@@ -33,13 +33,13 @@ public class M3BadgedBox extends Control {
     /// The base style class for M3FX badged boxes.
     public static final String STYLE_CLASS = "m3-badged-box";
 
-    /// The optional content node property.
+    // The optional content node property.
     private final ObjectProperty<@Nullable Node> content = new SimpleObjectProperty<>(this, "content");
 
-    /// The optional badge property.
+    // The optional badge property.
     private final ObjectProperty<@Nullable M3Badge> badge = new SimpleObjectProperty<>(this, "badge");
 
-    /// The badge alignment inside this container, resolved horizontally against the effective node orientation.
+    // The badge alignment inside this container, resolved horizontally against the effective node orientation.
     private final ObjectProperty<Pos> badgeAlignment = new SimpleObjectProperty<>(this, "badgeAlignment", Pos.TOP_RIGHT) {
         /// Restores the default badge alignment when the property is set to null.
         @Override
@@ -52,7 +52,7 @@ public class M3BadgedBox extends Control {
         }
     };
 
-    /// The horizontal badge translation after alignment is applied.
+    // The horizontal badge translation after alignment is applied.
     private final DoubleProperty badgeOffsetX = new SimpleDoubleProperty(this, "badgeOffsetX") {
         /// Updates badge placement after the offset changes.
         @Override
@@ -61,7 +61,7 @@ public class M3BadgedBox extends Control {
         }
     };
 
-    /// The vertical badge translation after alignment is applied.
+    // The vertical badge translation after alignment is applied.
     private final DoubleProperty badgeOffsetY = new SimpleDoubleProperty(this, "badgeOffsetY") {
         /// Updates badge placement after the offset changes.
         @Override
@@ -250,17 +250,26 @@ public class M3BadgedBox extends Control {
     }
 
     /// Requests focus on the current or first accessibility item.
-    private void focusAccessibleItem() {
+    ///
+    /// @return `true` when the target accepted focus
+    final boolean focusAccessibleItem() {
         if (M3Accessible.showCurrentOrItem(this, getContent(), getBadge())) {
             notifyAccessibleFocusChanged();
+            return true;
         }
+        return false;
     }
 
     /// Shows an item requested by an accessibility client.
-    private void showAccessibleItem(Object... parameters) {
+    ///
+    /// @param parameters optional accessibility target parameters
+    /// @return `true` when focus moved to the default or requested item
+    final boolean showAccessibleItem(Object... parameters) {
         if (M3Accessible.showCurrentOrItem(this, getContent(), getBadge(), parameters)) {
             notifyAccessibleFocusChanged();
+            return true;
         }
+        return false;
     }
 
     /// Notifies accessibility clients that the container focus target changed.
@@ -273,6 +282,7 @@ public class M3BadgedBox extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
+        M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleItem, this::showAccessibleItem);
         content.addListener(observable -> handleContentChanged());
         badge.addListener(observable -> handleContentChanged());
         addEventFilter(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);

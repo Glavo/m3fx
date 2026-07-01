@@ -22,7 +22,7 @@ public final class M3NodeLayout {
     /// Returns whether the node currently resolves to right-to-left layout.
     ///
     /// @param node the node that owns the effective orientation
-    /// @return `true` when the node's effective orientation is [NodeOrientation.RIGHT_TO_LEFT]
+    /// @return `true` when the node's effective orientation is `NodeOrientation.RIGHT_TO_LEFT`
     public static boolean isRightToLeft(Node node) {
         return node.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
     }

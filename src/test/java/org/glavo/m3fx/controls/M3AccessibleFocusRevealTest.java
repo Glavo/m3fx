@@ -3,10 +3,12 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Bounds;
 import javafx.scene.AccessibleAction;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
@@ -15,10 +17,15 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 import org.glavo.m3fx.FxTestUtils;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -33,6 +40,19 @@ final class M3AccessibleFocusRevealTest {
     @BeforeAll
     static void startToolkit() throws InterruptedException {
         FxTestUtils.startToolkit();
+        Platform.setImplicitExit(false);
+    }
+
+    /// Closes test windows after every focus reveal test.
+    @AfterEach
+    void closeStages() {
+        FxTestUtils.runOnFxThread(() -> {
+            for (Window window : List.copyOf(Window.getWindows())) {
+                if (window instanceof Stage stage) {
+                    stage.close();
+                }
+            }
+        });
     }
 
     /// Verifies direct accessibility focus reports success only when focus moves and reveals the target.
@@ -47,7 +67,7 @@ final class M3AccessibleFocusRevealTest {
             scrollPane.setFitToWidth(true);
             scrollPane.setPrefSize(180.0, 96.0);
 
-            new Scene(scrollPane, 180.0, 96.0);
+            show(scrollPane, 180.0, 96.0);
             scrollPane.applyCss();
             scrollPane.resize(180.0, 96.0);
             scrollPane.layout();
@@ -101,7 +121,7 @@ final class M3AccessibleFocusRevealTest {
             scrollPane.setFitToWidth(true);
             scrollPane.setPrefSize(180.0, 96.0);
 
-            new Scene(scrollPane, 180.0, 96.0);
+            show(scrollPane, 180.0, 96.0);
             scrollPane.applyCss();
             scrollPane.resize(180.0, 96.0);
             scrollPane.layout();
@@ -126,14 +146,14 @@ final class M3AccessibleFocusRevealTest {
             scrollPane.setFitToWidth(true);
             scrollPane.setPrefSize(180.0, 96.0);
 
-            new Scene(scrollPane, 180.0, 96.0);
+            show(scrollPane, 180.0, 96.0);
             scrollPane.applyCss();
             scrollPane.resize(180.0, 96.0);
             scrollPane.layout();
             content.layout();
             slider.layout();
 
-            slider.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+            assertTrue(M3Accessible.requestAccessibleFocus(content, slider));
 
             assertTrue(slider.isFocused());
             assertTargetVisible(scrollPane, content, slider);
@@ -153,7 +173,7 @@ final class M3AccessibleFocusRevealTest {
             scrollPane.setFitToWidth(true);
             scrollPane.setPrefSize(180.0, 96.0);
 
-            new Scene(scrollPane, 180.0, 96.0);
+            show(scrollPane, 180.0, 96.0);
             scrollPane.applyCss();
             scrollPane.resize(180.0, 96.0);
             scrollPane.layout();
@@ -180,7 +200,7 @@ final class M3AccessibleFocusRevealTest {
             scrollPane.setFitToWidth(true);
             scrollPane.setPrefSize(180.0, 96.0);
 
-            new Scene(scrollPane, 180.0, 96.0);
+            show(scrollPane, 180.0, 96.0);
             scrollPane.applyCss();
             scrollPane.resize(180.0, 96.0);
             scrollPane.layout();
@@ -208,7 +228,7 @@ final class M3AccessibleFocusRevealTest {
             scrollPane.setFitToWidth(true);
             scrollPane.setPrefSize(180.0, 96.0);
 
-            new Scene(scrollPane, 180.0, 96.0);
+            show(scrollPane, 180.0, 96.0);
             scrollPane.applyCss();
             scrollPane.resize(180.0, 96.0);
             scrollPane.layout();
@@ -239,7 +259,7 @@ final class M3AccessibleFocusRevealTest {
             scrollPane.setFitToWidth(true);
             scrollPane.setPrefSize(180.0, 96.0);
 
-            new Scene(scrollPane, 180.0, 96.0);
+            show(scrollPane, 180.0, 96.0);
             scrollPane.applyCss();
             scrollPane.resize(180.0, 96.0);
             scrollPane.layout();
@@ -266,7 +286,7 @@ final class M3AccessibleFocusRevealTest {
             scrollPane.setFitToWidth(true);
             scrollPane.setPrefSize(240.0, 120.0);
 
-            Scene scene = new Scene(scrollPane, 240.0, 120.0);
+            Scene scene = show(scrollPane, 240.0, 120.0);
             scrollPane.applyCss();
             scrollPane.resize(240.0, 120.0);
             scrollPane.layout();
@@ -295,7 +315,7 @@ final class M3AccessibleFocusRevealTest {
             scrollPane.setFitToWidth(true);
             scrollPane.setPrefSize(240.0, 120.0);
 
-            Scene scene = new Scene(scrollPane, 240.0, 120.0);
+            Scene scene = show(scrollPane, 240.0, 120.0);
             scrollPane.applyCss();
             scrollPane.resize(240.0, 120.0);
             scrollPane.layout();
@@ -308,6 +328,67 @@ final class M3AccessibleFocusRevealTest {
             assertNotNull(focusOwner);
             assertTrue(M3Accessible.containsNode(picker, focusOwner));
             assertTargetVisible(scrollPane, content, focusOwner);
+            assertTrue(scrollPane.getVvalue() > 0.0, () -> "vvalue=" + scrollPane.getVvalue());
+        });
+    }
+
+    /// Verifies accessibility focus on a text input layout scrolls its input into view.
+    @Test
+    void textInputLayoutAccessibleRequestFocusRevealsInput() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane spacer = new Pane();
+            spacer.setPrefHeight(240.0);
+            M3TextField input = new M3TextField("Project");
+            M3TextInputLayout layout = new M3TextInputLayout(input, "Project name");
+            VBox content = new VBox(spacer, layout);
+            ScrollPane scrollPane = new ScrollPane(content);
+            scrollPane.setFitToWidth(true);
+            scrollPane.setPrefSize(240.0, 120.0);
+
+            show(scrollPane, 240.0, 120.0);
+            scrollPane.applyCss();
+            scrollPane.resize(240.0, 120.0);
+            scrollPane.layout();
+            content.layout();
+            layout.layout();
+
+            assertTrue(M3Accessible.requestAccessibleFocus(content, layout));
+
+            assertTrue(input.isFocused());
+            assertTargetVisible(scrollPane, content, input);
+            assertTrue(scrollPane.getVvalue() > 0.0, () -> "vvalue=" + scrollPane.getVvalue());
+        });
+    }
+
+    /// Verifies accessibility focus on a validation summary scrolls its current invalid input into view.
+    @Test
+    void validationSummaryAccessibleRequestFocusRevealsInvalidInput() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane spacer = new Pane();
+            spacer.setPrefHeight(240.0);
+            M3TextField input = new M3TextField();
+            M3TextInputLayout layout = new M3TextInputLayout(input, "Name", "Required");
+            layout.setValidator(M3TextInputValidators.required("Name is required"));
+            M3FormValidator validator = new M3FormValidator(layout);
+            M3ValidationSummary summary = new M3ValidationSummary(validator);
+            assertFalse(validator.validate());
+            VBox content = new VBox(spacer, layout, summary);
+            ScrollPane scrollPane = new ScrollPane(content);
+            scrollPane.setFitToWidth(true);
+            scrollPane.setPrefSize(260.0, 140.0);
+
+            show(scrollPane, 260.0, 140.0);
+            scrollPane.applyCss();
+            scrollPane.resize(260.0, 140.0);
+            scrollPane.layout();
+            content.layout();
+            layout.layout();
+            summary.layout();
+
+            assertTrue(M3Accessible.requestAccessibleFocus(content, summary));
+
+            assertTrue(input.isFocused());
+            assertTargetVisible(scrollPane, content, input);
             assertTrue(scrollPane.getVvalue() > 0.0, () -> "vvalue=" + scrollPane.getVvalue());
         });
     }
@@ -326,7 +407,7 @@ final class M3AccessibleFocusRevealTest {
             scrollPane.setFitToWidth(true);
             scrollPane.setPrefSize(240.0, 120.0);
 
-            new Scene(scrollPane, 240.0, 120.0);
+            show(scrollPane, 240.0, 120.0);
             scrollPane.applyCss();
             scrollPane.resize(240.0, 120.0);
             scrollPane.layout();
@@ -354,7 +435,7 @@ final class M3AccessibleFocusRevealTest {
             scrollPane.setFitToWidth(true);
             scrollPane.setPrefSize(240.0, 120.0);
 
-            Scene scene = new Scene(scrollPane, 240.0, 120.0);
+            Scene scene = show(scrollPane, 240.0, 120.0);
             scrollPane.applyCss();
             scrollPane.resize(240.0, 120.0);
             scrollPane.layout();
@@ -371,6 +452,39 @@ final class M3AccessibleFocusRevealTest {
         });
     }
 
+    /// Verifies external accessibility focus routes preserve a search bar's current child focus.
+    @Test
+    void searchBarRouteRequestFocusPreservesCurrentFocusNode() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane spacer = new Pane();
+            spacer.setPrefHeight(240.0);
+            M3Button filter = new M3Button("Filter");
+            M3SearchBar searchBar = new M3SearchBar("Search");
+            searchBar.setTrailingActions(filter);
+            VBox content = new VBox(spacer, searchBar);
+            ScrollPane scrollPane = new ScrollPane(content);
+            scrollPane.setFitToWidth(true);
+            scrollPane.setPrefSize(260.0, 140.0);
+
+            show(scrollPane, 260.0, 140.0);
+            scrollPane.applyCss();
+            scrollPane.resize(260.0, 140.0);
+            scrollPane.layout();
+            content.layout();
+            searchBar.layout();
+
+            assertTrue(M3Accessible.showAccessibleActionTarget(content, searchBar, filter));
+            assertTrue(filter.isFocused());
+            assertSame(filter, searchBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+            assertTrue(M3Accessible.requestAccessibleFocus(content, searchBar));
+
+            assertTrue(filter.isFocused());
+            assertSame(filter, searchBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            assertTargetVisible(scrollPane, content, filter);
+            assertTrue(scrollPane.getVvalue() > 0.0, () -> "vvalue=" + scrollPane.getVvalue());
+        });
+    }
     /// Verifies search view default show-item focus scrolls the embedded editor into view.
     @Test
     void searchViewDefaultShowItemRevealsEditor() {
@@ -383,7 +497,7 @@ final class M3AccessibleFocusRevealTest {
             scrollPane.setFitToWidth(true);
             scrollPane.setPrefSize(260.0, 140.0);
 
-            Scene scene = new Scene(scrollPane, 260.0, 140.0);
+            Scene scene = show(scrollPane, 260.0, 140.0);
             scrollPane.applyCss();
             scrollPane.resize(260.0, 140.0);
             scrollPane.layout();
@@ -413,7 +527,7 @@ final class M3AccessibleFocusRevealTest {
             scrollPane.setFitToWidth(true);
             scrollPane.setPrefSize(260.0, 140.0);
 
-            new Scene(scrollPane, 260.0, 140.0);
+            show(scrollPane, 260.0, 140.0);
             scrollPane.applyCss();
             scrollPane.resize(260.0, 140.0);
             scrollPane.layout();
@@ -441,7 +555,7 @@ final class M3AccessibleFocusRevealTest {
             scrollPane.setFitToWidth(true);
             scrollPane.setPrefSize(260.0, 140.0);
 
-            Scene scene = new Scene(scrollPane, 260.0, 140.0);
+            Scene scene = show(scrollPane, 260.0, 140.0);
             scrollPane.applyCss();
             scrollPane.resize(260.0, 140.0);
             scrollPane.layout();
@@ -477,7 +591,7 @@ final class M3AccessibleFocusRevealTest {
             scrollPane.setFitToHeight(true);
             scrollPane.setPrefSize(180.0, 80.0);
 
-            new Scene(scrollPane, 180.0, 80.0);
+            show(scrollPane, 180.0, 80.0);
             scrollPane.applyCss();
             scrollPane.resize(180.0, 80.0);
             scrollPane.layout();
@@ -510,7 +624,7 @@ final class M3AccessibleFocusRevealTest {
             scrollPane.setFitToHeight(true);
             scrollPane.setPrefSize(180.0, 80.0);
 
-            new Scene(scrollPane, 180.0, 80.0);
+            show(scrollPane, 180.0, 80.0);
             scrollPane.applyCss();
             scrollPane.resize(180.0, 80.0);
             scrollPane.layout();
@@ -593,7 +707,7 @@ final class M3AccessibleFocusRevealTest {
             scrollPane.setFitToHeight(true);
             scrollPane.setPrefSize(180.0, 80.0);
 
-            new Scene(scrollPane, 180.0, 80.0);
+            show(scrollPane, 180.0, 80.0);
             scrollPane.applyCss();
             scrollPane.resize(180.0, 80.0);
             scrollPane.layout();
@@ -628,7 +742,7 @@ final class M3AccessibleFocusRevealTest {
             scrollPane.setFitToHeight(true);
             scrollPane.setPrefSize(180.0, 80.0);
 
-            new Scene(scrollPane, 180.0, 80.0);
+            show(scrollPane, 180.0, 80.0);
             scrollPane.applyCss();
             scrollPane.resize(180.0, 80.0);
             scrollPane.layout();
@@ -643,6 +757,292 @@ final class M3AccessibleFocusRevealTest {
         });
     }
 
+    /// Verifies direct accessibility focus can target an indexed child outside the owner's parent-child tree.
+    @Test
+    void directAccessibleFocusUsesIndexedChildOutsideParentTree() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Button indexedChild = new M3Button("Indexed");
+            IndexedAccessibleOwner owner = new IndexedAccessibleOwner(indexedChild);
+            owner.setPrefSize(120.0, 32.0);
+            Pane spacer = new Pane();
+            spacer.setPrefHeight(240.0);
+            VBox content = new VBox(owner, spacer, indexedChild);
+            ScrollPane scrollPane = new ScrollPane(content);
+            scrollPane.setFitToWidth(true);
+            scrollPane.setPrefSize(180.0, 96.0);
+
+            show(scrollPane, 180.0, 96.0);
+            scrollPane.applyCss();
+            scrollPane.resize(180.0, 96.0);
+            scrollPane.layout();
+            content.layout();
+            owner.layout();
+            indexedChild.layout();
+
+            assertTrue(M3Accessible.showItem(content, owner));
+
+            assertTrue(indexedChild.isFocused());
+            assertFalse(owner.isFocused());
+            assertTargetVisible(scrollPane, content, indexedChild);
+            assertTrue(scrollPane.getVvalue() > 0.0, () -> "vvalue=" + scrollPane.getVvalue());
+        });
+    }
+
+    /// Verifies explicit accessibility reveal can target an indexed child outside the owner's parent-child tree.
+    @Test
+    void accessibleShowItemTargetsIndexedChildOutsideParentTree() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Button indexedChild = new M3Button("Indexed");
+            IndexedAccessibleOwner owner = new IndexedAccessibleOwner(indexedChild);
+            owner.setFocusTraversable(true);
+            owner.setPrefSize(120.0, 32.0);
+            Pane spacer = new Pane();
+            spacer.setPrefHeight(240.0);
+            VBox content = new VBox(owner, spacer, indexedChild);
+            ScrollPane scrollPane = new ScrollPane(content);
+            scrollPane.setFitToWidth(true);
+            scrollPane.setPrefSize(180.0, 96.0);
+
+            show(scrollPane, 180.0, 96.0);
+            scrollPane.applyCss();
+            scrollPane.resize(180.0, 96.0);
+            scrollPane.layout();
+            content.layout();
+            owner.layout();
+            indexedChild.layout();
+
+            assertTrue(M3Accessible.showAccessibleActionTarget(content, owner, indexedChild));
+
+            assertTrue(indexedChild.isFocused());
+            assertFalse(owner.isFocused());
+            assertTargetVisible(scrollPane, content, indexedChild);
+            assertTrue(scrollPane.getVvalue() > 0.0, () -> "vvalue=" + scrollPane.getVvalue());
+        });
+    }
+
+    /// Verifies installed focus routes handle external accessibility focus before JavaFX action fallback.
+    @Test
+    void installedAccessibleFocusRouteHandlesExternalTarget() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Button routeTarget = new M3Button("Route target");
+            RouteAccessibleOwner owner = new RouteAccessibleOwner(routeTarget);
+            owner.setPrefSize(120.0, 32.0);
+            Pane spacer = new Pane();
+            spacer.setPrefHeight(240.0);
+            VBox content = new VBox(owner, spacer, routeTarget);
+            ScrollPane scrollPane = new ScrollPane(content);
+            scrollPane.setFitToWidth(true);
+            scrollPane.setPrefSize(180.0, 96.0);
+
+            show(scrollPane, 180.0, 96.0);
+            scrollPane.applyCss();
+            scrollPane.resize(180.0, 96.0);
+            scrollPane.layout();
+            content.layout();
+            owner.layout();
+            routeTarget.layout();
+
+            assertTrue(M3Accessible.requestAccessibleFocus(content, owner));
+
+            assertTrue(owner.focusRouteCalled);
+            assertFalse(owner.fallbackFocusActionCalled);
+            assertTrue(routeTarget.isFocused());
+            assertTargetVisible(scrollPane, content, routeTarget);
+            assertTrue(scrollPane.getVvalue() > 0.0, () -> "vvalue=" + scrollPane.getVvalue());
+        });
+    }
+
+    /// Verifies installed reveal routes handle indexed external targets before JavaFX action fallback.
+    @Test
+    void installedAccessibleRevealRouteHandlesIndexedExternalTarget() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Button routeTarget = new M3Button("Route target");
+            RouteAccessibleOwner owner = new RouteAccessibleOwner(routeTarget);
+            owner.setPrefSize(120.0, 32.0);
+            Pane spacer = new Pane();
+            spacer.setPrefHeight(240.0);
+            VBox content = new VBox(owner, spacer, routeTarget);
+            ScrollPane scrollPane = new ScrollPane(content);
+            scrollPane.setFitToWidth(true);
+            scrollPane.setPrefSize(180.0, 96.0);
+
+            show(scrollPane, 180.0, 96.0);
+            scrollPane.applyCss();
+            scrollPane.resize(180.0, 96.0);
+            scrollPane.layout();
+            content.layout();
+            owner.layout();
+            routeTarget.layout();
+
+            assertTrue(M3Accessible.showAccessibleActionTarget(content, owner, routeTarget));
+
+            assertTrue(owner.showRouteCalled);
+            assertFalse(owner.fallbackShowActionCalled);
+            assertTrue(routeTarget.isFocused());
+            assertTargetVisible(scrollPane, content, routeTarget);
+            assertTrue(scrollPane.getVvalue() > 0.0, () -> "vvalue=" + scrollPane.getVvalue());
+        });
+    }
+
+    /// Verifies installed reveal route target matchers handle non-node targets before JavaFX action fallback.
+    @Test
+    void installedAccessibleRevealRouteHandlesNonNodeTarget() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Button routeTarget = new M3Button("Route target");
+            RouteAccessibleOwner owner = new RouteAccessibleOwner(routeTarget);
+            owner.setPrefSize(120.0, 32.0);
+            Pane spacer = new Pane();
+            spacer.setPrefHeight(240.0);
+            VBox content = new VBox(owner, spacer, routeTarget);
+            ScrollPane scrollPane = new ScrollPane(content);
+            scrollPane.setFitToWidth(true);
+            scrollPane.setPrefSize(180.0, 96.0);
+
+            show(scrollPane, 180.0, 96.0);
+            scrollPane.applyCss();
+            scrollPane.resize(180.0, 96.0);
+            scrollPane.layout();
+            content.layout();
+            owner.layout();
+            routeTarget.layout();
+
+            assertTrue(M3Accessible.showAccessibleActionTarget(content, owner, owner.valueTarget));
+
+            assertTrue(owner.showTargetMatcherCalled);
+            assertTrue(owner.showRouteCalled);
+            assertFalse(owner.fallbackShowActionCalled);
+            assertTrue(routeTarget.isFocused());
+            assertTargetVisible(scrollPane, content, routeTarget);
+            assertTrue(scrollPane.getVvalue() > 0.0, () -> "vvalue=" + scrollPane.getVvalue());
+        });
+    }
+
+    /// Verifies installed reveal routes handle nested non-node targets before JavaFX action fallback.
+    @Test
+    void installedAccessibleRevealRouteHandlesNestedNonNodeTarget() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Button routeTarget = new M3Button("Route target");
+            RouteAccessibleOwner owner = new RouteAccessibleOwner(routeTarget);
+            owner.setPrefSize(120.0, 32.0);
+            Pane spacer = new Pane();
+            spacer.setPrefHeight(240.0);
+            VBox content = new VBox(owner, spacer, routeTarget);
+            ScrollPane scrollPane = new ScrollPane(content);
+            scrollPane.setFitToWidth(true);
+            scrollPane.setPrefSize(180.0, 96.0);
+
+            show(scrollPane, 180.0, 96.0);
+            scrollPane.applyCss();
+            scrollPane.resize(180.0, 96.0);
+            scrollPane.layout();
+            content.layout();
+            owner.layout();
+            routeTarget.layout();
+
+            Object nestedTarget = new Object[] {List.of(owner.valueTarget)};
+            assertTrue(M3Accessible.showAccessibleActionTarget(content, owner, nestedTarget));
+
+            assertTrue(owner.showTargetMatcherCalled);
+            assertTrue(owner.showRouteCalled);
+            assertFalse(owner.fallbackShowActionCalled);
+            assertTrue(routeTarget.isFocused());
+            assertTargetVisible(scrollPane, content, routeTarget);
+            assertTrue(scrollPane.getVvalue() > 0.0, () -> "vvalue=" + scrollPane.getVvalue());
+        });
+    }
+
+    /// Verifies removing an installed accessibility route restores JavaFX action fallback dispatch.
+    @Test
+    void installedAccessibleActionRouteCanBeCleared() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Button routeTarget = new M3Button("Route target");
+            RouteAccessibleOwner owner = new RouteAccessibleOwner(routeTarget);
+            owner.setPrefSize(120.0, 32.0);
+            Pane spacer = new Pane();
+            spacer.setPrefHeight(240.0);
+            VBox content = new VBox(owner, spacer, routeTarget);
+            ScrollPane scrollPane = new ScrollPane(content);
+            scrollPane.setFitToWidth(true);
+            scrollPane.setPrefSize(180.0, 96.0);
+
+            show(scrollPane, 180.0, 96.0);
+            scrollPane.applyCss();
+            scrollPane.resize(180.0, 96.0);
+            scrollPane.layout();
+            content.layout();
+            owner.layout();
+            routeTarget.layout();
+
+            M3Accessible.installAccessibleActionRoute(owner, null, null, null);
+
+            assertFalse(M3Accessible.showAccessibleActionTarget(content, owner, owner.valueTarget));
+            assertFalse(owner.showTargetMatcherCalled);
+            assertFalse(owner.showRouteCalled);
+            assertFalse(owner.fallbackShowActionCalled);
+            assertFalse(routeTarget.isFocused());
+
+            assertFalse(M3Accessible.requestAccessibleFocus(content, owner));
+            assertFalse(owner.focusRouteCalled);
+            assertTrue(owner.fallbackFocusActionCalled);
+            assertFalse(routeTarget.isFocused());
+        });
+    }
+
+    /// Verifies reinstalling an accessibility route replaces the previous handlers atomically.
+    @Test
+    void installedAccessibleActionRouteCanBeReplaced() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Button routeTarget = new M3Button("Route target");
+            RouteAccessibleOwner owner = new RouteAccessibleOwner(routeTarget);
+            owner.setPrefSize(120.0, 32.0);
+            Pane spacer = new Pane();
+            spacer.setPrefHeight(240.0);
+            VBox content = new VBox(owner, spacer, routeTarget);
+            ScrollPane scrollPane = new ScrollPane(content);
+            scrollPane.setFitToWidth(true);
+            scrollPane.setPrefSize(180.0, 96.0);
+            boolean[] replacementFocusRouteCalled = {false};
+            boolean[] replacementShowRouteCalled = {false};
+            boolean[] replacementShowTargetMatcherCalled = {false};
+
+            show(scrollPane, 180.0, 96.0);
+            scrollPane.applyCss();
+            scrollPane.resize(180.0, 96.0);
+            scrollPane.layout();
+            content.layout();
+            owner.layout();
+            routeTarget.layout();
+
+            M3Accessible.installAccessibleActionRoute(owner,
+                    () -> {
+                        replacementFocusRouteCalled[0] = true;
+                        return false;
+                    },
+                    parameters -> {
+                        replacementShowRouteCalled[0] = true;
+                        return false;
+                    },
+                    parameter -> {
+                        replacementShowTargetMatcherCalled[0] = true;
+                        return parameter == owner.valueTarget;
+                    });
+
+            assertFalse(M3Accessible.requestAccessibleFocus(content, owner));
+            assertTrue(replacementFocusRouteCalled[0]);
+            assertFalse(owner.focusRouteCalled);
+            assertFalse(owner.fallbackFocusActionCalled);
+            assertFalse(routeTarget.isFocused());
+
+            assertFalse(M3Accessible.showAccessibleActionTarget(content, owner, owner.valueTarget));
+            assertTrue(replacementShowTargetMatcherCalled[0]);
+            assertTrue(replacementShowRouteCalled[0]);
+            assertFalse(owner.showTargetMatcherCalled);
+            assertFalse(owner.showRouteCalled);
+            assertFalse(owner.fallbackShowActionCalled);
+            assertFalse(routeTarget.isFocused());
+        });
+    }
+
     /// Verifies accessibility focus helpers report failure when no reachable target can receive focus.
     @Test
     void accessibleShowCurrentOrItemReturnsFalseWithoutReachableTarget() {
@@ -653,6 +1053,17 @@ final class M3AccessibleFocusRevealTest {
             assertFalse(M3Accessible.showCurrentOrItem(owner, items));
             assertFalse(M3Accessible.showCurrentOrItem(owner, items, 1));
         });
+    }
+
+    /// Shows the supplied scroll pane in a real JavaFX window and performs an initial layout pass.
+    private static Scene show(ScrollPane scrollPane, double width, double height) {
+        Stage stage = new Stage();
+        Scene scene = new Scene(scrollPane, width, height);
+        stage.setScene(scene);
+        stage.show();
+        scrollPane.applyCss();
+        scrollPane.layout();
+        return scene;
     }
 
     /// Verifies that the target node is visible within the current vertical viewport.
@@ -688,6 +1099,132 @@ final class M3AccessibleFocusRevealTest {
         button.setPrefWidth(120.0);
         button.setMaxWidth(120.0);
         return button;
+    }
+
+    /// Test node that exposes one indexed accessibility child without owning it as a scene-graph child.
+    @NotNullByDefault
+    private static final class IndexedAccessibleOwner extends Pane {
+        /// The indexed child returned from accessibility queries.
+        private final Node indexedChild;
+
+        /// Creates an owner for one indexed child.
+        private IndexedAccessibleOwner(Node indexedChild) {
+            this.indexedChild = indexedChild;
+        }
+
+        /// Returns the indexed child accessibility structure.
+        @Override
+        public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+            return switch (attribute) {
+                case ITEM_COUNT -> 1;
+                case ITEM_AT_INDEX -> parameters.length > 0
+                        && parameters[0] instanceof Number number
+                        && number.intValue() == 0 ? indexedChild : null;
+                default -> super.queryAccessibleAttribute(attribute, parameters);
+            };
+        }
+    }
+
+    /// Test node that exposes installed accessibility action routes for an external indexed child.
+    @NotNullByDefault
+    private static final class RouteAccessibleOwner extends Pane {
+        /// The indexed child reached through the installed route.
+        private final Node routeTarget;
+
+        /// The non-node value target exposed through the installed route matcher.
+        private final Object valueTarget = new Object();
+
+        /// Whether the installed focus route was called.
+        private boolean focusRouteCalled;
+
+        /// Whether the installed reveal route was called.
+        private boolean showRouteCalled;
+
+        /// Whether JavaFX fallback focus action dispatch was used.
+        private boolean fallbackFocusActionCalled;
+
+        /// Whether JavaFX fallback reveal action dispatch was used.
+        private boolean fallbackShowActionCalled;
+
+        /// Whether the installed non-node target matcher was called.
+        private boolean showTargetMatcherCalled;
+
+        /// Creates an owner for one external route target.
+        private RouteAccessibleOwner(Node routeTarget) {
+            this.routeTarget = routeTarget;
+            M3Accessible.installAccessibleActionRoute(this,
+                    this::focusRouteTarget,
+                    this::showRouteTarget,
+                    this::handlesShowTarget);
+        }
+
+        /// Focuses the external route target.
+        private boolean focusRouteTarget() {
+            focusRouteCalled = true;
+            return M3Accessible.showDirectItem(this, routeTarget);
+        }
+
+        /// Reveals the external route target.
+        private boolean showRouteTarget(Object... parameters) {
+            showRouteCalled = true;
+            for (Object parameter : parameters) {
+                if (containsRouteTarget(parameter)) {
+                    return M3Accessible.showDirectItem(this, routeTarget);
+                }
+            }
+            return false;
+        }
+
+        /// Returns whether this route owns the supplied non-node target.
+        private boolean handlesShowTarget(@Nullable Object parameter) {
+            showTargetMatcherCalled = true;
+            return containsRouteTarget(parameter);
+        }
+
+        /// Returns whether one reveal parameter references this route target.
+        private boolean containsRouteTarget(@Nullable Object parameter) {
+            if (parameter == routeTarget || parameter == valueTarget) {
+                return true;
+            }
+            if (parameter instanceof Iterable<?> values) {
+                for (Object value : values) {
+                    if (containsRouteTarget(value)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            if (parameter instanceof Object[] values) {
+                for (Object value : values) {
+                    if (containsRouteTarget(value)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        /// Returns the external route target through indexed accessibility queries.
+        @Override
+        public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+            return switch (attribute) {
+                case ITEM_COUNT -> 1;
+                case ITEM_AT_INDEX -> parameters.length > 0
+                        && parameters[0] instanceof Number number
+                        && number.intValue() == 0 ? routeTarget : null;
+                default -> super.queryAccessibleAttribute(attribute, parameters);
+            };
+        }
+
+        /// Records JavaFX accessibility fallback action dispatch.
+        @Override
+        public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
+            switch (action) {
+                case REQUEST_FOCUS -> fallbackFocusActionCalled = true;
+                case SHOW_ITEM -> fallbackShowActionCalled = true;
+                default -> super.executeAccessibleAction(action, parameters);
+            }
+        }
     }
 
     /// Test node that exposes focus traversal but ignores accessibility focus actions.

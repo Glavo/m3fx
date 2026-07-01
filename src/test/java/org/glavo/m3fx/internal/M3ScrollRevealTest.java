@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.internal;
 
+import javafx.application.Platform;
 import javafx.geometry.Bounds;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -12,9 +13,12 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+import javafx.stage.Window;
 import org.glavo.m3fx.FxTestUtils;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -30,6 +34,19 @@ final class M3ScrollRevealTest {
     @BeforeAll
     static void startToolkit() throws InterruptedException {
         FxTestUtils.startToolkit();
+        Platform.setImplicitExit(false);
+    }
+
+    /// Closes real stages opened by focus-aware tests.
+    @AfterEach
+    void closeStages() {
+        FxTestUtils.runOnFxThread(() -> {
+            for (Window window : java.util.List.copyOf(Window.getWindows())) {
+                if (window instanceof Stage stage) {
+                    stage.close();
+                }
+            }
+        });
     }
 
     /// Verifies that the default reveal behavior scrolls a descendant target into view.
@@ -58,7 +75,10 @@ final class M3ScrollRevealTest {
             Label target = new Label("Target");
             target.setFocusTraversable(true);
             VBox content = new VBox(spacer, target);
-            ScrollPane scrollPane = scrollPane(content);
+            ScrollPane scrollPane = new ScrollPane(content);
+            scrollPane.setFitToWidth(true);
+            scrollPane.setPrefSize(180.0, 120.0);
+            show(scrollPane, 180.0, 120.0);
 
             assertTrue(M3ScrollReveal.requestFocusAndReveal(content, target));
 
@@ -305,6 +325,22 @@ final class M3ScrollRevealTest {
             assertTrue(scrollPane.getVvalue() > 0.0, () -> "vvalue=" + scrollPane.getVvalue());
             assertTargetVerticallyVisible(scrollPane, content, target);
         });
+    }
+
+    /// Shows and lays out a scroll pane in a real stage.
+    private static Scene show(ScrollPane scrollPane, double width, double height) {
+        Stage stage = new Stage();
+        Scene scene = new Scene(scrollPane, width, height);
+        stage.setScene(scene);
+        stage.show();
+        scrollPane.applyCss();
+        scrollPane.resize(width, height);
+        scrollPane.layout();
+        Node content = scrollPane.getContent();
+        if (content instanceof Region region) {
+            region.layout();
+        }
+        return scene;
     }
 
     /// Verifies that the target is visible in the scroll pane's vertical viewport.

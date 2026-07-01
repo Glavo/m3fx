@@ -259,6 +259,9 @@ public final class M3FXDemoApp extends Application {
     /// The scroll pane that hosts the demo sidebar.
     private @Nullable ScrollPane sidebarScrollPane;
 
+    /// The scroll pane that hosts the current demo page.
+    private @Nullable ScrollPane pageScrollPane;
+
     /// The pending retry that scrolls the active sidebar destination after drawer expansion settles.
     private @Nullable Timeline sidebarScrollRetryAnimation;
 
@@ -584,6 +587,7 @@ public final class M3FXDemoApp extends Application {
         pageHost = host;
 
         ScrollPane scrollPane = new ScrollPane(host);
+        pageScrollPane = scrollPane;
         scrollPane.getStyleClass().add("demo-scroll-pane");
         M3ScrollPanes.style(scrollPane);
         M3ScrollPanes.enableSmoothScrolling(scrollPane);
@@ -609,6 +613,11 @@ public final class M3FXDemoApp extends Application {
 
         pageNode.getChildren().addAll(createPageHeader(page), page.createContent());
         host.getChildren().setAll(pageNode);
+        ScrollPane scrollPane = pageScrollPane;
+        if (scrollPane != null) {
+            scrollPane.setHvalue(0.0);
+            scrollPane.setVvalue(0.0);
+        }
         scrollSidebarPageIntoViewLater(page);
     }
 
@@ -1081,16 +1090,34 @@ public final class M3FXDemoApp extends Application {
     private Node createTypographyPage() {
         return createGallery(
                 createShowcaseGroup(
-                        "Scale",
+                        "Display",
                         new M3Text("Display Large", M3TextRole.DISPLAY_LARGE),
-                        new M3Text("Headline Medium", M3TextRole.HEADLINE_MEDIUM),
-                        new M3Text("Title Large", M3TextRole.TITLE_LARGE)
+                        new M3Text("Display Medium", M3TextRole.DISPLAY_MEDIUM),
+                        new M3Text("Display Small", M3TextRole.DISPLAY_SMALL)
                 ),
                 createShowcaseGroup(
-                        "Body And Labels",
-                        new M3Text("Label Large", M3TextRole.LABEL_LARGE),
+                        "Headline",
+                        new M3Text("Headline Large", M3TextRole.HEADLINE_LARGE),
+                        new M3Text("Headline Medium", M3TextRole.HEADLINE_MEDIUM),
+                        new M3Text("Headline Small", M3TextRole.HEADLINE_SMALL)
+                ),
+                createShowcaseGroup(
+                        "Title",
+                        new M3Text("Title Large", M3TextRole.TITLE_LARGE),
+                        new M3Text("Title Medium", M3TextRole.TITLE_MEDIUM),
+                        new M3Text("Title Small", M3TextRole.TITLE_SMALL)
+                ),
+                createShowcaseGroup(
+                        "Body",
                         new M3Text("Body Large text follows the active theme typography tokens.", M3TextRole.BODY_LARGE),
-                        new M3Text("Body Medium text", M3TextRole.BODY_MEDIUM)
+                        new M3Text("Body Medium text", M3TextRole.BODY_MEDIUM),
+                        new M3Text("Body Small text", M3TextRole.BODY_SMALL)
+                ),
+                createShowcaseGroup(
+                        "Label",
+                        new M3Text("Label Large", M3TextRole.LABEL_LARGE),
+                        new M3Text("Label Medium", M3TextRole.LABEL_MEDIUM),
+                        new M3Text("Label Small", M3TextRole.LABEL_SMALL)
                 )
         );
     }

@@ -45,13 +45,16 @@ final class M3InputSlotNavigationTest {
                 root.applyCss();
                 root.layout();
 
+                boolean[] bubbled = {false};
+                root.addEventHandler(KeyEvent.KEY_PRESSED, event -> bubbled[0] = true);
+
                 searchBar.getEditor().requestFocus();
                 KeyEvent event = targetedKeyEvent(KeyCode.RIGHT, searchBar);
                 searchBar.fireEvent(event);
 
                 assertTrue(searchBar.getEditor().isFocused(), () -> "focused=" + scene.getFocusOwner());
                 assertFalse(action.isFocused());
-                assertTrue(event.isConsumed());
+                assertFalse(bubbled[0]);
             } finally {
                 stage.close();
             }
@@ -76,13 +79,16 @@ final class M3InputSlotNavigationTest {
                 root.applyCss();
                 root.layout();
 
+                boolean[] bubbled = {false};
+                root.addEventHandler(KeyEvent.KEY_PRESSED, event -> bubbled[0] = true);
+
                 input.requestFocus();
                 KeyEvent event = targetedKeyEvent(KeyCode.RIGHT, layout);
                 layout.fireEvent(event);
 
                 assertTrue(input.isFocused(), () -> "focused=" + scene.getFocusOwner());
                 assertFalse(trailing.isFocused());
-                assertTrue(event.isConsumed());
+                assertFalse(bubbled[0]);
             } finally {
                 stage.close();
             }

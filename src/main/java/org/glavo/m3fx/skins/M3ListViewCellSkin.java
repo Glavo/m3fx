@@ -27,7 +27,10 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListViewCell<T>> {
             (observable, oldValue, newValue) -> updateGraphic(newValue);
 
     /// Requests row re-layout when the cell direction changes.
-    private final InvalidationListener nodeOrientationInvalidation = observable -> getSkinnable().requestLayout();
+    private final InvalidationListener nodeOrientationInvalidation = observable -> {
+        getSkinnable().requestLayout();
+        layoutCurrentRow();
+    };
 
     /// Creates a virtualized list view cell skin.
     ///
@@ -35,7 +38,7 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListViewCell<T>> {
     public M3ListViewCellSkin(M3ListViewCell<T> control) {
         super(control);
         control.graphicProperty().addListener(graphicListener);
-        control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
+        control.nodeOrientationProperty().addListener(nodeOrientationInvalidation);
         updateGraphic(control.getGraphic());
     }
 
@@ -44,7 +47,7 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListViewCell<T>> {
     public void dispose() {
         M3ListViewCell<T> cell = getSkinnable();
         cell.graphicProperty().removeListener(graphicListener);
-        cell.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
+        cell.nodeOrientationProperty().removeListener(nodeOrientationInvalidation);
         getChildren().clear();
         graphic = null;
         super.dispose();
@@ -138,15 +141,55 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListViewCell<T>> {
     /// @param height the layout area's height
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
-        Node row = graphic;
-        if (row != null) {
-            layoutInArea(row, x, y, width, height, 0.0, horizontalAlignment(), VPos.CENTER);
+        layoutRow(x, y, width, height);
+    }
+
+    /// Lays out the current rendered row within the current skinnable bounds.
+    private void layoutCurrentRow() {
+        M3ListViewCell<T> cell = getSkinnable();
+        double width = cell.getWidth();
+        double height = cell.getHeight();
+        if (width <= 0.0 || height <= 0.0) {
+            return;
         }
+        layoutRow(0.0, 0.0, width, height);
+    }
+
+    /// Lays out the rendered row in the supplied area.
+    private void layoutRow(double x, double y, double width, double height) {
+        Node row = graphic;
+        if (row == null) {
+            return;
+        }
+
+        double rowWidth = snapSizeX(boundedSize(row.minWidth(height), row.prefWidth(height), row.maxWidth(height), width));
+        double rowHeight = snapSizeY(boundedSize(row.minHeight(rowWidth), row.prefHeight(rowWidth), row.maxHeight(rowWidth), height));
+        double rowX = alignedX(x, width, rowWidth, horizontalAlignment());
+        double rowY = y + (height - rowHeight) / 2.0;
+        row.resizeRelocate(snapPositionX(rowX), snapPositionY(rowY), rowWidth, rowHeight);
+    }
+
+    /// Returns a child size bounded by its constraints and available size.
+    private static double boundedSize(double minimum, double preferred, double maximum, double available) {
+        return Math.min(available, Math.max(minimum, Math.min(preferred, maximum)));
+    }
+
+    /// Returns the physical x coordinate for one horizontal alignment.
+    private static double alignedX(double x, double width, double childWidth, HPos alignment) {
+        return switch (alignment) {
+            case CENTER -> x + (width - childWidth) / 2.0;
+            case RIGHT -> x + width - childWidth;
+            default -> x;
+        };
     }
 
     /// Returns the physical alignment for the current logical visual start edge.
     private HPos horizontalAlignment() {
-        return M3NodeLayout.logicalStartHorizontalAlignment(getSkinnable());
+        return switch (getSkinnable().getNodeOrientation()) {
+            case RIGHT_TO_LEFT -> HPos.RIGHT;
+            case LEFT_TO_RIGHT -> HPos.LEFT;
+            default -> M3NodeLayout.logicalStartHorizontalAlignment(getSkinnable());
+        };
     }
 
     /// Replaces the rendered row node owned by this skin.

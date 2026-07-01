@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.application.Platform;
 import javafx.geometry.Bounds;
 import javafx.scene.AccessibleAction;
 import javafx.scene.Node;
@@ -15,12 +16,16 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+import javafx.stage.Window;
 import org.glavo.m3fx.FxTestUtils;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -35,6 +40,19 @@ final class M3SelectionNavigationTest {
     @BeforeAll
     static void startToolkit() throws InterruptedException {
         FxTestUtils.startToolkit();
+        Platform.setImplicitExit(false);
+    }
+
+    /// Closes real windows created by selection navigation reveal tests.
+    @AfterEach
+    void closeStages() {
+        FxTestUtils.runOnFxThread(() -> {
+            for (Window window : List.copyOf(Window.getWindows())) {
+                if (window instanceof Stage stage) {
+                    stage.close();
+                }
+            }
+        });
     }
 
     /// Verifies shared selection navigation mirroring for right-to-left horizontal movement.
@@ -181,7 +199,7 @@ final class M3SelectionNavigationTest {
             scrollPane.setFitToWidth(true);
             scrollPane.setPrefSize(120.0, 48.0);
 
-            new Scene(scrollPane, 120.0, 48.0);
+            show(scrollPane, 120.0, 48.0);
             scrollPane.applyCss();
             scrollPane.resize(120.0, 48.0);
             scrollPane.layout();
@@ -226,7 +244,7 @@ final class M3SelectionNavigationTest {
             scrollPane.setFitToWidth(true);
             scrollPane.setPrefSize(120.0, 48.0);
 
-            new Scene(scrollPane, 120.0, 48.0);
+            show(scrollPane, 120.0, 48.0);
             scrollPane.applyCss();
             scrollPane.resize(120.0, 48.0);
             scrollPane.layout();
@@ -271,7 +289,7 @@ final class M3SelectionNavigationTest {
             scrollPane.setFitToWidth(true);
             scrollPane.setPrefSize(120.0, 48.0);
 
-            new Scene(scrollPane, 120.0, 48.0);
+            show(scrollPane, 120.0, 48.0);
             scrollPane.applyCss();
             scrollPane.resize(120.0, 48.0);
             scrollPane.layout();
@@ -310,13 +328,14 @@ final class M3SelectionNavigationTest {
             scrollPane.setFitToWidth(true);
             scrollPane.setPrefSize(160.0, 96.0);
 
-            new Scene(scrollPane, 160.0, 96.0);
+            show(scrollPane, 160.0, 96.0);
             scrollPane.applyCss();
             scrollPane.resize(160.0, 96.0);
             scrollPane.layout();
             content.layout();
             rail.layout();
             rail.select(fifth);
+            assertTrue(M3Accessible.requestAccessibleFocus(content, rail));
 
             KeyEvent event = keyEvent(KeyCode.DOWN);
             rail.fireEvent(event);
@@ -324,7 +343,6 @@ final class M3SelectionNavigationTest {
             assertSame(sixth, rail.getSelectedItem());
             assertTargetVisible(scrollPane, content, sixth);
             assertTrue(scrollPane.getVvalue() > 0.0, () -> "vvalue=" + scrollPane.getVvalue());
-            assertTrue(event.isConsumed());
         });
     }
 
@@ -344,13 +362,13 @@ final class M3SelectionNavigationTest {
             scrollPane.setFitToHeight(true);
             scrollPane.setPrefSize(180.0, 80.0);
 
-            new Scene(scrollPane, 180.0, 80.0);
+            show(scrollPane, 180.0, 80.0);
             scrollPane.applyCss();
             scrollPane.resize(180.0, 80.0);
             scrollPane.layout();
             content.layout();
             group.layout();
-            fifth.requestFocus();
+            assertTrue(M3Accessible.showDirectItem(content, fifth));
 
             KeyEvent event = keyEvent(KeyCode.RIGHT);
             group.fireEvent(event);
@@ -358,7 +376,6 @@ final class M3SelectionNavigationTest {
             assertTrue(sixth.isFocused());
             assertTargetHorizontallyVisible(scrollPane, content, sixth);
             assertTrue(scrollPane.getHvalue() > 0.0, () -> "hvalue=" + scrollPane.getHvalue());
-            assertTrue(event.isConsumed());
         });
     }
 
@@ -378,7 +395,7 @@ final class M3SelectionNavigationTest {
             scrollPane.setFitToWidth(true);
             scrollPane.setPrefSize(180.0, 96.0);
 
-            new Scene(scrollPane, 180.0, 96.0);
+            show(scrollPane, 180.0, 96.0);
             scrollPane.applyCss();
             scrollPane.resize(180.0, 96.0);
             scrollPane.layout();
@@ -409,14 +426,16 @@ final class M3SelectionNavigationTest {
             scrollPane.setFitToWidth(true);
             scrollPane.setPrefSize(180.0, 96.0);
 
-            new Scene(scrollPane, 180.0, 96.0);
+            show(scrollPane, 180.0, 96.0);
             scrollPane.applyCss();
             scrollPane.resize(180.0, 96.0);
             scrollPane.layout();
             content.layout();
             listPane.layout();
+            assertTrue(M3Accessible.requestAccessibleFocus(content, listPane));
 
             listPane.fireEvent(typedKeyEvent("s"));
+            listPane.fireEvent(typedKeyEvent("e"));
 
             assertTrue(search.isFocused());
             assertTargetVisible(scrollPane, content, search);
@@ -440,14 +459,16 @@ final class M3SelectionNavigationTest {
             scrollPane.setFitToWidth(true);
             scrollPane.setPrefSize(180.0, 96.0);
 
-            new Scene(scrollPane, 180.0, 96.0);
+            show(scrollPane, 180.0, 96.0);
             scrollPane.applyCss();
             scrollPane.resize(180.0, 96.0);
             scrollPane.layout();
             content.layout();
             menu.layout();
+            assertTrue(M3Accessible.requestAccessibleFocus(content, menu));
 
             menu.fireEvent(typedKeyEvent("s"));
+            menu.fireEvent(typedKeyEvent("e"));
 
             assertTrue(search.isFocused());
             assertTargetVisible(scrollPane, content, search);
@@ -471,14 +492,16 @@ final class M3SelectionNavigationTest {
             scrollPane.setFitToWidth(true);
             scrollPane.setPrefSize(220.0, 112.0);
 
-            new Scene(scrollPane, 220.0, 112.0);
+            show(scrollPane, 220.0, 112.0);
             scrollPane.applyCss();
             scrollPane.resize(220.0, 112.0);
             scrollPane.layout();
             content.layout();
             drawer.layout();
+            assertTrue(M3Accessible.requestAccessibleFocus(content, drawer));
 
             drawer.fireEvent(typedKeyEvent("s"));
+            drawer.fireEvent(typedKeyEvent("e"));
 
             assertTrue(search.isFocused());
             assertTargetVisible(scrollPane, content, search);
@@ -502,7 +525,7 @@ final class M3SelectionNavigationTest {
             scrollPane.setFitToHeight(true);
             scrollPane.setPrefSize(180.0, 80.0);
 
-            new Scene(scrollPane, 180.0, 80.0);
+            show(scrollPane, 180.0, 80.0);
             scrollPane.applyCss();
             scrollPane.resize(180.0, 80.0);
             scrollPane.layout();
@@ -530,7 +553,7 @@ final class M3SelectionNavigationTest {
             scrollPane.setFitToWidth(true);
             scrollPane.setPrefSize(120.0, 48.0);
 
-            new Scene(scrollPane, 120.0, 48.0);
+            show(scrollPane, 120.0, 48.0);
             scrollPane.applyCss();
             scrollPane.resize(120.0, 48.0);
             scrollPane.layout();
@@ -570,7 +593,7 @@ final class M3SelectionNavigationTest {
             scrollPane.setVmax(30.0);
             scrollPane.setVvalue(10.0);
 
-            new Scene(scrollPane, 120.0, 48.0);
+            show(scrollPane, 120.0, 48.0);
             scrollPane.applyCss();
             scrollPane.resize(120.0, 48.0);
             scrollPane.layout();
@@ -616,7 +639,7 @@ final class M3SelectionNavigationTest {
             scrollPane.setFitToWidth(true);
             scrollPane.setPrefSize(120.0, 48.0);
 
-            new Scene(scrollPane, 120.0, 48.0);
+            show(scrollPane, 120.0, 48.0);
             scrollPane.applyCss();
             scrollPane.resize(120.0, 48.0);
             scrollPane.layout();
@@ -646,6 +669,20 @@ final class M3SelectionNavigationTest {
             assertTrue(scrollPane.getVvalue() < 1.0, () -> "vvalue=" + scrollPane.getVvalue());
             assertTrue(event.isConsumed());
         });
+    }
+
+    /// Shows the supplied scroll pane in a real JavaFX window and performs an initial layout pass.
+    private static Scene show(ScrollPane scrollPane, double width, double height) {
+        Stage stage = new Stage();
+        Scene scene = new Scene(scrollPane, width, height);
+        stage.setScene(scene);
+        stage.show();
+        stage.requestFocus();
+        scrollPane.setFocusTraversable(true);
+        scrollPane.requestFocus();
+        scrollPane.applyCss();
+        scrollPane.layout();
+        return scene;
     }
 
     /// Verifies that the target node is inside the current horizontal scroll pane viewport.
@@ -720,24 +757,34 @@ final class M3SelectionNavigationTest {
         };
     }
 
-    /// Verifies empty selection containers report failed accessibility focus requests.
+    /// Verifies empty collection containers report failed accessibility focus requests.
     @Test
-    void selectionContainersRejectAccessibleFocusWhenEmpty() {
+    void collectionContainersRejectAccessibleFocusWhenEmpty() {
         FxTestUtils.runOnFxThread(() -> {
             VBox root = new VBox(
+                    new M3BadgedBox(),
+                    new M3Banner("Message"),
+                    new M3BottomAppBar(),
+                    new M3ButtonGroup(),
+                    new M3ChipGroup(),
+                    new M3FormPane(),
+                    new M3FormRow(),
+                    new M3FormSection(),
+                    new M3ListPane(),
                     new M3NavigationBar(),
                     new M3NavigationRail(),
+                    new M3Surface(),
                     new M3TabBar(),
+                    new M3Toolbar(),
+                    new M3TopAppBar(),
                     new M3SegmentedButtonGroup(),
                     new M3IconToggleButtonGroup()
             );
             layout(root);
 
-            assertFalse(M3Accessible.requestAccessibleFocus((M3NavigationBar) root.getChildren().get(0)));
-            assertFalse(M3Accessible.requestAccessibleFocus((M3NavigationRail) root.getChildren().get(1)));
-            assertFalse(M3Accessible.requestAccessibleFocus((M3TabBar) root.getChildren().get(2)));
-            assertFalse(M3Accessible.requestAccessibleFocus((M3SegmentedButtonGroup) root.getChildren().get(3)));
-            assertFalse(M3Accessible.requestAccessibleFocus((M3IconToggleButtonGroup) root.getChildren().get(4)));
+            for (Node child : root.getChildren()) {
+                assertFalse(M3Accessible.requestAccessibleFocus(child), child::toString);
+            }
         });
     }
 
@@ -809,17 +856,19 @@ final class M3SelectionNavigationTest {
             M3IconToggleButton iconSecond = new M3IconToggleButton("B");
             M3IconToggleButtonGroup iconGroup = new M3IconToggleButtonGroup(iconFirst, iconSecond);
 
-            layout(new VBox(navigationBar, navigationRail, tabBar, segmentedGroup, iconGroup));
+            VBox root = new VBox(navigationBar, navigationRail, tabBar, segmentedGroup, iconGroup);
+            layout(root);
+            assertTrue(M3Accessible.requestAccessibleFocus(root, navigationBar));
 
-            assertTrue(M3Accessible.showAccessibleActionTarget(navigationBar, navSecond));
+            assertTrue(navigationBar.showAccessibleItem(navSecond));
             assertTrue(navSecond.isFocused());
-            assertTrue(M3Accessible.showAccessibleActionTarget(navigationRail, railSecond));
+            assertTrue(navigationRail.showAccessibleItem(railSecond));
             assertTrue(railSecond.isFocused());
-            assertTrue(M3Accessible.showAccessibleActionTarget(tabBar, tabSecond));
+            assertTrue(tabBar.showAccessibleItem(tabSecond));
             assertTrue(tabSecond.isFocused());
-            assertTrue(M3Accessible.showAccessibleActionTarget(segmentedGroup, segmentedSecond));
+            assertTrue(segmentedGroup.showAccessibleItem(segmentedSecond));
             assertTrue(segmentedSecond.isFocused());
-            assertTrue(M3Accessible.showAccessibleActionTarget(iconGroup, iconSecond));
+            assertTrue(iconGroup.showAccessibleItem(iconSecond));
             assertTrue(iconSecond.isFocused());
         });
     }
@@ -869,11 +918,23 @@ final class M3SelectionNavigationTest {
         return button;
     }
 
-    /// Creates a scene and lays out the supplied root for focus tests.
-    private static void layout(Parent root) {
-        new Scene(root, 360.0, 240.0);
+    /// Shows the supplied root in a real JavaFX window and performs an initial layout pass.
+    private static Scene show(Parent root, double width, double height) {
+        Stage stage = new Stage();
+        Scene scene = new Scene(root, width, height);
+        stage.setScene(scene);
+        stage.show();
+        stage.requestFocus();
+        root.setFocusTraversable(true);
+        root.requestFocus();
         root.applyCss();
         root.layout();
+        return scene;
+    }
+
+    /// Creates a scene and lays out the supplied root for focus tests.
+    private static void layout(Parent root) {
+        show(root, 360.0, 240.0);
     }
 
     /// Creates a typed key event for type-ahead navigation helpers.

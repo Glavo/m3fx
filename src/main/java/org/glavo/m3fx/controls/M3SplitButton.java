@@ -108,7 +108,7 @@ public class M3SplitButton extends Control {
                 }
             };
 
-    /// The Material Expressive split button size property.
+    // The Material Expressive split button size property.
     private final ObjectProperty<M3SplitButtonSize> size =
             new SimpleObjectProperty<>(this, "size", DEFAULT_SIZE) {
                 /// Updates size style classes when the property changes.
@@ -123,7 +123,7 @@ public class M3SplitButton extends Control {
                 }
             };
 
-    /// The styleable spacing between the action and menu parts.
+    // The styleable spacing between the action and menu parts.
     private @Nullable StyleableDoubleProperty spacing;
 
     /// Creates an empty split button.
@@ -525,6 +525,7 @@ public class M3SplitButton extends Control {
         menuIndicator.expandedProperty().bind(menuButton.showingProperty());
         menuButton.setGraphic(menuIndicator);
         setAccessibleRole(AccessibleRole.TOOL_BAR);
+        M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
         buttonParts.setAll(actionButton, menuButton);
         menuButton.setHorizontalPadding(0.0);
         actionButton.addEventHandler(ActionEvent.ACTION, event -> hideMenu());
@@ -555,9 +556,11 @@ public class M3SplitButton extends Control {
     }
 
     /// Requests focus for the currently active split button focus branch.
-    private void focusAccessibleNode() {
+    ///
+    /// @return `true` when the target accepted focus
+    final boolean focusAccessibleNode() {
         if (!M3Accessible.canReach(this)) {
-            return;
+            return false;
         }
         boolean focused = isShowing()
                 ? menuButton.requestAccessibleFocus()
@@ -565,12 +568,16 @@ public class M3SplitButton extends Control {
         if (focused) {
             notifyFocusNodeChanged();
         }
+        return focused;
     }
 
     /// Focuses a requested split button part or delegates menu-item targets to the popup menu.
-    private void showAccessibleItem(Object... parameters) {
+    ///
+    /// @param parameters optional accessibility target parameters
+    /// @return `true` when focus moved to the default or requested split-button target
+    final boolean showAccessibleItem(Object... parameters) {
         if (!M3Accessible.canReach(this)) {
-            return;
+            return false;
         }
         if (parameters.length == 0) {
             boolean focused = isShowing()
@@ -579,20 +586,23 @@ public class M3SplitButton extends Control {
             if (focused) {
                 notifyFocusNodeChanged();
             }
-            return;
+            return focused;
         }
 
         @Nullable Node buttonPart = M3Accessible.actionItem(buttonParts, parameters);
         if (buttonPart != null) {
             if (M3Accessible.showItem(this, buttonPart)) {
                 notifyFocusNodeChanged();
+                return true;
             }
-            return;
+            return false;
         }
 
         if (parameters.length > 0 && menuButton.showAccessibleMenuItem(parameters)) {
             notifyFocusNodeChanged();
+            return true;
         }
+        return false;
     }
 
     /// Notifies and refreshes cached accessibility focus state.

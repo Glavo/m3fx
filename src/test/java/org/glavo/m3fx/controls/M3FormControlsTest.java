@@ -15,6 +15,8 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+import javafx.stage.Window;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.skins.M3FormPaneSkin;
 import org.glavo.m3fx.skins.M3FormRowSkin;
@@ -23,6 +25,7 @@ import org.glavo.m3fx.skins.M3ValidationSummarySkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -48,6 +51,18 @@ final class M3FormControlsTest {
     static void startToolkit() throws InterruptedException {
         FxTestUtils.startToolkit();
         Platform.setImplicitExit(false);
+    }
+
+    /// Closes real stages opened by focus and scrolling tests.
+    @AfterEach
+    void closeStages() {
+        FxTestUtils.runOnFxThread(() -> {
+            for (Window window : java.util.List.copyOf(Window.getWindows())) {
+                if (window instanceof Stage stage) {
+                    stage.close();
+                }
+            }
+        });
     }
 
     /// Verifies that form panes expose items through the skin and accessibility metadata.
@@ -220,7 +235,11 @@ final class M3FormControlsTest {
             scrollPane.setFitToWidth(true);
             scrollPane.setPrefSize(320.0, 120.0);
 
-            new Scene(scrollPane, 320.0, 120.0);
+            Stage stage = new Stage();
+            Scene scene = new Scene(scrollPane, 320.0, 120.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            stage.setScene(scene);
+            stage.show();
             scrollPane.applyCss();
             scrollPane.resize(320.0, 120.0);
             scrollPane.layout();
@@ -338,7 +357,14 @@ final class M3FormControlsTest {
 
             M3FormValidator validator = new M3FormValidator(nameLayout, emailLayout);
             M3ValidationSummary summary = new M3ValidationSummary(validator);
-            applyCss(new VBox(summary, nameLayout, emailLayout));
+            VBox root = new VBox(summary, nameLayout, emailLayout);
+            Stage stage = new Stage();
+            Scene scene = new Scene(root, 640.0, 320.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            stage.setScene(scene);
+            stage.show();
+            root.applyCss();
+            root.layout();
 
             assertInstanceOf(M3ValidationSummarySkin.class, summary.getSkin());
             assertTrue(summary.getPseudoClassStates().contains(empty));
@@ -387,8 +413,11 @@ final class M3FormControlsTest {
             ScrollPane scrollPane = new ScrollPane(content);
             scrollPane.setFitToWidth(true);
             scrollPane.setPrefSize(280.0, 120.0);
+            Stage stage = new Stage();
             Scene scene = new Scene(scrollPane, 280.0, 120.0);
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            stage.setScene(scene);
+            stage.show();
             scrollPane.applyCss();
             scrollPane.resize(280.0, 120.0);
             scrollPane.layout();

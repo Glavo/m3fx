@@ -408,6 +408,7 @@ public class M3MenuButton extends M3Button {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.MENU_BUTTON);
+        M3Accessible.installAccessibleActionRoute(this, this::requestAccessibleFocus, this::showAccessibleMenuItem);
         popup.setAutoHide(true);
         popup.getContent().add(menu);
         popup.setOnHidden(event -> {

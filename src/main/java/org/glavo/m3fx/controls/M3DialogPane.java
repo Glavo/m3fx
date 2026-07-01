@@ -79,6 +79,7 @@ public class M3DialogPane extends DialogPane {
     public M3DialogPane() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.DIALOG);
+        M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
         headerTextProperty().addListener((observable, oldValue, newValue) -> updateAccessibleText());
         contentTextProperty().addListener((observable, oldValue, newValue) -> updateAccessibleText());
         contentProperty().addListener((observable, oldValue, newValue) -> notifyAccessibleItemsChanged());
@@ -189,18 +190,8 @@ public class M3DialogPane extends DialogPane {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> {
-                if (M3Accessible.showItem(this, currentOrFirstFocusableItem())) {
-                    M3Accessible.notifyFocusNodeChanged(this);
-                    focusNotifier.refresh();
-                }
-            }
-            case SHOW_ITEM -> {
-                if (showAccessibleItem(parameters)) {
-                    M3Accessible.notifyFocusNodeChanged(this);
-                    focusNotifier.refresh();
-                }
-            }
+            case REQUEST_FOCUS -> focusAccessibleNode();
+            case SHOW_ITEM -> showAccessibleItem(parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
     }
@@ -359,8 +350,13 @@ public class M3DialogPane extends DialogPane {
     private void notifyAccessibleItemsChanged() {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
-        M3Accessible.notifyFocusNodeChanged(this);
+        notifyAccessibleFocusChanged();
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+    }
+
+    /// Notifies accessibility clients that the exposed dialog focus target changed.
+    private void notifyAccessibleFocusChanged() {
+        M3Accessible.notifyFocusNodeChanged(this);
         focusNotifier.refresh();
     }
 
@@ -393,24 +389,42 @@ public class M3DialogPane extends DialogPane {
         return parameters.length == 0 ? currentOrFirstFocusableItem() : accessibleActionItem(parameters);
     }
 
-    /// Focuses a requested dialog item or delegates deep popup targets to the content control.
-    private boolean showAccessibleItem(Object... parameters) {
-        Objects.requireNonNull(parameters, "parameters");
-        @Nullable Node item = accessibleActionOrCurrentItem(parameters);
-        if (item != null) {
-            return M3Accessible.showAccessibleActionTarget(this, item, parameters)
-                    || M3Accessible.showItem(this, item);
-        }
-
-        if (M3Accessible.showAccessibleActionTarget(this, getContent(), parameters)) {
+    /// Requests focus on the current or first dialog focus target.
+    ///
+    /// @return `true` when the target accepted focus
+    final boolean focusAccessibleNode() {
+        if (M3Accessible.showItem(this, currentOrFirstFocusableItem())) {
+            notifyAccessibleFocusChanged();
             return true;
         }
-        for (ButtonType buttonType : getButtonTypes()) {
-            if (M3Accessible.showAccessibleActionTarget(this, lookupButton(buttonType), parameters)) {
-                return true;
+        return false;
+    }
+
+    /// Focuses a requested dialog item or delegates deep popup targets to the content control.
+    ///
+    /// @param parameters optional accessibility target parameters
+    /// @return `true` when focus moved to the default or requested dialog item
+    final boolean showAccessibleItem(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        @Nullable Node item = accessibleActionOrCurrentItem(parameters);
+        boolean shown = false;
+        if (item != null) {
+            shown = M3Accessible.showAccessibleActionTarget(this, item, parameters)
+                    || M3Accessible.showItem(this, item);
+        } else if (M3Accessible.showAccessibleActionTarget(this, getContent(), parameters)) {
+            shown = true;
+        } else {
+            for (ButtonType buttonType : getButtonTypes()) {
+                if (M3Accessible.showAccessibleActionTarget(this, lookupButton(buttonType), parameters)) {
+                    shown = true;
+                    break;
+                }
             }
         }
-        return false;
+        if (shown) {
+            notifyAccessibleFocusChanged();
+        }
+        return shown;
     }
 
     /// Returns the item requested by accessibility action parameters.

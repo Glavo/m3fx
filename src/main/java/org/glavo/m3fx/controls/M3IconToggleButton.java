@@ -511,9 +511,12 @@ public class M3IconToggleButton extends ButtonBase {
     private void updateMetrics() {
         double width = getContainerWidth();
         double height = getContainerHeight();
-        setMinSize(width, height);
-        setPrefSize(width, height);
-        setMaxSize(width, height);
+        M3Css.setMinWidthIfUnbound(this, width);
+        M3Css.setMinHeightIfUnbound(this, height);
+        M3Css.setPrefWidthIfUnbound(this, width);
+        M3Css.setPrefHeightIfUnbound(this, height);
+        M3Css.setMaxWidthIfUnbound(this, width);
+        M3Css.setMaxHeightIfUnbound(this, height);
         updateM3IconGraphicSize();
     }
 

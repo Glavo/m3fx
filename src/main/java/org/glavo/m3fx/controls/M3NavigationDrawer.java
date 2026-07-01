@@ -79,7 +79,7 @@ public class M3NavigationDrawer extends Control {
     private final @UnmodifiableView ObservableList<M3ListItem> selectedItemsView =
             FXCollections.unmodifiableObservableList(selectedItems);
 
-    /// The styleable spacing between top-level drawer items.
+    // The styleable spacing between top-level drawer items.
     private @Nullable StyleableDoubleProperty itemSpacing;
 
     // Whether the drawer allows all list items to be unselected.
@@ -406,6 +406,12 @@ public class M3NavigationDrawer extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.LIST_VIEW);
+        M3Accessible.installAccessibleActionRoute(
+                this,
+                this::requestAccessibleFocus,
+                this::showAccessibleItem,
+                this::containsAccessibleRevealTarget
+        );
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         addEventHandler(KeyEvent.KEY_TYPED, this::handleTypeAheadKeyTyped);
         getItems().addListener(childrenListener);
@@ -602,7 +608,7 @@ public class M3NavigationDrawer extends Control {
             return false;
         }
 
-        if (M3Accessible.showAccessibleActionTarget(this, item, parameters)
+        if (M3Accessible.showResolvedAccessibleActionTarget(this, item, parameters)
                 || M3Accessible.showItem(this, item)) {
             notifyAccessibleFocusChanged();
             return true;
@@ -686,6 +692,59 @@ public class M3NavigationDrawer extends Control {
             }
         }
         return null;
+    }
+
+    /// Returns whether this drawer can reveal the supplied accessibility target.
+    private boolean containsAccessibleRevealTarget(@Nullable Object parameter) {
+        if (parameter instanceof Node node) {
+            return containsAccessibleRevealNode(node);
+        }
+        if (parameter instanceof Iterable<?> values) {
+            for (Object value : values) {
+                if (containsAccessibleRevealTarget(value)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (parameter instanceof Object[] values) {
+            for (Object value : values) {
+                if (containsAccessibleRevealTarget(value)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /// Returns whether this drawer owns the supplied reveal node directly or through a collapsed group.
+    private boolean containsAccessibleRevealNode(Node node) {
+        for (Node child : getItems()) {
+            if (M3Accessible.containsNodeTarget(child, node)
+                    || M3Accessible.containsAccessibleActionTarget(child, node)) {
+                return true;
+            }
+            if (child instanceof M3NavigationDrawerGroup group && containsGroupRevealNode(group, node)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// Returns whether a drawer group owns the supplied reveal node through any header or child row.
+    private boolean containsGroupRevealNode(M3NavigationDrawerGroup group, Node node) {
+        M3ListItem headerItem = group.getHeaderItem();
+        if (M3Accessible.containsNodeTarget(headerItem, node)
+                || M3Accessible.containsAccessibleActionTarget(headerItem, node)) {
+            return true;
+        }
+        for (M3ListItem item : group.getItems()) {
+            if (M3Accessible.containsNodeTarget(item, node)
+                    || M3Accessible.containsAccessibleActionTarget(item, node)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /// Returns the drawer content node referenced by accessibility action parameters.
@@ -1093,6 +1152,7 @@ public class M3NavigationDrawer extends Control {
     }
 
     /// CSS metadata for navigation drawer styleable properties.
+    @NotNullByDefault
     private static final class StyleableProperties {
         /// CSS metadata for the top-level item spacing token.
         private static final CssMetaData<M3NavigationDrawer, Number> ITEM_SPACING =

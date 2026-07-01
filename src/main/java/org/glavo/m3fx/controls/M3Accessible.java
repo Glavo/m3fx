@@ -14,12 +14,12 @@ import org.glavo.m3fx.internal.M3ScrollReveal;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BooleanSupplier;
+import java.util.function.Predicate;
 
 /// Provides shared accessibility query helpers for M3FX controls.
 @NotNullByDefault
@@ -27,8 +27,105 @@ final class M3Accessible {
     /// The node property key used to provide an accessibility index before a skin attaches nodes.
     private static final Object ACCESSIBLE_INDEX_ITEMS_KEY = new Object();
 
+    /// The node property key used to provide direct accessibility focus and reveal routes.
+    private static final Object ACCESSIBLE_ACTION_ROUTE_KEY = new Object();
+
     /// Prevents utility class instantiation.
     private M3Accessible() {
+    }
+
+    /// Handles a parameterized accessibility reveal request.
+    @NotNullByDefault
+    @FunctionalInterface
+    interface AccessibleActionHandler {
+        /// Handles the supplied accessibility action parameters.
+        ///
+        /// @param parameters the action parameters
+        /// @return `true` when the handler accepted the request
+        boolean handle(Object... parameters);
+    }
+
+    /// Stores direct accessibility action handlers for a node.
+    @NotNullByDefault
+    private static final class AccessibleActionRoute {
+        /// The optional focus handler.
+        private final @Nullable BooleanSupplier focusHandler;
+
+        /// The optional reveal handler.
+        private final @Nullable AccessibleActionHandler showHandler;
+
+        /// The optional reveal target matcher.
+        private final @Nullable Predicate<@Nullable Object> showTargetMatcher;
+
+        /// Creates an accessibility action route.
+        ///
+        /// @param focusHandler the optional focus handler
+        /// @param showHandler the optional reveal handler
+        /// @param showTargetMatcher the optional reveal target matcher
+        private AccessibleActionRoute(
+                @Nullable BooleanSupplier focusHandler,
+                @Nullable AccessibleActionHandler showHandler,
+                @Nullable Predicate<@Nullable Object> showTargetMatcher
+        ) {
+            this.focusHandler = focusHandler;
+            this.showHandler = showHandler;
+            this.showTargetMatcher = showTargetMatcher;
+        }
+
+        /// Returns whether this route has a focus handler.
+        private boolean hasFocusHandler() {
+            return focusHandler != null;
+        }
+
+        /// Returns whether this route has a reveal handler.
+        private boolean hasShowHandler() {
+            return showHandler != null;
+        }
+
+        /// Returns whether this route handles a reveal target.
+        private boolean handlesShowTarget(@Nullable Object parameter) {
+            return showTargetMatcher != null && showTargetMatcher.test(parameter);
+        }
+
+        /// Requests focus through the registered focus handler.
+        private boolean requestFocus() {
+            return focusHandler != null && focusHandler.getAsBoolean();
+        }
+
+        /// Reveals a target through the registered reveal handler.
+        private boolean showItem(Object... parameters) {
+            return showHandler != null && showHandler.handle(parameters);
+        }
+    }
+
+    /// Installs direct accessibility action handlers on a node.
+    static void installAccessibleActionRoute(
+            Node node,
+            @Nullable BooleanSupplier focusHandler,
+            @Nullable AccessibleActionHandler showHandler
+    ) {
+        installAccessibleActionRoute(node, focusHandler, showHandler, null);
+    }
+
+    /// Installs direct accessibility action handlers and a non-node reveal target matcher on a node.
+    static void installAccessibleActionRoute(
+            Node node,
+            @Nullable BooleanSupplier focusHandler,
+            @Nullable AccessibleActionHandler showHandler,
+            @Nullable Predicate<@Nullable Object> showTargetMatcher
+    ) {
+        Objects.requireNonNull(node, "node");
+        if (focusHandler == null && showHandler == null && showTargetMatcher == null) {
+            node.getProperties().remove(ACCESSIBLE_ACTION_ROUTE_KEY);
+        } else {
+            node.getProperties().put(ACCESSIBLE_ACTION_ROUTE_KEY,
+                    new AccessibleActionRoute(focusHandler, showHandler, showTargetMatcher));
+        }
+    }
+
+    /// Returns the direct accessibility action route installed on a node.
+    private static @Nullable AccessibleActionRoute accessibleActionRoute(@Nullable Node item) {
+        return item == null ? null : (AccessibleActionRoute) item.getProperties().get(ACCESSIBLE_ACTION_ROUTE_KEY);
     }
 
     /// Returns an accessibility attribute by name when the running JavaFX version provides it.
@@ -448,32 +545,9 @@ final class M3Accessible {
         if (!canReach(item)) {
             return false;
         }
-        if (item instanceof M3MenuButton menuButton) {
-            return menuButton.requestAccessibleFocus();
-        }
-        if (item instanceof M3SubMenuItem subMenuItem) {
-            return subMenuItem.requestAccessibleFocus();
-        }
-        if (item instanceof M3Menu menu) {
-            return menu.requestAccessibleFocus();
-        }
-        if (item instanceof M3NavigationDrawer drawer) {
-            return drawer.requestAccessibleFocus();
-        }
-        if (item instanceof M3NavigationBar navigationBar) {
-            return navigationBar.focusAccessibleSelectionTarget();
-        }
-        if (item instanceof M3NavigationRail navigationRail) {
-            return navigationRail.focusAccessibleSelectionTarget();
-        }
-        if (item instanceof M3TabBar tabBar) {
-            return tabBar.focusAccessibleSelectionTarget();
-        }
-        if (item instanceof M3SegmentedButtonGroup segmentedButtonGroup) {
-            return segmentedButtonGroup.focusAccessibleSelectionTarget();
-        }
-        if (item instanceof M3IconToggleButtonGroup iconToggleButtonGroup) {
-            return iconToggleButtonGroup.focusAccessibleSelectionTarget();
+        @Nullable AccessibleActionRoute route = accessibleActionRoute(item);
+        if (route != null && route.hasFocusHandler()) {
+            return route.requestFocus();
         }
         item.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
         return currentContainedFocusTarget(item) != null || activeExternalFocusTarget(item, item) != null;
@@ -739,10 +813,23 @@ final class M3Accessible {
                 && delegateSelectedItemReveal(containingItem, parameters);
     }
 
+    /// Delegates an explicit reveal request to a resolved item and reveals the focused target through the owner.
+    static boolean showResolvedAccessibleActionTarget(Node owner, @Nullable Node item, Object... parameters) {
+        Objects.requireNonNull(owner, "owner");
+        if (showAccessibleActionTarget(item, parameters)) {
+            revealCurrentFocusOwner(owner);
+            return true;
+        }
+        return false;
+    }
     /// Delegates an explicit reveal request and reveals the focused target through the owner when one is reached.
     static boolean showAccessibleActionTarget(Node owner, @Nullable Node item, Object... parameters) {
         Objects.requireNonNull(owner, "owner");
         if (showAccessibleActionTarget(item, parameters)) {
+            revealCurrentFocusOwner(owner);
+            return true;
+        }
+        if (item != null && showRoutedAccessibleActionTarget(owner, prependParameter(item, parameters))) {
             revealCurrentFocusOwner(owner);
             return true;
         }
@@ -752,8 +839,21 @@ final class M3Accessible {
     /// Delegates an explicit reveal request to the first child that exposes the requested accessibility target.
     static boolean showAccessibleActionTarget(@Nullable Node item, Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
-        if (!canReachOrReveal(item) || parameters.length == 0) {
+        Set<Node> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+        return showAccessibleActionTarget(item, visited, parameters);
+    }
+
+    /// Delegates an explicit reveal request while avoiding accessibility child cycles.
+    private static boolean showAccessibleActionTarget(
+            @Nullable Node item,
+            Set<Node> visited,
+            Object... parameters
+    ) {
+        if (!canReachOrReveal(item) || parameters.length == 0 || !visited.add(item)) {
             return false;
+        }
+        if (showRoutedAccessibleActionTarget(item, parameters)) {
+            return true;
         }
 
         @Nullable Node directTarget = actionItem(item, parameters);
@@ -771,14 +871,76 @@ final class M3Accessible {
 
         if (item instanceof Parent parent) {
             for (Node child : parent.getChildrenUnmodifiable()) {
-                if (showAccessibleActionTarget(child, parameters)) {
+                if (showAccessibleActionTarget(child, visited, parameters)) {
                     return true;
                 }
             }
         }
 
-        if (containsOwnAccessibleActionTarget(item, parameters)) {
-            return showOwnAccessibleActionTarget(item, parameters);
+        if (containsOwnAccessibleActionTarget(item, parameters)
+                && showOwnAccessibleActionTarget(item, parameters)) {
+            return true;
+        }
+
+        int itemCount = indexedChildCount(item);
+        for (int index = 0; index < itemCount; index++) {
+            @Nullable Node child = indexedChild(item, index);
+            if (child != null && child != item && showAccessibleActionTarget(child, visited, parameters)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// Prepends one primary target before nested accessibility action parameters.
+    private static Object[] prependParameter(Object first, Object... rest) {
+        Objects.requireNonNull(rest, "rest");
+        Object[] parameters = new Object[rest.length + 1];
+        parameters[0] = first;
+        System.arraycopy(rest, 0, parameters, 1, rest.length);
+        return parameters;
+    }
+
+    /// Delegates an explicit reveal request through a node's installed accessibility route.
+    private static boolean showRoutedAccessibleActionTarget(@Nullable Node item, Object... parameters) {
+        @Nullable AccessibleActionRoute route = accessibleActionRoute(item);
+        return route != null
+                && route.hasShowHandler()
+                && routeHandlesAnyShowTarget(route, parameters)
+                && route.showItem(parameters);
+    }
+
+    /// Returns whether a route matcher accepts any explicit reveal parameter.
+    private static boolean routeHandlesAnyShowTarget(AccessibleActionRoute route, Object... parameters) {
+        Objects.requireNonNull(route, "route");
+        Objects.requireNonNull(parameters, "parameters");
+        for (Object parameter : parameters) {
+            if (routeHandlesShowTarget(route, parameter)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// Returns whether a route matcher accepts a possibly nested explicit reveal parameter.
+    private static boolean routeHandlesShowTarget(AccessibleActionRoute route, @Nullable Object parameter) {
+        if (route.handlesShowTarget(parameter)) {
+            return true;
+        }
+        if (parameter instanceof Iterable<?> values) {
+            for (Object value : values) {
+                if (routeHandlesShowTarget(route, value)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (parameter instanceof Object[] values) {
+            for (Object value : values) {
+                if (routeHandlesShowTarget(route, value)) {
+                    return true;
+                }
+            }
         }
         return false;
     }
@@ -789,32 +951,9 @@ final class M3Accessible {
         if (item == null) {
             return false;
         }
-        if (item instanceof M3MenuButton menuButton) {
-            return menuButton.showAccessibleMenuItem(parameters);
-        }
-        if (item instanceof M3SubMenuItem subMenuItem) {
-            return subMenuItem.showAccessibleSubMenuItem(parameters);
-        }
-        if (item instanceof M3Menu menu) {
-            return menu.showAccessibleItem(parameters);
-        }
-        if (item instanceof M3NavigationDrawer drawer) {
-            return drawer.showAccessibleItem(parameters);
-        }
-        if (item instanceof M3NavigationBar navigationBar) {
-            return navigationBar.showAccessibleItem(parameters);
-        }
-        if (item instanceof M3NavigationRail navigationRail) {
-            return navigationRail.showAccessibleItem(parameters);
-        }
-        if (item instanceof M3TabBar tabBar) {
-            return tabBar.showAccessibleItem(parameters);
-        }
-        if (item instanceof M3SegmentedButtonGroup segmentedButtonGroup) {
-            return segmentedButtonGroup.showAccessibleItem(parameters);
-        }
-        if (item instanceof M3IconToggleButtonGroup iconToggleButtonGroup) {
-            return iconToggleButtonGroup.showAccessibleItem(parameters);
+        @Nullable AccessibleActionRoute route = accessibleActionRoute(item);
+        if (route != null && route.hasShowHandler()) {
+            return route.showItem(parameters);
         }
         item.executeAccessibleAction(AccessibleAction.SHOW_ITEM, parameters);
         return currentContainedFocusTarget(item) != null || activeExternalFocusTarget(item, item) != null;
@@ -876,7 +1015,7 @@ final class M3Accessible {
         if (!canReach(item)) {
             return null;
         }
-        return focusTargetInReachableTree(item);
+        return focusTargetInReachableTree(item, true);
     }
 
     /// Returns a focusable item or descendant without requiring attachment to a scene.
@@ -887,17 +1026,55 @@ final class M3Accessible {
         if (!isEffectivelyReachable(item)) {
             return null;
         }
-        return focusTargetInReachableTree(Objects.requireNonNull(item, "item"));
+        return focusTargetInReachableTree(Objects.requireNonNull(item, "item"), false);
     }
 
     /// Returns a focusable item or descendant in an already reachable tree.
-    private static @Nullable Node focusTargetInReachableTree(Node item) {
+    private static @Nullable Node focusTargetInReachableTree(Node item, boolean requireScene) {
+        Set<Node> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+        return focusTargetInReachableTree(item, requireScene, visited);
+    }
+
+    /// Returns a focusable item or descendant while avoiding accessibility child cycles.
+    private static @Nullable Node focusTargetInReachableTree(
+            Node item,
+            boolean requireScene,
+            Set<Node> visited
+    ) {
+        if (!visited.add(item) || !(requireScene ? canReach(item) : isEffectivelyReachable(item))) {
+            return null;
+        }
         if (item.isFocusTraversable()) {
             return item;
         }
+
+        @Nullable Node indexedTarget = firstIndexedFocusTarget(item, requireScene, visited, indexedChildCount(item));
+        if (indexedTarget != null) {
+            return indexedTarget;
+        }
+
         if (item instanceof Parent parent) {
             for (Node child : parent.getChildrenUnmodifiable()) {
-                @Nullable Node focusTarget = structuralFocusTarget(child);
+                @Nullable Node focusTarget = focusTargetInReachableTree(child, requireScene, visited);
+                if (focusTarget != null) {
+                    return focusTarget;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns the first focusable target exposed through indexed accessibility children.
+    private static @Nullable Node firstIndexedFocusTarget(
+            Node item,
+            boolean requireScene,
+            Set<Node> visited,
+            int indexedChildCount
+    ) {
+        for (int index = 0; index < indexedChildCount; index++) {
+            @Nullable Node child = indexedChild(item, index);
+            if (child != null && child != item) {
+                @Nullable Node focusTarget = focusTargetInReachableTree(child, requireScene, visited);
                 if (focusTarget != null) {
                     return focusTarget;
                 }
@@ -1238,7 +1415,17 @@ final class M3Accessible {
     /// Returns an active external focus target exposed by one item outside the owner subtree.
     static @Nullable Node activeExternalFocusTarget(Node owner, @Nullable Node item) {
         Objects.requireNonNull(owner, "owner");
-        if (!canReach(item)) {
+        Set<Node> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+        return activeExternalFocusTarget(owner, item, visited);
+    }
+
+    /// Returns an active external focus target while avoiding accessibility child cycles.
+    private static @Nullable Node activeExternalFocusTarget(
+            Node owner,
+            @Nullable Node item,
+            Set<Node> visited
+    ) {
+        if (!canReach(item) || !visited.add(item)) {
             return null;
         }
 
@@ -1254,9 +1441,22 @@ final class M3Accessible {
 
         if (item instanceof Parent parent) {
             for (Node child : parent.getChildrenUnmodifiable()) {
-                @Nullable Node childTarget = activeExternalFocusTarget(owner, child);
+                @Nullable Node childTarget = activeExternalFocusTarget(owner, child, visited);
                 if (childTarget != null) {
                     return childTarget;
+                }
+            }
+        }
+
+        if (indexedChildrenCanExposeActiveFocus(item)) {
+            int itemCount = indexedChildCount(item);
+            for (int index = 0; index < itemCount; index++) {
+                @Nullable Node child = indexedChild(item, index);
+                if (child != null && child != item) {
+                    @Nullable Node childTarget = activeExternalFocusTarget(owner, child, visited);
+                    if (childTarget != null) {
+                        return childTarget;
+                    }
                 }
             }
         }
@@ -1265,13 +1465,20 @@ final class M3Accessible {
 
     /// Returns the first active external focus target exposed by one item list.
     private static @Nullable Node activeExternalFocusTarget(Node owner, ObservableList<? extends Node> items) {
+        Set<Node> visited = Collections.newSetFromMap(new IdentityHashMap<>());
         for (Node item : items) {
-            @Nullable Node target = activeExternalFocusTarget(owner, item);
+            @Nullable Node target = activeExternalFocusTarget(owner, item, visited);
             if (target != null) {
                 return target;
             }
         }
         return null;
+    }
+
+    /// Returns whether indexed children can currently expose active external focus.
+    private static boolean indexedChildrenCanExposeActiveFocus(Node item) {
+        @Nullable Object expanded = item.queryAccessibleAttribute(AccessibleAttribute.EXPANDED);
+        return !Boolean.FALSE.equals(expanded);
     }
 
     /// Returns whether a focus target belongs to a live popup or overlay outside the owner subtree.
@@ -1368,17 +1575,26 @@ final class M3Accessible {
     static boolean containsNode(Node possibleAncestor, Node possibleDescendant) {
         Objects.requireNonNull(possibleAncestor, "possibleAncestor");
         Objects.requireNonNull(possibleDescendant, "possibleDescendant");
+        Set<Node> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+        return containsNode(possibleAncestor, possibleDescendant, visited);
+    }
+
+    /// Returns whether the possible ancestor contains the requested descendant node without revisiting cycles.
+    private static boolean containsNode(Node possibleAncestor, Node possibleDescendant, Set<Node> visited) {
         if (possibleAncestor == possibleDescendant) {
             return true;
         }
+        if (!visited.add(possibleAncestor)) {
+            return false;
+        }
         if (possibleAncestor instanceof M3ListItem listItem
-                && (containsOptionalNode(possibleAncestor, listItem.getLeading(), possibleDescendant)
-                || containsOptionalNode(possibleAncestor, listItem.getTrailing(), possibleDescendant))) {
+                && (containsOptionalNode(possibleAncestor, listItem.getLeading(), possibleDescendant, visited)
+                || containsOptionalNode(possibleAncestor, listItem.getTrailing(), possibleDescendant, visited))) {
             return true;
         }
         if (possibleAncestor instanceof Parent parent) {
             for (Node child : parent.getChildrenUnmodifiable()) {
-                if (containsNode(child, possibleDescendant)) {
+                if (containsNode(child, possibleDescendant, visited)) {
                     return true;
                 }
             }
@@ -1387,14 +1603,19 @@ final class M3Accessible {
     }
 
     /// Returns whether a nullable logical content node contains the requested descendant.
-    private static boolean containsOptionalNode(Node owner, @Nullable Node possibleAncestor, Node possibleDescendant) {
+    private static boolean containsOptionalNode(
+            Node owner,
+            @Nullable Node possibleAncestor,
+            Node possibleDescendant,
+            Set<Node> visited
+    ) {
         if (possibleAncestor == null) {
             return false;
         }
         if (possibleAncestor == possibleDescendant) {
             return true;
         }
-        return possibleAncestor != owner && containsNode(possibleAncestor, possibleDescendant);
+        return possibleAncestor != owner && containsNode(possibleAncestor, possibleDescendant, visited);
     }
 
     /// Returns the first child item referenced by accessibility selection parameters.
@@ -1486,14 +1707,15 @@ final class M3Accessible {
             Set<Node> visited,
             boolean includeParentChildren
     ) {
+        @Nullable AccessibleActionRoute route = accessibleActionRoute(item);
+        if (route != null && route.handlesShowTarget(parameter)) {
+            return true;
+        }
         if (parameter instanceof Node node) {
             return containsAccessibleNode(item, node, visited, includeParentChildren);
         }
         if (!visited.add(item)) {
             return false;
-        }
-        if (containsPickerValueTarget(item, parameter)) {
-            return true;
         }
         if (parameter instanceof Iterable<?> values) {
             for (Object value : values) {
@@ -1552,19 +1774,6 @@ final class M3Accessible {
         return false;
     }
 
-    /// Returns whether an item can reveal the supplied picker value target through `SHOW_ITEM`.
-    private static boolean containsPickerValueTarget(Node item, @Nullable Object parameter) {
-        if (parameter instanceof LocalDate) {
-            return item instanceof M3DatePicker
-                    || item instanceof M3DateRangePicker
-                    || item instanceof M3DatePickerField
-                    || item instanceof M3DateRangePickerField;
-        }
-        if (parameter instanceof LocalTime) {
-            return item instanceof M3TimePicker || item instanceof M3TimePickerField;
-        }
-        return false;
-    }
 
     /// Returns whether an owner node exposes a requested node directly or through indexed accessibility children.
     private static boolean containsAccessibleNode(
@@ -2138,14 +2347,26 @@ final class M3Accessible {
         return indexedActionItem(item, number.intValue());
     }
 
+    /// Returns the non-negative number of indexed accessibility children exposed by one item.
+    private static int indexedChildCount(Node item) {
+        Objects.requireNonNull(item, "item");
+        @Nullable Object itemCountValue = item.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT);
+        return itemCountValue instanceof Number itemCountNumber ? Math.max(0, itemCountNumber.intValue()) : 0;
+    }
+
     /// Returns the child exposed by one item's accessibility index.
-    private static @Nullable Node indexedActionItem(Node item, int index) {
+    private static @Nullable Node indexedChild(Node item, int index) {
         Objects.requireNonNull(item, "item");
         if (index < 0) {
             return null;
         }
         @Nullable Object child = item.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, index);
         return child instanceof Node node ? node : null;
+    }
+
+    /// Returns the child exposed by one item's accessibility index.
+    private static @Nullable Node indexedActionItem(Node item, int index) {
+        return indexedChild(item, index);
     }
 
     /// Returns this node's index in its parent child list, or `-1` when it is detached.

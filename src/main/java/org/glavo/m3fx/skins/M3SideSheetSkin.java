@@ -4,6 +4,7 @@
 package org.glavo.m3fx.skins;
 
 import javafx.beans.value.ChangeListener;
+import javafx.geometry.NodeOrientation;
 import javafx.collections.ListChangeListener;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
@@ -61,7 +62,7 @@ public final class M3SideSheetSkin extends SkinBase<M3SideSheet> {
         contentSlot.alignmentProperty().bind(M3NodeLayout.createLogicalStartTopAlignmentBinding(control));
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         header.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
-        contentSlot.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
+        contentSlot.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
         HBox.setHgrow(spacer, Priority.ALWAYS);
         headlineLabel.textProperty().bind(control.headlineProperty());
 

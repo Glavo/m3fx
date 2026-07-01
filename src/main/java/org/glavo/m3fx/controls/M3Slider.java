@@ -719,6 +719,7 @@ public class M3Slider extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.SLIDER);
+        M3Accessible.installAccessibleActionRoute(this, () -> M3Accessible.showDirectItem(this, this), null);
         setFocusTraversable(true);
         updateMetrics();
     }

@@ -136,7 +136,7 @@ public final class M3BadgedBoxSkin extends SkinBase<M3BadgedBox> {
     private void layoutBadge(M3Badge badgeNode, double x, double y, double width, double height) {
         double badgeWidth = snapSizeX(badgeNode.prefWidth(-1.0));
         double badgeHeight = snapSizeY(badgeNode.prefHeight(badgeWidth));
-        Pos alignment = M3NodeLayout.logicalAlignment(getSkinnable(), getSkinnable().getBadgeAlignment());
+        Pos alignment = getSkinnable().getBadgeAlignment();
         double badgeX = x + alignedX(alignment.getHpos(), width, badgeWidth);
         double badgeY = y + alignedY(alignment.getVpos(), height, badgeHeight);
 

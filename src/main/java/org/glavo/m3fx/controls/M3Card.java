@@ -114,6 +114,7 @@ public class M3Card extends Control {
     /// @param content the card content node, or `null` for no content
     public M3Card(@Nullable Node content) {
         M3ControlStyles.add(this, STYLE_CLASS);
+        M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
         setFocusTraversable(false);
         addEventFilter(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         focusNotifier.start();
@@ -417,20 +418,28 @@ public class M3Card extends Control {
     }
 
     /// Focuses the current card/content target, or an explicitly requested content target.
-    private void showAccessibleItem(Object... parameters) {
+    ///
+    /// @param parameters optional accessibility target parameters
+    /// @return `true` when focus moved to the default or requested target
+    final boolean showAccessibleItem(Object... parameters) {
         boolean shown = parameters.length == 0
                 ? M3Accessible.showItem(this, accessibleFocusNode())
                 : M3Accessible.showCurrentOrItem(this, getContent(), (Node) null, parameters);
         if (shown) {
             notifyAccessibleFocusChanged();
         }
+        return shown;
     }
 
     /// Requests focus on the current card accessibility focus node.
-    private void focusAccessibleNode() {
+    ///
+    /// @return `true` when the target accepted focus
+    final boolean focusAccessibleNode() {
         if (M3Accessible.showItem(this, accessibleFocusNode())) {
             notifyAccessibleFocusChanged();
+            return true;
         }
+        return false;
     }
 
     /// Notifies accessibility clients that the card focus target changed.

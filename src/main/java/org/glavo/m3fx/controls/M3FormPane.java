@@ -181,17 +181,26 @@ public class M3FormPane extends Control {
     }
 
     /// Requests focus on the current or first accessibility item.
-    private void focusAccessibleItem() {
+    ///
+    /// @return `true` when the target accepted focus
+    final boolean focusAccessibleItem() {
         if (M3Accessible.showCurrentOrItem(this, getItems())) {
             notifyAccessibleFocusChanged();
+            return true;
         }
+        return false;
     }
 
     /// Shows an item requested by an accessibility client.
-    private void showAccessibleItem(Object... parameters) {
+    ///
+    /// @param parameters optional accessibility target parameters
+    /// @return `true` when focus moved to the default or requested item
+    final boolean showAccessibleItem(Object... parameters) {
         if (M3Accessible.showCurrentOrItem(this, getItems(), parameters)) {
             notifyAccessibleFocusChanged();
+            return true;
         }
+        return false;
     }
 
     /// Notifies accessibility clients that the container focus target changed.
@@ -246,6 +255,7 @@ public class M3FormPane extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
+        M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleItem, this::showAccessibleItem);
         getItems().addListener(itemsListener);
         addEventFilter(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         focusNotifier.start();

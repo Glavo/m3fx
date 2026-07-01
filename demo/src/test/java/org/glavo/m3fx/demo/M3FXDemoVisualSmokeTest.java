@@ -563,6 +563,61 @@ final class M3FXDemoVisualSmokeTest {
         );
     }
 
+    /// Verifies that switching pages starts each page from the top-left content viewport.
+    @Test
+    void demoPageSwitchResetsMainPageScrollPane() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
+        AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
+
+        runOnFxThread(() -> {
+            Stage stage = new Stage();
+            M3FXDemoApp app = new M3FXDemoApp();
+            app.start(stage);
+            stage.setWidth(1280.0);
+            stage.setHeight(720.0);
+
+            stageReference.set(stage);
+            appReference.set(app);
+            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+        });
+
+        try {
+            DemoFxTestUtils.assertNoCssWarnings(() -> runOnFxThread(() -> {
+                M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+                Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+
+                app.showPageForTesting("App Bars");
+                applySceneCssAndLayout(scene);
+                ScrollPane pageScrollPane = demoPageScrollPane(scene);
+                pageScrollPane.setHvalue(0.45);
+                pageScrollPane.setVvalue(0.75);
+                applySceneCssAndLayout(scene);
+                assertEquals(0.45, pageScrollPane.getHvalue(), 0.001,
+                        "precondition should set a non-zero horizontal page scroll value");
+                assertEquals(0.75, pageScrollPane.getVvalue(), 0.001,
+                        "precondition should set a non-zero vertical page scroll value");
+
+                app.showPageForTesting("Typography");
+                applySceneCssAndLayout(scene);
+                assertCurrentPageTitle(scene, "Typography");
+                assertSame(pageScrollPane, demoPageScrollPane(scene),
+                        "page switches should reuse the shared page scroll pane");
+                assertEquals(0.0, pageScrollPane.getHvalue(), 0.001,
+                        "page switch should reset horizontal content scroll");
+                assertEquals(0.0, pageScrollPane.getVvalue(), 0.001,
+                        "page switch should reset vertical content scroll");
+            }));
+        } finally {
+            runOnFxThread(() -> {
+                Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
     /// Opens every registered demo page in one runtime mode while JavaFX CSS warnings are captured.
     private static void assertDemoPagesOpenWithoutCssWarningsAndExposeMaterialDocumentationLinks(
             String modeName,
@@ -784,8 +839,9 @@ final class M3FXDemoVisualSmokeTest {
                 app.showPageForTesting("App Bars");
                 scene.getRoot().applyCss();
                 scene.getRoot().layout();
-                assertDemoVectorIcons(scene.getRoot(), "App Bars", 18);
-                List<M3TopAppBar> topAppBars = visibleNodesOfType(scene.getRoot(), M3TopAppBar.class);
+                Node page = currentDemoPage(scene, "App Bars");
+                assertDemoVectorIcons(page, "App Bars", 18);
+                List<M3TopAppBar> topAppBars = visibleNodesOfType(page, M3TopAppBar.class);
                 assertEquals(6, topAppBars.size(), "top app bar demo count");
                 assertEquals(M3TopAppBarVariant.SMALL, topAppBars.get(0).getVariant());
                 assertEquals(M3TopAppBarVariant.CENTER_ALIGNED, topAppBars.get(1).getVariant());
@@ -809,8 +865,7 @@ final class M3FXDemoVisualSmokeTest {
                         assertAppBarUsesVectorIconButtons(appBar, "top app bar", "menu", "search", "more");
                     }
                 }
-                List<M3BottomAppBar> appBarsPageBottomAppBars =
-                        visibleNodesOfType(scene.getRoot(), M3BottomAppBar.class);
+                List<M3BottomAppBar> appBarsPageBottomAppBars = visibleNodesOfType(page, M3BottomAppBar.class);
                 assertEquals(0, appBarsPageBottomAppBars.size(),
                         "App Bars page should not duplicate bottom app bars that belong to Toolbars");
                 WritableImage appBarsImage = snapshot(scene);
@@ -822,10 +877,7 @@ final class M3FXDemoVisualSmokeTest {
                 ));
                 assertSnapshotHasVisibleContent(appBarsImage, "App Bars");
 
-                ScrollPane pageScrollPane = assertInstanceOf(
-                        ScrollPane.class,
-                        requireVisibleStyledDescendant(scene.getRoot(), "demo-scroll-pane", "demo page scroll pane")
-                );
+                ScrollPane pageScrollPane = demoPageScrollPane(scene);
                 pageScrollPane.setVvalue(1.0);
                 scene.getRoot().applyCss();
                 scene.getRoot().layout();
@@ -851,17 +903,16 @@ final class M3FXDemoVisualSmokeTest {
             runOnFxThreadWhenStable(
                     () -> {
                         Scene scene = sceneReference.get();
-                        return scene != null && visibleNodesOfType(scene.getRoot(), M3BottomAppBar.class).size() == 3;
+                        return scene != null
+                                && visibleNodesOfType(currentDemoPage(scene, "Bottom App Bars"), M3BottomAppBar.class)
+                                        .size() == 3;
                     },
                     SETTLED_STATE_PULSES,
                     () -> {
                         M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
                         Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                         app.showPageForTesting("Bottom App Bars");
-                        ScrollPane pageScrollPane = assertInstanceOf(
-                                ScrollPane.class,
-                                requireVisibleStyledDescendant(scene.getRoot(), "demo-scroll-pane", "demo page scroll pane")
-                        );
+                        ScrollPane pageScrollPane = demoPageScrollPane(scene);
                         pageScrollPane.setVvalue(0.0);
                         scene.getRoot().applyCss();
                         scene.getRoot().layout();
@@ -869,12 +920,12 @@ final class M3FXDemoVisualSmokeTest {
                     () -> {
                         Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                         assertCurrentPageTitle(scene, "Bottom App Bars");
-                        assertDemoVectorIcons(scene.getRoot(), "Bottom App Bars", 9);
-                        List<M3TopAppBar> topAppBars = visibleNodesOfType(scene.getRoot(), M3TopAppBar.class);
+                        Node page = currentDemoPage(scene, "Bottom App Bars");
+                        assertDemoVectorIcons(page, "Bottom App Bars", 9);
+                        List<M3TopAppBar> topAppBars = visibleNodesOfType(page, M3TopAppBar.class);
                         assertEquals(0, topAppBars.size(),
                                 "Bottom App Bars page should not duplicate top app bars");
-                        List<M3BottomAppBar> bottomAppBars =
-                                visibleNodesOfType(scene.getRoot(), M3BottomAppBar.class);
+                        List<M3BottomAppBar> bottomAppBars = visibleNodesOfType(page, M3BottomAppBar.class);
                         assertEquals(3, bottomAppBars.size(), "bottom app bar demo count");
                         assertEquals(M3BottomAppBarFloatingActionAlignment.END,
                                 bottomAppBars.get(0).getFloatingActionAlignment());
@@ -902,17 +953,15 @@ final class M3FXDemoVisualSmokeTest {
             runOnFxThreadWhenStable(
                     () -> {
                         Scene scene = sceneReference.get();
-                        return scene != null && visibleNodesOfType(scene.getRoot(), M3Toolbar.class).size() == 4;
+                        return scene != null
+                                && visibleNodesOfType(currentDemoPage(scene, "Toolbars"), M3Toolbar.class).size() == 4;
                     },
                     SETTLED_STATE_PULSES,
                     () -> {
                         M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
                         Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                         app.showPageForTesting("Toolbars");
-                        ScrollPane pageScrollPane = assertInstanceOf(
-                                ScrollPane.class,
-                                requireVisibleStyledDescendant(scene.getRoot(), "demo-scroll-pane", "demo page scroll pane")
-                        );
+                        ScrollPane pageScrollPane = demoPageScrollPane(scene);
                         pageScrollPane.setVvalue(0.0);
                         scene.getRoot().applyCss();
                         scene.getRoot().layout();
@@ -920,7 +969,8 @@ final class M3FXDemoVisualSmokeTest {
                     () -> {
                         Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                         assertCurrentPageTitle(scene, "Toolbars");
-                        List<M3Toolbar> toolbars = visibleNodesOfType(scene.getRoot(), M3Toolbar.class);
+                        Node page = currentDemoPage(scene, "Toolbars");
+                        List<M3Toolbar> toolbars = visibleNodesOfType(page, M3Toolbar.class);
                         assertEquals(4, toolbars.size(), "toolbar demo count");
                         assertEquals(M3ToolbarVariant.STANDARD, toolbars.get(0).getVariant());
                         assertEquals(M3ToolbarVariant.FLOATING, toolbars.get(1).getVariant());
@@ -929,7 +979,7 @@ final class M3FXDemoVisualSmokeTest {
                         for (M3Toolbar toolbar : toolbars) {
                             assertToolbarDemoGeometry(toolbar);
                         }
-                        assertEquals(0, visibleNodesOfType(scene.getRoot(), M3BottomAppBar.class).size(),
+                        assertEquals(0, visibleNodesOfType(page, M3BottomAppBar.class).size(),
                                 "Toolbars page should showcase M3Toolbar instead of bottom app bars");
                         WritableImage toolbarsImage = snapshot(scene);
                         writeVisualSnapshot(toolbarsImage, Path.of(
@@ -977,7 +1027,8 @@ final class M3FXDemoVisualSmokeTest {
                 assertCurrentPageTitle(scene, "Lists");
 
                 @SuppressWarnings("rawtypes")
-                List<M3ListView> listViews = visibleNodesOfType(scene.getRoot(), M3ListView.class);
+                Node page = currentDemoPage(scene, "Lists");
+                List<M3ListView> listViews = visibleNodesOfType(page, M3ListView.class);
                 assertEquals(1, listViews.size(), "Lists page should show one virtualized list view");
                 @SuppressWarnings("rawtypes")
                 M3ListView listView = listViews.get(0);
@@ -1184,7 +1235,8 @@ final class M3FXDemoVisualSmokeTest {
                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                 assertCurrentPageTitle(scene, "Search");
 
-                List<M3SearchView> searchViews = visibleNodesOfType(scene.getRoot(), M3SearchView.class);
+                Node page = currentDemoPage(scene, "Search");
+                List<M3SearchView> searchViews = visibleNodesOfType(page, M3SearchView.class);
                 assertEquals(2, searchViews.size(), "Search page should show active and inactive search views");
                 M3SearchView activeView = Objects.requireNonNull(
                         searchViews.stream().filter(M3SearchView::isActive).findFirst().orElse(null),
@@ -1195,14 +1247,14 @@ final class M3FXDemoVisualSmokeTest {
                         "inactive search view"
                 );
 
-                List<M3SearchBar> searchBars = visibleNodesOfType(scene.getRoot(), M3SearchBar.class);
+                List<M3SearchBar> searchBars = visibleNodesOfType(page, M3SearchBar.class);
                 assertEquals(4, searchBars.size(),
                         "Search page should expose two standalone bars and two embedded search bars");
                 searchBars.forEach(M3FXDemoVisualSmokeTest::assertSearchBarVisualGeometry);
 
                 assertSearchViewResultsVisible(activeView);
                 assertSearchViewResultsHidden(inactiveView);
-                assertFalse(visibleNodesOfType(scene.getRoot(), Text.class).stream()
+                assertFalse(visibleNodesOfType(page, Text.class).stream()
                                 .anyMatch(text -> "Hidden result".equals(text.getText())),
                         "inactive search view should not render hidden result text");
 
@@ -1261,9 +1313,10 @@ final class M3FXDemoVisualSmokeTest {
                     }, () -> {
                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                 Parent root = scene.getRoot();
+                Node page = currentDemoPage(scene, "Cards");
                 assertCurrentPageTitle(scene, "Cards");
 
-                List<M3Card> cards = visibleNodesOfType(root, M3Card.class);
+                List<M3Card> cards = visibleNodesOfType(page, M3Card.class);
                 assertEquals(6, cards.size(), "Cards page should render compact, media, and state card examples");
                 assertEquals(2, cards.stream().filter(card -> card.getVariant() == M3CardVariant.FILLED).count());
                 assertEquals(2, cards.stream().filter(card -> card.getVariant() == M3CardVariant.OUTLINED).count());
@@ -1273,11 +1326,11 @@ final class M3FXDemoVisualSmokeTest {
                 assertEquals(1, cards.stream().filter(Node::isDisabled).count(),
                         "Cards page should include one disabled card state");
 
-                assertEquals(3, visibleNodesWithStyle(root, "demo-card-media").size(),
+                assertEquals(3, visibleNodesWithStyle(page, "demo-card-media").size(),
                         "Cards page should render three media cards");
-                assertEquals(3, visibleNodesWithStyle(root, "demo-card-actions").size(),
+                assertEquals(3, visibleNodesWithStyle(page, "demo-card-actions").size(),
                         "Cards page should render action rows for the media cards");
-                long cardActionButtons = visibleNodesOfType(root, M3Button.class).stream()
+                long cardActionButtons = visibleNodesOfType(page, M3Button.class).stream()
                         .filter(button -> nearestAncestorOfType(button, M3Card.class) != null)
                         .count();
                 assertEquals(6, cardActionButtons, "media cards should expose two actions each");
@@ -1299,10 +1352,7 @@ final class M3FXDemoVisualSmokeTest {
                 ));
                 assertSnapshotHasVisibleContent(image, "Cards rich states");
 
-                ScrollPane pageScrollPane = assertInstanceOf(
-                        ScrollPane.class,
-                        requireVisibleStyledDescendant(root, "demo-scroll-pane", "demo page scroll pane")
-                );
+                ScrollPane pageScrollPane = demoPageScrollPane(scene);
                 pageScrollPane.setVvalue(1.0);
                 scene.getRoot().applyCss();
                 scene.getRoot().layout();
@@ -1369,13 +1419,14 @@ final class M3FXDemoVisualSmokeTest {
             }, () -> {
                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                 Parent root = scene.getRoot();
+                Node page = currentDemoPage(scene, "Carousel");
                 assertCurrentPageTitle(scene, "Carousel");
                 assertVisibleText(root, "Multi-browse", "Carousel");
                 assertVisibleText(root, "Compact", "Carousel");
                 assertVisibleText(root, "Previous", "Carousel");
                 assertVisibleText(root, "Next", "Carousel");
 
-                List<M3Carousel> carousels = visibleNodesOfType(root, M3Carousel.class);
+                List<M3Carousel> carousels = visibleNodesOfType(page, M3Carousel.class);
                 assertEquals(2, carousels.size(),
                         () -> "Carousel page should render two carousel variants, found " + carousels.size());
 
@@ -1423,8 +1474,9 @@ final class M3FXDemoVisualSmokeTest {
                 M3Carousel multiBrowse = Objects.requireNonNull(multiBrowseReference.get(), "multi-browse carousel");
                 M3MotionSettings.setAnimationsEnabled(multiBrowse, false);
                 multiBrowse.setAnimatedScroll(false);
+                Node page = currentDemoPage(scene, "Carousel");
                 M3Button next = Objects.requireNonNull(
-                        firstVisibleButtonWithText(scene.getRoot(), "Next"),
+                        firstVisibleButtonWithText(page, "Next"),
                         "carousel next button"
                 );
                 next.fire();
@@ -1489,6 +1541,7 @@ final class M3FXDemoVisualSmokeTest {
                     }, () -> {
                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                 Parent root = scene.getRoot();
+                Node page = currentDemoPage(scene, "Dialogs");
                 assertCurrentPageTitle(scene, "Dialogs");
                 assertVisibleText(root, "Open basic", "Dialogs");
                 assertVisibleText(root, "Open settings", "Dialogs");
@@ -1497,21 +1550,21 @@ final class M3FXDemoVisualSmokeTest {
                 assertVisibleText(root, "OK", "Dialogs");
                 assertVisibleText(root, "Apply", "Dialogs");
 
-                List<M3DialogPane> panes = visibleNodesOfType(root, M3DialogPane.class);
+                List<M3DialogPane> panes = visibleNodesOfType(page, M3DialogPane.class);
                 assertEquals(3, panes.size(), "Dialogs page should render basic, form, and scrollable panes");
-                assertEquals(1, visibleNodesOfType(root, M3TextInputLayout.class).stream()
+                assertEquals(1, visibleNodesOfType(page, M3TextInputLayout.class).stream()
                                 .filter(layout -> nearestAncestorOfType(layout, M3DialogPane.class) != null)
                                 .count(),
                         "Dialogs page should include one form-like text input layout");
-                assertEquals(1, visibleNodesOfType(root, M3Switch.class).stream()
+                assertEquals(1, visibleNodesOfType(page, M3Switch.class).stream()
                                 .filter(toggle -> nearestAncestorOfType(toggle, M3DialogPane.class) != null)
                                 .count(),
                         "Dialogs page should include one settings switch");
-                assertEquals(1, visibleNodesOfType(root, M3CheckBox.class).stream()
+                assertEquals(1, visibleNodesOfType(page, M3CheckBox.class).stream()
                                 .filter(checkbox -> nearestAncestorOfType(checkbox, M3DialogPane.class) != null)
                                 .count(),
                         "Dialogs page should include one settings checkbox");
-                assertEquals(1, visibleNodesOfType(root, ScrollPane.class).stream()
+                assertEquals(1, visibleNodesOfType(page, ScrollPane.class).stream()
                                 .filter(scrollPane -> scrollPane.getStyleClass().contains("demo-dialog-scroll-pane"))
                                 .count(),
                         "Dialogs page should include one scrollable dialog body");
@@ -1529,10 +1582,7 @@ final class M3FXDemoVisualSmokeTest {
                 ));
                 assertSnapshotHasVisibleContent(image, "Dialogs inline panes");
 
-                ScrollPane pageScrollPane = assertInstanceOf(
-                        ScrollPane.class,
-                        requireVisibleStyledDescendant(root, "demo-scroll-pane", "demo page scroll pane")
-                );
+                ScrollPane pageScrollPane = demoPageScrollPane(scene);
                 pageScrollPane.setVvalue(1.0);
                 scene.getRoot().applyCss();
                 scene.getRoot().layout();
@@ -1591,17 +1641,18 @@ final class M3FXDemoVisualSmokeTest {
                     }, () -> {
                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                 Parent root = scene.getRoot();
+                Node page = currentDemoPage(scene, "Banners");
                 assertCurrentPageTitle(scene, "Banners");
                 assertVisibleText(root, "Learn", "Banners");
                 assertVisibleText(root, "Dismiss", "Banners");
                 assertVisibleText(root, "Details", "Banners");
                 assertVisibleText(root, "Secondary", "Banners");
 
-                List<M3Banner> banners = visibleNodesOfType(root, M3Banner.class);
+                List<M3Banner> banners = visibleNodesOfType(page, M3Banner.class);
                 assertEquals(6, banners.size(), "Banners page should render six banner states");
-                assertEquals(4, visibleNodesWithStyle(root, M3Banner.ICON_STYLE_CLASS).size(),
+                assertEquals(4, visibleNodesWithStyle(page, M3Banner.ICON_STYLE_CLASS).size(),
                         "Banners page should render four visible icon slots");
-                long actionButtonCount = visibleNodesOfType(root, M3Button.class).stream()
+                long actionButtonCount = visibleNodesOfType(page, M3Button.class).stream()
                         .filter(button -> nearestAncestorOfType(button, M3Banner.class) != null)
                         .count();
                 assertEquals(8, actionButtonCount, "Banners page should render all action buttons");
@@ -1626,10 +1677,7 @@ final class M3FXDemoVisualSmokeTest {
                 ));
                 assertSnapshotHasVisibleContent(image, "Banners states");
 
-                ScrollPane pageScrollPane = assertInstanceOf(
-                        ScrollPane.class,
-                        requireVisibleStyledDescendant(root, "demo-scroll-pane", "demo page scroll pane")
-                );
+                ScrollPane pageScrollPane = demoPageScrollPane(scene);
                 pageScrollPane.setVvalue(1.0);
                 scene.getRoot().applyCss();
                 scene.getRoot().layout();
@@ -1944,12 +1992,13 @@ final class M3FXDemoVisualSmokeTest {
                 }, () -> {
                     Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                     Parent root = scene.getRoot();
+                    Node page = currentDemoPage(scene, "Menus");
                     assertCurrentPageTitle(scene, "Menus");
                     assertVisibleText(root, "Menu Button", "Menus");
                     assertVisibleText(root, "Inline Menus", "Menus");
-                    assertDemoVectorIcons(root, "Menus", 10);
+                    assertDemoVectorIcons(page, "Menus", 10);
 
-                    List<M3Menu> inlineMenus = visibleNodesOfType(root, M3Menu.class);
+                    List<M3Menu> inlineMenus = visibleNodesOfType(page, M3Menu.class);
                     assertEquals(4, inlineMenus.size(), "Menus page should render four inline menu surfaces");
 
                     M3Menu selectedMenu = requireMenuContainingText(inlineMenus, "Selected item");
@@ -1991,7 +2040,7 @@ final class M3FXDemoVisualSmokeTest {
                     assertSnapshotHasVisibleContent(image, "Menus inline states");
 
                     M3MenuButton menuButton = Objects.requireNonNull(
-                            firstVisibleMenuButtonWithText(root, "Open menu"),
+                            firstVisibleMenuButtonWithText(page, "Open menu"),
                             "menu button"
                     );
                     M3MotionSettings.setAnimationsEnabled(menuButton, false);
@@ -2281,10 +2330,7 @@ final class M3FXDemoVisualSmokeTest {
         assertRightToLeftTextInputLayoutGeometry(rtlOutlinedLayout, "mirrored outlined text input");
         assertRightToLeftTextInputLayoutGeometry(rtlPasswordLayout, "mirrored password text input");
 
-        ScrollPane pageScrollPane = assertInstanceOf(
-                ScrollPane.class,
-                requireVisibleStyledDescendant(scene.getRoot(), "demo-scroll-pane", "demo page scroll pane")
-        );
+        ScrollPane pageScrollPane = demoPageScrollPane(scene);
         pageScrollPane.setVvalue(1.0);
         scene.getRoot().applyCss();
         scene.getRoot().layout();
@@ -2698,7 +2744,9 @@ final class M3FXDemoVisualSmokeTest {
                     app.showPageForTesting(pageTitle);
                     scene.getRoot().applyCss();
                     scene.getRoot().layout();
-                    assertDemoVectorIcons(scene.getRoot(), pageTitle, entry.getValue());
+                    assertCurrentPageTitle(scene, pageTitle);
+                    Node page = currentDemoPage(scene, pageTitle);
+                    assertDemoVectorIcons(page, pageTitle, entry.getValue());
                 }
             });
         } finally {
@@ -2879,7 +2927,8 @@ final class M3FXDemoVisualSmokeTest {
                     assertDemoPageVisualGeometry(scene, pageTitle);
                     assertDemoPageSpecificVisualState(scene, pageTitle);
                     if ("App Bars".equals(pageTitle)) {
-                        for (M3TopAppBar appBar : visibleNodesOfType(scene.getRoot(), M3TopAppBar.class)) {
+                        Node page = currentDemoPage(scene, pageTitle);
+                        for (M3TopAppBar appBar : visibleNodesOfType(page, M3TopAppBar.class)) {
                             assertTopAppBarSlotGeometry(appBar);
                         }
                     }
@@ -3282,8 +3331,9 @@ final class M3FXDemoVisualSmokeTest {
                         app.showPageForTesting("Loading Indicator");
                         scene.getRoot().applyCss();
                         scene.getRoot().layout();
+                        Node page = currentDemoPage(scene, "Loading Indicator");
                         indicatorReference.set(Objects.requireNonNull(firstVisibleNodeWithStyle(
-                                scene.getRoot(),
+                                page,
                                 M3LoadingIndicator.STYLE_CLASS
                         ), "loading indicator"));
                         baselineFrameReference.set(snapshot(scene));
@@ -3355,15 +3405,15 @@ final class M3FXDemoVisualSmokeTest {
                     appReference,
                     sceneReference,
                     "Progress",
-                    scene -> firstVisibleIndeterminateProgressBar(scene.getRoot()),
+                    M3FXDemoVisualSmokeTest::firstVisibleIndeterminateProgressBar,
                     "progress-reduced-motion"
             );
             verifyReducedMotionPageKeepsBasicIndeterminateMotion(
                     appReference,
                     sceneReference,
                     "Loading Indicator",
-                    scene -> Objects.requireNonNull(firstVisibleNodeWithStyle(
-                            scene.getRoot(),
+                    page -> Objects.requireNonNull(firstVisibleNodeWithStyle(
+                            page,
                             M3LoadingIndicator.STYLE_CLASS
                     ), "loading indicator"),
                     "loading-indicator-reduced-motion"
@@ -3383,7 +3433,7 @@ final class M3FXDemoVisualSmokeTest {
             AtomicReference<@Nullable M3FXDemoApp> appReference,
             AtomicReference<@Nullable Scene> sceneReference,
             String pageTitle,
-            Function<Scene, Node> targetFactory,
+            Function<Node, Node> targetFactory,
             String snapshotName
     ) throws InterruptedException {
         AtomicReference<@Nullable Node> targetReference = new AtomicReference<>();
@@ -3404,7 +3454,8 @@ final class M3FXDemoVisualSmokeTest {
                         M3MotionSettings.setAnimationsEnabled(scene.getRoot(), false);
                         scene.getRoot().applyCss();
                         scene.getRoot().layout();
-                        Node target = targetFactory.apply(scene);
+                        Node page = currentDemoPage(scene, pageTitle);
+                        Node target = targetFactory.apply(page);
                         targetReference.set(target);
                         baselineFrameReference.set(snapshot(scene));
                     },
@@ -3452,8 +3503,9 @@ final class M3FXDemoVisualSmokeTest {
             scene.getRoot().applyCss();
             scene.getRoot().layout();
 
+            Node page = currentDemoPage(scene, "Buttons");
             Node target = Objects.requireNonNull(firstVisibleButtonWithText(
-                    scene.getRoot(),
+                    page,
                     "Filled"
             ), "button");
             targetReference.set(target);
@@ -4368,7 +4420,8 @@ final class M3FXDemoVisualSmokeTest {
             scene.getRoot().applyCss();
             scene.getRoot().layout();
 
-            Node target = Objects.requireNonNull(targetLookup.apply(scene.getRoot()), targetName);
+            Node page = currentDemoPage(scene, pageTitle);
+            Node target = Objects.requireNonNull(targetLookup.apply(page), targetName);
             targetReference.set(target);
             normalReference.set(snapshot(scene));
             writeInteractionSnapshot(
@@ -4441,7 +4494,8 @@ final class M3FXDemoVisualSmokeTest {
             scene.getRoot().applyCss();
             scene.getRoot().layout();
 
-            T target = Objects.requireNonNull(targetLookup.apply(scene.getRoot()), targetName);
+            Node page = currentDemoPage(scene, pageTitle);
+            T target = Objects.requireNonNull(targetLookup.apply(page), targetName);
             assertFalse(selectedLookup.apply(target), targetName + " should start unselected in the demo");
             targetReference.set(target);
             normalReference.set(snapshot(scene));
@@ -4512,7 +4566,8 @@ final class M3FXDemoVisualSmokeTest {
             scene.getRoot().applyCss();
             scene.getRoot().layout();
 
-            Node target = Objects.requireNonNull(firstPickerFieldOpenButton(scene.getRoot()), "picker open button");
+            Node page = currentDemoPage(scene, "Date Pickers");
+            Node target = Objects.requireNonNull(firstPickerFieldOpenButton(page), "picker open button");
             targetReference.set(target);
             normalReference.set(snapshot(scene));
             writeInteractionSnapshot(
@@ -4604,7 +4659,7 @@ final class M3FXDemoVisualSmokeTest {
             scene.getRoot().layout();
 
             M3TextInputLayout layout = Objects.requireNonNull(
-                    firstTextInputClearButtonLayout(scene.getRoot()),
+                    firstTextInputClearButtonLayout(currentDemoPage(scene, "Text Fields")),
                     "text input layout with clear button"
             );
             Node target = requireVisibleStyledDescendant(
@@ -4716,7 +4771,7 @@ final class M3FXDemoVisualSmokeTest {
             scene.getRoot().layout();
 
             Node target = Objects.requireNonNull(
-                    firstTextInputTrailingActionButton(scene.getRoot()),
+                    firstTextInputTrailingActionButton(currentDemoPage(scene, "Text Fields")),
                     "text input trailing action"
             );
             targetReference.set(target);
@@ -4832,7 +4887,11 @@ final class M3FXDemoVisualSmokeTest {
             scene.getRoot().applyCss();
             scene.getRoot().layout();
 
-            Node target = Objects.requireNonNull(targetLookup.apply(scene.getRoot()), targetName);
+            Node lookupRoot = pageTitle == null ? scene.getRoot() : currentDemoPage(scene, pageTitle);
+            Node target = Objects.requireNonNull(targetLookup.apply(lookupRoot), targetName);
+            scrollAncestorScrollPanesNodeIntoView(target);
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
             M3MotionSettings.setMotionScheme(target, visualRippleMotionScheme());
             targetReference.set(target);
             targetBoundsReference.set(nodeAreaBounds(target));
@@ -6246,7 +6305,8 @@ final class M3FXDemoVisualSmokeTest {
             scene.getRoot().applyCss();
             scene.getRoot().layout();
 
-            M3Button owner = Objects.requireNonNull(firstVisibleButtonWithText(scene.getRoot(), ownerText),
+            Node page = currentDemoPage(scene, "Tooltips");
+            M3Button owner = Objects.requireNonNull(firstVisibleButtonWithText(page, ownerText),
                     () -> "tooltip owner: " + ownerText);
             M3Tooltip tooltip = tooltipInstaller.apply(owner);
             ownerReference.set(owner);
@@ -6678,6 +6738,9 @@ final class M3FXDemoVisualSmokeTest {
                     scene.getRoot(),
                     M3IconToggleButton.STYLE_CLASS
             ), "toggle icon button");
+            scrollAncestorScrollPanesNodeIntoView(target);
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
             targetReference.set(target);
             normalReference.set(snapshot(scene));
             writeInteractionSnapshot(
@@ -7134,21 +7197,26 @@ final class M3FXDemoVisualSmokeTest {
         );
     }
 
+    /// Returns the scroll pane that owns the current demo page content.
+    private static ScrollPane demoPageScrollPane(Scene scene) {
+        return visibleNodesOfType(scene.getRoot(), ScrollPane.class)
+                .stream()
+                .filter(scrollPane -> scrollPane.getContent() != null
+                        && scrollPane.getContent().getStyleClass().contains("demo-page-host"))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("demo page scroll pane not found"));
+    }
+
     /// Resets the shared demo page scroll pane before a visual page assertion.
     private static void resetDemoPageScroll(Scene scene) {
-        @Nullable Node node = scene.getRoot().lookup(".demo-scroll-pane");
-        if (node instanceof ScrollPane scrollPane) {
-            scrollPane.setVvalue(0.0);
-            scrollPane.setHvalue(0.0);
-        }
+        ScrollPane scrollPane = demoPageScrollPane(scene);
+        scrollPane.setVvalue(0.0);
+        scrollPane.setHvalue(0.0);
     }
 
     /// Scrolls the main demo page scroll pane until the supplied node is inside the viewport.
     private static void scrollDemoPageNodeIntoView(Scene scene, Node node) {
-        ScrollPane scrollPane = assertInstanceOf(
-                ScrollPane.class,
-                requireVisibleStyledDescendant(scene.getRoot(), "demo-scroll-pane", "demo page scroll pane")
-        );
+        ScrollPane scrollPane = demoPageScrollPane(scene);
         scrollPaneNodeIntoView(scrollPane, node);
         scene.getRoot().applyCss();
         scene.getRoot().layout();
@@ -8876,10 +8944,11 @@ final class M3FXDemoVisualSmokeTest {
         }
     }
 
-    /// Verifies that visible Material controls stay inside the visible scene and scroll viewport.
+    /// Verifies that visible page-owned Material controls stay inside the visible scene and scroll viewport.
     private static void assertVisibleMaterialControlsInsideScene(Scene scene, String pageTitle) {
         Bounds sceneBounds = scene.getRoot().localToScene(scene.getRoot().getBoundsInLocal());
-        visitVisibleNodes(scene.getRoot(), node -> {
+        Node page = currentDemoPage(scene, pageTitle);
+        visitVisibleNodes(page, node -> {
             if (!isPageLevelMaterialControl(node) || !hasRenderableBounds(node)) {
                 return;
             }
@@ -8934,11 +9003,12 @@ final class M3FXDemoVisualSmokeTest {
         return null;
     }
 
-    /// Verifies that visible `Labeled` control text ink stays inside and vertically centered in its control.
+    /// Verifies that visible page-owned `Labeled` control text ink stays inside and vertically centered in its control.
     private static void assertLabeledControlTextInkGeometry(Scene scene, String pageTitle) {
         Bounds sceneBounds = scene.getRoot().localToScene(scene.getRoot().getBoundsInLocal());
         WritableImage image = snapshot(scene);
-        visitVisibleNodes(scene.getRoot(), node -> {
+        Node page = currentDemoPage(scene, pageTitle);
+        visitVisibleNodes(page, node -> {
             if (!(node instanceof Labeled labeled)
                     || !shouldCheckLabeledControlTextInkGeometry(labeled)
                     || !hasRenderableBounds(labeled)) {
@@ -9012,11 +9082,12 @@ final class M3FXDemoVisualSmokeTest {
                 || labeled instanceof M3SegmentedButton;
     }
 
-    /// Verifies that one-line list item headlines are rendered inside and centered in their item rows.
+    /// Verifies that one-line page-owned list item headlines are rendered inside and centered in their item rows.
     private static void assertListItemHeadlineTextInkGeometry(Scene scene, String pageTitle) {
         Bounds sceneBounds = scene.getRoot().localToScene(scene.getRoot().getBoundsInLocal());
         WritableImage image = snapshot(scene);
-        visitVisibleNodes(scene.getRoot(), node -> {
+        Node page = currentDemoPage(scene, pageTitle);
+        visitVisibleNodes(page, node -> {
             if (!(node instanceof M3ListItem item)
                     || !shouldCheckListItemHeadlineTextInkGeometry(item)
                     || !hasRenderableBounds(item)) {
@@ -9082,11 +9153,12 @@ final class M3FXDemoVisualSmokeTest {
         return headline == null ? null : firstVisibleText(headline);
     }
 
-    /// Verifies that list item text segments stay inside their row and keep rendered ink within row bounds.
+    /// Verifies that page-owned list item text segments stay inside their row and keep rendered ink within row bounds.
     private static void assertListItemTextSegmentGeometry(Scene scene, String pageTitle) {
         Bounds sceneBounds = scene.getRoot().localToScene(scene.getRoot().getBoundsInLocal());
         WritableImage image = snapshot(scene);
-        visitVisibleNodes(scene.getRoot(), node -> {
+        Node page = currentDemoPage(scene, pageTitle);
+        visitVisibleNodes(page, node -> {
             if (!(node instanceof M3ListItem item) || !hasRenderableBounds(item)) {
                 return;
             }
@@ -9222,10 +9294,11 @@ final class M3FXDemoVisualSmokeTest {
         }
     }
 
-    /// Verifies that list item leading and trailing slots remain inside their row and centered when one-line.
+    /// Verifies that page-owned list item leading and trailing slots remain inside their row and centered when one-line.
     private static void assertListItemSlotGeometry(Scene scene, String pageTitle) {
         Bounds sceneBounds = scene.getRoot().localToScene(scene.getRoot().getBoundsInLocal());
-        visitVisibleNodes(scene.getRoot(), node -> {
+        Node page = currentDemoPage(scene, pageTitle);
+        visitVisibleNodes(page, node -> {
             if (!(node instanceof M3ListItem item) || !hasRenderableBounds(item)) {
                 return;
             }
@@ -9317,11 +9390,12 @@ final class M3FXDemoVisualSmokeTest {
         return item.getOverlineText().isBlank() && item.getSupportingText().isBlank();
     }
 
-    /// Verifies that fixed-size Material targets keep their glyph text centered.
+    /// Verifies that page-owned fixed-size Material targets keep their glyph text centered.
     private static void assertFixedTargetGlyphsCentered(Scene scene, String pageTitle) {
         Bounds sceneBounds = scene.getRoot().localToScene(scene.getRoot().getBoundsInLocal());
         WritableImage image = snapshot(scene);
-        visitVisibleNodes(scene.getRoot(), node -> {
+        Node page = currentDemoPage(scene, pageTitle);
+        visitVisibleNodes(page, node -> {
             if (!isCenteredTarget(node) || !hasRenderableBounds(node)) {
                 return;
             }
@@ -9434,10 +9508,11 @@ final class M3FXDemoVisualSmokeTest {
         return !text.isEmpty();
     }
 
-    /// Verifies that navigation item indicator and icon slots share stable centers.
+    /// Verifies that page-owned navigation item indicator and icon slots share stable centers.
     private static void assertNavigationItemIconSlotsCentered(Scene scene, String pageTitle) {
         Bounds sceneBounds = scene.getRoot().localToScene(scene.getRoot().getBoundsInLocal());
-        visitVisibleNodes(scene.getRoot(), node -> {
+        Node page = currentDemoPage(scene, pageTitle);
+        visitVisibleNodes(page, node -> {
             if (!(node instanceof M3NavigationItem item) || !hasRenderableBounds(item)) {
                 return;
             }
@@ -9661,7 +9736,8 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies that single-line text input glyphs have visible vertical room inside their field containers.
     private static void assertSingleLineTextInputsHaveVerticalRoom(Scene scene, String pageTitle) {
         WritableImage image = snapshot(scene);
-        for (M3TextInputLayout layout : visibleNodesOfType(scene.getRoot(), M3TextInputLayout.class)) {
+        Node page = currentDemoPage(scene, pageTitle);
+        for (M3TextInputLayout layout : visibleNodesOfType(page, M3TextInputLayout.class)) {
             if (!hasRenderableBounds(layout)) {
                 continue;
             }
@@ -11288,6 +11364,7 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies the real Checkboxes demo page state matrix and indicator geometry.
     private static void assertCheckboxesPageVisualState(Scene scene) {
         Parent root = scene.getRoot();
+        Node page = currentDemoPage(scene, "Checkboxes");
         assertCurrentPageTitle(scene, "Checkboxes");
         assertVisibleText(root, "Interactive States", "Checkboxes");
         assertVisibleText(root, "Disabled States", "Checkboxes");
@@ -11299,7 +11376,7 @@ final class M3FXDemoVisualSmokeTest {
         assertVisibleText(root, "Disabled checked", "Checkboxes");
         assertVisibleText(root, "Disabled indeterminate", "Checkboxes");
 
-        List<M3CheckBox> checkBoxes = visibleNodesOfType(root, M3CheckBox.class);
+        List<M3CheckBox> checkBoxes = visibleNodesOfType(page, M3CheckBox.class);
         assertEquals(7, checkBoxes.size(),
                 () -> "Checkboxes page should render seven checkbox states, found " + checkBoxes.size());
         assertEquals(2, checkBoxes.stream().filter(M3CheckBox::isSelected).count(),
@@ -11316,6 +11393,7 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies the real Radio Buttons demo page state matrix and indicator geometry.
     private static void assertRadioButtonsPageVisualState(Scene scene) {
         Parent root = scene.getRoot();
+        Node page = currentDemoPage(scene, "Radio Buttons");
         assertCurrentPageTitle(scene, "Radio Buttons");
         assertVisibleText(root, "Selection Group", "Radio Buttons");
         assertVisibleText(root, "Disabled States", "Radio Buttons");
@@ -11324,7 +11402,7 @@ final class M3FXDemoVisualSmokeTest {
         assertVisibleText(root, "Disabled unchecked", "Radio Buttons");
         assertVisibleText(root, "Disabled selected", "Radio Buttons");
 
-        List<M3RadioButton> radioButtons = visibleNodesOfType(root, M3RadioButton.class);
+        List<M3RadioButton> radioButtons = visibleNodesOfType(page, M3RadioButton.class);
         assertEquals(4, radioButtons.size(),
                 () -> "Radio Buttons page should render four radio states, found " + radioButtons.size());
         assertEquals(2, radioButtons.stream().filter(M3RadioButton::isSelected).count(),
@@ -11337,6 +11415,7 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies the real Switches demo page state matrix and thumb geometry.
     private static void assertSwitchesPageVisualState(Scene scene) {
         Parent root = scene.getRoot();
+        Node page = currentDemoPage(scene, "Switches");
         assertCurrentPageTitle(scene, "Switches");
         assertVisibleText(root, "Interactive States", "Switches");
         assertVisibleText(root, "Disabled States", "Switches");
@@ -11346,7 +11425,7 @@ final class M3FXDemoVisualSmokeTest {
         assertVisibleText(root, "Disabled on", "Switches");
 
         Set<String> expectedSwitchLabels = Set.of("On", "Off", "Disabled off", "Disabled on");
-        List<M3Switch> switches = visibleNodesOfType(root, M3Switch.class)
+        List<M3Switch> switches = visibleNodesOfType(page, M3Switch.class)
                 .stream()
                 .filter(switchControl -> expectedSwitchLabels.contains(switchControl.getText()))
                 .toList();
@@ -11386,6 +11465,7 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies the real Button Groups demo page connected and standard group structure and variants.
     private static void assertButtonGroupsPageVisualState(Scene scene) {
         Parent root = scene.getRoot();
+        Node page = currentDemoPage(scene, "Button Groups");
         assertCurrentPageTitle(scene, "Button Groups");
         assertVisibleText(root, "Standard Group", "Button Groups");
         assertVisibleText(root, "Connected Tonal Group", "Button Groups");
@@ -11397,7 +11477,7 @@ final class M3FXDemoVisualSmokeTest {
         assertVisibleText(root, "Accept", "Button Groups");
         assertVisibleText(root, "XL", "Button Groups");
 
-        List<M3ButtonGroup> groups = visibleNodesOfType(root, M3ButtonGroup.class);
+        List<M3ButtonGroup> groups = visibleNodesOfType(page, M3ButtonGroup.class);
         assertEquals(9, groups.size(), () -> "Button Groups page should render nine groups: " + groups);
         assertEquals(6, groups.stream().filter(group -> group.getVariant() == M3ButtonGroupVariant.STANDARD).count(),
                 "Button Groups page should include one primary standard group plus five size-scale standard groups");
@@ -11551,12 +11631,13 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies the real FAB Menu demo page expanded, collapsed, and variant menu states.
     private static void assertFabMenuPageVisualState(Scene scene) {
         Parent root = scene.getRoot();
+        Node page = currentDemoPage(scene, "FAB Menu");
         assertCurrentPageTitle(scene, "FAB Menu");
         assertVisibleText(root, "Expanded", "FAB Menu");
         assertVisibleText(root, "Collapsed", "FAB Menu");
         assertVisibleText(root, "Variants", "FAB Menu");
 
-        List<M3FabMenu> menus = visibleNodesOfType(root, M3FabMenu.class);
+        List<M3FabMenu> menus = visibleNodesOfType(page, M3FabMenu.class);
         assertEquals(3, menus.size(), () -> "FAB Menu page should render three FAB menus: " + menus);
         assertEquals(2, menus.stream().filter(M3FabMenu::isExpanded).count(),
                 "FAB Menu page should render two expanded menu examples");
@@ -11579,7 +11660,7 @@ final class M3FXDemoVisualSmokeTest {
                 assertFabMenuActionsStayInsideShowcase(menu);
             }
         }
-        assertDemoVectorIcons(root, "FAB Menu", 9);
+        assertDemoVectorIcons(page, "FAB Menu", 9);
     }
 
     /// Verifies the real Split Buttons demo page action/menu structure and variants.
@@ -11626,6 +11707,7 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies the real Bottom Sheets demo page standard and compact sheet states.
     private static void assertBottomSheetsPageVisualState(Scene scene) {
         Parent root = scene.getRoot();
+        Node page = currentDemoPage(scene, "Bottom Sheets");
         assertCurrentPageTitle(scene, "Bottom Sheets");
         assertVisibleText(root, "Bottom Sheets", "Bottom Sheets");
         assertVisibleText(root, "Now playing", "Bottom Sheets");
@@ -11634,11 +11716,11 @@ final class M3FXDemoVisualSmokeTest {
         assertVisibleText(root, "Activity", "Bottom Sheets");
         assertVisibleText(root, "Settings", "Bottom Sheets");
 
-        List<M3BottomSheet> sheets = visibleNodesOfType(root, M3BottomSheet.class);
+        List<M3BottomSheet> sheets = visibleNodesOfType(page, M3BottomSheet.class);
         assertEquals(2, sheets.size(), () -> "Bottom Sheets page should render two sheet states: " + sheets);
 
         M3BottomSheet standard = Objects.requireNonNull(
-                firstVisibleBottomSheetWithHeadline(root, "Now playing"),
+                firstVisibleBottomSheetWithHeadline(page, "Now playing"),
                 "standard bottom sheet"
         );
         assertEquals(M3SheetVariant.STANDARD, standard.getVariant(), "standard bottom sheet variant");
@@ -11648,7 +11730,7 @@ final class M3FXDemoVisualSmokeTest {
         assertBottomSheetDemoGeometry(standard, "standard bottom sheet");
 
         M3BottomSheet compact = Objects.requireNonNull(
-                firstVisibleBottomSheetWithHeadline(root, "Compact"),
+                firstVisibleBottomSheetWithHeadline(page, "Compact"),
                 "compact bottom sheet"
         );
         assertEquals(M3SheetVariant.STANDARD, compact.getVariant(), "compact bottom sheet variant");
@@ -11661,6 +11743,7 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies the real Side Sheets demo page standard and modal sheet states.
     private static void assertSideSheetsPageVisualState(Scene scene) {
         Parent root = scene.getRoot();
+        Node page = currentDemoPage(scene, "Side Sheets");
         assertCurrentPageTitle(scene, "Side Sheets");
         assertVisibleText(root, "Side Sheets", "Side Sheets");
         assertVisibleText(root, "Details", "Side Sheets");
@@ -11669,11 +11752,11 @@ final class M3FXDemoVisualSmokeTest {
         assertVisibleText(root, "Activity", "Side Sheets");
         assertVisibleText(root, "Settings", "Side Sheets");
 
-        List<M3SideSheet> sheets = visibleNodesOfType(root, M3SideSheet.class);
+        List<M3SideSheet> sheets = visibleNodesOfType(page, M3SideSheet.class);
         assertEquals(2, sheets.size(), () -> "Side Sheets page should render two sheet states: " + sheets);
 
         M3SideSheet standard = Objects.requireNonNull(
-                firstVisibleSideSheetWithHeadline(root, "Details"),
+                firstVisibleSideSheetWithHeadline(page, "Details"),
                 "standard side sheet"
         );
         assertEquals(M3SheetVariant.STANDARD, standard.getVariant(), "standard side sheet variant");
@@ -11682,7 +11765,7 @@ final class M3FXDemoVisualSmokeTest {
         assertSideSheetDemoGeometry(standard, "standard side sheet");
 
         M3SideSheet modal = Objects.requireNonNull(
-                firstVisibleSideSheetWithHeadline(root, "Filters"),
+                firstVisibleSideSheetWithHeadline(page, "Filters"),
                 "modal side sheet"
         );
         assertEquals(M3SheetVariant.MODAL, modal.getVariant(), "modal side sheet variant");
@@ -12033,6 +12116,7 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies the real Date Pickers demo page field, dialog, and calendar-cell geometry.
     private static void assertDatePickersPageVisualState(Scene scene) {
         Parent root = scene.getRoot();
+        Node page = currentDemoPage(scene, "Date Pickers");
         assertCurrentPageTitle(scene, "Date Pickers");
         assertVisibleText(root, "Fields", "Date Pickers");
         assertVisibleText(root, "Range Field", "Date Pickers");
@@ -12045,23 +12129,20 @@ final class M3FXDemoVisualSmokeTest {
         assertVisibleText(root, "Open date dialog", "Date Pickers");
         assertVisibleText(root, "Open range dialog", "Date Pickers");
 
-        List<M3DatePickerField> dateFields = visibleNodesOfType(root, M3DatePickerField.class);
+        List<M3DatePickerField> dateFields = visibleNodesOfType(page, M3DatePickerField.class);
         assertEquals(2, dateFields.size(), () -> "Date Pickers page should render two date fields: "
                 + dateFields.size());
-        List<M3DateRangePickerField> rangeFields = visibleNodesOfType(root, M3DateRangePickerField.class);
+        List<M3DateRangePickerField> rangeFields = visibleNodesOfType(page, M3DateRangePickerField.class);
         assertEquals(1, rangeFields.size(), () -> "Date Pickers page should render one range field: "
                 + rangeFields.size());
-        List<M3DatePicker> datePickers = visibleNodesOfType(root, M3DatePicker.class);
+        List<M3DatePicker> datePickers = visibleNodesOfType(page, M3DatePicker.class);
         assertEquals(3, datePickers.size(), () -> "Date Pickers page should render three inline date pickers: "
                 + datePickers.size());
-        List<M3DateRangePicker> rangePickers = visibleNodesOfType(root, M3DateRangePicker.class);
+        List<M3DateRangePicker> rangePickers = visibleNodesOfType(page, M3DateRangePicker.class);
         assertEquals(1, rangePickers.size(), () -> "Date Pickers page should render one inline range picker: "
                 + rangePickers.size());
 
-        ScrollPane pageScrollPane = assertInstanceOf(
-                ScrollPane.class,
-                requireVisibleStyledDescendant(root, "demo-scroll-pane", "Date Pickers page scroll pane")
-        );
+        ScrollPane pageScrollPane = demoPageScrollPane(scene);
         pageScrollPane.setVvalue(1.0);
         root.applyCss();
         root.layout();
@@ -12078,6 +12159,7 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies the real Time Pickers demo page field, dialog, and time-cell geometry.
     private static void assertTimePickersPageVisualState(Scene scene) {
         Parent root = scene.getRoot();
+        Node page = currentDemoPage(scene, "Time Pickers");
         assertCurrentPageTitle(scene, "Time Pickers");
         assertVisibleText(root, "Fields", "Time Pickers");
         assertVisibleText(root, "Dialog", "Time Pickers");
@@ -12087,10 +12169,10 @@ final class M3FXDemoVisualSmokeTest {
         assertVisibleText(root, "Office hours", "Time Pickers");
         assertVisibleText(root, "Open time dialog", "Time Pickers");
 
-        List<M3TimePickerField> timeFields = visibleNodesOfType(root, M3TimePickerField.class);
+        List<M3TimePickerField> timeFields = visibleNodesOfType(page, M3TimePickerField.class);
         assertEquals(2, timeFields.size(), () -> "Time Pickers page should render two time fields: "
                 + timeFields.size());
-        List<M3TimePicker> timePickers = visibleNodesOfType(root, M3TimePicker.class);
+        List<M3TimePicker> timePickers = visibleNodesOfType(page, M3TimePicker.class);
         assertEquals(3, timePickers.size(), () -> "Time Pickers page should render three inline time pickers: "
                 + timePickers.size());
         assertTrue(timePickers.stream().anyMatch(M3TimePicker::isUse24HourClock),
@@ -12098,10 +12180,7 @@ final class M3FXDemoVisualSmokeTest {
         assertTrue(timePickers.stream().anyMatch(picker -> picker.getMinTime() != null && picker.getMaxTime() != null),
                 "Time Pickers page should render a bounded picker");
 
-        ScrollPane pageScrollPane = assertInstanceOf(
-                ScrollPane.class,
-                requireVisibleStyledDescendant(root, "demo-scroll-pane", "Time Pickers page scroll pane")
-        );
+        ScrollPane pageScrollPane = demoPageScrollPane(scene);
         pageScrollPane.setVvalue(1.0);
         root.applyCss();
         root.layout();
@@ -12193,12 +12272,13 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies the real Sliders demo page state matrix and track/thumb geometry.
     private static void assertSlidersPageVisualState(Scene scene) {
         Parent root = scene.getRoot();
+        Node page = currentDemoPage(scene, "Sliders");
         assertCurrentPageTitle(scene, "Sliders");
         assertVisibleText(root, "Continuous", "Sliders");
         assertVisibleText(root, "Discrete", "Sliders");
         assertVisibleText(root, "Vertical", "Sliders");
 
-        List<M3Slider> sliders = visibleNodesOfType(root, M3Slider.class);
+        List<M3Slider> sliders = visibleNodesOfType(page, M3Slider.class);
         assertEquals(6, sliders.size(),
                 () -> "Sliders page should render six slider states, found " + sliders.size());
         assertEquals(1, sliders.stream().filter(Node::isDisabled).count(),
@@ -12213,12 +12293,13 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies the real Badges demo page dot, label, overflow, and attached badge geometry.
     private static void assertBadgesPageVisualState(Scene scene) {
         Parent root = scene.getRoot();
+        Node page = currentDemoPage(scene, "Badges");
         assertCurrentPageTitle(scene, "Badges");
         assertVisibleText(root, "Badges", "Badges");
         assertVisibleText(root, "Attached", "Badges");
         assertVisibleText(root, "Inbox", "Badges");
 
-        List<M3Badge> badges = visibleNodesOfType(root, M3Badge.class);
+        List<M3Badge> badges = visibleNodesOfType(page, M3Badge.class);
         assertEquals(4, badges.size(), () -> "Badges page should render four badges, found " + badges.size());
         assertTrue(badges.stream().anyMatch(badge -> badge.getText().isEmpty()),
                 "Badges page should render one dot badge");
@@ -12232,7 +12313,7 @@ final class M3FXDemoVisualSmokeTest {
             assertBadgeDemoGeometry(badge);
         }
 
-        List<M3BadgedBox> badgedBoxes = visibleNodesOfType(root, M3BadgedBox.class);
+        List<M3BadgedBox> badgedBoxes = visibleNodesOfType(page, M3BadgedBox.class);
         assertEquals(1, badgedBoxes.size(), "Badges page should render one attached badged box");
         assertBadgedBoxDemoGeometry(badgedBoxes.get(0));
     }
@@ -12293,14 +12374,15 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies the real Avatars demo page text, graphic, variant, and list-item avatar states.
     private static void assertAvatarsPageVisualState(Scene scene) {
         Parent root = scene.getRoot();
+        Node page = currentDemoPage(scene, "Avatars");
         assertCurrentPageTitle(scene, "Avatars");
         assertVisibleText(root, "Avatars", "Avatars");
         assertVisibleText(root, "List Usage", "Avatars");
         assertVisibleText(root, "Account", "Avatars");
         assertVisibleText(root, "Avatar as leading content", "Avatars");
-        assertDemoVectorIcons(root, "Avatars", 1);
+        assertDemoVectorIcons(page, "Avatars", 1);
 
-        List<M3Avatar> avatars = visibleNodesOfType(root, M3Avatar.class);
+        List<M3Avatar> avatars = visibleNodesOfType(page, M3Avatar.class);
         assertEquals(5, avatars.size(), () -> "Avatars page should render five avatars, found " + avatars.size());
         assertEquals(2, avatars.stream().filter(avatar -> avatar.getVariant() == M3AvatarVariant.PRIMARY).count(),
                 "Avatars page should render two primary avatars including list usage");
@@ -12340,11 +12422,12 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies the real Dividers demo page horizontal, inset, middle-inset, and vertical states.
     private static void assertDividersPageVisualState(Scene scene) {
         Parent root = scene.getRoot();
+        Node page = currentDemoPage(scene, "Dividers");
         assertCurrentPageTitle(scene, "Dividers");
         assertVisibleText(root, "Horizontal", "Dividers");
         assertVisibleText(root, "Vertical", "Dividers");
 
-        List<M3Divider> dividers = visibleNodesOfType(root, M3Divider.class);
+        List<M3Divider> dividers = visibleNodesOfType(page, M3Divider.class);
         assertEquals(4, dividers.size(), () -> "Dividers page should render four dividers, found " + dividers.size());
         assertEquals(3, dividers.stream().filter(divider -> divider.getOrientation() == Orientation.HORIZONTAL).count(),
                 "Dividers page should render three horizontal dividers");
@@ -12380,13 +12463,14 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies the real Surfaces demo page color-container variants and elevation states.
     private static void assertSurfacesPageVisualState(Scene scene) {
         Parent root = scene.getRoot();
+        Node page = currentDemoPage(scene, "Surfaces");
         assertCurrentPageTitle(scene, "Surfaces");
         assertVisibleText(root, "Surface Tones", "Surfaces");
         assertVisibleText(root, "Container Colors", "Surfaces");
         assertVisibleText(root, "Surface", "Surfaces");
         assertVisibleText(root, "Tertiary", "Surfaces");
 
-        List<M3Surface> surfaces = visibleNodesOfType(root, M3Surface.class);
+        List<M3Surface> surfaces = visibleNodesOfType(page, M3Surface.class);
         assertEquals(6, surfaces.size(), () -> "Surfaces page should render six surfaces, found " + surfaces.size());
         assertTrue(surfaces.stream().anyMatch(surface -> surface.getVariant() == M3SurfaceVariant.SURFACE
                         && surface.getElevation() == M3SurfaceElevation.LEVEL0),
@@ -12425,16 +12509,17 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies the real Scrims demo page plain and actionable overlay previews.
     private static void assertScrimsPageVisualState(Scene scene) {
         Parent root = scene.getRoot();
+        Node page = currentDemoPage(scene, "Scrims");
         assertCurrentPageTitle(scene, "Scrims");
         assertVisibleText(root, "States", "Scrims");
         assertVisibleText(root, "Modal content", "Scrims");
         assertVisibleText(root, "Click scrim", "Scrims");
 
-        List<M3Scrim> scrims = visibleNodesOfType(root, M3Scrim.class);
+        List<M3Scrim> scrims = visibleNodesOfType(page, M3Scrim.class);
         assertEquals(2, scrims.size(), () -> "Scrims page should render two scrims, found " + scrims.size());
         assertEquals(1, scrims.stream().filter(scrim -> scrim.getOnAction() != null).count(),
                 "Scrims page should render exactly one actionable scrim");
-        List<Node> previews = visibleNodesWithStyle(root, "demo-scrim-preview");
+        List<Node> previews = visibleNodesWithStyle(page, "demo-scrim-preview");
         assertEquals(2, previews.size(), "Scrims page should render two fixed preview panes");
         for (Node preview : previews) {
             assertScrimPreviewDemoGeometry(preview);
@@ -12472,6 +12557,7 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies the real Forms demo page section, row, validation, and embedded control structure.
     private static void assertFormsPageVisualState(Scene scene) {
         Parent root = scene.getRoot();
+        Node page = currentDemoPage(scene, "Forms");
         assertCurrentPageTitle(scene, "Forms");
         assertVisibleText(root, "Structured Form", "Forms");
         assertVisibleText(root, "Account", "Forms");
@@ -12481,27 +12567,27 @@ final class M3FXDemoVisualSmokeTest {
         assertVisibleText(root, "Email", "Forms");
         assertVisibleText(root, "Validate form", "Forms");
 
-        List<M3FormPane> forms = visibleNodesOfType(root, M3FormPane.class);
+        List<M3FormPane> forms = visibleNodesOfType(page, M3FormPane.class);
         assertEquals(1, forms.size(), "Forms page should render one form pane");
         assertFormPaneDemoGeometry(forms.get(0));
 
-        List<M3FormSection> sections = visibleNodesOfType(root, M3FormSection.class);
+        List<M3FormSection> sections = visibleNodesOfType(page, M3FormSection.class);
         assertEquals(3, sections.size(), () -> "Forms page should render three sections, found " + sections.size());
         for (M3FormSection section : sections) {
             assertFormSectionDemoGeometry(section);
         }
 
-        List<M3FormRow> rows = visibleNodesOfType(root, M3FormRow.class);
+        List<M3FormRow> rows = visibleNodesOfType(page, M3FormRow.class);
         assertEquals(6, rows.size(), () -> "Forms page should render six form rows, found " + rows.size());
         for (M3FormRow row : rows) {
             assertFormRowDemoGeometry(row);
         }
 
-        assertTrue(visibleNodesOfType(root, M3TextInputLayout.class).size() >= 2,
+        assertTrue(visibleNodesOfType(page, M3TextInputLayout.class).size() >= 2,
                 "Forms page should render text input layouts");
-        assertTrue(visibleNodesOfType(root, M3Switch.class).stream().anyMatch(M3Switch::isSelected),
+        assertTrue(visibleNodesOfType(page, M3Switch.class).stream().anyMatch(M3Switch::isSelected),
                 "Forms page should render a selected switch");
-        assertTrue(visibleNodesOfType(root, M3CheckBox.class).stream().anyMatch(M3CheckBox::isIndeterminate),
+        assertTrue(visibleNodesOfType(page, M3CheckBox.class).stream().anyMatch(M3CheckBox::isIndeterminate),
                 "Forms page should render an indeterminate checkbox");
     }
 
@@ -12564,26 +12650,36 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies the real Typography demo page token-backed text roles.
     private static void assertTypographyPageVisualState(Scene scene) {
         Parent root = scene.getRoot();
+        Node page = currentDemoPage(scene, "Typography");
         assertCurrentPageTitle(scene, "Typography");
-        assertVisibleText(root, "Scale", "Typography");
-        assertVisibleText(root, "Body And Labels", "Typography");
+        assertVisibleText(root, "Display", "Typography");
+        assertVisibleText(root, "Headline", "Typography");
+        assertVisibleText(root, "Title", "Typography");
+        assertVisibleText(root, "Body", "Typography");
+        assertVisibleText(root, "Label", "Typography");
         assertVisibleText(root, "Display Large", "Typography");
+        assertVisibleText(root, "Display Medium", "Typography");
+        assertVisibleText(root, "Display Small", "Typography");
+        assertVisibleText(root, "Headline Large", "Typography");
+        assertVisibleText(root, "Headline Medium", "Typography");
+        assertVisibleText(root, "Headline Small", "Typography");
+        assertVisibleText(root, "Title Large", "Typography");
+        assertVisibleText(root, "Title Medium", "Typography");
+        assertVisibleText(root, "Title Small", "Typography");
         assertVisibleText(root, "Body Large text follows the active theme typography tokens.", "Typography");
+        assertVisibleText(root, "Body Medium text", "Typography");
+        assertVisibleText(root, "Body Small text", "Typography");
+        assertVisibleText(root, "Label Large", "Typography");
+        assertVisibleText(root, "Label Medium", "Typography");
+        assertVisibleText(root, "Label Small", "Typography");
 
-        List<M3Text> texts = visibleNodesOfType(root, M3Text.class);
-        assertEquals(6, texts.size(), () -> "Typography page should render six M3Text samples, found " + texts.size());
-        assertTrue(texts.stream().anyMatch(text -> text.getRole() == M3TextRole.DISPLAY_LARGE),
-                "Typography page should render display large");
-        assertTrue(texts.stream().anyMatch(text -> text.getRole() == M3TextRole.HEADLINE_MEDIUM),
-                "Typography page should render headline medium");
-        assertTrue(texts.stream().anyMatch(text -> text.getRole() == M3TextRole.TITLE_LARGE),
-                "Typography page should render title large");
-        assertTrue(texts.stream().anyMatch(text -> text.getRole() == M3TextRole.LABEL_LARGE),
-                "Typography page should render label large");
-        assertTrue(texts.stream().anyMatch(text -> text.getRole() == M3TextRole.BODY_LARGE),
-                "Typography page should render body large");
-        assertTrue(texts.stream().anyMatch(text -> text.getRole() == M3TextRole.BODY_MEDIUM),
-                "Typography page should render body medium");
+        List<M3Text> texts = visibleNodesOfType(page, M3Text.class);
+        assertEquals(M3TextRole.values().length, texts.size(),
+                () -> "Typography page should render every M3Text role, found " + texts.size());
+        for (M3TextRole role : M3TextRole.values()) {
+            assertEquals(1, texts.stream().filter(text -> text.getRole() == role).count(),
+                    () -> "Typography page should render exactly one " + role + " sample");
+        }
         for (M3Text text : texts) {
             assertTypographyDemoGeometry(text);
         }
@@ -12600,28 +12696,30 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies the real Icons demo page vector size, color, and button usage examples.
     private static void assertIconsPageVisualState(Scene scene) {
         Parent root = scene.getRoot();
+        Node page = currentDemoPage(scene, "Icons");
         assertCurrentPageTitle(scene, "Icons");
         assertVisibleText(root, "Sizes", "Icons");
         assertVisibleText(root, "Color Variants", "Icons");
         assertVisibleText(root, "Button Usage", "Icons");
-        assertDemoVectorIcons(root, "Icons", 12);
+        assertDemoVectorIcons(page, "Icons", 12);
 
-        List<Node> icons = visibleNodesWithStyle(root, DemoIcons.STYLE_CLASS);
+        List<Node> icons = visibleNodesWithStyle(page, DemoIcons.STYLE_CLASS);
         assertTrue(icons.size() >= 12, () -> "Icons page should render at least 12 vector icons, found " + icons.size());
         for (Node icon : icons) {
             Bounds iconBounds = icon.localToScene(icon.getBoundsInLocal());
             assertTrue(iconBounds.getWidth() >= 8.0 && iconBounds.getHeight() >= 8.0,
                     () -> "demo vector icon should render with visible geometry: " + iconBounds);
         }
-        assertTrue(visibleNodesOfType(root, M3IconButton.class).size() >= 2,
+        assertTrue(visibleNodesOfType(page, M3IconButton.class).size() >= 2,
                 "Icons page should render icon button usage");
-        assertTrue(visibleNodesOfType(root, M3FloatingActionButton.class).size() >= 2,
+        assertTrue(visibleNodesOfType(page, M3FloatingActionButton.class).size() >= 2,
                 "Icons page should render FAB icon usage");
     }
 
     /// Verifies the real Tooltips demo page owner controls and vector icon trigger.
     private static void assertTooltipsPageVisualState(Scene scene) {
         Parent root = scene.getRoot();
+        Node page = currentDemoPage(scene, "Tooltips");
         assertCurrentPageTitle(scene, "Tooltips");
         assertVisibleText(root, "Plain", "Tooltips");
         assertVisibleText(root, "Rich", "Tooltips");
@@ -12629,13 +12727,13 @@ final class M3FXDemoVisualSmokeTest {
         assertVisibleText(root, "Long tooltip", "Tooltips");
         assertVisibleText(root, "Rich tooltip", "Tooltips");
         assertVisibleText(root, "Rich action", "Tooltips");
-        assertDemoVectorIcons(root, "Tooltips", 1);
+        assertDemoVectorIcons(page, "Tooltips", 1);
 
-        assertNotNull(firstVisibleButtonWithText(root, "Hover me"), "plain tooltip owner should be visible");
-        assertNotNull(firstVisibleButtonWithText(root, "Long tooltip"), "long tooltip owner should be visible");
-        assertNotNull(firstVisibleButtonWithText(root, "Rich tooltip"), "rich tooltip owner should be visible");
-        assertNotNull(firstVisibleButtonWithText(root, "Rich action"), "rich action tooltip owner should be visible");
-        assertTrue(visibleNodesOfType(root, M3IconButton.class).size() >= 1,
+        assertNotNull(firstVisibleButtonWithText(page, "Hover me"), "plain tooltip owner should be visible");
+        assertNotNull(firstVisibleButtonWithText(page, "Long tooltip"), "long tooltip owner should be visible");
+        assertNotNull(firstVisibleButtonWithText(page, "Rich tooltip"), "rich tooltip owner should be visible");
+        assertNotNull(firstVisibleButtonWithText(page, "Rich action"), "rich action tooltip owner should be visible");
+        assertTrue(visibleNodesOfType(page, M3IconButton.class).size() >= 1,
                 "Tooltips page should render an icon-button tooltip owner");
     }
 
@@ -12654,7 +12752,8 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies that selection-control indicators keep their active pieces centered in real rendered geometry.
     private static void assertSelectionIndicatorsCentered(Scene scene, String pageTitle) {
         Bounds sceneBounds = scene.getRoot().localToScene(scene.getRoot().getBoundsInLocal());
-        for (M3CheckBox checkBox : visibleNodesOfType(scene.getRoot(), M3CheckBox.class)) {
+        Node page = currentDemoPage(scene, pageTitle);
+        for (M3CheckBox checkBox : visibleNodesOfType(page, M3CheckBox.class)) {
             if (hasRenderableBounds(checkBox)) {
                 assertWithNodeFullyVisibleSnapshot(
                         scene,
@@ -12664,7 +12763,7 @@ final class M3FXDemoVisualSmokeTest {
                 );
             }
         }
-        for (M3RadioButton radioButton : visibleNodesOfType(scene.getRoot(), M3RadioButton.class)) {
+        for (M3RadioButton radioButton : visibleNodesOfType(page, M3RadioButton.class)) {
             if (hasRenderableBounds(radioButton)) {
                 assertWithNodeFullyVisibleSnapshot(
                         scene,
@@ -12674,7 +12773,7 @@ final class M3FXDemoVisualSmokeTest {
                 );
             }
         }
-        for (M3Switch switchControl : visibleNodesOfType(scene.getRoot(), M3Switch.class)) {
+        for (M3Switch switchControl : visibleNodesOfType(page, M3Switch.class)) {
             if (hasRenderableBounds(switchControl)) {
                 assertWithNodeFullyVisibleSnapshot(
                         scene,
@@ -12684,7 +12783,7 @@ final class M3FXDemoVisualSmokeTest {
                 );
             }
         }
-        for (M3Slider slider : visibleNodesOfType(scene.getRoot(), M3Slider.class)) {
+        for (M3Slider slider : visibleNodesOfType(page, M3Slider.class)) {
             if (hasRenderableBounds(slider)) {
                 assertWithNodeFullyVisibleSnapshot(
                         scene,
@@ -12696,10 +12795,11 @@ final class M3FXDemoVisualSmokeTest {
         }
     }
 
-    /// Verifies that navigation badges stay compact and anchored instead of stretching over the selected indicator.
+    /// Verifies that page-owned navigation badges stay compact and anchored instead of stretching over the selected indicator.
     private static void assertNavigationBadgesStayCompact(Scene scene, String pageTitle) {
         Bounds sceneBounds = scene.getRoot().localToScene(scene.getRoot().getBoundsInLocal());
-        visitVisibleNodes(scene.getRoot(), node -> {
+        Node page = currentDemoPage(scene, pageTitle);
+        visitVisibleNodes(page, node -> {
             if (!(node instanceof M3NavigationItem item) || !hasRenderableBounds(item)) {
                 return;
             }

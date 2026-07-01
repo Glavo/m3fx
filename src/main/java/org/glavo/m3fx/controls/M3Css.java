@@ -12,7 +12,10 @@ import javafx.scene.layout.Region;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.Objects;
+import java.util.Set;
 
 /// Provides shared helpers for m3fx CSS-backed component tokens.
 @NotNullByDefault
@@ -37,6 +40,9 @@ final class M3Css {
 
     /// Tracks the last padding written by M3FX metric helpers.
     private static final Object PADDING_KEY = new Object();
+
+    /// Tracks helper-owned metrics that were skipped while application bindings were active.
+    private static final Object SUSPENDED_METRICS_KEY = new Object();
 
     /// Prevents utility class instantiation.
     private M3Css() {
@@ -147,9 +153,34 @@ final class M3Css {
                 region.getPadding(),
                 Insets.EMPTY
         )) {
-            region.setPadding(padding);
+            writePadding(region, padding);
             rememberMetric(region, PADDING_KEY, padding);
         }
+    }
+
+    /// Writes region padding without marking the metric as helper-owned.
+    static void setPaddingWithoutOwnershipIfUnbound(Region region, Insets padding) {
+        if (region.paddingProperty().isBound()) {
+            return;
+        }
+
+        writePadding(region, padding);
+        region.getProperties().remove(PADDING_KEY);
+    }
+
+    /// Writes region padding as an M3FX-owned metric.
+    static void setPaddingAsHelperOwned(Region region, Insets padding) {
+        if (region.paddingProperty().isBound()) {
+            return;
+        }
+
+        writePadding(region, padding);
+        rememberMetric(region, PADDING_KEY, padding);
+    }
+
+    /// Writes one Region padding value.
+    private static void writePadding(Region region, Insets padding) {
+        region.setPadding(padding);
     }
 
     /// Returns whether an M3FX helper still owns one numeric Region metric.
@@ -160,11 +191,17 @@ final class M3Css {
             double currentValue,
             double defaultValue
     ) {
+        Object previousValue = region.getProperties().get(key);
         if (bound) {
+            rememberSuspendedMetricIfOwned(region, key,
+                    previousValue instanceof Number || previousValue == null
+                            && Double.compare(currentValue, defaultValue) == 0);
             return false;
         }
+        if (consumeSuspendedMetric(region, key)) {
+            return true;
+        }
 
-        Object previousValue = region.getProperties().get(key);
         if (previousValue instanceof Number previousNumber) {
             return Double.compare(previousNumber.doubleValue(), currentValue) == 0;
         }
@@ -180,14 +217,48 @@ final class M3Css {
             Object currentValue,
             Object defaultValue
     ) {
+        Object previousValue = region.getProperties().get(key);
         if (bound) {
+            rememberSuspendedMetricIfOwned(region, key,
+                    previousValue != null || Objects.equals(currentValue, defaultValue));
             return false;
         }
+        if (consumeSuspendedMetric(region, key)) {
+            return true;
+        }
 
-        Object previousValue = region.getProperties().get(key);
         return previousValue == null
                 ? Objects.equals(currentValue, defaultValue)
                 : Objects.equals(previousValue, currentValue);
+    }
+
+    /// Records a skipped helper-owned metric while an application binding is active.
+    @SuppressWarnings("unchecked")
+    private static void rememberSuspendedMetricIfOwned(Region region, Object key, boolean owned) {
+        if (!owned) {
+            return;
+        }
+        Object value = region.getProperties().get(SUSPENDED_METRICS_KEY);
+        Set<Object> suspendedMetrics;
+        if (value instanceof Set<?> existing) {
+            suspendedMetrics = (Set<Object>) existing;
+        } else {
+            suspendedMetrics = Collections.newSetFromMap(new IdentityHashMap<>());
+            region.getProperties().put(SUSPENDED_METRICS_KEY, suspendedMetrics);
+        }
+        suspendedMetrics.add(key);
+    }
+
+    /// Returns and clears whether a skipped helper-owned metric should be restored after unbinding.
+    private static boolean consumeSuspendedMetric(Region region, Object key) {
+        Object value = region.getProperties().get(SUSPENDED_METRICS_KEY);
+        if (!(value instanceof Set<?> suspendedMetrics) || !suspendedMetrics.remove(key)) {
+            return false;
+        }
+        if (suspendedMetrics.isEmpty()) {
+            region.getProperties().remove(SUSPENDED_METRICS_KEY);
+        }
+        return true;
     }
 
     /// Records one numeric Region metric written by an M3FX helper.

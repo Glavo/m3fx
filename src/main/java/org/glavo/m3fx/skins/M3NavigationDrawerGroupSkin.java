@@ -12,6 +12,7 @@ import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.Insets;
+import javafx.geometry.NodeOrientation;
 import javafx.scene.Parent;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.Pane;
@@ -87,10 +88,10 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
         super(control);
         childViewport.setManaged(false);
         childViewport.setClip(childrenClip);
-        childViewport.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
+        childViewport.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
         childrenContainer.setManaged(false);
         childrenContainer.setSpacing(ITEM_SPACING);
-        childrenContainer.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
+        childrenContainer.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
         childViewport.getChildren().add(childrenContainer);
         getChildren().addAll(control.getHeaderItem(), childViewport);
         control.getItems().addListener(itemsListener);
@@ -340,7 +341,15 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
     private void updateChildItemWidths(double width, double childEdgeInset) {
         double itemWidth = Math.max(0.0, width - childEdgeInset);
         for (M3ListItem item : getSkinnable().getItems()) {
+            updateChildItemOrientation(item);
             updateListItemWidth(item, itemWidth);
+        }
+    }
+
+    /// Keeps child rows in the group direction while their physical container reserves indentation.
+    private void updateChildItemOrientation(M3ListItem item) {
+        if (!item.nodeOrientationProperty().isBound()) {
+            item.setNodeOrientation(getSkinnable().getEffectiveNodeOrientation());
         }
     }
 

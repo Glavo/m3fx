@@ -32,6 +32,41 @@ final class VisualWaitDisciplineTest {
             Path.of("demo", "src", "test", "java", "org", "glavo", "m3fx", "demo", "DemoFxTestUtils.java")
     );
 
+    /// The demo visual smoke test source that owns page-level rendered assertions.
+    private static final Path DEMO_VISUAL_TEST_SOURCE = Path.of(
+            "demo",
+            "src",
+            "test",
+            "java",
+            "org",
+            "glavo",
+            "m3fx",
+            "demo",
+            "M3FXDemoVisualSmokeTest.java"
+    );
+
+    /// Demo visual helper methods whose component scans should only inspect the current page content.
+    private static final @Unmodifiable List<String> PAGE_OWNED_DEMO_VISUAL_HELPERS = List.of(
+            "assertVisibleMaterialControlsInsideScene",
+            "assertLabeledControlTextInkGeometry",
+            "assertListItemHeadlineTextInkGeometry",
+            "assertListItemTextSegmentGeometry",
+            "assertListItemSlotGeometry",
+            "assertFixedTargetGlyphsCentered",
+            "assertNavigationItemIconSlotsCentered",
+            "assertSingleLineTextInputsHaveVerticalRoom",
+            "assertSelectionIndicatorsCentered",
+            "assertNavigationBadgesStayCompact"
+    );
+
+    /// Root-level scan calls that make page-owned demo visual assertions vulnerable to stale or outer UI nodes.
+    private static final @Unmodifiable List<String> PAGE_OWNED_ROOT_SCAN_PATTERNS = List.of(
+            "visitVisibleNodes(scene.getRoot()",
+            "visibleNodesOfType(scene.getRoot()",
+            "visibleNodesWithStyle(scene.getRoot()",
+            "assertDemoVectorIcons(scene.getRoot()"
+    );
+
     /// Source markers that identify tests doing rendered-image, pixel, or snapshot verification.
     private static final @Unmodifiable List<String> VISUAL_SOURCE_MARKERS = List.of(
             "WritableImage",
@@ -115,6 +150,33 @@ final class VisualWaitDisciplineTest {
                 + "hide fixed elapsed-time waits behind reusable utilities: " + violations);
     }
 
+    /// Verifies that page-owned demo visual scans use the current page instead of the whole scene tree.
+    @Test
+    void demoPageOwnedVisualScansUseCurrentPageRoots() throws IOException {
+        Path root = workspaceRoot();
+        Path sourceFile = root.resolve(DEMO_VISUAL_TEST_SOURCE);
+        assertTrue(Files.isRegularFile(sourceFile), () -> "Demo visual test source is missing: "
+                + DEMO_VISUAL_TEST_SOURCE);
+
+        String source = Files.readString(sourceFile);
+        List<String> violations = new ArrayList<>();
+        for (String helperName : PAGE_OWNED_DEMO_VISUAL_HELPERS) {
+            String body = requireMethodBody(source, helperName);
+            if (!body.contains("currentDemoPage(scene, pageTitle)")) {
+                violations.add(helperName + " does not resolve the current demo page");
+            }
+            for (String pattern : PAGE_OWNED_ROOT_SCAN_PATTERNS) {
+                if (body.contains(pattern)) {
+                    violations.add(helperName + " contains root-scoped page scan pattern `" + pattern + "`");
+                }
+            }
+        }
+
+        assertTrue(violations.isEmpty(), () -> "Page-owned demo visual scans must start from the current "
+                + "demo page so header, sidebar, popup, and stale page nodes cannot satisfy page assertions: "
+                + violations);
+    }
+
     /// Discovers test source files that own rendered visual assertions.
     private static @Unmodifiable List<Path> discoverVisualTestSources(Path root) throws IOException {
         List<Path> result = new ArrayList<>();
@@ -176,6 +238,28 @@ final class VisualWaitDisciplineTest {
                 }
             }
         }
+    }
+
+    /// Returns the source body for one method name.
+    private static String requireMethodBody(String source, String methodName) {
+        int signatureIndex = source.indexOf("private static void " + methodName + "(");
+        assertTrue(signatureIndex >= 0, () -> "Source method is missing: " + methodName);
+        int openBraceIndex = source.indexOf('{', signatureIndex);
+        assertTrue(openBraceIndex >= 0, () -> "Source method has no body: " + methodName);
+
+        int depth = 0;
+        for (int index = openBraceIndex; index < source.length(); index++) {
+            char value = source.charAt(index);
+            if (value == '{') {
+                depth++;
+            } else if (value == '}') {
+                depth--;
+                if (depth == 0) {
+                    return source.substring(openBraceIndex, index + 1);
+                }
+            }
+        }
+        throw new AssertionError("Source method body is not closed: " + methodName);
     }
 
     /// Returns the repository root for source-file checks.

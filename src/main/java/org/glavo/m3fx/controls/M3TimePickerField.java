@@ -88,6 +88,11 @@ public final class M3TimePickerField extends M3PickerField<LocalTime, M3TimePick
         initializePresetContent();
     }
 
+    /// Returns whether this field can reveal the supplied accessibility time target.
+    @Override
+    protected boolean handlesAccessibleShowTarget(@Nullable Object parameter) {
+        return parameter instanceof LocalTime;
+    }
     /// Returns the mutable time preset list rendered in the popup.
     public ObservableList<M3TimePreset> getPresets() {
         return presets;

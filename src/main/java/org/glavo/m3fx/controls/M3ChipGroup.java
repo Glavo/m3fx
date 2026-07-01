@@ -485,7 +485,9 @@ public class M3ChipGroup extends Control {
     }
 
     /// Requests focus on the current selected or focused accessibility target.
-    private void focusAccessibleSelectionTarget() {
+    ///
+    /// @return `true` when the target accepted focus
+    final boolean focusAccessibleSelectionTarget() {
         if (M3Accessible.showItem(this, M3Accessible.currentOrSelectionFocusTarget(
                 this,
                 getItems(),
@@ -493,11 +495,16 @@ public class M3ChipGroup extends Control {
                 M3Chip.class
         ))) {
             notifyAccessibleFocusChanged();
+            return true;
         }
+        return false;
     }
 
     /// Shows an item requested by an accessibility client.
-    private void showAccessibleItem(Object... parameters) {
+    ///
+    /// @param parameters optional accessibility target parameters
+    /// @return `true` when focus moved to the default or requested item
+    final boolean showAccessibleItem(Object... parameters) {
         if (M3Accessible.showItemOrDefault(this, M3Accessible.currentOrSelectionFocusTarget(
                 this,
                 getItems(),
@@ -505,7 +512,9 @@ public class M3ChipGroup extends Control {
                 M3Chip.class
         ), getItems(), parameters)) {
             notifyAccessibleFocusChanged();
+            return true;
         }
+        return false;
     }
 
     /// Notifies accessibility clients that the group focus target changed.
@@ -518,6 +527,7 @@ public class M3ChipGroup extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.LIST_VIEW);
+        M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleSelectionTarget, this::showAccessibleItem);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         getItems().addListener(childrenListener);
         focusNotifier.start();

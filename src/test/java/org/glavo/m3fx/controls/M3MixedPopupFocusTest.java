@@ -3584,6 +3584,224 @@ final class M3MixedPopupFocusTest {
         });
     }
 
+    /// Verifies that banner action slots reveal menu popup targets and expose popup focus.
+    @Test
+    void bannerRevealsNestedMenuPopupTargetFromActionSlot() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem saveItem = new M3MenuItem("Save");
+            M3MenuItem archiveItem = new M3MenuItem("Archive");
+            M3MenuButton menuButton = new M3MenuButton("Actions", saveItem, archiveItem);
+            M3Banner banner = new M3Banner("Sync required", menuButton);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(banner);
+                Scene scene = new Scene(root, 760.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                banner.resizeRelocate(32.0, 32.0, 620.0, 104.0);
+                menuButton.resizeRelocate(420.0, 24.0, 160.0, 48.0);
+                root.layout();
+
+                assertFalse(menuButton.isShowing());
+
+                banner.executeAccessibleAction(AccessibleAction.SHOW_ITEM, archiveItem);
+
+                assertTrue(menuButton.isShowing());
+                assertTrue(archiveItem.isFocused());
+                assertSame(archiveItem, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(archiveItem, banner.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                archiveItem.fireEvent(keyPressed(KeyCode.ESCAPE));
+
+                assertFalse(menuButton.isShowing());
+                assertTrue(menuButton.isFocused());
+                assertSame(menuButton, banner.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                menuButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that banner action slots reveal date picker value targets and expose popup focus.
+    @Test
+    void bannerRevealsNestedDatePickerValueTargetFromActionSlot() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 6, 14));
+            LocalDate targetDate = LocalDate.of(2026, 6, 22);
+            M3Banner banner = new M3Banner("Choose a due date", field);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(banner);
+                Scene scene = new Scene(root, 760.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                banner.resizeRelocate(32.0, 32.0, 640.0, 112.0);
+                field.resizeRelocate(368.0, 16.0, 220.0, 64.0);
+                root.layout();
+
+                assertPickerValueTargetRoutedByContainer(banner, field, targetDate);
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that banner action slots reveal split-button menu targets and expose popup focus.
+    @Test
+    void bannerRevealsNestedSplitButtonPopupTargetFromActionSlot() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem draftItem = new M3MenuItem("Draft");
+            M3MenuItem publishItem = new M3MenuItem("Publish");
+            M3SplitButton splitButton = new M3SplitButton("Create", draftItem, publishItem);
+            M3Banner banner = new M3Banner("Create an item", splitButton);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(banner);
+                Scene scene = new Scene(root, 760.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                banner.resizeRelocate(32.0, 32.0, 640.0, 112.0);
+                splitButton.resizeRelocate(360.0, 24.0, 240.0, 48.0);
+                root.layout();
+
+                assertFalse(splitButton.isShowing());
+
+                banner.executeAccessibleAction(AccessibleAction.SHOW_ITEM, publishItem);
+
+                assertTrue(splitButton.isShowing());
+                assertTrue(publishItem.isFocused());
+                assertSame(publishItem, splitButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(publishItem, banner.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                publishItem.fireEvent(keyPressed(KeyCode.ESCAPE));
+
+                assertFalse(splitButton.isShowing());
+                assertTrue(splitButton.getMenuButton().isFocused());
+                assertSame(splitButton.getMenuButton(), banner.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                splitButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that card content reveals menu popup targets and exposes popup focus.
+    @Test
+    void cardRevealsNestedMenuPopupTargetFromContent() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem openItem = new M3MenuItem("Open");
+            M3MenuItem archiveItem = new M3MenuItem("Archive");
+            M3MenuButton menuButton = new M3MenuButton("Actions", openItem, archiveItem);
+            M3Card card = new M3Card(menuButton);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(card);
+                Scene scene = new Scene(root, 720.0, 320.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                card.resizeRelocate(32.0, 32.0, 300.0, 120.0);
+                root.layout();
+
+                assertFalse(menuButton.isShowing());
+
+                card.executeAccessibleAction(AccessibleAction.SHOW_ITEM, archiveItem);
+
+                assertTrue(menuButton.isShowing());
+                assertTrue(archiveItem.isFocused());
+                assertSame(archiveItem, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(archiveItem, card.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                archiveItem.fireEvent(keyPressed(KeyCode.ESCAPE));
+
+                assertFalse(menuButton.isShowing());
+                assertTrue(menuButton.isFocused());
+                assertSame(menuButton, card.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                menuButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that card content reveals date picker value targets and exposes popup focus.
+    @Test
+    void cardRevealsNestedDatePickerValueTargetFromContent() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 6, 14));
+            LocalDate targetDate = LocalDate.of(2026, 6, 24);
+            M3Card card = new M3Card(field);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(card);
+                Scene scene = new Scene(root, 720.0, 320.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                card.resizeRelocate(32.0, 32.0, 360.0, 136.0);
+                root.layout();
+
+                assertPickerValueTargetRoutedByContainer(card, field, targetDate);
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that card content reveals split-button menu targets and exposes popup focus.
+    @Test
+    void cardRevealsNestedSplitButtonPopupTargetFromContent() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem draftItem = new M3MenuItem("Draft");
+            M3MenuItem publishItem = new M3MenuItem("Publish");
+            M3SplitButton splitButton = new M3SplitButton("Create", draftItem, publishItem);
+            M3Card card = new M3Card(splitButton);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(card);
+                Scene scene = new Scene(root, 720.0, 320.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                card.resizeRelocate(32.0, 32.0, 360.0, 120.0);
+                root.layout();
+
+                assertFalse(splitButton.isShowing());
+
+                card.executeAccessibleAction(AccessibleAction.SHOW_ITEM, publishItem);
+
+                assertTrue(splitButton.isShowing());
+                assertTrue(publishItem.isFocused());
+                assertSame(publishItem, splitButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(publishItem, card.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                publishItem.fireEvent(keyPressed(KeyCode.ESCAPE));
+
+                assertFalse(splitButton.isShowing());
+                assertTrue(splitButton.getMenuButton().isFocused());
+                assertSame(splitButton.getMenuButton(), card.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                splitButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
     /// Verifies that surface content subtrees expose active card rich tooltip action focus.
     @Test
     void surfaceRoutesFocusThroughNestedCardRichTooltipAction() {
@@ -3875,6 +4093,116 @@ final class M3MixedPopupFocusTest {
         });
     }
 
+    /// Verifies that list item leading slots reveal menu popup targets and expose popup focus.
+    @Test
+    void listItemLeadingSlotRevealsNestedMenuPopupTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem openItem = new M3MenuItem("Open");
+            M3MenuItem archiveItem = new M3MenuItem("Archive");
+            M3MenuButton menuButton = new M3MenuButton("Actions", openItem, archiveItem);
+            M3ListItem listItem = new M3ListItem("Document");
+            listItem.setLeading(menuButton);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(listItem);
+                Scene scene = new Scene(root, 640.0, 260.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                listItem.resizeRelocate(32.0, 32.0, 460.0, 72.0);
+                root.layout();
+
+                assertFalse(menuButton.isShowing());
+
+                listItem.executeAccessibleAction(AccessibleAction.SHOW_ITEM, archiveItem);
+
+                assertTrue(menuButton.isShowing());
+                assertTrue(archiveItem.isFocused());
+                assertSame(archiveItem, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(archiveItem, listItem.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                archiveItem.fireEvent(keyPressed(KeyCode.ESCAPE));
+
+                assertFalse(menuButton.isShowing());
+                assertTrue(menuButton.isFocused());
+                assertSame(menuButton, listItem.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                menuButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that list item trailing slots reveal date picker value targets and expose popup focus.
+    @Test
+    void listItemTrailingSlotRevealsNestedDatePickerValueTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 6, 14));
+            LocalDate targetDate = LocalDate.of(2026, 6, 26);
+            M3ListItem listItem = new M3ListItem("Due date");
+            listItem.setTrailing(field);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(listItem);
+                Scene scene = new Scene(root, 720.0, 300.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                listItem.resizeRelocate(32.0, 32.0, 560.0, 88.0);
+                root.layout();
+
+                assertPickerValueTargetRoutedByContainer(listItem, field, targetDate);
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that list item leading slots reveal split-button menu targets and expose popup focus.
+    @Test
+    void listItemLeadingSlotRevealsNestedSplitButtonPopupTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem draftItem = new M3MenuItem("Draft");
+            M3MenuItem publishItem = new M3MenuItem("Publish");
+            M3SplitButton splitButton = new M3SplitButton("Create", draftItem, publishItem);
+            M3ListItem listItem = new M3ListItem("Template");
+            listItem.setLeading(splitButton);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(listItem);
+                Scene scene = new Scene(root, 720.0, 300.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                listItem.resizeRelocate(32.0, 32.0, 560.0, 88.0);
+                root.layout();
+
+                assertFalse(splitButton.isShowing());
+
+                listItem.executeAccessibleAction(AccessibleAction.SHOW_ITEM, publishItem);
+
+                assertTrue(splitButton.isShowing());
+                assertTrue(publishItem.isFocused());
+                assertSame(publishItem, splitButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(publishItem, listItem.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                publishItem.fireEvent(keyPressed(KeyCode.ESCAPE));
+
+                assertFalse(splitButton.isShowing());
+                assertTrue(splitButton.getMenuButton().isFocused());
+                assertSame(splitButton.getMenuButton(), listItem.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                splitButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
     /// Verifies that a hidden side sheet can reveal a nested submenu target from its content subtree.
     @Test
     void hiddenSideSheetRevealsNestedContentMenuPopupTarget() {

@@ -332,6 +332,8 @@ public class M3TimePicker extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
+        M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleTime,
+                parameter -> parameter instanceof LocalTime);
         setFocusTraversable(true);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
     }
@@ -485,24 +487,29 @@ public class M3TimePicker extends Control {
         return null;
     }
 
+    /// Focuses the current accessibility target or the picker itself.
+    final boolean focusAccessibleNode() {
+        return focusAccessibleNode(accessibleFocusNode());
+    }
+
     /// Focuses an accessibility target or the picker itself.
-    private void focusAccessibleNode(@Nullable Node node) {
-        if (node == null || node == this || !M3Accessible.showItem(this, node)) {
-            M3Accessible.showDirectItem(this, this);
+    private boolean focusAccessibleNode(@Nullable Node node) {
+        if (node != null && node != this && M3Accessible.showItem(this, node)) {
+            return true;
         }
+        return M3Accessible.showDirectItem(this, this);
     }
 
     /// Shows and focuses the time item requested by accessibility parameters.
-    private void showAccessibleTime(Object... parameters) {
+    final boolean showAccessibleTime(Object... parameters) {
         @Nullable Object item = accessibleTimeItem(parameters);
         if (item instanceof Node node && M3Accessible.showItem(this, node)) {
-            return;
+            return true;
         }
         if (item instanceof LocalTime time) {
-            focusAccessibleTime(time);
-            return;
+            return showAccessibleTime(time);
         }
-        focusAccessibleNode(accessibleFocusNode());
+        return parameters.length == 0 && focusAccessibleNode();
     }
 
     /// Selects the time requested by accessibility parameters.
@@ -515,10 +522,17 @@ public class M3TimePicker extends Control {
         }
     }
 
-    /// Focuses the rendered time cell for a time when it is visible.
-    private void focusAccessibleTime(LocalTime time) {
+    /// Shows the rendered time cell for a time when it is visible.
+    private boolean showAccessibleTime(LocalTime time) {
         @Nullable M3TimePickerSkin skin = materialSkin();
-        focusAccessibleNode(skin == null ? this : skin.getCell(normalizeTime(time)));
+        @Nullable Node cell = skin == null ? null : skin.getCell(normalizeTime(time));
+        return cell != null && M3Accessible.showItem(this, cell);
+    }
+
+    /// Focuses the rendered time cell for a time when it is visible.
+    private boolean focusAccessibleTime(LocalTime time) {
+        @Nullable M3TimePickerSkin skin = materialSkin();
+        return focusAccessibleNode(skin == null ? this : skin.getCell(normalizeTime(time)));
     }
 
     /// Returns the time item requested by accessibility parameters.

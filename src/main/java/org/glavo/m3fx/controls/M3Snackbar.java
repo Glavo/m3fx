@@ -76,6 +76,7 @@ public class M3Snackbar extends Control {
     public M3Snackbar(String text) {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TEXT);
+        M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
         this.text.addListener((observable, oldValue, newValue) -> {
             updateAccessibleText();
             notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
@@ -350,8 +351,14 @@ public class M3Snackbar extends Control {
     }
 
     /// Focuses the snackbar action button when it exists.
-    private void focusAccessibleNode() {
-        M3Accessible.showItem(this, accessibleFocusNode());
+    ///
+    /// @return `true` when the action button accepted focus
+    final boolean focusAccessibleNode() {
+        if (M3Accessible.showItem(this, accessibleFocusNode())) {
+            M3Accessible.notifyFocusNodeChanged(this);
+            return true;
+        }
+        return false;
     }
 
     /// Returns the action button for an accessibility item index.
@@ -378,11 +385,14 @@ public class M3Snackbar extends Control {
     }
 
     /// Focuses the snackbar action or delegates to nested action-owned popup targets.
-    private void showAccessibleItem(Object... parameters) {
+    ///
+    /// @param parameters optional accessibility target parameters
+    /// @return `true` when focus moved to the action or requested nested target
+    final boolean showAccessibleItem(Object... parameters) {
         @Nullable Node actionButton = accessibleActionButton(parameters);
         if (actionButton != null && M3Accessible.showItem(this, actionButton)) {
             M3Accessible.notifyFocusNodeChanged(this);
-            return;
+            return true;
         }
 
         @Nullable Node focusNode = accessibleFocusNode();
@@ -390,7 +400,9 @@ public class M3Snackbar extends Control {
                 && focusNode != null
                 && M3Accessible.showAccessibleActionTarget(this, focusNode, parameters)) {
             M3Accessible.notifyFocusNodeChanged(this);
+            return true;
         }
+        return false;
     }
 
     /// Returns the installed Material snackbar skin.

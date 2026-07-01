@@ -119,6 +119,9 @@ final class SourceStyleRequirementsTest {
                     + "(?:(?:static|final|synchronized)\\s+)*[^;=]+\\b(?:with|of|create)\\s*\\("
     );
 
+    /// Matches concrete M3FX type references inside generic accessibility dispatch paths.
+    private static final Pattern CONCRETE_M3_DISPATCH_REFERENCE = Pattern.compile("\\bM3(?!Accessible\\b)[A-Z]\\w*\\b");
+
     /// Matches public non-canonical convenience constructors on nested token records.
     private static final Pattern PUBLIC_TOKEN_RECORD_CONVENIENCE_CONSTRUCTOR = Pattern.compile(
             "^\\s*public\\s+\\w+Tokens\\s*\\("
@@ -225,9 +228,6 @@ final class SourceStyleRequirementsTest {
                             "itemNode.setMinWidth(0.0);", "itemNode.minWidthProperty().isBound()",
                             "itemNode.setMaxWidth(Double.MAX_VALUE);", "itemNode.maxWidthProperty().isBound()",
                             "listItem.setPrefWidth(width);", "listItem.prefWidthProperty().isBound()"
-                    ),
-                    "M3TextInputLayout.java", Map.of(
-                            "input.setPadding(padding);", "input.paddingProperty().isBound()"
                     )
             );
 
@@ -623,6 +623,100 @@ final class SourceStyleRequirementsTest {
                         + missingClasses);
     }
 
+    /// Verifies that control-owned accessibility actions are reachable through installed route handlers.
+    @Test
+    void controlAccessibleActionsInstallM3AccessibleRoutes() throws IOException {
+        List<String> missingFocusRoutes = new ArrayList<>();
+        List<String> missingShowRoutes = new ArrayList<>();
+        for (Path sourceFile : javaSourceFiles(CONTROLS_SOURCE_ROOT)) {
+            String sourceName = sourceFile.getFileName().toString();
+            if ("M3Accessible.java".equals(sourceName)) {
+                continue;
+            }
+
+            String className = sourceName.substring(0, sourceName.length() - ".java".length());
+            String source = Files.readString(sourceFile);
+            @org.jetbrains.annotations.Nullable String route = accessibleActionRouteInstallation(source);
+            if (declaresAccessibleAction(source, "REQUEST_FOCUS") && !routeHasHandler(route, 1)) {
+                missingFocusRoutes.add(className);
+            }
+            if (declaresAccessibleAction(source, "SHOW_ITEM") && !routeHasHandler(route, 2)) {
+                missingShowRoutes.add(className);
+            }
+        }
+
+        assertTrue(missingFocusRoutes.isEmpty(),
+                () -> "Controls with REQUEST_FOCUS actions must install M3Accessible focus routes: "
+                        + missingFocusRoutes);
+        assertTrue(missingShowRoutes.isEmpty(),
+                () -> "Controls with SHOW_ITEM actions must install M3Accessible reveal routes: " + missingShowRoutes);
+    }
+
+    /// Verifies that generic accessibility action dispatch stays decoupled from concrete controls.
+    @Test
+    void m3AccessibleActionDispatchDoesNotDependOnConcreteControls() throws IOException {
+        String source = Files.readString(CONTROLS_SOURCE_ROOT.resolve("M3Accessible.java"));
+        List<String> concreteReferences = new ArrayList<>();
+        addConcreteM3References(concreteReferences, "requestAccessibleFocus",
+                sourceMethodBody(source, "static boolean requestAccessibleFocus(@Nullable Node item)"));
+        addConcreteM3References(concreteReferences, "showOwnAccessibleActionTarget",
+                sourceMethodBody(source, "private static boolean showOwnAccessibleActionTarget("));
+
+        assertTrue(concreteReferences.isEmpty(),
+                () -> "Generic accessibility action dispatch must use installed routes, not concrete controls: "
+                        + concreteReferences);
+    }
+
+    /// Verifies that non-node accessibility reveal targets stay owned by installed routes, not generic helpers.
+    @Test
+    void m3AccessibleNonNodeRevealTargetsUseInstalledRoutes() throws IOException {
+        String source = Files.readString(CONTROLS_SOURCE_ROOT.resolve("M3Accessible.java"));
+        List<String> forbiddenReferences = List.of(
+                "containsPickerValueTarget",
+                "LocalDate",
+                "LocalTime",
+                "M3DatePicker",
+                "M3DateRangePicker",
+                "M3DatePickerField",
+                "M3DateRangePickerField",
+                "M3TimePicker",
+                "M3TimePickerField"
+        );
+        List<String> presentReferences = forbiddenReferences.stream()
+                .filter(source::contains)
+                .toList();
+
+        assertTrue(presentReferences.isEmpty(),
+                () -> "Non-node reveal target matching must be supplied by installed accessibility routes: "
+                        + presentReferences);
+    }
+    /// Verifies that installed accessibility routes keep the same action entry points as JavaFX actions.
+    @Test
+    void controlAccessibleActionRoutesMirrorExecuteAccessibleActions() throws IOException {
+        List<String> mismatchedRoutes = new ArrayList<>();
+        for (Path sourceFile : javaSourceFiles(CONTROLS_SOURCE_ROOT)) {
+            String sourceName = sourceFile.getFileName().toString();
+            if ("M3Accessible.java".equals(sourceName)) {
+                continue;
+            }
+
+            String source = Files.readString(sourceFile);
+            @org.jetbrains.annotations.Nullable String route = accessibleActionRouteInstallation(source);
+            if (route == null) {
+                continue;
+            }
+
+            String className = sourceName.substring(0, sourceName.length() - ".java".length());
+            List<String> routeArguments = topLevelArguments(route);
+            verifyAccessibleRouteMatchesAction(mismatchedRoutes, className, "REQUEST_FOCUS", routeArguments, 1, source);
+            verifyAccessibleRouteMatchesAction(mismatchedRoutes, className, "SHOW_ITEM", routeArguments, 2, source);
+        }
+
+        assertTrue(mismatchedRoutes.isEmpty(),
+                () -> "Accessibility route handlers must mirror their executeAccessibleAction entry points: "
+                        + mismatchedRoutes);
+    }
+
     /// Verifies that public skins inherit JavaFX base skin classes or project skin bases.
     @Test
     void publicSkinsDoNotExtendConcreteJavaFxSkins() throws IOException {
@@ -827,24 +921,279 @@ final class SourceStyleRequirementsTest {
 
     /// Returns the source body of a test method.
     private static String testMethodBody(String source, String methodName) {
-        int methodIndex = source.indexOf("void " + methodName + "(");
-        assertTrue(methodIndex >= 0, () -> "Missing test method: " + methodName);
-        int bodyStart = source.indexOf('{', methodIndex);
-        assertTrue(bodyStart >= 0, () -> "Missing test method body: " + methodName);
+        return sourceMethodBody(source, "void " + methodName + "(");
+    }
 
-        int depth = 0;
-        for (int index = bodyStart; index < source.length(); index++) {
+    /// Returns the body of a source method identified by a stable signature snippet.
+    private static String sourceMethodBody(String source, String methodSignature) {
+        int methodIndex = source.indexOf(methodSignature);
+        assertTrue(methodIndex >= 0, () -> "Missing source method: " + methodSignature);
+        int bodyStart = source.indexOf('{', methodIndex);
+        assertTrue(bodyStart >= 0, () -> "Missing source method body: " + methodSignature);
+
+        return source.substring(bodyStart + 1, blockEnd(source, bodyStart));
+    }
+
+    /// Returns whether source declares an accessibility switch case for the requested action.
+    private static boolean declaresAccessibleAction(String source, String actionName) {
+        return Pattern.compile(
+                "\\bcase\\s+[^\\n]*\\b" + Pattern.quote(actionName) + "\\b\\s*->"
+        ).matcher(source).find();
+    }
+
+    /// Adds concrete M3FX type references found in a generic accessibility dispatch method body.
+    private static void addConcreteM3References(List<String> references, String methodName, String methodBody) {
+        Matcher matcher = CONCRETE_M3_DISPATCH_REFERENCE.matcher(methodBody);
+        while (matcher.find()) {
+            references.add(methodName + ": " + matcher.group());
+        }
+    }
+
+    /// Verifies one installed accessibility route handler against the matching action branch.
+    private static void verifyAccessibleRouteMatchesAction(
+            List<String> mismatches,
+            String className,
+            String actionName,
+            List<String> routeArguments,
+            int routeArgumentIndex,
+            String source
+    ) {
+        if (routeArgumentIndex >= routeArguments.size()) {
+            return;
+        }
+        String handler = routeArguments.get(routeArgumentIndex).trim();
+        if ("null".equals(handler)) {
+            return;
+        }
+
+        @org.jetbrains.annotations.Nullable String actionBody = accessibleActionCaseBody(source, actionName);
+        if (actionBody != null && !routeHandlerMatchesActionBody(handler, actionBody)) {
+            mismatches.add(className + " " + actionName + " route=" + handler + " action=" + actionBody.trim());
+        }
+    }
+
+    /// Returns the body of an accessibility action switch case.
+    private static @org.jetbrains.annotations.Nullable String accessibleActionCaseBody(String source, String actionName) {
+        Matcher matcher = Pattern.compile(
+                "\\bcase\\s+[^\\n]*\\b" + Pattern.quote(actionName) + "\\b[^\\n]*->"
+        ).matcher(source);
+        if (!matcher.find()) {
+            return null;
+        }
+
+        int bodyStart = skipWhitespace(source, matcher.end());
+        if (bodyStart < source.length() && source.charAt(bodyStart) == '{') {
+            return source.substring(bodyStart + 1, blockEnd(source, bodyStart));
+        }
+
+        int bodyEnd = statementEnd(source, bodyStart);
+        assertTrue(bodyEnd >= 0, () -> "Unclosed accessibility action case: " + actionName);
+        return source.substring(bodyStart, bodyEnd);
+    }
+
+    /// Returns whether an installed route handler mirrors an accessibility action branch.
+    private static boolean routeHandlerMatchesActionBody(String handler, String actionBody) {
+        if (handler.startsWith("this::")) {
+            String methodName = handler.substring("this::".length()).trim();
+            return containsMethodCall(actionBody, methodName);
+        }
+
+        int arrowIndex = handler.indexOf("->");
+        if (arrowIndex >= 0) {
+            String expression = handler.substring(arrowIndex + "->".length()).trim();
+            if (actionBody.contains(expression)) {
+                return true;
+            }
+            if (expression.contains("null") && !actionBody.contains("null")) {
+                return false;
+            }
+            List<String> methodNames = methodCalls(expression);
+            return !methodNames.isEmpty()
+                    && methodNames.stream().allMatch(methodName -> containsMethodCall(actionBody, methodName));
+        }
+
+        return actionBody.contains(handler);
+    }
+
+    /// Returns top-level whitespace skip position.
+    private static int skipWhitespace(String source, int startIndex) {
+        int index = startIndex;
+        while (index < source.length() && Character.isWhitespace(source.charAt(index))) {
+            index++;
+        }
+        return index;
+    }
+
+    /// Returns the closing brace index for a block that starts with `{`.
+    private static int blockEnd(String source, int blockStart) {
+        return matchingDelimiterEnd(source, blockStart, '{', '}');
+    }
+
+    /// Returns the end index of a Java statement that starts at `startIndex`.
+    private static int statementEnd(String source, int startIndex) {
+        int roundDepth = 0;
+        int squareDepth = 0;
+        int braceDepth = 0;
+        for (int index = startIndex; index < source.length(); index++) {
+            int skippedIndex = skipLiteralOrComment(source, index);
+            if (skippedIndex != index) {
+                index = skippedIndex - 1;
+                continue;
+            }
+
             char ch = source.charAt(index);
-            if (ch == '{') {
+            if (ch == '(') {
+                roundDepth++;
+            } else if (ch == ')' && roundDepth > 0) {
+                roundDepth--;
+            } else if (ch == '[') {
+                squareDepth++;
+            } else if (ch == ']' && squareDepth > 0) {
+                squareDepth--;
+            } else if (ch == '{') {
+                braceDepth++;
+            } else if (ch == '}' && braceDepth > 0) {
+                braceDepth--;
+            } else if (ch == ';' && roundDepth == 0 && squareDepth == 0 && braceDepth == 0) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    /// Returns the matching delimiter index while skipping Java strings, character literals, and comments.
+    private static int matchingDelimiterEnd(String source, int startIndex, char opening, char closing) {
+        assertTrue(startIndex >= 0 && startIndex < source.length() && source.charAt(startIndex) == opening,
+                () -> "Missing opening delimiter: " + opening);
+        int depth = 0;
+        for (int index = startIndex; index < source.length(); index++) {
+            int skippedIndex = skipLiteralOrComment(source, index);
+            if (skippedIndex != index) {
+                index = skippedIndex - 1;
+                continue;
+            }
+
+            char ch = source.charAt(index);
+            if (ch == opening) {
                 depth++;
-            } else if (ch == '}') {
+            } else if (ch == closing) {
                 depth--;
                 if (depth == 0) {
-                    return source.substring(bodyStart + 1, index);
+                    return index;
                 }
             }
         }
-        throw new AssertionError("Unclosed test method body: " + methodName);
+        throw new AssertionError("Unclosed source delimiter: " + opening);
+    }
+
+    /// Returns the index after a Java string, character literal, text block, or comment at `index`.
+    private static int skipLiteralOrComment(String source, int index) {
+        char ch = source.charAt(index);
+        if (ch == '"') {
+            if (source.startsWith("\"\"\"", index)) {
+                int end = source.indexOf("\"\"\"", index + 3);
+                return end < 0 ? source.length() : end + 3;
+            }
+            return skipQuotedLiteral(source, index, '"');
+        }
+        if (ch == '\'') {
+            return skipQuotedLiteral(source, index, '\'');
+        }
+        if (ch == '/' && index + 1 < source.length()) {
+            char next = source.charAt(index + 1);
+            if (next == '/') {
+                int end = source.indexOf('\n', index + 2);
+                return end < 0 ? source.length() : end + 1;
+            }
+            if (next == '*') {
+                int end = source.indexOf("*/", index + 2);
+                return end < 0 ? source.length() : end + 2;
+            }
+        }
+        return index;
+    }
+
+    /// Returns the index after a quoted Java literal.
+    private static int skipQuotedLiteral(String source, int startIndex, char quote) {
+        for (int index = startIndex + 1; index < source.length(); index++) {
+            char ch = source.charAt(index);
+            if (ch == '\\') {
+                index++;
+            } else if (ch == quote) {
+                return index + 1;
+            }
+        }
+        return source.length();
+    }
+
+    /// Returns whether a source body contains a call to a method name.
+    private static boolean containsMethodCall(String source, String methodName) {
+        return Pattern.compile("\\b" + Pattern.quote(methodName) + "\\s*\\(").matcher(source).find();
+    }
+
+    /// Returns method names called by an expression.
+    private static @Unmodifiable List<String> methodCalls(String expression) {
+        List<String> methodNames = new ArrayList<>();
+        Matcher matcher = Pattern.compile("\\b([A-Za-z_]\\w*)\\s*\\(").matcher(expression);
+        while (matcher.find()) {
+            methodNames.add(matcher.group(1));
+        }
+        return List.copyOf(methodNames);
+    }
+
+    /// Returns the first direct `M3Accessible` route installation call in source text.
+    private static @org.jetbrains.annotations.Nullable String accessibleActionRouteInstallation(String source) {
+        int startIndex = source.indexOf("M3Accessible.installAccessibleActionRoute(");
+        if (startIndex < 0) {
+            return null;
+        }
+        int argumentStart = source.indexOf('(', startIndex);
+        return source.substring(argumentStart + 1, matchingDelimiterEnd(source, argumentStart, '(', ')'));
+    }
+
+    /// Returns whether the route argument at the requested index is a non-null handler.
+    private static boolean routeHasHandler(@org.jetbrains.annotations.Nullable String route, int argumentIndex) {
+        if (route == null) {
+            return false;
+        }
+        List<String> arguments = topLevelArguments(route);
+        return argumentIndex < arguments.size() && !"null".equals(arguments.get(argumentIndex).trim());
+    }
+
+    /// Splits a comma-separated argument list without splitting nested expressions or lambdas.
+    private static @Unmodifiable List<String> topLevelArguments(String arguments) {
+        List<String> result = new ArrayList<>();
+        int roundDepth = 0;
+        int squareDepth = 0;
+        int braceDepth = 0;
+        int argumentStart = 0;
+        for (int index = 0; index < arguments.length(); index++) {
+            int skippedIndex = skipLiteralOrComment(arguments, index);
+            if (skippedIndex != index) {
+                index = skippedIndex - 1;
+                continue;
+            }
+
+            char ch = arguments.charAt(index);
+            if (ch == '(') {
+                roundDepth++;
+            } else if (ch == ')' && roundDepth > 0) {
+                roundDepth--;
+            } else if (ch == '[') {
+                squareDepth++;
+            } else if (ch == ']' && squareDepth > 0) {
+                squareDepth--;
+            } else if (ch == '{') {
+                braceDepth++;
+            } else if (ch == '}' && braceDepth > 0) {
+                braceDepth--;
+            } else if (ch == ',' && roundDepth == 0 && squareDepth == 0 && braceDepth == 0) {
+                result.add(arguments.substring(argumentStart, index));
+                argumentStart = index + 1;
+            }
+        }
+        result.add(arguments.substring(argumentStart));
+        return List.copyOf(result);
     }
 
     /// Returns whether source text constructs the requested class.

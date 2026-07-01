@@ -78,7 +78,7 @@ final class M3FocusVisibleTracker {
     ) {
         this.owner = owner;
         this.invalidation = invalidation;
-        this.nativeFocusVisibleListener = (observable, oldValue, newValue) -> invalidation.run();
+        this.nativeFocusVisibleListener = (observable, oldValue, newValue) -> updateFocusVisible();
         this.nativeFocusVisibleProperty = nativeFocusVisibleProperty;
     }
 
@@ -89,16 +89,19 @@ final class M3FocusVisibleTracker {
         }
 
         installed = true;
+        boolean initiallyFocusVisible = owner.getPseudoClassStates().contains(FOCUS_VISIBLE_PSEUDO_CLASS);
         ReadOnlyBooleanProperty nativeProperty = nativeFocusVisibleProperty;
         if (nativeProperty != null) {
             nativeProperty.addListener(nativeFocusVisibleListener);
-            return;
         }
 
         owner.sceneProperty().addListener(sceneListener);
         owner.focusedProperty().addListener(focusedListener);
         attachToFallbackScene(owner.getScene());
         updateFocusVisible(false);
+        if (initiallyFocusVisible) {
+            owner.pseudoClassStateChanged(FOCUS_VISIBLE_PSEUDO_CLASS, true);
+        }
     }
 
     /// Uninstalls native focus-visible or fallback event listeners.
@@ -111,7 +114,6 @@ final class M3FocusVisibleTracker {
         ReadOnlyBooleanProperty nativeProperty = nativeFocusVisibleProperty;
         if (nativeProperty != null) {
             nativeProperty.removeListener(nativeFocusVisibleListener);
-            return;
         }
 
         detachFromFallbackScene();
@@ -151,11 +153,17 @@ final class M3FocusVisibleTracker {
 
     /// Updates the focus-visible pseudo-class from the current modality and focus state.
     private void updateFocusVisible(boolean notify) {
-        boolean focusVisible = owner.isFocused() && isFallbackKeyboardInteraction();
+        boolean focusVisible = isNativeFocusVisible() || owner.isFocused() && isFallbackKeyboardInteraction();
         owner.pseudoClassStateChanged(FOCUS_VISIBLE_PSEUDO_CLASS, focusVisible);
         if (notify) {
             invalidation.run();
         }
+    }
+
+    /// Returns whether JavaFX reports native keyboard-visible focus for the owner.
+    private boolean isNativeFocusVisible() {
+        ReadOnlyBooleanProperty nativeProperty = nativeFocusVisibleProperty;
+        return nativeProperty != null && nativeProperty.get();
     }
 
     /// Returns whether this tracker's fallback scene most recently received keyboard input.

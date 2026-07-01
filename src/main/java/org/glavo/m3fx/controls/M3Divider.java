@@ -44,7 +44,7 @@ public class M3Divider extends Control {
     /// The default trailing inset.
     private static final double DEFAULT_INSET_END = 0.0;
 
-    /// The divider orientation property.
+    // The divider orientation property.
     private final ObjectProperty<Orientation> orientation = new SimpleObjectProperty<>(this, "orientation", Orientation.HORIZONTAL) {
         /// Restores the default orientation when a null value is assigned.
         @Override
@@ -55,13 +55,13 @@ public class M3Divider extends Control {
         }
     };
 
-    /// The styleable divider thickness token.
+    // The styleable divider thickness token.
     private @Nullable StyleableDoubleProperty thickness;
 
-    /// The styleable leading inset token.
+    // The styleable leading inset token.
     private @Nullable StyleableDoubleProperty insetStart;
 
-    /// The styleable trailing inset token.
+    // The styleable trailing inset token.
     private @Nullable StyleableDoubleProperty insetEnd;
 
     /// Creates a horizontal divider.

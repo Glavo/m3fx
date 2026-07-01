@@ -829,7 +829,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
             case REQUEST_FOCUS -> focusAccessibleNode();
             case SHOW_MENU, EXPAND -> showPicker();
             case COLLAPSE -> hidePicker(true);
-            case SHOW_ITEM -> showPickerAndForwardAccessibleAction(action, parameters);
+            case SHOW_ITEM -> showAccessibleItem(parameters);
             case SET_SELECTED_ITEMS, INCREMENT, DECREMENT, BLOCK_INCREMENT, BLOCK_DECREMENT ->
                     forwardPickerAccessibleAction(action, true, parameters);
             default -> super.executeAccessibleAction(action, parameters);
@@ -846,6 +846,8 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
+        M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem,
+                parameter -> parameter instanceof LocalDate);
         startInputLayout.setLabelText("Start date");
         endInputLayout.setLabelText("End date");
         startInputLayout.setTrailing(startOpenButton);
@@ -1204,20 +1206,28 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         return null;
     }
 
+    /// Shows the popup, forwards a show-item request to the picker, and focuses the requested item.
+    ///
+    /// @param parameters optional accessibility target parameters
+    /// @return `true` when the popup stayed visible and a picker target accepted focus
+    final boolean showAccessibleItem(Object... parameters) {
+        return showPickerAndForwardAccessibleAction(AccessibleAction.SHOW_ITEM, parameters);
+    }
+
     /// Shows the popup when possible, forwards an accessibility action to the picker, and focuses its item.
-    private void showPickerAndForwardAccessibleAction(AccessibleAction action, Object... parameters) {
+    private boolean showPickerAndForwardAccessibleAction(AccessibleAction action, Object... parameters) {
         if (!M3Accessible.canReach(this)) {
-            return;
+            return false;
         }
         boolean preservePopupFocus = popup.isShowing() && parameters.length == 0 && popupFocusOwner() != null;
         showPicker();
         if (!popup.isShowing()) {
-            return;
+            return false;
         }
         if (!preservePopupFocus) {
             forwardPickerAccessibleAction(action, false, parameters);
         }
-        focusPicker();
+        return focusPicker();
     }
 
     /// Forwards an accessibility action to the popup range picker and optionally syncs edited endpoints.
@@ -1233,15 +1243,17 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     }
 
     /// Focuses the preferred node inside the popup picker.
-    private void focusPicker() {
+    private boolean focusPicker() {
         if (!popup.isShowing()) {
-            return;
+            return false;
         }
 
         if (M3Accessible.showItem(this, focusNode())) {
             notifyFocusNodeChanged();
             popupFocusNotifier.refresh();
+            return true;
         }
+        return false;
     }
 
     /// Focuses the picker content directly instead of preserving an already focused preset action.
@@ -1266,14 +1278,18 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     }
 
     /// Requests focus for the field's current editor or popup focus target.
-    private void focusAccessibleNode() {
+    ///
+    /// @return `true` when the current target accepted focus
+    final boolean focusAccessibleNode() {
         if (!M3Accessible.canReach(this)) {
-            return;
+            return false;
         }
         if (M3Accessible.showItem(this, focusNode())) {
             notifyFocusNodeChanged();
             popupFocusNotifier.refresh();
+            return true;
         }
+        return false;
     }
 
     /// Returns the editor currently focused by the user, or the start editor by default.

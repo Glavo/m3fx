@@ -7156,7 +7156,7 @@ final class M3ControlStyleTest {
                 layout.layout();
 
                 assertEquals(12.0, textField.getTranslateX(), 0.0001);
-                assertEquals(16.0, textField.getPadding().getLeft(), 0.0001);
+                assertEquals(48.0, textField.getPadding().getLeft(), 0.0001);
                 assertEquals(48.0, textField.getPadding().getRight(), 0.0001);
 
                 textField.setVariant(M3TextInputVariant.OUTLINED);
@@ -9614,8 +9614,8 @@ final class M3ControlStyleTest {
         assertEquals(28.0, icon.getIconSize(), 0.0001);
         assertEquals(700.0, icon.getIconFontWeight(), 0.0001);
         assertEquals(28.0, icon.getFont().getSize(), 0.0001);
-        assertEquals(35.0, icon.getPrefWidth(), 0.0001);
-        assertEquals(35.0, icon.getPrefHeight(), 0.0001);
+        assertEquals(42.0, icon.getPrefWidth(), 0.0001);
+        assertEquals(42.0, icon.getPrefHeight(), 0.0001);
         assertTrue(icon.getPrefHeight() > icon.getIconSize());
     }
 
@@ -9634,8 +9634,8 @@ final class M3ControlStyleTest {
             root.layout();
 
             assertEquals(18.0, icon.getIconSize(), 0.0001);
-            assertEquals(23.0, icon.getPrefWidth(), 0.0001);
-            assertEquals(23.0, icon.getPrefHeight(), 0.0001);
+            assertEquals(27.0, icon.getPrefWidth(), 0.0001);
+            assertEquals(27.0, icon.getPrefHeight(), 0.0001);
 
             WritableImage image = snapshotImageOnFxThread(root);
             assertSnapshotNodeContainsContrast(image, icon, Color.WHITE, 0.05);
@@ -20107,7 +20107,7 @@ final class M3ControlStyleTest {
                 PseudoClass focusVisible = PseudoClass.getPseudoClass("focus-visible");
                 assertFalse(firstItem.getPseudoClassStates().contains(focusVisible));
 
-                root.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                Event.fireEvent(scene, keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
                 listView.focusIndex(0);
                 root.layout();
 
@@ -20148,9 +20148,9 @@ final class M3ControlStyleTest {
 
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         root.applyCss();
-        cell.resize(240.0, 56.0);
         cell.updateIndex(0);
         root.layout();
+        cell.resize(240.0, 56.0);
         cell.layout();
 
         assertSame(row, cell.getListItem());
@@ -24193,7 +24193,7 @@ final class M3ControlStyleTest {
                 root.layout();
 
                 embeddedEditor.requestFocus();
-                KeyEvent embeddedEvent = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT);
+                KeyEvent embeddedEvent = targetedKeyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT, embeddedEditor);
                 assertFalse(M3FocusTraversal.handleHorizontalKeyFocus(
                         owner,
                         embeddedEvent,
@@ -24203,6 +24203,17 @@ final class M3ControlStyleTest {
                 assertTrue(embeddedEditor.isFocused());
                 assertFalse(next.isFocused());
                 assertFalse(embeddedEvent.isConsumed());
+
+                KeyEvent ownerEvent = targetedKeyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT, owner);
+                assertFalse(M3FocusTraversal.handleHorizontalKeyFocus(
+                        owner,
+                        ownerEvent,
+                        M3FocusTraversal.focusTargets(owner.getContent())
+                ));
+
+                assertTrue(embeddedEditor.isFocused());
+                assertFalse(next.isFocused());
+                assertTrue(ownerEvent.isConsumed());
 
                 outsideEditor.requestFocus();
                 KeyEvent outsideEvent = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT);
@@ -28133,8 +28144,8 @@ final class M3ControlStyleTest {
             assertTrue(root.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
             assertEquals(48.0, filledButton.getContainerHeight(), 0.0001);
             assertEquals(28.0, filledButton.getHorizontalPadding(), 0.0001);
-            assertEquals(48.0, iconButton.getContainerHeight(), 0.0001);
-            assertEquals(48.0, standardToggle.getContainerHeight(), 0.0001);
+            assertEquals(40.0, iconButton.getContainerHeight(), 0.0001);
+            assertEquals(40.0, standardToggle.getContainerHeight(), 0.0001);
             assertEquals(64.0, regularFab.getContainerSize(), 0.0001);
             assertEquals(18.0, regularFab.getHorizontalPadding(), 0.0001);
             assertEquals(48.0, day.getContainerHeight(), 0.0001);
@@ -28324,7 +28335,7 @@ final class M3ControlStyleTest {
             assertEquals(48.0, filledButton.getContainerHeight(), 0.0001);
             assertEquals(64.0, textField.getContainerHeight(), 0.0001);
             assertEquals(56.0, searchBar.getHeight(), 0.0001);
-            assertEquals(48.0, selectedToggle.getContainerHeight(), 0.0001);
+            assertEquals(40.0, selectedToggle.getContainerHeight(), 0.0001);
             assertEquals(64.0, fab.getContainerSize(), 0.0001);
 
             WritableImage image = snapshotImageOnFxThread(root);
@@ -37272,6 +37283,10 @@ final class M3ControlStyleTest {
         return new KeyEvent(eventType, "", "", code, false, false, false, false);
     }
 
+    /// Creates a key event with an explicit source and target node.
+    private static KeyEvent targetedKeyEvent(EventType<KeyEvent> eventType, KeyCode code, Node target) {
+        return new KeyEvent(target, target, eventType, "", "", code, false, false, false, false);
+    }
     /// Creates a typed key event for printable-key behavior tests.
     private static KeyEvent keyTypedEvent(String character) {
         return new KeyEvent(KeyEvent.KEY_TYPED, character, character, KeyCode.UNDEFINED, false, false, false, false);

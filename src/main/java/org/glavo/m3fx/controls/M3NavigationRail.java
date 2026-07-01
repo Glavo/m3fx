@@ -77,7 +77,7 @@ public class M3NavigationRail extends Control {
     private final @UnmodifiableView ObservableList<M3NavigationItem> selectedItemsView =
             FXCollections.unmodifiableObservableList(selectedItems);
 
-    /// The styleable spacing between navigation item rows.
+    // The styleable spacing between navigation item rows.
     private @Nullable StyleableDoubleProperty itemSpacing;
 
     // Whether the rail allows all navigation items to be unselected.
@@ -434,6 +434,7 @@ public class M3NavigationRail extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TOOL_BAR);
+        M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleSelectionTarget, this::showAccessibleItem);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         getItems().addListener(childrenListener);
         focusNotifier.start();
@@ -632,6 +633,7 @@ public class M3NavigationRail extends Control {
     }
 
     /// CSS metadata for navigation rail styleable properties.
+    @NotNullByDefault
     private static final class StyleableProperties {
         /// CSS metadata for the item spacing token.
         private static final CssMetaData<M3NavigationRail, Number> ITEM_SPACING =

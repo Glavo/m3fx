@@ -118,6 +118,17 @@ final class PackagingConfigurationTest {
                 "library publication must not expose direct JavaFX implementation dependencies");
     }
 
+    /// Verifies that generated API documentation cannot ship with Javadoc warnings.
+    @Test
+    void javadocGenerationTreatsWarningsAsErrors() throws IOException {
+        String buildScript = Files.readString(ROOT_BUILD_SCRIPT);
+
+        assertTrue(buildScript.contains("it.addBooleanOption(\"Werror\", true)"),
+                "Javadoc generation must fail when API documentation emits warnings");
+        assertTrue(buildScript.contains("it.addStringOption(\"Xdoclint:none\", \"-quiet\")"),
+                "Javadoc generation should keep style-only doclint noise disabled without ignoring real warnings");
+    }
+
     /// Verifies that JPMS JavaFX readability remains separate from published artifact dependencies.
     @Test
     void moduleDescriptorKeepsJavafxReadabilityExplicit() throws IOException {

@@ -105,6 +105,7 @@ public class M3SnackbarHost extends Control {
     public M3SnackbarHost() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
+        M3Accessible.installAccessibleActionRoute(this, this::focusCurrentAccessibleNode, this::showAccessibleSnackbar);
         setPickOnBounds(false);
         showing.addListener((observable, oldValue, newValue) -> {
             notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
@@ -537,10 +538,14 @@ public class M3SnackbarHost extends Control {
     }
 
     /// Focuses the current snackbar action focus node when it is reachable.
-    private void focusCurrentAccessibleNode() {
+    ///
+    /// @return `true` when the current snackbar focus node accepted focus
+    final boolean focusCurrentAccessibleNode() {
         if (M3Accessible.showItem(this, currentFocusNode())) {
             notifyFocusNodeChanged();
+            return true;
         }
+        return false;
     }
 
     /// Notifies and refreshes cached accessibility focus state.
@@ -580,25 +585,32 @@ public class M3SnackbarHost extends Control {
     }
 
     /// Shows or focuses the snackbar referenced by accessibility action parameters.
-    private void showAccessibleSnackbar(Object... parameters) {
+    ///
+    /// @param parameters optional accessibility target parameters
+    /// @return `true` when the target snackbar was focused, shown, or accepted as the current target
+    final boolean showAccessibleSnackbar(Object... parameters) {
         @Nullable M3Snackbar target = accessibleSnackbar(parameters);
         if (target == null) {
-            return;
+            return false;
         }
 
         if (target == getSnackbar()) {
             refreshAccessibleFocusNode();
-            if (showAccessibleSnackbarTarget(target, parameters)) {
+            boolean shown = showAccessibleSnackbarTarget(target, parameters);
+            if (shown) {
                 refreshAccessibleFocusNode();
             }
-            return;
+            return shown;
         }
         if (queue.remove(target)) {
             show(target);
-            if (showAccessibleSnackbarTarget(target, parameters)) {
+            boolean shown = showAccessibleSnackbarTarget(target, parameters);
+            if (shown) {
                 refreshAccessibleFocusNode();
             }
+            return shown;
         }
+        return false;
     }
 
     /// Focuses the hosted snackbar or delegates to one of its nested action-owned targets.

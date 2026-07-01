@@ -317,15 +317,7 @@ public class M3SideSheet extends Control {
                 }
             }
             case REQUEST_FOCUS -> focusAccessibleNode();
-            case SHOW_ITEM -> {
-                if (!M3Accessible.canReveal(this)) {
-                    return;
-                }
-                show();
-                if (M3Accessible.showCurrentOrItem(this, getContent(), getActions(), parameters)) {
-                    notifyFocusNodeChanged();
-                }
-            }
+            case SHOW_ITEM -> showAccessibleItem(parameters);
             case COLLAPSE -> hide();
             default -> super.executeAccessibleAction(action, parameters);
         }
@@ -343,6 +335,7 @@ public class M3SideSheet extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
+        M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
         headline.addListener((observable, oldValue, newValue) -> updateAccessibleText());
         content.addListener((observable, oldValue, newValue) -> {
             notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
@@ -411,12 +404,32 @@ public class M3SideSheet extends Control {
         notifyFocusNodeChanged();
     }
 
+    /// Shows this sheet and focuses the requested accessible content or action target.
+    ///
+    /// @param parameters optional accessibility target parameters
+    /// @return `true` when focus moved to the requested or current target
+    final boolean showAccessibleItem(Object... parameters) {
+        if (!M3Accessible.canReveal(this)) {
+            return false;
+        }
+        show();
+        if (M3Accessible.showCurrentOrItem(this, getContent(), getActions(), parameters)) {
+            notifyFocusNodeChanged();
+            return true;
+        }
+        return false;
+    }
+
     /// Requests focus for the current accessible focus target when this sheet is visible.
-    private void focusAccessibleNode() {
+    ///
+    /// @return `true` when the current target accepted focus
+    final boolean focusAccessibleNode() {
         if (isShown() && M3Accessible.canReach(this)
                 && M3Accessible.showCurrentOrItem(this, getContent(), getActions())) {
             notifyFocusNodeChanged();
+            return true;
         }
+        return false;
     }
 
     /// Notifies and refreshes cached accessibility focus state.

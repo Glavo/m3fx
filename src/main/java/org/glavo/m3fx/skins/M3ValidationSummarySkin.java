@@ -6,6 +6,7 @@ package org.glavo.m3fx.skins;
 import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
+import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
@@ -80,6 +81,8 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
         emptyLabel.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(control));
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         items.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
+        titleLabel.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+        emptyLabel.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
         titleLabel.getStyleClass().add(M3ValidationSummary.TITLE_STYLE_CLASS);
         emptyLabel.getStyleClass().add(M3ValidationSummary.EMPTY_TEXT_STYLE_CLASS);
         items.getStyleClass().add(M3ValidationSummary.ITEMS_STYLE_CLASS);
@@ -252,7 +255,7 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
 
         VBox text = new VBox(ITEM_TEXT_SPACING, label, error);
         text.setMaxWidth(Double.MAX_VALUE);
-        text.nodeOrientationProperty().bind(getSkinnable().effectiveNodeOrientationProperty());
+        text.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
         text.setAlignment(textAlignment());
         StackPane.setAlignment(text, textAlignment());
         item.getChildren().add(text);

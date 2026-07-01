@@ -508,6 +508,7 @@ public class M3TopAppBar extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TOOL_BAR);
+        M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleItem, this::showAccessibleItem);
         addEventFilter(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         title.addListener(observable -> updateAccessibleText());
         navigation.addListener((observable, oldValue, newValue) -> notifyAccessibleItemsChanged());
@@ -542,17 +543,26 @@ public class M3TopAppBar extends Control {
     }
 
     /// Requests focus on the current or first accessibility item.
-    private void focusAccessibleItem() {
+    ///
+    /// @return `true` when the target accepted focus
+    final boolean focusAccessibleItem() {
         if (M3Accessible.showCurrentOrItem(this, getNavigation(), getActions())) {
             notifyAccessibleFocusChanged();
+            return true;
         }
+        return false;
     }
 
     /// Shows an item requested by an accessibility client.
-    private void showAccessibleItem(Object... parameters) {
+    ///
+    /// @param parameters optional accessibility target parameters
+    /// @return `true` when focus moved to the default or requested item
+    final boolean showAccessibleItem(Object... parameters) {
         if (M3Accessible.showCurrentOrItem(this, getNavigation(), getActions(), parameters)) {
             notifyAccessibleFocusChanged();
+            return true;
         }
+        return false;
     }
 
     /// Notifies accessibility clients that the container focus target changed.

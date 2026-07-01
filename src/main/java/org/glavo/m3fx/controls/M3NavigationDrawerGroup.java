@@ -252,6 +252,7 @@ public final class M3NavigationDrawerGroup extends Control {
             notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
         });
         setAccessibleRole(AccessibleRole.NODE);
+        M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
         setAccessibleText(getTitle());
         setFocusTraversable(false);
         focusNotifier.start();
@@ -268,18 +269,27 @@ public final class M3NavigationDrawerGroup extends Control {
     }
 
     /// Expands the group when needed and focuses the requested accessible row.
-    private void showAccessibleItem(Object... parameters) {
+    ///
+    /// @param parameters optional accessibility target parameters
+    /// @return `true` when focus moved to the requested or current row
+    final boolean showAccessibleItem(Object... parameters) {
         expandForAccessibleReveal();
         if (M3Accessible.showCurrentOrItem(this, accessibleContent(), parameters)) {
             notifyFocusNodeChanged();
+            return true;
         }
+        return false;
     }
 
     /// Requests focus for the current accessible row, or the header row when no child owns focus.
-    private void focusAccessibleNode() {
+    ///
+    /// @return `true` when the current row accepted focus
+    final boolean focusAccessibleNode() {
         if (M3Accessible.showCurrentOrItem(this, accessibleContent())) {
             notifyFocusNodeChanged();
+            return true;
         }
+        return false;
     }
 
     /// Expands this group without leaving an in-flight reveal animation before an accessibility focus request.

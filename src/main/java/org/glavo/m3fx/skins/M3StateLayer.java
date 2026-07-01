@@ -164,8 +164,16 @@ final class M3StateLayer extends Pane {
             owner.pseudoClassStateChanged(ARMED_PSEUDO_CLASS, button.isArmed());
             button.armedProperty().addListener(buttonArmedStateListener);
         }
+        synchronizeOwnerStateOpacity(owner);
     }
 
+    /// Synchronizes opacity with owner interaction states without starting an initial transition.
+    private void synchronizeOwnerStateOpacity(Node owner) {
+        overlayOpacityAnimation.stop();
+        overlay.setOpacity(resolvedOverlayOpacity(owner));
+        focusIndicatorOpacityAnimation.stop();
+        focusIndicator.setOpacity(resolvedFocusIndicatorOpacity(owner));
+    }
     /// Removes opacity transition listeners from the current owner.
     void uninstallStateTransitions() {
         Node owner = stateOwner;

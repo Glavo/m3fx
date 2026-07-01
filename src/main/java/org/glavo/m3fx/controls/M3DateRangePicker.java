@@ -517,6 +517,8 @@ public class M3DateRangePicker extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
+        M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleDay,
+                parameter -> parameter instanceof LocalDate);
         setFocusTraversable(true);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
     }
@@ -715,25 +717,30 @@ public class M3DateRangePicker extends Control {
         return null;
     }
 
+    /// Focuses the current accessibility target or the picker itself.
+    final boolean focusAccessibleNode() {
+        return focusAccessibleNode(accessibleFocusNode());
+    }
+
     /// Focuses an accessibility target or the picker itself.
-    private void focusAccessibleNode(@Nullable Node node) {
-        if (node == null || node == this || !M3Accessible.showItem(this, node)) {
-            M3Accessible.showDirectItem(this, this);
+    private boolean focusAccessibleNode(@Nullable Node node) {
+        if (node != null && node != this && M3Accessible.showItem(this, node)) {
+            return true;
         }
+        return M3Accessible.showDirectItem(this, this);
     }
 
     /// Shows and focuses the day requested by accessibility parameters.
-    private void showAccessibleDay(Object... parameters) {
+    final boolean showAccessibleDay(Object... parameters) {
         @Nullable Object item = accessibleDayItem(parameters);
         if (item instanceof Node node && M3Accessible.showItem(this, node)) {
-            return;
+            return true;
         }
         if (item instanceof LocalDate date) {
             showMonth(YearMonth.from(date));
-            focusAccessibleDate(date);
-            return;
+            return showAccessibleDate(date);
         }
-        focusAccessibleNode(accessibleFocusNode());
+        return parameters.length == 0 && focusAccessibleNode();
     }
 
     /// Selects one or two dates requested by accessibility parameters.
@@ -818,10 +825,17 @@ public class M3DateRangePicker extends Control {
         return item instanceof LocalDate date ? date : dateFromNode(item);
     }
 
-    /// Focuses the rendered day cell for a date when it is visible.
-    private void focusAccessibleDate(LocalDate date) {
+    /// Shows the rendered day cell for a date when it is visible.
+    private boolean showAccessibleDate(LocalDate date) {
         @Nullable M3DateRangePickerSkin skin = materialSkin();
-        focusAccessibleNode(skin == null ? this : skin.getDayCell(date));
+        @Nullable Node cell = skin == null ? null : skin.getDayCell(date);
+        return cell != null && M3Accessible.showItem(this, cell);
+    }
+
+    /// Focuses the rendered day cell for a date when it is visible.
+    private boolean focusAccessibleDate(LocalDate date) {
+        @Nullable M3DateRangePickerSkin skin = materialSkin();
+        return focusAccessibleNode(skin == null ? this : skin.getDayCell(date));
     }
 
     /// Returns the day item requested by accessibility parameters.

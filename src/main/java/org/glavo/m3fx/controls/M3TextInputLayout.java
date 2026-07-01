@@ -845,7 +845,7 @@ public class M3TextInputLayout extends Control {
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
         switch (action) {
-            case REQUEST_FOCUS -> focusAccessibleItem(accessibleFocusNode());
+            case REQUEST_FOCUS -> focusAccessibleNode();
             case SHOW_ITEM -> showAccessibleItem(parameters);
             default -> super.executeAccessibleAction(action, parameters);
         }
@@ -855,6 +855,7 @@ public class M3TextInputLayout extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
+        M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleSlotNavigationKey);
 
         inputContainer.getStyleClass().add(INPUT_CONTAINER_STYLE_CLASS);
@@ -1134,7 +1135,7 @@ public class M3TextInputLayout extends Control {
     private void restoreInputPadding(TextInputControl input) {
         Insets basePadding = installedInputBasePadding;
         if (basePadding != null) {
-            setInputPadding(input, basePadding);
+            writeInputPadding(input, basePadding, false);
         }
         setInputTranslateX(input, installedInputBaseTranslateX);
     }
@@ -1149,25 +1150,37 @@ public class M3TextInputLayout extends Control {
 
         double leading = resolvedInputLeadingInset(basePadding);
         double trailing = resolvedInputTrailingInset(basePadding);
+        double inputLeading = leading;
+        double inputTrailing = trailing;
+        if (needsRightToLeftTrailingTextReservation(input)) {
+            inputLeading = Math.max(inputLeading, ADORNED_HORIZONTAL_PADDING);
+            inputTrailing = inputTrailingInset(basePadding);
+        } else if (needsRightToLeftFilledLeadingTextReservation(input)) {
+            inputTrailing = Math.max(inputTrailing, ADORNED_HORIZONTAL_PADDING);
+        }
         // Outlined floating labels occupy the outline notch, not the input content area.
         double top = isLabelFloating() && !isOutlinedInput()
                 ? Math.max(basePadding.getTop(), labeledTopPadding(input))
                 : basePadding.getTop();
-        double left = physicalLeftInset(leading, trailing);
-        double right = physicalRightInset(leading, trailing);
-        setInputPadding(input, new Insets(top, right, basePadding.getBottom(), left));
+        double left = physicalLeftInset(inputLeading, inputTrailing);
+        double right = physicalRightInset(inputLeading, inputTrailing);
+        writeInputPadding(input, new Insets(top, right, basePadding.getBottom(), left), true);
         updateInputAreaOffset(input);
     }
 
     /// Writes the wrapped input padding when the application has not bound it.
-    private void setInputPadding(TextInputControl input, Insets padding) {
+    private void writeInputPadding(TextInputControl input, Insets padding, boolean helperOwned) {
         if (input.paddingProperty().isBound()) {
             return;
         }
 
         applyingInputPadding = true;
         try {
-            input.setPadding(padding);
+            if (helperOwned) {
+                M3Css.setPaddingAsHelperOwned(input, padding);
+            } else {
+                M3Css.setPaddingWithoutOwnershipIfUnbound(input, padding);
+            }
         } finally {
             applyingInputPadding = false;
         }
@@ -1223,6 +1236,24 @@ public class M3TextInputLayout extends Control {
                 && isRightToLeft()
                 && getLeading() != null
                 && effectiveTrailing() == null
+                && input instanceof TextField;
+    }
+
+    /// Returns whether a right-to-left single-line filled input needs balanced physical text padding.
+    private boolean needsRightToLeftFilledLeadingTextReservation(@Nullable TextInputControl input) {
+        return !isOutlinedInput()
+                && isRightToLeft()
+                && getLeading() != null
+                && effectiveTrailing() == null
+                && input instanceof TextField;
+    }
+
+    /// Returns whether a right-to-left single-line outlined input needs physical text-area reservation.
+    private boolean needsRightToLeftTrailingTextReservation(@Nullable TextInputControl input) {
+        return isOutlinedInput()
+                && isRightToLeft()
+                && getLeading() == null
+                && effectiveTrailing() != null
                 && input instanceof TextField;
     }
 
@@ -1806,24 +1837,41 @@ public class M3TextInputLayout extends Control {
         return leading != null ? leading : effectiveTrailing();
     }
 
+    /// Requests focus for the current or default accessibility focus target.
+    ///
+    /// @return `true` when the target accepted focus
+    final boolean focusAccessibleNode() {
+        return focusAccessibleItem(accessibleFocusNode());
+    }
+
     /// Focuses an accessible child item and reports the changed focus target.
-    private void focusAccessibleItem(@Nullable Node item) {
+    ///
+    /// @param item the item to focus, or `null` when no item is available
+    /// @return `true` when the target accepted focus
+    final boolean focusAccessibleItem(@Nullable Node item) {
         if (!M3Accessible.canReach(this)) {
-            return;
+            return false;
         }
         if (M3Accessible.showItem(this, item)) {
             notifyFocusNodeChanged();
+            return true;
         }
+        return false;
     }
 
     /// Shows and focuses the requested accessible child or a descendant popup target.
-    private void showAccessibleItem(Object... parameters) {
+    ///
+    /// @param parameters optional accessibility target parameters
+    /// @return `true` when focus moved to the default or requested target
+    final boolean showAccessibleItem(Object... parameters) {
         if (!M3Accessible.canReach(this)) {
-            return;
+            return false;
         }
         if (M3Accessible.showCurrentOrItem(this, getLeading(), getInput(), effectiveTrailing(), parameters)) {
             notifyFocusNodeChanged();
+            return true;
         }
+        return false;
     }
 
     /// Returns whether keyboard focus belongs to the supplied node or one of its descendants.

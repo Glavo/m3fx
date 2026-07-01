@@ -343,6 +343,7 @@ public class M3SubMenuItem extends M3MenuItem {
     /// Adds base style classes and configures submenu popup behavior.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
+        M3Accessible.installAccessibleActionRoute(this, this::requestAccessibleFocus, this::showAccessibleSubMenuItem);
         if (getTrailing() == null) {
             setTrailing(defaultIndicator);
         }

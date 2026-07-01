@@ -130,7 +130,10 @@ final class M3FocusTraversal {
             return false;
         }
 
-        if (!M3Accessible.showItem(owner, target)) {
+        boolean focused = target.isFocusTraversable()
+                ? M3Accessible.showDirectItem(owner, target)
+                : M3Accessible.showItem(owner, target);
+        if (!focused) {
             return false;
         }
         event.consume();
@@ -232,9 +235,10 @@ final class M3FocusTraversal {
     ) {
         Objects.requireNonNull(owner, "owner");
         Objects.requireNonNull(event, "event");
+
         if (focusOwnerInsideTextInput(owner)
                 && isNavigationKeyForEnabledAxis(event.getCode(), horizontalEnabled, verticalEnabled)) {
-            if (event.getTarget() == owner) {
+            if (!eventTargetsFocusedTextInput(owner, event)) {
                 event.consume();
             }
             return true;
@@ -242,6 +246,20 @@ final class M3FocusTraversal {
         return false;
     }
 
+    /// Returns whether the key event is targeted at the focused text input itself.
+    private static boolean eventTargetsFocusedTextInput(Node owner, KeyEvent event) {
+        @Nullable Scene scene = owner.getScene();
+        @Nullable Node focusOwner = scene == null ? null : scene.getFocusOwner();
+        return focusOwner != null
+                && (eventNodeBelongsToFocusOwner(focusOwner, event.getTarget())
+                || eventNodeBelongsToFocusOwner(focusOwner, event.getSource()));
+    }
+
+    /// Returns whether one event endpoint belongs to the current text input focus owner.
+    private static boolean eventNodeBelongsToFocusOwner(Node focusOwner, @Nullable Object eventEndpoint) {
+        return eventEndpoint instanceof Node node
+                && (node == focusOwner || M3Accessible.containsNode(focusOwner, node));
+    }
     /// Adds one accessible focus target when the item can expose focus.
     private static void addFocusTarget(List<Node> targets, @Nullable Node item) {
         @Nullable Node focusTarget = M3Accessible.accessibleFocusTarget(item);

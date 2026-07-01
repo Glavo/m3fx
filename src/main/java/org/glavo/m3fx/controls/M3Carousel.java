@@ -362,6 +362,7 @@ public class M3Carousel extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.LIST_VIEW);
+        M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
         setFocusTraversable(true);
         focusNotifier.start();
         getItems().addListener(itemsListener);
@@ -431,12 +432,16 @@ public class M3Carousel extends Control {
     }
 
     /// Shows an item requested by an accessibility client.
-    private void showAccessibleItem(Object... parameters) {
+    ///
+    /// @param parameters optional accessibility target parameters
+    /// @return `true` when focus moved to the default or requested target
+    final boolean showAccessibleItem(Object... parameters) {
         if (parameters.length == 0) {
-            if (focusAccessibleNode()) {
+            boolean focused = focusAccessibleNode();
+            if (focused) {
                 scrollSelectedItemIntoView();
             }
-            return;
+            return focused;
         }
 
         @Nullable Node selectedTarget = accessibleTarget(parameters);
@@ -451,9 +456,10 @@ public class M3Carousel extends Control {
             if (shown) {
                 notifyAccessibleFocusChanged();
             }
-            return;
+            return shown;
         }
         scrollSelectedItemIntoView();
+        return false;
     }
 
     /// Returns the selected carousel item focus target, or this carousel when no item can receive focus.
@@ -467,7 +473,9 @@ public class M3Carousel extends Control {
     }
 
     /// Requests focus on the accessible carousel focus target.
-    private boolean focusAccessibleNode() {
+    ///
+    /// @return `true` when the target accepted focus
+    final boolean focusAccessibleNode() {
         if (M3Accessible.showItem(this, accessibleFocusNode())) {
             notifyAccessibleFocusChanged();
             return true;

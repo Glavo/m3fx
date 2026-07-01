@@ -201,6 +201,7 @@ public class M3ListItem extends Control {
         M3PopupStyles.addFallbackRootStyleClass(this);
         M3PopupStyles.addStylesheet(this, M3Stylesheets.fallbackStylesheet());
         setAccessibleRole(AccessibleRole.LIST_ITEM);
+        M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
         setFocusTraversable(true);
         setPickOnBounds(true);
         focusNotifier.start();
@@ -539,20 +540,28 @@ public class M3ListItem extends Control {
     }
 
     /// Focuses the current row or slot target, or an explicitly requested slot target.
-    private void showAccessibleItem(Object... parameters) {
+    ///
+    /// @param parameters optional accessibility target parameters
+    /// @return `true` when focus moved to the default or requested target
+    final boolean showAccessibleItem(Object... parameters) {
         boolean shown = parameters.length == 0
                 ? M3Accessible.showItem(this, accessibleFocusNode())
                 : M3Accessible.showCurrentOrItem(this, getLeading(), getTrailing(), parameters);
         if (shown) {
             notifyAccessibleFocusChanged();
         }
+        return shown;
     }
 
     /// Requests focus on the current list item accessibility focus node.
-    private void focusAccessibleNode() {
+    ///
+    /// @return `true` when the target accepted focus
+    final boolean focusAccessibleNode() {
         if (M3Accessible.showItem(this, accessibleFocusNode())) {
             notifyAccessibleFocusChanged();
+            return true;
         }
+        return false;
     }
 
     /// Notifies accessibility clients that the list item focus target changed.

@@ -486,7 +486,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
             case REQUEST_FOCUS -> focusAccessibleNode();
             case SHOW_MENU, EXPAND -> showPicker();
             case COLLAPSE -> hidePicker(true);
-            case SHOW_ITEM -> showPickerAndForwardAccessibleAction(action, parameters);
+            case SHOW_ITEM -> showAccessibleItem(parameters);
             case SET_SELECTED_ITEMS, INCREMENT, DECREMENT, BLOCK_INCREMENT, BLOCK_DECREMENT ->
                     forwardPickerAccessibleAction(action, parameters);
             default -> super.executeAccessibleAction(action, parameters);
@@ -544,6 +544,10 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
         M3ControlStyles.add(popupContent, popupStyleClass);
         M3ControlStyles.add(openButton, OPEN_BUTTON_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.COMBO_BOX);
+        M3Accessible.installAccessibleActionRoute(this,
+                this::focusAccessibleNode,
+                this::showAccessibleItem,
+                this::handlesAccessibleShowTarget);
 
         inputLayout.setTrailing(openButton);
         inputLayout.disableProperty().bind(disabledProperty());
@@ -731,20 +735,32 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
         return null;
     }
 
+    /// Returns whether this field can reveal the supplied non-node accessibility target.
+    protected boolean handlesAccessibleShowTarget(@Nullable Object parameter) {
+        return false;
+    }
+    /// Shows the popup, forwards a show-item request to the picker, and focuses the requested item.
+    ///
+    /// @param parameters optional accessibility target parameters
+    /// @return `true` when the popup stayed visible and a picker target accepted focus
+    final boolean showAccessibleItem(Object... parameters) {
+        return showPickerAndForwardAccessibleAction(AccessibleAction.SHOW_ITEM, parameters);
+    }
+
     /// Shows the popup when possible, forwards an accessibility action to the picker, and focuses its item.
-    private void showPickerAndForwardAccessibleAction(AccessibleAction action, Object... parameters) {
+    private boolean showPickerAndForwardAccessibleAction(AccessibleAction action, Object... parameters) {
         if (!M3Accessible.canReach(this)) {
-            return;
+            return false;
         }
         boolean preservePopupFocus = popup.isShowing() && parameters.length == 0 && popupFocusOwner() != null;
         showPicker();
         if (!popup.isShowing()) {
-            return;
+            return false;
         }
         if (!preservePopupFocus) {
             forwardPickerAccessibleAction(action, parameters);
         }
-        focusPicker();
+        return focusPicker();
     }
 
     /// Forwards value-oriented accessibility actions to the concrete popup picker.
@@ -753,26 +769,32 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
     }
 
     /// Focuses the preferred node inside the popup picker.
-    private void focusPicker() {
+    private boolean focusPicker() {
         if (!popup.isShowing()) {
-            return;
+            return false;
         }
 
         if (M3Accessible.showItem(this, focusNode())) {
             notifyFocusNodeChanged();
             popupFocusNotifier.refresh();
+            return true;
         }
+        return false;
     }
 
     /// Requests focus for the current editor, open button, or popup focus target.
-    private void focusAccessibleNode() {
+    ///
+    /// @return `true` when the current target accepted focus
+    final boolean focusAccessibleNode() {
         if (!M3Accessible.canReach(this)) {
-            return;
+            return false;
         }
         if (M3Accessible.showItem(this, focusNode())) {
             notifyFocusNodeChanged();
             popupFocusNotifier.refresh();
+            return true;
         }
+        return false;
     }
 
     /// Notifies accessibility clients and owner containers about the exposed focus target.

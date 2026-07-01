@@ -13,7 +13,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 @NotNullByDefault
 public final class M3IconSkin extends SkinBase<M3Icon> {
     /// The layout line box multiplier used by [M3Icon].
-    private static final double ICON_LINE_BOX_SCALE = 1.25;
+    private static final double ICON_LINE_BOX_SCALE = 1.5;
 
     /// The rendered glyph node.
     private final Text glyph = new Text();

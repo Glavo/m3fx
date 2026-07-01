@@ -238,6 +238,7 @@ public class M3ValidationSummary extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
+        M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleInput);
         validator.addListener((observable, oldValue, newValue) -> updateValidator(oldValue, newValue));
         titleText.addListener(observable -> updateSummaryState());
         emptyText.addListener(observable -> updateSummaryState());
@@ -345,7 +346,7 @@ public class M3ValidationSummary extends Control {
     }
 
     /// Requests focus for the current accessible invalid input target.
-    private boolean focusAccessibleNode() {
+    final boolean focusAccessibleNode() {
         @Nullable Node focusNode = accessibleFocusNode();
         if (focusNode == null) {
             return false;
@@ -358,26 +359,28 @@ public class M3ValidationSummary extends Control {
     }
 
     /// Shows and focuses the requested invalid input or one of its descendant accessibility targets.
-    private void showAccessibleInput(Object... parameters) {
+    ///
+    /// @param parameters optional accessibility target parameters
+    /// @return `true` when focus moved to the requested invalid input or descendant target
+    final boolean showAccessibleInput(Object... parameters) {
         if (parameters.length == 0) {
-            focusAccessibleNode();
-            return;
+            return focusAccessibleNode();
         }
 
         @Nullable M3TextInputLayout input = accessibleActionInput(parameters);
         if (input == null) {
-            return;
+            return false;
         }
 
         if (isSummaryIndexRequest(parameters) || isDirectInvalidInputRequest(input, parameters)) {
-            focusInput(input);
-            return;
+            return focusInput(input);
         }
 
-        if (!M3Accessible.showAccessibleActionTarget(this, input, parameters)) {
-            focusInput(input);
+        if (M3Accessible.showAccessibleActionTarget(this, input, parameters)) {
+            notifyFocusNodeChanged();
+            return true;
         }
-        notifyFocusNodeChanged();
+        return focusInput(input);
     }
 
     /// Returns the invalid input referenced by accessibility action parameters.

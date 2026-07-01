@@ -371,6 +371,7 @@ public class M3SearchBar extends Control {
         M3ControlStyles.add(this, STYLE_CLASS);
         editor.getStyleClass().add(INPUT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
+        M3Accessible.installAccessibleActionRoute(this, () -> focusAccessibleItem(accessibleFocusNode()), this::showAccessibleItem);
         setFocusTraversable(true);
         M3Css.setMinHeightIfUnbound(this, DEFAULT_HEIGHT);
         M3Css.setPrefHeightIfUnbound(this, DEFAULT_HEIGHT);
@@ -447,31 +448,42 @@ public class M3SearchBar extends Control {
     }
 
     /// Focuses an indexed child item, falling back to the editor when the item is not focusable.
-    private void focusAccessibleItem(@Nullable Node item) {
+    ///
+    /// @param item the item to focus, or `null` to use the editor fallback
+    /// @return `true` when the target accepted focus
+    final boolean focusAccessibleItem(@Nullable Node item) {
         if (!M3Accessible.isEffectivelyReachable(this)) {
-            return;
+            return false;
         }
         activate();
         if (M3Accessible.structuralFocusTarget(item) == null) {
             if (M3Accessible.canReach(editor) && M3Accessible.showItem(this, editor)) {
                 notifyFocusNodeChanged();
+                return true;
             }
-            return;
+            return false;
         }
         if (M3Accessible.showItem(this, item)) {
             notifyFocusNodeChanged();
+            return true;
         }
+        return false;
     }
 
     /// Shows and focuses the requested accessible child or a descendant popup target.
-    private void showAccessibleItem(Object... parameters) {
+    ///
+    /// @param parameters optional accessibility target parameters
+    /// @return `true` when focus moved to the default or requested target
+    final boolean showAccessibleItem(Object... parameters) {
         if (!M3Accessible.isEffectivelyReachable(this)) {
-            return;
+            return false;
         }
         activateWithoutEditorFocus();
         if (M3Accessible.showCurrentOrItem(this, getLeading(), editor, getTrailingActions(), parameters)) {
             notifyFocusNodeChanged();
+            return true;
         }
+        return false;
     }
 
     /// Moves the search bar into its active state while preserving the current accessibility child focus.

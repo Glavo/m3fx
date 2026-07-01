@@ -92,6 +92,7 @@ public class M3Scrim extends Region {
     public M3Scrim() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.BUTTON);
+        M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, parameters -> parameters.length == 0 && showAccessibleItem());
         setAccessibleText("Dismiss");
         setFocusTraversable(true);
         setOpacity(getVisibleOpacity());
@@ -239,19 +240,29 @@ public class M3Scrim extends Region {
         Objects.requireNonNull(action, "action");
         switch (action) {
             case FIRE -> fire();
-            case EXPAND, SHOW_ITEM -> {
-                if (M3Accessible.canReveal(this)) {
-                    show();
-                }
-            }
+            case EXPAND, SHOW_ITEM -> showAccessibleItem();
             case COLLAPSE -> hide();
-            case REQUEST_FOCUS -> {
-                if (isShown() && M3Accessible.canReach(this)) {
-                    M3Accessible.showDirectItem(this, this);
-                }
-            }
+            case REQUEST_FOCUS -> focusAccessibleNode();
             default -> super.executeAccessibleAction(action, parameters);
         }
+    }
+
+    /// Shows this scrim through an accessibility reveal request.
+    ///
+    /// @return `true` when the scrim can be revealed
+    final boolean showAccessibleItem() {
+        if (!M3Accessible.canReveal(this)) {
+            return false;
+        }
+        show();
+        return true;
+    }
+
+    /// Requests focus on this scrim when it is visible and reachable.
+    ///
+    /// @return `true` when this scrim accepted focus
+    final boolean focusAccessibleNode() {
+        return isShown() && M3Accessible.canReach(this) && M3Accessible.showDirectItem(this, this);
     }
 
     /// Handles keyboard activation for focused scrims.

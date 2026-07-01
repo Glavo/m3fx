@@ -5,6 +5,7 @@ package org.glavo.m3fx.skins;
 
 import javafx.beans.InvalidationListener;
 import javafx.collections.ListChangeListener;
+import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
@@ -56,6 +57,8 @@ public final class M3FormSectionSkin extends SkinBase<M3FormSection> {
         header.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         content.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
 
+        titleLabel.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+        supportingLabel.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
         titleLabel.setWrapText(true);
         supportingLabel.setWrapText(true);
         header.setMaxWidth(Double.MAX_VALUE);

@@ -84,6 +84,7 @@ tasks.withType<Javadoc> {
             "https://javadoc.io/doc/org.glavo/MonetFX/0.4.0/"
         )
         it.addBooleanOption("html5", true)
+        it.addBooleanOption("Werror", true)
         it.addStringOption("Xdoclint:none", "-quiet")
 
         it.tags!!.addAll(

@@ -298,14 +298,7 @@ public class M3FabMenu extends Control {
             }
             case SHOW_ITEM -> showAccessibleItem(parameters);
             case COLLAPSE -> hide();
-            case REQUEST_FOCUS -> {
-                if (!M3Accessible.canReach(this)) {
-                    return;
-                }
-                if (M3Accessible.showItem(this, accessibleFocusNode())) {
-                    notifyFocusNodeChanged();
-                }
-            }
+            case REQUEST_FOCUS -> focusAccessibleNode();
             default -> super.executeAccessibleAction(action, parameters);
         }
     }
@@ -316,6 +309,7 @@ public class M3FabMenu extends Control {
         M3ControlStyles.add(actions, ACTIONS_STYLE_CLASS);
         M3ControlStyles.add(toggleButton, TOGGLE_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TOOL_BAR);
+        M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
         actions.getChildren().addListener(actionsListener);
         addEventHandler(ActionEvent.ACTION, this::handleActionItemAction);
         toggleButton.addEventHandler(ActionEvent.ACTION, event -> toggle());
@@ -406,11 +400,28 @@ public class M3FabMenu extends Control {
         return M3Accessible.focusTarget(targets.get(currentIndex));
     }
 
+    /// Requests focus on the current action or toggle target.
+    ///
+    /// @return `true` when the target accepted focus
+    final boolean focusAccessibleNode() {
+        if (!M3Accessible.canReach(this)) {
+            return false;
+        }
+        if (M3Accessible.showItem(this, accessibleFocusNode())) {
+            notifyFocusNodeChanged();
+            return true;
+        }
+        return false;
+    }
+
     /// Shows the action menu and focuses the requested action, preserving a currently focused action by default.
-    private void showAccessibleItem(Object... parameters) {
+    ///
+    /// @param parameters optional accessibility target parameters
+    /// @return `true` when focus moved to the default or requested action target
+    final boolean showAccessibleItem(Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
         if (!M3Accessible.canReach(this)) {
-            return;
+            return false;
         }
         @Nullable Node target = parameters.length == 0
                 ? currentAccessibleActionFocusNode()
@@ -419,7 +430,7 @@ public class M3FabMenu extends Control {
                 && target == null
                 && containsNestedAccessibleActionTarget(parameters);
         if (parameters.length > 0 && target == null && !hasNestedTarget) {
-            return;
+            return false;
         }
         show();
         if (parameters.length == 0 && target == null) {
@@ -434,6 +445,7 @@ public class M3FabMenu extends Control {
         if (shown) {
             notifyFocusNodeChanged();
         }
+        return shown;
     }
 
     /// Returns the focused action-owned external popup target or the focused action item itself.

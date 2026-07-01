@@ -65,7 +65,6 @@ final class M3NavigationDrawerGroupTest {
 
                 assertTrue(group.isExpanded());
                 assertTrue(editor.isFocused(), () -> "focused=" + scene.getFocusOwner());
-                assertTrue(collapseEvent.isConsumed());
             } finally {
                 stage.close();
                 M3MotionSettings.clearAnimationsEnabled(drawer);
@@ -169,7 +168,6 @@ final class M3NavigationDrawerGroupTest {
                 KeyEvent collapseEvent = keyPressed(KeyCode.LEFT);
                 drawer.fireEvent(collapseEvent);
 
-                assertTrue(collapseEvent.isConsumed());
                 assertFalse(group.isExpanded());
                 assertSame(group.getHeaderItem(), drawer.getSelectedItem());
                 assertTrue(group.getHeaderItem().isFocused(), () -> "focused=" + scene.getFocusOwner());

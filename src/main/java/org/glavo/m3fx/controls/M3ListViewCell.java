@@ -102,7 +102,7 @@ public class M3ListViewCell<T> extends IndexedCell<T> {
             clearContent();
             return;
         }
-        if (getScene() == null || !isListViewSceneShowing()) {
+        if (!isCellSceneShowing()) {
             return;
         }
 
@@ -188,9 +188,9 @@ public class M3ListViewCell<T> extends IndexedCell<T> {
         itemNode.setStyle(baseStyleValue instanceof String baseStyle ? baseStyle : "");
     }
 
-    /// Returns whether the owning list view is in a scene whose window is still visible.
-    private boolean isListViewSceneShowing() {
-        @Nullable Scene scene = getListView().getScene();
+    /// Returns whether this cell is in a scene whose window is still visible.
+    private boolean isCellSceneShowing() {
+        @Nullable Scene scene = getScene();
         if (scene == null) {
             return false;
         }

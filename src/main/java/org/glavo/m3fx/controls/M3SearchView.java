@@ -380,6 +380,7 @@ public class M3SearchView extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
+        M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleResult);
         resultsBox.getStyleClass().add(RESULTS_STYLE_CLASS);
         searchBar.activeProperty().addListener((observable, oldValue, newValue) -> {
             boolean restoreSearchBarFocus = !newValue && isFocusInsideResults();
@@ -450,28 +451,29 @@ public class M3SearchView extends Control {
     }
 
     /// Shows and focuses the result referenced by accessibility action parameters.
-    private void showAccessibleResult(Object... parameters) {
+    ///
+    /// @param parameters optional accessibility target parameters
+    /// @return `true` when focus moved to the requested result or default target
+    final boolean showAccessibleResult(Object... parameters) {
         if (!M3Accessible.canReach(this)) {
-            return;
+            return false;
         }
         @Nullable Node currentFocusNode = currentDefaultShowItemFocusNode();
         activate();
         if (parameters.length == 0) {
             if (currentFocusNode != null && M3Accessible.showItem(this, currentFocusNode)) {
                 notifyFocusNodeChanged();
-                return;
+                return true;
             }
-            if (!focusFirstResult()) {
-                focusEditor();
-            }
-            return;
+            return focusFirstResult() || focusEditor();
         }
 
         if (M3Accessible.containsAccessibleActionTarget(searchBar, parameters)) {
             if (M3Accessible.showAccessibleActionTarget(this, searchBar, parameters)) {
                 notifyFocusNodeChanged();
+                return true;
             }
-            return;
+            return false;
         }
 
         @Nullable Node focusOwnerBefore = getScene() == null ? null : getScene().getFocusOwner();
@@ -481,12 +483,13 @@ public class M3SearchView extends Control {
                 && getScene().getFocusOwner() == focusOwnerBefore
                 && currentFocusNode() == null
                 && M3Accessible.canReach(getEditor())) {
-            focusEditor();
-            return;
+            return focusEditor();
         }
         if (shown) {
             notifyFocusNodeChanged();
+            return true;
         }
+        return false;
     }
 
     /// Focuses the next result relative to the current focus owner.
@@ -693,15 +696,19 @@ public class M3SearchView extends Control {
     }
 
     /// Focuses the current accessibility focus node, or the embedded editor when focus is outside this search view.
-    private void focusAccessibleNode() {
+    ///
+    /// @return `true` when the target accepted focus
+    final boolean focusAccessibleNode() {
         if (!M3Accessible.canReach(this)) {
-            return;
+            return false;
         }
         @Nullable Node focusNode = currentFocusNode();
         activate();
         if (M3Accessible.showItem(this, focusNode == null ? getEditor() : focusNode)) {
             notifyFocusNodeChanged();
+            return true;
         }
+        return false;
     }
 
     /// Returns the current focused child target, or `null` when focus is outside this search view.
@@ -786,10 +793,14 @@ public class M3SearchView extends Control {
     }
 
     /// Moves focus to the embedded search editor and reveals it through this search view.
-    private void focusEditor() {
+    ///
+    /// @return `true` when the editor accepted focus
+    private boolean focusEditor() {
         if (M3Accessible.canReach(getEditor()) && M3Accessible.showItem(this, getEditor())) {
             notifyFocusNodeChanged();
+            return true;
         }
+        return false;
     }
 
     /// Moves focus to the search bar container and reveals it through this search view.

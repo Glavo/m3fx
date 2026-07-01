@@ -656,6 +656,7 @@ public class M3ListView<T> extends Control {
         M3PopupStyles.addFallbackRootStyleClass(this);
         M3PopupStyles.addStylesheet(this, M3Stylesheets.fallbackStylesheet());
         setAccessibleRole(AccessibleRole.LIST_VIEW);
+        M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
         setFocusTraversable(true);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         addEventHandler(KeyEvent.KEY_TYPED, this::handleTypeAheadKeyTyped);
@@ -864,15 +865,17 @@ public class M3ListView<T> extends Control {
     }
 
     /// Moves focus to an active row-owned popup target, focused row, selected row, or first row for accessibility clients.
-    private void focusAccessibleNode() {
+    ///
+    /// @return `true` when a focus target was found and focus was requested
+    final boolean focusAccessibleNode() {
         @Nullable Node externalFocus = currentVisibleExternalFocusNode();
         if (externalFocus != null && M3Accessible.showItem(this, externalFocus)) {
-            return;
+            return true;
         }
 
         @Nullable Node currentFocus = currentVisibleFocusNode();
         if (currentFocus != null && M3Accessible.showItem(this, currentFocus)) {
-            return;
+            return true;
         }
 
         int index = focusedIndex.get();
@@ -884,9 +887,9 @@ public class M3ListView<T> extends Control {
         }
         if (index >= 0) {
             focusIndex(index);
-        } else {
-            M3Accessible.showDirectItem(this, this);
+            return true;
         }
+        return M3Accessible.showDirectItem(this, this);
     }
 
     /// Returns an active external popup focus node exposed by an attached visible row.
@@ -939,10 +942,12 @@ public class M3ListView<T> extends Control {
     }
 
     /// Scrolls the item referenced by accessibility parameters into view.
-    private void showAccessibleItem(Object... parameters) {
+    ///
+    /// @param parameters optional accessibility target parameters
+    /// @return `true` when a row target was focused or a nested reveal request was accepted
+    final boolean showAccessibleItem(Object... parameters) {
         if (parameters.length == 0) {
-            focusAccessibleNode();
-            return;
+            return focusAccessibleNode();
         }
 
         @Nullable Node requestedNode = firstNodeParameter(parameters);
@@ -951,25 +956,20 @@ public class M3ListView<T> extends Control {
             if (requestedIndex >= 0) {
                 if (visibleNodeIndex(requestedNode) == requestedIndex) {
                     updateFocusedIndexForAttachedNode(requestedIndex);
-                    M3Accessible.showItem(this, requestedNode);
-                } else {
-                    focusAccessibleIndex(requestedIndex);
-                    showMaterializedOrDeferAccessibleActionTarget(requestedIndex, parameters);
+                    return M3Accessible.showItem(this, requestedNode);
                 }
-                return;
+                focusAccessibleIndex(requestedIndex);
+                return showMaterializedOrDeferAccessibleActionTarget(requestedIndex, parameters);
             }
         }
 
         int index = firstSelectionIndex(parameters);
         if (index >= 0) {
             focusAccessibleIndex(index);
-            showMaterializedOrDeferAccessibleActionTarget(index, parameters);
-            return;
+            return showMaterializedOrDeferAccessibleActionTarget(index, parameters);
         }
 
-        if (showVisibleAccessibleActionTarget(parameters)) {
-            return;
-        }
+        return showVisibleAccessibleActionTarget(parameters);
     }
 
     /// Moves accessibility focus to one row using synchronous scrolling so explicit nested targets are materialized.
@@ -998,15 +998,18 @@ public class M3ListView<T> extends Control {
     }
 
     /// Delegates an explicit reveal request now, or retries after the virtualized row is attached.
-    private void showMaterializedOrDeferAccessibleActionTarget(int index, Object... parameters) {
+    ///
+    /// @return `true` when the row target was handled immediately or queued for deferred reveal
+    private boolean showMaterializedOrDeferAccessibleActionTarget(int index, Object... parameters) {
         if (showMaterializedAccessibleActionTarget(index, parameters) || !hasNonIndexRevealParameter(parameters)) {
-            return;
+            return true;
         }
 
         pendingAccessibleRevealIndex = index;
         pendingAccessibleRevealParameters = parameters.clone();
         pendingAccessibleRevealRetries = 8;
         completePendingAccessibleReveal();
+        return true;
     }
 
     /// Delegates an explicit reveal request after a virtualized row has been synchronously materialized.

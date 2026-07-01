@@ -3,9 +3,12 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.application.Platform;
 import javafx.geometry.Bounds;
 import javafx.geometry.NodeOrientation;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.input.KeyCode;
@@ -14,8 +17,12 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+import javafx.stage.Window;
 import org.glavo.m3fx.FxTestUtils;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -32,6 +39,19 @@ final class M3FocusTraversalTest {
     @BeforeAll
     static void startToolkit() throws InterruptedException {
         FxTestUtils.startToolkit();
+        Platform.setImplicitExit(false);
+    }
+
+    /// Closes real windows created by focus traversal tests.
+    @AfterEach
+    void closeStages() {
+        FxTestUtils.runOnFxThread(() -> {
+            for (Window window : List.copyOf(Window.getWindows())) {
+                if (window instanceof Stage stage) {
+                    stage.close();
+                }
+            }
+        });
     }
 
     /// Verifies directional focus traversal reveals a lower target inside the enclosing scroll pane.
@@ -49,7 +69,7 @@ final class M3FocusTraversalTest {
             scrollPane.setFitToWidth(true);
             scrollPane.setPrefSize(120.0, 48.0);
 
-            new Scene(scrollPane, 120.0, 48.0);
+            show(scrollPane, 120.0, 48.0);
             scrollPane.applyCss();
             scrollPane.resize(120.0, 48.0);
             scrollPane.layout();
@@ -98,7 +118,7 @@ final class M3FocusTraversalTest {
             M3Button next = new M3Button("Next");
             VBox owner = new VBox(editor, next);
 
-            new Scene(owner, 160.0, 80.0);
+            show(owner, 160.0, 80.0);
             owner.applyCss();
             owner.layout();
             editor.requestFocus();
@@ -124,7 +144,7 @@ final class M3FocusTraversalTest {
             M3Button next = new M3Button("Next");
             VBox owner = new VBox(editor, next);
 
-            new Scene(owner, 160.0, 80.0);
+            show(owner, 160.0, 80.0);
             owner.applyCss();
             owner.layout();
             editor.requestFocus();
@@ -147,20 +167,48 @@ final class M3FocusTraversalTest {
     void presetHandoffConsumesOnlyAfterSuccessfulFocusTransfer() {
         FxTestUtils.runOnFxThread(() -> {
             VBox presetList = new VBox();
+            presetList.setFocusTraversable(true);
             Pane owner = new Pane(presetList);
             boolean[] focusAccepted = {false};
             M3PresetNavigation.install(presetList, owner, () -> focusAccepted[0]);
+            show(owner, 160.0, 80.0);
+            presetList.requestFocus();
 
-            KeyEvent rejected = keyEvent(KeyCode.RIGHT);
+            KeyEvent rejected = targetedKeyEvent(KeyCode.RIGHT, presetList);
             presetList.fireEvent(rejected);
 
             assertFalse(rejected.isConsumed());
 
             focusAccepted[0] = true;
-            KeyEvent accepted = keyEvent(KeyCode.RIGHT);
+            KeyEvent accepted = targetedKeyEvent(KeyCode.RIGHT, presetList);
             presetList.fireEvent(accepted);
 
             assertTrue(accepted.isConsumed());
+        });
+    }
+
+    /// Verifies preset-to-picker handoff mirrors the logical handoff key in right-to-left layouts.
+    @Test
+    void presetHandoffMirrorsRightToLeftDirection() {
+        FxTestUtils.runOnFxThread(() -> {
+            VBox presetList = new VBox();
+            presetList.setFocusTraversable(true);
+            Pane owner = new Pane(presetList);
+            owner.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            boolean[] focusAccepted = {true};
+            M3PresetNavigation.install(presetList, owner, () -> focusAccepted[0]);
+            show(owner, 160.0, 80.0);
+            presetList.requestFocus();
+
+            KeyEvent wrongDirection = targetedKeyEvent(KeyCode.RIGHT, presetList);
+            presetList.fireEvent(wrongDirection);
+
+            assertFalse(wrongDirection.isConsumed());
+
+            KeyEvent logicalHandoff = targetedKeyEvent(KeyCode.LEFT, presetList);
+            presetList.fireEvent(logicalHandoff);
+
+            assertTrue(logicalHandoff.isConsumed());
         });
     }
 
@@ -174,7 +222,7 @@ final class M3FocusTraversalTest {
             HBox owner = new HBox(first, second, third);
             owner.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
 
-            new Scene(owner, 240.0, 60.0);
+            show(owner, 240.0, 60.0);
             owner.applyCss();
             owner.layout();
             second.requestFocus();
@@ -211,7 +259,7 @@ final class M3FocusTraversalTest {
             owner.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
             owner.setFocusTraversable(true);
 
-            new Scene(owner, 240.0, 60.0);
+            show(owner, 240.0, 60.0);
             owner.applyCss();
             owner.layout();
 
@@ -251,7 +299,7 @@ final class M3FocusTraversalTest {
             scrollPane.setFitToWidth(true);
             scrollPane.setPrefSize(120.0, 48.0);
 
-            new Scene(scrollPane, 120.0, 48.0);
+            show(scrollPane, 120.0, 48.0);
             scrollPane.applyCss();
             scrollPane.resize(120.0, 48.0);
             scrollPane.layout();
@@ -303,7 +351,7 @@ final class M3FocusTraversalTest {
             scrollPane.setFitToWidth(true);
             scrollPane.setPrefSize(120.0, 48.0);
 
-            new Scene(scrollPane, 120.0, 48.0);
+            show(scrollPane, 120.0, 48.0);
             scrollPane.applyCss();
             scrollPane.resize(120.0, 48.0);
             scrollPane.layout();
@@ -343,7 +391,7 @@ final class M3FocusTraversalTest {
             scrollPane.setFitToWidth(true);
             scrollPane.setPrefSize(120.0, 48.0);
 
-            new Scene(scrollPane, 120.0, 48.0);
+            show(scrollPane, 120.0, 48.0);
             scrollPane.applyCss();
             scrollPane.resize(120.0, 48.0);
             scrollPane.layout();
@@ -379,7 +427,7 @@ final class M3FocusTraversalTest {
             VBox owner = new VBox(first, second, hidden, third);
             hidden.setVisible(false);
 
-            new Scene(owner, 160.0, 120.0);
+            show(owner, 160.0, 120.0);
             owner.applyCss();
             owner.layout();
             second.requestFocus();
@@ -411,7 +459,7 @@ final class M3FocusTraversalTest {
             VBox owner = new VBox(hidden, first, second, third);
             hidden.setVisible(false);
 
-            new Scene(owner, 160.0, 120.0);
+            show(owner, 160.0, 120.0);
             owner.applyCss();
             owner.layout();
 
@@ -440,7 +488,7 @@ final class M3FocusTraversalTest {
             FocusRow second = new FocusRow();
             VBox owner = new VBox(first, anchor, second);
 
-            new Scene(owner, 160.0, 120.0);
+            show(owner, 160.0, 120.0);
             owner.applyCss();
             owner.layout();
 
@@ -459,6 +507,46 @@ final class M3FocusTraversalTest {
             assertTrue(second.isFocused());
             assertTrue(event.isConsumed());
         });
+    }
+
+    /// Verifies indexed accessibility children take part in subtree focus traversal before parent children repeat.
+    @Test
+    void reachableTreeTraversalUsesIndexedAccessibilityChildren() {
+        FxTestUtils.runOnFxThread(() -> {
+            FocusRow first = new FocusRow();
+            FocusRow indexedChild = new FocusRow();
+            IndexedFocusContainer indexedContainer = new IndexedFocusContainer(indexedChild);
+            FocusRow after = new FocusRow();
+            VBox owner = new VBox(first, indexedContainer, after);
+
+            show(owner, 160.0, 120.0);
+            first.requestFocus();
+
+            KeyEvent event = keyEvent(KeyCode.DOWN);
+            assertTrue(M3FocusTraversal.handleDirectionalKeyFocus(
+                    owner,
+                    event,
+                    M3FocusTraversal.focusTargetsInReachableTree(owner),
+                    false,
+                    true
+            ));
+
+            assertTrue(indexedChild.isFocused());
+            assertFalse(indexedContainer.isFocused());
+            assertFalse(after.isFocused());
+            assertTrue(event.isConsumed());
+        });
+    }
+
+    /// Shows the supplied root in a real JavaFX window and performs an initial layout pass.
+    private static Scene show(Parent root, double width, double height) {
+        Stage stage = new Stage();
+        Scene scene = new Scene(root, width, height);
+        stage.setScene(scene);
+        stage.show();
+        root.applyCss();
+        root.layout();
+        return scene;
     }
 
     /// Verifies that the target row is inside the current scroll pane viewport.
@@ -502,6 +590,47 @@ final class M3FocusTraversalTest {
                 false,
                 false
         );
+    }
+
+    /// Focusable container row that exposes one indexed accessibility child.
+    @NotNullByDefault
+    private static final class IndexedFocusContainer extends Pane {
+        /// The preferred height of one row.
+        private static final double ROW_HEIGHT = 20.0;
+
+        /// The child returned from indexed accessibility queries.
+        private final Node indexedChild;
+
+        /// Creates an indexed focus container around a child node.
+        private IndexedFocusContainer(Node indexedChild) {
+            super(indexedChild);
+            this.indexedChild = indexedChild;
+            setFocusTraversable(true);
+        }
+
+        /// Computes the preferred row width.
+        @Override
+        protected double computePrefWidth(double height) {
+            return 100.0;
+        }
+
+        /// Computes the preferred row height.
+        @Override
+        protected double computePrefHeight(double width) {
+            return ROW_HEIGHT;
+        }
+
+        /// Returns indexed accessibility children for focus traversal tests.
+        @Override
+        public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+            return switch (attribute) {
+                case ITEM_COUNT -> 1;
+                case ITEM_AT_INDEX -> parameters.length > 0
+                        && parameters[0] instanceof Number number
+                        && number.intValue() == 0 ? indexedChild : null;
+                default -> super.queryAccessibleAttribute(attribute, parameters);
+            };
+        }
     }
 
     /// Focusable container row with a stable preferred size.

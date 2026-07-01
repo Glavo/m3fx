@@ -77,7 +77,7 @@ public class M3ButtonGroup extends Control {
     private final M3AccessibleFocusNotifier focusNotifier =
             new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(this, getItems()));
 
-    /// The button group visual variant property.
+    // The button group visual variant property.
     private final ObjectProperty<M3ButtonGroupVariant> variant =
             new SimpleObjectProperty<>(this, "variant", DEFAULT_VARIANT) {
                 /// Updates variant style classes when the property changes.
@@ -93,7 +93,7 @@ public class M3ButtonGroup extends Control {
                 }
             };
 
-    /// The button group size property.
+    // The button group size property.
     private final ObjectProperty<M3ButtonGroupSize> size =
             new SimpleObjectProperty<>(this, "size", DEFAULT_SIZE) {
                 /// Updates size style classes when the property changes.
@@ -108,7 +108,7 @@ public class M3ButtonGroup extends Control {
                 }
             };
 
-    /// The styleable spacing between grouped buttons.
+    // The styleable spacing between grouped buttons.
     private @Nullable StyleableDoubleProperty spacing;
 
     /// Updates grouped button position style classes when children change.
@@ -295,17 +295,26 @@ public class M3ButtonGroup extends Control {
     }
 
     /// Requests focus on the current or first accessibility item.
-    private void focusAccessibleItem() {
+    ///
+    /// @return `true` when the target accepted focus
+    final boolean focusAccessibleItem() {
         if (M3Accessible.showCurrentOrItem(this, getItems())) {
             notifyAccessibleFocusChanged();
+            return true;
         }
+        return false;
     }
 
     /// Shows an item requested by an accessibility client.
-    private void showAccessibleItem(Object... parameters) {
+    ///
+    /// @param parameters optional accessibility target parameters
+    /// @return `true` when focus moved to the default or requested item
+    final boolean showAccessibleItem(Object... parameters) {
         if (M3Accessible.showCurrentOrItem(this, getItems(), parameters)) {
             notifyAccessibleFocusChanged();
+            return true;
         }
+        return false;
     }
 
     /// Notifies accessibility clients that the container focus target changed.
@@ -320,6 +329,7 @@ public class M3ButtonGroup extends Control {
         updateVariantStyle();
         updateSizeStyle();
         setAccessibleRole(AccessibleRole.TOOL_BAR);
+        M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleItem, this::showAccessibleItem);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         effectiveNodeOrientationProperty().addListener(effectiveNodeOrientationListener);
         getItems().addListener(childrenListener);
