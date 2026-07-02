@@ -328,6 +328,25 @@ public class M3RichTooltip extends M3Tooltip {
         return null;
     }
 
+    /// Returns whether an action row node can handle the requested interactive target.
+    @Override
+    protected boolean containsInteractiveActionTarget(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        return M3Accessible.canShowItem(null, actions.getChildren(), parameters)
+                && interactiveActionOwnerFor(parameters) != null;
+    }
+
+    /// Shows an action row node or delegates to an action-owned popup target.
+    @Override
+    protected boolean showInteractiveActionTarget(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        if (!M3Accessible.canShowItem(null, actions.getChildren(), parameters)) {
+            return false;
+        }
+        @Nullable Node action = interactiveActionOwnerFor(parameters);
+        return action != null && M3Accessible.showAccessibleActionTarget(action, parameters);
+    }
+
     /// Returns the action-row target that contains a requested node.
     @Override
     protected @Nullable Node interactiveFocusTargetFor(Node requestedNode) {
@@ -338,6 +357,17 @@ public class M3RichTooltip extends M3Tooltip {
                     return requestedNode;
                 }
                 return M3Accessible.structuralFocusTarget(action) == null ? null : action;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the action row owner that exposes one requested interactive target.
+    private @Nullable Node interactiveActionOwnerFor(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        for (Node action : actions.getChildren()) {
+            if (M3Accessible.containsAccessibleActionTarget(action, parameters)) {
+                return action;
             }
         }
         return null;

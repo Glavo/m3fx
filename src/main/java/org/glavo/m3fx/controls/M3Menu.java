@@ -21,6 +21,7 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyCode;
@@ -713,10 +714,50 @@ public class M3Menu extends Control {
         return false;
     }
 
+    /// Returns whether this menu can route an accessibility item request without changing popup or focus state.
+    final boolean canShowAccessibleItem(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        if (parameters.length == 0) {
+            return true;
+        }
+        if (containsUnrevealableMenuActionTarget(getItems(), parameters)) {
+            return false;
+        }
+        if (parameters[0] instanceof Number) {
+            @Nullable Node item = M3Accessible.itemAt(getItems(), parameters);
+            if (!canRevealMenuActionItem(item)) {
+                return false;
+            }
+            if (parameters.length == 1) {
+                return true;
+            }
+            Object[] nestedParameters = new Object[parameters.length - 1];
+            System.arraycopy(parameters, 1, nestedParameters, 0, nestedParameters.length);
+            return containsMenuActionTarget(item, nestedParameters);
+        }
+        return containsNestedAccessibleTarget(getItems(), parameters);
+    }
+
     /// Focuses the item supplied by an accessibility action parameter.
     final boolean showAccessibleItem(Object... parameters) {
         if (parameters.length == 0 && focusDefaultItem()) {
             return true;
+        }
+        if (parameters.length > 1 && parameters[0] instanceof Number) {
+            @Nullable Node indexedItem = M3Accessible.itemAt(getItems(), parameters);
+            if (indexedItem == null) {
+                return false;
+            }
+            Object[] nestedParameters = new Object[parameters.length - 1];
+            System.arraycopy(parameters, 1, nestedParameters, 0, nestedParameters.length);
+            if (indexedItem instanceof M3SubMenuItem subMenuItem && focusMenuItem(subMenuItem)) {
+                return subMenuItem.showAccessibleSubMenuItem(nestedParameters);
+            }
+            if (M3Accessible.showAccessibleActionTarget(this, indexedItem, nestedParameters)) {
+                notifyFocusNodeChanged();
+                return true;
+            }
+            return false;
         }
 
         @Nullable Node item = M3Accessible.actionItem(getItems(), parameters);
@@ -759,26 +800,174 @@ public class M3Menu extends Control {
             ObservableList<? extends Node> items,
             Object... parameters
     ) {
+        return containsNestedAccessibleTarget(items, 0, parameters);
+    }
+
+    /// Returns whether the supplied menu subtree contains an accessibility action target after an outer index prefix.
+    private static boolean containsNestedAccessibleTarget(
+            ObservableList<? extends Node> items,
+            int firstTargetParameter,
+            Object... parameters
+    ) {
         Objects.requireNonNull(items, "items");
         Objects.requireNonNull(parameters, "parameters");
-        if (parameters.length > 0 && parameters[0] instanceof Number) {
+        if (firstTargetParameter >= parameters.length || parameters[firstTargetParameter] instanceof Number) {
             return false;
         }
-        if (M3Accessible.actionItem(items, parameters) != null) {
-            return true;
-        }
-        for (Node item : items) {
-            if (M3Accessible.containsAccessibleActionTarget(item, parameters)) {
+        for (int index = firstTargetParameter; index < parameters.length; index++) {
+            if (M3Accessible.actionItem(items, parameters[index]) != null) {
                 return true;
             }
+        }
+        for (Node item : items) {
+            for (int index = firstTargetParameter; index < parameters.length; index++) {
+                if (M3Accessible.containsAccessibleActionTarget(item, parameters[index])) {
+                    return true;
+                }
+            }
             if (item instanceof M3SubMenuItem subMenuItem
-                    && containsNestedAccessibleTarget(subMenuItem.getItems(), parameters)) {
+                    && containsNestedAccessibleTarget(subMenuItem.getItems(), firstTargetParameter, parameters)) {
                 return true;
             }
         }
         return false;
     }
 
+    /// Returns whether accessibility parameters target a menu node that cannot become reachable when popups open.
+    private static boolean containsUnrevealableMenuActionTarget(
+            ObservableList<? extends Node> items,
+            Object... parameters
+    ) {
+        Objects.requireNonNull(items, "items");
+        Objects.requireNonNull(parameters, "parameters");
+        for (Object parameter : parameters) {
+            if (containsUnrevealableMenuActionTarget(items, parameter)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// Returns whether one accessibility parameter targets an unreachable node in a menu tree.
+    private static boolean containsUnrevealableMenuActionTarget(
+            ObservableList<? extends Node> items,
+            @Nullable Object parameter
+    ) {
+        if (parameter instanceof Iterable<?> values) {
+            for (Object value : values) {
+                if (containsUnrevealableMenuActionTarget(items, value)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (parameter instanceof Object[] values) {
+            for (Object value : values) {
+                if (containsUnrevealableMenuActionTarget(items, value)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        for (Node item : items) {
+            if (containsUnrevealableMenuActionTarget(item, parameter)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// Returns whether one menu item owns an unreachable requested target.
+    private static boolean containsUnrevealableMenuActionTarget(Node item, @Nullable Object parameter) {
+        if (!canRevealMenuActionItem(item) && containsMenuActionTarget(item, parameter)) {
+            return true;
+        }
+        if (parameter instanceof Node target && M3Accessible.containsNode(item, target)) {
+            return !canRevealMenuActionNode(item, target);
+        }
+        if (item instanceof M3SubMenuItem subMenuItem) {
+            return containsUnrevealableMenuActionTarget(subMenuItem.getItems(), parameter);
+        }
+        return false;
+    }
+
+    /// Returns whether one menu item or submenu tree contains any accessibility target.
+    private static boolean containsMenuActionTarget(Node item, Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        for (Object parameter : parameters) {
+            if (containsMenuActionTarget(item, parameter)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    /// Returns whether one menu item or submenu tree contains an accessibility target.
+    private static boolean containsMenuActionTarget(Node item, @Nullable Object parameter) {
+        if (parameter instanceof Node target) {
+            if (item == target || M3Accessible.containsNode(item, target)) {
+                return true;
+            }
+            return item instanceof M3SubMenuItem subMenuItem
+                    && containsMenuActionTarget(subMenuItem.getItems(), target);
+        }
+        if (parameter instanceof Iterable<?> values) {
+            for (Object value : values) {
+                if (containsMenuActionTarget(item, value)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (parameter instanceof Object[] values) {
+            for (Object value : values) {
+                if (containsMenuActionTarget(item, value)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        return M3Accessible.containsAccessibleActionTarget(item, parameter)
+                || item instanceof M3SubMenuItem subMenuItem
+                && containsMenuActionTarget(subMenuItem.getItems(), parameter);
+    }
+
+    /// Returns whether a menu tree contains an accessibility target.
+    private static boolean containsMenuActionTarget(
+            ObservableList<? extends Node> items,
+            @Nullable Object parameter
+    ) {
+        for (Node item : items) {
+            if (containsMenuActionTarget(item, parameter)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// Returns whether a menu item can become reachable when its owner popup is shown.
+    private static boolean canRevealMenuActionItem(@Nullable Node item) {
+        return item != null && item.isVisible() && !item.isDisabled();
+    }
+
+    /// Returns whether a physical descendant target can become reachable after the menu item is shown.
+    private static boolean canRevealMenuActionNode(Node item, Node target) {
+        if (!canRevealMenuActionItem(item) || !target.isVisible() || target.isDisabled()) {
+            return false;
+        }
+        if (item == target) {
+            return true;
+        }
+
+        @Nullable Parent parent = target.getParent();
+        while (parent != null && parent != item) {
+            if (!parent.isVisible() || parent.isDisabled()) {
+                return false;
+            }
+            parent = parent.getParent();
+        }
+        return parent == item;
+    }
     /// Installs action and selected-state listeners on a menu item.
     private void installItem(M3MenuItem item) {
         updateChildColorStylePseudoClass(item);

@@ -38,7 +38,7 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListViewCell<T>> {
     public M3ListViewCellSkin(M3ListViewCell<T> control) {
         super(control);
         control.graphicProperty().addListener(graphicListener);
-        control.nodeOrientationProperty().addListener(nodeOrientationInvalidation);
+        control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
         updateGraphic(control.getGraphic());
     }
 
@@ -47,7 +47,7 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListViewCell<T>> {
     public void dispose() {
         M3ListViewCell<T> cell = getSkinnable();
         cell.graphicProperty().removeListener(graphicListener);
-        cell.nodeOrientationProperty().removeListener(nodeOrientationInvalidation);
+        cell.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
         getChildren().clear();
         graphic = null;
         super.dispose();
@@ -185,11 +185,7 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListViewCell<T>> {
 
     /// Returns the physical alignment for the current logical visual start edge.
     private HPos horizontalAlignment() {
-        return switch (getSkinnable().getNodeOrientation()) {
-            case RIGHT_TO_LEFT -> HPos.RIGHT;
-            case LEFT_TO_RIGHT -> HPos.LEFT;
-            default -> M3NodeLayout.logicalStartHorizontalAlignment(getSkinnable());
-        };
+        return M3NodeLayout.logicalStartHorizontalAlignment(getSkinnable());
     }
 
     /// Replaces the rendered row node owned by this skin.

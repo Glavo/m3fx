@@ -148,6 +148,7 @@ import org.glavo.m3fx.controls.M3Toolbar;
 import org.glavo.m3fx.controls.M3ToolbarVariant;
 import org.glavo.m3fx.controls.M3TopAppBar;
 import org.glavo.m3fx.controls.M3TopAppBarVariant;
+import org.glavo.m3fx.controls.M3ValidationSummary;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -195,6 +196,7 @@ final class M3FXDemoVisualSmokeTest {
             "App Bars",
             "Bottom App Bars",
             "Badges",
+            "All Buttons",
             "Button Groups",
             "Buttons",
             "Extended FABs",
@@ -248,8 +250,9 @@ final class M3FXDemoVisualSmokeTest {
     private static final @Unmodifiable Map<String, String> EXPECTED_MATERIAL_URLS = Map.ofEntries(
             Map.entry("Components Overview", DemoMaterialDocs.COMPONENTS),
             Map.entry("App Bars", DemoMaterialDocs.APP_BARS),
-            Map.entry("Bottom App Bars", DemoMaterialDocs.BOTTOM_APP_BARS),
+            Map.entry("Bottom App Bars", DemoMaterialDocs.TOOLBARS),
             Map.entry("Badges", DemoMaterialDocs.BADGES),
+            Map.entry("All Buttons", DemoMaterialDocs.ALL_BUTTONS),
             Map.entry("Button Groups", DemoMaterialDocs.BUTTON_GROUPS),
             Map.entry("Buttons", DemoMaterialDocs.BUTTONS),
             Map.entry("Extended FABs", DemoMaterialDocs.EXTENDED_FAB),
@@ -299,6 +302,7 @@ final class M3FXDemoVisualSmokeTest {
             Map.entry("App Bars", M3FXDemoVisualSmokeTest::assertAppBarsPageVisualState),
             Map.entry("Bottom App Bars", M3FXDemoVisualSmokeTest::assertBottomAppBarsPageVisualState),
             Map.entry("Badges", M3FXDemoVisualSmokeTest::assertBadgesPageVisualState),
+            Map.entry("All Buttons", M3FXDemoVisualSmokeTest::assertAllButtonsPageVisualState),
             Map.entry("Button Groups", M3FXDemoVisualSmokeTest::assertButtonGroupsPageVisualState),
             Map.entry("Buttons", M3FXDemoVisualSmokeTest::assertButtonsPageVisualState),
             Map.entry("Extended FABs", M3FXDemoVisualSmokeTest::assertExtendedFabsPageVisualState),
@@ -358,6 +362,7 @@ final class M3FXDemoVisualSmokeTest {
             Map.entry("Avatars", 1),
             Map.entry("Banners", 2),
             Map.entry("Bottom Sheets", 3),
+            Map.entry("All Buttons", 10),
             Map.entry("Chips", 1),
             Map.entry("FAB Menu", 6),
             Map.entry("Floating Action Buttons", 3),
@@ -722,6 +727,8 @@ final class M3FXDemoVisualSmokeTest {
         assertEquals("m3.material.io", uri.getHost(), title + " Material documentation URL host");
         assertTrue(uri.getPath().startsWith("/"), title + " Material documentation URL path");
         assertFalse(uri.getPath().isBlank(), title + " Material documentation URL blank path");
+        assertFalse(uri.getPath().contains("/components/bottom-app-bar/"),
+                title + " Material documentation URL should use the current toolbar guidance");
         assertNull(uri.getRawQuery(), title + " Material documentation URL query");
         assertFalse(url.contains(" "), title + " Material documentation URL whitespace");
     }
@@ -1156,6 +1163,12 @@ final class M3FXDemoVisualSmokeTest {
 
         try {
             DemoFxTestUtils.assertNoCssWarnings(() -> {
+                assertButtonFamilyDemoPage(
+                        appReference,
+                        sceneReference,
+                        "All Buttons",
+                        M3FXDemoVisualSmokeTest::assertAllButtonsPageVisualState
+                );
                 assertButtonFamilyDemoPage(
                         appReference,
                         sceneReference,
@@ -1963,6 +1976,88 @@ final class M3FXDemoVisualSmokeTest {
         }
     }
 
+    /// Verifies that the Forms demo supports the real validation-summary workflow.
+    @Test
+    void formsPageValidationWorkflowFocusesAndClearsSummary() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
+        AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
+
+        runOnFxThread(() -> {
+            Stage stage = new Stage();
+            M3FXDemoApp app = new M3FXDemoApp();
+            app.start(stage);
+            stage.setWidth(1280.0);
+            stage.setHeight(900.0);
+
+            stageReference.set(stage);
+            appReference.set(app);
+            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+        });
+
+        try {
+            DemoFxTestUtils.assertNoCssWarnings(() -> runOnFxThread(() -> {
+                M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+                Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                app.showPageForTesting("Forms");
+                scene.getRoot().applyCss();
+                scene.getRoot().layout();
+
+                Node page = currentDemoPage(scene, "Forms");
+                M3ValidationSummary summary = visibleNodesOfType(page, M3ValidationSummary.class).get(0);
+                M3TextInputLayout displayNameLayout = requireTextInputLayout(
+                        visibleNodesOfType(page, M3TextInputLayout.class),
+                        "",
+                        "Display name"
+                );
+                TextInputControl displayName = Objects.requireNonNull(displayNameLayout.getInput(), "display name input");
+                Node summaryItem = requireVisibleStyledDescendant(
+                        summary,
+                        M3ValidationSummary.ITEM_STYLE_CLASS,
+                        "forms validation summary item"
+                );
+                M3Button clearButton = Objects.requireNonNull(
+                        firstVisibleButtonWithText(page, "Clear validation"),
+                        "Clear validation button"
+                );
+                M3Button validateButton = Objects.requireNonNull(
+                        firstVisibleButtonWithText(page, "Validate form"),
+                        "Validate form button"
+                );
+
+
+                assertTrue(summary.isShowingSummary(), "Forms validation summary should start visible");
+                assertEquals(1, summary.getInvalidInputCount(), "Forms page should start with one invalid field");
+                assertFalse(clearButton.isDisabled(), "Clear validation should be enabled after initial validation");
+
+                firePrimaryMouseEvent(summaryItem, MouseEvent.MOUSE_PRESSED, true);
+                firePrimaryMouseEvent(summaryItem, MouseEvent.MOUSE_RELEASED, false);
+                assertTrue(displayName.isFocused(), "Clicking the summary item should focus Display name");
+
+                clearButton.fire();
+                scene.getRoot().applyCss();
+                scene.getRoot().layout();
+                assertFalse(summary.isShowingSummary(), "Clear validation should hide the invalid summary");
+                assertEquals(0, summary.getInvalidInputCount(), "Clear validation should remove invalid rows");
+                assertTrue(clearButton.isDisabled(), "Clear validation should disable after validation is cleared");
+
+                validateButton.fire();
+                scene.getRoot().applyCss();
+                scene.getRoot().layout();
+                assertTrue(summary.isShowingSummary(), "Validate form should restore the invalid summary");
+                assertEquals(1, summary.getInvalidInputCount(), "Validate form should restore one invalid row");
+                assertTrue(displayName.isFocused(), "Validate form should focus the first invalid field");
+                assertVisibleText(scene.getRoot(), "Display name is required", "Forms validation workflow");
+            }));
+        } finally {
+            runOnFxThread(() -> {
+                Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
     /// Verifies that the Menus page renders inline selection states and a compact nested popup stack.
     @Test
     void menusPageRendersInlineSelectionAndNestedPopupStack() throws InterruptedException {
@@ -2995,6 +3090,8 @@ final class M3FXDemoVisualSmokeTest {
             verifyTextInputClearButtonInteraction(appReference, sceneReference);
             verifyTextInputTrailingActionMouseFeedback(appReference, sceneReference);
             verifyTextInputTrailingActionRippleReleaseAnimation(appReference, sceneReference);
+            verifyValidationSummaryItemMouseFeedback(appReference, sceneReference);
+            verifyValidationSummaryItemRippleReleaseAnimation(appReference, sceneReference);
             verifyPickerFieldOpenButtonMouseFeedback(appReference, sceneReference);
             verifyPickerFieldOpenButtonRippleReleaseAnimation(appReference, sceneReference);
             verifySidebarMouseFeedback(appReference, sceneReference);
@@ -4546,6 +4643,36 @@ final class M3FXDemoVisualSmokeTest {
                 Objects.requireNonNull(normalReference.get(), "normal " + targetName + " selection snapshot"),
                 Objects.requireNonNull(selectedReference.get(), "selected " + targetName + " snapshot"),
                 targetName + " selected"
+        );
+    }
+
+    /// Verifies hover and pressed feedback on a validation summary invalid-field row.
+    private static void verifyValidationSummaryItemMouseFeedback(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifySelectionControlMouseFeedback(
+                appReference,
+                sceneReference,
+                "Forms",
+                "validation-summary-item",
+                "validation summary item",
+                root -> firstVisibleStyledDescendant(root, M3ValidationSummary.ITEM_STYLE_CLASS)
+        );
+    }
+
+    /// Verifies that validation summary row ripple release remains visible for an intermediate fade-out frame.
+    private static void verifyValidationSummaryItemRippleReleaseAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference
+    ) throws InterruptedException {
+        verifyRippleReleaseAnimation(
+                appReference,
+                sceneReference,
+                "Forms",
+                "validation-summary-item-ripple",
+                "validation summary item",
+                root -> firstVisibleStyledDescendant(root, M3ValidationSummary.ITEM_STYLE_CLASS)
         );
     }
 
@@ -11438,6 +11565,75 @@ final class M3FXDemoVisualSmokeTest {
         assertSelectionIndicatorsCentered(scene, "Switches");
     }
 
+    /// Verifies the real All Buttons demo page combines each button-family control category.
+    private static void assertAllButtonsPageVisualState(Scene scene) {
+        Parent root = scene.getRoot();
+        Node page = currentDemoPage(scene, "All Buttons");
+        assertCurrentPageTitle(scene, "All Buttons");
+        assertVisibleText(root, "Common Buttons", "All Buttons");
+        assertVisibleText(root, "Icon Buttons", "All Buttons");
+        assertVisibleText(root, "Floating Actions", "All Buttons");
+        assertVisibleText(root, "Grouped Actions", "All Buttons");
+        assertVisibleText(root, "Filled", "All Buttons");
+        assertVisibleText(root, "Tonal", "All Buttons");
+        assertVisibleText(root, "Outlined", "All Buttons");
+        assertVisibleText(root, "Text", "All Buttons");
+        assertVisibleText(root, "Elevated", "All Buttons");
+        assertVisibleText(root, "Create", "All Buttons");
+        assertVisibleText(root, "Archive", "All Buttons");
+        assertVisibleText(root, "Month", "All Buttons");
+
+        List<M3Button> buttons = visibleDemoPageButtons(page);
+        assertTrue(buttons.size() >= 11, () -> "All Buttons page should render regular, grouped, and split buttons: "
+                + buttons);
+        assertButtonVariantCount(buttons, M3ButtonVariant.FILLED, 2, "All Buttons");
+        assertTrue(buttons.stream().anyMatch(button -> button.getVariant() == M3ButtonVariant.OUTLINED),
+                "All Buttons page should include outlined actions");
+        assertTrue(buttons.stream().anyMatch(button -> button.getVariant() == M3ButtonVariant.ELEVATED),
+                "All Buttons page should include elevated actions");
+        assertEquals(1, buttons.stream().filter(Node::isDisabled).count(),
+                "All Buttons page should render one disabled regular button state");
+
+        List<M3IconButton> iconButtons = visibleNodesOfType(page, M3IconButton.class);
+        assertEquals(2, iconButtons.size(), () -> "All Buttons page should render two icon buttons: " + iconButtons);
+        assertTrue(iconButtons.stream().anyMatch(button -> button.getWidthRole() == M3IconButtonWidth.WIDE),
+                "All Buttons page should include a wide icon button sample");
+
+        List<M3IconToggleButtonGroup> toggleGroups = visibleNodesOfType(page, M3IconToggleButtonGroup.class);
+        assertEquals(1, toggleGroups.size(), () -> "All Buttons page should render one toggle group: " + toggleGroups);
+        assertEquals(3, toggleGroups.get(0).getItems().size(), "All Buttons toggle group item count");
+        assertEquals(1, toggleGroups.get(0).getSelectedButtons().size(), "All Buttons toggle group selected count");
+
+        List<M3FloatingActionButton> fabs = visibleNodesOfType(page, M3FloatingActionButton.class);
+        assertEquals(6, fabs.size(), () -> "All Buttons page should render FAB, extended FAB, and FAB menu actions: "
+                + fabs);
+        assertFloatingActionButtonVariantCount(fabs, M3FloatingActionButtonVariant.PRIMARY, 4, "All Buttons");
+        assertTrue(fabs.stream().anyMatch(button -> !Objects.toString(button.getText(), "").isBlank()),
+                "All Buttons page should include an extended FAB label");
+
+        List<M3FabMenu> fabMenus = visibleNodesOfType(page, M3FabMenu.class);
+        assertEquals(1, fabMenus.size(), () -> "All Buttons page should render one FAB menu: " + fabMenus);
+        assertTrue(fabMenus.get(0).isExpanded(), "All Buttons FAB menu should be expanded for visual coverage");
+        assertFabMenuActionsStayInsideShowcase(fabMenus.get(0));
+
+        List<M3ButtonGroup> buttonGroups = visibleNodesOfType(page, M3ButtonGroup.class);
+        assertEquals(1, buttonGroups.size(), () -> "All Buttons page should render one button group: "
+                + buttonGroups);
+        assertEquals(3, buttonGroups.get(0).getItems().size(), "All Buttons button group item count");
+        assertButtonGroupItemsInsideGroup(buttonGroups.get(0), "All Buttons button group");
+
+        List<M3SegmentedButtonGroup> segmentedGroups = visibleNodesOfType(page, M3SegmentedButtonGroup.class);
+        assertEquals(1, segmentedGroups.size(), () -> "All Buttons page should render one segmented group: "
+                + segmentedGroups);
+        assertEquals(3, segmentedGroups.get(0).getItems().size(), "All Buttons segmented group item count");
+
+        List<M3SplitButton> splitButtons = visibleNodesOfType(page, M3SplitButton.class);
+        assertEquals(1, splitButtons.size(), () -> "All Buttons page should render one split button: " + splitButtons);
+        assertEquals(3, splitButtons.get(0).getItems().size(), "All Buttons split button item count");
+        assertSplitButtonPartsInsideOwner(splitButtons.get(0));
+        assertDemoVectorIcons(page, "All Buttons", 10);
+    }
+
     /// Verifies the real Buttons demo page variant matrix and disabled state.
     private static void assertButtonsPageVisualState(Scene scene) {
         Parent root = scene.getRoot();
@@ -12566,10 +12762,16 @@ final class M3FXDemoVisualSmokeTest {
         assertVisibleText(root, "Display name", "Forms");
         assertVisibleText(root, "Email", "Forms");
         assertVisibleText(root, "Validate form", "Forms");
+        assertVisibleText(root, "Review form fields", "Forms");
+        assertVisibleText(root, "Display name is required", "Forms");
 
         List<M3FormPane> forms = visibleNodesOfType(page, M3FormPane.class);
         assertEquals(1, forms.size(), "Forms page should render one form pane");
         assertFormPaneDemoGeometry(forms.get(0));
+
+        List<M3ValidationSummary> summaries = visibleNodesOfType(page, M3ValidationSummary.class);
+        assertEquals(1, summaries.size(), "Forms page should render one validation summary");
+        assertFormValidationSummaryDemoState(summaries.get(0));
 
         List<M3FormSection> sections = visibleNodesOfType(page, M3FormSection.class);
         assertEquals(3, sections.size(), () -> "Forms page should render three sections, found " + sections.size());
@@ -12589,6 +12791,25 @@ final class M3FXDemoVisualSmokeTest {
                 "Forms page should render a selected switch");
         assertTrue(visibleNodesOfType(page, M3CheckBox.class).stream().anyMatch(M3CheckBox::isIndeterminate),
                 "Forms page should render an indeterminate checkbox");
+    }
+
+    /// Verifies that the form validation summary renders an invalid field row with Material feedback layers.
+    private static void assertFormValidationSummaryDemoState(M3ValidationSummary summary) {
+        assertTrue(summary.isShowingSummary(), "Forms page validation summary should be visible by default");
+        assertEquals(1, summary.getInvalidInputCount(), "Forms page should start with one invalid field");
+        assertFalse(summary.isShowWhenValid(), "Forms page should start with invalid-state summary content");
+        Node item = requireVisibleStyledDescendant(
+                summary,
+                M3ValidationSummary.ITEM_STYLE_CLASS,
+                "forms validation summary item"
+        );
+        requireVisibleStyledDescendant(item, "m3-state-layer-container", "forms validation item state layer");
+        assertNotNull(item.lookup("." + RIPPLE_STYLE_CLASS), "forms validation item ripple node");
+        Bounds summaryBounds = summary.localToScene(summary.getBoundsInLocal());
+        Bounds itemBounds = item.localToScene(item.getBoundsInLocal());
+        assertTrue(containsBoundsWithTolerance(summaryBounds, itemBounds, CONTROL_EDGE_TOLERANCE),
+                () -> "validation item should stay inside summary: summary="
+                        + summaryBounds + ", item=" + itemBounds);
     }
 
     /// Verifies that the form pane keeps all top-level items inside its material surface.

@@ -12,7 +12,9 @@ import javafx.scene.Scene;
 import javafx.scene.control.ButtonType;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.theme.M3Theme;
@@ -28,6 +30,7 @@ import java.util.Objects;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -655,6 +658,118 @@ final class M3MixedPopupFocusTest {
         });
     }
 
+    /// Verifies that text input layouts reject disabled trailing tooltip actions without focusing the input.
+    @Test
+    void textInputLayoutRejectsDisabledTrailingRichTooltipActionTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3Button outside = new M3Button("Outside");
+            M3TextField field = new M3TextField("M3FX");
+            M3Button helpButton = new M3Button("Help");
+            M3Button tooltipAction = new M3Button("Details");
+            tooltipAction.setDisable(true);
+            M3RichTooltip tooltip = M3RichTooltip.install(
+                    helpButton,
+                    "Help",
+                    "Explains this input.",
+                    tooltipAction
+            );
+            M3TextInputLayout layout = new M3TextInputLayout(field, "Project", "Required");
+            layout.setTrailing(helpButton);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(outside, layout);
+                Scene scene = new Scene(root, 620.0, 260.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                outside.resizeRelocate(24.0, 24.0, 120.0, 48.0);
+                layout.resizeRelocate(32.0, 96.0, 440.0, 88.0);
+                root.layout();
+
+                outside.requestFocus();
+                assertTrue(outside.isFocused());
+                assertFalse(tooltip.isShowing());
+
+                layout.executeAccessibleAction(AccessibleAction.SHOW_ITEM, tooltipAction);
+                root.layout();
+
+                assertFalse(tooltip.isShowing());
+                assertFalse(tooltipAction.isFocused());
+                assertFalse(field.isFocused());
+                assertFalse(helpButton.isFocused());
+                assertSame(outside, scene.getFocusOwner());
+                assertNotSame(tooltipAction, layout.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                tooltip.hide();
+                M3Tooltip.uninstall(helpButton, tooltip);
+                stage.close();
+            }
+        });
+    }
+    /// Verifies that validation summaries reject explicit invalid-input descendants that are not reachable.
+    @Test
+    void validationSummaryRejectsUnreachableInvalidInputAdornmentTargets() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3Button outside = new M3Button("Outside");
+            M3TextField nameField = new M3TextField();
+            M3Button visibleAction = new M3Button("Visible");
+            M3Button hiddenAction = new M3Button("Hidden");
+            hiddenAction.setVisible(false);
+            M3Button disabledAction = new M3Button("Disabled");
+            disabledAction.setDisable(true);
+            StackPane trailingActions = new StackPane(visibleAction, hiddenAction, disabledAction);
+            M3TextInputLayout nameLayout = new M3TextInputLayout(nameField, "Name", "Required");
+            nameLayout.setTrailing(trailingActions);
+            nameLayout.setValidator(M3TextInputValidators.required("Name is required"));
+
+            M3FormValidator validator = new M3FormValidator(nameLayout);
+            M3ValidationSummary summary = new M3ValidationSummary(validator);
+            Stage stage = new Stage();
+
+            try {
+                assertFalse(validator.validate());
+
+                Pane root = new Pane(outside, nameLayout, summary);
+                Scene scene = new Scene(root, 620.0, 320.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                outside.resizeRelocate(32.0, 24.0, 120.0, 48.0);
+                nameLayout.resizeRelocate(32.0, 96.0, 440.0, 88.0);
+                summary.resizeRelocate(32.0, 212.0, 440.0, 88.0);
+                root.layout();
+
+                outside.requestFocus();
+                assertTrue(outside.isFocused());
+
+                summary.executeAccessibleAction(AccessibleAction.SHOW_ITEM, hiddenAction);
+                root.layout();
+
+                assertTrue(outside.isFocused());
+                assertFalse(nameField.isFocused());
+                assertFalse(hiddenAction.isFocused());
+
+                summary.executeAccessibleAction(AccessibleAction.SHOW_ITEM, disabledAction);
+                root.layout();
+
+                assertTrue(outside.isFocused());
+                assertFalse(nameField.isFocused());
+                assertFalse(disabledAction.isFocused());
+
+                summary.executeAccessibleAction(AccessibleAction.SHOW_ITEM, visibleAction);
+                root.layout();
+
+                assertTrue(visibleAction.isFocused());
+                assertSame(visibleAction, nameLayout.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(visibleAction, summary.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
     /// Verifies that nested form containers reveal and route menu, tooltip, and picker popup targets.
     @Test
     void formContainersRevealNestedPopupTargetsAcrossRows() {
@@ -671,10 +786,20 @@ final class M3MixedPopupFocusTest {
                     "Explains how this form section is validated.",
                     tooltipAction
             );
+            M3Button disabledHelpButton = new M3Button("Disabled help");
+            M3Button disabledTooltipAction = new M3Button("Disabled explain");
+            disabledTooltipAction.setDisable(true);
+            M3RichTooltip disabledTooltip = M3RichTooltip.install(
+                    disabledHelpButton,
+                    "Disabled form help",
+                    "Disabled tooltip actions cannot be revealed.",
+                    disabledTooltipAction
+            );
 
             LocalDate targetDate = LocalDate.of(2026, 7, 6);
             M3DatePickerField dateField = new M3DatePickerField(LocalDate.of(2026, 7, 1));
-            M3FormRow actionRow = new M3FormRow("Actions", "Menu and help affordances", menuButton, helpButton);
+            HBox helpActions = new HBox(helpButton, disabledHelpButton);
+            M3FormRow actionRow = new M3FormRow("Actions", "Menu and help affordances", menuButton, helpActions);
             M3FormRow dateRow = new M3FormRow("Due date", "Date picker target", dateField);
             M3FormSection section = new M3FormSection("Project", actionRow, dateRow);
             M3FormPane form = new M3FormPane(section);
@@ -724,6 +849,16 @@ final class M3MixedPopupFocusTest {
                 assertSame(helpButton, actionRow.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
                 assertSame(helpButton, form.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
+                form.executeAccessibleAction(AccessibleAction.SHOW_ITEM, disabledTooltipAction);
+                root.layout();
+
+                assertFalse(disabledTooltip.isShowing());
+                assertFalse(disabledTooltipAction.isFocused());
+                assertFalse(disabledHelpButton.isFocused());
+                assertTrue(helpButton.isFocused());
+                assertSame(helpButton, actionRow.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(helpButton, form.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
                 assertPickerValueTargetRoutedByContainer(form, dateField, targetDate);
 
                 assertSame(dateField.getEditor(), dateRow.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
@@ -731,6 +866,9 @@ final class M3MixedPopupFocusTest {
             } finally {
                 dateField.hidePicker();
                 tooltip.hide();
+                disabledTooltip.hide();
+                M3Tooltip.uninstall(helpButton, tooltip);
+                M3Tooltip.uninstall(disabledHelpButton, disabledTooltip);
                 menuButton.hideMenu();
                 stage.close();
             }
@@ -841,6 +979,293 @@ final class M3MixedPopupFocusTest {
         });
     }
 
+    /// Verifies that menu buttons reject disabled direct picker value targets before opening their popup.
+    @Test
+    void menuButtonRejectsDisabledDirectPickerValueTargetsBeforeOpeningMenu() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3DatePickerField dateField = new M3DatePickerField(LocalDate.of(2026, 8, 10));
+            dateField.setMaxDate(LocalDate.of(2026, 8, 15));
+            M3MenuButton dateMenuButton = new M3MenuButton("Date", dateField);
+
+            M3TimePickerField timeField = new M3TimePickerField(LocalTime.of(10, 0));
+            timeField.setMaxTime(LocalTime.of(12, 0));
+            M3MenuButton timeMenuButton = new M3MenuButton("Time", timeField);
+
+            M3DateRangePickerField rangeField = new M3DateRangePickerField(
+                    LocalDate.of(2026, 8, 10),
+                    LocalDate.of(2026, 8, 12)
+            );
+            rangeField.setMaxDate(LocalDate.of(2026, 8, 15));
+            M3MenuButton rangeMenuButton = new M3MenuButton("Range", rangeField);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(dateMenuButton, timeMenuButton, rangeMenuButton);
+                Scene scene = new Scene(root, 760.0, 420.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                dateMenuButton.resizeRelocate(32.0, 32.0, 180.0, 56.0);
+                timeMenuButton.resizeRelocate(32.0, 104.0, 180.0, 56.0);
+                rangeMenuButton.resizeRelocate(32.0, 176.0, 180.0, 56.0);
+                root.layout();
+
+                assertDirectMenuPickerValueTargetRejected(
+                        dateMenuButton,
+                        dateField,
+                        LocalDate.of(2026, 8, 20)
+                );
+                assertDirectMenuPickerValueTargetRejected(
+                        timeMenuButton,
+                        timeField,
+                        LocalTime.of(13, 0)
+                );
+                assertDirectMenuDateRangePickerValueTargetRejected(
+                        rangeMenuButton,
+                        rangeField,
+                        LocalDate.of(2026, 8, 20)
+                );
+            } finally {
+                dateMenuButton.hideMenu();
+                timeMenuButton.hideMenu();
+                rangeMenuButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that menu buttons reject disabled nested picker value targets before opening any menu branch.
+    @Test
+    void menuButtonRejectsDisabledNestedPickerValueTargetsBeforeOpeningMenuBranch() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3DatePickerField dateField = new M3DatePickerField(LocalDate.of(2026, 8, 10));
+            dateField.setMaxDate(LocalDate.of(2026, 8, 15));
+            M3SubMenuItem dateScheduleItem = new M3SubMenuItem("Date schedule", dateField);
+            M3MenuButton dateMenuButton = new M3MenuButton("Date", dateScheduleItem);
+
+            M3TimePickerField timeField = new M3TimePickerField(LocalTime.of(10, 0));
+            timeField.setMaxTime(LocalTime.of(12, 0));
+            M3SubMenuItem timeScheduleItem = new M3SubMenuItem("Time schedule", timeField);
+            M3MenuButton timeMenuButton = new M3MenuButton("Time", timeScheduleItem);
+
+            M3DateRangePickerField rangeField = new M3DateRangePickerField(
+                    LocalDate.of(2026, 8, 10),
+                    LocalDate.of(2026, 8, 12)
+            );
+            rangeField.setMaxDate(LocalDate.of(2026, 8, 15));
+            M3SubMenuItem rangeScheduleItem = new M3SubMenuItem("Range schedule", rangeField);
+            M3MenuButton rangeMenuButton = new M3MenuButton("Range", rangeScheduleItem);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(dateMenuButton, timeMenuButton, rangeMenuButton);
+                Scene scene = new Scene(root, 760.0, 420.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                dateMenuButton.resizeRelocate(32.0, 32.0, 180.0, 56.0);
+                timeMenuButton.resizeRelocate(32.0, 104.0, 180.0, 56.0);
+                rangeMenuButton.resizeRelocate(32.0, 176.0, 180.0, 56.0);
+                root.layout();
+
+                assertNestedMenuPickerValueTargetRejected(
+                        dateMenuButton,
+                        dateScheduleItem,
+                        dateField,
+                        LocalDate.of(2026, 8, 20)
+                );
+                assertNestedMenuPickerValueTargetRejected(
+                        timeMenuButton,
+                        timeScheduleItem,
+                        timeField,
+                        LocalTime.of(13, 0)
+                );
+                assertNestedMenuDateRangePickerValueTargetRejected(
+                        rangeMenuButton,
+                        rangeScheduleItem,
+                        rangeField,
+                        LocalDate.of(2026, 8, 20)
+                );
+            } finally {
+                dateMenuButton.hideMenu();
+                timeMenuButton.hideMenu();
+                rangeMenuButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that submenu items reject disabled picker value targets without opening their popup.
+    @Test
+    void subMenuItemRejectsDisabledPickerValueTargetsBeforeOpeningSubMenu() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3DatePickerField dateField = new M3DatePickerField(LocalDate.of(2026, 8, 10));
+            dateField.setMaxDate(LocalDate.of(2026, 8, 15));
+            M3SubMenuItem dateScheduleItem = new M3SubMenuItem("Date schedule", dateField);
+
+            M3TimePickerField timeField = new M3TimePickerField(LocalTime.of(10, 0));
+            timeField.setMaxTime(LocalTime.of(12, 0));
+            M3SubMenuItem timeScheduleItem = new M3SubMenuItem("Time schedule", timeField);
+
+            M3DateRangePickerField rangeField = new M3DateRangePickerField(
+                    LocalDate.of(2026, 8, 10),
+                    LocalDate.of(2026, 8, 12)
+            );
+            rangeField.setMaxDate(LocalDate.of(2026, 8, 15));
+            M3SubMenuItem rangeScheduleItem = new M3SubMenuItem("Range schedule", rangeField);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(dateScheduleItem, timeScheduleItem, rangeScheduleItem);
+                Scene scene = new Scene(root, 760.0, 420.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                dateScheduleItem.resizeRelocate(32.0, 32.0, 220.0, 56.0);
+                timeScheduleItem.resizeRelocate(32.0, 104.0, 220.0, 56.0);
+                rangeScheduleItem.resizeRelocate(32.0, 176.0, 220.0, 56.0);
+                root.layout();
+
+                assertSubMenuPickerValueTargetRejected(
+                        dateScheduleItem,
+                        dateField,
+                        LocalDate.of(2026, 8, 20)
+                );
+                assertSubMenuPickerValueTargetRejected(
+                        timeScheduleItem,
+                        timeField,
+                        LocalTime.of(13, 0)
+                );
+                assertSubMenuDateRangePickerValueTargetRejected(
+                        rangeScheduleItem,
+                        rangeField,
+                        LocalDate.of(2026, 8, 20)
+                );
+            } finally {
+                dateScheduleItem.hideSubMenu();
+                timeScheduleItem.hideSubMenu();
+                rangeScheduleItem.hideSubMenu();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that menu owners reject unreachable node targets before opening popup branches.
+    @Test
+    void menuOwnersRejectUnreachableNodeTargetsBeforeOpeningPopupBranches() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem hiddenDirect = new M3MenuItem("Hidden direct");
+            hiddenDirect.setVisible(false);
+            M3MenuItem disabledDirect = new M3MenuItem("Disabled direct");
+            disabledDirect.setDisable(true);
+
+            M3Button hiddenNestedAction = new M3Button("Hidden nested action");
+            hiddenNestedAction.setVisible(false);
+            StackPane compositeDirect = new StackPane(hiddenNestedAction);
+            compositeDirect.setPrefSize(160.0, 56.0);
+
+            M3MenuItem hiddenBranchTarget = new M3MenuItem("Hidden branch target");
+            M3SubMenuItem hiddenBranch = new M3SubMenuItem("Hidden branch", hiddenBranchTarget);
+            hiddenBranch.setVisible(false);
+
+            M3MenuItem disabledBranchTarget = new M3MenuItem("Disabled branch target");
+            M3SubMenuItem disabledBranch = new M3SubMenuItem("Disabled branch", disabledBranchTarget);
+            disabledBranch.setDisable(true);
+
+            M3MenuItem hiddenNestedItem = new M3MenuItem("Hidden nested item");
+            hiddenNestedItem.setVisible(false);
+            M3MenuItem visibleNestedItem = new M3MenuItem("Visible nested item");
+            M3SubMenuItem visibleBranch = new M3SubMenuItem("Visible branch", hiddenNestedItem, visibleNestedItem);
+
+            M3MenuButton menuButton = new M3MenuButton(
+                    "More",
+                    hiddenDirect,
+                    disabledDirect,
+                    compositeDirect,
+                    hiddenBranch,
+                    disabledBranch,
+                    visibleBranch
+            );
+
+            M3MenuItem standaloneHidden = new M3MenuItem("Standalone hidden");
+            standaloneHidden.setVisible(false);
+            M3MenuItem standaloneVisible = new M3MenuItem("Standalone visible");
+            M3SubMenuItem standaloneSubMenu = new M3SubMenuItem(
+                    "Standalone branch",
+                    standaloneHidden,
+                    standaloneVisible
+            );
+
+            M3MenuItem splitHidden = new M3MenuItem("Split hidden");
+            splitHidden.setVisible(false);
+            M3MenuItem splitVisible = new M3MenuItem("Split visible");
+            M3SplitButton splitButton = new M3SplitButton("Create", splitHidden, splitVisible);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(menuButton, standaloneSubMenu, splitButton);
+                Scene scene = new Scene(root, 820.0, 460.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                menuButton.resizeRelocate(32.0, 32.0, 180.0, 56.0);
+                standaloneSubMenu.resizeRelocate(32.0, 112.0, 220.0, 56.0);
+                splitButton.resizeRelocate(32.0, 192.0, 220.0, 56.0);
+                root.layout();
+
+                menuButton.executeAccessibleAction(AccessibleAction.SHOW_ITEM, hiddenDirect);
+                assertFalse(menuButton.isShowing());
+                menuButton.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0);
+                assertFalse(menuButton.isShowing());
+                menuButton.executeAccessibleAction(AccessibleAction.SHOW_ITEM, disabledDirect);
+                assertFalse(menuButton.isShowing());
+                menuButton.executeAccessibleAction(AccessibleAction.SHOW_ITEM, hiddenNestedAction);
+                assertFalse(menuButton.isShowing());
+                menuButton.executeAccessibleAction(AccessibleAction.SHOW_ITEM, hiddenBranchTarget);
+                assertFalse(menuButton.isShowing());
+                menuButton.executeAccessibleAction(AccessibleAction.SHOW_ITEM, disabledBranchTarget);
+                assertFalse(menuButton.isShowing());
+                menuButton.executeAccessibleAction(AccessibleAction.SHOW_ITEM, hiddenNestedItem);
+                assertFalse(menuButton.isShowing());
+                menuButton.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 2, visibleNestedItem);
+                assertFalse(menuButton.isShowing());
+
+                menuButton.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 5, visibleNestedItem);
+                assertTrue(menuButton.isShowing());
+                assertTrue(visibleBranch.isSubMenuShowing());
+                assertTrue(visibleNestedItem.isFocused());
+                menuButton.hideMenu();
+                assertFalse(menuButton.isShowing());
+
+                standaloneSubMenu.executeAccessibleAction(AccessibleAction.SHOW_ITEM, standaloneHidden);
+                assertFalse(standaloneSubMenu.isSubMenuShowing());
+                standaloneSubMenu.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0);
+                assertFalse(standaloneSubMenu.isSubMenuShowing());
+
+                standaloneSubMenu.executeAccessibleAction(AccessibleAction.SHOW_ITEM, standaloneVisible);
+                assertTrue(standaloneSubMenu.isSubMenuShowing());
+                assertTrue(standaloneVisible.isFocused());
+                standaloneSubMenu.hideSubMenu();
+                assertFalse(standaloneSubMenu.isSubMenuShowing());
+
+                splitButton.executeAccessibleAction(AccessibleAction.SHOW_ITEM, splitHidden);
+                assertFalse(splitButton.isShowing());
+
+                splitButton.executeAccessibleAction(AccessibleAction.SHOW_ITEM, splitVisible);
+                assertTrue(splitButton.isShowing());
+                assertTrue(splitVisible.isFocused());
+            } finally {
+                menuButton.hideMenu();
+                standaloneSubMenu.hideSubMenu();
+                splitButton.hideMenu();
+                stage.close();
+            }
+        });
+    }
     /// Verifies that composite owners reveal picker value targets inside closed nested submenu branches.
     @Test
     void surfaceRevealsPickerValueTargetInsideClosedNestedSubMenuBranch() {
@@ -1211,6 +1636,460 @@ final class M3MixedPopupFocusTest {
                     assertSame(okButton, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
                 } finally {
                     tooltip.hide();
+                }
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that dialog action rich tooltips reveal action-owned menu targets.
+    @Test
+    void dialogPaneRevealsMenuItemInsideActionRichTooltip() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3DialogPane dialogPane = new M3DialogPane();
+            dialogPane.setContent(new Pane());
+            dialogPane.getButtonTypes().setAll(ButtonType.OK);
+            M3MenuItem targetItem = new M3MenuItem("Archive");
+            M3MenuButton tooltipMenu = new M3MenuButton(
+                    "More",
+                    new M3MenuItem("Rename"),
+                    targetItem
+            );
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(dialogPane);
+                Scene scene = new Scene(root, 560.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                dialogPane.resizeRelocate(32.0, 32.0, 400.0, 240.0);
+                root.layout();
+
+                Node okButton = Objects.requireNonNull(dialogPane.lookupButton(ButtonType.OK), "okButton");
+                M3RichTooltip tooltip = M3RichTooltip.install(
+                        okButton,
+                        "Confirm",
+                        "Dialog action help",
+                        tooltipMenu
+                );
+
+                try {
+                    assertFalse(tooltip.isShowing());
+                    assertFalse(tooltipMenu.isShowing());
+
+                    dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, targetItem);
+                    root.layout();
+
+                    assertTrue(tooltip.isShowing());
+                    assertTrue(tooltipMenu.isShowing());
+                    assertTrue(targetItem.isFocused());
+                    assertSame(targetItem, tooltipMenu.getMenu().queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                    assertSame(targetItem, tooltipMenu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                    assertSame(targetItem, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                } finally {
+                    tooltipMenu.hideMenu();
+                    tooltip.hide();
+                    M3Tooltip.uninstall(okButton, tooltip);
+                }
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that dialog action rich tooltips reject disabled action-owned menu targets before opening popups.
+    @Test
+    void dialogPaneRejectsDisabledMenuItemInsideActionRichTooltip() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3Button outside = new M3Button("Outside");
+            M3DialogPane dialogPane = new M3DialogPane();
+            dialogPane.setContent(new Pane());
+            dialogPane.getButtonTypes().setAll(ButtonType.OK);
+            M3MenuItem disabledTarget = new M3MenuItem("Archive");
+            disabledTarget.setDisable(true);
+            M3MenuButton tooltipMenu = new M3MenuButton(
+                    "More",
+                    new M3MenuItem("Rename"),
+                    disabledTarget
+            );
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(outside, dialogPane);
+                Scene scene = new Scene(root, 620.0, 380.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                outside.resizeRelocate(24.0, 24.0, 120.0, 48.0);
+                dialogPane.resizeRelocate(32.0, 96.0, 400.0, 240.0);
+                root.layout();
+
+                Node okButton = Objects.requireNonNull(dialogPane.lookupButton(ButtonType.OK), "okButton");
+                M3RichTooltip tooltip = M3RichTooltip.install(
+                        okButton,
+                        "Confirm",
+                        "Dialog action help",
+                        tooltipMenu
+                );
+
+                try {
+                    outside.requestFocus();
+                    assertTrue(outside.isFocused());
+
+                    dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, disabledTarget);
+                    root.layout();
+
+                    assertFalse(tooltip.isShowing());
+                    assertFalse(tooltipMenu.isShowing());
+                    assertFalse(disabledTarget.isFocused());
+                    assertFalse(okButton.isFocused());
+                    assertSame(outside, scene.getFocusOwner());
+                    assertNotSame(disabledTarget, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                } finally {
+                    tooltipMenu.hideMenu();
+                    tooltip.hide();
+                    M3Tooltip.uninstall(okButton, tooltip);
+                }
+            } finally {
+                stage.close();
+            }
+        });
+    }
+    /// Verifies that dialog action rich tooltips reveal action-owned time picker targets.
+    @Test
+    void dialogPaneRevealsTimePickerValueInsideActionRichTooltip() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3DialogPane dialogPane = new M3DialogPane();
+            dialogPane.setContent(new Pane());
+            dialogPane.getButtonTypes().setAll(ButtonType.OK);
+            M3TimePickerField tooltipTimeField = new M3TimePickerField(LocalTime.of(9, 30));
+            LocalTime targetTime = LocalTime.of(10, 45);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(dialogPane);
+                Scene scene = new Scene(root, 620.0, 420.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                dialogPane.resizeRelocate(32.0, 32.0, 420.0, 260.0);
+                root.layout();
+
+                Node okButton = Objects.requireNonNull(dialogPane.lookupButton(ButtonType.OK), "okButton");
+                M3RichTooltip tooltip = M3RichTooltip.install(
+                        okButton,
+                        "Schedule",
+                        "Choose a target time.",
+                        tooltipTimeField
+                );
+
+                try {
+                    assertFalse(tooltip.isShowing());
+                    assertFalse(tooltipTimeField.isShowing());
+
+                    dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, targetTime);
+                    root.layout();
+
+                    Node pickerFocusNode = Objects.requireNonNull(assertInstanceOf(
+                            Node.class,
+                            tooltipTimeField.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                    ));
+                    assertTrue(tooltip.isShowing());
+                    assertTrue(tooltipTimeField.isShowing());
+                    assertTrue(pickerFocusNode.isFocused());
+                    assertTrue(M3Accessible.containsNode(tooltipTimeField.getPicker(), pickerFocusNode));
+                    assertSame(pickerFocusNode, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                } finally {
+                    tooltipTimeField.hidePicker();
+                    tooltip.hide();
+                    M3Tooltip.uninstall(okButton, tooltip);
+                }
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that dialog action rich tooltips reject out-of-range action-owned time targets before opening popups.
+    @Test
+    void dialogPaneRejectsDisabledTimePickerValueInsideActionRichTooltip() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3Button outside = new M3Button("Outside");
+            M3DialogPane dialogPane = new M3DialogPane();
+            dialogPane.setContent(new Pane());
+            dialogPane.getButtonTypes().setAll(ButtonType.OK);
+            M3TimePickerField tooltipTimeField = new M3TimePickerField(LocalTime.of(9, 30));
+            tooltipTimeField.setMaxTime(LocalTime.of(10, 0));
+            LocalTime disabledTime = LocalTime.of(11, 15);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(outside, dialogPane);
+                Scene scene = new Scene(root, 660.0, 440.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                outside.resizeRelocate(24.0, 24.0, 120.0, 48.0);
+                dialogPane.resizeRelocate(32.0, 96.0, 420.0, 260.0);
+                root.layout();
+
+                Node okButton = Objects.requireNonNull(dialogPane.lookupButton(ButtonType.OK), "okButton");
+                M3RichTooltip tooltip = M3RichTooltip.install(
+                        okButton,
+                        "Schedule",
+                        "Choose a target time.",
+                        tooltipTimeField
+                );
+
+                try {
+                    outside.requestFocus();
+                    assertTrue(outside.isFocused());
+
+                    dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, disabledTime);
+                    root.layout();
+
+                    assertFalse(tooltip.isShowing());
+                    assertFalse(tooltipTimeField.isShowing());
+                    assertFalse(tooltipTimeField.getEditor().isFocused());
+                    assertFalse(okButton.isFocused());
+                    assertSame(outside, scene.getFocusOwner());
+
+                } finally {
+                    tooltipTimeField.hidePicker();
+                    tooltip.hide();
+                    M3Tooltip.uninstall(okButton, tooltip);
+                }
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that dialog action rich tooltips reveal action-owned date-range picker targets.
+    @Test
+    void dialogPaneRevealsDateRangePickerValueInsideActionRichTooltip() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3DialogPane dialogPane = new M3DialogPane();
+            dialogPane.setContent(new Pane());
+            dialogPane.getButtonTypes().setAll(ButtonType.OK);
+            M3DateRangePickerField tooltipRangeField = new M3DateRangePickerField(
+                    LocalDate.of(2026, 6, 14),
+                    LocalDate.of(2026, 6, 18)
+            );
+            LocalDate targetDate = LocalDate.of(2026, 6, 22);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(dialogPane);
+                Scene scene = new Scene(root, 680.0, 460.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                dialogPane.resizeRelocate(32.0, 32.0, 440.0, 280.0);
+                root.layout();
+
+                Node okButton = Objects.requireNonNull(dialogPane.lookupButton(ButtonType.OK), "okButton");
+                M3RichTooltip tooltip = M3RichTooltip.install(
+                        okButton,
+                        "Schedule",
+                        "Choose a target range.",
+                        tooltipRangeField
+                );
+
+                try {
+                    assertFalse(tooltip.isShowing());
+                    assertFalse(tooltipRangeField.isShowing());
+
+                    dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, targetDate);
+                    root.layout();
+
+                    Node pickerFocusNode = Objects.requireNonNull(assertInstanceOf(
+                            Node.class,
+                            tooltipRangeField.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                    ));
+                    assertTrue(tooltip.isShowing());
+                    assertTrue(tooltipRangeField.isShowing());
+                    assertTrue(pickerFocusNode.isFocused());
+                    assertTrue(M3Accessible.containsNode(tooltipRangeField.getPicker(), pickerFocusNode));
+                    assertSame(pickerFocusNode, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                } finally {
+                    tooltipRangeField.hidePicker();
+                    tooltip.hide();
+                    M3Tooltip.uninstall(okButton, tooltip);
+                }
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that dialog action rich tooltips reject out-of-range action-owned date-range targets before opening popups.
+    @Test
+    void dialogPaneRejectsDisabledDateRangePickerValueInsideActionRichTooltip() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3Button outside = new M3Button("Outside");
+            M3DialogPane dialogPane = new M3DialogPane();
+            dialogPane.setContent(new Pane());
+            dialogPane.getButtonTypes().setAll(ButtonType.OK);
+            M3DateRangePickerField tooltipRangeField = new M3DateRangePickerField(
+                    LocalDate.of(2026, 6, 14),
+                    LocalDate.of(2026, 6, 18)
+            );
+            tooltipRangeField.setMaxDate(LocalDate.of(2026, 6, 20));
+            LocalDate disabledDate = LocalDate.of(2026, 6, 24);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(outside, dialogPane);
+                Scene scene = new Scene(root, 700.0, 480.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                outside.resizeRelocate(24.0, 24.0, 120.0, 48.0);
+                dialogPane.resizeRelocate(32.0, 96.0, 440.0, 280.0);
+                root.layout();
+
+                Node okButton = Objects.requireNonNull(dialogPane.lookupButton(ButtonType.OK), "okButton");
+                M3RichTooltip tooltip = M3RichTooltip.install(
+                        okButton,
+                        "Schedule",
+                        "Choose a target range.",
+                        tooltipRangeField
+                );
+
+                try {
+                    outside.requestFocus();
+                    assertTrue(outside.isFocused());
+
+                    dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, disabledDate);
+                    root.layout();
+
+                    assertFalse(tooltip.isShowing());
+                    assertFalse(tooltipRangeField.isShowing());
+                    assertFalse(tooltipRangeField.getStartEditor().isFocused());
+                    assertFalse(tooltipRangeField.getEndEditor().isFocused());
+                    assertFalse(okButton.isFocused());
+                    assertSame(outside, scene.getFocusOwner());
+
+                } finally {
+                    tooltipRangeField.hidePicker();
+                    tooltip.hide();
+                    M3Tooltip.uninstall(okButton, tooltip);
+                }
+            } finally {
+                stage.close();
+            }
+        });
+    }
+    /// Verifies that dialog action tooltip reveal rejects unreachable action targets without focusing the owner action.
+    @Test
+    void dialogPaneRejectsDisabledActionRichTooltipTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3Button outside = new M3Button("Outside");
+            M3DialogPane dialogPane = new M3DialogPane();
+            dialogPane.setContent(new Pane());
+            dialogPane.getButtonTypes().setAll(ButtonType.OK);
+            M3Button tooltipAction = new M3Button("Details");
+            tooltipAction.setDisable(true);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(outside, dialogPane);
+                Scene scene = new Scene(root, 560.0, 340.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                outside.resizeRelocate(24.0, 24.0, 120.0, 48.0);
+                dialogPane.resizeRelocate(32.0, 96.0, 360.0, 220.0);
+                root.layout();
+
+                Node okButton = Objects.requireNonNull(dialogPane.lookupButton(ButtonType.OK), "okButton");
+                M3RichTooltip tooltip = M3RichTooltip.install(
+                        okButton,
+                        "Confirm",
+                        "Dialog action help",
+                        tooltipAction
+                );
+
+                try {
+                    outside.requestFocus();
+                    assertTrue(outside.isFocused());
+                    assertFalse(tooltip.isShowing());
+
+                    dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, tooltipAction);
+                    root.layout();
+
+                    assertFalse(tooltip.isShowing());
+                    assertFalse(tooltipAction.isFocused());
+                    assertFalse(okButton.isFocused());
+                    assertSame(outside, scene.getFocusOwner());
+                    assertNotSame(tooltipAction, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                } finally {
+                    tooltip.hide();
+                    M3Tooltip.uninstall(okButton, tooltip);
+                }
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that dialog content tooltip reveal rejects unreachable action targets without focusing the content item.
+    @Test
+    void dialogPaneRejectsDisabledContentRichTooltipTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3Button outside = new M3Button("Outside");
+            M3ListItem contentItem = new M3ListItem("Content row");
+            M3DialogPane dialogPane = new M3DialogPane();
+            dialogPane.setContent(contentItem);
+            dialogPane.getButtonTypes().setAll(ButtonType.OK);
+            M3Button tooltipAction = new M3Button("Details");
+            tooltipAction.setDisable(true);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(outside, dialogPane);
+                Scene scene = new Scene(root, 560.0, 340.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                outside.resizeRelocate(24.0, 24.0, 120.0, 48.0);
+                dialogPane.resizeRelocate(32.0, 96.0, 360.0, 220.0);
+                root.layout();
+
+                M3RichTooltip tooltip = M3RichTooltip.install(
+                        contentItem,
+                        "Content",
+                        "Dialog content help",
+                        tooltipAction
+                );
+
+                try {
+                    outside.requestFocus();
+                    assertTrue(outside.isFocused());
+                    assertFalse(tooltip.isShowing());
+
+                    dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, tooltipAction);
+                    root.layout();
+
+                    assertFalse(tooltip.isShowing());
+                    assertFalse(tooltipAction.isFocused());
+                    assertFalse(contentItem.isFocused());
+                    assertSame(outside, scene.getFocusOwner());
+                    assertNotSame(tooltipAction, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                } finally {
+                    tooltip.hide();
+                    M3Tooltip.uninstall(contentItem, tooltip);
                 }
             } finally {
                 stage.close();
@@ -2060,6 +2939,656 @@ final class M3MixedPopupFocusTest {
                 assertTrue(recentItem.isSubMenuShowing());
                 assertTrue(htmlItem.isFocused());
                 assertSame(htmlItem, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that dialog content containers reject hidden popup owners before opening their menus.
+    @Test
+    void dialogPaneRejectsHiddenContentPopupOwnersBeforeOpeningBranches() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem archiveItem = new M3MenuItem("Archive");
+            M3MenuButton menuButton = new M3MenuButton("Actions", archiveItem);
+            menuButton.setVisible(false);
+
+            M3MenuItem publishItem = new M3MenuItem("Publish");
+            M3SplitButton splitButton = new M3SplitButton("Create", publishItem);
+            splitButton.setVisible(false);
+
+            M3MenuItem nestedItem = new M3MenuItem("Nested");
+            M3SubMenuItem hiddenSubMenu = new M3SubMenuItem("Hidden branch", nestedItem);
+            hiddenSubMenu.setVisible(false);
+            M3MenuButton parentMenuButton = new M3MenuButton("Parent", hiddenSubMenu);
+
+            Pane content = new Pane(menuButton, splitButton, parentMenuButton);
+            content.setPrefSize(420.0, 120.0);
+            M3DialogPane dialogPane = new M3DialogPane();
+            dialogPane.setContent(content);
+            dialogPane.getButtonTypes().setAll(ButtonType.OK);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(dialogPane);
+                Scene scene = new Scene(root, 640.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                dialogPane.resizeRelocate(32.0, 32.0, 520.0, 260.0);
+                menuButton.resizeRelocate(0.0, 0.0, 180.0, 48.0);
+                splitButton.resizeRelocate(0.0, 64.0, 240.0, 48.0);
+                parentMenuButton.resizeRelocate(0.0, 128.0, 180.0, 48.0);
+                root.layout();
+
+                Object baselineFocusNode = dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
+                assertFalse(menuButton.isShowing());
+                assertFalse(splitButton.isShowing());
+                assertFalse(parentMenuButton.isShowing());
+                assertFalse(hiddenSubMenu.isSubMenuShowing());
+                assertSame(baselineFocusNode, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, archiveItem);
+
+                assertFalse(menuButton.isShowing());
+                assertFalse(archiveItem.isFocused());
+                assertSame(baselineFocusNode, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, publishItem);
+
+                assertFalse(splitButton.isShowing());
+                assertFalse(publishItem.isFocused());
+                assertSame(baselineFocusNode, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, nestedItem);
+
+                assertFalse(parentMenuButton.isShowing());
+                assertFalse(hiddenSubMenu.isSubMenuShowing());
+                assertFalse(nestedItem.isFocused());
+                assertSame(baselineFocusNode, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that dialog content subtrees expose hosted snackbar action focus.
+    @Test
+    void dialogPaneRoutesFocusThroughNestedSnackbarHost() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3SnackbarHost host = new M3SnackbarHost();
+            M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
+            Pane content = new Pane(host);
+            content.setPrefSize(420.0, 120.0);
+            M3DialogPane dialogPane = new M3DialogPane();
+            dialogPane.setContent(content);
+            dialogPane.getButtonTypes().setAll(ButtonType.OK);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(dialogPane);
+                Scene scene = new Scene(root, 640.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                dialogPane.resizeRelocate(32.0, 32.0, 520.0, 260.0);
+                host.resizeRelocate(0.0, 0.0, 420.0, 96.0);
+                root.layout();
+
+                host.show(snackbar);
+                root.applyCss();
+                root.layout();
+                Node actionButton = Objects.requireNonNull(assertInstanceOf(
+                        Node.class,
+                        snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                ));
+
+                assertTrue(host.isShowing());
+                assertSame(actionButton, host.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(host, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                actionButton.requestFocus();
+
+                assertTrue(actionButton.isFocused());
+                assertSame(actionButton, snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(actionButton, host.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertPopupFocusRoutedByContainer(dialogPane, actionButton);
+
+                dialogPane.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
+
+                assertTrue(actionButton.isFocused());
+                assertPopupFocusRoutedByContainer(dialogPane, actionButton);
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that dialog content containers reveal queued snackbar actions through nested hosts.
+    @Test
+    void dialogPaneRevealsQueuedSnackbarThroughNestedSnackbarHost() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3SnackbarHost host = new M3SnackbarHost();
+            M3Snackbar currentSnackbar = new M3Snackbar("Saved", "Undo");
+            M3Snackbar queuedSnackbar = new M3Snackbar("Deleted", "Restore");
+            Pane content = new Pane(host);
+            content.setPrefSize(420.0, 120.0);
+            M3DialogPane dialogPane = new M3DialogPane();
+            dialogPane.setContent(content);
+            dialogPane.getButtonTypes().setAll(ButtonType.OK);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(dialogPane);
+                Scene scene = new Scene(root, 640.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                dialogPane.resizeRelocate(32.0, 32.0, 520.0, 260.0);
+                host.resizeRelocate(0.0, 0.0, 420.0, 96.0);
+                root.layout();
+
+                host.show(currentSnackbar);
+                host.enqueue(queuedSnackbar);
+                root.applyCss();
+                root.layout();
+                Node currentActionButton = Objects.requireNonNull(assertInstanceOf(
+                        Node.class,
+                        currentSnackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                ));
+
+                assertTrue(host.isShowing());
+                assertSame(currentSnackbar, host.getSnackbar());
+                assertSame(queuedSnackbar, host.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+                assertSame(host, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, queuedSnackbar);
+                root.applyCss();
+                root.layout();
+                Node queuedActionButton = Objects.requireNonNull(assertInstanceOf(
+                        Node.class,
+                        queuedSnackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                ));
+
+                assertTrue(host.isShowing());
+                assertSame(queuedSnackbar, host.getSnackbar());
+                assertTrue(host.getQueue().isEmpty());
+                assertTrue(queuedActionButton.isFocused());
+                assertSame(queuedActionButton, host.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertPopupFocusRoutedByContainer(dialogPane, queuedActionButton);
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that dialog content subtrees can reveal queued snackbar actions by accessibility index.
+    @Test
+    void dialogPaneRevealsQueuedSnackbarActionByIndexThroughNestedSnackbarHost() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3SnackbarHost host = new M3SnackbarHost();
+            M3Snackbar currentSnackbar = new M3Snackbar("Saved", "Undo");
+            M3Snackbar queuedSnackbar = new M3Snackbar("Deleted", "Restore");
+            Pane content = new Pane(host);
+            content.setPrefSize(420.0, 120.0);
+            M3DialogPane dialogPane = new M3DialogPane();
+            dialogPane.setContent(content);
+            dialogPane.getButtonTypes().setAll(ButtonType.OK);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(dialogPane);
+                Scene scene = new Scene(root, 640.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                dialogPane.resizeRelocate(32.0, 32.0, 520.0, 260.0);
+                host.resizeRelocate(0.0, 0.0, 420.0, 96.0);
+                root.layout();
+
+                host.show(currentSnackbar);
+                host.enqueue(queuedSnackbar);
+                root.applyCss();
+                root.layout();
+
+                assertTrue(host.isShowing());
+                assertSame(currentSnackbar, host.getSnackbar());
+                assertSame(currentSnackbar, host.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+                assertSame(queuedSnackbar, host.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+                assertSame(host, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0, 1);
+                root.applyCss();
+                root.layout();
+                Node queuedActionButton = Objects.requireNonNull(assertInstanceOf(
+                        Node.class,
+                        queuedSnackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                ));
+
+                assertTrue(host.isShowing());
+                assertSame(queuedSnackbar, host.getSnackbar());
+                assertSame(queuedSnackbar, host.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+                assertNull(host.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+                assertTrue(host.getQueue().isEmpty());
+                assertTrue(queuedActionButton.isFocused());
+                assertSame(queuedActionButton, host.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertPopupFocusRoutedByContainer(dialogPane, queuedActionButton);
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that hidden dialog snackbar hosts reject queued snackbar reveal without promotion.
+    @Test
+    void dialogPaneRejectsHiddenSnackbarHostBeforeQueuePromotion() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3SnackbarHost host = new M3SnackbarHost();
+            M3Snackbar currentSnackbar = new M3Snackbar("Saved", "Undo");
+            M3Snackbar queuedSnackbar = new M3Snackbar("Deleted", "Restore");
+            Pane content = new Pane(host);
+            content.setPrefSize(420.0, 120.0);
+            M3DialogPane dialogPane = new M3DialogPane();
+            dialogPane.setContent(content);
+            dialogPane.getButtonTypes().setAll(ButtonType.OK);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(dialogPane);
+                Scene scene = new Scene(root, 640.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                dialogPane.resizeRelocate(32.0, 32.0, 520.0, 260.0);
+                host.resizeRelocate(0.0, 0.0, 420.0, 96.0);
+                root.layout();
+
+                host.show(currentSnackbar);
+                host.enqueue(queuedSnackbar);
+                root.applyCss();
+                root.layout();
+                Node currentActionButton = Objects.requireNonNull(assertInstanceOf(
+                        Node.class,
+                        currentSnackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                ));
+
+                host.setVisible(false);
+                root.applyCss();
+                root.layout();
+                Object baselineFocusNode = dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
+
+                dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, queuedSnackbar);
+                dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0, 1);
+                root.applyCss();
+                root.layout();
+
+                assertTrue(host.isShowing());
+                assertSame(currentSnackbar, host.getSnackbar());
+                assertEquals(1, host.getQueue().size());
+                assertSame(queuedSnackbar, host.getQueue().get(0));
+                assertFalse(currentActionButton.isFocused());
+                Object queuedFocusNode = queuedSnackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
+                if (queuedFocusNode instanceof Node queuedNode) {
+                    assertFalse(queuedNode.isFocused());
+                }
+                assertSame(baselineFocusNode, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that dialog content subtrees expose active snackbar rich tooltip action focus.
+    @Test
+    void dialogPaneRoutesFocusThroughNestedSnackbarRichTooltipAction() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3SnackbarHost host = new M3SnackbarHost();
+            M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
+            Pane content = new Pane(host);
+            content.setPrefSize(420.0, 120.0);
+            M3DialogPane dialogPane = new M3DialogPane();
+            dialogPane.setContent(content);
+            dialogPane.getButtonTypes().setAll(ButtonType.OK);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(dialogPane);
+                Scene scene = new Scene(root, 640.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                dialogPane.resizeRelocate(32.0, 32.0, 520.0, 260.0);
+                host.resizeRelocate(0.0, 0.0, 420.0, 96.0);
+                root.layout();
+
+                host.show(snackbar);
+                root.applyCss();
+                root.layout();
+                Node actionButton = Objects.requireNonNull(assertInstanceOf(
+                        Node.class,
+                        snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                ));
+                M3Button tooltipAction = new M3Button("Details");
+                M3RichTooltip tooltip = M3RichTooltip.install(
+                        actionButton,
+                        "Undo",
+                        "Restores the previous item state.",
+                        tooltipAction
+                );
+
+                try {
+                    actionButton.requestFocus();
+                    tooltip.show(actionButton, stage.getX() + 216.0, stage.getY() + 184.0);
+
+                    assertTrue(host.isShowing());
+                    assertTrue(tooltip.isShowing());
+                    assertTrue(actionButton.isFocused());
+                    assertSame(actionButton, snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                    assertSame(actionButton, host.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                    assertSame(actionButton, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                    actionButton.fireEvent(keyPressed(KeyCode.F6));
+
+                    assertTrue(tooltipAction.isFocused());
+                    assertTrue(tooltip.isShowing());
+                    assertTrue(host.isShowing());
+                    assertSame(tooltipAction, snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                    assertSame(tooltipAction, host.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                    assertPopupFocusRoutedByContainer(dialogPane, tooltipAction);
+
+                    tooltipAction.fireEvent(keyPressed(KeyCode.ESCAPE));
+
+                    assertFalse(tooltip.isShowing());
+                    assertTrue(actionButton.isFocused());
+                    assertTrue(host.isShowing());
+                    assertSame(actionButton, snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                    assertSame(actionButton, host.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                    assertSame(actionButton, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                } finally {
+                    tooltip.hide();
+                    M3Tooltip.uninstall(actionButton, tooltip);
+                }
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that dialog content containers reveal snackbar rich tooltip actions from explicit actions.
+    @Test
+    void dialogPaneRevealsNestedSnackbarRichTooltipAction() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3SnackbarHost host = new M3SnackbarHost();
+            M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
+            Pane content = new Pane(host);
+            content.setPrefSize(420.0, 120.0);
+            M3DialogPane dialogPane = new M3DialogPane();
+            dialogPane.setContent(content);
+            dialogPane.getButtonTypes().setAll(ButtonType.OK);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(dialogPane);
+                Scene scene = new Scene(root, 640.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                dialogPane.resizeRelocate(32.0, 32.0, 520.0, 260.0);
+                host.resizeRelocate(0.0, 0.0, 420.0, 96.0);
+                root.layout();
+
+                host.show(snackbar);
+                root.applyCss();
+                root.layout();
+                Node actionButton = Objects.requireNonNull(assertInstanceOf(
+                        Node.class,
+                        snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                ));
+                M3Button tooltipAction = new M3Button("Details");
+                M3RichTooltip tooltip = M3RichTooltip.install(
+                        actionButton,
+                        "Undo",
+                        "Restores the previous item state.",
+                        tooltipAction
+                );
+
+                try {
+                    assertFalse(tooltip.isShowing());
+                    assertSame(host, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                    dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, tooltipAction);
+
+                    assertTrue(tooltip.isShowing());
+                    assertTrue(tooltipAction.isFocused());
+                    assertTrue(host.isShowing());
+                    assertSame(tooltipAction, snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                    assertSame(tooltipAction, host.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                    assertSame(tooltipAction, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                } finally {
+                    tooltip.hide();
+                    M3Tooltip.uninstall(actionButton, tooltip);
+                }
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that dialog content containers can promote queued snackbars before revealing action tooltip targets.
+    @Test
+    void dialogPaneRevealsQueuedSnackbarRichTooltipActionThroughNestedSnackbarHost() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3SnackbarHost host = new M3SnackbarHost();
+            M3Snackbar currentSnackbar = new M3Snackbar("Saved", "Undo");
+            M3Snackbar queuedSnackbar = new M3Snackbar("Deleted", "Restore");
+            Pane content = new Pane(host);
+            content.setPrefSize(420.0, 120.0);
+            M3DialogPane dialogPane = new M3DialogPane();
+            dialogPane.setContent(content);
+            dialogPane.getButtonTypes().setAll(ButtonType.OK);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(dialogPane);
+                Scene scene = new Scene(root, 640.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                dialogPane.resizeRelocate(32.0, 32.0, 520.0, 260.0);
+                host.resizeRelocate(0.0, 0.0, 420.0, 96.0);
+                root.layout();
+
+                host.show(currentSnackbar);
+                host.enqueue(queuedSnackbar);
+                root.applyCss();
+                root.layout();
+
+                assertSame(currentSnackbar, host.getSnackbar());
+                assertSame(queuedSnackbar, host.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+                assertSame(host, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, queuedSnackbar);
+                root.applyCss();
+                root.layout();
+                Node actionButton = Objects.requireNonNull(assertInstanceOf(
+                        Node.class,
+                        queuedSnackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                ));
+                M3Button tooltipAction = new M3Button("Details");
+                M3RichTooltip tooltip = M3RichTooltip.install(
+                        actionButton,
+                        "Restore",
+                        "Restores the deleted item.",
+                        tooltipAction
+                );
+
+                try {
+                    assertSame(queuedSnackbar, host.getSnackbar());
+                    assertTrue(host.getQueue().isEmpty());
+                    assertTrue(actionButton.isFocused());
+                    assertFalse(tooltip.isShowing());
+
+                    dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, tooltipAction);
+
+                    assertTrue(tooltip.isShowing());
+                    assertTrue(tooltipAction.isFocused());
+                    assertSame(tooltipAction, queuedSnackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                    assertSame(tooltipAction, host.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                    assertPopupFocusRoutedByContainer(dialogPane, tooltipAction);
+                } finally {
+                    tooltip.hide();
+                    M3Tooltip.uninstall(actionButton, tooltip);
+                }
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that dialog content containers can reveal indexed queued snackbar tooltip targets.
+    @Test
+    void dialogPaneRevealsQueuedSnackbarRichTooltipActionByIndexThroughNestedSnackbarHost() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3SnackbarHost host = new M3SnackbarHost();
+            M3Snackbar currentSnackbar = new M3Snackbar("Saved", "Undo");
+            M3Snackbar queuedSnackbar = new M3Snackbar("Deleted", "Restore");
+            Pane content = new Pane(host);
+            content.setPrefSize(420.0, 120.0);
+            M3DialogPane dialogPane = new M3DialogPane();
+            dialogPane.setContent(content);
+            dialogPane.getButtonTypes().setAll(ButtonType.OK);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(dialogPane);
+                Scene scene = new Scene(root, 640.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                dialogPane.resizeRelocate(32.0, 32.0, 520.0, 260.0);
+                host.resizeRelocate(0.0, 0.0, 420.0, 96.0);
+                root.layout();
+
+                host.show(currentSnackbar);
+                host.enqueue(queuedSnackbar);
+                root.applyCss();
+                root.layout();
+
+                assertSame(currentSnackbar, host.getSnackbar());
+                assertSame(currentSnackbar, host.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+                assertSame(queuedSnackbar, host.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+                assertSame(host, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0, 1);
+                root.applyCss();
+                root.layout();
+                Node actionButton = Objects.requireNonNull(assertInstanceOf(
+                        Node.class,
+                        queuedSnackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                ));
+                M3Button tooltipAction = new M3Button("Details");
+                M3RichTooltip tooltip = M3RichTooltip.install(
+                        actionButton,
+                        "Restore",
+                        "Restores the deleted item.",
+                        tooltipAction
+                );
+
+                try {
+                    assertSame(queuedSnackbar, host.getSnackbar());
+                    assertNull(host.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+                    assertTrue(host.getQueue().isEmpty());
+                    assertTrue(actionButton.isFocused());
+                    assertFalse(tooltip.isShowing());
+
+                    host.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0, tooltipAction);
+
+                    assertTrue(tooltip.isShowing());
+                    assertTrue(tooltipAction.isFocused());
+
+                    tooltip.hide();
+                    actionButton.requestFocus();
+                    dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0, tooltipAction);
+
+                    assertTrue(tooltip.isShowing());
+                    assertTrue(tooltipAction.isFocused());
+                    assertSame(tooltipAction, queuedSnackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                    assertSame(tooltipAction, host.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                    assertPopupFocusRoutedByContainer(dialogPane, tooltipAction);
+                } finally {
+                    tooltip.hide();
+                    M3Tooltip.uninstall(actionButton, tooltip);
+                }
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that dialog snackbar rich tooltip reveal rejects unreachable action targets.
+    @Test
+    void dialogPaneRejectsUnreachableNestedSnackbarRichTooltipAction() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3SnackbarHost host = new M3SnackbarHost();
+            M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
+            Pane content = new Pane(host);
+            content.setPrefSize(420.0, 120.0);
+            M3DialogPane dialogPane = new M3DialogPane();
+            dialogPane.setContent(content);
+            dialogPane.getButtonTypes().setAll(ButtonType.OK);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(dialogPane);
+                Scene scene = new Scene(root, 640.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                dialogPane.resizeRelocate(32.0, 32.0, 520.0, 260.0);
+                host.resizeRelocate(0.0, 0.0, 420.0, 96.0);
+                root.layout();
+
+                host.show(snackbar);
+                root.applyCss();
+                root.layout();
+                Node actionButton = Objects.requireNonNull(assertInstanceOf(
+                        Node.class,
+                        snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                ));
+                M3Button tooltipAction = new M3Button("Details");
+                tooltipAction.setDisable(true);
+                M3RichTooltip tooltip = M3RichTooltip.install(
+                        actionButton,
+                        "Undo",
+                        "Restores the previous item state.",
+                        tooltipAction
+                );
+
+                try {
+                    assertFalse(tooltip.isShowing());
+
+                    dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, tooltipAction);
+
+                    assertFalse(tooltip.isShowing());
+                    assertFalse(tooltipAction.isFocused());
+                    assertTrue(host.isShowing());
+                    assertSame(actionButton, snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                    assertSame(actionButton, host.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                    assertSame(host, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                } finally {
+                    tooltip.hide();
+                    M3Tooltip.uninstall(actionButton, tooltip);
+                }
             } finally {
                 stage.close();
             }
@@ -3380,6 +4909,146 @@ final class M3MixedPopupFocusTest {
         });
     }
 
+    /// Verifies that surface content containers can promote queued snackbars before revealing action tooltip targets.
+    @Test
+    void surfaceRevealsQueuedSnackbarRichTooltipActionThroughNestedSnackbarHost() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3SnackbarHost host = new M3SnackbarHost();
+            M3Snackbar currentSnackbar = new M3Snackbar("Saved", "Undo");
+            M3Snackbar queuedSnackbar = new M3Snackbar("Deleted", "Restore");
+            M3Surface surface = new M3Surface(host);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(surface);
+                Scene scene = new Scene(root, 720.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                surface.resizeRelocate(32.0, 32.0, 520.0, 160.0);
+                host.resizeRelocate(0.0, 0.0, 480.0, 96.0);
+                root.layout();
+
+                host.show(currentSnackbar);
+                host.enqueue(queuedSnackbar);
+                root.applyCss();
+                root.layout();
+
+                assertTrue(host.isShowing());
+                assertSame(currentSnackbar, host.getSnackbar());
+                assertSame(queuedSnackbar, host.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+
+                surface.executeAccessibleAction(AccessibleAction.SHOW_ITEM, queuedSnackbar);
+                root.applyCss();
+                root.layout();
+                Node actionButton = Objects.requireNonNull(assertInstanceOf(
+                        Node.class,
+                        queuedSnackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                ));
+                M3Button tooltipAction = new M3Button("Details");
+                M3RichTooltip tooltip = M3RichTooltip.install(
+                        actionButton,
+                        "Restore",
+                        "Restores the deleted item.",
+                        tooltipAction
+                );
+
+                try {
+                    assertSame(queuedSnackbar, host.getSnackbar());
+                    assertFalse(tooltip.isShowing());
+
+                    surface.executeAccessibleAction(AccessibleAction.SHOW_ITEM, tooltipAction);
+
+                    assertTrue(tooltip.isShowing());
+                    assertTrue(tooltipAction.isFocused());
+                    assertTrue(host.isShowing());
+                    assertSame(queuedSnackbar, host.getSnackbar());
+                    assertSame(tooltipAction, queuedSnackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                    assertSame(tooltipAction, host.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                    assertSame(tooltipAction, surface.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                } finally {
+                    tooltip.hide();
+                    M3Tooltip.uninstall(actionButton, tooltip);
+                }
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that surface content containers can reveal indexed queued snackbar tooltip targets.
+    @Test
+    void surfaceRevealsQueuedSnackbarRichTooltipActionByIndexThroughNestedSnackbarHost() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3SnackbarHost host = new M3SnackbarHost();
+            M3Snackbar currentSnackbar = new M3Snackbar("Saved", "Undo");
+            M3Snackbar queuedSnackbar = new M3Snackbar("Deleted", "Restore");
+            M3Surface surface = new M3Surface(host);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(surface);
+                Scene scene = new Scene(root, 720.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                surface.resizeRelocate(32.0, 32.0, 520.0, 160.0);
+                host.resizeRelocate(0.0, 0.0, 480.0, 96.0);
+                root.layout();
+
+                host.show(currentSnackbar);
+                host.enqueue(queuedSnackbar);
+                root.applyCss();
+                root.layout();
+
+                assertTrue(host.isShowing());
+                assertSame(currentSnackbar, host.getSnackbar());
+                assertSame(currentSnackbar, host.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+                assertSame(queuedSnackbar, host.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+
+                surface.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1);
+                root.applyCss();
+                root.layout();
+                Node actionButton = Objects.requireNonNull(assertInstanceOf(
+                        Node.class,
+                        queuedSnackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                ));
+                M3Button tooltipAction = new M3Button("Details");
+                M3RichTooltip tooltip = M3RichTooltip.install(
+                        actionButton,
+                        "Restore",
+                        "Restores the deleted item.",
+                        tooltipAction
+                );
+
+                try {
+                    assertSame(queuedSnackbar, host.getSnackbar());
+                    assertSame(queuedSnackbar, host.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+                    assertNull(host.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+                    assertTrue(host.getQueue().isEmpty());
+                    assertFalse(tooltip.isShowing());
+
+                    surface.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0, tooltipAction);
+
+                    assertTrue(tooltip.isShowing());
+                    assertTrue(tooltipAction.isFocused());
+                    assertTrue(host.isShowing());
+                    assertSame(queuedSnackbar, host.getSnackbar());
+                    assertSame(tooltipAction, queuedSnackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                    assertSame(tooltipAction, host.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                    assertSame(tooltipAction, surface.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                } finally {
+                    tooltip.hide();
+                    M3Tooltip.uninstall(actionButton, tooltip);
+                }
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that snackbar rich tooltip reveal rejects unreachable action targets.
     @Test
     void surfaceRejectsUnreachableNestedSnackbarRichTooltipAction() {
@@ -3695,6 +5364,46 @@ final class M3MixedPopupFocusTest {
         });
     }
 
+    /// Verifies that banner action slots reject unreachable menu popup targets before opening popups.
+    @Test
+    void bannerRejectsUnreachableNestedMenuPopupTargetsFromActionSlot() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem hiddenItem = new M3MenuItem("Hidden");
+            M3MenuItem disabledItem = new M3MenuItem("Disabled");
+            M3MenuButton menuButton = unreachableTargetMenuButton(hiddenItem, disabledItem);
+            M3Banner banner = new M3Banner("Sync required", menuButton);
+
+            assertContainerRejectsUnreachableNestedMenuPopupTargets(
+                    banner,
+                    menuButton,
+                    hiddenItem,
+                    disabledItem,
+                    640.0,
+                    112.0
+            );
+        });
+    }
+
+    /// Verifies that banner action slots reject unreachable split-button popup targets before opening popups.
+    @Test
+    void bannerRejectsUnreachableNestedSplitButtonPopupTargetsFromActionSlot() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem hiddenItem = new M3MenuItem("Hidden");
+            M3MenuItem disabledItem = new M3MenuItem("Disabled");
+            M3SplitButton splitButton = unreachableTargetSplitButton(hiddenItem, disabledItem);
+            M3Banner banner = new M3Banner("Create an item", splitButton);
+
+            assertContainerRejectsUnreachableNestedSplitButtonPopupTargets(
+                    banner,
+                    splitButton,
+                    hiddenItem,
+                    disabledItem,
+                    640.0,
+                    112.0
+            );
+        });
+    }
+
     /// Verifies that card content reveals menu popup targets and exposes popup focus.
     @Test
     void cardRevealsNestedMenuPopupTargetFromContent() {
@@ -3802,6 +5511,47 @@ final class M3MixedPopupFocusTest {
             }
         });
     }
+
+    /// Verifies that card content rejects unreachable menu popup targets before opening popups.
+    @Test
+    void cardRejectsUnreachableNestedMenuPopupTargetsFromContent() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem hiddenItem = new M3MenuItem("Hidden");
+            M3MenuItem disabledItem = new M3MenuItem("Disabled");
+            M3MenuButton menuButton = unreachableTargetMenuButton(hiddenItem, disabledItem);
+            M3Card card = new M3Card(menuButton);
+
+            assertContainerRejectsUnreachableNestedMenuPopupTargets(
+                    card,
+                    menuButton,
+                    hiddenItem,
+                    disabledItem,
+                    360.0,
+                    120.0
+            );
+        });
+    }
+
+    /// Verifies that card content rejects unreachable split-button popup targets before opening popups.
+    @Test
+    void cardRejectsUnreachableNestedSplitButtonPopupTargetsFromContent() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem hiddenItem = new M3MenuItem("Hidden");
+            M3MenuItem disabledItem = new M3MenuItem("Disabled");
+            M3SplitButton splitButton = unreachableTargetSplitButton(hiddenItem, disabledItem);
+            M3Card card = new M3Card(splitButton);
+
+            assertContainerRejectsUnreachableNestedSplitButtonPopupTargets(
+                    card,
+                    splitButton,
+                    hiddenItem,
+                    disabledItem,
+                    360.0,
+                    120.0
+            );
+        });
+    }
+
     /// Verifies that surface content subtrees expose active card rich tooltip action focus.
     @Test
     void surfaceRoutesFocusThroughNestedCardRichTooltipAction() {
@@ -4203,6 +5953,49 @@ final class M3MixedPopupFocusTest {
             }
         });
     }
+
+    /// Verifies that list item leading slots reject unreachable menu popup targets before opening popups.
+    @Test
+    void listItemLeadingSlotRejectsUnreachableNestedMenuPopupTargets() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem hiddenItem = new M3MenuItem("Hidden");
+            M3MenuItem disabledItem = new M3MenuItem("Disabled");
+            M3MenuButton menuButton = unreachableTargetMenuButton(hiddenItem, disabledItem);
+            M3ListItem listItem = new M3ListItem("Document");
+            listItem.setLeading(menuButton);
+
+            assertContainerRejectsUnreachableNestedMenuPopupTargets(
+                    listItem,
+                    menuButton,
+                    hiddenItem,
+                    disabledItem,
+                    560.0,
+                    88.0
+            );
+        });
+    }
+
+    /// Verifies that list item leading slots reject unreachable split-button popup targets before opening popups.
+    @Test
+    void listItemLeadingSlotRejectsUnreachableNestedSplitButtonPopupTargets() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem hiddenItem = new M3MenuItem("Hidden");
+            M3MenuItem disabledItem = new M3MenuItem("Disabled");
+            M3SplitButton splitButton = unreachableTargetSplitButton(hiddenItem, disabledItem);
+            M3ListItem listItem = new M3ListItem("Template");
+            listItem.setLeading(splitButton);
+
+            assertContainerRejectsUnreachableNestedSplitButtonPopupTargets(
+                    listItem,
+                    splitButton,
+                    hiddenItem,
+                    disabledItem,
+                    560.0,
+                    88.0
+            );
+        });
+    }
+
     /// Verifies that a hidden side sheet can reveal a nested submenu target from its content subtree.
     @Test
     void hiddenSideSheetRevealsNestedContentMenuPopupTarget() {
@@ -5045,6 +6838,214 @@ final class M3MixedPopupFocusTest {
         });
     }
 
+    /// Verifies that hidden sheets reject disabled picker value targets before changing shown state.
+    @Test
+    void hiddenSheetsRejectDisabledContentPickerValueTargetsBeforeShowing() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3DatePickerField bottomDateField = new M3DatePickerField(LocalDate.of(2026, 8, 10));
+            bottomDateField.setMaxDate(LocalDate.of(2026, 8, 15));
+            M3BottomSheet bottomDateSheet = new M3BottomSheet("Bottom date", new Pane(bottomDateField));
+            bottomDateSheet.setShown(false);
+
+            M3DatePickerField sideDateField = new M3DatePickerField(LocalDate.of(2026, 8, 10));
+            sideDateField.setMaxDate(LocalDate.of(2026, 8, 15));
+            M3SideSheet sideDateSheet = new M3SideSheet("Side date", new Pane(sideDateField));
+            sideDateSheet.setShown(false);
+
+            M3TimePickerField bottomTimeField = new M3TimePickerField(LocalTime.of(9, 0));
+            bottomTimeField.setMaxTime(LocalTime.of(12, 0));
+            M3BottomSheet bottomTimeSheet = new M3BottomSheet("Bottom time", new Pane(bottomTimeField));
+            bottomTimeSheet.setShown(false);
+
+            M3TimePickerField sideTimeField = new M3TimePickerField(LocalTime.of(9, 0));
+            sideTimeField.setMaxTime(LocalTime.of(12, 0));
+            M3SideSheet sideTimeSheet = new M3SideSheet("Side time", new Pane(sideTimeField));
+            sideTimeSheet.setShown(false);
+
+            M3DateRangePickerField bottomRangeField = new M3DateRangePickerField(
+                    LocalDate.of(2026, 8, 10),
+                    LocalDate.of(2026, 8, 12)
+            );
+            bottomRangeField.setMaxDate(LocalDate.of(2026, 8, 15));
+            M3BottomSheet bottomRangeSheet = new M3BottomSheet("Bottom range", new Pane(bottomRangeField));
+            bottomRangeSheet.setShown(false);
+
+            M3DateRangePickerField sideRangeField = new M3DateRangePickerField(
+                    LocalDate.of(2026, 8, 10),
+                    LocalDate.of(2026, 8, 12)
+            );
+            sideRangeField.setMaxDate(LocalDate.of(2026, 8, 15));
+            M3SideSheet sideRangeSheet = new M3SideSheet("Side range", new Pane(sideRangeField));
+            sideRangeSheet.setShown(false);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(
+                        bottomDateSheet,
+                        sideDateSheet,
+                        bottomTimeSheet,
+                        sideTimeSheet,
+                        bottomRangeSheet,
+                        sideRangeSheet
+                );
+                Scene scene = new Scene(root, 960.0, 720.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                bottomDateSheet.resizeRelocate(32.0, 32.0, 420.0, 220.0);
+                sideDateSheet.resizeRelocate(500.0, 32.0, 360.0, 220.0);
+                bottomTimeSheet.resizeRelocate(32.0, 260.0, 420.0, 220.0);
+                sideTimeSheet.resizeRelocate(500.0, 260.0, 360.0, 220.0);
+                bottomRangeSheet.resizeRelocate(32.0, 488.0, 420.0, 220.0);
+                sideRangeSheet.resizeRelocate(500.0, 488.0, 360.0, 220.0);
+                bottomDateField.resizeRelocate(0.0, 0.0, 260.0, 64.0);
+                sideDateField.resizeRelocate(0.0, 0.0, 260.0, 64.0);
+                bottomTimeField.resizeRelocate(0.0, 0.0, 260.0, 64.0);
+                sideTimeField.resizeRelocate(0.0, 0.0, 260.0, 64.0);
+                bottomRangeField.resizeRelocate(0.0, 0.0, 340.0, 64.0);
+                sideRangeField.resizeRelocate(0.0, 0.0, 340.0, 64.0);
+                root.layout();
+
+                assertHiddenSheetPickerValueTargetRejected(
+                        bottomDateSheet,
+                        bottomDateField,
+                        LocalDate.of(2026, 8, 20)
+                );
+                assertHiddenSheetPickerValueTargetRejected(
+                        sideDateSheet,
+                        sideDateField,
+                        LocalDate.of(2026, 8, 20)
+                );
+                assertHiddenSheetPickerValueTargetRejected(
+                        bottomTimeSheet,
+                        bottomTimeField,
+                        LocalTime.of(13, 0)
+                );
+                assertHiddenSheetPickerValueTargetRejected(
+                        sideTimeSheet,
+                        sideTimeField,
+                        LocalTime.of(13, 0)
+                );
+                assertHiddenSheetDateRangePickerValueTargetRejected(
+                        bottomRangeSheet,
+                        bottomRangeField,
+                        LocalDate.of(2026, 8, 20)
+                );
+                assertHiddenSheetDateRangePickerValueTargetRejected(
+                        sideRangeSheet,
+                        sideRangeField,
+                        LocalDate.of(2026, 8, 20)
+                );
+            } finally {
+                bottomDateSheet.hide();
+                sideDateSheet.hide();
+                bottomTimeSheet.hide();
+                sideTimeSheet.hide();
+                bottomRangeSheet.hide();
+                sideRangeSheet.hide();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that closed reveal owners reject hidden explicit node targets before changing visible state.
+    @Test
+    void closedRevealOwnersRejectHiddenNodeTargetsBeforeStateChanges() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3Button bottomVisibleAction = new M3Button("Bottom visible");
+            M3Button bottomHiddenAction = new M3Button("Bottom hidden");
+            bottomHiddenAction.setVisible(false);
+            M3BottomSheet bottomSheet = new M3BottomSheet(
+                    "Bottom actions",
+                    new StackPane(bottomVisibleAction, bottomHiddenAction)
+            );
+            bottomSheet.hide();
+
+            M3Button sideVisibleAction = new M3Button("Side visible");
+            M3Button sideHiddenAction = new M3Button("Side hidden");
+            sideHiddenAction.setVisible(false);
+            M3SideSheet sideSheet = new M3SideSheet(
+                    "Side actions",
+                    new StackPane(sideVisibleAction, sideHiddenAction)
+            );
+            sideSheet.hide();
+
+            M3Button searchVisibleAction = new M3Button("Search visible");
+            M3Button searchHiddenAction = new M3Button("Search hidden");
+            searchHiddenAction.setVisible(false);
+            M3SearchBar searchBar = new M3SearchBar("Search");
+            searchBar.setTrailingActions(new StackPane(searchVisibleAction, searchHiddenAction));
+
+            M3Button resultVisibleAction = new M3Button("Result visible");
+            M3Button resultHiddenAction = new M3Button("Result hidden");
+            resultHiddenAction.setVisible(false);
+            M3ListItem result = new M3ListItem("Result");
+            result.setTrailing(new StackPane(resultVisibleAction, resultHiddenAction));
+            M3SearchView searchView = new M3SearchView("Search results", result);
+
+            M3Button outside = new M3Button("Outside");
+            Stage stage = new Stage();
+            try {
+                Pane root = new Pane(outside, bottomSheet, sideSheet, searchBar, searchView);
+                Scene scene = new Scene(root, 860.0, 620.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                outside.resizeRelocate(16.0, 16.0, 120.0, 40.0);
+                bottomSheet.resizeRelocate(32.0, 80.0, 360.0, 160.0);
+                sideSheet.resizeRelocate(440.0, 80.0, 320.0, 180.0);
+                searchBar.resizeRelocate(32.0, 300.0, 420.0, 56.0);
+                searchView.resizeRelocate(32.0, 390.0, 480.0, 170.0);
+                searchView.deactivate();
+                root.layout();
+
+                assertFalse(searchView.isActive());
+                outside.requestFocus();
+                assertTrue(outside.isFocused());
+
+                bottomSheet.executeAccessibleAction(AccessibleAction.SHOW_ITEM, bottomHiddenAction);
+                sideSheet.executeAccessibleAction(AccessibleAction.SHOW_ITEM, sideHiddenAction);
+                searchBar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, searchHiddenAction);
+                searchView.executeAccessibleAction(AccessibleAction.SHOW_ITEM, resultHiddenAction);
+                root.layout();
+
+                assertFalse(bottomSheet.isShown());
+                assertFalse(sideSheet.isShown());
+                assertFalse(searchBar.isActive());
+                assertFalse(searchView.isActive());
+                assertFalse(bottomHiddenAction.isFocused());
+                assertFalse(sideHiddenAction.isFocused());
+                assertFalse(searchHiddenAction.isFocused());
+                assertFalse(resultHiddenAction.isFocused());
+                assertTrue(outside.isFocused());
+
+                bottomSheet.executeAccessibleAction(AccessibleAction.SHOW_ITEM, bottomVisibleAction);
+                assertTrue(bottomSheet.isShown());
+                assertTrue(bottomVisibleAction.isFocused());
+                assertSame(bottomVisibleAction, bottomSheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                sideSheet.executeAccessibleAction(AccessibleAction.SHOW_ITEM, sideVisibleAction);
+                assertTrue(sideSheet.isShown());
+                assertTrue(sideVisibleAction.isFocused());
+                assertSame(sideVisibleAction, sideSheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                searchBar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, searchVisibleAction);
+                assertTrue(searchBar.isActive());
+                assertTrue(searchVisibleAction.isFocused());
+                assertPopupFocusRoutedByContainer(searchBar, searchVisibleAction);
+
+                searchView.executeAccessibleAction(AccessibleAction.SHOW_ITEM, resultVisibleAction);
+                assertTrue(searchView.isActive());
+                assertTrue(resultVisibleAction.isFocused());
+                assertPopupFocusRoutedByContainer(searchView, resultVisibleAction);
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that search bars reveal trailing menu popup targets from explicit accessibility actions.
     @Test
     void searchBarRevealsNestedTrailingMenuPopupTarget() {
@@ -5078,6 +7079,68 @@ final class M3MixedPopupFocusTest {
                 menuButton.hideMenu();
                 stage.close();
             }
+        });
+    }
+
+    /// Verifies that search bars reveal trailing split-button popup targets from explicit accessibility actions.
+    @Test
+    void searchBarRevealsNestedTrailingSplitButtonPopupTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem draftItem = new M3MenuItem("Draft");
+            M3MenuItem publishItem = new M3MenuItem("Publish");
+            M3SplitButton splitButton = new M3SplitButton("Create", draftItem, publishItem);
+            M3SearchBar searchBar = new M3SearchBar("Search");
+            searchBar.setTrailingActions(splitButton);
+
+            assertFalse(searchBar.isActive());
+            assertContainerRevealsNestedSplitButtonPopupTarget(searchBar, splitButton, publishItem, 420.0, 56.0);
+            assertTrue(searchBar.isActive());
+        });
+    }
+
+    /// Verifies that search bars reject unreachable trailing menu popup targets before activating.
+    @Test
+    void searchBarRejectsUnreachableNestedTrailingMenuPopupTargets() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem hiddenItem = new M3MenuItem("Hidden");
+            M3MenuItem disabledItem = new M3MenuItem("Disabled");
+            M3MenuButton menuButton = unreachableTargetMenuButton(hiddenItem, disabledItem);
+            M3SearchBar searchBar = new M3SearchBar("Search");
+            searchBar.setTrailingActions(menuButton);
+
+            assertFalse(searchBar.isActive());
+            assertContainerRejectsUnreachableNestedMenuPopupTargets(
+                    searchBar,
+                    menuButton,
+                    hiddenItem,
+                    disabledItem,
+                    420.0,
+                    56.0
+            );
+            assertFalse(searchBar.isActive());
+        });
+    }
+
+    /// Verifies that search bars reject unreachable trailing split-button popup targets before activating.
+    @Test
+    void searchBarRejectsUnreachableNestedTrailingSplitButtonPopupTargets() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem hiddenItem = new M3MenuItem("Hidden");
+            M3MenuItem disabledItem = new M3MenuItem("Disabled");
+            M3SplitButton splitButton = unreachableTargetSplitButton(hiddenItem, disabledItem);
+            M3SearchBar searchBar = new M3SearchBar("Search");
+            searchBar.setTrailingActions(splitButton);
+
+            assertFalse(searchBar.isActive());
+            assertContainerRejectsUnreachableNestedSplitButtonPopupTargets(
+                    searchBar,
+                    splitButton,
+                    hiddenItem,
+                    disabledItem,
+                    420.0,
+                    56.0
+            );
+            assertFalse(searchBar.isActive());
         });
     }
 
@@ -5197,6 +7260,155 @@ final class M3MixedPopupFocusTest {
                 menuButton.hideMenu();
                 stage.close();
             }
+        });
+    }
+
+    /// Verifies that search views reveal menu popup targets owned by the embedded search bar.
+    @Test
+    void searchViewRevealsNestedSearchBarMenuPopupTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem archiveItem = new M3MenuItem("Archive");
+            M3MenuButton menuButton = new M3MenuButton("Actions", archiveItem);
+            M3SearchView searchView = new M3SearchView("Search");
+            searchView.setTrailingActions(menuButton);
+
+            searchView.deactivate();
+            assertFalse(searchView.isActive());
+            assertContainerRevealsNestedMenuPopupTarget(searchView, menuButton, archiveItem, 480.0, 180.0);
+            assertTrue(searchView.isActive());
+        });
+    }
+
+    /// Verifies that search views reveal split-button targets owned by the embedded search bar.
+    @Test
+    void searchViewRevealsNestedSearchBarSplitButtonPopupTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem draftItem = new M3MenuItem("Draft");
+            M3MenuItem publishItem = new M3MenuItem("Publish");
+            M3SplitButton splitButton = new M3SplitButton("Create", draftItem, publishItem);
+            M3SearchView searchView = new M3SearchView("Search");
+            searchView.setTrailingActions(splitButton);
+
+            searchView.deactivate();
+            assertFalse(searchView.isActive());
+            assertContainerRevealsNestedSplitButtonPopupTarget(searchView, splitButton, publishItem, 480.0, 180.0);
+            assertTrue(searchView.isActive());
+        });
+    }
+
+    /// Verifies that search views reveal nested split-button popup targets from result rows.
+    @Test
+    void searchViewRevealsNestedResultSplitButtonPopupTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem draftItem = new M3MenuItem("Draft");
+            M3MenuItem publishItem = new M3MenuItem("Publish");
+            M3SplitButton splitButton = new M3SplitButton("Create", draftItem, publishItem);
+            M3ListItem result = new M3ListItem("Document");
+            result.setTrailing(splitButton);
+            M3SearchView searchView = new M3SearchView("Search", result);
+
+            searchView.deactivate();
+            assertFalse(searchView.isActive());
+            assertContainerRevealsNestedSplitButtonPopupTarget(searchView, splitButton, publishItem, 480.0, 180.0);
+            assertTrue(searchView.isActive());
+        });
+    }
+
+    /// Verifies that search views reject unreachable embedded search-bar menu targets before activating.
+    @Test
+    void searchViewRejectsUnreachableNestedSearchBarMenuPopupTargets() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem hiddenItem = new M3MenuItem("Hidden");
+            M3MenuItem disabledItem = new M3MenuItem("Disabled");
+            M3MenuButton menuButton = unreachableTargetMenuButton(hiddenItem, disabledItem);
+            M3SearchView searchView = new M3SearchView("Search");
+            searchView.setTrailingActions(menuButton);
+
+            searchView.deactivate();
+            assertFalse(searchView.isActive());
+            assertContainerRejectsUnreachableNestedMenuPopupTargets(
+                    searchView,
+                    menuButton,
+                    hiddenItem,
+                    disabledItem,
+                    480.0,
+                    180.0
+            );
+            assertFalse(searchView.isActive());
+        });
+    }
+
+    /// Verifies that search views reject unreachable embedded search-bar split-button targets before activating.
+    @Test
+    void searchViewRejectsUnreachableNestedSearchBarSplitButtonPopupTargets() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem hiddenItem = new M3MenuItem("Hidden");
+            M3MenuItem disabledItem = new M3MenuItem("Disabled");
+            M3SplitButton splitButton = unreachableTargetSplitButton(hiddenItem, disabledItem);
+            M3SearchView searchView = new M3SearchView("Search");
+            searchView.setTrailingActions(splitButton);
+
+            searchView.deactivate();
+            assertFalse(searchView.isActive());
+            assertContainerRejectsUnreachableNestedSplitButtonPopupTargets(
+                    searchView,
+                    splitButton,
+                    hiddenItem,
+                    disabledItem,
+                    480.0,
+                    180.0
+            );
+            assertFalse(searchView.isActive());
+        });
+    }
+
+    /// Verifies that search views reject unreachable result-row menu targets before activating.
+    @Test
+    void searchViewRejectsUnreachableNestedResultMenuPopupTargets() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem hiddenItem = new M3MenuItem("Hidden");
+            M3MenuItem disabledItem = new M3MenuItem("Disabled");
+            M3MenuButton menuButton = unreachableTargetMenuButton(hiddenItem, disabledItem);
+            M3ListItem result = new M3ListItem("Document");
+            result.setTrailing(menuButton);
+            M3SearchView searchView = new M3SearchView("Search", result);
+
+            searchView.deactivate();
+            assertFalse(searchView.isActive());
+            assertContainerRejectsUnreachableNestedMenuPopupTargets(
+                    searchView,
+                    menuButton,
+                    hiddenItem,
+                    disabledItem,
+                    480.0,
+                    180.0
+            );
+            assertFalse(searchView.isActive());
+        });
+    }
+
+    /// Verifies that search views reject unreachable result-row split-button targets before activating.
+    @Test
+    void searchViewRejectsUnreachableNestedResultSplitButtonPopupTargets() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem hiddenItem = new M3MenuItem("Hidden");
+            M3MenuItem disabledItem = new M3MenuItem("Disabled");
+            M3SplitButton splitButton = unreachableTargetSplitButton(hiddenItem, disabledItem);
+            M3ListItem result = new M3ListItem("Document");
+            result.setTrailing(splitButton);
+            M3SearchView searchView = new M3SearchView("Search", result);
+
+            searchView.deactivate();
+            assertFalse(searchView.isActive());
+            assertContainerRejectsUnreachableNestedSplitButtonPopupTargets(
+                    searchView,
+                    splitButton,
+                    hiddenItem,
+                    disabledItem,
+                    480.0,
+                    180.0
+            );
+            assertFalse(searchView.isActive());
         });
     }
 
@@ -5521,6 +7733,228 @@ final class M3MixedPopupFocusTest {
         });
     }
 
+    /// Verifies that collapsed navigation drawer groups reveal nested child date picker targets.
+    @Test
+    void navigationDrawerGroupRevealsNestedChildDatePickerValueTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 8, 12));
+            M3ListItem childItem = new M3ListItem("Schedule");
+            childItem.setTrailing(field);
+            M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Navigation");
+            group.addItem(childItem);
+            group.setExpanded(false);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(group);
+                Scene scene = new Scene(root, 540.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                group.resizeRelocate(32.0, 32.0, 420.0, 260.0);
+                root.layout();
+
+                assertFalse(group.isExpanded());
+                assertPickerValueTargetRoutedByContainer(
+                        group,
+                        field,
+                        LocalDate.of(2026, 8, 20)
+                );
+                assertTrue(group.isExpanded());
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that collapsed navigation drawer groups reveal nested child time picker targets.
+    @Test
+    void navigationDrawerGroupRevealsNestedChildTimePickerValueTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3TimePickerField field = new M3TimePickerField(LocalTime.of(9, 30));
+            M3ListItem childItem = new M3ListItem("Schedule");
+            childItem.setTrailing(field);
+            M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Navigation");
+            group.addItem(childItem);
+            group.setExpanded(false);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(group);
+                Scene scene = new Scene(root, 540.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                group.resizeRelocate(32.0, 32.0, 420.0, 260.0);
+                root.layout();
+
+                assertFalse(group.isExpanded());
+                assertPickerValueTargetRoutedByContainer(
+                        group,
+                        field,
+                        LocalTime.of(11, 45)
+                );
+                assertTrue(group.isExpanded());
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that collapsed navigation drawer groups reveal nested child date-range picker targets.
+    @Test
+    void navigationDrawerGroupRevealsNestedChildDateRangePickerValueTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3DateRangePickerField field = new M3DateRangePickerField(
+                    LocalDate.of(2026, 8, 12),
+                    LocalDate.of(2026, 8, 18)
+            );
+            M3ListItem childItem = new M3ListItem("Schedule");
+            childItem.setTrailing(field);
+            M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Navigation");
+            group.addItem(childItem);
+            group.setExpanded(false);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(group);
+                Scene scene = new Scene(root, 620.0, 380.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                group.resizeRelocate(32.0, 32.0, 500.0, 280.0);
+                root.layout();
+
+                assertFalse(group.isExpanded());
+                assertCollapsedDateRangePickerValueTargetRoutedByContainer(
+                        group,
+                        group,
+                        field,
+                        LocalDate.of(2026, 8, 24)
+                );
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that collapsed navigation drawer groups reject disabled child date picker targets.
+    @Test
+    void navigationDrawerGroupRejectsDisabledNestedChildDatePickerValueTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 8, 12));
+            field.setMaxDate(LocalDate.of(2026, 8, 18));
+            M3ListItem childItem = new M3ListItem("Schedule");
+            childItem.setTrailing(field);
+            M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Navigation");
+            group.addItem(childItem);
+            group.setExpanded(false);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(group);
+                Scene scene = new Scene(root, 540.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                group.resizeRelocate(32.0, 32.0, 420.0, 260.0);
+                root.layout();
+
+                assertCollapsedPickerValueTargetRejectedByContainer(
+                        group,
+                        group,
+                        field,
+                        LocalDate.of(2026, 8, 20)
+                );
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that collapsed navigation drawer groups reject disabled child time picker targets.
+    @Test
+    void navigationDrawerGroupRejectsDisabledNestedChildTimePickerValueTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3TimePickerField field = new M3TimePickerField(LocalTime.of(9, 30));
+            field.setMaxTime(LocalTime.of(10, 0));
+            M3ListItem childItem = new M3ListItem("Schedule");
+            childItem.setTrailing(field);
+            M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Navigation");
+            group.addItem(childItem);
+            group.setExpanded(false);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(group);
+                Scene scene = new Scene(root, 540.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                group.resizeRelocate(32.0, 32.0, 420.0, 260.0);
+                root.layout();
+
+                assertCollapsedPickerValueTargetRejectedByContainer(
+                        group,
+                        group,
+                        field,
+                        LocalTime.of(11, 45)
+                );
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that collapsed navigation drawer groups reject disabled child date-range picker targets.
+    @Test
+    void navigationDrawerGroupRejectsDisabledNestedChildDateRangePickerValueTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3DateRangePickerField field = new M3DateRangePickerField(
+                    LocalDate.of(2026, 8, 12),
+                    LocalDate.of(2026, 8, 18)
+            );
+            field.setMaxDate(LocalDate.of(2026, 8, 18));
+            M3ListItem childItem = new M3ListItem("Schedule");
+            childItem.setTrailing(field);
+            M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Navigation");
+            group.addItem(childItem);
+            group.setExpanded(false);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(group);
+                Scene scene = new Scene(root, 620.0, 380.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                group.resizeRelocate(32.0, 32.0, 500.0, 280.0);
+                root.layout();
+
+                assertCollapsedDateRangePickerValueTargetRejectedByContainer(
+                        group,
+                        group,
+                        field,
+                        LocalDate.of(2026, 8, 24)
+                );
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that expanded navigation drawer groups preserve active child rich tooltip focus for default actions.
     @Test
     void navigationDrawerGroupPreservesActiveChildRichTooltipFocusForDefaultActions() {
@@ -5677,6 +8111,99 @@ final class M3MixedPopupFocusTest {
         });
     }
 
+    /// Verifies that navigation drawers reveal nested rich tooltip actions from top-level rows.
+    @Test
+    void navigationDrawerRevealsNestedTopLevelRichTooltipAction() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3Button ownerAction = new M3Button("More");
+            M3Button tooltipAction = new M3Button("Details");
+            M3RichTooltip tooltip = M3RichTooltip.install(
+                    ownerAction,
+                    "More",
+                    "Shows drawer destination details.",
+                    tooltipAction
+            );
+            M3ListItem item = new M3ListItem("Destination");
+            item.setTrailing(ownerAction);
+            M3NavigationDrawer drawer = new M3NavigationDrawer(item);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(drawer);
+                Scene scene = new Scene(root, 480.0, 260.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                drawer.resizeRelocate(32.0, 32.0, 360.0, 180.0);
+                root.layout();
+
+                assertFalse(tooltip.isShowing());
+
+                drawer.executeAccessibleAction(AccessibleAction.SHOW_ITEM, tooltipAction);
+                root.layout();
+
+                assertTrue(tooltip.isShowing());
+                assertTrue(tooltipAction.isFocused());
+                assertSame(tooltipAction, item.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertPopupFocusRoutedByContainer(drawer, tooltipAction);
+            } finally {
+                tooltip.hide();
+                M3Tooltip.uninstall(ownerAction, tooltip);
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that navigation drawers reject unreachable top-level rich tooltip actions without focusing the row.
+    @Test
+    void navigationDrawerRejectsDisabledNestedTopLevelRichTooltipAction() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3Button outside = new M3Button("Outside");
+            M3Button ownerAction = new M3Button("More");
+            M3Button tooltipAction = new M3Button("Details");
+            tooltipAction.setDisable(true);
+            M3RichTooltip tooltip = M3RichTooltip.install(
+                    ownerAction,
+                    "More",
+                    "Shows drawer destination details.",
+                    tooltipAction
+            );
+            M3ListItem item = new M3ListItem("Destination");
+            item.setTrailing(ownerAction);
+            M3NavigationDrawer drawer = new M3NavigationDrawer(item);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(outside, drawer);
+                Scene scene = new Scene(root, 520.0, 280.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                outside.resizeRelocate(16.0, 16.0, 120.0, 48.0);
+                drawer.resizeRelocate(32.0, 88.0, 360.0, 160.0);
+                root.layout();
+
+                outside.requestFocus();
+                assertTrue(outside.isFocused());
+                assertFalse(tooltip.isShowing());
+
+                drawer.executeAccessibleAction(AccessibleAction.SHOW_ITEM, tooltipAction);
+                root.layout();
+
+                assertFalse(tooltip.isShowing());
+                assertFalse(tooltipAction.isFocused());
+                assertFalse(item.isFocused());
+                assertSame(outside, scene.getFocusOwner());
+                assertNotSame(tooltipAction, drawer.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                tooltip.hide();
+                M3Tooltip.uninstall(ownerAction, tooltip);
+                stage.close();
+            }
+        });
+    }
     /// Verifies that navigation drawers reveal nested rich tooltip actions from collapsed group child rows.
     @Test
     void navigationDrawerRevealsNestedCollapsedGroupRichTooltipAction() {
@@ -5721,6 +8248,236 @@ final class M3MixedPopupFocusTest {
                 assertPopupFocusRoutedByContainer(drawer, tooltipAction);
             } finally {
                 tooltip.hide();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that navigation drawers reveal nested date picker targets from collapsed group child rows.
+    @Test
+    void navigationDrawerRevealsNestedCollapsedGroupDatePickerValueTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 8, 12));
+            M3ListItem childItem = new M3ListItem("Schedule");
+            childItem.setTrailing(field);
+            M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Navigation");
+            group.addItem(childItem);
+            group.setExpanded(false);
+            M3NavigationDrawer drawer = new M3NavigationDrawer(group);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(drawer);
+                Scene scene = new Scene(root, 540.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                drawer.resizeRelocate(32.0, 32.0, 420.0, 260.0);
+                root.layout();
+
+                assertFalse(group.isExpanded());
+                assertPickerValueTargetRoutedByContainer(
+                        drawer,
+                        field,
+                        LocalDate.of(2026, 8, 20)
+                );
+                assertTrue(group.isExpanded());
+                assertSame(field.getEditor(), group.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that navigation drawers reveal nested time picker targets from collapsed group child rows.
+    @Test
+    void navigationDrawerRevealsNestedCollapsedGroupTimePickerValueTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3TimePickerField field = new M3TimePickerField(LocalTime.of(9, 30));
+            M3ListItem childItem = new M3ListItem("Schedule");
+            childItem.setTrailing(field);
+            M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Navigation");
+            group.addItem(childItem);
+            group.setExpanded(false);
+            M3NavigationDrawer drawer = new M3NavigationDrawer(group);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(drawer);
+                Scene scene = new Scene(root, 540.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                drawer.resizeRelocate(32.0, 32.0, 420.0, 260.0);
+                root.layout();
+
+                assertFalse(group.isExpanded());
+                assertPickerValueTargetRoutedByContainer(
+                        drawer,
+                        field,
+                        LocalTime.of(11, 45)
+                );
+                assertTrue(group.isExpanded());
+                assertSame(field.getEditor(), group.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that navigation drawers reveal nested date-range picker targets from collapsed group child rows.
+    @Test
+    void navigationDrawerRevealsNestedCollapsedGroupDateRangePickerValueTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3DateRangePickerField field = new M3DateRangePickerField(
+                    LocalDate.of(2026, 8, 12),
+                    LocalDate.of(2026, 8, 18)
+            );
+            M3ListItem childItem = new M3ListItem("Schedule");
+            childItem.setTrailing(field);
+            M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Navigation");
+            group.addItem(childItem);
+            group.setExpanded(false);
+            M3NavigationDrawer drawer = new M3NavigationDrawer(group);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(drawer);
+                Scene scene = new Scene(root, 620.0, 380.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                drawer.resizeRelocate(32.0, 32.0, 500.0, 280.0);
+                root.layout();
+
+                assertFalse(group.isExpanded());
+                assertCollapsedDateRangePickerValueTargetRoutedByContainer(
+                        drawer,
+                        group,
+                        field,
+                        LocalDate.of(2026, 8, 24)
+                );
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that navigation drawers reject disabled date picker targets from collapsed group child rows.
+    @Test
+    void navigationDrawerRejectsDisabledNestedCollapsedGroupDatePickerValueTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 8, 12));
+            field.setMaxDate(LocalDate.of(2026, 8, 18));
+            M3ListItem childItem = new M3ListItem("Schedule");
+            childItem.setTrailing(field);
+            M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Navigation");
+            group.addItem(childItem);
+            group.setExpanded(false);
+            M3NavigationDrawer drawer = new M3NavigationDrawer(group);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(drawer);
+                Scene scene = new Scene(root, 540.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                drawer.resizeRelocate(32.0, 32.0, 420.0, 260.0);
+                root.layout();
+
+                assertCollapsedPickerValueTargetRejectedByContainer(
+                        drawer,
+                        group,
+                        field,
+                        LocalDate.of(2026, 8, 20)
+                );
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that navigation drawers reject disabled time picker targets from collapsed group child rows.
+    @Test
+    void navigationDrawerRejectsDisabledNestedCollapsedGroupTimePickerValueTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3TimePickerField field = new M3TimePickerField(LocalTime.of(9, 30));
+            field.setMaxTime(LocalTime.of(10, 0));
+            M3ListItem childItem = new M3ListItem("Schedule");
+            childItem.setTrailing(field);
+            M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Navigation");
+            group.addItem(childItem);
+            group.setExpanded(false);
+            M3NavigationDrawer drawer = new M3NavigationDrawer(group);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(drawer);
+                Scene scene = new Scene(root, 540.0, 360.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                drawer.resizeRelocate(32.0, 32.0, 420.0, 260.0);
+                root.layout();
+
+                assertCollapsedPickerValueTargetRejectedByContainer(
+                        drawer,
+                        group,
+                        field,
+                        LocalTime.of(11, 45)
+                );
+            } finally {
+                field.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that navigation drawers reject disabled date-range picker targets from collapsed group child rows.
+    @Test
+    void navigationDrawerRejectsDisabledNestedCollapsedGroupDateRangePickerValueTarget() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3DateRangePickerField field = new M3DateRangePickerField(
+                    LocalDate.of(2026, 8, 12),
+                    LocalDate.of(2026, 8, 18)
+            );
+            field.setMaxDate(LocalDate.of(2026, 8, 18));
+            M3ListItem childItem = new M3ListItem("Schedule");
+            childItem.setTrailing(field);
+            M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Navigation");
+            group.addItem(childItem);
+            group.setExpanded(false);
+            M3NavigationDrawer drawer = new M3NavigationDrawer(group);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(drawer);
+                Scene scene = new Scene(root, 620.0, 380.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                drawer.resizeRelocate(32.0, 32.0, 500.0, 280.0);
+                root.layout();
+
+                assertCollapsedDateRangePickerValueTargetRejectedByContainer(
+                        drawer,
+                        group,
+                        field,
+                        LocalDate.of(2026, 8, 24)
+                );
+            } finally {
+                field.hidePicker();
                 stage.close();
             }
         });
@@ -5794,6 +8551,191 @@ final class M3MixedPopupFocusTest {
             } finally {
                 stage.close();
             }
+        });
+    }
+
+    /// Verifies that top app bar action slots reveal split-button menu targets.
+    @Test
+    void topAppBarRevealsNestedSplitButtonPopupTargetFromActionSlot() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem draftItem = new M3MenuItem("Draft");
+            M3MenuItem publishItem = new M3MenuItem("Publish");
+            M3SplitButton splitButton = new M3SplitButton("Create", draftItem, publishItem);
+            M3TopAppBar appBar = new M3TopAppBar("Project", (Node) null, splitButton);
+
+            assertContainerRevealsNestedSplitButtonPopupTarget(appBar, splitButton, publishItem, 640.0, 72.0);
+        });
+    }
+
+    /// Verifies that bottom app bar action slots reveal menu popup targets.
+    @Test
+    void bottomAppBarRevealsNestedMenuPopupTargetFromActionSlot() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem saveItem = new M3MenuItem("Save");
+            M3MenuItem archiveItem = new M3MenuItem("Archive");
+            M3MenuButton menuButton = new M3MenuButton("Actions", saveItem, archiveItem);
+            M3BottomAppBar appBar = new M3BottomAppBar(new M3Button("Search"), menuButton);
+
+            assertContainerRevealsNestedMenuPopupTarget(appBar, menuButton, archiveItem, 640.0, 96.0);
+        });
+    }
+
+    /// Verifies that bottom app bar action slots reveal split-button menu targets.
+    @Test
+    void bottomAppBarRevealsNestedSplitButtonPopupTargetFromActionSlot() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem draftItem = new M3MenuItem("Draft");
+            M3MenuItem publishItem = new M3MenuItem("Publish");
+            M3SplitButton splitButton = new M3SplitButton("Create", draftItem, publishItem);
+            M3BottomAppBar appBar = new M3BottomAppBar(new M3Button("Search"), splitButton);
+
+            assertContainerRevealsNestedSplitButtonPopupTarget(appBar, splitButton, publishItem, 640.0, 96.0);
+        });
+    }
+
+    /// Verifies that toolbar item slots reveal menu popup targets.
+    @Test
+    void toolbarRevealsNestedMenuPopupTargetFromItemSlot() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem saveItem = new M3MenuItem("Save");
+            M3MenuItem archiveItem = new M3MenuItem("Archive");
+            M3MenuButton menuButton = new M3MenuButton("Actions", saveItem, archiveItem);
+            M3Toolbar toolbar = new M3Toolbar(new M3Button("Back"), menuButton, new M3Button("Share"));
+
+            assertContainerRevealsNestedMenuPopupTarget(toolbar, menuButton, archiveItem, 520.0, 72.0);
+        });
+    }
+
+    /// Verifies that toolbar item slots reveal split-button menu targets.
+    @Test
+    void toolbarRevealsNestedSplitButtonPopupTargetFromItemSlot() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem draftItem = new M3MenuItem("Draft");
+            M3MenuItem publishItem = new M3MenuItem("Publish");
+            M3SplitButton splitButton = new M3SplitButton("Create", draftItem, publishItem);
+            M3Toolbar toolbar = new M3Toolbar(new M3Button("Back"), splitButton, new M3Button("Share"));
+
+            assertContainerRevealsNestedSplitButtonPopupTarget(toolbar, splitButton, publishItem, 560.0, 72.0);
+        });
+    }
+
+    /// Verifies that top app bar action slots reject unreachable menu popup targets before opening popups.
+    @Test
+    void topAppBarRejectsUnreachableNestedMenuPopupTargetsFromActionSlot() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem hiddenItem = new M3MenuItem("Hidden");
+            M3MenuItem disabledItem = new M3MenuItem("Disabled");
+            M3MenuButton menuButton = unreachableTargetMenuButton(hiddenItem, disabledItem);
+            M3TopAppBar appBar = new M3TopAppBar("Project", (Node) null, menuButton);
+
+            assertContainerRejectsUnreachableNestedMenuPopupTargets(
+                    appBar,
+                    menuButton,
+                    hiddenItem,
+                    disabledItem,
+                    640.0,
+                    72.0
+            );
+        });
+    }
+
+    /// Verifies that top app bar action slots reject unreachable split-button popup targets before opening popups.
+    @Test
+    void topAppBarRejectsUnreachableNestedSplitButtonPopupTargetsFromActionSlot() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem hiddenItem = new M3MenuItem("Hidden");
+            M3MenuItem disabledItem = new M3MenuItem("Disabled");
+            M3SplitButton splitButton = unreachableTargetSplitButton(hiddenItem, disabledItem);
+            M3TopAppBar appBar = new M3TopAppBar("Project", (Node) null, splitButton);
+
+            assertContainerRejectsUnreachableNestedSplitButtonPopupTargets(
+                    appBar,
+                    splitButton,
+                    hiddenItem,
+                    disabledItem,
+                    640.0,
+                    72.0
+            );
+        });
+    }
+
+    /// Verifies that bottom app bar action slots reject unreachable menu popup targets before opening popups.
+    @Test
+    void bottomAppBarRejectsUnreachableNestedMenuPopupTargetsFromActionSlot() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem hiddenItem = new M3MenuItem("Hidden");
+            M3MenuItem disabledItem = new M3MenuItem("Disabled");
+            M3MenuButton menuButton = unreachableTargetMenuButton(hiddenItem, disabledItem);
+            M3BottomAppBar appBar = new M3BottomAppBar(new M3Button("Search"), menuButton);
+
+            assertContainerRejectsUnreachableNestedMenuPopupTargets(
+                    appBar,
+                    menuButton,
+                    hiddenItem,
+                    disabledItem,
+                    640.0,
+                    96.0
+            );
+        });
+    }
+
+    /// Verifies that bottom app bar action slots reject unreachable split-button popup targets before opening popups.
+    @Test
+    void bottomAppBarRejectsUnreachableNestedSplitButtonPopupTargetsFromActionSlot() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem hiddenItem = new M3MenuItem("Hidden");
+            M3MenuItem disabledItem = new M3MenuItem("Disabled");
+            M3SplitButton splitButton = unreachableTargetSplitButton(hiddenItem, disabledItem);
+            M3BottomAppBar appBar = new M3BottomAppBar(new M3Button("Search"), splitButton);
+
+            assertContainerRejectsUnreachableNestedSplitButtonPopupTargets(
+                    appBar,
+                    splitButton,
+                    hiddenItem,
+                    disabledItem,
+                    640.0,
+                    96.0
+            );
+        });
+    }
+
+    /// Verifies that toolbar item slots reject unreachable menu popup targets before opening popups.
+    @Test
+    void toolbarRejectsUnreachableNestedMenuPopupTargetsFromItemSlot() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem hiddenItem = new M3MenuItem("Hidden");
+            M3MenuItem disabledItem = new M3MenuItem("Disabled");
+            M3MenuButton menuButton = unreachableTargetMenuButton(hiddenItem, disabledItem);
+            M3Toolbar toolbar = new M3Toolbar(new M3Button("Back"), menuButton, new M3Button("Share"));
+
+            assertContainerRejectsUnreachableNestedMenuPopupTargets(
+                    toolbar,
+                    menuButton,
+                    hiddenItem,
+                    disabledItem,
+                    520.0,
+                    72.0
+            );
+        });
+    }
+
+    /// Verifies that toolbar item slots reject unreachable split-button popup targets before opening popups.
+    @Test
+    void toolbarRejectsUnreachableNestedSplitButtonPopupTargetsFromItemSlot() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3MenuItem hiddenItem = new M3MenuItem("Hidden");
+            M3MenuItem disabledItem = new M3MenuItem("Disabled");
+            M3SplitButton splitButton = unreachableTargetSplitButton(hiddenItem, disabledItem);
+            M3Toolbar toolbar = new M3Toolbar(new M3Button("Back"), splitButton, new M3Button("Share"));
+
+            assertContainerRejectsUnreachableNestedSplitButtonPopupTargets(
+                    toolbar,
+                    splitButton,
+                    hiddenItem,
+                    disabledItem,
+                    560.0,
+                    72.0
+            );
         });
     }
 
@@ -6067,6 +9009,370 @@ final class M3MixedPopupFocusTest {
         });
     }
 
+    /// Verifies that toolbars reveal menu targets owned by rich tooltip action nodes.
+    @Test
+    void toolbarRevealsMenuItemInsideRichTooltipAction() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3Button ownerAction = new M3Button("Format");
+            M3MenuItem targetItem = new M3MenuItem("Archive");
+            M3MenuButton tooltipMenu = new M3MenuButton(
+                    "More",
+                    new M3MenuItem("Rename"),
+                    targetItem
+            );
+            M3RichTooltip tooltip = M3RichTooltip.install(
+                    ownerAction,
+                    "Format",
+                    "Shows formatting details.",
+                    tooltipMenu
+            );
+            M3Toolbar toolbar = new M3Toolbar(ownerAction, new M3Button("Share"));
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(toolbar);
+                Scene scene = new Scene(root, 560.0, 320.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                toolbar.resizeRelocate(32.0, 32.0, 320.0, 72.0);
+                root.layout();
+
+                assertFalse(tooltip.isShowing());
+                assertFalse(tooltipMenu.isShowing());
+
+                toolbar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, targetItem);
+
+                assertTrue(tooltip.isShowing());
+                assertTrue(tooltipMenu.isShowing());
+                assertTrue(targetItem.isFocused());
+                assertSame(targetItem, tooltipMenu.getMenu().queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(targetItem, tooltipMenu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(targetItem, toolbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                tooltipMenu.hideMenu();
+                tooltip.hide();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that rich tooltip action nodes reject disabled nested menu targets before opening popups.
+    @Test
+    void toolbarRejectsDisabledMenuItemInsideRichTooltipAction() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3Button ownerAction = new M3Button("Format");
+            M3MenuItem disabledTarget = new M3MenuItem("Archive");
+            disabledTarget.setDisable(true);
+            M3MenuButton tooltipMenu = new M3MenuButton(
+                    "More",
+                    new M3MenuItem("Rename"),
+                    disabledTarget
+            );
+            M3RichTooltip tooltip = M3RichTooltip.install(
+                    ownerAction,
+                    "Format",
+                    "Shows formatting details.",
+                    tooltipMenu
+            );
+            M3Toolbar toolbar = new M3Toolbar(ownerAction, new M3Button("Share"));
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(toolbar);
+                Scene scene = new Scene(root, 560.0, 320.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                toolbar.resizeRelocate(32.0, 32.0, 320.0, 72.0);
+                root.layout();
+                ownerAction.requestFocus();
+
+                toolbar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, disabledTarget);
+
+                assertFalse(tooltip.isShowing());
+                assertFalse(tooltipMenu.isShowing());
+                assertFalse(disabledTarget.isFocused());
+                assertSame(ownerAction, toolbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                tooltipMenu.hideMenu();
+                tooltip.hide();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that toolbars reveal picker value targets owned by rich tooltip action nodes.
+    @Test
+    void toolbarRevealsDatePickerValueInsideRichTooltipAction() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3Button ownerAction = new M3Button("Schedule");
+            M3DatePickerField tooltipDateField = new M3DatePickerField(LocalDate.of(2026, 6, 14));
+            LocalDate targetDate = LocalDate.of(2026, 6, 18);
+            M3RichTooltip tooltip = M3RichTooltip.install(
+                    ownerAction,
+                    "Schedule",
+                    "Choose a target date.",
+                    tooltipDateField
+            );
+            M3Toolbar toolbar = new M3Toolbar(ownerAction, new M3Button("Share"));
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(toolbar);
+                Scene scene = new Scene(root, 640.0, 420.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                toolbar.resizeRelocate(32.0, 32.0, 360.0, 72.0);
+                root.layout();
+
+                assertFalse(tooltip.isShowing());
+                assertFalse(tooltipDateField.isShowing());
+
+                toolbar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, targetDate);
+
+                assertTrue(tooltip.isShowing());
+                assertTrue(tooltipDateField.isShowing());
+                assertSame(tooltipDateField.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE),
+                        toolbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                tooltipDateField.hidePicker();
+                tooltip.hide();
+                stage.close();
+            }
+        });
+    }
+    /// Verifies that rich tooltip action nodes reject disabled picker values before opening popups.
+    @Test
+    void toolbarRejectsDisabledDatePickerValueInsideRichTooltipAction() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3Button ownerAction = new M3Button("Schedule");
+            M3DatePickerField tooltipDateField = new M3DatePickerField(LocalDate.of(2026, 6, 14));
+            tooltipDateField.setMaxDate(LocalDate.of(2026, 6, 18));
+            LocalDate disabledDate = LocalDate.of(2026, 6, 24);
+            M3RichTooltip tooltip = M3RichTooltip.install(
+                    ownerAction,
+                    "Schedule",
+                    "Choose a target date.",
+                    tooltipDateField
+            );
+            M3Toolbar toolbar = new M3Toolbar(ownerAction, new M3Button("Share"));
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(toolbar);
+                Scene scene = new Scene(root, 640.0, 420.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                toolbar.resizeRelocate(32.0, 32.0, 360.0, 72.0);
+                root.layout();
+                ownerAction.requestFocus();
+
+                toolbar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, disabledDate);
+
+                assertFalse(tooltip.isShowing());
+                assertFalse(tooltipDateField.isShowing());
+                assertFalse(tooltipDateField.getEditor().isFocused());
+                assertSame(ownerAction, toolbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                tooltipDateField.hidePicker();
+                tooltip.hide();
+                stage.close();
+            }
+        });
+    }
+    /// Verifies that toolbars reveal time picker targets owned by rich tooltip action nodes.
+    @Test
+    void toolbarRevealsTimePickerValueInsideRichTooltipAction() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3Button ownerAction = new M3Button("Schedule");
+            M3TimePickerField tooltipTimeField = new M3TimePickerField(LocalTime.of(9, 30));
+            LocalTime targetTime = LocalTime.of(10, 45);
+            M3RichTooltip tooltip = M3RichTooltip.install(
+                    ownerAction,
+                    "Schedule",
+                    "Choose a target time.",
+                    tooltipTimeField
+            );
+            M3Toolbar toolbar = new M3Toolbar(ownerAction, new M3Button("Share"));
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(toolbar);
+                Scene scene = new Scene(root, 640.0, 420.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                toolbar.resizeRelocate(32.0, 32.0, 360.0, 72.0);
+                root.layout();
+
+                assertFalse(tooltip.isShowing());
+                assertFalse(tooltipTimeField.isShowing());
+
+                toolbar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, targetTime);
+
+                Node pickerFocusNode = Objects.requireNonNull(assertInstanceOf(
+                        Node.class,
+                        tooltipTimeField.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                ));
+                assertTrue(tooltip.isShowing());
+                assertTrue(tooltipTimeField.isShowing());
+                assertTrue(pickerFocusNode.isFocused());
+                assertTrue(M3Accessible.containsNode(tooltipTimeField.getPicker(), pickerFocusNode));
+                assertSame(pickerFocusNode, toolbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                tooltipTimeField.hidePicker();
+                tooltip.hide();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that rich tooltip action nodes reject out-of-range time picker values before opening popups.
+    @Test
+    void toolbarRejectsDisabledTimePickerValueInsideRichTooltipAction() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3Button ownerAction = new M3Button("Schedule");
+            M3TimePickerField tooltipTimeField = new M3TimePickerField(LocalTime.of(9, 30));
+            tooltipTimeField.setMaxTime(LocalTime.of(10, 0));
+            LocalTime disabledTime = LocalTime.of(11, 15);
+            M3RichTooltip tooltip = M3RichTooltip.install(
+                    ownerAction,
+                    "Schedule",
+                    "Choose a target time.",
+                    tooltipTimeField
+            );
+            M3Toolbar toolbar = new M3Toolbar(ownerAction, new M3Button("Share"));
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(toolbar);
+                Scene scene = new Scene(root, 640.0, 420.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                toolbar.resizeRelocate(32.0, 32.0, 360.0, 72.0);
+                root.layout();
+                ownerAction.requestFocus();
+
+                toolbar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, disabledTime);
+
+                assertFalse(tooltip.isShowing());
+                assertFalse(tooltipTimeField.isShowing());
+                assertFalse(tooltipTimeField.getEditor().isFocused());
+                assertSame(ownerAction, toolbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                tooltipTimeField.hidePicker();
+                tooltip.hide();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that toolbars reveal date-range picker targets owned by rich tooltip action nodes.
+    @Test
+    void toolbarRevealsDateRangePickerValueInsideRichTooltipAction() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3Button ownerAction = new M3Button("Schedule");
+            M3DateRangePickerField tooltipRangeField = new M3DateRangePickerField(
+                    LocalDate.of(2026, 6, 14),
+                    LocalDate.of(2026, 6, 18)
+            );
+            LocalDate targetDate = LocalDate.of(2026, 6, 22);
+            M3RichTooltip tooltip = M3RichTooltip.install(
+                    ownerAction,
+                    "Schedule",
+                    "Choose a target range.",
+                    tooltipRangeField
+            );
+            M3Toolbar toolbar = new M3Toolbar(ownerAction, new M3Button("Share"));
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(toolbar);
+                Scene scene = new Scene(root, 720.0, 460.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                toolbar.resizeRelocate(32.0, 32.0, 420.0, 72.0);
+                root.layout();
+
+                assertFalse(tooltip.isShowing());
+                assertFalse(tooltipRangeField.isShowing());
+
+                toolbar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, targetDate);
+
+                Node pickerFocusNode = Objects.requireNonNull(assertInstanceOf(
+                        Node.class,
+                        tooltipRangeField.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                ));
+                assertTrue(tooltip.isShowing());
+                assertTrue(tooltipRangeField.isShowing());
+                assertTrue(pickerFocusNode.isFocused());
+                assertTrue(M3Accessible.containsNode(tooltipRangeField.getPicker(), pickerFocusNode));
+                assertSame(pickerFocusNode, toolbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                tooltipRangeField.hidePicker();
+                tooltip.hide();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that rich tooltip action nodes reject out-of-range date-range values before opening popups.
+    @Test
+    void toolbarRejectsDisabledDateRangePickerValueInsideRichTooltipAction() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3Button ownerAction = new M3Button("Schedule");
+            M3DateRangePickerField tooltipRangeField = new M3DateRangePickerField(
+                    LocalDate.of(2026, 6, 14),
+                    LocalDate.of(2026, 6, 18)
+            );
+            tooltipRangeField.setMaxDate(LocalDate.of(2026, 6, 20));
+            LocalDate disabledDate = LocalDate.of(2026, 6, 24);
+            M3RichTooltip tooltip = M3RichTooltip.install(
+                    ownerAction,
+                    "Schedule",
+                    "Choose a target range.",
+                    tooltipRangeField
+            );
+            M3Toolbar toolbar = new M3Toolbar(ownerAction, new M3Button("Share"));
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(toolbar);
+                Scene scene = new Scene(root, 720.0, 460.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                toolbar.resizeRelocate(32.0, 32.0, 420.0, 72.0);
+                root.layout();
+                ownerAction.requestFocus();
+
+                toolbar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, disabledDate);
+
+                assertFalse(tooltip.isShowing());
+                assertFalse(tooltipRangeField.isShowing());
+                assertFalse(tooltipRangeField.getStartEditor().isFocused());
+                assertFalse(tooltipRangeField.getEndEditor().isFocused());
+                assertSame(ownerAction, toolbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                tooltipRangeField.hidePicker();
+                tooltip.hide();
+                stage.close();
+            }
+        });
+    }
     /// Verifies that top app bar action slots reveal picker value targets and expose popup focus.
     @Test
     void topAppBarRevealsNestedDatePickerValueTargetFromActionSlot() {
@@ -6385,6 +9691,56 @@ final class M3MixedPopupFocusTest {
         });
     }
 
+    /// Verifies that search components reject disabled picker value targets before activating.
+    @Test
+    void searchComponentsRejectDisabledPickerValueTargetsBeforeActivating() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            LocalDate invalidDate = LocalDate.of(2026, 6, 24);
+            M3DatePickerField searchBarField = new M3DatePickerField(LocalDate.of(2026, 6, 14));
+            searchBarField.setMaxDate(LocalDate.of(2026, 6, 18));
+            M3SearchBar searchBar = new M3SearchBar("Search schedule");
+            searchBar.setTrailingActions(searchBarField);
+            searchBar.setActive(false);
+
+            M3DatePickerField resultField = new M3DatePickerField(LocalDate.of(2026, 6, 14));
+            resultField.setMaxDate(LocalDate.of(2026, 6, 18));
+            M3SearchView searchView = new M3SearchView("Search results", new Pane(resultField));
+            searchView.setActive(false);
+            Stage stage = new Stage();
+
+            try {
+                Pane root = new Pane(searchBar, searchView);
+                Scene scene = new Scene(root, 860.0, 420.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                searchBar.resizeRelocate(32.0, 32.0, 720.0, 80.0);
+                searchView.resizeRelocate(32.0, 140.0, 720.0, 180.0);
+                resultField.resizeRelocate(0.0, 0.0, 320.0, 64.0);
+                root.layout();
+
+                assertFalse(searchBar.isActive());
+                assertFalse(searchBarField.isShowing());
+                searchBar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, invalidDate);
+                assertFalse(searchBar.isActive());
+                assertFalse(searchBarField.isShowing());
+                assertFalse(searchBarField.getEditor().isFocused());
+
+                assertFalse(searchView.isActive());
+                assertFalse(resultField.isShowing());
+                searchView.executeAccessibleAction(AccessibleAction.SHOW_ITEM, invalidDate);
+                assertFalse(searchView.isActive());
+                assertFalse(resultField.isShowing());
+                assertFalse(resultField.getEditor().isFocused());
+            } finally {
+                searchBarField.hidePicker();
+                resultField.hidePicker();
+                stage.close();
+            }
+        });
+    }
+
     /// Creates a key press event for popup keyboard tests.
     private static KeyEvent keyPressed(KeyCode code) {
         return new KeyEvent(KeyEvent.KEY_PRESSED, "", "", code, false, false, false, false);
@@ -6453,6 +9809,354 @@ final class M3MixedPopupFocusTest {
             menuButton.hideMenu();
             stage.close();
         }
+    }
+
+    /// Verifies split-button reveal, popup focus routing, and Escape restoration through one item container.
+    private static void assertContainerRevealsNestedSplitButtonPopupTarget(
+            Node container,
+            M3SplitButton splitButton,
+            M3MenuItem targetItem,
+            double width,
+            double height
+    ) {
+        Stage stage = new Stage();
+
+        try {
+            Pane root = new Pane(container);
+            Scene scene = new Scene(root, Math.max(560.0, width + 96.0), Math.max(340.0, height + 200.0));
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            stage.setScene(scene);
+            stage.show();
+            root.applyCss();
+            container.resizeRelocate(32.0, 32.0, width, height);
+            root.layout();
+
+            assertFalse(splitButton.isShowing());
+
+            container.executeAccessibleAction(AccessibleAction.SHOW_ITEM, targetItem);
+            root.layout();
+
+            assertTrue(splitButton.isShowing());
+            assertTrue(targetItem.isFocused());
+            assertSame(targetItem, splitButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            assertPopupFocusRoutedByContainer(container, targetItem);
+
+            targetItem.fireEvent(keyPressed(KeyCode.ESCAPE));
+
+            assertFalse(splitButton.isShowing());
+            assertTrue(splitButton.getMenuButton().isFocused());
+            assertSame(splitButton.getMenuButton(), container.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+        } finally {
+            splitButton.hideMenu();
+            stage.close();
+        }
+    }
+
+    /// Creates a menu button with one hidden and one disabled target item.
+    private static M3MenuButton unreachableTargetMenuButton(M3MenuItem hiddenItem, M3MenuItem disabledItem) {
+        hiddenItem.setVisible(false);
+        disabledItem.setDisable(true);
+        return new M3MenuButton("Actions", hiddenItem, disabledItem, new M3MenuItem("Visible"));
+    }
+
+    /// Creates a split button with one hidden and one disabled target item.
+    private static M3SplitButton unreachableTargetSplitButton(M3MenuItem hiddenItem, M3MenuItem disabledItem) {
+        hiddenItem.setVisible(false);
+        disabledItem.setDisable(true);
+        return new M3SplitButton("Create", hiddenItem, disabledItem, new M3MenuItem("Visible"));
+    }
+
+    /// Verifies menu-target rejection through one container without opening the menu or moving focus.
+    private static void assertContainerRejectsUnreachableNestedMenuPopupTargets(
+            Node container,
+            M3MenuButton menuButton,
+            M3MenuItem hiddenTargetItem,
+            M3MenuItem disabledTargetItem,
+            double width,
+            double height
+    ) {
+        Stage stage = new Stage();
+
+        try {
+            M3Button focusOwner = new M3Button("Focus owner");
+            Pane root = new Pane(focusOwner, container);
+            Scene scene = new Scene(root, Math.max(560.0, width + 96.0), Math.max(360.0, height + 220.0));
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            stage.setScene(scene);
+            stage.show();
+            root.applyCss();
+            focusOwner.resizeRelocate(16.0, 16.0, 132.0, 48.0);
+            container.resizeRelocate(32.0, 96.0, width, height);
+            root.layout();
+
+            assertContainerRejectsUnreachableMenuPopupTarget(
+                    scene,
+                    root,
+                    focusOwner,
+                    container,
+                    menuButton,
+                    hiddenTargetItem
+            );
+            assertContainerRejectsUnreachableMenuPopupTarget(
+                    scene,
+                    root,
+                    focusOwner,
+                    container,
+                    menuButton,
+                    disabledTargetItem
+            );
+        } finally {
+            menuButton.hideMenu();
+            stage.close();
+        }
+    }
+
+    /// Verifies split-button target rejection through one container without opening the menu or moving focus.
+    private static void assertContainerRejectsUnreachableNestedSplitButtonPopupTargets(
+            Node container,
+            M3SplitButton splitButton,
+            M3MenuItem hiddenTargetItem,
+            M3MenuItem disabledTargetItem,
+            double width,
+            double height
+    ) {
+        Stage stage = new Stage();
+
+        try {
+            M3Button focusOwner = new M3Button("Focus owner");
+            Pane root = new Pane(focusOwner, container);
+            Scene scene = new Scene(root, Math.max(560.0, width + 96.0), Math.max(360.0, height + 220.0));
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            stage.setScene(scene);
+            stage.show();
+            root.applyCss();
+            focusOwner.resizeRelocate(16.0, 16.0, 132.0, 48.0);
+            container.resizeRelocate(32.0, 96.0, width, height);
+            root.layout();
+
+            assertContainerRejectsUnreachableSplitButtonPopupTarget(
+                    scene,
+                    root,
+                    focusOwner,
+                    container,
+                    splitButton,
+                    hiddenTargetItem
+            );
+            assertContainerRejectsUnreachableSplitButtonPopupTarget(
+                    scene,
+                    root,
+                    focusOwner,
+                    container,
+                    splitButton,
+                    disabledTargetItem
+            );
+        } finally {
+            splitButton.hideMenu();
+            stage.close();
+        }
+    }
+
+    /// Verifies that one unreachable menu target cannot open a menu popup.
+    private static void assertContainerRejectsUnreachableMenuPopupTarget(
+            Scene scene,
+            Pane root,
+            M3Button focusOwner,
+            Node container,
+            M3MenuButton menuButton,
+            M3MenuItem targetItem
+    ) {
+        focusOwner.requestFocus();
+        root.layout();
+
+        assertTrue(focusOwner.isFocused());
+        assertFalse(menuButton.isShowing());
+
+        container.executeAccessibleAction(AccessibleAction.SHOW_ITEM, targetItem);
+        root.layout();
+
+        assertFalse(menuButton.isShowing());
+        assertFalse(targetItem.isFocused());
+        assertSame(focusOwner, scene.getFocusOwner());
+        assertNotSame(targetItem, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+        assertNotSame(targetItem, container.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+    }
+
+    /// Verifies that one unreachable split-button target cannot open a menu popup.
+    private static void assertContainerRejectsUnreachableSplitButtonPopupTarget(
+            Scene scene,
+            Pane root,
+            M3Button focusOwner,
+            Node container,
+            M3SplitButton splitButton,
+            M3MenuItem targetItem
+    ) {
+        focusOwner.requestFocus();
+        root.layout();
+
+        assertTrue(focusOwner.isFocused());
+        assertFalse(splitButton.isShowing());
+
+        container.executeAccessibleAction(AccessibleAction.SHOW_ITEM, targetItem);
+        root.layout();
+
+        assertFalse(splitButton.isShowing());
+        assertFalse(targetItem.isFocused());
+        assertSame(focusOwner, scene.getFocusOwner());
+        assertNotSame(targetItem, splitButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+        assertNotSame(targetItem, container.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+    }
+
+    /// Verifies that a hidden sheet picker target is rejected without showing the sheet.
+    private static void assertHiddenSheetPickerValueTargetRejected(
+            Node sheet,
+            M3PickerField<?, ?> field,
+            Object valueTarget
+    ) {
+        assertFalse(isSheetShown(sheet));
+        assertNull(sheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+        assertFalse(field.isShowing());
+
+        sheet.executeAccessibleAction(AccessibleAction.SHOW_ITEM, valueTarget);
+
+        assertFalse(isSheetShown(sheet));
+        assertNull(sheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+        assertFalse(field.isShowing());
+        assertFalse(field.getEditor().isFocused());
+    }
+
+    /// Verifies that a hidden sheet date-range target is rejected without showing the sheet.
+    private static void assertHiddenSheetDateRangePickerValueTargetRejected(
+            Node sheet,
+            M3DateRangePickerField field,
+            LocalDate valueTarget
+    ) {
+        assertFalse(isSheetShown(sheet));
+        assertNull(sheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+        assertFalse(field.isShowing());
+
+        sheet.executeAccessibleAction(AccessibleAction.SHOW_ITEM, valueTarget);
+
+        assertFalse(isSheetShown(sheet));
+        assertNull(sheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+        assertFalse(field.isShowing());
+        assertFalse(field.getStartEditor().isFocused());
+        assertFalse(field.getEndEditor().isFocused());
+    }
+
+    /// Returns the shown state for a sheet control.
+    private static boolean isSheetShown(Node sheet) {
+        if (sheet instanceof M3BottomSheet bottomSheet) {
+            return bottomSheet.isShown();
+        }
+        if (sheet instanceof M3SideSheet sideSheet) {
+            return sideSheet.isShown();
+        }
+        throw new IllegalArgumentException("Unsupported sheet node: " + sheet);
+    }
+
+    /// Verifies that a direct menu-button picker target is rejected without opening its menu.
+    private static void assertDirectMenuPickerValueTargetRejected(
+            M3MenuButton menuButton,
+            M3PickerField<?, ?> field,
+            Object valueTarget
+    ) {
+        assertFalse(menuButton.isShowing());
+        assertFalse(field.isShowing());
+
+        menuButton.executeAccessibleAction(AccessibleAction.SHOW_ITEM, valueTarget);
+
+        assertFalse(menuButton.isShowing());
+        assertFalse(field.isShowing());
+        assertFalse(field.getEditor().isFocused());
+    }
+
+    /// Verifies that a direct menu-button date-range target is rejected without opening its menu.
+    private static void assertDirectMenuDateRangePickerValueTargetRejected(
+            M3MenuButton menuButton,
+            M3DateRangePickerField field,
+            LocalDate valueTarget
+    ) {
+        assertFalse(menuButton.isShowing());
+        assertFalse(field.isShowing());
+
+        menuButton.executeAccessibleAction(AccessibleAction.SHOW_ITEM, valueTarget);
+
+        assertFalse(menuButton.isShowing());
+        assertFalse(field.isShowing());
+        assertFalse(field.getStartEditor().isFocused());
+        assertFalse(field.getEndEditor().isFocused());
+    }
+
+    /// Verifies that a nested menu-button picker target is rejected without opening either menu.
+    private static void assertNestedMenuPickerValueTargetRejected(
+            M3MenuButton menuButton,
+            M3SubMenuItem subMenuItem,
+            M3PickerField<?, ?> field,
+            Object valueTarget
+    ) {
+        assertFalse(menuButton.isShowing());
+        assertFalse(subMenuItem.isSubMenuShowing());
+        assertFalse(field.isShowing());
+
+        menuButton.executeAccessibleAction(AccessibleAction.SHOW_ITEM, valueTarget);
+
+        assertFalse(menuButton.isShowing());
+        assertFalse(subMenuItem.isSubMenuShowing());
+        assertFalse(field.isShowing());
+        assertFalse(field.getEditor().isFocused());
+    }
+
+    /// Verifies that a nested menu-button date-range target is rejected without opening either menu.
+    private static void assertNestedMenuDateRangePickerValueTargetRejected(
+            M3MenuButton menuButton,
+            M3SubMenuItem subMenuItem,
+            M3DateRangePickerField field,
+            LocalDate valueTarget
+    ) {
+        assertFalse(menuButton.isShowing());
+        assertFalse(subMenuItem.isSubMenuShowing());
+        assertFalse(field.isShowing());
+
+        menuButton.executeAccessibleAction(AccessibleAction.SHOW_ITEM, valueTarget);
+
+        assertFalse(menuButton.isShowing());
+        assertFalse(subMenuItem.isSubMenuShowing());
+        assertFalse(field.isShowing());
+        assertFalse(field.getStartEditor().isFocused());
+        assertFalse(field.getEndEditor().isFocused());
+    }
+
+    /// Verifies that a submenu picker target is rejected without opening the submenu.
+    private static void assertSubMenuPickerValueTargetRejected(
+            M3SubMenuItem subMenuItem,
+            M3PickerField<?, ?> field,
+            Object valueTarget
+    ) {
+        assertFalse(subMenuItem.isSubMenuShowing());
+        assertFalse(field.isShowing());
+
+        subMenuItem.executeAccessibleAction(AccessibleAction.SHOW_ITEM, valueTarget);
+
+        assertFalse(subMenuItem.isSubMenuShowing());
+        assertFalse(field.isShowing());
+        assertFalse(field.getEditor().isFocused());
+    }
+
+    /// Verifies that a submenu date-range target is rejected without opening the submenu.
+    private static void assertSubMenuDateRangePickerValueTargetRejected(
+            M3SubMenuItem subMenuItem,
+            M3DateRangePickerField field,
+            LocalDate valueTarget
+    ) {
+        assertFalse(subMenuItem.isSubMenuShowing());
+        assertFalse(field.isShowing());
+
+        subMenuItem.executeAccessibleAction(AccessibleAction.SHOW_ITEM, valueTarget);
+
+        assertFalse(subMenuItem.isSubMenuShowing());
+        assertFalse(field.isShowing());
+        assertFalse(field.getStartEditor().isFocused());
+        assertFalse(field.getEndEditor().isFocused());
     }
 
     /// Verifies picker reveal, popup focus routing, and Escape restoration through a menu button submenu branch.
@@ -6611,6 +10315,70 @@ final class M3MixedPopupFocusTest {
         assertFalse(field.isShowing());
         assertTrue(field.getEndEditor().isFocused());
         assertSame(field.getEndEditor(), container.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+    }
+
+    /// Verifies a collapsed container ignores a disabled picker value target.
+    private static void assertCollapsedPickerValueTargetRejectedByContainer(
+            Node container,
+            M3NavigationDrawerGroup group,
+            M3PickerField<?, ?> field,
+            Object valueTarget
+    ) {
+        assertFalse(group.isExpanded());
+        assertFalse(field.isShowing());
+
+        container.executeAccessibleAction(AccessibleAction.SHOW_ITEM, valueTarget);
+
+        assertFalse(group.isExpanded());
+        assertFalse(field.isShowing());
+        assertFalse(field.getEditor().isFocused());
+    }
+
+    /// Verifies a collapsed container ignores a disabled date-range picker value target.
+    private static void assertCollapsedDateRangePickerValueTargetRejectedByContainer(
+            Node container,
+            M3NavigationDrawerGroup group,
+            M3DateRangePickerField field,
+            LocalDate valueTarget
+    ) {
+        assertFalse(group.isExpanded());
+        assertFalse(field.isShowing());
+
+        container.executeAccessibleAction(AccessibleAction.SHOW_ITEM, valueTarget);
+
+        assertFalse(group.isExpanded());
+        assertFalse(field.isShowing());
+        assertFalse(field.getStartEditor().isFocused());
+        assertFalse(field.getEndEditor().isFocused());
+    }
+
+    /// Verifies a collapsed container reveals a date-range picker value target before endpoint focus exists.
+    private static void assertCollapsedDateRangePickerValueTargetRoutedByContainer(
+            Node container,
+            M3NavigationDrawerGroup group,
+            M3DateRangePickerField field,
+            LocalDate valueTarget
+    ) {
+        assertFalse(field.isShowing());
+
+        container.executeAccessibleAction(AccessibleAction.SHOW_ITEM, valueTarget);
+
+        Node pickerFocusNode = Objects.requireNonNull(assertInstanceOf(
+                Node.class,
+                field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+        ));
+        assertTrue(group.isExpanded());
+        assertTrue(field.isShowing());
+        assertTrue(pickerFocusNode.isFocused());
+        assertTrue(M3Accessible.containsNode(field.getPicker(), pickerFocusNode));
+        assertPopupFocusRoutedByContainer(container, pickerFocusNode);
+
+        field.getPicker().fireEvent(keyPressed(KeyCode.ESCAPE));
+
+        assertFalse(field.isShowing());
+        assertTrue(field.getStartEditor().isFocused());
+        assertSame(field.getStartEditor(), group.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+        assertSame(field.getStartEditor(), container.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
     }
 
     /// Verifies that a composite owner preserves and reveals an active external popup focus target.

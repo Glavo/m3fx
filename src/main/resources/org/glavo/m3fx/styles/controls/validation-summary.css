@@ -34,8 +34,22 @@
     -fx-cursor: hand;
 }
 
-.m3-validation-summary-item:hover {
-    -fx-background-color: derive(-m3-color-error-container, -6%);
+.m3-validation-summary-item .m3-state-layer,
+.m3-validation-summary-item .m3-ripple {
+    -fx-background-color: -m3-color-on-error-container;
+}
+
+.m3-validation-summary-item:hover .m3-state-layer {
+    -fx-opacity: 0.08;
+}
+
+.m3-validation-summary-item:focus-visible .m3-state-layer,
+.m3-validation-summary-item:pressed .m3-state-layer {
+    -fx-opacity: 0.10;
+}
+
+.m3-validation-summary-item .m3-focus-indicator {
+    -fx-border-color: -m3-color-on-error-container;
 }
 
 .m3-validation-summary-item:focused {

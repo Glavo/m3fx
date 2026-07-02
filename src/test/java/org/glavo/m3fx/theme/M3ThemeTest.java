@@ -185,7 +185,9 @@ final class M3ThemeTest {
         assertTrue(theme.toControlStyleRules().contains(".m3-list-item"));
         assertTrue(theme.toControlStyleRules().contains(".m3-list-section-header"));
         assertTrue(theme.toControlStyleRules().contains(".m3-form-row"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-validation-summary-item"));
+        assertTrue(theme.toControlStyleRules().contains(".m3-validation-summary-item:hover .m3-state-layer"));
+        assertTrue(theme.toControlStyleRules().contains(".m3-validation-summary-item:focus-visible .m3-state-layer"));
+        assertTrue(theme.toControlStyleRules().contains(".m3-validation-summary-item:pressed .m3-state-layer"));
         assertTrue(theme.toControlStyleRules().contains(".m3-carousel-track"));
         assertTrue(theme.toControlStyleRules().contains(".m3-surface"));
         assertTrue(theme.toControlStyleRules().contains("-fx-opacity: 0.08"));

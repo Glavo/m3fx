@@ -847,7 +847,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem,
-                parameter -> parameter instanceof LocalDate);
+                this::handlesAccessibleShowTarget);
         startInputLayout.setLabelText("Start date");
         endInputLayout.setLabelText("End date");
         startInputLayout.setTrailing(startOpenButton);
@@ -1206,6 +1206,54 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         return null;
     }
 
+    /// Returns whether this field can reveal the supplied accessibility date target.
+    private boolean handlesAccessibleShowTarget(@Nullable Object parameter) {
+        return parameter instanceof LocalDate date && !picker.isDateDisabled(date);
+    }
+
+    /// Returns whether a show-item request names a target this field can reasonably forward.
+    private boolean canAttemptAccessibleShow(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        if (parameters.length == 0) {
+            return true;
+        }
+        for (Object parameter : parameters) {
+            if (canAttemptAccessibleShowParameter(parameter)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// Returns whether one show-item parameter can be routed to the popup picker.
+    private boolean canAttemptAccessibleShowParameter(@Nullable Object parameter) {
+        if (parameter instanceof Number) {
+            return true;
+        }
+        if (parameter instanceof Node node) {
+            return M3Accessible.isEffectivelyReachable(node);
+        }
+        if (handlesAccessibleShowTarget(parameter)) {
+            return true;
+        }
+        if (parameter instanceof Iterable<?> values) {
+            for (Object value : values) {
+                if (canAttemptAccessibleShowParameter(value)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (parameter instanceof Object[] values) {
+            for (Object value : values) {
+                if (canAttemptAccessibleShowParameter(value)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     /// Shows the popup, forwards a show-item request to the picker, and focuses the requested item.
     ///
     /// @param parameters optional accessibility target parameters
@@ -1217,6 +1265,9 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// Shows the popup when possible, forwards an accessibility action to the picker, and focuses its item.
     private boolean showPickerAndForwardAccessibleAction(AccessibleAction action, Object... parameters) {
         if (!M3Accessible.canReach(this)) {
+            return false;
+        }
+        if (action == AccessibleAction.SHOW_ITEM && !canAttemptAccessibleShow(parameters)) {
             return false;
         }
         boolean preservePopupFocus = popup.isShowing() && parameters.length == 0 && popupFocusOwner() != null;

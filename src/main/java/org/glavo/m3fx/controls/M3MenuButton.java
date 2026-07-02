@@ -408,7 +408,12 @@ public class M3MenuButton extends M3Button {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.MENU_BUTTON);
-        M3Accessible.installAccessibleActionRoute(this, this::requestAccessibleFocus, this::showAccessibleMenuItem);
+        M3Accessible.installAccessibleActionRoute(
+                this,
+                this::requestAccessibleFocus,
+                this::showAccessibleMenuItem,
+                this::canShowAccessibleMenuItem
+        );
         popup.setAutoHide(true);
         popup.getContent().add(menu);
         popup.setOnHidden(event -> {
@@ -476,9 +481,17 @@ public class M3MenuButton extends M3Button {
         return false;
     }
 
+    /// Returns whether this menu button can reveal the supplied menu target without opening the popup.
+    final boolean canShowAccessibleMenuItem(@Nullable Object parameter) {
+        return !isDisabled() && menu.canShowAccessibleItem(parameter);
+    }
+
     /// Opens the popup menu and focuses the descendant supplied by accessibility parameters.
     final boolean showAccessibleMenuItem(Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
+        if (!M3Accessible.canReach(this) || !menu.canShowAccessibleItem(parameters)) {
+            return false;
+        }
         showMenu();
         if (!popup.isShowing()) {
             return false;

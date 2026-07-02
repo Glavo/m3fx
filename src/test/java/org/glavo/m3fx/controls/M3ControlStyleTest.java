@@ -3493,6 +3493,80 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that FAB menu accessibility reveal rejects unrevealable explicit child targets before expansion.
+    @Test
+    void fabMenuRejectsUnrevealableAccessibleActionTargetsBeforeExpanding() {
+        runOnFxThread(() -> {
+            M3Button visibleNestedAction = new M3Button("Visible nested");
+            M3Button hiddenNestedAction = new M3Button("Hidden nested");
+            hiddenNestedAction.setVisible(false);
+            StackPane compositeAction = new StackPane(visibleNestedAction, hiddenNestedAction);
+            compositeAction.setPrefSize(144.0, 64.0);
+
+            M3FloatingActionButton disabledAction = new M3FloatingActionButton("D");
+            disabledAction.setDisable(true);
+            M3FloatingActionButton tooltipOwnerAction = new M3FloatingActionButton("T");
+            M3Button disabledTooltipAction = new M3Button("Tooltip disabled");
+            disabledTooltipAction.setDisable(true);
+            M3RichTooltip tooltip = M3RichTooltip.install(
+                    tooltipOwnerAction,
+                    "Tooltip action",
+                    "Disabled tooltip actions cannot be revealed.",
+                    disabledTooltipAction
+            );
+
+            M3Button outside = new M3Button("Outside");
+            M3FabMenu menu = new M3FabMenu();
+            menu.addItems(compositeAction, disabledAction, tooltipOwnerAction);
+            Pane root = new Pane(outside, menu);
+            Stage stage = new Stage();
+
+            try {
+                M3MotionSettings.setAnimationsEnabled(menu, false);
+                Scene scene = new Scene(root, 280.0, 240.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                menu.resizeRelocate(24.0, 24.0, 180.0, 180.0);
+                root.layout();
+
+                outside.requestFocus();
+                assertTrue(outside.isFocused());
+
+                menu.executeAccessibleAction(AccessibleAction.SHOW_ITEM, hiddenNestedAction);
+
+                assertFalse(menu.isExpanded());
+                assertFalse(hiddenNestedAction.isFocused());
+                assertTrue(outside.isFocused());
+
+                menu.executeAccessibleAction(AccessibleAction.SHOW_ITEM, disabledAction);
+
+                assertFalse(menu.isExpanded());
+                assertFalse(disabledAction.isFocused());
+                assertTrue(outside.isFocused());
+
+                menu.executeAccessibleAction(AccessibleAction.SHOW_ITEM, disabledTooltipAction);
+
+                assertFalse(menu.isExpanded());
+                assertFalse(tooltip.isShowing());
+                assertFalse(disabledTooltipAction.isFocused());
+                assertTrue(outside.isFocused());
+
+                menu.executeAccessibleAction(AccessibleAction.SHOW_ITEM, visibleNestedAction);
+
+                assertTrue(menu.isExpanded());
+                assertTrue(visibleNestedAction.isFocused());
+                assertSame(visibleNestedAction, menu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                tooltip.hide();
+                M3Tooltip.uninstall(tooltipOwnerAction, tooltip);
+                M3MotionSettings.clearAnimationsEnabled(menu);
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that FAB menu action spacing is styleable from CSS.
     @Test
     void fabMenuActionSpacingTokenIsStyleable() {
@@ -3894,12 +3968,57 @@ final class M3ControlStyleTest {
 
         assertFalse(second.getStyleClass().contains(M3Carousel.ITEM_STYLE_CLASS));
         assertFalse(second.getStyleClass().contains(M3Carousel.SELECTED_ITEM_STYLE_CLASS));
-        assertSame(third, carousel.getSelectedItem());
+        assertSame(first, carousel.getSelectedItem());
 
         carousel.clearItems();
 
         assertEquals(-1, carousel.getSelectedIndex());
         assertNull(carousel.getSelectedItem());
+    }
+
+    /// Verifies that carousel selection rejects unreachable item nodes and tracks runtime reachability changes.
+    @Test
+    void carouselSelectionRejectsAndTracksUnreachableItems() {
+        Label first = new Label("First");
+        Label hidden = new Label("Hidden");
+        Label disabled = new Label("Disabled");
+        Label last = new Label("Last");
+        hidden.setVisible(false);
+        disabled.setDisable(true);
+        M3Carousel carousel = new M3Carousel(first, hidden, disabled, last);
+
+        assertThrows(IllegalArgumentException.class, () -> carousel.select(hidden));
+        assertThrows(IllegalArgumentException.class, () -> carousel.select(disabled));
+        assertThrows(IllegalArgumentException.class, () -> carousel.selectIndex(1));
+        assertThrows(IllegalArgumentException.class, () -> carousel.selectIndex(2));
+
+        carousel.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, hidden);
+
+        assertNull(carousel.getSelectedItem());
+        assertEquals(-1, carousel.getSelectedIndex());
+
+        carousel.select(last);
+
+        assertSame(last, carousel.getSelectedItem());
+        assertEquals(3, carousel.getSelectedIndex());
+
+        last.setVisible(false);
+
+        assertSame(first, carousel.getSelectedItem());
+        assertEquals(0, carousel.getSelectedIndex());
+        assertFalse(last.getStyleClass().contains(M3Carousel.SELECTED_ITEM_STYLE_CLASS));
+
+        first.setDisable(true);
+
+        assertNull(carousel.getSelectedItem());
+        assertEquals(-1, carousel.getSelectedIndex());
+        assertTrue(carousel.getSelectedItems().isEmpty());
+
+        hidden.setVisible(true);
+        carousel.setSelectedIndex(1);
+
+        assertSame(hidden, carousel.getSelectedItem());
+        assertEquals(1, carousel.getSelectedIndex());
     }
 
     /// Verifies that carousels support keyboard navigation and accessibility selection.
@@ -4021,7 +4140,17 @@ final class M3ControlStyleTest {
                     tooltipAction
             );
             HBox secondItem = new HBox(ownerAction);
-            M3Carousel carousel = new M3Carousel(firstItem, secondItem);
+            M3Button hiddenOwnerAction = new M3Button("Hidden settings action");
+            hiddenOwnerAction.setVisible(false);
+            M3Button hiddenTooltipAction = new M3Button("Hidden details");
+            M3RichTooltip hiddenTooltip = M3RichTooltip.install(
+                    hiddenOwnerAction,
+                    "Hidden settings",
+                    "This action cannot be revealed.",
+                    hiddenTooltipAction
+            );
+            HBox thirdItem = new HBox(hiddenOwnerAction);
+            M3Carousel carousel = new M3Carousel(firstItem, secondItem, thirdItem);
             carousel.setAnimatedScroll(false);
             Pane root = new Pane(carousel);
             Stage stage = new Stage();
@@ -4034,6 +4163,20 @@ final class M3ControlStyleTest {
                 root.layout();
 
                 assertFalse(tooltip.isShowing());
+                assertFalse(hiddenTooltip.isShowing());
+
+                carousel.select(firstItem);
+                carousel.executeAccessibleAction(AccessibleAction.SHOW_ITEM, hiddenTooltipAction);
+                root.layout();
+
+                assertSame(firstItem, carousel.getSelectedItem());
+                assertFalse(hiddenTooltip.isShowing());
+                assertFalse(hiddenTooltipAction.isFocused());
+
+                carousel.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, hiddenTooltipAction);
+
+                assertNull(carousel.getSelectedItem());
+                assertEquals(-1, carousel.getSelectedIndex());
 
                 carousel.executeAccessibleAction(AccessibleAction.SHOW_ITEM, tooltipAction);
                 root.layout();
@@ -4049,6 +4192,7 @@ final class M3ControlStyleTest {
                 assertSame(tooltipAction, carousel.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
                 M3Tooltip.uninstall(ownerAction, tooltip);
+                M3Tooltip.uninstall(hiddenOwnerAction, hiddenTooltip);
                 stage.close();
             }
         });
@@ -4718,6 +4862,441 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that snackbar action indexes delegate into action-owned accessibility targets.
+    @Test
+    void snackbarActionIndexRevealsRichTooltipActionTarget() {
+        runOnFxThread(() -> {
+            M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
+            Pane root = new Pane(snackbar);
+            Stage stage = new Stage();
+
+            try {
+                stage.setScene(new Scene(root, 360.0, 160.0));
+                M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                M3Button actionButton = assertInstanceOf(
+                        M3Button.class,
+                        snackbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0)
+                );
+                M3Button tooltipAction = new M3Button("Details");
+                M3RichTooltip tooltip = M3RichTooltip.install(
+                        actionButton,
+                        "Undo",
+                        "Restores the previous item state.",
+                        tooltipAction
+                );
+
+                try {
+                    assertFalse(tooltip.isShowing());
+
+                    snackbar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0, tooltipAction);
+
+                    assertTrue(tooltip.isShowing());
+                    assertTrue(tooltipAction.isFocused());
+                    assertSame(tooltipAction, snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                } finally {
+                    tooltip.hide();
+                    M3Tooltip.uninstall(actionButton, tooltip);
+                }
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that snackbar action indexes reject unreachable nested action-owned targets.
+    @Test
+    void snackbarActionIndexRejectsDisabledRichTooltipActionTarget() {
+        runOnFxThread(() -> {
+            M3Button outside = new M3Button("Outside");
+            M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
+            Pane root = new Pane(outside, snackbar);
+            Stage stage = new Stage();
+
+            try {
+                stage.setScene(new Scene(root, 420.0, 180.0));
+                M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
+                stage.show();
+                root.applyCss();
+                outside.resizeRelocate(24.0, 24.0, 120.0, 48.0);
+                snackbar.resizeRelocate(24.0, 96.0, 320.0, 64.0);
+                root.layout();
+
+                M3Button actionButton = assertInstanceOf(
+                        M3Button.class,
+                        snackbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0)
+                );
+                M3Button tooltipAction = new M3Button("Details");
+                tooltipAction.setDisable(true);
+                M3RichTooltip tooltip = M3RichTooltip.install(
+                        actionButton,
+                        "Undo",
+                        "Restores the previous item state.",
+                        tooltipAction
+                );
+
+                try {
+                    outside.requestFocus();
+                    assertTrue(outside.isFocused());
+                    assertFalse(tooltip.isShowing());
+
+                    snackbar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0, tooltipAction);
+
+                    assertFalse(tooltip.isShowing());
+                    assertFalse(tooltipAction.isFocused());
+                    assertFalse(actionButton.isFocused());
+                    assertSame(outside, stage.getScene().getFocusOwner());
+                    assertFalse(tooltipAction == snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                } finally {
+                    tooltip.hide();
+                    M3Tooltip.uninstall(actionButton, tooltip);
+                }
+            } finally {
+                stage.close();
+            }
+        });
+    }
+    /// Verifies that snackbar action indexes reveal menu targets owned by rich tooltip action nodes.
+    @Test
+    void snackbarActionIndexRevealsMenuItemInsideRichTooltipAction() {
+        runOnFxThread(() -> {
+            M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
+            Pane root = new Pane(snackbar);
+            Stage stage = new Stage();
+
+            try {
+                stage.setScene(new Scene(root, 420.0, 220.0));
+                M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
+                stage.show();
+                root.applyCss();
+                snackbar.resizeRelocate(24.0, 96.0, 340.0, 64.0);
+                root.layout();
+
+                M3Button actionButton = assertInstanceOf(
+                        M3Button.class,
+                        snackbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0)
+                );
+                M3MenuItem targetItem = new M3MenuItem("Archive");
+                M3MenuButton tooltipMenu = new M3MenuButton(
+                        "More",
+                        new M3MenuItem("Rename"),
+                        targetItem
+                );
+                M3RichTooltip tooltip = M3RichTooltip.install(
+                        actionButton,
+                        "Undo",
+                        "Restores the previous item state.",
+                        tooltipMenu
+                );
+
+                try {
+                    assertFalse(tooltip.isShowing());
+                    assertFalse(tooltipMenu.isShowing());
+
+                    snackbar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0, targetItem);
+
+                    assertTrue(tooltip.isShowing());
+                    assertTrue(tooltipMenu.isShowing());
+                    assertTrue(targetItem.isFocused());
+                    assertSame(targetItem, tooltipMenu.getMenu().queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                    assertSame(targetItem, tooltipMenu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                    assertSame(targetItem, snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                } finally {
+                    tooltipMenu.hideMenu();
+                    tooltip.hide();
+                    M3Tooltip.uninstall(actionButton, tooltip);
+                }
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that snackbar action indexes reject disabled menu targets owned by rich tooltip action nodes.
+    @Test
+    void snackbarActionIndexRejectsDisabledMenuItemInsideRichTooltipAction() {
+        runOnFxThread(() -> {
+            M3Button outside = new M3Button("Outside");
+            M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
+            Pane root = new Pane(outside, snackbar);
+            Stage stage = new Stage();
+
+            try {
+                stage.setScene(new Scene(root, 460.0, 240.0));
+                M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
+                stage.show();
+                root.applyCss();
+                outside.resizeRelocate(24.0, 24.0, 120.0, 48.0);
+                snackbar.resizeRelocate(24.0, 112.0, 340.0, 64.0);
+                root.layout();
+
+                M3Button actionButton = assertInstanceOf(
+                        M3Button.class,
+                        snackbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0)
+                );
+                M3MenuItem disabledTarget = new M3MenuItem("Archive");
+                disabledTarget.setDisable(true);
+                M3MenuButton tooltipMenu = new M3MenuButton(
+                        "More",
+                        new M3MenuItem("Rename"),
+                        disabledTarget
+                );
+                M3RichTooltip tooltip = M3RichTooltip.install(
+                        actionButton,
+                        "Undo",
+                        "Restores the previous item state.",
+                        tooltipMenu
+                );
+
+                try {
+                    outside.requestFocus();
+                    assertTrue(outside.isFocused());
+
+                    snackbar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0, disabledTarget);
+
+                    assertFalse(tooltip.isShowing());
+                    assertFalse(tooltipMenu.isShowing());
+                    assertFalse(disabledTarget.isFocused());
+                    assertFalse(actionButton.isFocused());
+                    assertSame(outside, stage.getScene().getFocusOwner());
+                    assertFalse(disabledTarget == snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                } finally {
+                    tooltipMenu.hideMenu();
+                    tooltip.hide();
+                    M3Tooltip.uninstall(actionButton, tooltip);
+                }
+            } finally {
+                stage.close();
+            }
+        });
+    }
+    /// Verifies that snackbar action indexes reveal time picker targets owned by rich tooltip action nodes.
+    @Test
+    void snackbarActionIndexRevealsTimePickerValueInsideRichTooltipAction() {
+        runOnFxThread(() -> {
+            M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
+            Pane root = new Pane(snackbar);
+            Stage stage = new Stage();
+
+            try {
+                stage.setScene(new Scene(root, 520.0, 320.0));
+                M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
+                stage.show();
+                root.applyCss();
+                snackbar.resizeRelocate(24.0, 112.0, 360.0, 64.0);
+                root.layout();
+
+                M3Button actionButton = assertInstanceOf(
+                        M3Button.class,
+                        snackbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0)
+                );
+                M3TimePickerField tooltipTimeField = new M3TimePickerField(LocalTime.of(9, 30));
+                LocalTime targetTime = LocalTime.of(10, 45);
+                M3RichTooltip tooltip = M3RichTooltip.install(
+                        actionButton,
+                        "Undo",
+                        "Restores the previous item state.",
+                        tooltipTimeField
+                );
+
+                try {
+                    assertFalse(tooltip.isShowing());
+                    assertFalse(tooltipTimeField.isShowing());
+
+                    snackbar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0, targetTime);
+
+                    Node pickerFocusNode = Objects.requireNonNull(assertInstanceOf(
+                            Node.class,
+                            tooltipTimeField.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                    ));
+                    assertTrue(tooltip.isShowing());
+                    assertTrue(tooltipTimeField.isShowing());
+                    assertTrue(pickerFocusNode.isFocused());
+                    assertTrue(M3Accessible.containsNode(tooltipTimeField.getPicker(), pickerFocusNode));
+                    assertSame(pickerFocusNode, snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                } finally {
+                    tooltipTimeField.hidePicker();
+                    tooltip.hide();
+                    M3Tooltip.uninstall(actionButton, tooltip);
+                }
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that snackbar action indexes reject out-of-range time picker targets before opening popups.
+    @Test
+    void snackbarActionIndexRejectsDisabledTimePickerValueInsideRichTooltipAction() {
+        runOnFxThread(() -> {
+            M3Button outside = new M3Button("Outside");
+            M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
+            Pane root = new Pane(outside, snackbar);
+            Stage stage = new Stage();
+
+            try {
+                stage.setScene(new Scene(root, 540.0, 340.0));
+                M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
+                stage.show();
+                root.applyCss();
+                outside.resizeRelocate(24.0, 24.0, 120.0, 48.0);
+                snackbar.resizeRelocate(24.0, 128.0, 360.0, 64.0);
+                root.layout();
+
+                M3Button actionButton = assertInstanceOf(
+                        M3Button.class,
+                        snackbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0)
+                );
+                M3TimePickerField tooltipTimeField = new M3TimePickerField(LocalTime.of(9, 30));
+                tooltipTimeField.setMaxTime(LocalTime.of(10, 0));
+                LocalTime disabledTime = LocalTime.of(11, 15);
+                M3RichTooltip tooltip = M3RichTooltip.install(
+                        actionButton,
+                        "Undo",
+                        "Restores the previous item state.",
+                        tooltipTimeField
+                );
+
+                try {
+                    outside.requestFocus();
+                    assertTrue(outside.isFocused());
+
+                    snackbar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0, disabledTime);
+
+                    assertFalse(tooltip.isShowing());
+                    assertFalse(tooltipTimeField.isShowing());
+                    assertFalse(tooltipTimeField.getEditor().isFocused());
+                    assertFalse(actionButton.isFocused());
+                    assertSame(outside, stage.getScene().getFocusOwner());
+                } finally {
+                    tooltipTimeField.hidePicker();
+                    tooltip.hide();
+                    M3Tooltip.uninstall(actionButton, tooltip);
+                }
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that snackbar action indexes reveal date-range picker targets owned by rich tooltip action nodes.
+    @Test
+    void snackbarActionIndexRevealsDateRangePickerValueInsideRichTooltipAction() {
+        runOnFxThread(() -> {
+            M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
+            Pane root = new Pane(snackbar);
+            Stage stage = new Stage();
+
+            try {
+                stage.setScene(new Scene(root, 620.0, 380.0));
+                M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
+                stage.show();
+                root.applyCss();
+                snackbar.resizeRelocate(24.0, 144.0, 380.0, 64.0);
+                root.layout();
+
+                M3Button actionButton = assertInstanceOf(
+                        M3Button.class,
+                        snackbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0)
+                );
+                M3DateRangePickerField tooltipRangeField = new M3DateRangePickerField(
+                        LocalDate.of(2026, 6, 14),
+                        LocalDate.of(2026, 6, 18)
+                );
+                LocalDate targetDate = LocalDate.of(2026, 6, 22);
+                M3RichTooltip tooltip = M3RichTooltip.install(
+                        actionButton,
+                        "Undo",
+                        "Restores the previous item state.",
+                        tooltipRangeField
+                );
+
+                try {
+                    assertFalse(tooltip.isShowing());
+                    assertFalse(tooltipRangeField.isShowing());
+
+                    snackbar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0, targetDate);
+
+                    Node pickerFocusNode = Objects.requireNonNull(assertInstanceOf(
+                            Node.class,
+                            tooltipRangeField.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+                    ));
+                    assertTrue(tooltip.isShowing());
+                    assertTrue(tooltipRangeField.isShowing());
+                    assertTrue(pickerFocusNode.isFocused());
+                    assertTrue(M3Accessible.containsNode(tooltipRangeField.getPicker(), pickerFocusNode));
+                    assertSame(pickerFocusNode, snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                } finally {
+                    tooltipRangeField.hidePicker();
+                    tooltip.hide();
+                    M3Tooltip.uninstall(actionButton, tooltip);
+                }
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that snackbar action indexes reject out-of-range date-range targets before opening popups.
+    @Test
+    void snackbarActionIndexRejectsDisabledDateRangePickerValueInsideRichTooltipAction() {
+        runOnFxThread(() -> {
+            M3Button outside = new M3Button("Outside");
+            M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
+            Pane root = new Pane(outside, snackbar);
+            Stage stage = new Stage();
+
+            try {
+                stage.setScene(new Scene(root, 640.0, 400.0));
+                M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
+                stage.show();
+                root.applyCss();
+                outside.resizeRelocate(24.0, 24.0, 120.0, 48.0);
+                snackbar.resizeRelocate(24.0, 160.0, 380.0, 64.0);
+                root.layout();
+
+                M3Button actionButton = assertInstanceOf(
+                        M3Button.class,
+                        snackbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0)
+                );
+                M3DateRangePickerField tooltipRangeField = new M3DateRangePickerField(
+                        LocalDate.of(2026, 6, 14),
+                        LocalDate.of(2026, 6, 18)
+                );
+                tooltipRangeField.setMaxDate(LocalDate.of(2026, 6, 20));
+                LocalDate disabledDate = LocalDate.of(2026, 6, 24);
+                M3RichTooltip tooltip = M3RichTooltip.install(
+                        actionButton,
+                        "Undo",
+                        "Restores the previous item state.",
+                        tooltipRangeField
+                );
+
+                try {
+                    outside.requestFocus();
+                    assertTrue(outside.isFocused());
+
+                    snackbar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0, disabledDate);
+
+                    assertFalse(tooltip.isShowing());
+                    assertFalse(tooltipRangeField.isShowing());
+                    assertFalse(tooltipRangeField.getStartEditor().isFocused());
+                    assertFalse(tooltipRangeField.getEndEditor().isFocused());
+                    assertFalse(actionButton.isFocused());
+                    assertSame(outside, stage.getScene().getFocusOwner());
+                } finally {
+                    tooltipRangeField.hidePicker();
+                    tooltip.hide();
+                    M3Tooltip.uninstall(actionButton, tooltip);
+                }
+            } finally {
+                stage.close();
+            }
+        });
+    }
     /// Verifies that snackbar internal padding follows the logical action edge.
     @Test
     void snackbarSkinUsesLogicalActionPadding() {
@@ -5125,6 +5704,239 @@ final class M3ControlStyleTest {
                 assertFalse(host.isShowing());
                 assertEquals(false, host.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
                 assertNull(host.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that snackbar hosts delegate current snackbar action indexes into action-owned targets.
+    @Test
+    void snackbarHostActionIndexRevealsCurrentRichTooltipActionTarget() {
+        runOnFxThread(() -> {
+            M3SnackbarHost host = new M3SnackbarHost();
+            host.setDisplayDuration(Duration.INDEFINITE);
+            M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
+            Pane root = new Pane(host);
+            Stage stage = new Stage();
+
+            try {
+                stage.setScene(new Scene(root, 400.0, 160.0));
+                M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
+                stage.show();
+                host.show(snackbar);
+                root.applyCss();
+                root.layout();
+
+                M3Button actionButton = assertInstanceOf(
+                        M3Button.class,
+                        snackbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0)
+                );
+                M3Button tooltipAction = new M3Button("Details");
+                M3RichTooltip tooltip = M3RichTooltip.install(
+                        actionButton,
+                        "Undo",
+                        "Restores the saved item.",
+                        tooltipAction
+                );
+
+                try {
+                    assertFalse(tooltip.isShowing());
+
+                    host.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0, tooltipAction);
+
+                    assertTrue(tooltip.isShowing());
+                    assertTrue(tooltipAction.isFocused());
+                    assertSame(tooltipAction, snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                    assertSame(tooltipAction, host.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                } finally {
+                    tooltip.hide();
+                    M3Tooltip.uninstall(actionButton, tooltip);
+                }
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that snackbar hosts can promote queued snackbars before indexed action-owned target reveal.
+    @Test
+    void snackbarHostActionIndexRevealsPromotedQueuedRichTooltipActionTarget() {
+        runOnFxThread(() -> {
+            M3SnackbarHost host = new M3SnackbarHost();
+            host.setDisplayDuration(Duration.INDEFINITE);
+            M3Snackbar currentSnackbar = new M3Snackbar("Saved", "Undo");
+            M3Snackbar queuedSnackbar = new M3Snackbar("Deleted", "Restore");
+            Pane root = new Pane(host);
+            Stage stage = new Stage();
+
+            try {
+                stage.setScene(new Scene(root, 400.0, 160.0));
+                M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
+                stage.show();
+                host.show(currentSnackbar);
+                host.enqueue(queuedSnackbar);
+                root.applyCss();
+                root.layout();
+
+                assertSame(currentSnackbar, host.getSnackbar());
+                assertSame(queuedSnackbar, host.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+
+                host.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1);
+                root.applyCss();
+                root.layout();
+                M3Button actionButton = assertInstanceOf(
+                        M3Button.class,
+                        queuedSnackbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0)
+                );
+                M3Button tooltipAction = new M3Button("Details");
+                M3RichTooltip tooltip = M3RichTooltip.install(
+                        actionButton,
+                        "Restore",
+                        "Restores the deleted item.",
+                        tooltipAction
+                );
+
+                try {
+                    assertSame(queuedSnackbar, host.getSnackbar());
+                    assertSame(queuedSnackbar, host.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+                    assertNull(host.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+                    assertTrue(host.getQueue().isEmpty());
+                    assertFalse(tooltip.isShowing());
+
+                    host.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0, tooltipAction);
+
+                    assertTrue(tooltip.isShowing());
+                    assertTrue(tooltipAction.isFocused());
+                    assertSame(tooltipAction, queuedSnackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                    assertSame(tooltipAction, host.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                } finally {
+                    tooltip.hide();
+                    M3Tooltip.uninstall(actionButton, tooltip);
+                }
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that snackbar hosts reject disabled action-owned targets before changing focus.
+    @Test
+    void snackbarHostActionIndexRejectsDisabledRichTooltipActionTarget() {
+        runOnFxThread(() -> {
+            M3SnackbarHost host = new M3SnackbarHost();
+            host.setDisplayDuration(Duration.INDEFINITE);
+            M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
+            Pane root = new Pane(host);
+            Stage stage = new Stage();
+
+            try {
+                stage.setScene(new Scene(root, 400.0, 160.0));
+                M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
+                stage.show();
+                host.show(snackbar);
+                root.applyCss();
+                root.layout();
+
+                M3Button actionButton = assertInstanceOf(
+                        M3Button.class,
+                        snackbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0)
+                );
+                M3Button disabledTooltipAction = new M3Button("Details");
+                disabledTooltipAction.setDisable(true);
+                M3RichTooltip tooltip = M3RichTooltip.install(
+                        actionButton,
+                        "Undo",
+                        "Restores the saved item.",
+                        disabledTooltipAction
+                );
+
+                try {
+                    host.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+                    assertTrue(actionButton.isFocused());
+                    assertFalse(tooltip.isShowing());
+
+                    host.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0, disabledTooltipAction);
+
+                    assertFalse(tooltip.isShowing());
+                    assertFalse(disabledTooltipAction.isFocused());
+                    assertTrue(actionButton.isFocused());
+                    assertSame(actionButton, snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                    assertSame(actionButton, host.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                } finally {
+                    tooltip.hide();
+                    M3Tooltip.uninstall(actionButton, tooltip);
+                }
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that hidden or disabled queued snackbars are not promoted by explicit reveal requests.
+    @Test
+    void snackbarHostRejectsUnreachableQueuedSnackbarRevealWithoutPromoting() {
+        runOnFxThread(() -> {
+            M3SnackbarHost host = new M3SnackbarHost();
+            host.setDisplayDuration(Duration.INDEFINITE);
+            M3Snackbar currentSnackbar = new M3Snackbar("Saved", "Undo");
+            M3Snackbar disabledQueuedSnackbar = new M3Snackbar("Deleted", "Restore");
+            disabledQueuedSnackbar.setDisable(true);
+            M3Snackbar hiddenQueuedSnackbar = new M3Snackbar("Uploaded", "View");
+            hiddenQueuedSnackbar.setVisible(false);
+            Pane root = new Pane(host);
+            Stage stage = new Stage();
+
+            try {
+                stage.setScene(new Scene(root, 360.0, 140.0));
+                M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
+                stage.show();
+                host.show(currentSnackbar);
+                host.enqueue(disabledQueuedSnackbar);
+                host.enqueue(hiddenQueuedSnackbar);
+                root.applyCss();
+                root.layout();
+
+                assertSame(currentSnackbar, host.getSnackbar());
+                assertEquals(2, host.getQueue().size());
+                assertSame(disabledQueuedSnackbar, host.getQueue().get(0));
+                assertSame(hiddenQueuedSnackbar, host.getQueue().get(1));
+
+                host.executeAccessibleAction(AccessibleAction.SHOW_ITEM, disabledQueuedSnackbar);
+                root.applyCss();
+                root.layout();
+
+                assertSame(currentSnackbar, host.getSnackbar());
+                assertEquals(2, host.getQueue().size());
+                assertSame(disabledQueuedSnackbar, host.getQueue().get(0));
+                assertSame(hiddenQueuedSnackbar, host.getQueue().get(1));
+
+                host.executeAccessibleAction(AccessibleAction.SHOW_ITEM, hiddenQueuedSnackbar);
+                root.applyCss();
+                root.layout();
+
+                assertSame(currentSnackbar, host.getSnackbar());
+                assertEquals(2, host.getQueue().size());
+                assertSame(disabledQueuedSnackbar, host.getQueue().get(0));
+                assertSame(hiddenQueuedSnackbar, host.getQueue().get(1));
+
+                host.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1);
+                root.applyCss();
+                root.layout();
+
+                assertSame(currentSnackbar, host.getSnackbar());
+                assertEquals(2, host.getQueue().size());
+                assertSame(disabledQueuedSnackbar, host.getQueue().get(0));
+                assertSame(hiddenQueuedSnackbar, host.getQueue().get(1));
+
+                host.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 2);
+                root.applyCss();
+                root.layout();
+
+                assertSame(currentSnackbar, host.getSnackbar());
+                assertEquals(2, host.getQueue().size());
+                assertSame(disabledQueuedSnackbar, host.getQueue().get(0));
+                assertSame(hiddenQueuedSnackbar, host.getQueue().get(1));
             } finally {
                 stage.close();
             }
@@ -11835,7 +12647,8 @@ final class M3ControlStyleTest {
 
             M3Button outside = new M3Button("Outside");
             VBox hiddenOwner = new VBox(8.0, sideSheet, bottomSheet, scrim, snackbarHost);
-            VBox root = new VBox(8.0, outside, hiddenOwner);
+            M3Surface ownerSurface = new M3Surface(hiddenOwner);
+            VBox root = new VBox(8.0, outside, ownerSurface);
             Stage stage = new Stage();
             try {
                 M3MotionSettings.setAnimationsEnabled(root, false);
@@ -11884,6 +12697,8 @@ final class M3ControlStyleTest {
                 snackbarHost.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
                 snackbarHost.executeAccessibleAction(AccessibleAction.SHOW_ITEM, queuedSnackbar);
                 snackbarHost.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1);
+                ownerSurface.executeAccessibleAction(AccessibleAction.SHOW_ITEM, queuedSnackbar);
+                ownerSurface.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1);
 
                 assertSame(currentSnackbar, snackbarHost.getSnackbar());
                 assertEquals(1, snackbarHost.getQueue().size());
@@ -16627,6 +17442,21 @@ final class M3ControlStyleTest {
         slider.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
 
         assertEquals(25.0, slider.getValue(), 0.0001);
+
+        double centerY = slider.getHeight() / 2.0;
+        double lowValueX = slider.getWidth() - slider.getThumbWidth() / 2.0;
+        slider.fireEvent(primaryMouseEvent(slider, MouseEvent.MOUSE_PRESSED, lowValueX, centerY, true));
+        slider.fireEvent(primaryMouseEvent(slider, MouseEvent.MOUSE_RELEASED, lowValueX, centerY, false));
+
+        assertEquals(0.0, slider.getValue(), 0.0001);
+        assertFalse(slider.isValueChanging());
+
+        double highValueX = slider.getThumbWidth() / 2.0;
+        slider.fireEvent(primaryMouseEvent(slider, MouseEvent.MOUSE_PRESSED, highValueX, centerY, true));
+        slider.fireEvent(primaryMouseEvent(slider, MouseEvent.MOUSE_RELEASED, highValueX, centerY, false));
+
+        assertEquals(100.0, slider.getValue(), 0.0001);
+        assertFalse(slider.isValueChanging());
     }
 
     /// Verifies that slider active and inactive tracks leave Material handle gaps in every direction.
@@ -19406,6 +20236,55 @@ final class M3ControlStyleTest {
         assertNull(listView.getFocusedItem());
     }
 
+    /// Verifies that virtualized list selection and focus track runtime node item reachability changes.
+    @Test
+    void listViewSelectionAndFocusTrackNodeItemReachabilityChanges() {
+        M3ListItem first = new M3ListItem("First");
+        M3ListItem second = new M3ListItem("Second");
+        M3ListItem third = new M3ListItem("Third");
+        M3ListView<M3ListItem> listView = new M3ListView<>(first, second, third);
+        listView.setSelectionMode(M3ListSelectionMode.MULTIPLE);
+
+        listView.selectIndex(0);
+        listView.selectIndex(1);
+        listView.selectIndex(2);
+        listView.focusIndex(1);
+
+        assertEquals(java.util.List.of(0, 1, 2), listView.getSelectedIndices());
+        assertEquals(1, listView.getFocusedIndex());
+
+        second.setVisible(false);
+
+        assertEquals(java.util.List.of(0, 2), listView.getSelectedIndices());
+        assertEquals(-1, listView.getFocusedIndex());
+        assertNull(listView.getFocusedItem());
+
+        listView.selectIndex(1);
+
+        assertEquals(java.util.List.of(0, 2), listView.getSelectedIndices());
+
+        second.setVisible(true);
+        listView.selectIndex(1);
+        listView.focusIndex(2);
+
+        assertEquals(java.util.List.of(0, 1, 2), listView.getSelectedIndices());
+        assertEquals(2, listView.getFocusedIndex());
+
+        third.setDisable(true);
+
+        assertEquals(java.util.List.of(0, 1), listView.getSelectedIndices());
+        assertEquals(-1, listView.getFocusedIndex());
+        assertNull(listView.getFocusedItem());
+
+        listView.setSelectionMode(M3ListSelectionMode.SINGLE);
+        listView.setAllowEmptySelection(false);
+        listView.selectIndex(0);
+        first.setDisable(true);
+
+        assertEquals(java.util.List.of(1), listView.getSelectedIndices());
+        assertSame(second, listView.getSelectedItem());
+    }
+
     /// Verifies that virtualized list page navigation moves by visible rows without wrapping.
     @Test
     void listViewPageNavigationUsesVisibleRowSteps() {
@@ -19706,6 +20585,13 @@ final class M3ControlStyleTest {
                         settingsRow.getTrailing()
                 ));
 
+                settingsAction.setVisible(false);
+                listView.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, settingsAction);
+
+                assertEquals(-1, listView.getSelectedIndex());
+                assertNull(listView.getSelectedItem());
+
+                settingsAction.setVisible(true);
                 listView.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, settingsAction);
 
                 assertEquals(1, listView.getSelectedIndex());
@@ -19999,6 +20885,58 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that visible list view rows reject disabled picker value targets without changing list focus.
+    @Test
+    void listViewAccessibilityActionsRejectVisibleRowDisabledPickerValueTargets() {
+        runOnFxThread(() -> {
+            AtomicReference<@Nullable M3DatePickerField> targetDateFieldReference = new AtomicReference<>();
+            M3ListView<Integer> listView = new M3ListView<>(0, 1, 2);
+            listView.setSelectionMode(M3ListSelectionMode.SINGLE);
+            listView.setFixedCellSize(56.0);
+            listView.setPrefSize(360.0, 168.0);
+            listView.setCellFactory(value -> {
+                M3ListItem item = new M3ListItem("Row " + value);
+                M3DatePickerField dateField = new M3DatePickerField(LocalDate.of(2026, 5, 1));
+                dateField.setDisplayedMonth(YearMonth.of(2026, 5));
+                dateField.setMaxDate(LocalDate.of(2026, 5, 10));
+                dateField.setPrefWidth(180.0);
+                if (value == 1) {
+                    targetDateFieldReference.set(dateField);
+                }
+                item.setTrailing(dateField);
+                return item;
+            });
+            Pane root = new StackPane(listView);
+            Scene scene = new Scene(root, 440.0, 240.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            Stage stage = new Stage();
+            try {
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                M3DatePickerField targetDateField =
+                        Objects.requireNonNull(targetDateFieldReference.get(), "targetDateField");
+                listView.focusIndex(0);
+                root.layout();
+
+                assertEquals(0, listView.getFocusedIndex());
+                assertFalse(targetDateField.isShowing());
+
+                listView.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1, LocalDate.of(2026, 5, 18));
+                root.layout();
+
+                assertEquals(0, listView.getFocusedIndex());
+                assertEquals(0, listView.getFocusedItem());
+                assertFalse(targetDateField.isShowing());
+                assertFalse(targetDateField.getEditor().isFocused());
+            } finally {
+                stage.close();
+            }
+        });
+    }
     /// Verifies that virtualized list view accessibility actions accept data item descendants.
     @Test
     void listViewAccessibilityActionsAcceptDataItemDescendants() {
@@ -20021,6 +20959,67 @@ final class M3ControlStyleTest {
 
         assertEquals(1, listView.getFocusedIndex());
         assertSame(second, listView.getFocusedItem());
+    }
+
+    /// Verifies that virtualized list view selection ignores unreachable data items and descendants.
+    @Test
+    void listViewAccessibilitySelectionIgnoresUnreachableDataItemTargets() {
+        M3ListItem hiddenRow = new M3ListItem("Hidden row");
+        hiddenRow.setVisible(false);
+
+        M3ListItem disabledRow = new M3ListItem("Disabled row");
+        disabledRow.setDisable(true);
+
+        M3Button hiddenAction = new M3Button("Hidden action");
+        hiddenAction.setVisible(false);
+        M3ListItem hiddenActionRow = new M3ListItem("Hidden action row");
+        hiddenActionRow.setTrailing(hiddenAction);
+
+        M3Button disabledAction = new M3Button("Disabled action");
+        disabledAction.setDisable(true);
+        M3ListItem disabledActionRow = new M3ListItem("Disabled action row");
+        disabledActionRow.setTrailing(disabledAction);
+
+        M3Button visibleAction = new M3Button("Visible action");
+        M3ListItem visibleRow = new M3ListItem("Visible row");
+        visibleRow.setTrailing(visibleAction);
+
+        M3ListView<M3ListItem> listView = new M3ListView<>(
+                hiddenRow,
+                disabledRow,
+                hiddenActionRow,
+                disabledActionRow,
+                visibleRow
+        );
+        listView.setSelectionMode(M3ListSelectionMode.MULTIPLE);
+
+        listView.executeAccessibleAction(
+                AccessibleAction.SET_SELECTED_ITEMS,
+                hiddenRow,
+                disabledRow,
+                hiddenAction,
+                disabledAction
+        );
+
+        assertTrue(listView.getSelectedItems().isEmpty());
+        assertTrue(listView.getSelectedIndices().isEmpty());
+
+        hiddenRow.setVisible(true);
+        disabledRow.setDisable(false);
+        hiddenAction.setVisible(true);
+        disabledAction.setDisable(false);
+        listView.executeAccessibleAction(
+                AccessibleAction.SET_SELECTED_ITEMS,
+                hiddenRow,
+                disabledRow,
+                hiddenAction,
+                disabledAction,
+                visibleAction
+        );
+
+        assertEquals(java.util.List.of(0, 1, 2, 3, 4), listView.getSelectedIndices());
+        assertEquals(java.util.List.of(hiddenRow, disabledRow, hiddenActionRow, disabledActionRow, visibleRow),
+                listView.getSelectedItems());
     }
 
     /// Verifies that focused virtualized list rows update after item changes.
@@ -20157,14 +21156,14 @@ final class M3ControlStyleTest {
         assertEquals(0.0, row.getLayoutX(), 0.0001);
         assertEquals(NodeOrientation.LEFT_TO_RIGHT, row.getEffectiveNodeOrientation());
 
-        cell.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+        root.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
         root.applyCss();
         cell.layout();
 
         assertEquals(120.0, row.getLayoutX(), 0.0001);
         assertEquals(NodeOrientation.RIGHT_TO_LEFT, row.getEffectiveNodeOrientation());
 
-        cell.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+        root.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
         root.applyCss();
         cell.layout();
 
@@ -23103,6 +24102,8 @@ final class M3ControlStyleTest {
         assertThrows(IllegalArgumentException.class, () -> navigationRail.select(railSecond));
         assertThrows(IllegalArgumentException.class, () -> list.select(listSecond));
         assertThrows(IllegalArgumentException.class, () -> menu.select(menuSecond));
+        assertThrows(IllegalArgumentException.class, () -> carousel.select(carousel.getItems().get(1)));
+        assertThrows(IllegalArgumentException.class, () -> carousel.selectIndex(1));
 
         iconGroup.selectNext();
         segmentedGroup.selectNext();
@@ -23715,7 +24716,10 @@ final class M3ControlStyleTest {
             HBox firstCarouselItem = new HBox(firstCarouselAction);
             M3Button secondCarouselAction = new M3Button("Second carousel action");
             HBox secondCarouselItem = new HBox(secondCarouselAction);
-            M3Carousel carousel = new M3Carousel(firstCarouselItem, secondCarouselItem);
+            M3Button hiddenCarouselAction = new M3Button("Hidden carousel action");
+            hiddenCarouselAction.setVisible(false);
+            HBox hiddenCarouselItem = new HBox(hiddenCarouselAction);
+            M3Carousel carousel = new M3Carousel(firstCarouselItem, secondCarouselItem, hiddenCarouselItem);
             carousel.setAnimatedScroll(false);
 
             M3Button firstDrawerTrailing = new M3Button("First drawer trailing");
@@ -23756,6 +24760,12 @@ final class M3ControlStyleTest {
 
                 carousel.select(firstCarouselItem);
                 assertSame(firstCarouselItem, carousel.getSelectedItem());
+
+                carousel.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 2, hiddenCarouselAction);
+                root.layout();
+
+                assertSame(firstCarouselItem, carousel.getSelectedItem());
+                assertFalse(hiddenCarouselAction.isFocused());
 
                 carousel.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1, secondCarouselAction);
                 root.layout();
@@ -24025,19 +25035,37 @@ final class M3ControlStyleTest {
         section.resize(360.0, 100.0);
         section.layout();
 
-        assertFormSectionTextAlignment(section, Pos.TOP_LEFT, Pos.CENTER_LEFT, TextAlignment.LEFT);
+        assertFormSectionTextAlignment(
+                section,
+                Pos.TOP_LEFT,
+                Pos.CENTER_LEFT,
+                TextAlignment.LEFT,
+                NodeOrientation.LEFT_TO_RIGHT
+        );
 
         section.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
         root.applyCss();
         section.layout();
 
-        assertFormSectionTextAlignment(section, Pos.TOP_RIGHT, Pos.CENTER_RIGHT, TextAlignment.RIGHT);
+        assertFormSectionTextAlignment(
+                section,
+                Pos.TOP_RIGHT,
+                Pos.CENTER_RIGHT,
+                TextAlignment.RIGHT,
+                NodeOrientation.RIGHT_TO_LEFT
+        );
 
         section.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
         root.applyCss();
         section.layout();
 
-        assertFormSectionTextAlignment(section, Pos.TOP_LEFT, Pos.CENTER_LEFT, TextAlignment.LEFT);
+        assertFormSectionTextAlignment(
+                section,
+                Pos.TOP_LEFT,
+                Pos.CENTER_LEFT,
+                TextAlignment.LEFT,
+                NodeOrientation.LEFT_TO_RIGHT
+        );
     }
 
     /// Verifies that form rows mirror text alignment when orientation changes at runtime.
@@ -24735,9 +25763,17 @@ final class M3ControlStyleTest {
             );
 
             assertEquals(NodeOrientation.RIGHT_TO_LEFT, sideHeader.getEffectiveNodeOrientation());
+            assertEquals(NodeOrientation.RIGHT_TO_LEFT, sideContent.getEffectiveNodeOrientation());
             assertEquals(NodeOrientation.RIGHT_TO_LEFT, bottomHeader.getEffectiveNodeOrientation());
+            assertEquals(NodeOrientation.RIGHT_TO_LEFT, bottomContent.getEffectiveNodeOrientation());
             assertEquals(NodeOrientation.RIGHT_TO_LEFT, formHeader.getEffectiveNodeOrientation());
+            assertEquals(NodeOrientation.RIGHT_TO_LEFT, formContent.getEffectiveNodeOrientation());
             assertEquals(NodeOrientation.RIGHT_TO_LEFT, summaryItems.getEffectiveNodeOrientation());
+            assertEquals(NodeOrientation.LEFT_TO_RIGHT, sectionTitle.getEffectiveNodeOrientation());
+            assertEquals(NodeOrientation.LEFT_TO_RIGHT, sectionSupporting.getEffectiveNodeOrientation());
+            assertEquals(NodeOrientation.LEFT_TO_RIGHT, summaryTitle.getEffectiveNodeOrientation());
+            assertEquals(NodeOrientation.LEFT_TO_RIGHT, summaryItemLabel.getEffectiveNodeOrientation());
+            assertEquals(NodeOrientation.LEFT_TO_RIGHT, summaryItemError.getEffectiveNodeOrientation());
             assertEquals(Pos.CENTER_RIGHT, sideHeader.getAlignment());
             assertEquals(Pos.CENTER_LEFT, sideActions.getAlignment());
             assertEquals(Pos.TOP_RIGHT, sideContentSlot.getAlignment());
@@ -26237,6 +27273,9 @@ final class M3ControlStyleTest {
             assertEquals(TextAlignment.LEFT, title.getTextAlignment());
             assertEquals(TextAlignment.LEFT, itemLabel.getTextAlignment());
             assertEquals(TextAlignment.LEFT, itemError.getTextAlignment());
+            assertEquals(NodeOrientation.LEFT_TO_RIGHT, title.getEffectiveNodeOrientation());
+            assertEquals(NodeOrientation.LEFT_TO_RIGHT, itemLabel.getEffectiveNodeOrientation());
+            assertEquals(NodeOrientation.LEFT_TO_RIGHT, itemError.getEffectiveNodeOrientation());
 
             summary.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
             root.applyCss();
@@ -26251,6 +27290,9 @@ final class M3ControlStyleTest {
             assertEquals(TextAlignment.RIGHT, title.getTextAlignment());
             assertEquals(TextAlignment.RIGHT, itemLabel.getTextAlignment());
             assertEquals(TextAlignment.RIGHT, itemError.getTextAlignment());
+            assertEquals(NodeOrientation.LEFT_TO_RIGHT, title.getEffectiveNodeOrientation());
+            assertEquals(NodeOrientation.LEFT_TO_RIGHT, itemLabel.getEffectiveNodeOrientation());
+            assertEquals(NodeOrientation.LEFT_TO_RIGHT, itemError.getEffectiveNodeOrientation());
 
             summary.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
             root.applyCss();
@@ -26265,6 +27307,9 @@ final class M3ControlStyleTest {
             assertEquals(TextAlignment.LEFT, title.getTextAlignment());
             assertEquals(TextAlignment.LEFT, itemLabel.getTextAlignment());
             assertEquals(TextAlignment.LEFT, itemError.getTextAlignment());
+            assertEquals(NodeOrientation.LEFT_TO_RIGHT, title.getEffectiveNodeOrientation());
+            assertEquals(NodeOrientation.LEFT_TO_RIGHT, itemLabel.getEffectiveNodeOrientation());
+            assertEquals(NodeOrientation.LEFT_TO_RIGHT, itemError.getEffectiveNodeOrientation());
         });
     }
 
@@ -26495,11 +27540,31 @@ final class M3ControlStyleTest {
                 root.layout();
 
                 assertFalse(validator.validate());
+                root.applyCss();
+                root.layout();
+
+                PseudoClass empty = PseudoClass.getPseudoClass("empty");
                 assertEquals(2, summary.getInvalidInputCount());
+                assertEquals(1, summary.getVisibleInvalidInputCount());
+                assertFalse(summary.getPseudoClassStates().contains(empty));
+                assertFalse(summary.isInvalidInputShown(hiddenLayout));
+                assertFalse(summary.isInvalidInputReachable(hiddenLayout));
+                assertTrue(summary.isInvalidInputShown(visibleLayout));
+                assertTrue(summary.isInvalidInputReachable(visibleLayout));
                 assertEquals(1, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
                 assertSame(visibleLayout, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
                 assertNull(summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
                 assertSame(visibleField, summary.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                VBox items = assertInstanceOf(
+                        VBox.class,
+                        summary.lookup("." + M3ValidationSummary.ITEMS_STYLE_CLASS)
+                );
+                assertEquals(1, items.getChildren().size());
+                Label itemLabel = assertInstanceOf(
+                        Label.class,
+                        items.getChildren().get(0).lookup("." + M3ValidationSummary.ITEM_LABEL_STYLE_CLASS)
+                );
+                assertEquals("Visible", itemLabel.getText());
 
                 outside.requestFocus();
                 assertFalse(summary.focusInput(hiddenLayout));
@@ -26516,6 +27581,55 @@ final class M3ControlStyleTest {
 
                 assertTrue(visibleField.isFocused());
                 assertSame(visibleField, summary.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                hiddenAncestor.setVisible(true);
+                root.applyCss();
+                root.layout();
+
+                assertTrue(summary.isInvalidInputShown(hiddenLayout));
+                assertTrue(summary.isInvalidInputReachable(hiddenLayout));
+                assertEquals(2, summary.getVisibleInvalidInputCount());
+                assertEquals(2, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+                assertEquals(2, summary.lookupAll("." + M3ValidationSummary.ITEM_STYLE_CLASS).size());
+
+                visibleLayout.setDisable(true);
+                root.applyCss();
+                root.layout();
+
+                assertFalse(summary.isInvalidInputShown(visibleLayout));
+                assertFalse(summary.isInvalidInputReachable(visibleLayout));
+                assertEquals(1, summary.getVisibleInvalidInputCount());
+                assertEquals(1, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+                items = assertInstanceOf(
+                        VBox.class,
+                        summary.lookup("." + M3ValidationSummary.ITEMS_STYLE_CLASS)
+                );
+                assertEquals(1, items.getChildren().size());
+                itemLabel = assertInstanceOf(
+                        Label.class,
+                        items.getChildren().get(0).lookup("." + M3ValidationSummary.ITEM_LABEL_STYLE_CLASS)
+                );
+                assertEquals("Hidden", itemLabel.getText());
+
+                hiddenAncestor.setVisible(false);
+                root.applyCss();
+                root.layout();
+
+                assertFalse(summary.isShowingSummary());
+                assertEquals(0, summary.getVisibleInvalidInputCount());
+                assertTrue(summary.getPseudoClassStates().contains(empty));
+                assertTrue(summary.lookupAll("." + M3ValidationSummary.ITEM_STYLE_CLASS).isEmpty());
+                assertEquals(0, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+
+                hiddenAncestor.setVisible(true);
+                visibleLayout.setDisable(false);
+                root.applyCss();
+                root.layout();
+
+                assertTrue(summary.isShowingSummary());
+                assertEquals(2, summary.getVisibleInvalidInputCount());
+                assertFalse(summary.getPseudoClassStates().contains(empty));
+                assertEquals(2, summary.lookupAll("." + M3ValidationSummary.ITEM_STYLE_CLASS).size());
 
                 outside.requestFocus();
                 summary.setVisible(false);
@@ -28793,9 +29907,9 @@ final class M3ControlStyleTest {
         slider.resize(220.0, 48.0);
         slider.layout();
 
-        slider.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 210.0, 24.0, true));
+        slider.fireEvent(primaryMouseEvent(slider, MouseEvent.MOUSE_PRESSED, 210.0, 24.0, true));
         assertTrue(slider.getValue() > 95.0);
-        slider.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 10.0, 24.0, false));
+        slider.fireEvent(primaryMouseEvent(slider, MouseEvent.MOUSE_RELEASED, 10.0, 24.0, false));
         assertTrue(slider.getValue() < 5.0);
 
         slider.setValue(50.0);
@@ -28814,9 +29928,9 @@ final class M3ControlStyleTest {
         rightToLeft.resize(220.0, 48.0);
         rightToLeft.layout();
 
-        rightToLeft.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 210.0, 24.0, true));
+        rightToLeft.fireEvent(primaryMouseEvent(rightToLeft, MouseEvent.MOUSE_PRESSED, 210.0, 24.0, true));
         assertTrue(rightToLeft.getValue() < 5.0, () -> "value=" + rightToLeft.getValue());
-        rightToLeft.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 10.0, 24.0, false));
+        rightToLeft.fireEvent(primaryMouseEvent(rightToLeft, MouseEvent.MOUSE_RELEASED, 10.0, 24.0, false));
         assertTrue(rightToLeft.getValue() > 95.0, () -> "value=" + rightToLeft.getValue());
     }
 
@@ -28833,11 +29947,11 @@ final class M3ControlStyleTest {
         slider.layout();
 
         Region thumb = lookupRegion(slider, ".thumb");
-        slider.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 210.0, 24.0, true));
+        slider.fireEvent(primaryMouseEvent(slider, MouseEvent.MOUSE_PRESSED, 210.0, 24.0, true));
         slider.layout();
         assertTrue(thumb.getLayoutX() > 190.0);
 
-        slider.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_DRAGGED, 10.0, 24.0, true));
+        slider.fireEvent(primaryMouseEvent(slider, MouseEvent.MOUSE_DRAGGED, 10.0, 24.0, true));
         slider.layout();
         assertTrue(thumb.getLayoutX() < 10.0);
     }
@@ -28856,7 +29970,7 @@ final class M3ControlStyleTest {
         slider.setValueChanging(true);
 
         slider.setDisable(true);
-        slider.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 210.0, 24.0, true));
+        slider.fireEvent(primaryMouseEvent(slider, MouseEvent.MOUSE_PRESSED, 210.0, 24.0, true));
         slider.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
 
         assertEquals(50.0, slider.getValue(), 0.0001);
@@ -28892,7 +30006,7 @@ final class M3ControlStyleTest {
         slider.layout();
 
         assertInstanceOf(Region.class, slider.lookup(".m3-state-layer"));
-        slider.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 110.0, 24.0, true));
+        slider.fireEvent(primaryMouseEvent(slider, MouseEvent.MOUSE_PRESSED, 110.0, 24.0, true));
 
         assertTrue(lookupRegion(slider, ".m3-ripple").getOpacity() > 0.0);
     }
@@ -29409,6 +30523,39 @@ final class M3ControlStyleTest {
         navigationDrawer.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, drawerSecond);
 
         assertEquals(drawerSecond, navigationDrawer.getSelectedItem());
+    }
+
+    /// Verifies that selection actions ignore hidden or disabled descendant targets.
+    @Test
+    void selectionContainersIgnoreUnreachableDescendantSelectionTargets() {
+        M3Button hiddenAction = new M3Button("Hidden action");
+        hiddenAction.setVisible(false);
+        M3ListItem hiddenItem = new M3ListItem("Hidden row");
+        hiddenItem.setTrailing(hiddenAction);
+
+        M3Button disabledAction = new M3Button("Disabled action");
+        disabledAction.setDisable(true);
+        M3ListItem disabledItem = new M3ListItem("Disabled row");
+        disabledItem.setTrailing(disabledAction);
+
+        M3Button visibleAction = new M3Button("Visible action");
+        M3ListItem visibleItem = new M3ListItem("Visible row");
+        visibleItem.setTrailing(visibleAction);
+
+        M3ListPane list = new M3ListPane(hiddenItem, disabledItem, visibleItem);
+        list.setSelectionMode(M3ListSelectionMode.MULTIPLE);
+
+        list.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, hiddenAction, disabledAction);
+
+        assertTrue(list.getSelectedItems().isEmpty());
+        assertFalse(hiddenItem.isSelected());
+        assertFalse(disabledItem.isSelected());
+
+        hiddenAction.setVisible(true);
+        disabledAction.setDisable(false);
+        list.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, hiddenAction, disabledAction, visibleAction);
+
+        assertEquals(java.util.List.of(hiddenItem, disabledItem, visibleItem), list.getSelectedItems());
     }
 
     /// Verifies that menu buttons expose their popup menu to accessibility clients.
@@ -33916,7 +35063,8 @@ final class M3ControlStyleTest {
             M3FormSection section,
             Pos topAlignment,
             Pos centerAlignment,
-            TextAlignment textAlignment
+            TextAlignment textAlignment,
+            NodeOrientation nodeOrientation
     ) {
         VBox header = assertInstanceOf(VBox.class, section.lookup("." + M3FormSection.HEADER_STYLE_CLASS));
         VBox content = assertInstanceOf(VBox.class, section.lookup("." + M3FormSection.CONTENT_STYLE_CLASS));
@@ -33928,6 +35076,10 @@ final class M3ControlStyleTest {
 
         assertEquals(topAlignment, header.getAlignment());
         assertEquals(topAlignment, content.getAlignment());
+        assertEquals(nodeOrientation, header.getEffectiveNodeOrientation());
+        assertEquals(nodeOrientation, content.getEffectiveNodeOrientation());
+        assertEquals(NodeOrientation.LEFT_TO_RIGHT, title.getEffectiveNodeOrientation());
+        assertEquals(NodeOrientation.LEFT_TO_RIGHT, supporting.getEffectiveNodeOrientation());
         assertEquals(centerAlignment, title.getAlignment());
         assertEquals(centerAlignment, supporting.getAlignment());
         assertEquals(textAlignment, title.getTextAlignment());

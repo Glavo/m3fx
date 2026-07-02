@@ -15,6 +15,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.skins.M3PickerFieldSkin;
@@ -203,6 +204,80 @@ final class M3PickerFieldTest {
         assertEquals("11:30", timeField.getEditor().getText());
         assertEquals(List.of(LocalTime.of(11, 30)),
                 timeField.queryAccessibleAttribute(AccessibleAttribute.SELECTED_ITEMS));
+    }
+
+    /// Verifies that picker fields reject out-of-range accessibility value targets before opening popups.
+    @Test
+    void pickerFieldsRejectOutOfRangeAccessibleValueTargets() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3DatePickerField dateField = new M3DatePickerField(LocalDate.of(2026, 5, 19));
+            dateField.setMinDate(LocalDate.of(2026, 5, 1));
+            dateField.setMaxDate(LocalDate.of(2026, 5, 31));
+            M3TimePickerField timeField = new M3TimePickerField(LocalTime.of(10, 30));
+            timeField.setMinTime(LocalTime.of(9, 0));
+            timeField.setMaxTime(LocalTime.of(17, 30));
+            M3DateRangePickerField rangeField = new M3DateRangePickerField(
+                    LocalDate.of(2026, 5, 10),
+                    LocalDate.of(2026, 5, 12)
+            );
+            rangeField.setMinDate(LocalDate.of(2026, 5, 1));
+            rangeField.setMaxDate(LocalDate.of(2026, 5, 31));
+            M3DialogPane pane = new M3DialogPane();
+            pane.setContent(new VBox(16.0, dateField, timeField, rangeField));
+            Pane root = new Pane(pane);
+            Scene scene = new Scene(root, 780.0, 420.0);
+            Stage stage = new Stage();
+
+            try {
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                pane.resizeRelocate(24.0, 24.0, 700.0, 340.0);
+                root.layout();
+
+                pane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, LocalDate.of(2026, 6, 2));
+                pane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, LocalTime.of(18, 0));
+
+                assertFalse(dateField.isShowing());
+                assertFalse(timeField.isShowing());
+                assertFalse(rangeField.isShowing());
+
+                dateField.executeAccessibleAction(AccessibleAction.SHOW_ITEM, LocalDate.of(2026, 6, 2));
+                timeField.executeAccessibleAction(AccessibleAction.SHOW_ITEM, LocalTime.of(18, 0));
+                rangeField.executeAccessibleAction(AccessibleAction.SHOW_ITEM, LocalDate.of(2026, 6, 2));
+
+                assertFalse(dateField.isShowing());
+                assertFalse(timeField.isShowing());
+                assertFalse(rangeField.isShowing());
+
+                dateField.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, LocalDate.of(2026, 6, 2));
+                timeField.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, LocalTime.of(18, 0));
+                rangeField.executeAccessibleAction(
+                        AccessibleAction.SET_SELECTED_ITEMS,
+                        LocalDate.of(2026, 6, 2),
+                        LocalDate.of(2026, 6, 4)
+                );
+
+                assertEquals(LocalDate.of(2026, 5, 19), dateField.getValue());
+                assertEquals(LocalTime.of(10, 30), timeField.getValue());
+                assertEquals(LocalDate.of(2026, 5, 10), rangeField.getStartDate());
+                assertEquals(LocalDate.of(2026, 5, 12), rangeField.getEndDate());
+
+                dateField.executeAccessibleAction(AccessibleAction.SHOW_ITEM, LocalDate.of(2026, 5, 20));
+                assertTrue(dateField.isShowing());
+                dateField.hidePicker();
+
+                timeField.executeAccessibleAction(AccessibleAction.SHOW_ITEM, LocalTime.of(10, 45));
+                assertTrue(timeField.isShowing());
+                timeField.hidePicker();
+
+                rangeField.executeAccessibleAction(AccessibleAction.SHOW_ITEM, LocalDate.of(2026, 5, 20));
+                assertTrue(rangeField.isShowing());
+            } finally {
+                stage.close();
+            }
+        });
     }
 
     /// Verifies that picker fields install the shared picker field skin and render their input layouts.

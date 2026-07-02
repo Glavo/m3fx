@@ -14,6 +14,9 @@ final class DemoMaterialDocs {
     /// The Material Design 3 components overview URL.
     static final String COMPONENTS = ROOT + "components";
 
+    /// The Material Design all-buttons documentation URL.
+    static final String ALL_BUTTONS = ROOT + "components/all-buttons";
+
     /// The Material Design color role documentation URL.
     static final String COLOR_ROLES = ROOT + "styles/color/roles";
 
@@ -26,8 +29,8 @@ final class DemoMaterialDocs {
     /// The app bars component documentation URL.
     static final String APP_BARS = componentUrl("app-bars");
 
-    /// The bottom app bar component documentation URL.
-    static final String BOTTOM_APP_BARS = componentUrl("bottom-app-bar");
+    /// The Material toolbar documentation URL used for bottom app bar guidance.
+    static final String BOTTOM_APP_BARS = componentUrl("toolbars");
 
     /// The badges component documentation URL.
     static final String BADGES = componentUrl("badges");

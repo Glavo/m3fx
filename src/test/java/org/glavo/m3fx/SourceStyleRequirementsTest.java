@@ -174,11 +174,15 @@ final class SourceStyleRequirementsTest {
             "^\\s*[\\w-]+\\s*:\\s*[\"']-(?:m3|monet)-[a-z0-9-]+[\"']"
     );
 
-    /// Matches direct physical right-to-left orientation checks outside the shared logical layout helper.
+    /// Matches direct physical orientation checks outside the shared logical layout helper.
     private static final Pattern DIRECT_RIGHT_TO_LEFT_ORIENTATION_CHECK = Pattern.compile(
             "getEffectiveNodeOrientation\\(\\)\\s*==\\s*NodeOrientation\\.RIGHT_TO_LEFT"
                     + "|NodeOrientation\\.RIGHT_TO_LEFT\\s*==\\s*getEffectiveNodeOrientation\\(\\)"
+                    + "|\\bgetNodeOrientation\\(\\)"
     );
+
+    /// Matches JavaFX CSS lookup calls that couple production code to rendered skin internals.
+    private static final Pattern CSS_LOOKUP_CALL = Pattern.compile("\\.lookup(?:All)?\\s*\\(");
 
     /// Matches public `STYLE_CLASS` string declarations.
     private static final Pattern STYLE_CLASS_DECLARATION = Pattern.compile(
@@ -352,6 +356,24 @@ final class SourceStyleRequirementsTest {
 
         assertTrue(optionalUsages.isEmpty(),
                 () -> "Production sources must use @Nullable instead of Optional: " + optionalUsages);
+    }
+
+    /// Verifies that production code does not depend on JavaFX CSS lookup for control structure.
+    @Test
+    void productionSourcesDoNotUseCssLookup() throws IOException {
+        List<String> lookupCalls = new ArrayList<>();
+        for (Path sourceFile : productionJavaSourceFiles()) {
+            List<String> lines = Files.readAllLines(sourceFile);
+            for (int lineIndex = 0; lineIndex < lines.size(); lineIndex++) {
+                String line = lines.get(lineIndex);
+                if (CSS_LOOKUP_CALL.matcher(line).find()) {
+                    lookupCalls.add(sourceFile + ":" + (lineIndex + 1) + ": " + line.trim());
+                }
+            }
+        }
+
+        assertTrue(lookupCalls.isEmpty(),
+                () -> "Production sources must use explicit node references instead of CSS lookup: " + lookupCalls);
     }
 
     /// Verifies that exported public and protected APIs do not expose internal implementation member types.
@@ -690,6 +712,202 @@ final class SourceStyleRequirementsTest {
                 () -> "Non-node reveal target matching must be supplied by installed accessibility routes: "
                         + presentReferences);
     }
+
+    /// Verifies that picker value reveal routes check selectable ranges before claiming ownership.
+    @Test
+    void pickerValueRevealRoutesValidateSelectableRanges() throws IOException {
+        List<String> violations = new ArrayList<>();
+        verifyAccessibleRouteMatcher(violations, "M3PickerField.java");
+        verifyAccessibleRouteMatcher(violations, "M3DatePicker.java");
+        verifyAccessibleRouteMatcher(violations, "M3DateRangePicker.java");
+        verifyAccessibleRouteMatcher(violations, "M3DateRangePickerField.java");
+        verifyAccessibleRouteMatcher(violations, "M3TimePicker.java");
+        verifySelectableTargetMatcher(violations, "M3DatePicker.java", "LocalDate", "isDateDisabled");
+        verifySelectableTargetMatcher(violations, "M3DateRangePicker.java", "LocalDate", "isDateDisabled");
+        verifySelectableTargetMatcher(violations, "M3DatePickerField.java", "LocalDate", "isDateDisabled");
+        verifySelectableTargetMatcher(violations, "M3DateRangePickerField.java", "LocalDate", "isDateDisabled");
+        verifySelectableTargetMatcher(violations, "M3TimePicker.java", "LocalTime", "isTimeDisabled");
+        verifySelectableTargetMatcher(violations, "M3TimePickerField.java", "LocalTime", "isTimeDisabled");
+
+        assertTrue(violations.isEmpty(),
+                () -> "Picker value reveal routes must reject disabled or out-of-range values before claiming owners: "
+                        + violations);
+    }
+
+    /// Verifies reveal actions preflight explicit targets before opening popup or overlay state.
+    @Test
+    void revealActionsPreflightTargetsBeforeOpeningStateChanges() throws IOException {
+        List<String> violations = new ArrayList<>();
+        verifyPreflightBeforeStateChange(
+                violations,
+                "M3MenuButton.java",
+                "showAccessibleMenuItem(Object... parameters)",
+                "menu.canShowAccessibleItem(parameters)",
+                "showMenu()"
+        );
+        verifyPreflightBeforeStateChange(
+                violations,
+                "M3SubMenuItem.java",
+                "showAccessibleSubMenuItem(Object... parameters)",
+                "subMenu.canShowAccessibleItem(parameters)",
+                "showSubMenu()"
+        );
+        verifyPreflightBeforeStateChange(
+                violations,
+                "M3PickerField.java",
+                "showPickerAndForwardAccessibleAction(AccessibleAction action, Object... parameters)",
+                "canAttemptAccessibleShow(parameters)",
+                "showPicker()"
+        );
+        verifyPreflightBeforeStateChange(
+                violations,
+                "M3DateRangePickerField.java",
+                "showPickerAndForwardAccessibleAction(AccessibleAction action, Object... parameters)",
+                "canAttemptAccessibleShow(parameters)",
+                "showPicker()"
+        );
+        verifyPreflightBeforeStateChange(
+                violations,
+                "M3BottomSheet.java",
+                "showAccessibleItem(Object... parameters)",
+                "M3Accessible.canShowItem(getContent(), getActions(), parameters)",
+                "show()"
+        );
+        verifyPreflightBeforeStateChange(
+                violations,
+                "M3SideSheet.java",
+                "showAccessibleItem(Object... parameters)",
+                "M3Accessible.canShowItem(getContent(), getActions(), parameters)",
+                "show()"
+        );
+        verifyPreflightBeforeStateChange(
+                violations,
+                "M3SearchBar.java",
+                "showAccessibleItem(Object... parameters)",
+                "M3Accessible.canShowItem(getLeading(), editor, getTrailingActions(), parameters)",
+                "activateWithoutEditorFocus()"
+        );
+        verifyPreflightBeforeStateChange(
+                violations,
+                "M3SearchView.java",
+                "showAccessibleResult(Object... parameters)",
+                "canShowAccessibleResult(parameters)",
+                "activate()"
+        );
+        verifyPreflightBeforeStateChange(
+                violations,
+                "M3FabMenu.java",
+                "showAccessibleItem(Object... parameters)",
+                "M3Accessible.containsUnrevealableActionNodeTarget(getItems(), parameters)",
+                "show()"
+        );
+        verifyPreflightBeforeStateChange(
+                violations,
+                "M3SnackbarHost.java",
+                "showAccessibleSnackbar(Object... parameters)",
+                "accessibleSnackbar(parameters)",
+                "show(target)"
+        );
+        verifyPreflightBeforeLastStateChange(
+                violations,
+                "M3NavigationDrawerGroup.java",
+                "showAccessibleItem(Object... parameters)",
+                "M3Accessible.canShowItem(headerItem, items, parameters)",
+                "expandForAccessibleReveal()"
+        );
+        verifyPreflightBeforeStateChange(
+                violations,
+                "M3NavigationDrawer.java",
+                "accessibleGroupActionItem(M3NavigationDrawerGroup group, Object... parameters)",
+                "M3Accessible.containsUnrevealableActionNodeTarget(item, parameters)",
+                "group.expandForAccessibleReveal()"
+        );
+
+        assertTrue(violations.isEmpty(),
+                () -> "Reveal actions that open popup or overlay state must preflight explicit targets first: "
+                        + violations);
+    }
+
+    /// Verifies popup reveal routes reject unreachable owners before opening popup or overlay state.
+    @Test
+    void popupRevealRoutesPreflightOwnerReachabilityBeforeOpeningStateChanges() throws IOException {
+        List<String> violations = new ArrayList<>();
+        verifyPreflightBeforeStateChange(
+                violations,
+                "M3MenuButton.java",
+                "showAccessibleMenuItem(Object... parameters)",
+                "M3Accessible.canReach(this)",
+                "showMenu()"
+        );
+        verifyPreflightBeforeStateChange(
+                violations,
+                "M3SubMenuItem.java",
+                "showAccessibleSubMenuItem(Object... parameters)",
+                "M3Accessible.canReach(this)",
+                "showSubMenu()"
+        );
+        verifyPreflightBeforeStateChange(
+                violations,
+                "M3PickerField.java",
+                "showPickerAndForwardAccessibleAction(AccessibleAction action, Object... parameters)",
+                "M3Accessible.canReach(this)",
+                "showPicker()"
+        );
+        verifyPreflightBeforeStateChange(
+                violations,
+                "M3DateRangePickerField.java",
+                "showPickerAndForwardAccessibleAction(AccessibleAction action, Object... parameters)",
+                "M3Accessible.canReach(this)",
+                "showPicker()"
+        );
+        verifyPreflightBeforeStateChange(
+                violations,
+                "M3BottomSheet.java",
+                "showAccessibleItem(Object... parameters)",
+                "M3Accessible.canReveal(this)",
+                "show()"
+        );
+        verifyPreflightBeforeStateChange(
+                violations,
+                "M3SideSheet.java",
+                "showAccessibleItem(Object... parameters)",
+                "M3Accessible.canReveal(this)",
+                "show()"
+        );
+        verifyPreflightBeforeStateChange(
+                violations,
+                "M3SearchBar.java",
+                "showAccessibleItem(Object... parameters)",
+                "M3Accessible.isEffectivelyReachable(this)",
+                "activateWithoutEditorFocus()"
+        );
+        verifyPreflightBeforeStateChange(
+                violations,
+                "M3SearchView.java",
+                "showAccessibleResult(Object... parameters)",
+                "M3Accessible.canReach(this)",
+                "activate()"
+        );
+        verifyPreflightBeforeStateChange(
+                violations,
+                "M3FabMenu.java",
+                "showAccessibleItem(Object... parameters)",
+                "M3Accessible.canReach(this)",
+                "show()"
+        );
+        verifyPreflightBeforeStateChange(
+                violations,
+                "M3SnackbarHost.java",
+                "showAccessibleSnackbar(Object... parameters)",
+                "M3Accessible.canReach(this)",
+                "show(target)"
+        );
+
+        assertTrue(violations.isEmpty(),
+                () -> "Popup reveal routes must preflight owner reachability before opening state: "
+                        + violations);
+    }
+
     /// Verifies that installed accessibility routes keep the same action entry points as JavaFX actions.
     @Test
     void controlAccessibleActionRoutesMirrorExecuteAccessibleActions() throws IOException {
@@ -885,7 +1103,7 @@ final class SourceStyleRequirementsTest {
                 () -> "CSS token lookups must remain paint/size lookups, not quoted string values: " + quotedTokens);
     }
 
-    /// Verifies that physical right-to-left checks stay centralized in the logical layout helper.
+    /// Verifies that physical orientation checks stay centralized in the logical layout helper.
     @Test
     void rightToLeftOrientationChecksUseLogicalLayoutHelper() throws IOException {
         List<String> directChecks = new ArrayList<>();
@@ -904,7 +1122,7 @@ final class SourceStyleRequirementsTest {
         }
 
         assertTrue(directChecks.isEmpty(),
-                () -> "Production sources must use M3NodeLayout for right-to-left orientation checks: "
+                () -> "Production sources must use M3NodeLayout for physical orientation checks: "
                         + directChecks);
     }
 
@@ -947,6 +1165,185 @@ final class SourceStyleRequirementsTest {
         while (matcher.find()) {
             references.add(methodName + ": " + matcher.group());
         }
+    }
+
+    /// Verifies that an accessibility route uses the control-specific picker value matcher.
+    private static void verifyAccessibleRouteMatcher(List<String> violations, String sourceName) throws IOException {
+        String source = Files.readString(CONTROLS_SOURCE_ROOT.resolve(sourceName));
+        @org.jetbrains.annotations.Nullable String route = accessibleActionRouteInstallation(source);
+        if (route == null) {
+            violations.add(sourceName + ": missing M3Accessible route");
+            return;
+        }
+
+        List<String> routeArguments = topLevelArguments(route);
+        if (routeArguments.size() <= 3) {
+            violations.add(sourceName + ": missing value-target route matcher");
+            return;
+        }
+
+        String matcher = compactWhitespace(routeArguments.get(3));
+        if (!"this::handlesAccessibleShowTarget".equals(matcher)) {
+            violations.add(sourceName + ": route matcher must be this::handlesAccessibleShowTarget, found " + matcher);
+        }
+    }
+
+    /// Verifies that a picker value matcher checks both type and selectable range.
+    private static void verifySelectableTargetMatcher(
+            List<String> violations,
+            String sourceName,
+            String valueType,
+            String selectableCheck
+    ) throws IOException {
+        String source = Files.readString(CONTROLS_SOURCE_ROOT.resolve(sourceName));
+        String matcherBody = compactWhitespace(
+                sourceMethodBody(source, "handlesAccessibleShowTarget(@Nullable Object parameter)")
+        );
+        if (!matcherBody.contains("instanceof " + valueType)) {
+            violations.add(sourceName + ": value matcher must check " + valueType);
+        }
+        if (!matcherBody.contains(selectableCheck + "(")) {
+            violations.add(sourceName + ": value matcher must call " + selectableCheck);
+        }
+    }
+
+    /// Collapses source whitespace for stable expression comparison.
+    private static String compactWhitespace(String source) {
+        return source.replaceAll("\\s+", " ").trim();
+    }
+
+    /// Verifies that a source method calls a target preflight before a state-changing call.
+    private static void verifyPreflightBeforeStateChange(
+            List<String> violations,
+            String sourceName,
+            String methodSignature,
+            String preflightCall,
+            String stateChangeCall
+    ) throws IOException {
+        verifyPreflightBeforeStateChange(violations, sourceName, methodSignature, preflightCall, stateChangeCall, false);
+    }
+
+    /// Verifies that a source method calls a target preflight before the final matching state-changing call.
+    private static void verifyPreflightBeforeLastStateChange(
+            List<String> violations,
+            String sourceName,
+            String methodSignature,
+            String preflightCall,
+            String stateChangeCall
+    ) throws IOException {
+        verifyPreflightBeforeStateChange(violations, sourceName, methodSignature, preflightCall, stateChangeCall, true);
+    }
+
+    /// Verifies that a source method calls a target preflight before a state-changing call.
+    private static void verifyPreflightBeforeStateChange(
+            List<String> violations,
+            String sourceName,
+            String methodSignature,
+            String preflightCall,
+            String stateChangeCall,
+            boolean useLastStateChange
+    ) throws IOException {
+        String source = Files.readString(CONTROLS_SOURCE_ROOT.resolve(sourceName));
+        String body = compactWhitespace(sourceMethodBody(source, methodSignature));
+        int preflightIndex = body.indexOf(preflightCall);
+        int stateChangeIndex = useLastStateChange ? body.lastIndexOf(stateChangeCall) : body.indexOf(stateChangeCall);
+        if (preflightIndex < 0) {
+            violations.add(sourceName + " " + methodSignature + ": missing preflight " + preflightCall);
+            return;
+        }
+        if (stateChangeIndex < 0) {
+            violations.add(sourceName + " " + methodSignature + ": missing state change " + stateChangeCall);
+            return;
+        }
+        if (preflightIndex > stateChangeIndex) {
+            violations.add(sourceName + " " + methodSignature + ": " + preflightCall
+                    + " must run before " + stateChangeCall);
+        }
+    }
+
+    /// Verifies shared accessibility reveal helpers reject unreachable explicit node targets before handling them.
+    @Test
+    void sharedAccessibleRevealHelpersRejectUnreachableNodeTargetsBeforeHandling() throws IOException {
+        String source = Files.readString(CONTROLS_SOURCE_ROOT.resolve("M3Accessible.java")).replace("\r\n", "\n");
+        String containedActionTarget = compactWhitespace(sourceMethodBody(
+                source,
+                "containedActionTarget(@Nullable Node item, Node requestedNode)"
+        ));
+        assertTrue(containedActionTarget.contains("!canRevealActionNode(item, requestedNode)"),
+                "containedActionTarget must reject hidden or disabled descendant node targets before returning owners");
+
+        String recursiveReveal = compactWhitespace(sourceMethodBody(
+                source,
+                "private static boolean showAccessibleActionTarget("
+        ));
+        int unrevealableIndex = recursiveReveal.indexOf("containsUnrevealableActionNodeTarget(item, parameters)");
+        int routeIndex = recursiveReveal.indexOf("showRoutedAccessibleActionTarget(item, parameters)");
+        assertTrue(unrevealableIndex >= 0,
+                "showAccessibleActionTarget must preflight unreachable explicit node targets");
+        assertTrue(routeIndex >= 0,
+                "showAccessibleActionTarget must still route reachable explicit targets");
+        assertTrue(unrevealableIndex < routeIndex,
+                "showAccessibleActionTarget must reject unreachable explicit node targets before route dispatch");
+
+        String listReveal = compactWhitespace(sourceMethodBody(
+                source,
+                "static boolean showAccessibleActionTarget(\n            ObservableList<? extends Node> items"
+        ));
+        int listUnrevealableIndex = listReveal.indexOf("containsUnrevealableActionNodeTarget(items, parameters)");
+        int listLoopIndex = listReveal.indexOf("for (Node item : items)");
+        assertTrue(listUnrevealableIndex >= 0,
+                "list-level showAccessibleActionTarget must preflight unreachable explicit node targets");
+        assertTrue(listLoopIndex >= 0,
+                "list-level showAccessibleActionTarget must still search reachable item routes");
+        assertTrue(listUnrevealableIndex < listLoopIndex,
+                "list-level showAccessibleActionTarget must reject unreachable explicit node targets before sibling routes");
+
+        verifyShowItemPreflight(source,
+                "private static boolean showItemOrAccessibleActionTarget(\n            @Nullable Node item,\n            ObservableList<? extends Node> items",
+                "containsUnrevealableActionNodeTarget(items, parameters)",
+                "delegateContainingItemReveal(item, items, parameters)");
+        verifyShowItemPreflight(source,
+                "private static boolean showIndexedItemOrAccessibleActionTarget(\n            Node owner",
+                "containsUnrevealableActionNodeTarget(items, parameters)",
+                "delegateContainingItemReveal(item, items, parameters)");
+        verifyShowItemPreflight(source,
+                "private static boolean showItemOrAccessibleActionTarget(\n            @Nullable Node item,\n            @Nullable Node leading,\n            ObservableList<? extends Node> items",
+                "containsUnrevealableActionNodeTarget(leading, items, parameters)",
+                "delegateContainingNodeReveal(item, leading, parameters)");
+        verifyShowItemPreflight(source,
+                "private static boolean showItemOrAccessibleActionTarget(\n            @Nullable Node item,\n            ObservableList<? extends Node> items,\n            @Nullable Node trailing",
+                "containsUnrevealableActionNodeTarget(trailing, items, parameters)",
+                "delegateContainingListReveal(item, items, parameters)");
+        verifyShowItemPreflight(source,
+                "private static boolean showItemOrAccessibleActionTarget(\n            @Nullable Node item,\n            @Nullable Node first,\n            @Nullable Node second,\n            Object... parameters",
+                "containsUnrevealableActionNodeTarget(first, second, parameters)",
+                "delegateContainingNodeReveal(item, first, parameters)");
+        verifyShowItemPreflight(source,
+                "private static boolean showItemOrAccessibleActionTarget(\n            @Nullable Node item,\n            @Nullable Node first,\n            @Nullable Node second,\n            @Nullable Node third",
+                "containsUnrevealableActionNodeTarget(first, second, third, parameters)",
+                "delegateContainingNodeReveal(item, first, parameters)");
+        verifyShowItemPreflight(source,
+                "private static boolean showItemOrAccessibleActionTarget(\n            @Nullable Node item,\n            @Nullable Node first,\n            @Nullable Node second,\n            ObservableList<? extends Node> items",
+                "containsUnrevealableActionNodeTarget(first, second, items, parameters)",
+                "delegateContainingNodeReveal(item, first, parameters)");
+    }
+
+    /// Verifies one shared show-item helper preflights unreachable explicit targets before delegate routing.
+    private static void verifyShowItemPreflight(
+            String source,
+            String methodSignature,
+            String preflightCall,
+            String delegateCall
+    ) {
+        String body = compactWhitespace(sourceMethodBody(source, methodSignature));
+        int preflightIndex = body.indexOf(preflightCall);
+        int delegateIndex = body.indexOf(delegateCall);
+        assertTrue(preflightIndex >= 0,
+                () -> methodSignature + " must preflight unreachable explicit node targets");
+        assertTrue(delegateIndex >= 0,
+                () -> methodSignature + " must still delegate reachable explicit targets");
+        assertTrue(preflightIndex < delegateIndex,
+                () -> methodSignature + " must reject unreachable explicit node targets before delegate routing");
     }
 
     /// Verifies one installed accessibility route handler against the matching action branch.

@@ -273,6 +273,20 @@ public final class M3NavigationDrawerGroup extends Control {
     /// @param parameters optional accessibility target parameters
     /// @return `true` when focus moved to the requested or current row
     final boolean showAccessibleItem(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        if (parameters.length == 0) {
+            expandForAccessibleReveal();
+            if (M3Accessible.showCurrentOrItem(this, accessibleContent())) {
+                notifyFocusNodeChanged();
+                return true;
+            }
+            return false;
+        }
+
+        if (!M3Accessible.canShowItem(headerItem, items, parameters)) {
+            return false;
+        }
+
         expandForAccessibleReveal();
         if (M3Accessible.showCurrentOrItem(this, accessibleContent(), parameters)) {
             notifyFocusNodeChanged();

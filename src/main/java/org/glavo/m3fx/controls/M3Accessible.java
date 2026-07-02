@@ -82,6 +82,11 @@ final class M3Accessible {
             return showHandler != null;
         }
 
+        /// Returns whether this route has an explicit reveal target matcher.
+        private boolean hasShowTargetMatcher() {
+            return showTargetMatcher != null;
+        }
+
         /// Returns whether this route handles a reveal target.
         private boolean handlesShowTarget(@Nullable Object parameter) {
             return showTargetMatcher != null && showTargetMatcher.test(parameter);
@@ -278,7 +283,111 @@ final class M3Accessible {
         return index < items.size() ? items.get(index) : null;
     }
 
-    /// Returns whether accessibility action parameters contain the requested selection target or one of its descendants.
+    /// Returns whether parameters contain a direct atomic value accepted by the target matcher.
+    static boolean parametersContainDirectTarget(
+            Predicate<@Nullable Object> targetMatcher,
+            Object... parameters
+    ) {
+        Objects.requireNonNull(targetMatcher, "targetMatcher");
+        Objects.requireNonNull(parameters, "parameters");
+        for (Object parameter : parameters) {
+            if (parameterContainsDirectTarget(targetMatcher, parameter)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// Returns whether one parameter contains a direct atomic value accepted by the target matcher.
+    private static boolean parameterContainsDirectTarget(
+            Predicate<@Nullable Object> targetMatcher,
+            @Nullable Object parameter
+    ) {
+        if (targetMatcher.test(parameter)) {
+            return true;
+        }
+        if (parameter instanceof Iterable<?> values) {
+            for (Object value : values) {
+                if (parameterContainsDirectTarget(targetMatcher, value)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (parameter instanceof Object[] values) {
+            for (Object value : values) {
+                if (parameterContainsDirectTarget(targetMatcher, value)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /// Returns whether parameters directly express exactly one target accepted by the matcher and nothing else.
+    static boolean parametersDirectlyReferenceSingleTarget(
+            Predicate<@Nullable Object> targetMatcher,
+            Object... parameters
+    ) {
+        Objects.requireNonNull(targetMatcher, "targetMatcher");
+        Objects.requireNonNull(parameters, "parameters");
+        return parameters.length == 1 && parameterDirectlyReferencesSingleTarget(targetMatcher, parameters[0]);
+    }
+
+    /// Returns whether one parameter directly expresses exactly one target accepted by the matcher and nothing else.
+    private static boolean parameterDirectlyReferencesSingleTarget(
+            Predicate<@Nullable Object> targetMatcher,
+            @Nullable Object parameter
+    ) {
+        if (targetMatcher.test(parameter)) {
+            return true;
+        }
+        if (parameter instanceof Iterable<?> values) {
+            return parameterValuesDirectlyReferenceSingleTarget(targetMatcher, values);
+        }
+        if (parameter instanceof Object[] values) {
+            return parameterValuesDirectlyReferenceSingleTarget(targetMatcher, values);
+        }
+        return false;
+    }
+
+    /// Returns whether a value collection contains exactly one accepted direct target and no other values.
+    private static boolean parameterValuesDirectlyReferenceSingleTarget(
+            Predicate<@Nullable Object> targetMatcher,
+            Iterable<?> values
+    ) {
+        boolean matched = false;
+        for (Object value : values) {
+            if (!parameterDirectlyReferencesSingleTarget(targetMatcher, value)) {
+                return false;
+            }
+            if (matched) {
+                return false;
+            }
+            matched = true;
+        }
+        return matched;
+    }
+
+    /// Returns whether a value array contains exactly one accepted direct target and no other values.
+    private static boolean parameterValuesDirectlyReferenceSingleTarget(
+            Predicate<@Nullable Object> targetMatcher,
+            Object[] values
+    ) {
+        boolean matched = false;
+        for (Object value : values) {
+            if (!parameterDirectlyReferencesSingleTarget(targetMatcher, value)) {
+                return false;
+            }
+            if (matched) {
+                return false;
+            }
+            matched = true;
+        }
+        return matched;
+    }
+
+    /// Returns whether accessibility action parameters contain the requested reachable selection target or one of its descendants.
     static boolean containsSelectionTarget(Node target, Object... parameters) {
         Objects.requireNonNull(target, "target");
         Objects.requireNonNull(parameters, "parameters");
@@ -312,6 +421,227 @@ final class M3Accessible {
         for (Object parameter : parameters) {
             Set<Node> visited = Collections.newSetFromMap(new IdentityHashMap<>());
             if (containsAccessibleActionTarget(item, parameter, visited, true)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// Returns whether explicit action parameters contain a node that cannot become reachable after owner reveal.
+    static boolean containsUnrevealableActionNodeTarget(
+            ObservableList<? extends Node> items,
+            Object... parameters
+    ) {
+        Objects.requireNonNull(items, "items");
+        Objects.requireNonNull(parameters, "parameters");
+        return containsUnrevealableActionNodeTarget(null, null, items, parameters);
+    }
+
+    /// Returns whether explicit action parameters contain a node that cannot become reachable after owner reveal.
+    private static boolean containsUnrevealableActionNodeTarget(
+            @Nullable Node leading,
+            ObservableList<? extends Node> items,
+            Object... parameters
+    ) {
+        return containsUnrevealableActionNodeTarget(leading, null, items, parameters);
+    }
+
+    /// Returns whether explicit action parameters contain a node that cannot become reachable after owner reveal.
+    private static boolean containsUnrevealableActionNodeTarget(
+            @Nullable Node first,
+            @Nullable Node second,
+            Object... parameters
+    ) {
+        Objects.requireNonNull(parameters, "parameters");
+        for (Object parameter : parameters) {
+            if (containsUnrevealableActionNodeTarget(first, second, null, parameter)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// Returns whether explicit action parameters contain a node that cannot become reachable after owner reveal.
+    private static boolean containsUnrevealableActionNodeTarget(
+            @Nullable Node first,
+            @Nullable Node second,
+            @Nullable Node third,
+            Object... parameters
+    ) {
+        return containsUnrevealableActionNodeTarget(first, second, parameters)
+                || containsUnrevealableActionNodeTarget(third, parameters);
+    }
+
+    /// Returns whether explicit action parameters contain a node that cannot become reachable after owner reveal.
+    private static boolean containsUnrevealableActionNodeTarget(
+            @Nullable Node first,
+            @Nullable Node second,
+            ObservableList<? extends Node> items,
+            Object... parameters
+    ) {
+        Objects.requireNonNull(items, "items");
+        Objects.requireNonNull(parameters, "parameters");
+        for (Object parameter : parameters) {
+            if (containsUnrevealableActionNodeTarget(first, second, items, parameter)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// Returns whether explicit action parameters contain a node that cannot become reachable after owner reveal.
+    static boolean containsUnrevealableActionNodeTarget(@Nullable Node item, Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        for (Object parameter : parameters) {
+            if (containsUnrevealableActionNodeTarget(item, null, null, parameter)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// Returns whether one explicit action parameter cannot become reachable after owner reveal.
+    private static boolean containsUnrevealableActionNodeTarget(
+            @Nullable Node first,
+            @Nullable Node second,
+            @Nullable ObservableList<? extends Node> items,
+            @Nullable Object parameter
+    ) {
+        if (parameter instanceof Node node) {
+            if (isUnrevealableActionNodeTarget(first, node) || isUnrevealableActionNodeTarget(second, node)) {
+                return true;
+            }
+            if (items != null) {
+                for (Node item : items) {
+                    if (isUnrevealableActionNodeTarget(item, node)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+        if (parameter instanceof Iterable<?> values) {
+            for (Object value : values) {
+                if (containsUnrevealableActionNodeTarget(first, second, items, value)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (parameter instanceof Object[] values) {
+            for (Object value : values) {
+                if (containsUnrevealableActionNodeTarget(first, second, items, value)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /// Returns whether a requested action-owned node is disabled, hidden, or hidden below the action item boundary.
+    private static boolean isUnrevealableActionNodeTarget(@Nullable Node item, Node target) {
+        if (item == null) {
+            return false;
+        }
+        if (item == target) {
+            return !item.isVisible() || item.isDisabled();
+        }
+        if (!containsNode(item, target)) {
+            return false;
+        }
+        return !canRevealActionNode(item, target);
+    }
+
+    /// Returns whether a node under an action item can become reachable when the owner reveals the item.
+    private static boolean canRevealActionNode(Node item, Node target) {
+        if (item.isDisabled() || !target.isVisible() || target.isDisabled()) {
+            return false;
+        }
+
+        @Nullable Parent parent = target.getParent();
+        while (parent != null && parent != item) {
+            if (parent.isDisabled()) {
+                return false;
+            }
+            parent = parent.getParent();
+        }
+        return parent == item || containsNode(item, target);
+    }
+
+    /// Returns whether a leading item or indexed items can handle explicit accessibility item parameters.
+    static boolean canShowItem(@Nullable Node leading, ObservableList<? extends Node> items, Object... parameters) {
+        Objects.requireNonNull(items, "items");
+        Objects.requireNonNull(parameters, "parameters");
+        if (parameters.length == 0) {
+            return true;
+        }
+        if (parameters[0] instanceof Number) {
+            @Nullable Node indexedItem = itemAt(leading, items, parameters);
+            if (indexedItem == null || indexedItem.isDisabled()) {
+                return false;
+            }
+            if (parameters.length == 1) {
+                return true;
+            }
+            Object[] nestedParameters = new Object[parameters.length - 1];
+            System.arraycopy(parameters, 1, nestedParameters, 0, nestedParameters.length);
+            return !containsUnrevealableActionNodeTarget(indexedItem, nestedParameters)
+                    && containsAccessibleActionTarget(indexedItem, nestedParameters);
+        }
+        if (containsUnrevealableActionNodeTarget(leading, items, parameters)) {
+            return false;
+        }
+        if (actionItem(leading, items, parameters) != null) {
+            return true;
+        }
+        if (containsAccessibleActionTarget(leading, parameters)) {
+            return true;
+        }
+        for (Node item : items) {
+            if (containsAccessibleActionTarget(item, parameters)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// Returns whether two leading items or indexed trailing items can handle explicit accessibility item parameters.
+    static boolean canShowItem(
+            @Nullable Node first,
+            @Nullable Node second,
+            ObservableList<? extends Node> items,
+            Object... parameters
+    ) {
+        Objects.requireNonNull(items, "items");
+        Objects.requireNonNull(parameters, "parameters");
+        if (parameters.length == 0) {
+            return true;
+        }
+        if (parameters[0] instanceof Number) {
+            @Nullable Node indexedItem = itemAt(first, second, items, parameters);
+            if (indexedItem == null || indexedItem.isDisabled()) {
+                return false;
+            }
+            if (parameters.length == 1) {
+                return true;
+            }
+            Object[] nestedParameters = new Object[parameters.length - 1];
+            System.arraycopy(parameters, 1, nestedParameters, 0, nestedParameters.length);
+            return !containsUnrevealableActionNodeTarget(indexedItem, nestedParameters)
+                    && containsAccessibleActionTarget(indexedItem, nestedParameters);
+        }
+        if (containsUnrevealableActionNodeTarget(first, second, items, parameters)) {
+            return false;
+        }
+        if (actionItem(first, second, items, parameters) != null) {
+            return true;
+        }
+        if (containsAccessibleActionTarget(first, parameters)
+                || containsAccessibleActionTarget(second, parameters)) {
+            return true;
+        }
+        for (Node item : items) {
+            if (containsAccessibleActionTarget(item, parameters)) {
                 return true;
             }
         }
@@ -616,6 +946,9 @@ final class M3Accessible {
             ObservableList<? extends Node> items,
             Object... parameters
     ) {
+        if (parameters.length > 0 && containsUnrevealableActionNodeTarget(items, parameters)) {
+            return false;
+        }
         if (delegateContainingItemReveal(item, items, parameters)) {
             return true;
         }
@@ -636,6 +969,9 @@ final class M3Accessible {
             Object... parameters
     ) {
         Objects.requireNonNull(owner, "owner");
+        if (parameters.length > 0 && containsUnrevealableActionNodeTarget(items, parameters)) {
+            return false;
+        }
         if (delegateContainingItemReveal(item, items, parameters)) {
             return revealCurrentFocusOwner(owner);
         }
@@ -659,6 +995,9 @@ final class M3Accessible {
             ObservableList<? extends Node> items,
             Object... parameters
     ) {
+        if (parameters.length > 0 && containsUnrevealableActionNodeTarget(leading, items, parameters)) {
+            return false;
+        }
         if (delegateContainingNodeReveal(item, leading, parameters)
                 || delegateContainingListReveal(item, items, parameters)) {
             return true;
@@ -680,6 +1019,9 @@ final class M3Accessible {
             @Nullable Node trailing,
             Object... parameters
     ) {
+        if (parameters.length > 0 && containsUnrevealableActionNodeTarget(trailing, items, parameters)) {
+            return false;
+        }
         if (delegateContainingListReveal(item, items, parameters)
                 || delegateContainingNodeReveal(item, trailing, parameters)) {
             return true;
@@ -701,6 +1043,9 @@ final class M3Accessible {
             @Nullable Node second,
             Object... parameters
     ) {
+        if (parameters.length > 0 && containsUnrevealableActionNodeTarget(first, second, parameters)) {
+            return false;
+        }
         if (delegateContainingNodeReveal(item, first, parameters)
                 || delegateContainingNodeReveal(item, second, parameters)) {
             return true;
@@ -723,6 +1068,9 @@ final class M3Accessible {
             @Nullable Node third,
             Object... parameters
     ) {
+        if (parameters.length > 0 && containsUnrevealableActionNodeTarget(first, second, third, parameters)) {
+            return false;
+        }
         if (delegateContainingNodeReveal(item, first, parameters)
                 || delegateContainingNodeReveal(item, second, parameters)
                 || delegateContainingNodeReveal(item, third, parameters)) {
@@ -748,6 +1096,9 @@ final class M3Accessible {
             ObservableList<? extends Node> items,
             Object... parameters
     ) {
+        if (parameters.length > 0 && containsUnrevealableActionNodeTarget(first, second, items, parameters)) {
+            return false;
+        }
         if (delegateContainingNodeReveal(item, first, parameters)
                 || delegateContainingNodeReveal(item, second, parameters)
                 || delegateContainingListReveal(item, items, parameters)) {
@@ -822,9 +1173,17 @@ final class M3Accessible {
         }
         return false;
     }
+
     /// Delegates an explicit reveal request and reveals the focused target through the owner when one is reached.
     static boolean showAccessibleActionTarget(Node owner, @Nullable Node item, Object... parameters) {
         Objects.requireNonNull(owner, "owner");
+        if (item != null
+                && parameters.length > 1
+                && parametersReferenceIndexedActionItem(owner, item, parameters)
+                && showAccessibleActionTarget(item, parametersAfterOwnerIndex(parameters))) {
+            revealCurrentFocusOwner(owner);
+            return true;
+        }
         if (showAccessibleActionTarget(item, parameters)) {
             revealCurrentFocusOwner(owner);
             return true;
@@ -850,6 +1209,12 @@ final class M3Accessible {
             Object... parameters
     ) {
         if (!canReachOrReveal(item) || parameters.length == 0 || !visited.add(item)) {
+            return false;
+        }
+        if (containsUnrevealableActionNodeTarget(item, parameters)) {
+            return false;
+        }
+        if (routeRejectsAccessibleActionTarget(item, parameters)) {
             return false;
         }
         if (showRoutedAccessibleActionTarget(item, parameters)) {
@@ -899,6 +1264,20 @@ final class M3Accessible {
         parameters[0] = first;
         System.arraycopy(rest, 0, parameters, 1, rest.length);
         return parameters;
+    }
+
+    /// Returns accessibility action parameters after the current owner index has selected a child.
+    private static Object[] parametersAfterOwnerIndex(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        Object[] nestedParameters = new Object[parameters.length - 1];
+        System.arraycopy(parameters, 1, nestedParameters, 0, nestedParameters.length);
+        return nestedParameters;
+    }
+
+    /// Returns whether an installed route matcher rejects the supplied reveal parameters.
+    private static boolean routeRejectsAccessibleActionTarget(@Nullable Node item, Object... parameters) {
+        @Nullable AccessibleActionRoute route = accessibleActionRoute(item);
+        return route != null && route.hasShowTargetMatcher() && !routeHandlesAnyShowTarget(route, parameters);
     }
 
     /// Delegates an explicit reveal request through a node's installed accessibility route.
@@ -987,6 +1366,9 @@ final class M3Accessible {
             Object... parameters
     ) {
         Objects.requireNonNull(items, "items");
+        if (containsUnrevealableActionNodeTarget(items, parameters)) {
+            return false;
+        }
         for (Node item : items) {
             if (showAccessibleActionTarget(item, parameters)) {
                 return true;
@@ -1654,10 +2036,10 @@ final class M3Accessible {
         return null;
     }
 
-    /// Returns whether one accessibility action parameter references the requested selection target or one of its descendants.
+    /// Returns whether one accessibility action parameter references the requested reachable selection target or one of its descendants.
     private static boolean containsSelectionTarget(Node target, @Nullable Object parameter) {
         if (parameter instanceof Node node) {
-            return containsNode(target, node);
+            return isEffectivelyReachable(node) && containsNode(target, node);
         }
         if (parameter instanceof Iterable<?> values) {
             for (Object value : values) {
@@ -1708,8 +2090,8 @@ final class M3Accessible {
             boolean includeParentChildren
     ) {
         @Nullable AccessibleActionRoute route = accessibleActionRoute(item);
-        if (route != null && route.handlesShowTarget(parameter)) {
-            return true;
+        if (route != null && route.hasShowTargetMatcher()) {
+            return routeHandlesShowTarget(route, parameter);
         }
         if (parameter instanceof Node node) {
             return containsAccessibleNode(item, node, visited, includeParentChildren);
@@ -1785,7 +2167,14 @@ final class M3Accessible {
         if (!visited.add(owner)) {
             return false;
         }
-        if (owner == requestedNode || containsNode(owner, requestedNode)) {
+        if (owner == requestedNode) {
+            return true;
+        }
+        @Nullable AccessibleActionRoute route = accessibleActionRoute(owner);
+        if (route != null && route.hasShowTargetMatcher()) {
+            return routeHandlesShowTarget(route, requestedNode);
+        }
+        if (containsNode(owner, requestedNode)) {
             return true;
         }
         if (M3Tooltip.containsInstalledTooltipActionTarget(owner, requestedNode)) {
@@ -2287,6 +2676,12 @@ final class M3Accessible {
     /// Returns the action target contained by one item for a requested node.
     private static @Nullable Node containedActionTarget(@Nullable Node item, Node requestedNode) {
         if (item == null || !containsNode(item, requestedNode)) {
+            return null;
+        }
+        if (item == requestedNode) {
+            return isEffectivelyReachable(item) ? item : null;
+        }
+        if (!canRevealActionNode(item, requestedNode)) {
             return null;
         }
         return accessibleFocusTarget(requestedNode) == null ? item : requestedNode;

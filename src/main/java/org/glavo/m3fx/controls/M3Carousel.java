@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.beans.InvalidationListener;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
@@ -93,6 +94,9 @@ public class M3Carousel extends Control {
     /// Observes descendant focus changes for the public `FOCUS_NODE` attribute.
     private final M3AccessibleFocusNotifier focusNotifier =
             new M3AccessibleFocusNotifier(this, this::accessibleFocusNode);
+
+    /// Refreshes selection when a carousel item becomes visible, hidden, enabled, or disabled.
+    private final InvalidationListener itemReachabilityListener = observable -> refreshItemReachabilityState();
 
     /// Updates item installation, selection invariants, and accessibility metadata when items change.
     private final ListChangeListener<Node> itemsListener = change -> {
@@ -264,7 +268,12 @@ public class M3Carousel extends Control {
     /// Selects the item at the supplied index.
     ///
     /// @param index the item index to select
+    /// @throws IllegalArgumentException if the item at the index is not reachable for selection
     public final void selectIndex(int index) {
+        Node item = getItems().get(index);
+        if (!isSelectable(item)) {
+            throw new IllegalArgumentException("item at index is not reachable for selection");
+        }
         setSelectedIndex(index);
     }
 
@@ -426,7 +435,7 @@ public class M3Carousel extends Control {
             return;
         }
         Object source = event.getSource();
-        if (source instanceof Node item && getItems().contains(item) && !item.isDisabled()) {
+        if (source instanceof Node item && getItems().contains(item) && isSelectable(item)) {
             select(item);
         }
     }
@@ -446,12 +455,24 @@ public class M3Carousel extends Control {
 
         @Nullable Node selectedTarget = accessibleTarget(parameters);
         if (selectedTarget != null) {
+            if (!isSelectable(selectedTarget)) {
+                return false;
+            }
+            boolean nestedTarget = referencesNestedActionTarget(selectedTarget, parameters);
+            boolean shown = nestedTarget
+                    ? M3Accessible.showAccessibleActionTarget(this, selectedTarget, parameters)
+                    : false;
+            if (nestedTarget && !shown) {
+                return false;
+            }
             select(selectedTarget);
             scrollSelectedItemIntoView();
-            boolean shown = M3Accessible.showAccessibleActionTarget(this, selectedTarget, parameters);
             if (!shown) {
-                @Nullable Node focusTarget = M3Accessible.actionItem(getItems(), parameters);
-                shown = M3Accessible.showItem(this, focusTarget == null ? selectedTarget : focusTarget);
+                shown = M3Accessible.showAccessibleActionTarget(this, selectedTarget, parameters);
+                if (!shown) {
+                    @Nullable Node focusTarget = M3Accessible.actionItem(getItems(), parameters);
+                    shown = M3Accessible.showItem(this, focusTarget == null ? selectedTarget : focusTarget);
+                }
             }
             if (shown) {
                 notifyAccessibleFocusChanged();
@@ -485,32 +506,133 @@ public class M3Carousel extends Control {
 
     /// Applies accessible single selection parameters.
     private void setAccessibleSelectedItems(Object... parameters) {
-        @Nullable Node target = accessibleTarget(parameters);
+        @Nullable Node target = accessibleSelectionTarget(parameters);
         if (target == null) {
             clearSelection();
-        } else {
+        } else if (isSelectable(target)) {
             select(target);
         }
     }
 
-    /// Returns the first item referenced by accessibility parameters.
+    /// Returns the first item referenced by accessibility reveal parameters.
     private @Nullable Node accessibleTarget(Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
         return M3Accessible.containingItem(getItems(), parameters);
+    }
+
+    /// Returns the first item referenced by accessibility selection parameters.
+    private @Nullable Node accessibleSelectionTarget(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        if (parameters.length == 0) {
+            return null;
+        }
+        @Nullable Object firstParameter = parameters[0];
+        if (firstParameter instanceof Number) {
+            return M3Accessible.itemAt(getItems(), parameters);
+        }
+        for (Object parameter : parameters) {
+            @Nullable Node item = accessibleSelectionTarget(parameter);
+            if (item != null) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the item referenced by one accessibility selection parameter.
+    private @Nullable Node accessibleSelectionTarget(@Nullable Object parameter) {
+        if (parameter instanceof Number number) {
+            return M3Accessible.itemAt(getItems(), number);
+        }
+        if (parameter instanceof Node node) {
+            if (!M3Accessible.isEffectivelyReachable(node)) {
+                return null;
+            }
+            for (Node item : getItems()) {
+                if (M3Accessible.containsNode(item, node)) {
+                    return item;
+                }
+            }
+            return null;
+        }
+        if (parameter instanceof Iterable<?> values) {
+            for (Object value : values) {
+                @Nullable Node item = accessibleSelectionTarget(value);
+                if (item != null) {
+                    return item;
+                }
+            }
+            return null;
+        }
+        if (parameter instanceof Object[] values) {
+            for (Object value : values) {
+                @Nullable Node item = accessibleSelectionTarget(value);
+                if (item != null) {
+                    return item;
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Returns whether action parameters reference a nested accessibility target inside the supplied item.
+    private static boolean referencesNestedActionTarget(Node item, Object... parameters) {
+        Objects.requireNonNull(item, "item");
+        Objects.requireNonNull(parameters, "parameters");
+        for (Object parameter : parameters) {
+            if (referencesNestedActionTarget(item, parameter)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// Returns whether one action parameter references a nested accessibility target inside the supplied item.
+    private static boolean referencesNestedActionTarget(Node item, @Nullable Object parameter) {
+        if (parameter instanceof Node node) {
+            return node != item
+                    && (M3Accessible.containsNode(item, node)
+                    || M3Accessible.containsAccessibleActionTarget(item, node));
+        }
+        if (parameter instanceof Iterable<?> values) {
+            for (Object value : values) {
+                if (referencesNestedActionTarget(item, value)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        if (parameter instanceof Object[] values) {
+            for (Object value : values) {
+                if (referencesNestedActionTarget(item, value)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /// Installs carousel behavior and styles on one item.
     private void installItem(Node item) {
         M3ControlStyles.add(item, ITEM_STYLE_CLASS);
         item.addEventHandler(MouseEvent.MOUSE_CLICKED, itemMouseHandler);
+        item.visibleProperty().addListener(itemReachabilityListener);
+        item.disabledProperty().addListener(itemReachabilityListener);
     }
 
     /// Removes carousel behavior and transient styles from one item.
     private void uninstallItem(Node item) {
+        item.visibleProperty().removeListener(itemReachabilityListener);
+        item.disabledProperty().removeListener(itemReachabilityListener);
         item.removeEventHandler(MouseEvent.MOUSE_CLICKED, itemMouseHandler);
         item.getStyleClass().remove(ITEM_STYLE_CLASS);
         item.getStyleClass().remove(SELECTED_ITEM_STYLE_CLASS);
         item.pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, false);
+    }
+
+    /// Reapplies selection invariants after one item's reachability changes.
+    private void refreshItemReachabilityState() {
+        applySelectedIndex(getSelectedIndex(), false);
     }
 
     /// Applies a selected index after normalizing it against the current item list.
@@ -564,7 +686,21 @@ public class M3Carousel extends Control {
         if (getItems().isEmpty() || index < 0) {
             return -1;
         }
-        return Math.min(index, getItems().size() - 1);
+        int boundedIndex = Math.min(index, getItems().size() - 1);
+        if (isSelectableItem(getItems().get(boundedIndex))) {
+            return boundedIndex;
+        }
+        for (int nextIndex = boundedIndex + 1; nextIndex < getItems().size(); nextIndex++) {
+            if (isSelectableItem(getItems().get(nextIndex))) {
+                return nextIndex;
+            }
+        }
+        for (int previousIndex = boundedIndex - 1; previousIndex >= 0; previousIndex--) {
+            if (isSelectableItem(getItems().get(previousIndex))) {
+                return previousIndex;
+            }
+        }
+        return -1;
     }
 
     /// Requests focus on the selected item when it can accept focus.
@@ -622,7 +758,12 @@ public class M3Carousel extends Control {
 
     /// Returns whether a node can be targeted by navigation.
     private boolean isSelectable(Node item) {
-        return M3Accessible.isEffectivelyReachable(this) && M3Accessible.isEffectivelyReachable(item);
+        return M3Accessible.isEffectivelyReachable(this) && isSelectableItem(item);
+    }
+
+    /// Returns whether an item node itself can participate in selection.
+    private static boolean isSelectableItem(Node item) {
+        return item.isVisible() && !item.isDisabled();
     }
 
     /// Validates a carousel item array.

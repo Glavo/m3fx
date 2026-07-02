@@ -430,6 +430,7 @@ public final class M3FXDemoApp extends Application {
                 new DemoPage("App Bars", "App bars", APP_BARS_GROUP, "Top app bars with navigation and actions", DemoMaterialDocs.APP_BARS, this::createAppBarsPage),
                 new DemoPage("Bottom App Bars", "Bottom app bars", APP_BARS_GROUP, "Bottom app bars with floating action alignment", DemoMaterialDocs.BOTTOM_APP_BARS, this::createBottomAppBarsPage),
                 new DemoPage("Badges", "Badges", "Badges", "Dot, count, overflow, and attached badges", DemoMaterialDocs.BADGES, this::createBadgesPage),
+                new DemoPage("All Buttons", "All buttons", BUTTONS_GROUP, "Overview of button families and action patterns", DemoMaterialDocs.ALL_BUTTONS, this::createAllButtonsPage),
                 new DemoPage("Button Groups", "Button groups", BUTTONS_GROUP, "Connected groups for related actions", DemoMaterialDocs.BUTTON_GROUPS, this::createButtonGroupsPage),
                 new DemoPage("Buttons", "Buttons", BUTTONS_GROUP, "Common button variants", DemoMaterialDocs.BUTTONS, this::createButtonsPage),
                 new DemoPage("Extended FABs", "Extended FABs", BUTTONS_GROUP, "Extended floating action button examples", DemoMaterialDocs.EXTENDED_FAB, this::createExtendedFabsPage),
@@ -882,6 +883,62 @@ public final class M3FXDemoApp extends Application {
         return createGallery(
                 createShowcaseGroup("Primary Components", primaryComponents),
                 createShowcaseGroup("Feedback And Containers", feedbackComponents)
+        );
+    }
+
+    /// Creates the all-buttons overview component page.
+    private Node createAllButtonsPage() {
+        M3Button disabledFilled = createButton("Disabled", M3ButtonVariant.FILLED);
+        disabledFilled.setDisable(true);
+
+        M3IconToggleButtonGroup toggleGroup = createIconToggleGroup(
+                M3IconToggleButtonVariant.TONAL,
+                "bookmark",
+                "schedule",
+                "notifications"
+        );
+
+        M3FabMenu fabMenu = createFabMenu();
+        fabMenu.setExpanded(true);
+
+        M3ButtonGroup actionGroup = new M3ButtonGroup(
+                createButton("Archive", M3ButtonVariant.TONAL),
+                createButton("Share", M3ButtonVariant.TONAL),
+                createButton("Edit", M3ButtonVariant.TONAL)
+        );
+        actionGroup.setVariant(M3ButtonGroupVariant.STANDARD);
+
+        M3SegmentedButtonGroup segmentedGroup = createSegmentedGroup("Day", "Week", "Month");
+        M3SplitButton splitButton = createSplitButton("Create", M3ButtonVariant.TONAL);
+
+        return createGallery(
+                createShowcaseGroup(
+                        "Common Buttons",
+                        createButton("Filled", M3ButtonVariant.FILLED),
+                        createButton("Tonal", M3ButtonVariant.TONAL),
+                        createButton("Outlined", M3ButtonVariant.OUTLINED),
+                        createButton("Text", M3ButtonVariant.TEXT),
+                        createButton("Elevated", M3ButtonVariant.ELEVATED),
+                        disabledFilled
+                ),
+                createShowcaseGroup(
+                        "Icon Buttons",
+                        createIconButton("search"),
+                        createIconButton("favorite", M3IconButtonSize.MEDIUM, M3IconButtonWidth.WIDE, M3IconButtonShape.ROUND),
+                        toggleGroup
+                ),
+                createShowcaseGroup(
+                        "Floating Actions",
+                        createFab("add", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.REGULAR),
+                        createExtendedFab("Create", M3FloatingActionButtonVariant.PRIMARY),
+                        fabMenu
+                ),
+                createShowcaseGroup(
+                        "Grouped Actions",
+                        actionGroup,
+                        segmentedGroup,
+                        splitButton
+                )
         );
     }
 
@@ -2395,6 +2452,8 @@ public final class M3FXDemoApp extends Application {
                 "Group-level validation keeps form feedback and focus movement coordinated.",
                 new M3FormRow("Actions", "Validate all registered inputs", validationActions)
         );
+
+        validator.validate();
 
         M3FormPane form = new M3FormPane(validationSummary, account, preferences, validation);
         form.getStyleClass().add("demo-form");

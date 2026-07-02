@@ -390,9 +390,21 @@ public class M3Snackbar extends Control {
     /// @return `true` when focus moved to the action or requested nested target
     final boolean showAccessibleItem(Object... parameters) {
         @Nullable Node actionButton = accessibleActionButton(parameters);
-        if (actionButton != null && M3Accessible.showItem(this, actionButton)) {
-            M3Accessible.notifyFocusNodeChanged(this);
-            return true;
+        if (actionButton != null) {
+            Object[] targetParameters = actionTargetParameters(parameters);
+            if (targetParameters.length > 0
+                    && M3Accessible.showAccessibleActionTarget(this, actionButton, targetParameters)) {
+                M3Accessible.notifyFocusNodeChanged(this);
+                return true;
+            }
+            if (targetParameters.length > 0
+                    && !M3Accessible.parametersContainDirectTarget(parameter -> parameter == actionButton, targetParameters)) {
+                return false;
+            }
+            if (M3Accessible.showItem(this, actionButton)) {
+                M3Accessible.notifyFocusNodeChanged(this);
+                return true;
+            }
         }
 
         @Nullable Node focusNode = accessibleFocusNode();
@@ -403,6 +415,18 @@ public class M3Snackbar extends Control {
             return true;
         }
         return false;
+    }
+
+    /// Returns nested accessibility target parameters after the action button index is resolved.
+    private static Object[] actionTargetParameters(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        if (parameters.length <= 1 || !(parameters[0] instanceof Number)) {
+            return parameters;
+        }
+
+        Object[] targetParameters = new Object[parameters.length - 1];
+        System.arraycopy(parameters, 1, targetParameters, 0, targetParameters.length);
+        return targetParameters;
     }
 
     /// Returns the installed Material snackbar skin.

@@ -433,6 +433,7 @@ public class M3SplitButton extends Control {
 
     /// Shows the attached menu.
     public final void showMenu() {
+        ensureButtonPartsInitialized();
         menuButton.showMenu();
     }
 
@@ -525,7 +526,12 @@ public class M3SplitButton extends Control {
         menuIndicator.expandedProperty().bind(menuButton.showingProperty());
         menuButton.setGraphic(menuIndicator);
         setAccessibleRole(AccessibleRole.TOOL_BAR);
-        M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
+        M3Accessible.installAccessibleActionRoute(
+                this,
+                this::focusAccessibleNode,
+                this::showAccessibleItem,
+                this::canShowAccessibleItem
+        );
         buttonParts.setAll(actionButton, menuButton);
         menuButton.setHorizontalPadding(0.0);
         actionButton.addEventHandler(ActionEvent.ACTION, event -> hideMenu());
@@ -571,6 +577,19 @@ public class M3SplitButton extends Control {
         return focused;
     }
 
+    /// Returns whether this split button can reveal the supplied target without changing popup state.
+    private boolean canShowAccessibleItem(@Nullable Object parameter) {
+        return !isDisabled()
+                && (M3Accessible.actionItem(buttonParts, parameter) != null
+                || getMenu().canShowAccessibleItem(parameter));
+    }
+
+    /// Ensures the internal buttons are attached before popup-owner actions use them.
+    private void ensureButtonPartsInitialized() {
+        applyCss();
+        menuButton.applyCss();
+    }
+
     /// Focuses a requested split button part or delegates menu-item targets to the popup menu.
     ///
     /// @param parameters optional accessibility target parameters
@@ -598,9 +617,12 @@ public class M3SplitButton extends Control {
             return false;
         }
 
-        if (parameters.length > 0 && menuButton.showAccessibleMenuItem(parameters)) {
-            notifyFocusNodeChanged();
-            return true;
+        if (parameters.length > 0 && getMenu().canShowAccessibleItem(parameters)) {
+            ensureButtonPartsInitialized();
+            if (menuButton.showAccessibleMenuItem(parameters)) {
+                notifyFocusNodeChanged();
+                return true;
+            }
         }
         return false;
     }

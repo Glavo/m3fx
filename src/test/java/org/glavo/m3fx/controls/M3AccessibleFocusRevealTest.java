@@ -884,6 +884,38 @@ final class M3AccessibleFocusRevealTest {
         });
     }
 
+    /// Verifies indexed owner parameters are stripped before revealing through a child route.
+    @Test
+    void ownerIndexedAccessibleRevealDelegatesNestedParametersToChildRoute() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Button routeTarget = new M3Button("Route target");
+            RouteAccessibleOwner childOwner = new RouteAccessibleOwner(routeTarget);
+            IndexedAccessibleOwner owner = new IndexedAccessibleOwner(childOwner);
+            owner.setPrefSize(120.0, 32.0);
+            childOwner.setPrefSize(120.0, 32.0);
+            Pane spacer = new Pane();
+            spacer.setPrefHeight(240.0);
+            VBox content = new VBox(owner, childOwner, spacer, routeTarget);
+            ScrollPane scrollPane = new ScrollPane(content);
+            scrollPane.setFitToWidth(true);
+            scrollPane.setPrefSize(180.0, 96.0);
+
+            show(scrollPane, 180.0, 96.0);
+            scrollPane.applyCss();
+            scrollPane.resize(180.0, 96.0);
+            scrollPane.layout();
+            content.layout();
+            owner.layout();
+            childOwner.layout();
+            routeTarget.layout();
+
+            assertTrue(M3Accessible.showAccessibleActionTarget(owner, childOwner, 0, routeTarget));
+
+            assertTrue(childOwner.showRouteCalled);
+            assertFalse(childOwner.fallbackShowActionCalled);
+            assertTrue(routeTarget.isFocused());
+        });
+    }
     /// Verifies installed reveal route target matchers handle non-node targets before JavaFX action fallback.
     @Test
     void installedAccessibleRevealRouteHandlesNonNodeTarget() {
@@ -951,6 +983,193 @@ final class M3AccessibleFocusRevealTest {
         });
     }
 
+    /// Verifies a route matcher is authoritative for the route's indexed accessibility children.
+    @Test
+    void installedAccessibleRevealRouteMatcherRejectsUnmatchedIndexedChildTarget() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Button routeTarget = new M3Button("Route target");
+            StrictRouteAccessibleOwner owner = new StrictRouteAccessibleOwner(routeTarget);
+            owner.setPrefSize(120.0, 32.0);
+            Pane spacer = new Pane();
+            spacer.setPrefHeight(240.0);
+            VBox content = new VBox(owner, spacer, routeTarget);
+            ScrollPane scrollPane = new ScrollPane(content);
+            scrollPane.setFitToWidth(true);
+            scrollPane.setPrefSize(180.0, 96.0);
+
+            show(scrollPane, 180.0, 96.0);
+            scrollPane.applyCss();
+            scrollPane.resize(180.0, 96.0);
+            scrollPane.layout();
+            content.layout();
+            owner.layout();
+            routeTarget.layout();
+
+            assertFalse(M3Accessible.containsAccessibleActionTarget(owner, routeTarget));
+            assertFalse(M3Accessible.showAccessibleActionTarget(content, owner, routeTarget));
+
+            assertTrue(owner.showTargetMatcherCalled);
+            assertFalse(owner.showRouteCalled);
+            assertFalse(owner.fallbackShowActionCalled);
+            assertFalse(routeTarget.isFocused());
+        });
+    }
+    /// Verifies shared reveal delegation rejects hidden or disabled descendant node targets before scrolling.
+    @Test
+    void accessibleRevealRejectsUnrevealableDescendantNodeTargetsBeforeRouting() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane spacer = new Pane();
+            spacer.setPrefHeight(240.0);
+            M3Button visible = new M3Button("Visible");
+            M3Button hidden = new M3Button("Hidden");
+            hidden.setVisible(false);
+            M3Button disabled = new M3Button("Disabled");
+            disabled.setDisable(true);
+            VBox owner = new VBox(visible, hidden, disabled);
+            VBox content = new VBox(spacer, owner);
+            ScrollPane scrollPane = new ScrollPane(content);
+            scrollPane.setFitToWidth(true);
+            scrollPane.setPrefSize(180.0, 96.0);
+
+            show(scrollPane, 180.0, 96.0);
+            scrollPane.applyCss();
+            scrollPane.resize(180.0, 96.0);
+            scrollPane.layout();
+            content.layout();
+            owner.layout();
+            visible.layout();
+            hidden.layout();
+            disabled.layout();
+
+            ObservableList<Node> items = FXCollections.observableArrayList(owner);
+            assertFalse(M3Accessible.showIndexedItem(content, items, hidden));
+            assertFalse(hidden.isFocused());
+            assertTrue(scrollPane.getVvalue() <= 0.0, () -> "vvalue=" + scrollPane.getVvalue());
+
+            assertFalse(M3Accessible.showIndexedItem(content, items, disabled));
+            assertFalse(disabled.isFocused());
+            assertTrue(scrollPane.getVvalue() <= 0.0, () -> "vvalue=" + scrollPane.getVvalue());
+
+            assertFalse(M3Accessible.showAccessibleActionTarget(content, owner, hidden));
+            assertFalse(hidden.isFocused());
+            assertTrue(scrollPane.getVvalue() <= 0.0, () -> "vvalue=" + scrollPane.getVvalue());
+
+            assertFalse(M3Accessible.showAccessibleActionTarget(content, owner, disabled));
+            assertFalse(disabled.isFocused());
+            assertTrue(scrollPane.getVvalue() <= 0.0, () -> "vvalue=" + scrollPane.getVvalue());
+
+            assertTrue(M3Accessible.showIndexedItem(content, items, visible));
+            assertTrue(visible.isFocused());
+            assertTargetVisible(scrollPane, content, visible);
+            assertTrue(scrollPane.getVvalue() > 0.0, () -> "vvalue=" + scrollPane.getVvalue());
+
+            scrollPane.setVvalue(0.0);
+            content.requestFocus();
+
+            assertTrue(M3Accessible.showAccessibleActionTarget(content, owner, visible));
+            assertTrue(visible.isFocused());
+            assertTargetVisible(scrollPane, content, visible);
+            assertTrue(scrollPane.getVvalue() > 0.0, () -> "vvalue=" + scrollPane.getVvalue());
+        });
+    }
+
+    /// Verifies list-level reveal rejects hidden or disabled descendants before sibling routes can handle them.
+    @Test
+    void indexedAccessibleRevealRejectsUnrevealableDescendantBeforeSiblingRoutes() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane spacer = new Pane();
+            spacer.setPrefHeight(240.0);
+            M3Button hidden = new M3Button("Hidden");
+            hidden.setVisible(false);
+            VBox hiddenOwner = new VBox(hidden);
+            M3Button routeTarget = new M3Button("Route target");
+            BroadRouteAccessibleOwner routeOwner = new BroadRouteAccessibleOwner(routeTarget);
+            VBox content = new VBox(spacer, hiddenOwner, routeOwner, routeTarget);
+            ScrollPane scrollPane = new ScrollPane(content);
+            scrollPane.setFitToWidth(true);
+            scrollPane.setPrefSize(180.0, 96.0);
+
+            show(scrollPane, 180.0, 96.0);
+            scrollPane.applyCss();
+            scrollPane.resize(180.0, 96.0);
+            scrollPane.layout();
+            content.layout();
+            hiddenOwner.layout();
+            hidden.layout();
+            routeOwner.layout();
+            routeTarget.layout();
+
+            ObservableList<Node> items = FXCollections.observableArrayList(hiddenOwner, routeOwner);
+            assertFalse(M3Accessible.showAccessibleActionTarget(content, items, hidden));
+
+            assertFalse(routeOwner.showRouteCalled);
+            assertFalse(routeTarget.isFocused());
+            assertTrue(scrollPane.getVvalue() <= 0.0, () -> "vvalue=" + scrollPane.getVvalue());
+        });
+    }
+    /// Verifies composite reveal helpers reject unreachable descendants before direct focus or sibling routes.
+    @Test
+    void compositeAccessibleRevealRejectsUnrevealableDescendantBeforeDirectFocusOrSiblingRoutes() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane spacer = new Pane();
+            spacer.setPrefHeight(240.0);
+            M3Button indexedVisible = new M3Button("Indexed visible");
+            M3Button indexedHidden = new M3Button("Indexed hidden");
+            indexedHidden.setVisible(false);
+            VBox indexedOwner = new VBox(indexedVisible, indexedHidden);
+            M3Button leadingHidden = new M3Button("Leading hidden");
+            leadingHidden.setVisible(false);
+            VBox leadingOwner = new VBox(leadingHidden);
+            M3Button firstHidden = new M3Button("First hidden");
+            firstHidden.setVisible(false);
+            VBox firstOwner = new VBox(firstHidden);
+            M3Button listRouteTarget = new M3Button("List route target");
+            BroadRouteAccessibleOwner listRouteOwner = new BroadRouteAccessibleOwner(listRouteTarget);
+            M3Button slotRouteTarget = new M3Button("Slot route target");
+            BroadRouteAccessibleOwner slotRouteOwner = new BroadRouteAccessibleOwner(slotRouteTarget);
+            VBox content = new VBox(
+                    spacer,
+                    indexedOwner,
+                    leadingOwner,
+                    firstOwner,
+                    listRouteOwner,
+                    slotRouteOwner,
+                    listRouteTarget,
+                    slotRouteTarget
+            );
+            ScrollPane scrollPane = new ScrollPane(content);
+            scrollPane.setFitToWidth(true);
+            scrollPane.setPrefSize(220.0, 120.0);
+
+            show(scrollPane, 220.0, 120.0);
+            scrollPane.applyCss();
+            scrollPane.resize(220.0, 120.0);
+            scrollPane.layout();
+            content.layout();
+            indexedOwner.layout();
+            leadingOwner.layout();
+            firstOwner.layout();
+            listRouteOwner.layout();
+            slotRouteOwner.layout();
+            listRouteTarget.layout();
+            slotRouteTarget.layout();
+
+            ObservableList<Node> indexedItems = FXCollections.observableArrayList(indexedOwner, listRouteOwner);
+            assertFalse(M3Accessible.showIndexedItem(content, indexedItems, 0, indexedHidden));
+            assertFalse(indexedVisible.isFocused());
+            assertFalse(listRouteOwner.showRouteCalled);
+            assertFalse(listRouteTarget.isFocused());
+            assertTrue(scrollPane.getVvalue() <= 0.0, () -> "vvalue=" + scrollPane.getVvalue());
+
+            assertFalse(M3Accessible.showItem(leadingOwner, indexedItems, leadingHidden));
+            assertFalse(listRouteOwner.showRouteCalled);
+            assertFalse(listRouteTarget.isFocused());
+
+            assertFalse(M3Accessible.showItem(firstOwner, slotRouteOwner, firstHidden));
+            assertFalse(slotRouteOwner.showRouteCalled);
+            assertFalse(slotRouteTarget.isFocused());
+        });
+    }
     /// Verifies removing an installed accessibility route restores JavaFX action fallback dispatch.
     @Test
     void installedAccessibleActionRouteCanBeCleared() {
@@ -1125,6 +1344,90 @@ final class M3AccessibleFocusRevealTest {
         }
     }
 
+    /// Test node whose matcher exposes only one value while its indexed child remains route-owned.
+    @NotNullByDefault
+    private static final class StrictRouteAccessibleOwner extends Pane {
+        /// The indexed child exposed through accessibility queries.
+        private final Node routeTarget;
+
+        /// The non-node value accepted by the route matcher.
+        private final Object valueTarget = new Object();
+
+        /// Whether the installed reveal route was called.
+        private boolean showRouteCalled;
+
+        /// Whether JavaFX fallback reveal action dispatch was used.
+        private boolean fallbackShowActionCalled;
+
+        /// Whether the installed target matcher was called.
+        private boolean showTargetMatcherCalled;
+
+        /// Creates an owner with one route-owned indexed child.
+        private StrictRouteAccessibleOwner(Node routeTarget) {
+            this.routeTarget = routeTarget;
+            M3Accessible.installAccessibleActionRoute(this, null, this::showRouteTarget, this::handlesShowTarget);
+        }
+
+        /// Reveals the indexed child when the route receives an accepted value target.
+        private boolean showRouteTarget(Object... parameters) {
+            showRouteCalled = true;
+            for (Object parameter : parameters) {
+                if (parameter == valueTarget) {
+                    return M3Accessible.showDirectItem(this, routeTarget);
+                }
+            }
+            return false;
+        }
+
+        /// Returns whether this route owns the supplied value target.
+        private boolean handlesShowTarget(@Nullable Object parameter) {
+            showTargetMatcherCalled = true;
+            return parameter == valueTarget;
+        }
+
+        /// Returns the route-owned indexed child.
+        @Override
+        public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+            return switch (attribute) {
+                case ITEM_COUNT -> 1;
+                case ITEM_AT_INDEX -> parameters.length > 0
+                        && parameters[0] instanceof Number number
+                        && number.intValue() == 0 ? routeTarget : null;
+                default -> super.queryAccessibleAttribute(attribute, parameters);
+            };
+        }
+
+        /// Records JavaFX accessibility fallback action dispatch.
+        @Override
+        public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
+            if (action == AccessibleAction.SHOW_ITEM) {
+                fallbackShowActionCalled = true;
+                return;
+            }
+            super.executeAccessibleAction(action, parameters);
+        }
+    }
+    /// Test node whose reveal route accepts any target so preflight failures are observable.
+    @NotNullByDefault
+    private static final class BroadRouteAccessibleOwner extends Pane {
+        /// The external target focused if the route is invoked.
+        private final Node routeTarget;
+
+        /// Whether the installed reveal route was called.
+        private boolean showRouteCalled;
+
+        /// Creates a broad route owner for one external target.
+        private BroadRouteAccessibleOwner(Node routeTarget) {
+            this.routeTarget = routeTarget;
+            M3Accessible.installAccessibleActionRoute(this, null, this::showRouteTarget, parameter -> true);
+        }
+
+        /// Focuses the external route target and records route dispatch.
+        private boolean showRouteTarget(Object... parameters) {
+            showRouteCalled = true;
+            return M3Accessible.showDirectItem(this, routeTarget);
+        }
+    }
     /// Test node that exposes installed accessibility action routes for an external indexed child.
     @NotNullByDefault
     private static final class RouteAccessibleOwner extends Pane {

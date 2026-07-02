@@ -3,7 +3,9 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -220,6 +222,67 @@ final class M3NavigationDrawerGroupTest {
                 assertSame(archive, drawer.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
                 stage.close();
+            }
+        });
+    }
+
+    /// Verifies hidden collapsed-group descendants do not expand groups through reveal or selection actions.
+    @Test
+    void collapsedDrawerGroupRejectsHiddenDescendantTargetsBeforeExpanding() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Button hiddenAction = new M3Button("Hidden action");
+            hiddenAction.setVisible(false);
+            M3ListItem bottomSheets = new M3ListItem("Bottom sheets");
+            bottomSheets.setTrailing(hiddenAction);
+            M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Sheets");
+            group.addItem(bottomSheets);
+            group.setExpanded(false);
+            M3NavigationDrawer drawer = new M3NavigationDrawer(group);
+            M3MotionSettings.setAnimationsEnabled(drawer, false);
+
+            StackPane root = new StackPane(drawer);
+            Scene scene = new Scene(root, GROUP_WIDTH, 240.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            try {
+                root.applyCss();
+                root.layout();
+                drawer.clearSelection();
+                M3ListItem baselineSelection = drawer.getSelectedItem();
+                Node baselineFocusOwner = scene.getFocusOwner();
+
+                assertFalse(M3Accessible.showAccessibleActionTarget(group, hiddenAction));
+                assertFalse(group.isExpanded());
+                assertFalse(hiddenAction.isFocused(), () -> "focused=" + scene.getFocusOwner());
+                assertSame(baselineSelection, drawer.getSelectedItem());
+                assertSame(baselineFocusOwner, scene.getFocusOwner());
+
+                group.executeAccessibleAction(AccessibleAction.SHOW_ITEM, hiddenAction);
+
+                assertFalse(group.isExpanded());
+                assertFalse(hiddenAction.isFocused(), () -> "focused=" + scene.getFocusOwner());
+                assertSame(baselineSelection, drawer.getSelectedItem());
+                assertSame(baselineFocusOwner, scene.getFocusOwner());
+
+                assertFalse(M3Accessible.showAccessibleActionTarget(drawer, hiddenAction));
+                assertFalse(group.isExpanded());
+                assertFalse(hiddenAction.isFocused(), () -> "focused=" + scene.getFocusOwner());
+                assertSame(baselineSelection, drawer.getSelectedItem());
+                assertSame(baselineFocusOwner, scene.getFocusOwner());
+
+                drawer.executeAccessibleAction(AccessibleAction.SHOW_ITEM, hiddenAction);
+
+                assertFalse(group.isExpanded());
+                assertFalse(hiddenAction.isFocused(), () -> "focused=" + scene.getFocusOwner());
+                assertSame(baselineSelection, drawer.getSelectedItem());
+                assertSame(baselineFocusOwner, scene.getFocusOwner());
+
+                drawer.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, hiddenAction);
+
+                assertFalse(group.isExpanded());
+                assertSame(baselineSelection, drawer.getSelectedItem());
+                assertSame(baselineFocusOwner, scene.getFocusOwner());
+            } finally {
+                M3MotionSettings.clearAnimationsEnabled(drawer);
             }
         });
     }

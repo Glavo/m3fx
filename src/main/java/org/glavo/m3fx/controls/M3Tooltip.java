@@ -743,6 +743,18 @@ public class M3Tooltip extends PopupControl {
         return focusInteractiveTarget(firstInteractiveFocusTarget());
     }
 
+    /// Returns whether this tooltip exposes the requested interactive action target.
+    protected boolean containsInteractiveActionTarget(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        return interactiveFocusTargetFor(parameters) != null;
+    }
+
+    /// Shows one requested interactive action target inside the tooltip.
+    protected boolean showInteractiveActionTarget(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        return focusInteractiveTarget(interactiveFocusTargetFor(parameters));
+    }
+
     /// Returns the interactive popup target referenced by accessibility action parameters.
     protected @Nullable Node interactiveFocusTargetFor(Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
@@ -1093,17 +1105,22 @@ public class M3Tooltip extends PopupControl {
             }
 
             @Nullable Node popupRoot = scene.getRoot();
+            if (popupRoot == null) {
+                return null;
+            }
+
+            @Nullable Node externalTarget = M3Accessible.activeExternalFocusTarget(popupRoot, popupRoot);
+            if (externalTarget != null) {
+                return externalTarget;
+            }
+
             @Nullable Node focusOwner = scene.getFocusOwner();
-            return popupRoot != null
-                    && focusOwner != null
-                    && M3Accessible.containsNode(popupRoot, focusOwner)
-                    ? focusOwner
-                    : null;
+            return focusOwner != null && M3Accessible.containsNode(popupRoot, focusOwner) ? focusOwner : null;
         }
 
         /// Returns whether this installation exposes the requested interactive target.
         private boolean containsInteractiveFocusTarget(Object... parameters) {
-            return tooltip.isInteractive() && tooltip.interactiveFocusTargetFor(parameters) != null;
+            return tooltip.isInteractive() && tooltip.containsInteractiveActionTarget(parameters);
         }
 
         /// Shows the tooltip and focuses the requested interactive target.
@@ -1122,8 +1139,7 @@ public class M3Tooltip extends PopupControl {
                 return false;
             }
 
-            @Nullable Node target = tooltip.interactiveFocusTargetFor(parameters);
-            if (!focusInteractiveTarget(target)) {
+            if (!tooltip.showInteractiveActionTarget(parameters)) {
                 return false;
             }
             hideTimer.stop();

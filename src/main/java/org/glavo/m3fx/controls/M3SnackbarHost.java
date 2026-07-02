@@ -359,7 +359,7 @@ public class M3SnackbarHost extends Control {
                 }
             }
             case SHOW_ITEM -> {
-                if (M3Accessible.canReveal(this)) {
+                if (canRunAccessibleSnackbarAction()) {
                     showAccessibleSnackbar(parameters);
                 }
             }
@@ -584,11 +584,24 @@ public class M3SnackbarHost extends Control {
         return focusOwner != null && M3Accessible.containsNode(node, focusOwner);
     }
 
+    /// Returns whether accessibility actions can run against this host.
+    private boolean canRunAccessibleSnackbarAction() {
+        return M3Accessible.canReach(this) || isDetachedReachableHost();
+    }
+
+    /// Returns whether this host can run structural accessibility actions before scene attachment.
+    private boolean isDetachedReachableHost() {
+        return getScene() == null && M3Accessible.isEffectivelyReachable(this);
+    }
+
     /// Shows or focuses the snackbar referenced by accessibility action parameters.
     ///
     /// @param parameters optional accessibility target parameters
     /// @return `true` when the target snackbar was focused, shown, or accepted as the current target
     final boolean showAccessibleSnackbar(Object... parameters) {
+        if (!M3Accessible.canReach(this) && !isDetachedReachableHost()) {
+            return false;
+        }
         @Nullable M3Snackbar target = accessibleSnackbar(parameters);
         if (target == null) {
             return false;
@@ -616,22 +629,30 @@ public class M3SnackbarHost extends Control {
     /// Focuses the hosted snackbar or delegates to one of its nested action-owned targets.
     private boolean showAccessibleSnackbarTarget(M3Snackbar target, Object... parameters) {
         Objects.requireNonNull(target, "target");
-        if (parametersReferenceNestedSnackbarAction(target, parameters)) {
-            return M3Accessible.showAccessibleActionTarget(this, target, parameters) && currentFocusNode() != null;
+        Object[] targetParameters = snackbarTargetParameters(parameters);
+        if (targetParameters.length > 0 && !parametersReferenceSnackbar(target, targetParameters)) {
+            if (M3Accessible.containsUnrevealableActionNodeTarget(target, targetParameters)) {
+                return false;
+            }
+            if (target.showAccessibleItem(targetParameters) && currentFocusNode() != null) {
+                return true;
+            }
         }
         return M3Accessible.showItem(this, currentFocusNode());
     }
 
-    /// Returns whether the supplied parameters target snackbar action content instead of the snackbar item itself.
-    private static boolean parametersReferenceNestedSnackbarAction(M3Snackbar target, Object... parameters) {
-        Objects.requireNonNull(target, "target");
+    /// Returns parameters that should be applied after an indexed snackbar has already been resolved.
+    private static Object[] snackbarTargetParameters(Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
-        if (parameters.length == 0 || parameters[0] instanceof Number || parametersReferenceSnackbar(target, parameters)) {
-            return false;
+        if (parameters.length <= 1 || !(parameters[0] instanceof Number)) {
+            return parameters;
         }
-        return M3Accessible.containsNodeTarget(target, parameters)
-                || M3Accessible.containsAccessibleActionTarget(target, parameters);
+
+        Object[] targetParameters = new Object[parameters.length - 1];
+        System.arraycopy(parameters, 1, targetParameters, 0, targetParameters.length);
+        return targetParameters;
     }
+
 
     /// Returns whether any supplied parameter directly references the snackbar item.
     private static boolean parametersReferenceSnackbar(M3Snackbar target, Object... parameters) {
@@ -670,27 +691,60 @@ public class M3SnackbarHost extends Control {
     private @Nullable M3Snackbar accessibleSnackbar(Object... parameters) {
         if (parameters.length == 0) {
             @Nullable M3Snackbar currentSnackbar = getSnackbar();
-            return currentSnackbar != null ? currentSnackbar : (queue.isEmpty() ? null : queue.get(0));
+            if (canRevealSnackbar(currentSnackbar)) {
+                return currentSnackbar;
+            }
+            return queue.isEmpty() ? null : revealableSnackbar(queue.get(0));
         }
 
         int index = M3Accessible.indexParameter(parameters);
         if (index >= 0) {
-            Node item = snackbarAt(parameters);
-            return item instanceof M3Snackbar snackbar ? snackbar : null;
+            return indexedAccessibleSnackbar(parameters);
         }
 
         @Nullable M3Snackbar currentSnackbar = getSnackbar();
-        if (currentSnackbar != null && (M3Accessible.containsNodeTarget(currentSnackbar, parameters)
+        if (currentSnackbar != null
+                && canRevealSnackbarTarget(currentSnackbar, parameters)
+                && (M3Accessible.containsNodeTarget(currentSnackbar, parameters)
                 || M3Accessible.containsAccessibleActionTarget(currentSnackbar, parameters))) {
             return currentSnackbar;
         }
         for (M3Snackbar queuedSnackbar : queue) {
-            if (M3Accessible.containsNodeTarget(queuedSnackbar, parameters)
-                    || M3Accessible.containsAccessibleActionTarget(queuedSnackbar, parameters)) {
+            if (canRevealSnackbarTarget(queuedSnackbar, parameters)
+                    && (M3Accessible.containsNodeTarget(queuedSnackbar, parameters)
+                    || M3Accessible.containsAccessibleActionTarget(queuedSnackbar, parameters))) {
                 return queuedSnackbar;
             }
         }
         return null;
+    }
+
+    /// Returns the indexed snackbar when the snackbar and any nested target can be revealed.
+    private @Nullable M3Snackbar indexedAccessibleSnackbar(Object... parameters) {
+        @Nullable M3Snackbar snackbar = revealableSnackbar(snackbarAt(parameters));
+        if (snackbar == null || parameters.length <= 1) {
+            return snackbar;
+        }
+
+        Object[] targetParameters = snackbarTargetParameters(parameters);
+        return canRevealSnackbarTarget(snackbar, targetParameters) ? snackbar : null;
+    }
+
+    /// Returns the supplied snackbar when it can be revealed through this host.
+    private static @Nullable M3Snackbar revealableSnackbar(@Nullable Node item) {
+        return item instanceof M3Snackbar snackbar && canRevealSnackbar(snackbar) ? snackbar : null;
+    }
+
+    /// Returns whether one snackbar and any explicitly requested nested target can participate in reveal.
+    private static boolean canRevealSnackbarTarget(M3Snackbar snackbar, Object... parameters) {
+        Objects.requireNonNull(snackbar, "snackbar");
+        return canRevealSnackbar(snackbar)
+                && !M3Accessible.containsUnrevealableActionNodeTarget(snackbar, parameters);
+    }
+
+    /// Returns whether one snackbar can participate in explicit accessibility reveal.
+    private static boolean canRevealSnackbar(@Nullable M3Snackbar snackbar) {
+        return M3Accessible.isEffectivelyReachable(snackbar);
     }
 
     /// Returns text for the currently hosted snackbar.

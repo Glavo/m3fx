@@ -333,7 +333,7 @@ public class M3TimePicker extends Control {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleTime,
-                parameter -> parameter instanceof LocalTime);
+                this::handlesAccessibleShowTarget);
         setFocusTraversable(true);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
     }
@@ -500,6 +500,11 @@ public class M3TimePicker extends Control {
         return M3Accessible.showDirectItem(this, this);
     }
 
+    /// Returns whether this picker can reveal the supplied accessibility time target.
+    private boolean handlesAccessibleShowTarget(@Nullable Object parameter) {
+        return parameter instanceof LocalTime time && !isTimeDisabled(time);
+    }
+
     /// Shows and focuses the time item requested by accessibility parameters.
     final boolean showAccessibleTime(Object... parameters) {
         @Nullable Object item = accessibleTimeItem(parameters);
@@ -507,7 +512,7 @@ public class M3TimePicker extends Control {
             return true;
         }
         if (item instanceof LocalTime time) {
-            return showAccessibleTime(time);
+            return !isTimeDisabled(time) && showAccessibleTime(time);
         }
         return parameters.length == 0 && focusAccessibleNode();
     }
@@ -526,11 +531,14 @@ public class M3TimePicker extends Control {
     private boolean showAccessibleTime(LocalTime time) {
         @Nullable M3TimePickerSkin skin = materialSkin();
         @Nullable Node cell = skin == null ? null : skin.getCell(normalizeTime(time));
-        return cell != null && M3Accessible.showItem(this, cell);
+        return cell != null && !cell.isDisabled() && M3Accessible.showItem(this, cell);
     }
 
     /// Focuses the rendered time cell for a time when it is visible.
     private boolean focusAccessibleTime(LocalTime time) {
+        if (isTimeDisabled(time)) {
+            return false;
+        }
         @Nullable M3TimePickerSkin skin = materialSkin();
         return focusAccessibleNode(skin == null ? this : skin.getCell(normalizeTime(time)));
     }
@@ -562,7 +570,7 @@ public class M3TimePicker extends Control {
             return normalizeTime(time);
         }
         if (parameter instanceof Node node) {
-            return timeFromNode(node) == null ? null : node;
+            return M3Accessible.isEffectivelyReachable(node) && timeFromNode(node) != null ? node : null;
         }
         if (parameter instanceof Iterable<?> values) {
             for (Object value : values) {

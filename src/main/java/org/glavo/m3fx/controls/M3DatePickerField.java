@@ -94,8 +94,9 @@ public final class M3DatePickerField extends M3PickerField<LocalDate, M3DatePick
     /// Returns whether this field can reveal the supplied accessibility date target.
     @Override
     protected boolean handlesAccessibleShowTarget(@Nullable Object parameter) {
-        return parameter instanceof LocalDate;
+        return parameter instanceof LocalDate date && !isDateDisabled(date);
     }
+
     /// Returns the mutable date preset list rendered in the popup.
     ///
     /// @return the mutable date preset list rendered in the popup

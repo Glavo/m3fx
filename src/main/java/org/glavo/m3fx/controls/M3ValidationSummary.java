@@ -5,10 +5,13 @@ package org.glavo.m3fx.controls;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.ReadOnlyIntegerProperty;
+import javafx.beans.property.ReadOnlyIntegerWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.beans.InvalidationListener;
 import javafx.collections.ListChangeListener;
 import javafx.css.PseudoClass;
 import javafx.scene.AccessibleAction;
@@ -23,7 +26,10 @@ import org.glavo.m3fx.skins.M3ValidationSummarySkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.Objects;
+import java.util.Set;
 
 /// Displays the invalid fields reported by an [M3FormValidator].
 ///
@@ -84,8 +90,24 @@ public class M3ValidationSummary extends Control {
     // Whether the summary renders an empty state when no invalid inputs exist.
     private final BooleanProperty showWhenValid = new SimpleBooleanProperty(this, "showWhenValid", false);
 
+    // The number of invalid input layouts that currently have a visible and enabled ancestor chain.
+    private final ReadOnlyIntegerWrapper visibleInvalidInputCount =
+            new ReadOnlyIntegerWrapper(this, "visibleInvalidInputCount");
+
     /// Updates summary state when the validator invalid input list changes.
-    private final ListChangeListener<M3TextInputLayout> invalidInputsListener = change -> updateSummaryState();
+    private final ListChangeListener<M3TextInputLayout> invalidInputsListener = change -> {
+        updateReachabilityObservers();
+        updateSummaryState();
+    };
+
+    /// Updates summary state when an invalid input or ancestor visibility chain changes.
+    private final InvalidationListener reachabilityListener = observable -> {
+        updateReachabilityObservers();
+        updateSummaryState();
+    };
+
+    /// Nodes in current summary and invalid input ancestry chains observed for row visibility changes.
+    private final Set<Node> observedReachabilityNodes = Collections.newSetFromMap(new IdentityHashMap<>());
 
     /// Notifies accessibility clients when focus moves between invalid input layouts.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -164,7 +186,25 @@ public class M3ValidationSummary extends Control {
 
     /// Returns whether the summary currently has visible content.
     public final boolean isShowingSummary() {
-        return isShowWhenValid() || getInvalidInputCount() > 0;
+        return isShowWhenValid() || getVisibleInvalidInputCount() > 0;
+    }
+
+    /// Returns the number of invalid inputs currently shown by this summary.
+    ///
+    /// This count excludes invalid inputs hidden or disabled through their ancestor chain. It may include inputs that
+    /// are not attached to the same scene as the summary so standalone summaries can render validation results before
+    /// a form preview is mounted.
+    ///
+    /// @return the number of invalid inputs currently shown by this summary
+    public final int getVisibleInvalidInputCount() {
+        return visibleInvalidInputCount.get();
+    }
+
+    /// Returns the visible invalid input count property.
+    ///
+    /// @return the visible invalid input count property
+    public final ReadOnlyIntegerProperty visibleInvalidInputCountProperty() {
+        return visibleInvalidInputCount.getReadOnlyProperty();
     }
 
     /// Returns the number of invalid inputs currently reported by the validator.
@@ -180,6 +220,29 @@ public class M3ValidationSummary extends Control {
             return null;
         }
         return validator.getInvalidInputs().get(index);
+    }
+
+    /// Returns whether the supplied invalid input should be rendered by this summary.
+    ///
+    /// A shown invalid input belongs to the current validator and has a visible and enabled ancestor chain. The input
+    /// does not have to share a scene with the summary, which allows standalone summaries and form previews to render
+    /// validation results before the corresponding fields are attached to the same scene.
+    ///
+    /// @param input the invalid input layout to test
+    /// @return `true` when the input should be rendered by this summary
+    public final boolean isInvalidInputShown(M3TextInputLayout input) {
+        return isShownInvalidInput(Objects.requireNonNull(input, "input"));
+    }
+
+    /// Returns whether the supplied invalid input can currently be focused or revealed from this summary.
+    ///
+    /// A reachable invalid input is shown by this summary and can be reached from the current scene when the summary is
+    /// attached to one.
+    ///
+    /// @param input the invalid input layout to test
+    /// @return `true` when the input is reachable from this summary
+    public final boolean isInvalidInputReachable(M3TextInputLayout input) {
+        return isAccessibleInvalidInput(Objects.requireNonNull(input, "input"));
     }
 
     /// Requests focus for one invalid input layout if it belongs to the current validator.
@@ -255,11 +318,51 @@ public class M3ValidationSummary extends Control {
         if (newValidator != null) {
             newValidator.getInvalidInputs().addListener(invalidInputsListener);
         }
+        updateReachabilityObservers();
         updateSummaryState();
+    }
+
+    /// Updates listeners for summary and invalid input ancestry chains that affect row visibility.
+    private void updateReachabilityObservers() {
+        removeReachabilityObservers();
+        observeReachabilityChain(this);
+
+        @Nullable M3FormValidator validator = getValidator();
+        if (validator == null) {
+            return;
+        }
+
+        for (M3TextInputLayout input : validator.getInvalidInputs()) {
+            observeReachabilityChain(input);
+        }
+    }
+
+    /// Observes one invalid input and its current parent chain.
+    private void observeReachabilityChain(Node node) {
+        @Nullable Node current = node;
+        while (current != null) {
+            if (observedReachabilityNodes.add(current)) {
+                current.visibleProperty().addListener(reachabilityListener);
+                current.disabledProperty().addListener(reachabilityListener);
+                current.parentProperty().addListener(reachabilityListener);
+            }
+            current = current.getParent();
+        }
+    }
+
+    /// Removes all summary and invalid input ancestry listeners.
+    private void removeReachabilityObservers() {
+        for (Node node : observedReachabilityNodes) {
+            node.visibleProperty().removeListener(reachabilityListener);
+            node.disabledProperty().removeListener(reachabilityListener);
+            node.parentProperty().removeListener(reachabilityListener);
+        }
+        observedReachabilityNodes.clear();
     }
 
     /// Updates pseudo-classes and accessibility notifications after summary content changes.
     private void updateSummaryState() {
+        visibleInvalidInputCount.set(shownInvalidInputCount());
         boolean empty = !isShowingSummary();
         pseudoClassStateChanged(EMPTY_PSEUDO_CLASS, empty);
         setAccessibleText(accessibleText());
@@ -380,7 +483,7 @@ public class M3ValidationSummary extends Control {
             notifyFocusNodeChanged();
             return true;
         }
-        return focusInput(input);
+        return false;
     }
 
     /// Returns the invalid input referenced by accessibility action parameters.
@@ -444,6 +547,27 @@ public class M3ValidationSummary extends Control {
 
     /// Returns the number of invalid inputs currently exposed to accessibility clients.
     private int accessibleInvalidInputCount() {
+        return reachableInvalidInputCount();
+    }
+
+    /// Returns the number of invalid inputs that should be rendered by this summary.
+    private int shownInvalidInputCount() {
+        @Nullable M3FormValidator validator = getValidator();
+        if (validator == null || !M3Accessible.isEffectivelyReachable(this)) {
+            return 0;
+        }
+
+        int count = 0;
+        for (M3TextInputLayout invalidInput : validator.getInvalidInputs()) {
+            if (isShownInvalidInput(invalidInput)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    /// Returns the number of invalid inputs that can currently be focused from this summary.
+    private int reachableInvalidInputCount() {
         @Nullable M3FormValidator validator = getValidator();
         if (validator == null || !M3Accessible.isEffectivelyReachable(this)) {
             return 0;
@@ -496,11 +620,16 @@ public class M3ValidationSummary extends Control {
         return null;
     }
 
-    /// Returns whether one invalid input belongs to this summary and has a reachable ancestor chain.
-    private boolean isAccessibleInvalidInput(M3TextInputLayout input) {
+    /// Returns whether one invalid input belongs to this summary and has a visible ancestor chain.
+    private boolean isShownInvalidInput(M3TextInputLayout input) {
         return containsInvalidInput(input)
                 && M3Accessible.isEffectivelyReachable(this)
-                && M3Accessible.isEffectivelyReachable(input)
+                && M3Accessible.isEffectivelyReachable(input);
+    }
+
+    /// Returns whether one invalid input belongs to this summary and has a reachable ancestor chain.
+    private boolean isAccessibleInvalidInput(M3TextInputLayout input) {
+        return isShownInvalidInput(input)
                 && (getScene() == null || M3Accessible.canReach(input));
     }
 
@@ -589,7 +718,7 @@ public class M3ValidationSummary extends Control {
 
     /// Returns the current accessibility summary text.
     private String accessibleText() {
-        if (getInvalidInputCount() == 0 && isShowWhenValid()) {
+        if (getVisibleInvalidInputCount() == 0 && isShowWhenValid()) {
             return getTitleText() + " " + getEmptyText();
         }
         return getTitleText();

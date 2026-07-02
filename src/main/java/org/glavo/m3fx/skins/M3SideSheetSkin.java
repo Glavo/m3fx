@@ -40,6 +40,9 @@ public final class M3SideSheetSkin extends SkinBase<M3SideSheet> {
     /// The content slot.
     private final StackPane contentSlot = new StackPane();
 
+    /// The orientation bridge for public content nodes.
+    private final StackPane contentOrientationBridge = new StackPane();
+
     /// Updates content when the public content property changes.
     private final ChangeListener<@Nullable Node> contentListener =
             (observable, oldValue, newValue) -> updateContent(newValue);
@@ -57,17 +60,20 @@ public final class M3SideSheetSkin extends SkinBase<M3SideSheet> {
         headlineLabel.getStyleClass().add(M3SideSheet.TITLE_STYLE_CLASS);
         actions.getStyleClass().add(M3SideSheet.ACTIONS_STYLE_CLASS);
         contentSlot.getStyleClass().add(M3SideSheet.CONTENT_STYLE_CLASS);
+        contentSlot.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
         header.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(control));
         actions.alignmentProperty().bind(M3NodeLayout.createLogicalEndCenterAlignmentBinding(control));
         contentSlot.alignmentProperty().bind(M3NodeLayout.createLogicalStartTopAlignmentBinding(control));
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         header.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         contentSlot.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+        contentOrientationBridge.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         HBox.setHgrow(spacer, Priority.ALWAYS);
         headlineLabel.textProperty().bind(control.headlineProperty());
 
         control.contentProperty().addListener(contentListener);
         control.getActions().addListener(actionsListener);
+        contentSlot.getChildren().setAll(contentOrientationBridge);
         updateContent(control.getContent());
         updateActions();
         header.getChildren().setAll(headlineLabel, spacer, actions);
@@ -87,9 +93,11 @@ public final class M3SideSheetSkin extends SkinBase<M3SideSheet> {
         header.nodeOrientationProperty().unbind();
         header.alignmentProperty().unbind();
         actions.alignmentProperty().unbind();
+        contentOrientationBridge.nodeOrientationProperty().unbind();
         contentSlot.nodeOrientationProperty().unbind();
         contentSlot.alignmentProperty().unbind();
         actions.getChildren().clear();
+        contentOrientationBridge.getChildren().clear();
         contentSlot.getChildren().clear();
         header.getChildren().clear();
         container.setTop(null);
@@ -177,9 +185,9 @@ public final class M3SideSheetSkin extends SkinBase<M3SideSheet> {
 
     /// Updates the content slot.
     private void updateContent(@Nullable Node content) {
-        contentSlot.getChildren().clear();
+        contentOrientationBridge.getChildren().clear();
         if (content != null) {
-            contentSlot.getChildren().add(content);
+            contentOrientationBridge.getChildren().add(content);
         }
         getSkinnable().requestLayout();
     }

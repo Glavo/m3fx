@@ -171,6 +171,7 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
                 + ".m3-slider:hover .m3-state-layer, .m3-tab:hover .m3-state-layer, "
                 + ".m3-navigation-item:hover .m3-state-layer, "
                 + ".m3-list-item:hover .m3-state-layer, "
+                + ".m3-validation-summary-item:hover .m3-state-layer, "
                 + ".m3-card:hover .m3-state-layer";
     }
 
@@ -184,6 +185,7 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
                 + ".m3-slider:focus-visible .m3-state-layer, .m3-tab:focus-visible .m3-state-layer, "
                 + ".m3-navigation-item:focus-visible .m3-state-layer, "
                 + ".m3-list-item:focus-visible .m3-state-layer, "
+                + ".m3-validation-summary-item:focus-visible .m3-state-layer, "
                 + ".m3-card:focus-visible .m3-state-layer";
     }
 
@@ -197,6 +199,7 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
                 + ".m3-slider:pressed .m3-state-layer, .m3-tab:pressed .m3-state-layer, "
                 + ".m3-navigation-item:pressed .m3-state-layer, "
                 + ".m3-list-item:pressed .m3-state-layer, "
+                + ".m3-validation-summary-item:pressed .m3-state-layer, "
                 + ".m3-card:pressed .m3-state-layer";
     }
 

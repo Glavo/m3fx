@@ -245,17 +245,17 @@ public final class M3FormValidator {
         refreshInvalidInputs();
     }
 
-    /// Requests focus on the first invalid input layout and returns whether one existed.
+    /// Requests focus on the first reachable invalid input layout.
     ///
-    /// @return `true` when an invalid input existed and focus was requested
+    /// @return `true` when a reachable invalid input accepted keyboard focus
     public boolean focusFirstInvalidInput() {
         return focusFirstInvalidInputWithOwner(null);
     }
 
-    /// Requests focus on the first invalid input layout and reveals it through the supplied owner when possible.
+    /// Requests focus on the first reachable invalid input layout and reveals it through the supplied owner.
     ///
     /// @param owner the node whose enclosing scroll pane should reveal the focused invalid input
-    /// @return `true` when an invalid input existed and focus was requested
+    /// @return `true` when a reachable invalid input accepted keyboard focus
     public boolean focusFirstInvalidInput(Node owner) {
         return focusFirstInvalidInputWithOwner(Objects.requireNonNull(owner, "owner"));
     }
@@ -283,17 +283,17 @@ public final class M3FormValidator {
         return valid;
     }
 
-    /// Requests focus on the first invalid input layout with an optional reveal owner.
+    /// Requests focus on the first reachable invalid input layout with an optional reveal owner.
     private boolean focusFirstInvalidInputWithOwner(@Nullable Node owner) {
         for (M3TextInputLayout invalidInput : invalidInputs) {
             @Nullable Node focusTarget = invalidInputFocusTarget(invalidInput);
             if (focusTarget != null) {
-                if (owner == null) {
-                    M3Accessible.showItem(focusTarget);
-                } else {
-                    M3Accessible.showItem(owner, focusTarget);
+                boolean focused = owner == null
+                        ? M3Accessible.showItem(focusTarget)
+                        : M3Accessible.showItem(owner, focusTarget);
+                if (focused) {
+                    return true;
                 }
-                return true;
             }
         }
         return false;

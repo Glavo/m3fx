@@ -167,6 +167,97 @@ final class M3DatePickerTest {
         assertEquals(YearMonth.of(2026, 6), picker.getDisplayedMonth());
     }
 
+    /// Verifies that accessibility reveal and selection ignore dates outside selectable bounds.
+    @Test
+    void datePickerAccessibleActionsIgnoreDisabledDateValues() {
+        M3DatePicker picker = new M3DatePicker(LocalDate.of(2026, 5, 18));
+        picker.setMinDate(LocalDate.of(2026, 5, 1));
+        picker.setMaxDate(LocalDate.of(2026, 5, 31));
+        picker.setDisplayedMonth(YearMonth.of(2026, 5));
+
+        picker.executeAccessibleAction(AccessibleAction.SHOW_ITEM, LocalDate.of(2026, 6, 2));
+
+        assertEquals(YearMonth.of(2026, 5), picker.getDisplayedMonth());
+        assertEquals(LocalDate.of(2026, 5, 18), picker.getValue());
+
+        picker.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, LocalDate.of(2026, 6, 2));
+
+        assertEquals(LocalDate.of(2026, 5, 18), picker.getValue());
+    }
+
+    /// Verifies that composite owners skip date pickers whose value route rejects an out-of-range target.
+    @Test
+    void datePickerAccessibleRouteRejectsOutOfRangeTargetsInCompositeOwners() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3DatePicker first = new M3DatePicker(LocalDate.of(2026, 5, 18));
+            first.setMinDate(LocalDate.of(2026, 5, 1));
+            first.setMaxDate(LocalDate.of(2026, 5, 31));
+            M3DatePicker second = new M3DatePicker(LocalDate.of(2026, 6, 2));
+            second.setMinDate(LocalDate.of(2026, 6, 1));
+            second.setMaxDate(LocalDate.of(2026, 6, 30));
+            M3FormPane form = new M3FormPane();
+            form.setItems(first, second);
+            Stage stage = new Stage();
+            try {
+                Pane root = new Pane(form);
+                Scene scene = new Scene(root, 720.0, 480.0);
+
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                form.resizeRelocate(24.0, 24.0, 640.0, 400.0);
+                root.layout();
+                form.layout();
+
+                form.executeAccessibleAction(AccessibleAction.SHOW_ITEM, LocalDate.of(2026, 6, 2));
+
+                Node focusOwner = scene.getFocusOwner();
+                assertTrue(focusOwner != null && M3Accessible.containsNode(second, focusOwner));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that accessibility selection ignores unreachable rendered day cell nodes.
+    @Test
+    void datePickerAccessibleSelectionIgnoresUnreachableDayCells() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3DatePicker picker = new M3DatePicker(LocalDate.of(2026, 5, 18));
+            Stage stage = new Stage();
+            try {
+                Pane root = new Pane(picker);
+                Scene scene = new Scene(root, 420.0, 360.0);
+
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                ButtonBase targetCell = dayCellForDate(picker, LocalDate.of(2026, 5, 25));
+                targetCell.setVisible(false);
+                picker.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, targetCell);
+
+                assertEquals(LocalDate.of(2026, 5, 18), picker.getValue());
+
+                targetCell.setVisible(true);
+                targetCell.setDisable(true);
+                picker.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, targetCell);
+
+                assertEquals(LocalDate.of(2026, 5, 18), picker.getValue());
+
+                targetCell.setDisable(false);
+                picker.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, targetCell);
+
+                assertEquals(LocalDate.of(2026, 5, 25), picker.getValue());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that default accessibility focus actions preserve the focused visible day cell.
     @Test
     void datePickerAccessibleFocusPreservesFocusedVisibleCell() {

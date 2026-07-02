@@ -679,12 +679,12 @@ public class M3NavigationDrawer extends Control {
             Object... parameters
     ) {
         M3ListItem headerItem = group.getHeaderItem();
-        if (isSelectableDrawerItem(headerItem) && M3Accessible.containsNodeTarget(headerItem, parameters)) {
+        if (isSelectableDrawerItem(headerItem) && M3Accessible.containsSelectionTarget(headerItem, parameters)) {
             return headerItem;
         }
 
         for (M3ListItem item : group.getItems()) {
-            if (M3Accessible.isEffectivelyReachable(item) && M3Accessible.containsNodeTarget(item, parameters)) {
+            if (M3Accessible.isEffectivelyReachable(item) && M3Accessible.containsSelectionTarget(item, parameters)) {
                 group.setExpanded(true);
                 if (isSelectableDrawerItem(item)) {
                     return item;
@@ -720,8 +720,9 @@ public class M3NavigationDrawer extends Control {
     /// Returns whether this drawer owns the supplied reveal node directly or through a collapsed group.
     private boolean containsAccessibleRevealNode(Node node) {
         for (Node child : getItems()) {
-            if (M3Accessible.containsNodeTarget(child, node)
-                    || M3Accessible.containsAccessibleActionTarget(child, node)) {
+            if (!M3Accessible.containsUnrevealableActionNodeTarget(child, node)
+                    && (M3Accessible.containsNodeTarget(child, node)
+                    || M3Accessible.containsAccessibleActionTarget(child, node))) {
                 return true;
             }
             if (child instanceof M3NavigationDrawerGroup group && containsGroupRevealNode(group, node)) {
@@ -734,13 +735,15 @@ public class M3NavigationDrawer extends Control {
     /// Returns whether a drawer group owns the supplied reveal node through any header or child row.
     private boolean containsGroupRevealNode(M3NavigationDrawerGroup group, Node node) {
         M3ListItem headerItem = group.getHeaderItem();
-        if (M3Accessible.containsNodeTarget(headerItem, node)
-                || M3Accessible.containsAccessibleActionTarget(headerItem, node)) {
+        if (!M3Accessible.containsUnrevealableActionNodeTarget(headerItem, node)
+                && (M3Accessible.containsNodeTarget(headerItem, node)
+                || M3Accessible.containsAccessibleActionTarget(headerItem, node))) {
             return true;
         }
         for (M3ListItem item : group.getItems()) {
-            if (M3Accessible.containsNodeTarget(item, node)
-                    || M3Accessible.containsAccessibleActionTarget(item, node)) {
+            if (!M3Accessible.containsUnrevealableActionNodeTarget(item, node)
+                    && (M3Accessible.containsNodeTarget(item, node)
+                    || M3Accessible.containsAccessibleActionTarget(item, node))) {
                 return true;
             }
         }
@@ -785,6 +788,7 @@ public class M3NavigationDrawer extends Control {
 
         for (M3ListItem item : group.getItems()) {
             if (M3Accessible.isEffectivelyReachable(item)
+                    && !M3Accessible.containsUnrevealableActionNodeTarget(item, parameters)
                     && (M3Accessible.containsNodeTarget(item, parameters)
                     || M3Accessible.containsAccessibleActionTarget(item, parameters))) {
                 group.expandForAccessibleReveal();

@@ -51,14 +51,14 @@ public final class M3FormSectionSkin extends SkinBase<M3FormSection> {
         root.setManaged(false);
         header.getStyleClass().add(M3FormSection.HEADER_STYLE_CLASS);
         titleLabel.getStyleClass().add(M3FormSection.TITLE_STYLE_CLASS);
+        titleLabel.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
         supportingLabel.getStyleClass().add(M3FormSection.SUPPORTING_TEXT_STYLE_CLASS);
+        supportingLabel.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
         content.getStyleClass().add(M3FormSection.CONTENT_STYLE_CLASS);
         root.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         header.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         content.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
 
-        titleLabel.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
-        supportingLabel.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
         titleLabel.setWrapText(true);
         supportingLabel.setWrapText(true);
         header.setMaxWidth(Double.MAX_VALUE);

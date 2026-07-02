@@ -281,7 +281,9 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-time-picker-container"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-picker-field-popup"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-form-row-text-column"));
-        assertTrue(tokenSet.toControlStyleRules().contains(".m3-validation-summary-item"));
+        assertTrue(tokenSet.toControlStyleRules().contains(".m3-validation-summary-item:hover .m3-state-layer"));
+        assertTrue(tokenSet.toControlStyleRules().contains(".m3-validation-summary-item:focus-visible .m3-state-layer"));
+        assertTrue(tokenSet.toControlStyleRules().contains(".m3-validation-summary-item:pressed .m3-state-layer"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-carousel-selected-item"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-surface"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-bottom-sheet .m3-bottom-sheet-drag-handle"));

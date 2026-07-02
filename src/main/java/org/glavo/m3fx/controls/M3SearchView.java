@@ -458,6 +458,9 @@ public class M3SearchView extends Control {
         if (!M3Accessible.canReach(this)) {
             return false;
         }
+        if (parameters.length > 0 && !canShowAccessibleResult(parameters)) {
+            return false;
+        }
         @Nullable Node currentFocusNode = currentDefaultShowItemFocusNode();
         activate();
         if (parameters.length == 0) {
@@ -490,6 +493,13 @@ public class M3SearchView extends Control {
             return true;
         }
         return false;
+    }
+
+    /// Returns whether this search view can handle explicit accessibility result parameters before activation.
+    private boolean canShowAccessibleResult(Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        return M3Accessible.containsAccessibleActionTarget(searchBar, parameters)
+                || M3Accessible.canShowItem(null, getResults(), parameters);
     }
 
     /// Focuses the next result relative to the current focus owner.

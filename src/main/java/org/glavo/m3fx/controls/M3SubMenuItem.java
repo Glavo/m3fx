@@ -449,6 +449,9 @@ public class M3SubMenuItem extends M3MenuItem {
     /// Opens the submenu and focuses a descendant supplied by accessibility parameters.
     final boolean showAccessibleSubMenuItem(Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
+        if (!M3Accessible.canReach(this) || !subMenu.canShowAccessibleItem(parameters)) {
+            return false;
+        }
         showSubMenu();
         if (!popup.isShowing()) {
             return false;

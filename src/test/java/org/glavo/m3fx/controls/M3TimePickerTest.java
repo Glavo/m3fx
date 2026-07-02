@@ -193,6 +193,119 @@ final class M3TimePickerTest {
                 picker.queryAccessibleAttribute(AccessibleAttribute.SELECTED_ITEMS));
     }
 
+    /// Verifies that accessibility reveal and selection ignore times outside selectable bounds.
+    @Test
+    void timePickerAccessibleActionsIgnoreDisabledTimeValues() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3TimePicker picker = new M3TimePicker(LocalTime.of(10, 30));
+            picker.setMinuteStep(15);
+            picker.setMinTime(LocalTime.of(9, 0));
+            picker.setMaxTime(LocalTime.of(12, 45));
+            Stage stage = new Stage();
+            try {
+                Pane root = new Pane(picker);
+                Scene scene = new Scene(root, 520.0, 360.0);
+
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                picker.resize(460.0, 320.0);
+                root.layout();
+                picker.layout();
+
+                ButtonBase focusedCell = cellByText(picker, M3TimePicker.HOUR_CELL_STYLE_CLASS, "10");
+                focusedCell.requestFocus();
+
+                picker.executeAccessibleAction(AccessibleAction.SHOW_ITEM, LocalTime.of(14, 0));
+
+                assertTrue(focusedCell.isFocused());
+                assertEquals(LocalTime.of(10, 30), picker.getValue());
+
+                picker.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, LocalTime.of(14, 0));
+
+                assertTrue(focusedCell.isFocused());
+                assertEquals(LocalTime.of(10, 30), picker.getValue());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that composite owners skip time pickers whose value route rejects an out-of-range target.
+    @Test
+    void timePickerAccessibleRouteRejectsOutOfRangeTargetsInCompositeOwners() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3TimePicker first = new M3TimePicker(LocalTime.of(10, 30));
+            first.setMinTime(LocalTime.of(9, 0));
+            first.setMaxTime(LocalTime.of(12, 0));
+            M3TimePicker second = new M3TimePicker(LocalTime.of(18, 0));
+            second.setMinTime(LocalTime.of(17, 0));
+            second.setMaxTime(LocalTime.of(20, 0));
+            M3FormPane form = new M3FormPane();
+            form.setItems(first, second);
+            Stage stage = new Stage();
+            try {
+                Pane root = new Pane(form);
+                Scene scene = new Scene(root, 760.0, 540.0);
+
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                form.resizeRelocate(24.0, 24.0, 700.0, 460.0);
+                root.layout();
+                form.layout();
+
+                form.executeAccessibleAction(AccessibleAction.SHOW_ITEM, LocalTime.of(18, 0));
+
+                Node focusOwner = scene.getFocusOwner();
+                assertTrue(focusOwner != null && M3Accessible.containsNode(second, focusOwner));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that accessibility selection ignores unreachable rendered time cell nodes.
+    @Test
+    void timePickerAccessibleSelectionIgnoresUnreachableTimeCells() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3TimePicker picker = new M3TimePicker(LocalTime.of(10, 30));
+            picker.setMinuteStep(15);
+            Stage stage = new Stage();
+            try {
+                Pane root = new Pane(picker);
+                Scene scene = new Scene(root, 520.0, 360.0);
+
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                ButtonBase targetCell = cellByText(picker, M3TimePicker.HOUR_CELL_STYLE_CLASS, "11");
+                targetCell.setVisible(false);
+                picker.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, targetCell);
+
+                assertEquals(LocalTime.of(10, 30), picker.getValue());
+
+                targetCell.setVisible(true);
+                targetCell.setDisable(true);
+                picker.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, targetCell);
+
+                assertEquals(LocalTime.of(10, 30), picker.getValue());
+
+                targetCell.setDisable(false);
+                picker.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, targetCell);
+
+                assertEquals(LocalTime.of(11, 30), picker.getValue());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that default accessibility focus actions preserve the focused visible time cell.
     @Test
     void timePickerAccessibleFocusPreservesFocusedVisibleCell() {

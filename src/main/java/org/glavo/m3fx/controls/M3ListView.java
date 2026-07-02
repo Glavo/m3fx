@@ -5,6 +5,7 @@ package org.glavo.m3fx.controls;
 
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
+import javafx.beans.InvalidationListener;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ObjectProperty;
@@ -39,8 +40,10 @@ import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /// A Material Design 3 data-driven virtualized list view.
 ///
@@ -165,16 +168,15 @@ public class M3ListView<T> extends Control {
     private final M3MotionSettingsObserver motionSettingsObserver =
             new M3MotionSettingsObserver(this, this::refreshMotionSettings);
 
+    /// Updates selection and focus state when a node data item or its ancestor reachability changes.
+    private final InvalidationListener itemReachabilityListener = observable -> refreshDataItemReachabilityState();
+
+    /// Nodes in current node data item ancestry chains observed for navigation reachability changes.
+    private final Set<Node> observedItemReachabilityNodes = Collections.newSetFromMap(new IdentityHashMap<>());
+
     /// Updates selection and cells when data items change.
     private final ListChangeListener<T> itemsListener = change -> {
-        clearTypeAheadBuffer();
-        trimSelectedIndices();
-        trimFocusedIndex();
-        if (!isAllowEmptySelection() && getSelectionMode() != M3ListSelectionMode.NONE && selectedIndices.isEmpty()) {
-            selectFirstItemIfNeeded();
-        } else {
-            refreshSelectedItems();
-        }
+        refreshDataItemReachabilityState();
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         requestCellCountRefresh();
@@ -424,11 +426,14 @@ public class M3ListView<T> extends Control {
         return focusedIndex.get() == index;
     }
 
-    /// Selects the item at the supplied index.
+    /// Selects the reachable item at the supplied index.
     ///
     /// @param index the data item index to select
     public final void selectIndex(int index) {
         checkItemIndex(index);
+        if (!isIndexNavigable(index)) {
+            return;
+        }
         if (getSelectionMode() == M3ListSelectionMode.MULTIPLE) {
             setIndexSelected(index, true);
         } else {
@@ -448,12 +453,15 @@ public class M3ListView<T> extends Control {
         selectIndex(index);
     }
 
-    /// Sets one index's selected state.
+    /// Sets one reachable index's selected state.
     ///
     /// @param index the data item index to update
     /// @param selected whether the index should be selected
     public final void setIndexSelected(int index, boolean selected) {
         checkItemIndex(index);
+        if (selected && !isIndexNavigable(index)) {
+            return;
+        }
         if (getSelectionMode() == M3ListSelectionMode.NONE) {
             if (!selected) {
                 removeSelectedIndex(index);
@@ -479,7 +487,7 @@ public class M3ListView<T> extends Control {
         }
     }
 
-    /// Toggles the selected state for one item index.
+    /// Toggles the selected state for one reachable item index.
     ///
     /// @param index the data item index to toggle
     public final void toggleIndex(int index) {
@@ -661,6 +669,7 @@ public class M3ListView<T> extends Control {
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         addEventHandler(KeyEvent.KEY_TYPED, this::handleTypeAheadKeyTyped);
         getItems().addListener(itemsListener);
+        updateItemReachabilityObservers();
         sceneProperty().addListener((observable, oldScene, newScene) -> {
             if (newScene == null) {
                 clearTypeAheadBuffer();
@@ -676,6 +685,54 @@ public class M3ListView<T> extends Control {
                 M3Animation.motionBehavior(this).typeAheadResetDelay(),
                 typeAheadBuffer.length() > 0
         );
+    }
+
+    /// Refreshes listeners for node data items whose visibility or disabled state affects navigation.
+    private void updateItemReachabilityObservers() {
+        removeItemReachabilityObservers();
+        for (T item : getItems()) {
+            if (item instanceof Node node) {
+                observeItemReachabilityChain(node);
+            }
+        }
+    }
+
+    /// Observes one node data item and its current parent chain.
+    private void observeItemReachabilityChain(Node node) {
+        @Nullable Node current = node;
+        while (current != null) {
+            if (observedItemReachabilityNodes.add(current)) {
+                current.visibleProperty().addListener(itemReachabilityListener);
+                current.disabledProperty().addListener(itemReachabilityListener);
+                current.parentProperty().addListener(itemReachabilityListener);
+            }
+            current = current.getParent();
+        }
+    }
+
+    /// Removes all node data item reachability listeners.
+    private void removeItemReachabilityObservers() {
+        for (Node node : observedItemReachabilityNodes) {
+            node.visibleProperty().removeListener(itemReachabilityListener);
+            node.disabledProperty().removeListener(itemReachabilityListener);
+            node.parentProperty().removeListener(itemReachabilityListener);
+        }
+        observedItemReachabilityNodes.clear();
+    }
+
+    /// Refreshes selection, focus, and visible rows after node data item reachability changes.
+    private void refreshDataItemReachabilityState() {
+        clearTypeAheadBuffer();
+        updateItemReachabilityObservers();
+        trimSelectedIndices();
+        trimFocusedIndex();
+        if (!isAllowEmptySelection() && getSelectionMode() != M3ListSelectionMode.NONE && selectedIndices.isEmpty()) {
+            selectFirstItemIfNeeded();
+        } else {
+            refreshSelectedItems();
+        }
+        M3Accessible.notifyFocusNodeChanged(this);
+        requestVisibleCellRefresh();
     }
 
     /// Applies the configured selection policy to a reachable cell activation.
@@ -958,15 +1015,25 @@ public class M3ListView<T> extends Control {
                     updateFocusedIndexForAttachedNode(requestedIndex);
                     return M3Accessible.showItem(this, requestedNode);
                 }
+                int previousFocusedIndex = getFocusedIndex();
                 focusAccessibleIndex(requestedIndex);
-                return showMaterializedOrDeferAccessibleActionTarget(requestedIndex, parameters);
+                boolean shown = showMaterializedOrDeferAccessibleActionTarget(requestedIndex, parameters);
+                if (!shown) {
+                    updateFocusedIndex(previousFocusedIndex, false, false);
+                }
+                return shown;
             }
         }
 
         int index = firstSelectionIndex(parameters);
         if (index >= 0) {
+            int previousFocusedIndex = getFocusedIndex();
             focusAccessibleIndex(index);
-            return showMaterializedOrDeferAccessibleActionTarget(index, parameters);
+            boolean shown = showMaterializedOrDeferAccessibleActionTarget(index, parameters);
+            if (!shown) {
+                updateFocusedIndex(previousFocusedIndex, false, false);
+            }
+            return shown;
         }
 
         return showVisibleAccessibleActionTarget(parameters);
@@ -1001,15 +1068,63 @@ public class M3ListView<T> extends Control {
     ///
     /// @return `true` when the row target was handled immediately or queued for deferred reveal
     private boolean showMaterializedOrDeferAccessibleActionTarget(int index, Object... parameters) {
-        if (showMaterializedAccessibleActionTarget(index, parameters) || !hasNonIndexRevealParameter(parameters)) {
+        Object[] targetParameters = nestedRevealParameters(index, parameters);
+        if (targetParameters.length == 0) {
+            return true;
+        }
+        if (showMaterializedAccessibleActionTarget(index, targetParameters)
+                || !hasNonIndexRevealParameter(targetParameters)) {
             return true;
         }
 
+        if (getSkin() instanceof M3ListViewSkin<?> skin) {
+            skin.scrollTo(index, false);
+            applyCss();
+            layout();
+            if (showMaterializedAccessibleActionTarget(index, targetParameters)) {
+                return true;
+            }
+            if (skin.getAttachedVisibleItem(index) != null) {
+                return false;
+            }
+        }
+
         pendingAccessibleRevealIndex = index;
-        pendingAccessibleRevealParameters = parameters.clone();
+        pendingAccessibleRevealParameters = targetParameters.clone();
         pendingAccessibleRevealRetries = 8;
         completePendingAccessibleReveal();
         return true;
+    }
+
+    /// Returns reveal parameters with one explicit row selector removed.
+    private Object[] nestedRevealParameters(int index, Object... parameters) {
+        Objects.requireNonNull(parameters, "parameters");
+        if (parameters.length <= 1 || !isRowSelector(index, parameters[0])) {
+            return parameters;
+        }
+        Object[] nestedParameters = new Object[parameters.length - 1];
+        System.arraycopy(parameters, 1, nestedParameters, 0, nestedParameters.length);
+        return nestedParameters;
+    }
+
+    /// Returns whether a parameter identifies the row itself rather than a nested row target.
+    private boolean isRowSelector(int index, @Nullable Object parameter) {
+        if (parameter instanceof Number || parameter instanceof M3ListViewCell<?>) {
+            return selectionIndex(parameter) == index;
+        }
+        T item = getItems().get(index);
+        if (Objects.equals(item, parameter)) {
+            return true;
+        }
+        if (parameter instanceof Node node) {
+            if (item == node) {
+                return true;
+            }
+            if (getSkin() instanceof M3ListViewSkin<?> skin) {
+                return skin.getAttachedVisibleItem(index) == node;
+            }
+        }
+        return false;
     }
 
     /// Delegates an explicit reveal request after a virtualized row has been synchronously materialized.
@@ -1170,13 +1285,16 @@ public class M3ListView<T> extends Control {
     private int selectionIndex(@Nullable Object parameter) {
         if (parameter instanceof Number number) {
             int index = number.intValue();
-            return index >= 0 && index < getItems().size() ? index : -1;
+            return isIndexNavigable(index) ? index : -1;
         }
         if (parameter instanceof M3ListViewCell<?> cell) {
             int index = cell.getIndex();
-            return index >= 0 && index < getItems().size() ? index : -1;
+            return isIndexNavigable(index) ? index : -1;
         }
         if (parameter instanceof Node node) {
+            if (!M3Accessible.isEffectivelyReachable(node)) {
+                return -1;
+            }
             int visibleIndex = visibleNodeIndex(node);
             if (visibleIndex >= 0) {
                 return visibleIndex;
@@ -1193,7 +1311,7 @@ public class M3ListView<T> extends Control {
     private int visibleNodeIndex(Node node) {
         if (getSkin() instanceof M3ListViewSkin<?> skin) {
             int index = skin.getAttachedVisibleItemIndex(node);
-            return index >= 0 && index < getItems().size() ? index : -1;
+            return isIndexNavigable(index) ? index : -1;
         }
         return -1;
     }
@@ -1202,7 +1320,9 @@ public class M3ListView<T> extends Control {
     private int dataNodeIndex(Node node) {
         for (int index = 0; index < getItems().size(); index++) {
             T item = getItems().get(index);
-            if (item instanceof Node itemNode && M3Accessible.containsNode(itemNode, node)) {
+            if (isIndexNavigable(index)
+                    && item instanceof Node itemNode
+                    && M3Accessible.containsSelectionTarget(itemNode, node)) {
                 return index;
             }
         }
@@ -1212,7 +1332,7 @@ public class M3ListView<T> extends Control {
     /// Returns the data index for a parameter equal to one backing data item.
     private int dataValueIndex(@Nullable Object parameter) {
         for (int index = 0; index < getItems().size(); index++) {
-            if (Objects.equals(getItems().get(index), parameter)) {
+            if (isIndexNavigable(index) && Objects.equals(getItems().get(index), parameter)) {
                 return index;
             }
         }
@@ -1307,10 +1427,10 @@ public class M3ListView<T> extends Control {
         }
     }
 
-    /// Removes selected indices outside the current item range.
+    /// Removes selected indices outside the current item range or no longer reachable by row navigation.
     private void trimSelectedIndices() {
         int size = getItems().size();
-        selectedIndices.removeIf(index -> index < 0 || index >= size);
+        selectedIndices.removeIf(index -> index < 0 || index >= size || !isIndexNavigable(index));
     }
 
     /// Clears the focused index when it no longer points at a reachable data item.

@@ -423,6 +423,9 @@ public class M3FabMenu extends Control {
         if (!M3Accessible.canReach(this)) {
             return false;
         }
+        if (parameters.length > 0 && M3Accessible.containsUnrevealableActionNodeTarget(getItems(), parameters)) {
+            return false;
+        }
         @Nullable Node target = parameters.length == 0
                 ? currentAccessibleActionFocusNode()
                 : M3Accessible.actionItem(getItems(), parameters);
@@ -436,10 +439,10 @@ public class M3FabMenu extends Control {
         if (parameters.length == 0 && target == null) {
             target = M3Accessible.actionItem(getItems());
         }
-        boolean shown = false;
-        if (target != null) {
+        boolean shown = parameters.length > 0 && M3Accessible.showAccessibleActionTarget(this, getItems(), parameters);
+        if (!shown && target != null) {
             shown = M3Accessible.showItem(this, target);
-        } else if (hasNestedTarget) {
+        } else if (!shown && hasNestedTarget) {
             shown = M3Accessible.showAccessibleActionTarget(this, getItems(), parameters);
         }
         if (shown) {

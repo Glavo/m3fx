@@ -479,7 +479,8 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
             return 0.0;
         }
         double start = thumbWidth / 2.0;
-        return clamp((point.getX() - start) / length);
+        double position = clamp((point.getX() - start) / length);
+        return isHorizontalRightToLeft() ? 1.0 - position : position;
     }
 
     /// Converts a slider value to a normalized position.

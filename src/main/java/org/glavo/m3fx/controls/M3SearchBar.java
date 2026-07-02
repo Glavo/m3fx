@@ -478,6 +478,9 @@ public class M3SearchBar extends Control {
         if (!M3Accessible.isEffectivelyReachable(this)) {
             return false;
         }
+        if (parameters.length > 0 && !M3Accessible.canShowItem(getLeading(), editor, getTrailingActions(), parameters)) {
+            return false;
+        }
         activateWithoutEditorFocus();
         if (M3Accessible.showCurrentOrItem(this, getLeading(), editor, getTrailingActions(), parameters)) {
             notifyFocusNodeChanged();

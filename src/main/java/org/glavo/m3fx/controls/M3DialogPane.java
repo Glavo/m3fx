@@ -409,8 +409,10 @@ public class M3DialogPane extends DialogPane {
         @Nullable Node item = accessibleActionOrCurrentItem(parameters);
         boolean shown = false;
         if (item != null) {
-            shown = M3Accessible.showAccessibleActionTarget(this, item, parameters)
-                    || M3Accessible.showItem(this, item);
+            shown = M3Accessible.showAccessibleActionTarget(this, item, parameters);
+            if (!shown && canFallbackToDialogItem(item, parameters)) {
+                shown = M3Accessible.showItem(this, item);
+            }
         } else if (M3Accessible.showAccessibleActionTarget(this, getContent(), parameters)) {
             shown = true;
         } else {
@@ -425,6 +427,18 @@ public class M3DialogPane extends DialogPane {
             notifyAccessibleFocusChanged();
         }
         return shown;
+    }
+
+    /// Returns whether a failed explicit reveal may fall back to focusing the resolved dialog item.
+    private boolean canFallbackToDialogItem(Node item, Object... parameters) {
+        Objects.requireNonNull(item, "item");
+        Objects.requireNonNull(parameters, "parameters");
+        return parameters.length == 0 || M3Accessible.parametersDirectlyReferenceSingleTarget(
+                parameter -> parameter == item
+                        || (parameter instanceof ButtonType buttonType && lookupButton(buttonType) == item)
+                        || (parameter instanceof Number number && accessibleItemAt(number) == item),
+                parameters
+        );
     }
 
     /// Returns the item requested by accessibility action parameters.

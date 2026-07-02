@@ -5,14 +5,20 @@ package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
 import javafx.css.PseudoClass;
+import javafx.event.EventType;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
+import javafx.geometry.Bounds;
+import javafx.geometry.Point2D;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.input.PickResult;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
@@ -25,6 +31,7 @@ import org.glavo.m3fx.skins.M3ValidationSummarySkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -32,6 +39,8 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -207,7 +216,19 @@ final class M3FormControlsTest {
             assertEquals(List.of(nameLayout), validator.getInvalidInputs());
             assertSame(nameLayout, validator.getFirstInvalidInput());
             assertSame(nameLayout, validator.firstInvalidInputProperty().get());
+            assertFalse(validator.focusFirstInvalidInput());
+
+            VBox root = new VBox(nameLayout, emailLayout);
+            Stage stage = new Stage();
+            Scene scene = new Scene(root, 520.0, 240.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            stage.setScene(scene);
+            stage.show();
+            root.applyCss();
+            root.layout();
+
             assertTrue(validator.focusFirstInvalidInput());
+            assertTrue(nameField.isFocused());
 
             nameField.setText("M3FX Project");
 
@@ -393,6 +414,396 @@ final class M3FormControlsTest {
         });
     }
 
+    /// Verifies that validation summary accessible text follows the rendered visible invalid row state.
+    @Test
+    void validationSummaryAccessibleTextFollowsVisibleInvalidRows() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3TextField hiddenField = new M3TextField();
+            M3TextInputLayout hiddenLayout = new M3TextInputLayout(hiddenField, "Hidden", "Required");
+            hiddenLayout.setValidator(M3TextInputValidators.required("Hidden is required"));
+            Pane hiddenAncestor = new Pane(hiddenLayout);
+            hiddenAncestor.setVisible(false);
+
+            M3FormValidator validator = new M3FormValidator(hiddenLayout);
+            M3ValidationSummary summary = new M3ValidationSummary(validator);
+            summary.setShowWhenValid(true);
+            summary.setTitleText("Validation status");
+            summary.setEmptyText("All visible fields are valid");
+
+            VBox root = new VBox(summary, hiddenAncestor);
+            Stage stage = new Stage();
+            Scene scene = new Scene(root, 520.0, 220.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            stage.setScene(scene);
+            stage.show();
+            root.applyCss();
+            root.layout();
+
+            assertFalse(validator.validate());
+            root.applyCss();
+            root.layout();
+
+            assertEquals(1, summary.getInvalidInputCount());
+            assertEquals(0, summary.getVisibleInvalidInputCount());
+            assertTrue(summary.isShowingSummary());
+            assertEquals("Validation status All visible fields are valid",
+                    summary.queryAccessibleAttribute(AccessibleAttribute.TEXT));
+            assertEquals(0, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+            assertTrue(summary.lookupAll("." + M3ValidationSummary.ITEM_STYLE_CLASS).isEmpty());
+            Label emptyLabel = assertInstanceOf(
+                    Label.class,
+                    summary.lookup("." + M3ValidationSummary.EMPTY_TEXT_STYLE_CLASS)
+            );
+            assertEquals("All visible fields are valid", emptyLabel.getText());
+
+            hiddenAncestor.setVisible(true);
+            root.applyCss();
+            root.layout();
+
+            assertEquals(1, summary.getVisibleInvalidInputCount());
+            assertEquals("Validation status", summary.queryAccessibleAttribute(AccessibleAttribute.TEXT));
+            assertEquals(1, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+            assertSame(hiddenLayout, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+            assertEquals(1, summary.lookupAll("." + M3ValidationSummary.ITEM_STYLE_CLASS).size());
+        });
+    }
+    /// Verifies that validation summaries track their own visible and enabled ancestor chain.
+    @Test
+    void validationSummaryTracksOwnAncestorReachability() {
+        FxTestUtils.runOnFxThread(() -> {
+            PseudoClass empty = PseudoClass.getPseudoClass("empty");
+            M3TextField field = new M3TextField();
+            M3TextInputLayout layout = new M3TextInputLayout(field, "Display name", "Required");
+            layout.setValidator(M3TextInputValidators.required("Display name is required"));
+            M3FormValidator validator = new M3FormValidator(layout);
+            M3ValidationSummary summary = new M3ValidationSummary(validator);
+            Pane summaryOwner = new Pane(summary);
+            VBox root = new VBox(summaryOwner, layout);
+            Stage stage = new Stage();
+            Scene scene = new Scene(root, 520.0, 260.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            stage.setScene(scene);
+            stage.show();
+            assertFalse(validator.validate());
+            root.applyCss();
+            root.layout();
+
+            assertEquals(1, summary.getVisibleInvalidInputCount());
+            assertTrue(summary.isShowingSummary());
+            assertFalse(summary.getPseudoClassStates().contains(empty));
+            assertEquals(1, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+            assertEquals(1, summary.lookupAll("." + M3ValidationSummary.ITEM_STYLE_CLASS).size());
+
+            summaryOwner.setVisible(false);
+            root.applyCss();
+            root.layout();
+
+            assertEquals(0, summary.getVisibleInvalidInputCount());
+            assertFalse(summary.isShowingSummary());
+            assertTrue(summary.getPseudoClassStates().contains(empty));
+            assertEquals(0, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+            assertTrue(summary.lookupAll("." + M3ValidationSummary.ITEM_STYLE_CLASS).isEmpty());
+
+            summaryOwner.setVisible(true);
+            root.applyCss();
+            root.layout();
+
+            assertEquals(1, summary.getVisibleInvalidInputCount());
+            assertTrue(summary.isShowingSummary());
+            assertEquals(1, summary.lookupAll("." + M3ValidationSummary.ITEM_STYLE_CLASS).size());
+
+            summaryOwner.setDisable(true);
+            root.applyCss();
+            root.layout();
+
+            assertEquals(0, summary.getVisibleInvalidInputCount());
+            assertFalse(summary.isShowingSummary());
+            assertEquals(0, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+
+            summaryOwner.setDisable(false);
+            root.applyCss();
+            root.layout();
+
+            assertEquals(1, summary.getVisibleInvalidInputCount());
+            assertEquals(1, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+        });
+    }
+
+    /// Verifies that validation summary rows refresh when invalid input display text changes.
+    @Test
+    void validationSummaryRowsTrackInvalidInputTextChanges() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3TextField field = new M3TextField();
+            field.setPromptText("Email");
+            M3TextInputLayout layout = new M3TextInputLayout(field, "", "Required");
+            layout.setValidator(M3TextInputValidators.required("Email is required"));
+            M3FormValidator validator = new M3FormValidator(layout);
+            M3ValidationSummary summary = new M3ValidationSummary(validator);
+            VBox root = new VBox(summary, layout);
+            Stage stage = new Stage();
+            Scene scene = new Scene(root, 520.0, 260.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            stage.setScene(scene);
+            stage.show();
+            assertFalse(validator.validate());
+            root.applyCss();
+            root.layout();
+
+            Label itemLabel = assertInstanceOf(
+                    Label.class,
+                    firstValidationSummaryItem(summary).lookup("." + M3ValidationSummary.ITEM_LABEL_STYLE_CLASS)
+            );
+            Label itemError = assertInstanceOf(
+                    Label.class,
+                    firstValidationSummaryItem(summary).lookup("." + M3ValidationSummary.ITEM_ERROR_STYLE_CLASS)
+            );
+            assertEquals("Email", itemLabel.getText());
+            assertEquals("Email is required", itemError.getText());
+
+            field.setPromptText("Work email");
+            root.applyCss();
+            root.layout();
+
+            itemLabel = assertInstanceOf(
+                    Label.class,
+                    firstValidationSummaryItem(summary).lookup("." + M3ValidationSummary.ITEM_LABEL_STYLE_CLASS)
+            );
+            assertEquals("Work email", itemLabel.getText());
+
+            layout.setLabelText("Account email");
+            root.applyCss();
+            root.layout();
+
+            itemLabel = assertInstanceOf(
+                    Label.class,
+                    firstValidationSummaryItem(summary).lookup("." + M3ValidationSummary.ITEM_LABEL_STYLE_CLASS)
+            );
+            assertEquals("Account email", itemLabel.getText());
+
+            layout.setValidator(M3TextInputValidators.required("Account email is required"));
+            root.applyCss();
+            root.layout();
+
+            itemError = assertInstanceOf(
+                    Label.class,
+                    firstValidationSummaryItem(summary).lookup("." + M3ValidationSummary.ITEM_ERROR_STYLE_CLASS)
+            );
+            assertEquals("Account email is required", itemError.getText());
+        });
+    }
+
+    /// Verifies that validation summaries follow only the active validator and its live input list.
+    @Test
+    void validationSummaryTracksValidatorReplacementAndInputListChanges() {
+        FxTestUtils.runOnFxThread(() -> {
+            PseudoClass empty = PseudoClass.getPseudoClass("empty");
+            M3TextField firstField = new M3TextField();
+            M3TextInputLayout firstLayout = new M3TextInputLayout(firstField, "First", "Required");
+            firstLayout.setValidator(M3TextInputValidators.required("First is required"));
+
+            M3TextField secondField = new M3TextField();
+            M3TextInputLayout secondLayout = new M3TextInputLayout(secondField, "Second", "Required");
+            secondLayout.setValidator(M3TextInputValidators.required("Second is required"));
+
+            M3TextField thirdField = new M3TextField();
+            M3TextInputLayout thirdLayout = new M3TextInputLayout(thirdField, "Third", "Required");
+            thirdLayout.setValidator(M3TextInputValidators.required("Third is required"));
+
+            M3FormValidator firstValidator = new M3FormValidator(firstLayout);
+            M3FormValidator secondValidator = new M3FormValidator(secondLayout);
+            M3ValidationSummary summary = new M3ValidationSummary(firstValidator);
+            VBox root = new VBox(summary, firstLayout, secondLayout, thirdLayout);
+            Stage stage = new Stage();
+            Scene scene = new Scene(root, 640.0, 360.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            stage.setScene(scene);
+            stage.show();
+            root.applyCss();
+            root.layout();
+
+            assertFalse(firstValidator.validate());
+            root.applyCss();
+            root.layout();
+
+            assertEquals(1, summary.getInvalidInputCount());
+            assertSame(firstLayout, summary.getInvalidInput(0));
+            assertEquals(1, summary.lookupAll("." + M3ValidationSummary.ITEM_STYLE_CLASS).size());
+
+            summary.setValidator(secondValidator);
+            assertFalse(secondValidator.validate());
+            root.applyCss();
+            root.layout();
+
+            assertEquals(1, summary.getInvalidInputCount());
+            assertSame(secondLayout, summary.getInvalidInput(0));
+            assertEquals(1, summary.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+
+            firstField.setText("No longer invalid");
+            assertTrue(firstValidator.validate());
+            root.applyCss();
+            root.layout();
+
+            assertEquals(1, summary.getInvalidInputCount());
+            assertSame(secondLayout, summary.getInvalidInput(0));
+
+            secondValidator.addInput(thirdLayout);
+            assertFalse(secondValidator.validate());
+            root.applyCss();
+            root.layout();
+
+            assertEquals(2, summary.getInvalidInputCount());
+            assertSame(secondLayout, summary.getInvalidInput(0));
+            assertSame(thirdLayout, summary.getInvalidInput(1));
+            assertEquals(2, summary.lookupAll("." + M3ValidationSummary.ITEM_STYLE_CLASS).size());
+
+            assertTrue(secondValidator.removeInput(secondLayout));
+            root.applyCss();
+            root.layout();
+
+            assertEquals(1, summary.getInvalidInputCount());
+            assertSame(thirdLayout, summary.getInvalidInput(0));
+            assertEquals(1, summary.lookupAll("." + M3ValidationSummary.ITEM_STYLE_CLASS).size());
+
+            secondValidator.clearInputs();
+            root.applyCss();
+            root.layout();
+
+            assertEquals(0, summary.getInvalidInputCount());
+            assertFalse(summary.isShowingSummary());
+            assertTrue(summary.getPseudoClassStates().contains(empty));
+        });
+    }
+
+    /// Verifies that pointer activation only fires when a validation summary row is released inside its bounds.
+    @Test
+    void validationSummaryRowsActivateOnlyWhenReleasedInside() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Button focusSentinel = new M3Button("Before");
+            M3TextField field = new M3TextField();
+            M3TextInputLayout layout = new M3TextInputLayout(field, "Display name", "Required");
+            layout.setValidator(M3TextInputValidators.required("Display name is required"));
+            M3FormValidator validator = new M3FormValidator(layout);
+            M3ValidationSummary summary = new M3ValidationSummary(validator);
+            VBox root = new VBox(focusSentinel, summary, layout);
+            Stage stage = new Stage();
+            Scene scene = new Scene(root, 520.0, 260.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            stage.setScene(scene);
+            stage.show();
+            assertFalse(validator.validate());
+            root.applyCss();
+            root.layout();
+
+            Node row = firstValidationSummaryItem(summary);
+            Bounds bounds = row.getLayoutBounds();
+            double centerX = bounds.getMinX() + bounds.getWidth() / 2.0;
+            double centerY = bounds.getMinY() + bounds.getHeight() / 2.0;
+            double outsideX = bounds.getMaxX() + 24.0;
+            focusSentinel.requestFocus();
+            assertTrue(focusSentinel.isFocused());
+
+            row.fireEvent(primaryMouseEvent(row, MouseEvent.MOUSE_PRESSED, centerX, centerY, true));
+            row.fireEvent(primaryMouseEvent(row, MouseEvent.MOUSE_RELEASED, outsideX, centerY, false));
+
+            assertFalse(field.isFocused());
+            assertTrue(focusSentinel.isFocused());
+
+            row.fireEvent(primaryMouseEvent(row, MouseEvent.MOUSE_PRESSED, centerX, centerY, true));
+            row.fireEvent(primaryMouseEvent(row, MouseEvent.MOUSE_RELEASED, centerX, centerY, false));
+
+            assertTrue(field.isFocused());
+        });
+    }
+
+    /// Verifies that validation summary rows expose Material state layer and ripple feedback.
+    @Test
+    void validationSummaryRowsExposeMaterialStateLayerFeedback() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3TextField> fieldReference = new AtomicReference<>();
+        AtomicReference<@Nullable Node> rowReference = new AtomicReference<>();
+        AtomicReference<@Nullable Node> rippleReference = new AtomicReference<>();
+
+        try {
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> {
+                        @Nullable Node ripple = rippleReference.get();
+                        return ripple != null && ripple.getOpacity() > 0.0;
+                    },
+                    () -> "Timed out waiting for validation summary pointer ripple",
+                    () -> {
+                        M3TextField field = new M3TextField();
+                        M3TextInputLayout layout = new M3TextInputLayout(field, "Display name", "Required");
+                        layout.setValidator(M3TextInputValidators.required("Display name is required"));
+                        M3FormValidator validator = new M3FormValidator(layout);
+                        M3ValidationSummary summary = new M3ValidationSummary(validator);
+                        VBox root = new VBox(summary, layout);
+                        Stage stage = new Stage();
+                        Scene scene = new Scene(root, 520.0, 260.0);
+                        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                        stage.setScene(scene);
+                        stage.show();
+                        assertFalse(validator.validate());
+                        root.applyCss();
+                        root.layout();
+
+                        Node row = firstValidationSummaryItem(summary);
+                        Node stateLayer = Objects.requireNonNull(
+                                row.lookup(".m3-state-layer-container"),
+                                "validation summary item state layer"
+                        );
+                        Node ripple = Objects.requireNonNull(
+                                row.lookup(".m3-ripple"),
+                                "validation summary item ripple"
+                        );
+                        assertNotNull(stateLayer.lookup(".m3-focus-indicator"));
+
+                        stageReference.set(stage);
+                        fieldReference.set(field);
+                        rowReference.set(row);
+                        rippleReference.set(ripple);
+                        firePrimaryMouseEvent(row, MouseEvent.MOUSE_PRESSED, true);
+                    },
+                    () -> {
+                        Node row = Objects.requireNonNull(rowReference.get(), "validation summary item");
+                        Node ripple = Objects.requireNonNull(rippleReference.get(), "validation summary item ripple");
+                        assertTrue(ripple.getOpacity() > 0.0, () -> "ripple opacity=" + ripple.getOpacity());
+                        firePrimaryMouseEvent(row, MouseEvent.MOUSE_RELEASED, false);
+                        assertTrue(Objects.requireNonNull(fieldReference.get(), "invalid field").isFocused());
+                    }
+            );
+
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> {
+                        @Nullable Node ripple = rippleReference.get();
+                        return ripple != null && ripple.getOpacity() <= 0.001;
+                    },
+                    () -> "Timed out waiting for validation summary ripple release",
+                    () -> {
+                    },
+                    () -> assertTrue(Objects.requireNonNull(rippleReference.get(), "validation summary item ripple")
+                            .getOpacity() <= 0.001)
+            );
+
+            FxTestUtils.runOnFxThread(() -> {
+                M3TextField field = Objects.requireNonNull(fieldReference.get(), "invalid field");
+                Node row = Objects.requireNonNull(rowReference.get(), "validation summary item");
+                Node ripple = Objects.requireNonNull(rippleReference.get(), "validation summary item ripple");
+                row.requestFocus();
+                row.fireEvent(keyPressed(KeyCode.SPACE));
+
+                assertTrue(field.isFocused());
+                assertTrue(ripple.getOpacity() > 0.0, () -> "keyboard ripple opacity=" + ripple.getOpacity());
+            });
+        } finally {
+            FxTestUtils.runOnFxThread(() -> {
+                @Nullable Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
     /// Verifies keyboard navigation inside validation summary rows reveals the focused row in a scroll pane.
     @Test
     void validationSummaryKeyboardNavigationRevealsFocusedItem() {
@@ -437,6 +848,61 @@ final class M3FormControlsTest {
             assertTrue(scrollPane.getVvalue() > 0.0, () -> "vvalue=" + scrollPane.getVvalue());
         });
     }
+
+    /// Returns the first rendered validation-summary item row.
+    private static Node firstValidationSummaryItem(M3ValidationSummary summary) {
+        return summary.lookupAll("." + M3ValidationSummary.ITEM_STYLE_CLASS)
+                .stream()
+                .min(Comparator.comparingDouble(row -> row.getBoundsInParent().getMinY()))
+                .orElseThrow(() -> new AssertionError("validation summary item"));
+    }
+
+    /// Fires a primary-button mouse event at the center of a node's layout bounds.
+    private static void firePrimaryMouseEvent(
+            Node node,
+            EventType<MouseEvent> eventType,
+            boolean primaryButtonDown
+    ) {
+        Bounds bounds = node.getLayoutBounds();
+        double x = bounds.getMinX() + bounds.getWidth() / 2.0;
+        double y = bounds.getMinY() + bounds.getHeight() / 2.0;
+        node.fireEvent(primaryMouseEvent(node, eventType, x, y, primaryButtonDown));
+    }
+
+    /// Creates a primary-button mouse event at one local point of a node.
+    private static MouseEvent primaryMouseEvent(
+            Node node,
+            EventType<MouseEvent> eventType,
+            double x,
+            double y,
+            boolean primaryButtonDown
+    ) {
+        Point2D scenePoint = node.localToScene(x, y);
+        Point2D screenPoint = node.localToScreen(x, y);
+        double screenX = screenPoint == null ? scenePoint.getX() : screenPoint.getX();
+        double screenY = screenPoint == null ? scenePoint.getY() : screenPoint.getY();
+        return new MouseEvent(
+                eventType,
+                scenePoint.getX(),
+                scenePoint.getY(),
+                screenX,
+                screenY,
+                MouseButton.PRIMARY,
+                1,
+                false,
+                false,
+                false,
+                false,
+                primaryButtonDown,
+                false,
+                false,
+                false,
+                false,
+                false,
+                new PickResult(node, scenePoint.getX(), scenePoint.getY())
+        );
+    }
+
     /// Creates a key-pressed event for control keyboard behavior tests.
     private static KeyEvent keyPressed(KeyCode code) {
         return new KeyEvent(

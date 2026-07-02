@@ -437,6 +437,9 @@ public class M3BottomSheet extends Control {
         if (!M3Accessible.canReveal(this)) {
             return false;
         }
+        if (!isShown() && parameters.length > 0 && !M3Accessible.canShowItem(getContent(), getActions(), parameters)) {
+            return false;
+        }
         show();
         if (M3Accessible.showCurrentOrItem(this, getContent(), getActions(), parameters)) {
             notifyFocusNodeChanged();
