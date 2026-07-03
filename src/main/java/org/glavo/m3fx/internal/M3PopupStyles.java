@@ -5,6 +5,7 @@ package org.glavo.m3fx.internal;
 
 import javafx.css.Styleable;
 import javafx.scene.Parent;
+import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -53,8 +54,12 @@ public final class M3PopupStyles {
         }
         addFallbackRootStyleClass(popupRoot);
         preserveBaseStyle(popupRoot);
+        @Nullable M3Theme theme = themeRoot == null ? null : M3ThemeManager.getTheme(themeRoot);
         if (themeRoot != null) {
             M3ThemeManager.copyThemeContext(themeRoot, popupRoot);
+            if (theme != null) {
+                moveStylesheetToEnd(popupRoot, M3ThemeManager.themeStylesheetUrl(theme));
+            }
         } else {
             restoreBaseStyle(popupRoot);
         }
@@ -88,6 +93,16 @@ public final class M3PopupStyles {
             stylesheets.remove(index);
         }
         stylesheets.add(0, stylesheet);
+    }
+
+    /// Moves a stylesheet URL to the highest popup-root stylesheet priority.
+    ///
+    /// @param popupRoot the popup-hosted root that receives the stylesheet
+    /// @param stylesheet the stylesheet URL to move or add
+    private static void moveStylesheetToEnd(Parent popupRoot, String stylesheet) {
+        List<String> stylesheets = popupRoot.getStylesheets();
+        stylesheets.remove(stylesheet);
+        stylesheets.add(stylesheet);
     }
 
     /// Ensures fallback token declarations match a standalone scene or popup root.

@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -47,69 +48,79 @@ final class M3DateRangePickerFieldTest {
     /// Verifies that the range field commits both editor values and mirrors them into the popup picker.
     @Test
     void dateRangePickerFieldCommitsEditorTextAndSyncsPicker() {
-        M3DateRangePickerField field = new M3DateRangePickerField(
-                LocalDate.of(2026, 5, 18),
-                LocalDate.of(2026, 5, 22)
-        );
+        FxTestUtils.runOnFxThread(() -> {
+            M3DateRangePickerField field = new M3DateRangePickerField(
+                    LocalDate.of(2026, 5, 18),
+                    LocalDate.of(2026, 5, 22)
+            );
 
-        assertEquals("2026-05-18", field.getStartEditor().getText());
-        assertEquals("2026-05-22", field.getEndEditor().getText());
-        assertEquals(LocalDate.of(2026, 5, 18), field.getPicker().getStartDate());
-        assertEquals(LocalDate.of(2026, 5, 22), field.getPicker().getEndDate());
+            assertEquals("2026-05-18", field.getStartEditor().getText());
+            assertEquals("2026-05-22", field.getEndEditor().getText());
+            assertEquals(LocalDate.of(2026, 5, 18), field.getPicker().getStartDate());
+            assertEquals(LocalDate.of(2026, 5, 22), field.getPicker().getEndDate());
 
-        field.getStartEditor().setText("2026-05-19");
-        field.getEndEditor().setText("2026-05-25");
-        assertTrue(field.commitEditorText());
-        assertEquals(LocalDate.of(2026, 5, 19), field.getStartDate());
-        assertEquals(LocalDate.of(2026, 5, 25), field.getEndDate());
-        assertEquals(LocalDate.of(2026, 5, 19), field.getPicker().getStartDate());
-        assertEquals(LocalDate.of(2026, 5, 25), field.getPicker().getEndDate());
+            field.getStartEditor().setText("2026-05-19");
+            field.getEndEditor().setText("2026-05-25");
+            assertTrue(field.commitEditorText());
+            assertEquals(LocalDate.of(2026, 5, 19), field.getStartDate());
+            assertEquals(LocalDate.of(2026, 5, 25), field.getEndDate());
+            assertEquals(LocalDate.of(2026, 5, 19), field.getPicker().getStartDate());
+            assertEquals(LocalDate.of(2026, 5, 25), field.getPicker().getEndDate());
+        });
     }
 
     /// Verifies partial ranges, invalid text, reversed ranges, and bounds errors.
     @Test
     void dateRangePickerFieldValidatesEditorText() {
-        M3DateRangePickerField field = new M3DateRangePickerField();
+        FxTestUtils.runOnFxThread(() -> {
+            M3DateRangePickerField field = new M3DateRangePickerField();
 
-        field.getStartEditor().setText("2026-05-19");
-        field.getEndEditor().setText("");
-        assertTrue(field.commitEditorText());
-        assertEquals(LocalDate.of(2026, 5, 19), field.getStartDate());
-        assertNull(field.getEndDate());
+            field.getStartEditor().setText("2026-05-19");
+            field.getEndEditor().setText("");
+            assertTrue(field.commitEditorText());
+            assertEquals(LocalDate.of(2026, 5, 19), field.getStartDate());
+            assertNull(field.getEndDate());
 
-        field.getStartEditor().setText("");
-        field.getEndEditor().setText("2026-05-20");
-        assertFalse(field.commitEditorText());
-        assertEquals(field.getInvalidTextErrorText(), field.getStartInputLayout().getErrorText());
+            field.getStartEditor().setText("");
+            field.getEndEditor().setText("2026-05-20");
+            assertFalse(field.commitEditorText());
+            assertEquals(field.getInvalidTextErrorText(), field.getStartInputLayout().getErrorText());
 
-        field.getStartEditor().setText("2026-05-25");
-        field.getEndEditor().setText("2026-05-20");
-        assertFalse(field.commitEditorText());
-        assertEquals(field.getRangeErrorText(), field.getStartInputLayout().getErrorText());
-        assertEquals(field.getRangeErrorText(), field.getEndInputLayout().getErrorText());
+            field.getStartEditor().setText("2026-05-25");
+            field.getEndEditor().setText("2026-05-20");
+            assertFalse(field.commitEditorText());
+            assertEquals(field.getRangeErrorText(), field.getStartInputLayout().getErrorText());
+            assertEquals(field.getRangeErrorText(), field.getEndInputLayout().getErrorText());
 
-        field.setMinDate(LocalDate.of(2026, 5, 10));
-        field.setMaxDate(LocalDate.of(2026, 5, 24));
-        field.getStartEditor().setText("2026-05-20");
-        field.getEndEditor().setText("2026-05-25");
-        assertFalse(field.commitEditorText());
-        assertEquals(field.getRangeErrorText(), field.getStartInputLayout().getErrorText());
-        assertEquals(field.getRangeErrorText(), field.getEndInputLayout().getErrorText());
+            field.setMinDate(LocalDate.of(2026, 5, 10));
+            field.setMaxDate(LocalDate.of(2026, 5, 24));
+            field.getStartEditor().setText("2026-05-20");
+            field.getEndEditor().setText("2026-05-25");
+            assertFalse(field.commitEditorText());
+            assertEquals(field.getRangeErrorText(), field.getStartInputLayout().getErrorText());
+            assertEquals(field.getRangeErrorText(), field.getEndInputLayout().getErrorText());
+        });
     }
 
     /// Verifies that popup picker selections are coalesced and mirrored back into the field editors.
     @Test
     void dateRangePickerFieldSyncsPopupPickerSelection() {
-        M3DateRangePickerField field = new M3DateRangePickerField();
+        AtomicReference<M3DateRangePickerField> fieldReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThread(() -> field.getPicker().selectDate(LocalDate.of(2026, 5, 18)));
         FxTestUtils.runOnFxThread(() -> {
+            M3DateRangePickerField field = new M3DateRangePickerField();
+            fieldReference.set(field);
+            field.getPicker().selectDate(LocalDate.of(2026, 5, 18));
+        });
+        FxTestUtils.runOnFxThread(() -> {
+            M3DateRangePickerField field = fieldReference.get();
             assertEquals(LocalDate.of(2026, 5, 18), field.getStartDate());
             assertNull(field.getEndDate());
             assertEquals("2026-05-18", field.getStartEditor().getText());
             field.getPicker().selectDate(LocalDate.of(2026, 5, 22));
         });
         FxTestUtils.runOnFxThread(() -> {
+            M3DateRangePickerField field = fieldReference.get();
             assertEquals(LocalDate.of(2026, 5, 18), field.getStartDate());
             assertEquals(LocalDate.of(2026, 5, 22), field.getEndDate());
             assertEquals("2026-05-22", field.getEndEditor().getText());
@@ -172,26 +183,35 @@ final class M3DateRangePickerFieldTest {
     /// Verifies that the range field forwards accessibility value actions to its popup picker.
     @Test
     void dateRangePickerFieldForwardsAccessibleValueActions() {
-        M3DateRangePickerField field = new M3DateRangePickerField();
-        field.setDisplayedMonth(YearMonth.of(2026, 1));
+        FxTestUtils.runOnFxThread(() -> {
+            M3DateRangePickerField field = new M3DateRangePickerField();
+            field.setDisplayedMonth(YearMonth.of(2026, 1));
 
-        field.executeAccessibleAction(
-                AccessibleAction.SET_SELECTED_ITEMS,
-                List.of(LocalDate.of(2026, 1, 12), LocalDate.of(2026, 1, 10))
-        );
-        assertEquals(LocalDate.of(2026, 1, 10), field.getStartDate());
-        assertEquals(LocalDate.of(2026, 1, 12), field.getEndDate());
-        assertEquals("2026-01-10", field.getStartEditor().getText());
-        assertEquals("2026-01-12", field.getEndEditor().getText());
-        assertEquals(List.of(LocalDate.of(2026, 1, 10), LocalDate.of(2026, 1, 12)),
-                field.queryAccessibleAttribute(AccessibleAttribute.SELECTED_ITEMS));
+            field.executeAccessibleAction(
+                    AccessibleAction.SET_SELECTED_ITEMS,
+                    List.of(LocalDate.of(2026, 1, 12), LocalDate.of(2026, 1, 10))
+            );
+            assertEquals(LocalDate.of(2026, 1, 10), field.getStartDate());
+            assertEquals(LocalDate.of(2026, 1, 12), field.getEndDate());
+            assertEquals("2026-01-10", field.getStartEditor().getText());
+            assertEquals("2026-01-12", field.getEndEditor().getText());
+            assertEquals(List.of(LocalDate.of(2026, 1, 10), LocalDate.of(2026, 1, 12)),
+                    field.queryAccessibleAttribute(AccessibleAttribute.SELECTED_ITEMS));
 
-        field.clearRange();
-        field.setDisplayedMonth(YearMonth.of(2026, 1));
-        field.executeAccessibleAction(AccessibleAction.INCREMENT);
-        assertEquals(LocalDate.of(2026, 1, 2), field.getStartDate());
-        assertNull(field.getEndDate());
-        assertEquals("2026-01-02", field.getStartEditor().getText());
+            field.executeAccessibleAction(
+                    AccessibleAction.SET_SELECTED_ITEMS,
+                    List.of(LocalDate.of(2026, 1, 12), LocalDate.of(2026, 1, 10))
+            );
+            assertEquals("2026-01-10", field.getStartEditor().getText());
+            assertEquals("2026-01-12", field.getEndEditor().getText());
+
+            field.clearRange();
+            field.setDisplayedMonth(YearMonth.of(2026, 1));
+            field.executeAccessibleAction(AccessibleAction.INCREMENT);
+            assertEquals(LocalDate.of(2026, 1, 2), field.getStartDate());
+            assertNull(field.getEndDate());
+            assertEquals("2026-01-02", field.getStartEditor().getText());
+        });
     }
 
     /// Verifies that the range field installs its skin and lays out both input layouts.

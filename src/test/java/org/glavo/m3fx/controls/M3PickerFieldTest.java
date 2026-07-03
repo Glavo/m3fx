@@ -430,6 +430,32 @@ final class M3PickerFieldTest {
         });
     }
 
+    /// Verifies modified date picker navigation keys are left to application shortcuts.
+    @Test
+    void datePickerModifiedNavigationKeysAreIgnored() {
+        M3DatePicker picker = new M3DatePicker(LocalDate.of(2026, 5, 19));
+
+        picker.fireEvent(modifiedKeyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT, false, true, false, false));
+        picker.fireEvent(modifiedKeyEvent(KeyEvent.KEY_PRESSED, KeyCode.PAGE_DOWN, true, false, false, false));
+
+        assertEquals(LocalDate.of(2026, 5, 19), picker.getValue());
+    }
+
+    /// Verifies modified date range picker navigation keys are left to application shortcuts.
+    @Test
+    void dateRangePickerModifiedNavigationKeysAreIgnored() {
+        M3DateRangePicker picker = new M3DateRangePicker(
+                LocalDate.of(2026, 5, 19),
+                LocalDate.of(2026, 5, 21)
+        );
+
+        picker.fireEvent(modifiedKeyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT, false, true, false, false));
+        picker.fireEvent(modifiedKeyEvent(KeyEvent.KEY_PRESSED, KeyCode.PAGE_DOWN, true, false, false, false));
+
+        assertEquals(LocalDate.of(2026, 5, 19), picker.getStartDate());
+        assertEquals(LocalDate.of(2026, 5, 21), picker.getEndDate());
+    }
+
     /// Verifies that preset popup action columns support keyboard traversal and picker handoff.
     @Test
     void pickerFieldPresetKeyboardNavigationMovesWithinColumnAndToPicker() {
@@ -597,6 +623,18 @@ final class M3PickerFieldTest {
             }
         }
         throw new AssertionError("Missing preset button: " + text);
+    }
+
+    /// Creates a modified key event for picker field keyboard tests.
+    private static KeyEvent modifiedKeyEvent(
+            EventType<KeyEvent> eventType,
+            KeyCode code,
+            boolean shiftDown,
+            boolean controlDown,
+            boolean altDown,
+            boolean metaDown
+    ) {
+        return new KeyEvent(eventType, "", "", code, shiftDown, controlDown, altDown, metaDown);
     }
 
     /// Creates a key event for picker field keyboard tests.

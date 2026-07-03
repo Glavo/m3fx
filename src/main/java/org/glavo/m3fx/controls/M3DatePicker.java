@@ -406,6 +406,10 @@ public class M3DatePicker extends Control {
 
     /// Handles keyboard date navigation.
     private void handleNavigationKeyPressed(KeyEvent event) {
+        if (M3KeyEvents.hasNavigationModifier(event)) {
+            return;
+        }
+
         boolean handled = switch (event.getCode()) {
             case LEFT -> {
                 moveSelectionHorizontally(false);

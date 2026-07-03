@@ -340,6 +340,10 @@ public class M3TimePicker extends Control {
 
     /// Handles keyboard time navigation.
     private void handleNavigationKeyPressed(KeyEvent event) {
+        if (M3KeyEvents.hasNavigationModifier(event)) {
+            return;
+        }
+
         boolean handled = switch (event.getCode()) {
             case LEFT -> {
                 moveHorizontally(false);

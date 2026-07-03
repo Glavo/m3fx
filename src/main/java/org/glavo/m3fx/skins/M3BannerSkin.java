@@ -3,9 +3,8 @@
 
 package org.glavo.m3fx.skins;
 
-
+import javafx.beans.InvalidationListener;
 import javafx.collections.ListChangeListener;
-
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
@@ -36,6 +35,8 @@ public final class M3BannerSkin extends SkinBase<M3Banner> {
     /// Updates the visual action list when public actions change.
     private final ListChangeListener<Node> actionsListener = change -> updateActions();
 
+    /// Applies spacing token changes to internal layout nodes.
+    private final InvalidationListener tokenInvalidation = observable -> updateTokenStyles();
 
     /// Creates a banner skin.
     ///
@@ -60,9 +61,12 @@ public final class M3BannerSkin extends SkinBase<M3Banner> {
 
         control.iconProperty().addListener((observable, oldValue, newValue) -> updateIcon(newValue));
         control.getActions().addListener(actionsListener);
+        control.contentSpacingProperty().addListener(tokenInvalidation);
+        control.actionSpacingProperty().addListener(tokenInvalidation);
 
         updateIcon(control.getIcon());
         updateActions();
+        updateTokenStyles();
         container.getChildren().setAll(iconSlot, textLabel, actions);
         getChildren().add(container);
     }
@@ -73,6 +77,8 @@ public final class M3BannerSkin extends SkinBase<M3Banner> {
         M3Banner control = getSkinnable();
         textLabel.textProperty().unbind();
         control.getActions().removeListener(actionsListener);
+        control.contentSpacingProperty().removeListener(tokenInvalidation);
+        control.actionSpacingProperty().removeListener(tokenInvalidation);
         container.nodeOrientationProperty().unbind();
         container.alignmentProperty().unbind();
         actions.alignmentProperty().unbind();
@@ -160,6 +166,14 @@ public final class M3BannerSkin extends SkinBase<M3Banner> {
         container.resizeRelocate(x, y, width, height);
     }
 
+    /// Updates internal spacing from banner tokens.
+    private void updateTokenStyles() {
+        M3Banner banner = getSkinnable();
+        container.setSpacing(banner.getContentSpacing());
+        actions.setSpacing(banner.getActionSpacing());
+        banner.requestLayout();
+    }
+
     /// Updates the optional icon slot.
     private void updateIcon(@Nullable Node node) {
         iconSlot.getChildren().clear();
@@ -179,5 +193,4 @@ public final class M3BannerSkin extends SkinBase<M3Banner> {
         actions.setManaged(visible);
         getSkinnable().requestLayout();
     }
-
 }

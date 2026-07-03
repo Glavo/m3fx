@@ -6,7 +6,9 @@ package org.glavo.m3fx.skins;
 import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.beans.value.ChangeListener;
+import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Label;
 import org.glavo.m3fx.controls.M3Tooltip;
 import org.glavo.m3fx.internal.M3PopupStyles;
@@ -33,7 +35,7 @@ public final class M3TooltipSkin extends M3PopupSkinBase<M3Tooltip> {
     private final ChangeListener<@Nullable M3Theme> themeListener =
             (observable, oldValue, newValue) -> updateThemeStylesheet(root.getScene(), root.getScene());
 
-    /// The generated theme stylesheet currently installed on the popup scene.
+    /// The generated theme stylesheet currently installed on the popup scene and skin root.
     private @Nullable String installedThemeStylesheet;
 
     /// Creates a tooltip skin.
@@ -72,7 +74,7 @@ public final class M3TooltipSkin extends M3PopupSkinBase<M3Tooltip> {
     protected double computePrefHeight(double width) {
         double horizontalInsets = snappedLeftInset() + snappedRightInset();
         double contentWidth = width == -1.0
-                ? preferredWrapWidth()
+                ? preferredContentWidth()
                 : Math.max(0.0, width - horizontalInsets);
         return snappedTopInset() + root.prefHeight(contentWidth) + snappedBottomInset();
     }
@@ -117,6 +119,26 @@ public final class M3TooltipSkin extends M3PopupSkinBase<M3Tooltip> {
         root.getStyleClass().addAll(tooltip.getStyleClass());
     }
 
+    /// Returns the preferred width of wrapped or graphic-only tooltip content.
+    private double preferredContentWidth() {
+        double preferredWrapWidth = preferredWrapWidth();
+        if (preferredWrapWidth != -1.0) {
+            return preferredWrapWidth;
+        }
+
+        if (root.getContentDisplay() == ContentDisplay.GRAPHIC_ONLY) {
+            @Nullable Node graphic = root.getGraphic();
+            if (graphic != null) {
+                double graphicWidth = graphic.prefWidth(-1.0);
+                if (isUsableContentWidth(graphicWidth)) {
+                    return graphicWidth;
+                }
+            }
+        }
+
+        return -1.0;
+    }
+
     /// Returns the explicit wrap width used when popup sizing asks for unconstrained height.
     private double preferredWrapWidth() {
         if (!root.isWrapText()) {
@@ -133,12 +155,20 @@ public final class M3TooltipSkin extends M3PopupSkinBase<M3Tooltip> {
         return preferredWidth;
     }
 
+    /// Returns whether a computed content width can be used for height calculation.
+    private static boolean isUsableContentWidth(double width) {
+        return width > 0.0 && !Double.isNaN(width) && !Double.isInfinite(width) && width != USE_COMPUTED_SIZE;
+    }
+
     /// Installs or removes the generated theme stylesheet used by popup content.
     private void updateThemeStylesheet(@Nullable Scene oldScene, @Nullable Scene newScene) {
         M3Tooltip tooltip = getSkinnable();
         String currentStylesheet = installedThemeStylesheet;
-        if (currentStylesheet != null && oldScene != null) {
-            oldScene.getStylesheets().remove(currentStylesheet);
+        if (currentStylesheet != null) {
+            if (oldScene != null) {
+                oldScene.getStylesheets().remove(currentStylesheet);
+            }
+            root.getStylesheets().remove(currentStylesheet);
         }
         installedThemeStylesheet = null;
 
@@ -152,6 +182,7 @@ public final class M3TooltipSkin extends M3PopupSkinBase<M3Tooltip> {
         if (!newScene.getStylesheets().contains(themeStylesheet)) {
             newScene.getStylesheets().add(themeStylesheet);
         }
+        M3PopupStyles.addStylesheet(root, themeStylesheet);
         installedThemeStylesheet = themeStylesheet;
         resizeShowingPopup();
         Platform.runLater(this::resizeShowingPopup);

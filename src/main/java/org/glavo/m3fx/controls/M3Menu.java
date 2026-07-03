@@ -532,6 +532,9 @@ public class M3Menu extends Control {
 
     /// Applies keyboard navigation across enabled menu items.
     private void handleNavigationKeyPressed(KeyEvent event) {
+        if (M3KeyEvents.hasNavigationModifier(event)) {
+            return;
+        }
         if (handleFocusedItemKey(event)) {
             return;
         }
@@ -604,7 +607,7 @@ public class M3Menu extends Control {
     /// Moves focus to the next menu item whose text matches the printable-key search prefix.
     private void handleTypeAheadKeyTyped(KeyEvent event) {
         Objects.requireNonNull(event, "event");
-        if (event.isAltDown() || event.isControlDown() || event.isMetaDown() || event.isShortcutDown()) {
+        if (M3KeyEvents.hasShortcutModifier(event)) {
             return;
         }
 

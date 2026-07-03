@@ -4,6 +4,7 @@
 package org.glavo.m3fx.skins;
 
 import javafx.application.Platform;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -40,6 +41,29 @@ final class M3FocusVisibleTrackerTest {
                 if (window instanceof Stage stage) {
                     stage.close();
                 }
+            }
+        });
+    }
+
+    /// Verifies that a native focus-visible property drives the Material pseudo-class when it is available.
+    @Test
+    void nativeFocusVisiblePropertyDrivesPseudoClass() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane pane = focusablePane();
+            show(new HBox(pane), 96.0, 48.0);
+            SimpleBooleanProperty nativeFocusVisible = new SimpleBooleanProperty(false);
+            M3FocusVisibleTracker tracker = new M3FocusVisibleTracker(pane, () -> {}, nativeFocusVisible);
+            tracker.install();
+            try {
+                assertFalse(pane.getPseudoClassStates().contains(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS));
+
+                nativeFocusVisible.set(true);
+                assertTrue(pane.getPseudoClassStates().contains(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS));
+
+                nativeFocusVisible.set(false);
+                assertFalse(pane.getPseudoClassStates().contains(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS));
+            } finally {
+                tracker.uninstall();
             }
         });
     }

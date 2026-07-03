@@ -11,6 +11,7 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
@@ -525,6 +526,10 @@ public class M3DateRangePicker extends Control {
 
     /// Handles keyboard date navigation.
     private void handleNavigationKeyPressed(KeyEvent event) {
+        if (M3KeyEvents.hasNavigationModifier(event)) {
+            return;
+        }
+
         boolean handled = switch (event.getCode()) {
             case LEFT -> {
                 moveSelectionHorizontally(false);
@@ -763,7 +768,7 @@ public class M3DateRangePicker extends Control {
         if (dates.size() == 1) {
             if (!isDateDisabled(firstDate)) {
                 selectDate(firstDate);
-                focusAccessibleDate(firstDate);
+                focusAccessibleDateWhenShowing(firstDate);
             }
             return;
         }
@@ -778,7 +783,7 @@ public class M3DateRangePicker extends Control {
         } else {
             setRange(firstDate, secondDate);
         }
-        focusAccessibleDate(secondDate);
+        focusAccessibleDateWhenShowing(secondDate);
     }
 
     /// Collects up to two dates from accessibility parameters.
@@ -844,6 +849,16 @@ public class M3DateRangePicker extends Control {
         @Nullable M3DateRangePickerSkin skin = materialSkin();
         @Nullable Node cell = skin == null ? null : skin.getDayCell(date);
         return cell != null && !cell.isDisabled() && M3Accessible.showItem(this, cell);
+    }
+
+    /// Focuses the selected date when this picker is attached to a showing window.
+    ///
+    /// @param date the date whose cell should receive focus
+    private void focusAccessibleDateWhenShowing(LocalDate date) {
+        @Nullable Scene scene = getScene();
+        if (scene != null && scene.getWindow() != null && scene.getWindow().isShowing()) {
+            focusAccessibleDate(date);
+        }
     }
 
     /// Focuses the rendered day cell for a date when it is visible.

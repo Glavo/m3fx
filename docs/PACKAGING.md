@@ -30,7 +30,7 @@ During resource processing, the demo downloads `https://registry.npmmirror.com/@
 Build it with:
 
 ```shell
-./gradlew -g .gradle-user-home shadowDemoJar
+./gradlew shadowDemoJar
 ```
 
 The output is:
@@ -48,26 +48,26 @@ The jlink tasks create runtime images for the demo application. They download a 
 Build the host-platform runtime image:
 
 ```shell
-./gradlew -g .gradle-user-home jlinkDemoRuntime
+./gradlew jlinkDemoRuntime
 ```
 
 Build platform-specific images for the configured architecture:
 
 ```shell
-./gradlew -g .gradle-user-home jlinkDemoWindowsRuntime
-./gradlew -g .gradle-user-home jlinkDemoLinuxRuntime
-./gradlew -g .gradle-user-home jlinkDemoMacosRuntime
+./gradlew jlinkDemoWindowsRuntime
+./gradlew jlinkDemoLinuxRuntime
+./gradlew jlinkDemoMacosRuntime
 ```
 
 Build fixed platform and architecture images:
 
 ```shell
-./gradlew -g .gradle-user-home jlinkDemoWindowsX64Runtime
-./gradlew -g .gradle-user-home jlinkDemoWindowsAarch64Runtime
-./gradlew -g .gradle-user-home jlinkDemoLinuxX64Runtime
-./gradlew -g .gradle-user-home jlinkDemoLinuxAarch64Runtime
-./gradlew -g .gradle-user-home jlinkDemoMacosX64Runtime
-./gradlew -g .gradle-user-home jlinkDemoMacosAarch64Runtime
+./gradlew jlinkDemoWindowsX64Runtime
+./gradlew jlinkDemoWindowsAarch64Runtime
+./gradlew jlinkDemoLinuxX64Runtime
+./gradlew jlinkDemoLinuxAarch64Runtime
+./gradlew jlinkDemoMacosX64Runtime
+./gradlew jlinkDemoMacosAarch64Runtime
 ```
 
 Runtime images are written under:
@@ -83,7 +83,7 @@ Each jlink task verifies the generated runtime image before it succeeds. The ver
 The default jlink target is inferred from the host OS and architecture. It can be overridden with Gradle properties:
 
 ```shell
-./gradlew -g .gradle-user-home jlinkDemoRuntime -Pm3fx.jlink.os=windows -Pm3fx.jlink.arch=x86 -Pm3fx.jlink.javaFeature=21
+./gradlew jlinkDemoRuntime -Pm3fx.jlink.os=windows -Pm3fx.jlink.arch=x86 -Pm3fx.jlink.javaFeature=21
 ```
 
 Supported Liberica OS values:
@@ -124,7 +124,7 @@ Cross-platform and cross-architecture jlink use target-platform `jmods` from the
 When the current Gradle JVM already matches the target Java feature version, the task uses the Gradle JVM's `jlink`. If it does not match, the task automatically downloads a host-platform BellSoft LibericaJDK Full archive and uses its `jlink` executable. You can still pass an explicit executable to override this behavior:
 
 ```shell
-./gradlew -g .gradle-user-home jlinkDemoLinuxX64Runtime -Pm3fx.jlink.executable=/path/to/jdk-21/bin/jlink
+./gradlew jlinkDemoLinuxX64Runtime -Pm3fx.jlink.executable=/path/to/jdk-21/bin/jlink
 ```
 
 For same-platform and same-architecture builds, the task uses the downloaded target JDK's `jlink` executable directly.
@@ -134,13 +134,13 @@ For same-platform and same-architecture builds, the task uses the downloaded tar
 Use these tasks before distributing artifacts:
 
 ```shell
-./gradlew -g .gradle-user-home releaseCheck
-./gradlew -g .gradle-user-home check
-./gradlew -g .gradle-user-home compileJava
-./gradlew -g .gradle-user-home test
-./gradlew -g .gradle-user-home shadowDemoJar
-./gradlew -g .gradle-user-home jlinkDemoRuntime
-./gradlew -g .gradle-user-home jlinkDemoAllPlatformArchitectureRuntimes
+./gradlew releaseCheck
+./gradlew check
+./gradlew compileJava
+./gradlew test
+./gradlew shadowDemoJar
+./gradlew jlinkDemoRuntime
+./gradlew jlinkDemoAllPlatformArchitectureRuntimes
 ```
 
 `releaseCheck` runs `check`, `shadowDemoJar`, and `jlinkDemoRuntime`. It is the local release gate for the library publication plus the host-platform demo distribution. It does not run the all-platform jlink aggregate task, so release builds can opt into the cross-platform runtime images they actually need.

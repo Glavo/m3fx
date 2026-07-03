@@ -441,8 +441,8 @@ final class M3TokenFactoryTest {
                 new M3ComponentTokens.SurfaceTokens(22.0, 19.0),
                 new M3ComponentTokens.CarouselTokens(5.0, 13.0, 0.91, 11.0, 0.13, 4.0),
                 new M3ComponentTokens.CardTokens(13.0, 18.0, 2.0),
-                new M3ComponentTokens.DialogTokens(30.0, 26.0),
-                new M3ComponentTokens.SnackbarTokens(9.0, 18.0),
+                new M3ComponentTokens.DialogTokens(30.0, 26.0, 300.0, 540.0, 12.0, 28.0),
+                new M3ComponentTokens.SnackbarTokens(9.0, 18.0, 344.0, 672.0, 48.0, 68.0, 32.0),
                 new M3ComponentTokens.BannerTokens(70.0, 10.0, 20.0, 11.0, 12.0),
                 new M3ComponentTokens.TooltipTokens(
                         3.0,

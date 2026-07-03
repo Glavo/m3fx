@@ -20,6 +20,7 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.lang.reflect.WildcardType;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -32,6 +33,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Verifies project source style requirements that are not covered by compiler checks.
@@ -53,6 +55,14 @@ final class SourceStyleRequirementsTest {
     private static final Pattern EXPORTED_INTERNAL_API_REFERENCE =
             Pattern.compile("\\borg\\.glavo\\.m3fx\\.internal\\b|\\bM3Internal\\w*\\b");
 
+    /// The package set intentionally exported as the public JPMS API surface.
+    private static final @Unmodifiable Set<String> EXPECTED_EXPORTED_API_PACKAGES = Set.of(
+            "org.glavo.m3fx.animation",
+            "org.glavo.m3fx.controls",
+            "org.glavo.m3fx.theme",
+            "org.glavo.m3fx.tokens"
+    );
+
     /// The public control source root scanned for M3FX control API shape constraints.
     private static final Path CONTROLS_SOURCE_ROOT =
             Path.of("src", "main", "java", "org", "glavo", "m3fx", "controls");
@@ -64,6 +74,15 @@ final class SourceStyleRequirementsTest {
     /// The public token source root scanned for M3FX token API shape constraints.
     private static final Path TOKENS_SOURCE_ROOT =
             Path.of("src", "main", "java", "org", "glavo", "m3fx", "tokens");
+
+    /// Direct calls to JavaFX APIs introduced after the JavaFX 14 compatibility baseline.
+    private static final @Unmodifiable List<String> NEWER_JAVA_FX_API_DIRECT_CALL_FRAGMENTS = List.of(
+            ".focusVisibleProperty(",
+            ".isFocusVisible(",
+            ".focusWithinProperty(",
+            ".isFocusWithin(",
+            "Platform.getPreferences("
+    );
 
     /// The source call that lets sparse Material shapes receive pointer events across their layout bounds.
     private static final String FULL_BOUNDS_PICK_ON_BOUNDS_CALL = "setPickOnBounds(true)";
@@ -107,6 +126,32 @@ final class SourceStyleRequirementsTest {
             "^\\s*public\\s+(?:final\\s+|abstract\\s+|sealed\\s+|non-sealed\\s+)?class\\s+\\w+\\b"
     );
 
+    /// Matches public top-level type declarations and captures their simple name.
+    private static final Pattern PUBLIC_TOP_LEVEL_TYPE_DECLARATION = Pattern.compile(
+            "^\\s*public\\s+(?:(?:abstract|final|sealed|non-sealed)\\s+)*"
+                    + "(?:class|interface|enum|record)\\s+(\\w+)\\b"
+    );
+
+    /// Public control type names that would expose implementation nodes rather than user-facing controls.
+    private static final @Unmodifiable Set<String> FORBIDDEN_PUBLIC_CONTROL_TYPE_NAMES = Set.of(
+            "M3DisclosureIcon",
+            "M3ListViewCell"
+    );
+
+    /// Public control type suffixes reserved for implementation details.
+    private static final @Unmodifiable List<String> FORBIDDEN_PUBLIC_CONTROL_TYPE_SUFFIXES = List.of(
+            "Cell",
+            "Context",
+            "Helper",
+            "Impl",
+            "Installation",
+            "Resolver",
+            "Skin",
+            "State",
+            "Stylesheets",
+            "Synchronizer"
+    );
+
     /// Matches concrete public control classes and captures their direct superclass.
     private static final Pattern PUBLIC_CONCRETE_CONTROL_EXTENDS_DECLARATION = Pattern.compile(
             "^\\s*public\\s+(?:final\\s+|sealed\\s+|non-sealed\\s+)?"
@@ -116,7 +161,7 @@ final class SourceStyleRequirementsTest {
     /// Matches public static convenience factory names that controls should avoid.
     private static final Pattern PUBLIC_CONTROL_FACTORY_METHOD = Pattern.compile(
             "^\\s*public\\s+(?=[\\w\\s<>,.?@\\[\\]]*\\bstatic\\b)"
-                    + "(?:(?:static|final|synchronized)\\s+)*[^;=]+\\b(?:with|of|create)\\s*\\("
+                    + "(?:(?:static|final|synchronized)\\s+)*[^;=]+\\b(?:with[A-Z]\\w*|of|create)\\s*\\("
     );
 
     /// Matches concrete M3FX type references inside generic accessibility dispatch paths.
@@ -358,6 +403,27 @@ final class SourceStyleRequirementsTest {
                 () -> "Production sources must use @Nullable instead of Optional: " + optionalUsages);
     }
 
+    /// Verifies that JavaFX APIs newer than the runtime compatibility baseline stay behind guarded access.
+    @Test
+    void newerJavaFxApisStayBehindRuntimeGuards() throws IOException {
+        List<String> directCalls = new ArrayList<>();
+        for (Path sourceFile : productionJavaSourceFiles()) {
+            List<String> lines = Files.readAllLines(sourceFile);
+            for (int lineIndex = 0; lineIndex < lines.size(); lineIndex++) {
+                String line = lines.get(lineIndex);
+                for (String fragment : NEWER_JAVA_FX_API_DIRECT_CALL_FRAGMENTS) {
+                    if (line.contains(fragment)) {
+                        directCalls.add(sourceFile + ":" + (lineIndex + 1) + ": " + line.trim());
+                    }
+                }
+            }
+        }
+
+        assertTrue(directCalls.isEmpty(),
+                () -> "JavaFX APIs newer than the compatibility baseline must use guarded runtime access: "
+                        + directCalls);
+    }
+
     /// Verifies that production code does not depend on JavaFX CSS lookup for control structure.
     @Test
     void productionSourcesDoNotUseCssLookup() throws IOException {
@@ -374,6 +440,35 @@ final class SourceStyleRequirementsTest {
 
         assertTrue(lookupCalls.isEmpty(),
                 () -> "Production sources must use explicit node references instead of CSS lookup: " + lookupCalls);
+    }
+
+    /// Verifies that the module export surface matches the public package contract.
+    @Test
+    void moduleExportsOnlyExpectedPublicApiPackages() throws IOException {
+        assertEquals(EXPECTED_EXPORTED_API_PACKAGES, exportedPackageNames(),
+                "The public JPMS export surface must stay explicit");
+    }
+
+    /// Verifies that exported controls do not publish implementation helper node types.
+    @Test
+    void exportedControlsDoNotPublishImplementationTypes() throws IOException {
+        List<String> implementationTypes = new ArrayList<>();
+        for (Path sourceFile : javaSourceFiles(CONTROLS_SOURCE_ROOT)) {
+            List<String> lines = Files.readAllLines(sourceFile);
+            for (int lineIndex = 0; lineIndex < lines.size(); lineIndex++) {
+                Matcher matcher = PUBLIC_TOP_LEVEL_TYPE_DECLARATION.matcher(lines.get(lineIndex));
+                if (matcher.find()) {
+                    String typeName = matcher.group(1);
+                    if (isForbiddenPublicControlImplementationType(typeName)) {
+                        implementationTypes.add(sourceFile + ":" + (lineIndex + 1) + ": " + typeName);
+                    }
+                }
+            }
+        }
+
+        assertTrue(implementationTypes.isEmpty(),
+                () -> "Exported controls must not publish implementation helper node types: "
+                        + implementationTypes);
     }
 
     /// Verifies that exported public and protected APIs do not expose internal implementation member types.
@@ -610,12 +705,10 @@ final class SourceStyleRequirementsTest {
     void publicChildLayoutWritesCheckBoundProperties() throws IOException {
         List<String> unguardedWrites = new ArrayList<>();
         collectUnguardedPublicChildLayoutWrites(
-                CONTROLS_SOURCE_ROOT,
                 BOUND_GUARDED_CONTROL_LAYOUT_WRITES,
                 unguardedWrites
         );
         collectUnguardedPublicChildLayoutWrites(
-                SKINS_SOURCE_ROOT,
                 BOUND_GUARDED_SKIN_LAYOUT_WRITES,
                 unguardedWrites
         );
@@ -1593,6 +1686,19 @@ final class SourceStyleRequirementsTest {
         return List.copyOf(result);
     }
 
+    /// Returns whether one public control type name looks like an implementation helper.
+    private static boolean isForbiddenPublicControlImplementationType(String typeName) {
+        if (FORBIDDEN_PUBLIC_CONTROL_TYPE_NAMES.contains(typeName)) {
+            return true;
+        }
+        for (String suffix : FORBIDDEN_PUBLIC_CONTROL_TYPE_SUFFIXES) {
+            if (typeName.endsWith(suffix)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /// Returns whether source text constructs the requested class.
     private static boolean hasConstructorReference(String source, String className) {
         return Pattern.compile(
@@ -1618,12 +1724,11 @@ final class SourceStyleRequirementsTest {
 
     /// Collects public-child layout writes that are missing their bound-property guards.
     private static void collectUnguardedPublicChildLayoutWrites(
-            Path sourceRoot,
             Map<String, @Unmodifiable Map<String, String>> guardedWrites,
             List<String> unguardedWrites
     ) throws IOException {
         for (Map.Entry<String, @Unmodifiable Map<String, String>> sourceEntry : guardedWrites.entrySet()) {
-            Path sourceFile = sourceRoot.resolve(sourceEntry.getKey());
+            Path sourceFile = productionSourceFileNamed(sourceEntry.getKey());
             List<String> lines = Files.readAllLines(sourceFile);
             for (Map.Entry<String, String> writeEntry : sourceEntry.getValue().entrySet()) {
                 collectUnguardedPublicChildLayoutWrite(
@@ -1635,6 +1740,16 @@ final class SourceStyleRequirementsTest {
                 );
             }
         }
+    }
+
+    /// Returns the production source file with the supplied file name.
+    private static Path productionSourceFileNamed(String sourceName) throws IOException {
+        for (Path sourceFile : productionJavaSourceFiles()) {
+            if (sourceFile.getFileName().toString().equals(sourceName)) {
+                return sourceFile;
+            }
+        }
+        throw new NoSuchFileException(sourceName);
     }
 
     /// Adds a diagnostic when a public-child layout write is missing its bound-property guard.

@@ -27,7 +27,7 @@ import javafx.util.Callback;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListView;
-import org.glavo.m3fx.controls.M3ListViewCell;
+import org.glavo.m3fx.internal.M3ListViewCell;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3ScrollReveal;

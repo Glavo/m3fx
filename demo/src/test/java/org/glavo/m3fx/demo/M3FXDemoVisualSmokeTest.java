@@ -18,6 +18,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.IndexedCell;
 import javafx.scene.control.Label;
 import javafx.scene.control.Labeled;
 import javafx.scene.control.ScrollPane;
@@ -95,7 +96,6 @@ import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListItemSlotSize;
 import org.glavo.m3fx.controls.M3ListPane;
 import org.glavo.m3fx.controls.M3ListView;
-import org.glavo.m3fx.controls.M3ListViewCell;
 import org.glavo.m3fx.controls.M3LoadingIndicator;
 import org.glavo.m3fx.controls.M3LoadingIndicatorVariant;
 import org.glavo.m3fx.controls.M3Menu;
@@ -1044,7 +1044,9 @@ final class M3FXDemoVisualSmokeTest {
                 assertEquals(2, listView.getSelectedIndex(), "demo list should show a non-first selected row");
                 assertInstanceOf(VirtualFlow.class, listView.lookup(".m3-list-view-flow"));
 
-                List<M3ListViewCell> visibleCells = visibleNodesOfType(listView, M3ListViewCell.class);
+                List<IndexedCell> visibleCells = visibleNodesOfType(listView, IndexedCell.class).stream()
+                        .filter(cell -> cell.getStyleClass().contains("m3-list-view-cell"))
+                        .toList();
                 int maxExpectedVisibleCells =
                         (int) Math.ceil(listView.getPrefHeight() / listView.getFixedCellSize()) + 8;
                 assertTrue(!visibleCells.isEmpty(), "virtualized list should attach visible cells");
@@ -2676,6 +2678,110 @@ final class M3FXDemoVisualSmokeTest {
                                 "sidebar-expanded-bottom-scroll.png"
                         ));
                         assertSnapshotHasVisibleContent(image, "Sidebar expanded bottom scroll");
+                    }
+            );
+        } finally {
+            runOnFxThread(() -> {
+                Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
+    /// Verifies the sidebar remains scrollable after every collapsible drawer group is expanded.
+    @Test
+    void sidebarAllExpandedGroupsCanScrollToLastDestination() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
+        AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
+
+        runOnFxThread(() -> {
+            Stage stage = new Stage();
+            M3FXDemoApp app = new M3FXDemoApp();
+            app.start(stage);
+            stage.setWidth(1280.0);
+            stage.setHeight(720.0);
+
+            stageReference.set(stage);
+            appReference.set(app);
+            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+        });
+
+        try {
+            runOnFxThreadWhenStable(
+                    () -> {
+                        Scene scene = sceneReference.get();
+                        if (scene == null) {
+                            return false;
+                        }
+                        scene.getRoot().applyCss();
+                        scene.getRoot().layout();
+
+                        List<M3NavigationDrawerGroup> groups = demoSidebarDrawerGroups(scene.getRoot());
+                        if (groups.isEmpty() || groups.stream().anyMatch(group -> !group.isExpanded())) {
+                            return false;
+                        }
+
+                        @Nullable Node node = firstVisibleStyledDescendant(
+                                scene.getRoot(),
+                                "demo-sidebar-scroll-pane"
+                        );
+                        if (!(node instanceof ScrollPane scrollPane)) {
+                            return false;
+                        }
+                        scrollPane.setVvalue(1.0);
+                        scene.getRoot().applyCss();
+                        scene.getRoot().layout();
+
+                        M3ListItem lastItem = lastDemoSidebarItem(scene.getRoot());
+                        return "Scrims".equals(lastItem.getHeadlineText())
+                                && nodeInsideNearestScrollViewport(lastItem, CONTROL_EDGE_TOLERANCE);
+                    },
+                    SETTLED_STATE_PULSES,
+                    () -> "Timed out waiting for the fully expanded demo sidebar to reveal its last item: "
+                            + sidebarScrollDebug(sceneReference.get()),
+                    () -> {
+                        M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+                        Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                        app.showPageForTesting("Components Overview");
+                        scene.getRoot().applyCss();
+                        scene.getRoot().layout();
+                        for (M3NavigationDrawerGroup group : demoSidebarDrawerGroups(scene.getRoot())) {
+                            group.setExpanded(true);
+                        }
+                    },
+                    () -> {
+                        Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                        List<M3NavigationDrawerGroup> groups = demoSidebarDrawerGroups(scene.getRoot());
+                        assertFalse(groups.isEmpty(), "demo sidebar drawer groups");
+                        assertTrue(groups.stream().allMatch(M3NavigationDrawerGroup::isExpanded),
+                                "all demo sidebar drawer groups should be expanded");
+
+                        ScrollPane sidebarScrollPane = assertInstanceOf(
+                                ScrollPane.class,
+                                requireVisibleStyledDescendant(
+                                        scene.getRoot(),
+                                        "demo-sidebar-scroll-pane",
+                                        "demo sidebar scroll pane"
+                                )
+                        );
+                        assertEquals(1.0, sidebarScrollPane.getVvalue(), 0.001,
+                                "fully expanded sidebar should support scrolling to the bottom");
+
+                        M3ListItem lastItem = lastDemoSidebarItem(scene.getRoot());
+                        assertEquals("Scrims", lastItem.getHeadlineText(), "last fully expanded sidebar destination");
+                        assertNodeInsideNearestScrollViewport(lastItem, "last fully expanded sidebar destination");
+
+                        WritableImage image = snapshot(scene);
+                        writeVisualSnapshot(image, Path.of(
+                                "build",
+                                "reports",
+                                "m3fx-demo-visual",
+                                "sidebar-all-expanded-bottom-scroll.png"
+                        ));
+                        assertSnapshotHasVisibleContent(image, "Sidebar all-expanded bottom scroll");
                     }
             );
         } finally {
@@ -7502,6 +7608,14 @@ final class M3FXDemoVisualSmokeTest {
         return builder.toString();
     }
 
+    /// Returns visible navigation drawer groups that belong to the demo sidebar.
+    private static List<M3NavigationDrawerGroup> demoSidebarDrawerGroups(Node root) {
+        return visibleNodesOfType(root, M3NavigationDrawerGroup.class)
+                .stream()
+                .filter(group -> nearestAncestorWithStyle(group, "demo-sidebar-drawer") != null)
+                .toList();
+    }
+
     /// Returns visible list items that belong to the demo navigation drawer sidebar.
     private static List<M3ListItem> demoSidebarItems(Node root) {
         return visibleNodesOfType(root, M3ListItem.class)
@@ -8179,6 +8293,31 @@ final class M3FXDemoVisualSmokeTest {
                 referenceBackground,
                 description
         );
+        assertMultilineTextInputInkInsideContainer(image, layout, description);
+    }
+
+    /// Verifies that multiline text ink stays inside the Material input container.
+    private static void assertMultilineTextInputInkInsideContainer(
+            WritableImage image,
+            M3TextInputLayout layout,
+            String description
+    ) {
+        TextInputControl input = Objects.requireNonNull(layout.getInput(), "input");
+        assertInstanceOf(M3TextArea.class, input, description + " input");
+        Bounds containerBounds = layout.getInputContainer().localToScene(layout.getInputContainer().getBoundsInLocal());
+        List<Rectangle2D> inkBounds = new ArrayList<>();
+        collectRenderedTextInkBounds(image, input, inkBounds);
+
+        assertFalse(inkBounds.isEmpty(),
+                () -> description + " should expose measurable multiline text ink");
+        for (Rectangle2D ink : inkBounds) {
+            assertRectangleInsideBounds(
+                    containerBounds,
+                    ink,
+                    TEXT_EDGE_TOLERANCE,
+                    description + " multiline rendered text"
+            );
+        }
     }
 
     /// Verifies that focused text area content does not paint a local default background behind text rows.
@@ -9935,6 +10074,7 @@ final class M3FXDemoVisualSmokeTest {
                         + ", textBounds=" + textBounds + ", inkBounds=" + inkBounds);
         if (isSingleLineM3TextInputWithVisibleText(input)) {
             assertSingleLineTextInputInkAvoidsAdornments(layout, inkBounds, pageTitle);
+            assertSingleLineTextInputInkAvoidsFloatingLabel(layout, inkBounds, pageTitle);
             assertSingleLineTextInputInkAligned(layout, input, inkBounds, inputBounds, pageTitle);
         }
     }
@@ -9992,6 +10132,38 @@ final class M3FXDemoVisualSmokeTest {
         assertTrue(horizontalOverlap <= TEXT_INPUT_ADORNMENT_OVERLAP_TOLERANCE,
                 () -> description + " overlaps rendered text ink: overlap=" + horizontalOverlap
                         + ", inkBounds=" + inkBounds + ", slotBounds=" + slotBounds
+                        + ", layout=" + layout + ", input=" + textInputDebugState(layout.getInput()));
+    }
+
+    /// Verifies that floating-label ink remains separated from the input text ink.
+    private static void assertSingleLineTextInputInkAvoidsFloatingLabel(
+            M3TextInputLayout layout,
+            Rectangle2D inputInkBounds,
+            String pageTitle
+    ) {
+        if (!layout.isLabelFloating()) {
+            return;
+        }
+
+        @Nullable Node label = firstVisibleStyledDescendant(layout, M3TextInputLayout.LABEL_STYLE_CLASS);
+        if (label == null) {
+            return;
+        }
+
+        @Nullable Text labelText = firstVisibleText(label);
+        if (labelText == null) {
+            return;
+        }
+
+        Bounds labelBounds = labelText.localToScene(labelText.getBoundsInLocal());
+        double verticalOverlap = Math.min(inputInkBounds.getMaxY(), labelBounds.getMaxY())
+                - Math.max(inputInkBounds.getMinY(), labelBounds.getMinY());
+        double horizontalOverlap = Math.min(inputInkBounds.getMaxX(), labelBounds.getMaxX())
+                - Math.max(inputInkBounds.getMinX(), labelBounds.getMinX());
+        assertTrue(verticalOverlap <= TEXT_INPUT_ADORNMENT_OVERLAP_TOLERANCE
+                        || horizontalOverlap <= TEXT_INPUT_ADORNMENT_OVERLAP_TOLERANCE,
+                () -> pageTitle + " text input ink overlaps floating label: inputInk="
+                        + inputInkBounds + ", labelText=" + labelBounds
                         + ", layout=" + layout + ", input=" + textInputDebugState(layout.getInput()));
     }
 
@@ -14555,6 +14727,7 @@ final class M3FXDemoVisualSmokeTest {
                 || node instanceof M3Switch
                 || node instanceof M3Tab
                 || node instanceof M3Text
+                || node instanceof M3TextArea
                 || node instanceof M3TextField
                 || node instanceof M3TextInputLayout
                 || node instanceof M3TimePicker

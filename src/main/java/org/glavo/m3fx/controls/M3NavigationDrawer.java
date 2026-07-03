@@ -474,7 +474,7 @@ public class M3NavigationDrawer extends Control {
             return;
         }
 
-        if (event.isAltDown() || event.isControlDown() || event.isMetaDown() || event.isShortcutDown()) {
+        if (M3KeyEvents.hasShortcutModifier(event)) {
             return;
         }
 
@@ -526,6 +526,10 @@ public class M3NavigationDrawer extends Control {
 
     /// Handles left and right arrow disclosure behavior for focused or selected drawer groups.
     private boolean handleGroupDisclosureKey(KeyEvent event) {
+        if (M3KeyEvents.hasNavigationModifier(event)) {
+            return false;
+        }
+
         KeyCode code = event.getCode();
         if (code != KeyCode.LEFT && code != KeyCode.RIGHT) {
             return false;

@@ -30,6 +30,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.util.Callback;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3ListViewCell;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3PopupStyles;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -754,6 +755,9 @@ public class M3ListView<T> extends Control {
         if (M3FocusTraversal.consumeNavigationKeyIfFocusOwnerInsideTextInput(this, event, false, true)) {
             return;
         }
+        if (M3KeyEvents.hasNavigationModifier(event)) {
+            return;
+        }
 
         KeyCode code = event.getCode();
         switch (code) {
@@ -776,7 +780,7 @@ public class M3ListView<T> extends Control {
             return;
         }
 
-        if (event.isAltDown() || event.isControlDown() || event.isMetaDown() || event.isShortcutDown()) {
+        if (M3KeyEvents.hasShortcutModifier(event)) {
             return;
         }
 

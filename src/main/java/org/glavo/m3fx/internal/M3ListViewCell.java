@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Glavo
 // SPDX-License-Identifier: Apache-2.0
 
-package org.glavo.m3fx.controls;
+package org.glavo.m3fx.internal;
 
 import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
@@ -15,9 +15,8 @@ import javafx.scene.control.IndexedCell;
 import javafx.scene.control.Skin;
 import javafx.stage.Window;
 import javafx.util.Callback;
-import org.glavo.m3fx.internal.M3PopupStyles;
-import org.glavo.m3fx.internal.M3Stylesheets;
-import org.glavo.m3fx.internal.M3ThemeResolver;
+import org.glavo.m3fx.controls.M3ListItem;
+import org.glavo.m3fx.controls.M3ListView;
 import org.glavo.m3fx.skins.M3ListViewCellSkin;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -25,13 +24,13 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
-/// A reusable virtualized cell used by [M3ListView].
+/// An internal reusable virtualized cell used by [M3ListView].
 ///
 /// See [Material Design lists](https://m3.material.io/components/lists/overview).
 ///
 /// @param <T> the item type rendered by this cell
 @NotNullByDefault
-public class M3ListViewCell<T> extends IndexedCell<T> {
+public final class M3ListViewCell<T> extends IndexedCell<T> {
     /// The base style class for M3FX list view cells.
     public static final String STYLE_CLASS = "m3-list-view-cell";
 
@@ -55,7 +54,9 @@ public class M3ListViewCell<T> extends IndexedCell<T> {
     /// @param listView the owning virtualized list view
     public M3ListViewCell(M3ListView<T> listView) {
         this.listView = Objects.requireNonNull(listView, "listView");
-        M3ControlStyles.add(this, STYLE_CLASS);
+        if (!getStyleClass().contains(STYLE_CLASS)) {
+            getStyleClass().add(STYLE_CLASS);
+        }
         M3PopupStyles.addFallbackRootStyleClass(this);
         M3PopupStyles.addStylesheet(this, M3Stylesheets.fallbackStylesheet());
         setAccessibleRole(AccessibleRole.LIST_ITEM);
@@ -243,7 +244,7 @@ public class M3ListViewCell<T> extends IndexedCell<T> {
             return false;
         }
 
-        M3Accessible.showDirectItem(getListView(), getListView());
+        getListView().requestFocus();
         refreshFocus();
         return getListView().isFocused();
     }
@@ -276,7 +277,12 @@ public class M3ListViewCell<T> extends IndexedCell<T> {
         int index = getIndex();
         if (index >= 0 && index < getListView().getItems().size()) {
             getListView().focusIndex(index);
-            getListView().activateIndex(index);
+            switch (getListView().getSelectionMode()) {
+                case NONE -> {
+                }
+                case SINGLE -> getListView().selectIndex(index);
+                case MULTIPLE -> getListView().setIndexSelected(index, !getListView().isIndexSelected(index));
+            }
         }
         event.consume();
     }

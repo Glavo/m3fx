@@ -19,6 +19,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.internal.M3DisclosureIcon;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3NavigationDrawerGroupSkin;
 import org.jetbrains.annotations.NotNullByDefault;

@@ -206,6 +206,9 @@ final class M3SelectionNavigation {
         Objects.requireNonNull(children, "children");
         Objects.requireNonNull(type, "type");
         Objects.requireNonNull(selector, "selector");
+        if (M3KeyEvents.hasNavigationModifier(event)) {
+            return false;
+        }
 
         @Nullable T target = targetFromKey(event.getCode(), children, current, type, horizontal, vertical, rightToLeft);
         if (target == null) {
@@ -229,6 +232,9 @@ final class M3SelectionNavigation {
     ) {
         Objects.requireNonNull(event, "event");
         Objects.requireNonNull(selector, "selector");
+        if (M3KeyEvents.hasNavigationModifier(event)) {
+            return false;
+        }
         @Nullable T target = pageTargetFromKey(event.getCode(), owner, children, current, type);
         if (target == null) {
             return false;
@@ -312,6 +318,9 @@ final class M3SelectionNavigation {
         Objects.requireNonNull(event, "event");
         Objects.requireNonNull(children, "children");
         Objects.requireNonNull(type, "type");
+        if (M3KeyEvents.hasNavigationModifier(event)) {
+            return false;
+        }
 
         @Nullable T target = targetFromKey(event.getCode(), children, current, type, horizontal, vertical, rightToLeft);
         if (target == null) {
@@ -334,6 +343,9 @@ final class M3SelectionNavigation {
             Class<T> type
     ) {
         Objects.requireNonNull(event, "event");
+        if (M3KeyEvents.hasNavigationModifier(event)) {
+            return false;
+        }
         @Nullable T target = pageTargetFromKey(event.getCode(), owner, children, current, type);
         if (target == null) {
             return false;

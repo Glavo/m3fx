@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.application.Platform;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
@@ -35,6 +36,7 @@ final class M3NavigationDrawerGroupTest {
     @BeforeAll
     static void startToolkit() throws InterruptedException {
         FxTestUtils.startToolkit();
+        Platform.setImplicitExit(false);
     }
 
     /// Verifies drawer disclosure keys do not steal focus from an embedded text input.
@@ -67,6 +69,41 @@ final class M3NavigationDrawerGroupTest {
 
                 assertTrue(group.isExpanded());
                 assertTrue(editor.isFocused(), () -> "focused=" + scene.getFocusOwner());
+            } finally {
+                stage.close();
+                M3MotionSettings.clearAnimationsEnabled(drawer);
+            }
+        });
+    }
+
+    /// Verifies modified drawer disclosure keys are left to application shortcuts.
+    @Test
+    void modifiedDrawerDisclosureKeysAreIgnored() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Group");
+            M3ListItem child = new M3ListItem("Child");
+            group.addItem(child);
+            group.setExpanded(false);
+            M3NavigationDrawer drawer = new M3NavigationDrawer(group);
+            M3MotionSettings.setAnimationsEnabled(drawer, false);
+
+            StackPane root = new StackPane(drawer);
+            Stage stage = new Stage();
+            try {
+                Scene scene = new Scene(root, GROUP_WIDTH, 240.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                drawer.select(group.getHeaderItem());
+                KeyEvent event = modifiedKeyPressed(KeyCode.RIGHT, false, true, false, false);
+                drawer.fireEvent(event);
+
+                assertFalse(group.isExpanded());
+                assertSame(group.getHeaderItem(), drawer.getSelectedItem());
+                assertFalse(event.isConsumed());
             } finally {
                 stage.close();
                 M3MotionSettings.clearAnimationsEnabled(drawer);
@@ -331,6 +368,26 @@ final class M3NavigationDrawerGroupTest {
                 false,
                 false,
                 false
+        );
+    }
+
+    /// Creates a modified pressed key event for drawer keyboard handling tests.
+    private static KeyEvent modifiedKeyPressed(
+            KeyCode code,
+            boolean shiftDown,
+            boolean controlDown,
+            boolean altDown,
+            boolean metaDown
+    ) {
+        return new KeyEvent(
+                KeyEvent.KEY_PRESSED,
+                code.getName(),
+                code.getName(),
+                code,
+                shiftDown,
+                controlDown,
+                altDown,
+                metaDown
         );
     }
 

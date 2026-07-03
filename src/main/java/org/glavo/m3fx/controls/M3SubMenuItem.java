@@ -507,11 +507,22 @@ public class M3SubMenuItem extends M3MenuItem {
     /// Handles keyboard actions on the submenu item.
     private void handleKeyPressed(KeyEvent event) {
         KeyCode code = event.getCode();
+        if (code == KeyCode.ESCAPE) {
+            if (popup.isShowing()) {
+                hideSubMenu(true);
+                event.consume();
+            }
+            return;
+        }
+        if (M3KeyEvents.hasNavigationModifier(event)) {
+            return;
+        }
+
         if (code == KeyCode.ENTER || code == KeyCode.SPACE || isOpenSubMenuKey(code)) {
             if (showSubMenuAndFocusFirstItem()) {
                 event.consume();
             }
-        } else if (code == KeyCode.ESCAPE || isCloseSubMenuKey(code)) {
+        } else if (isCloseSubMenuKey(code)) {
             if (popup.isShowing()) {
                 hideSubMenu(true);
                 event.consume();
@@ -522,7 +533,8 @@ public class M3SubMenuItem extends M3MenuItem {
     /// Handles keyboard dismissal while focus is inside the submenu.
     private void handleSubMenuKeyPressed(KeyEvent event) {
         KeyCode code = event.getCode();
-        if (code == KeyCode.ESCAPE || isCloseSubMenuKey(code)) {
+        if (code == KeyCode.ESCAPE
+                || (!M3KeyEvents.hasNavigationModifier(event) && isCloseSubMenuKey(code))) {
             if (popup.isShowing()) {
                 hideSubMenu(true);
                 event.consume();

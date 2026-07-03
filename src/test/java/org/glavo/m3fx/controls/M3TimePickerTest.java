@@ -152,6 +152,18 @@ final class M3TimePickerTest {
         assertEquals(LocalTime.of(10, 30), picker.getValue());
     }
 
+    /// Verifies modified time picker navigation keys are left to application shortcuts.
+    @Test
+    void timePickerModifiedNavigationKeysAreIgnored() {
+        M3TimePicker picker = new M3TimePicker(LocalTime.of(10, 30));
+        picker.setMinuteStep(15);
+
+        picker.fireEvent(modifiedKeyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT, false, true, false, false));
+        picker.fireEvent(modifiedKeyEvent(KeyEvent.KEY_PRESSED, KeyCode.UP, true, false, false, false));
+
+        assertEquals(LocalTime.of(10, 30), picker.getValue());
+    }
+
     /// Verifies that horizontal keyboard navigation follows visual order in right-to-left layouts.
     @Test
     void timePickerMirrorsHorizontalKeyboardNavigationInRightToLeftLayouts() {
@@ -441,6 +453,18 @@ final class M3TimePickerTest {
                 "time cell"
         );
     }
+    /// Creates a modified key event for control behavior tests.
+    private static KeyEvent modifiedKeyEvent(
+            EventType<KeyEvent> eventType,
+            KeyCode code,
+            boolean shiftDown,
+            boolean controlDown,
+            boolean altDown,
+            boolean metaDown
+    ) {
+        return new KeyEvent(eventType, "", "", code, shiftDown, controlDown, altDown, metaDown);
+    }
+
     /// Creates a key event for control behavior tests.
     private static KeyEvent keyEvent(EventType<KeyEvent> eventType, KeyCode code) {
         return new KeyEvent(eventType, "", "", code, false, false, false, false);

@@ -5,6 +5,7 @@ package org.glavo.m3fx.controls;
 
 import javafx.collections.ListChangeListener;
 import javafx.css.CssMetaData;
+import javafx.css.StyleOrigin;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
@@ -14,6 +15,7 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
@@ -21,6 +23,7 @@ import javafx.scene.control.ButtonBase;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.DialogPane;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.HBox;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -56,6 +59,25 @@ public class M3DialogPane extends DialogPane {
     /// The default dialog content padding.
     private static final double DEFAULT_CONTENT_PADDING = 24.0;
 
+    /// The default minimum dialog container width.
+    private static final double DEFAULT_CONTAINER_MIN_WIDTH = 280.0;
+
+    /// The default maximum dialog container width.
+    private static final double DEFAULT_CONTAINER_MAX_WIDTH = 560.0;
+
+    /// The default spacing between dialog action buttons.
+    private static final double DEFAULT_ACTION_SPACING = 8.0;
+
+    /// The default dialog graphic icon size.
+    private static final double DEFAULT_ICON_SIZE = 24.0;
+
+    /// The style class applied to Material icons used as dialog graphics.
+    private static final String GRAPHIC_ICON_STYLE_CLASS = "m3-dialog-graphic-icon";
+
+    /// The property key used to restore caller-provided dialog graphic icon styles.
+    private static final String GRAPHIC_ICON_BASE_STYLE_KEY =
+            M3DialogPane.class.getName() + ".graphicIconBaseStyle";
+
     /// The inline style declaration managed by the container shape token.
     private @Nullable String managedContainerShapeStyle;
 
@@ -71,6 +93,21 @@ public class M3DialogPane extends DialogPane {
     // The styleable dialog content padding token.
     private @Nullable StyleableDoubleProperty contentPadding;
 
+    // The styleable minimum dialog container width token.
+    private @Nullable StyleableDoubleProperty containerMinWidth;
+
+    // The styleable maximum dialog container width token.
+    private @Nullable StyleableDoubleProperty containerMaxWidth;
+
+    // The styleable spacing between dialog action buttons.
+    private @Nullable StyleableDoubleProperty actionSpacing;
+
+    // The styleable dialog graphic icon size token.
+    private @Nullable StyleableDoubleProperty iconSize;
+
+    /// The internal dialog action button bar.
+    private @Nullable ButtonBar buttonBar;
+
     /// Reports focused dialog content or action changes to accessibility clients.
     private final M3AccessibleFocusNotifier focusNotifier =
             new M3AccessibleFocusNotifier(this, this::currentOrFirstFocusableItem);
@@ -83,6 +120,7 @@ public class M3DialogPane extends DialogPane {
         headerTextProperty().addListener((observable, oldValue, newValue) -> updateAccessibleText());
         contentTextProperty().addListener((observable, oldValue, newValue) -> updateAccessibleText());
         contentProperty().addListener((observable, oldValue, newValue) -> notifyAccessibleItemsChanged());
+        graphicProperty().addListener((observable, oldValue, newValue) -> updateGraphicMetrics(oldValue, newValue));
         getButtonTypes().addListener((ListChangeListener<ButtonType>) change -> notifyAccessibleItemsChanged());
         styleProperty().addListener((observable, oldValue, newValue) -> {
             if (!updatingManagedStyle && managedContainerShapeStyle != null) {
@@ -155,6 +193,126 @@ public class M3DialogPane extends DialogPane {
         return contentPadding;
     }
 
+    /// Returns the minimum dialog container width token.
+    ///
+    /// @return the minimum dialog container width token
+    public final double getContainerMinWidth() {
+        return containerMinWidth == null ? DEFAULT_CONTAINER_MIN_WIDTH : containerMinWidth.get();
+    }
+
+    /// Sets the minimum dialog container width token.
+    ///
+    /// @param containerMinWidth the minimum dialog container width token
+    public final void setContainerMinWidth(double containerMinWidth) {
+        containerMinWidthProperty().set(M3Css.nonNegative(containerMinWidth, "containerMinWidth"));
+    }
+
+    /// Returns the minimum dialog container width token property.
+    ///
+    /// @return the minimum dialog container width token property
+    public final StyleableDoubleProperty containerMinWidthProperty() {
+        if (containerMinWidth == null) {
+            containerMinWidth = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_CONTAINER_MIN_WIDTH,
+                    this,
+                    "containerMinWidth",
+                    StyleableProperties.CONTAINER_MIN_WIDTH,
+                    this::updateMetrics
+            );
+        }
+        return containerMinWidth;
+    }
+
+    /// Returns the maximum dialog container width token.
+    ///
+    /// @return the maximum dialog container width token
+    public final double getContainerMaxWidth() {
+        return containerMaxWidth == null ? DEFAULT_CONTAINER_MAX_WIDTH : containerMaxWidth.get();
+    }
+
+    /// Sets the maximum dialog container width token.
+    ///
+    /// @param containerMaxWidth the maximum dialog container width token
+    public final void setContainerMaxWidth(double containerMaxWidth) {
+        containerMaxWidthProperty().set(M3Css.nonNegative(containerMaxWidth, "containerMaxWidth"));
+    }
+
+    /// Returns the maximum dialog container width token property.
+    ///
+    /// @return the maximum dialog container width token property
+    public final StyleableDoubleProperty containerMaxWidthProperty() {
+        if (containerMaxWidth == null) {
+            containerMaxWidth = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_CONTAINER_MAX_WIDTH,
+                    this,
+                    "containerMaxWidth",
+                    StyleableProperties.CONTAINER_MAX_WIDTH,
+                    this::updateMetrics
+            );
+        }
+        return containerMaxWidth;
+    }
+
+    /// Returns the spacing between dialog action buttons.
+    ///
+    /// @return the spacing between dialog action buttons
+    public final double getActionSpacing() {
+        return actionSpacing == null ? DEFAULT_ACTION_SPACING : actionSpacing.get();
+    }
+
+    /// Sets the spacing between dialog action buttons.
+    ///
+    /// @param actionSpacing the spacing between dialog action buttons
+    public final void setActionSpacing(double actionSpacing) {
+        actionSpacingProperty().set(M3Css.nonNegative(actionSpacing, "actionSpacing"));
+    }
+
+    /// Returns the spacing property for dialog action buttons.
+    ///
+    /// @return the spacing property for dialog action buttons
+    public final StyleableDoubleProperty actionSpacingProperty() {
+        if (actionSpacing == null) {
+            actionSpacing = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_ACTION_SPACING,
+                    this,
+                    "actionSpacing",
+                    StyleableProperties.ACTION_SPACING,
+                    this::updateActionSpacing
+            );
+        }
+        return actionSpacing;
+    }
+
+    /// Returns the dialog graphic icon size token.
+    ///
+    /// @return the dialog graphic icon size token
+    public final double getIconSize() {
+        return iconSize == null ? DEFAULT_ICON_SIZE : iconSize.get();
+    }
+
+    /// Sets the dialog graphic icon size token.
+    ///
+    /// @param iconSize the dialog graphic icon size token
+    public final void setIconSize(double iconSize) {
+        iconSizeProperty().set(M3Css.nonNegative(iconSize, "iconSize"));
+    }
+
+    /// Returns the dialog graphic icon size token property.
+    ///
+    /// @return the dialog graphic icon size token property
+    public final StyleableDoubleProperty iconSizeProperty() {
+        if (iconSize == null) {
+            iconSize = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_ICON_SIZE,
+                    this,
+                    "iconSize",
+                    StyleableProperties.ICON_SIZE,
+                    () -> updateGraphicMetrics(null, getGraphic())
+            );
+        }
+        return iconSize;
+    }
+
     /// Returns the CSS metadata for this control class.
     ///
     /// @return the CSS metadata for this control class
@@ -202,8 +360,10 @@ public class M3DialogPane extends DialogPane {
         Node buttonBar = super.createButtonBar();
         buttonBar.getStyleClass().add(BUTTON_BAR_STYLE_CLASS);
         if (buttonBar instanceof ButtonBar materialButtonBar) {
+            this.buttonBar = materialButtonBar;
             materialButtonBar.setButtonMinWidth(0.0);
             materialButtonBar.setButtonOrder(ButtonBar.BUTTON_ORDER_NONE);
+            synchronizeActionSpacing();
         }
         return buttonBar;
     }
@@ -256,13 +416,87 @@ public class M3DialogPane extends DialogPane {
     @Override
     protected void layoutChildren() {
         synchronizeContainerShapeStyle();
+        synchronizeActionSpacing();
+        updateGraphicMetrics(null, getGraphic());
         super.layoutChildren();
+        synchronizeActionSpacing();
     }
 
     /// Applies size-related component tokens to JavaFX layout properties.
     private void updateMetrics() {
         double padding = getContentPadding();
+        double minWidth = getContainerMinWidth();
         M3Css.setPaddingIfUnbound(this, new Insets(padding));
+        M3Css.setMinWidthIfUnbound(this, minWidth);
+        M3Css.setMaxWidthIfUnbound(this, Math.max(minWidth, getContainerMaxWidth()));
+        updateActionSpacing();
+        updateGraphicMetrics(null, getGraphic());
+    }
+
+    /// Applies the action spacing token to the internal button bar and requests layout.
+    private void updateActionSpacing() {
+        synchronizeActionSpacing();
+        requestLayout();
+    }
+
+    /// Synchronizes the action spacing token with the JavaFX button bar skin row.
+    private void synchronizeActionSpacing() {
+        @Nullable ButtonBar materialButtonBar = buttonBar;
+        if (materialButtonBar != null) {
+            synchronizeActionSpacing(materialButtonBar);
+        }
+    }
+
+    /// Synchronizes action spacing below one skin node.
+    private boolean synchronizeActionSpacing(Node node) {
+        if (node instanceof HBox row && row.getStyleClass().contains("container")) {
+            if (!row.spacingProperty().isBound()) {
+                row.setSpacing(getActionSpacing());
+            }
+            return true;
+        }
+        if (node instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                if (synchronizeActionSpacing(child)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /// Applies dialog graphic tokens to a Material icon graphic.
+    private void updateGraphicMetrics(@Nullable Node oldGraphic, @Nullable Node newGraphic) {
+        if (oldGraphic instanceof M3Icon oldIcon) {
+            restoreGraphicIconStyle(oldIcon);
+        }
+        if (!(newGraphic instanceof M3Icon icon)) {
+            return;
+        }
+
+        applyGraphicIconStyle(icon);
+        if (M3Css.isSettable(icon.iconSizeProperty())) {
+            icon.iconSizeProperty().applyStyle(StyleOrigin.USER_AGENT, getIconSize());
+        }
+    }
+
+    /// Applies dialog-specific style classes and managed inline color to a graphic icon.
+    private static void applyGraphicIconStyle(M3Icon icon) {
+        if (!icon.getStyleClass().contains(GRAPHIC_ICON_STYLE_CLASS)) {
+            icon.getStyleClass().add(GRAPHIC_ICON_STYLE_CLASS);
+        }
+        Object baseStyle = icon.getProperties().computeIfAbsent(GRAPHIC_ICON_BASE_STYLE_KEY, key -> icon.getStyle());
+        String callerStyle = baseStyle instanceof String style ? style : "";
+        icon.setStyle(mergeStyles("-fx-text-fill: -m3-color-secondary;", callerStyle));
+    }
+
+    /// Restores the caller-provided style after an icon leaves the dialog graphic slot.
+    private static void restoreGraphicIconStyle(M3Icon icon) {
+        icon.getStyleClass().remove(GRAPHIC_ICON_STYLE_CLASS);
+        Object baseStyle = icon.getProperties().remove(GRAPHIC_ICON_BASE_STYLE_KEY);
+        if (baseStyle instanceof String style) {
+            icon.setStyle(style);
+        }
     }
 
     /// Requests a style pass when the runtime container shape token changes.
@@ -677,6 +911,70 @@ public class M3DialogPane extends DialogPane {
                     }
                 };
 
+        /// CSS metadata for the minimum container width token.
+        private static final CssMetaData<M3DialogPane, Number> CONTAINER_MIN_WIDTH =
+                new CssMetaData<>("-m3-container-min-width", SizeConverter.getInstance(), DEFAULT_CONTAINER_MIN_WIDTH) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3DialogPane control) {
+                        return M3Css.isSettable(control.containerMinWidthProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3DialogPane control) {
+                        return control.containerMinWidthProperty();
+                    }
+                };
+
+        /// CSS metadata for the maximum container width token.
+        private static final CssMetaData<M3DialogPane, Number> CONTAINER_MAX_WIDTH =
+                new CssMetaData<>("-m3-container-max-width", SizeConverter.getInstance(), DEFAULT_CONTAINER_MAX_WIDTH) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3DialogPane control) {
+                        return M3Css.isSettable(control.containerMaxWidthProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3DialogPane control) {
+                        return control.containerMaxWidthProperty();
+                    }
+                };
+
+        /// CSS metadata for the dialog action spacing token.
+        private static final CssMetaData<M3DialogPane, Number> ACTION_SPACING =
+                new CssMetaData<>("-m3-action-spacing", SizeConverter.getInstance(), DEFAULT_ACTION_SPACING) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3DialogPane control) {
+                        return M3Css.isSettable(control.actionSpacingProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3DialogPane control) {
+                        return control.actionSpacingProperty();
+                    }
+                };
+
+        /// CSS metadata for the dialog graphic icon size token.
+        private static final CssMetaData<M3DialogPane, Number> ICON_SIZE =
+                new CssMetaData<>("-m3-dialog-icon-size", SizeConverter.getInstance(), DEFAULT_ICON_SIZE) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3DialogPane control) {
+                        return M3Css.isSettable(control.iconSizeProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3DialogPane control) {
+                        return control.iconSizeProperty();
+                    }
+                };
+
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
@@ -684,6 +982,10 @@ public class M3DialogPane extends DialogPane {
             List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(DialogPane.getClassCssMetaData());
             styleables.add(CONTAINER_SHAPE);
             styleables.add(CONTENT_PADDING);
+            styleables.add(CONTAINER_MIN_WIDTH);
+            styleables.add(CONTAINER_MAX_WIDTH);
+            styleables.add(ACTION_SPACING);
+            styleables.add(ICON_SIZE);
             STYLEABLES = Collections.unmodifiableList(styleables);
         }
     }

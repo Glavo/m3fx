@@ -111,6 +111,9 @@ final class M3FocusTraversal {
         Objects.requireNonNull(owner, "owner");
         Objects.requireNonNull(event, "event");
         Objects.requireNonNull(focusableItems, "focusableItems");
+        if (M3KeyEvents.hasNavigationModifier(event)) {
+            return false;
+        }
         if (consumeNavigationKeyIfFocusOwnerInsideTextInput(owner, event, horizontalEnabled, verticalEnabled)) {
             return false;
         }

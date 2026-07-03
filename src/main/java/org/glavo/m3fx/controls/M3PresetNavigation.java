@@ -49,7 +49,7 @@ final class M3PresetNavigation {
         Objects.requireNonNull(orientationOwner, "orientationOwner");
         Objects.requireNonNull(focusPicker, "focusPicker");
 
-        if (isPickerHandoffKey(event.getCode(), orientationOwner)) {
+        if (!M3KeyEvents.hasNavigationModifier(event) && isPickerHandoffKey(event.getCode(), orientationOwner)) {
             if (focusPicker.getAsBoolean()) {
                 event.consume();
             }

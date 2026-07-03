@@ -5,6 +5,9 @@
 .m3-snackbar {
     -m3-container-shape: 4px;
     -m3-content-padding: 16px;
+    -m3-single-line-container-height: 48px;
+    -m3-two-line-container-height: 68px;
+    -m3-action-container-height: 32px;
     -fx-background-color: transparent;
 }
 
@@ -22,5 +25,6 @@
 }
 
 .m3-snackbar-action {
+    -m3-container-height: -m3-action-container-height;
     -fx-text-fill: -m3-color-inverse-primary;
 }

@@ -93,7 +93,7 @@ final class PackagingConfigurationTest {
                 "releaseCheck must verify the executable demo shadow jar");
         assertTrue(buildScript.contains("tasks.named(\"jlinkDemoRuntime\")"),
                 "releaseCheck must verify the default demo jlink runtime image");
-        assertTrue(packagingGuide.contains("./gradlew -g .gradle-user-home releaseCheck"),
+        assertTrue(packagingGuide.contains("./gradlew releaseCheck"),
                 "packaging guide must document the local release verification entry point");
         assertTrue(packagingGuide.contains("releaseCheck` runs `check`, `shadowDemoJar`, and `jlinkDemoRuntime`"),
                 "packaging guide must explain the releaseCheck coverage");
@@ -127,6 +127,8 @@ final class PackagingConfigurationTest {
                 "Javadoc generation must fail when API documentation emits warnings");
         assertTrue(buildScript.contains("it.addStringOption(\"Xdoclint:none\", \"-quiet\")"),
                 "Javadoc generation should keep style-only doclint noise disabled without ignoring real warnings");
+        assertTrue(buildScript.contains("it.addStringOption(\"-show-packages\", \"exported\")"),
+                "Javadoc generation must document only exported JPMS packages");
     }
 
     /// Verifies that JPMS JavaFX readability remains separate from published artifact dependencies.
@@ -197,6 +199,18 @@ final class PackagingConfigurationTest {
                 "publication artifact verification must reject missing source jar entries");
         assertTrue(buildScript.contains("Main JAR must not bundle JavaFX classes."),
                 "publication artifact verification must reject bundled JavaFX implementation classes");
+        assertTrue(buildScript.contains("moduleNameFromModuleInfo(mainModuleInfo)"),
+                "publication artifact verification must inspect module-scoped Javadoc entries");
+        assertTrue(buildScript.contains("Javadoc JAR must only document exported M3FX API packages:"),
+                "publication artifact verification must reject non-exported package documentation");
+        assertTrue(buildScript.contains("forbiddenJavadocContentFragments"),
+                "publication artifact verification must scan generated Javadoc content for implementation leaks");
+        assertTrue(buildScript.contains("org.glavo.m3fx.internal"),
+                "publication artifact verification must reject internal package references in generated Javadocs");
+        assertTrue(buildScript.contains("org.glavo.m3fx.skins"),
+                "publication artifact verification must reject skin package references in generated Javadocs");
+        assertTrue(buildScript.contains("Javadoc JAR must not mention non-exported implementation packages or helper types:"),
+                "publication artifact verification must reject implementation details in generated Javadoc content");
         assertTrue(buildScript.contains("verifyPublicationArtifacts,"),
                 "`check` must depend on both publication metadata and artifact verification");
     }

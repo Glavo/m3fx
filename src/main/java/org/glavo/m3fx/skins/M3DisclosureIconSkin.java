@@ -11,7 +11,7 @@ import javafx.beans.value.ChangeListener;
 import javafx.scene.control.SkinBase;
 import javafx.scene.shape.SVGPath;
 import org.glavo.m3fx.animation.M3MotionSpec;
-import org.glavo.m3fx.controls.M3DisclosureIcon;
+import org.glavo.m3fx.internal.M3DisclosureIcon;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3NodeLayout;

@@ -313,8 +313,17 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-card-content-padding: 20px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-dialog-container-shape: 32px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-dialog-content-padding: 28px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-dialog-container-min-width: 280px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-dialog-container-max-width: 560px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-dialog-action-spacing: 8px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-dialog-icon-size: 24px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-snackbar-container-shape: 16px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-snackbar-content-padding: 18px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-snackbar-container-min-width: 344px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-snackbar-container-max-width: 672px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-snackbar-single-line-container-height: 48px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-snackbar-two-line-container-height: 68px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-snackbar-action-container-height: 32px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-banner-container-min-height: 88px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-banner-horizontal-padding: 28px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-tooltip-plain-container-shape: 10px"));
@@ -463,8 +472,17 @@ final class M3ThemeTest {
         assertEquals(24.0, theme.tokens().componentTokens().card().containerShape(), 0.0001);
         assertEquals(20.0, theme.tokens().componentTokens().card().contentPadding(), 0.0001);
         assertEquals(28.0, theme.tokens().componentTokens().dialog().contentPadding(), 0.0001);
+        assertEquals(280.0, theme.tokens().componentTokens().dialog().containerMinWidth(), 0.0001);
+        assertEquals(560.0, theme.tokens().componentTokens().dialog().containerMaxWidth(), 0.0001);
+        assertEquals(8.0, theme.tokens().componentTokens().dialog().actionSpacing(), 0.0001);
+        assertEquals(24.0, theme.tokens().componentTokens().dialog().iconSize(), 0.0001);
         assertEquals(16.0, theme.tokens().componentTokens().snackbar().containerShape(), 0.0001);
         assertEquals(18.0, theme.tokens().componentTokens().snackbar().contentPadding(), 0.0001);
+        assertEquals(344.0, theme.tokens().componentTokens().snackbar().containerMinWidth(), 0.0001);
+        assertEquals(672.0, theme.tokens().componentTokens().snackbar().containerMaxWidth(), 0.0001);
+        assertEquals(48.0, theme.tokens().componentTokens().snackbar().singleLineContainerHeight(), 0.0001);
+        assertEquals(68.0, theme.tokens().componentTokens().snackbar().twoLineContainerHeight(), 0.0001);
+        assertEquals(32.0, theme.tokens().componentTokens().snackbar().actionContainerHeight(), 0.0001);
         assertEquals(88.0, theme.tokens().componentTokens().banner().containerMinHeight(), 0.0001);
         assertEquals(28.0, theme.tokens().componentTokens().banner().horizontalPadding(), 0.0001);
         assertEquals(10.0, theme.tokens().componentTokens().tooltip().plainContainerShape(), 0.0001);
@@ -877,7 +895,7 @@ final class M3ThemeTest {
         M3BottomSheet bottomSheet = new M3BottomSheet();
         M3Card card = new M3Card();
         M3DialogPane dialogPane = new M3DialogPane();
-        M3Snackbar snackbar = new M3Snackbar("Saved");
+        M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
         M3Banner banner = new M3Banner("Message");
         M3TopAppBar topAppBar = new M3TopAppBar("Inbox");
         M3BottomAppBar bottomAppBar = new M3BottomAppBar();
@@ -1082,9 +1100,23 @@ final class M3ThemeTest {
         assertEquals(20.0, card.getContentPadding(), 0.0001);
         assertEquals(32.0, dialogPane.getContainerShape(), 0.0001);
         assertEquals(28.0, dialogPane.getContentPadding(), 0.0001);
+        assertEquals(280.0, dialogPane.getContainerMinWidth(), 0.0001);
+        assertEquals(560.0, dialogPane.getContainerMaxWidth(), 0.0001);
+        assertEquals(280.0, dialogPane.getMinWidth(), 0.0001);
+        assertEquals(560.0, dialogPane.getMaxWidth(), 0.0001);
         assertEquals(28.0, dialogPane.getPadding().getTop(), 0.0001);
         assertEquals(16.0, snackbar.getContainerShape(), 0.0001);
         assertEquals(18.0, snackbar.getContentPadding(), 0.0001);
+        assertEquals(344.0, snackbar.getContainerMinWidth(), 0.0001);
+        assertEquals(672.0, snackbar.getContainerMaxWidth(), 0.0001);
+        assertEquals(48.0, snackbar.getSingleLineContainerHeight(), 0.0001);
+        assertEquals(68.0, snackbar.getTwoLineContainerHeight(), 0.0001);
+        assertEquals(32.0, snackbar.getActionContainerHeight(), 0.0001);
+        assertEquals(
+                32.0,
+                ((M3Button) snackbar.lookup(".m3-snackbar-action")).getContainerHeight(),
+                0.0001
+        );
         assertEquals(88.0, banner.getMinHeight(), 0.0001);
         assertEquals(28.0, banner.getPadding().getLeft(), 0.0001);
         assertEquals(72.0, topAppBar.getPrefHeight(), 0.0001);
@@ -1240,8 +1272,20 @@ final class M3ThemeTest {
         assertEquals(16.0, card.getContentPadding(), 0.0001);
         assertEquals(28.0, dialogPane.getContainerShape(), 0.0001);
         assertEquals(24.0, dialogPane.getContentPadding(), 0.0001);
+        assertEquals(280.0, dialogPane.getContainerMinWidth(), 0.0001);
+        assertEquals(560.0, dialogPane.getContainerMaxWidth(), 0.0001);
         assertEquals(4.0, snackbar.getContainerShape(), 0.0001);
         assertEquals(16.0, snackbar.getContentPadding(), 0.0001);
+        assertEquals(344.0, snackbar.getContainerMinWidth(), 0.0001);
+        assertEquals(672.0, snackbar.getContainerMaxWidth(), 0.0001);
+        assertEquals(48.0, snackbar.getSingleLineContainerHeight(), 0.0001);
+        assertEquals(68.0, snackbar.getTwoLineContainerHeight(), 0.0001);
+        assertEquals(32.0, snackbar.getActionContainerHeight(), 0.0001);
+        assertEquals(
+                32.0,
+                ((M3Button) snackbar.lookup(".m3-snackbar-action")).getContainerHeight(),
+                0.0001
+        );
         assertEquals(80.0, banner.getMinHeight(), 0.0001);
         assertEquals(24.0, banner.getPadding().getLeft(), 0.0001);
         assertEquals(64.0, topAppBar.getPrefHeight(), 0.0001);
@@ -1502,6 +1546,10 @@ final class M3ThemeTest {
         assertEquals(1.0, card.getOutlineWidth(), 0.0001);
         assertEquals(32.0, dialogPane.getContainerShape(), 0.0001);
         assertEquals(28.0, dialogPane.getContentPadding(), 0.0001);
+        assertEquals(280.0, dialogPane.getContainerMinWidth(), 0.0001);
+        assertEquals(560.0, dialogPane.getContainerMaxWidth(), 0.0001);
+        assertEquals(280.0, dialogPane.getMinWidth(), 0.0001);
+        assertEquals(560.0, dialogPane.getMaxWidth(), 0.0001);
         assertEquals(28.0, dialogPane.getPadding().getTop(), 0.0001);
     }
 

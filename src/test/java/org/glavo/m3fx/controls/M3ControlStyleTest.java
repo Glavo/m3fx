@@ -85,8 +85,11 @@ import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3DisclosureIcon;
 import org.glavo.m3fx.internal.M3InternalIcon;
+import org.glavo.m3fx.internal.M3ListViewCell;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
+import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.shape.M3ShapeMorph;
 import org.glavo.m3fx.skins.M3AvatarSkin;
 import org.glavo.m3fx.skins.M3BadgeSkin;
@@ -1697,8 +1700,26 @@ final class M3ControlStyleTest {
                 assertEquals(22.0, surface.getContentPadding(), 0.0001));
 
         M3DialogPane dialogPane = new M3DialogPane();
-        assertBoundRegionMetricsPreserved(dialogPane, () -> dialogPane.setContentPadding(28.0), () ->
-                assertEquals(28.0, dialogPane.getContentPadding(), 0.0001));
+        assertBoundRegionMetricsPreserved(dialogPane, () -> {
+            dialogPane.setContentPadding(28.0);
+            dialogPane.setContainerMinWidth(320.0);
+            dialogPane.setContainerMaxWidth(520.0);
+        }, () -> {
+            assertEquals(28.0, dialogPane.getContentPadding(), 0.0001);
+            assertEquals(320.0, dialogPane.getContainerMinWidth(), 0.0001);
+            assertEquals(520.0, dialogPane.getContainerMaxWidth(), 0.0001);
+        });
+
+        M3Banner banner = new M3Banner("Message");
+        assertBoundRegionMetricsPreserved(banner, () -> {
+            banner.setContainerMinHeight(92.0);
+            banner.setVerticalPadding(22.0);
+            banner.setHorizontalPadding(30.0);
+        }, () -> {
+            assertEquals(92.0, banner.getContainerMinHeight(), 0.0001);
+            assertEquals(22.0, banner.getVerticalPadding(), 0.0001);
+            assertEquals(30.0, banner.getHorizontalPadding(), 0.0001);
+        });
     }
 
     /// Verifies that generated component token stylesheets preserve application-bound JavaFX layout properties.
@@ -4534,12 +4555,159 @@ final class M3ControlStyleTest {
     @Test
     void snackbarTokensAreStyleable() {
         M3Snackbar snackbar = new M3Snackbar("Message");
-        snackbar.setStyle("-m3-container-shape: 10px; -m3-content-padding: 24px;");
+        snackbar.setStyle("-m3-container-shape: 10px; -m3-content-padding: 24px; "
+                + "-m3-container-min-width: 280px; -m3-container-max-width: 520px; "
+                + "-m3-single-line-container-height: 52px; -m3-two-line-container-height: 76px; "
+                + "-m3-action-container-height: 40px;");
 
         applyCss(snackbar);
 
         assertEquals(10.0, snackbar.getContainerShape(), 0.0001);
         assertEquals(24.0, snackbar.getContentPadding(), 0.0001);
+        assertEquals(280.0, snackbar.getContainerMinWidth(), 0.0001);
+        assertEquals(520.0, snackbar.getContainerMaxWidth(), 0.0001);
+        assertEquals(52.0, snackbar.getSingleLineContainerHeight(), 0.0001);
+        assertEquals(76.0, snackbar.getTwoLineContainerHeight(), 0.0001);
+        assertEquals(40.0, snackbar.getActionContainerHeight(), 0.0001);
+    }
+
+    /// Verifies that snackbar action height tokens survive button interaction state CSS.
+    @Test
+    void snackbarActionHeightTokenSurvivesButtonInteractionStates() {
+        runOnFxThread(() -> {
+            M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
+            snackbar.setStyle("-m3-action-container-height: 40px;");
+            StackPane root = new StackPane(snackbar);
+            Scene scene = new Scene(root, 360.0, 120.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.layout();
+
+            M3Button actionButton = assertInstanceOf(M3Button.class, snackbar.lookup(".m3-snackbar-action"));
+            assertEquals(40.0, snackbar.getActionContainerHeight(), 0.0001);
+            assertEquals(40.0, actionButton.getContainerHeight(), 0.0001);
+
+            actionButton.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
+            root.applyCss();
+            assertEquals(40.0, actionButton.getContainerHeight(), 0.0001);
+
+            actionButton.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
+            root.applyCss();
+            assertEquals(40.0, actionButton.getContainerHeight(), 0.0001);
+        });
+    }
+
+    /// Verifies that snackbar container height follows Material single-line and two-line tokens.
+    @Test
+    void snackbarContainerHeightFollowsLineCountTokens() {
+        runOnFxThread(() -> {
+            M3Snackbar singleLine = new M3Snackbar("Saved");
+            M3Snackbar twoLine = new M3Snackbar(
+                    "Snackbar messages wrap to two lines when the available width is constrained."
+            );
+            M3Snackbar singleLineAction = new M3Snackbar("Saved", "Undo");
+            M3Snackbar twoLineAction = new M3Snackbar(
+                    "Snackbar messages with actions also wrap when constrained.",
+                    "Undo"
+            );
+            M3Snackbar longAction = new M3Snackbar(
+                    "A long action keeps the snackbar on its expanded container height.",
+                    "Review changes"
+            );
+            M3Snackbar customTwoLine = new M3Snackbar(
+                    "Snackbar messages wrap to two lines when the available width is constrained."
+            );
+            longAction.setStyle("-m3-single-line-container-height: 52px; -m3-two-line-container-height: 88px;");
+            customTwoLine.setStyle("-m3-single-line-container-height: 52px; -m3-two-line-container-height: 76px;");
+            VBox root = new VBox(8.0, singleLine, twoLine, singleLineAction, twoLineAction, longAction, customTwoLine);
+            Scene scene = new Scene(root, 260.0, 420.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.layout();
+
+            M3Button singleLineActionButton = assertInstanceOf(
+                    M3Button.class,
+                    singleLineAction.lookup(".m3-snackbar-action")
+            );
+
+            assertEquals(32.0, singleLineActionButton.getContainerHeight(), 0.0001);
+            assertEquals(48.0, singleLine.prefHeight(220.0), 0.0001);
+            assertEquals(48.0, singleLineAction.prefHeight(220.0), 0.0001);
+            assertTrue(twoLine.prefHeight(220.0) >= 68.0,
+                    () -> "two-line snackbar height should honor the Material token: "
+                            + twoLine.prefHeight(220.0));
+            assertTrue(twoLineAction.prefHeight(180.0) >= 68.0,
+                    () -> "two-line snackbar with an action should honor the Material token: "
+                            + twoLineAction.prefHeight(180.0));
+            assertTrue(longAction.prefHeight(180.0) >= 88.0,
+                    () -> "long-action snackbar should honor the custom two-line token: "
+                            + longAction.prefHeight(180.0));
+            assertTrue(customTwoLine.prefHeight(220.0) >= 76.0,
+                    () -> "custom two-line snackbar height should honor the styleable token: "
+                            + customTwoLine.prefHeight(220.0));
+        });
+    }
+
+    /// Verifies that snackbar width tokens constrain host and skin layout.
+    @Test
+    void snackbarContainerWidthFollowsTokensAndHostBounds() {
+        runOnFxThread(() -> {
+            M3Snackbar shortSnackbar = new M3Snackbar("Saved", "Undo");
+            M3Snackbar defaultSnackbar = new M3Snackbar(
+                    "A longer snackbar message should grow until the Material maximum width token is reached.",
+                    "Undo"
+            );
+            M3Snackbar customSnackbar = new M3Snackbar(
+                    "A custom snackbar maximum width should be applied by the host and the skin layout.",
+                    "Review"
+            );
+            customSnackbar.setStyle("-m3-container-min-width: 240px; -m3-container-max-width: 420px;");
+
+            M3SnackbarHost host = new M3SnackbarHost();
+            host.setDisplayDuration(Duration.ZERO);
+            StackPane root = new StackPane(host);
+            Scene scene = new Scene(root, 1000.0, 180.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+
+            host.show(shortSnackbar);
+            root.applyCss();
+            root.layout();
+
+            Region shortContainer = assertInstanceOf(
+                    Region.class,
+                    shortSnackbar.lookup(".m3-snackbar-container")
+            );
+            assertEquals(344.0, shortSnackbar.getContainerMinWidth(), 0.0001);
+            assertEquals(672.0, shortSnackbar.getContainerMaxWidth(), 0.0001);
+            assertEquals(344.0, shortSnackbar.getWidth(), 1.0);
+            assertEquals(344.0, shortContainer.getBoundsInParent().getWidth(), 1.0);
+
+            host.show(defaultSnackbar);
+            root.applyCss();
+            root.layout();
+
+            Region defaultContainer = assertInstanceOf(
+                    Region.class,
+                    defaultSnackbar.lookup(".m3-snackbar-container")
+            );
+            assertEquals(344.0, defaultSnackbar.getContainerMinWidth(), 0.0001);
+            assertEquals(672.0, defaultSnackbar.getContainerMaxWidth(), 0.0001);
+            assertEquals(672.0, defaultSnackbar.getWidth(), 1.0);
+            assertEquals(672.0, defaultContainer.getBoundsInParent().getWidth(), 1.0);
+
+            host.show(customSnackbar);
+            root.applyCss();
+            root.layout();
+
+            Region customContainer = assertInstanceOf(
+                    Region.class,
+                    customSnackbar.lookup(".m3-snackbar-container")
+            );
+            assertEquals(240.0, customSnackbar.getContainerMinWidth(), 0.0001);
+            assertEquals(420.0, customSnackbar.getContainerMaxWidth(), 0.0001);
+            assertEquals(420.0, customSnackbar.getWidth(), 1.0);
+            assertEquals(420.0, customContainer.getBoundsInParent().getWidth(), 1.0);
+        });
     }
 
     /// Verifies that banners expose text, icon, actions, and accessibility state.
@@ -4703,6 +4871,42 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that banner component tokens are styleable and update the rendered skin layout.
+    @Test
+    void bannerTokensAreStyleableAndUpdateSkinSpacing() {
+        M3Banner banner = createBanner("Message", new Label("i"), new M3Button("Retry"), new M3Button("Dismiss"));
+        banner.setStyle("-m3-container-min-height: 96px; -m3-vertical-padding: 22px; "
+                + "-m3-horizontal-padding: 30px; -m3-content-spacing: 24px; -m3-action-spacing: 14px;");
+        Pane root = new Pane(banner);
+        Scene scene = new Scene(root, 640.0, 140.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        root.layout();
+
+        HBox container = assertInstanceOf(HBox.class, banner.lookup("." + M3Banner.CONTAINER_STYLE_CLASS));
+        HBox actions = assertInstanceOf(HBox.class, banner.lookup("." + M3Banner.ACTIONS_STYLE_CLASS));
+        assertEquals(96.0, banner.getContainerMinHeight(), 0.0001);
+        assertEquals(22.0, banner.getVerticalPadding(), 0.0001);
+        assertEquals(30.0, banner.getHorizontalPadding(), 0.0001);
+        assertEquals(24.0, banner.getContentSpacing(), 0.0001);
+        assertEquals(14.0, banner.getActionSpacing(), 0.0001);
+        assertEquals(96.0, banner.getMinHeight(), 0.0001);
+        assertEquals(new Insets(22.0, 30.0, 22.0, 30.0), banner.getPadding());
+        assertEquals(24.0, container.getSpacing(), 0.0001);
+        assertEquals(14.0, actions.getSpacing(), 0.0001);
+
+        banner.setContentSpacing(28.0);
+        banner.setActionSpacing(18.0);
+        banner.setVerticalPadding(26.0);
+        root.applyCss();
+        root.layout();
+
+        assertEquals(28.0, container.getSpacing(), 0.0001);
+        assertEquals(18.0, actions.getSpacing(), 0.0001);
+        assertEquals(new Insets(26.0, 30.0, 26.0, 30.0), banner.getPadding());
+    }
+
     /// Verifies that banner component tokens apply profile-specific layout metrics.
     @Test
     void bannerAppliesProfileMetrics() {
@@ -4717,6 +4921,11 @@ final class M3ControlStyleTest {
         ));
         root.applyCss();
 
+        assertEquals(88.0, banner.getContainerMinHeight(), 0.0001);
+        assertEquals(20.0, banner.getVerticalPadding(), 0.0001);
+        assertEquals(28.0, banner.getHorizontalPadding(), 0.0001);
+        assertEquals(20.0, banner.getContentSpacing(), 0.0001);
+        assertEquals(12.0, banner.getActionSpacing(), 0.0001);
         assertEquals(88.0, banner.getMinHeight(), 0.0001);
         assertEquals(20.0, banner.getPadding().getTop(), 0.0001);
         assertEquals(28.0, banner.getPadding().getLeft(), 0.0001);
@@ -4726,6 +4935,11 @@ final class M3ControlStyleTest {
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         root.applyCss();
 
+        assertEquals(80.0, banner.getContainerMinHeight(), 0.0001);
+        assertEquals(16.0, banner.getVerticalPadding(), 0.0001);
+        assertEquals(24.0, banner.getHorizontalPadding(), 0.0001);
+        assertEquals(16.0, banner.getContentSpacing(), 0.0001);
+        assertEquals(8.0, banner.getActionSpacing(), 0.0001);
         assertEquals(80.0, banner.getMinHeight(), 0.0001);
         assertEquals(16.0, banner.getPadding().getTop(), 0.0001);
         assertEquals(24.0, banner.getPadding().getLeft(), 0.0001);
@@ -6282,7 +6496,13 @@ final class M3ControlStyleTest {
     @Test
     void dialogPaneTokensAreStyleable() {
         M3DialogPane dialogPane = new M3DialogPane();
-        dialogPane.setStyle("-m3-container-shape: 20px; -m3-content-padding: 28px;");
+        M3Icon graphic = new M3Icon("info");
+        graphic.setStyle("-fx-opacity: 0.75;");
+        dialogPane.setGraphic(graphic);
+        dialogPane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
+        dialogPane.setStyle("-m3-container-shape: 20px; -m3-content-padding: 28px; "
+                + "-m3-container-min-width: 300px; -m3-container-max-width: 520px; "
+                + "-m3-action-spacing: 12px; -m3-dialog-icon-size: 28px;");
         Pane root = new Pane(dialogPane);
         Scene scene = new Scene(root, 480.0, 240.0);
 
@@ -6298,6 +6518,22 @@ final class M3ControlStyleTest {
         assertEquals(28.0, dialogPane.getPadding().getRight(), 0.0001);
         assertEquals(28.0, dialogPane.getPadding().getBottom(), 0.0001);
         assertEquals(28.0, dialogPane.getPadding().getLeft(), 0.0001);
+        assertEquals(300.0, dialogPane.getContainerMinWidth(), 0.0001);
+        assertEquals(520.0, dialogPane.getContainerMaxWidth(), 0.0001);
+        assertEquals(12.0, dialogPane.getActionSpacing(), 0.0001);
+        assertEquals(28.0, dialogPane.getIconSize(), 0.0001);
+        assertEquals(300.0, dialogPane.getMinWidth(), 0.0001);
+        assertEquals(520.0, dialogPane.getMaxWidth(), 0.0001);
+        assertEquals(28.0, graphic.getIconSize(), 0.0001);
+        assertEquals(M3IconVariant.ON_SURFACE_VARIANT, graphic.getVariant());
+        assertTrue(graphic.getStyle().contains("-fx-text-fill: -m3-color-secondary;"));
+        assertTrue(graphic.getStyle().contains("-fx-opacity: 0.75;"));
+        assertEquals(M3Theme.defaultTheme().colorScheme().getColor(org.glavo.monetfx.ColorRole.SECONDARY),
+                graphic.getTextFill());
+        Node buttonBarContainer = Objects.requireNonNull(dialogPane.lookup(".container"),
+                "dialog button bar container");
+        HBox actionRow = assertInstanceOf(HBox.class, buttonBarContainer);
+        assertEquals(12.0, actionRow.getSpacing(), 0.0001);
         assertRegionRadii(dialogPane, 20.0, 20.0, 20.0, 20.0);
 
         dialogPane.setContainerShape(12.0);
@@ -9636,6 +9872,48 @@ final class M3ControlStyleTest {
         assertThrows(NullPointerException.class, () -> tooltip.addAction(null));
     }
 
+    /// Verifies that rich tooltip token CSS leaves caller-provided button styles untouched.
+    @Test
+    void richTooltipTokenCssDoesNotRewriteActionButtonInlineStyle() {
+        runOnFxThread(() -> {
+            Stage stage = new Stage();
+            M3Button action = new M3Button("Action");
+            action.setStyle("-m3-horizontal-padding: 20px;");
+            M3RichTooltip tooltip = new M3RichTooltip("Title", "Supporting text", action);
+            M3Theme expressiveTheme = M3Theme.fromSeed(
+                    Color.web("#006a6a"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.LIGHT
+            );
+
+            try {
+                Label owner = new Label("Owner");
+                StackPane ownerRoot = new StackPane(owner);
+                Scene scene = new Scene(ownerRoot, 320.0, 160.0);
+                M3ThemeManager.install(scene, expressiveTheme);
+                stage.setScene(scene);
+                stage.show();
+
+                tooltip.setTheme(expressiveTheme);
+                tooltip.show(owner, stage.getX() + 24.0, stage.getY() + 48.0);
+                tooltip.getScene().getRoot().applyCss();
+
+                assertEquals("-m3-horizontal-padding: 20px;", action.getStyle());
+                assertEquals(36.0, action.getContainerHeight(), 0.0001);
+                assertEquals(20.0, action.getHorizontalPadding(), 0.0001);
+
+                tooltip.setTheme(null);
+                assertEquals("-m3-horizontal-padding: 20px;", action.getStyle());
+
+                tooltip.setTheme(expressiveTheme);
+                tooltip.clearActions();
+                assertEquals("-m3-horizontal-padding: 20px;", action.getStyle());
+            } finally {
+                tooltip.hide();
+                stage.close();
+            }
+        });
+    }
     /// Verifies that tooltip component tokens apply profile-specific popup metrics.
     @Test
     void tooltipAppliesProfileMetrics() {
@@ -11907,6 +12185,59 @@ final class M3ControlStyleTest {
             } finally {
                 menuButton.hideMenu();
                 stage.close();
+            }
+        });
+    }
+
+    /// Verifies that generated theme rules keep higher priority than popup control stylesheets.
+    @Test
+    void popupContextSynchronizerKeepsThemeStylesheetAfterPopupControlStylesheets() {
+        runOnFxThread(() -> {
+            Label owner = new Label("Owner");
+            Pane ownerContainer = new Pane(owner);
+            Pane root = new Pane(ownerContainer);
+            Pane popupRoot = new Pane();
+            String controlStylesheet = M3Stylesheets.controlStylesheet("menu.css");
+            M3PopupContextSynchronizer synchronizer = new M3PopupContextSynchronizer(
+                    owner,
+                    popupRoot,
+                    controlStylesheet
+            );
+            M3Theme baselineTheme = M3Theme.defaultTheme();
+            M3Theme expressiveDarkTheme = M3Theme.fromSeed(
+                    Color.web("#006a6a"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.DARK
+            );
+            Scene scene = new Scene(root, 420.0, 220.0);
+            try {
+                M3ThemeManager.install(scene, baselineTheme);
+                synchronizer.start();
+
+                String baselineThemeStylesheet = M3ThemeManager.themeStylesheetUrl(baselineTheme);
+                List<String> baselineStylesheets = popupRoot.getStylesheets();
+                assertTrue(baselineStylesheets.indexOf(controlStylesheet)
+                        < baselineStylesheets.lastIndexOf(baselineThemeStylesheet));
+                assertEquals(baselineStylesheets.size() - 1, baselineStylesheets.lastIndexOf(baselineThemeStylesheet));
+
+                M3ThemeManager.install(scene, expressiveDarkTheme);
+
+                String expressiveThemeStylesheet = M3ThemeManager.themeStylesheetUrl(expressiveDarkTheme);
+                List<String> expressiveStylesheets = popupRoot.getStylesheets();
+                assertFalse(expressiveStylesheets.contains(baselineThemeStylesheet));
+                assertTrue(expressiveStylesheets.indexOf(controlStylesheet)
+                        < expressiveStylesheets.lastIndexOf(expressiveThemeStylesheet));
+                assertEquals(expressiveStylesheets.size() - 1, expressiveStylesheets.lastIndexOf(expressiveThemeStylesheet));
+
+                M3ThemeManager.uninstall(scene);
+                M3ThemeManager.install(ownerContainer, baselineTheme);
+
+                List<String> localStylesheets = popupRoot.getStylesheets();
+                assertTrue(localStylesheets.indexOf(controlStylesheet)
+                        < localStylesheets.lastIndexOf(baselineThemeStylesheet));
+                assertEquals(localStylesheets.size() - 1, localStylesheets.lastIndexOf(baselineThemeStylesheet));
+            } finally {
+                synchronizer.stop();
             }
         });
     }
@@ -29665,6 +29996,11 @@ final class M3ControlStyleTest {
                 Bounds renderedBounds = renderedTooltip.getLayoutBounds();
                 assertPopupRootUsesThemeClasses(tooltipRoot, M3Theme.defaultTheme());
                 assertTrue(renderedTooltip.isWrapText(), "long tooltips should wrap text");
+                assertEquals(4.0, renderedTooltip.getPadding().getTop(), 0.0001);
+                assertEquals(4.0, renderedTooltip.getPadding().getBottom(), 0.0001);
+                assertEquals(8.0, renderedTooltip.getPadding().getLeft(), 0.0001);
+                assertEquals(8.0, renderedTooltip.getPadding().getRight(), 0.0001);
+                assertRegionRadii(renderedTooltip, 4.0, 4.0, 4.0, 4.0);
                 assertTrue(popupBounds.getWidth() >= 250.0 && popupBounds.getWidth() <= 270.0,
                         () -> "popup should honor the requested wrap width: " + popupBounds);
                 assertTrue(renderedBounds.getHeight() >= 38.0,
@@ -29727,6 +30063,19 @@ final class M3ControlStyleTest {
                         HBox.class,
                         tooltipRoot.lookup("." + M3RichTooltip.ACTIONS_STYLE_CLASS)
                 );
+                assertRegionFill(container, Color.rgb(242, 236, 244));
+                assertRegionRadii(container, 12.0, 12.0, 12.0, 12.0);
+                assertEquals(new Insets(12.0, 16.0, 8.0, 16.0), container.getPadding());
+                Label titleLabel = assertInstanceOf(
+                        Label.class,
+                        tooltipRoot.lookup("." + M3RichTooltip.TITLE_STYLE_CLASS)
+                );
+                Label supportingTextLabel = assertInstanceOf(
+                        Label.class,
+                        tooltipRoot.lookup("." + M3RichTooltip.SUPPORTING_TEXT_STYLE_CLASS)
+                );
+                assertEquals(Color.rgb(73, 69, 78), titleLabel.getTextFill());
+                assertEquals(Color.rgb(73, 69, 78), supportingTextLabel.getTextFill());
                 Node action = tooltip.getActions().get(0);
                 assertNodeInsideAncestor(container, action, 0.5);
                 assertNodeInsideAncestor(container, actions, 0.5);

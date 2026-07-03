@@ -9,7 +9,7 @@ import javafx.geometry.HPos;
 import javafx.geometry.VPos;
 import javafx.scene.Node;
 import javafx.scene.control.SkinBase;
-import org.glavo.m3fx.controls.M3ListViewCell;
+import org.glavo.m3fx.internal.M3ListViewCell;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;

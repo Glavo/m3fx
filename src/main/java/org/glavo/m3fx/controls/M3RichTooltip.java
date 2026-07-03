@@ -14,8 +14,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3MotionBehavior;
-import org.glavo.m3fx.theme.M3Theme;
-import org.glavo.m3fx.tokens.M3ComponentTokens;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -47,10 +45,6 @@ public class M3RichTooltip extends M3Tooltip {
 
     /// The minimum rich tooltip height when actions are visible.
     private static final double ACTION_CONTENT_MIN_HEIGHT = 160.0;
-
-    /// The action button property key used to store the caller-provided inline style.
-    private static final String ACTION_BUTTON_BASE_STYLE_KEY =
-            M3RichTooltip.class.getName() + ".actionButtonBaseStyle";
 
     // Backing property for the public rich tooltip title API.
     private final StringProperty title = new SimpleStringProperty(this, "title", "");
@@ -223,22 +217,12 @@ public class M3RichTooltip extends M3Tooltip {
 
         title.addListener(observable -> updateTextState());
         supportingText.addListener(observable -> updateTextState());
-        actions.getChildren().addListener((ListChangeListener<Node>) change -> {
-            while (change.next()) {
-                for (Node removed : change.getRemoved()) {
-                    restoreActionButtonStyle(removed);
-                }
-            }
-            updateActionsVisibility();
-            applyRichTooltipMetrics(getTheme());
-        });
-        themeProperty().addListener((observable, oldValue, newValue) -> applyRichTooltipMetrics(newValue));
+        actions.getChildren().addListener((ListChangeListener<Node>) change -> updateActionsVisibility());
 
         container.getChildren().addAll(titleLabel, supportingTextLabel, actions);
         setGraphic(container);
         updateTextState();
         updateActionsVisibility();
-        applyRichTooltipMetrics(getTheme());
     }
 
     /// Validates an action array.
@@ -402,86 +386,6 @@ public class M3RichTooltip extends M3Tooltip {
             }
         }
         return -1;
-    }
-
-    /// Applies profile-specific rich tooltip metrics to internal content nodes.
-    private void applyRichTooltipMetrics(@Nullable M3Theme theme) {
-        if (theme == null) {
-            container.setStyle("");
-            actions.setStyle("");
-            restoreActionButtonStyles();
-            return;
-        }
-
-        M3ComponentTokens.TooltipTokens tokens = theme.tokens().componentTokens().tooltip();
-        container.setStyle("-fx-background-radius: "
-                + pixels(tokens.richContainerShape())
-                + "; -fx-padding: "
-                + pixels(tokens.richTopPadding())
-                + " "
-                + pixels(tokens.richHorizontalPadding())
-                + " "
-                + pixels(tokens.richBottomPadding())
-                + " "
-                + pixels(tokens.richHorizontalPadding())
-                + "; -fx-spacing: "
-                + pixels(tokens.richContentSpacing())
-                + "; -fx-pref-width: "
-                + pixels(tokens.richPreferredWidth())
-                + ";");
-        actions.setStyle("-fx-spacing: " + pixels(tokens.richActionSpacing()) + ";");
-        for (Node action : actions.getChildren()) {
-            if (action instanceof M3Button button) {
-                if (!button.getProperties().containsKey(ACTION_BUTTON_BASE_STYLE_KEY)) {
-                    button.getProperties().put(ACTION_BUTTON_BASE_STYLE_KEY, button.getStyle());
-                }
-                String tokenStyle = "-m3-container-height: "
-                        + pixels(tokens.richActionButtonHeight())
-                        + "; -m3-horizontal-padding: "
-                        + pixels(tokens.richActionButtonHorizontalPadding())
-                        + ";";
-                button.setStyle(mergeStyles(actionButtonBaseStyle(button), tokenStyle));
-            }
-        }
-    }
-
-    /// Restores caller-provided inline styles on action buttons.
-    private void restoreActionButtonStyles() {
-        for (Node action : actions.getChildren()) {
-            restoreActionButtonStyle(action);
-        }
-    }
-
-    /// Restores the caller-provided inline style on one action button.
-    private static void restoreActionButtonStyle(Node action) {
-        if (action instanceof M3Button button) {
-            Object baseStyle = button.getProperties().remove(ACTION_BUTTON_BASE_STYLE_KEY);
-            if (baseStyle instanceof String style) {
-                button.setStyle(style);
-            }
-        }
-    }
-
-    /// Returns the caller-provided inline style stored for an action button.
-    private static String actionButtonBaseStyle(M3Button button) {
-        Object baseStyle = button.getProperties().get(ACTION_BUTTON_BASE_STYLE_KEY);
-        return baseStyle instanceof String style ? style : "";
-    }
-
-    /// Merges an existing inline style and generated token style.
-    private static String mergeStyles(String baseStyle, String tokenStyle) {
-        if (baseStyle.isBlank()) {
-            return tokenStyle;
-        }
-        return baseStyle.stripTrailing() + " " + tokenStyle;
-    }
-
-    /// Formats a CSS pixel value.
-    private static String pixels(double value) {
-        if (Math.rint(value) == value) {
-            return Long.toString((long) value) + "px";
-        }
-        return Double.toString(value) + "px";
     }
 
     /// Rich tooltip content container that preserves the action minimum height without clipping longer content.

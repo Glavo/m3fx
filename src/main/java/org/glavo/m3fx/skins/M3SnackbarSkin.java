@@ -4,11 +4,13 @@
 package org.glavo.m3fx.skins;
 
 import javafx.beans.InvalidationListener;
+import javafx.css.StyleOrigin;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Snackbar;
@@ -19,8 +21,6 @@ import org.jetbrains.annotations.Nullable;
 /// The default skin for [M3Snackbar].
 @NotNullByDefault
 public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
-    /// The Material minimum height for a single-line snackbar container.
-    private static final double MIN_CONTAINER_HEIGHT = 48.0;
 
     /// The snackbar layout container.
     private final HBox container = new HBox();
@@ -53,11 +53,17 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
         actionButton.setVariant(M3ButtonVariant.TEXT);
 
         textLabel.textProperty().bind(control.textProperty());
+        textLabel.setWrapText(true);
         actionButton.textProperty().bind(control.actionTextProperty());
         actionButton.setOnAction(this::fireAction);
         control.actionTextProperty().addListener(actionTextInvalidation);
         control.containerShapeProperty().addListener(tokenInvalidation);
         control.contentPaddingProperty().addListener(tokenInvalidation);
+        control.containerMinWidthProperty().addListener(tokenInvalidation);
+        control.containerMaxWidthProperty().addListener(tokenInvalidation);
+        control.singleLineContainerHeightProperty().addListener(tokenInvalidation);
+        control.twoLineContainerHeightProperty().addListener(tokenInvalidation);
+        control.actionContainerHeightProperty().addListener(tokenInvalidation);
         control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
 
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
@@ -84,6 +90,11 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
         snackbar.actionTextProperty().removeListener(actionTextInvalidation);
         snackbar.containerShapeProperty().removeListener(tokenInvalidation);
         snackbar.contentPaddingProperty().removeListener(tokenInvalidation);
+        snackbar.containerMinWidthProperty().removeListener(tokenInvalidation);
+        snackbar.containerMaxWidthProperty().removeListener(tokenInvalidation);
+        snackbar.singleLineContainerHeightProperty().removeListener(tokenInvalidation);
+        snackbar.twoLineContainerHeightProperty().removeListener(tokenInvalidation);
+        snackbar.actionContainerHeightProperty().removeListener(tokenInvalidation);
         snackbar.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
         container.nodeOrientationProperty().unbind();
         super.dispose();
@@ -111,9 +122,114 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
         double leadingPadding = padding;
         double trailingPadding = actionButton.isManaged() ? padding / 2.0 : padding;
         container.setPadding(snackbarPadding(verticalPadding, leadingPadding, trailingPadding));
-        container.setMinHeight(MIN_CONTAINER_HEIGHT);
+        container.setMinHeight(snackbar.getSingleLineContainerHeight());
+        actionButton.containerHeightProperty().applyStyle(StyleOrigin.USER_AGENT, snackbar.getActionContainerHeight());
         String shape = formatPixels(snackbar.getContainerShape());
         container.setStyle("-fx-background-radius: " + shape + ";");
+    }
+
+    /// Computes the minimum snackbar width from the container width token.
+    @Override
+    protected double computeMinWidth(
+            double height,
+            double topInset,
+            double rightInset,
+            double bottomInset,
+            double leftInset
+    ) {
+        return leftInset + effectiveContainerMinWidth() + rightInset;
+    }
+
+    /// Computes the preferred snackbar width from content and container width tokens.
+    @Override
+    protected double computePrefWidth(
+            double height,
+            double topInset,
+            double rightInset,
+            double bottomInset,
+            double leftInset
+    ) {
+        return leftInset + boundedContainerWidth(container.prefWidth(-1.0)) + rightInset;
+    }
+
+    /// Computes the minimum snackbar height for the current text wrapping state.
+    @Override
+    protected double computeMinHeight(
+            double width,
+            double topInset,
+            double rightInset,
+            double bottomInset,
+            double leftInset
+    ) {
+        return computePrefHeight(width, topInset, rightInset, bottomInset, leftInset);
+    }
+
+    /// Computes the preferred snackbar height for single-line and two-line content tokens.
+    @Override
+    protected double computePrefHeight(
+            double width,
+            double topInset,
+            double rightInset,
+            double bottomInset,
+            double leftInset
+    ) {
+        double contentWidth = width < 0.0 ? -1.0 : Math.max(0.0, width - leftInset - rightInset);
+        return topInset + snackbarContainerHeight(contentWidth) + bottomInset;
+    }
+
+    /// Lays out the snackbar container inside the control content area.
+    @Override
+    protected void layoutChildren(double x, double y, double width, double height) {
+        double containerHeight = Math.max(height, snackbarContainerHeight(width));
+        container.resizeRelocate(
+                snapPositionX(x),
+                snapPositionY(y),
+                snapSizeX(width),
+                snapSizeY(containerHeight)
+        );
+    }
+
+    /// Returns the preferred container width clamped by the width tokens.
+    private double boundedContainerWidth(double preferredWidth) {
+        return Math.min(effectiveContainerMaxWidth(), Math.max(effectiveContainerMinWidth(), preferredWidth));
+    }
+
+    /// Returns the effective minimum container width.
+    private double effectiveContainerMinWidth() {
+        M3Snackbar snackbar = getSkinnable();
+        return Math.min(snackbar.getContainerMinWidth(), effectiveContainerMaxWidth());
+    }
+
+    /// Returns the effective maximum container width.
+    private double effectiveContainerMaxWidth() {
+        M3Snackbar snackbar = getSkinnable();
+        return Math.max(snackbar.getContainerMinWidth(), snackbar.getContainerMaxWidth());
+    }
+
+    /// Returns the snackbar container height selected for the available width.
+    private double snackbarContainerHeight(double width) {
+        M3Snackbar snackbar = getSkinnable();
+        double tokenHeight = textWrapsAt(width)
+                ? snackbar.getTwoLineContainerHeight()
+                : snackbar.getSingleLineContainerHeight();
+        return Math.max(tokenHeight, snapSizeY(container.prefHeight(width)));
+    }
+
+    /// Returns whether the message label needs more than one line at the available container width.
+    private boolean textWrapsAt(double containerWidth) {
+        if (containerWidth < 0.0 || getSkinnable().getText().isBlank()) {
+            return false;
+        }
+
+        Insets padding = container.getPadding();
+        double labelWidth = containerWidth - padding.getLeft() - padding.getRight();
+        if (actionButton.isManaged()) {
+            labelWidth -= actionButton.prefWidth(-1.0) + container.getSpacing();
+        }
+        labelWidth = Math.max(0.0, labelWidth);
+        double singleLineHeight = textLabel.prefHeight(-1.0);
+        double wrappedHeight = textLabel.prefHeight(labelWidth);
+        return wrappedHeight > singleLineHeight + 0.5;
     }
 
     /// Returns physical container padding for logical snackbar content edges.

@@ -503,7 +503,7 @@ public class M3ListPane extends Control {
             return;
         }
 
-        if (event.isAltDown() || event.isControlDown() || event.isMetaDown() || event.isShortcutDown()) {
+        if (M3KeyEvents.hasShortcutModifier(event)) {
             return;
         }
 

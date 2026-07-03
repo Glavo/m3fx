@@ -1,14 +1,13 @@
 // Copyright (c) 2026 Glavo
 // SPDX-License-Identifier: Apache-2.0
 
-package org.glavo.m3fx.controls;
+package org.glavo.m3fx.internal;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.css.PseudoClass;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
-import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3DisclosureIconSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 
@@ -41,7 +40,7 @@ public final class M3DisclosureIcon extends Control {
     ///
     /// @param expanded whether the disclosure target starts expanded
     public M3DisclosureIcon(boolean expanded) {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        getStyleClass().add(STYLE_CLASS);
         setFocusTraversable(false);
         setExpanded(expanded);
     }

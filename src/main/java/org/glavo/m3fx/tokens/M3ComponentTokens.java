@@ -512,17 +512,26 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double cardContainerShape = expressive ? shapeTokens.large() : shapeTokens.medium();
         double cardContentPadding = density.apply(expressive ? 20.0 : 16.0);
         double dialogContentPadding = density.apply(expressive ? 28.0 : 24.0);
+        double dialogContainerMinWidth = density.apply(280.0);
+        double dialogContainerMaxWidth = density.apply(560.0);
+        double dialogActionSpacing = density.apply(8.0);
+        double dialogIconSize = density.apply(24.0);
         double snackbarContainerShape = expressive ? shapeTokens.medium() : shapeTokens.extraSmall();
         double snackbarContentPadding = density.apply(expressive ? 18.0 : 16.0);
+        double snackbarContainerMinWidth = density.apply(344.0);
+        double snackbarContainerMaxWidth = density.apply(672.0);
+        double snackbarSingleLineContainerHeight = density.apply(48.0);
+        double snackbarTwoLineContainerHeight = density.apply(68.0);
+        double snackbarActionContainerHeight = density.apply(32.0);
         double bannerMinHeight = density.apply(expressive ? 88.0 : 80.0);
         double bannerVerticalPadding = density.apply(expressive ? 20.0 : 16.0);
         double bannerHorizontalPadding = density.apply(expressive ? 28.0 : 24.0);
         double bannerContentSpacing = density.apply(expressive ? 20.0 : 16.0);
         double bannerActionSpacing = density.apply(expressive ? 12.0 : 8.0);
         double tooltipPlainContainerShape = expressive ? shapeTokens.small() : shapeTokens.extraSmall();
-        double tooltipPlainVerticalPadding = density.apply(expressive ? 8.0 : 6.0);
+        double tooltipPlainVerticalPadding = density.apply(expressive ? 8.0 : 4.0);
         double tooltipPlainHorizontalPadding = density.apply(expressive ? 12.0 : 8.0);
-        double tooltipRichContainerShape = expressive ? shapeTokens.medium() : shapeTokens.small();
+        double tooltipRichContainerShape = shapeTokens.medium();
         double tooltipRichTopPadding = density.apply(expressive ? 16.0 : 12.0);
         double tooltipRichHorizontalPadding = density.apply(expressive ? 20.0 : 16.0);
         double tooltipRichBottomPadding = density.apply(expressive ? 12.0 : 8.0);
@@ -898,8 +907,23 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         carouselSelectedShadowOffsetY
                 ),
                 new CardTokens(cardContainerShape, cardContentPadding, 1.0),
-                new DialogTokens(shapeTokens.extraLarge(), dialogContentPadding),
-                new SnackbarTokens(snackbarContainerShape, snackbarContentPadding),
+                new DialogTokens(
+                        shapeTokens.extraLarge(),
+                        dialogContentPadding,
+                        dialogContainerMinWidth,
+                        dialogContainerMaxWidth,
+                        dialogActionSpacing,
+                        dialogIconSize
+                ),
+                new SnackbarTokens(
+                        snackbarContainerShape,
+                        snackbarContentPadding,
+                        snackbarContainerMinWidth,
+                        snackbarContainerMaxWidth,
+                        snackbarSingleLineContainerHeight,
+                        snackbarTwoLineContainerHeight,
+                        snackbarActionContainerHeight
+                ),
                 new BannerTokens(
                         bannerMinHeight,
                         bannerVerticalPadding,
@@ -1181,8 +1205,6 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendDialogRule(builder, dialog());
         appendSnackbarRule(builder, snackbar());
         appendBannerRule(builder, banner());
-        appendBannerContentRule(builder, banner());
-        appendBannerActionsRule(builder, banner());
         appendTooltipRule(builder, tooltip());
         appendRichTooltipRule(builder, tooltip());
         appendRichTooltipActionsRule(builder, tooltip());
@@ -1607,12 +1629,33 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     private static void append(StringBuilder builder, DialogTokens tokens) {
         M3TokenCss.append(builder, "-m3-dialog-container-shape", M3TokenCss.pixels(tokens.containerShape()));
         M3TokenCss.append(builder, "-m3-dialog-content-padding", M3TokenCss.pixels(tokens.contentPadding()));
+        M3TokenCss.append(builder, "-m3-dialog-container-min-width", M3TokenCss.pixels(tokens.containerMinWidth()));
+        M3TokenCss.append(builder, "-m3-dialog-container-max-width", M3TokenCss.pixels(tokens.containerMaxWidth()));
+        M3TokenCss.append(builder, "-m3-dialog-action-spacing", M3TokenCss.pixels(tokens.actionSpacing()));
+        M3TokenCss.append(builder, "-m3-dialog-icon-size", M3TokenCss.pixels(tokens.iconSize()));
     }
 
     /// Appends snackbar token declarations.
     private static void append(StringBuilder builder, SnackbarTokens tokens) {
         M3TokenCss.append(builder, "-m3-snackbar-container-shape", M3TokenCss.pixels(tokens.containerShape()));
         M3TokenCss.append(builder, "-m3-snackbar-content-padding", M3TokenCss.pixels(tokens.contentPadding()));
+        M3TokenCss.append(builder, "-m3-snackbar-container-min-width", M3TokenCss.pixels(tokens.containerMinWidth()));
+        M3TokenCss.append(builder, "-m3-snackbar-container-max-width", M3TokenCss.pixels(tokens.containerMaxWidth()));
+        M3TokenCss.append(
+                builder,
+                "-m3-snackbar-single-line-container-height",
+                M3TokenCss.pixels(tokens.singleLineContainerHeight())
+        );
+        M3TokenCss.append(
+                builder,
+                "-m3-snackbar-two-line-container-height",
+                M3TokenCss.pixels(tokens.twoLineContainerHeight())
+        );
+        M3TokenCss.append(
+                builder,
+                "-m3-snackbar-action-container-height",
+                M3TokenCss.pixels(tokens.actionContainerHeight())
+        );
     }
 
     /// Appends banner token declarations.
@@ -2945,6 +2988,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         beginRule(builder, ".m3-dialog-pane");
         appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.containerShape()));
         appendDeclaration(builder, "-m3-content-padding", M3TokenCss.pixels(tokens.contentPadding()));
+        appendDeclaration(builder, "-m3-container-min-width", M3TokenCss.pixels(tokens.containerMinWidth()));
+        appendDeclaration(builder, "-m3-container-max-width", M3TokenCss.pixels(tokens.containerMaxWidth()));
+        appendDeclaration(builder, "-m3-action-spacing", M3TokenCss.pixels(tokens.actionSpacing()));
+        appendDeclaration(builder, "-m3-dialog-icon-size", M3TokenCss.pixels(tokens.iconSize()));
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.containerShape()));
         appendDeclaration(builder, "-fx-padding", M3TokenCss.pixels(tokens.contentPadding()));
         endRule(builder);
@@ -2964,30 +3011,34 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         beginRule(builder, ".m3-snackbar");
         appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.containerShape()));
         appendDeclaration(builder, "-m3-content-padding", M3TokenCss.pixels(tokens.contentPadding()));
+        appendDeclaration(builder, "-m3-container-min-width", M3TokenCss.pixels(tokens.containerMinWidth()));
+        appendDeclaration(builder, "-m3-container-max-width", M3TokenCss.pixels(tokens.containerMaxWidth()));
+        appendDeclaration(
+                builder,
+                "-m3-single-line-container-height",
+                M3TokenCss.pixels(tokens.singleLineContainerHeight())
+        );
+        appendDeclaration(
+                builder,
+                "-m3-two-line-container-height",
+                M3TokenCss.pixels(tokens.twoLineContainerHeight())
+        );
+        appendDeclaration(builder, "-m3-action-container-height", M3TokenCss.pixels(tokens.actionContainerHeight()));
+        endRule(builder);
+
+        beginRule(builder, ".m3-snackbar .m3-snackbar-action");
+        appendDeclaration(builder, "-m3-container-height", "-m3-action-container-height");
         endRule(builder);
     }
 
     /// Appends a banner token CSS rule.
     private static void appendBannerRule(StringBuilder builder, BannerTokens tokens) {
-        String horizontalPadding = M3TokenCss.pixels(tokens.horizontalPadding());
-        String verticalPadding = M3TokenCss.pixels(tokens.verticalPadding());
         beginRule(builder, ".m3-banner");
-        appendDeclaration(builder, "-fx-min-height", M3TokenCss.pixels(tokens.containerMinHeight()));
-        appendDeclaration(builder, "-fx-padding", verticalPadding + " " + horizontalPadding);
-        endRule(builder);
-    }
-
-    /// Appends a banner content container token CSS rule.
-    private static void appendBannerContentRule(StringBuilder builder, BannerTokens tokens) {
-        beginRule(builder, ".m3-banner-container");
-        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.contentSpacing()));
-        endRule(builder);
-    }
-
-    /// Appends a banner action container token CSS rule.
-    private static void appendBannerActionsRule(StringBuilder builder, BannerTokens tokens) {
-        beginRule(builder, ".m3-banner-actions");
-        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.actionSpacing()));
+        appendDeclaration(builder, "-m3-container-min-height", M3TokenCss.pixels(tokens.containerMinHeight()));
+        appendDeclaration(builder, "-m3-vertical-padding", M3TokenCss.pixels(tokens.verticalPadding()));
+        appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
+        appendDeclaration(builder, "-m3-content-spacing", M3TokenCss.pixels(tokens.contentSpacing()));
+        appendDeclaration(builder, "-m3-action-spacing", M3TokenCss.pixels(tokens.actionSpacing()));
         endRule(builder);
     }
 
@@ -4125,15 +4176,32 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ///
     /// @param containerShape the dialog container radius
     /// @param contentPadding the dialog content padding
+    /// @param containerMinWidth the minimum dialog container width
+    /// @param containerMaxWidth the maximum dialog container width
+    /// @param actionSpacing the spacing between dialog action buttons
+    /// @param iconSize the dialog graphic icon size
     @NotNullByDefault
     record DialogTokens(
             double containerShape,
-            double contentPadding
+            double contentPadding,
+            double containerMinWidth,
+            double containerMaxWidth,
+            double actionSpacing,
+            double iconSize
     ) {
         /// Creates dialog tokens.
         public DialogTokens {
             validateNonNegative(containerShape, "containerShape");
             validateNonNegative(contentPadding, "contentPadding");
+            validateNonNegative(containerMinWidth, "containerMinWidth");
+            validateNonNegative(containerMaxWidth, "containerMaxWidth");
+            validateNonNegative(actionSpacing, "actionSpacing");
+            validateNonNegative(iconSize, "iconSize");
+            if (containerMaxWidth < containerMinWidth) {
+                throw new IllegalArgumentException(
+                        "containerMaxWidth must be greater than or equal to containerMinWidth"
+                );
+            }
         }
     }
 
@@ -4141,15 +4209,35 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ///
     /// @param containerShape the snackbar container radius
     /// @param contentPadding the snackbar content padding
+    /// @param containerMinWidth the minimum snackbar container width
+    /// @param containerMaxWidth the maximum snackbar container width
+    /// @param singleLineContainerHeight the single-line snackbar container height
+    /// @param twoLineContainerHeight the two-line snackbar container height
+    /// @param actionContainerHeight the snackbar action button container height
     @NotNullByDefault
     record SnackbarTokens(
             double containerShape,
-            double contentPadding
+            double contentPadding,
+            double containerMinWidth,
+            double containerMaxWidth,
+            double singleLineContainerHeight,
+            double twoLineContainerHeight,
+            double actionContainerHeight
     ) {
         /// Creates snackbar tokens.
         public SnackbarTokens {
             validateNonNegative(containerShape, "containerShape");
             validateNonNegative(contentPadding, "contentPadding");
+            validateNonNegative(containerMinWidth, "containerMinWidth");
+            validateNonNegative(containerMaxWidth, "containerMaxWidth");
+            validateNonNegative(singleLineContainerHeight, "singleLineContainerHeight");
+            if (containerMaxWidth < containerMinWidth) {
+                throw new IllegalArgumentException(
+                        "containerMaxWidth must be greater than or equal to containerMinWidth"
+                );
+            }
+            validateNonNegative(twoLineContainerHeight, "twoLineContainerHeight");
+            validateNonNegative(actionContainerHeight, "actionContainerHeight");
         }
     }
 

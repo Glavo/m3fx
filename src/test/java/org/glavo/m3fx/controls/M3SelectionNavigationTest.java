@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -160,6 +161,56 @@ final class M3SelectionNavigationTest {
             ));
             assertSame(third, selected.get());
             assertTrue(unanchoredEnd.isConsumed());
+        });
+    }
+
+    /// Verifies modified selection navigation keys are left to application shortcuts and platform behavior.
+    @Test
+    void modifiedSelectionNavigationKeysAreIgnored() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Button first = new M3Button("First");
+            M3Button second = new M3Button("Second");
+            M3Button third = new M3Button("Third");
+            HBox owner = new HBox(first, second, third);
+            AtomicReference<@Nullable M3Button> selected = new AtomicReference<>(second);
+
+            KeyEvent event = modifiedKeyEvent(KeyCode.RIGHT, false, true, false, false);
+            assertFalse(M3SelectionNavigation.handleKeySelection(
+                    event,
+                    owner.getChildren(),
+                    second,
+                    M3Button.class,
+                    true,
+                    false,
+                    selected::set
+            ));
+
+            assertSame(second, selected.get());
+            assertFalse(event.isConsumed());
+        });
+    }
+
+    /// Verifies modified page navigation keys are left to application shortcuts and platform behavior.
+    @Test
+    void modifiedPageNavigationKeysAreIgnored() {
+        FxTestUtils.runOnFxThread(() -> {
+            NavigationRow first = new NavigationRow();
+            NavigationRow second = new NavigationRow();
+            VBox owner = new VBox(first, second);
+            AtomicReference<@Nullable NavigationRow> selected = new AtomicReference<>(first);
+
+            KeyEvent event = modifiedKeyEvent(KeyCode.PAGE_DOWN, true, false, false, false);
+            assertFalse(M3SelectionNavigation.handlePageKeySelection(
+                    event,
+                    owner,
+                    owner.getChildren(),
+                    first,
+                    NavigationRow.class,
+                    selected::set
+            ));
+
+            assertSame(first, selected.get());
+            assertFalse(event.isConsumed());
         });
     }
 
@@ -443,6 +494,42 @@ final class M3SelectionNavigationTest {
         });
     }
 
+    /// Verifies shortcut-modified type-ahead keys are left to application shortcuts.
+    @Test
+    void listPaneShortcutModifiedTypeAheadIsIgnored() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3ListItem archive = new M3ListItem("Archive");
+            M3ListItem settings = new M3ListItem("Settings");
+            M3ListPane listPane = new M3ListPane(archive, settings);
+            layout(listPane);
+            assertTrue(M3Accessible.requestAccessibleFocus(listPane, archive));
+
+            KeyEvent event = modifiedTypedKeyEvent("s", false, true, false, false);
+            listPane.fireEvent(event);
+
+            assertTrue(archive.isFocused());
+            assertFalse(settings.isFocused());
+            assertFalse(event.isConsumed());
+        });
+    }
+
+    /// Verifies shift-modified type-ahead keeps matching uppercase printable keys.
+    @Test
+    void listPaneShiftTypeAheadMatchesUppercaseText() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3ListItem archive = new M3ListItem("Archive");
+            M3ListItem settings = new M3ListItem("Settings");
+            M3ListPane listPane = new M3ListPane(archive, settings);
+            layout(listPane);
+            assertTrue(M3Accessible.requestAccessibleFocus(listPane, archive));
+
+            KeyEvent event = modifiedTypedKeyEvent("S", true, false, false, false);
+            listPane.fireEvent(event);
+
+            assertTrue(settings.isFocused());
+        });
+    }
+
     /// Verifies menu type-ahead focus scrolls the matched item into view.
     @Test
     void menuTypeAheadRevealsMatchedTarget() {
@@ -473,6 +560,63 @@ final class M3SelectionNavigationTest {
             assertTrue(search.isFocused());
             assertTargetVisible(scrollPane, content, search);
             assertTrue(scrollPane.getVvalue() > 0.0, () -> "vvalue=" + scrollPane.getVvalue());
+        });
+    }
+
+    /// Verifies modified menu navigation keys are left to application shortcuts.
+    @Test
+    void menuModifiedNavigationKeysAreIgnored() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3MenuItem archive = new M3MenuItem("Archive");
+            M3MenuItem settings = new M3MenuItem("Settings");
+            M3Menu menu = new M3Menu(archive, settings);
+            menu.setSelectionMode(M3MenuSelectionMode.SINGLE);
+            layout(menu);
+            assertTrue(M3Accessible.requestAccessibleFocus(menu, archive));
+            menu.select(archive);
+
+            KeyEvent event = modifiedKeyEvent(KeyCode.DOWN, false, true, false, false);
+            menu.fireEvent(event);
+
+            assertSame(archive, menu.getSelectedItem());
+            assertTrue(archive.isFocused());
+            assertFalse(settings.isFocused());
+            assertFalse(event.isConsumed());
+        });
+    }
+
+    /// Verifies list view modified navigation keys do not move virtualized focus or selection.
+    @Test
+    void listViewModifiedNavigationKeysAreIgnored() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3ListView<String> listView = new M3ListView<>("Archive", "Settings", "Search");
+            listView.setSelectionMode(M3ListSelectionMode.SINGLE);
+            listView.selectIndex(0);
+            layout(listView);
+
+            KeyEvent event = modifiedKeyEvent(KeyCode.DOWN, false, true, false, false);
+            listView.fireEvent(event);
+
+            assertEquals(0, listView.getSelectedIndex());
+            assertEquals(-1, listView.getFocusedIndex());
+            assertFalse(event.isConsumed());
+        });
+    }
+
+    /// Verifies list view unmodified navigation keys still move virtualized focus and selection.
+    @Test
+    void listViewUnmodifiedNavigationKeysMoveFocusAndSelection() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3ListView<String> listView = new M3ListView<>("Archive", "Settings", "Search");
+            listView.setSelectionMode(M3ListSelectionMode.SINGLE);
+            listView.selectIndex(0);
+            layout(listView);
+
+            KeyEvent event = keyEvent(KeyCode.DOWN);
+            listView.fireEvent(event);
+
+            assertEquals(1, listView.getSelectedIndex());
+            assertEquals(1, listView.getFocusedIndex());
         });
     }
 
@@ -951,6 +1095,26 @@ final class M3SelectionNavigationTest {
         );
     }
 
+    /// Creates a modified typed key event for type-ahead navigation helpers.
+    private static KeyEvent modifiedTypedKeyEvent(
+            String character,
+            boolean shiftDown,
+            boolean controlDown,
+            boolean altDown,
+            boolean metaDown
+    ) {
+        return new KeyEvent(
+                KeyEvent.KEY_TYPED,
+                character,
+                character,
+                KeyCode.UNDEFINED,
+                shiftDown,
+                controlDown,
+                altDown,
+                metaDown
+        );
+    }
+
     /// Creates a pressed key event for shared navigation helpers.
     private static KeyEvent keyEvent(KeyCode code) {
         return new KeyEvent(
@@ -962,6 +1126,26 @@ final class M3SelectionNavigationTest {
                 false,
                 false,
                 false
+        );
+    }
+
+    /// Creates a modified pressed key event for shared navigation helpers.
+    private static KeyEvent modifiedKeyEvent(
+            KeyCode code,
+            boolean shiftDown,
+            boolean controlDown,
+            boolean altDown,
+            boolean metaDown
+    ) {
+        return new KeyEvent(
+                KeyEvent.KEY_PRESSED,
+                code.getName(),
+                code.getName(),
+                code,
+                shiftDown,
+                controlDown,
+                altDown,
+                metaDown
         );
     }
 }

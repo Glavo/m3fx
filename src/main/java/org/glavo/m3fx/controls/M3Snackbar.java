@@ -35,7 +35,8 @@ import java.util.Objects;
 ///
 /// `M3Snackbar` displays a short message with an optional action. It is normally shown through
 /// [M3SnackbarHost], which handles queueing, timing, entrance motion, and dismissal. The snackbar exposes
-/// token-backed container shape and padding properties for theme and density integration.
+/// token-backed container shape, padding, width, line-height, and action-height properties for theme and density
+/// integration.
 ///
 /// See [Material Design snackbars](https://m3.material.io/components/snackbar/overview).
 @NotNullByDefault
@@ -49,6 +50,20 @@ public class M3Snackbar extends Control {
     /// The default snackbar content padding.
     private static final double DEFAULT_CONTENT_PADDING = 16.0;
 
+    /// The default minimum snackbar container width.
+    private static final double DEFAULT_CONTAINER_MIN_WIDTH = 344.0;
+
+    /// The default maximum snackbar container width.
+    private static final double DEFAULT_CONTAINER_MAX_WIDTH = 672.0;
+
+    /// The default single-line snackbar container height.
+    private static final double DEFAULT_SINGLE_LINE_CONTAINER_HEIGHT = 48.0;
+
+    /// The default two-line snackbar container height.
+    private static final double DEFAULT_TWO_LINE_CONTAINER_HEIGHT = 68.0;
+
+    /// The default snackbar action button container height.
+    private static final double DEFAULT_ACTION_CONTAINER_HEIGHT = 32.0;
     // Backing property for the public snackbar message text API.
     private final StringProperty text = new SimpleStringProperty(this, "text", "");
 
@@ -64,6 +79,21 @@ public class M3Snackbar extends Control {
 
     // Backing property for the public content padding token API.
     private @Nullable StyleableDoubleProperty contentPadding;
+
+    // Backing property for the public minimum container width token API.
+    private @Nullable StyleableDoubleProperty containerMinWidth;
+
+    // Backing property for the public maximum container width token API.
+    private @Nullable StyleableDoubleProperty containerMaxWidth;
+
+    // Backing property for the public single-line container height token API.
+    private @Nullable StyleableDoubleProperty singleLineContainerHeight;
+
+    // Backing property for the public two-line container height token API.
+    private @Nullable StyleableDoubleProperty twoLineContainerHeight;
+
+    // Backing property for the public action button container height token API.
+    private @Nullable StyleableDoubleProperty actionContainerHeight;
 
     /// Creates an empty snackbar.
     public M3Snackbar() {
@@ -296,6 +326,167 @@ public class M3Snackbar extends Control {
         return contentPadding;
     }
 
+    /// Returns the minimum snackbar container width token.
+    ///
+    /// @return the minimum snackbar container width token in pixels
+    public final double getContainerMinWidth() {
+        return containerMinWidth == null ? DEFAULT_CONTAINER_MIN_WIDTH : containerMinWidth.get();
+    }
+
+    /// Sets the minimum snackbar container width token.
+    ///
+    /// @param containerMinWidth the minimum snackbar container width token in pixels
+    public final void setContainerMinWidth(double containerMinWidth) {
+        containerMinWidthProperty().set(M3Css.nonNegative(containerMinWidth, "containerMinWidth"));
+    }
+
+    /// Returns the minimum snackbar container width token property.
+    ///
+    /// @return the minimum snackbar container width token property
+    public final StyleableDoubleProperty containerMinWidthProperty() {
+        if (containerMinWidth == null) {
+            containerMinWidth = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_CONTAINER_MIN_WIDTH,
+                    this,
+                    "containerMinWidth",
+                    StyleableProperties.CONTAINER_MIN_WIDTH,
+                    this::requestLayout
+            );
+        }
+        return containerMinWidth;
+    }
+
+    /// Returns the maximum snackbar container width token.
+    ///
+    /// @return the maximum snackbar container width token in pixels
+    public final double getContainerMaxWidth() {
+        return containerMaxWidth == null ? DEFAULT_CONTAINER_MAX_WIDTH : containerMaxWidth.get();
+    }
+
+    /// Sets the maximum snackbar container width token.
+    ///
+    /// @param containerMaxWidth the maximum snackbar container width token in pixels
+    public final void setContainerMaxWidth(double containerMaxWidth) {
+        containerMaxWidthProperty().set(M3Css.nonNegative(containerMaxWidth, "containerMaxWidth"));
+    }
+
+    /// Returns the maximum snackbar container width token property.
+    ///
+    /// @return the maximum snackbar container width token property
+    public final StyleableDoubleProperty containerMaxWidthProperty() {
+        if (containerMaxWidth == null) {
+            containerMaxWidth = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_CONTAINER_MAX_WIDTH,
+                    this,
+                    "containerMaxWidth",
+                    StyleableProperties.CONTAINER_MAX_WIDTH,
+                    this::requestLayout
+            );
+        }
+        return containerMaxWidth;
+    }
+
+    /// Returns the single-line snackbar container height token.
+    ///
+    /// @return the single-line snackbar container height token in pixels
+    public final double getSingleLineContainerHeight() {
+        return singleLineContainerHeight == null
+                ? DEFAULT_SINGLE_LINE_CONTAINER_HEIGHT
+                : singleLineContainerHeight.get();
+    }
+
+    /// Sets the single-line snackbar container height token.
+    ///
+    /// @param singleLineContainerHeight the single-line snackbar container height token in pixels
+    public final void setSingleLineContainerHeight(double singleLineContainerHeight) {
+        singleLineContainerHeightProperty().set(M3Css.nonNegative(
+                singleLineContainerHeight,
+                "singleLineContainerHeight"
+        ));
+    }
+
+    /// Returns the single-line snackbar container height token property.
+    ///
+    /// @return the single-line snackbar container height token property
+    public final StyleableDoubleProperty singleLineContainerHeightProperty() {
+        if (singleLineContainerHeight == null) {
+            singleLineContainerHeight = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_SINGLE_LINE_CONTAINER_HEIGHT,
+                    this,
+                    "singleLineContainerHeight",
+                    StyleableProperties.SINGLE_LINE_CONTAINER_HEIGHT,
+                    this::requestLayout
+            );
+        }
+        return singleLineContainerHeight;
+    }
+
+    /// Returns the two-line snackbar container height token.
+    ///
+    /// @return the two-line snackbar container height token in pixels
+    public final double getTwoLineContainerHeight() {
+        return twoLineContainerHeight == null
+                ? DEFAULT_TWO_LINE_CONTAINER_HEIGHT
+                : twoLineContainerHeight.get();
+    }
+
+    /// Sets the two-line snackbar container height token.
+    ///
+    /// @param twoLineContainerHeight the two-line snackbar container height token in pixels
+    public final void setTwoLineContainerHeight(double twoLineContainerHeight) {
+        twoLineContainerHeightProperty().set(M3Css.nonNegative(
+                twoLineContainerHeight,
+                "twoLineContainerHeight"
+        ));
+    }
+
+    /// Returns the two-line snackbar container height token property.
+    ///
+    /// @return the two-line snackbar container height token property
+    public final StyleableDoubleProperty twoLineContainerHeightProperty() {
+        if (twoLineContainerHeight == null) {
+            twoLineContainerHeight = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_TWO_LINE_CONTAINER_HEIGHT,
+                    this,
+                    "twoLineContainerHeight",
+                    StyleableProperties.TWO_LINE_CONTAINER_HEIGHT,
+                    this::requestLayout
+            );
+        }
+        return twoLineContainerHeight;
+    }
+
+    /// Returns the action button container height token.
+    ///
+    /// @return the action button container height token in pixels
+    public final double getActionContainerHeight() {
+        return actionContainerHeight == null ? DEFAULT_ACTION_CONTAINER_HEIGHT : actionContainerHeight.get();
+    }
+
+    /// Sets the action button container height token.
+    ///
+    /// @param actionContainerHeight the action button container height token in pixels
+    public final void setActionContainerHeight(double actionContainerHeight) {
+        actionContainerHeightProperty().set(M3Css.nonNegative(actionContainerHeight, "actionContainerHeight"));
+    }
+
+    /// Returns the action button container height token property.
+    ///
+    /// @return the action button container height token property
+    public final StyleableDoubleProperty actionContainerHeightProperty() {
+        if (actionContainerHeight == null) {
+            actionContainerHeight = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_ACTION_CONTAINER_HEIGHT,
+                    this,
+                    "actionContainerHeight",
+                    StyleableProperties.ACTION_CONTAINER_HEIGHT,
+                    this::requestLayout
+            );
+        }
+        return actionContainerHeight;
+    }
+
+
     /// Creates the default snackbar skin.
     ///
     /// @return the default snackbar skin
@@ -477,6 +668,98 @@ public class M3Snackbar extends Control {
                     }
                 };
 
+        /// CSS metadata for the minimum container width token.
+        private static final CssMetaData<M3Snackbar, Number> CONTAINER_MIN_WIDTH =
+                new CssMetaData<>("-m3-container-min-width", SizeConverter.getInstance(), DEFAULT_CONTAINER_MIN_WIDTH) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3Snackbar control) {
+                        return M3Css.isSettable(control.containerMinWidthProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3Snackbar control) {
+                        return control.containerMinWidthProperty();
+                    }
+                };
+
+        /// CSS metadata for the maximum container width token.
+        private static final CssMetaData<M3Snackbar, Number> CONTAINER_MAX_WIDTH =
+                new CssMetaData<>("-m3-container-max-width", SizeConverter.getInstance(), DEFAULT_CONTAINER_MAX_WIDTH) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3Snackbar control) {
+                        return M3Css.isSettable(control.containerMaxWidthProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3Snackbar control) {
+                        return control.containerMaxWidthProperty();
+                    }
+                };
+
+        /// CSS metadata for the single-line container height token.
+        private static final CssMetaData<M3Snackbar, Number> SINGLE_LINE_CONTAINER_HEIGHT =
+                new CssMetaData<>(
+                        "-m3-single-line-container-height",
+                        SizeConverter.getInstance(),
+                        DEFAULT_SINGLE_LINE_CONTAINER_HEIGHT
+                ) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3Snackbar control) {
+                        return M3Css.isSettable(control.singleLineContainerHeightProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3Snackbar control) {
+                        return control.singleLineContainerHeightProperty();
+                    }
+                };
+
+        /// CSS metadata for the two-line container height token.
+        private static final CssMetaData<M3Snackbar, Number> TWO_LINE_CONTAINER_HEIGHT =
+                new CssMetaData<>(
+                        "-m3-two-line-container-height",
+                        SizeConverter.getInstance(),
+                        DEFAULT_TWO_LINE_CONTAINER_HEIGHT
+                ) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3Snackbar control) {
+                        return M3Css.isSettable(control.twoLineContainerHeightProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3Snackbar control) {
+                        return control.twoLineContainerHeightProperty();
+                    }
+                };
+
+        /// CSS metadata for the action button container height token.
+        private static final CssMetaData<M3Snackbar, Number> ACTION_CONTAINER_HEIGHT =
+                new CssMetaData<>(
+                        "-m3-action-container-height",
+                        SizeConverter.getInstance(),
+                        DEFAULT_ACTION_CONTAINER_HEIGHT
+                ) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3Snackbar control) {
+                        return M3Css.isSettable(control.actionContainerHeightProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3Snackbar control) {
+                        return control.actionContainerHeightProperty();
+                    }
+                };
+
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
@@ -484,6 +767,11 @@ public class M3Snackbar extends Control {
             List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Control.getClassCssMetaData());
             styleables.add(CONTAINER_SHAPE);
             styleables.add(CONTENT_PADDING);
+            styleables.add(CONTAINER_MIN_WIDTH);
+            styleables.add(CONTAINER_MAX_WIDTH);
+            styleables.add(SINGLE_LINE_CONTAINER_HEIGHT);
+            styleables.add(TWO_LINE_CONTAINER_HEIGHT);
+            styleables.add(ACTION_CONTAINER_HEIGHT);
             STYLEABLES = Collections.unmodifiableList(styleables);
         }
     }

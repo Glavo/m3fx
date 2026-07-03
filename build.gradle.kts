@@ -74,10 +74,17 @@ java {
 }
 
 tasks.withType<Javadoc> {
+    val mainSourceDirectory = layout.projectDirectory.dir("src/main/java").asFile
+    setSource(fileTree(mainSourceDirectory) {
+        include("org/glavo/m3fx/controls/package-info.java")
+    })
+
     (options as StandardJavadocDocletOptions).also {
         it.jFlags!!.addAll(listOf("-Duser.language=en", "-Duser.country=", "-Duser.variant="))
 
         it.encoding("UTF-8")
+        it.addStringOption("sourcepath", mainSourceDirectory.absolutePath)
+        it.addStringOption("subpackages", "org.glavo.m3fx")
         it.links(
             "https://docs.oracle.com/en/java/javase/17/docs/api/",
             "https://openjfx.io/javadoc/$javafxVersion/",
@@ -85,6 +92,8 @@ tasks.withType<Javadoc> {
         )
         it.addBooleanOption("html5", true)
         it.addBooleanOption("Werror", true)
+        it.addStringOption("-show-packages", "exported")
+        it.addStringOption("exclude", "org.glavo.m3fx.internal:org.glavo.m3fx.internal.animation:org.glavo.m3fx.internal.shape:org.glavo.m3fx.internal.theme:org.glavo.m3fx.internal.tokens:org.glavo.m3fx.skins")
         it.addStringOption("Xdoclint:none", "-quiet")
 
         it.tags!!.addAll(
@@ -259,6 +268,14 @@ fun exportedPackagePathsFromModuleInfo(moduleInfoFile: File): List<String> {
     return packagePaths
 }
 
+fun moduleNameFromModuleInfo(moduleInfoFile: File): String {
+    val modulePattern = Regex("^\\s*module\\s+([\\w.]+)\\s*\\{")
+    return moduleInfoFile.readLines()
+        .mapNotNull { line -> modulePattern.find(line)?.groupValues?.get(1) }
+        .singleOrNull()
+        ?: throw GradleException("Main module descriptor should declare exactly one module name.")
+}
+
 val verifyPublicationArtifacts = tasks.register("verifyPublicationArtifacts") {
     group = "verification"
     description = "Verifies that Maven publication JAR artifacts contain the expected M3FX API and resources."
@@ -345,6 +362,62 @@ val verifyPublicationArtifacts = tasks.register("verifyPublicationArtifacts") {
         requireEntry(javadocEntries, "index.html", "Javadoc JAR")
         if (javadocEntries.any { it.endsWith(".class") || it.endsWith(".java") }) {
             throw GradleException("Javadoc JAR must not contain class or source files.")
+        }
+
+        fun javadocPackagePath(moduleRelativeEntry: String): String? {
+            if (!moduleRelativeEntry.startsWith("org/glavo/m3fx/") || !moduleRelativeEntry.endsWith(".html")) {
+                return null
+            }
+            val packageRelativeEntry = moduleRelativeEntry
+                .substringBefore("/class-use/")
+                .substringBefore("/doc-files/")
+            return packageRelativeEntry.substringBeforeLast('/', missingDelimiterValue = "")
+        }
+
+        val javadocModulePrefix = "${moduleNameFromModuleInfo(mainModuleInfo)}/"
+        val nonExportedJavadocEntries = javadocEntries
+            .mapNotNull { entry ->
+                val moduleRelativeEntry = if (entry.startsWith(javadocModulePrefix)) {
+                    entry.removePrefix(javadocModulePrefix)
+                } else {
+                    entry
+                }
+                val packagePath = javadocPackagePath(moduleRelativeEntry)
+                if (packagePath != null && packagePath !in exportedPackagePaths) entry else null
+            }
+            .sorted()
+        if (nonExportedJavadocEntries.isNotEmpty()) {
+            throw GradleException(
+                "Javadoc JAR must only document exported M3FX API packages: "
+                        + nonExportedJavadocEntries.take(10)
+            )
+        }
+
+        val forbiddenJavadocContentFragments = listOf(
+            "org.glavo.m3fx.internal",
+            "org/glavo/m3fx/internal",
+            "org.glavo.m3fx.skins",
+            "org/glavo/m3fx/skins",
+            "M3DisclosureIcon",
+            "M3ListViewCell"
+        )
+        val forbiddenJavadocReferences = ZipFile(javadocJar.get().asFile).use { zip ->
+            zip.entries().asSequence()
+                .filter { entry -> !entry.isDirectory && entry.name.endsWith(".html") }
+                .flatMap { entry ->
+                    val text = zip.getInputStream(entry).reader(Charsets.UTF_8).use { it.readText() }
+                    forbiddenJavadocContentFragments.asSequence()
+                        .filter(text::contains)
+                        .map { fragment -> "${entry.name}: $fragment" }
+                }
+                .take(10)
+                .toList()
+        }
+        if (forbiddenJavadocReferences.isNotEmpty()) {
+            throw GradleException(
+                "Javadoc JAR must not mention non-exported implementation packages or helper types: "
+                        + forbiddenJavadocReferences
+            )
         }
     }
 }

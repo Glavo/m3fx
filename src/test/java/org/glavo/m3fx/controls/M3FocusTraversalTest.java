@@ -162,6 +162,32 @@ final class M3FocusTraversalTest {
         });
     }
 
+    /// Verifies modified navigation keys are left to application shortcuts and platform editing behavior.
+    @Test
+    void modifiedDirectionalFocusKeysAreIgnored() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Button first = new M3Button("First");
+            M3Button second = new M3Button("Second");
+            HBox owner = new HBox(first, second);
+
+            show(owner, 180.0, 60.0);
+            owner.applyCss();
+            owner.layout();
+            first.requestFocus();
+
+            KeyEvent event = modifiedKeyEvent(KeyCode.RIGHT, false, true, false, false);
+            assertFalse(M3FocusTraversal.handleHorizontalKeyFocus(
+                    owner,
+                    event,
+                    M3FocusTraversal.focusTargets(owner.getChildren())
+            ));
+
+            assertTrue(first.isFocused());
+            assertFalse(second.isFocused());
+            assertFalse(event.isConsumed());
+        });
+    }
+
     /// Verifies preset-to-picker handoff consumes keys only when the picker accepts focus.
     @Test
     void presetHandoffConsumesOnlyAfterSuccessfulFocusTransfer() {
@@ -184,6 +210,40 @@ final class M3FocusTraversalTest {
             presetList.fireEvent(accepted);
 
             assertTrue(accepted.isConsumed());
+        });
+    }
+
+    /// Verifies modified preset handoff keys are left to application shortcuts and platform behavior.
+    @Test
+    void modifiedPresetHandoffKeysAreIgnored() {
+        FxTestUtils.runOnFxThread(() -> {
+            VBox presetList = new VBox();
+            presetList.setFocusTraversable(true);
+            Pane owner = new Pane(presetList);
+            boolean[] focusAccepted = {false};
+            M3PresetNavigation.install(presetList, owner, () -> {
+                focusAccepted[0] = true;
+                return true;
+            });
+            show(owner, 160.0, 80.0);
+            presetList.requestFocus();
+
+            KeyEvent event = new KeyEvent(
+                    presetList,
+                    presetList,
+                    KeyEvent.KEY_PRESSED,
+                    KeyCode.RIGHT.getName(),
+                    KeyCode.RIGHT.getName(),
+                    KeyCode.RIGHT,
+                    false,
+                    true,
+                    false,
+                    false
+            );
+            presetList.fireEvent(event);
+
+            assertFalse(focusAccepted[0]);
+            assertFalse(event.isConsumed());
         });
     }
 
@@ -589,6 +649,26 @@ final class M3FocusTraversalTest {
                 false,
                 false,
                 false
+        );
+    }
+
+    /// Creates a modified pressed key event for focus traversal helpers.
+    private static KeyEvent modifiedKeyEvent(
+            KeyCode code,
+            boolean shiftDown,
+            boolean controlDown,
+            boolean altDown,
+            boolean metaDown
+    ) {
+        return new KeyEvent(
+                KeyEvent.KEY_PRESSED,
+                code.getName(),
+                code.getName(),
+                code,
+                shiftDown,
+                controlDown,
+                altDown,
+                metaDown
         );
     }
 

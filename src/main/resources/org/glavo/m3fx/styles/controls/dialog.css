@@ -1,6 +1,10 @@
 .m3-dialog-pane {
     -m3-container-shape: 28px;
     -m3-content-padding: 24px;
+    -m3-container-min-width: 280px;
+    -m3-container-max-width: 560px;
+    -m3-action-spacing: 8px;
+    -m3-dialog-icon-size: 24px;
     -fx-background-color: -m3-color-surface-container-high;
     -fx-background-radius: 28px;
     -fx-padding: 24px;
@@ -59,6 +63,15 @@
 
 .m3-dialog-pane .m3-dialog-button {
     -m3-horizontal-padding: 12px;
+}
+
+.m3-dialog-button-bar .container {
+    -fx-spacing: -m3-action-spacing;
+}
+
+.m3-dialog-pane .m3-dialog-graphic-icon {
+    -m3-icon-size: -m3-dialog-icon-size;
+    -fx-text-fill: -m3-color-secondary;
 }
 
 .m3-date-picker-dialog-preset-content,
