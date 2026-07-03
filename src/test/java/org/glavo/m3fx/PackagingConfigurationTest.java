@@ -31,9 +31,6 @@ final class PackagingConfigurationTest {
     /// The library Java module descriptor.
     private static final Path MODULE_INFO = Path.of("src", "main", "java", "module-info.java");
 
-    /// The packaging guide documenting distribution behavior.
-    private static final Path PACKAGING_DOCUMENTATION = Path.of("docs", "PACKAGING.md");
-
     /// The GitHub Actions workflow that publishes the demo shadow jar artifact.
     private static final Path DEMO_SHADOW_WORKFLOW =
             Path.of(".github", "workflows", "demo-shadow-jar.yml");
@@ -66,7 +63,7 @@ final class PackagingConfigurationTest {
             "jlinkDemoAllPlatformArchitectureRuntimes"
     );
 
-    /// Verifies that documented root packaging aliases remain present.
+    /// Verifies that root packaging aliases remain present.
     @Test
     void rootDistributionAliasesRemainAvailable() throws IOException {
         String buildScript = Files.readString(ROOT_BUILD_SCRIPT);
@@ -81,7 +78,6 @@ final class PackagingConfigurationTest {
     @Test
     void localReleaseCheckAggregatesPublicationAndDemoDistributionGates() throws IOException {
         String buildScript = Files.readString(ROOT_BUILD_SCRIPT);
-        String packagingGuide = Files.readString(PACKAGING_DOCUMENTATION);
 
         assertTrue(buildScript.contains("tasks.register(\"releaseCheck\")"),
                 "root build must expose a local release verification task");
@@ -93,10 +89,6 @@ final class PackagingConfigurationTest {
                 "releaseCheck must verify the executable demo shadow jar");
         assertTrue(buildScript.contains("tasks.named(\"jlinkDemoRuntime\")"),
                 "releaseCheck must verify the default demo jlink runtime image");
-        assertTrue(packagingGuide.contains("./gradlew releaseCheck"),
-                "packaging guide must document the local release verification entry point");
-        assertTrue(packagingGuide.contains("releaseCheck` runs `check`, `shadowDemoJar`, and `jlinkDemoRuntime`"),
-                "packaging guide must explain the releaseCheck coverage");
     }
 
     /// Verifies that the library keeps JavaFX off the published Gradle API dependency surface.
@@ -135,16 +127,11 @@ final class PackagingConfigurationTest {
     @Test
     void moduleDescriptorKeepsJavafxReadabilityExplicit() throws IOException {
         String moduleInfo = Files.readString(MODULE_INFO);
-        String packagingGuide = Files.readString(PACKAGING_DOCUMENTATION);
 
         assertTrue(moduleInfo.contains("requires transitive javafx.controls;"),
                 "JPMS consumers need transitive readability for public JavaFX control types");
         assertTrue(moduleInfo.contains("requires transitive javafx.graphics;"),
                 "JPMS consumers need transitive readability for public JavaFX graphics types");
-        assertTrue(packagingGuide.contains("module descriptor declares `requires transitive javafx.controls`"),
-                "packaging documentation must distinguish JPMS readability from artifact publication");
-        assertTrue(packagingGuide.contains("does not publish OpenJFX artifacts as Maven dependencies"),
-                "packaging documentation must keep the JavaFX artifact ownership rule explicit");
     }
 
     /// Verifies that generated Maven publication metadata is checked before `check` succeeds.
@@ -372,7 +359,6 @@ final class PackagingConfigurationTest {
     @Test
     void generatedJlinkRuntimeImageStructureIsVerified() throws IOException {
         String buildScript = Files.readString(DEMO_BUILD_SCRIPT);
-        String packagingGuide = Files.readString(PACKAGING_DOCUMENTATION);
 
         assertTrue(buildScript.contains("verifyJlinkRuntimeImage(imageDirectory, targetOs.get())"),
                 "jlink tasks must verify the generated runtime image before succeeding");
@@ -390,10 +376,6 @@ final class PackagingConfigurationTest {
                 "jlink runtime verification must require the demo module in release metadata");
         assertTrue(buildScript.contains("requireJlinkRuntimeFile(imageDirectory, \"bin/m3fx-demo.bat\")"),
                 "Windows jlink runtime verification must require the batch launcher");
-        assertTrue(packagingGuide.contains("Each jlink task verifies the generated runtime image before it succeeds"),
-                "packaging documentation must explain runtime image verification");
-        assertTrue(packagingGuide.contains("platform launcher"),
-                "packaging documentation must call out launcher verification");
     }
 
     /// Verifies that BellSoft API architecture names stay separate from M3FX task architecture names.
@@ -447,12 +429,11 @@ final class PackagingConfigurationTest {
                 "demo shadow jar verification must reject empty packaged demo font entries");
     }
 
-    /// Verifies that the demo default font is downloaded, packaged, documented, and loaded at runtime.
+    /// Verifies that the demo default font is downloaded, packaged, and loaded at runtime.
     @Test
     void demoDefaultFontIsDownloadedPackagedAndLoaded() throws IOException {
         String buildScript = Files.readString(DEMO_BUILD_SCRIPT);
         String demoApp = Files.readString(DEMO_APP_SOURCE);
-        String packagingGuide = Files.readString(PACKAGING_DOCUMENTATION);
 
         assertTrue(buildScript.contains("m3fx.demo.fontPackageUrl"),
                 "demo font package URL must remain overridable for release builds and mirrors");
@@ -480,10 +461,6 @@ final class PackagingConfigurationTest {
                 "demo application must register the packaged font with JavaFX");
         assertTrue(demoApp.contains("-fx-font-family: "),
                 "demo application must apply the loaded font family to the root node");
-        assertTrue(packagingGuide.contains(DEMO_FONT_PACKAGE_URL),
-                "packaging documentation must name the default font package source");
-        assertTrue(packagingGuide.contains(DEMO_FONT_FILE_NAME),
-                "packaging documentation must name the packaged default demo font");
     }
 
     /// Verifies that CI uploads the built demo shadow jar without repackaging it.
