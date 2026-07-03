@@ -1232,11 +1232,6 @@ public class M3Menu extends Control {
         return null;
     }
 
-    /// Returns the focused enabled visible menu item.
-    private @Nullable M3MenuItem focusedMenuItem() {
-        return M3SelectionNavigation.focused(getItems(), M3MenuItem.class);
-    }
-
     /// Returns the focused item inside this menu or one of its open submenus.
     private @Nullable Node focusedAccessibleNode() {
         @Nullable Node currentFocus = M3Accessible.currentFocusTarget(this, getItems());
@@ -1249,7 +1244,7 @@ public class M3Menu extends Control {
             return nestedFocus;
         }
 
-        @Nullable M3MenuItem focusedItem = focusedMenuItem();
+        @Nullable M3MenuItem focusedItem = M3SelectionNavigation.focused(getItems(), M3MenuItem.class);
         if (focusedItem != null) {
             return focusedItem;
         }

@@ -126,7 +126,7 @@ public final class FxTestUtils {
 
     /// Captures JavaFX CSS warnings emitted while running a task.
     public static @Unmodifiable List<LogRecord> captureCssWarnings(Runnable task) {
-        return captureWarnings(task, "javafx.css", "javafx.scene.CssStyleHelper");
+        return captureWarningsChecked(() -> task.run(), "javafx.css", "javafx.scene.CssStyleHelper");
     }
 
     /// Verifies that a task does not emit JavaFX CSS warnings.
@@ -152,11 +152,6 @@ public final class FxTestUtils {
         return message != null
                 && (message.contains("-m3-color-")
                 || message.contains("ClassCastException") && message.contains("-fx-background-color"));
-    }
-
-    /// Captures warning-level records from the requested loggers while running a task.
-    private static @Unmodifiable List<LogRecord> captureWarnings(Runnable task, String... loggerNames) {
-        return captureWarningsChecked(() -> task.run(), loggerNames);
     }
 
     /// Captures warning-level records from the requested loggers while running a task.
@@ -233,17 +228,6 @@ public final class FxTestUtils {
         runOnFxThreadWhenWithTimeout(condition, timeoutMessage, setup, verification, FX_TIMEOUT_NANOS);
     }
 
-    /// Runs setup on the FX application thread with an explicit timeout for helper tests.
-    static void runOnFxThreadWhenWithTimeoutForTesting(
-            BooleanSupplier condition,
-            Supplier<String> timeoutMessage,
-            Runnable setup,
-            Runnable verification,
-            long timeoutNanos
-    ) {
-        runOnFxThreadWhenWithTimeout(condition, timeoutMessage, setup, verification, timeoutNanos);
-    }
-
     /// Runs setup on the FX application thread and verifies the result when a condition becomes true.
     private static void runOnFxThreadWhenWithTimeout(
             BooleanSupplier condition,
@@ -296,19 +280,6 @@ public final class FxTestUtils {
         runOnFxThreadWhenStableWithTimeout(condition, stablePulseCount, timeoutMessage, setup, verification, FX_TIMEOUT_NANOS);
     }
 
-    /// Runs setup and stable verification on the FX application thread with an explicit timeout for helper tests.
-    @SuppressWarnings("SameParameterValue")
-    static void runOnFxThreadWhenStableWithTimeoutForTesting(
-            BooleanSupplier condition,
-            int stablePulseCount,
-            Supplier<String> timeoutMessage,
-            Runnable setup,
-            Runnable verification,
-            long timeoutNanos
-    ) {
-        runOnFxThreadWhenStableWithTimeout(condition, stablePulseCount, timeoutMessage, setup, verification, timeoutNanos);
-    }
-
     /// Runs setup on the FX application thread and verifies the result after a condition stays true for pulses.
     private static void runOnFxThreadWhenStableWithTimeout(
             BooleanSupplier condition,
@@ -349,7 +320,7 @@ public final class FxTestUtils {
     ) throws InterruptedException {
         AtomicReference<@Nullable Throwable> failure = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
-        WaitDiagnostics diagnostics = WaitDiagnostics.oneShot(timeoutNanos);
+        WaitDiagnostics diagnostics = new WaitDiagnostics(1, timeoutNanos);
 
         Platform.runLater(() -> {
             try {
@@ -411,7 +382,7 @@ public final class FxTestUtils {
 
         AtomicReference<@Nullable Throwable> failure = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
-        WaitDiagnostics diagnostics = WaitDiagnostics.stable(stablePulseCount, timeoutNanos);
+        WaitDiagnostics diagnostics = new WaitDiagnostics(stablePulseCount, timeoutNanos);
 
         Platform.runLater(() -> {
             try {
@@ -614,15 +585,6 @@ public final class FxTestUtils {
             this.timeoutNanos = timeoutNanos;
         }
 
-        /// Creates diagnostics for a one-shot condition wait.
-        private static WaitDiagnostics oneShot(long timeoutNanos) {
-            return new WaitDiagnostics(1, timeoutNanos);
-        }
-
-        /// Creates diagnostics for a stable condition wait.
-        private static WaitDiagnostics stable(int requiredStablePulses, long timeoutNanos) {
-            return new WaitDiagnostics(requiredStablePulses, timeoutNanos);
-        }
 
         /// Records the start time of the wait.
         private void start(long startNanos) {
@@ -670,22 +632,12 @@ public final class FxTestUtils {
                     + ", conditionEvaluations=" + conditionEvaluations
                     + ", trueConditionEvaluations=" + trueConditionEvaluations
                     + ", falseConditionEvaluations=" + falseConditionEvaluations
-                    + ", lastCondition=" + lastConditionText()
+                    + ", lastCondition=" + (hasLastCondition ? Boolean.toString(lastCondition) : "unavailable")
                     + ", stablePulses=" + stablePulses
                     + ", maxStablePulses=" + maxStablePulses
                     + ", requiredStablePulses=" + requiredStablePulses
                     + ", lastConditionAgeMillis=" + lastConditionAgeMillis
-                    + ", lastPulseNanos=" + lastPulseText();
-        }
-
-        /// Returns the last condition result or a placeholder when it was never evaluated.
-        private String lastConditionText() {
-            return hasLastCondition ? Boolean.toString(lastCondition) : "unavailable";
-        }
-
-        /// Returns the last pulse timestamp or a placeholder when no pulse was observed.
-        private String lastPulseText() {
-            return pulseCount == 0 ? "unavailable" : Long.toString(lastPulseNanos);
+                    + ", lastPulseNanos=" + (pulseCount == 0 ? "unavailable" : Long.toString(lastPulseNanos));
         }
     }
 

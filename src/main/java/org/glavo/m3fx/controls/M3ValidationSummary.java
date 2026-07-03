@@ -279,7 +279,7 @@ public class M3ValidationSummary extends Control {
         Objects.requireNonNull(attribute, "attribute");
         return switch (attribute) {
             case TEXT -> accessibleText();
-            case ITEM_COUNT -> accessibleInvalidInputCount();
+            case ITEM_COUNT -> reachableInvalidInputCount();
             case ITEM_AT_INDEX -> accessibleInvalidInputAt(M3Accessible.indexParameter(parameters));
             case FOCUS_NODE -> accessibleFocusNode();
             default -> super.queryAccessibleAttribute(attribute, parameters);
@@ -475,7 +475,8 @@ public class M3ValidationSummary extends Control {
             return false;
         }
 
-        if (isSummaryIndexRequest(parameters) || isDirectInvalidInputRequest(input, parameters)) {
+        if ((parameters.length > 0 && parameters[0] instanceof Number)
+                || isDirectInvalidInputRequest(input, parameters)) {
             return focusInput(input);
         }
 
@@ -543,11 +544,6 @@ public class M3ValidationSummary extends Control {
     private boolean containsInvalidInput(M3TextInputLayout input) {
         @Nullable M3FormValidator validator = getValidator();
         return validator != null && validator.getInvalidInputs().contains(input);
-    }
-
-    /// Returns the number of invalid inputs currently exposed to accessibility clients.
-    private int accessibleInvalidInputCount() {
-        return reachableInvalidInputCount();
     }
 
     /// Returns the number of invalid inputs that should be rendered by this summary.
@@ -670,11 +666,6 @@ public class M3ValidationSummary extends Control {
             }
         }
         return null;
-    }
-
-    /// Returns whether the first action parameter is a summary invalid-input index.
-    private static boolean isSummaryIndexRequest(Object... parameters) {
-        return parameters.length > 0 && parameters[0] instanceof Number;
     }
 
     /// Returns whether action parameters directly reference the invalid input itself.

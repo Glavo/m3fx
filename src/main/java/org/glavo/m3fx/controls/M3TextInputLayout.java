@@ -386,12 +386,6 @@ public class M3TextInputLayout extends Control {
 
     /// The listener used to mirror logical leading and trailing geometry when layout direction changes.
     private final InvalidationListener nodeOrientationListener = observable -> updateNodeOrientationLayout();
-
-    /// Observes runtime motion settings while this layout is attached to a scene and is retained for this control lifetime.
-    @SuppressWarnings("unused")
-    private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(this, this::refreshMotionSettings);
-
     /// The container that overlays leading and trailing adornments over the input.
     private final StackPane inputContainer = new StackPane();
 
@@ -447,6 +441,19 @@ public class M3TextInputLayout extends Control {
 
     /// The animation used when the built-in clear button enters the trailing slot.
     private final Timeline trailingAnimation = new Timeline();
+
+    /// Observes runtime motion settings while this layout is attached to a scene and is retained for this control lifetime.
+    @SuppressWarnings("unused")
+    private final M3MotionSettingsObserver motionSettingsObserver =
+            new M3MotionSettingsObserver(
+                    this,
+                    () -> M3Animation.finishRunningAnimationsIfDisabled(
+                            this,
+                            labelAnimation,
+                            trailingAnimation,
+                            supportingRowAnimation
+                    )
+            );
 
     /// The previously installed input node.
     private @Nullable TextInputControl installedInput = null;
@@ -1051,7 +1058,7 @@ public class M3TextInputLayout extends Control {
 
     /// Updates the leading adornment slot.
     private void updateLeading() {
-        @Nullable Node previousLeading = installedLeading();
+        @Nullable Node previousLeading = leadingSlot.getChildren().isEmpty() ? null : leadingSlot.getChildren().get(0);
         @Nullable Node leading = getLeading();
         boolean restoreInputFocus = previousLeading != leading && isFocusInside(previousLeading);
         leadingSlot.getChildren().clear();
@@ -1098,11 +1105,6 @@ public class M3TextInputLayout extends Control {
             return trailing;
         }
         return isClearButtonActive() ? clearButton : null;
-    }
-
-    /// Returns the node that currently occupies the leading adornment slot.
-    private @Nullable Node installedLeading() {
-        return leadingSlot.getChildren().isEmpty() ? null : leadingSlot.getChildren().get(0);
     }
 
     /// Returns whether the built-in clear button should be visible.
@@ -1609,11 +1611,6 @@ public class M3TextInputLayout extends Control {
                 new KeyValue(supportingRow.translateYProperty(), 0.0, spec.interpolator())
         ));
         M3Animation.playFromStart(this, supportingRowAnimation);
-    }
-
-    /// Applies changed runtime motion settings to currently running text input animations.
-    private void refreshMotionSettings() {
-        M3Animation.finishRunningAnimationsIfDisabled(this, labelAnimation, trailingAnimation, supportingRowAnimation);
     }
 
     /// Returns the supporting row text that should be visible.

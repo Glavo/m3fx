@@ -23,7 +23,6 @@ import javafx.scene.control.SkinBase;
 import javafx.scene.control.skin.VirtualFlow;
 import javafx.scene.input.ScrollEvent;
 import javafx.stage.Window;
-import javafx.util.Callback;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListView;
@@ -136,7 +135,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         flow.getStyleClass().add("m3-list-view-flow");
         flow.setVertical(true);
         flow.setPannable(true);
-        flow.setCellFactory(createCellFactory(control));
+        flow.setCellFactory(flow -> new M3ListViewCell<>(control));
         flow.fixedCellSizeProperty().bind(control.fixedCellSizeProperty());
         control.addEventFilter(ScrollEvent.SCROLL, smoothScrollHandler);
         getChildren().add(flow);
@@ -445,13 +444,6 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     /// @return the matching attached visible list item, or `null` when none matches
     public @Nullable Node findAttachedVisibleItem(Predicate<? super Node> predicate) {
         return flow.findAttachedVisibleItem(predicate);
-    }
-
-    /// Creates the virtual flow cell factory.
-    private static <T> Callback<VirtualFlow<M3ListViewCell<T>>, M3ListViewCell<T>> createCellFactory(
-            M3ListView<T> listView
-    ) {
-        return flow -> new M3ListViewCell<>(listView);
     }
 
     /// Refreshes the visible cell that owns the focused index when it has been materialized.

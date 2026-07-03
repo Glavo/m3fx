@@ -162,9 +162,24 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListViewCell<T>> {
             return;
         }
 
-        double rowWidth = snapSizeX(boundedSize(row.minWidth(height), row.prefWidth(height), row.maxWidth(height), width));
-        double rowHeight = snapSizeY(boundedSize(row.minHeight(rowWidth), row.prefHeight(rowWidth), row.maxHeight(rowWidth), height));
-        double rowX = alignedX(x, width, rowWidth, horizontalAlignment());
+        double rowWidth = snapSizeX(boundedSize(
+                row.minWidth(height),
+                row.prefWidth(height),
+                row.maxWidth(height),
+                width
+        ));
+        double rowHeight = snapSizeY(boundedSize(
+                row.minHeight(rowWidth),
+                row.prefHeight(rowWidth),
+                row.maxHeight(rowWidth),
+                height
+        ));
+        double rowX = alignedX(
+                x,
+                width,
+                rowWidth,
+                M3NodeLayout.logicalStartHorizontalAlignment(getSkinnable())
+        );
         double rowY = y + (height - rowHeight) / 2.0;
         row.resizeRelocate(snapPositionX(rowX), snapPositionY(rowY), rowWidth, rowHeight);
     }
@@ -181,11 +196,6 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListViewCell<T>> {
             case RIGHT -> x + width - childWidth;
             default -> x;
         };
-    }
-
-    /// Returns the physical alignment for the current logical visual start edge.
-    private HPos horizontalAlignment() {
-        return M3NodeLayout.logicalStartHorizontalAlignment(getSkinnable());
     }
 
     /// Replaces the rendered row node owned by this skin.

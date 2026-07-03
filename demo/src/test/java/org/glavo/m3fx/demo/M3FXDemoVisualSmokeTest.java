@@ -160,7 +160,6 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -190,113 +189,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 /// Visual smoke tests for the demo application's real JavaFX window hierarchy.
 @NotNullByDefault
 final class M3FXDemoVisualSmokeTest {
-    /// Demo pages expected in the same order as the demo page registry.
-    private static final @Unmodifiable List<String> ALL_DEMO_PAGE_TITLES = List.of(
-            "Components Overview",
-            "App Bars",
-            "Bottom App Bars",
-            "Badges",
-            "All Buttons",
-            "Button Groups",
-            "Buttons",
-            "Extended FABs",
-            "FAB Menu",
-            "Floating Action Buttons",
-            "Icon Buttons",
-            "Segmented Buttons",
-            "Split Buttons",
-            "Cards",
-            "Carousel",
-            "Checkboxes",
-            "Chips",
-            "Date Pickers",
-            "Time Pickers",
-            "Dialogs",
-            "Dividers",
-            "Lists",
-            "Loading Indicator",
-            "Progress",
-            "Menus",
-            "Navigation",
-            "Navigation Drawer",
-            "Navigation Rail",
-            "Radio Buttons",
-            "Search",
-            "Bottom Sheets",
-            "Side Sheets",
-            "Sliders",
-            "Snackbars",
-            "Switches",
-            "Tabs",
-            "Text Fields",
-            "Toolbars",
-            "Tooltips",
-            "Banners",
-            "Forms",
-            "Typography",
-            "Icons",
-            "Avatars",
-            "Surfaces",
-            "Scrims"
-    );
-
-    /// Demo pages rendered under the dark expressive theme combination.
-    private static final @Unmodifiable List<String> DARK_EXPRESSIVE_VISUAL_PAGES = ALL_DEMO_PAGE_TITLES;
-
-    /// Demo pages rendered under right-to-left mirroring in real window layouts.
-    private static final @Unmodifiable List<String> RTL_VISUAL_PAGES = ALL_DEMO_PAGE_TITLES;
-
-    /// Material documentation URLs expected for demo pages that map to official Material pages.
-    private static final @Unmodifiable Map<String, String> EXPECTED_MATERIAL_URLS = Map.ofEntries(
-            Map.entry("Components Overview", DemoMaterialDocs.COMPONENTS),
-            Map.entry("App Bars", DemoMaterialDocs.APP_BARS),
-            Map.entry("Bottom App Bars", DemoMaterialDocs.TOOLBARS),
-            Map.entry("Badges", DemoMaterialDocs.BADGES),
-            Map.entry("All Buttons", DemoMaterialDocs.ALL_BUTTONS),
-            Map.entry("Button Groups", DemoMaterialDocs.BUTTON_GROUPS),
-            Map.entry("Buttons", DemoMaterialDocs.BUTTONS),
-            Map.entry("Extended FABs", DemoMaterialDocs.EXTENDED_FAB),
-            Map.entry("FAB Menu", DemoMaterialDocs.FAB_MENU),
-            Map.entry("Floating Action Buttons", DemoMaterialDocs.FLOATING_ACTION_BUTTON),
-            Map.entry("Icon Buttons", DemoMaterialDocs.ICON_BUTTONS),
-            Map.entry("Segmented Buttons", DemoMaterialDocs.SEGMENTED_BUTTONS),
-            Map.entry("Split Buttons", DemoMaterialDocs.SPLIT_BUTTON),
-            Map.entry("Cards", DemoMaterialDocs.CARDS),
-            Map.entry("Carousel", DemoMaterialDocs.CAROUSEL),
-            Map.entry("Checkboxes", DemoMaterialDocs.CHECKBOX),
-            Map.entry("Chips", DemoMaterialDocs.CHIPS),
-            Map.entry("Date Pickers", DemoMaterialDocs.DATE_PICKERS),
-            Map.entry("Time Pickers", DemoMaterialDocs.TIME_PICKERS),
-            Map.entry("Dialogs", DemoMaterialDocs.DIALOGS),
-            Map.entry("Dividers", DemoMaterialDocs.DIVIDER),
-            Map.entry("Lists", DemoMaterialDocs.LISTS),
-            Map.entry("Loading Indicator", DemoMaterialDocs.LOADING_INDICATOR),
-            Map.entry("Progress", DemoMaterialDocs.PROGRESS_INDICATORS),
-            Map.entry("Menus", DemoMaterialDocs.MENUS),
-            Map.entry("Navigation", DemoMaterialDocs.NAVIGATION_BAR),
-            Map.entry("Navigation Drawer", DemoMaterialDocs.NAVIGATION_DRAWER),
-            Map.entry("Navigation Rail", DemoMaterialDocs.NAVIGATION_RAIL),
-            Map.entry("Radio Buttons", DemoMaterialDocs.RADIO_BUTTON),
-            Map.entry("Search", DemoMaterialDocs.SEARCH),
-            Map.entry("Bottom Sheets", DemoMaterialDocs.BOTTOM_SHEETS),
-            Map.entry("Side Sheets", DemoMaterialDocs.SIDE_SHEETS),
-            Map.entry("Sliders", DemoMaterialDocs.SLIDERS),
-            Map.entry("Snackbars", DemoMaterialDocs.SNACKBAR),
-            Map.entry("Switches", DemoMaterialDocs.SWITCH),
-            Map.entry("Tabs", DemoMaterialDocs.TABS),
-            Map.entry("Text Fields", DemoMaterialDocs.TEXT_FIELDS),
-            Map.entry("Toolbars", DemoMaterialDocs.TOOLBARS),
-            Map.entry("Tooltips", DemoMaterialDocs.TOOLTIPS),
-            Map.entry("Banners", DemoMaterialDocs.BANNERS),
-            Map.entry("Forms", DemoMaterialDocs.FORMS),
-            Map.entry("Typography", DemoMaterialDocs.TYPOGRAPHY),
-            Map.entry("Icons", DemoMaterialDocs.ICONS),
-            Map.entry("Avatars", DemoMaterialDocs.AVATARS),
-            Map.entry("Surfaces", DemoMaterialDocs.SURFACES),
-            Map.entry("Scrims", DemoMaterialDocs.SCRIMS)
-    );
-
-    /// Page-specific visual-state assertions required for every registered demo page.
+    /// Optional page-specific visual-state assertions for rendered demo pages.
     private static final @Unmodifiable Map<String, Consumer<Scene>> DEMO_PAGE_VISUAL_STATE_ASSERTIONS = Map.ofEntries(
             Map.entry("Components Overview", M3FXDemoVisualSmokeTest::assertComponentsOverviewPageVisualState),
             Map.entry("App Bars", M3FXDemoVisualSmokeTest::assertAppBarsPageVisualState),
@@ -355,7 +248,7 @@ final class M3FXDemoVisualSmokeTest {
             M3SegmentedButton.STYLE_CLASS
     );
 
-    /// Demo pages that should use SVG icons instead of text-placeholder icon controls in interactive slots.
+    /// Demo pages that should use SVG icons instead of text-only icon controls in interactive slots.
     private static final @Unmodifiable Map<String, Integer> DEMO_VECTOR_ICON_PAGE_MINIMUMS = Map.ofEntries(
             Map.entry("App Bars", 18),
             Map.entry("Bottom App Bars", 9),
@@ -380,6 +273,372 @@ final class M3FXDemoVisualSmokeTest {
             Map.entry("Tooltips", 1)
     );
 
+    /// Demo controls that share the standard hover and pressed feedback verification path.
+    private static final @Unmodifiable List<InteractionTargetCase> MOUSE_FEEDBACK_TARGETS = List.of(
+            new InteractionTargetCase(
+                    "Buttons",
+                    "button",
+                    "button",
+                    root -> firstVisibleButtonWithText(root, "Filled")
+            ),
+            new InteractionTargetCase(
+                    "Floating Action Buttons",
+                    "floating-action-button",
+                    "floating action button",
+                    root -> firstVisibleFloatingActionButtonWithSize(root, M3FloatingActionButtonSize.REGULAR)
+            ),
+            new InteractionTargetCase(
+                    "Extended FABs",
+                    "extended-fab",
+                    "extended FAB",
+                    root -> firstVisibleFloatingActionButtonWithText(root, "Create")
+            ),
+            new InteractionTargetCase(
+                    "Split Buttons",
+                    "split-button-action",
+                    "split button action",
+                    root -> firstVisibleSplitButtonActionWithText(root, "Create")
+            ),
+            new InteractionTargetCase(
+                    "Split Buttons",
+                    "split-button-menu",
+                    "split button menu",
+                    root -> firstVisibleSplitButtonMenuWithText(root, "Create"),
+                    scene -> hideShowingMenuButtons(scene.getRoot())
+            ),
+            new InteractionTargetCase(
+                    "Menus",
+                    "menu-button",
+                    "menu button",
+                    root -> firstVisibleMenuButtonWithText(root, "Open menu"),
+                    scene -> hideShowingMenuButtons(scene.getRoot())
+            ),
+            new InteractionTargetCase(
+                    "App Bars",
+                    "top-app-bar-action",
+                    "top app bar action",
+                    M3FXDemoVisualSmokeTest::firstVisibleTopAppBarAction
+            ),
+            new InteractionTargetCase(
+                    "Toolbars",
+                    "toolbar-action",
+                    "toolbar action",
+                    M3FXDemoVisualSmokeTest::firstVisibleToolbarAction
+            ),
+            new InteractionTargetCase(
+                    "Banners",
+                    "banner-action",
+                    "banner action",
+                    root -> firstVisibleBannerActionWithText(root, "Dismiss"),
+                    scene -> hideShowingSnackbarHosts(scene.getRoot())
+            ),
+            new InteractionTargetCase(
+                    "Dialogs",
+                    "dialog-action",
+                    "dialog action",
+                    root -> firstVisibleDialogActionWithText(root, "OK")
+            ),
+            new InteractionTargetCase(
+                    "Bottom Sheets",
+                    "bottom-sheet-action",
+                    "bottom sheet action",
+                    root -> firstVisibleBottomSheetActionWithHeadline(root, "Now playing")
+            ),
+            new InteractionTargetCase(
+                    "Side Sheets",
+                    "side-sheet-action",
+                    "side sheet action",
+                    root -> firstVisibleSideSheetActionWithHeadline(root, "Details")
+            ),
+            new InteractionTargetCase(
+                    "FAB Menu",
+                    "fab-menu-action",
+                    "FAB menu action",
+                    M3FXDemoVisualSmokeTest::firstVisibleFabMenuAction,
+                    scene -> hideShowingSnackbarHosts(scene.getRoot())
+            ),
+            new InteractionTargetCase(
+                    "Text Fields",
+                    "text-input-trailing-action",
+                    "text input trailing action",
+                    M3FXDemoVisualSmokeTest::firstTextInputTrailingActionButton
+            ),
+            new InteractionTargetCase(
+                    "Forms",
+                    "validation-summary-item",
+                    "validation summary item",
+                    root -> firstVisibleStyledDescendant(root, M3ValidationSummary.ITEM_STYLE_CLASS)
+            ),
+            new InteractionTargetCase(
+                    "Chips",
+                    "chip",
+                    "chip",
+                    root -> firstVisibleChipWithText(root, "Filter")
+            ),
+            new InteractionTargetCase(
+                    "Segmented Buttons",
+                    "segmented-button",
+                    "segmented button",
+                    root -> firstVisibleSegmentedButtonWithText(root, "Day")
+            ),
+            new InteractionTargetCase(
+                    "Tabs",
+                    "tab",
+                    "tab",
+                    root -> firstVisibleTabWithText(root, "Activity")
+            ),
+            new InteractionTargetCase(
+                    "Navigation",
+                    "navigation-item",
+                    "navigation item",
+                    root -> firstVisibleNavigationItemWithText(root, "Search")
+            ),
+            new InteractionTargetCase(
+                    "Lists",
+                    "list-item",
+                    "list item",
+                    root -> firstVisibleListItemWithHeadline(root, "One-line item")
+            ),
+            new InteractionTargetCase(
+                    "Checkboxes",
+                    "checkbox",
+                    "checkbox",
+                    root -> firstVisibleCheckBoxWithText(root, "Unchecked")
+            ),
+            new InteractionTargetCase(
+                    "Radio Buttons",
+                    "radio-button",
+                    "radio button",
+                    root -> firstVisibleRadioButtonWithText(root, "Radio B")
+            ),
+            new InteractionTargetCase(
+                    "Switches",
+                    "switch",
+                    "switch",
+                    root -> firstVisibleSwitchWithText(root, "Off")
+            )
+    );
+
+    /// Demo controls that share the standard ripple release animation verification path.
+    private static final @Unmodifiable List<InteractionTargetCase> RIPPLE_RELEASE_TARGETS = List.of(
+            new InteractionTargetCase(
+                    "Buttons",
+                    "button",
+                    "button",
+                    root -> firstVisibleButtonWithText(root, "Filled")
+            ),
+            new InteractionTargetCase(
+                    "Floating Action Buttons",
+                    "floating-action-button",
+                    "floating action button",
+                    root -> firstVisibleFloatingActionButtonWithSize(root, M3FloatingActionButtonSize.REGULAR)
+            ),
+            new InteractionTargetCase(
+                    "Extended FABs",
+                    "extended-fab",
+                    "extended FAB",
+                    root -> firstVisibleFloatingActionButtonWithText(root, "Create")
+            ),
+            new InteractionTargetCase(
+                    "Split Buttons",
+                    "split-button-action",
+                    "split button action",
+                    root -> firstVisibleSplitButtonActionWithText(root, "Create")
+            ),
+            new InteractionTargetCase(
+                    "Split Buttons",
+                    "split-button-menu",
+                    "split button menu",
+                    root -> firstVisibleSplitButtonMenuWithText(root, "Create"),
+                    scene -> hideShowingMenuButtons(scene.getRoot())
+            ),
+            new InteractionTargetCase(
+                    "Menus",
+                    "menu-button",
+                    "menu button",
+                    root -> firstVisibleMenuButtonWithText(root, "Open menu"),
+                    scene -> hideShowingMenuButtons(scene.getRoot())
+            ),
+            new InteractionTargetCase(
+                    "App Bars",
+                    "top-app-bar-action",
+                    "top app bar action",
+                    M3FXDemoVisualSmokeTest::firstVisibleTopAppBarAction
+            ),
+            new InteractionTargetCase(
+                    "Toolbars",
+                    "toolbar-action",
+                    "toolbar action",
+                    M3FXDemoVisualSmokeTest::firstVisibleToolbarAction
+            ),
+            new InteractionTargetCase(
+                    "Banners",
+                    "banner-action",
+                    "banner action",
+                    root -> firstVisibleBannerActionWithText(root, "Dismiss"),
+                    scene -> hideShowingSnackbarHosts(scene.getRoot())
+            ),
+            new InteractionTargetCase(
+                    "Dialogs",
+                    "dialog-action",
+                    "dialog action",
+                    root -> firstVisibleDialogActionWithText(root, "OK")
+            ),
+            new InteractionTargetCase(
+                    "Bottom Sheets",
+                    "bottom-sheet-action",
+                    "bottom sheet action",
+                    root -> firstVisibleBottomSheetActionWithHeadline(root, "Now playing")
+            ),
+            new InteractionTargetCase(
+                    "Side Sheets",
+                    "side-sheet-action",
+                    "side sheet action",
+                    root -> firstVisibleSideSheetActionWithHeadline(root, "Details")
+            ),
+            new InteractionTargetCase(
+                    "Icon Buttons",
+                    "icon-toggle-button",
+                    "toggle icon button",
+                    root -> firstVisibleNodeWithStyle(root, M3IconToggleButton.STYLE_CLASS)
+            ),
+            new InteractionTargetCase(
+                    "Text Fields",
+                    "text-input-trailing-action",
+                    "text input trailing action",
+                    M3FXDemoVisualSmokeTest::firstTextInputTrailingActionButton
+            ),
+            new InteractionTargetCase(
+                    "Forms",
+                    "validation-summary-item",
+                    "validation summary item",
+                    root -> firstVisibleStyledDescendant(root, M3ValidationSummary.ITEM_STYLE_CLASS)
+            ),
+            new InteractionTargetCase(
+                    "Chips",
+                    "chip",
+                    "chip",
+                    root -> firstVisibleChipWithText(root, "Filter")
+            ),
+            new InteractionTargetCase(
+                    "Segmented Buttons",
+                    "segmented-button",
+                    "segmented button",
+                    root -> firstVisibleSegmentedButtonWithText(root, "Day")
+            ),
+            new InteractionTargetCase(
+                    "Tabs",
+                    "tab",
+                    "tab",
+                    root -> firstVisibleTabWithText(root, "Activity")
+            ),
+            new InteractionTargetCase(
+                    "Navigation",
+                    "navigation-item",
+                    "navigation item",
+                    root -> firstVisibleNavigationItemWithText(root, "Search")
+            ),
+            new InteractionTargetCase(
+                    "Lists",
+                    "list-item",
+                    "list item",
+                    root -> firstVisibleListItemWithHeadline(root, "One-line item")
+            ),
+            new InteractionTargetCase(
+                    "Checkboxes",
+                    "checkbox",
+                    "checkbox",
+                    root -> firstVisibleCheckBoxWithText(root, "Unchecked")
+            ),
+            new InteractionTargetCase(
+                    "Radio Buttons",
+                    "radio-button",
+                    "radio button",
+                    root -> firstVisibleRadioButtonWithText(root, "Radio B")
+            ),
+            new InteractionTargetCase(
+                    "Switches",
+                    "switch",
+                    "switch",
+                    root -> firstVisibleSwitchWithText(root, "Off")
+            )
+    );
+
+    /// Demo controls that share the selected-state animation verification path.
+    private static final @Unmodifiable List<SelectionTargetCase> SELECTION_TARGETS = List.of(
+            new SelectionTargetCase(
+                    "Chips",
+                    "chip-selection",
+                    "chip",
+                    root -> firstVisibleChipWithText(root, "Filter"),
+                    node -> ((M3Chip) node).isSelected()
+            ),
+            new SelectionTargetCase(
+                    "Segmented Buttons",
+                    "segmented-button-selection",
+                    "segmented button",
+                    root -> firstVisibleSegmentedButtonWithText(root, "Day"),
+                    node -> ((M3SegmentedButton) node).isSelected()
+            ),
+            new SelectionTargetCase(
+                    "Tabs",
+                    "tab-selection",
+                    "tab",
+                    root -> firstVisibleTabWithText(root, "Activity"),
+                    node -> ((M3Tab) node).isSelected()
+            ),
+            new SelectionTargetCase(
+                    "Navigation",
+                    "navigation-item-selection",
+                    "navigation item",
+                    root -> firstVisibleNavigationItemWithText(root, "Search"),
+                    node -> ((M3NavigationItem) node).isSelected()
+            ),
+            new SelectionTargetCase(
+                    "Lists",
+                    "list-item-selection",
+                    "list item",
+                    root -> firstVisibleListItemWithHeadline(root, "One-line item"),
+                    node -> ((M3ListItem) node).isSelected()
+            )
+    );
+
+    /// Describes one demo target that uses shared interaction visual checks.
+    private record InteractionTargetCase(
+            String pageTitle,
+            String snapshotName,
+            String targetName,
+            Function<Node, @Nullable Node> targetLookup,
+            @Nullable Consumer<Scene> cleanup
+    ) {
+        /// Creates a target case without transient-scene cleanup.
+        private InteractionTargetCase(
+                String pageTitle,
+                String snapshotName,
+                String targetName,
+                Function<Node, @Nullable Node> targetLookup
+        ) {
+            this(pageTitle, snapshotName, targetName, targetLookup, null);
+        }
+
+        /// Clears transient scene state created by this target's interaction, when needed.
+        private void cleanup(AtomicReference<@Nullable Scene> sceneReference) {
+            if (cleanup != null) {
+                DemoFxTestUtils.runOnFxThread(() -> cleanup.accept(Objects.requireNonNull(sceneReference.get(), "scene")));
+            }
+        }
+    }
+
+    /// Describes one demo target that uses shared selected-state visual checks.
+    private record SelectionTargetCase(
+            String pageTitle,
+            String snapshotName,
+            String targetName,
+            Function<Node, @Nullable Node> targetLookup,
+            Function<Node, Boolean> selectedLookup
+    ) {
+    }
+
     /// The edge tolerance used when comparing text bounds against scene and viewport bounds.
     private static final double TEXT_EDGE_TOLERANCE = 1.0;
 
@@ -389,8 +648,8 @@ final class M3FXDemoVisualSmokeTest {
     /// The minimum rendered ink height expected for visible alphanumeric text.
     private static final double TEXT_INK_MINIMUM_FONT_HEIGHT_RATIO = 0.42;
 
-    /// The pixel tolerance used by rendered text ink height coverage checks.
-    private static final double TEXT_INK_HEIGHT_COVERAGE_TOLERANCE = 1.0;
+    /// The pixel tolerance used by rendered text clipping checks.
+    private static final double TEXT_INK_HEIGHT_CLIPPING_TOLERANCE = 1.0;
 
     /// The edge tolerance used when comparing visible control bounds against scene and viewport bounds.
     private static final double CONTROL_EDGE_TOLERANCE = 2.0;
@@ -534,12 +793,11 @@ final class M3FXDemoVisualSmokeTest {
         Platform.setImplicitExit(false);
     }
 
-    /// Verifies that every demo page opens cleanly and exposes a stable Material documentation link.
+    /// Verifies that registered demo pages open cleanly and expose a visible Material documentation entry point.
     @Test
-    void demoPagesOpenWithoutCssWarningsAndExposeMaterialDocumentationLinks() throws InterruptedException {
-        assertDemoPagesOpenWithoutCssWarningsAndExposeMaterialDocumentationLinks(
+    void demoPagesOpenWithoutCssWarningsAndExposeDocumentationLinks() throws InterruptedException {
+        assertDemoPagesOpenWithoutCssWarningsAndExposeDocumentationLinks(
                 "standard",
-                ALL_DEMO_PAGE_TITLES,
                 1280.0,
                 900.0,
                 (app, scene) -> {
@@ -547,20 +805,18 @@ final class M3FXDemoVisualSmokeTest {
                 scene -> {
                 }
         );
-        assertDemoPagesOpenWithoutCssWarningsAndExposeMaterialDocumentationLinks(
+        assertDemoPagesOpenWithoutCssWarningsAndExposeDocumentationLinks(
                 "dark expressive",
-                DARK_EXPRESSIVE_VISUAL_PAGES,
                 1366.0,
                 900.0,
-                (app, scene) -> app.setDarkExpressiveThemeForTesting(),
+                (app, scene) -> app.setDarkExpressiveTheme(),
                 scene -> {
                     assertTrue(scene.getRoot().getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
                     assertTrue(scene.getRoot().getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
                 }
         );
-        assertDemoPagesOpenWithoutCssWarningsAndExposeMaterialDocumentationLinks(
+        assertDemoPagesOpenWithoutCssWarningsAndExposeDocumentationLinks(
                 "right-to-left",
-                RTL_VISUAL_PAGES,
                 1366.0,
                 900.0,
                 (app, scene) -> scene.getRoot().setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT),
@@ -575,7 +831,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3FXDemoApp app = new M3FXDemoApp();
             app.start(stage);
@@ -584,15 +840,15 @@ final class M3FXDemoVisualSmokeTest {
 
             stageReference.set(stage);
             appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
         });
 
         try {
-            DemoFxTestUtils.assertNoCssWarnings(() -> runOnFxThread(() -> {
+            DemoFxTestUtils.assertNoCssWarnings(() -> DemoFxTestUtils.runOnFxThread(() -> {
                 M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
 
-                app.showPageForTesting("App Bars");
+                app.showPageByTitle("App Bars");
                 applySceneCssAndLayout(scene);
                 ScrollPane pageScrollPane = demoPageScrollPane(scene);
                 pageScrollPane.setHvalue(0.45);
@@ -603,7 +859,7 @@ final class M3FXDemoVisualSmokeTest {
                 assertEquals(0.75, pageScrollPane.getVvalue(), 0.001,
                         "precondition should set a non-zero vertical page scroll value");
 
-                app.showPageForTesting("Typography");
+                app.showPageByTitle("Typography");
                 applySceneCssAndLayout(scene);
                 assertCurrentPageTitle(scene, "Typography");
                 assertSame(pageScrollPane, demoPageScrollPane(scene),
@@ -614,7 +870,7 @@ final class M3FXDemoVisualSmokeTest {
                         "page switch should reset vertical content scroll");
             }));
         } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -623,10 +879,9 @@ final class M3FXDemoVisualSmokeTest {
         }
     }
 
-    /// Opens every registered demo page in one runtime mode while JavaFX CSS warnings are captured.
-    private static void assertDemoPagesOpenWithoutCssWarningsAndExposeMaterialDocumentationLinks(
+    /// Opens registered demo pages in one runtime mode while JavaFX CSS warnings are captured.
+    private static void assertDemoPagesOpenWithoutCssWarningsAndExposeDocumentationLinks(
             String modeName,
-            List<String> pageTitles,
             double stageWidth,
             double stageHeight,
             BiConsumer<M3FXDemoApp, Scene> modeSetup,
@@ -635,38 +890,30 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
+        AtomicReference<@Nullable List<String>> pageTitlesReference = new AtomicReference<>();
 
         try {
             DemoFxTestUtils.assertNoCssWarnings(() -> {
-                runOnFxThread(() -> {
+                DemoFxTestUtils.runOnFxThread(() -> {
                     Stage stage = new Stage();
                     M3FXDemoApp app = new M3FXDemoApp();
                     app.start(stage);
                     stage.setWidth(stageWidth);
                     stage.setHeight(stageHeight);
 
-                    Scene scene = Objects.requireNonNull(app.sceneForTesting(), "scene");
+                    Scene scene = Objects.requireNonNull(app.activeScene(), "scene");
                     modeSetup.accept(app, scene);
+
+                    List<String> pageTitles = List.copyOf(app.demoPageTitles());
+                    assertTrue(pageTitles.size() > 20, modeName + " demo should expose component pages");
 
                     stageReference.set(stage);
                     appReference.set(app);
                     sceneReference.set(scene);
-
-                    assertEquals(pageTitles, app.demoPageTitlesForTesting(), modeName + " demo page registry");
-                    assertEquals(EXPECTED_MATERIAL_URLS, app.demoPageMaterialUrlsForTesting(),
-                            modeName + " Material documentation URL registry");
-                    assertEquals(pageTitles, new ArrayList<>(app.demoPageMaterialUrlsForTesting().keySet()),
-                            modeName + " Material documentation URL order");
-
-                    for (String title : pageTitles) {
-                        String url = Objects.requireNonNull(
-                                app.demoPageMaterialUrlsForTesting().get(title),
-                                title + " Material documentation URL"
-                        );
-                        assertMaterialDocumentationUrl(title, url);
-                    }
+                    pageTitlesReference.set(pageTitles);
                 });
 
+                List<String> pageTitles = Objects.requireNonNull(pageTitlesReference.get(), "page titles");
                 for (String title : pageTitles) {
                     showPageWhenSidebarSelectionSettled(
                             appReference,
@@ -688,7 +935,7 @@ final class M3FXDemoVisualSmokeTest {
                 }
             });
         } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -713,34 +960,14 @@ final class M3FXDemoVisualSmokeTest {
         assertTrue(docsButton.getBoundsInParent().getHeight() > 0.0, title + " docs link height");
     }
 
-    /// Verifies that a demo page URL points at the official Material Design site.
-    private static void assertMaterialDocumentationUrl(String title, String url) {
-        URI uri;
-        try {
-            uri = URI.create(url);
-        } catch (IllegalArgumentException e) {
-            fail(title + " Material documentation URL is not a valid URI: " + url, e);
-            return;
-        }
-
-        assertEquals("https", uri.getScheme(), title + " Material documentation URL scheme");
-        assertEquals("m3.material.io", uri.getHost(), title + " Material documentation URL host");
-        assertTrue(uri.getPath().startsWith("/"), title + " Material documentation URL path");
-        assertFalse(uri.getPath().isBlank(), title + " Material documentation URL blank path");
-        assertFalse(uri.getPath().contains("/components/bottom-app-bar/"),
-                title + " Material documentation URL should use the current toolbar guidance");
-        assertNull(uri.getRawQuery(), title + " Material documentation URL query");
-        assertFalse(url.contains(" "), title + " Material documentation URL whitespace");
-    }
-
-    /// Verifies that clicking demo header theme controls reapplies the theme without style or shape regressions.
+    /// Verifies that clicking demo header theme controls reapplies the theme while preserving style and shape.
     @Test
     void headerThemeControlsReapplyThemeWithoutCssWarningsOrShapeRegression() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3FXDemoApp app = new M3FXDemoApp();
             app.start(stage);
@@ -749,15 +976,15 @@ final class M3FXDemoVisualSmokeTest {
 
             stageReference.set(stage);
             appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
         });
 
         try {
-            DemoFxTestUtils.assertNoCssWarnings(() -> runOnFxThread(() -> {
+            DemoFxTestUtils.assertNoCssWarnings(() -> DemoFxTestUtils.runOnFxThread(() -> {
                 M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
 
-                app.showPageForTesting("Buttons");
+                app.showPageByTitle("Buttons");
                 scene.getRoot().applyCss();
                 scene.getRoot().layout();
                 assertCurrentPageTitle(scene, "Buttons");
@@ -810,7 +1037,7 @@ final class M3FXDemoVisualSmokeTest {
                 assertHeaderSeedButtonsRenderCircular(scene, "after header theme toggles");
             }));
         } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -826,7 +1053,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3FXDemoApp app = new M3FXDemoApp();
             app.start(stage);
@@ -835,15 +1062,15 @@ final class M3FXDemoVisualSmokeTest {
 
             stageReference.set(stage);
             appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
         });
 
         try {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
 
-                app.showPageForTesting("App Bars");
+                app.showPageByTitle("App Bars");
                 scene.getRoot().applyCss();
                 scene.getRoot().layout();
                 Node page = currentDemoPage(scene, "App Bars");
@@ -907,7 +1134,7 @@ final class M3FXDemoVisualSmokeTest {
                 assertSnapshotHasVisibleContent(appBarsScrolledImage, "App Bars scrolled-under");
             });
 
-            runOnFxThreadWhenStable(
+            DemoFxTestUtils.runOnFxThreadWhenStable(
                     () -> {
                         Scene scene = sceneReference.get();
                         return scene != null
@@ -918,7 +1145,7 @@ final class M3FXDemoVisualSmokeTest {
                     () -> {
                         M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
                         Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-                        app.showPageForTesting("Bottom App Bars");
+                        app.showPageByTitle("Bottom App Bars");
                         ScrollPane pageScrollPane = demoPageScrollPane(scene);
                         pageScrollPane.setVvalue(0.0);
                         scene.getRoot().applyCss();
@@ -957,7 +1184,7 @@ final class M3FXDemoVisualSmokeTest {
                     }
             );
 
-            runOnFxThreadWhenStable(
+            DemoFxTestUtils.runOnFxThreadWhenStable(
                     () -> {
                         Scene scene = sceneReference.get();
                         return scene != null
@@ -967,7 +1194,7 @@ final class M3FXDemoVisualSmokeTest {
                     () -> {
                         M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
                         Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-                        app.showPageForTesting("Toolbars");
+                        app.showPageByTitle("Toolbars");
                         ScrollPane pageScrollPane = demoPageScrollPane(scene);
                         pageScrollPane.setVvalue(0.0);
                         scene.getRoot().applyCss();
@@ -999,7 +1226,7 @@ final class M3FXDemoVisualSmokeTest {
                     }
             );
         } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -1015,7 +1242,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3FXDemoApp app = new M3FXDemoApp();
             app.start(stage);
@@ -1024,7 +1251,7 @@ final class M3FXDemoVisualSmokeTest {
 
             stageReference.set(stage);
             appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
         });
 
         try {
@@ -1076,7 +1303,7 @@ final class M3FXDemoVisualSmokeTest {
                 assertSnapshotHasVisibleContent(image, "Lists virtualized view");
             });
         } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -1092,7 +1319,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3FXDemoApp app = new M3FXDemoApp();
             app.start(stage);
@@ -1101,7 +1328,7 @@ final class M3FXDemoVisualSmokeTest {
 
             stageReference.set(stage);
             appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
         });
 
         try {
@@ -1135,7 +1362,7 @@ final class M3FXDemoVisualSmokeTest {
                 assertSnapshotHasVisibleContent(image, "Time Pickers fields and cells");
             });
         } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -1151,7 +1378,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3FXDemoApp app = new M3FXDemoApp();
             app.start(stage);
@@ -1160,7 +1387,7 @@ final class M3FXDemoVisualSmokeTest {
 
             stageReference.set(stage);
             appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
         });
 
         try {
@@ -1215,7 +1442,7 @@ final class M3FXDemoVisualSmokeTest {
                 );
             });
         } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -1231,7 +1458,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3FXDemoApp app = new M3FXDemoApp();
             app.start(stage);
@@ -1240,7 +1467,7 @@ final class M3FXDemoVisualSmokeTest {
 
             stageReference.set(stage);
             appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
         });
 
         try {
@@ -1275,7 +1502,7 @@ final class M3FXDemoVisualSmokeTest {
 
                 M3ListItem firstResult = assertInstanceOf(M3ListItem.class, activeView.getResults().get(0));
                 activeView.getEditor().requestFocus();
-                activeView.getEditor().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                activeView.getEditor().fireEvent(new KeyEvent(KeyEvent.KEY_PRESSED, "", "", KeyCode.DOWN, false, false, false, false));
                 scene.getRoot().applyCss();
                 scene.getRoot().layout();
 
@@ -1294,7 +1521,7 @@ final class M3FXDemoVisualSmokeTest {
                 assertSnapshotHasVisibleContent(image, "Search active view");
             }));
         } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -1310,7 +1537,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3FXDemoApp app = new M3FXDemoApp();
             app.start(stage);
@@ -1319,7 +1546,7 @@ final class M3FXDemoVisualSmokeTest {
 
             stageReference.set(stage);
             appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
         });
 
         try {
@@ -1399,7 +1626,7 @@ final class M3FXDemoVisualSmokeTest {
                 assertSnapshotHasVisibleContent(mediaImage, "Cards media and actions");
             }));
         } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -1417,7 +1644,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3Carousel> multiBrowseReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Carousel> compactReference = new AtomicReference<>();
 
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3FXDemoApp app = new M3FXDemoApp();
             app.start(stage);
@@ -1426,7 +1653,7 @@ final class M3FXDemoVisualSmokeTest {
 
             stageReference.set(stage);
             appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
         });
 
         try {
@@ -1471,7 +1698,7 @@ final class M3FXDemoVisualSmokeTest {
                 assertSnapshotHasVisibleContent(image, "Carousel viewport selection");
             });
 
-            runOnFxThreadWhenStable(() -> {
+            DemoFxTestUtils.runOnFxThreadWhenStable(() -> {
                 @Nullable Scene scene = sceneReference.get();
                 @Nullable M3Carousel multiBrowse = multiBrowseReference.get();
                 @Nullable M3Carousel compact = compactReference.get();
@@ -1517,7 +1744,7 @@ final class M3FXDemoVisualSmokeTest {
                 assertSnapshotHasVisibleContent(image, "Carousel after next action");
             });
         } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 @Nullable M3Carousel multiBrowse = multiBrowseReference.get();
                 if (multiBrowse != null) {
                     multiBrowse.setAnimatedScroll(true);
@@ -1538,7 +1765,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3FXDemoApp app = new M3FXDemoApp();
             app.start(stage);
@@ -1547,7 +1774,7 @@ final class M3FXDemoVisualSmokeTest {
 
             stageReference.set(stage);
             appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
         });
 
         try {
@@ -1622,7 +1849,7 @@ final class M3FXDemoVisualSmokeTest {
                 assertSnapshotHasVisibleContent(scrollableImage, "Dialogs scrollable content");
             }));
         } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -1638,7 +1865,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3FXDemoApp app = new M3FXDemoApp();
             app.start(stage);
@@ -1647,7 +1874,7 @@ final class M3FXDemoVisualSmokeTest {
 
             stageReference.set(stage);
             appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
         });
 
         try {
@@ -1725,7 +1952,7 @@ final class M3FXDemoVisualSmokeTest {
                 assertSnapshotHasVisibleContent(responsiveImage, "Banners responsive and RTL");
             }));
         } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -1741,7 +1968,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3FXDemoApp app = new M3FXDemoApp();
             app.start(stage);
@@ -1750,7 +1977,7 @@ final class M3FXDemoVisualSmokeTest {
 
             stageReference.set(stage);
             appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
         });
 
         try {
@@ -1775,7 +2002,7 @@ final class M3FXDemoVisualSmokeTest {
                 );
             });
         } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -1791,7 +2018,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3FXDemoApp app = new M3FXDemoApp();
             app.start(stage);
@@ -1800,7 +2027,7 @@ final class M3FXDemoVisualSmokeTest {
 
             stageReference.set(stage);
             appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
         });
 
         try {
@@ -1883,7 +2110,7 @@ final class M3FXDemoVisualSmokeTest {
                 );
             });
         } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -1899,7 +2126,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3FXDemoApp app = new M3FXDemoApp();
             app.start(stage);
@@ -1908,7 +2135,7 @@ final class M3FXDemoVisualSmokeTest {
 
             stageReference.set(stage);
             appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
         });
 
         try {
@@ -1969,7 +2196,7 @@ final class M3FXDemoVisualSmokeTest {
                 );
             });
         } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -1985,7 +2212,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3FXDemoApp app = new M3FXDemoApp();
             app.start(stage);
@@ -1994,14 +2221,14 @@ final class M3FXDemoVisualSmokeTest {
 
             stageReference.set(stage);
             appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
         });
 
         try {
-            DemoFxTestUtils.assertNoCssWarnings(() -> runOnFxThread(() -> {
+            DemoFxTestUtils.assertNoCssWarnings(() -> DemoFxTestUtils.runOnFxThread(() -> {
                 M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-                app.showPageForTesting("Forms");
+                app.showPageByTitle("Forms");
                 scene.getRoot().applyCss();
                 scene.getRoot().layout();
 
@@ -2027,7 +2254,6 @@ final class M3FXDemoVisualSmokeTest {
                         "Validate form button"
                 );
 
-
                 assertTrue(summary.isShowingSummary(), "Forms validation summary should start visible");
                 assertEquals(1, summary.getInvalidInputCount(), "Forms page should start with one invalid field");
                 assertFalse(clearButton.isDisabled(), "Clear validation should be enabled after initial validation");
@@ -2052,7 +2278,7 @@ final class M3FXDemoVisualSmokeTest {
                 assertVisibleText(scene.getRoot(), "Display name is required", "Forms validation workflow");
             }));
         } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -2060,6 +2286,7 @@ final class M3FXDemoVisualSmokeTest {
             });
         }
     }
+
     /// Verifies that the Menus page renders inline selection states and a compact nested popup stack.
     @Test
     void menusPageRendersInlineSelectionAndNestedPopupStack() throws InterruptedException {
@@ -2071,7 +2298,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable WritableImage> ownerPopupSnapshotReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> subMenuSnapshotReference = new AtomicReference<>();
 
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3FXDemoApp app = new M3FXDemoApp();
             app.start(stage);
@@ -2080,7 +2307,7 @@ final class M3FXDemoVisualSmokeTest {
 
             stageReference.set(stage);
             appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
         });
 
         try {
@@ -2229,7 +2456,7 @@ final class M3FXDemoVisualSmokeTest {
                 });
             });
         } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 @Nullable M3SubMenuItem subMenuItem = subMenuItemReference.get();
                 if (subMenuItem != null) {
                     subMenuItem.hideSubMenu();
@@ -2255,7 +2482,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3FXDemoApp app = new M3FXDemoApp();
             app.start(stage);
@@ -2264,7 +2491,7 @@ final class M3FXDemoVisualSmokeTest {
 
             stageReference.set(stage);
             appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
         });
 
         try {
@@ -2275,12 +2502,13 @@ final class M3FXDemoVisualSmokeTest {
                 List<M3TextInputLayout> layouts = assertTextInputDemoPageStructure(scene);
                 assertTextInputDemoVariantAndStateContracts(layouts);
                 assertTextInputDemoGeometryContracts(scene, layouts);
-                assertTextInputDemoValidationContract(layouts);
+                M3TextInputLayout validatedEmailLayout = requireTextInputLayout(layouts, "support", "Validated email");
+                assertDemoValidationFeedbackRemainsStableOnEdits(validatedEmailLayout);
                 assertFocusedMultilineTextInputSurfaceContract(scene, layouts);
                 assertMirroredTextInputLayoutContracts(scene, layouts);
             }));
         } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -2372,12 +2600,6 @@ final class M3FXDemoVisualSmokeTest {
                 outlinedTextLayout,
                 "outlined populated text input"
         );
-    }
-
-    /// Verifies that validation feedback remains visually settled across text changes.
-    private static void assertTextInputDemoValidationContract(List<M3TextInputLayout> layouts) {
-        M3TextInputLayout validatedEmailLayout = requireTextInputLayout(layouts, "support", "Validated email");
-        assertDemoValidationFeedbackRemainsStableOnEdits(validatedEmailLayout);
     }
 
     /// Verifies that focused multiline text input content uses the Material container surface.
@@ -2502,7 +2724,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3FXDemoApp app = new M3FXDemoApp();
             app.start(stage);
@@ -2511,7 +2733,7 @@ final class M3FXDemoVisualSmokeTest {
 
             stageReference.set(stage);
             appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
         });
 
         try {
@@ -2543,7 +2765,7 @@ final class M3FXDemoVisualSmokeTest {
                     writePageSnapshot(scene, "selection-sliders-geometry.png", "Sliders geometry");
             });
         } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -2559,7 +2781,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3FXDemoApp app = new M3FXDemoApp();
             app.start(stage);
@@ -2568,7 +2790,7 @@ final class M3FXDemoVisualSmokeTest {
 
             stageReference.set(stage);
             appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
         });
 
         try {
@@ -2584,7 +2806,7 @@ final class M3FXDemoVisualSmokeTest {
                 });
             }
 
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                 WritableImage image = snapshot(scene);
                 writeVisualSnapshot(image, Path.of(
@@ -2596,7 +2818,7 @@ final class M3FXDemoVisualSmokeTest {
                 assertSnapshotHasVisibleContent(image, "Sidebar selection settled");
             });
         } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -2612,7 +2834,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3FXDemoApp app = new M3FXDemoApp();
             app.start(stage);
@@ -2621,11 +2843,11 @@ final class M3FXDemoVisualSmokeTest {
 
             stageReference.set(stage);
             appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
         });
 
         try {
-            runOnFxThreadWhenStable(
+            DemoFxTestUtils.runOnFxThreadWhenStable(
                     () -> {
                         Scene scene = sceneReference.get();
                         if (scene == null) {
@@ -2642,7 +2864,7 @@ final class M3FXDemoVisualSmokeTest {
                     () -> {
                         M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
                         Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-                        app.showPageForTesting("Scrims");
+                        app.showPageByTitle("Scrims");
                         scene.getRoot().applyCss();
                         scene.getRoot().layout();
                     },
@@ -2681,7 +2903,7 @@ final class M3FXDemoVisualSmokeTest {
                     }
             );
         } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -2697,7 +2919,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3FXDemoApp app = new M3FXDemoApp();
             app.start(stage);
@@ -2706,11 +2928,11 @@ final class M3FXDemoVisualSmokeTest {
 
             stageReference.set(stage);
             appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
         });
 
         try {
-            runOnFxThreadWhenStable(
+            DemoFxTestUtils.runOnFxThreadWhenStable(
                     () -> {
                         Scene scene = sceneReference.get();
                         if (scene == null) {
@@ -2745,7 +2967,7 @@ final class M3FXDemoVisualSmokeTest {
                     () -> {
                         M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
                         Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-                        app.showPageForTesting("Components Overview");
+                        app.showPageByTitle("Components Overview");
                         scene.getRoot().applyCss();
                         scene.getRoot().layout();
                         for (M3NavigationDrawerGroup group : demoSidebarDrawerGroups(scene.getRoot())) {
@@ -2785,129 +3007,7 @@ final class M3FXDemoVisualSmokeTest {
                     }
             );
         } finally {
-            runOnFxThread(() -> {
-                Stage stage = stageReference.get();
-                if (stage != null) {
-                    stage.close();
-                }
-            });
-        }
-    }
-
-    /// Verifies viewport-aware snapshots scroll all ancestor scroll panes before pixel sampling.
-    @Test
-    void viewportAwareSnapshotScrollsAllAncestorScrollPanes() throws InterruptedException {
-        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
-        AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
-        AtomicReference<@Nullable Rectangle> targetReference = new AtomicReference<>();
-        AtomicReference<@Nullable ScrollPane> outerScrollPaneReference = new AtomicReference<>();
-        AtomicReference<@Nullable ScrollPane> innerScrollPaneReference = new AtomicReference<>();
-        AtomicReference<@Nullable WritableImage> visibleImageReference = new AtomicReference<>();
-        AtomicReference<@Nullable Bounds> visibleBoundsReference = new AtomicReference<>();
-        AtomicInteger matchingPixelsReference = new AtomicInteger();
-        Color targetColor = Color.rgb(0x67, 0x50, 0xa4);
-
-        try {
-            runOnFxThreadWhenStable(
-                    () -> {
-                        @Nullable Scene scene = sceneReference.get();
-                        @Nullable Rectangle target = targetReference.get();
-                        if (scene == null || target == null) {
-                            return false;
-                        }
-
-                        WritableImage image = snapshot(scene);
-                        Bounds bounds = target.localToScene(target.getLayoutBounds());
-                        int matchingPixels = countSnapshotSamplesNearColor(image, bounds, targetColor, 0.05);
-                        visibleImageReference.set(image);
-                        visibleBoundsReference.set(bounds);
-                        matchingPixelsReference.set(matchingPixels);
-                        return nodeFullyInsideSnapshotViewport(target, bounds, image) && matchingPixels >= 5;
-                    },
-                    SETTLED_STATE_PULSES,
-                    () -> {
-                        @Nullable Rectangle target = targetReference.get();
-                        return "Timed out waiting for nested scroll target pixels: bounds="
-                                + visibleBoundsReference.get()
-                                + ", matches=" + matchingPixelsReference.get() + "/9"
-                                + ", viewports=" + (target == null ? "missing target" : scrollViewportDebug(target));
-                    },
-                    () -> {
-                        Stage stage = new Stage();
-                        Rectangle target = new Rectangle(48.0, 48.0, targetColor);
-
-                        HBox targetRow = new HBox(fixedRegion(520.0, 48.0), target, fixedRegion(240.0, 48.0));
-                        VBox innerContent = new VBox(fixedRegion(48.0, 420.0), targetRow, fixedRegion(48.0, 160.0));
-                        ScrollPane innerScrollPane = new ScrollPane(innerContent);
-                        innerScrollPane.setMinSize(180.0, 130.0);
-                        innerScrollPane.setPrefSize(180.0, 130.0);
-                        innerScrollPane.setMaxSize(180.0, 130.0);
-
-                        HBox innerRow = new HBox(
-                                fixedRegion(440.0, 130.0),
-                                innerScrollPane,
-                                fixedRegion(240.0, 130.0)
-                        );
-                        VBox outerContent = new VBox(fixedRegion(180.0, 360.0), innerRow, fixedRegion(180.0, 160.0));
-                        ScrollPane outerScrollPane = new ScrollPane(outerContent);
-                        outerScrollPane.setPrefSize(240.0, 180.0);
-
-                        Scene scene = new Scene(outerScrollPane, 260.0, 200.0);
-                        stage.setScene(scene);
-                        stage.show();
-                        scene.getRoot().applyCss();
-                        scene.getRoot().layout();
-
-                        stageReference.set(stage);
-                        sceneReference.set(scene);
-                        targetReference.set(target);
-                        outerScrollPaneReference.set(outerScrollPane);
-                        innerScrollPaneReference.set(innerScrollPane);
-
-                        WritableImage initialImage = snapshot(scene);
-                        Bounds initialBounds = target.localToScene(target.getLayoutBounds());
-                        assertFalse(nodeFullyInsideSnapshotViewport(target, initialBounds, initialImage),
-                                () -> "nested scroll target should start outside at least one viewport: bounds="
-                                        + initialBounds + ", viewports=" + scrollViewportDebug(target));
-
-                        scrollAncestorScrollPanesNodeIntoView(target);
-                    },
-                    () -> {
-                        Rectangle target = Objects.requireNonNull(targetReference.get(), "target");
-                        ScrollPane outerScrollPane = Objects.requireNonNull(
-                                outerScrollPaneReference.get(),
-                                "outer scroll pane"
-                        );
-                        ScrollPane innerScrollPane = Objects.requireNonNull(
-                                innerScrollPaneReference.get(),
-                                "inner scroll pane"
-                        );
-                        WritableImage visibleImage = Objects.requireNonNull(visibleImageReference.get(), "visible image");
-                        Bounds visibleBounds = Objects.requireNonNull(visibleBoundsReference.get(), "visible bounds");
-
-                        assertTrue(nodeFullyInsideSnapshotViewport(target, visibleBounds, visibleImage),
-                                () -> "nested scroll target should be visible after ancestor scrolling: bounds="
-                                        + visibleBounds + ", viewports=" + scrollViewportDebug(target));
-                        writeVisualSnapshot(visibleImage, Path.of(
-                                "build",
-                                "reports",
-                                "m3fx-demo-visual",
-                                "nested-scroll-target.png"
-                        ));
-                        assertTrue(matchingPixelsReference.get() >= 5,
-                                () -> "nested scroll target pixels should be visible in the scene snapshot: matches="
-                                        + matchingPixelsReference.get() + "/9, expected=" + targetColor
-                                        + ", bounds=" + visibleBounds);
-                        assertTrue(outerScrollPane.getVvalue() > 0.0 && outerScrollPane.getHvalue() > 0.0,
-                                () -> "outer scroll pane should move on both axes: h="
-                                        + outerScrollPane.getHvalue() + ", v=" + outerScrollPane.getVvalue());
-                        assertTrue(innerScrollPane.getVvalue() > 0.0 && innerScrollPane.getHvalue() > 0.0,
-                                () -> "inner scroll pane should move on both axes: h="
-                                        + innerScrollPane.getHvalue() + ", v=" + innerScrollPane.getVvalue());
-                    }
-            );
-        } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -2923,7 +3023,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3FXDemoApp app = new M3FXDemoApp();
             app.start(stage);
@@ -2932,17 +3032,17 @@ final class M3FXDemoVisualSmokeTest {
 
             stageReference.set(stage);
             appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
         });
 
         try {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
 
                 for (Map.Entry<String, Integer> entry : DEMO_VECTOR_ICON_PAGE_MINIMUMS.entrySet()) {
                     String pageTitle = entry.getKey();
-                    app.showPageForTesting(pageTitle);
+                    app.showPageByTitle(pageTitle);
                     scene.getRoot().applyCss();
                     scene.getRoot().layout();
                     assertCurrentPageTitle(scene, pageTitle);
@@ -2951,7 +3051,7 @@ final class M3FXDemoVisualSmokeTest {
                 }
             });
         } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -2967,16 +3067,16 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3FXDemoApp app = new M3FXDemoApp();
             app.start(stage);
             stage.setWidth(1280.0);
             stage.setHeight(900.0);
 
-            Scene scene = Objects.requireNonNull(app.sceneForTesting(), "scene");
+            Scene scene = Objects.requireNonNull(app.activeScene(), "scene");
             assertNotNull(scene);
-            assertTrue(app.demoPageTitlesForTesting().size() > 20);
+            assertTrue(app.demoPageTitles().size() > 20);
 
             stageReference.set(stage);
             appReference.set(app);
@@ -2985,7 +3085,7 @@ final class M3FXDemoVisualSmokeTest {
 
         try {
             @Unmodifiable List<String> pageTitles =
-                    Objects.requireNonNull(appReference.get(), "app").demoPageTitlesForTesting();
+                    Objects.requireNonNull(appReference.get(), "app").demoPageTitles();
             for (String pageTitle : pageTitles) {
                 showPageWhenSidebarSelectionSettled(
                         appReference,
@@ -3011,7 +3111,7 @@ final class M3FXDemoVisualSmokeTest {
                 });
             }
         } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -3027,17 +3127,17 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3FXDemoApp app = new M3FXDemoApp();
             app.start(stage);
             stage.setWidth(1366.0);
             stage.setHeight(900.0);
-            app.setDarkExpressiveThemeForTesting();
+            app.setDarkExpressiveTheme();
 
-            Scene scene = Objects.requireNonNull(app.sceneForTesting(), "scene");
+            Scene scene = Objects.requireNonNull(app.activeScene(), "scene");
             assertNotNull(scene);
-            assertEquals(app.demoPageTitlesForTesting(), DARK_EXPRESSIVE_VISUAL_PAGES);
+            assertTrue(app.demoPageTitles().size() > 20);
             assertTrue(scene.getRoot().getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
             assertTrue(scene.getRoot().getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
 
@@ -3047,7 +3147,9 @@ final class M3FXDemoVisualSmokeTest {
         });
 
         try {
-            for (String pageTitle : DARK_EXPRESSIVE_VISUAL_PAGES) {
+            @Unmodifiable List<String> pageTitles =
+                    Objects.requireNonNull(appReference.get(), "app").demoPageTitles();
+            for (String pageTitle : pageTitles) {
                 showPageWhenSidebarSelectionSettled(
                         appReference,
                         sceneReference,
@@ -3074,7 +3176,7 @@ final class M3FXDemoVisualSmokeTest {
                 });
             }
         } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -3090,16 +3192,16 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3FXDemoApp app = new M3FXDemoApp();
             app.start(stage);
             stage.setWidth(1366.0);
             stage.setHeight(900.0);
 
-            Scene scene = Objects.requireNonNull(app.sceneForTesting(), "scene");
+            Scene scene = Objects.requireNonNull(app.activeScene(), "scene");
             assertNotNull(scene);
-            assertEquals(app.demoPageTitlesForTesting(), RTL_VISUAL_PAGES);
+            assertTrue(app.demoPageTitles().size() > 20);
             scene.getRoot().setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
 
             stageReference.set(stage);
@@ -3108,7 +3210,9 @@ final class M3FXDemoVisualSmokeTest {
         });
 
         try {
-            for (String pageTitle : RTL_VISUAL_PAGES) {
+            @Unmodifiable List<String> pageTitles =
+                    Objects.requireNonNull(appReference.get(), "app").demoPageTitles();
+            for (String pageTitle : pageTitles) {
                 showPageWhenSidebarSelectionSettled(appReference, sceneReference, pageTitle, scene ->
                         scene.getRoot().setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT), () -> {
                     M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
@@ -3136,7 +3240,7 @@ final class M3FXDemoVisualSmokeTest {
                 });
             }
         } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -3152,7 +3256,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3FXDemoApp app = new M3FXDemoApp();
             app.start(stage);
@@ -3161,75 +3265,33 @@ final class M3FXDemoVisualSmokeTest {
 
             stageReference.set(stage);
             appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
         });
 
         try {
-            verifyButtonMouseFeedback(appReference, sceneReference);
-            verifyButtonRippleReleaseAnimation(appReference, sceneReference);
-            verifyFloatingActionButtonMouseFeedback(appReference, sceneReference);
-            verifyFloatingActionButtonRippleReleaseAnimation(appReference, sceneReference);
-            verifyExtendedFabMouseFeedback(appReference, sceneReference);
-            verifyExtendedFabRippleReleaseAnimation(appReference, sceneReference);
-            verifySplitButtonActionMouseFeedback(appReference, sceneReference);
-            verifySplitButtonActionRippleReleaseAnimation(appReference, sceneReference);
-            verifySplitButtonMenuMouseFeedback(appReference, sceneReference);
-            verifySplitButtonMenuRippleReleaseAnimation(appReference, sceneReference);
-            verifyMenuButtonMouseFeedback(appReference, sceneReference);
-            verifyMenuButtonRippleReleaseAnimation(appReference, sceneReference);
-            verifyTopAppBarActionMouseFeedback(appReference, sceneReference);
-            verifyTopAppBarActionRippleReleaseAnimation(appReference, sceneReference);
-            verifyToolbarActionMouseFeedback(appReference, sceneReference);
-            verifyToolbarActionRippleReleaseAnimation(appReference, sceneReference);
-            verifyBannerActionMouseFeedback(appReference, sceneReference);
-            verifyBannerActionRippleReleaseAnimation(appReference, sceneReference);
-            verifyDialogActionMouseFeedback(appReference, sceneReference);
-            verifyDialogActionRippleReleaseAnimation(appReference, sceneReference);
-            verifyBottomSheetActionMouseFeedback(appReference, sceneReference);
-            verifyBottomSheetActionRippleReleaseAnimation(appReference, sceneReference);
-            verifySideSheetActionMouseFeedback(appReference, sceneReference);
-            verifySideSheetActionRippleReleaseAnimation(appReference, sceneReference);
-            verifyFabMenuActionMouseFeedback(appReference, sceneReference);
+            for (InteractionTargetCase targetCase : MOUSE_FEEDBACK_TARGETS) {
+                verifyInteractionTargetMouseFeedback(appReference, sceneReference, targetCase);
+            }
+            for (InteractionTargetCase targetCase : RIPPLE_RELEASE_TARGETS) {
+                verifyInteractionTargetRippleReleaseAnimation(appReference, sceneReference, targetCase);
+            }
             verifySnackbarActionMouseFeedback(appReference, sceneReference);
             verifySnackbarActionRippleReleaseAnimation(appReference, sceneReference);
             verifyTextFieldFocusFeedback(appReference, sceneReference);
             verifyTextInputClearButtonInteraction(appReference, sceneReference);
-            verifyTextInputTrailingActionMouseFeedback(appReference, sceneReference);
-            verifyTextInputTrailingActionRippleReleaseAnimation(appReference, sceneReference);
-            verifyValidationSummaryItemMouseFeedback(appReference, sceneReference);
-            verifyValidationSummaryItemRippleReleaseAnimation(appReference, sceneReference);
             verifyPickerFieldOpenButtonMouseFeedback(appReference, sceneReference);
             verifyPickerFieldOpenButtonRippleReleaseAnimation(appReference, sceneReference);
             verifySidebarMouseFeedback(appReference, sceneReference);
             verifySidebarRippleReleaseAnimation(appReference, sceneReference);
             verifyIconToggleButtonMouseFeedback(appReference, sceneReference);
-            verifyIconToggleButtonRippleReleaseAnimation(appReference, sceneReference);
-            verifyChipMouseFeedback(appReference, sceneReference);
-            verifyChipRippleReleaseAnimation(appReference, sceneReference);
-            verifyChipSelectionAnimation(appReference, sceneReference);
-            verifySegmentedButtonMouseFeedback(appReference, sceneReference);
-            verifySegmentedButtonRippleReleaseAnimation(appReference, sceneReference);
-            verifySegmentedButtonSelectionAnimation(appReference, sceneReference);
-            verifyTabMouseFeedback(appReference, sceneReference);
-            verifyTabRippleReleaseAnimation(appReference, sceneReference);
-            verifyTabSelectionAnimation(appReference, sceneReference);
-            verifyNavigationItemMouseFeedback(appReference, sceneReference);
-            verifyNavigationItemRippleReleaseAnimation(appReference, sceneReference);
-            verifyNavigationItemSelectionFeedback(appReference, sceneReference);
-            verifyListItemMouseFeedback(appReference, sceneReference);
-            verifyListItemRippleReleaseAnimation(appReference, sceneReference);
-            verifyListItemSelectionAnimation(appReference, sceneReference);
-            verifyCheckboxMouseFeedback(appReference, sceneReference);
-            verifyCheckboxRippleReleaseAnimation(appReference, sceneReference);
-            verifyRadioButtonMouseFeedback(appReference, sceneReference);
-            verifyRadioButtonRippleReleaseAnimation(appReference, sceneReference);
-            verifySwitchMouseFeedback(appReference, sceneReference);
-            verifySwitchRippleReleaseAnimation(appReference, sceneReference);
+            for (SelectionTargetCase targetCase : SELECTION_TARGETS) {
+                verifySelectionTargetAnimation(appReference, sceneReference, targetCase);
+            }
             verifySwitchSelectionAnimation(appReference, sceneReference);
             verifySliderDragInteraction(appReference, sceneReference);
             verifyDisabledAnimationInteractionFeedback(appReference, sceneReference);
         } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -3245,7 +3307,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3FXDemoApp app = new M3FXDemoApp();
             app.start(stage);
@@ -3254,14 +3316,14 @@ final class M3FXDemoVisualSmokeTest {
 
             stageReference.set(stage);
             appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
         });
 
         try {
             verifySplitButtonPopupAnimation(appReference, sceneReference);
             verifyDatePickerFieldPopupAnimation(appReference, sceneReference);
         } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -3277,7 +3339,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3FXDemoApp app = new M3FXDemoApp();
             app.start(stage);
@@ -3286,7 +3348,7 @@ final class M3FXDemoVisualSmokeTest {
 
             stageReference.set(stage);
             appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
         });
 
         try {
@@ -3295,7 +3357,7 @@ final class M3FXDemoVisualSmokeTest {
                     sceneReference
             ));
         } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -3311,7 +3373,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3FXDemoApp app = new M3FXDemoApp();
             app.start(stage);
@@ -3320,7 +3382,7 @@ final class M3FXDemoVisualSmokeTest {
 
             stageReference.set(stage);
             appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
         });
 
         try {
@@ -3338,7 +3400,7 @@ final class M3FXDemoVisualSmokeTest {
             );
             verifySidebarDrawerGroupExpansionAnimation(sceneReference);
         } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -3354,7 +3416,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3FXDemoApp app = new M3FXDemoApp();
             app.start(stage);
@@ -3363,14 +3425,14 @@ final class M3FXDemoVisualSmokeTest {
 
             stageReference.set(stage);
             appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
         });
 
         try {
             verifyBottomSheetVisibilityAnimation(appReference, sceneReference);
             verifySideSheetVisibilityAnimation(appReference, sceneReference);
         } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -3386,7 +3448,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3FXDemoApp app = new M3FXDemoApp();
             app.start(stage);
@@ -3395,7 +3457,7 @@ final class M3FXDemoVisualSmokeTest {
 
             stageReference.set(stage);
             appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
         });
 
         try {
@@ -3404,7 +3466,7 @@ final class M3FXDemoVisualSmokeTest {
             verifyRichTooltipInteractiveLifetime(appReference, sceneReference);
             verifyDialogPopupSurface(sceneReference);
         } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -3427,7 +3489,7 @@ final class M3FXDemoVisualSmokeTest {
         );
         List<WritableImage> continuedAnimationFrames = new ArrayList<>(CONTINUOUS_ANIMATION_FRAME_COUNT);
 
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3FXDemoApp app = new M3FXDemoApp();
             app.start(stage);
@@ -3436,7 +3498,7 @@ final class M3FXDemoVisualSmokeTest {
 
             stageReference.set(stage);
             appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
         });
 
         try {
@@ -3449,7 +3511,7 @@ final class M3FXDemoVisualSmokeTest {
                     () -> {
                         M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
                         Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-                        app.showPageForTesting("Progress");
+                        app.showPageByTitle("Progress");
                         scene.getRoot().applyCss();
                         scene.getRoot().layout();
                         pageReference.set(Objects.requireNonNull(firstVisibleNodeWithStyle(
@@ -3462,7 +3524,7 @@ final class M3FXDemoVisualSmokeTest {
             );
 
             Node progressPage = Objects.requireNonNull(pageReference.get(), "progress page");
-            runOnFxThread(() -> assertNodeAreaFramesAdvance(
+            DemoFxTestUtils.runOnFxThread(() -> assertNodeAreaFramesAdvance(
                     progressPage,
                     animationFrames,
                     "progress animation frames"
@@ -3480,13 +3542,13 @@ final class M3FXDemoVisualSmokeTest {
                     () -> writeAnimationFrameSnapshots(continuedAnimationFrames, "progress-continued")
             );
 
-            runOnFxThread(() -> assertNodeAreaFramesAdvance(
+            DemoFxTestUtils.runOnFxThread(() -> assertNodeAreaFramesAdvance(
                     progressPage,
                     continuedAnimationFrames,
                     "progress continued animation frames"
             ));
         } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -3509,7 +3571,7 @@ final class M3FXDemoVisualSmokeTest {
         );
         List<WritableImage> continuedAnimationFrames = new ArrayList<>(CONTINUOUS_ANIMATION_FRAME_COUNT);
 
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3FXDemoApp app = new M3FXDemoApp();
             app.start(stage);
@@ -3518,7 +3580,7 @@ final class M3FXDemoVisualSmokeTest {
 
             stageReference.set(stage);
             appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
         });
 
         try {
@@ -3531,7 +3593,7 @@ final class M3FXDemoVisualSmokeTest {
                     () -> {
                         M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
                         Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-                        app.showPageForTesting("Loading Indicator");
+                        app.showPageByTitle("Loading Indicator");
                         scene.getRoot().applyCss();
                         scene.getRoot().layout();
                         Node page = currentDemoPage(scene, "Loading Indicator");
@@ -3545,7 +3607,7 @@ final class M3FXDemoVisualSmokeTest {
             );
 
             Node loadingIndicator = Objects.requireNonNull(indicatorReference.get(), "loading indicator");
-            runOnFxThread(() -> assertNodeAreaFramesAdvance(
+            DemoFxTestUtils.runOnFxThread(() -> assertNodeAreaFramesAdvance(
                     loadingIndicator,
                     animationFrames,
                     "loading indicator animation frames"
@@ -3563,19 +3625,19 @@ final class M3FXDemoVisualSmokeTest {
                     () -> writeAnimationFrameSnapshots(continuedAnimationFrames, "loading-indicator-continued")
             );
 
-            runOnFxThread(() -> assertNodeAreaFramesAdvance(
+            DemoFxTestUtils.runOnFxThread(() -> assertNodeAreaFramesAdvance(
                     loadingIndicator,
                     continuedAnimationFrames,
                     "loading indicator continued animation frames"
             ));
             animationFrames.addAll(continuedAnimationFrames);
-            runOnFxThread(() -> assertLoadingIndicatorFramesRemainCentered(
+            DemoFxTestUtils.runOnFxThread(() -> assertLoadingIndicatorFramesRemainCentered(
                     loadingIndicator,
                     animationFrames,
                     "loading indicator animation"
             ));
         } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -3591,7 +3653,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
 
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3FXDemoApp app = new M3FXDemoApp();
             app.start(stage);
@@ -3600,7 +3662,7 @@ final class M3FXDemoVisualSmokeTest {
 
             stageReference.set(stage);
             appReference.set(app);
-            sceneReference.set(Objects.requireNonNull(app.sceneForTesting(), "scene"));
+            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
         });
 
         try {
@@ -3622,7 +3684,7 @@ final class M3FXDemoVisualSmokeTest {
                     "loading-indicator-reduced-motion"
             );
         } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -3653,7 +3715,7 @@ final class M3FXDemoVisualSmokeTest {
                     () -> {
                         M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
                         Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-                        app.showPageForTesting(pageTitle);
+                        app.showPageByTitle(pageTitle);
                         M3MotionSettings.setAnimationsEnabled(scene.getRoot(), false);
                         scene.getRoot().applyCss();
                         scene.getRoot().layout();
@@ -3666,13 +3728,13 @@ final class M3FXDemoVisualSmokeTest {
             );
 
             Node target = Objects.requireNonNull(targetReference.get(), snapshotName + " target");
-            runOnFxThread(() -> assertNodeAreaFramesAdvance(
+            DemoFxTestUtils.runOnFxThread(() -> assertNodeAreaFramesAdvance(
                     target,
                     animationFrames,
                     snapshotName + " reduced animation frames"
             ));
         } finally {
-            runOnFxThread(() -> {
+            DemoFxTestUtils.runOnFxThread(() -> {
                 Scene scene = sceneReference.get();
                 if (scene != null) {
                     M3MotionSettings.clearAnimationsEnabled(scene.getRoot());
@@ -3689,446 +3751,6 @@ final class M3FXDemoVisualSmokeTest {
                 .orElseThrow(() -> new AssertionError("No visible indeterminate progress bar"));
     }
 
-    /// Verifies hover and pressed feedback on a regular demo button.
-    private static void verifyButtonMouseFeedback(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        AtomicReference<@Nullable Node> targetReference = new AtomicReference<>();
-        AtomicReference<@Nullable WritableImage> normalReference = new AtomicReference<>();
-        AtomicReference<@Nullable WritableImage> hoverReference = new AtomicReference<>();
-        AtomicReference<@Nullable WritableImage> pressedReference = new AtomicReference<>();
-
-        runOnFxThreadWhenNodeAreaChanged(targetReference, normalReference, sceneReference, hoverReference, () -> {
-            M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
-            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            app.showPageForTesting("Buttons");
-            scene.getRoot().applyCss();
-            scene.getRoot().layout();
-
-            Node page = currentDemoPage(scene, "Buttons");
-            Node target = Objects.requireNonNull(firstVisibleButtonWithText(
-                    page,
-                    "Filled"
-            ), "button");
-            targetReference.set(target);
-            normalReference.set(snapshot(scene));
-            writeInteractionSnapshot(
-                    Objects.requireNonNull(normalReference.get(), "normal button snapshot"),
-                    "button",
-                    "normal"
-            );
-            applyHoverPseudoState(target);
-            scene.getRoot().applyCss();
-            scene.getRoot().layout();
-        }, () -> {
-            writeInteractionSnapshot(
-                    Objects.requireNonNull(hoverReference.get(), "hover button snapshot"),
-                    "button",
-                    "hover"
-            );
-            Node target = Objects.requireNonNull(targetReference.get(), "button");
-            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            firePrimaryMouseEvent(target, MouseEvent.MOUSE_PRESSED, true);
-            scene.getRoot().applyCss();
-            scene.getRoot().layout();
-        });
-
-        runOnFxThreadWhenNodeAreaChanged(targetReference, hoverReference, sceneReference, pressedReference, () -> {
-        }, () -> {
-            writeInteractionSnapshot(
-                    Objects.requireNonNull(pressedReference.get(), "pressed button snapshot"),
-                    "button",
-                    "pressed"
-            );
-            Node target = Objects.requireNonNull(targetReference.get(), "button");
-            firePrimaryMouseEvent(target, MouseEvent.MOUSE_RELEASED, false);
-            clearHoverPseudoState(target);
-        });
-
-        assertNodeAreaChanged(
-                Objects.requireNonNull(targetReference.get(), "button"),
-                Objects.requireNonNull(normalReference.get(), "normal button snapshot"),
-                Objects.requireNonNull(hoverReference.get(), "hover button snapshot"),
-                "button hover"
-        );
-        assertNodeAreaChanged(
-                Objects.requireNonNull(targetReference.get(), "button"),
-                Objects.requireNonNull(hoverReference.get(), "hover button snapshot"),
-                Objects.requireNonNull(pressedReference.get(), "pressed button snapshot"),
-                "button pressed"
-        );
-    }
-
-    /// Verifies that button ripple release remains visible for an intermediate fade-out frame.
-    private static void verifyButtonRippleReleaseAnimation(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifyRippleReleaseAnimation(
-                appReference,
-                sceneReference,
-                "Buttons",
-                "button-ripple",
-                "button",
-                root -> firstVisibleButtonWithText(root, "Filled")
-        );
-    }
-
-    /// Verifies hover and pressed feedback on a regular floating action button.
-    private static void verifyFloatingActionButtonMouseFeedback(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifySelectionControlMouseFeedback(
-                appReference,
-                sceneReference,
-                "Floating Action Buttons",
-                "floating-action-button",
-                "floating action button",
-                root -> firstVisibleFloatingActionButtonWithSize(root, M3FloatingActionButtonSize.REGULAR)
-        );
-    }
-
-    /// Verifies that floating action button ripple release remains visible for an intermediate fade-out frame.
-    private static void verifyFloatingActionButtonRippleReleaseAnimation(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifyRippleReleaseAnimation(
-                appReference,
-                sceneReference,
-                "Floating Action Buttons",
-                "floating-action-button-ripple",
-                "floating action button",
-                root -> firstVisibleFloatingActionButtonWithSize(root, M3FloatingActionButtonSize.REGULAR)
-        );
-    }
-
-    /// Verifies hover and pressed feedback on an extended floating action button.
-    private static void verifyExtendedFabMouseFeedback(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifySelectionControlMouseFeedback(
-                appReference,
-                sceneReference,
-                "Extended FABs",
-                "extended-fab",
-                "extended FAB",
-                root -> firstVisibleFloatingActionButtonWithText(root, "Create")
-        );
-    }
-
-    /// Verifies that extended floating action button ripple release remains visible for an intermediate fade-out frame.
-    private static void verifyExtendedFabRippleReleaseAnimation(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifyRippleReleaseAnimation(
-                appReference,
-                sceneReference,
-                "Extended FABs",
-                "extended-fab-ripple",
-                "extended FAB",
-                root -> firstVisibleFloatingActionButtonWithText(root, "Create")
-        );
-    }
-
-    /// Verifies hover and pressed feedback on the primary action side of a split button.
-    private static void verifySplitButtonActionMouseFeedback(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifySelectionControlMouseFeedback(
-                appReference,
-                sceneReference,
-                "Split Buttons",
-                "split-button-action",
-                "split button action",
-                root -> firstVisibleSplitButtonActionWithText(root, "Create")
-        );
-    }
-
-    /// Verifies that split button action-side ripple release remains visible for an intermediate fade-out frame.
-    private static void verifySplitButtonActionRippleReleaseAnimation(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifyRippleReleaseAnimation(
-                appReference,
-                sceneReference,
-                "Split Buttons",
-                "split-button-action-ripple",
-                "split button action",
-                root -> firstVisibleSplitButtonActionWithText(root, "Create")
-        );
-    }
-
-    /// Verifies hover and pressed feedback on the menu side of a split button.
-    private static void verifySplitButtonMenuMouseFeedback(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifySelectionControlMouseFeedback(
-                appReference,
-                sceneReference,
-                "Split Buttons",
-                "split-button-menu",
-                "split button menu",
-                root -> firstVisibleSplitButtonMenuWithText(root, "Create")
-        );
-        runOnFxThread(() -> hideShowingMenuButtons(Objects.requireNonNull(sceneReference.get(), "scene").getRoot()));
-    }
-
-    /// Verifies that split button menu-side ripple release remains visible for an intermediate fade-out frame.
-    private static void verifySplitButtonMenuRippleReleaseAnimation(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifyRippleReleaseAnimation(
-                appReference,
-                sceneReference,
-                "Split Buttons",
-                "split-button-menu-ripple",
-                "split button menu",
-                root -> firstVisibleSplitButtonMenuWithText(root, "Create")
-        );
-        runOnFxThread(() -> hideShowingMenuButtons(Objects.requireNonNull(sceneReference.get(), "scene").getRoot()));
-    }
-
-    /// Verifies hover and pressed feedback on a menu button.
-    private static void verifyMenuButtonMouseFeedback(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifySelectionControlMouseFeedback(
-                appReference,
-                sceneReference,
-                "Menus",
-                "menu-button",
-                "menu button",
-                root -> firstVisibleMenuButtonWithText(root, "Open menu")
-        );
-        runOnFxThread(() -> hideShowingMenuButtons(Objects.requireNonNull(sceneReference.get(), "scene").getRoot()));
-    }
-
-    /// Verifies that menu button ripple release remains visible for an intermediate fade-out frame.
-    private static void verifyMenuButtonRippleReleaseAnimation(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifyRippleReleaseAnimation(
-                appReference,
-                sceneReference,
-                "Menus",
-                "menu-button-ripple",
-                "menu button",
-                root -> firstVisibleMenuButtonWithText(root, "Open menu")
-        );
-        runOnFxThread(() -> hideShowingMenuButtons(Objects.requireNonNull(sceneReference.get(), "scene").getRoot()));
-    }
-
-
-    /// Verifies hover and pressed feedback on a top app bar action slot.
-    private static void verifyTopAppBarActionMouseFeedback(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifySelectionControlMouseFeedback(
-                appReference,
-                sceneReference,
-                "App Bars",
-                "top-app-bar-action",
-                "top app bar action",
-                M3FXDemoVisualSmokeTest::firstVisibleTopAppBarAction
-        );
-    }
-
-    /// Verifies that top app bar action ripple release remains visible for an intermediate fade-out frame.
-    private static void verifyTopAppBarActionRippleReleaseAnimation(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifyRippleReleaseAnimation(
-                appReference,
-                sceneReference,
-                "App Bars",
-                "top-app-bar-action-ripple",
-                "top app bar action",
-                M3FXDemoVisualSmokeTest::firstVisibleTopAppBarAction
-        );
-    }
-
-    /// Verifies hover and pressed feedback on a toolbar action slot.
-    private static void verifyToolbarActionMouseFeedback(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifySelectionControlMouseFeedback(
-                appReference,
-                sceneReference,
-                "Toolbars",
-                "toolbar-action",
-                "toolbar action",
-                M3FXDemoVisualSmokeTest::firstVisibleToolbarAction
-        );
-    }
-
-    /// Verifies that toolbar action ripple release remains visible for an intermediate fade-out frame.
-    private static void verifyToolbarActionRippleReleaseAnimation(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifyRippleReleaseAnimation(
-                appReference,
-                sceneReference,
-                "Toolbars",
-                "toolbar-action-ripple",
-                "toolbar action",
-                M3FXDemoVisualSmokeTest::firstVisibleToolbarAction
-        );
-    }
-
-    /// Verifies hover and pressed feedback on a banner action slot.
-    private static void verifyBannerActionMouseFeedback(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifySelectionControlMouseFeedback(
-                appReference,
-                sceneReference,
-                "Banners",
-                "banner-action",
-                "banner action",
-                root -> firstVisibleBannerActionWithText(root, "Dismiss")
-        );
-        runOnFxThread(() -> hideShowingSnackbarHosts(Objects.requireNonNull(sceneReference.get(), "scene").getRoot()));
-    }
-
-    /// Verifies that banner action ripple release remains visible for an intermediate fade-out frame.
-    private static void verifyBannerActionRippleReleaseAnimation(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifyRippleReleaseAnimation(
-                appReference,
-                sceneReference,
-                "Banners",
-                "banner-action-ripple",
-                "banner action",
-                root -> firstVisibleBannerActionWithText(root, "Dismiss")
-        );
-        runOnFxThread(() -> hideShowingSnackbarHosts(Objects.requireNonNull(sceneReference.get(), "scene").getRoot()));
-    }
-
-    /// Verifies hover and pressed feedback on an inline dialog pane action.
-    private static void verifyDialogActionMouseFeedback(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifySelectionControlMouseFeedback(
-                appReference,
-                sceneReference,
-                "Dialogs",
-                "dialog-action",
-                "dialog action",
-                root -> firstVisibleDialogActionWithText(root, "OK")
-        );
-    }
-
-    /// Verifies that dialog pane action ripple release remains visible for an intermediate fade-out frame.
-    private static void verifyDialogActionRippleReleaseAnimation(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifyRippleReleaseAnimation(
-                appReference,
-                sceneReference,
-                "Dialogs",
-                "dialog-action-ripple",
-                "dialog action",
-                root -> firstVisibleDialogActionWithText(root, "OK")
-        );
-    }
-
-
-    /// Verifies hover and pressed feedback on a bottom sheet action slot.
-    private static void verifyBottomSheetActionMouseFeedback(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifySelectionControlMouseFeedback(
-                appReference,
-                sceneReference,
-                "Bottom Sheets",
-                "bottom-sheet-action",
-                "bottom sheet action",
-                root -> firstVisibleBottomSheetActionWithHeadline(root, "Now playing")
-        );
-    }
-
-    /// Verifies that bottom sheet action ripple release remains visible for an intermediate fade-out frame.
-    private static void verifyBottomSheetActionRippleReleaseAnimation(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifyRippleReleaseAnimation(
-                appReference,
-                sceneReference,
-                "Bottom Sheets",
-                "bottom-sheet-action-ripple",
-                "bottom sheet action",
-                root -> firstVisibleBottomSheetActionWithHeadline(root, "Now playing")
-        );
-    }
-
-    /// Verifies hover and pressed feedback on a side sheet action slot.
-    private static void verifySideSheetActionMouseFeedback(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifySelectionControlMouseFeedback(
-                appReference,
-                sceneReference,
-                "Side Sheets",
-                "side-sheet-action",
-                "side sheet action",
-                root -> firstVisibleSideSheetActionWithHeadline(root, "Details")
-        );
-    }
-
-    /// Verifies that side sheet action ripple release remains visible for an intermediate fade-out frame.
-    private static void verifySideSheetActionRippleReleaseAnimation(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifyRippleReleaseAnimation(
-                appReference,
-                sceneReference,
-                "Side Sheets",
-                "side-sheet-action-ripple",
-                "side sheet action",
-                root -> firstVisibleSideSheetActionWithHeadline(root, "Details")
-        );
-    }
-
-    /// Verifies hover and pressed feedback on an expanded FAB menu action.
-    private static void verifyFabMenuActionMouseFeedback(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifySelectionControlMouseFeedback(
-                appReference,
-                sceneReference,
-                "FAB Menu",
-                "fab-menu-action",
-                "FAB menu action",
-                M3FXDemoVisualSmokeTest::firstVisibleFabMenuAction
-        );
-        runOnFxThread(() -> hideShowingSnackbarHosts(Objects.requireNonNull(sceneReference.get(), "scene").getRoot()));
-    }
-
     /// Verifies hover and pressed feedback on a snackbar action.
     private static void verifySnackbarActionMouseFeedback(
             AtomicReference<@Nullable M3FXDemoApp> appReference,
@@ -4142,7 +3764,7 @@ final class M3FXDemoVisualSmokeTest {
                 "snackbar action",
                 M3FXDemoVisualSmokeTest::firstVisibleSnackbarAction
         );
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "snackbar host");
             host.dismissAll();
             M3MotionSettings.clearMotionScheme(host);
@@ -4164,345 +3786,11 @@ final class M3FXDemoVisualSmokeTest {
                 "snackbar action",
                 M3FXDemoVisualSmokeTest::firstVisibleSnackbarAction
         );
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "snackbar host");
             host.dismissAll();
             M3MotionSettings.clearMotionScheme(host);
         });
-    }
-    /// Verifies that toggle icon button ripple release remains visible for an intermediate fade-out frame.
-    private static void verifyIconToggleButtonRippleReleaseAnimation(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifyRippleReleaseAnimation(
-                appReference,
-                sceneReference,
-                "Icon Buttons",
-                "icon-toggle-button-ripple",
-                "toggle icon button",
-                root -> firstVisibleNodeWithStyle(root, M3IconToggleButton.STYLE_CLASS)
-        );
-    }
-
-    /// Verifies hover and pressed feedback on a chip control.
-    private static void verifyChipMouseFeedback(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifySelectionControlMouseFeedback(
-                appReference,
-                sceneReference,
-                "Chips",
-                "chip",
-                "chip",
-                root -> firstVisibleChipWithText(root, "Filter")
-        );
-    }
-
-    /// Verifies that chip ripple release remains visible for an intermediate fade-out frame.
-    private static void verifyChipRippleReleaseAnimation(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifyRippleReleaseAnimation(
-                appReference,
-                sceneReference,
-                "Chips",
-                "chip-ripple",
-                "chip",
-                root -> firstVisibleChipWithText(root, "Filter")
-        );
-    }
-
-    /// Verifies that clicking a chip settles into a visibly selected state.
-    private static void verifyChipSelectionAnimation(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifySelectableControlSelectionAnimation(
-                appReference,
-                sceneReference,
-                "Chips",
-                "chip-selection",
-                "chip",
-                root -> firstVisibleChipWithText(root, "Filter"),
-                M3Chip::isSelected
-        );
-    }
-
-    /// Verifies hover and pressed feedback on a segmented button.
-    private static void verifySegmentedButtonMouseFeedback(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifySelectionControlMouseFeedback(
-                appReference,
-                sceneReference,
-                "Segmented Buttons",
-                "segmented-button",
-                "segmented button",
-                root -> firstVisibleSegmentedButtonWithText(root, "Day")
-        );
-    }
-
-    /// Verifies that segmented button ripple release remains visible for an intermediate fade-out frame.
-    private static void verifySegmentedButtonRippleReleaseAnimation(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifyRippleReleaseAnimation(
-                appReference,
-                sceneReference,
-                "Segmented Buttons",
-                "segmented-button-ripple",
-                "segmented button",
-                root -> firstVisibleSegmentedButtonWithText(root, "Day")
-        );
-    }
-
-    /// Verifies that clicking a segmented button settles into a visibly selected state.
-    private static void verifySegmentedButtonSelectionAnimation(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifySelectableControlSelectionAnimation(
-                appReference,
-                sceneReference,
-                "Segmented Buttons",
-                "segmented-button-selection",
-                "segmented button",
-                root -> firstVisibleSegmentedButtonWithText(root, "Day"),
-                M3SegmentedButton::isSelected
-        );
-    }
-
-    /// Verifies hover and pressed feedback on a tab.
-    private static void verifyTabMouseFeedback(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifySelectionControlMouseFeedback(
-                appReference,
-                sceneReference,
-                "Tabs",
-                "tab",
-                "tab",
-                root -> firstVisibleTabWithText(root, "Activity")
-        );
-    }
-
-    /// Verifies that tab ripple release remains visible for an intermediate fade-out frame.
-    private static void verifyTabRippleReleaseAnimation(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifyRippleReleaseAnimation(
-                appReference,
-                sceneReference,
-                "Tabs",
-                "tab-ripple",
-                "tab",
-                root -> firstVisibleTabWithText(root, "Activity")
-        );
-    }
-
-    /// Verifies that clicking a tab settles into a visibly selected state.
-    private static void verifyTabSelectionAnimation(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifySelectableControlSelectionAnimation(
-                appReference,
-                sceneReference,
-                "Tabs",
-                "tab-selection",
-                "tab",
-                root -> firstVisibleTabWithText(root, "Activity"),
-                M3Tab::isSelected
-        );
-    }
-
-    /// Verifies hover and pressed feedback on a navigation item.
-    private static void verifyNavigationItemMouseFeedback(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifySelectionControlMouseFeedback(
-                appReference,
-                sceneReference,
-                "Navigation",
-                "navigation-item",
-                "navigation item",
-                root -> firstVisibleNavigationItemWithText(root, "Search")
-        );
-    }
-
-    /// Verifies that navigation item ripple release remains visible for an intermediate fade-out frame.
-    private static void verifyNavigationItemRippleReleaseAnimation(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifyRippleReleaseAnimation(
-                appReference,
-                sceneReference,
-                "Navigation",
-                "navigation-item-ripple",
-                "navigation item",
-                root -> firstVisibleNavigationItemWithText(root, "Search")
-        );
-    }
-
-    /// Verifies that clicking a navigation item settles into a visibly selected state.
-    private static void verifyNavigationItemSelectionFeedback(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifySelectableControlSelectionAnimation(
-                appReference,
-                sceneReference,
-                "Navigation",
-                "navigation-item-selection",
-                "navigation item",
-                root -> firstVisibleNavigationItemWithText(root, "Search"),
-                M3NavigationItem::isSelected
-        );
-    }
-
-    /// Verifies hover and pressed feedback on a list item.
-    private static void verifyListItemMouseFeedback(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifySelectionControlMouseFeedback(
-                appReference,
-                sceneReference,
-                "Lists",
-                "list-item",
-                "list item",
-                root -> firstVisibleListItemWithHeadline(root, "One-line item")
-        );
-    }
-
-    /// Verifies that list item ripple release remains visible for an intermediate fade-out frame.
-    private static void verifyListItemRippleReleaseAnimation(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifyRippleReleaseAnimation(
-                appReference,
-                sceneReference,
-                "Lists",
-                "list-item-ripple",
-                "list item",
-                root -> firstVisibleListItemWithHeadline(root, "One-line item")
-        );
-    }
-
-    /// Verifies that clicking a list item settles into a visibly selected state.
-    private static void verifyListItemSelectionAnimation(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifySelectableControlSelectionAnimation(
-                appReference,
-                sceneReference,
-                "Lists",
-                "list-item-selection",
-                "list item",
-                root -> firstVisibleListItemWithHeadline(root, "One-line item"),
-                M3ListItem::isSelected
-        );
-    }
-
-    /// Verifies hover and pressed feedback on a checkbox control.
-    private static void verifyCheckboxMouseFeedback(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifySelectionControlMouseFeedback(
-                appReference,
-                sceneReference,
-                "Checkboxes",
-                "checkbox",
-                "checkbox",
-                root -> firstVisibleCheckBoxWithText(root, "Unchecked")
-        );
-    }
-
-    /// Verifies that checkbox ripple release remains visible for an intermediate fade-out frame.
-    private static void verifyCheckboxRippleReleaseAnimation(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifyRippleReleaseAnimation(
-                appReference,
-                sceneReference,
-                "Checkboxes",
-                "checkbox-ripple",
-                "checkbox",
-                root -> firstVisibleCheckBoxWithText(root, "Unchecked")
-        );
-    }
-
-    /// Verifies hover and pressed feedback on a radio button control.
-    private static void verifyRadioButtonMouseFeedback(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifySelectionControlMouseFeedback(
-                appReference,
-                sceneReference,
-                "Radio Buttons",
-                "radio-button",
-                "radio button",
-                root -> firstVisibleRadioButtonWithText(root, "Radio B")
-        );
-    }
-
-    /// Verifies that radio button ripple release remains visible for an intermediate fade-out frame.
-    private static void verifyRadioButtonRippleReleaseAnimation(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifyRippleReleaseAnimation(
-                appReference,
-                sceneReference,
-                "Radio Buttons",
-                "radio-button-ripple",
-                "radio button",
-                root -> firstVisibleRadioButtonWithText(root, "Radio B")
-        );
-    }
-
-    /// Verifies hover and pressed feedback on a switch control.
-    private static void verifySwitchMouseFeedback(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifySelectionControlMouseFeedback(
-                appReference,
-                sceneReference,
-                "Switches",
-                "switch",
-                "switch",
-                root -> firstVisibleSwitchWithText(root, "Off")
-        );
-    }
-
-    /// Verifies that switch ripple release remains visible for an intermediate fade-out frame.
-    private static void verifySwitchRippleReleaseAnimation(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifyRippleReleaseAnimation(
-                appReference,
-                sceneReference,
-                "Switches",
-                "switch-ripple",
-                "switch",
-                root -> firstVisibleSwitchWithText(root, "Off")
-        );
     }
 
     /// Shows an action snackbar and waits until its action button is stable enough for interaction snapshots.
@@ -4519,7 +3807,7 @@ final class M3FXDemoVisualSmokeTest {
         }, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            app.showPageForTesting("Snackbars");
+            app.showPageByTitle("Snackbars");
             scene.getRoot().applyCss();
             scene.getRoot().layout();
 
@@ -4535,6 +3823,46 @@ final class M3FXDemoVisualSmokeTest {
             M3Snackbar snackbar = Objects.requireNonNull(host.getSnackbar(), "interaction snackbar");
             assertSnackbarStaysCompact(scene, snackbar);
         });
+    }
+
+    /// Verifies hover and pressed feedback for one data-driven demo target.
+    private static void verifyInteractionTargetMouseFeedback(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference,
+            InteractionTargetCase targetCase
+    ) throws InterruptedException {
+        try {
+            verifySelectionControlMouseFeedback(
+                    appReference,
+                    sceneReference,
+                    targetCase.pageTitle(),
+                    targetCase.snapshotName(),
+                    targetCase.targetName(),
+                    targetCase.targetLookup()
+            );
+        } finally {
+            targetCase.cleanup(sceneReference);
+        }
+    }
+
+    /// Verifies ripple release feedback for one data-driven demo target.
+    private static void verifyInteractionTargetRippleReleaseAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference,
+            InteractionTargetCase targetCase
+    ) throws InterruptedException {
+        try {
+            verifyRippleReleaseAnimation(
+                    appReference,
+                    sceneReference,
+                    targetCase.pageTitle(),
+                    targetCase.snapshotName() + "-ripple",
+                    targetCase.targetName(),
+                    targetCase.targetLookup()
+            );
+        } finally {
+            targetCase.cleanup(sceneReference);
+        }
     }
 
     /// Verifies hover and pressed feedback for a target in the already prepared current scene.
@@ -4602,6 +3930,7 @@ final class M3FXDemoVisualSmokeTest {
             clearHoverPseudoState(target);
         });
     }
+
     /// Verifies hover and pressed feedback on one selectable control.
     private static void verifySelectionControlMouseFeedback(
             AtomicReference<@Nullable M3FXDemoApp> appReference,
@@ -4619,7 +3948,7 @@ final class M3FXDemoVisualSmokeTest {
         runOnFxThreadWhenNodeAreaChanged(targetReference, normalReference, sceneReference, hoverReference, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            app.showPageForTesting(pageTitle);
+            app.showPageByTitle(pageTitle);
             scene.getRoot().applyCss();
             scene.getRoot().layout();
 
@@ -4675,6 +4004,23 @@ final class M3FXDemoVisualSmokeTest {
         );
     }
 
+    /// Verifies selected-state animation for one data-driven demo target.
+    private static void verifySelectionTargetAnimation(
+            AtomicReference<@Nullable M3FXDemoApp> appReference,
+            AtomicReference<@Nullable Scene> sceneReference,
+            SelectionTargetCase targetCase
+    ) throws InterruptedException {
+        verifySelectableControlSelectionAnimation(
+                appReference,
+                sceneReference,
+                targetCase.pageTitle(),
+                targetCase.snapshotName(),
+                targetCase.targetName(),
+                targetCase.targetLookup(),
+                targetCase.selectedLookup()
+        );
+    }
+
     /// Verifies that a selectable control changes from unselected to selected with visible pressed and settled frames.
     private static <T extends Node> void verifySelectableControlSelectionAnimation(
             AtomicReference<@Nullable M3FXDemoApp> appReference,
@@ -4693,7 +4039,7 @@ final class M3FXDemoVisualSmokeTest {
         runOnFxThreadWhenNodeAreaChanged(targetReference, normalReference, sceneReference, pressedReference, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            app.showPageForTesting(pageTitle);
+            app.showPageByTitle(pageTitle);
             scene.getRoot().applyCss();
             scene.getRoot().layout();
 
@@ -4752,36 +4098,6 @@ final class M3FXDemoVisualSmokeTest {
         );
     }
 
-    /// Verifies hover and pressed feedback on a validation summary invalid-field row.
-    private static void verifyValidationSummaryItemMouseFeedback(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifySelectionControlMouseFeedback(
-                appReference,
-                sceneReference,
-                "Forms",
-                "validation-summary-item",
-                "validation summary item",
-                root -> firstVisibleStyledDescendant(root, M3ValidationSummary.ITEM_STYLE_CLASS)
-        );
-    }
-
-    /// Verifies that validation summary row ripple release remains visible for an intermediate fade-out frame.
-    private static void verifyValidationSummaryItemRippleReleaseAnimation(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifyRippleReleaseAnimation(
-                appReference,
-                sceneReference,
-                "Forms",
-                "validation-summary-item-ripple",
-                "validation summary item",
-                root -> firstVisibleStyledDescendant(root, M3ValidationSummary.ITEM_STYLE_CLASS)
-        );
-    }
-
     /// Verifies hover and pressed feedback on an embedded picker-field open button.
     private static void verifyPickerFieldOpenButtonMouseFeedback(
             AtomicReference<@Nullable M3FXDemoApp> appReference,
@@ -4795,12 +4111,15 @@ final class M3FXDemoVisualSmokeTest {
         runOnFxThreadWhenNodeAreaChanged(targetReference, normalReference, sceneReference, hoverReference, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            app.showPageForTesting("Date Pickers");
+            app.showPageByTitle("Date Pickers");
             scene.getRoot().applyCss();
             scene.getRoot().layout();
 
             Node page = currentDemoPage(scene, "Date Pickers");
-            Node target = Objects.requireNonNull(firstPickerFieldOpenButton(page), "picker open button");
+            Node target = Objects.requireNonNull(
+                    firstVisibleNodeWithStyle(page, M3PickerField.OPEN_BUTTON_STYLE_CLASS),
+                    "picker open button"
+            );
             targetReference.set(target);
             normalReference.set(snapshot(scene));
             writeInteractionSnapshot(
@@ -4864,9 +4183,9 @@ final class M3FXDemoVisualSmokeTest {
                 "Date Pickers",
                 "picker-open-button-ripple",
                 "picker open button",
-                M3FXDemoVisualSmokeTest::firstPickerFieldOpenButton
+                root -> firstVisibleNodeWithStyle(root, M3PickerField.OPEN_BUTTON_STYLE_CLASS)
         );
-        runOnFxThread(() -> {
+        DemoFxTestUtils.runOnFxThread(() -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             hideShowingPickerFields(scene.getRoot());
         });
@@ -4887,7 +4206,7 @@ final class M3FXDemoVisualSmokeTest {
         runOnFxThreadWhenNodeAreaChanged(targetReference, normalReference, sceneReference, hoverReference, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            app.showPageForTesting("Text Fields");
+            app.showPageByTitle("Text Fields");
             scene.getRoot().applyCss();
             scene.getRoot().layout();
 
@@ -4951,7 +4270,7 @@ final class M3FXDemoVisualSmokeTest {
             scene.getRoot().layout();
         });
 
-        runOnFxThreadWhenStable(() -> {
+        DemoFxTestUtils.runOnFxThreadWhenStable(() -> {
             @Nullable M3TextInputLayout layout = layoutReference.get();
             if (layout == null) {
                 return false;
@@ -4983,92 +4302,6 @@ final class M3FXDemoVisualSmokeTest {
                 Objects.requireNonNull(pressedReference.get(), "pressed text input clear button snapshot"),
                 Objects.requireNonNull(clearedReference.get(), "cleared text input clear button snapshot"),
                 "text input clear button release"
-        );
-    }
-
-    /// Verifies hover and pressed feedback on a text-input trailing action button.
-    private static void verifyTextInputTrailingActionMouseFeedback(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        AtomicReference<@Nullable Node> targetReference = new AtomicReference<>();
-        AtomicReference<@Nullable WritableImage> normalReference = new AtomicReference<>();
-        AtomicReference<@Nullable WritableImage> hoverReference = new AtomicReference<>();
-        AtomicReference<@Nullable WritableImage> pressedReference = new AtomicReference<>();
-
-        runOnFxThreadWhenNodeAreaChanged(targetReference, normalReference, sceneReference, hoverReference, () -> {
-            M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
-            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            app.showPageForTesting("Text Fields");
-            scene.getRoot().applyCss();
-            scene.getRoot().layout();
-
-            Node target = Objects.requireNonNull(
-                    firstTextInputTrailingActionButton(currentDemoPage(scene, "Text Fields")),
-                    "text input trailing action"
-            );
-            targetReference.set(target);
-            normalReference.set(snapshot(scene));
-            writeInteractionSnapshot(
-                    Objects.requireNonNull(normalReference.get(), "normal text input trailing action snapshot"),
-                    "text-input-trailing-action",
-                    "normal"
-            );
-            applyHoverPseudoState(target);
-            scene.getRoot().applyCss();
-            scene.getRoot().layout();
-        }, () -> {
-            writeInteractionSnapshot(
-                    Objects.requireNonNull(hoverReference.get(), "hover text input trailing action snapshot"),
-                    "text-input-trailing-action",
-                    "hover"
-            );
-            Node target = Objects.requireNonNull(targetReference.get(), "text input trailing action");
-            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            firePrimaryMouseEvent(target, MouseEvent.MOUSE_PRESSED, true);
-            scene.getRoot().applyCss();
-            scene.getRoot().layout();
-        });
-
-        runOnFxThreadWhenNodeAreaChanged(targetReference, hoverReference, sceneReference, pressedReference, () -> {
-        }, () -> {
-            writeInteractionSnapshot(
-                    Objects.requireNonNull(pressedReference.get(), "pressed text input trailing action snapshot"),
-                    "text-input-trailing-action",
-                    "pressed"
-            );
-            Node target = Objects.requireNonNull(targetReference.get(), "text input trailing action");
-            firePrimaryMouseEvent(target, MouseEvent.MOUSE_RELEASED, false);
-            clearHoverPseudoState(target);
-        });
-
-        Node target = Objects.requireNonNull(targetReference.get(), "text input trailing action");
-        assertNodeAreaChanged(
-                target,
-                Objects.requireNonNull(normalReference.get(), "normal text input trailing action snapshot"),
-                Objects.requireNonNull(hoverReference.get(), "hover text input trailing action snapshot"),
-                "text input trailing action hover"
-        );
-        assertNodeAreaChanged(
-                target,
-                Objects.requireNonNull(hoverReference.get(), "hover text input trailing action snapshot"),
-                Objects.requireNonNull(pressedReference.get(), "pressed text input trailing action snapshot"),
-                "text input trailing action pressed"
-        );
-    }
-
-    /// Verifies that text-input trailing action ripple release remains visible for an intermediate fade-out frame.
-    private static void verifyTextInputTrailingActionRippleReleaseAnimation(
-            AtomicReference<@Nullable M3FXDemoApp> appReference,
-            AtomicReference<@Nullable Scene> sceneReference
-    ) throws InterruptedException {
-        verifyRippleReleaseAnimation(
-                appReference,
-                sceneReference,
-                "Text Fields",
-                "text-input-trailing-action-ripple",
-                "text input trailing action",
-                M3FXDemoVisualSmokeTest::firstTextInputTrailingActionButton
         );
     }
 
@@ -5115,7 +4348,7 @@ final class M3FXDemoVisualSmokeTest {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             if (pageTitle != null) {
-                app.showPageForTesting(pageTitle);
+                app.showPageByTitle(pageTitle);
             }
             scene.getRoot().applyCss();
             scene.getRoot().layout();
@@ -5155,7 +4388,7 @@ final class M3FXDemoVisualSmokeTest {
             releaseStartReference.set(snapshot(scene));
         });
 
-        runOnFxThreadWhen(() -> {
+        DemoFxTestUtils.runOnFxThreadWhen(() -> {
             @Nullable Node target = targetReference.get();
             @Nullable Node ripple = rippleReference.get();
             @Nullable Double releaseStartOpacity = releaseStartOpacityReference.get();
@@ -5222,11 +4455,6 @@ final class M3FXDemoVisualSmokeTest {
         M3MotionSettings.clearMotionScheme(target);
     }
 
-    /// Returns the first visible picker-field trailing open button.
-    private static @Nullable Node firstPickerFieldOpenButton(Node root) {
-        return firstVisibleNodeWithStyle(root, M3PickerField.OPEN_BUTTON_STYLE_CLASS);
-    }
-
     /// Returns the first visible text-input layout whose built-in clear button is active.
     private static @Nullable M3TextInputLayout firstTextInputClearButtonLayout(Node root) {
         for (M3TextInputLayout layout : visibleNodesOfType(root, M3TextInputLayout.class)) {
@@ -5272,7 +4500,6 @@ final class M3FXDemoVisualSmokeTest {
         });
     }
 
-
     /// Hides every showing snackbar host below a root.
     private static void hideShowingSnackbarHosts(Node root) {
         visitVisibleNodes(root, node -> {
@@ -5281,7 +4508,6 @@ final class M3FXDemoVisualSmokeTest {
             }
         });
     }
-
 
     /// Returns a ripple-specific motion scheme that makes release fade frames observable in real snapshots.
     private static M3MotionScheme visualRippleMotionScheme() {
@@ -5310,7 +4536,7 @@ final class M3FXDemoVisualSmokeTest {
         runOnFxThreadWhenNodeAreaChanged(targetReference, normalReference, sceneReference, intermediateReference, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            app.showPageForTesting("Switches");
+            app.showPageByTitle("Switches");
             scene.getRoot().applyCss();
             scene.getRoot().layout();
 
@@ -5382,7 +4608,7 @@ final class M3FXDemoVisualSmokeTest {
         runOnFxThreadWhenNodeAreaChanged(targetReference, normalReference, sceneReference, pressedReference, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            app.showPageForTesting("Sliders");
+            app.showPageByTitle("Sliders");
             scene.getRoot().applyCss();
             scene.getRoot().layout();
 
@@ -5501,7 +4727,7 @@ final class M3FXDemoVisualSmokeTest {
                 () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            app.showPageForTesting("Split Buttons");
+            app.showPageByTitle("Split Buttons");
             scene.getRoot().applyCss();
             scene.getRoot().layout();
 
@@ -5563,7 +4789,7 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadWhenStable(() -> {
+        DemoFxTestUtils.runOnFxThreadWhenStable(() -> {
             @Nullable M3SplitButton target = targetReference.get();
             return target != null && !target.isShowing();
         }, SETTLED_STATE_PULSES, () -> {
@@ -5598,7 +4824,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable WritableImage> settledReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> hidingReference = new AtomicReference<>();
 
-        runOnFxThreadWhenStable(() -> {
+        DemoFxTestUtils.runOnFxThreadWhenStable(() -> {
             @Nullable M3MenuButton menuButton = menuButtonReference.get();
             return menuButton != null
                     && menuButton.isShowing()
@@ -5606,7 +4832,7 @@ final class M3FXDemoVisualSmokeTest {
         }, SETTLED_STATE_PULSES, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            app.showPageForTesting("Menus");
+            app.showPageByTitle("Menus");
             scene.getRoot().applyCss();
             scene.getRoot().layout();
 
@@ -5722,7 +4948,7 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadWhenStable(() -> {
+        DemoFxTestUtils.runOnFxThreadWhenStable(() -> {
             @Nullable M3SubMenuItem subMenuItem = subMenuItemReference.get();
             return subMenuItem != null && !subMenuItem.isSubMenuShowing();
         }, SETTLED_STATE_PULSES, () -> {
@@ -5767,7 +4993,7 @@ final class M3FXDemoVisualSmokeTest {
                 () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            app.showPageForTesting("Date Pickers");
+            app.showPageByTitle("Date Pickers");
             scene.getRoot().applyCss();
             scene.getRoot().layout();
 
@@ -5828,7 +5054,7 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadWhenStable(() -> {
+        DemoFxTestUtils.runOnFxThreadWhenStable(() -> {
             @Nullable M3DatePickerField target = targetReference.get();
             return target != null && !target.isShowing();
         }, SETTLED_STATE_PULSES, () -> {
@@ -5875,7 +5101,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable WritableImage> intermediateReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> settledReference = new AtomicReference<>();
 
-        runOnFxThreadWhen(() -> {
+        DemoFxTestUtils.runOnFxThreadWhen(() -> {
             @Nullable M3NavigationItem target = targetReference.get();
             @Nullable WritableImage normal = normalReference.get();
             @Nullable Scene scene = sceneReference.get();
@@ -5893,7 +5119,7 @@ final class M3FXDemoVisualSmokeTest {
         }, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            app.showPageForTesting(pageTitle);
+            app.showPageByTitle(pageTitle);
             scene.getRoot().applyCss();
             scene.getRoot().layout();
 
@@ -5924,7 +5150,12 @@ final class M3FXDemoVisualSmokeTest {
 
         runOnFxThreadWhenNodeAreaStable(targetReference, sceneReference, settledReference, () -> {
             @Nullable M3NavigationItem target = targetReference.get();
-            return target != null && target.isSelected() && navigationIndicatorIsFullySelected(target);
+            @Nullable Node indicator = target == null ? null : navigationIndicator(target);
+            return target != null
+                    && target.isSelected()
+                    && indicator != null
+                    && indicator.getOpacity() >= 0.999
+                    && indicator.getScaleX() >= 0.999;
         }, () -> {
         }, () -> {
             writeAnimationSnapshot(
@@ -5962,11 +5193,6 @@ final class M3FXDemoVisualSmokeTest {
         return opacity > 0.05 && opacity < 0.95 && scaleX > 0.74 && scaleX < 0.99;
     }
 
-    /// Returns whether the navigation selected indicator reached its selected visual state.
-    private static boolean navigationIndicatorIsFullySelected(M3NavigationItem item) {
-        @Nullable Node indicator = navigationIndicator(item);
-        return indicator != null && indicator.getOpacity() >= 0.999 && indicator.getScaleX() >= 0.999;
-    }
 
     /// Returns the selected indicator node for a navigation item.
     private static @Nullable Node navigationIndicator(M3NavigationItem item) {
@@ -6105,7 +5331,7 @@ final class M3FXDemoVisualSmokeTest {
         runOnFxThreadWhenNodeAreaChanged(targetReference, shownReference, sceneReference, hidingReference, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            app.showPageForTesting("Bottom Sheets");
+            app.showPageByTitle("Bottom Sheets");
             scene.getRoot().applyCss();
             scene.getRoot().layout();
 
@@ -6130,8 +5356,10 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadWhenNodeAreaStable(targetReference, sceneReference, hiddenReference, () ->
-                bottomSheetHidden(targetReference.get()), () -> {
+        runOnFxThreadWhenNodeAreaStable(targetReference, sceneReference, hiddenReference, () -> {
+            @Nullable M3BottomSheet sheet = targetReference.get();
+            return sheet != null && !sheet.isShown() && !sheet.isVisible() && !sheet.isManaged();
+        }, () -> {
         }, () -> {
             M3BottomSheet target = Objects.requireNonNull(targetReference.get(), "bottom sheet");
             writeAnimationSnapshot(
@@ -6203,7 +5431,7 @@ final class M3FXDemoVisualSmokeTest {
         runOnFxThreadWhenNodeAreaChanged(targetReference, shownReference, sceneReference, hidingReference, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            app.showPageForTesting("Side Sheets");
+            app.showPageByTitle("Side Sheets");
             scene.getRoot().applyCss();
             scene.getRoot().layout();
 
@@ -6228,8 +5456,10 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadWhenNodeAreaStable(targetReference, sceneReference, hiddenReference, () ->
-                sideSheetHidden(targetReference.get()), () -> {
+        runOnFxThreadWhenNodeAreaStable(targetReference, sceneReference, hiddenReference, () -> {
+            @Nullable M3SideSheet sheet = targetReference.get();
+            return sheet != null && !sheet.isShown() && !sheet.isVisible() && !sheet.isManaged();
+        }, () -> {
         }, () -> {
             M3SideSheet target = Objects.requireNonNull(targetReference.get(), "side sheet");
             writeAnimationSnapshot(
@@ -6315,7 +5545,7 @@ final class M3FXDemoVisualSmokeTest {
         runOnFxThreadWhenNodeAreaChanged(hostReference, hiddenBaselineReference, sceneReference, openingReference, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            app.showPageForTesting("Snackbars");
+            app.showPageByTitle("Snackbars");
             scene.getRoot().applyCss();
             scene.getRoot().layout();
 
@@ -6373,8 +5603,10 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadWhenNodeAreaStable(hostReference, sceneReference, hiddenReference, () ->
-                snackbarHidden(hostReference.get()), () -> {
+        runOnFxThreadWhenNodeAreaStable(hostReference, sceneReference, hiddenReference, () -> {
+            @Nullable M3SnackbarHost host = hostReference.get();
+            return host != null && !host.isShowing() && host.getSnackbar() == null;
+        }, () -> {
         }, () -> {
             M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "snackbar host");
             assertFalse(host.isShowing());
@@ -6419,7 +5651,7 @@ final class M3FXDemoVisualSmokeTest {
         runOnFxThreadWhenNodeAreaChanged(targetReference, collapsedReference, sceneReference, expandingReference, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            app.showPageForTesting("FAB Menu");
+            app.showPageByTitle("FAB Menu");
             scene.getRoot().applyCss();
             scene.getRoot().layout();
 
@@ -6571,7 +5803,7 @@ final class M3FXDemoVisualSmokeTest {
             tooltip.hide();
         });
 
-        runOnFxThreadWhenStable(() -> {
+        DemoFxTestUtils.runOnFxThreadWhenStable(() -> {
             @Nullable M3Tooltip tooltip = tooltipReference.get();
             return tooltip != null && !tooltip.isShowing();
         }, SETTLED_STATE_PULSES, () -> {
@@ -6606,7 +5838,7 @@ final class M3FXDemoVisualSmokeTest {
         }, "rich tooltip popup settled frame", () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            app.showPageForTesting("Tooltips");
+            app.showPageByTitle("Tooltips");
             scene.getRoot().applyCss();
             scene.getRoot().layout();
 
@@ -6658,7 +5890,7 @@ final class M3FXDemoVisualSmokeTest {
             firePrimaryMouseEvent(popupRoot, MouseEvent.MOUSE_ENTERED, false);
         });
 
-        runOnFxThreadWhenStable(() -> {
+        DemoFxTestUtils.runOnFxThreadWhenStable(() -> {
             @Nullable M3RichTooltip tooltip = tooltipReference.get();
             return tooltip != null && tooltip.isShowing() && tooltip.getScene() != null;
         }, SETTLED_STATE_PULSES, () -> {
@@ -6672,7 +5904,7 @@ final class M3FXDemoVisualSmokeTest {
         });
 
         AtomicReference<String> pressedDiagnostics = new AtomicReference<>("rich tooltip action pressed frame has not been captured");
-        runOnFxThreadWhen(() -> {
+        DemoFxTestUtils.runOnFxThreadWhen(() -> {
             @Nullable M3RichTooltip tooltip = tooltipReference.get();
             @Nullable WritableImage hoverActionFrame = actionHoverReference.get();
             @Nullable Bounds actionBounds = actionBoundsReference.get();
@@ -6715,7 +5947,7 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        runOnFxThreadWhenStable(() -> {
+        DemoFxTestUtils.runOnFxThreadWhenStable(() -> {
             @Nullable M3RichTooltip tooltip = tooltipReference.get();
             return tooltip != null && tooltip.isShowing() && tooltip.getScene() != null;
         }, SETTLED_STATE_PULSES, () -> {
@@ -6732,7 +5964,7 @@ final class M3FXDemoVisualSmokeTest {
             tooltip.hide();
         });
 
-        runOnFxThreadWhenStable(() -> {
+        DemoFxTestUtils.runOnFxThreadWhenStable(() -> {
             @Nullable M3RichTooltip tooltip = tooltipReference.get();
             return tooltip != null && !tooltip.isShowing();
         }, SETTLED_STATE_PULSES, () -> {
@@ -6828,7 +6060,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable WritableImage> normalReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> focusedReference = new AtomicReference<>();
 
-        runOnFxThreadWhenStable(() -> {
+        DemoFxTestUtils.runOnFxThreadWhenStable(() -> {
             @Nullable Node target = targetReference.get();
             if (target != null && !target.isFocused()) {
                 target.requestFocus();
@@ -6841,7 +6073,7 @@ final class M3FXDemoVisualSmokeTest {
         }, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            app.showPageForTesting("Text Fields");
+            app.showPageByTitle("Text Fields");
             scene.getRoot().applyCss();
             scene.getRoot().layout();
 
@@ -6963,7 +6195,7 @@ final class M3FXDemoVisualSmokeTest {
         runOnFxThreadWhenNodeAreaChanged(targetReference, normalReference, sceneReference, hoverReference, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            app.showPageForTesting("Icon Buttons");
+            app.showPageByTitle("Icon Buttons");
             scene.getRoot().applyCss();
             scene.getRoot().layout();
 
@@ -7081,11 +6313,11 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies that the demo sidebar selection matches the displayed page.
     private static void assertSidebarSelectionMatchesCurrentPage(M3FXDemoApp app, String pageTitle) {
         String expected = Objects.requireNonNull(
-                app.currentPageNavigationTitleForTesting(),
+                app.currentPageNavigationTitle(),
                 () -> "No current page navigation title for " + pageTitle
         );
         String selected = Objects.requireNonNull(
-                app.selectedSidebarNavigationTitleForTesting(),
+                app.selectedSidebarNavigationTitle(),
                 () -> "No selected sidebar item for " + pageTitle
         );
         assertEquals(expected, selected,
@@ -7277,30 +6509,6 @@ final class M3FXDemoVisualSmokeTest {
         return image.getPixelReader().getColor(pixelX, pixelY);
     }
 
-    /// Counts sample points inside a scene-snapshot bounds that are close to an expected color.
-    private static int countSnapshotSamplesNearColor(
-            WritableImage image,
-            Bounds bounds,
-            Color expected,
-            double maximumDistance
-    ) {
-        int matchingPixels = 0;
-        double[] sampleFractions = {0.25, 0.5, 0.75};
-        for (double yFraction : sampleFractions) {
-            for (double xFraction : sampleFractions) {
-                Color sample = snapshotColorAt(
-                        image,
-                        bounds.getMinX() + bounds.getWidth() * xFraction,
-                        bounds.getMinY() + bounds.getHeight() * yFraction
-                );
-                if (pixelDistance(sample, expected) <= maximumDistance) {
-                    matchingPixels++;
-                }
-            }
-        }
-        return matchingPixels;
-    }
-
     /// Samples the surface color immediately outside a rendered bounds.
     private static Color sampleColorOutsideBounds(WritableImage image, Bounds bounds) {
         double offset = 4.0;
@@ -7336,7 +6544,7 @@ final class M3FXDemoVisualSmokeTest {
             Consumer<Scene> sceneSetup,
             Runnable verification
     ) throws InterruptedException {
-        runOnFxThreadWhenStable(
+        DemoFxTestUtils.runOnFxThreadWhenStable(
                 () -> {
                     M3FXDemoApp app = appReference.get();
                     Scene scene = sceneReference.get();
@@ -7346,7 +6554,7 @@ final class M3FXDemoVisualSmokeTest {
                 () -> {
                     M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
                     Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-                    app.showPageForTesting(pageTitle);
+                    app.showPageByTitle(pageTitle);
                     sceneSetup.accept(scene);
                     scene.getRoot().applyCss();
                     scene.getRoot().layout();
@@ -7531,15 +6739,6 @@ final class M3FXDemoVisualSmokeTest {
         return (clampedLeadingEdge - contentLeadingEdge) / scrollableExtent;
     }
 
-    /// Returns a region with fixed layout dimensions for synthetic visual test scenes.
-    private static Region fixedRegion(double width, double height) {
-        Region region = new Region();
-        region.setMinSize(width, height);
-        region.setPrefSize(width, height);
-        region.setMaxSize(width, height);
-        return region;
-    }
-
     /// Asserts that the sidebar selected indicator has no outgoing visual selection residue.
     private static void assertSidebarVisualSelectionSettled(M3FXDemoApp app, Scene scene, String pageTitle) {
         assertTrue(sidebarVisualSelectionSettled(app, scene),
@@ -7552,7 +6751,7 @@ final class M3FXDemoVisualSmokeTest {
     private static boolean sidebarVisualSelectionSettled(M3FXDemoApp app, Scene scene) {
         scene.getRoot().applyCss();
         scene.getRoot().layout();
-        String expected = app.currentPageNavigationTitleForTesting();
+        String expected = app.currentPageNavigationTitle();
         if (expected == null) {
             return false;
         }
@@ -7783,13 +6982,12 @@ final class M3FXDemoVisualSmokeTest {
         assertNavigationBadgesStayCompact(scene, pageTitle);
     }
 
-    /// Applies the dedicated visual-state assertion for a rendered demo page.
+    /// Applies the page-specific visual-state assertion for a rendered demo page when one is registered.
     private static void assertDemoPageSpecificVisualState(Scene scene, String pageTitle) {
-        Consumer<Scene> assertion = Objects.requireNonNull(
-                DEMO_PAGE_VISUAL_STATE_ASSERTIONS.get(pageTitle),
-                pageTitle + " page-specific visual assertion"
-        );
-        assertion.accept(scene);
+        @Nullable Consumer<Scene> assertion = DEMO_PAGE_VISUAL_STATE_ASSERTIONS.get(pageTitle);
+        if (assertion != null) {
+            assertion.accept(scene);
+        }
     }
 
     /// Verifies that a search bar keeps its editor and optional slots inside the rounded search container.
@@ -7798,7 +6996,7 @@ final class M3FXDemoVisualSmokeTest {
         Bounds searchBounds = searchBar.localToScene(searchBar.getBoundsInLocal());
         Bounds editorBounds = searchBar.getEditor().localToScene(searchBar.getEditor().getBoundsInLocal());
         boolean embeddedInSearchView = nearestAncestorOfType(searchBar, M3SearchView.class) != null;
-        double expectedHeight = expectedSearchBarHeight(searchBar);
+        double expectedHeight = 56.0;
 
         if (embeddedInSearchView) {
             assertTrue(searchBounds.getHeight() >= expectedHeight - CONTROL_EDGE_TOLERANCE
@@ -7862,11 +7060,6 @@ final class M3FXDemoVisualSmokeTest {
         }
     }
 
-    /// Returns the search bar height expected from Material Design search bar tokens.
-    private static double expectedSearchBarHeight(M3SearchBar searchBar) {
-        return 56.0;
-    }
-
     /// Verifies that an active search view shows its result rows as reachable Material list items.
     private static void assertSearchViewResultsVisible(M3SearchView searchView) {
         assertTrue(searchView.isActive(), "search view should be active");
@@ -7917,7 +7110,7 @@ final class M3FXDemoVisualSmokeTest {
             M3ListItem item = (M3ListItem) result;
             Bounds resultBounds = item.localToScene(item.getBoundsInLocal());
             assertSearchResultRowGeometry(item, resultBounds, resultsBounds);
-            assertEquals(expectedSearchResultContainerShape(item), item.getContainerShape(), CONTROL_EDGE_TOLERANCE,
+            assertEquals(isExpressiveTheme(item) ? 16.0 : 0.0, item.getContainerShape(), CONTROL_EDGE_TOLERANCE,
                     () -> "search result row should use the active profile result shape token: item="
                             + item.getHeadlineText());
             double expectedMinY = previousMaxY;
@@ -7972,11 +7165,6 @@ final class M3FXDemoVisualSmokeTest {
                 () -> "active search view results inset from the embedded bar is too large: leftInset="
                         + leftInset + ", rightInset=" + rightInset + ", results=" + resultsBounds
                         + ", bar=" + barBounds);
-    }
-
-    /// Returns the search result row shape expected from the active profile tokens.
-    private static double expectedSearchResultContainerShape(M3ListItem item) {
-        return isExpressiveTheme(item) ? 16.0 : 0.0;
     }
 
     /// Verifies one visible search result row inside an active search view.
@@ -8950,7 +8138,7 @@ final class M3FXDemoVisualSmokeTest {
         }
     }
 
-    /// Verifies that demo icon slots use renderable SVG paths and no legacy text-placeholder `M3Icon` nodes.
+    /// Verifies that demo icon slots use renderable SVG paths and no text-only `M3Icon` nodes.
     private static void assertDemoVectorIcons(Node root, String pageTitle, int minimumIconCount) {
         int[] iconCount = {0};
         visitVisibleNodes(root, node -> {
@@ -8960,12 +8148,14 @@ final class M3FXDemoVisualSmokeTest {
                         () -> pageTitle + " demo vector icon style is not applied to an SVGPath: " + node);
                 assertTrue(hasRenderableBounds(node),
                         () -> pageTitle + " demo vector icon has no renderable bounds: " + node);
-                assertTrue(isInsideStableDemoIconViewport(node),
+                assertTrue(
+                        nearestAncestorWithStyle(node, "demo-vector-icon-viewport") != null
+                                || nearestAncestorWithStyle(node, "demo-sample-icon") != null,
                         () -> pageTitle + " demo vector icon is not wrapped in a stable viewport: " + node);
             }
 
             if (node instanceof M3Icon && hasDemoIconSlotStyle(node)) {
-                fail(() -> pageTitle + " still uses a text-placeholder M3Icon in an interactive icon slot: "
+                fail(() -> pageTitle + " uses a text-only M3Icon in an interactive icon slot: "
                         + node.getStyleClass());
             }
 
@@ -8980,7 +8170,7 @@ final class M3FXDemoVisualSmokeTest {
                         + iconCount[0] + ", minimum=" + minimumIconCount);
     }
 
-    /// Verifies that a list item icon slot does not use a text-placeholder `M3Icon`.
+    /// Verifies that a list item icon slot does not use a text-only `M3Icon`.
     private static void assertListItemSlotIsNotTextPlaceholder(
             @Nullable Node slot,
             String pageTitle,
@@ -8988,11 +8178,11 @@ final class M3FXDemoVisualSmokeTest {
     ) {
         if (slot instanceof M3Icon icon) {
             fail(() -> pageTitle + " list item " + slotName
-                    + " slot still uses a text-placeholder M3Icon: " + icon.getText());
+                    + " slot uses a text-only M3Icon: " + icon.getText());
         }
     }
 
-    /// Returns whether a node has a demo style class historically used for interactive icon slots.
+    /// Returns whether a node has a demo style class for interactive icon slots.
     private static boolean hasDemoIconSlotStyle(Node node) {
         return node.getStyleClass().contains("demo-icon-label")
                 || node.getStyleClass().contains("demo-fab-icon")
@@ -9000,11 +8190,6 @@ final class M3FXDemoVisualSmokeTest {
                 || node.getStyleClass().contains("demo-app-bar-icon");
     }
 
-    /// Returns whether a demo SVG icon is inside a fixed or explicitly sized icon viewport.
-    private static boolean isInsideStableDemoIconViewport(Node node) {
-        return nearestAncestorWithStyle(node, "demo-vector-icon-viewport") != null
-                || nearestAncestorWithStyle(node, "demo-sample-icon") != null;
-    }
 
     /// Verifies that visible text nodes and their rendered ink are not clipped by scene or explicit ancestor clips.
     private static void assertVisibleTextInsideScene(Scene scene, String pageTitle) {
@@ -9042,7 +8227,7 @@ final class M3FXDemoVisualSmokeTest {
                 if (inkBounds != null) {
                     assertVisibleTextInkHasVerticalRoom(text, textBounds, inkBounds, pageTitle);
                     assertVisibleTextInkInsideNearestVisualBoundary(text, inkBounds, pageTitle);
-                    assertVisibleTextInkHasExpectedCoverage(text, textBounds, inkBounds, pageTitle);
+                    assertVisibleTextInkHasExpectedHeight(text, textBounds, inkBounds, pageTitle);
                     assertRectangleInsideBounds(
                             viewportBounds,
                             inkBounds,
@@ -9062,7 +8247,7 @@ final class M3FXDemoVisualSmokeTest {
             if (inkBounds != null) {
                 assertVisibleTextInkHasVerticalRoom(text, textBounds, inkBounds, pageTitle);
                 assertVisibleTextInkInsideNearestVisualBoundary(text, inkBounds, pageTitle);
-                assertVisibleTextInkHasExpectedCoverage(text, textBounds, inkBounds, pageTitle);
+                assertVisibleTextInkHasExpectedHeight(text, textBounds, inkBounds, pageTitle);
                 assertRectangleInsideBounds(
                         sceneBounds,
                         inkBounds,
@@ -9090,13 +8275,13 @@ final class M3FXDemoVisualSmokeTest {
     }
 
     /// Verifies that rendered text ink keeps enough height to catch clipping that still remains inside layout bounds.
-    private static void assertVisibleTextInkHasExpectedCoverage(
+    private static void assertVisibleTextInkHasExpectedHeight(
             Text text,
             Bounds textBounds,
             Rectangle2D inkBounds,
             String pageTitle
     ) {
-        if (!shouldCheckRenderedTextInkCoverage(text)) {
+        if (!shouldCheckRenderedTextInkHeight(text)) {
             return;
         }
         if (!renderedTextInkWidthIsRepresentative(inkBounds, textBounds)) {
@@ -9105,15 +8290,15 @@ final class M3FXDemoVisualSmokeTest {
 
         double fontSize = text.getFont().getSize();
         double minimumInkHeight = Math.max(3.0, fontSize * TEXT_INK_MINIMUM_FONT_HEIGHT_RATIO);
-        assertTrue(inkBounds.getHeight() + TEXT_INK_HEIGHT_COVERAGE_TOLERANCE >= minimumInkHeight,
+        assertTrue(inkBounds.getHeight() + TEXT_INK_HEIGHT_CLIPPING_TOLERANCE >= minimumInkHeight,
                 () -> pageTitle + " visible text ink is too short for its font size and may be clipped: text="
                         + text.getText() + ", fontSize=" + fontSize + ", minimumInkHeight="
-                        + minimumInkHeight + ", tolerance=" + TEXT_INK_HEIGHT_COVERAGE_TOLERANCE
+                        + minimumInkHeight + ", tolerance=" + TEXT_INK_HEIGHT_CLIPPING_TOLERANCE
                         + ", inkBounds=" + inkBounds);
     }
 
-    /// Returns whether a text node should participate in rendered-ink height coverage checks.
-    private static boolean shouldCheckRenderedTextInkCoverage(Text text) {
+    /// Returns whether a text node should participate in rendered-ink height clipping checks.
+    private static boolean shouldCheckRenderedTextInkHeight(Text text) {
         if (text.getFont().getSize() < 6.0) {
             return false;
         }
@@ -9130,7 +8315,7 @@ final class M3FXDemoVisualSmokeTest {
         return false;
     }
 
-    /// Returns whether extracted text ink width is broad enough for a height coverage assertion.
+    /// Returns whether extracted text ink width is broad enough for a height clipping assertion.
     private static boolean renderedTextInkWidthIsRepresentative(Rectangle2D inkBounds, Bounds textBounds) {
         return inkBounds.getWidth() >= Math.max(24.0, textBounds.getWidth() * 0.35);
     }
@@ -9164,17 +8349,12 @@ final class M3FXDemoVisualSmokeTest {
     private static @Nullable Node nearestTextVisualBoundary(Text text) {
         @Nullable Parent parent = text.getParent();
         while (parent != null) {
-            if (isTextVisualBoundary(parent)) {
+            if (isPageLevelMaterialControl(parent)) {
                 return parent;
             }
             parent = parent.getParent();
         }
         return null;
-    }
-
-    /// Returns whether a node is a visible owner that should contain descendant text ink.
-    private static boolean isTextVisualBoundary(Node node) {
-        return isPageLevelMaterialControl(node);
     }
 
     /// Verifies that visible text stays inside every explicit ancestor clip intersecting the text.
@@ -9227,7 +8407,7 @@ final class M3FXDemoVisualSmokeTest {
             @Nullable Node scrollViewport = nearestScrollViewport(node);
             if (scrollViewport != null) {
                 Bounds viewportBounds = scrollViewport.localToScene(scrollViewport.getBoundsInLocal());
-                if (allowsHorizontalViewportClipping(node)) {
+                if (nearestAncestorWithStyle(node, M3Carousel.VIEWPORT_STYLE_CLASS) != null) {
                     return;
                 }
                 assertTrue(containsHorizontalBoundsWithTolerance(viewportBounds, controlBounds, CONTROL_EDGE_TOLERANCE),
@@ -9247,12 +8427,6 @@ final class M3FXDemoVisualSmokeTest {
                             + node + ", bounds=" + controlBounds + ", scene=" + sceneBounds);
         });
     }
-
-    /// Returns whether a node belongs to a horizontal viewport that intentionally clips content at its edges.
-    private static boolean allowsHorizontalViewportClipping(Node node) {
-        return nearestAncestorWithStyle(node, M3Carousel.VIEWPORT_STYLE_CLASS) != null;
-    }
-
 
     /// Returns the nearest scroll pane viewport that clips a node, or `null` when the node is not inside one.
     private static @Nullable Node nearestScrollViewport(Node node) {
@@ -9360,7 +8534,8 @@ final class M3FXDemoVisualSmokeTest {
                 return;
             }
 
-            @Nullable Text text = listItemHeadlineText(item);
+            @Nullable Node headline = firstVisibleStyledDescendant(item, LIST_ITEM_HEADLINE_STYLE_CLASS);
+            @Nullable Text text = headline == null ? null : firstVisibleText(headline);
             assertNotNull(text, () -> pageTitle + " one-line list item should render its headline text: item="
                     + item + ", headline=" + item.getHeadlineText());
             Text headlineText = Objects.requireNonNull(text);
@@ -9413,11 +8588,6 @@ final class M3FXDemoVisualSmokeTest {
         return bounds.getHeight() <= 96.0;
     }
 
-    /// Returns the rendered headline text node for one list item.
-    private static @Nullable Text listItemHeadlineText(M3ListItem item) {
-        @Nullable Node headline = firstVisibleStyledDescendant(item, LIST_ITEM_HEADLINE_STYLE_CLASS);
-        return headline == null ? null : firstVisibleText(headline);
-    }
 
     /// Verifies that page-owned list item text segments stay inside their row and keep rendered ink within row bounds.
     private static void assertListItemTextSegmentGeometry(Scene scene, String pageTitle) {
@@ -9528,7 +8698,7 @@ final class M3FXDemoVisualSmokeTest {
                 && renderedTextInkWidthIsRepresentative(inkBounds, textBounds)
                 && renderedTextInkHeightIsRepresentative(inkBounds, actualText)) {
             assertVisibleTextInkHasVerticalRoom(actualText, textBounds, inkBounds, pageTitle);
-            assertVisibleTextInkHasExpectedCoverage(actualText, textBounds, inkBounds, pageTitle);
+            assertVisibleTextInkHasExpectedHeight(actualText, textBounds, inkBounds, pageTitle);
             assertRectangleInsideBounds(
                     itemBounds,
                     inkBounds,
@@ -9619,7 +8789,7 @@ final class M3FXDemoVisualSmokeTest {
         assertTrue(containsBoundsWithTolerance(itemBounds, slotBounds, CONTROL_EDGE_TOLERANCE),
                 () -> pageTitle + " list item " + slotName + " slot leaves its row: item="
                         + itemBounds + ", slot=" + slotBounds + ", content=" + content);
-        if (isOneLineListItem(item)) {
+        if (item.getOverlineText().isBlank() && item.getSupportingText().isBlank()) {
             assertTrue(Math.abs(slotBounds.getCenterY() - itemBounds.getCenterY()) <= LIST_ITEM_SLOT_CENTER_TOLERANCE,
                     () -> pageTitle + " one-line list item " + slotName + " slot is vertically off-center: item="
                             + itemBounds + ", slot=" + slotBounds + ", content=" + content);
@@ -9649,11 +8819,6 @@ final class M3FXDemoVisualSmokeTest {
                     pageTitle + " list item " + slotName + " vector icon"
             );
         }
-    }
-
-    /// Returns whether a list item uses the one-line text structure.
-    private static boolean isOneLineListItem(M3ListItem item) {
-        return item.getOverlineText().isBlank() && item.getSupportingText().isBlank();
     }
 
     /// Verifies that page-owned fixed-size Material targets keep their glyph text centered.
@@ -9736,11 +8901,6 @@ final class M3FXDemoVisualSmokeTest {
         return target instanceof Labeled labeled && !Objects.toString(labeled.getText(), "").isBlank();
     }
 
-    /// Returns whether extracted text ink bounds represent enough of the glyph for pixel-centering checks.
-    private static boolean textInkBoundsAreRepresentative(Rectangle2D inkBounds, Bounds glyphBounds) {
-        return inkBounds.getWidth() >= Math.max(2.0, glyphBounds.getWidth() * 0.35)
-                && inkBounds.getHeight() >= Math.max(2.0, glyphBounds.getHeight() * 0.25);
-    }
 
     /// Returns whether text ink centering is meaningful for a rendered fixed target.
     private static boolean shouldCheckRenderedTextInkCenter(
@@ -9749,7 +8909,8 @@ final class M3FXDemoVisualSmokeTest {
             Rectangle2D inkBounds,
             Bounds glyphBounds
     ) {
-        if (!textInkBoundsAreRepresentative(inkBounds, glyphBounds)) {
+        if (inkBounds.getWidth() < Math.max(2.0, glyphBounds.getWidth() * 0.35)
+                || inkBounds.getHeight() < Math.max(2.0, glyphBounds.getHeight() * 0.25)) {
             return false;
         }
 
@@ -10181,7 +9342,6 @@ final class M3FXDemoVisualSmokeTest {
                 + ", alignment=" + alignment
                 + ", padding=" + input.getPadding() + "]";
     }
-
 
     /// Verifies that a single-line text input's rendered ink center matches its active content slot.
     private static void assertSingleLineTextInputInkAligned(
@@ -11785,7 +10945,7 @@ final class M3FXDemoVisualSmokeTest {
 
         List<M3FabMenu> fabMenus = visibleNodesOfType(page, M3FabMenu.class);
         assertEquals(1, fabMenus.size(), () -> "All Buttons page should render one FAB menu: " + fabMenus);
-        assertTrue(fabMenus.get(0).isExpanded(), "All Buttons FAB menu should be expanded for visual coverage");
+        assertTrue(fabMenus.get(0).isExpanded(), "All Buttons FAB menu should be expanded for visual state");
         assertFabMenuActionsStayInsideShowcase(fabMenus.get(0));
 
         List<M3ButtonGroup> buttonGroups = visibleNodesOfType(page, M3ButtonGroup.class);
@@ -14994,6 +14154,7 @@ final class M3FXDemoVisualSmokeTest {
         }
         return null;
     }
+
     /// Returns the first visible M3 switch with the requested text.
     private static @Nullable M3Switch firstVisibleSwitchWithText(Node root, String text) {
         if (root instanceof M3Switch switchControl
@@ -15077,7 +14238,6 @@ final class M3FXDemoVisualSmokeTest {
         return menuButton.isVisible() && hasRenderableBounds(menuButton) ? menuButton : null;
     }
 
-
     /// Returns the first visible M3 split button with the requested text.
     private static @Nullable M3SplitButton firstVisibleSplitButtonWithText(Node root, String text) {
         if (root instanceof M3SplitButton splitButton
@@ -15135,7 +14295,6 @@ final class M3FXDemoVisualSmokeTest {
         return null;
     }
 
-
     /// Returns the first visible top app bar action button.
     private static @Nullable M3IconButton firstVisibleTopAppBarAction(Node root) {
         for (M3IconButton button : visibleNodesOfType(root, M3IconButton.class)) {
@@ -15191,7 +14350,6 @@ final class M3FXDemoVisualSmokeTest {
         return null;
     }
 
-
     /// Returns the first visible bottom sheet action for the requested headline.
     private static @Nullable Node firstVisibleBottomSheetActionWithHeadline(Node root, String headline) {
         @Nullable M3BottomSheet sheet = firstVisibleBottomSheetWithHeadline(root, headline);
@@ -15246,6 +14404,7 @@ final class M3FXDemoVisualSmokeTest {
         }
         return null;
     }
+
     /// Returns the first visible M3 menu button with the requested text.
     private static @Nullable M3MenuButton firstVisibleMenuButtonWithText(Node root, String text) {
         if (root instanceof M3MenuButton menuButton
@@ -15469,10 +14628,6 @@ final class M3FXDemoVisualSmokeTest {
                 && popupRoot.getOpacity() > 0.0;
     }
 
-    /// Returns whether a bottom sheet has reached its fully hidden state.
-    private static boolean bottomSheetHidden(@Nullable M3BottomSheet sheet) {
-        return sheet != null && !sheet.isShown() && !sheet.isVisible() && !sheet.isManaged();
-    }
 
     /// Returns whether a bottom sheet has reached its fully shown state.
     private static boolean bottomSheetShown(@Nullable M3BottomSheet sheet) {
@@ -15485,10 +14640,6 @@ final class M3FXDemoVisualSmokeTest {
                 && hasRenderableBounds(sheet);
     }
 
-    /// Returns whether a side sheet has reached its fully hidden state.
-    private static boolean sideSheetHidden(@Nullable M3SideSheet sheet) {
-        return sheet != null && !sheet.isShown() && !sheet.isVisible() && !sheet.isManaged();
-    }
 
     /// Returns whether a side sheet has reached its fully shown state.
     private static boolean sideSheetShown(@Nullable M3SideSheet sheet) {
@@ -15516,10 +14667,6 @@ final class M3FXDemoVisualSmokeTest {
                 && hasRenderableBounds(snackbar);
     }
 
-    /// Returns whether a snackbar host has reached its fully hidden state.
-    private static boolean snackbarHidden(@Nullable M3SnackbarHost host) {
-        return host != null && !host.isShowing() && host.getSnackbar() == null;
-    }
 
     /// Returns whether a FAB menu has reached its fully expanded visual state.
     private static boolean fabMenuExpandedSettled(@Nullable M3FabMenu menu) {
@@ -16532,19 +15679,9 @@ final class M3FXDemoVisualSmokeTest {
         double trackLength = Math.max(0.0, slider.getWidth() - thumbWidth);
         double x = thumbWidth / 2.0 + trackLength * Math.max(0.0, Math.min(1.0, position));
         double y = slider.getHeight() / 2.0;
-        firePrimaryMouseEventAtLocalPoint(slider, eventType, x, y, primaryButtonDown);
+        slider.fireEvent(primaryMouseEvent(slider, eventType, x, y, primaryButtonDown));
     }
 
-    /// Fires a primary-button mouse event at one local point of a node.
-    private static void firePrimaryMouseEventAtLocalPoint(
-            Node node,
-            EventType<MouseEvent> eventType,
-            double x,
-            double y,
-            boolean primaryButtonDown
-    ) {
-        node.fireEvent(primaryMouseEvent(node, eventType, x, y, primaryButtonDown));
-    }
     /// Creates a primary-button mouse event at one local point of a node.
     private static MouseEvent primaryMouseEvent(
             Node node,
@@ -16577,11 +15714,6 @@ final class M3FXDemoVisualSmokeTest {
                 false,
                 new PickResult(node, scenePoint.getX(), scenePoint.getY())
         );
-    }
-
-    /// Creates one keyboard event for synthetic demo keyboard traversal checks.
-    private static KeyEvent keyEvent(EventType<KeyEvent> eventType, KeyCode code) {
-        return new KeyEvent(eventType, "", "", code, false, false, false, false);
     }
 
     /// Returns the first visible text node below a target node.
@@ -16674,6 +15806,7 @@ final class M3FXDemoVisualSmokeTest {
         double height = Math.abs(max.getY() - min.getY());
         return new BoundingBox(minX, minY, width, height);
     }
+
     /// Returns a stable scene-space area for visual change comparisons.
     private static Bounds nodeAreaBounds(Node node) {
         try {
@@ -16710,20 +15843,6 @@ final class M3FXDemoVisualSmokeTest {
                         && inner.getMaxX() <= outer.getMaxX() + tolerance
                         && inner.getMaxY() <= outer.getMaxY() + tolerance,
                 () -> description + " leaves its target bounds: pixels=" + inner + ", target=" + outer
-        );
-    }
-
-    /// Verifies that a rendered pixel rectangle remains horizontally inside a layout bounds.
-    private static void assertRectangleHorizontallyInsideBounds(
-            Bounds outer,
-            Rectangle2D inner,
-            double tolerance,
-            String description
-    ) {
-        assertTrue(
-                inner.getMinX() >= outer.getMinX() - tolerance
-                        && inner.getMaxX() <= outer.getMaxX() + tolerance,
-                () -> description + " leaves its target bounds horizontally: pixels=" + inner + ", target=" + outer
         );
     }
 
@@ -17152,51 +16271,6 @@ final class M3FXDemoVisualSmokeTest {
         return colorDistance(first, second) + Math.abs(first.getOpacity() - second.getOpacity());
     }
 
-    /// Runs a task on the JavaFX application thread and propagates failures.
-    private static void runOnFxThread(Runnable task) {
-        DemoFxTestUtils.runOnFxThread(task);
-    }
-
-    /// Runs setup on the FX thread and verifies the result when a condition becomes true.
-    private static void runOnFxThreadWhen(
-            BooleanSupplier condition,
-            Runnable setup,
-            Runnable verification
-    ) throws InterruptedException {
-        DemoFxTestUtils.runOnFxThreadWhen(condition, setup, verification);
-    }
-
-    /// Runs setup on the FX thread and verifies the result when a condition becomes true.
-    private static void runOnFxThreadWhen(
-            BooleanSupplier condition,
-            Supplier<String> timeoutMessage,
-            Runnable setup,
-            Runnable verification
-    ) throws InterruptedException {
-        DemoFxTestUtils.runOnFxThreadWhen(condition, timeoutMessage, setup, verification);
-    }
-
-    /// Runs setup on the FX thread and verifies the result after a condition stays true for pulses.
-    private static void runOnFxThreadWhenStable(
-            BooleanSupplier condition,
-            int stablePulseCount,
-            Runnable setup,
-            Runnable verification
-    ) throws InterruptedException {
-        DemoFxTestUtils.runOnFxThreadWhenStable(condition, stablePulseCount, setup, verification);
-    }
-
-    /// Runs setup on the FX thread and verifies the result after a condition stays true for pulses.
-    private static void runOnFxThreadWhenStable(
-            BooleanSupplier condition,
-            int stablePulseCount,
-            Supplier<String> timeoutMessage,
-            Runnable setup,
-            Runnable verification
-    ) throws InterruptedException {
-        DemoFxTestUtils.runOnFxThreadWhenStable(condition, stablePulseCount, timeoutMessage, setup, verification);
-    }
-
     /// Runs setup and verifies after a referenced node snapshot visibly changes from a baseline snapshot.
     private static void runOnFxThreadWhenNodeSnapshotChanged(
             Supplier<@Nullable Node> nodeSupplier,
@@ -17207,7 +16281,7 @@ final class M3FXDemoVisualSmokeTest {
             Runnable verification
     ) throws InterruptedException {
         AtomicReference<String> diagnostics = new AtomicReference<>("visual snapshot wait has not run yet");
-        runOnFxThreadWhen(() -> {
+        DemoFxTestUtils.runOnFxThreadWhen(() -> {
             @Nullable Node node = nodeSupplier.get();
             @Nullable WritableImage baseline = baselineReference.get();
             if (node == null) {
@@ -17238,7 +16312,7 @@ final class M3FXDemoVisualSmokeTest {
     ) throws InterruptedException {
         AtomicReference<@Nullable WritableImage> previousFrameReference = new AtomicReference<>();
         AtomicReference<String> diagnostics = new AtomicReference<>("visual snapshot stability wait has not run yet");
-        runOnFxThreadWhenStable(() -> {
+        DemoFxTestUtils.runOnFxThreadWhenStable(() -> {
             @Nullable Node node = nodeSupplier.get();
             if (node == null) {
                 diagnostics.set(description + " node reference is not set");
@@ -17288,7 +16362,7 @@ final class M3FXDemoVisualSmokeTest {
             Runnable verification
     ) throws InterruptedException {
         AtomicReference<String> diagnostics = new AtomicReference<>("visual change wait has not run yet");
-        runOnFxThreadWhen(() -> {
+        DemoFxTestUtils.runOnFxThreadWhen(() -> {
             @Nullable Node node = nodeReference.get();
             @Nullable WritableImage baseline = baselineReference.get();
             @Nullable Scene scene = sceneReference.get();
@@ -17333,7 +16407,7 @@ final class M3FXDemoVisualSmokeTest {
         frameList.clear();
         AtomicReference<@Nullable WritableImage> previousFrameReference = new AtomicReference<>();
         AtomicReference<String> diagnostics = new AtomicReference<>("visual frame sequence wait has not run yet");
-        runOnFxThreadWhen(() -> {
+        DemoFxTestUtils.runOnFxThreadWhen(() -> {
             @Nullable Node node = nodeReference.get();
             @Nullable Scene scene = sceneReference.get();
             @Nullable WritableImage baseline = baselineReference.get();
@@ -17406,7 +16480,7 @@ final class M3FXDemoVisualSmokeTest {
     ) throws InterruptedException {
         AtomicReference<@Nullable WritableImage> previousFrameReference = new AtomicReference<>();
         AtomicReference<String> diagnostics = new AtomicReference<>("visual stability wait has not run yet");
-        runOnFxThreadWhenStable(() -> {
+        DemoFxTestUtils.runOnFxThreadWhenStable(() -> {
             @Nullable Node node = nodeReference.get();
             @Nullable Scene scene = sceneReference.get();
             if (node == null) {

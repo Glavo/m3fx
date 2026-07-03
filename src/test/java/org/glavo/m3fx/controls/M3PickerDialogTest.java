@@ -63,8 +63,8 @@ final class M3PickerDialogTest {
             dialog.setValue(value);
 
             assertFalse(pane.lookupButton(ButtonType.OK).isDisabled());
-            assertEquals(value, convertResult(dialog, ButtonType.OK));
-            assertNull(convertResult(dialog, ButtonType.CANCEL));
+            assertEquals(value, dialog.getResultConverter().call(ButtonType.OK));
+            assertNull(dialog.getResultConverter().call(ButtonType.CANCEL));
 
             dialog.clearValue();
 
@@ -214,8 +214,8 @@ final class M3PickerDialogTest {
 
             assertFalse(pane.lookupButton(ButtonType.OK).isDisabled());
             assertEquals(new M3DateRange(start, end), dialog.getRange());
-            assertEquals(new M3DateRange(start, end), convertResult(dialog, ButtonType.OK));
-            assertNull(convertResult(dialog, ButtonType.CANCEL));
+            assertEquals(new M3DateRange(start, end), dialog.getResultConverter().call(ButtonType.OK));
+            assertNull(dialog.getResultConverter().call(ButtonType.CANCEL));
         });
     }
 
@@ -271,7 +271,7 @@ final class M3PickerDialogTest {
             assertEquals(6, dialog.getPresets().size());
             assertEquals(6, pane.lookupAll("." + M3DateRangePickerDialog.PRESET_BUTTON_STYLE_CLASS).size());
 
-            nextSevenDaysPresetButton(pane).fire();
+            presetButton(pane, M3DateRangePickerDialog.PRESET_BUTTON_STYLE_CLASS, "Next 7 days").fire();
 
             assertEquals(new M3DateRange(anchor, anchor.plusDays(6)), dialog.getRange());
             assertEquals(YearMonth.from(anchor), dialog.getDisplayedMonth());
@@ -311,8 +311,8 @@ final class M3PickerDialogTest {
             dialog.setValue(value);
 
             assertFalse(pane.lookupButton(ButtonType.OK).isDisabled());
-            assertEquals(value, convertResult(dialog, ButtonType.OK));
-            assertNull(convertResult(dialog, ButtonType.CANCEL));
+            assertEquals(value, dialog.getResultConverter().call(ButtonType.OK));
+            assertNull(dialog.getResultConverter().call(ButtonType.CANCEL));
 
             dialog.clearValue();
 
@@ -532,16 +532,6 @@ final class M3PickerDialogTest {
         root.applyCss();
     }
 
-    /// Converts a dialog button through the dialog result converter.
-    @SuppressWarnings("DataFlowIssue")
-    private static <T> @Nullable T convertResult(M3Dialog<T> dialog, ButtonType buttonType) {
-        return dialog.getResultConverter().call(buttonType);
-    }
-
-    /// Returns the `Next 7 days` preset button.
-    private static M3Button nextSevenDaysPresetButton(M3DialogPane pane) {
-        return presetButton(pane, M3DateRangePickerDialog.PRESET_BUTTON_STYLE_CLASS, "Next 7 days");
-    }
 
     /// Returns the preset button with the supplied style class and text.
     private static M3Button presetButton(M3DialogPane pane, String styleClass, String text) {

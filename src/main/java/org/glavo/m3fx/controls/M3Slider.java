@@ -490,7 +490,7 @@ public class M3Slider extends Control {
                     this,
                     "trackThickness",
                     StyleableProperties.TRACK_THICKNESS,
-                    this::updateMetrics
+                    this::requestLayout
             );
         }
         return trackThickness;
@@ -550,7 +550,7 @@ public class M3Slider extends Control {
                     this,
                     "thumbSize",
                     StyleableProperties.THUMB_SIZE,
-                    this::updateMetrics
+                    this::requestLayout
             );
         }
         return thumbSize;
@@ -580,7 +580,7 @@ public class M3Slider extends Control {
                     this,
                     "thumbWidth",
                     StyleableProperties.THUMB_WIDTH,
-                    this::updateMetrics
+                    this::requestLayout
             );
         }
         return thumbWidth;
@@ -610,7 +610,7 @@ public class M3Slider extends Control {
                     this,
                     "thumbTrackGap",
                     StyleableProperties.THUMB_TRACK_GAP,
-                    this::updateMetrics
+                    this::requestLayout
             );
         }
         return thumbTrackGap;
@@ -640,7 +640,7 @@ public class M3Slider extends Control {
                     this,
                     "touchTargetSize",
                     StyleableProperties.TOUCH_TARGET_SIZE,
-                    this::updateMetrics
+                    this::requestLayout
             );
         }
         return touchTargetSize;
@@ -678,7 +678,7 @@ public class M3Slider extends Control {
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
         if (attribute == VALUE_STRING_ATTRIBUTE) {
-            return accessibleValueString();
+            return Double.toString(getValue());
         }
         return switch (attribute) {
             case MIN_VALUE -> getMin();
@@ -721,11 +721,6 @@ public class M3Slider extends Control {
         setAccessibleRole(AccessibleRole.SLIDER);
         M3Accessible.installAccessibleActionRoute(this, () -> M3Accessible.showDirectItem(this, this), null);
         setFocusTraversable(true);
-        updateMetrics();
-    }
-
-    /// Requests layout after size-related component tokens change.
-    private void updateMetrics() {
         requestLayout();
     }
 
@@ -777,10 +772,6 @@ public class M3Slider extends Control {
         }
     }
 
-    /// Returns the accessible string representation of the current value.
-    private String accessibleValueString() {
-        return Double.toString(getValue());
-    }
 
     /// CSS metadata for m3fx slider component tokens.
     @NotNullByDefault

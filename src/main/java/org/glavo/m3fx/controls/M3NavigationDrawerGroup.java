@@ -313,19 +313,15 @@ public final class M3NavigationDrawerGroup extends Control {
         M3MotionSettings.setAnimationsEnabled(this, false);
         try {
             setExpanded(true);
-            applyCssIfAttached();
+            if (getScene() != null) {
+                applyCss();
+            }
             layout();
         } finally {
             M3MotionSettings.setAnimationsEnabled(this, previousAnimationsEnabled);
         }
     }
 
-    /// Applies CSS after an accessibility-driven expansion so newly mounted child slots can receive focus.
-    private void applyCssIfAttached() {
-        if (getScene() != null) {
-            applyCss();
-        }
-    }
 
     /// Returns whether keyboard focus is currently inside a child destination row.
     private boolean isFocusInsideChildItems() {

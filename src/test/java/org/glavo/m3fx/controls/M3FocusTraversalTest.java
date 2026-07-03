@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/// Unit tests for shared focus traversal behavior.
+/// Verifies shared focus traversal behavior.
 @NotNullByDefault
 final class M3FocusTraversalTest {
     /// Starts the JavaFX toolkit for focus traversal tests.
@@ -175,7 +175,16 @@ final class M3FocusTraversalTest {
             owner.layout();
             first.requestFocus();
 
-            KeyEvent event = modifiedKeyEvent(KeyCode.RIGHT, false, true, false, false);
+            KeyEvent event = new KeyEvent(
+                    KeyEvent.KEY_PRESSED,
+                    KeyCode.RIGHT.getName(),
+                    KeyCode.RIGHT.getName(),
+                    KeyCode.RIGHT,
+                    false,
+                    true,
+                    false,
+                    false
+            );
             assertFalse(M3FocusTraversal.handleHorizontalKeyFocus(
                     owner,
                     event,
@@ -638,7 +647,7 @@ final class M3FocusTraversalTest {
         );
     }
 
-    /// Creates a pressed key event for focus traversal helpers.
+    /// Creates a pressed key event for focus traversal behavior checks.
     private static KeyEvent keyEvent(KeyCode code) {
         return new KeyEvent(
                 KeyEvent.KEY_PRESSED,
@@ -652,25 +661,6 @@ final class M3FocusTraversalTest {
         );
     }
 
-    /// Creates a modified pressed key event for focus traversal helpers.
-    private static KeyEvent modifiedKeyEvent(
-            KeyCode code,
-            boolean shiftDown,
-            boolean controlDown,
-            boolean altDown,
-            boolean metaDown
-    ) {
-        return new KeyEvent(
-                KeyEvent.KEY_PRESSED,
-                code.getName(),
-                code.getName(),
-                code,
-                shiftDown,
-                controlDown,
-                altDown,
-                metaDown
-        );
-    }
 
     /// Focusable container row that exposes one indexed accessibility child.
     @NotNullByDefault

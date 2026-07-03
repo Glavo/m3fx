@@ -103,7 +103,7 @@ public class M3TopAppBar extends Control {
                         return;
                     }
                     updateVariantStyle();
-                    updateVariantMetrics();
+                    updateMetrics();
                 }
             };
 
@@ -516,7 +516,7 @@ public class M3TopAppBar extends Control {
         focusNotifier.start();
         updateAccessibleText();
         updateVariantStyle();
-        updateVariantMetrics();
+        updateMetrics();
     }
 
     /// Returns accessibility attributes for the title and action collection.
@@ -618,11 +618,6 @@ public class M3TopAppBar extends Control {
                 M3TopAppBarVariant.MEDIUM.getStyleClass(),
                 M3TopAppBarVariant.LARGE.getStyleClass()
         );
-    }
-
-    /// Updates variant-dependent control sizing.
-    private void updateVariantMetrics() {
-        updateMetrics();
     }
 
     /// Applies size-related component tokens to JavaFX layout properties.

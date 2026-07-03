@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/// Tests internal animation helpers.
+/// Verifies Material motion settings and animation lifecycle behavior.
 @NotNullByDefault
 final class M3AnimationTest {
     /// Starts the JavaFX toolkit before animation tests create timelines.
@@ -64,7 +64,7 @@ final class M3AnimationTest {
         assertFalse(timeline.getStatus() == Timeline.Status.RUNNING);
     }
 
-    /// Verifies that animation helpers resolve the theme motion scheme through the parent chain.
+    /// Verifies that animation defaults resolve the theme motion scheme through the parent chain.
     @Test
     void resolvesThemeMotionSchemeFromParentChain() {
         Pane root = new Pane();

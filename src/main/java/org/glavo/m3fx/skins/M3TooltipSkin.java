@@ -130,7 +130,10 @@ public final class M3TooltipSkin extends M3PopupSkinBase<M3Tooltip> {
             @Nullable Node graphic = root.getGraphic();
             if (graphic != null) {
                 double graphicWidth = graphic.prefWidth(-1.0);
-                if (isUsableContentWidth(graphicWidth)) {
+                if (graphicWidth > 0.0
+                        && !Double.isNaN(graphicWidth)
+                        && !Double.isInfinite(graphicWidth)
+                        && graphicWidth != USE_COMPUTED_SIZE) {
                     return graphicWidth;
                 }
             }
@@ -153,11 +156,6 @@ public final class M3TooltipSkin extends M3PopupSkinBase<M3Tooltip> {
             return -1.0;
         }
         return preferredWidth;
-    }
-
-    /// Returns whether a computed content width can be used for height calculation.
-    private static boolean isUsableContentWidth(double width) {
-        return width > 0.0 && !Double.isNaN(width) && !Double.isInfinite(width) && width != USE_COMPUTED_SIZE;
     }
 
     /// Installs or removes the generated theme stylesheet used by popup content.

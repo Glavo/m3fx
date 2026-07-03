@@ -177,7 +177,7 @@ public class M3Avatar extends Control {
                     this,
                     "containerSize",
                     StyleableProperties.CONTAINER_SIZE,
-                    this::updateMetrics
+                    this::requestLayout
             );
         }
         return containerSize;
@@ -210,7 +210,7 @@ public class M3Avatar extends Control {
         graphic.addListener((observable, oldValue, newValue) -> updateAccessibleText());
         updateVariantStyle();
         updateAccessibleText();
-        updateMetrics();
+        requestLayout();
     }
 
     /// Applies the current variant style class.
@@ -236,11 +236,6 @@ public class M3Avatar extends Control {
             }
         }
         setAccessibleText(getText());
-    }
-
-    /// Requests layout after size-related component tokens change.
-    private void updateMetrics() {
-        requestLayout();
     }
 
     /// Computes the minimum avatar width from the container size token.

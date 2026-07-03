@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/// Unit tests for accessibility focus reveal and focus restoration behavior.
+/// Verifies accessibility focus reveal and focus restoration behavior.
 @NotNullByDefault
 final class M3AccessibleFocusRevealTest {
     /// Starts the JavaFX toolkit for focus reveal tests.
@@ -1107,7 +1107,7 @@ final class M3AccessibleFocusRevealTest {
             assertTrue(scrollPane.getVvalue() <= 0.0, () -> "vvalue=" + scrollPane.getVvalue());
         });
     }
-    /// Verifies composite reveal helpers reject unreachable descendants before direct focus or sibling routes.
+    /// Verifies composite reveal behavior rejects unreachable descendants before direct focus or sibling routes.
     @Test
     void compositeAccessibleRevealRejectsUnrevealableDescendantBeforeDirectFocusOrSiblingRoutes() {
         FxTestUtils.runOnFxThread(() -> {
@@ -1262,7 +1262,7 @@ final class M3AccessibleFocusRevealTest {
         });
     }
 
-    /// Verifies accessibility focus helpers report failure when no reachable target can receive focus.
+    /// Verifies accessibility focus behavior reports failure when no reachable target can receive focus.
     @Test
     void accessibleShowCurrentOrItemReturnsFalseWithoutReachableTarget() {
         FxTestUtils.runOnFxThread(() -> {

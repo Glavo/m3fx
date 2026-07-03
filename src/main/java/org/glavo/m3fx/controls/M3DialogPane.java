@@ -157,7 +157,7 @@ public class M3DialogPane extends DialogPane {
                     this,
                     "containerShape",
                     StyleableProperties.CONTAINER_SHAPE,
-                    this::updateContainerShape
+                    this::requestContainerShapeStyleSync
             );
         }
         return containerShape;
@@ -499,11 +499,6 @@ public class M3DialogPane extends DialogPane {
         }
     }
 
-    /// Requests a style pass when the runtime container shape token changes.
-    private void updateContainerShape() {
-        requestContainerShapeStyleSync();
-    }
-
     /// Requests managed container shape synchronization before layout.
     private void requestContainerShapeStyleSync() {
         containerShapeStyleDirty = true;
@@ -614,13 +609,10 @@ public class M3DialogPane extends DialogPane {
             index--;
         }
 
-        return buttonAt(index);
-    }
-
-    /// Returns the requested action item, preserving the current focus target when no item is requested.
-    private @Nullable Node accessibleActionOrCurrentItem(Object... parameters) {
-        Objects.requireNonNull(parameters, "parameters");
-        return parameters.length == 0 ? currentOrFirstFocusableItem() : accessibleActionItem(parameters);
+        if (index < 0 || index >= getButtonTypes().size()) {
+            return null;
+        }
+        return lookupButton(getButtonTypes().get(index));
     }
 
     /// Requests focus on the current or first dialog focus target.
@@ -640,7 +632,7 @@ public class M3DialogPane extends DialogPane {
     /// @return `true` when focus moved to the default or requested dialog item
     final boolean showAccessibleItem(Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
-        @Nullable Node item = accessibleActionOrCurrentItem(parameters);
+        @Nullable Node item = parameters.length == 0 ? currentOrFirstFocusableItem() : accessibleActionItem(parameters);
         boolean shown = false;
         if (item != null) {
             shown = M3Accessible.showAccessibleActionTarget(this, item, parameters);
@@ -816,11 +808,6 @@ public class M3DialogPane extends DialogPane {
             return null;
         }
         return M3Accessible.canReach(focusOwner) ? focusOwner : itemFocusTarget;
-    }
-
-    /// Returns the action button at an index in button type order.
-    private @Nullable Node buttonAt(int index) {
-        return index >= 0 && index < getButtonTypes().size() ? lookupButton(getButtonTypes().get(index)) : null;
     }
 
     /// Returns the current dialog action buttons in button type order.

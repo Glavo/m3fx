@@ -18,10 +18,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/// Unit tests for logical layout helpers used by orientation-aware controls.
+/// Verifies logical layout behavior used by orientation-aware controls.
 @NotNullByDefault
 final class M3NodeLayoutTest {
-    /// Starts JavaFX before constructing scene graph nodes in helper tests.
+    /// Starts JavaFX before constructing scene graph nodes.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
         FxTestUtils.startToolkit();

@@ -2,9 +2,7 @@
 
 ## Purpose
 
-M3FX is a modular Material Design 3 component library for JavaFX. The project is still in active development, but the implementation is now close enough to release readiness that remaining work should focus on API stability, visual parity, and release verification.
-
-This file tracks product state and planning only. Repository rules, code style, nullability, documentation, Gradle invocation, and commit-message requirements belong in `AGENTS.md`.
+M3FX is a modular Material Design 3 component library for JavaFX. The project is still in active development, with remaining release work centered on API stability, visual parity, and release verification.
 
 ## Current Baseline
 
@@ -46,10 +44,10 @@ This file tracks product state and planning only. Repository rules, code style, 
 - Host and cross-platform jlink support uses BellSoft LibericaJDK Full target jmods.
 - Platform and architecture jlink tasks cover Windows, Linux, and macOS on x64 and AArch64.
 - `releaseCheck` validates the default release path: `check`, demo shadow jar verification, and the default host-platform demo jlink runtime image.
-- Publication verification covers Maven metadata, main jar, sources jar, javadoc jar shape, build-local repository layout, and consumer resolution without publishing OpenJFX artifacts.
+- Publication verification covers Maven metadata, main and sources jars, Maven artifact layout, and consumer resolution without publishing OpenJFX artifacts.
 - GitHub Actions runs release validation under Xvfb and uploads the verified demo shadow jar as an unarchived artifact.
 - Packaging guidance is documented in `docs/PACKAGING.md`.
-- The root README documents status, dependency ownership, JPMS usage, theme installation, component coverage, demo execution, packaging tasks, validation entry points, and licensing.
+- The root README documents status, dependency ownership, JPMS usage, theme installation, component status, demo execution, packaging tasks, validation entry points, and licensing.
 
 ### Theme, Tokens, And Motion
 
@@ -71,7 +69,7 @@ This file tracks product state and planning only. Repository rules, code style, 
 - Feedback and overlays: banners, dialogs, snackbars, tooltips, rich tooltips, scrims, bottom sheets, side sheets, top app bars, bottom app bars, and toolbars.
 - Pickers and menus: menus, submenus, menu buttons, search bars, search views, date pickers, date-range pickers, time pickers, and picker fields.
 
-### Demo And Visual Coverage
+### Demo And Visual Validation
 
 - The demo app is organized as Material component pages with documentation links to `https://m3.material.io/`.
 - The demo includes standard, dark, expressive, and right-to-left visual paths.
@@ -80,42 +78,31 @@ This file tracks product state and planning only. Repository rules, code style, 
 
 ## Release Readiness
 
-- The library is close to release-ready for baseline Material Design 3 plus documented M3 Expressive coverage.
+- The library is close to release-ready for baseline Material Design 3 plus documented M3 Expressive support.
 - Before 1.0, finish a public API review across the module export surface: `org.glavo.m3fx.animation`, `org.glavo.m3fx.controls`, `org.glavo.m3fx.theme`, and `org.glavo.m3fx.tokens`.
 - Before 1.0, decide whether full M3 Expressive visual parity for every component is in scope for 1.0 or explicitly deferred.
 - Before 1.0, run a final component-by-component visual pass on the demo in standard, expressive, dark, and right-to-left modes.
-- Before 1.0, rerun all release gates after the final source, stylesheet, token, demo, or build-logic change.
-- Before publishing runtime images, rerun all-platform and all-architecture jlink validation.
+- Before 1.0, complete final release validation after the final source, stylesheet, token, demo, or build-logic change.
+- Before publishing runtime images, complete all-platform and all-architecture jlink validation.
 
 ## Next Goals
 
 - Finish the public API naming and package-surface review.
 - Continue improving M3 Expressive parity for components whose official target values are stable.
-- Keep visual and animation tests tied to semantic states, stable animation pulses, rendered-pixel changes, or real focus and pointer interactions.
+- Visual and animation validation is tied to semantic states, stable animation pulses, rendered-pixel changes, and real focus or pointer interactions.
 - Audit less common mixed popup stacks for keyboard and accessibility parity, especially combinations of menus, pickers, tooltips, dialogs, sheets, snackbars, and search surfaces.
-- Keep demo pages representative enough that each implemented component exposes normal, selected, focused, pressed, disabled, RTL, and reduced-motion states where those states apply.
+- Demo page validation targets normal, selected, focused, pressed, disabled, RTL, and reduced-motion states for each implemented component where those states apply.
 
 ## Validation Entry Points
 
 - `compileJava` validates main source compilation.
 - `compileTestJava` validates test source compilation.
-- `test` validates unit, behavior, visual, accessibility, snapshot, and packaging tests.
-- `check` validates compilation, tests, Javadoc, publication metadata, publication artifact layout, and build-local publication consumption.
+- `test` validates unit, behavior, visual, accessibility, and snapshot tests.
+- `check` validates compilation, tests, publication metadata, publication artifact layout, and build-local publication consumption.
 - `releaseCheck` validates the library publication path, executable demo shadow jar, and default demo jlink runtime image structure.
 - `shadowDemoJar` validates executable demo jar packaging without bundled JavaFX.
 - `jlinkDemoRuntime` validates the default demo runtime image.
 - `jlinkDemoAllPlatformArchitectureRuntimes` validates Windows, Linux, and macOS runtime images on x64 and AArch64.
-
-## Current Verification Target
-
-After further source, stylesheet, token, demo, documentation, or build-logic changes, rerun:
-
-```shell
-./gradlew check --warning-mode all
-./gradlew releaseCheck --warning-mode all
-```
-
-Run `jlinkDemoAllPlatformArchitectureRuntimes` when release artifacts include cross-platform runtime images.
 
 ## Out Of Scope For Now
 

@@ -913,7 +913,8 @@ final class M3ThemeTest {
         M3FloatingActionButton fab = new M3FloatingActionButton();
         fab.setSize(M3FloatingActionButtonSize.LARGE);
         M3SegmentedButton segmentedButton = new M3SegmentedButton("Week");
-        M3Tab tab = selectedTab("Overview");
+        M3Tab tab = new M3Tab("Overview");
+        tab.setSelected(true);
         Pane root = new Pane(
                 button,
                 buttonGroup,
@@ -1588,10 +1589,4 @@ final class M3ThemeTest {
         assertEquals(32.0, button.getMaxHeight(), 0.0001);
     }
 
-    /// Creates a selected tab for token cascade tests.
-    private static M3Tab selectedTab(String text) {
-        M3Tab tab = new M3Tab(text);
-        tab.setSelected(true);
-        return tab;
-    }
 }

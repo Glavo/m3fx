@@ -258,7 +258,7 @@ public final class M3BottomAppBarSkin extends SkinBase<M3BottomAppBar> {
         }
         return switch (alignment) {
             case START -> x;
-            case CENTER -> x + snappedOffsetX((width - floatingActionWidth) / 2.0);
+            case CENTER -> x + snapPositionX(Math.max(0.0, (width - floatingActionWidth) / 2.0));
             case END -> x + width - floatingActionWidth;
         };
     }
@@ -289,11 +289,6 @@ public final class M3BottomAppBarSkin extends SkinBase<M3BottomAppBar> {
     /// Returns a child node's snapped preferred height.
     private double snappedPrefHeight(Node node, double width) {
         return snapSizeY(node.prefHeight(width));
-    }
-
-    /// Snaps an offset to the horizontal pixel grid.
-    private double snappedOffsetX(double value) {
-        return snapPositionX(Math.max(0.0, value));
     }
 
     /// Snaps an offset to the vertical pixel grid.

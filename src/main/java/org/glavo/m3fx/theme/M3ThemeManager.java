@@ -125,7 +125,8 @@ public final class M3ThemeManager {
 
         String stylesheet = stylesheetUrl();
         List<String> stylesheets = scene.getStylesheets();
-        moveOrAdd(stylesheets, stylesheet, baseStylesheetIndex(stylesheets));
+        int fallbackStylesheetIndex = stylesheets.indexOf(M3Stylesheets.fallbackStylesheet());
+        moveOrAdd(stylesheets, stylesheet, fallbackStylesheetIndex >= 0 ? fallbackStylesheetIndex + 1 : 0);
     }
 
     /// Adds the generated theme stylesheet to a scene.
@@ -139,7 +140,11 @@ public final class M3ThemeManager {
         if (previousStylesheet != null && !previousStylesheet.equals(stylesheet)) {
             stylesheets.remove(previousStylesheet);
         }
-        moveOrAdd(stylesheets, stylesheet, themeStylesheetIndex(stylesheets));
+        int baseStylesheetIndex = stylesheets.indexOf(stylesheetUrl());
+        int stylesheetIndex = baseStylesheetIndex >= 0
+                ? baseStylesheetIndex + 1
+                : stylesheets.indexOf(M3Stylesheets.fallbackStylesheet()) + 1;
+        moveOrAdd(stylesheets, stylesheet, stylesheetIndex);
     }
 
     /// Removes m3fx theme state and stylesheets from a scene.
@@ -318,18 +323,6 @@ public final class M3ThemeManager {
         return false;
     }
 
-    /// Returns the insertion index for the generated theme stylesheet.
-    private static int themeStylesheetIndex(List<String> stylesheets) {
-        int baseStylesheetIndex = stylesheets.indexOf(stylesheetUrl());
-        return baseStylesheetIndex >= 0 ? baseStylesheetIndex + 1 : baseStylesheetIndex(stylesheets);
-    }
-
-    /// Returns the insertion index for the base stylesheet.
-    private static int baseStylesheetIndex(List<String> stylesheets) {
-        int fallbackStylesheetIndex = stylesheets.indexOf(M3Stylesheets.fallbackStylesheet());
-        return fallbackStylesheetIndex >= 0 ? fallbackStylesheetIndex + 1 : 0;
-    }
-
     /// Merges existing root style declarations with generated theme declarations.
     private static String mergeStyles(String baseStyle, String themeStyle) {
         if (baseStyle.isBlank()) {
@@ -341,8 +334,14 @@ public final class M3ThemeManager {
     /// Updates profile and brightness classes on the themed root.
     private static void updateThemeModeStyleClasses(Styleable root, M3Theme theme) {
         removeThemeModeStyleClasses(root);
-        root.getStyleClass().add(profileStyleClass(theme.profile()));
-        root.getStyleClass().add(brightnessStyleClass(theme.brightness()));
+        root.getStyleClass().add(switch (theme.profile()) {
+            case BASELINE_2021 -> BASELINE_PROFILE_STYLE_CLASS;
+            case EXPRESSIVE_2025 -> EXPRESSIVE_PROFILE_STYLE_CLASS;
+        });
+        root.getStyleClass().add(switch (theme.brightness()) {
+            case LIGHT -> LIGHT_BRIGHTNESS_STYLE_CLASS;
+            case DARK -> DARK_BRIGHTNESS_STYLE_CLASS;
+        });
     }
 
     /// Removes profile and brightness classes from the root.
@@ -351,22 +350,6 @@ public final class M3ThemeManager {
         root.getStyleClass().remove(EXPRESSIVE_PROFILE_STYLE_CLASS);
         root.getStyleClass().remove(LIGHT_BRIGHTNESS_STYLE_CLASS);
         root.getStyleClass().remove(DARK_BRIGHTNESS_STYLE_CLASS);
-    }
-
-    /// Returns the root style class for a profile.
-    private static String profileStyleClass(M3Profile profile) {
-        return switch (profile) {
-            case BASELINE_2021 -> BASELINE_PROFILE_STYLE_CLASS;
-            case EXPRESSIVE_2025 -> EXPRESSIVE_PROFILE_STYLE_CLASS;
-        };
-    }
-
-    /// Returns the root style class for a brightness mode.
-    private static String brightnessStyleClass(Brightness brightness) {
-        return switch (brightness) {
-            case LIGHT -> LIGHT_BRIGHTNESS_STYLE_CLASS;
-            case DARK -> DARK_BRIGHTNESS_STYLE_CLASS;
-        };
     }
 
     /// Copies a style class from one root to another when it is present.

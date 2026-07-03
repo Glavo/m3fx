@@ -75,7 +75,8 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     private final InvalidationListener valueInvalidation = observable -> updateDisplayedPosition();
 
     /// Snaps the displayed position after range changes.
-    private final InvalidationListener rangeInvalidation = observable -> snapDisplayedPosition();
+    private final InvalidationListener rangeInvalidation =
+            observable -> setDisplayedPositionImmediately(valueToPosition(getSkinnable().getValue()));
 
     /// Clears transient interaction state when the slider becomes disabled.
     private final InvalidationListener disabledInvalidation = observable -> resetDisabledInteractionState();
@@ -533,11 +534,6 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
                 new KeyValue(displayedPosition, targetPosition, spec.interpolator())
         ));
         M3Animation.playFromStart(getSkinnable(), valueAnimation);
-    }
-
-    /// Snaps the displayed position to the current value without animation.
-    private void snapDisplayedPosition() {
-        setDisplayedPositionImmediately(valueToPosition(getSkinnable().getValue()));
     }
 
     /// Sets the displayed position immediately and clears pending transitions.

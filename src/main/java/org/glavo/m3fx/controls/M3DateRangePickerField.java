@@ -1355,11 +1355,6 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         return startEditor;
     }
 
-    /// Returns the editor that should regain focus when the current popup session ends.
-    private M3TextField popupOwnerEditorOrDefault() {
-        return popupOwnerEditor == null ? currentEditor() : popupOwnerEditor;
-    }
-
     /// Notifies accessibility clients and owner containers about the exposed focus target.
     private void notifyFocusNodeChanged() {
         M3Accessible.notifyFocusNodeChanged(this);
@@ -1403,7 +1398,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
             return;
         }
 
-        focusEditorOnHidden = focusEditor ? popupOwnerEditorOrDefault() : null;
+        focusEditorOnHidden = focusEditor ? (popupOwnerEditor == null ? currentEditor() : popupOwnerEditor) : null;
         showAnimation.stop();
         if (hideAnimation.getStatus() == Animation.Status.RUNNING) {
             return;

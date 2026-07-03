@@ -174,7 +174,7 @@ final class M3FocusVisibleTracker {
         }
 
         @Nullable SceneInputTracker tracker = SCENE_INPUT_TRACKERS.get(scene);
-        return tracker != null && tracker.isKeyboardInteraction();
+        return tracker != null && tracker.keyboardInteraction;
     }
 
     /// Returns or creates the fallback input tracker for one scene.
@@ -250,11 +250,6 @@ final class M3FocusVisibleTracker {
                 scene.addEventFilter(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
             }
             trackers.add(tracker);
-        }
-
-        /// Returns whether this scene most recently received keyboard input.
-        private boolean isKeyboardInteraction() {
-            return keyboardInteraction;
         }
 
         /// Updates this scene's fallback modality and all registered focus-visible owners.

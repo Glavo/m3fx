@@ -24,7 +24,8 @@ public class M3MenuSectionHeader extends M3Text {
     /// @param text the header text
     public M3MenuSectionHeader(String text) {
         super(text, M3TextRole.LABEL_LARGE);
-        initialize();
+        M3ControlStyles.add(this, STYLE_CLASS);
+        setFocusTraversable(false);
     }
 
     /// Returns the user-agent stylesheet for M3FX menu section headers.
@@ -33,9 +34,4 @@ public class M3MenuSectionHeader extends M3Text {
         return M3Stylesheets.controlStylesheet("menu.css");
     }
 
-    /// Adds base style classes and keeps the header outside keyboard traversal.
-    private void initialize() {
-        M3ControlStyles.add(this, STYLE_CLASS);
-        setFocusTraversable(false);
-    }
 }

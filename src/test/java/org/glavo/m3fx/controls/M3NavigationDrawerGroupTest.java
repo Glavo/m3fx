@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/// Unit tests for navigation drawer group layout behavior.
+/// Verifies navigation drawer group layout behavior.
 @NotNullByDefault
 final class M3NavigationDrawerGroupTest {
     /// The width used for drawer group preferred-height measurement.
@@ -98,7 +98,16 @@ final class M3NavigationDrawerGroupTest {
                 root.layout();
 
                 drawer.select(group.getHeaderItem());
-                KeyEvent event = modifiedKeyPressed(KeyCode.RIGHT, false, true, false, false);
+                KeyEvent event = new KeyEvent(
+                        KeyEvent.KEY_PRESSED,
+                        KeyCode.RIGHT.getName(),
+                        KeyCode.RIGHT.getName(),
+                        KeyCode.RIGHT,
+                        false,
+                        true,
+                        false,
+                        false
+                );
                 drawer.fireEvent(event);
 
                 assertFalse(group.isExpanded());
@@ -134,7 +143,16 @@ final class M3NavigationDrawerGroupTest {
 
                 drawer.select(editable);
                 editor.requestFocus();
-                KeyEvent typedEvent = keyTyped("a");
+                KeyEvent typedEvent = new KeyEvent(
+                        KeyEvent.KEY_TYPED,
+                        "a",
+                        "a",
+                        KeyCode.UNDEFINED,
+                        false,
+                        false,
+                        false,
+                        false
+                );
                 drawer.fireEvent(typedEvent);
 
                 assertSame(editable, drawer.getSelectedItem());
@@ -371,37 +389,5 @@ final class M3NavigationDrawerGroupTest {
         );
     }
 
-    /// Creates a modified pressed key event for drawer keyboard handling tests.
-    private static KeyEvent modifiedKeyPressed(
-            KeyCode code,
-            boolean shiftDown,
-            boolean controlDown,
-            boolean altDown,
-            boolean metaDown
-    ) {
-        return new KeyEvent(
-                KeyEvent.KEY_PRESSED,
-                code.getName(),
-                code.getName(),
-                code,
-                shiftDown,
-                controlDown,
-                altDown,
-                metaDown
-        );
-    }
 
-    /// Creates a typed key event for drawer type-ahead tests.
-    private static KeyEvent keyTyped(String character) {
-        return new KeyEvent(
-                KeyEvent.KEY_TYPED,
-                character,
-                character,
-                KeyCode.UNDEFINED,
-                false,
-                false,
-                false,
-                false
-        );
-    }
 }

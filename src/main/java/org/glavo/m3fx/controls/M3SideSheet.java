@@ -111,7 +111,10 @@ public class M3SideSheet extends Control {
 
     /// Observes runtime motion settings while this sheet is attached to a scene.
     private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(this, this::refreshMotionSettings);
+            new M3MotionSettingsObserver(
+                    this,
+                    () -> M3Animation.finishRunningAnimationsIfDisabled(this, visibilityAnimation)
+            );
 
     /// The node focused before this modal sheet was shown.
     private @Nullable Node focusOwnerBeforeShown;
@@ -509,11 +512,6 @@ public class M3SideSheet extends Control {
         setManaged(shown);
         setOpacity(shown ? 1.0 : 0.0);
         setTranslateX(shown ? 0.0 : hiddenTranslateX());
-    }
-
-    /// Applies changed runtime motion settings to the active visibility animation.
-    private void refreshMotionSettings() {
-        M3Animation.finishRunningAnimationsIfDisabled(this, visibilityAnimation);
     }
 
     /// Returns the off-screen horizontal translation used when the sheet is hidden.

@@ -78,7 +78,7 @@ final class ControlVisualTestUtils {
             for (int x = 0; x < image.getWidth(); x += 4) {
                 int argb = image.getPixelReader().getArgb(x, y);
                 if (((argb >>> 24) & 0xff) > 16) {
-                    colors.add(quantizedArgb(argb));
+                    colors.add(argb & 0xf0f0f0f0);
                 }
             }
         }
@@ -269,11 +269,6 @@ final class ControlVisualTestUtils {
             }
         }
         return bufferedImage;
-    }
-
-    /// Returns a quantized ARGB value that keeps color variety checks stable across renderers.
-    private static int quantizedArgb(int argb) {
-        return argb & 0xf0f0f0f0;
     }
 
     /// Returns a simple RGB distance between two colors.

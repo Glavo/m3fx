@@ -303,7 +303,8 @@ final class M3StateLayer extends Pane {
                 expansionSpec.duration(),
                 Math.max(startScaleX, startScaleY)
         );
-        Duration fadeEnd = laterDuration(remainingExpansion, fadeSpec.duration());
+        Duration fadeDuration = fadeSpec.duration();
+        Duration fadeEnd = remainingExpansion.greaterThan(fadeDuration) ? remainingExpansion : fadeDuration;
         if (remainingExpansion.greaterThan(Duration.ZERO)) {
             rippleAnimation.getKeyFrames().setAll(
                     new KeyFrame(
@@ -519,11 +520,6 @@ final class M3StateLayer extends Pane {
     private static Duration remainingRippleExpansionDuration(Duration fullDuration, double currentScale) {
         double clampedScale = Math.max(0.0, Math.min(1.0, currentScale));
         return Duration.millis(fullDuration.toMillis() * (1.0 - clampedScale));
-    }
-
-    /// Returns the later finite duration.
-    private static Duration laterDuration(Duration first, Duration second) {
-        return first.greaterThan(second) ? first : second;
     }
 
     /// Resolves a token radius to a radius that can be represented within the current bounds.

@@ -866,7 +866,7 @@ public class M3Tooltip extends PopupControl {
         private final javafx.event.EventHandler<MouseEvent> exitedHandler = this::handleExited;
 
         /// Handles pointer presses.
-        private final javafx.event.EventHandler<MouseEvent> pressedHandler = this::handlePressed;
+        private final javafx.event.EventHandler<MouseEvent> pressedHandler = event -> hideImmediately();
 
         /// Handles pointer entry into an interactive tooltip popup.
         private final javafx.event.EventHandler<MouseEvent> tooltipEnteredHandler = this::handleTooltipEntered;
@@ -977,11 +977,6 @@ public class M3Tooltip extends PopupControl {
         private void handleExited(MouseEvent event) {
             ownerContainsPointer = false;
             scheduleHide();
-        }
-
-        /// Hides the tooltip when the target is pressed.
-        private void handlePressed(MouseEvent event) {
-            hideImmediately();
         }
 
         /// Shows or hides the tooltip when keyboard focus enters or leaves the target.

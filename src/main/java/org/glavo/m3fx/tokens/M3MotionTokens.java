@@ -152,28 +152,28 @@ public sealed interface M3MotionTokens permits M3MotionTokensImpl {
         return scheme().slowSpatial();
     }
 
-    /// Returns the legacy short duration alias.
+    /// Returns the coarse short duration alias.
     ///
-    /// @return the legacy short duration alias in milliseconds
+    /// @return the coarse short duration alias in milliseconds
     default int shortDuration() {
         return short2();
     }
 
-    /// Returns the legacy medium duration alias.
+    /// Returns the coarse medium duration alias.
     ///
-    /// @return the legacy medium duration alias in milliseconds
+    /// @return the coarse medium duration alias in milliseconds
     default int mediumDuration() {
         return medium1();
     }
 
-    /// Returns the legacy long duration alias.
+    /// Returns the coarse long duration alias.
     ///
-    /// @return the legacy long duration alias in milliseconds
+    /// @return the coarse long duration alias in milliseconds
     default int longDuration() {
         return long2();
     }
 
-    /// Creates motion duration tokens from legacy coarse duration values.
+    /// Creates motion duration tokens from coarse duration values.
     ///
     /// @param shortDuration the duration applied to all short duration tokens
     /// @param mediumDuration the duration applied to all medium duration tokens
@@ -442,7 +442,7 @@ public sealed interface M3MotionTokens permits M3MotionTokensImpl {
     /// @return inline JavaFX CSS declarations for these motion tokens
     default String toStyleDeclarations() {
         StringBuilder builder = new StringBuilder();
-        appendLegacyStyleDeclarations(builder);
+        appendCoarseDurationStyleDeclarations(builder);
         appendSchemeStyleDeclarations(builder);
         appendBehaviorStyleDeclarations(builder);
         M3TokenCss.append(builder, "-m3-motion-duration-short1", short1() + "ms");
@@ -464,8 +464,8 @@ public sealed interface M3MotionTokens permits M3MotionTokensImpl {
         return builder.toString().trim();
     }
 
-    /// Appends legacy coarse duration declarations for compatibility.
-    private void appendLegacyStyleDeclarations(StringBuilder builder) {
+    /// Appends coarse duration alias declarations.
+    private void appendCoarseDurationStyleDeclarations(StringBuilder builder) {
         M3TokenCss.append(builder, "-m3-motion-duration-short", shortDuration() + "ms");
         M3TokenCss.append(builder, "-m3-motion-duration-medium", mediumDuration() + "ms");
         M3TokenCss.append(builder, "-m3-motion-duration-long", longDuration() + "ms");

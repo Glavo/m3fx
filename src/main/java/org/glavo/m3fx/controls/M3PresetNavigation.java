@@ -49,7 +49,8 @@ final class M3PresetNavigation {
         Objects.requireNonNull(orientationOwner, "orientationOwner");
         Objects.requireNonNull(focusPicker, "focusPicker");
 
-        if (!M3KeyEvents.hasNavigationModifier(event) && isPickerHandoffKey(event.getCode(), orientationOwner)) {
+        if (!M3KeyEvents.hasNavigationModifier(event)
+                && event.getCode() == (M3NodeLayout.isRightToLeft(orientationOwner) ? KeyCode.LEFT : KeyCode.RIGHT)) {
             if (focusPicker.getAsBoolean()) {
                 event.consume();
             }
@@ -73,8 +74,4 @@ final class M3PresetNavigation {
         M3SelectionNavigation.handlePageKeyFocus(event, presetList, children, focusedButton, M3Button.class);
     }
 
-    /// Returns whether the key moves focus from the logical-start preset column into the picker.
-    private static boolean isPickerHandoffKey(KeyCode keyCode, Node owner) {
-        return keyCode == (M3NodeLayout.isRightToLeft(owner) ? KeyCode.LEFT : KeyCode.RIGHT);
-    }
 }

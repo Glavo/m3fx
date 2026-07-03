@@ -5,7 +5,6 @@ package org.glavo.m3fx.skins;
 
 import javafx.beans.InvalidationListener;
 import javafx.css.StyleOrigin;
-import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
@@ -55,7 +54,10 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
         textLabel.textProperty().bind(control.textProperty());
         textLabel.setWrapText(true);
         actionButton.textProperty().bind(control.actionTextProperty());
-        actionButton.setOnAction(this::fireAction);
+        actionButton.setOnAction(event -> {
+            event.consume();
+            getSkinnable().fireAction();
+        });
         control.actionTextProperty().addListener(actionTextInvalidation);
         control.containerShapeProperty().addListener(tokenInvalidation);
         control.contentPaddingProperty().addListener(tokenInvalidation);
@@ -100,12 +102,6 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
         super.dispose();
     }
 
-    /// Fires the snackbar action handler if one is present.
-    private void fireAction(ActionEvent event) {
-        event.consume();
-        getSkinnable().fireAction();
-    }
-
     /// Updates the action button visibility from its text.
     private void updateActionVisibility(@Nullable String actionText) {
         boolean visible = actionText != null && !actionText.isBlank();
@@ -121,7 +117,13 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
         double verticalPadding = padding / 2.0;
         double leadingPadding = padding;
         double trailingPadding = actionButton.isManaged() ? padding / 2.0 : padding;
-        container.setPadding(snackbarPadding(verticalPadding, leadingPadding, trailingPadding));
+        container.setPadding(M3NodeLayout.logicalInsets(
+                snackbar,
+                verticalPadding,
+                leadingPadding,
+                verticalPadding,
+                trailingPadding
+        ));
         container.setMinHeight(snackbar.getSingleLineContainerHeight());
         actionButton.containerHeightProperty().applyStyle(StyleOrigin.USER_AGENT, snackbar.getActionContainerHeight());
         String shape = formatPixels(snackbar.getContainerShape());
@@ -149,7 +151,12 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
             double bottomInset,
             double leftInset
     ) {
-        return leftInset + boundedContainerWidth(container.prefWidth(-1.0)) + rightInset;
+        double preferredWidth = container.prefWidth(-1.0);
+        double boundedWidth = Math.min(
+                effectiveContainerMaxWidth(),
+                Math.max(effectiveContainerMinWidth(), preferredWidth)
+        );
+        return leftInset + boundedWidth + rightInset;
     }
 
     /// Computes the minimum snackbar height for the current text wrapping state.
@@ -189,11 +196,6 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
         );
     }
 
-    /// Returns the preferred container width clamped by the width tokens.
-    private double boundedContainerWidth(double preferredWidth) {
-        return Math.min(effectiveContainerMaxWidth(), Math.max(effectiveContainerMinWidth(), preferredWidth));
-    }
-
     /// Returns the effective minimum container width.
     private double effectiveContainerMinWidth() {
         M3Snackbar snackbar = getSkinnable();
@@ -230,11 +232,6 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
         double singleLineHeight = textLabel.prefHeight(-1.0);
         double wrappedHeight = textLabel.prefHeight(labelWidth);
         return wrappedHeight > singleLineHeight + 0.5;
-    }
-
-    /// Returns physical container padding for logical snackbar content edges.
-    private Insets snackbarPadding(double verticalPadding, double leadingPadding, double trailingPadding) {
-        return M3NodeLayout.logicalInsets(getSkinnable(), verticalPadding, leadingPadding, verticalPadding, trailingPadding);
     }
 
     /// Formats a CSS pixel value.

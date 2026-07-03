@@ -102,7 +102,9 @@ public class M3Dialog<R> extends Dialog<R> {
 
     /// Creates a Material Design 3 dialog.
     public M3Dialog() {
-        installDialogPane(new M3DialogPane());
+        M3DialogPane pane = new M3DialogPane();
+        installStylesheet(pane);
+        setDialogPane(pane);
         addEventFilter(DialogEvent.DIALOG_SHOWING, event -> {
             refreshOwnerWindowFromNode();
             startInheritedThemeContextObservation();
@@ -216,12 +218,6 @@ public class M3Dialog<R> extends Dialog<R> {
         if (scene != null && scene.getWindow() != null) {
             initOwner(scene.getWindow());
         }
-    }
-
-    /// Installs the Material dialog pane and its shared stylesheet.
-    private void installDialogPane(M3DialogPane pane) {
-        installStylesheet(pane);
-        setDialogPane(pane);
     }
 
     /// Applies the explicit theme or the current owner scene theme to the dialog pane.
@@ -423,7 +419,9 @@ public class M3Dialog<R> extends Dialog<R> {
         if (previousStylesheet instanceof String previous && !previous.equals(stylesheet)) {
             pane.getStylesheets().remove(previous);
         }
-        moveOrAdd(pane.getStylesheets(), stylesheet, themeStylesheetIndex(pane.getStylesheets()));
+        List<String> stylesheets = pane.getStylesheets();
+        int baseStylesheetIndex = stylesheets.indexOf(M3ThemeManager.stylesheetUrl());
+        moveOrAdd(stylesheets, stylesheet, baseStylesheetIndex >= 0 ? baseStylesheetIndex + 1 : 0);
     }
 
     /// Removes the generated theme stylesheet from the dialog pane.
@@ -448,12 +446,6 @@ public class M3Dialog<R> extends Dialog<R> {
             }
         }
         stylesheets.add(Math.min(targetIndex, stylesheets.size()), stylesheet);
-    }
-
-    /// Returns the insertion index for the generated theme stylesheet.
-    private static int themeStylesheetIndex(List<String> stylesheets) {
-        int baseStylesheetIndex = stylesheets.indexOf(M3ThemeManager.stylesheetUrl());
-        return baseStylesheetIndex >= 0 ? baseStylesheetIndex + 1 : 0;
     }
 
     /// Merges existing pane style declarations with generated theme declarations.

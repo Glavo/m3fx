@@ -32,7 +32,8 @@ public class M3MenuItem extends M3ListItem {
     /// @param text the item text
     public M3MenuItem(String text) {
         super(text);
-        initialize();
+        M3ControlStyles.add(this, STYLE_CLASS);
+        setAccessibleRole(AccessibleRole.MENU_ITEM);
     }
 
     /// Creates a menu item with text and leading content.
@@ -70,9 +71,4 @@ public class M3MenuItem extends M3ListItem {
         setOnAction(onAction);
     }
 
-    /// Adds base style classes.
-    private void initialize() {
-        M3ControlStyles.add(this, STYLE_CLASS);
-        setAccessibleRole(AccessibleRole.MENU_ITEM);
-    }
 }

@@ -153,7 +153,7 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         double amplitude = Math.min(progressBar.getWaveAmplitude(), Math.max(0.0, (height - thickness) / 2.0));
         double visualHeight = Math.min(height, thickness + amplitude * 2.0);
         double trackY = y + (height - visualHeight) / 2.0;
-        double radius = resolvedTrackRadius(progressBar, thickness);
+        double radius = Math.min(progressBar.getTrackShape(), thickness / 2.0);
 
         container.resizeRelocate(x, trackY, width, visualHeight);
         clip.setWidth(width);
@@ -202,7 +202,7 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         bar.setVisible(false);
         waveBar.setVisible(true);
         waveBar.setStrokeWidth(thickness);
-        double effectiveGap = effectiveTrackGap(getSkinnable().getTrackGap(), thickness);
+        double effectiveGap = Math.max(0.0, getSkinnable().getTrackGap()) + Math.max(0.0, thickness) / 2.0;
 
         if (progress == M3ProgressBar.INDETERMINATE_PROGRESS) {
             stop.setVisible(false);
@@ -331,11 +331,6 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         throw new IllegalArgumentException("Unsupported sampled path element: " + element);
     }
 
-    /// Returns the centerline gap that preserves the requested visible gap around round caps.
-    private static double effectiveTrackGap(double gap, double thickness) {
-        return Math.max(0.0, gap) + Math.max(0.0, thickness) / 2.0;
-    }
-
     /// Lays out a track segment and hides it when its visible width is empty.
     private static void layoutTrackSegment(
             Rectangle rectangle,
@@ -417,11 +412,6 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     /// Clamps a progress value to the visible range.
     private static double clamp(double value) {
         return Math.max(0.0, Math.min(1.0, value));
-    }
-
-    /// Returns a track radius that can be rendered cleanly for the current thickness.
-    private static double resolvedTrackRadius(M3ProgressBar progressBar, double thickness) {
-        return Math.min(progressBar.getTrackShape(), thickness / 2.0);
     }
 
     /// Lays out a progress rectangle with a clean resolved corner radius.

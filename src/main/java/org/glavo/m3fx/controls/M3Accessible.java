@@ -71,36 +71,6 @@ final class M3Accessible {
             this.showHandler = showHandler;
             this.showTargetMatcher = showTargetMatcher;
         }
-
-        /// Returns whether this route has a focus handler.
-        private boolean hasFocusHandler() {
-            return focusHandler != null;
-        }
-
-        /// Returns whether this route has a reveal handler.
-        private boolean hasShowHandler() {
-            return showHandler != null;
-        }
-
-        /// Returns whether this route has an explicit reveal target matcher.
-        private boolean hasShowTargetMatcher() {
-            return showTargetMatcher != null;
-        }
-
-        /// Returns whether this route handles a reveal target.
-        private boolean handlesShowTarget(@Nullable Object parameter) {
-            return showTargetMatcher != null && showTargetMatcher.test(parameter);
-        }
-
-        /// Requests focus through the registered focus handler.
-        private boolean requestFocus() {
-            return focusHandler != null && focusHandler.getAsBoolean();
-        }
-
-        /// Reveals a target through the registered reveal handler.
-        private boolean showItem(Object... parameters) {
-            return showHandler != null && showHandler.handle(parameters);
-        }
     }
 
     /// Installs direct accessibility action handlers on a node.
@@ -876,8 +846,8 @@ final class M3Accessible {
             return false;
         }
         @Nullable AccessibleActionRoute route = accessibleActionRoute(item);
-        if (route != null && route.hasFocusHandler()) {
-            return route.requestFocus();
+        if (route != null && route.focusHandler != null) {
+            return route.focusHandler.getAsBoolean();
         }
         item.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
         return currentContainedFocusTarget(item) != null || activeExternalFocusTarget(item, item) != null;
@@ -1277,16 +1247,16 @@ final class M3Accessible {
     /// Returns whether an installed route matcher rejects the supplied reveal parameters.
     private static boolean routeRejectsAccessibleActionTarget(@Nullable Node item, Object... parameters) {
         @Nullable AccessibleActionRoute route = accessibleActionRoute(item);
-        return route != null && route.hasShowTargetMatcher() && !routeHandlesAnyShowTarget(route, parameters);
+        return route != null && route.showTargetMatcher != null && !routeHandlesAnyShowTarget(route, parameters);
     }
 
     /// Delegates an explicit reveal request through a node's installed accessibility route.
     private static boolean showRoutedAccessibleActionTarget(@Nullable Node item, Object... parameters) {
         @Nullable AccessibleActionRoute route = accessibleActionRoute(item);
         return route != null
-                && route.hasShowHandler()
+                && route.showHandler != null
                 && routeHandlesAnyShowTarget(route, parameters)
-                && route.showItem(parameters);
+                && route.showHandler.handle(parameters);
     }
 
     /// Returns whether a route matcher accepts any explicit reveal parameter.
@@ -1303,7 +1273,7 @@ final class M3Accessible {
 
     /// Returns whether a route matcher accepts a possibly nested explicit reveal parameter.
     private static boolean routeHandlesShowTarget(AccessibleActionRoute route, @Nullable Object parameter) {
-        if (route.handlesShowTarget(parameter)) {
+        if (route.showTargetMatcher != null && route.showTargetMatcher.test(parameter)) {
             return true;
         }
         if (parameter instanceof Iterable<?> values) {
@@ -1331,8 +1301,8 @@ final class M3Accessible {
             return false;
         }
         @Nullable AccessibleActionRoute route = accessibleActionRoute(item);
-        if (route != null && route.hasShowHandler()) {
-            return route.showItem(parameters);
+        if (route != null && route.showHandler != null) {
+            return route.showHandler.handle(parameters);
         }
         item.executeAccessibleAction(AccessibleAction.SHOW_ITEM, parameters);
         return currentContainedFocusTarget(item) != null || activeExternalFocusTarget(item, item) != null;
@@ -2090,7 +2060,7 @@ final class M3Accessible {
             boolean includeParentChildren
     ) {
         @Nullable AccessibleActionRoute route = accessibleActionRoute(item);
-        if (route != null && route.hasShowTargetMatcher()) {
+        if (route != null && route.showTargetMatcher != null) {
             return routeHandlesShowTarget(route, parameter);
         }
         if (parameter instanceof Node node) {
@@ -2171,7 +2141,7 @@ final class M3Accessible {
             return true;
         }
         @Nullable AccessibleActionRoute route = accessibleActionRoute(owner);
-        if (route != null && route.hasShowTargetMatcher()) {
+        if (route != null && route.showTargetMatcher != null) {
             return routeHandlesShowTarget(route, requestedNode);
         }
         if (containsNode(owner, requestedNode)) {

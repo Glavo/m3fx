@@ -266,7 +266,7 @@ public class M3Surface extends Control {
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         return switch (attribute) {
-            case CONTENTS -> accessibleContents();
+            case CONTENTS -> getContent().size() == 1 ? getContent().get(0) : null;
             case ITEM_COUNT -> getContent().size();
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getContent(), parameters);
             case FOCUS_NODE -> M3Accessible.currentOrFirstFocusTarget(this, getContent());
@@ -327,11 +327,6 @@ public class M3Surface extends Control {
                 -1,
                 false
         );
-    }
-
-    /// Returns the single content node when the surface has one logical child.
-    private @Nullable Node accessibleContents() {
-        return getContent().size() == 1 ? getContent().get(0) : null;
     }
 
     /// Notifies accessibility clients that the surface content collection changed.

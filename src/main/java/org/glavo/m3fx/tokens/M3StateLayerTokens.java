@@ -154,9 +154,9 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
     /// @return JavaFX CSS rules for controls that render state layers or disabled opacity
     default String toControlStyleRules() {
         StringBuilder builder = new StringBuilder();
-        appendStateLayerOpacityRule(builder, hoverStateSelectors(), hoverOpacity());
-        appendStateLayerOpacityRule(builder, focusStateSelectors(), focusOpacity());
-        appendStateLayerOpacityRule(builder, pressedStateSelectors(), pressedOpacity());
+        appendOpacityRule(builder, hoverStateSelectors(), hoverOpacity());
+        appendOpacityRule(builder, focusStateSelectors(), focusOpacity());
+        appendOpacityRule(builder, pressedStateSelectors(), pressedOpacity());
         appendOpacityRule(builder, disabledStateSelectors(), disabledContentOpacity());
         return builder.toString().stripTrailing();
     }
@@ -223,8 +223,4 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
                 .append(";\n}\n\n");
     }
 
-    /// Appends a state layer opacity CSS rule.
-    private static void appendStateLayerOpacityRule(StringBuilder builder, String selector, double opacity) {
-        appendOpacityRule(builder, selector, opacity);
-    }
 }

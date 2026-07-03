@@ -73,7 +73,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
 
     /// Mirrors expanded-state changes into the child row viewport.
     private final ChangeListener<Boolean> expandedListener =
-            (observable, oldValue, newValue) -> setExpandedState(newValue, shouldAnimateExpansion());
+            (observable, oldValue, newValue) -> setExpandedState(newValue, getSkinnable().getScene() != null);
 
     /// Requests layout when the effective node orientation changes at runtime.
     private final InvalidationListener orientationInvalidation = observable -> getSkinnable().requestLayout();
@@ -288,11 +288,6 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
         M3Animation.playFromStart(getSkinnable(), expansionAnimation);
     }
 
-    /// Returns whether expanded-state changes should animate.
-    private boolean shouldAnimateExpansion() {
-        return getSkinnable().getScene() != null;
-    }
-
     /// Returns whether child rows should be kept mounted in the viewport.
     private boolean shouldMountChildItems() {
         return getSkinnable().isExpanded()
@@ -367,15 +362,10 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
     private void updateChildrenContainerPadding(double childEdgeInset) {
         Insets padding = childEdgeInset == 0.0
                 ? EMPTY_CHILD_PADDING
-                : childContainerPadding(childEdgeInset);
+                : M3NodeLayout.logicalInsets(getSkinnable(), 0.0, childEdgeInset, 0.0, 0.0);
         if (!padding.equals(childrenContainer.getPadding())) {
             childrenContainer.setPadding(padding);
         }
-    }
-
-    /// Returns the physical padding that indents child rows from the visual leading edge.
-    private Insets childContainerPadding(double childEdgeInset) {
-        return M3NodeLayout.logicalInsets(getSkinnable(), 0.0, childEdgeInset, 0.0, 0.0);
     }
 
     /// Keeps one list item container inside the group content area.

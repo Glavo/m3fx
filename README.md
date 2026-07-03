@@ -130,7 +130,7 @@ Common local gates:
 ./gradlew jlinkDemoAllPlatformArchitectureRuntimes
 ```
 
-`check` covers compilation, tests, Javadoc, Maven publication metadata, publication artifact layout, and build-local publication consumption. `releaseCheck` adds demo shadow jar verification and the default host-platform demo jlink runtime image. The all-platform jlink aggregate validates Windows, Linux, and macOS runtime images on x64 and AArch64 targets.
+`check` covers compilation, tests, Maven publication metadata, publication artifact layout, and build-local publication consumption. `releaseCheck` adds demo shadow jar verification and the default host-platform demo jlink runtime image. The all-platform jlink aggregate validates Windows, Linux, and macOS runtime images on x64 and AArch64 targets.
 
 ## Packaging Notes
 

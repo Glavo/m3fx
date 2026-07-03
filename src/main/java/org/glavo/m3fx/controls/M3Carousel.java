@@ -96,7 +96,7 @@ public class M3Carousel extends Control {
             new M3AccessibleFocusNotifier(this, this::accessibleFocusNode);
 
     /// Refreshes selection when a carousel item becomes visible, hidden, enabled, or disabled.
-    private final InvalidationListener itemReachabilityListener = observable -> refreshItemReachabilityState();
+    private final InvalidationListener itemReachabilityListener = observable -> applySelectedIndex(getSelectedIndex(), false);
 
     /// Updates item installation, selection invariants, and accessibility metadata when items change.
     private final ListChangeListener<Node> itemsListener = change -> {
@@ -453,7 +453,7 @@ public class M3Carousel extends Control {
             return focused;
         }
 
-        @Nullable Node selectedTarget = accessibleTarget(parameters);
+        @Nullable Node selectedTarget = M3Accessible.containingItem(getItems(), parameters);
         if (selectedTarget != null) {
             if (!isSelectable(selectedTarget)) {
                 return false;
@@ -512,12 +512,6 @@ public class M3Carousel extends Control {
         } else if (isSelectable(target)) {
             select(target);
         }
-    }
-
-    /// Returns the first item referenced by accessibility reveal parameters.
-    private @Nullable Node accessibleTarget(Object... parameters) {
-        Objects.requireNonNull(parameters, "parameters");
-        return M3Accessible.containingItem(getItems(), parameters);
     }
 
     /// Returns the first item referenced by accessibility selection parameters.
@@ -628,11 +622,6 @@ public class M3Carousel extends Control {
         item.getStyleClass().remove(ITEM_STYLE_CLASS);
         item.getStyleClass().remove(SELECTED_ITEM_STYLE_CLASS);
         item.pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, false);
-    }
-
-    /// Reapplies selection invariants after one item's reachability changes.
-    private void refreshItemReachabilityState() {
-        applySelectedIndex(getSelectedIndex(), false);
     }
 
     /// Applies a selected index after normalizing it against the current item list.

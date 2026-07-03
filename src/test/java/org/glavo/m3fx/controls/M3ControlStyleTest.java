@@ -229,8 +229,8 @@ final class M3ControlStyleTest {
     /// The minimum rendered ink height expected for visible alphanumeric text.
     private static final double TEXT_INK_MINIMUM_FONT_HEIGHT_RATIO = 0.42;
 
-    /// The pixel tolerance used by rendered text ink height coverage checks.
-    private static final double TEXT_INK_HEIGHT_COVERAGE_TOLERANCE = 1.0;
+    /// The pixel tolerance used by rendered text clipping checks.
+    private static final double TEXT_INK_HEIGHT_CLIPPING_TOLERANCE = 1.0;
 
     /// The duration used to keep real-pulse animation states observable in tests.
     private static final Duration OBSERVABLE_TEST_MOTION_DURATION = Duration.millis(600.0);
@@ -263,7 +263,7 @@ final class M3ControlStyleTest {
     /// Verifies that scene-level themes follow runtime root replacement.
     @Test
     void sceneThemeInstallationFollowsRootReplacement() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Pane firstRoot = new Pane();
             Pane secondRoot = new Pane();
             Pane thirdRoot = new Pane();
@@ -305,7 +305,7 @@ final class M3ControlStyleTest {
     /// Verifies that uninstalling a scene theme stops future root tracking.
     @Test
     void sceneThemeUninstallStopsRootReplacementTracking() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Pane firstRoot = new Pane();
             Pane secondRoot = new Pane();
             Scene scene = new Scene(firstRoot);
@@ -329,7 +329,7 @@ final class M3ControlStyleTest {
     /// Verifies that scene-level themes restore a previous local root theme after root replacement.
     @Test
     void sceneThemeRootReplacementRestoresPreviousLocalTheme() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Pane firstRoot = new Pane();
             Pane secondRoot = new Pane();
             firstRoot.setStyle("-fx-padding: 8px;");
@@ -358,7 +358,7 @@ final class M3ControlStyleTest {
     /// Verifies that uninstalling a scene-level theme restores a previous local root theme.
     @Test
     void sceneThemeUninstallRestoresPreviousLocalRootTheme() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Pane root = new Pane();
             root.setStyle("-fx-padding: 12px;");
             Scene scene = new Scene(root);
@@ -414,7 +414,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3MenuButton> menuButtonReference = new AtomicReference<>();
         AtomicReference<@Nullable M3SubMenuItem> subMenuItemReference = new AtomicReference<>();
 
-        runOnFxThreadWhenStable(() -> standaloneControlPopupStackReady(
+        FxTestUtils.runOnFxThreadWhenStable(() -> standaloneControlPopupStackReady(
                 stageReference,
                 menuButtonReference,
                 subMenuItemReference
@@ -710,7 +710,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3TimePickerField> timePickerFieldReference = new AtomicReference<>();
         AtomicReference<@Nullable M3DateRangePickerField> dateRangePickerFieldReference = new AtomicReference<>();
 
-        runOnFxThreadWhenStable(() -> standalonePickerPopupsReady(
+        FxTestUtils.runOnFxThreadWhenStable(() -> standalonePickerPopupsReady(
                 stageReference,
                 datePickerFieldReference,
                 timePickerFieldReference,
@@ -751,7 +751,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3RichTooltip> richTooltipReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhenStable(() -> standaloneTooltipPopupsReady(
+            FxTestUtils.runOnFxThreadWhenStable(() -> standaloneTooltipPopupsReady(
                     stageReference,
                     plainTooltipReference,
                     richTooltipReference
@@ -853,7 +853,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable M3InternalIcon> iconReference = new AtomicReference<>();
 
-        runOnFxThreadWhenStable(() -> standaloneInternalIconReady(stageReference, iconReference),
+        FxTestUtils.runOnFxThreadWhenStable(() -> standaloneInternalIconReady(stageReference, iconReference),
                 STANDALONE_FALLBACK_STYLE_STABLE_PULSES, () -> {
             M3SearchBar searchBar = new M3SearchBar("Search");
             VBox root = new VBox(searchBar);
@@ -1082,7 +1082,7 @@ final class M3ControlStyleTest {
     /// Verifies that item-container skins keep their internal rows aligned to the logical start edge.
     @Test
     void itemContainerSkinsAlignToLogicalStartWhenOrientationChanges() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3ButtonGroup buttonGroup = new M3ButtonGroup(new M3Button("One"), new M3Button("Two"));
             M3IconToggleButtonGroup iconGroup = new M3IconToggleButtonGroup(
                     new M3IconToggleButton("A"),
@@ -1139,7 +1139,7 @@ final class M3ControlStyleTest {
     /// Verifies that composite control containers align to the logical start edge when orientation changes.
     @Test
     void compositeControlContainersAlignToLogicalStartWhenOrientationChanges() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3CheckBox checkBox = createCheckBox("Checkbox", true);
             M3RadioButton radioButton = createRadioButton("Radio", true);
             M3Switch switchControl = createSwitch("Switch", true);
@@ -1186,7 +1186,7 @@ final class M3ControlStyleTest {
     /// Verifies that menu buttons open their popup from a full-bounds pointer click near the layout edge.
     @Test
     void menuButtonPicksFullLayoutBoundsToShowPopup() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3MenuButton button = new M3MenuButton("Open", new M3MenuItem("First"));
             Pane root = new Pane(button);
             Scene scene = new Scene(root, 280.0, 180.0);
@@ -1241,7 +1241,7 @@ final class M3ControlStyleTest {
     /// Verifies that button feedback layers use the same resolved shape as the button surface.
     @Test
     void buttonStateLayerUsesResolvedContainerShape() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button button = new M3Button("Button");
             Pane root = new Pane(button);
             Scene scene = new Scene(root, 200.0, 100.0);
@@ -1266,7 +1266,7 @@ final class M3ControlStyleTest {
     /// Verifies that CSS reapplication after pressed pseudo-class changes does not hide ripples.
     @Test
     void buttonRippleSurvivesCssReapplicationAfterPress() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button button = new M3Button("Button");
             Pane root = new Pane(button);
             Scene scene = new Scene(root, 200.0, 100.0);
@@ -1368,7 +1368,7 @@ final class M3ControlStyleTest {
     /// Verifies that only the elevated button variant owns button elevation.
     @Test
     void buttonElevationDoesNotLeakIntoNonElevatedVariants() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button button = createButton("Button", M3ButtonVariant.ELEVATED);
             Pane root = new Pane(button);
             Scene scene = new Scene(root, 200.0, 100.0);
@@ -1495,7 +1495,7 @@ final class M3ControlStyleTest {
     /// Verifies that floating action button graphics stay centered in fixed-size FAB containers.
     @Test
     void floatingActionButtonCentersGraphicContent() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3FloatingActionButton small = createGraphicFab(
                     visualIcon("add"),
                     M3FloatingActionButtonVariant.PRIMARY,
@@ -1739,38 +1739,6 @@ final class M3ControlStyleTest {
         assertGeneratedThemeCssPreservesBoundRegionMetrics(new M3ListSectionHeader("Section"));
     }
 
-    /// Verifies that shared Region metric helpers write unbound properties and preserve bound properties.
-    @Test
-    void m3CssRegionMetricHelpersPreserveBoundLayoutProperties() {
-        Region unbound = new Region();
-        M3Css.setMinWidthIfUnbound(unbound, 31.0);
-        M3Css.setPrefWidthIfUnbound(unbound, 41.0);
-        M3Css.setMaxWidthIfUnbound(unbound, 91.0);
-        M3Css.setMinHeightIfUnbound(unbound, 32.0);
-        M3Css.setPrefHeightIfUnbound(unbound, 42.0);
-        M3Css.setMaxHeightIfUnbound(unbound, 92.0);
-        M3Css.setPaddingIfUnbound(unbound, new Insets(1.0, 2.0, 3.0, 4.0));
-
-        assertEquals(31.0, unbound.getMinWidth(), 0.0001);
-        assertEquals(41.0, unbound.getPrefWidth(), 0.0001);
-        assertEquals(91.0, unbound.getMaxWidth(), 0.0001);
-        assertEquals(32.0, unbound.getMinHeight(), 0.0001);
-        assertEquals(42.0, unbound.getPrefHeight(), 0.0001);
-        assertEquals(92.0, unbound.getMaxHeight(), 0.0001);
-        assertEquals(new Insets(1.0, 2.0, 3.0, 4.0), unbound.getPadding());
-
-        Region bound = new Region();
-        assertBoundRegionMetricsPreserved(bound, () -> {
-            M3Css.setMinWidthIfUnbound(bound, 131.0);
-            M3Css.setPrefWidthIfUnbound(bound, 141.0);
-            M3Css.setMaxWidthIfUnbound(bound, 191.0);
-            M3Css.setMinHeightIfUnbound(bound, 132.0);
-            M3Css.setPrefHeightIfUnbound(bound, 142.0);
-            M3Css.setMaxHeightIfUnbound(bound, 192.0);
-            M3Css.setPaddingIfUnbound(bound, new Insets(11.0, 12.0, 13.0, 14.0));
-        }, () -> assertTrue(bound.minWidthProperty().isBound()));
-    }
-
     /// Verifies that component metric tokens preserve application-set JavaFX layout properties.
     @Test
     void componentMetricTokensPreserveApplicationSetLayoutProperties() {
@@ -1811,89 +1779,6 @@ final class M3ControlStyleTest {
         assertEquals(112.0, toolbar.getPrefHeight(), 0.0001);
         assertEquals(new Insets(10.0, 11.0, 12.0, 13.0), toolbar.getPadding());
     }
-
-    /// Verifies that shared Region metric helpers update owned values but preserve application-set values.
-    @Test
-    void m3CssRegionMetricHelpersPreserveApplicationSetLayoutProperties() {
-        Region region = new Region();
-        M3Css.setMinWidthIfUnbound(region, 31.0);
-        M3Css.setPrefWidthIfUnbound(region, 41.0);
-        M3Css.setMaxWidthIfUnbound(region, 91.0);
-        M3Css.setMinHeightIfUnbound(region, 32.0);
-        M3Css.setPrefHeightIfUnbound(region, 42.0);
-        M3Css.setMaxHeightIfUnbound(region, 92.0);
-        M3Css.setPaddingIfUnbound(region, new Insets(1.0, 2.0, 3.0, 4.0));
-
-        M3Css.setMinWidthIfUnbound(region, 33.0);
-        M3Css.setPrefWidthIfUnbound(region, 43.0);
-        M3Css.setMaxWidthIfUnbound(region, 93.0);
-        M3Css.setMinHeightIfUnbound(region, 34.0);
-        M3Css.setPrefHeightIfUnbound(region, 44.0);
-        M3Css.setMaxHeightIfUnbound(region, 94.0);
-        M3Css.setPaddingIfUnbound(region, new Insets(5.0, 6.0, 7.0, 8.0));
-
-        assertEquals(33.0, region.getMinWidth(), 0.0001);
-        assertEquals(43.0, region.getPrefWidth(), 0.0001);
-        assertEquals(93.0, region.getMaxWidth(), 0.0001);
-        assertEquals(34.0, region.getMinHeight(), 0.0001);
-        assertEquals(44.0, region.getPrefHeight(), 0.0001);
-        assertEquals(94.0, region.getMaxHeight(), 0.0001);
-        assertEquals(new Insets(5.0, 6.0, 7.0, 8.0), region.getPadding());
-
-        region.setMinWidth(131.0);
-        region.setPrefWidth(141.0);
-        region.setMaxWidth(191.0);
-        region.setMinHeight(132.0);
-        region.setPrefHeight(142.0);
-        region.setMaxHeight(192.0);
-        region.setPadding(new Insets(11.0, 12.0, 13.0, 14.0));
-
-        M3Css.setMinWidthIfUnbound(region, 231.0);
-        M3Css.setPrefWidthIfUnbound(region, 241.0);
-        M3Css.setMaxWidthIfUnbound(region, 291.0);
-        M3Css.setMinHeightIfUnbound(region, 232.0);
-        M3Css.setPrefHeightIfUnbound(region, 242.0);
-        M3Css.setMaxHeightIfUnbound(region, 292.0);
-        M3Css.setPaddingIfUnbound(region, new Insets(21.0, 22.0, 23.0, 24.0));
-
-        assertEquals(131.0, region.getMinWidth(), 0.0001);
-        assertEquals(141.0, region.getPrefWidth(), 0.0001);
-        assertEquals(191.0, region.getMaxWidth(), 0.0001);
-        assertEquals(132.0, region.getMinHeight(), 0.0001);
-        assertEquals(142.0, region.getPrefHeight(), 0.0001);
-        assertEquals(192.0, region.getMaxHeight(), 0.0001);
-        assertEquals(new Insets(11.0, 12.0, 13.0, 14.0), region.getPadding());
-    }
-
-    /// Verifies that shared Region metric helpers do not claim values set before their first write.
-    @Test
-    void m3CssRegionMetricHelpersPreservePreexistingApplicationSetLayoutProperties() {
-        Region region = new Region();
-        region.setMinWidth(131.0);
-        region.setPrefWidth(141.0);
-        region.setMaxWidth(191.0);
-        region.setMinHeight(132.0);
-        region.setPrefHeight(142.0);
-        region.setMaxHeight(192.0);
-        region.setPadding(new Insets(11.0, 12.0, 13.0, 14.0));
-
-        M3Css.setMinWidthIfUnbound(region, 231.0);
-        M3Css.setPrefWidthIfUnbound(region, 241.0);
-        M3Css.setMaxWidthIfUnbound(region, 291.0);
-        M3Css.setMinHeightIfUnbound(region, 232.0);
-        M3Css.setPrefHeightIfUnbound(region, 242.0);
-        M3Css.setMaxHeightIfUnbound(region, 292.0);
-        M3Css.setPaddingIfUnbound(region, new Insets(21.0, 22.0, 23.0, 24.0));
-
-        assertEquals(131.0, region.getMinWidth(), 0.0001);
-        assertEquals(141.0, region.getPrefWidth(), 0.0001);
-        assertEquals(191.0, region.getMaxWidth(), 0.0001);
-        assertEquals(132.0, region.getMinHeight(), 0.0001);
-        assertEquals(142.0, region.getPrefHeight(), 0.0001);
-        assertEquals(192.0, region.getMaxHeight(), 0.0001);
-        assertEquals(new Insets(11.0, 12.0, 13.0, 14.0), region.getPadding());
-    }
-
     /// Verifies that explicit component token API values survive later stylesheet passes.
     @Test
     void coreComponentTokenApiValuesSurviveStylesheetPasses() {
@@ -2670,7 +2555,7 @@ final class M3ControlStyleTest {
     /// Verifies that toolbar arrow keys follow orientation, right-to-left direction, and reachable item filtering.
     @Test
     void toolbarKeyboardTraversalFollowsOrientationDirectionAndReachability() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button first = new M3Button("Archive");
             M3Button hidden = new M3Button("Hidden");
             M3Button disabled = new M3Button("Disabled");
@@ -2748,7 +2633,7 @@ final class M3ControlStyleTest {
     /// Verifies that toolbar navigation and accessibility actions use each item's actual exposed focus target.
     @Test
     void toolbarAccessibilityUsesNestedAndCurrentFocusTargets() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button groupedFirst = new M3Button("Grouped first");
             M3Button groupedSecond = new M3Button("Grouped second");
             M3Button hidden = new M3Button("Hidden");
@@ -2798,7 +2683,7 @@ final class M3ControlStyleTest {
     /// Verifies that toolbar accessibility actions can reveal popup-backed nested action targets.
     @Test
     void toolbarRevealsNestedMenuPopupTargets() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3MenuItem firstItem = new M3MenuItem("First");
             M3MenuItem secondItem = new M3MenuItem("Second");
             M3MenuButton menuButton = new M3MenuButton("Open", firstItem, secondItem);
@@ -2851,7 +2736,7 @@ final class M3ControlStyleTest {
     /// Verifies that horizontal toolbar item slots mirror their visual order in right-to-left scenes.
     @Test
     void toolbarRightToLeftLayoutMirrorsHorizontalActionSlots() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button first = new M3Button("First");
             M3Button second = new M3Button("Second");
             M3Button third = new M3Button("Third");
@@ -2905,7 +2790,7 @@ final class M3ControlStyleTest {
     /// Verifies that toolbar item mutations rebuild generated slots without retaining removed nodes.
     @Test
     void toolbarItemMutationsRebuildGeneratedSlots() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button first = new M3Button("First");
             M3Button second = new M3Button("Second");
             M3Button third = new M3Button("Third");
@@ -2975,7 +2860,7 @@ final class M3ControlStyleTest {
     /// Verifies that button group corners and feedback layers match right-to-left visual order.
     @Test
     void buttonGroupUsesRightToLeftPositionSpecificShapes() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button first = new M3Button("Archive");
             M3Button second = new M3Button("Share");
             M3Button third = new M3Button("Edit");
@@ -3060,7 +2945,7 @@ final class M3ControlStyleTest {
     /// Verifies that split buttons route accessibility focus through their attached popup menu.
     @Test
     void splitButtonRoutesAccessibleFocusThroughPopupMenu() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3MenuItem draft = new M3MenuItem("Draft");
             M3MenuItem publish = new M3MenuItem("Publish");
             M3SplitButton splitButton = new M3SplitButton("Create", draft, publish);
@@ -3153,7 +3038,7 @@ final class M3ControlStyleTest {
     /// Verifies that split button sizes resolve Material Expressive metrics from CSS.
     @Test
     void splitButtonSizesResolveMaterialExpressiveMetrics() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3SplitButton extraSmall = createSizedSplitButton(M3SplitButtonSize.EXTRA_SMALL);
             M3SplitButton small = createSizedSplitButton(M3SplitButtonSize.SMALL);
             M3SplitButton medium = createSizedSplitButton(M3SplitButtonSize.MEDIUM);
@@ -3181,7 +3066,7 @@ final class M3ControlStyleTest {
     /// Verifies that split button part shapes mirror under right-to-left layout.
     @Test
     void splitButtonMirrorsPartShapesForRightToLeft() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3SplitButton splitButton = createSplitButton(
                     "Export",
                     M3ButtonVariant.TONAL,
@@ -3221,7 +3106,7 @@ final class M3ControlStyleTest {
     /// Verifies that right-to-left joined buttons render mirrored edge shapes in snapshots.
     @Test
     void rightToLeftJoinedButtonsRenderMirroredCornersInSnapshot() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button firstGroupButton = createButton("Archive", M3ButtonVariant.TONAL);
             M3Button secondGroupButton = createButton("Share", M3ButtonVariant.TONAL);
             M3Button thirdGroupButton = createButton("Edit", M3ButtonVariant.TONAL);
@@ -3297,6 +3182,7 @@ final class M3ControlStyleTest {
     void floatingActionButtonVariantAndSizeUpdateStyleClasses() {
         M3FloatingActionButton button = createFab(
                 "+",
+                null,
                 M3FloatingActionButtonVariant.PRIMARY,
                 M3FloatingActionButtonSize.REGULAR
         );
@@ -3390,7 +3276,7 @@ final class M3ControlStyleTest {
     /// Verifies that FAB menu keyboard navigation, dismissal, and actions keep focus reachable.
     @Test
     void fabMenuRestoresToggleFocusWhenCollapsedFromFocusedAction() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3FloatingActionButton firstAction = new M3FloatingActionButton("A");
             M3FloatingActionButton disabledAction = new M3FloatingActionButton("D");
             M3FloatingActionButton secondAction = new M3FloatingActionButton("B");
@@ -3460,7 +3346,7 @@ final class M3ControlStyleTest {
     /// Verifies that FAB menu accessibility actions route focus through visible action items.
     @Test
     void fabMenuRoutesAccessibleFocusThroughActionItems() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3FloatingActionButton firstAction = new M3FloatingActionButton("A");
             M3FloatingActionButton secondAction = new M3FloatingActionButton("B");
             M3FabMenu menu = new M3FabMenu();
@@ -3517,7 +3403,7 @@ final class M3ControlStyleTest {
     /// Verifies that FAB menu accessibility reveal rejects unrevealable explicit child targets before expansion.
     @Test
     void fabMenuRejectsUnrevealableAccessibleActionTargetsBeforeExpanding() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button visibleNestedAction = new M3Button("Visible nested");
             M3Button hiddenNestedAction = new M3Button("Hidden nested");
             hiddenNestedAction.setVisible(false);
@@ -3608,7 +3494,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3FloatingActionButton> actionReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> fabMenuActionIsTransitioning(actionReference),
                     () -> describeFabMenuActionState(actionReference, "FAB menu action never reached an intermediate expand frame"),
                     () -> {
@@ -3636,11 +3522,11 @@ final class M3ControlStyleTest {
                     },
                     () -> {
                         M3FloatingActionButton action = Objects.requireNonNull(actionReference.get(), "action");
-                        assertFabActionTransitionFrame(action);
+                        assertFabActionEnterNodeIntermediate(action);
                     }
             );
 
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> fabMenuExpandedStateHasSettled(menuReference, actionReference),
                     () -> describeFabMenuState(
                             menuReference,
@@ -3657,18 +3543,18 @@ final class M3ControlStyleTest {
                     }
             );
 
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> fabMenuActionIsTransitioning(actionReference),
                     () -> describeFabMenuActionState(actionReference, "FAB menu action never reached an intermediate collapse frame"),
                     () -> {
                     },
                     () -> {
                         M3FloatingActionButton action = Objects.requireNonNull(actionReference.get(), "action");
-                        assertFabActionTransitionFrame(action);
+                        assertFabActionEnterNodeIntermediate(action);
                     }
             );
 
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> fabMenuCollapsedStateHasSettled(menuReference, actionReference),
                     () -> describeFabMenuState(
                             menuReference,
@@ -3684,7 +3570,7 @@ final class M3ControlStyleTest {
                     }
             );
         } finally {
-            runOnFxThread(() -> {
+            FxTestUtils.runOnFxThread(() -> {
                 @Nullable Pane root = rootReference.get();
                 if (root != null) {
                     M3MotionSettings.clearAnimationsEnabled(root);
@@ -3776,7 +3662,7 @@ final class M3ControlStyleTest {
     /// Verifies that cards expose content focus while preserving actionable surface focus.
     @Test
     void cardAccessibleFocusIncludesContentAndActionSurface() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button passiveContent = new M3Button("Open");
             M3Card passiveCard = new M3Card(passiveContent);
             M3Button actionContent = new M3Button("Nested action");
@@ -3884,7 +3770,7 @@ final class M3ControlStyleTest {
     /// Verifies that card variants apply Material state elevation and outline treatments.
     @Test
     void cardVariantsApplyMaterialStateElevationAndOutlineTreatments() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Card filled = new M3Card(new Label("Filled"), M3CardVariant.FILLED);
             M3Card elevated = new M3Card(new Label("Elevated"), M3CardVariant.ELEVATED);
             M3Card outlined = new M3Card(new Label("Outlined"), M3CardVariant.OUTLINED);
@@ -4077,7 +3963,7 @@ final class M3ControlStyleTest {
     /// Verifies that carousel navigation keys do not steal focus from embedded text inputs.
     @Test
     void carouselNavigationDoesNotStealEmbeddedTextInputFocus() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextField editor = createTextField("Editable", M3TextInputVariant.OUTLINED);
             editor.setPrefWidth(180.0);
             M3Button next = new M3Button("Next");
@@ -4112,7 +3998,7 @@ final class M3ControlStyleTest {
     /// Verifies that carousel accessibility reveal requests can target focusable descendants inside items.
     @Test
     void carouselAccessibleShowItemFocusesRequestedDescendant() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button firstPrimary = new M3Button("First primary");
             M3Button firstSecondary = new M3Button("First secondary");
             M3Button secondPrimary = new M3Button("Second primary");
@@ -4149,7 +4035,7 @@ final class M3ControlStyleTest {
     /// Verifies that carousel reveal requests can open installed rich tooltip action targets inside item content.
     @Test
     void carouselAccessibleShowItemRevealsNestedTooltipTargets() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button firstAction = new M3Button("First action");
             HBox firstItem = new HBox(firstAction);
             M3Button ownerAction = new M3Button("Settings action");
@@ -4222,7 +4108,7 @@ final class M3ControlStyleTest {
     /// Verifies that carousel reveal requests can open nested submenu targets inside item content.
     @Test
     void carouselAccessibleShowItemRevealsNestedMenuTargets() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button firstAction = new M3Button("First action");
             HBox firstItem = new HBox(firstAction);
             M3MenuItem archiveItem = new M3MenuItem("Archive item");
@@ -4273,7 +4159,7 @@ final class M3ControlStyleTest {
     /// Verifies that carousel reveal requests can open nested picker value targets inside item content wrappers.
     @Test
     void carouselAccessibleShowItemRevealsNestedPickerValueTargets() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button firstAction = new M3Button("First action");
             HBox firstItem = new HBox(firstAction);
             LocalDate targetDate = LocalDate.of(2026, 10, 12);
@@ -4320,7 +4206,7 @@ final class M3ControlStyleTest {
     /// Verifies that carousel reveal requests can open nested time picker value targets inside item content wrappers.
     @Test
     void carouselAccessibleShowItemRevealsNestedTimePickerValueTargets() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button firstAction = new M3Button("First action");
             HBox firstItem = new HBox(firstAction);
             LocalTime targetTime = LocalTime.of(14, 30);
@@ -4365,7 +4251,7 @@ final class M3ControlStyleTest {
     /// Verifies that carousel skins create an internal viewport and reveal selected items.
     @Test
     void carouselCreatesMaterialSkinAndScrollsSelectedItemIntoView() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Carousel carousel = new M3Carousel(
                     carouselTestItem("A"),
                     carouselTestItem("B"),
@@ -4422,7 +4308,7 @@ final class M3ControlStyleTest {
     /// Verifies that carousel viewports keep wheel ownership inside outer smooth scroll panes.
     @Test
     void carouselViewportKeepsWheelEventsInsideOuterSmoothScrollPane() {
-        FxTestUtils.assertNoM3CssTokenWarnings(() -> runOnFxThread(() -> {
+        FxTestUtils.assertNoM3CssTokenWarnings(() -> FxTestUtils.runOnFxThread(() -> {
             M3Carousel carousel = new M3Carousel(
                     carouselTestItem("A"),
                     carouselTestItem("B"),
@@ -4495,7 +4381,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable ScrollPane> viewportReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> carouselViewportScrollIsInProgress(viewportReference),
                     () -> describeCarouselViewportScrollState(
                             viewportReference,
@@ -4574,7 +4460,7 @@ final class M3ControlStyleTest {
     /// Verifies that snackbar action height tokens survive button interaction state CSS.
     @Test
     void snackbarActionHeightTokenSurvivesButtonInteractionStates() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
             snackbar.setStyle("-m3-action-container-height: 40px;");
             StackPane root = new StackPane(snackbar);
@@ -4600,7 +4486,7 @@ final class M3ControlStyleTest {
     /// Verifies that snackbar container height follows Material single-line and two-line tokens.
     @Test
     void snackbarContainerHeightFollowsLineCountTokens() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Snackbar singleLine = new M3Snackbar("Saved");
             M3Snackbar twoLine = new M3Snackbar(
                     "Snackbar messages wrap to two lines when the available width is constrained."
@@ -4651,7 +4537,7 @@ final class M3ControlStyleTest {
     /// Verifies that snackbar width tokens constrain host and skin layout.
     @Test
     void snackbarContainerWidthFollowsTokensAndHostBounds() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Snackbar shortSnackbar = new M3Snackbar("Saved", "Undo");
             M3Snackbar defaultSnackbar = new M3Snackbar(
                     "A longer snackbar message should grow until the Material maximum width token is reached.",
@@ -4748,7 +4634,7 @@ final class M3ControlStyleTest {
     /// Verifies that banner accessibility focus includes a focusable leading icon and action nodes.
     @Test
     void bannerAccessibleFocusIncludesIconAndActions() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button icon = new M3Button("Icon");
             M3Button action = new M3Button("Action");
             M3Button outside = new M3Button("Outside");
@@ -4806,7 +4692,7 @@ final class M3ControlStyleTest {
     /// Verifies that banner keyboard traversal follows direction and skips unreachable items.
     @Test
     void bannerKeyboardTraversalFollowsDirectionAndReachability() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button icon = new M3Button("Icon");
             M3Button hidden = new M3Button("Hidden");
             M3Button disabled = new M3Button("Disabled");
@@ -5039,7 +4925,7 @@ final class M3ControlStyleTest {
     /// Verifies that snackbars expose their rendered action button to accessibility clients.
     @Test
     void snackbarExposesAccessibleActionButton() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
             Pane root = new Pane(snackbar);
             Stage stage = new Stage();
@@ -5079,7 +4965,7 @@ final class M3ControlStyleTest {
     /// Verifies that snackbar action indexes delegate into action-owned accessibility targets.
     @Test
     void snackbarActionIndexRevealsRichTooltipActionTarget() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
             Pane root = new Pane(snackbar);
             Stage stage = new Stage();
@@ -5124,7 +5010,7 @@ final class M3ControlStyleTest {
     /// Verifies that snackbar action indexes reject unreachable nested action-owned targets.
     @Test
     void snackbarActionIndexRejectsDisabledRichTooltipActionTarget() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button outside = new M3Button("Outside");
             M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
             Pane root = new Pane(outside, snackbar);
@@ -5176,7 +5062,7 @@ final class M3ControlStyleTest {
     /// Verifies that snackbar action indexes reveal menu targets owned by rich tooltip action nodes.
     @Test
     void snackbarActionIndexRevealsMenuItemInsideRichTooltipAction() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
             Pane root = new Pane(snackbar);
             Stage stage = new Stage();
@@ -5232,7 +5118,7 @@ final class M3ControlStyleTest {
     /// Verifies that snackbar action indexes reject disabled menu targets owned by rich tooltip action nodes.
     @Test
     void snackbarActionIndexRejectsDisabledMenuItemInsideRichTooltipAction() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button outside = new M3Button("Outside");
             M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
             Pane root = new Pane(outside, snackbar);
@@ -5290,7 +5176,7 @@ final class M3ControlStyleTest {
     /// Verifies that snackbar action indexes reveal time picker targets owned by rich tooltip action nodes.
     @Test
     void snackbarActionIndexRevealsTimePickerValueInsideRichTooltipAction() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
             Pane root = new Pane(snackbar);
             Stage stage = new Stage();
@@ -5345,7 +5231,7 @@ final class M3ControlStyleTest {
     /// Verifies that snackbar action indexes reject out-of-range time picker targets before opening popups.
     @Test
     void snackbarActionIndexRejectsDisabledTimePickerValueInsideRichTooltipAction() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button outside = new M3Button("Outside");
             M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
             Pane root = new Pane(outside, snackbar);
@@ -5399,7 +5285,7 @@ final class M3ControlStyleTest {
     /// Verifies that snackbar action indexes reveal date-range picker targets owned by rich tooltip action nodes.
     @Test
     void snackbarActionIndexRevealsDateRangePickerValueInsideRichTooltipAction() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
             Pane root = new Pane(snackbar);
             Stage stage = new Stage();
@@ -5457,7 +5343,7 @@ final class M3ControlStyleTest {
     /// Verifies that snackbar action indexes reject out-of-range date-range targets before opening popups.
     @Test
     void snackbarActionIndexRejectsDisabledDateRangePickerValueInsideRichTooltipAction() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button outside = new M3Button("Outside");
             M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
             Pane root = new Pane(outside, snackbar);
@@ -5587,7 +5473,7 @@ final class M3ControlStyleTest {
     /// Verifies that snackbar hosts show action snackbars and route action events.
     @Test
     void snackbarHostShowsActionSnackbars() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3SnackbarHost host = new M3SnackbarHost();
             host.setDisplayDuration(Duration.INDEFINITE);
             AtomicInteger actionCount = new AtomicInteger();
@@ -5617,7 +5503,7 @@ final class M3ControlStyleTest {
     /// Verifies that snackbar hosts do not stretch snackbars to the full overlay size.
     @Test
     void snackbarHostKeepsSnackbarAtPreferredSizeInLargeOverlay() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3SnackbarHost host = new M3SnackbarHost();
             host.setDisplayDuration(Duration.INDEFINITE);
             StackPane root = new StackPane(new Region(), host);
@@ -5648,8 +5534,11 @@ final class M3ControlStyleTest {
     void snackbarHostRemovesDismissedSnackbars() throws InterruptedException {
         AtomicReference<@Nullable M3Snackbar> snackbarReference = new AtomicReference<>();
 
-        runOnFxThreadWhen(
-                () -> snackbarDetached(snackbarReference),
+        FxTestUtils.runOnFxThreadWhen(
+                () -> {
+                    @Nullable M3Snackbar snackbar = snackbarReference.get();
+                    return snackbar != null && snackbar.getParent() == null && !snackbar.isVisible();
+                },
                 () -> describeSnackbarState(
                         snackbarReference,
                         "Snackbar was not detached after dismissal"
@@ -5683,7 +5572,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3Snackbar> firstReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Snackbar> secondReference = new AtomicReference<>();
 
-        runOnFxThreadWhen(
+        FxTestUtils.runOnFxThreadWhen(
                 () -> queuedSnackbarShown(hostReference, firstReference, secondReference),
                 () -> describeSnackbarHostState(
                         hostReference,
@@ -5731,7 +5620,7 @@ final class M3ControlStyleTest {
     /// Verifies that snackbar hosts clear pending snackbars without dismissing the current snackbar.
     @Test
     void snackbarHostClearsQueuedSnackbars() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3SnackbarHost host = new M3SnackbarHost();
             host.setDisplayDuration(Duration.INDEFINITE);
             M3Snackbar first = new M3Snackbar("First");
@@ -5757,7 +5646,7 @@ final class M3ControlStyleTest {
     /// Verifies that snackbar hosts reset a snackbar when it is replaced immediately.
     @Test
     void snackbarHostResetsReplacedSnackbar() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3SnackbarHost host = new M3SnackbarHost();
             host.setDisplayDuration(Duration.INDEFINITE);
             M3Snackbar first = new M3Snackbar("First");
@@ -5786,7 +5675,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3Snackbar> firstReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Snackbar> secondReference = new AtomicReference<>();
 
-        runOnFxThreadWhen(
+        FxTestUtils.runOnFxThreadWhen(
                 () -> snackbarHostCleared(hostReference, firstReference, secondReference),
                 () -> describeSnackbarHostState(
                         hostReference,
@@ -5828,7 +5717,7 @@ final class M3ControlStyleTest {
     /// Verifies that snackbar hosts expose the current snackbar and queue to accessibility clients.
     @Test
     void snackbarHostExposesAccessibleStateAndActions() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3SnackbarHost host = new M3SnackbarHost();
             M3Snackbar first = new M3Snackbar("Saved", "Undo");
             M3Snackbar second = new M3Snackbar("Deleted");
@@ -5854,7 +5743,7 @@ final class M3ControlStyleTest {
     /// Verifies that snackbar hosts route focus to the current snackbar action and support Escape dismissal.
     @Test
     void snackbarHostSupportsAccessibleFocusAndKeyboardDismissal() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3SnackbarHost host = new M3SnackbarHost();
             host.setDisplayDuration(Duration.INDEFINITE);
             M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
@@ -5927,7 +5816,7 @@ final class M3ControlStyleTest {
     /// Verifies that snackbar hosts delegate current snackbar action indexes into action-owned targets.
     @Test
     void snackbarHostActionIndexRevealsCurrentRichTooltipActionTarget() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3SnackbarHost host = new M3SnackbarHost();
             host.setDisplayDuration(Duration.INDEFINITE);
             M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
@@ -5976,7 +5865,7 @@ final class M3ControlStyleTest {
     /// Verifies that snackbar hosts can promote queued snackbars before indexed action-owned target reveal.
     @Test
     void snackbarHostActionIndexRevealsPromotedQueuedRichTooltipActionTarget() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3SnackbarHost host = new M3SnackbarHost();
             host.setDisplayDuration(Duration.INDEFINITE);
             M3Snackbar currentSnackbar = new M3Snackbar("Saved", "Undo");
@@ -6037,7 +5926,7 @@ final class M3ControlStyleTest {
     /// Verifies that snackbar hosts reject disabled action-owned targets before changing focus.
     @Test
     void snackbarHostActionIndexRejectsDisabledRichTooltipActionTarget() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3SnackbarHost host = new M3SnackbarHost();
             host.setDisplayDuration(Duration.INDEFINITE);
             M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
@@ -6090,7 +5979,7 @@ final class M3ControlStyleTest {
     /// Verifies that hidden or disabled queued snackbars are not promoted by explicit reveal requests.
     @Test
     void snackbarHostRejectsUnreachableQueuedSnackbarRevealWithoutPromoting() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3SnackbarHost host = new M3SnackbarHost();
             host.setDisplayDuration(Duration.INDEFINITE);
             M3Snackbar currentSnackbar = new M3Snackbar("Saved", "Undo");
@@ -6167,7 +6056,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3Snackbar> secondReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Button> firstActionReference = new AtomicReference<>();
 
-        runOnFxThreadWhen(
+        FxTestUtils.runOnFxThreadWhen(
                 () -> queuedSnackbarShown(hostReference, firstReference, secondReference)
                         && snackbarFocusNodeFocused(secondReference.get()),
                 () -> describeSnackbarHostState(
@@ -6244,7 +6133,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3Snackbar> firstReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Snackbar> secondReference = new AtomicReference<>();
 
-        runOnFxThreadWhen(
+        FxTestUtils.runOnFxThreadWhen(
                 () -> queuedSnackbarShown(hostReference, firstReference, secondReference)
                         && outsideReference.get() != null
                         && Objects.requireNonNull(outsideReference.get(), "outside").isFocused(),
@@ -6330,7 +6219,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3Snackbar> firstReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Snackbar> secondReference = new AtomicReference<>();
 
-        runOnFxThreadWhen(
+        FxTestUtils.runOnFxThreadWhen(
                 () -> queuedSnackbarShown(hostReference, firstReference, secondReference),
                 () -> {
                     M3SnackbarHost host = new M3SnackbarHost();
@@ -6388,7 +6277,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3Snackbar> firstReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Snackbar> secondReference = new AtomicReference<>();
 
-        runOnFxThreadWhen(
+        FxTestUtils.runOnFxThreadWhen(
                 () -> queuedSnackbarShown(hostReference, firstReference, secondReference),
                 () -> {
                     M3SnackbarHost host = new M3SnackbarHost();
@@ -6449,7 +6338,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3Snackbar> firstReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Snackbar> secondReference = new AtomicReference<>();
 
-        runOnFxThreadWhenStable(
+        FxTestUtils.runOnFxThreadWhenStable(
                 () -> queuedSnackbarStillCurrent(hostReference, firstReference, secondReference),
                 SNACKBAR_DISABLED_TIMER_STABLE_PULSES,
                 () -> {
@@ -6620,7 +6509,7 @@ final class M3ControlStyleTest {
     /// Verifies that dialog panes expose content and action buttons as indexed accessibility items.
     @Test
     void dialogPaneExposesIndexedAccessibleItems() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button contentAction = new M3Button("Content action");
             M3Button outsideAction = new M3Button("Outside action");
             M3DialogPane dialogPane = new M3DialogPane();
@@ -6682,7 +6571,7 @@ final class M3ControlStyleTest {
     /// Verifies that dialog action rows support directional focus without stealing content editing keys.
     @Test
     void dialogPaneActionKeyboardTraversalFollowsDirectionWithoutStealingContentKeys() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextField content = new M3TextField("Editable content");
             ButtonType cancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
             ButtonType skip = new ButtonType("Skip", ButtonBar.ButtonData.OTHER);
@@ -6754,7 +6643,7 @@ final class M3ControlStyleTest {
     /// Verifies that dialog panes expose focused descendants from nested popups hosted by dialog content.
     @Test
     void dialogPaneFocusNodeTracksNestedContentPopups() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3MenuItem pdf = new M3MenuItem("PDF");
             M3MenuItem html = new M3MenuItem("HTML");
             M3SubMenuItem recent = new M3SubMenuItem("Recent", pdf, html);
@@ -6832,7 +6721,7 @@ final class M3ControlStyleTest {
     /// Verifies that dialog panes fall back to the default action when content is not focusable.
     @Test
     void dialogPaneFocusNodeUsesDefaultActionWhenContentIsStatic() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3DialogPane dialogPane = new M3DialogPane();
             dialogPane.setContent(new Label("Dialog body"));
             dialogPane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
@@ -6860,7 +6749,7 @@ final class M3ControlStyleTest {
     /// Verifies that Material dialogs install a Material dialog pane and stylesheet.
     @Test
     void dialogInstallsMaterialPaneAndStylesheet() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Dialog<ButtonType> dialog = new M3Dialog<>(
                     "Title",
                     "Header",
@@ -6888,7 +6777,7 @@ final class M3ControlStyleTest {
     /// Verifies that Material dialogs can apply and clear inline theme declarations.
     @Test
     void dialogAppliesAndClearsTheme() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Dialog<Void> dialog = new M3Dialog<>();
             M3DialogPane pane = dialog.getM3DialogPane();
             M3Theme theme = M3Theme.defaultTheme();
@@ -6913,7 +6802,7 @@ final class M3ControlStyleTest {
     /// Verifies that Material dialogs inherit the owner scene theme when they are shown.
     @Test
     void dialogInheritsOwnerSceneTheme() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Stage owner = new Stage();
             try {
                 Pane root = new Pane();
@@ -6939,7 +6828,7 @@ final class M3ControlStyleTest {
     /// Verifies that Material dialogs inherit a local owner node theme when they are shown.
     @Test
     void dialogInheritsOwnerNodeLocalTheme() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Label ownerNode = new Label("Open dialog");
             Pane localRoot = new Pane(ownerNode);
             Pane root = new Pane(localRoot);
@@ -6962,7 +6851,7 @@ final class M3ControlStyleTest {
     /// Verifies that shown dialogs follow runtime owner scene theme changes.
     @Test
     void dialogFollowsRuntimeOwnerSceneThemeChanges() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Stage owner = new Stage();
             try {
                 Pane root = new Pane();
@@ -7001,7 +6890,7 @@ final class M3ControlStyleTest {
     /// Verifies that shown dialogs follow owner-scene root replacement.
     @Test
     void dialogFollowsRuntimeOwnerSceneRootReplacement() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Stage owner = new Stage();
             try {
                 Pane firstRoot = new Pane();
@@ -7050,7 +6939,7 @@ final class M3ControlStyleTest {
     /// Verifies that shown dialogs follow runtime local owner-node theme changes.
     @Test
     void dialogFollowsRuntimeOwnerNodeLocalThemeChanges() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Label ownerNode = new Label("Open dialog");
             Pane localRoot = new Pane(ownerNode);
             Pane root = new Pane(localRoot);
@@ -7085,7 +6974,7 @@ final class M3ControlStyleTest {
     /// Verifies that shown dialogs follow owner-node reparenting to a different local theme root.
     @Test
     void dialogFollowsRuntimeOwnerNodeReparentingToLocalTheme() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Label ownerNode = new Label("Open dialog");
             Pane firstLocalRoot = new Pane(ownerNode);
             Pane secondLocalRoot = new Pane();
@@ -7119,7 +7008,7 @@ final class M3ControlStyleTest {
     /// Verifies that shown dialogs follow runtime owner-window scene changes.
     @Test
     void dialogFollowsRuntimeOwnerWindowSceneChanges() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Stage owner = new Stage();
             try {
                 Pane firstRoot = new Pane();
@@ -7187,7 +7076,7 @@ final class M3ControlStyleTest {
     /// Verifies that dialogs initialized from detached owner nodes resolve the window owner before showing.
     @Test
     void dialogRefreshesDetachedOwnerNodeWindowBeforeShowing() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Stage owner = new Stage();
             try {
                 Label ownerNode = new Label("Open dialog");
@@ -7211,7 +7100,7 @@ final class M3ControlStyleTest {
     /// Verifies that Material dialog pane access rejects a replaced plain pane.
     @Test
     void dialogRejectsReplacedPlainPane() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Dialog<Void> dialog = new M3Dialog<>();
 
             dialog.setDialogPane(new DialogPane());
@@ -7484,7 +7373,7 @@ final class M3ControlStyleTest {
     /// Verifies that filled text input labels and text keep stable vertical placement in a shown window.
     @Test
     void filledTextInputLayoutKeepsFloatingLabelAndTextAlignedInWindow() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextField textField = createTextField("support@example.com", M3TextInputVariant.FILLED);
             textField.setPrefWidth(340.0);
             M3TextInputLayout layout = new M3TextInputLayout(textField, "Email address");
@@ -7544,7 +7433,7 @@ final class M3ControlStyleTest {
     /// Verifies that a focused outlined text input layout keeps text visually centered in a shown window.
     @Test
     void focusedOutlinedTextInputLayoutKeepsTextCenteredInWindowAfterEdits() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextField textField = createTextField("", M3TextInputVariant.OUTLINED);
             textField.setPrefWidth(360.0);
 
@@ -7635,7 +7524,7 @@ final class M3ControlStyleTest {
     /// Verifies that focused outlined text areas do not expose the JavaFX inner content background.
     @Test
     void focusedOutlinedTextAreaKeepsTransparentContentBackgroundInWindow() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextArea textArea = createTextArea(
                     "Material text areas share field colors\nbut keep multi-line height tokens.",
                     M3TextInputVariant.OUTLINED
@@ -7692,7 +7581,7 @@ final class M3ControlStyleTest {
     /// Verifies that multiline RTL inputs do not receive the single-line text field edge correction.
     @Test
     void rightToLeftOutlinedTextAreaKeepsApplicationTranslationInWindow() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextArea textArea = createTextArea("M3FX RTL\nSecond line", M3TextInputVariant.OUTLINED);
             textArea.setTranslateX(6.0);
             textArea.setPrefSize(420.0, 128.0);
@@ -7762,7 +7651,7 @@ final class M3ControlStyleTest {
     /// Verifies that RTL outlined inputs keep floating labels, rendered text ink, and actions in separate slots.
     @Test
     void rightToLeftOutlinedTextInputSeparatesLabelTextAndTrailingActionInWindow() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextField textField = createTextField("M3FX RTL", M3TextInputVariant.OUTLINED);
             textField.setPrefWidth(360.0);
 
@@ -7855,7 +7744,7 @@ final class M3ControlStyleTest {
     /// Verifies that asymmetric RTL input adornments reserve the physical edge that owns the leading slot.
     @Test
     void rightToLeftOutlinedTextInputReservesLeadingOnlyAdornmentSpaceInWindow() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextField textField = createTextField("M3FX RTL", M3TextInputVariant.OUTLINED);
             textField.setPrefWidth(360.0);
 
@@ -7934,7 +7823,7 @@ final class M3ControlStyleTest {
     /// Verifies that bound application translation is not overwritten by layout-owned RTL correction.
     @Test
     void rightToLeftOutlinedTextInputPreservesBoundApplicationTranslationInWindow() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextField textField = createTextField("M3FX RTL", M3TextInputVariant.OUTLINED);
             SimpleDoubleProperty applicationTranslate = new SimpleDoubleProperty(9.0);
             textField.translateXProperty().bind(applicationTranslate);
@@ -7997,7 +7886,7 @@ final class M3ControlStyleTest {
     /// Verifies that bound application padding is not overwritten by layout-owned adornment padding.
     @Test
     void rightToLeftOutlinedTextInputPreservesBoundApplicationPaddingInWindow() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextField textField = createTextField("M3FX RTL", M3TextInputVariant.OUTLINED);
             SimpleObjectProperty<Insets> applicationPadding = new SimpleObjectProperty<>(
                     new Insets(10.0, 64.0, 14.0, 24.0)
@@ -8068,7 +7957,7 @@ final class M3ControlStyleTest {
     /// Verifies that asymmetric RTL input edge correction is applied and cleared during runtime direction changes.
     @Test
     void rightToLeftOutlinedTextInputLeadingOnlyOffsetTracksRuntimeOrientationChanges() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextField textField = createTextField("M3FX RTL", M3TextInputVariant.OUTLINED);
             textField.setTranslateX(4.0);
             textField.setPrefWidth(360.0);
@@ -8270,7 +8159,7 @@ final class M3ControlStyleTest {
     /// Verifies that RTL picker fields keep editor ink away from the trailing open button in a shown window.
     @Test
     void rightToLeftPickerFieldSeparatesEditorInkAndOpenButtonInWindow() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 6, 27));
             field.getEditor().setVariant(M3TextInputVariant.OUTLINED);
             field.getInputLayout().setLabelText("RTL date");
@@ -8350,7 +8239,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3TextInputLayout> layoutReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> textInputLayoutFloatingPresentationIsAnimating(layoutReference),
                     () -> showObservableTextInputLayout(stageReference, rootReference, layoutReference, false),
                     () -> {
@@ -8360,7 +8249,7 @@ final class M3ControlStyleTest {
                         layout.setSupportingText("Helper text");
                     }
             );
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> textInputLayoutSupportingRowPresentationIsAnimating(layoutReference),
                     () -> {
                     },
@@ -8369,7 +8258,7 @@ final class M3ControlStyleTest {
                     )
             );
         } finally {
-            runOnFxThread(() -> {
+            FxTestUtils.runOnFxThread(() -> {
                 @Nullable Pane root = rootReference.get();
                 if (root != null) {
                     M3MotionSettings.clearAnimationsEnabled(root);
@@ -8391,7 +8280,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3TextInputLayout> layoutReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> textInputLayoutFullPresentationIsAnimating(layoutReference),
                     () -> showObservableTextInputLayout(stageReference, rootReference, layoutReference, true),
                     () -> {
@@ -8410,7 +8299,7 @@ final class M3ControlStyleTest {
                     }
             );
         } finally {
-            runOnFxThread(() -> {
+            FxTestUtils.runOnFxThread(() -> {
                 @Nullable Pane root = rootReference.get();
                 if (root != null) {
                     M3MotionSettings.clearAnimationsEnabled(root);
@@ -8481,7 +8370,7 @@ final class M3ControlStyleTest {
     /// Verifies that text input layouts route accessibility focus through input and adornment targets.
     @Test
     void textInputLayoutRoutesAccessibleFocusAcrossInputAndAdornments() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextField textField = new M3TextField("abc");
             M3Button leading = new M3Button("Lead");
             M3IconButton trailing = createIconButton("T");
@@ -8553,7 +8442,7 @@ final class M3ControlStyleTest {
     /// Verifies that text input layouts traverse slots without stealing editor navigation keys.
     @Test
     void textInputLayoutKeyboardTraversalFollowsDirectionWithoutStealingEditorKeys() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextField textField = new M3TextField("abc");
             M3Button leading = new M3Button("Lead");
             M3IconButton trailing = createIconButton("T");
@@ -8626,7 +8515,7 @@ final class M3ControlStyleTest {
     /// Verifies that built-in clear buttons participate in text input layout slot traversal.
     @Test
     void textInputLayoutKeyboardTraversalIncludesClearButtonSlot() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextField textField = new M3TextField("abc");
             M3Button leading = new M3Button("Lead");
             M3TextInputLayout layout = new M3TextInputLayout(textField, "Helper text");
@@ -8677,7 +8566,7 @@ final class M3ControlStyleTest {
     /// Verifies that text input layouts expose focused descendants inside compound adornment slots.
     @Test
     void textInputLayoutRoutesAccessibleFocusToDescendantAdornments() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextField textField = new M3TextField("abc");
             M3Button leadingPrimary = new M3Button("Leading primary");
             M3Button leadingSecondary = new M3Button("Leading secondary");
@@ -8720,7 +8609,7 @@ final class M3ControlStyleTest {
     /// Verifies that text input layouts route explicit reveal actions into popup-backed adornments.
     @Test
     void textInputLayoutRoutesAccessibleFocusThroughPopupAdornments() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3MenuItem leadingTarget = new M3MenuItem("Leading target");
             M3SubMenuItem leadingSubMenu = new M3SubMenuItem("Leading submenu", leadingTarget);
             M3MenuButton leadingMenuButton = new M3MenuButton("Leading menu", leadingSubMenu);
@@ -8775,7 +8664,7 @@ final class M3ControlStyleTest {
     /// Verifies that hidden text input layout owners do not route accessibility focus into children.
     @Test
     void textInputLayoutSkipsAccessibleFocusWhenOwnerHiddenByAncestor() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextField textField = new M3TextField("abc");
             M3IconButton trailing = createIconButton("T");
             M3TextInputLayout layout = new M3TextInputLayout(textField, "Helper text");
@@ -8817,7 +8706,7 @@ final class M3ControlStyleTest {
     /// Verifies that text input layouts mirror logical adornments and floating label geometry in right-to-left mode.
     @Test
     void textInputLayoutMirrorsAdornmentsAndFloatingLabelForRightToLeft() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextField textField = createTextField("M3FX", M3TextInputVariant.OUTLINED);
             textField.setPrefWidth(360.0);
             M3TextInputLayout layout = new M3TextInputLayout(textField, "Project name");
@@ -8857,7 +8746,7 @@ final class M3ControlStyleTest {
     /// Verifies that text input layouts reflow logical geometry after runtime orientation changes.
     @Test
     void textInputLayoutReflowsAdornmentsAndFloatingLabelAfterRuntimeOrientationChanges() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextField textField = createTextField("M3FX", M3TextInputVariant.OUTLINED);
             textField.setPrefWidth(360.0);
             M3TextInputLayout layout = new M3TextInputLayout(textField, "Project name");
@@ -8905,7 +8794,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3IconButton> trailingButtonReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> trailingIconRippleIsVisible(trailingButtonReference),
                     () -> {
                         M3PasswordField passwordField = createPasswordField("Hello", M3TextInputVariant.OUTLINED);
@@ -8964,7 +8853,7 @@ final class M3ControlStyleTest {
                     }
             );
         } finally {
-            runOnFxThread(() -> {
+            FxTestUtils.runOnFxThread(() -> {
                 @Nullable M3IconButton trailingButton = trailingButtonReference.get();
                 if (trailingButton != null && trailingButton.isArmed()) {
                     trailingButton.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 20.0, 20.0, false));
@@ -9081,7 +8970,7 @@ final class M3ControlStyleTest {
     /// Verifies that visible supporting rows do not replay entry motion while validation refreshes during edits.
     @Test
     void textInputLayoutDoesNotFlickerVisibleValidationFeedbackOnEdits() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextField textField = new M3TextField();
             textField.setPrefWidth(280.0);
             M3TextInputLayout layout = new M3TextInputLayout(textField, "Email", "Helper text");
@@ -9236,7 +9125,7 @@ final class M3ControlStyleTest {
     /// Verifies that focus-loss validation activates configured validators.
     @Test
     void textInputLayoutValidatesOnFocusLoss() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextField textField = new M3TextField();
             M3Button nextButton = new M3Button("Next");
             M3TextInputLayout layout = new M3TextInputLayout(textField, "Email", "Helper text");
@@ -9440,7 +9329,7 @@ final class M3ControlStyleTest {
     /// Verifies that text input error styles resolve to the Material error color token.
     @Test
     void textInputErrorStylesUseErrorColor() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Color errorColor = Color.rgb(186, 26, 26);
             M3TextField filledField = new M3TextField("Filled error");
             filledField.setError(true);
@@ -9528,7 +9417,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable Label> targetReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Tooltip> tooltipReference = new AtomicReference<>();
 
-        runOnFxThreadWhen(
+        FxTestUtils.runOnFxThreadWhen(
                 () -> tooltipShowingWithFocus(tooltipReference, targetReference),
                 () -> {
                     Label target = new Label("Target");
@@ -9572,7 +9461,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3RichTooltip> tooltipReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Button> actionReference = new AtomicReference<>();
 
-        runOnFxThreadWhen(
+        FxTestUtils.runOnFxThreadWhen(
                 () -> tooltipShowing(tooltipReference),
                 () -> {
                     Stage stage = new Stage();
@@ -9631,7 +9520,7 @@ final class M3ControlStyleTest {
     /// Verifies that installed tooltip popups follow owner node orientation changes while showing.
     @Test
     void tooltipPopupSynchronizesOwnerNodeOrientationWhileShowing() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Label target = new Label("Target");
             target.setMinSize(96.0, 32.0);
             M3Button action = createButton("Action", M3ButtonVariant.TEXT);
@@ -9681,7 +9570,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3Tooltip> tooltipReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> tooltipShowing(tooltipReference),
                     () -> {
                         Label target = new Label("Target");
@@ -9730,7 +9619,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3Tooltip> tooltipReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> tooltipShowing(tooltipReference),
                     () -> {
                         Label target = new Label("Target");
@@ -9768,7 +9657,7 @@ final class M3ControlStyleTest {
                     }
             );
 
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> tooltipHidden(tooltipReference),
                     () -> {
                     },
@@ -9788,7 +9677,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3Tooltip> tooltipReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> tooltipShowing(tooltipReference),
                     () -> {
                         Label target = new Label("Target");
@@ -9830,7 +9719,7 @@ final class M3ControlStyleTest {
                     }
             );
 
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> tooltipHidden(tooltipReference),
                     () -> {
                     },
@@ -9875,7 +9764,7 @@ final class M3ControlStyleTest {
     /// Verifies that rich tooltip token CSS leaves caller-provided button styles untouched.
     @Test
     void richTooltipTokenCssDoesNotRewriteActionButtonInlineStyle() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3Button action = new M3Button("Action");
             action.setStyle("-m3-horizontal-padding: 20px;");
@@ -9917,7 +9806,7 @@ final class M3ControlStyleTest {
     /// Verifies that tooltip component tokens apply profile-specific popup metrics.
     @Test
     void tooltipAppliesProfileMetrics() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3Tooltip plainTooltip = new M3Tooltip("Details");
             M3RichTooltip richTooltip = new M3RichTooltip("Title", "Supporting text", new M3Button("Action"));
@@ -10006,7 +9895,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3RichTooltip> tooltipReference = new AtomicReference<>();
         AtomicReference<@Nullable Node> tooltipRootReference = new AtomicReference<>();
 
-        runOnFxThreadWhenStable(
+        FxTestUtils.runOnFxThreadWhenStable(
                 () -> {
                     @Nullable Label target = targetReference.get();
                     @Nullable M3RichTooltip tooltip = tooltipReference.get();
@@ -10070,7 +9959,7 @@ final class M3ControlStyleTest {
     /// Verifies that a rich tooltip popup action remains clickable after pointer transfer from the owner.
     @Test
     void richTooltipPopupActionFiresAfterPointerTransfer() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             Label target = new Label("Target");
             AtomicInteger actionCount = new AtomicInteger();
@@ -10135,7 +10024,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3RichTooltip> tooltipReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Button> actionReference = new AtomicReference<>();
 
-        runOnFxThreadWhen(
+        FxTestUtils.runOnFxThreadWhen(
                 () -> tooltipShowingWithFocus(tooltipReference, targetReference),
                 () -> {
                     Stage stage = new Stage();
@@ -10196,7 +10085,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3Button> disabledActionReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Button> secondActionReference = new AtomicReference<>();
 
-        runOnFxThreadWhen(
+        FxTestUtils.runOnFxThreadWhen(
                 () -> tooltipShowingWithFocus(tooltipReference, targetReference),
                 () -> {
                     Stage stage = new Stage();
@@ -10376,7 +10265,7 @@ final class M3ControlStyleTest {
     /// Verifies that installed tooltips follow scene theme changes after installation.
     @Test
     void tooltipReinheritsRuntimeSceneThemeChanges() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Label target = new Label("Target");
             Pane root = new Pane(target);
             Scene scene = new Scene(root, 240.0, 120.0);
@@ -10424,7 +10313,7 @@ final class M3ControlStyleTest {
     /// Verifies that installed tooltips follow scene root replacement while the target remains attached.
     @Test
     void tooltipReinheritsRuntimeSceneRootReplacement() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Label target = new Label("Target");
             Pane targetContainer = new Pane(target);
             Pane firstRoot = new Pane(targetContainer);
@@ -10493,7 +10382,7 @@ final class M3ControlStyleTest {
     /// Verifies that installed tooltips follow local parent theme changes after installation.
     @Test
     void tooltipReinheritsRuntimeLocalParentThemeChanges() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Label target = new Label("Target");
             Pane localRoot = new Pane(target);
             Pane root = new Pane(localRoot);
@@ -10542,7 +10431,7 @@ final class M3ControlStyleTest {
     /// Verifies that installed tooltips follow owner subtree reparenting between local theme roots.
     @Test
     void tooltipReinheritsRuntimeLocalParentThemeAfterReparenting() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Label target = new Label("Target");
             Pane firstLocalRoot = new Pane(target);
             Pane secondLocalRoot = new Pane();
@@ -10712,7 +10601,7 @@ final class M3ControlStyleTest {
     /// Verifies that fallback text glyphs keep a padded line box instead of touching clipped edges.
     @Test
     void iconFallbackGlyphKeepsClearSnapshotEdges() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Icon icon = new M3Icon("M", M3IconSize.SMALL, M3IconVariant.PRIMARY);
             StackPane root = new StackPane(icon);
             root.setStyle("-fx-background-color: white; " + visualTestColors());
@@ -10755,7 +10644,7 @@ final class M3ControlStyleTest {
     void disclosureIconAnimatesExpandedState() throws InterruptedException {
         AtomicReference<@Nullable SVGPath> shape = new AtomicReference<>();
 
-        runOnFxThreadWhen(
+        FxTestUtils.runOnFxThreadWhen(
                 () -> {
                     @Nullable SVGPath arrow = shape.get();
                     return arrow != null && Math.abs(arrow.getRotate()) <= 0.01;
@@ -10814,7 +10703,7 @@ final class M3ControlStyleTest {
     /// Verifies that disclosure icons render inside fixed list item icon slots without clipping.
     @Test
     void disclosureIconFitsNavigationDrawerSlot() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3DisclosureIcon disclosure = new M3DisclosureIcon(true);
             M3ListItem groupItem = new M3ListItem("Date & time pickers");
             groupItem.setTrailingMedia(disclosure, M3ListItemSlotSize.ICON);
@@ -10952,7 +10841,7 @@ final class M3ControlStyleTest {
     /// Verifies that toggle icon button graphics stay centered in their fixed touch target.
     @Test
     void iconToggleButtonCentersGraphicContent() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3IconToggleButton standard = new M3IconToggleButton("S");
             M3IconToggleButton tonal = createIconToggleButton("B", M3IconToggleButtonVariant.TONAL, true);
             M3IconToggleButton outlined = createIconToggleButton("O", M3IconToggleButtonVariant.OUTLINED, false);
@@ -11357,7 +11246,8 @@ final class M3ControlStyleTest {
         assertEquals(vibrant, selectedContainer.getPseudoClassStates().contains(vibrantPseudoClass));
         assertRegionFill(menu, expectedMenuFill);
         assertRegionFill(selectedContainer, expectedSelectedFill);
-        assertEquals(expectedSelectedTextFill, listItemHeadline(save).getTextFill());
+        Label selectedHeadline = assertInstanceOf(Label.class, save.lookup(".m3-list-item-headline"));
+        assertEquals(expectedSelectedTextFill, selectedHeadline.getTextFill());
         assertRegionFill(lookupRegion(open, ".m3-state-layer"), expectedStateLayerFill);
     }
 
@@ -11375,10 +11265,7 @@ final class M3ControlStyleTest {
                 + "-m3-color-on-surface-variant: rgb(28,29,30);";
     }
 
-    /// Returns the rendered headline label for a list item.
-    private static Label listItemHeadline(M3ListItem item) {
-        return assertInstanceOf(Label.class, item.lookup(".m3-list-item-headline"));
-    }
+
     /// Verifies that menu item action events bubble through the menu.
     @Test
     void menuItemActionsBubbleThroughMenu() {
@@ -11466,7 +11353,7 @@ final class M3ControlStyleTest {
     /// Verifies that menu section headers and dividers render as grouped menu content.
     @Test
     void menuSectionHeaderSnapshotRendersGroupedContent() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3MenuSectionHeader fileHeader = new M3MenuSectionHeader("File");
             M3MenuItem open = new M3MenuItem("Open", visualIcon("folder"));
             M3SubMenuItem export = new M3SubMenuItem("Export", new M3MenuItem("PDF"));
@@ -11753,7 +11640,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3SubMenuItem> itemReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhen(() -> {
+            FxTestUtils.runOnFxThreadWhen(() -> {
                 @Nullable M3SubMenuItem item = itemReference.get();
                 return item != null && item.isSubMenuShowing();
             }, () -> {
@@ -11794,7 +11681,7 @@ final class M3ControlStyleTest {
                 ));
             });
 
-            runOnFxThreadWhen(() -> {
+            FxTestUtils.runOnFxThreadWhen(() -> {
                 @Nullable M3SubMenuItem item = itemReference.get();
                 return item != null && !item.isSubMenuShowing();
             }, () -> {
@@ -11802,7 +11689,7 @@ final class M3ControlStyleTest {
                 item.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_EXITED, 8.0, 8.0, false));
             }, () -> assertFalse(Objects.requireNonNull(itemReference.get(), "submenu item").isSubMenuShowing()));
         } finally {
-            runOnFxThread(() -> {
+            FxTestUtils.runOnFxThread(() -> {
                 @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -11986,7 +11873,7 @@ final class M3ControlStyleTest {
     /// Verifies that popup menu surfaces preserve application-bound minimum widths.
     @Test
     void popupMenuSurfacesPreserveBoundMinWidths() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3SubMenuItem subMenuItem = new M3SubMenuItem("Move to", new M3MenuItem("Archive"));
             M3MenuButton menuButton = new M3MenuButton("More", new M3MenuItem("Duplicate"), subMenuItem);
             SimpleDoubleProperty menuMinWidth = new SimpleDoubleProperty(136.0);
@@ -12033,7 +11920,7 @@ final class M3ControlStyleTest {
     /// Verifies that popup menus activate focused items and reveal requested menu content.
     @Test
     void popupMenusActivateFocusedItemsAndRevealRequestedContent() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3MenuItem open = new M3MenuItem("Open");
             M3MenuItem pdf = new M3MenuItem("PDF");
             M3SubMenuItem export = new M3SubMenuItem("Export", pdf);
@@ -12061,7 +11948,7 @@ final class M3ControlStyleTest {
             }
         });
 
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3MenuItem first = new M3MenuItem("First");
             M3MenuItem second = new M3MenuItem("Second");
             M3MenuButton menuButton = new M3MenuButton("More", first, second);
@@ -12084,7 +11971,7 @@ final class M3ControlStyleTest {
     /// Verifies that popup menu buttons preserve menu type-ahead navigation across show and hide cycles.
     @Test
     void menuButtonPopupSupportsTypeAheadKeyboardNavigation() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3MenuItem archive = new M3MenuItem("Archive");
             M3MenuItem settings = new M3MenuItem("Settings");
             M3MenuItem share = new M3MenuItem("Share");
@@ -12121,7 +12008,7 @@ final class M3ControlStyleTest {
     /// Verifies that menu button popups inherit a locally installed parent theme.
     @Test
     void menuButtonPopupInheritsLocalParentThemeContext() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3MenuItem archive = new M3MenuItem("Archive");
             M3MenuButton menuButton = new M3MenuButton("More", archive);
             M3Theme localTheme = M3Theme.defaultTheme();
@@ -12151,7 +12038,7 @@ final class M3ControlStyleTest {
     /// Verifies that an already open menu button popup follows runtime scene theme changes.
     @Test
     void menuButtonPopupReinheritsRuntimeSceneThemeChanges() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3MenuButton menuButton = new M3MenuButton("More", new M3MenuItem("Archive"));
             M3Theme baselineTheme = M3Theme.defaultTheme();
             M3Theme expressiveDarkTheme = M3Theme.fromSeed(
@@ -12192,7 +12079,7 @@ final class M3ControlStyleTest {
     /// Verifies that generated theme rules keep higher priority than popup control stylesheets.
     @Test
     void popupContextSynchronizerKeepsThemeStylesheetAfterPopupControlStylesheets() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Label owner = new Label("Owner");
             Pane ownerContainer = new Pane(owner);
             Pane root = new Pane(ownerContainer);
@@ -12245,7 +12132,7 @@ final class M3ControlStyleTest {
     /// Verifies that popup theme synchronizers follow scene root replacement.
     @Test
     void popupContextSynchronizerReinheritsRuntimeSceneRootReplacement() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Label owner = new Label("Owner");
             Pane ownerContainer = new Pane(owner);
             Pane popupRoot = new Pane();
@@ -12308,7 +12195,7 @@ final class M3ControlStyleTest {
     /// Verifies that popup theme synchronizers follow owner subtree reparenting between local themes.
     @Test
     void popupContextSynchronizerReinheritsRuntimeLocalThemeAfterReparenting() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Label owner = new Label("Owner");
             Pane ownerContainer = new Pane(owner);
             Pane popupRoot = new Pane();
@@ -12357,7 +12244,7 @@ final class M3ControlStyleTest {
     /// Verifies that popup theme synchronizers observe local themes installed after the popup is already open.
     @Test
     void popupContextSynchronizerTracksRuntimeLocalThemeInstallation() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Label owner = new Label("Owner");
             Pane ownerContainer = new Pane(owner);
             Pane root = new Pane(ownerContainer);
@@ -12401,7 +12288,7 @@ final class M3ControlStyleTest {
     /// Verifies that stopped popup theme synchronizers no longer observe owner context changes.
     @Test
     void popupContextSynchronizerStopsRuntimeContextObservation() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Label owner = new Label("Owner");
             Pane ownerContainer = new Pane(owner);
             Pane root = new Pane(ownerContainer);
@@ -12438,7 +12325,7 @@ final class M3ControlStyleTest {
     /// Verifies that an already open submenu popup follows runtime parent menu theme changes.
     @Test
     void subMenuPopupReinheritsRuntimeParentMenuThemeChanges() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3SubMenuItem subMenuItem = new M3SubMenuItem("Move to", new M3MenuItem("Archive"));
             M3MenuButton menuButton = new M3MenuButton("More", new M3MenuItem("Duplicate"), subMenuItem);
             M3Theme baselineTheme = M3Theme.defaultTheme();
@@ -12483,7 +12370,7 @@ final class M3ControlStyleTest {
     /// Verifies that an already open picker-field popup follows runtime scene theme changes.
     @Test
     void pickerFieldPopupReinheritsRuntimeSceneThemeChanges() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 6, 15));
             M3Theme baselineTheme = M3Theme.defaultTheme();
             M3Theme expressiveDarkTheme = M3Theme.fromSeed(
@@ -12525,7 +12412,7 @@ final class M3ControlStyleTest {
     /// Verifies that an already open date-range picker-field popup follows runtime scene theme changes.
     @Test
     void dateRangePickerFieldPopupReinheritsRuntimeSceneThemeChanges() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3DateRangePickerField field = new M3DateRangePickerField(
                     LocalDate.of(2026, 6, 15),
                     LocalDate.of(2026, 6, 20)
@@ -12570,7 +12457,7 @@ final class M3ControlStyleTest {
     /// Verifies that menu button accessibility focus requests follow the active popup focus branch.
     @Test
     void menuButtonRoutesAccessibleFocusAcrossPopupBranches() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3MenuItem open = new M3MenuItem("Open");
             M3MenuItem save = new M3MenuItem("Save");
             M3MenuButton menuButton = new M3MenuButton("More", open, save);
@@ -12609,7 +12496,7 @@ final class M3ControlStyleTest {
     /// Verifies that popup menus prefer selected items for default accessibility focus requests.
     @Test
     void popupMenusPreferSelectedAccessibleFocusTargets() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3MenuItem menuOpen = new M3MenuItem("Open");
             M3MenuItem menuSave = new M3MenuItem("Save");
             M3Menu menu = new M3Menu(menuOpen, menuSave);
@@ -12668,7 +12555,7 @@ final class M3ControlStyleTest {
     /// Verifies that accessibility item requests can open nested menu branches and focus descendants.
     @Test
     void popupMenusOpenNestedBranchesForAccessibleTargets() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3MenuItem pdf = new M3MenuItem("PDF");
             M3SubMenuItem export = new M3SubMenuItem("Export", pdf);
             M3MenuButton menuButton = new M3MenuButton("More", export);
@@ -12702,7 +12589,7 @@ final class M3ControlStyleTest {
     /// Verifies that nested submenu keyboard traversal and accessible focus routing stay in the active popup branch.
     @Test
     void nestedSubMenuKeyboardTraversalPreservesAccessibleFocusBranch() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3MenuItem pdf = new M3MenuItem("PDF");
             M3MenuItem html = new M3MenuItem("HTML");
             M3SubMenuItem recent = new M3SubMenuItem("Recent", pdf, html);
@@ -12801,7 +12688,7 @@ final class M3ControlStyleTest {
     /// Verifies that open menu popup branches mirror owner direction changes and keep routed focus.
     @Test
     void openNestedMenuPopupBranchesMirrorRuntimeInheritedOrientationChanges() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3MenuItem pdf = new M3MenuItem("PDF");
             M3MenuItem html = new M3MenuItem("HTML");
             M3SubMenuItem recent = new M3SubMenuItem("Recent", pdf, html);
@@ -12877,7 +12764,7 @@ final class M3ControlStyleTest {
     /// Verifies that hidden popup owners do not open popups or route accessibility focus into hidden content.
     @Test
     void popupOwnersSkipAccessibleFocusAndRevealWhenHiddenByAncestor() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3MenuItem buttonTarget = new M3MenuItem("Button target");
             M3MenuButton menuButton = new M3MenuButton("More", buttonTarget);
 
@@ -12957,7 +12844,7 @@ final class M3ControlStyleTest {
     /// Verifies that hidden overlay owners do not reveal surfaces or route accessibility focus into hidden content.
     @Test
     void overlayOwnersSkipAccessibleRevealAndFocusWhenHiddenByAncestor() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button sideAction = new M3Button("Side action");
             M3SideSheet sideSheet = new M3SideSheet("Details", new Label("Side content"), sideAction);
             sideSheet.hide();
@@ -13047,7 +12934,7 @@ final class M3ControlStyleTest {
     /// Verifies that nested popup focus changes propagate through menu and split-button owners.
     @Test
     void nestedPopupMenuFocusPropagatesThroughOwners() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3MenuItem pdf = new M3MenuItem("PDF");
             M3MenuItem html = new M3MenuItem("HTML");
             M3SubMenuItem recent = new M3SubMenuItem("Recent", pdf, html);
@@ -13137,7 +13024,7 @@ final class M3ControlStyleTest {
     /// Verifies that structural containers delegate explicit accessibility reveal requests into popup-backed children.
     @Test
     void structuralContainersRouteNestedPopupAccessibleTargets() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3MenuItem formTarget = new M3MenuItem("Form archive");
             M3SubMenuItem formSubMenu = new M3SubMenuItem("Form move", formTarget);
             M3MenuButton formMenuButton = new M3MenuButton("Form menu", formSubMenu);
@@ -13228,7 +13115,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3RichTooltip> tooltipReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Button> actionReference = new AtomicReference<>();
 
-        runOnFxThreadWhen(
+        FxTestUtils.runOnFxThreadWhen(
                 () -> tooltipShowingWithFocus(tooltipReference, detailsReference),
                 () -> {
                     Stage stage = new Stage();
@@ -13304,7 +13191,7 @@ final class M3ControlStyleTest {
     /// Verifies that popup menu branches inherit theme color lookups without CSS conversion warnings.
     @Test
     void popupMenuBranchesResolveThemeColorLookups() {
-        FxTestUtils.assertNoCssWarnings(() -> runOnFxThread(() -> {
+        FxTestUtils.assertNoCssWarnings(() -> FxTestUtils.runOnFxThread(() -> {
             M3Theme theme = M3Theme.fromSeed(Color.web("#6750a4"));
             M3MenuItem archive = new M3MenuItem("Archive");
             M3MenuItem inbox = new M3MenuItem("Inbox");
@@ -13357,7 +13244,7 @@ final class M3ControlStyleTest {
     /// Verifies that static lists support printable-key type-ahead focus and single selection.
     @Test
     void listPaneSupportsTypeAheadKeyboardNavigation() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3ListItem archive = new M3ListItem("Archive");
             M3ListItem settings = new M3ListItem("Settings");
             M3ListItem search = new M3ListItem("Search");
@@ -13395,7 +13282,7 @@ final class M3ControlStyleTest {
     /// Verifies that virtualized lists support printable-key type-ahead focus and single selection.
     @Test
     void listViewSupportsTypeAheadKeyboardNavigation() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3ListView<String> listView = new M3ListView<>("Archive", "Settings", "Search", "Reports");
             listView.setSelectionMode(M3ListSelectionMode.SINGLE);
             listView.setFixedCellSize(56.0);
@@ -13433,7 +13320,7 @@ final class M3ControlStyleTest {
     /// Verifies that list navigation and type-ahead keys do not steal focus from embedded text inputs.
     @Test
     void listContainersDoNotStealEmbeddedTextInputKeys() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextField paneEditor = createTextField("Pane", M3TextInputVariant.OUTLINED);
             paneEditor.setPrefWidth(150.0);
             M3ListItem paneEditable = new M3ListItem("Editable");
@@ -13505,7 +13392,7 @@ final class M3ControlStyleTest {
     /// Verifies that virtualized list type-ahead uses M3ListItem headline text when data items are list items.
     @Test
     void listViewTypeAheadUsesListItemHeadlineText() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3ListItem overview = new M3ListItem("Overview");
             M3ListItem buttons = new M3ListItem("Buttons");
             M3ListItem disabled = new M3ListItem("Search");
@@ -13539,7 +13426,7 @@ final class M3ControlStyleTest {
     /// Verifies that virtualized lists expose the visible focused row as their accessibility focus node.
     @Test
     void listViewReportsVisibleFocusedRowForAccessibility() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3ListView<String> listView = new M3ListView<>("Archive", "Settings", "Search");
             listView.setSelectionMode(M3ListSelectionMode.SINGLE);
             listView.setFixedCellSize(56.0);
@@ -13572,7 +13459,7 @@ final class M3ControlStyleTest {
     /// Verifies that navigation drawers support printable-key type-ahead across expanded groups.
     @Test
     void navigationDrawerSupportsTypeAheadKeyboardNavigation() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3ListItem overview = new M3ListItem("Overview");
             M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Buttons");
             M3ListItem buttons = new M3ListItem("Buttons");
@@ -13625,7 +13512,7 @@ final class M3ControlStyleTest {
         AtomicLong readyNanos = new AtomicLong();
 
         try {
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> readyNanos.get() > 0L && System.nanoTime() >= readyNanos.get(),
                     () -> {
                         M3ListItem listPaneArchive = new M3ListItem("Archive");
@@ -13753,8 +13640,11 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3SubMenuItem> subMenuItemReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhen(
-                    () -> subMenuShowing(subMenuItemReference),
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> {
+                        @Nullable M3SubMenuItem subMenuItem = subMenuItemReference.get();
+                        return subMenuItem != null && subMenuItem.isSubMenuShowing();
+                    },
                     () -> {
                         M3SubMenuItem subMenuItem = new M3SubMenuItem("Move to", new M3MenuItem("Archive"));
                         subMenuItem.setMinSize(160.0, 48.0);
@@ -13801,8 +13691,11 @@ final class M3ControlStyleTest {
                     }
             );
 
-            runOnFxThreadWhen(
-                    () -> subMenuHidden(subMenuItemReference),
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> {
+                        @Nullable M3SubMenuItem subMenuItem = subMenuItemReference.get();
+                        return subMenuItem != null && !subMenuItem.isSubMenuShowing();
+                    },
                     () -> {
                     },
                     () -> assertFalse(Objects.requireNonNull(
@@ -13811,7 +13704,7 @@ final class M3ControlStyleTest {
                     ).isSubMenuShowing())
             );
         } finally {
-            runOnFxThread(() -> {
+            FxTestUtils.runOnFxThread(() -> {
                 @Nullable M3SubMenuItem subMenuItem = subMenuItemReference.get();
                 if (subMenuItem != null) {
                     subMenuItem.hideSubMenu();
@@ -13824,7 +13717,7 @@ final class M3ControlStyleTest {
     /// Verifies that drawer group disclosure keys keep focus on visible rows.
     @Test
     void navigationDrawerGroupDisclosureKeysRestoreHeaderFocus() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Buttons");
             M3ListItem buttons = new M3ListItem("Buttons");
             M3ListItem iconButtons = new M3ListItem("Icon buttons");
@@ -13882,7 +13775,7 @@ final class M3ControlStyleTest {
     /// Verifies that menu keyboard focus can land on submenu items without corrupting menu selection.
     @Test
     void menuKeyboardNavigationFocusesSubMenuItemsWithoutChangingSelection() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3MenuItem open = new M3MenuItem("Open");
             M3MenuItem save = new M3MenuItem("Save");
             M3MenuItem pdf = new M3MenuItem("PDF");
@@ -13936,7 +13829,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3SubMenuItem> exportReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhen(() -> {
+            FxTestUtils.runOnFxThreadWhen(() -> {
                 @Nullable M3SubMenuItem export = exportReference.get();
                 return export != null && !export.isSubMenuShowing() && export.isFocused();
             }, () -> {
@@ -13968,7 +13861,7 @@ final class M3ControlStyleTest {
                 assertTrue(export.isFocused());
             });
         } finally {
-            runOnFxThread(() -> {
+            FxTestUtils.runOnFxThread(() -> {
                 @Nullable M3SubMenuItem export = exportReference.get();
                 if (export != null) {
                     export.hideSubMenu();
@@ -13990,7 +13883,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3MenuItem> emailReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhen(() -> {
+            FxTestUtils.runOnFxThreadWhen(() -> {
                 @Nullable M3SubMenuItem export = exportReference.get();
                 @Nullable M3SubMenuItem share = shareReference.get();
                 @Nullable M3MenuItem email = emailReference.get();
@@ -14030,7 +13923,7 @@ final class M3ControlStyleTest {
                 assertTrue(email.isFocused());
             });
         } finally {
-            runOnFxThread(() -> {
+            FxTestUtils.runOnFxThread(() -> {
                 @Nullable M3SubMenuItem export = exportReference.get();
                 if (export != null) {
                     export.hideSubMenu();
@@ -14055,7 +13948,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3SubMenuItem> exportReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhen(() -> {
+            FxTestUtils.runOnFxThreadWhen(() -> {
                 @Nullable M3MenuButton menuButton = buttonReference.get();
                 @Nullable M3SubMenuItem export = exportReference.get();
                 return menuButton != null
@@ -14090,7 +13983,7 @@ final class M3ControlStyleTest {
                 assertEquals(export, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             });
         } finally {
-            runOnFxThread(() -> {
+            FxTestUtils.runOnFxThread(() -> {
                 @Nullable M3MenuButton menuButton = buttonReference.get();
                 if (menuButton != null) {
                     menuButton.hideMenu();
@@ -14106,7 +13999,7 @@ final class M3ControlStyleTest {
     /// Verifies that accessible popup collapse actions restore focus to the owning popup control.
     @Test
     void popupAccessibleCollapseRestoresOwnerFocus() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3MenuItem pdf = new M3MenuItem("PDF");
             M3SubMenuItem export = new M3SubMenuItem("Export", pdf);
             M3MenuButton menuButton = new M3MenuButton("More", export);
@@ -14153,7 +14046,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3SubMenuItem> exportReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhen(() -> {
+            FxTestUtils.runOnFxThreadWhen(() -> {
                 @Nullable M3MenuButton menuButton = buttonReference.get();
                 @Nullable M3SubMenuItem export = exportReference.get();
                 return menuButton != null
@@ -14190,7 +14083,7 @@ final class M3ControlStyleTest {
                 assertTrue(menuButton.isFocused());
             });
         } finally {
-            runOnFxThread(() -> {
+            FxTestUtils.runOnFxThread(() -> {
                 @Nullable M3MenuButton menuButton = buttonReference.get();
                 if (menuButton != null) {
                     menuButton.hideMenu();
@@ -14269,7 +14162,7 @@ final class M3ControlStyleTest {
     /// Verifies that search bars expose their slots as indexed accessibility items.
     @Test
     void searchBarExposesIndexedAccessibleSlots() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3SearchBar searchBar = new M3SearchBar("Search");
             Label leading = new Label("S");
             M3Button clear = new M3Button("Clear");
@@ -14328,7 +14221,7 @@ final class M3ControlStyleTest {
     /// Verifies that search bar slots reflow after runtime orientation changes.
     @Test
     void searchBarReflowsSlotsAfterRuntimeOrientationChanges() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3SearchBar searchBar = new M3SearchBar("Search");
             M3Button leading = new M3Button("Menu");
             M3Button clear = new M3Button("Clear");
@@ -14383,7 +14276,7 @@ final class M3ControlStyleTest {
     /// Verifies that active search views propagate runtime orientation changes into search bar and results.
     @Test
     void searchViewReflowsSearchBarAndResultsAfterRuntimeOrientationChanges() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button leading = new M3Button("Menu");
             M3Button filter = new M3Button("Filter");
             M3ListItem firstResult = new M3ListItem("First result");
@@ -14443,7 +14336,7 @@ final class M3ControlStyleTest {
     /// Verifies that search controls route direct child focus and restore focus when results collapse.
     @Test
     void searchControlsRouteDirectChildFocusAndRestoreCollapseFocus() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3SearchBar searchBar = new M3SearchBar("Search");
             M3Button barFilter = new M3Button("Filter");
             searchBar.setTrailingActions(barFilter);
@@ -14514,7 +14407,7 @@ final class M3ControlStyleTest {
     /// Verifies that search controls route focus to descendant targets inside slots and result rows.
     @Test
     void searchControlsRouteDescendantFocusTargets() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3SearchBar searchBar = new M3SearchBar("Search");
             M3Button barPrimary = new M3Button("Primary");
             M3Button barSecondary = new M3Button("Secondary");
@@ -14563,7 +14456,7 @@ final class M3ControlStyleTest {
     /// Verifies that search bars route explicit reveal actions into popup-backed leading and trailing actions.
     @Test
     void searchBarRoutesAccessibleFocusThroughPopupActions() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3MenuItem leadingTarget = new M3MenuItem("Leading target");
             M3SubMenuItem leadingSubMenu = new M3SubMenuItem("Leading submenu", leadingTarget);
             M3MenuButton leadingMenuButton = new M3MenuButton("Leading menu", leadingSubMenu);
@@ -14618,7 +14511,7 @@ final class M3ControlStyleTest {
     /// Verifies that hidden search bar owners do not route accessibility focus or active state into children.
     @Test
     void searchBarSkipsAccessibleFocusWhenOwnerHiddenByAncestor() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3SearchBar searchBar = new M3SearchBar("Search");
             M3Button filter = new M3Button("Filter");
             searchBar.setTrailingActions(filter);
@@ -14784,7 +14677,7 @@ final class M3ControlStyleTest {
     /// Verifies that search bars keep their token height when a flow row contains taller controls.
     @Test
     void searchBarKeepsPreferredHeightInTallFlowRows() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3SearchBar searchBar = new M3SearchBar("Search");
             searchBar.setPrefWidth(260.0);
             M3DatePicker datePicker = new M3DatePicker(LocalDate.of(2026, 5, 18));
@@ -14865,7 +14758,7 @@ final class M3ControlStyleTest {
         assertTrue(results.isManaged());
         assertTrue(results.getOpacity() <= 1.0);
 
-        runOnFxThreadWhen(() -> !results.isVisible()
+        FxTestUtils.runOnFxThreadWhen(() -> !results.isVisible()
                 && !results.isManaged()
                 && Math.abs(results.getOpacity()) < 0.0001
                 && results.getTranslateY() < 0.0, () -> {
@@ -14891,7 +14784,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3SearchView> searchViewReference = new AtomicReference<>();
         AtomicReference<@Nullable Region> resultsReference = new AtomicReference<>();
 
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3SearchView searchView = new M3SearchView("Find", new M3ListItem("Result"));
             searchView.setPrefSize(320.0, 160.0);
 
@@ -14924,7 +14817,7 @@ final class M3ControlStyleTest {
         });
 
         try {
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> searchViewResultsExitIsIntermediate(resultsReference),
                     () -> "Search view results never reached an intermediate exit transition frame: "
                             + describeSearchViewResults(resultsReference),
@@ -14948,7 +14841,7 @@ final class M3ControlStyleTest {
                     }
             );
         } finally {
-            runOnFxThread(() -> {
+            FxTestUtils.runOnFxThread(() -> {
                 @Nullable StackPane root = rootReference.get();
                 if (root != null) {
                     M3MotionSettings.clearMotionScheme(root);
@@ -14965,7 +14858,7 @@ final class M3ControlStyleTest {
     /// Verifies that search bars traverse focus between slots without stealing editor navigation keys.
     @Test
     void searchBarKeyboardTraversalFollowsDirectionWithoutStealingEditorKeys() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button leading = new M3Button("Menu");
             M3Button filter = new M3Button("Filter");
             M3Button disabled = new M3Button("Disabled");
@@ -15036,7 +14929,7 @@ final class M3ControlStyleTest {
     /// Verifies that embedded search bars keep slot traversal inside search views.
     @Test
     void searchViewSearchBarSlotKeyboardTraversalSurvivesViewEventFiltering() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button leading = new M3Button("Menu");
             M3Button filter = new M3Button("Filter");
             M3ListItem result = new M3ListItem("Result");
@@ -15088,7 +14981,7 @@ final class M3ControlStyleTest {
     /// Verifies that search views move keyboard focus between the editor and results.
     @Test
     void searchViewKeyboardNavigatesResults() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3ListItem first = new M3ListItem("First");
             M3ListItem second = new M3ListItem("Second");
             M3SearchView searchView = new M3SearchView("Search", first, second);
@@ -15144,7 +15037,7 @@ final class M3ControlStyleTest {
     /// Verifies that search view keyboard traversal continues after runtime orientation changes.
     @Test
     void searchViewKeyboardNavigationSurvivesRuntimeOrientationChanges() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button leading = new M3Button("Menu");
             M3Button trailing = new M3Button("Filter");
             M3ListItem first = new M3ListItem("First");
@@ -15211,7 +15104,7 @@ final class M3ControlStyleTest {
     /// Verifies that search view result navigation skips unreachable results and supports boundary keys.
     @Test
     void searchViewKeyboardNavigationSkipsUnreachableResultsAndSupportsPageKeys() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3ListItem first = new M3ListItem("First");
             M3ListItem disabled = new M3ListItem("Disabled");
             M3ListItem hidden = new M3ListItem("Hidden");
@@ -15296,7 +15189,7 @@ final class M3ControlStyleTest {
     /// Verifies that search view result navigation skips results and owners hidden by ancestors.
     @Test
     void searchViewSkipsResultsAndOwnersHiddenByAncestors() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button hiddenAction = new M3Button("Hidden action");
             Pane hiddenResult = new Pane(hiddenAction);
             hiddenResult.setVisible(false);
@@ -15390,7 +15283,7 @@ final class M3ControlStyleTest {
     /// Verifies that modal sheets restore focus to the trigger after keyboard dismissal.
     @Test
     void modalSheetsRestoreFocusAfterEscapeKey() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button trigger = new M3Button("Open");
             M3Button sideAction = new M3Button("Side action");
             M3Button bottomAction = new M3Button("Bottom action");
@@ -15431,7 +15324,7 @@ final class M3ControlStyleTest {
     /// Verifies that sheet action rows traverse horizontally without stealing content key events.
     @Test
     void sheetActionKeyboardTraversalFollowsDirectionWithoutStealingContentKeys() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button outside = new M3Button("Outside");
             TextArea sideContent = new TextArea("Side content");
             M3Button sideHidden = new M3Button("Side hidden");
@@ -15562,7 +15455,7 @@ final class M3ControlStyleTest {
     /// Verifies that accessible modal sheet collapse restores focus and hides sheet focus targets.
     @Test
     void modalSheetsAccessibleCollapseRestoresFocusAndClearsFocusNode() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button trigger = new M3Button("Open");
             M3Button sideAction = new M3Button("Side action");
             M3Button bottomAction = new M3Button("Bottom action");
@@ -15660,7 +15553,7 @@ final class M3ControlStyleTest {
     /// Verifies that sheet accessibility show-item actions focus content and trailing actions.
     @Test
     void sheetsFocusIndexedAccessibleItems() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button sideContent = new M3Button("Side content");
             M3Button sideAction = new M3Button("Side action");
             M3SideSheet sideSheet = new M3SideSheet("Details", sideContent, sideAction);
@@ -15724,7 +15617,7 @@ final class M3ControlStyleTest {
         assertTrue(sideSheet.isVisible());
         assertTrue(bottomSheet.isVisible());
 
-        runOnFxThreadWhen(() -> !sideSheet.isVisible()
+        FxTestUtils.runOnFxThreadWhen(() -> !sideSheet.isVisible()
                 && !sideSheet.isManaged()
                 && sideSheet.getTranslateX() > 0.0
                 && Math.abs(sideSheet.getOpacity()) < 0.0001
@@ -15756,7 +15649,7 @@ final class M3ControlStyleTest {
         assertTrue(sideSheet.isVisible());
         assertTrue(bottomSheet.isVisible());
 
-        runOnFxThreadWhen(() -> sideSheet.isManaged()
+        FxTestUtils.runOnFxThreadWhen(() -> sideSheet.isManaged()
                 && Math.abs(sideSheet.getTranslateX()) < 0.0001
                 && Math.abs(sideSheet.getOpacity() - 1.0) < 0.0001
                 && bottomSheet.isManaged()
@@ -15958,7 +15851,7 @@ final class M3ControlStyleTest {
         assertTrue(scrim.isVisible());
         assertTrue(scrim.isManaged());
 
-        runOnFxThreadWhen(() -> !scrim.isVisible()
+        FxTestUtils.runOnFxThreadWhen(() -> !scrim.isVisible()
                 && !scrim.isManaged()
                 && Math.abs(scrim.getOpacity()) < 0.0001, () -> {
         }, () -> {
@@ -15973,7 +15866,7 @@ final class M3ControlStyleTest {
         assertTrue(scrim.isVisible());
         assertTrue(scrim.isManaged());
 
-        runOnFxThreadWhen(() -> Math.abs(scrim.getOpacity() - 0.32) < 0.0001, () -> {
+        FxTestUtils.runOnFxThreadWhen(() -> Math.abs(scrim.getOpacity() - 0.32) < 0.0001, () -> {
         }, () -> assertEquals(0.32, scrim.getOpacity(), 0.0001));
     }
 
@@ -16012,7 +15905,7 @@ final class M3ControlStyleTest {
     /// Verifies that focused text input layout labels use Material focused and error colors.
     @Test
     void textInputLayoutLabelUsesFocusedAndErrorColors() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextField focusedField = createTextField("M3FX", M3TextInputVariant.OUTLINED);
             focusedField.setPrefWidth(260.0);
             M3TextInputLayout focusedLayout = new M3TextInputLayout(focusedField, "Project name");
@@ -16549,7 +16442,7 @@ final class M3ControlStyleTest {
     /// Verifies that segmented button surfaces and state layers follow segment position shapes.
     @Test
     void segmentedButtonGroupUsesPositionSpecificShapes() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3SegmentedButton day = new M3SegmentedButton("Day");
             M3SegmentedButton week = new M3SegmentedButton("Week");
             M3SegmentedButton month = new M3SegmentedButton("Month");
@@ -16580,7 +16473,7 @@ final class M3ControlStyleTest {
     /// Verifies that segmented button corners and feedback layers match right-to-left visual order.
     @Test
     void segmentedButtonGroupUsesRightToLeftPositionSpecificShapes() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3SegmentedButton day = new M3SegmentedButton("Day");
             M3SegmentedButton week = new M3SegmentedButton("Week");
             M3SegmentedButton month = new M3SegmentedButton("Month");
@@ -16619,7 +16512,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3SegmentedButton> monthReference = new AtomicReference<>();
 
         try {
-            runOnFxThread(() -> {
+            FxTestUtils.runOnFxThread(() -> {
                 M3SegmentedButton day = createSegmentedButton("Day", true);
                 M3SegmentedButton week = new M3SegmentedButton("Week");
                 M3SegmentedButton month = new M3SegmentedButton("Month");
@@ -16646,7 +16539,7 @@ final class M3ControlStyleTest {
                 group.select(month);
             });
 
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> segmentedButtonSelectionIsTransitioning(rootReference, dayReference, monthReference),
                     () -> {
                     },
@@ -16675,7 +16568,7 @@ final class M3ControlStyleTest {
                     }
             );
 
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> segmentedButtonSelectionHasSettled(rootReference, dayReference, monthReference),
                     () -> {
                     },
@@ -17031,14 +16924,14 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3Switch> switchReference = new AtomicReference<>();
 
         try {
-            runOnFxThread(() -> showObservableSelectionControls(
+            FxTestUtils.runOnFxThread(() -> showObservableSelectionControls(
                     stageReference,
                     rowReference,
                     checkBoxReference,
                     radioButtonReference,
                     switchReference
             ));
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> selectionIndicatorsSelecting(checkBoxReference, radioButtonReference, switchReference),
                     () -> {
                         Objects.requireNonNull(checkBoxReference.get(), "checkBox").setSelected(true);
@@ -17070,7 +16963,7 @@ final class M3ControlStyleTest {
                         ));
                     }
             );
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> selectionIndicatorsSelectedSettled(checkBoxReference, radioButtonReference, switchReference),
                     () -> {
                     },
@@ -17080,7 +16973,7 @@ final class M3ControlStyleTest {
                             Objects.requireNonNull(switchReference.get(), "switchControl")
                     )
             );
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> selectionIndicatorsDeselecting(checkBoxReference, radioButtonReference, switchReference),
                     () -> {
                         Objects.requireNonNull(checkBoxReference.get(), "checkBox").setSelected(false);
@@ -17093,7 +16986,7 @@ final class M3ControlStyleTest {
                             Objects.requireNonNull(switchReference.get(), "switchControl")
                     )
             );
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> selectionIndicatorsUnselectedSettled(
                             checkBoxReference,
                             radioButtonReference,
@@ -17115,7 +17008,7 @@ final class M3ControlStyleTest {
     /// Verifies that selection controls mirror indicator and label order in right-to-left mode.
     @Test
     void selectionControlsMirrorIndicatorAndLabelOrderForRightToLeft() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3CheckBox checkBox = createCheckBox("Checkbox", true);
             M3RadioButton radioButton = createRadioButton("Radio", true);
             M3Switch switchControl = createSwitch("Switch", true);
@@ -17158,19 +17051,19 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3CheckBox> checkBoxReference = new AtomicReference<>();
 
         try {
-            runOnFxThread(() -> showObservableIndeterminateCheckBox(
+            FxTestUtils.runOnFxThread(() -> showObservableIndeterminateCheckBox(
                     stageReference,
                     rowReference,
                     checkBoxReference
             ));
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> checkBoxIndeterminateMarkSettled(checkBoxReference),
                     () -> Objects.requireNonNull(checkBoxReference.get(), "checkBox").fire(),
                     () -> assertCheckBoxIndeterminateMarkSettled(
                             Objects.requireNonNull(checkBoxReference.get(), "checkBox")
                     )
             );
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> checkBoxSelectedMarkIsAnimating(checkBoxReference),
                     () -> Objects.requireNonNull(checkBoxReference.get(), "checkBox").fire(),
                     () -> {
@@ -17195,7 +17088,7 @@ final class M3ControlStyleTest {
                         ));
                     }
             );
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> checkBoxSelectedMarkSettled(checkBoxReference),
                     () -> {
                     },
@@ -17400,7 +17293,7 @@ final class M3ControlStyleTest {
     /// Verifies that the switch hover state renders circular thumb feedback in snapshots.
     @Test
     void switchHoverStateLayerRendersCircularThumbFeedback() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Switch switchControl = new M3Switch("On");
             switchControl.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
             Pane root = new Pane(switchControl);
@@ -17569,23 +17462,23 @@ final class M3ControlStyleTest {
         Shape dot = radioDot(radioButton);
         assertEquals(20.0, radio.getWidth(), 0.0001);
         assertEquals(20.0, radio.getHeight(), 0.0001);
-        assertShapeFill(ring, Color.TRANSPARENT);
+        assertEquals(Color.TRANSPARENT, ring.getFill());
         assertEquals(Color.rgb(4, 5, 6), ring.getStroke());
         assertEquals(2.0, ring.getStrokeWidth(), 0.0001);
-        assertShapeFill(dot, Color.TRANSPARENT);
+        assertEquals(Color.TRANSPARENT, dot.getFill());
 
         radioButton.setSelected(true);
         root.applyCss();
 
-        assertShapeFill(ring, Color.TRANSPARENT);
+        assertEquals(Color.TRANSPARENT, ring.getFill());
         assertEquals(Color.rgb(1, 2, 3), ring.getStroke());
-        assertShapeFill(dot, Color.rgb(1, 2, 3));
+        assertEquals(Color.rgb(1, 2, 3), dot.getFill());
     }
 
     /// Verifies that a selected radio button paints its dot at the visual center of the outer indicator.
     @Test
     void selectedRadioButtonDotRendersCenteredInIndicator() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3RadioButton radioButton = createRadioButton("Radio", true);
             Pane root = new Pane(radioButton);
             root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
@@ -17939,7 +17832,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable IndeterminateProgressMotionSample> sampleReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> indeterminateProgressMotionAdvanced(sceneReference, sampleReference),
                     () -> {
                         IndeterminateProgressMotionScene scene = showIndeterminateProgressMotionScene(true);
@@ -17955,7 +17848,7 @@ final class M3ControlStyleTest {
                     }
             );
 
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> indeterminateProgressMotionAdvanced(sceneReference, sampleReference),
                     () -> {
                     },
@@ -17969,7 +17862,7 @@ final class M3ControlStyleTest {
                     }
             );
 
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> indeterminateProgressMotionAdvanced(sceneReference, sampleReference),
                     () -> {
                     },
@@ -17992,7 +17885,7 @@ final class M3ControlStyleTest {
         Set<String> frameSignatures = new HashSet<>();
 
         try {
-            runOnFxThreadWhenStable(
+            FxTestUtils.runOnFxThreadWhenStable(
                     () -> loadingIndicatorObservedDistinctFrames(sceneReference, frameSignatures, 6),
                     2,
                     () -> {
@@ -18021,7 +17914,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable Double> initialAreaReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> loadingIndicatorBoundsExpandedPastInitial(sceneReference, initialAreaReference, 1.04),
                     () -> {
                         IndeterminateProgressMotionScene scene = showIndeterminateProgressMotionScene(true);
@@ -18051,7 +17944,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable Double> initialAreaReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> loadingIndicatorBoundsExpandedPastInitial(sceneReference, initialAreaReference, 1.04),
                     () -> {
                         IndeterminateProgressMotionScene scene = showIndeterminateProgressMotionScene(
@@ -18165,7 +18058,7 @@ final class M3ControlStyleTest {
         Set<String> frameSignatures = new HashSet<>();
 
         try {
-            runOnFxThreadWhenStable(
+            FxTestUtils.runOnFxThreadWhenStable(
                     () -> loadingIndicatorObservedDistinctFrames(sceneReference, frameSignatures, 4),
                     2,
                     () -> {
@@ -18192,7 +18085,7 @@ final class M3ControlStyleTest {
     /// Verifies that sampled indeterminate loading indicator frames stay centered.
     @Test
     void loadingIndicatorIndeterminateMorphFramesStayCentered() {
-        runOnFxThreadAndWait(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             LoadingIndicatorFrameScene frameScene = new LoadingIndicatorFrameScene();
 
             Set<String> boundsSignatures = new HashSet<>();
@@ -18231,7 +18124,7 @@ final class M3ControlStyleTest {
     /// Verifies that indeterminate loading indicator morphs scale the active shape between segment endpoints.
     @Test
     void loadingIndicatorIndeterminateMorphScalesWithinSegment() {
-        runOnFxThreadAndWait(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             LoadingIndicatorFrameScene frameScene = new LoadingIndicatorFrameScene();
 
             writeLoadingIndicatorMorphFrame(frameScene, 0, 0.0, 0.0);
@@ -18266,7 +18159,7 @@ final class M3ControlStyleTest {
     /// Verifies that settled morph segments keep rotating through the global rotation phase.
     @Test
     void loadingIndicatorIndeterminateMorphTargetKeepsRotating() {
-        runOnFxThreadAndWait(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             LoadingIndicatorFrameScene frameScene = new LoadingIndicatorFrameScene();
             writeLoadingIndicatorMorphFrame(frameScene, 0, 1.0, 0.0);
             Point2D initialPoint = firstPathPoint(frameScene.indicator);
@@ -18286,7 +18179,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable IndeterminateProgressMotionSample> sampleReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> loadingIndicatorMotionAdvanced(sceneReference, sampleReference),
                     () -> {
                         IndeterminateProgressMotionScene scene = showIndeterminateProgressMotionScene(false);
@@ -18361,7 +18254,7 @@ final class M3ControlStyleTest {
     /// Verifies that linear progress bars mirror their physical fill direction in right-to-left layouts.
     @Test
     void progressBarSkinMirrorsLinearProgressForRightToLeft() {
-        runOnFxThreadAndWait(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3ProgressBar determinateBar = new M3ProgressBar(0.25);
             determinateBar.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
             M3ProgressBar indeterminateBar = new M3ProgressBar();
@@ -18432,7 +18325,7 @@ final class M3ControlStyleTest {
     /// Verifies that inherited runtime direction changes relayout a previously laid-out progress bar.
     @Test
     void progressBarSkinRelayoutsWhenInheritedDirectionChanges() {
-        runOnFxThreadAndWait(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3ProgressBar progressBar = new M3ProgressBar(0.25);
             Pane root = new Pane(progressBar);
             Scene scene = new Scene(root, 240.0, 40.0);
@@ -18467,7 +18360,7 @@ final class M3ControlStyleTest {
     /// Verifies that progress bars mirror when attached to an already mirrored parent after detached layout.
     @Test
     void progressBarSkinRelayoutsWhenAttachedToRightToLeftParent() {
-        runOnFxThreadAndWait(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3ProgressBar progressBar = new M3ProgressBar(0.25);
             Pane detachedRoot = new Pane(progressBar);
             Scene detachedScene = new Scene(detachedRoot, 240.0, 40.0);
@@ -18521,7 +18414,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3ProgressBar> progressBarReference = new AtomicReference<>();
         AtomicReference<@Nullable Rectangle> barReference = new AtomicReference<>();
 
-        runOnFxThreadWhen(
+        FxTestUtils.runOnFxThreadWhen(
                 () -> progressBarWidthSettled(progressBarReference, barReference, 180.0),
                 () -> {
                     M3ProgressBar progressBar = new M3ProgressBar(0.1);
@@ -18560,7 +18453,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable Rectangle> barReference = new AtomicReference<>();
         AtomicReference<@Nullable Double> initialX = new AtomicReference<>();
 
-        runOnFxThreadWhen(
+        FxTestUtils.runOnFxThreadWhen(
                 () -> {
                     @Nullable M3ProgressBar progressBar = progressBarReference.get();
                     @Nullable Rectangle bar = barReference.get();
@@ -18606,7 +18499,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable IndeterminateProgressMotionSample> sampleReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> progressBarMotionAdvanced(sceneReference, sampleReference),
                     () -> {
                         IndeterminateProgressMotionScene scene = showIndeterminateProgressMotionScene(false);
@@ -18667,7 +18560,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable Rectangle> trailingTrackReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhenStable(
+            FxTestUtils.runOnFxThreadWhenStable(
                     () -> expressiveProgressBarIndeterminateWaveSeparated(
                             progressBarReference,
                             waveReference,
@@ -18744,7 +18637,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable Point2D> initialCircularPointReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhenStable(
+            FxTestUtils.runOnFxThreadWhenStable(
                     () -> expressiveProgressWavePathsMovedWithReusedElements(
                             rootReference,
                             progressBarReference,
@@ -18949,7 +18842,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3ProgressIndicator> progressIndicatorReference = new AtomicReference<>();
         AtomicReference<@Nullable Arc> indicatorReference = new AtomicReference<>();
 
-        runOnFxThreadWhen(
+        FxTestUtils.runOnFxThreadWhen(
                 () -> progressIndicatorLengthSettled(progressIndicatorReference, indicatorReference, -324.0),
                 () -> {
                     M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.1);
@@ -18989,7 +18882,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable Arc> indicatorReference = new AtomicReference<>();
         AtomicReference<@Nullable Double> initialStartAngle = new AtomicReference<>();
 
-        runOnFxThreadWhen(
+        FxTestUtils.runOnFxThreadWhen(
                 () -> {
                     @Nullable M3ProgressIndicator progressIndicator = progressIndicatorReference.get();
                     @Nullable Arc indicator = indicatorReference.get();
@@ -19037,7 +18930,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable IndeterminateProgressMotionSample> sampleReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> progressIndicatorMotionAdvanced(sceneReference, sampleReference),
                     () -> {
                         IndeterminateProgressMotionScene scene = showIndeterminateProgressMotionScene(false);
@@ -19064,7 +18957,7 @@ final class M3ControlStyleTest {
         ProgressIndicatorCycleObservation observation = new ProgressIndicatorCycleObservation();
 
         try {
-            runOnFxThreadWhenStable(
+            FxTestUtils.runOnFxThreadWhenStable(
                     () -> progressIndicatorObservedSeamlessCycle(sceneReference, observation),
                     PROGRESS_INDICATOR_CYCLE_STABLE_PULSES,
                     () -> {
@@ -19255,7 +19148,7 @@ final class M3ControlStyleTest {
     /// Verifies that the default badge alignment maps to logical end in right-to-left layouts.
     @Test
     void badgedBoxMirrorsDefaultBadgeAlignmentForRightToLeft() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Avatar content = new M3Avatar("M");
             M3Badge badge = new M3Badge("9");
             M3BadgedBox badgedBox = new M3BadgedBox(content, badge);
@@ -19345,7 +19238,7 @@ final class M3ControlStyleTest {
     /// Verifies that list items mirror logical leading and trailing content in right-to-left layouts.
     @Test
     void listItemMirrorsLogicalSlotsForRightToLeft() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3ListItem listItem = new M3ListItem("Headline");
             listItem.setSupportingText("Supporting");
             listItem.setLeadingIcon("L");
@@ -19421,7 +19314,7 @@ final class M3ControlStyleTest {
     /// Verifies that list item media slots render the supported fixed-size variants.
     @Test
     void listItemMediaSnapshotRendersSlotVariants() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3ListItem iconItem = new M3ListItem("Icon row");
             iconItem.setLeadingIcon("I");
             iconItem.setTrailingSupportingText("Now");
@@ -19546,7 +19439,7 @@ final class M3ControlStyleTest {
     /// Verifies that list items expose leading and trailing slot focus targets.
     @Test
     void listItemAccessibleFocusIncludesLeadingAndTrailingSlots() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button leading = new M3Button("Leading");
             M3Button trailing = new M3Button("Trailing");
             M3ListItem listItem = new M3ListItem("Headline");
@@ -19842,7 +19735,7 @@ final class M3ControlStyleTest {
     /// Verifies that virtualized list views use VirtualFlow-backed cells instead of materializing every item.
     @Test
     void listViewVirtualizesRenderedItems() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             AtomicInteger factoryCalls = new AtomicInteger();
             M3ListView<Integer> listView = new M3ListView<>();
             for (int i = 0; i < 100; i++) {
@@ -19897,7 +19790,7 @@ final class M3ControlStyleTest {
     /// Verifies that virtualized list views animate wheel scrolling through Material motion.
     @Test
     void listViewSmoothScrollingAnimatesWheelScroll() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3ListView<Integer> listView = new M3ListView<>();
             for (int i = 0; i < 100; i++) {
                 listView.addItem(i);
@@ -19943,7 +19836,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable Double> targetPositionReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhenStable(
+            FxTestUtils.runOnFxThreadWhenStable(
                     () -> {
                         VirtualFlow<?> flow = Objects.requireNonNull(flowReference.get(), "flow");
                         double targetPosition = Objects.requireNonNull(
@@ -19998,7 +19891,7 @@ final class M3ControlStyleTest {
                     }
             );
         } finally {
-            runOnFxThread(() -> {
+            FxTestUtils.runOnFxThread(() -> {
                 @Nullable M3ListView<Integer> listView = listViewReference.get();
                 if (listView != null) {
                     M3MotionSettings.clearAnimationsEnabled(listView);
@@ -20014,7 +19907,7 @@ final class M3ControlStyleTest {
     /// Verifies that running virtualized list wheel scrolling settles when animations are disabled at runtime.
     @Test
     void listViewSmoothScrollingSettlesWhenAnimationsAreDisabledAtRuntime() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3ListView<Integer> listView = new M3ListView<>();
             for (int i = 0; i < 100; i++) {
                 listView.addItem(i);
@@ -20058,7 +19951,7 @@ final class M3ControlStyleTest {
     /// Verifies that wheel events accumulate while virtualized list smooth scrolling is running.
     @Test
     void listViewSmoothScrollingAccumulatesWheelEventsWhileAnimationRuns() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3ListView<Integer> listView = new M3ListView<>();
             for (int i = 0; i < 100; i++) {
                 listView.addItem(i);
@@ -20106,7 +19999,7 @@ final class M3ControlStyleTest {
     /// Verifies that platform text-line units scroll virtualized lists by Material line distances.
     @Test
     void listViewSmoothScrollingUsesTextLineScrollUnits() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3ListView<Integer> listView = new M3ListView<>();
             for (int i = 0; i < 100; i++) {
                 listView.addItem(i);
@@ -20157,7 +20050,7 @@ final class M3ControlStyleTest {
     /// Verifies that platform page units scroll virtualized lists by the current viewport height.
     @Test
     void listViewSmoothScrollingUsesPageScrollUnits() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3ListView<Integer> listView = new M3ListView<>();
             for (int i = 0; i < 100; i++) {
                 listView.addItem(i);
@@ -20207,7 +20100,7 @@ final class M3ControlStyleTest {
     /// Verifies that disabled animation settings make virtualized list wheel scrolling finish synchronously.
     @Test
     void listViewSmoothScrollingHonorsDisabledAnimations() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3ListView<Integer> listView = new M3ListView<>();
             for (int i = 0; i < 100; i++) {
                 listView.addItem(i);
@@ -20247,7 +20140,7 @@ final class M3ControlStyleTest {
     /// Verifies that programmatic virtualized list scrolling uses the animated scroll policy.
     @Test
     void listViewProgrammaticScrollUsesAnimatedPolicy() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3ListView<Integer> listView = new M3ListView<>();
             for (int i = 0; i < 100; i++) {
                 listView.addItem(i);
@@ -20292,7 +20185,7 @@ final class M3ControlStyleTest {
     /// Verifies that running programmatic virtualized list scrolling settles when animations are disabled.
     @Test
     void listViewProgrammaticScrollSettlesWhenAnimationsAreDisabledAtRuntime() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3ListView<Integer> listView = new M3ListView<>();
             for (int i = 0; i < 100; i++) {
                 listView.addItem(i);
@@ -20334,7 +20227,7 @@ final class M3ControlStyleTest {
     /// Verifies that disabled animations make programmatic virtualized list scrolling finish synchronously.
     @Test
     void listViewProgrammaticScrollHonorsDisabledAnimations() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3ListView<Integer> listView = new M3ListView<>();
             for (int i = 0; i < 100; i++) {
                 listView.addItem(i);
@@ -20372,7 +20265,7 @@ final class M3ControlStyleTest {
     /// Verifies that keyboard focus scrolling also follows the animated scroll policy.
     @Test
     void listViewKeyboardFocusUsesAnimatedScrollPolicy() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3ListView<Integer> listView = new M3ListView<>();
             for (int i = 0; i < 100; i++) {
                 listView.addItem(i);
@@ -20780,7 +20673,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3ListView<Integer>> listViewReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhen(() -> listViewFocusNodeHasHeadline(listViewReference, "Row 99"), () -> {
+            FxTestUtils.runOnFxThreadWhen(() -> listViewFocusNodeHasHeadline(listViewReference, "Row 99"), () -> {
                 M3ListView<Integer> listView = new M3ListView<>();
                 for (int i = 0; i < 100; i++) {
                     listView.addItem(i);
@@ -20830,7 +20723,7 @@ final class M3ControlStyleTest {
                 root.layout();
             });
 
-            runOnFxThreadWhen(() -> listViewFocusNodeHasHeadline(listViewReference, "Row 40"), () -> {
+            FxTestUtils.runOnFxThreadWhen(() -> listViewFocusNodeHasHeadline(listViewReference, "Row 40"), () -> {
             }, () -> {
                 Pane root = Objects.requireNonNull(rootReference.get(), "root");
                 M3ListView<Integer> listView = Objects.requireNonNull(listViewReference.get(), "listView");
@@ -20841,7 +20734,7 @@ final class M3ControlStyleTest {
                 assertTrue(listView.isFocused());
             });
         } finally {
-            runOnFxThread(() -> {
+            FxTestUtils.runOnFxThread(() -> {
                 Stage stage = stageReference.get();
                 if (stage != null) {
                     stage.close();
@@ -20855,7 +20748,7 @@ final class M3ControlStyleTest {
     void listViewSkipsDeferredFocusCssWhenDetached() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
 
-        runOnFxThreadWhenStable(() -> {
+        FxTestUtils.runOnFxThreadWhenStable(() -> {
             @Nullable Stage stage = stageReference.get();
             return stage != null && !stage.isShowing();
         }, DETACHED_LIST_FOCUS_RETRY_STABLE_PULSES, () -> {
@@ -20886,7 +20779,7 @@ final class M3ControlStyleTest {
     /// Verifies that virtualized list view accessibility actions accept rendered row descendants.
     @Test
     void listViewAccessibilityActionsAcceptRenderedRowDescendants() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3ListView<String> listView = new M3ListView<>("Archive", "Settings", "Search");
             listView.setSelectionMode(M3ListSelectionMode.SINGLE);
             listView.setFixedCellSize(56.0);
@@ -20966,7 +20859,7 @@ final class M3ControlStyleTest {
     /// Verifies that virtualized list views delegate explicit reveal requests into visible row popup targets.
     @Test
     void listViewAccessibilityActionsRevealVisibleRowTooltipTargets() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             AtomicReference<@Nullable M3RichTooltip> tooltipReference = new AtomicReference<>();
             AtomicReference<@Nullable M3Button> tooltipActionReference = new AtomicReference<>();
             M3ListView<String> listView = new M3ListView<>("Archive", "Settings", "Search");
@@ -21028,7 +20921,7 @@ final class M3ControlStyleTest {
     /// Verifies that virtualized list views delegate explicit reveal requests into visible row nested menus.
     @Test
     void listViewAccessibilityActionsRevealVisibleRowNestedMenuTargets() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             AtomicReference<@Nullable M3MenuButton> menuButtonReference = new AtomicReference<>();
             AtomicReference<@Nullable M3SubMenuItem> subMenuItemReference = new AtomicReference<>();
             AtomicReference<@Nullable M3MenuItem> archiveItemReference = new AtomicReference<>();
@@ -21090,7 +20983,7 @@ final class M3ControlStyleTest {
     /// Verifies that virtualized list views materialize distant data-node rows before nested menu reveal.
     @Test
     void listViewAccessibilityActionsRevealVirtualizedRowNestedMenuTargets() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3ListView<M3ListItem> listView = new M3ListView<>();
             AtomicReference<@Nullable M3ListItem> targetRowReference = new AtomicReference<>();
             AtomicReference<@Nullable M3MenuButton> menuButtonReference = new AtomicReference<>();
@@ -21159,7 +21052,7 @@ final class M3ControlStyleTest {
     /// Verifies that indexed virtualized reveal opens the picker belonging to the requested distant row.
     @Test
     void listViewAccessibilityActionsRevealVirtualizedRowPickerValueTargets() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             AtomicReference<@Nullable M3DatePickerField> targetDateFieldReference = new AtomicReference<>();
             LocalDate targetDate = LocalDate.of(2026, 5, 18);
             M3ListView<Integer> listView = new M3ListView<>();
@@ -21219,7 +21112,7 @@ final class M3ControlStyleTest {
     /// Verifies that visible list view rows reject disabled picker value targets without changing list focus.
     @Test
     void listViewAccessibilityActionsRejectVisibleRowDisabledPickerValueTargets() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             AtomicReference<@Nullable M3DatePickerField> targetDateFieldReference = new AtomicReference<>();
             M3ListView<Integer> listView = new M3ListView<>(0, 1, 2);
             listView.setSelectionMode(M3ListSelectionMode.SINGLE);
@@ -21405,7 +21298,7 @@ final class M3ControlStyleTest {
     /// Verifies that virtualized list view row content stays out of direct tab traversal.
     @Test
     void listViewKeepsVirtualRowsOutOfDirectTabTraversal() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3ListView<Integer> listView = new M3ListView<>();
             for (int i = 0; i < 8; i++) {
                 listView.addItem(i);
@@ -21551,7 +21444,7 @@ final class M3ControlStyleTest {
     /// Verifies that visible virtualized rows follow runtime scene theme changes.
     @Test
     void listViewVisibleRowsReinheritRuntimeSceneThemeChanges() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3ListView<String> listView = new M3ListView<>("Alpha", "Beta", "Gamma");
             listView.setFixedCellSize(56.0);
             listView.setPrefSize(320.0, 168.0);
@@ -21595,7 +21488,7 @@ final class M3ControlStyleTest {
     /// Verifies that visible virtualized rows follow local parent theme changes and clearing.
     @Test
     void listViewVisibleRowsReinheritRuntimeLocalParentThemeChanges() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3ListView<String> listView = new M3ListView<>("Alpha", "Beta", "Gamma");
             listView.setFixedCellSize(56.0);
             listView.setPrefSize(320.0, 168.0);
@@ -21651,7 +21544,7 @@ final class M3ControlStyleTest {
     /// Verifies that virtualized list view rows are actually visible in rendered snapshots.
     @Test
     void listViewSnapshotRendersVisibleRows() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3ListView<Integer> listView = new M3ListView<>();
             for (int i = 0; i < 24; i++) {
                 listView.addItem(i);
@@ -21760,7 +21653,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3ListItem> drawerSecondReference = new AtomicReference<>();
 
         try {
-            runOnFxThread(() -> {
+            FxTestUtils.runOnFxThread(() -> {
                 M3ListItem listFirst = new M3ListItem("Inbox");
                 M3ListItem listSecond = new M3ListItem("Archive");
                 M3ListPane list = new M3ListPane(listFirst, listSecond);
@@ -21798,7 +21691,7 @@ final class M3ControlStyleTest {
                 drawer.select(drawerSecond);
             });
 
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> listAndDrawerSelectionContainersAreTransitioning(
                             rootReference,
                             listFirstReference,
@@ -21865,7 +21758,7 @@ final class M3ControlStyleTest {
                     }
             );
 
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> listAndDrawerSelectionContainersHaveSettled(
                             rootReference,
                             listFirstReference,
@@ -21912,7 +21805,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3ListItem> selectedItemReference = new AtomicReference<>();
 
         try {
-            runOnFxThread(() -> {
+            FxTestUtils.runOnFxThread(() -> {
                 M3ListItem first = new M3ListItem("Sheets");
                 M3ListItem second = new M3ListItem("Bottom sheets");
                 M3NavigationDrawer drawer = new M3NavigationDrawer(first, second);
@@ -21951,7 +21844,7 @@ final class M3ControlStyleTest {
                 selectedItemReference.set(second);
             });
 
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> drawerMouseSelectionIsTransitioning(rootReference, selectedItemReference),
                     () -> {
                     },
@@ -22402,7 +22295,7 @@ final class M3ControlStyleTest {
     /// Verifies that top app bar keyboard traversal follows direction and skips unreachable action slots.
     @Test
     void topAppBarKeyboardTraversalFollowsDirectionAndReachability() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button navigation = new M3Button("Menu");
             M3Button hidden = new M3Button("Hidden");
             M3Button disabled = new M3Button("Disabled");
@@ -22469,7 +22362,7 @@ final class M3ControlStyleTest {
     /// Verifies that bottom app bar keyboard traversal includes floating actions and mirrors in RTL layouts.
     @Test
     void bottomAppBarKeyboardTraversalIncludesFloatingActionAndMirrorsDirection() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button archive = new M3Button("Archive");
             M3Button hidden = new M3Button("Hidden");
             M3Button disabled = new M3Button("Disabled");
@@ -22596,7 +22489,7 @@ final class M3ControlStyleTest {
     /// Verifies that all top app bar variants use Material row, title, and action slot geometry.
     @Test
     void topAppBarVariantsLayOutMaterialSlots() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TopAppBar small = createGeometryTopAppBar("Inbox", M3TopAppBarVariant.SMALL);
             M3TopAppBar centerAligned = createGeometryTopAppBar("Calendar", M3TopAppBarVariant.CENTER_ALIGNED);
             M3TopAppBar medium = createGeometryTopAppBar("Project", M3TopAppBarVariant.MEDIUM);
@@ -22633,7 +22526,7 @@ final class M3ControlStyleTest {
     /// Verifies that top app bar variants mirror logical leading and trailing slots in right-to-left layouts.
     @Test
     void topAppBarVariantsLayOutMaterialSlotsInRightToLeft() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TopAppBar small = createGeometryTopAppBar("Inbox", M3TopAppBarVariant.SMALL);
             M3TopAppBar centerAligned = createGeometryTopAppBar("Calendar", M3TopAppBarVariant.CENTER_ALIGNED);
             M3TopAppBar medium = createGeometryTopAppBar("Project", M3TopAppBarVariant.MEDIUM);
@@ -22667,7 +22560,7 @@ final class M3ControlStyleTest {
     /// Verifies that generated top app bar action slots track action-list mutations without stale parents.
     @Test
     void topAppBarActionSlotsTrackActionListMutations() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3IconButton navigation = createGeometryTopAppBarIcon("menu");
             M3IconButton search = createGeometryTopAppBarIcon("search");
             M3IconButton more = createGeometryTopAppBarIcon("more");
@@ -22912,7 +22805,7 @@ final class M3ControlStyleTest {
     /// Verifies that top app bar icon buttons do not clip fallback glyphs.
     @Test
     void topAppBarFallbackIconButtonsDoNotClipGlyphs() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Icon navigationIcon = new M3Icon("M", M3IconSize.SMALL, M3IconVariant.PRIMARY);
             M3Icon searchIcon = new M3Icon("S", M3IconSize.SMALL, M3IconVariant.PRIMARY);
             M3Icon accountIcon = new M3Icon("A", M3IconSize.SMALL, M3IconVariant.PRIMARY);
@@ -23087,7 +22980,7 @@ final class M3ControlStyleTest {
     /// Verifies that generated bottom app bar action slots track action-list mutations without stale parents.
     @Test
     void bottomAppBarActionSlotsTrackActionListMutations() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3IconButton search = createGeometryTopAppBarIcon("search");
             M3IconButton more = createGeometryTopAppBarIcon("more");
             M3IconButton account = createGeometryTopAppBarIcon("person");
@@ -23126,7 +23019,7 @@ final class M3ControlStyleTest {
     /// Verifies that bottom app bars align floating action slots against the full bar instead of action width.
     @Test
     void bottomAppBarLaysOutFloatingActionSlotFromMaterialGeometry() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             for (M3BottomAppBarFloatingActionAlignment alignment : M3BottomAppBarFloatingActionAlignment.values()) {
                 M3BottomAppBar bottomAppBar = createGeometryBottomAppBar(alignment);
                 Pane root = new Pane(bottomAppBar);
@@ -23152,7 +23045,7 @@ final class M3ControlStyleTest {
     /// Verifies that app bars reflow logical slots without losing current action focus after runtime orientation changes.
     @Test
     void appBarsReflowSlotsAndPreserveFocusedActionsAfterRuntimeOrientationChanges() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3IconButton topNavigation = createGeometryTopAppBarIcon("menu");
             M3IconButton topSearch = createGeometryTopAppBarIcon("search");
             M3IconButton topMore = createGeometryTopAppBarIcon("more");
@@ -23392,7 +23285,7 @@ final class M3ControlStyleTest {
     /// Verifies that app bars and banners mirror logical leading and trailing slots in right-to-left layouts.
     @Test
     void appBarsAndBannersMirrorLogicalSlotsForRightToLeft() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Label topNavigation = new Label("N");
             Label topAction = new Label("A");
             M3TopAppBar topAppBar = new M3TopAppBar("Inbox", topNavigation, topAction);
@@ -23741,7 +23634,7 @@ final class M3ControlStyleTest {
     /// Verifies that navigation drawer groups route focus to visible rows and restore it after collapse.
     @Test
     void navigationDrawerGroupRoutesAccessibleFocusAcrossExpandedRows() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Buttons");
             M3ListItem commonButtons = new M3ListItem("Common buttons");
             M3ListItem floatingActions = new M3ListItem("Floating actions");
@@ -23790,7 +23683,7 @@ final class M3ControlStyleTest {
     /// Verifies that navigation drawers can reveal and focus descendants inside collapsed group rows.
     @Test
     void navigationDrawerAccessibleShowItemFocusesDescendantInCollapsedGroup() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Buttons");
             M3ListItem commonButtons = new M3ListItem("Common buttons");
             M3ListItem floatingActions = new M3ListItem("Floating actions");
@@ -23855,7 +23748,7 @@ final class M3ControlStyleTest {
     /// Verifies that selected child rows indent from the parent while aligning their right edge.
     @Test
     void navigationDrawerGroupChildSelectionPillIndentsAndAlignsRight() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Sheets");
             M3ListItem bottomSheets = new M3ListItem("Bottom sheets");
             M3ListItem sideSheets = new M3ListItem("Side sheets");
@@ -23894,7 +23787,7 @@ final class M3ControlStyleTest {
     /// Verifies that selected child rows mirror their indentation in right-to-left drawers.
     @Test
     void navigationDrawerGroupChildSelectionPillMirrorsIndentForRightToLeft() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Sheets");
             M3ListItem bottomSheets = new M3ListItem("Bottom sheets");
             M3ListItem sideSheets = new M3ListItem("Side sheets");
@@ -23936,7 +23829,7 @@ final class M3ControlStyleTest {
     /// Verifies that selected child rows mirror their indentation after runtime orientation changes.
     @Test
     void navigationDrawerGroupChildSelectionPillReflowsAfterRuntimeOrientationChanges() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Sheets");
             M3ListItem bottomSheets = new M3ListItem("Bottom sheets");
             M3ListItem sideSheets = new M3ListItem("Side sheets");
@@ -23984,7 +23877,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable Double> collapsedHeightReference = new AtomicReference<>();
         AtomicReference<@Nullable Double> expandedHeightReference = new AtomicReference<>();
 
-        runOnFxThreadWhen(
+        FxTestUtils.runOnFxThreadWhen(
                 () -> navigationDrawerGroupHeightBetween(
                         groupReference,
                         collapsedHeightReference,
@@ -24024,7 +23917,7 @@ final class M3ControlStyleTest {
                 }
         );
 
-        runOnFxThreadWhen(
+        FxTestUtils.runOnFxThreadWhen(
                 () -> navigationDrawerGroupHeightSettled(groupReference, expandedHeightReference)
                         && navigationDrawerGroupChildCount(groupReference) == 2,
                 () -> {
@@ -24037,7 +23930,7 @@ final class M3ControlStyleTest {
                 }
         );
 
-        runOnFxThreadWhen(
+        FxTestUtils.runOnFxThreadWhen(
                 () -> navigationDrawerGroupHeightBetween(
                         groupReference,
                         collapsedHeightReference,
@@ -24055,7 +23948,7 @@ final class M3ControlStyleTest {
                 }
         );
 
-        runOnFxThreadWhen(
+        FxTestUtils.runOnFxThreadWhen(
                 () -> navigationDrawerGroupHeightSettled(groupReference, collapsedHeightReference)
                         && navigationDrawerGroupChildCount(groupReference) == 0,
                 () -> {
@@ -24460,7 +24353,7 @@ final class M3ControlStyleTest {
     /// Verifies that picker skins stop exposing cells hidden by ancestor containers.
     @Test
     void pickerAccessibleCellsSkipAncestorHiddenTargets() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3DatePicker datePicker = new M3DatePicker(LocalDate.of(2026, 5, 18));
             M3DateRangePicker dateRangePicker = new M3DateRangePicker(
                     LocalDate.of(2026, 5, 12),
@@ -24494,7 +24387,7 @@ final class M3ControlStyleTest {
     /// Verifies that hidden picker field owners do not route accessibility focus or open popups.
     @Test
     void pickerFieldsSkipAccessibleFocusWhenOwnerHiddenByAncestor() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3DatePickerField dateField = new M3DatePickerField(LocalDate.of(2026, 5, 18));
             M3DateRangePickerField rangeField = new M3DateRangePickerField(
                     LocalDate.of(2026, 5, 12),
@@ -24544,7 +24437,7 @@ final class M3ControlStyleTest {
     /// Verifies that right-to-left controls mirror horizontal keyboard focus and selection.
     @Test
     void horizontalKeyboardNavigationMirrorsForRightToLeftLayouts() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button groupFirst = new M3Button("First");
             M3Button groupSecond = new M3Button("Second");
             M3Button groupThird = new M3Button("Third");
@@ -24687,7 +24580,7 @@ final class M3ControlStyleTest {
     /// Verifies that single-selection containers use the focused child as their keyboard navigation anchor.
     @Test
     void singleSelectionContainersUseFocusedChildAsKeyboardAnchor() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3IconToggleButton iconFirst = new M3IconToggleButton("A");
             M3IconToggleButton iconSecond = new M3IconToggleButton("B");
             M3IconToggleButton iconThird = new M3IconToggleButton("C");
@@ -24780,7 +24673,7 @@ final class M3ControlStyleTest {
     /// Verifies that menus support printable-key type-ahead focus navigation.
     @Test
     void menuSupportsTypeAheadKeyboardNavigation() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3MenuItem open = new M3MenuItem("Open");
             M3MenuItem archive = new M3MenuItem("Archive");
             M3MenuItem disabledSave = new M3MenuItem("Save");
@@ -24816,7 +24709,7 @@ final class M3ControlStyleTest {
     /// Verifies that selection containers expose a focusable child through accessibility focus routing.
     @Test
     void selectionContainersExposeAccessibleFocusTargets() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3IconToggleButton iconFirst = new M3IconToggleButton("A");
             M3IconToggleButton iconSecond = new M3IconToggleButton("B");
             M3IconToggleButtonGroup iconGroup = new M3IconToggleButtonGroup(iconFirst, iconSecond);
@@ -24995,7 +24888,7 @@ final class M3ControlStyleTest {
     /// Verifies that composite controls can focus indexed children through accessibility show-item actions.
     @Test
     void compositeControlsSupportAccessibleShowItemActions() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button first = new M3Button("First");
             M3Button second = new M3Button("Second");
             M3ButtonGroup group = new M3ButtonGroup(first, second);
@@ -25034,7 +24927,7 @@ final class M3ControlStyleTest {
     /// Verifies that indexed show-item parameters can still reveal nested targets inside the indexed item.
     @Test
     void indexedContainersDelegateShowItemIntoNestedTargets() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button firstTrailing = new M3Button("First trailing");
             M3ListItem firstItem = new M3ListItem("First row");
             firstItem.setTrailing(firstTrailing);
@@ -25112,7 +25005,7 @@ final class M3ControlStyleTest {
     /// Verifies that structural indexed containers focus or reveal requested accessibility items.
     @Test
     void structuralIndexedContainersSupportAccessibleShowItemActions() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button navigation = new M3Button("Navigation");
             M3Button topAction = new M3Button("Top action");
             M3TopAppBar topAppBar = new M3TopAppBar("Inbox", navigation, topAction);
@@ -25234,7 +25127,7 @@ final class M3ControlStyleTest {
             }
         });
 
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3SnackbarHost snackbarHost = new M3SnackbarHost();
             M3Snackbar first = new M3Snackbar("First");
             M3Snackbar second = new M3Snackbar("Second");
@@ -25251,7 +25144,7 @@ final class M3ControlStyleTest {
     /// Verifies that indexed structural containers expose default accessibility focus targets.
     @Test
     void structuralIndexedContainersExposeAccessibleFocusTargets() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button groupFirst = new M3Button("First");
             M3Button groupSecond = new M3Button("Second");
             M3ButtonGroup buttonGroup = new M3ButtonGroup(groupFirst, groupSecond);
@@ -25457,7 +25350,7 @@ final class M3ControlStyleTest {
     /// Verifies that form containers support directional focus without stealing text editing keys.
     @Test
     void formContainersSupportDirectionalKeyboardTraversalWithoutStealingTextInputKeys() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button paneFirst = new M3Button("Pane first");
             M3Button rowContent = new M3Button("Row content");
             M3Button rowTrailing = new M3Button("Row trailing");
@@ -25536,7 +25429,7 @@ final class M3ControlStyleTest {
     /// Verifies that shared directional traversal preserves embedded text input editing focus.
     @Test
     void focusTraversalHelperDoesNotStealEmbeddedTextInputKeys() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextField embeddedEditor = new M3TextField("Edit");
             M3Button next = new M3Button("Next");
             M3Surface owner = new M3Surface(embeddedEditor, next);
@@ -25593,7 +25486,7 @@ final class M3ControlStyleTest {
     /// Verifies that shared directional traversal prefers exact child targets before ancestor containers.
     @Test
     void focusTraversalHelperPrefersExactTargetsBeforeAncestorContainers() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button content = new M3Button("Card content");
             M3Card card = new M3Card(content, M3CardVariant.FILLED, event -> {
             });
@@ -25647,7 +25540,7 @@ final class M3ControlStyleTest {
     /// Verifies that shared directional traversal rejects stale, duplicate, and unreachable candidates.
     @Test
     void focusTraversalHelperFiltersUnreachableAndDuplicateTargets() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button first = new M3Button("First");
             M3Button hidden = new M3Button("Hidden");
             M3Button disabled = new M3Button("Disabled");
@@ -25731,7 +25624,7 @@ final class M3ControlStyleTest {
     /// Verifies that actionable containers ignore activation keys while a nested text input owns focus.
     @Test
     void actionableContainersIgnoreEmbeddedTextInputActivationKeys() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             AtomicInteger cardActions = new AtomicInteger();
             M3TextField cardEditor = new M3TextField("Card text");
             M3Card card = new M3Card(cardEditor, M3CardVariant.FILLED, event -> cardActions.incrementAndGet());
@@ -25785,7 +25678,7 @@ final class M3ControlStyleTest {
     /// Verifies that structural containers support directional focus without stealing text input keys.
     @Test
     void structuralContainersSupportDirectionalKeyboardTraversalWithoutStealingTextInputKeys() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button surfaceFirst = new M3Button("Surface first");
             M3Button hiddenSurfaceTarget = new M3Button("Hidden");
             M3Button disabledSurfaceTarget = new M3Button("Disabled");
@@ -25890,7 +25783,7 @@ final class M3ControlStyleTest {
     /// Verifies that picker skins propagate right-to-left orientation into their rendered layout nodes.
     @Test
     void pickerSkinsPropagateRightToLeftOrientation() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3DatePicker datePicker = new M3DatePicker(LocalDate.of(2026, 5, 18));
             datePicker.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
             M3DateRangePicker dateRangePicker = new M3DateRangePicker(
@@ -25990,7 +25883,7 @@ final class M3ControlStyleTest {
     /// Verifies that sheets, form sections, and validation summaries mirror logical slots in right-to-left layout.
     @Test
     void sheetFormAndValidationSkinsPropagateRightToLeftOrientation() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Label sideContent = new Label("Side content");
             M3Button sideAction = createButton("Close", M3ButtonVariant.TEXT);
             M3SideSheet sideSheet = new M3SideSheet("Details", sideContent, sideAction);
@@ -26294,7 +26187,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3NavigationItem> railSearchReference = new AtomicReference<>();
 
         try {
-            runOnFxThread(() -> {
+            FxTestUtils.runOnFxThread(() -> {
                 M3Tab overview = new M3Tab("Overview");
                 M3Tab details = new M3Tab("Details");
                 M3TabBar tabBar = new M3TabBar(overview, details);
@@ -26337,7 +26230,7 @@ final class M3ControlStyleTest {
                 navigationRail.select(railSearch);
             });
 
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> navigationIndicatorsAreTransitioning(
                             rootReference,
                             overviewReference,
@@ -26418,7 +26311,7 @@ final class M3ControlStyleTest {
                     }
             );
 
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> navigationIndicatorsHaveSettled(
                             rootReference,
                             overviewReference,
@@ -26515,7 +26408,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable SkinOwnedStateMotionScene> sceneReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> skinOwnedStateTransitionsAreAnimating(sceneReference),
                     () -> {
                         SkinOwnedStateMotionScene scene = showSkinOwnedStateMotionScene();
@@ -26542,7 +26435,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable OverlayOwnedStateMotionScene> sceneReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> overlayOwnedStateTransitionsAreAnimating(sceneReference),
                     () -> {
                         OverlayOwnedStateMotionScene scene = showOverlayOwnedStateMotionScene();
@@ -26574,7 +26467,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3DateRangePickerField> rangeFieldReference = new AtomicReference<>();
 
         try {
-            runOnFxThread(() -> showPopupMotionTestWindow(
+            FxTestUtils.runOnFxThread(() -> showPopupMotionTestWindow(
                     stageReference,
                     rootReference,
                     menuButtonReference,
@@ -26582,7 +26475,7 @@ final class M3ControlStyleTest {
                     dateFieldReference,
                     rangeFieldReference
             ));
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> menuPopupSurfaceIsAnimating(menuButtonReference),
                     () -> {
                         M3MotionSettings.setAnimationsEnabled(
@@ -26601,7 +26494,7 @@ final class M3ControlStyleTest {
                         assertPopupSurfaceSettled(menuButton.getMenu(), "menu popup");
                     }
             );
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> subMenuPopupSurfaceIsAnimating(subMenuItemReference),
                     () -> {
                         M3MotionSettings.setAnimationsEnabled(
@@ -26623,7 +26516,7 @@ final class M3ControlStyleTest {
                         Objects.requireNonNull(menuButtonReference.get(), "menuButton").hideMenu();
                     }
             );
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> datePickerPopupSurfaceIsAnimating(dateFieldReference),
                     () -> {
                         M3MotionSettings.setAnimationsEnabled(
@@ -26647,7 +26540,7 @@ final class M3ControlStyleTest {
                         dateField.hidePicker();
                     }
             );
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> rangePickerPopupSurfaceIsAnimating(rangeFieldReference),
                     () -> {
                         M3MotionSettings.setAnimationsEnabled(
@@ -26672,7 +26565,7 @@ final class M3ControlStyleTest {
                     }
             );
         } finally {
-            runOnFxThread(() -> closePopupMotionTestWindow(
+            FxTestUtils.runOnFxThread(() -> closePopupMotionTestWindow(
                     stageReference,
                     rootReference,
                     menuButtonReference,
@@ -26711,7 +26604,7 @@ final class M3ControlStyleTest {
     /// Verifies that state layer feedback changes rendered button pixels.
     @Test
     void buttonStateLayerChangesRenderedPixels() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button button = new M3Button("Button");
             Pane root = new Pane(button);
             Scene scene = new Scene(root, 200.0, 100.0);
@@ -26739,7 +26632,7 @@ final class M3ControlStyleTest {
     /// Verifies that representative interactive states render visible state layer feedback.
     @Test
     void interactiveStateSnapshotRendersHoverFocusAndPressedFeedback() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button normalButton = createButton("Normal", M3ButtonVariant.FILLED);
             M3Button hoverButton = createButton("Hover", M3ButtonVariant.FILLED);
             M3Button focusButton = createButton("Focus", M3ButtonVariant.FILLED);
@@ -26861,7 +26754,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable Double> releaseStartOpacityReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> buttonRippleIsFullyExpanded(buttonReference),
                     () -> {
                         showObservableRippleButton(stageReference, rootReference, buttonReference);
@@ -26882,7 +26775,7 @@ final class M3ControlStyleTest {
                         assertFalse(button.isArmed());
                     }
             );
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> buttonRippleOpacityFadedBelow(buttonReference, releaseStartOpacityReference),
                     () -> {
                     },
@@ -26901,7 +26794,7 @@ final class M3ControlStyleTest {
                                         + ", releaseStartOpacity=" + releaseStartOpacity);
                     }
             );
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> buttonRippleOpacityCleared(buttonReference),
                     () -> {
                     },
@@ -26928,7 +26821,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable Double> releaseStartOpacityReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> buttonRippleOpacityFadedBelow(buttonReference, releaseStartOpacityReference),
                     () -> {
                         showObservableRippleButton(stageReference, rootReference, buttonReference);
@@ -26958,7 +26851,7 @@ final class M3ControlStyleTest {
                                         + ", releaseStartOpacity=" + releaseStartOpacity);
                     }
             );
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> buttonRippleOpacityCleared(buttonReference),
                     () -> {
                     },
@@ -26979,7 +26872,7 @@ final class M3ControlStyleTest {
     /// Verifies that a representative control set renders non-blank visible output.
     @Test
     void visualSmokeSnapshotRendersCoreControlsWithContrast() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button filledButton = createButton("Filled", M3ButtonVariant.FILLED);
             M3Button tonalButton = createButton("Tonal", M3ButtonVariant.TONAL);
             M3Button outlinedButton = createButton("Outlined", M3ButtonVariant.OUTLINED);
@@ -27023,7 +26916,7 @@ final class M3ControlStyleTest {
     /// Verifies that slider snapshots show distinct rendered track and thumb pixels.
     @Test
     void sliderSnapshotRendersTrackAndThumbPixels() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Slider slider = new M3Slider(0.0, 100.0, 50.0);
             slider.setPrefSize(220.0, 56.0);
             FlowPane root = new FlowPane(slider);
@@ -27056,7 +26949,7 @@ final class M3ControlStyleTest {
     /// Verifies that selected segmented button backgrounds keep rounded end caps in rendered output.
     @Test
     void segmentedButtonSnapshotKeepsSelectedEndRounded() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3SegmentedButton day = new M3SegmentedButton("Day");
             M3SegmentedButton week = new M3SegmentedButton("Week");
             M3SegmentedButton month = createSegmentedButton("Month", true);
@@ -27096,7 +26989,7 @@ final class M3ControlStyleTest {
     /// Verifies that determinate progress snapshots show separated fill, track, and rounded caps.
     @Test
     void progressBarSnapshotRendersFillTrackAndRoundedCaps() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3ProgressBar progressBar = new M3ProgressBar(0.5);
             progressBar.setPrefSize(200.0, 32.0);
             progressBar.setStyle("-m3-track-thickness: 8px; -m3-track-shape: 999px;");
@@ -27136,7 +27029,7 @@ final class M3ControlStyleTest {
     /// Verifies that circular progress snapshots show distinct track and indicator arc pixels.
     @Test
     void progressIndicatorSnapshotRendersTrackAndArcPixels() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.5);
             progressIndicator.setPrefSize(72.0, 72.0);
             progressIndicator.setStyle("-m3-track-thickness: 8px; -m3-indicator-size: 72px;");
@@ -27175,7 +27068,7 @@ final class M3ControlStyleTest {
     /// Verifies that expressive progress snapshots render wavy linear and circular indicators.
     @Test
     void expressiveProgressSnapshotRendersWavyIndicators() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3ProgressBar determinateBar = new M3ProgressBar(0.55);
             determinateBar.setPrefWidth(260.0);
             M3ProgressBar indeterminateBar = new M3ProgressBar();
@@ -27219,7 +27112,7 @@ final class M3ControlStyleTest {
     /// Verifies that inputs render filled, outlined, password, and multiline visual variants.
     @Test
     void inputSnapshotRendersFilledOutlinedPasswordAndTextAreaControls() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextField filledField = new M3TextField("Filled text");
             filledField.setPrefWidth(180.0);
             M3TextField outlinedField = createTextField("Outlined text", M3TextInputVariant.OUTLINED);
@@ -27266,7 +27159,7 @@ final class M3ControlStyleTest {
     /// Verifies that text input layouts render supporting text, validation, errors, and character counters.
     @Test
     void inputLayoutSnapshotRendersSupportingErrorAndCounterText() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextField supportingField = new M3TextField("Alpha");
             supportingField.setPrefWidth(220.0);
             M3TextInputLayout supportingLayout = new M3TextInputLayout(supportingField, "Supporting text");
@@ -27385,7 +27278,7 @@ final class M3ControlStyleTest {
     /// Verifies that right-to-left text input layouts keep rendered ink, slots, counters, and notches stable.
     @Test
     void inputLayoutSnapshotRendersRightToLeftStatesWithStableTextInk() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextField filledField = new M3TextField("Filled value");
             filledField.setPrefWidth(240.0);
             M3TextInputLayout filledLayout = new M3TextInputLayout(filledField, "Filled supporting text");
@@ -27485,7 +27378,7 @@ final class M3ControlStyleTest {
     /// Verifies that outlined text input layouts cut a real outline notch instead of painting a label mask.
     @Test
     void outlinedInputLayoutSnapshotRendersNotchedOutlineWithoutLabelMask() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextField textField = createTextField("M3FX", M3TextInputVariant.OUTLINED);
             textField.setPrefWidth(360.0);
 
@@ -27570,7 +27463,7 @@ final class M3ControlStyleTest {
     /// Verifies that validation summaries mirror text alignment when orientation changes at runtime.
     @Test
     void validationSummaryMirrorsTextAlignmentWhenOrientationChanges() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextField field = new M3TextField();
             M3TextInputLayout layout = new M3TextInputLayout(field, "Display name", "Required");
             layout.setValidator(M3TextInputValidators.required("Display name is required"));
@@ -27647,7 +27540,7 @@ final class M3ControlStyleTest {
     /// Verifies that validation summaries render invalid input rows in snapshots.
     @Test
     void validationSummarySnapshotRendersInvalidInputRows() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextField nameField = new M3TextField();
             M3TextInputLayout nameLayout = new M3TextInputLayout(nameField, "Display name", "Required");
             nameLayout.setValidator(M3TextInputValidators.required("Display name is required"));
@@ -27692,7 +27585,7 @@ final class M3ControlStyleTest {
     /// Verifies that validation summaries route accessibility focus to the current invalid input.
     @Test
     void validationSummaryRoutesAccessibleFocusAcrossInvalidInputs() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextField nameField = new M3TextField();
             M3TextInputLayout nameLayout = new M3TextInputLayout(nameField, "Name", "Required");
             nameLayout.setValidator(M3TextInputValidators.required("Name is required"));
@@ -27802,7 +27695,7 @@ final class M3ControlStyleTest {
     /// Verifies that form validators focus the first reachable invalid input.
     @Test
     void formValidatorFocusSkipsInvalidInputsHiddenByAncestors() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextField hiddenField = new M3TextField();
             M3TextInputLayout hiddenLayout = new M3TextInputLayout(hiddenField, "Hidden", "Required");
             hiddenLayout.setValidator(M3TextInputValidators.required("Hidden is required"));
@@ -27846,7 +27739,7 @@ final class M3ControlStyleTest {
     /// Verifies that validation summary accessibility skips invalid inputs hidden by ancestors.
     @Test
     void validationSummarySkipsInvalidInputsHiddenByAncestors() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TextField hiddenField = new M3TextField();
             M3TextInputLayout hiddenLayout = new M3TextInputLayout(hiddenField, "Hidden", "Required");
             hiddenLayout.setValidator(M3TextInputValidators.required("Hidden is required"));
@@ -27980,7 +27873,7 @@ final class M3ControlStyleTest {
     /// Verifies that selection controls render selected, indeterminate, and disabled states.
     @Test
     void selectionSnapshotRendersStateMatrix() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3CheckBox uncheckedCheckBox = new M3CheckBox("Unchecked");
             M3CheckBox checkedCheckBox = createCheckBox("Checked", true);
             M3CheckBox indeterminateCheckBox = new M3CheckBox("Indeterminate");
@@ -28120,7 +28013,7 @@ final class M3ControlStyleTest {
     /// Verifies that containment, feedback, and navigation controls render visible surfaces.
     @Test
     void containmentFeedbackAndNavigationSnapshotRendersVisibleSurfaces() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Avatar avatar = createAvatar("AB", M3AvatarVariant.TERTIARY);
             M3BadgedBox badgedBox = new M3BadgedBox(new M3Avatar("M"), new M3Badge("7"));
             M3ListItem listItem = new M3ListItem("Inbox");
@@ -28173,7 +28066,7 @@ final class M3ControlStyleTest {
     /// Verifies that expanded navigation drawer groups render header and child rows.
     @Test
     void navigationDrawerGroupSnapshotRendersExpandedRows() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3ListItem overview = new M3ListItem("Components overview");
             M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Buttons");
             M3ListItem buttons = new M3ListItem("Buttons");
@@ -28214,7 +28107,7 @@ final class M3ControlStyleTest {
     /// Verifies that carousel snapshots render the viewport and selected item.
     @Test
     void carouselSnapshotRendersViewportAndSelectedItem() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Card first = new M3Card(visualLabel("First"), M3CardVariant.FILLED);
             first.setPrefSize(150.0, 84.0);
             M3Card second = new M3Card(visualLabel("Selected"), M3CardVariant.ELEVATED);
@@ -28253,7 +28146,7 @@ final class M3ControlStyleTest {
     /// Verifies that date range dialog presets render beside the picker.
     @Test
     void dateRangePresetDialogSnapshotRendersPresetColumn() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3DateRangePickerDialog dialog = new M3DateRangePickerDialog();
             dialog.setCommonPresets(LocalDate.of(2026, 5, 19));
             M3DialogPane pane = dialog.getM3DialogPane();
@@ -28289,7 +28182,7 @@ final class M3ControlStyleTest {
     /// Verifies that single-date dialog presets render beside the picker.
     @Test
     void datePresetDialogSnapshotRendersPresetColumn() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3DatePickerDialog dialog = new M3DatePickerDialog();
             dialog.setCommonPresets(LocalDate.of(2026, 5, 19));
             M3DialogPane pane = dialog.getM3DialogPane();
@@ -28325,7 +28218,7 @@ final class M3ControlStyleTest {
     /// Verifies that time dialog presets render beside the picker.
     @Test
     void timePresetDialogSnapshotRendersPresetColumn() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TimePickerDialog dialog = new M3TimePickerDialog(LocalTime.of(10, 30));
             dialog.setUse24HourClock(true);
             dialog.setMinuteStep(15);
@@ -28363,7 +28256,7 @@ final class M3ControlStyleTest {
     /// Verifies that picker dialog preset columns follow right-to-left layout direction.
     @Test
     void pickerPresetDialogsPropagateRightToLeftOrientation() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3DatePickerDialog dateDialog = new M3DatePickerDialog(LocalDate.of(2026, 5, 19));
             dateDialog.setCommonPresets(LocalDate.of(2026, 5, 19));
             M3DialogPane datePane = dateDialog.getM3DialogPane();
@@ -28439,7 +28332,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3DateRangePickerField> fieldReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> dateRangeFieldPresetPopupReady(fieldReference),
                     () -> {
                         M3DateRangePickerField field = new M3DateRangePickerField(
@@ -28493,7 +28386,7 @@ final class M3ControlStyleTest {
                         ));
                     });
         } finally {
-            runOnFxThread(() -> {
+            FxTestUtils.runOnFxThread(() -> {
                 @Nullable M3DateRangePickerField field = fieldReference.get();
                 if (field != null) {
                     field.hidePicker();
@@ -28514,7 +28407,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3DateRangePickerField> fieldReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> dateRangeFieldPresetPopupReady(fieldReference),
                     () -> {
                         M3DateRangePickerField field = new M3DateRangePickerField(
@@ -28568,7 +28461,7 @@ final class M3ControlStyleTest {
                         assertFixedTargetControlsKeepCenteredContent(popupRoot);
                     });
         } finally {
-            runOnFxThread(() -> {
+            FxTestUtils.runOnFxThread(() -> {
                 @Nullable M3DateRangePickerField field = fieldReference.get();
                 if (field != null) {
                     field.hidePicker();
@@ -28592,7 +28485,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3DateRangePickerField> rangeFieldReference = new AtomicReference<>();
 
         try {
-            runOnFxThread(() -> {
+            FxTestUtils.runOnFxThread(() -> {
                 M3DatePickerField dateField = new M3DatePickerField(LocalDate.of(2026, 5, 19));
                 M3MotionSettings.setAnimationsEnabled(dateField, false);
                 dateField.setCommonPresets(LocalDate.of(2026, 5, 19));
@@ -28633,7 +28526,7 @@ final class M3ControlStyleTest {
                 rangeFieldReference.set(rangeField);
             });
 
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> pickerFieldPresetPopupReady(
                             dateFieldReference.get(),
                             M3DatePickerField.PRESET_BUTTON_STYLE_CLASS,
@@ -28656,7 +28549,7 @@ final class M3ControlStyleTest {
                     )
             );
 
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> pickerFieldPresetPopupReady(
                             timeFieldReference.get(),
                             M3TimePickerField.PRESET_BUTTON_STYLE_CLASS,
@@ -28679,7 +28572,7 @@ final class M3ControlStyleTest {
                     )
             );
 
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> dateRangeFieldPresetPopupReady(rangeFieldReference),
                     () -> {
                         Pane root = Objects.requireNonNull(rootReference.get());
@@ -28694,7 +28587,7 @@ final class M3ControlStyleTest {
                     )
             );
         } finally {
-            runOnFxThread(() -> {
+            FxTestUtils.runOnFxThread(() -> {
                 @Nullable M3DatePickerField dateField = dateFieldReference.get();
                 if (dateField != null) {
                     dateField.hidePicker();
@@ -28721,7 +28614,7 @@ final class M3ControlStyleTest {
     /// Verifies that date range picker fields route popup accessibility focus through real popup children.
     @Test
     void dateRangePickerFieldRoutesPopupAccessibilityFocus() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3DateRangePickerField field = new M3DateRangePickerField(
                     LocalDate.of(2026, 5, 19),
                     LocalDate.of(2026, 5, 25)
@@ -28801,7 +28694,7 @@ final class M3ControlStyleTest {
     /// Verifies that date pickers expose rendered day cells to accessibility clients.
     @Test
     void datePickerExposesAccessibleDayCellsAndActions() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3DatePicker datePicker = new M3DatePicker(LocalDate.of(2026, 5, 19));
             datePicker.setDisplayedMonth(YearMonth.of(2026, 5));
             datePicker.setFirstDayOfWeek(DayOfWeek.MONDAY);
@@ -28851,7 +28744,7 @@ final class M3ControlStyleTest {
     /// Verifies that date picker day labels stay centered inside fixed day cells.
     @Test
     void datePickerCentersDayCellContent() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3DatePicker datePicker = new M3DatePicker(LocalDate.of(2026, 5, 18));
             datePicker.setDisplayedMonth(YearMonth.of(2026, 5));
             datePicker.setFirstDayOfWeek(DayOfWeek.MONDAY);
@@ -28902,7 +28795,7 @@ final class M3ControlStyleTest {
     /// Verifies that time picker cell labels stay centered inside fixed time cells.
     @Test
     void timePickerCentersCellContent() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TimePicker timePicker = new M3TimePicker(LocalTime.of(9, 30));
             timePicker.setUse24HourClock(true);
             timePicker.setMinuteStep(15);
@@ -28953,7 +28846,7 @@ final class M3ControlStyleTest {
     /// Verifies that time pickers expose rendered selectable cells to accessibility clients.
     @Test
     void timePickerExposesAccessibleCellsAndActions() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3TimePicker timePicker = new M3TimePicker(LocalTime.of(9, 30));
             timePicker.setUse24HourClock(true);
             timePicker.setMinuteStep(15);
@@ -29002,7 +28895,7 @@ final class M3ControlStyleTest {
     /// Verifies that every implemented node-backed control family renders in a full visual gallery.
     @Test
     void allImplementedControlFamiliesRenderVisualGallery() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Text titleText = new M3Text("M3FX", M3TextRole.DISPLAY_SMALL);
             M3Icon primaryIcon = new M3Icon("A", M3IconSize.LARGE, M3IconVariant.PRIMARY);
             M3DisclosureIcon disclosureIcon = new M3DisclosureIcon(true);
@@ -29438,7 +29331,7 @@ final class M3ControlStyleTest {
     /// Verifies that the expressive profile affects real rendered controls, not only generated token text.
     @Test
     void expressiveProfileVisualSnapshotRendersProfileSizedControls() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button filledButton = createButton("Filled", M3ButtonVariant.FILLED);
             M3IconButton iconButton = new M3IconButton(visualIcon("search"));
             M3IconToggleButton standardToggle = createIconToggleButton(
@@ -29697,7 +29590,7 @@ final class M3ControlStyleTest {
     /// Verifies that actual dark expressive theme tokens render the main control families visibly.
     @Test
     void darkExpressiveVisualSnapshotRendersTokenDrivenControls() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button filledButton = createButton("Filled", M3ButtonVariant.FILLED);
             M3Button tonalButton = createButton("Tonal", M3ButtonVariant.TONAL);
             M3Button outlinedButton = createButton("Outlined", M3ButtonVariant.OUTLINED);
@@ -29813,7 +29706,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3Tooltip> tooltipReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhen(
+            FxTestUtils.runOnFxThreadWhen(
                     () -> menuPopupSurfaceHasSettled(menuButtonReference),
                     () -> {
                         Stage stage = new Stage();
@@ -29899,7 +29792,7 @@ final class M3ControlStyleTest {
                     }
             );
         } finally {
-            runOnFxThread(() -> {
+            FxTestUtils.runOnFxThread(() -> {
                 @Nullable M3Tooltip tooltip = tooltipReference.get();
                 if (tooltip != null) {
                     tooltip.hide();
@@ -29921,7 +29814,7 @@ final class M3ControlStyleTest {
     /// Verifies that tooltip popups render their inverse surface and text.
     @Test
     void tooltipSnapshotRendersPopupSurface() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3Tooltip tooltip = new M3Tooltip("Tooltip text");
             try {
@@ -29963,7 +29856,7 @@ final class M3ControlStyleTest {
     /// Verifies that long tooltip popups keep their preferred wrap width when the popup is sized by JavaFX.
     @Test
     void tooltipPopupWrapsLongTextAtPreferredWidth() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3Tooltip tooltip = new M3Tooltip(
                     "Use tooltips for brief contextual labels when a control needs clarification."
@@ -30028,7 +29921,7 @@ final class M3ControlStyleTest {
     /// Verifies that rich tooltip popups render their surface, text, and actions.
     @Test
     void richTooltipSnapshotRendersPopupSurface() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3RichTooltip tooltip = new M3RichTooltip(
                     "Rich tooltip",
@@ -30197,7 +30090,7 @@ final class M3ControlStyleTest {
     /// Verifies that the slider skin uses Material handle geometry and centers feedback on the handle.
     @Test
     void sliderSkinUsesMaterialHandleGeometry() {
-        runOnFxThreadAndWait(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Slider horizontal = new M3Slider(0.0, 100.0, 25.0);
             M3Slider vertical = new M3Slider(0.0, 100.0, 75.0);
             vertical.setOrientation(Orientation.VERTICAL);
@@ -31031,7 +30924,7 @@ final class M3ControlStyleTest {
     /// Verifies that slot and container controls report the currently focused accessible child.
     @Test
     void slotContainersReportCurrentFocusedAccessibleChild() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button topNavigation = new M3Button("Menu");
             M3Button topSearch = new M3Button("Search");
             M3Button topAccount = new M3Button("Account");
@@ -31138,7 +31031,7 @@ final class M3ControlStyleTest {
     /// Verifies that hidden ancestor chains are excluded from structural accessibility focus routing.
     @Test
     void structuralContainersSkipFocusTargetsInsideHiddenAncestors() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button outside = new M3Button("Outside");
             M3Button hiddenTarget = new M3Button("Hidden target");
             M3Button visibleTarget = new M3Button("Visible target");
@@ -31182,7 +31075,7 @@ final class M3ControlStyleTest {
     /// Verifies that shared keyboard navigation skips candidates hidden by an ancestor.
     @Test
     void selectionNavigationSkipsNodesInsideHiddenAncestors() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button hiddenTarget = new M3Button("Hidden");
             M3Button visibleTarget = new M3Button("Visible");
             Pane hiddenContainer = new Pane(hiddenTarget);
@@ -31227,7 +31120,7 @@ final class M3ControlStyleTest {
     /// Verifies that parent containers use child controls' exposed focus nodes as default focus targets.
     @Test
     void parentContainersReportNestedCompositeDefaultFocusNodes() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3ButtonGroup buttonGroup = new M3ButtonGroup(new M3Button("Archive"), new M3Button("Share"));
 
             M3SnackbarHost snackbarHost = new M3SnackbarHost();
@@ -31277,7 +31170,7 @@ final class M3ControlStyleTest {
     /// Verifies that parent containers reveal child controls through their exposed focus nodes.
     @Test
     void parentContainersShowNestedCompositeAccessibleFocusTargets() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button archive = new M3Button("Archive");
             M3Button share = new M3Button("Share");
             M3ButtonGroup buttonGroup = new M3ButtonGroup(archive, share);
@@ -31329,7 +31222,7 @@ final class M3ControlStyleTest {
     /// Verifies that parent containers delegate indexed reveal requests into inactive nested search results.
     @Test
     void parentContainersShowNestedSearchResultByIndex() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button firstResult = new M3Button("First result");
             M3Button secondResult = new M3Button("Second result");
             M3SearchView searchView = new M3SearchView("Search", firstResult, secondResult);
@@ -31366,7 +31259,7 @@ final class M3ControlStyleTest {
     /// Verifies that parent containers delegate indexed reveal requests into hidden sheet owners.
     @Test
     void parentContainersShowNestedHiddenSheetItemByIndex() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button indexedSideContent = new M3Button("Side content");
             M3Button indexedSideAction = new M3Button("Side action");
             M3SideSheet indexedSideSheet = new M3SideSheet("Details", indexedSideContent, indexedSideAction);
@@ -31504,7 +31397,7 @@ final class M3ControlStyleTest {
     /// Verifies that composite controls actively notify when their accessible focus child changes.
     @Test
     void accessibleFocusNotifierReportsSceneFocusChanges() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button first = new M3Button("First");
             M3Button second = new M3Button("Second");
             M3Surface surface = new M3Surface(first, second);
@@ -31562,7 +31455,7 @@ final class M3ControlStyleTest {
     /// Verifies that accessible focus notifications can observe popup-hosted content for a separate owner.
     @Test
     void accessibleFocusNotifierReportsSeparateSceneFocusChanges() {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3Button owner = new M3Button("Owner");
             M3Button first = new M3Button("First");
             M3Button second = new M3Button("Second");
@@ -31880,7 +31773,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable Double> targetValueReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhenStable(
+            FxTestUtils.runOnFxThreadWhenStable(
                     () -> {
                         ScrollPane scrollPane = Objects.requireNonNull(scrollPaneReference.get(), "scrollPane");
                         double targetValue = Objects.requireNonNull(targetValueReference.get(), "targetValue");
@@ -31927,7 +31820,7 @@ final class M3ControlStyleTest {
                     }
             );
         } finally {
-            runOnFxThread(() -> {
+            FxTestUtils.runOnFxThread(() -> {
                 @Nullable ScrollPane scrollPane = scrollPaneReference.get();
                 if (scrollPane != null) {
                     M3ScrollPanes.disableSmoothScrolling(scrollPane);
@@ -31944,7 +31837,7 @@ final class M3ControlStyleTest {
     /// Verifies that a running smooth scroll settles when animations are disabled at runtime.
     @Test
     void scrollPaneSmoothScrollingSettlesWhenAnimationsAreDisabledAtRuntime() {
-        runOnFxThreadAndWait(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Region content = new Region();
             content.setPrefSize(160.0, 480.0);
             ScrollPane scrollPane = new ScrollPane(content);
@@ -32175,7 +32068,7 @@ final class M3ControlStyleTest {
     /// Verifies that wheel events accumulate while a smooth scroll animation is still running.
     @Test
     void scrollPaneSmoothScrollingAccumulatesWheelEventsWhileAnimationRuns() {
-        runOnFxThreadAndWait(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             Region content = new Region();
             content.setPrefSize(160.0, 480.0);
             ScrollPane scrollPane = new ScrollPane(content);
@@ -32308,7 +32201,7 @@ final class M3ControlStyleTest {
     /// Verifies that outer smooth scroll panes do not consume wheel events owned by nested virtualized lists.
     @Test
     void scrollPaneSmoothScrollingIgnoresNestedVirtualFlowScrollEvents() {
-        FxTestUtils.assertNoM3CssTokenWarnings(() -> runOnFxThread(() -> {
+        FxTestUtils.assertNoM3CssTokenWarnings(() -> FxTestUtils.runOnFxThread(() -> {
             M3ListView<Integer> listView = new M3ListView<>();
             for (int index = 0; index < 100; index++) {
                 listView.addItem(index);
@@ -32364,7 +32257,7 @@ final class M3ControlStyleTest {
     /// Verifies that common nested scroll controls keep wheel ownership when they are direct event targets.
     @Test
     void scrollPaneSmoothScrollingClassifiesCommonNestedScrollOwners() {
-        FxTestUtils.assertNoM3CssTokenWarnings(() -> runOnFxThread(() -> {
+        FxTestUtils.assertNoM3CssTokenWarnings(() -> FxTestUtils.runOnFxThread(() -> {
             TextArea textArea = new TextArea("Line 1\nLine 2\nLine 3");
             M3TextArea materialTextArea = new M3TextArea("Line 1\nLine 2\nLine 3");
             ListView<String> listView = new ListView<>();
@@ -32405,7 +32298,7 @@ final class M3ControlStyleTest {
     /// Verifies that nested smooth scroll panes retain ownership of their own wheel events.
     @Test
     void scrollPaneSmoothScrollingIgnoresNestedScrollPaneTargets() {
-        FxTestUtils.assertNoM3CssTokenWarnings(() -> runOnFxThread(() -> {
+        FxTestUtils.assertNoM3CssTokenWarnings(() -> FxTestUtils.runOnFxThread(() -> {
             Region innerContent = new Region();
             innerContent.setPrefSize(180.0, 480.0);
             ScrollPane innerScrollPane = new ScrollPane(innerContent);
@@ -32641,11 +32534,6 @@ final class M3ControlStyleTest {
         );
     }
 
-    /// Returns whether a snackbar has completed its exit transition and left its host.
-    private static boolean snackbarDetached(AtomicReference<@Nullable M3Snackbar> snackbarReference) {
-        @Nullable M3Snackbar snackbar = snackbarReference.get();
-        return snackbar != null && snackbar.getParent() == null && !snackbar.isVisible();
-    }
 
     /// Returns whether a snackbar's exposed focus node currently owns focus.
     private static boolean snackbarFocusNodeFocused(@Nullable M3Snackbar snackbar) {
@@ -32728,24 +32616,13 @@ final class M3ControlStyleTest {
         return tooltip != null && !tooltip.isShowing();
     }
 
-    /// Returns whether a referenced submenu item is currently showing its submenu popup.
-    private static boolean subMenuShowing(AtomicReference<? extends @Nullable M3SubMenuItem> subMenuItemReference) {
-        @Nullable M3SubMenuItem subMenuItem = subMenuItemReference.get();
-        return subMenuItem != null && subMenuItem.isSubMenuShowing();
-    }
-
-    /// Returns whether a referenced submenu item has been created and is currently hidden.
-    private static boolean subMenuHidden(AtomicReference<? extends @Nullable M3SubMenuItem> subMenuItemReference) {
-        @Nullable M3SubMenuItem subMenuItem = subMenuItemReference.get();
-        return subMenuItem != null && !subMenuItem.isSubMenuShowing();
-    }
 
     /// Closes a real-window motion behavior test scene and clears local motion overrides.
     private static void closeMotionTestScene(
             AtomicReference<? extends @Nullable Stage> stageReference,
             AtomicReference<? extends @Nullable Node> rootReference
     ) {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             @Nullable Node root = rootReference.get();
             if (root != null) {
                 M3MotionSettings.clearMotionBehavior(root);
@@ -32766,7 +32643,7 @@ final class M3ControlStyleTest {
             AtomicReference<? extends @Nullable Node> targetReference,
             AtomicReference<? extends @Nullable M3Tooltip> tooltipReference
     ) {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             @Nullable Node target = targetReference.get();
             @Nullable M3Tooltip tooltip = tooltipReference.get();
             if (target != null && tooltip != null) {
@@ -33000,7 +32877,10 @@ final class M3ControlStyleTest {
         ///
         /// @param rawStartAngle the arc start angle reported by the rendered progress indicator
         private void observe(double rawStartAngle) {
-            double normalizedStartAngle = normalizeAngleDegrees(rawStartAngle);
+            double normalizedStartAngle = rawStartAngle % 360.0;
+            if (normalizedStartAngle < 0.0) {
+                normalizedStartAngle += 360.0;
+            }
             angleBuckets.add((int) Math.floor(normalizedStartAngle / 45.0));
             sampleCount++;
 
@@ -33009,9 +32889,10 @@ final class M3ControlStyleTest {
                 if (rawDelta > 180.0) {
                     wrapCount++;
                 }
+                double angleDifference = Math.abs(normalizedStartAngle - lastNormalizedStartAngle);
                 maximumVisualDelta = Math.max(
                         maximumVisualDelta,
-                        circularAngleDistanceDegrees(normalizedStartAngle, lastNormalizedStartAngle)
+                        Math.min(angleDifference, 360.0 - angleDifference)
                 );
             }
 
@@ -33091,7 +32972,13 @@ final class M3ControlStyleTest {
     ) {
         M3ShapeMorph.Sequence sequence = M3ShapeMorph.loadingIndicatorIndeterminate();
         double progress = clampToUnit(segmentProgress);
-        double morphRotationTarget = normalizeTurns((segment + 1.0) * LOADING_INDICATOR_QUARTER_ROTATION);
+        double morphRotationTarget = ((segment + 1.0) * LOADING_INDICATOR_QUARTER_ROTATION) % 1.0;
+        if (morphRotationTarget < 0.0) {
+            morphRotationTarget += 1.0;
+        }
+        double morphScaleEnvelope = Math.sin(Math.PI * progress);
+        double morphScale = 1.0
+                + LOADING_INDICATOR_MORPH_SCALE_AMPLITUDE * morphScaleEnvelope * morphScaleEnvelope;
         sequence.morphAt(segment).writeTo(
                 frameScene.indicator,
                 progress,
@@ -33099,24 +32986,13 @@ final class M3ControlStyleTest {
                 LOADING_INDICATOR_TEST_CENTER,
                 LOADING_INDICATOR_TEST_INDICATOR_SIZE,
                 sequence.scaleFactor(),
-                loadingIndicatorMorphScale(progress),
+                morphScale,
                 progress * LOADING_INDICATOR_QUARTER_ROTATION + morphRotationTarget + globalRotation,
                 frameScene.scratch
         );
         frameScene.root.layout();
     }
 
-    /// Returns the transient scale used by the loading indicator morph animation.
-    private static double loadingIndicatorMorphScale(double segmentProgress) {
-        double envelope = Math.sin(Math.PI * clampToUnit(segmentProgress));
-        return 1.0 + LOADING_INDICATOR_MORPH_SCALE_AMPLITUDE * envelope * envelope;
-    }
-
-    /// Normalizes turn-based rotation into the `[0, 1)` range.
-    private static double normalizeTurns(double turns) {
-        double normalized = turns % 1.0;
-        return normalized < 0.0 ? normalized + 1.0 : normalized;
-    }
 
     /// Returns whether circular progress has crossed a rendered indeterminate cycle seam without a visual jump.
     private static boolean progressIndicatorObservedSeamlessCycle(
@@ -33149,17 +33025,6 @@ final class M3ControlStyleTest {
         );
     }
 
-    /// Normalizes an angle to the `[0, 360)` degree range.
-    private static double normalizeAngleDegrees(double angle) {
-        double normalized = angle % 360.0;
-        return normalized < 0.0 ? normalized + 360.0 : normalized;
-    }
-
-    /// Returns the shortest visual distance between two normalized degree angles.
-    private static double circularAngleDistanceDegrees(double a, double b) {
-        double difference = Math.abs(normalizeAngleDegrees(a) - normalizeAngleDegrees(b));
-        return Math.min(difference, 360.0 - difference);
-    }
 
     /// Returns whether a loading indicator has rendered the requested number of distinct real-pulse frames.
     private static boolean loadingIndicatorObservedDistinctFrames(
@@ -33278,7 +33143,7 @@ final class M3ControlStyleTest {
             AtomicReference<@Nullable Stage> stageReference,
             AtomicReference<@Nullable Pane> rootReference
     ) {
-        runOnFxThreadAndWait(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             @Nullable Pane root = rootReference.getAndSet(null);
             if (root != null) {
                 M3MotionSettings.clearAnimationsEnabled(root);
@@ -33433,7 +33298,7 @@ final class M3ControlStyleTest {
             return;
         }
 
-        runOnFxThreadAndWait(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3MotionSettings.clearAnimationsEnabled(scene.root);
             M3MotionSettings.clearMotionScheme(scene.root);
             M3MotionSettings.clearMotionBehavior(scene.root);
@@ -33441,7 +33306,7 @@ final class M3ControlStyleTest {
         });
     }
 
-    /// Applies the pseudo-class combination that previously allowed Modena button styles to win.
+    /// Applies an interactive pseudo-class combination that must keep M3FX button styles authoritative.
     private static void applyInteractivePseudoClasses(Node node) {
         node.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
         node.pseudoClassStateChanged(PseudoClass.getPseudoClass("focused"), true);
@@ -33473,11 +33338,6 @@ final class M3ControlStyleTest {
         Node child = node.lookup(selector);
         assertInstanceOf(Region.class, child);
         return (Region) child;
-    }
-
-    /// Runs a test action on the JavaFX application thread and waits for completion.
-    private static void runOnFxThreadAndWait(Runnable action) {
-        FxTestUtils.runOnFxThread(action);
     }
 
     /// Returns a local motion scheme with observable pulse-driven animation frames.
@@ -33718,7 +33578,7 @@ final class M3ControlStyleTest {
             return;
         }
 
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3MotionSettings.clearAnimationsEnabled(scene.root);
             M3MotionSettings.clearMotionScheme(scene.root);
             scene.stage.close();
@@ -33900,7 +33760,7 @@ final class M3ControlStyleTest {
             return;
         }
 
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             M3MotionSettings.clearAnimationsEnabled(scene.root);
             M3MotionSettings.clearMotionScheme(scene.root);
             scene.stage.close();
@@ -34111,11 +33971,6 @@ final class M3ControlStyleTest {
         assertBetween(node.getScaleY(), 0.86, 1.0, "FAB menu action scaleY");
     }
 
-    /// Verifies that a FAB menu action is rendering an intermediate transition frame.
-    private static void assertFabActionTransitionFrame(Node node) {
-        assertFabActionEnterNodeIntermediate(node);
-    }
-
     /// Verifies that a FAB menu and action reached the final expanded state.
     private static void assertFabMenuExpandedStateSettled(M3FabMenu menu, M3FloatingActionButton action) {
         layoutNodeTree(menu);
@@ -34187,7 +34042,7 @@ final class M3ControlStyleTest {
             AtomicReference<@Nullable Stage> stageReference,
             AtomicReference<@Nullable Parent> rootReference
     ) {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             @Nullable Parent root = rootReference.get();
             if (root != null) {
                 M3MotionSettings.clearAnimationsEnabled(root);
@@ -34493,7 +34348,7 @@ final class M3ControlStyleTest {
             AtomicReference<@Nullable Stage> stageReference,
             AtomicReference<@Nullable FlowPane> rowReference
     ) {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             @Nullable FlowPane row = rowReference.get();
             if (row != null) {
                 M3MotionSettings.clearAnimationsEnabled(row);
@@ -34996,7 +34851,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable ButtonBase> buttonReference = new AtomicReference<>();
 
         try {
-            runOnFxThreadWhenStable(
+            FxTestUtils.runOnFxThreadWhenStable(
                     () -> buttonScaleMatches(buttonReference, expectedScale),
                     2,
                     () -> {
@@ -35063,7 +34918,7 @@ final class M3ControlStyleTest {
             AtomicReference<@Nullable Pane> rootReference,
             AtomicReference<@Nullable ButtonBase> buttonReference
     ) {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             @Nullable ButtonBase button = buttonReference.get();
             if (button != null && button.isArmed()) {
                 button.fireEvent(primaryMouseEvent(
@@ -35140,7 +34995,7 @@ final class M3ControlStyleTest {
             AtomicReference<@Nullable Pane> rootReference,
             AtomicReference<@Nullable M3Button> buttonReference
     ) {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             @Nullable M3Button button = buttonReference.get();
             if (button != null && button.isArmed()) {
                 button.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 24.0, 20.0, false));
@@ -35872,11 +35727,6 @@ final class M3ControlStyleTest {
         assertEquals(expectedFill, region.getBackground().getFills().get(0).getFill());
     }
 
-    /// Verifies the fill color for a shape.
-    private static void assertShapeFill(Shape shape, Color expectedFill) {
-        assertEquals(expectedFill, shape.getFill());
-    }
-
     /// Verifies that a region background resolved to a concrete color.
     private static void assertResolvedBackgroundFill(Region region, String description) {
         assertTrue(region.getBackground() != null, () -> description + " has no background");
@@ -36113,7 +35963,7 @@ final class M3ControlStyleTest {
             String presetButtonStyleClass,
             Node expectedClosedFocusNode
     ) {
-        Parent popupRoot = pickerFieldPresetPopupRoot(field);
+        Parent popupRoot = Objects.requireNonNull(pickerFieldPresetPopupRootOrNull(field), "picker field preset popup root");
         Node presetButton = assertInstanceOf(Node.class, popupRoot.lookup("." + presetButtonStyleClass));
 
         ownerRoot.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
@@ -36164,7 +36014,8 @@ final class M3ControlStyleTest {
             Parent ownerRoot,
             M3DateRangePickerField field
     ) {
-        Parent popupRoot = dateRangePickerFieldPresetPopupRoot(field);
+        Parent presetContent = Objects.requireNonNull(field.getPicker().getParent(), "preset content");
+        Parent popupRoot = Objects.requireNonNull(presetContent.getParent(), "date range picker field preset popup root");
         Node presetButton = assertInstanceOf(
                 Node.class,
                 popupRoot.lookup("." + M3DateRangePickerField.PRESET_BUTTON_STYLE_CLASS)
@@ -36245,21 +36096,10 @@ final class M3ControlStyleTest {
                 && hasRenderableBounds(field.getPicker());
     }
 
-    /// Returns the popup root for a single-value picker field preset popup.
-    private static Parent pickerFieldPresetPopupRoot(M3PickerField<?, ?> field) {
-        return Objects.requireNonNull(pickerFieldPresetPopupRootOrNull(field), "picker field preset popup root");
-    }
-
     /// Returns the popup root for a single-value picker field preset popup, or `null` before it is attached.
     private static @Nullable Parent pickerFieldPresetPopupRootOrNull(M3PickerField<?, ?> field) {
         @Nullable Parent presetContent = field.getPicker().getParent();
         return presetContent == null ? null : presetContent.getParent();
-    }
-
-    /// Returns the popup root for a date range picker field preset popup.
-    private static Parent dateRangePickerFieldPresetPopupRoot(M3DateRangePickerField field) {
-        Parent presetContent = Objects.requireNonNull(field.getPicker().getParent(), "preset content");
-        return Objects.requireNonNull(presetContent.getParent(), "date range picker field preset popup root");
     }
 
     /// Returns whether a date range picker field popup has rendered its preset column.
@@ -36432,7 +36272,7 @@ final class M3ControlStyleTest {
                 assertRectangleInsideNodeBounds(boundary, inkBounds, TEXT_INK_EDGE_TOLERANCE,
                         "rendered text ink leaves its nearest visual owner");
             }
-            assertRenderedTextInkHasExpectedCoverage(text, textBounds, inkBounds);
+            assertRenderedTextInkHasExpectedHeight(text, textBounds, inkBounds);
         });
     }
 
@@ -36452,25 +36292,25 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that rendered text ink keeps enough height to catch vertical clipping inside layout bounds.
-    private static void assertRenderedTextInkHasExpectedCoverage(
+    private static void assertRenderedTextInkHasExpectedHeight(
             Text text,
             Bounds textBounds,
             Rectangle2D inkBounds
     ) {
-        if (!shouldCheckRenderedTextInkCoverage(text)
-                || !renderedTextInkWidthIsRepresentative(inkBounds, textBounds)) {
+        if (!shouldCheckRenderedTextInkHeight(text)
+                || inkBounds.getWidth() < Math.max(24.0, textBounds.getWidth() * 0.35)) {
             return;
         }
 
         double minimumInkHeight = Math.max(3.0, text.getFont().getSize() * TEXT_INK_MINIMUM_FONT_HEIGHT_RATIO);
-        assertTrue(inkBounds.getHeight() + TEXT_INK_HEIGHT_COVERAGE_TOLERANCE >= minimumInkHeight,
+        assertTrue(inkBounds.getHeight() + TEXT_INK_HEIGHT_CLIPPING_TOLERANCE >= minimumInkHeight,
                 () -> "rendered text ink is too short for its font size and may be clipped: text="
                         + text.getText() + ", fontSize=" + text.getFont().getSize()
                         + ", minimumInkHeight=" + minimumInkHeight + ", inkBounds=" + inkBounds);
     }
 
-    /// Returns whether a text node should participate in rendered-ink height coverage checks.
-    private static boolean shouldCheckRenderedTextInkCoverage(Text text) {
+    /// Returns whether a text node should participate in rendered-ink height clipping checks.
+    private static boolean shouldCheckRenderedTextInkHeight(Text text) {
         if (text.getFont().getSize() < 6.0) {
             return false;
         }
@@ -36484,10 +36324,6 @@ final class M3ControlStyleTest {
         return false;
     }
 
-    /// Returns whether extracted text ink width is broad enough for a height coverage assertion.
-    private static boolean renderedTextInkWidthIsRepresentative(Rectangle2D inkBounds, Bounds textBounds) {
-        return inkBounds.getWidth() >= Math.max(24.0, textBounds.getWidth() * 0.35);
-    }
 
     /// Verifies that visual-gallery icon slots use vector graphics instead of text fallback glyphs.
     private static void assertVisualIconSlotsUseVectorGraphics(Node root) {
@@ -36634,7 +36470,9 @@ final class M3ControlStyleTest {
                 if (textNode != null && hasRenderableBounds(textNode)) {
                     assertFixedTargetContentVerticallyCentered(image, button, textNode, 1.0, 2.0);
                 }
-            } else if (node instanceof ButtonBase button && isFixedTextCell(button)) {
+            } else if (node instanceof ButtonBase button
+                    && (button.getStyleClass().contains(M3DatePicker.DAY_CELL_STYLE_CLASS)
+                    || button.getStyleClass().contains(M3TimePicker.CELL_STYLE_CLASS))) {
                 @Nullable Node textNode = button.lookup(".text");
                 if (textNode != null && hasRenderableBounds(textNode)) {
                     assertFixedTargetContentCentered(image, button, textNode, 1.0, 1.5);
@@ -36899,11 +36737,6 @@ final class M3ControlStyleTest {
         return null;
     }
 
-    /// Returns whether a button is a fixed-size date or time grid cell.
-    private static boolean isFixedTextCell(ButtonBase button) {
-        return button.getStyleClass().contains(M3DatePicker.DAY_CELL_STYLE_CLASS)
-                || button.getStyleClass().contains(M3TimePicker.CELL_STYLE_CLASS);
-    }
 
     /// Returns a date picker day cell for the supplied date.
     private static ButtonBase dateCellForDate(M3DatePicker picker, LocalDate date) {
@@ -37017,7 +36850,7 @@ final class M3ControlStyleTest {
 
     /// Returns a rendered pixel from a node snapshot.
     private static Color snapshotPixel(Node node, int x, int y) {
-        return FxTestUtils.callOnFxThread(() -> snapshotPixelOnFxThread(node, x, y));
+        return FxTestUtils.callOnFxThread(() -> snapshotImageOnFxThread(node).getPixelReader().getColor(x, y));
     }
 
     /// Verifies that a control reports and focuses the expected accessibility focus node.
@@ -37093,51 +36926,6 @@ final class M3ControlStyleTest {
         assertEquals(headline, item.getHeadlineText());
     }
 
-    /// Runs a task on the FX application thread and propagates failures.
-    private static void runOnFxThread(Runnable task) {
-        FxTestUtils.runOnFxThread(task);
-    }
-
-    /// Runs setup on the FX thread and verifies the result when a condition becomes true.
-    private static void runOnFxThreadWhen(
-            BooleanSupplier condition,
-            Runnable setup,
-            Runnable verification
-    ) throws InterruptedException {
-        FxTestUtils.runOnFxThreadWhen(condition, setup, verification);
-    }
-
-    /// Runs setup on the FX thread and verifies the result when a condition becomes true.
-    private static void runOnFxThreadWhen(
-            BooleanSupplier condition,
-            Supplier<String> timeoutMessage,
-            Runnable setup,
-            Runnable verification
-    ) throws InterruptedException {
-        FxTestUtils.runOnFxThreadWhen(condition, timeoutMessage, setup, verification);
-    }
-
-    /// Runs setup on the FX thread and verifies the result after a condition remains true across pulses.
-    private static void runOnFxThreadWhenStable(
-            BooleanSupplier condition,
-            int stablePulseCount,
-            Runnable setup,
-            Runnable verification
-    ) throws InterruptedException {
-        FxTestUtils.runOnFxThreadWhenStable(condition, stablePulseCount, setup, verification);
-    }
-
-    /// Runs setup on the FX thread and verifies the result after a condition remains true across pulses.
-    private static void runOnFxThreadWhenStable(
-            BooleanSupplier condition,
-            int stablePulseCount,
-            Supplier<String> timeoutMessage,
-            Runnable setup,
-            Runnable verification
-    ) throws InterruptedException {
-        FxTestUtils.runOnFxThreadWhenStable(condition, stablePulseCount, timeoutMessage, setup, verification);
-    }
-
     /// Creates a section container used by visual snapshot tests.
     private static VBox visualSection(String title, Node... nodes) {
         M3Text heading = new M3Text(title, M3TextRole.TITLE_MEDIUM);
@@ -37210,7 +36998,7 @@ final class M3ControlStyleTest {
             AtomicReference<@Nullable Stage> stageReference,
             AtomicReference<@Nullable M3Carousel> carouselReference
     ) {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             @Nullable M3Carousel carousel = carouselReference.get();
             if (carousel != null) {
                 M3MotionSettings.clearAnimationsEnabled(carousel);
@@ -37246,10 +37034,6 @@ final class M3ControlStyleTest {
         return item;
     }
 
-    /// Returns a rendered pixel from a node snapshot on the FX thread.
-    private static Color snapshotPixelOnFxThread(Node node, int x, int y) {
-        return snapshotImageOnFxThread(node).getPixelReader().getColor(x, y);
-    }
 
     /// Returns a rendered pixel from a node-local coordinate in a root snapshot.
     private static Color snapshotNodePixel(WritableImage image, Node node, double x, double y) {
@@ -37314,7 +37098,7 @@ final class M3ControlStyleTest {
             for (int x = 0; x < image.getWidth(); x += 4) {
                 int argb = image.getPixelReader().getArgb(x, y);
                 if (((argb >>> 24) & 0xff) > 16) {
-                    colors.add(quantizedArgb(argb));
+                    colors.add(argb & 0xf0f0f0f0);
                 }
             }
         }
@@ -37806,11 +37590,6 @@ final class M3ControlStyleTest {
         return bufferedImage;
     }
 
-    /// Returns a quantized ARGB value that keeps color variety checks stable across renderers.
-    private static int quantizedArgb(int argb) {
-        return argb & 0xf0f0f0f0;
-    }
-
     /// Returns a simple RGB distance between two colors.
     private static double colorDistance(Color first, Color second) {
         return Math.abs(first.getRed() - second.getRed())
@@ -37900,7 +37679,7 @@ final class M3ControlStyleTest {
             AtomicReference<@Nullable M3Tooltip> plainTooltipReference,
             AtomicReference<@Nullable M3RichTooltip> richTooltipReference
     ) {
-        runOnFxThread(() -> {
+        FxTestUtils.runOnFxThread(() -> {
             @Nullable M3Tooltip plainTooltip = plainTooltipReference.get();
             if (plainTooltip != null) {
                 plainTooltip.hide();
@@ -38128,16 +37907,6 @@ final class M3ControlStyleTest {
         button.setOnAction(onAction);
         return button;
     }
-
-    /// Creates a floating action button with text, variant, and size.
-    private static M3FloatingActionButton createFab(
-            String text,
-            M3FloatingActionButtonVariant variant,
-            M3FloatingActionButtonSize size
-    ) {
-        return createFab(text, null, variant, size);
-    }
-
     /// Creates a floating action button with text, graphic content, variant, and size.
     private static M3FloatingActionButton createFab(
             String text,
@@ -38201,12 +37970,10 @@ final class M3ControlStyleTest {
 
     /// Verifies that one CSS metadata list contains a property.
     private static void assertCssProperty(List<CssMetaData<? extends Styleable, ?>> cssMetaData, String property) {
-        assertTrue(containsCssProperty(cssMetaData, property), () -> "Missing CSS property " + property);
-    }
-
-    /// Returns whether a CSS metadata list contains a property.
-    private static boolean containsCssProperty(List<CssMetaData<? extends Styleable, ?>> cssMetaData, String property) {
-        return cssMetaData.stream().anyMatch(metaData -> metaData.getProperty().equals(property));
+        assertTrue(
+                cssMetaData.stream().anyMatch(metaData -> metaData.getProperty().equals(property)),
+                () -> "Missing CSS property " + property
+        );
     }
 
     /// Creates an avatar with the requested variant.

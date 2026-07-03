@@ -124,7 +124,7 @@ public final class M3InternalIcon extends StackPane {
 
     /// Applies the current glyph path to the SVG node.
     private void updateGlyph() {
-        path.setContent(glyph.path());
+        path.setContent(glyph.path);
     }
 
     /// Applies the current color role as a token lookup fill.
@@ -134,7 +134,7 @@ public final class M3InternalIcon extends StackPane {
         styleClasses.remove(ON_SURFACE_STYLE_CLASS);
         styleClasses.remove(ON_SURFACE_VARIANT_STYLE_CLASS);
         styleClasses.remove(ON_PRIMARY_CONTAINER_STYLE_CLASS);
-        styleClasses.add(colorRole.styleClass());
+        styleClasses.add(colorRole.styleClass);
     }
 
     /// The built-in SVG glyphs needed by M3FX controls.
@@ -172,10 +172,6 @@ public final class M3InternalIcon extends StackPane {
             this.path = path;
         }
 
-        /// Returns the SVG path data for this glyph.
-        private String path() {
-            return path;
-        }
     }
 
     /// The Material color roles used by built-in affordance icons.
@@ -201,9 +197,5 @@ public final class M3InternalIcon extends StackPane {
             this.styleClass = styleClass;
         }
 
-        /// Returns the style class that selects this color role.
-        private String styleClass() {
-            return styleClass;
-        }
     }
 }

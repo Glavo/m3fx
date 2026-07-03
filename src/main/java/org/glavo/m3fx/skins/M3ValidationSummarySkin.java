@@ -332,7 +332,7 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
         item.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
         item.setMaxWidth(Double.MAX_VALUE);
         item.setAccessibleRole(AccessibleRole.BUTTON);
-        item.setAccessibleText(itemAccessibleText(input));
+        item.setAccessibleText(itemLabel(input) + ": " + itemError(input));
         item.setFocusTraversable(true);
         item.setPickOnBounds(true);
         stateLayer.installStateTransitions(item);
@@ -487,8 +487,4 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
         return errorText.isBlank() ? "Invalid value" : errorText;
     }
 
-    /// Returns the accessibility text shown for one invalid input item.
-    private static String itemAccessibleText(M3TextInputLayout input) {
-        return itemLabel(input) + ": " + itemError(input);
-    }
 }

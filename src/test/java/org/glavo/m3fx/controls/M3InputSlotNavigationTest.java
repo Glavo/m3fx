@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/// Unit tests for text-input container slot navigation behavior.
+/// Verifies text-input container slot navigation behavior.
 @NotNullByDefault
 final class M3InputSlotNavigationTest {
     /// Starts JavaFX before constructing controls.

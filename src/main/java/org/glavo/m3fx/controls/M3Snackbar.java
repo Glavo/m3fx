@@ -486,7 +486,6 @@ public class M3Snackbar extends Control {
         return actionContainerHeight;
     }
 
-
     /// Creates the default snackbar skin.
     ///
     /// @return the default snackbar skin
@@ -537,8 +536,8 @@ public class M3Snackbar extends Control {
 
     /// Returns the rendered action button when one is visible.
     private @Nullable Node renderedActionButton() {
-        @Nullable M3SnackbarSkin skin = materialSkin();
-        return skin == null ? null : skin.getActionButton();
+        Skin<?> skin = getSkin();
+        return skin instanceof M3SnackbarSkin snackbarSkin ? snackbarSkin.getActionButton() : null;
     }
 
     /// Focuses the snackbar action button when it exists.
@@ -618,12 +617,6 @@ public class M3Snackbar extends Control {
         Object[] targetParameters = new Object[parameters.length - 1];
         System.arraycopy(parameters, 1, targetParameters, 0, targetParameters.length);
         return targetParameters;
-    }
-
-    /// Returns the installed Material snackbar skin.
-    private @Nullable M3SnackbarSkin materialSkin() {
-        Skin<?> skin = getSkin();
-        return skin instanceof M3SnackbarSkin snackbarSkin ? snackbarSkin : null;
     }
 
     /// Notifies accessibility clients that the action item changed.

@@ -82,14 +82,9 @@ public sealed interface M3ColorTokens permits M3ColorTokensImpl {
     /// @param color the JavaFX color to convert
     /// @return a JavaFX CSS `rgb(r,g,b)` color value
     static String toRgb(Color color) {
-        int red = toChannel(color.getRed());
-        int green = toChannel(color.getGreen());
-        int blue = toChannel(color.getBlue());
+        int red = (int) Math.round(color.getRed() * 255.0);
+        int green = (int) Math.round(color.getGreen() * 255.0);
+        int blue = (int) Math.round(color.getBlue() * 255.0);
         return "rgb(" + red + "," + green + "," + blue + ")";
-    }
-
-    /// Converts a color channel into an integer CSS channel.
-    private static int toChannel(double value) {
-        return (int) Math.round(value * 255.0);
     }
 }

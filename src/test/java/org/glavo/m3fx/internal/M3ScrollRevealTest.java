@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/// Unit tests for scroll reveal helpers shared by focus navigation code.
+/// Verifies scroll reveal behavior used by focus navigation.
 @NotNullByDefault
 final class M3ScrollRevealTest {
     /// Starts the JavaFX toolkit before creating scroll panes.
@@ -57,7 +57,7 @@ final class M3ScrollRevealTest {
             spacer.setPrefHeight(240.0);
             Label target = new Label("Target");
             VBox content = new VBox(spacer, target);
-            ScrollPane scrollPane = scrollPane(content);
+            ScrollPane scrollPane = scrollPane(content, true, false);
 
             M3ScrollReveal.revealTarget(content, target);
 
@@ -132,7 +132,7 @@ final class M3ScrollRevealTest {
             Pane outerSpacer = new Pane();
             outerSpacer.setPrefHeight(220.0);
             VBox outerContent = new VBox(outerSpacer, innerScrollPane);
-            ScrollPane outerScrollPane = scrollPane(outerContent);
+            ScrollPane outerScrollPane = scrollPane(outerContent, true, false);
 
             M3ScrollReveal.revealTarget(outerContent, target);
 
@@ -181,7 +181,7 @@ final class M3ScrollRevealTest {
             spacer.setPrefHeight(240.0);
             Label target = new Label("Target");
             VBox content = new VBox(spacer, target);
-            ScrollPane scrollPane = scrollPane(content);
+            ScrollPane scrollPane = scrollPane(content, true, false);
 
             M3ScrollReveal.revealTarget(scrollPane, target);
 
@@ -226,7 +226,7 @@ final class M3ScrollRevealTest {
             spacer.setPrefHeight(240.0);
             Label target = new Label("Target");
             VBox content = new VBox(owner, spacer, target);
-            ScrollPane scrollPane = scrollPane(content);
+            ScrollPane scrollPane = scrollPane(content, true, false);
 
             M3ScrollReveal.revealTarget(owner, target);
 
@@ -242,7 +242,7 @@ final class M3ScrollRevealTest {
             Pane spacer = new Pane();
             spacer.setPrefHeight(240.0);
             VBox content = new VBox(spacer);
-            ScrollPane scrollPane = scrollPane(content);
+            ScrollPane scrollPane = scrollPane(content, true, false);
 
             assertEquals(
                     scrollPane.getViewportBounds().getHeight(),
@@ -259,7 +259,7 @@ final class M3ScrollRevealTest {
             Pane spacer = new Pane();
             spacer.setPrefHeight(240.0);
             VBox content = new VBox(spacer);
-            ScrollPane scrollPane = scrollPane(content);
+            ScrollPane scrollPane = scrollPane(content, true, false);
 
             assertEquals(
                     scrollPane.getViewportBounds().getHeight(),
@@ -314,7 +314,7 @@ final class M3ScrollRevealTest {
             spacer.setPrefHeight(240.0);
             Label target = new Label("Target");
             VBox content = new VBox(spacer, target);
-            ScrollPane scrollPane = scrollPane(content);
+            ScrollPane scrollPane = scrollPane(content, true, false);
 
             M3ScrollReveal.revealTarget(content, target, (owner, item) -> false);
 
@@ -406,11 +406,6 @@ final class M3ScrollRevealTest {
     private static double scrollPaneValue(AtomicReference<@Nullable ScrollPane> scrollPaneRef) {
         @Nullable ScrollPane scrollPane = scrollPaneRef.get();
         return scrollPane == null ? Double.NaN : scrollPane.getVvalue();
-    }
-
-    /// Creates and lays out a small vertical scroll pane for reveal checks.
-    private static ScrollPane scrollPane(Pane content) {
-        return scrollPane(content, true, false);
     }
 
     /// Creates and lays out a small scroll pane for reveal checks.

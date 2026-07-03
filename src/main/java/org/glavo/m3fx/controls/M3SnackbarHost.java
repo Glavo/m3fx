@@ -257,7 +257,8 @@ public class M3SnackbarHost extends Control {
     ///
     /// @param snackbar the snackbar to show
     public final void show(M3Snackbar snackbar) {
-        show(snackbar, currentSnackbarFocusNodeOwnsFocus());
+        @Nullable M3Snackbar currentSnackbar = getSnackbar();
+        show(snackbar, currentSnackbar != null && snackbarFocusNodeOwnsFocus(currentSnackbar));
     }
 
     /// Shows the supplied snackbar and optionally transfers current snackbar action focus to it.
@@ -273,7 +274,7 @@ public class M3SnackbarHost extends Control {
             if (previousSnackbar != null) {
                 resetSnackbar(previousSnackbar);
             }
-            setSnackbar(snackbar);
+            this.snackbar.set(snackbar);
             notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
             notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
             notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
@@ -337,7 +338,7 @@ public class M3SnackbarHost extends Control {
             case CONTENTS -> getSnackbar();
             case EXPANDED -> isShowing();
             case FOCUS_NODE -> currentFocusNode();
-            case ITEM_COUNT -> snackbarCount();
+            case ITEM_COUNT -> (getSnackbar() == null ? 0 : 1) + queue.size();
             case ITEM_AT_INDEX -> snackbarAt(parameters);
             case TEXT -> currentSnackbarText();
             default -> super.queryAccessibleAttribute(attribute, parameters);
@@ -359,7 +360,7 @@ public class M3SnackbarHost extends Control {
                 }
             }
             case SHOW_ITEM -> {
-                if (canRunAccessibleSnackbarAction()) {
+                if (M3Accessible.canReach(this) || isDetachedReachableHost()) {
                     showAccessibleSnackbar(parameters);
                 }
             }
@@ -466,7 +467,7 @@ public class M3SnackbarHost extends Control {
 
         boolean transferActionFocus = snackbarFocusNodeOwnsFocus(target);
         resetSnackbar(target);
-        setSnackbar(null);
+        this.snackbar.set(null);
         notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
@@ -490,11 +491,6 @@ public class M3SnackbarHost extends Control {
 
         M3Snackbar nextSnackbar = queue.remove(0);
         show(nextSnackbar, transferActionFocus);
-    }
-
-    /// Returns the number of currently exposed snackbar nodes.
-    private int snackbarCount() {
-        return (getSnackbar() == null ? 0 : 1) + queue.size();
     }
 
     /// Returns the current or queued snackbar at the supplied accessibility index.
@@ -554,12 +550,6 @@ public class M3SnackbarHost extends Control {
         focusNotifier.refresh();
     }
 
-    /// Returns whether the current snackbar's exposed action target owns keyboard focus.
-    private boolean currentSnackbarFocusNodeOwnsFocus() {
-        @Nullable M3Snackbar currentSnackbar = getSnackbar();
-        return currentSnackbar != null && snackbarFocusNodeOwnsFocus(currentSnackbar);
-    }
-
     /// Returns whether the supplied snackbar's exposed action target owns keyboard focus.
     private boolean snackbarFocusNodeOwnsFocus(M3Snackbar target) {
         Objects.requireNonNull(target, "target");
@@ -582,11 +572,6 @@ public class M3SnackbarHost extends Control {
         @Nullable Scene scene = node.getScene();
         @Nullable Node focusOwner = scene == null ? null : scene.getFocusOwner();
         return focusOwner != null && M3Accessible.containsNode(node, focusOwner);
-    }
-
-    /// Returns whether accessibility actions can run against this host.
-    private boolean canRunAccessibleSnackbarAction() {
-        return M3Accessible.canReach(this) || isDetachedReachableHost();
     }
 
     /// Returns whether this host can run structural accessibility actions before scene attachment.
@@ -652,7 +637,6 @@ public class M3SnackbarHost extends Control {
         System.arraycopy(parameters, 1, targetParameters, 0, targetParameters.length);
         return targetParameters;
     }
-
 
     /// Returns whether any supplied parameter directly references the snackbar item.
     private static boolean parametersReferenceSnackbar(M3Snackbar target, Object... parameters) {
@@ -757,8 +741,4 @@ public class M3SnackbarHost extends Control {
         return text == null ? "" : text;
     }
 
-    /// Sets the currently hosted snackbar.
-    private void setSnackbar(@Nullable M3Snackbar snackbar) {
-        this.snackbar.set(snackbar);
-    }
 }

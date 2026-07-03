@@ -399,7 +399,7 @@ fun registerJlinkRuntime(
         "${targetOs.get()}-${targetArch.get()}-${targetBitness.get()}-java${javaFeature.get()}"
     }
     val libericaArchive = layout.buildDirectory.file(providers.provider {
-        "liberica/${targetId.get()}/liberica-jdk.${libericaArchiveExtension(libericaPackageType(targetOs.get()))}"
+        "liberica/${targetId.get()}/liberica-jdk.${libericaPackageType(targetOs.get())}"
     })
     val libericaExtractDirectory = layout.buildDirectory.dir(targetId.map { "liberica/$it/extracted" })
     val jlinkImageDirectory = layout.buildDirectory.dir(targetId.map { "jlink/m3fx-demo-$it" })
@@ -412,7 +412,7 @@ fun registerJlinkRuntime(
         "host-jlink-$taskName-${detectLibericaOs()}-${detectLibericaArch()}-${targetBitness.get()}-java${javaFeature.get()}"
     }
     val hostLibericaArchive = layout.buildDirectory.file(providers.provider {
-        "liberica/${hostJlinkId.get()}/liberica-jdk.${libericaArchiveExtension(libericaPackageType(detectLibericaOs()))}"
+        "liberica/${hostJlinkId.get()}/liberica-jdk.${libericaPackageType(detectLibericaOs())}"
     })
     val hostLibericaExtractDirectory = layout.buildDirectory.dir(hostJlinkId.map { "liberica/$it/extracted" })
 
@@ -819,5 +819,3 @@ fun libericaPackageType(targetOs: String): String = when (targetOs) {
     "linux" -> "tar.gz"
     else -> "zip"
 }
-
-fun libericaArchiveExtension(packageType: String): String = packageType

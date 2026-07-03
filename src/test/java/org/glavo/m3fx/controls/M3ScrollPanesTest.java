@@ -3,7 +3,6 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.input.ScrollEvent;
@@ -17,7 +16,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/// Unit tests for Material smooth scrolling behavior.
+/// Verifies Material smooth scrolling behavior.
 @NotNullByDefault
 final class M3ScrollPanesTest {
     /// Starts JavaFX before constructing scroll panes.
@@ -46,7 +45,31 @@ final class M3ScrollPanesTest {
             try {
                 content.setExpanded(true);
 
-                ScrollEvent event = scrollEvent(scrollPane, -80.0);
+                ScrollEvent event = new ScrollEvent(
+                        scrollPane,
+                        scrollPane,
+                        ScrollEvent.SCROLL,
+                        40.0,
+                        40.0,
+                        40.0,
+                        40.0,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        0.0,
+                        -80.0,
+                        0.0,
+                        -80.0,
+                        ScrollEvent.HorizontalTextScrollUnits.NONE,
+                        0.0,
+                        ScrollEvent.VerticalTextScrollUnits.NONE,
+                        0.0,
+                        0,
+                        null
+                );
                 scrollPane.fireEvent(event);
 
                 assertTrue(event.isConsumed(), () -> "vvalue=" + scrollPane.getVvalue()
@@ -60,35 +83,6 @@ final class M3ScrollPanesTest {
                 M3MotionSettings.clearAnimationsEnabled(scrollPane);
             }
         });
-    }
-
-    /// Creates a vertical wheel scroll event for one scroll pane target.
-    private static ScrollEvent scrollEvent(Node target, double deltaY) {
-        return new ScrollEvent(
-                target,
-                target,
-                ScrollEvent.SCROLL,
-                40.0,
-                40.0,
-                40.0,
-                40.0,
-                false,
-                false,
-                false,
-                false,
-                false,
-                false,
-                0.0,
-                deltaY,
-                0.0,
-                deltaY,
-                ScrollEvent.HorizontalTextScrollUnits.NONE,
-                0.0,
-                ScrollEvent.VerticalTextScrollUnits.NONE,
-                0.0,
-                0,
-                null
-        );
     }
 
     /// Region whose expanded height depends on the width supplied by its scroll pane viewport.

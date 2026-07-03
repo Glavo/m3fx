@@ -116,10 +116,10 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
         double topRight = hasTopRightCorner(button)
                 ? innerCornerRadius(width, height, button.getContainerShape(), borderInsets.getRight(), borderInsets.getTop())
                 : 0.0;
-        double bottomRight = hasBottomRightCorner(button)
+        double bottomRight = hasTopRightCorner(button)
                 ? innerCornerRadius(width, height, button.getContainerShape(), borderInsets.getRight(), borderInsets.getBottom())
                 : 0.0;
-        double bottomLeft = hasBottomLeftCorner(button)
+        double bottomLeft = hasTopLeftCorner(button)
                 ? innerCornerRadius(width, height, button.getContainerShape(), borderInsets.getLeft(), borderInsets.getBottom())
                 : 0.0;
 
@@ -174,16 +174,6 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
         return button.getStyleClass().contains(M3SegmentedButtonGroup.SINGLE_SEGMENT_STYLE_CLASS)
                 || button.getStyleClass().contains(M3SegmentedButtonGroup.LAST_SEGMENT_STYLE_CLASS)
                 || !hasKnownSegmentPosition(button);
-    }
-
-    /// Returns whether the current segment has a rounded bottom-right corner.
-    private static boolean hasBottomRightCorner(M3SegmentedButton button) {
-        return hasTopRightCorner(button);
-    }
-
-    /// Returns whether the current segment has a rounded bottom-left corner.
-    private static boolean hasBottomLeftCorner(M3SegmentedButton button) {
-        return hasTopLeftCorner(button);
     }
 
     /// Returns whether the current button has one of the segment position classes.

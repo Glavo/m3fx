@@ -827,17 +827,13 @@ public class M3ListView<T> extends Control {
         for (int offset = 1; offset <= itemCount; offset++) {
             int index = Math.floorMod(anchor + offset, itemCount);
             T item = getItems().get(index);
+            String text = item instanceof M3ListItem listItem ? listItem.getHeadlineText() : String.valueOf(item);
             if (isItemNavigable(item)
-                    && M3SelectionNavigation.normalizeTypeAheadText(typeAheadText(item)).startsWith(prefix)) {
+                    && M3SelectionNavigation.normalizeTypeAheadText(text).startsWith(prefix)) {
                 return index;
             }
         }
         return -1;
-    }
-
-    /// Returns the text used for one data item's type-ahead matching.
-    private String typeAheadText(T item) {
-        return item instanceof M3ListItem listItem ? listItem.getHeadlineText() : String.valueOf(item);
     }
 
     /// Moves keyboard focus from a navigation event and selects rows in single-selection mode.

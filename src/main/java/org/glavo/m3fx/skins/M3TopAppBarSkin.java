@@ -116,7 +116,7 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
             double bottomInset,
             double leftInset
     ) {
-        return leftInset + computeContentPrefWidth(height) + rightInset;
+        return leftInset + computeContentMinWidth(height) + rightInset;
     }
 
     /// Computes the preferred height from the internal container.
@@ -240,11 +240,6 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
                 + snappedPrefWidth(actions, height)
                 + spacingAfter(navigationWidth)
                 + spacingAfter(snappedPrefWidth(actions, height));
-    }
-
-    /// Computes the preferred content width needed by app bar slots.
-    private double computeContentPrefWidth(double height) {
-        return computeContentMinWidth(height);
     }
 
     /// Computes the active top app bar variant height.

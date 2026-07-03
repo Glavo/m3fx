@@ -373,7 +373,9 @@ public final class M3FormValidator {
     /// Returns a validated copy of new input layout varargs.
     private List<M3TextInputLayout> validatedNewInputs(M3TextInputLayout... inputs) {
         List<M3TextInputLayout> validatedInputs = validatedInputs(inputs);
-        validateNewInputs(validatedInputs);
+        for (M3TextInputLayout input : validatedInputs) {
+            validateNewInput(input);
+        }
         return validatedInputs;
     }
 
@@ -392,13 +394,6 @@ public final class M3FormValidator {
     private void validateNewInput(M3TextInputLayout input) {
         if (inputs.contains(input)) {
             throw new IllegalArgumentException("input is already registered");
-        }
-    }
-
-    /// Validates that input layouts are not already registered.
-    private void validateNewInputs(List<M3TextInputLayout> inputs) {
-        for (M3TextInputLayout input : inputs) {
-            validateNewInput(input);
         }
     }
 

@@ -86,7 +86,10 @@ public class M3Scrim extends Region {
 
     /// Observes runtime motion settings while this scrim is attached to a scene.
     private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(this, this::refreshMotionSettings);
+            new M3MotionSettingsObserver(
+                    this,
+                    () -> M3Animation.finishRunningAnimationsIfDisabled(this, visibilityAnimation)
+            );
 
     /// Creates a scrim.
     public M3Scrim() {
@@ -320,11 +323,6 @@ public class M3Scrim extends Region {
         setVisible(shown);
         setManaged(shown);
         setOpacity(shown ? getVisibleOpacity() : 0.0);
-    }
-
-    /// Applies changed runtime motion settings to the active visibility animation.
-    private void refreshMotionSettings() {
-        M3Animation.finishRunningAnimationsIfDisabled(this, visibilityAnimation);
     }
 
     /// Validates a normalized opacity value.

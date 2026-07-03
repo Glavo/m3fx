@@ -74,7 +74,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
                 /// Normalizes and validates values assigned through the property.
                 @Override
                 public void set(@Nullable T newValue) {
-                    @Nullable T normalizedValue = normalizeNullableValue(newValue);
+                    @Nullable T normalizedValue = newValue == null ? null : normalizeValue(newValue);
                     validateValue(normalizedValue);
                     super.set(normalizedValue);
                 }
@@ -681,11 +681,6 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
         if (value != null && isPickerValueDisabled(value)) {
             throw new IllegalArgumentException("value is outside the selectable range");
         }
-    }
-
-    /// Normalizes a nullable selected value.
-    private @Nullable T normalizeNullableValue(@Nullable T value) {
-        return value == null ? null : normalizeValue(value);
     }
 
     /// Returns the field selection as an immutable accessibility list.

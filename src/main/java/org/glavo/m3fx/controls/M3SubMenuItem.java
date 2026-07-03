@@ -111,7 +111,10 @@ public class M3SubMenuItem extends M3MenuItem {
     private final PauseTransition hoverCloseDelay = new PauseTransition();
 
     /// Updates the indicator glyph and popup menu orientation when node orientation changes.
-    private final InvalidationListener nodeOrientationInvalidation = observable -> handleNodeOrientationInvalidated();
+    private final InvalidationListener nodeOrientationInvalidation = observable -> {
+        updateDefaultIndicatorDirection();
+        updateShowingSubMenuOrientation();
+    };
 
     /// Whether an action from the submenu is being forwarded to this item's parent menu.
     private boolean forwardingSubMenuAction = false;
@@ -230,7 +233,9 @@ public class M3SubMenuItem extends M3MenuItem {
             return;
         }
 
-        hideSiblingSubMenus();
+        if (ownerMenu != null) {
+            ownerMenu.hideSubMenusExcept(this);
+        }
         popupContextSynchronizer.start();
         prepareSubMenuForPopup();
         M3Css.setMinWidthIfUnbound(subMenu, Math.max(getWidth(), subMenu.minWidth(-1.0)));
@@ -658,11 +663,6 @@ public class M3SubMenuItem extends M3MenuItem {
                 : M3InternalIcon.Glyph.CHEVRON_RIGHT);
     }
 
-    /// Applies effective node orientation changes to this item and any showing submenu popup.
-    private void handleNodeOrientationInvalidated() {
-        updateDefaultIndicatorDirection();
-        updateShowingSubMenuOrientation();
-    }
 
     /// Synchronizes an already showing submenu popup with this item's effective node orientation.
     private void updateShowingSubMenuOrientation() {
@@ -714,12 +714,6 @@ public class M3SubMenuItem extends M3MenuItem {
         return scene == null ? null : scene.getRoot();
     }
 
-    /// Hides sibling submenu popups owned by the same parent menu.
-    private void hideSiblingSubMenus() {
-        if (ownerMenu != null) {
-            ownerMenu.hideSubMenusExcept(this);
-        }
-    }
 
     /// Creates the default trailing submenu indicator.
     private static M3InternalIcon createDefaultIndicator() {

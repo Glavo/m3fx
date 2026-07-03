@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/// Unit tests for shared child selection navigation behavior.
+/// Verifies shared child selection navigation behavior.
 @NotNullByDefault
 final class M3SelectionNavigationTest {
     /// Starts the JavaFX toolkit for Material control construction.
@@ -1081,7 +1081,7 @@ final class M3SelectionNavigationTest {
         show(root, 360.0, 240.0);
     }
 
-    /// Creates a typed key event for type-ahead navigation helpers.
+    /// Creates a typed key event for type-ahead navigation behavior checks.
     private static KeyEvent typedKeyEvent(String character) {
         return new KeyEvent(
                 KeyEvent.KEY_TYPED,
@@ -1095,7 +1095,7 @@ final class M3SelectionNavigationTest {
         );
     }
 
-    /// Creates a modified typed key event for type-ahead navigation helpers.
+    /// Creates a modified typed key event for type-ahead navigation behavior checks.
     private static KeyEvent modifiedTypedKeyEvent(
             String character,
             boolean shiftDown,
@@ -1115,7 +1115,7 @@ final class M3SelectionNavigationTest {
         );
     }
 
-    /// Creates a pressed key event for shared navigation helpers.
+    /// Creates a pressed key event for shared navigation behavior checks.
     private static KeyEvent keyEvent(KeyCode code) {
         return new KeyEvent(
                 KeyEvent.KEY_PRESSED,
@@ -1129,7 +1129,7 @@ final class M3SelectionNavigationTest {
         );
     }
 
-    /// Creates a modified pressed key event for shared navigation helpers.
+    /// Creates a modified pressed key event for shared navigation behavior checks.
     private static KeyEvent modifiedKeyEvent(
             KeyCode code,
             boolean shiftDown,

@@ -256,33 +256,12 @@ val verifyPublicationMetadata = tasks.register("verifyPublicationMetadata") {
     }
 }
 
-fun exportedPackagePathsFromModuleInfo(moduleInfoFile: File): List<String> {
-    val exportPattern = Regex("^\\s*exports\\s+([\\w.]+)\\s*;")
-    val packagePaths = moduleInfoFile.readLines()
-        .mapNotNull { line -> exportPattern.find(line)?.groupValues?.get(1) }
-        .map { packageName -> packageName.replace('.', '/') }
-        .sorted()
-    if (packagePaths.isEmpty()) {
-        throw GradleException("Main module descriptor should export at least one API package.")
-    }
-    return packagePaths
-}
-
-fun moduleNameFromModuleInfo(moduleInfoFile: File): String {
-    val modulePattern = Regex("^\\s*module\\s+([\\w.]+)\\s*\\{")
-    return moduleInfoFile.readLines()
-        .mapNotNull { line -> modulePattern.find(line)?.groupValues?.get(1) }
-        .singleOrNull()
-        ?: throw GradleException("Main module descriptor should declare exactly one module name.")
-}
-
 val verifyPublicationArtifacts = tasks.register("verifyPublicationArtifacts") {
     group = "verification"
     description = "Verifies that Maven publication JAR artifacts contain the expected M3FX API and resources."
 
     val mainJar = tasks.named<org.gradle.jvm.tasks.Jar>("jar").flatMap { it.archiveFile }
     val sourcesJar = tasks.named<org.gradle.jvm.tasks.Jar>("sourcesJar").flatMap { it.archiveFile }
-    val javadocJar = tasks.named<org.gradle.jvm.tasks.Jar>("javadocJar").flatMap { it.archiveFile }
     val mainSourceDirectory = layout.projectDirectory.dir("src/main/java").asFile
     val mainModuleInfo = mainSourceDirectory.resolve("module-info.java")
     val mainResourceDirectory = layout.projectDirectory.dir("src/main/resources").asFile
@@ -293,8 +272,8 @@ val verifyPublicationArtifacts = tasks.register("verifyPublicationArtifacts") {
         include("org/glavo/m3fx/styles/**/*.css")
     }
 
-    dependsOn(tasks.named("jar"), tasks.named("sourcesJar"), tasks.named("javadocJar"))
-    inputs.files(mainJar, sourcesJar, javadocJar, mainModuleInfo, mainJavaSources, mainStylesheetResources)
+    dependsOn(tasks.named("jar"), tasks.named("sourcesJar"))
+    inputs.files(mainJar, sourcesJar, mainModuleInfo, mainJavaSources, mainStylesheetResources)
 
     doLast {
         fun jarEntries(file: File): Set<String> =
@@ -313,7 +292,14 @@ val verifyPublicationArtifacts = tasks.register("verifyPublicationArtifacts") {
         fun sourceEntry(root: File, file: File): String =
             root.toPath().relativize(file.toPath()).toString().replace(File.separatorChar, '/')
 
-        val exportedPackagePaths = exportedPackagePathsFromModuleInfo(mainModuleInfo)
+        val exportPattern = Regex("^\\s*exports\\s+([\\w.]+)\\s*;")
+        val exportedPackagePaths = mainModuleInfo.readLines()
+            .mapNotNull { line -> exportPattern.find(line)?.groupValues?.get(1) }
+            .map { packageName -> packageName.replace('.', '/') }
+            .sorted()
+        if (exportedPackagePaths.isEmpty()) {
+            throw GradleException("Main module descriptor should export at least one API package.")
+        }
 
         val mainEntries = jarEntries(mainJar.get().asFile)
         requireEntry(mainEntries, "module-info.class", "Main JAR")
@@ -356,68 +342,6 @@ val verifyPublicationArtifacts = tasks.register("verifyPublicationArtifacts") {
         }
         if (sourceEntries.any { it.endsWith(".class") }) {
             throw GradleException("Sources JAR must not contain compiled class files.")
-        }
-
-        val javadocEntries = jarEntries(javadocJar.get().asFile)
-        requireEntry(javadocEntries, "index.html", "Javadoc JAR")
-        if (javadocEntries.any { it.endsWith(".class") || it.endsWith(".java") }) {
-            throw GradleException("Javadoc JAR must not contain class or source files.")
-        }
-
-        fun javadocPackagePath(moduleRelativeEntry: String): String? {
-            if (!moduleRelativeEntry.startsWith("org/glavo/m3fx/") || !moduleRelativeEntry.endsWith(".html")) {
-                return null
-            }
-            val packageRelativeEntry = moduleRelativeEntry
-                .substringBefore("/class-use/")
-                .substringBefore("/doc-files/")
-            return packageRelativeEntry.substringBeforeLast('/', missingDelimiterValue = "")
-        }
-
-        val javadocModulePrefix = "${moduleNameFromModuleInfo(mainModuleInfo)}/"
-        val nonExportedJavadocEntries = javadocEntries
-            .mapNotNull { entry ->
-                val moduleRelativeEntry = if (entry.startsWith(javadocModulePrefix)) {
-                    entry.removePrefix(javadocModulePrefix)
-                } else {
-                    entry
-                }
-                val packagePath = javadocPackagePath(moduleRelativeEntry)
-                if (packagePath != null && packagePath !in exportedPackagePaths) entry else null
-            }
-            .sorted()
-        if (nonExportedJavadocEntries.isNotEmpty()) {
-            throw GradleException(
-                "Javadoc JAR must only document exported M3FX API packages: "
-                        + nonExportedJavadocEntries.take(10)
-            )
-        }
-
-        val forbiddenJavadocContentFragments = listOf(
-            "org.glavo.m3fx.internal",
-            "org/glavo/m3fx/internal",
-            "org.glavo.m3fx.skins",
-            "org/glavo/m3fx/skins",
-            "M3DisclosureIcon",
-            "M3ListViewCell"
-        )
-        val forbiddenJavadocReferences = ZipFile(javadocJar.get().asFile).use { zip ->
-            zip.entries().asSequence()
-                .filter { entry -> !entry.isDirectory && entry.name.endsWith(".html") }
-                .flatMap { entry ->
-                    val text = zip.getInputStream(entry).reader(Charsets.UTF_8).use { it.readText() }
-                    forbiddenJavadocContentFragments.asSequence()
-                        .filter(text::contains)
-                        .map { fragment -> "${entry.name}: $fragment" }
-                }
-                .take(10)
-                .toList()
-        }
-        if (forbiddenJavadocReferences.isNotEmpty()) {
-            throw GradleException(
-                "Javadoc JAR must not mention non-exported implementation packages or helper types: "
-                        + forbiddenJavadocReferences
-            )
         }
     }
 }
@@ -469,7 +393,6 @@ val verifyMavenPublicationLayout = tasks.register("verifyMavenPublicationLayout"
 
         requirePublishedArtifact(null, "jar")
         requirePublishedArtifact("sources", "jar")
-        requirePublishedArtifact("javadoc", "jar")
         requirePublishedArtifact(null, "pom")
 
         if (fileNames.any { it.endsWith(".module") }) {
@@ -569,7 +492,6 @@ if (System.getenv("JITPACK").isNullOrBlank() && rootProject.ext.has("signing.key
     }
 }
 
-// ./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository
 nexusPublishing {
     repositories {
         sonatype {

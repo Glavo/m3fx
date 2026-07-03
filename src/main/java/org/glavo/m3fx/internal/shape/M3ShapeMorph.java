@@ -1324,23 +1324,6 @@ public final class M3ShapeMorph {
             return new Cubic(anchor1X, anchor1Y, control1X, control1Y, control0X, control0Y, anchor0X, anchor0Y);
         }
 
-        /// Returns this curve scaled by a scalar.
-        ///
-        /// @param scale the scale
-        /// @return the scaled cubic
-        private Cubic scaled(double scale) {
-            return new Cubic(
-                    anchor0X * scale,
-                    anchor0Y * scale,
-                    control0X * scale,
-                    control0Y * scale,
-                    control1X * scale,
-                    control1Y * scale,
-                    anchor1X * scale,
-                    anchor1Y * scale
-            );
-        }
-
         /// Returns this curve transformed by a transformer.
         ///
         /// @param transformer the transformer

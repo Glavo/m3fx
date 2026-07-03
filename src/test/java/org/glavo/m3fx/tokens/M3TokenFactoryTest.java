@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/// Tests explicit token factory methods.
+/// Tests explicit token construction and generated token output.
 @NotNullByDefault
 final class M3TokenFactoryTest {
     /// Verifies that system token groups can be created with explicit values.
@@ -375,7 +375,7 @@ final class M3TokenFactoryTest {
         assertTrue(motion.toStyleDeclarations().contains("-m3-motion-sub-menu-hover-open-delay: 150ms"));
     }
 
-    /// Creates component tokens with distinctive values for factory tests.
+    /// Creates component tokens with distinctive values for generated output assertions.
     private static M3ComponentTokens createComponentTokens() {
         return M3ComponentTokens.create(
                 new M3ComponentTokens.ButtonTokens(51.0, 21.0, 17.0),
@@ -485,7 +485,7 @@ final class M3TokenFactoryTest {
         );
     }
 
-    /// Creates icon button tokens for factory tests.
+    /// Creates icon button tokens with distinctive size values.
     private static M3ComponentTokens.IconButtonTokens createIconButtonTokens() {
         return new M3ComponentTokens.IconButtonTokens(
                 new M3ComponentTokens.IconButtonSizeTokens(32.0, 20.0, 28.0, 32.0, 40.0, 999.0, 12.0, 8.0, 12.0, 999.0, 1.0),
@@ -495,6 +495,7 @@ final class M3TokenFactoryTest {
                 new M3ComponentTokens.IconButtonSizeTokens(136.0, 40.0, 104.0, 136.0, 184.0, 999.0, 28.0, 16.0, 28.0, 999.0, 3.0)
         );
     }
+
     /// Creates component tokens whose record components all have distinctive values.
     private static M3ComponentTokens createComponentTokensWithUniqueValues() {
         UniqueDoubleValues values = new UniqueDoubleValues();
@@ -628,19 +629,25 @@ final class M3TokenFactoryTest {
         appendSourceFiles(
                 builder,
                 Path.of("src", "main", "resources", "org", "glavo", "m3fx", "styles"),
-                Path.of("__no_excluded_file__")
+                null
         );
         return builder.toString();
     }
 
-    /// Appends regular source file contents under the root while skipping one file.
-    private static void appendSourceFiles(StringBuilder builder, Path root, Path excludedFile) throws IOException {
-        Path excludedAbsolute = excludedFile.toAbsolutePath().normalize();
+    /// Appends regular source file contents under the root while optionally skipping one file.
+    private static void appendSourceFiles(
+            StringBuilder builder,
+            Path root,
+            @org.jetbrains.annotations.Nullable Path excludedFile
+    ) throws IOException {
+        @org.jetbrains.annotations.Nullable Path excludedAbsolute =
+                excludedFile == null ? null : excludedFile.toAbsolutePath().normalize();
         List<Path> sourceFiles;
         try (Stream<Path> files = Files.walk(root)) {
             sourceFiles = files
                     .filter(Files::isRegularFile)
-                    .filter(file -> !file.toAbsolutePath().normalize().equals(excludedAbsolute))
+                    .filter(file -> excludedAbsolute == null
+                            || !file.toAbsolutePath().normalize().equals(excludedAbsolute))
                     .toList();
         }
 
@@ -649,7 +656,7 @@ final class M3TokenFactoryTest {
         }
     }
 
-    /// Generates stable distinctive double values for component token coverage checks.
+    /// Generates stable distinctive double values for component token copy checks.
     private static final class UniqueDoubleValues {
         /// Number of values already produced.
         private int count;

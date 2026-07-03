@@ -224,7 +224,7 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         double progress = getSkinnable().getProgress();
         if (progress == M3ProgressIndicator.INDETERMINATE_PROGRESS) {
             track.setVisible(false);
-            indicator.setStartAngle(indeterminateStartAngle(indeterminatePhase.get()));
+            indicator.setStartAngle(90.0 - 360.0 * indeterminatePhase.get());
             indicator.setLength(-indeterminateSweep(
                     indeterminatePhase.get(),
                     !M3Animation.shouldReduceMotion(getSkinnable())
@@ -293,11 +293,6 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
     /// Returns the initial displayed progress value for a public progress value.
     private static double initialDisplayedProgress(double progress) {
         return progress == M3ProgressIndicator.INDETERMINATE_PROGRESS ? 0.0 : clamp(progress);
-    }
-
-    /// Returns the animated start angle for an indeterminate progress phase.
-    private static double indeterminateStartAngle(double phase) {
-        return 90.0 - 360.0 * phase;
     }
 
     /// Returns the animated sweep for an indeterminate progress phase.

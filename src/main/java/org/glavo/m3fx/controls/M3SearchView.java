@@ -73,7 +73,10 @@ public class M3SearchView extends Control {
 
     /// Observes runtime motion settings while this search view is attached to a scene.
     private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(this, this::refreshMotionSettings);
+            new M3MotionSettingsObserver(
+                    this,
+                    () -> M3Animation.finishRunningAnimationsIfDisabled(this, resultsVisibilityAnimation)
+            );
 
     /// Notifies accessibility clients when focus moves between the search bar and results.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -383,10 +386,10 @@ public class M3SearchView extends Control {
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleResult);
         resultsBox.getStyleClass().add(RESULTS_STYLE_CLASS);
         searchBar.activeProperty().addListener((observable, oldValue, newValue) -> {
-            boolean restoreSearchBarFocus = !newValue && isFocusInsideResults();
+            boolean restoreSearchBarFocus = !newValue && focusedResultIndex() >= 0;
             notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
             if (restoreSearchBarFocus) {
-                restoreSearchBarFocus();
+                focusSearchBar();
             }
             notifyFocusNodeChanged();
             updateResultsVisibility();
@@ -792,16 +795,6 @@ public class M3SearchView extends Control {
         return -1;
     }
 
-    /// Returns whether focus currently belongs to a result that will be hidden after collapse.
-    private boolean isFocusInsideResults() {
-        return focusedResultIndex() >= 0;
-    }
-
-    /// Moves focus back to the search bar when result content is being collapsed.
-    private void restoreSearchBarFocus() {
-        focusSearchBar();
-    }
-
     /// Moves focus to the embedded search editor and reveals it through this search view.
     ///
     /// @return `true` when the editor accepted focus
@@ -866,11 +859,6 @@ public class M3SearchView extends Control {
         resultsBox.setManaged(active);
         resultsBox.setOpacity(active ? 1.0 : 0.0);
         resultsBox.setTranslateY(active ? 0.0 : HIDDEN_RESULTS_TRANSLATE_Y);
-    }
-
-    /// Applies changed runtime motion settings to the active results visibility animation.
-    private void refreshMotionSettings() {
-        M3Animation.finishRunningAnimationsIfDisabled(this, resultsVisibilityAnimation);
     }
 
     /// Validates a result node array.

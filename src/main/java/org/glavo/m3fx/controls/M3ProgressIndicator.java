@@ -340,7 +340,7 @@ public class M3ProgressIndicator extends Control {
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
         if (attribute == VALUE_STRING_ATTRIBUTE) {
-            return accessibleValueString();
+            return isIndeterminate() ? "Indeterminate" : Math.round(getProgress() * 100.0) + "%";
         }
         return switch (attribute) {
             case INDETERMINATE -> isIndeterminate();
@@ -379,11 +379,6 @@ public class M3ProgressIndicator extends Control {
             return INDETERMINATE_PROGRESS;
         }
         return Math.min(1.0, progress);
-    }
-
-    /// Returns the accessible string representation of the current progress.
-    private String accessibleValueString() {
-        return isIndeterminate() ? "Indeterminate" : Math.round(getProgress() * 100.0) + "%";
     }
 
     /// CSS metadata for m3fx progress indicator component tokens.
