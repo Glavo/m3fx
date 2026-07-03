@@ -3415,7 +3415,7 @@ final class M3ControlStyleTest {
             M3FloatingActionButton tooltipOwnerAction = new M3FloatingActionButton("T");
             M3Button disabledTooltipAction = new M3Button("Tooltip disabled");
             disabledTooltipAction.setDisable(true);
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     tooltipOwnerAction,
                     "Tooltip action",
                     "Disabled tooltip actions cannot be revealed.",
@@ -4040,7 +4040,7 @@ final class M3ControlStyleTest {
             HBox firstItem = new HBox(firstAction);
             M3Button ownerAction = new M3Button("Settings action");
             M3Button tooltipAction = new M3Button("Details");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "Settings",
                     "Shows carousel item details.",
@@ -4050,7 +4050,7 @@ final class M3ControlStyleTest {
             M3Button hiddenOwnerAction = new M3Button("Hidden settings action");
             hiddenOwnerAction.setVisible(false);
             M3Button hiddenTooltipAction = new M3Button("Hidden details");
-            M3RichTooltip hiddenTooltip = M3RichTooltip.install(
+            M3RichTooltip hiddenTooltip = installRichTooltip(
                     hiddenOwnerAction,
                     "Hidden settings",
                     "This action cannot be revealed.",
@@ -4982,7 +4982,7 @@ final class M3ControlStyleTest {
                         snackbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0)
                 );
                 M3Button tooltipAction = new M3Button("Details");
-                M3RichTooltip tooltip = M3RichTooltip.install(
+                M3RichTooltip tooltip = installRichTooltip(
                         actionButton,
                         "Undo",
                         "Restores the previous item state.",
@@ -5031,7 +5031,7 @@ final class M3ControlStyleTest {
                 );
                 M3Button tooltipAction = new M3Button("Details");
                 tooltipAction.setDisable(true);
-                M3RichTooltip tooltip = M3RichTooltip.install(
+                M3RichTooltip tooltip = installRichTooltip(
                         actionButton,
                         "Undo",
                         "Restores the previous item state.",
@@ -5085,7 +5085,7 @@ final class M3ControlStyleTest {
                         new M3MenuItem("Rename"),
                         targetItem
                 );
-                M3RichTooltip tooltip = M3RichTooltip.install(
+                M3RichTooltip tooltip = installRichTooltip(
                         actionButton,
                         "Undo",
                         "Restores the previous item state.",
@@ -5144,7 +5144,7 @@ final class M3ControlStyleTest {
                         new M3MenuItem("Rename"),
                         disabledTarget
                 );
-                M3RichTooltip tooltip = M3RichTooltip.install(
+                M3RichTooltip tooltip = installRichTooltip(
                         actionButton,
                         "Undo",
                         "Restores the previous item state.",
@@ -5195,7 +5195,7 @@ final class M3ControlStyleTest {
                 );
                 M3TimePickerField tooltipTimeField = new M3TimePickerField(LocalTime.of(9, 30));
                 LocalTime targetTime = LocalTime.of(10, 45);
-                M3RichTooltip tooltip = M3RichTooltip.install(
+                M3RichTooltip tooltip = installRichTooltip(
                         actionButton,
                         "Undo",
                         "Restores the previous item state.",
@@ -5253,7 +5253,7 @@ final class M3ControlStyleTest {
                 M3TimePickerField tooltipTimeField = new M3TimePickerField(LocalTime.of(9, 30));
                 tooltipTimeField.setMaxTime(LocalTime.of(10, 0));
                 LocalTime disabledTime = LocalTime.of(11, 15);
-                M3RichTooltip tooltip = M3RichTooltip.install(
+                M3RichTooltip tooltip = installRichTooltip(
                         actionButton,
                         "Undo",
                         "Restores the previous item state.",
@@ -5307,7 +5307,7 @@ final class M3ControlStyleTest {
                         LocalDate.of(2026, 6, 18)
                 );
                 LocalDate targetDate = LocalDate.of(2026, 6, 22);
-                M3RichTooltip tooltip = M3RichTooltip.install(
+                M3RichTooltip tooltip = installRichTooltip(
                         actionButton,
                         "Undo",
                         "Restores the previous item state.",
@@ -5368,7 +5368,7 @@ final class M3ControlStyleTest {
                 );
                 tooltipRangeField.setMaxDate(LocalDate.of(2026, 6, 20));
                 LocalDate disabledDate = LocalDate.of(2026, 6, 24);
-                M3RichTooltip tooltip = M3RichTooltip.install(
+                M3RichTooltip tooltip = installRichTooltip(
                         actionButton,
                         "Undo",
                         "Restores the previous item state.",
@@ -5836,7 +5836,7 @@ final class M3ControlStyleTest {
                         snackbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0)
                 );
                 M3Button tooltipAction = new M3Button("Details");
-                M3RichTooltip tooltip = M3RichTooltip.install(
+                M3RichTooltip tooltip = installRichTooltip(
                         actionButton,
                         "Undo",
                         "Restores the saved item.",
@@ -5893,7 +5893,7 @@ final class M3ControlStyleTest {
                         queuedSnackbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0)
                 );
                 M3Button tooltipAction = new M3Button("Details");
-                M3RichTooltip tooltip = M3RichTooltip.install(
+                M3RichTooltip tooltip = installRichTooltip(
                         actionButton,
                         "Restore",
                         "Restores the deleted item.",
@@ -5947,7 +5947,7 @@ final class M3ControlStyleTest {
                 );
                 M3Button disabledTooltipAction = new M3Button("Details");
                 disabledTooltipAction.setDisable(true);
-                M3RichTooltip tooltip = M3RichTooltip.install(
+                M3RichTooltip tooltip = installRichTooltip(
                         actionButton,
                         "Undo",
                         "Restores the saved item.",
@@ -7558,13 +7558,14 @@ final class M3ControlStyleTest {
                 assertTrue(textArea.isFocused());
                 WritableImage image = snapshotImageOnFxThread(root);
                 Region content = lookupRegion(textArea, ".content");
-                Bounds contentBounds = content.localToScene(content.getBoundsInLocal());
-                Color contentBackground = image.getPixelReader().getColor(
-                        (int) Math.round(contentBounds.getMaxX() - 8.0),
-                        (int) Math.round(contentBounds.getMaxY() - 8.0)
-                );
 
-                assertColorNear(contentBackground, surface, 0.035, "focused outlined text area content background");
+                assertTextAreaContentBackgroundMatches(
+                        image,
+                        content,
+                        surface,
+                        0.035,
+                        "focused outlined text area content background"
+                );
                 writeVisualSnapshot(image, java.nio.file.Path.of(
                         "build",
                         "reports",
@@ -9388,7 +9389,7 @@ final class M3ControlStyleTest {
     @Test
     void tooltipInstallsOnNodes() {
         Label target = new Label("Target");
-        M3Tooltip tooltip = M3Tooltip.install(target, "Installed");
+        M3Tooltip tooltip = installTooltip(target, "Installed");
 
         assertEquals("Installed", tooltip.getText());
         assertTrue(tooltip.getStyleClass().contains(M3Tooltip.STYLE_CLASS));
@@ -9402,7 +9403,7 @@ final class M3ControlStyleTest {
 
         Label targetWithHelp = new Label("Target");
         targetWithHelp.setAccessibleHelp("Existing help");
-        M3Tooltip restoredTooltip = M3Tooltip.install(targetWithHelp, "Temporary help");
+        M3Tooltip restoredTooltip = installTooltip(targetWithHelp, "Temporary help");
 
         assertEquals("Temporary help", targetWithHelp.getAccessibleHelp());
 
@@ -9422,7 +9423,7 @@ final class M3ControlStyleTest {
                 () -> {
                     Label target = new Label("Target");
                     target.setFocusTraversable(true);
-                    M3Tooltip tooltip = M3Tooltip.install(target, "Installed");
+                    M3Tooltip tooltip = installTooltip(target, "Installed");
                     tooltip.setShowDelay(Duration.ZERO);
                     tooltip.setHideDelay(Duration.ZERO);
                     tooltip.setShowDuration(Duration.INDEFINITE);
@@ -9467,7 +9468,7 @@ final class M3ControlStyleTest {
                     Stage stage = new Stage();
                     Label target = new Label("Target");
                     M3Button action = createButton("Action", M3ButtonVariant.TEXT);
-                    M3RichTooltip tooltip = M3RichTooltip.install(
+                    M3RichTooltip tooltip = installRichTooltip(
                             target,
                             "Title",
                             "Supporting text",
@@ -9524,7 +9525,7 @@ final class M3ControlStyleTest {
             Label target = new Label("Target");
             target.setMinSize(96.0, 32.0);
             M3Button action = createButton("Action", M3ButtonVariant.TEXT);
-            M3RichTooltip tooltip = M3RichTooltip.install(target, "Title", "Supporting text", action);
+            M3RichTooltip tooltip = installRichTooltip(target, "Title", "Supporting text", action);
             Stage stage = new Stage();
 
             try {
@@ -9575,7 +9576,7 @@ final class M3ControlStyleTest {
                     () -> {
                         Label target = new Label("Target");
                         target.setMinSize(80.0, 32.0);
-                        M3Tooltip tooltip = M3Tooltip.install(target, "Installed");
+                        M3Tooltip tooltip = installTooltip(target, "Installed");
                         VBox root = new VBox(target);
                         M3MotionSettings.setMotionBehavior(root, tooltipBehavior(
                                 Duration.seconds(30.0),
@@ -9624,7 +9625,7 @@ final class M3ControlStyleTest {
                     () -> {
                         Label target = new Label("Target");
                         target.setMinSize(80.0, 32.0);
-                        M3Tooltip tooltip = M3Tooltip.install(target, "Installed");
+                        M3Tooltip tooltip = installTooltip(target, "Installed");
                         VBox root = new VBox(target);
                         M3MotionSettings.setMotionBehavior(root, tooltipBehavior(
                                 Duration.ZERO,
@@ -9682,7 +9683,7 @@ final class M3ControlStyleTest {
                     () -> {
                         Label target = new Label("Target");
                         target.setMinSize(80.0, 32.0);
-                        M3Tooltip tooltip = M3Tooltip.install(target, "Installed");
+                        M3Tooltip tooltip = installTooltip(target, "Installed");
                         VBox root = new VBox(target);
                         M3MotionSettings.setMotionBehavior(root, tooltipBehavior(
                                 Duration.ZERO,
@@ -9873,7 +9874,7 @@ final class M3ControlStyleTest {
     @Test
     void richTooltipInstallsOnNodes() {
         Label target = new Label("Target");
-        M3RichTooltip tooltip = M3RichTooltip.install(target, "Title", "Supporting text");
+        M3RichTooltip tooltip = installRichTooltip(target, "Title", "Supporting text");
 
         assertEquals("Title Supporting text", target.getAccessibleHelp());
 
@@ -9883,7 +9884,7 @@ final class M3ControlStyleTest {
         tooltip.setSupportingText("");
         assertEquals("Updated", target.getAccessibleHelp());
 
-        M3RichTooltip.uninstall(target, tooltip);
+        M3Tooltip.uninstall(target, tooltip);
         assertNull(target.getAccessibleHelp());
     }
 
@@ -9910,7 +9911,7 @@ final class M3ControlStyleTest {
                 () -> {
                     Stage stage = new Stage();
                     Label target = new Label("Target");
-                    M3RichTooltip tooltip = M3RichTooltip.install(
+                    M3RichTooltip tooltip = installRichTooltip(
                             target,
                             "Title",
                             "Supporting text",
@@ -9968,7 +9969,7 @@ final class M3ControlStyleTest {
                     M3ButtonVariant.TEXT,
                     event -> actionCount.incrementAndGet()
             );
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     target,
                     "Title",
                     "Supporting text",
@@ -10031,7 +10032,7 @@ final class M3ControlStyleTest {
                     Label target = new Label("Target");
                     target.setFocusTraversable(true);
                     M3Button action = createButton("Action", M3ButtonVariant.TEXT);
-                    M3RichTooltip tooltip = M3RichTooltip.install(
+                    M3RichTooltip tooltip = installRichTooltip(
                             target,
                             "Title",
                             "Supporting text",
@@ -10095,7 +10096,7 @@ final class M3ControlStyleTest {
                     M3Button disabledAction = createButton("Disabled", M3ButtonVariant.TEXT);
                     M3Button secondAction = createButton("Second", M3ButtonVariant.TEXT);
                     disabledAction.setDisable(true);
-                    M3RichTooltip tooltip = M3RichTooltip.install(
+                    M3RichTooltip tooltip = installRichTooltip(
                             target,
                             "Title",
                             "Supporting text",
@@ -10202,9 +10203,9 @@ final class M3ControlStyleTest {
 
         M3ThemeManager.install(scene, theme);
 
-        M3Tooltip attachedTooltip = M3Tooltip.install(attachedTarget, "Installed");
-        M3Tooltip delayedTooltip = M3Tooltip.install(delayedTarget, "Delayed");
-        M3Tooltip uninstalledTooltip = M3Tooltip.install(uninstalledTarget, "Uninstalled");
+        M3Tooltip attachedTooltip = installTooltip(attachedTarget, "Installed");
+        M3Tooltip delayedTooltip = installTooltip(delayedTarget, "Delayed");
+        M3Tooltip uninstalledTooltip = installTooltip(uninstalledTarget, "Uninstalled");
         M3Tooltip.uninstall(uninstalledTarget, uninstalledTooltip);
 
         assertEquals(theme, attachedTooltip.getTheme());
@@ -10234,7 +10235,7 @@ final class M3ControlStyleTest {
 
         M3ThemeManager.install(localRoot, localTheme);
 
-        M3Tooltip tooltip = M3Tooltip.install(target, "Installed");
+        M3Tooltip tooltip = installTooltip(target, "Installed");
 
         assertSame(localTheme, tooltip.getTheme());
         assertTrue(tooltip.getStyle().contains("-m3-color-primary"));
@@ -10251,7 +10252,7 @@ final class M3ControlStyleTest {
 
         M3ThemeManager.install(localRoot, localTheme);
 
-        M3Tooltip tooltip = M3Tooltip.install(target, "Installed");
+        M3Tooltip tooltip = installTooltip(target, "Installed");
 
         assertSame(localTheme, tooltip.getTheme());
 
@@ -10269,7 +10270,7 @@ final class M3ControlStyleTest {
             Label target = new Label("Target");
             Pane root = new Pane(target);
             Scene scene = new Scene(root, 240.0, 120.0);
-            M3Tooltip tooltip = M3Tooltip.install(target, "Installed");
+            M3Tooltip tooltip = installTooltip(target, "Installed");
             M3Theme baselineTheme = M3Theme.defaultTheme();
             M3Theme expressiveDarkTheme = M3Theme.fromSeed(
                     Color.web("#006a6a"),
@@ -10318,7 +10319,7 @@ final class M3ControlStyleTest {
             Pane targetContainer = new Pane(target);
             Pane firstRoot = new Pane(targetContainer);
             Scene scene = new Scene(firstRoot, 280.0, 140.0);
-            M3Tooltip tooltip = M3Tooltip.install(target, "Installed");
+            M3Tooltip tooltip = installTooltip(target, "Installed");
             M3Theme baselineTheme = M3Theme.defaultTheme();
             M3Theme expressiveDarkTheme = M3Theme.fromSeed(
                     Color.web("#006a6a"),
@@ -10387,7 +10388,7 @@ final class M3ControlStyleTest {
             Pane localRoot = new Pane(target);
             Pane root = new Pane(localRoot);
             Scene scene = new Scene(root, 240.0, 120.0);
-            M3Tooltip tooltip = M3Tooltip.install(target, "Installed");
+            M3Tooltip tooltip = installTooltip(target, "Installed");
             M3Theme baselineTheme = M3Theme.defaultTheme();
             M3Theme expressiveDarkTheme = M3Theme.fromSeed(
                     Color.web("#6750a4"),
@@ -10437,7 +10438,7 @@ final class M3ControlStyleTest {
             Pane secondLocalRoot = new Pane();
             Pane root = new Pane(firstLocalRoot, secondLocalRoot);
             Scene scene = new Scene(root, 320.0, 160.0);
-            M3Tooltip tooltip = M3Tooltip.install(target, "Installed");
+            M3Tooltip tooltip = installTooltip(target, "Installed");
             M3Theme baselineTheme = M3Theme.defaultTheme();
             M3Theme expressiveDarkTheme = M3Theme.fromSeed(
                     Color.web("#6750a4"),
@@ -13122,7 +13123,7 @@ final class M3ControlStyleTest {
                     M3MenuItem details = new M3MenuItem("Details");
                     M3MenuButton menuButton = new M3MenuButton("More", details);
                     M3Button action = createButton("Open details", M3ButtonVariant.TEXT);
-                    M3RichTooltip tooltip = M3RichTooltip.install(
+                    M3RichTooltip tooltip = installRichTooltip(
                             details,
                             "Details",
                             "Actions in a menu-owned tooltip remain reachable.",
@@ -20871,7 +20872,7 @@ final class M3ControlStyleTest {
                 M3Button ownerAction = new M3Button("Action");
                 if ("Settings".equals(value)) {
                     M3Button tooltipAction = new M3Button("Details");
-                    M3RichTooltip tooltip = M3RichTooltip.install(
+                    M3RichTooltip tooltip = installRichTooltip(
                             ownerAction,
                             "Settings",
                             "Shows row details.",
@@ -26932,10 +26933,18 @@ final class M3ControlStyleTest {
             var sliderBounds = slider.getBoundsInParent();
             int sliderX = (int) Math.round(sliderBounds.getMinX());
             int sliderY = (int) Math.round(sliderBounds.getMinY());
-            Color activeTrack = image.getPixelReader().getColor(sliderX + 24, sliderY + 28);
-            Color inactiveTrack = image.getPixelReader().getColor(sliderX + 190, sliderY + 28);
-            Color thumb = image.getPixelReader().getColor(sliderX + 110, sliderY + 28);
-            Color emptyTouchTarget = image.getPixelReader().getColor(sliderX + 110, sliderY + 4);
+            Color activeTrack = averageSnapshotColor(
+                    image, sliderX + 20, sliderY + 26, sliderX + 29, sliderY + 31
+            );
+            Color inactiveTrack = averageSnapshotColor(
+                    image, sliderX + 186, sliderY + 26, sliderX + 195, sliderY + 31
+            );
+            Color thumb = averageSnapshotColor(
+                    image, sliderX + 105, sliderY + 23, sliderX + 116, sliderY + 34
+            );
+            Color emptyTouchTarget = averageSnapshotColor(
+                    image, sliderX + 105, sliderY + 2, sliderX + 116, sliderY + 8
+            );
 
             assertTrue(colorDistance(inactiveTrack, thumb) > 0.1,
                     () -> "inactiveTrack=" + inactiveTrack + ", thumb=" + thumb);
@@ -26969,8 +26978,12 @@ final class M3ControlStyleTest {
             int monthRight = (int) Math.round(monthBounds.getMaxX());
             int monthTop = (int) Math.round(monthBounds.getMinY());
             int monthCenterY = (int) Math.round((monthBounds.getMinY() + monthBounds.getMaxY()) / 2.0);
-            Color selectedBody = image.getPixelReader().getColor(monthRight - 14, monthCenterY);
-            Color roundedCorner = image.getPixelReader().getColor(monthRight - 2, monthTop + 2);
+            Color selectedBody = averageSnapshotColor(
+                    image, monthRight - 20, monthCenterY - 3, monthRight - 8, monthCenterY + 4
+            );
+            Color roundedCorner = averageSnapshotColor(
+                    image, monthRight - 4, monthTop, monthRight, monthTop + 5
+            );
 
             assertTrue(selectedBody.getOpacity() > 0.4, () -> "selectedBody=" + selectedBody);
             assertSnapshotNodeBorderContainsContrast(image, month, selectedBody, 0.08);
@@ -27010,11 +27023,18 @@ final class M3ControlStyleTest {
             int trackCenterY = (int) Math.round((trackBounds.getMinY() + trackBounds.getMaxY()) / 2.0);
             int fillX = (int) Math.round((barBounds.getMinX() + barBounds.getMaxX()) / 2.0);
             int trackX = (int) Math.round(trackBounds.getMaxX() - 12.0);
-            Color fill = image.getPixelReader().getColor(fillX, trackCenterY);
-            Color track = image.getPixelReader().getColor(trackX, trackCenterY);
-            Color roundedCorner = image.getPixelReader().getColor(
-                    (int) Math.round(barBounds.getMinX()),
-                    (int) Math.round(barBounds.getMinY())
+            Color fill = averageSnapshotColor(
+                    image, fillX - 4, trackCenterY - 2, fillX + 5, trackCenterY + 3
+            );
+            Color track = averageSnapshotColor(
+                    image, trackX - 4, trackCenterY - 2, trackX + 5, trackCenterY + 3
+            );
+            Color roundedCorner = averageSnapshotColor(
+                    image,
+                    (int) Math.round(barBounds.getMinX()) - 1,
+                    (int) Math.round(barBounds.getMinY()) - 1,
+                    (int) Math.round(barBounds.getMinX()) + 4,
+                    (int) Math.round(barBounds.getMinY()) + 4
             );
 
             assertTrue(fill.getOpacity() > 0.8, () -> "fill=" + fill);
@@ -27136,14 +27156,14 @@ final class M3ControlStyleTest {
             assertSnapshotNodeBorderContainsContrast(image, outlinedField, Color.WHITE, 0.04);
             assertSnapshotNodeBorderContainsContrast(image, passwordField, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, textArea, Color.WHITE, 0.04);
-            Node textAreaContent = assertInstanceOf(Node.class, textArea.lookup(".content"));
-            var textAreaContentBounds = textAreaContent.localToScene(textAreaContent.getBoundsInLocal());
-            Color textAreaContentBackground = image.getPixelReader().getColor(
-                    (int) Math.round(textAreaContentBounds.getMaxX() - 8.0),
-                    (int) Math.round(textAreaContentBounds.getMaxY() - 8.0)
+            Region textAreaContent = lookupRegion(textArea, ".content");
+            assertTextAreaContentBackgroundMatches(
+                    image,
+                    textAreaContent,
+                    Color.rgb(230, 224, 233),
+                    0.035,
+                    "filled text area content background"
             );
-            assertTrue(colorDistance(textAreaContentBackground, Color.WHITE) > 0.02,
-                    () -> "textAreaContentBackground=" + textAreaContentBackground);
             writeVisualSnapshot(image, java.nio.file.Path.of(
                     "build",
                     "reports",
@@ -27430,16 +27450,22 @@ final class M3ControlStyleTest {
                     () -> "floating label should be centered around the outline top: field="
                             + fieldBounds + ", label=" + labelBounds);
 
-            Color labelPaddingPixel = image.getPixelReader().getColor(
-                    (int) Math.floor(labelBounds.getMinX() + 1.0),
-                    (int) Math.floor(labelBounds.getMinY() + labelBounds.getHeight() / 2.0)
+            Color labelPaddingPixel = averageSnapshotColor(
+                    image,
+                    (int) Math.floor(labelBounds.getMinX()),
+                    (int) Math.floor(labelBounds.getCenterY() - 2.0),
+                    (int) Math.floor(labelBounds.getMinX() + 4.0),
+                    (int) Math.floor(labelBounds.getCenterY() + 3.0)
             );
-            Color notchPixel = image.getPixelReader().getColor(
-                    (int) Math.floor(labelBounds.getMinX() + 1.0),
-                    (int) Math.floor(fieldBounds.getMinY() + 1.0)
+            Color notchPixel = averageSnapshotColor(
+                    image,
+                    (int) Math.floor(labelBounds.getMinX()),
+                    (int) Math.floor(fieldBounds.getMinY()),
+                    (int) Math.floor(labelBounds.getMinX() + 4.0),
+                    (int) Math.floor(fieldBounds.getMinY() + 3.0)
             );
-            assertColorNear(labelPaddingPixel, surface, 0.015, "floating label padding pixel");
-            assertColorNear(notchPixel, surface, 0.015, "outlined notch pixel");
+            assertColorNear(labelPaddingPixel, surface, 0.09, "floating label padding area");
+            assertColorNear(notchPixel, surface, 0.05, "outlined notch area");
             assertSnapshotAreaContainsContrast(
                     image,
                     (int) Math.floor(fieldBounds.getMinX() + 4.0),
@@ -37091,6 +37117,32 @@ final class M3ControlStyleTest {
         row.resize(240.0, 40.0);
     }
 
+    /// Returns the average color of a rendered snapshot area.
+    private static Color averageSnapshotColor(WritableImage image, int minX, int minY, int maxX, int maxY) {
+        int startX = clampPixelCoordinate(Math.min(minX, maxX), (int) image.getWidth());
+        int startY = clampPixelCoordinate(Math.min(minY, maxY), (int) image.getHeight());
+        int endX = clampPixelCoordinate(Math.max(minX, maxX), (int) image.getWidth());
+        int endY = clampPixelCoordinate(Math.max(minY, maxY), (int) image.getHeight());
+        double red = 0.0;
+        double green = 0.0;
+        double blue = 0.0;
+        double opacity = 0.0;
+        int count = 0;
+        for (int y = startY; y <= endY; y++) {
+            for (int x = startX; x <= endX; x++) {
+                Color color = image.getPixelReader().getColor(x, y);
+                red += color.getRed();
+                green += color.getGreen();
+                blue += color.getBlue();
+                opacity += color.getOpacity();
+                count++;
+            }
+        }
+        assertTrue(count > 0, () -> "empty snapshot sample area: minX=" + minX
+                + ", minY=" + minY + ", maxX=" + maxX + ", maxY=" + maxY);
+        return new Color(red / count, green / count, blue / count, opacity / count);
+    }
+
     /// Verifies that a rendered snapshot contains enough distinct visible colors.
     private static void assertSnapshotHasColorVariety(WritableImage image, int minimumColorCount) {
         Set<Integer> colors = new HashSet<>();
@@ -37601,6 +37653,71 @@ final class M3ControlStyleTest {
     private static void assertColorNear(Color actual, Color expected, double maximumDistance, String description) {
         assertTrue(colorDistance(actual, expected) <= maximumDistance,
                 () -> description + ": actual=" + actual + ", expected=" + expected);
+    }
+
+    /// Verifies that the lower content area of a text area uses the Material container background.
+    private static void assertTextAreaContentBackgroundMatches(
+            WritableImage image,
+            Region content,
+            Color expected,
+            double maximumDistance,
+            String description
+    ) {
+        Bounds bounds = content.localToScene(content.getBoundsInLocal());
+        double minX = Math.max(0.0, bounds.getMinX() + 8.0);
+        double maxX = Math.min(image.getWidth() - 1.0, bounds.getMaxX() - 8.0);
+        double minY = Math.max(0.0, bounds.getMinY() + Math.max(24.0, bounds.getHeight() * 0.45));
+        double maxY = Math.min(image.getHeight() - 1.0, bounds.getMaxY() - 8.0);
+
+        assertTrue(minX <= maxX && minY <= maxY,
+                () -> description + " has no sampleable content area: bounds=" + bounds);
+
+        int mismatches = 0;
+        int whiteLeaks = 0;
+        int ignoredInkPixels = 0;
+        double worstDistance = 0.0;
+        Color worstColor = expected;
+        int worstX = -1;
+        int worstY = -1;
+
+        for (int yIndex = 0; yIndex < 3; yIndex++) {
+            double y = minY + (maxY - minY) * yIndex / 2.0;
+            for (int xIndex = 0; xIndex < 5; xIndex++) {
+                double x = minX + (maxX - minX) * xIndex / 4.0;
+                int pixelX = (int) Math.round(x);
+                int pixelY = (int) Math.round(y);
+                Color color = image.getPixelReader().getColor(pixelX, pixelY);
+                double distance = colorDistance(color, expected);
+                if (distance > worstDistance) {
+                    worstDistance = distance;
+                    worstColor = color;
+                    worstX = pixelX;
+                    worstY = pixelY;
+                }
+                if (colorDistance(color, Color.WHITE) <= 0.02) {
+                    whiteLeaks++;
+                } else if (distance > maximumDistance) {
+                    if (color.getBrightness() < 0.72) {
+                        ignoredInkPixels++;
+                    } else {
+                        mismatches++;
+                    }
+                }
+            }
+        }
+
+        String mismatchMessage = description + " sampled non-container pixels: mismatches=" + mismatches
+                + ", worstColor=" + worstColor
+                + ", ignoredInkPixels=" + ignoredInkPixels
+                + ", worstDistance=" + worstDistance
+                + ", worstPixel=(" + worstX + ", " + worstY + ")"
+                + ", expected=" + expected
+                + ", bounds=" + bounds;
+        String whiteLeakMessage = description + " exposes JavaFX white content background: whiteLeaks=" + whiteLeaks
+                + ", worstColor=" + worstColor
+                + ", bounds=" + bounds;
+        assertEquals(0, mismatches, mismatchMessage);
+        assertEquals(0, whiteLeaks, whiteLeakMessage);
     }
 
     /// Returns whether standalone controls and their popup stack have reached a renderable fallback-styled state.
@@ -38558,5 +38675,24 @@ final class M3ControlStyleTest {
     /// Creates a typed key event for printable-key behavior tests.
     private static KeyEvent keyTypedEvent(String character) {
         return new KeyEvent(KeyEvent.KEY_TYPED, character, character, KeyCode.UNDEFINED, false, false, false, false);
+    }
+
+    /// Creates and installs a tooltip for tests that need installed tooltip behavior.
+    private static M3Tooltip installTooltip(Node node, String text) {
+        M3Tooltip tooltip = new M3Tooltip(text);
+        M3Tooltip.install(node, tooltip);
+        return tooltip;
+    }
+
+    /// Creates and installs a rich tooltip for tests that need installed tooltip behavior.
+    private static M3RichTooltip installRichTooltip(
+            Node node,
+            String title,
+            String supportingText,
+            Node... actions
+    ) {
+        M3RichTooltip tooltip = new M3RichTooltip(title, supportingText, actions);
+        M3Tooltip.install(node, tooltip);
+        return tooltip;
     }
 }

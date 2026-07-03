@@ -2435,7 +2435,7 @@ public final class M3FXDemoApp extends Application {
     /// Creates the tooltip component page.
     private Node createTooltipsPage() {
         M3Button plain = new M3Button("Hover me", M3ButtonVariant.FILLED);
-        M3Tooltip.install(plain, "Tooltip");
+        M3Tooltip.install(plain, new M3Tooltip("Tooltip"));
 
         M3Button longText = new M3Button("Long tooltip", M3ButtonVariant.OUTLINED);
         M3Tooltip tooltip = new M3Tooltip("Use tooltips for brief contextual labels when a control needs clarification.");
@@ -2443,23 +2443,27 @@ public final class M3FXDemoApp extends Application {
         M3Tooltip.install(longText, tooltip);
 
         M3IconButton iconButton = createIconButton("info");
-        M3Tooltip.install(iconButton, "Icon button");
+        M3Tooltip.install(iconButton, new M3Tooltip("Icon button"));
 
         M3Button rich = new M3Button("Rich tooltip", M3ButtonVariant.TONAL);
-        M3RichTooltip.install(
+        M3Tooltip.install(
                 rich,
-                "Rich tooltip",
-                "Use rich tooltips when brief supporting context needs a title and a wider surface."
+                new M3RichTooltip(
+                        "Rich tooltip",
+                        "Use rich tooltips when brief supporting context needs a title and a wider surface."
+                )
         );
 
         M3Button actionButton = new M3Button("Open", M3ButtonVariant.TEXT);
         actionButton.setOnAction(event -> showSnackbar("Theme-aware snackbar"));
         M3Button richAction = new M3Button("Rich action", M3ButtonVariant.OUTLINED);
-        M3RichTooltip.install(
+        M3Tooltip.install(
                 richAction,
-                "Generated theme",
-                "The tooltip can inherit the owning scene theme and expose action nodes in the content surface.",
-                actionButton
+                new M3RichTooltip(
+                        "Generated theme",
+                        "The tooltip can inherit the owning scene theme and expose action nodes in the content surface.",
+                        actionButton
+                )
         );
 
         return createGallery(

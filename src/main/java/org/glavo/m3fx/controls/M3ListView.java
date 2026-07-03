@@ -77,7 +77,9 @@ public class M3ListView<T> extends Control {
                 /// Rebuilds visible cells when the factory changes.
                 @Override
                 protected void invalidated() {
-                    requestCellRebuild();
+                    if (getSkin() instanceof M3ListViewSkin<?> skin) {
+                        skin.rebuildCells();
+                    }
                 }
             };
 
@@ -180,7 +182,9 @@ public class M3ListView<T> extends Control {
         refreshDataItemReachabilityState();
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
-        requestCellCountRefresh();
+        if (getSkin() instanceof M3ListViewSkin<?> skin) {
+            skin.refreshItemCount();
+        }
     };
 
     /// Creates an empty virtualized list view.
@@ -1630,19 +1634,6 @@ public class M3ListView<T> extends Control {
         }
     }
 
-    /// Requests a full visible cell rebuild from the installed skin.
-    private void requestCellRebuild() {
-        if (getSkin() instanceof M3ListViewSkin<?> skin) {
-            skin.rebuildCells();
-        }
-    }
-
-    /// Requests item count updates from the installed skin.
-    private void requestCellCountRefresh() {
-        if (getSkin() instanceof M3ListViewSkin<?> skin) {
-            skin.refreshItemCount();
-        }
-    }
 
     /// Verifies that an index belongs to the backing data list.
     private void checkItemIndex(int index) {

@@ -426,9 +426,15 @@ public class M3FabMenu extends Control {
         if (parameters.length > 0 && M3Accessible.containsUnrevealableActionNodeTarget(getItems(), parameters)) {
             return false;
         }
-        @Nullable Node target = parameters.length == 0
-                ? currentAccessibleActionFocusNode()
-                : M3Accessible.actionItem(getItems(), parameters);
+        @Nullable Node target;
+        if (parameters.length == 0) {
+            target = activeExternalActionFocusNode();
+            if (target == null) {
+                target = currentActionFocusNode();
+            }
+        } else {
+            target = M3Accessible.actionItem(getItems(), parameters);
+        }
         boolean hasNestedTarget = parameters.length > 0
                 && target == null
                 && containsNestedAccessibleActionTarget(parameters);
@@ -451,11 +457,6 @@ public class M3FabMenu extends Control {
         return shown;
     }
 
-    /// Returns the focused action-owned external popup target or the focused action item itself.
-    private @Nullable Node currentAccessibleActionFocusNode() {
-        @Nullable Node externalTarget = activeExternalActionFocusNode();
-        return externalTarget == null ? currentActionFocusNode() : externalTarget;
-    }
 
     /// Returns whether an action item exposes the requested nested accessibility target.
     private boolean containsNestedAccessibleActionTarget(Object... parameters) {

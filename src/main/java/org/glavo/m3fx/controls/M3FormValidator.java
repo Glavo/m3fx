@@ -327,20 +327,35 @@ public final class M3FormValidator {
 
     /// Rebuilds the invalid input list and read-only state properties.
     private void refreshInvalidInputs() {
-        ArrayList<M3TextInputLayout> invalidInputs = new ArrayList<>();
+        ArrayList<M3TextInputLayout> refreshedInvalidInputs = new ArrayList<>();
         boolean validationActive = false;
         for (M3TextInputLayout input : inputs) {
             validationActive |= input.isValidationActive();
             if (input.isValidationError()) {
-                invalidInputs.add(input);
+                refreshedInvalidInputs.add(input);
             }
         }
 
-        this.invalidInputs.setAll(invalidInputs);
-        firstInvalidInput.set(invalidInputs.isEmpty() ? null : invalidInputs.get(0));
+        if (!sameInputs(invalidInputs, refreshedInvalidInputs)) {
+            invalidInputs.setAll(refreshedInvalidInputs);
+        }
+        firstInvalidInput.set(refreshedInvalidInputs.isEmpty() ? null : refreshedInvalidInputs.get(0));
         this.validationActive.set(validationActive);
-        invalidInputCount.set(invalidInputs.size());
-        valid.set(invalidInputs.isEmpty());
+        invalidInputCount.set(refreshedInvalidInputs.size());
+        valid.set(refreshedInvalidInputs.isEmpty());
+    }
+
+    /// Returns whether two input lists contain the same layouts in the same order.
+    private static boolean sameInputs(List<M3TextInputLayout> first, List<M3TextInputLayout> second) {
+        if (first.size() != second.size()) {
+            return false;
+        }
+        for (int index = 0; index < first.size(); index++) {
+            if (first.get(index) != second.get(index)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /// Returns a registered input layout or throws when the input is not managed by this validator.

@@ -89,38 +89,6 @@ public class M3RichTooltip extends M3Tooltip {
         addActions(actions);
     }
 
-    /// Installs a rich tooltip with title and supporting text on a node.
-    ///
-    /// @param node the node that owns the tooltip
-    /// @param title the title displayed at the top of the tooltip
-    /// @param supportingText the supporting text displayed below the title
-    /// @return the installed rich tooltip
-    public static M3RichTooltip install(Node node, String title, String supportingText) {
-        M3RichTooltip tooltip = new M3RichTooltip(title, supportingText);
-        M3Tooltip.install(node, tooltip);
-        return tooltip;
-    }
-
-    /// Installs a rich tooltip with title, supporting text, and action nodes on a node.
-    ///
-    /// @param node the node that owns the tooltip
-    /// @param title the title displayed at the top of the tooltip
-    /// @param supportingText the supporting text displayed below the title
-    /// @param actions the action nodes displayed in the tooltip action row
-    /// @return the installed rich tooltip
-    public static M3RichTooltip install(Node node, String title, String supportingText, Node... actions) {
-        M3RichTooltip tooltip = new M3RichTooltip(title, supportingText, actions);
-        M3Tooltip.install(node, tooltip);
-        return tooltip;
-    }
-
-    /// Uninstalls a Material Design 3 rich tooltip from a node.
-    ///
-    /// @param node the node that owns the tooltip
-    /// @param tooltip the rich tooltip to uninstall
-    public static void uninstall(Node node, M3RichTooltip tooltip) {
-        M3Tooltip.uninstall(node, tooltip);
-    }
 
     /// Returns the rich tooltip title.
     ///

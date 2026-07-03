@@ -501,11 +501,6 @@ public class M3Menu extends Control {
     /// Updates the pseudo-class that represents the current menu color mapping.
     private void updateColorStylePseudoClass() {
         pseudoClassStateChanged(VIBRANT_PSEUDO_CLASS, getColorStyle() == M3MenuColorStyle.VIBRANT);
-        updateChildColorStylePseudoClasses();
-    }
-
-    /// Updates direct child pseudo-classes that depend on the current menu color style.
-    private void updateChildColorStylePseudoClasses() {
         for (Node child : getItems()) {
             updateChildColorStylePseudoClass(child);
         }

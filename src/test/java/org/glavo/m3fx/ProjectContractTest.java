@@ -8,6 +8,8 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Unmodifiable;
 import org.junit.jupiter.api.Test;
 
+import javafx.scene.control.Control;
+
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -360,6 +362,63 @@ final class ProjectContractTest {
 
         assertTrue(forbiddenInheritances.isEmpty(),
                 () -> "M3FX controls must not extend concrete JavaFX controls: " + forbiddenInheritances);
+    }
+
+    /// Verifies that concrete public controls expose constructors and properties instead of static factories.
+    @Test
+    void concretePublicControlsDoNotExposeStaticConvenienceMethods() throws Exception {
+        List<String> staticMethods = new ArrayList<>();
+        for (String className : exportedTopLevelClassNames(exportedPackageNames())) {
+            Class<?> type = Class.forName(className, false, ProjectContractTest.class.getClassLoader());
+            int typeModifiers = type.getModifiers();
+            if (!type.getPackageName().equals("org.glavo.m3fx.controls")
+                    || !Modifier.isPublic(typeModifiers)
+                    || Modifier.isAbstract(typeModifiers)
+                    || !Control.class.isAssignableFrom(type)) {
+                continue;
+            }
+
+            for (Method method : type.getDeclaredMethods()) {
+                int methodModifiers = method.getModifiers();
+                if (Modifier.isPublic(methodModifiers)
+                        && Modifier.isStatic(methodModifiers)
+                        && !method.getName().equals("getClassCssMetaData")) {
+                    staticMethods.add(type.getName() + "#" + method.getName());
+                }
+            }
+        }
+
+        assertTrue(staticMethods.isEmpty(),
+                () -> "Concrete public controls must not expose static convenience methods: " + staticMethods);
+    }
+
+    /// Verifies that public component types do not expose static factories returning component instances.
+    @Test
+    void publicControlPackageTypesDoNotExposeStaticSelfFactories() throws Exception {
+        List<String> staticFactories = new ArrayList<>();
+        for (String className : exportedTopLevelClassNames(exportedPackageNames())) {
+            Class<?> type = Class.forName(className, false, ProjectContractTest.class.getClassLoader());
+            int typeModifiers = type.getModifiers();
+            if (!type.getPackageName().equals("org.glavo.m3fx.controls")
+                    || !Modifier.isPublic(typeModifiers)
+                    || Modifier.isAbstract(typeModifiers)
+                    || type.isEnum()) {
+                continue;
+            }
+
+            for (Method method : type.getDeclaredMethods()) {
+                int methodModifiers = method.getModifiers();
+                if (Modifier.isPublic(methodModifiers)
+                        && Modifier.isStatic(methodModifiers)
+                        && type.isAssignableFrom(method.getReturnType())) {
+                    staticFactories.add(type.getName() + "#" + method.getName());
+                }
+            }
+        }
+
+        assertTrue(staticFactories.isEmpty(),
+                () -> "Public component types must use constructors instead of static self factories: "
+                        + staticFactories);
     }
 
     /// Verifies that public controls with custom CSS metadata expose class and instance metadata entry points.

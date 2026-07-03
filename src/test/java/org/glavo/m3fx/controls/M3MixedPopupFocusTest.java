@@ -51,7 +51,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3MenuItem detailsItem = new M3MenuItem("Details");
             M3Button action = new M3Button("Learn");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     detailsItem,
                     "Details",
                     "Supplemental menu help",
@@ -90,10 +90,10 @@ final class M3MixedPopupFocusTest {
                 assertTrue(menuButton.isShowing());
                 assertSame(action, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
-                action.fireEvent(keyPressed(KeyCode.ESCAPE));
+                action.fireEvent(keyPressed(KeyCode.F6));
 
-                assertFalse(tooltip.isShowing());
                 assertTrue(detailsItem.isFocused());
+                assertTrue(tooltip.isShowing());
                 assertTrue(menuButton.isShowing());
                 assertSame(detailsItem, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
@@ -110,7 +110,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem pdfItem = new M3MenuItem("PDF");
             M3MenuItem htmlItem = new M3MenuItem("HTML");
             M3Button action = new M3Button("Describe");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     pdfItem,
                     "PDF export",
                     "Exports the active document.",
@@ -188,7 +188,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem pdfItem = new M3MenuItem("PDF");
             M3MenuItem htmlItem = new M3MenuItem("HTML");
             M3Button action = new M3Button("Describe");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     pdfItem,
                     "PDF export",
                     "Exports the active document.",
@@ -291,7 +291,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem pdfItem = new M3MenuItem("PDF");
             M3MenuItem htmlItem = new M3MenuItem("HTML");
             M3Button action = new M3Button("Describe");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     pdfItem,
                     "PDF export",
                     "Exports the active document.",
@@ -358,7 +358,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem pdfItem = new M3MenuItem("PDF");
             M3Button action = new M3Button("Describe");
             action.setDisable(true);
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     pdfItem,
                     "PDF export",
                     "Exports the active document.",
@@ -404,7 +404,7 @@ final class M3MixedPopupFocusTest {
             M3TextField nameField = new M3TextField();
             M3IconButton helpButton = new M3IconButton(new M3Icon("?"));
             M3Button tooltipAction = new M3Button("Explain");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     helpButton,
                     "Name help",
                     "Explains why the field is invalid.",
@@ -667,7 +667,7 @@ final class M3MixedPopupFocusTest {
             M3Button helpButton = new M3Button("Help");
             M3Button tooltipAction = new M3Button("Details");
             tooltipAction.setDisable(true);
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     helpButton,
                     "Help",
                     "Explains this input.",
@@ -780,7 +780,7 @@ final class M3MixedPopupFocusTest {
 
             M3Button helpButton = new M3Button("Help");
             M3Button tooltipAction = new M3Button("Explain");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     helpButton,
                     "Form help",
                     "Explains how this form section is validated.",
@@ -789,7 +789,7 @@ final class M3MixedPopupFocusTest {
             M3Button disabledHelpButton = new M3Button("Disabled help");
             M3Button disabledTooltipAction = new M3Button("Disabled explain");
             disabledTooltipAction.setDisable(true);
-            M3RichTooltip disabledTooltip = M3RichTooltip.install(
+            M3RichTooltip disabledTooltip = installRichTooltip(
                     disabledHelpButton,
                     "Disabled form help",
                     "Disabled tooltip actions cannot be revealed.",
@@ -1424,7 +1424,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3MenuItem detailsItem = new M3MenuItem("Details");
             M3Button action = new M3Button("Inspect");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     detailsItem,
                     "Details",
                     "Dialog menu item help",
@@ -1459,7 +1459,6 @@ final class M3MixedPopupFocusTest {
                 assertSame(detailsItem, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
                 detailsItem.fireEvent(keyPressed(KeyCode.F6));
-
                 assertTrue(action.isFocused());
                 assertTrue(tooltip.isShowing());
                 assertTrue(menuButton.isShowing());
@@ -1552,7 +1551,7 @@ final class M3MixedPopupFocusTest {
                 root.layout();
 
                 Node okButton = Objects.requireNonNull(dialogPane.lookupButton(ButtonType.OK), "okButton");
-                M3RichTooltip tooltip = M3RichTooltip.install(
+                M3RichTooltip tooltip = installRichTooltip(
                         okButton,
                         "Confirm",
                         "Dialog action help",
@@ -1610,7 +1609,7 @@ final class M3MixedPopupFocusTest {
                 root.layout();
 
                 Node okButton = Objects.requireNonNull(dialogPane.lookupButton(ButtonType.OK), "okButton");
-                M3RichTooltip tooltip = M3RichTooltip.install(
+                M3RichTooltip tooltip = installRichTooltip(
                         okButton,
                         "Confirm",
                         "Dialog action help",
@@ -1669,7 +1668,7 @@ final class M3MixedPopupFocusTest {
                 root.layout();
 
                 Node okButton = Objects.requireNonNull(dialogPane.lookupButton(ButtonType.OK), "okButton");
-                M3RichTooltip tooltip = M3RichTooltip.install(
+                M3RichTooltip tooltip = installRichTooltip(
                         okButton,
                         "Confirm",
                         "Dialog action help",
@@ -1729,7 +1728,7 @@ final class M3MixedPopupFocusTest {
                 root.layout();
 
                 Node okButton = Objects.requireNonNull(dialogPane.lookupButton(ButtonType.OK), "okButton");
-                M3RichTooltip tooltip = M3RichTooltip.install(
+                M3RichTooltip tooltip = installRichTooltip(
                         okButton,
                         "Confirm",
                         "Dialog action help",
@@ -1781,7 +1780,7 @@ final class M3MixedPopupFocusTest {
                 root.layout();
 
                 Node okButton = Objects.requireNonNull(dialogPane.lookupButton(ButtonType.OK), "okButton");
-                M3RichTooltip tooltip = M3RichTooltip.install(
+                M3RichTooltip tooltip = installRichTooltip(
                         okButton,
                         "Schedule",
                         "Choose a target time.",
@@ -1840,7 +1839,7 @@ final class M3MixedPopupFocusTest {
                 root.layout();
 
                 Node okButton = Objects.requireNonNull(dialogPane.lookupButton(ButtonType.OK), "okButton");
-                M3RichTooltip tooltip = M3RichTooltip.install(
+                M3RichTooltip tooltip = installRichTooltip(
                         okButton,
                         "Schedule",
                         "Choose a target time.",
@@ -1896,7 +1895,7 @@ final class M3MixedPopupFocusTest {
                 root.layout();
 
                 Node okButton = Objects.requireNonNull(dialogPane.lookupButton(ButtonType.OK), "okButton");
-                M3RichTooltip tooltip = M3RichTooltip.install(
+                M3RichTooltip tooltip = installRichTooltip(
                         okButton,
                         "Schedule",
                         "Choose a target range.",
@@ -1958,7 +1957,7 @@ final class M3MixedPopupFocusTest {
                 root.layout();
 
                 Node okButton = Objects.requireNonNull(dialogPane.lookupButton(ButtonType.OK), "okButton");
-                M3RichTooltip tooltip = M3RichTooltip.install(
+                M3RichTooltip tooltip = installRichTooltip(
                         okButton,
                         "Schedule",
                         "Choose a target range.",
@@ -2013,7 +2012,7 @@ final class M3MixedPopupFocusTest {
                 root.layout();
 
                 Node okButton = Objects.requireNonNull(dialogPane.lookupButton(ButtonType.OK), "okButton");
-                M3RichTooltip tooltip = M3RichTooltip.install(
+                M3RichTooltip tooltip = installRichTooltip(
                         okButton,
                         "Confirm",
                         "Dialog action help",
@@ -2067,7 +2066,7 @@ final class M3MixedPopupFocusTest {
                 dialogPane.resizeRelocate(32.0, 96.0, 360.0, 220.0);
                 root.layout();
 
-                M3RichTooltip tooltip = M3RichTooltip.install(
+                M3RichTooltip tooltip = installRichTooltip(
                         contentItem,
                         "Content",
                         "Dialog content help",
@@ -2251,7 +2250,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3Button rowAction = new M3Button("More");
             M3Button tooltipAction = new M3Button("Details");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     rowAction,
                     "Row action",
                     "Shows details for the visible row.",
@@ -2423,7 +2422,7 @@ final class M3MixedPopupFocusTest {
             firstItem.setPrefSize(180.0, 128.0);
             M3Button ownerAction = new M3Button("More");
             M3Button tooltipAction = new M3Button("Details");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "Carousel item",
                     "Shows details for the selected carousel item.",
@@ -3275,7 +3274,7 @@ final class M3MixedPopupFocusTest {
                         snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
                 ));
                 M3Button tooltipAction = new M3Button("Details");
-                M3RichTooltip tooltip = M3RichTooltip.install(
+                M3RichTooltip tooltip = installRichTooltip(
                         actionButton,
                         "Undo",
                         "Restores the previous item state.",
@@ -3352,7 +3351,7 @@ final class M3MixedPopupFocusTest {
                         snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
                 ));
                 M3Button tooltipAction = new M3Button("Details");
-                M3RichTooltip tooltip = M3RichTooltip.install(
+                M3RichTooltip tooltip = installRichTooltip(
                         actionButton,
                         "Undo",
                         "Restores the previous item state.",
@@ -3423,7 +3422,7 @@ final class M3MixedPopupFocusTest {
                         queuedSnackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
                 ));
                 M3Button tooltipAction = new M3Button("Details");
-                M3RichTooltip tooltip = M3RichTooltip.install(
+                M3RichTooltip tooltip = installRichTooltip(
                         actionButton,
                         "Restore",
                         "Restores the deleted item.",
@@ -3496,7 +3495,7 @@ final class M3MixedPopupFocusTest {
                         queuedSnackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
                 ));
                 M3Button tooltipAction = new M3Button("Details");
-                M3RichTooltip tooltip = M3RichTooltip.install(
+                M3RichTooltip tooltip = installRichTooltip(
                         actionButton,
                         "Restore",
                         "Restores the deleted item.",
@@ -3567,7 +3566,7 @@ final class M3MixedPopupFocusTest {
                 ));
                 M3Button tooltipAction = new M3Button("Details");
                 tooltipAction.setDisable(true);
-                M3RichTooltip tooltip = M3RichTooltip.install(
+                M3RichTooltip tooltip = installRichTooltip(
                         actionButton,
                         "Undo",
                         "Restores the previous item state.",
@@ -3814,7 +3813,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem pdfItem = new M3MenuItem("PDF");
             M3MenuItem htmlItem = new M3MenuItem("HTML");
             M3Button tooltipAction = new M3Button("Describe");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     pdfItem,
                     "PDF export",
                     "Exports the current draft as a PDF.",
@@ -3890,7 +3889,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem draftItem = new M3MenuItem("Draft");
             M3MenuItem publishItem = new M3MenuItem("Publish");
             M3Button tooltipAction = new M3Button("Details");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     publishItem,
                     "Publish",
                     "Publishes the current draft.",
@@ -4026,7 +4025,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem draftItem = new M3MenuItem("Draft");
             M3MenuItem publishItem = new M3MenuItem("Publish");
             M3Button tooltipAction = new M3Button("Details");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     publishItem,
                     "Publish",
                     "Publishes the current draft.",
@@ -4084,7 +4083,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem draftItem = new M3MenuItem("Draft");
             M3MenuItem publishItem = new M3MenuItem("Publish");
             M3Button tooltipAction = new M3Button("Details");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     publishItem,
                     "Publish",
                     "Publishes the current draft.",
@@ -4134,7 +4133,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem pdfItem = new M3MenuItem("PDF");
             M3MenuItem htmlItem = new M3MenuItem("HTML");
             M3Button tooltipAction = new M3Button("Describe");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     pdfItem,
                     "PDF export",
                     "Exports the current draft as a PDF.",
@@ -4265,7 +4264,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3FloatingActionButton ownerAction = new M3FloatingActionButton("Edit");
             M3Button tooltipAction = new M3Button("Details");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "Edit",
                     "Edits the selected item.",
@@ -4329,7 +4328,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3FloatingActionButton ownerAction = new M3FloatingActionButton("Edit");
             M3Button tooltipAction = new M3Button("Details");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "Edit",
                     "Edits the selected item.",
@@ -4590,7 +4589,7 @@ final class M3MixedPopupFocusTest {
             M3FloatingActionButton ownerAction = new M3FloatingActionButton("Edit");
             M3Button tooltipAction = new M3Button("Details");
             tooltipAction.setDisable(true);
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "Edit",
                     "Edits the selected item.",
@@ -4808,7 +4807,7 @@ final class M3MixedPopupFocusTest {
                         snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
                 ));
                 M3Button tooltipAction = new M3Button("Details");
-                M3RichTooltip tooltip = M3RichTooltip.install(
+                M3RichTooltip tooltip = installRichTooltip(
                         actionButton,
                         "Undo",
                         "Restores the previous item state.",
@@ -4881,7 +4880,7 @@ final class M3MixedPopupFocusTest {
                         snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
                 ));
                 M3Button tooltipAction = new M3Button("Details");
-                M3RichTooltip tooltip = M3RichTooltip.install(
+                M3RichTooltip tooltip = installRichTooltip(
                         actionButton,
                         "Undo",
                         "Restores the previous item state.",
@@ -4947,7 +4946,7 @@ final class M3MixedPopupFocusTest {
                         queuedSnackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
                 ));
                 M3Button tooltipAction = new M3Button("Details");
-                M3RichTooltip tooltip = M3RichTooltip.install(
+                M3RichTooltip tooltip = installRichTooltip(
                         actionButton,
                         "Restore",
                         "Restores the deleted item.",
@@ -5016,7 +5015,7 @@ final class M3MixedPopupFocusTest {
                         queuedSnackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
                 ));
                 M3Button tooltipAction = new M3Button("Details");
-                M3RichTooltip tooltip = M3RichTooltip.install(
+                M3RichTooltip tooltip = installRichTooltip(
                         actionButton,
                         "Restore",
                         "Restores the deleted item.",
@@ -5078,7 +5077,7 @@ final class M3MixedPopupFocusTest {
                 ));
                 M3Button tooltipAction = new M3Button("Details");
                 tooltipAction.setDisable(true);
-                M3RichTooltip tooltip = M3RichTooltip.install(
+                M3RichTooltip tooltip = installRichTooltip(
                         actionButton,
                         "Undo",
                         "Restores the previous item state.",
@@ -5112,7 +5111,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3Button ownerAction = new M3Button("Retry");
             M3Button tooltipAction = new M3Button("Details");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "Retry",
                     "Retries the interrupted task.",
@@ -5168,7 +5167,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3Button ownerAction = new M3Button("Retry");
             M3Button tooltipAction = new M3Button("Details");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "Retry",
                     "Retries the interrupted task.",
@@ -5212,7 +5211,7 @@ final class M3MixedPopupFocusTest {
             M3Button ownerAction = new M3Button("Retry");
             M3Button tooltipAction = new M3Button("Details");
             tooltipAction.setDisable(true);
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "Retry",
                     "Retries the interrupted task.",
@@ -5558,7 +5557,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3Button ownerAction = new M3Button("Open");
             M3Button tooltipAction = new M3Button("Details");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "Open",
                     "Opens the selected card item.",
@@ -5613,7 +5612,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3Button ownerAction = new M3Button("Open");
             M3Button tooltipAction = new M3Button("Details");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "Open",
                     "Opens the selected card item.",
@@ -5656,7 +5655,7 @@ final class M3MixedPopupFocusTest {
             M3Button ownerAction = new M3Button("Open");
             M3Button tooltipAction = new M3Button("Details");
             tooltipAction.setDisable(true);
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "Open",
                     "Opens the selected card item.",
@@ -5702,7 +5701,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3Button ownerAction = new M3Button("More");
             M3Button tooltipAction = new M3Button("Details");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "More",
                     "Shows additional list item actions.",
@@ -5758,7 +5757,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3Button ownerAction = new M3Button("More");
             M3Button tooltipAction = new M3Button("Details");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "More",
                     "Shows additional list item actions.",
@@ -5802,7 +5801,7 @@ final class M3MixedPopupFocusTest {
             M3Button ownerAction = new M3Button("More");
             M3Button tooltipAction = new M3Button("Details");
             tooltipAction.setDisable(true);
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "More",
                     "Shows additional list item actions.",
@@ -6094,7 +6093,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3Button ownerAction = new M3Button("More");
             M3Button tooltipAction = new M3Button("Details");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "More",
                     "Shows additional sheet details.",
@@ -6141,7 +6140,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3Button ownerAction = new M3Button("More");
             M3Button tooltipAction = new M3Button("Details");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "More",
                     "Shows additional sheet details.",
@@ -6292,7 +6291,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3Button ownerAction = new M3Button("More");
             M3Button tooltipAction = new M3Button("Details");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "More",
                     "Shows additional sheet details.",
@@ -6339,7 +6338,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3Button ownerAction = new M3Button("More");
             M3Button tooltipAction = new M3Button("Details");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "More",
                     "Shows additional sheet details.",
@@ -7150,7 +7149,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3Button ownerAction = new M3Button("More");
             M3Button tooltipAction = new M3Button("Details");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "More",
                     "Shows more search options.",
@@ -7418,7 +7417,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3Button ownerAction = new M3Button("More");
             M3Button tooltipAction = new M3Button("Details");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "More",
                     "Shows result details.",
@@ -7461,7 +7460,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3Button ownerAction = new M3Button("More");
             M3Button tooltipAction = new M3Button("Details");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "More",
                     "Shows search view options.",
@@ -7692,7 +7691,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3Button ownerAction = new M3Button("More");
             M3Button tooltipAction = new M3Button("Details");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "More",
                     "Shows drawer destination details.",
@@ -7961,7 +7960,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3Button ownerAction = new M3Button("More");
             M3Button tooltipAction = new M3Button("Details");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "More",
                     "Shows drawer destination details.",
@@ -8016,7 +8015,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3Button ownerAction = new M3Button("More");
             M3Button tooltipAction = new M3Button("Details");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "More",
                     "Shows drawer destination details.",
@@ -8117,7 +8116,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3Button ownerAction = new M3Button("More");
             M3Button tooltipAction = new M3Button("Details");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "More",
                     "Shows drawer destination details.",
@@ -8163,7 +8162,7 @@ final class M3MixedPopupFocusTest {
             M3Button ownerAction = new M3Button("More");
             M3Button tooltipAction = new M3Button("Details");
             tooltipAction.setDisable(true);
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "More",
                     "Shows drawer destination details.",
@@ -8210,7 +8209,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3Button ownerAction = new M3Button("More");
             M3Button tooltipAction = new M3Button("Details");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "More",
                     "Shows drawer destination details.",
@@ -8745,7 +8744,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3Button navigation = new M3Button("Nav");
             M3Button tooltipAction = new M3Button("Details");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     navigation,
                     "Navigation",
                     "Shows navigation details.",
@@ -8784,7 +8783,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3Button ownerAction = new M3Button("More");
             M3Button tooltipAction = new M3Button("Details");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "More",
                     "Shows project actions.",
@@ -8872,7 +8871,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3Button floatingAction = new M3Button("Create");
             M3Button tooltipAction = new M3Button("Details");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     floatingAction,
                     "Create",
                     "Shows creation details.",
@@ -8926,7 +8925,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3Button ownerAction = new M3Button("Format");
             M3Button tooltipAction = new M3Button("Details");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "Format",
                     "Shows formatting details.",
@@ -8965,7 +8964,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3Button ownerAction = new M3Button("Format");
             M3Button tooltipAction = new M3Button("Details");
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "Format",
                     "Shows formatting details.",
@@ -9020,7 +9019,7 @@ final class M3MixedPopupFocusTest {
                     new M3MenuItem("Rename"),
                     targetItem
             );
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "Format",
                     "Shows formatting details.",
@@ -9070,7 +9069,7 @@ final class M3MixedPopupFocusTest {
                     new M3MenuItem("Rename"),
                     disabledTarget
             );
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "Format",
                     "Shows formatting details.",
@@ -9111,7 +9110,7 @@ final class M3MixedPopupFocusTest {
             M3Button ownerAction = new M3Button("Schedule");
             M3DatePickerField tooltipDateField = new M3DatePickerField(LocalDate.of(2026, 6, 14));
             LocalDate targetDate = LocalDate.of(2026, 6, 18);
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "Schedule",
                     "Choose a target date.",
@@ -9154,7 +9153,7 @@ final class M3MixedPopupFocusTest {
             M3DatePickerField tooltipDateField = new M3DatePickerField(LocalDate.of(2026, 6, 14));
             tooltipDateField.setMaxDate(LocalDate.of(2026, 6, 18));
             LocalDate disabledDate = LocalDate.of(2026, 6, 24);
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "Schedule",
                     "Choose a target date.",
@@ -9194,7 +9193,7 @@ final class M3MixedPopupFocusTest {
             M3Button ownerAction = new M3Button("Schedule");
             M3TimePickerField tooltipTimeField = new M3TimePickerField(LocalTime.of(9, 30));
             LocalTime targetTime = LocalTime.of(10, 45);
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "Schedule",
                     "Choose a target time.",
@@ -9243,7 +9242,7 @@ final class M3MixedPopupFocusTest {
             M3TimePickerField tooltipTimeField = new M3TimePickerField(LocalTime.of(9, 30));
             tooltipTimeField.setMaxTime(LocalTime.of(10, 0));
             LocalTime disabledTime = LocalTime.of(11, 15);
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "Schedule",
                     "Choose a target time.",
@@ -9287,7 +9286,7 @@ final class M3MixedPopupFocusTest {
                     LocalDate.of(2026, 6, 18)
             );
             LocalDate targetDate = LocalDate.of(2026, 6, 22);
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "Schedule",
                     "Choose a target range.",
@@ -9339,7 +9338,7 @@ final class M3MixedPopupFocusTest {
             );
             tooltipRangeField.setMaxDate(LocalDate.of(2026, 6, 20));
             LocalDate disabledDate = LocalDate.of(2026, 6, 24);
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
                     "Schedule",
                     "Choose a target range.",
@@ -10394,5 +10393,17 @@ final class M3MixedPopupFocusTest {
 
         assertTrue(focusTarget.isFocused());
         assertSame(focusTarget, container.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+    }
+
+    /// Creates and installs a rich tooltip for popup focus tests.
+    private static M3RichTooltip installRichTooltip(
+            Node node,
+            String title,
+            String supportingText,
+            Node... actions
+    ) {
+        M3RichTooltip tooltip = new M3RichTooltip(title, supportingText, actions);
+        M3Tooltip.install(node, tooltip);
+        return tooltip;
     }
 }

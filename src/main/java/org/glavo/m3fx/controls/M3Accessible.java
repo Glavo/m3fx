@@ -1841,7 +1841,7 @@ final class M3Accessible {
 
         @Nullable Scene focusTargetScene = focusTarget.getScene();
         @Nullable Node focusOwner = focusTargetScene == null ? null : focusTargetScene.getFocusOwner();
-        return focusOwner != null && containsNode(focusTarget, focusOwner);
+        return focusOwner != null && focusOwner.isFocused() && containsNode(focusTarget, focusOwner);
     }
 
     /// Returns a focus owner when it is contained by an item that can expose focus.

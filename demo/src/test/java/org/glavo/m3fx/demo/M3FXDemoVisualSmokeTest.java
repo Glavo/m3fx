@@ -2054,7 +2054,7 @@ final class M3FXDemoVisualSmokeTest {
                         "Tooltip",
                         "plain",
                         owner -> {
-                            M3Tooltip tooltip = M3Tooltip.install(owner, "Tooltip");
+                            M3Tooltip tooltip = installTooltip(owner, "Tooltip");
                             tooltip.setShowDelay(Duration.ZERO);
                             tooltip.setHideDelay(Duration.ZERO);
                             tooltip.setShowDuration(Duration.INDEFINITE);
@@ -2087,7 +2087,7 @@ final class M3FXDemoVisualSmokeTest {
                         "rich-action",
                         owner -> {
                             M3Button action = new M3Button("Open");
-                            M3RichTooltip tooltip = M3RichTooltip.install(
+                            M3RichTooltip tooltip = installRichTooltip(
                                     owner,
                                     "Generated theme",
                                     "The tooltip can inherit the owning scene theme and expose action nodes in the content surface.",
@@ -5848,7 +5848,7 @@ final class M3FXDemoVisualSmokeTest {
             ), "rich tooltip owner");
             M3Button action = new M3Button("Open");
             action.setOnAction(event -> actionCount.incrementAndGet());
-            M3RichTooltip tooltip = M3RichTooltip.install(
+            M3RichTooltip tooltip = installRichTooltip(
                     owner,
                     "Generated theme",
                     "The tooltip keeps its action surface available while pointer focus moves into the popup.",
@@ -5972,7 +5972,7 @@ final class M3FXDemoVisualSmokeTest {
             M3Button owner = Objects.requireNonNull(ownerReference.get(), "rich tooltip owner");
             M3RichTooltip tooltip = Objects.requireNonNull(tooltipReference.get(), "rich tooltip");
             assertFalse(tooltip.isShowing());
-            M3RichTooltip.uninstall(owner, tooltip);
+            M3Tooltip.uninstall(owner, tooltip);
         });
     }
 
@@ -16517,5 +16517,24 @@ final class M3FXDemoVisualSmokeTest {
             return true;
         }, SETTLED_STATE_PULSES, () -> "Timed out waiting for stable node-area frame: " + diagnostics.get(),
                 setup, verification);
+    }
+
+    /// Creates and installs a tooltip for tests that need installed tooltip behavior.
+    private static M3Tooltip installTooltip(Node node, String text) {
+        M3Tooltip tooltip = new M3Tooltip(text);
+        M3Tooltip.install(node, tooltip);
+        return tooltip;
+    }
+
+    /// Creates and installs a rich tooltip for tests that need installed tooltip behavior.
+    private static M3RichTooltip installRichTooltip(
+            Node node,
+            String title,
+            String supportingText,
+            Node... actions
+    ) {
+        M3RichTooltip tooltip = new M3RichTooltip(title, supportingText, actions);
+        M3Tooltip.install(node, tooltip);
+        return tooltip;
     }
 }

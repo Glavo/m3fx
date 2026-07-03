@@ -6,6 +6,7 @@ package org.glavo.m3fx.skins;
 import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
 import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.AccessibleRole;
@@ -81,6 +82,9 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
     /// Wrapped text inputs currently observed for prompt fallback changes.
     private final Map<M3TextInputLayout, TextInputControl> observedInvalidInputControls = new IdentityHashMap<>();
 
+    /// Cached rendered item rows keyed by invalid input layout identity.
+    private final Map<M3TextInputLayout, Node> itemRows = new IdentityHashMap<>();
+
     /// Moves invalid input listeners when the summary validator changes.
     private final ChangeListener<@Nullable M3FormValidator> validatorListener =
             (observable, oldValue, newValue) -> updateValidator(newValue);
@@ -139,7 +143,7 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
         emptyLabel.alignmentProperty().unbind();
         updateValidator(null);
         updateObservedInvalidInputs(List.of());
-        items.getChildren().clear();
+        clearInvalidItemRows();
         container.getChildren().clear();
         super.dispose();
     }
@@ -228,10 +232,10 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
         boolean showingSummary = control.isShowingSummary();
         container.setVisible(showingSummary);
         container.setManaged(showingSummary);
-        items.getChildren().clear();
 
         if (!showingSummary) {
             updateObservedInvalidInputs(List.of());
+            clearInvalidItemRows();
             container.getChildren().clear();
             control.requestLayout();
             return;
@@ -241,13 +245,12 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
         List<M3TextInputLayout> invalidInputs = shownInvalidInputs(control);
         updateObservedInvalidInputs(invalidInputs);
         if (invalidInputs.isEmpty()) {
+            clearInvalidItemRows();
             emptyLabel.setText(control.getEmptyText());
-            container.getChildren().setAll(titleLabel, emptyLabel);
+            setContainerChildren(titleLabel, emptyLabel);
         } else {
-            for (M3TextInputLayout input : invalidInputs) {
-                items.getChildren().add(createItem(input));
-            }
-            container.getChildren().setAll(titleLabel, items);
+            updateInvalidItemRows(invalidInputs);
+            setContainerChildren(titleLabel, items);
         }
         control.requestLayout();
     }
@@ -315,6 +318,89 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
             }
         }
         return inputs;
+    }
+
+    /// Updates top-level summary children without publishing redundant list changes.
+    private void setContainerChildren(Node... children) {
+        ObservableList<Node> currentChildren = container.getChildren();
+        if (!sameNodes(currentChildren, List.of(children))) {
+            currentChildren.setAll(children);
+        }
+    }
+
+    /// Updates rendered invalid item rows while preserving existing row nodes when possible.
+    private void updateInvalidItemRows(List<M3TextInputLayout> invalidInputs) {
+        Set<M3TextInputLayout> nextInputs = Collections.newSetFromMap(new IdentityHashMap<>());
+        nextInputs.addAll(invalidInputs);
+        itemRows.keySet().removeIf(input -> !nextInputs.contains(input));
+
+        ArrayList<Node> rows = new ArrayList<>(invalidInputs.size());
+        for (M3TextInputLayout input : invalidInputs) {
+            Node row = itemRows.get(input);
+            if (row == null) {
+                row = createItem(input);
+                itemRows.put(input, row);
+            } else {
+                updateItem(row, input);
+            }
+            rows.add(row);
+        }
+
+        ObservableList<Node> children = items.getChildren();
+        if (!sameNodes(children, rows)) {
+            children.setAll(rows);
+        }
+    }
+
+    /// Removes rendered invalid item rows and cached row references.
+    private void clearInvalidItemRows() {
+        items.getChildren().clear();
+        itemRows.clear();
+    }
+
+    /// Returns whether two node lists contain the same nodes in the same order.
+    private static boolean sameNodes(ObservableList<Node> first, List<Node> second) {
+        if (first.size() != second.size()) {
+            return false;
+        }
+        for (int index = 0; index < first.size(); index++) {
+            if (first.get(index) != second.get(index)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /// Updates text and orientation-sensitive alignment for one cached invalid item row.
+    private void updateItem(Node item, M3TextInputLayout input) {
+        item.setAccessibleText(itemLabel(input) + ": " + itemError(input));
+        if (!(item instanceof StackPane stackPane)) {
+            return;
+        }
+
+        for (Node child : stackPane.getChildren()) {
+            if (child instanceof VBox text) {
+                text.setAlignment(textAlignment());
+                StackPane.setAlignment(text, textAlignment());
+                updateItemTextLabels(text, input);
+                return;
+            }
+        }
+    }
+
+    /// Updates labels hosted by one cached invalid item row text container.
+    private void updateItemTextLabels(VBox text, M3TextInputLayout input) {
+        for (Node child : text.getChildren()) {
+            if (child instanceof Label label) {
+                label.setAlignment(textAlignment());
+                label.setTextAlignment(textTextAlignment());
+                if (label.getStyleClass().contains(M3ValidationSummary.ITEM_LABEL_STYLE_CLASS)) {
+                    label.setText(itemLabel(input));
+                } else if (label.getStyleClass().contains(M3ValidationSummary.ITEM_ERROR_STYLE_CLASS)) {
+                    label.setText(itemError(input));
+                }
+            }
+        }
     }
 
     /// Creates one clickable invalid input item row.

@@ -4,6 +4,7 @@
 package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
+import javafx.collections.ListChangeListener;
 import javafx.css.PseudoClass;
 import javafx.event.EventType;
 import javafx.scene.AccessibleAttribute;
@@ -40,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
@@ -360,6 +362,34 @@ final class M3FormControlsTest {
         });
     }
 
+    /// Verifies that stable invalid input membership does not publish redundant list changes.
+    @Test
+    void formValidatorSuppressesRedundantInvalidInputListChanges() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3TextField field = new M3TextField("a");
+            M3TextInputLayout layout = new M3TextInputLayout(field, "Code", "Minimum length");
+            layout.setValidator((input, text) -> text.length() < 3 ? "Enter " + (3 - text.length()) + " more" : null);
+            M3FormValidator validator = new M3FormValidator(layout);
+            AtomicInteger changeCount = new AtomicInteger();
+            validator.getInvalidInputs().addListener((ListChangeListener<M3TextInputLayout>) change ->
+                    changeCount.incrementAndGet());
+
+            assertFalse(validator.validate());
+            assertEquals(1, changeCount.get());
+            assertEquals(List.of(layout), validator.getInvalidInputs());
+
+            field.setText("ab");
+
+            assertEquals(1, changeCount.get());
+            assertEquals(List.of(layout), validator.getInvalidInputs());
+            assertEquals("Enter 1 more", layout.getValidationErrorText());
+
+            field.setText("abc");
+
+            assertEquals(2, changeCount.get());
+            assertTrue(validator.getInvalidInputs().isEmpty());
+        });
+    }
     /// Verifies that validation summaries render validator errors and expose accessibility targets.
     @Test
     void validationSummaryMirrorsValidatorErrorsIntoSkin() {
@@ -549,13 +579,14 @@ final class M3FormControlsTest {
             root.applyCss();
             root.layout();
 
+            Node row = firstValidationSummaryItem(summary);
             Label itemLabel = assertInstanceOf(
                     Label.class,
-                    firstValidationSummaryItem(summary).lookup("." + M3ValidationSummary.ITEM_LABEL_STYLE_CLASS)
+                    row.lookup("." + M3ValidationSummary.ITEM_LABEL_STYLE_CLASS)
             );
             Label itemError = assertInstanceOf(
                     Label.class,
-                    firstValidationSummaryItem(summary).lookup("." + M3ValidationSummary.ITEM_ERROR_STYLE_CLASS)
+                    row.lookup("." + M3ValidationSummary.ITEM_ERROR_STYLE_CLASS)
             );
             assertEquals("Email", itemLabel.getText());
             assertEquals("Email is required", itemError.getText());
@@ -564,9 +595,10 @@ final class M3FormControlsTest {
             root.applyCss();
             root.layout();
 
+            assertSame(row, firstValidationSummaryItem(summary));
             itemLabel = assertInstanceOf(
                     Label.class,
-                    firstValidationSummaryItem(summary).lookup("." + M3ValidationSummary.ITEM_LABEL_STYLE_CLASS)
+                    row.lookup("." + M3ValidationSummary.ITEM_LABEL_STYLE_CLASS)
             );
             assertEquals("Work email", itemLabel.getText());
 
@@ -574,9 +606,10 @@ final class M3FormControlsTest {
             root.applyCss();
             root.layout();
 
+            assertSame(row, firstValidationSummaryItem(summary));
             itemLabel = assertInstanceOf(
                     Label.class,
-                    firstValidationSummaryItem(summary).lookup("." + M3ValidationSummary.ITEM_LABEL_STYLE_CLASS)
+                    row.lookup("." + M3ValidationSummary.ITEM_LABEL_STYLE_CLASS)
             );
             assertEquals("Account email", itemLabel.getText());
 
@@ -584,9 +617,10 @@ final class M3FormControlsTest {
             root.applyCss();
             root.layout();
 
+            assertSame(row, firstValidationSummaryItem(summary));
             itemError = assertInstanceOf(
                     Label.class,
-                    firstValidationSummaryItem(summary).lookup("." + M3ValidationSummary.ITEM_ERROR_STYLE_CLASS)
+                    row.lookup("." + M3ValidationSummary.ITEM_ERROR_STYLE_CLASS)
             );
             assertEquals("Account email is required", itemError.getText());
         });

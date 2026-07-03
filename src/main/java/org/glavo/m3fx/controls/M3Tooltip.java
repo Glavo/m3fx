@@ -181,16 +181,6 @@ public class M3Tooltip extends PopupControl {
         setText(text);
     }
 
-    /// Installs a Material Design 3 tooltip with the supplied text on a node.
-    ///
-    /// @param node the node that should own the tooltip
-    /// @param text the tooltip text
-    /// @return the installed tooltip
-    public static M3Tooltip install(Node node, String text) {
-        M3Tooltip tooltip = new M3Tooltip(text);
-        install(node, tooltip);
-        return tooltip;
-    }
 
     /// Installs a Material Design 3 tooltip on a node.
     ///
@@ -1004,7 +994,7 @@ public class M3Tooltip extends PopupControl {
             scheduleHide();
         }
 
-        /// Hides the tooltip from the Escape key while focus is inside its popup.
+        /// Handles dismissal and keyboard traversal while focus is inside the tooltip popup.
         private void handleTooltipKeyPressed(KeyEvent event) {
             if (event.isConsumed()) {
                 return;
@@ -1015,9 +1005,16 @@ public class M3Tooltip extends PopupControl {
                     M3Accessible.showDirectItem(node, node);
                 }
                 event.consume();
-            } else if (event.getCode() == KeyCode.TAB && tooltip.isInteractive()) {
+            } else if ((event.getCode() == KeyCode.TAB || event.getCode() == KeyCode.F6)
+                    && tooltip.isInteractive()) {
                 @Nullable Node focusOwner = tooltipScene == null ? null : tooltipScene.getFocusOwner();
                 if (tooltip.traverseInteractiveFocus(focusOwner, node, event.isShiftDown())) {
+                    if (ownerHasKeyboardFocus()) {
+                        tooltipContainsFocus = false;
+                        notifyOwnerFocusNodeChanged();
+                    } else {
+                        markTooltipFocusActive();
+                    }
                     event.consume();
                 }
             }
@@ -1075,6 +1072,7 @@ public class M3Tooltip extends PopupControl {
                     && tooltip.isShowing()
                     && !event.isShiftDown()
                     && tooltip.focusFirstInteractiveTarget()) {
+                markTooltipFocusActive();
                 event.consume();
             }
         }
@@ -1109,8 +1107,14 @@ public class M3Tooltip extends PopupControl {
                 return externalTarget;
             }
 
+            if (!tooltipContainsFocus) {
+                return null;
+            }
+
             @Nullable Node focusOwner = scene.getFocusOwner();
-            return focusOwner != null && M3Accessible.containsNode(popupRoot, focusOwner) ? focusOwner : null;
+            return focusOwner != null && focusOwner.isFocused() && M3Accessible.containsNode(popupRoot, focusOwner)
+                    ? focusOwner
+                    : null;
         }
 
         /// Returns whether this installation exposes the requested interactive target.
@@ -1137,9 +1141,7 @@ public class M3Tooltip extends PopupControl {
             if (!tooltip.showInteractiveActionTarget(parameters)) {
                 return false;
             }
-            hideTimer.stop();
-            durationTimer.stop();
-            notifyOwnerFocusNodeChanged();
+            markTooltipFocusActive();
             return true;
         }
 
@@ -1148,6 +1150,14 @@ public class M3Tooltip extends PopupControl {
             return tooltip.isInteractive()
                     && tooltip.isShowing()
                     && (tooltipContainsPointer || tooltipContainsFocus);
+        }
+
+        /// Marks the interactive tooltip popup as owning keyboard focus after an explicit focus request.
+        private void markTooltipFocusActive() {
+            tooltipContainsFocus = true;
+            hideTimer.stop();
+            durationTimer.stop();
+            notifyOwnerFocusNodeChanged();
         }
 
         /// Notifies the target and owning menu chain that the exposed focus node may have changed.
