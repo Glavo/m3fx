@@ -3,7 +3,6 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
@@ -18,7 +17,13 @@ import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
+import org.glavo.m3fx.internal.M3FocusTraversal;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.skins.M3FormPaneSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -51,7 +56,7 @@ public class M3FormPane extends Control {
     private static final double DEFAULT_ROW_SPACING = 16.0;
 
     /// The mutable top-level form item list.
-    private final ObservableList<Node> items = FXCollections.observableArrayList();
+    private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
 
     /// The listener used to refresh accessibility state when form items change.
     private final ListChangeListener<Node> itemsListener = change -> handleItemsChanged();
@@ -71,14 +76,6 @@ public class M3FormPane extends Control {
         initialize();
     }
 
-    /// Creates a form pane containing the supplied items.
-    ///
-    /// @param items the initial top-level form items
-    public M3FormPane(Node... items) {
-        initialize();
-        addItems(items);
-    }
-
     /// Returns the mutable top-level form item list.
     ///
     /// @return the mutable top-level form item list
@@ -86,33 +83,9 @@ public class M3FormPane extends Control {
         return items;
     }
 
-    /// Adds one form item.
-    ///
-    /// @param item the form item to add
-    public final void addItem(Node item) {
-        getItems().add(Objects.requireNonNull(item, "item"));
-    }
 
-    /// Adds form items in order.
-    ///
-    /// @param items the form items to add
-    public final void addItems(Node... items) {
-        validateItems(items);
-        getItems().addAll(items);
-    }
 
-    /// Replaces all form items.
-    ///
-    /// @param items the replacement form items
-    public final void setItems(Node... items) {
-        validateItems(items);
-        getItems().setAll(items);
-    }
 
-    /// Removes all form items.
-    public final void clearItems() {
-        getItems().clear();
-    }
 
     /// Returns the uniform content padding used by the default skin.
     ///
@@ -255,6 +228,7 @@ public class M3FormPane extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
+        setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleItem, this::showAccessibleItem);
         getItems().addListener(itemsListener);
         addEventFilter(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
@@ -286,13 +260,6 @@ public class M3FormPane extends Control {
         focusNotifier.refresh();
     }
 
-    /// Validates a varargs item array before mutation.
-    private static void validateItems(Node... items) {
-        Objects.requireNonNull(items, "items");
-        for (Node item : items) {
-            Objects.requireNonNull(item, "item");
-        }
-    }
 
     /// CSS metadata for M3FX form pane layout tokens.
     @NotNullByDefault

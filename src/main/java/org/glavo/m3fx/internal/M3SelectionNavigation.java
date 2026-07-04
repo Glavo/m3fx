@@ -1,14 +1,13 @@
 // Copyright (c) 2026 Glavo
 // SPDX-License-Identifier: Apache-2.0
 
-package org.glavo.m3fx.controls;
+package org.glavo.m3fx.internal;
 
 import javafx.collections.ObservableList;
 import javafx.scene.Node;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Region;
-import org.glavo.m3fx.internal.M3ScrollReveal;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -19,7 +18,7 @@ import java.util.function.Function;
 
 /// Shared child navigation helpers for M3FX selection containers.
 @NotNullByDefault
-final class M3SelectionNavigation {
+public final class M3SelectionNavigation {
     /// The fallback row height used for page navigation before rows have been measured.
     private static final double DEFAULT_PAGE_ROW_HEIGHT = 56.0;
 
@@ -31,7 +30,7 @@ final class M3SelectionNavigation {
     }
 
     /// Returns the first enabled visible child matching the requested type.
-    static <T extends Node> @Nullable T first(ObservableList<Node> children, Class<T> type) {
+    public static <T extends Node> @Nullable T first(ObservableList<Node> children, Class<T> type) {
         for (Node child : children) {
             @Nullable T selectable = selectable(child, type);
             if (selectable != null) {
@@ -42,7 +41,7 @@ final class M3SelectionNavigation {
     }
 
     /// Returns the last enabled visible child matching the requested type.
-    static <T extends Node> @Nullable T last(ObservableList<Node> children, Class<T> type) {
+    public static <T extends Node> @Nullable T last(ObservableList<Node> children, Class<T> type) {
         for (int index = children.size() - 1; index >= 0; index--) {
             @Nullable T selectable = selectable(children.get(index), type);
             if (selectable != null) {
@@ -53,7 +52,7 @@ final class M3SelectionNavigation {
     }
 
     /// Returns the next enabled visible child after the current child, wrapping at the end.
-    static <T extends Node> @Nullable T next(ObservableList<Node> children, @Nullable T current, Class<T> type) {
+    public static <T extends Node> @Nullable T next(ObservableList<Node> children, @Nullable T current, Class<T> type) {
         int childCount = children.size();
         if (childCount == 0) {
             return null;
@@ -70,7 +69,7 @@ final class M3SelectionNavigation {
     }
 
     /// Returns the previous enabled visible child before the current child, wrapping at the start.
-    static <T extends Node> @Nullable T previous(ObservableList<Node> children, @Nullable T current, Class<T> type) {
+    public static <T extends Node> @Nullable T previous(ObservableList<Node> children, @Nullable T current, Class<T> type) {
         int childCount = children.size();
         if (childCount == 0) {
             return null;
@@ -91,7 +90,7 @@ final class M3SelectionNavigation {
     }
 
     /// Returns the enabled visible child reached by page navigation without wrapping around list edges.
-    static <T extends Node> @Nullable T page(
+    public static <T extends Node> @Nullable T page(
             Node owner,
             ObservableList<Node> children,
             @Nullable T current,
@@ -128,7 +127,7 @@ final class M3SelectionNavigation {
     }
 
     /// Handles a navigation key event and selects the matching child when a key applies.
-    static <T extends Node> boolean handleKeySelection(
+    public static <T extends Node> boolean handleKeySelection(
             KeyEvent event,
             ObservableList<Node> children,
             @Nullable T current,
@@ -141,7 +140,7 @@ final class M3SelectionNavigation {
     }
 
     /// Handles a navigation key event, selects the matching child, and reveals it when a scroll owner exists.
-    static <T extends Node> boolean handleKeySelection(
+    public static <T extends Node> boolean handleKeySelection(
             KeyEvent event,
             Node owner,
             ObservableList<Node> children,
@@ -158,7 +157,7 @@ final class M3SelectionNavigation {
     ///
     /// When `rightToLeft` is true, horizontal arrow keys are mirrored after an anchor exists so focus and
     /// selection move in the same visual direction as the rendered row.
-    static <T extends Node> boolean handleKeySelection(
+    public static <T extends Node> boolean handleKeySelection(
             KeyEvent event,
             ObservableList<Node> children,
             @Nullable T current,
@@ -175,7 +174,7 @@ final class M3SelectionNavigation {
     ///
     /// When `rightToLeft` is true, horizontal arrow keys are mirrored after an anchor exists so focus and
     /// selection move in the same visual direction as the rendered row.
-    static <T extends Node> boolean handleKeySelection(
+    public static <T extends Node> boolean handleKeySelection(
             KeyEvent event,
             Node owner,
             ObservableList<Node> children,
@@ -222,7 +221,7 @@ final class M3SelectionNavigation {
     }
 
     /// Handles a page navigation key event and selects the matching child when a key applies.
-    static <T extends Node> boolean handlePageKeySelection(
+    public static <T extends Node> boolean handlePageKeySelection(
             KeyEvent event,
             Node owner,
             ObservableList<Node> children,
@@ -247,7 +246,7 @@ final class M3SelectionNavigation {
     }
 
     /// Handles a navigation key event and focuses the matching child when a key applies.
-    static <T extends Node> boolean handleKeyFocus(
+    public static <T extends Node> boolean handleKeyFocus(
             KeyEvent event,
             ObservableList<Node> children,
             @Nullable T current,
@@ -259,7 +258,7 @@ final class M3SelectionNavigation {
     }
 
     /// Handles a navigation key event, focuses the matching child, and reveals it when a scroll owner exists.
-    static <T extends Node> boolean handleKeyFocus(
+    public static <T extends Node> boolean handleKeyFocus(
             KeyEvent event,
             Node owner,
             ObservableList<Node> children,
@@ -275,7 +274,7 @@ final class M3SelectionNavigation {
     ///
     /// When `rightToLeft` is true, horizontal arrow keys are mirrored after an anchor exists so focus moves in the
     /// same visual direction as the rendered row.
-    static <T extends Node> boolean handleKeyFocus(
+    public static <T extends Node> boolean handleKeyFocus(
             KeyEvent event,
             ObservableList<Node> children,
             @Nullable T current,
@@ -291,7 +290,7 @@ final class M3SelectionNavigation {
     ///
     /// When `rightToLeft` is true, horizontal arrow keys are mirrored after an anchor exists so focus moves in the
     /// same visual direction as the rendered row.
-    static <T extends Node> boolean handleKeyFocus(
+    public static <T extends Node> boolean handleKeyFocus(
             KeyEvent event,
             Node owner,
             ObservableList<Node> children,
@@ -335,7 +334,7 @@ final class M3SelectionNavigation {
     }
 
     /// Handles a page navigation key event and focuses the matching child when a key applies.
-    static <T extends Node> boolean handlePageKeyFocus(
+    public static <T extends Node> boolean handlePageKeyFocus(
             KeyEvent event,
             Node owner,
             ObservableList<Node> children,
@@ -368,7 +367,7 @@ final class M3SelectionNavigation {
     }
 
     /// Returns the focused enabled visible child matching the requested type.
-    static <T extends Node> @Nullable T focused(ObservableList<Node> children, Class<T> type) {
+    public static <T extends Node> @Nullable T focused(ObservableList<Node> children, Class<T> type) {
         Objects.requireNonNull(children, "children");
         Objects.requireNonNull(type, "type");
 
@@ -382,7 +381,7 @@ final class M3SelectionNavigation {
     }
 
     /// Returns the focused child when present, otherwise the current child when it is still navigable.
-    static <T extends Node> @Nullable T focusAnchor(
+    public static <T extends Node> @Nullable T focusAnchor(
             ObservableList<Node> children,
             @Nullable T current,
             Class<T> type
@@ -401,7 +400,7 @@ final class M3SelectionNavigation {
     }
 
     /// Returns the focused child, the current child, or the first navigable child as an accessibility focus target.
-    static <T extends Node> @Nullable T focusTarget(
+    public static <T extends Node> @Nullable T focusTarget(
             ObservableList<Node> children,
             @Nullable T current,
             Class<T> type
@@ -414,7 +413,7 @@ final class M3SelectionNavigation {
     }
 
     /// Returns the next enabled visible child whose normalized text starts with the supplied prefix.
-    static <T extends Node> @Nullable T typeAheadTarget(
+    public static <T extends Node> @Nullable T typeAheadTarget(
             ObservableList<Node> children,
             @Nullable T current,
             Class<T> type,
@@ -444,7 +443,7 @@ final class M3SelectionNavigation {
     }
 
     /// Returns text normalized for case-insensitive type-ahead matching.
-    static String normalizeTypeAheadText(String text) {
+    public static String normalizeTypeAheadText(String text) {
         Objects.requireNonNull(text, "text");
         return text.strip().toLowerCase(Locale.ROOT);
     }

@@ -17,6 +17,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.skins.M3PickerFieldSkin;
 import org.glavo.m3fx.theme.M3Theme;
@@ -33,7 +34,9 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Tests [M3DatePickerField] and [M3TimePickerField] value editing, validation, and skin installation.
@@ -60,8 +63,8 @@ final class M3PickerFieldTest {
         assertEquals(LocalDate.of(2026, 5, 21), field.getPicker().getValue());
         assertEquals("2026-05-21", field.getEditor().getText());
 
-        field.setMinDate(LocalDate.of(2026, 5, 18));
-        field.setMaxDate(LocalDate.of(2026, 5, 24));
+        field.getPicker().setMinDate(LocalDate.of(2026, 5, 18));
+        field.getPicker().setMaxDate(LocalDate.of(2026, 5, 24));
         field.getEditor().setText("2026-05-25");
         assertFalse(field.commitEditorText());
         assertEquals(LocalDate.of(2026, 5, 21), field.getValue());
@@ -79,21 +82,20 @@ final class M3PickerFieldTest {
             LocalDate anchor = LocalDate.of(2026, 5, 19);
             M3DatePickerField field = new M3DatePickerField();
 
-            field.setCommonPresets(anchor);
+            field.getPresets().setAll(M3DatePresets.common(anchor));
 
             assertEquals(5, field.getPresets().size());
             Node presetContent = assertInstanceOf(Node.class, field.getPicker().getParent());
             assertTrue(presetContent.getStyleClass().contains(M3DatePickerField.PRESET_CONTENT_STYLE_CLASS));
             assertEquals(5, presetContent.lookupAll("." + M3DatePickerField.PRESET_BUTTON_STYLE_CLASS).size());
 
-            M3DatePreset preset = M3DatePresets.daysFrom(anchor, 7);
-            field.applyPreset(preset);
+            findPresetButton(presetContent, "In 7 days").fire();
 
             assertEquals(anchor.plusDays(7), field.getValue());
-            assertEquals(YearMonth.from(anchor), field.getDisplayedMonth());
+            assertEquals(YearMonth.from(anchor), field.getPicker().getDisplayedMonth());
             assertEquals("2026-05-26", field.getEditor().getText());
 
-            field.clearPresets();
+            field.getPresets().clear();
 
             assertTrue(field.getPresets().isEmpty());
             assertFalse(assertInstanceOf(Node.class, field.getPicker().getParent()).getStyleClass()
@@ -107,15 +109,58 @@ final class M3PickerFieldTest {
         FxTestUtils.runOnFxThread(() -> {
             LocalDate anchor = LocalDate.of(2026, 5, 19);
             M3DatePickerField field = new M3DatePickerField();
-            field.setMinDate(anchor.plusDays(1));
-            field.setMaxDate(anchor.plusDays(30));
+            field.getPicker().setMinDate(anchor.plusDays(1));
+            field.getPicker().setMaxDate(anchor.plusDays(30));
 
-            field.setPresets(M3DatePresets.today(anchor), M3DatePresets.tomorrow(anchor));
+            field.getPresets().setAll(M3DatePresets.today(anchor), M3DatePresets.tomorrow(anchor));
 
             Node presetContent = assertInstanceOf(Node.class, field.getPicker().getParent());
             assertTrue(findPresetButton(presetContent, "Today").isDisabled());
             assertFalse(findPresetButton(presetContent, "Tomorrow").isDisabled());
         });
+    }
+
+    /// Verifies that date picker field bounds clear an excluded value and refresh preset buttons.
+    @Test
+    void datePickerFieldBoundsClearExcludedValueAndRefreshPresets() {
+        FxTestUtils.runOnFxThread(() -> {
+            LocalDate anchor = LocalDate.of(2026, 5, 19);
+            M3DatePickerField field = new M3DatePickerField(anchor);
+            field.getPresets().setAll(M3DatePresets.today(anchor), M3DatePresets.tomorrow(anchor));
+
+            Node presetContent = assertInstanceOf(Node.class, field.getPicker().getParent());
+            assertFalse(findPresetButton(presetContent, "Today").isDisabled());
+            assertFalse(findPresetButton(presetContent, "Tomorrow").isDisabled());
+
+            field.getPicker().setMinDate(anchor.plusDays(1));
+
+            assertNull(field.getValue());
+            assertNull(field.getPicker().getValue());
+            assertEquals("", field.getEditor().getText());
+            assertTrue(findPresetButton(presetContent, "Today").isDisabled());
+            assertFalse(findPresetButton(presetContent, "Tomorrow").isDisabled());
+        });
+    }
+
+    /// Verifies that picker field preset lists reject null mutations without partial insertion.
+    @Test
+    @SuppressWarnings("DataFlowIssue")
+    void pickerFieldPresetListsRejectNullElements() {
+        LocalDate dateAnchor = LocalDate.of(2026, 5, 19);
+        M3DatePickerField dateField = new M3DatePickerField();
+        M3DatePreset datePreset = M3DatePresets.today(dateAnchor);
+
+        assertThrows(NullPointerException.class, () -> dateField.getPresets().add(null));
+        assertThrows(NullPointerException.class, () -> dateField.getPresets().addAll(datePreset, null));
+        assertTrue(dateField.getPresets().isEmpty());
+
+        LocalTime timeAnchor = LocalTime.of(10, 30);
+        M3TimePickerField timeField = new M3TimePickerField();
+        M3TimePreset timePreset = M3TimePresets.now(timeAnchor);
+
+        assertThrows(NullPointerException.class, () -> timeField.getPresets().add(null));
+        assertThrows(NullPointerException.class, () -> timeField.getPresets().addAll(timePreset, null));
+        assertTrue(timeField.getPresets().isEmpty());
     }
 
     /// Verifies that a time picker field normalizes seconds, parses text, and reports invalid input.
@@ -131,8 +176,8 @@ final class M3PickerFieldTest {
         assertEquals(LocalTime.of(11, 45), field.getValue());
         assertEquals("11:45", field.getEditor().getText());
 
-        field.setMinTime(LocalTime.of(9, 0));
-        field.setMaxTime(LocalTime.of(17, 30));
+        field.getPicker().setMinTime(LocalTime.of(9, 0));
+        field.getPicker().setMaxTime(LocalTime.of(17, 30));
         field.getEditor().setText("18:00");
         assertFalse(field.commitEditorText());
         assertEquals(LocalTime.of(11, 45), field.getValue());
@@ -150,20 +195,19 @@ final class M3PickerFieldTest {
             LocalTime anchor = LocalTime.of(10, 30);
             M3TimePickerField field = new M3TimePickerField();
 
-            field.setCommonPresets(anchor);
+            field.getPresets().setAll(M3TimePresets.common(anchor));
 
             assertEquals(5, field.getPresets().size());
             Node presetContent = assertInstanceOf(Node.class, field.getPicker().getParent());
             assertTrue(presetContent.getStyleClass().contains(M3TimePickerField.PRESET_CONTENT_STYLE_CLASS));
             assertEquals(5, presetContent.lookupAll("." + M3TimePickerField.PRESET_BUTTON_STYLE_CLASS).size());
 
-            M3TimePreset preset = M3TimePresets.minutesFrom(anchor, 15);
-            field.applyPreset(preset);
+            findTimePresetButton(presetContent, "In 15 min").fire();
 
             assertEquals(LocalTime.of(10, 45), field.getValue());
             assertEquals("10:45", field.getEditor().getText());
 
-            field.clearPresets();
+            field.getPresets().clear();
 
             assertTrue(field.getPresets().isEmpty());
             assertFalse(assertInstanceOf(Node.class, field.getPicker().getParent()).getStyleClass()
@@ -176,14 +220,35 @@ final class M3PickerFieldTest {
     void timePickerFieldDisablesOutOfBoundsPresetButtons() {
         FxTestUtils.runOnFxThread(() -> {
             M3TimePickerField field = new M3TimePickerField();
-            field.setMinTime(LocalTime.of(9, 0));
-            field.setMaxTime(LocalTime.of(17, 30));
+            field.getPicker().setMinTime(LocalTime.of(9, 0));
+            field.getPicker().setMaxTime(LocalTime.of(17, 30));
 
-            field.setPresets(M3TimePresets.midnight(), M3TimePresets.morning());
+            field.getPresets().setAll(M3TimePresets.midnight(), M3TimePresets.morning());
 
             Node presetContent = assertInstanceOf(Node.class, field.getPicker().getParent());
             assertTrue(findTimePresetButton(presetContent, "Midnight").isDisabled());
             assertFalse(findTimePresetButton(presetContent, "Morning").isDisabled());
+        });
+    }
+
+    /// Verifies that time picker field bounds clear an excluded value and refresh preset buttons.
+    @Test
+    void timePickerFieldBoundsClearExcludedValueAndRefreshPresets() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3TimePickerField field = new M3TimePickerField(LocalTime.of(9, 0));
+            field.getPresets().setAll(M3TimePresets.morning(), M3TimePresets.noon());
+
+            Node presetContent = assertInstanceOf(Node.class, field.getPicker().getParent());
+            assertFalse(findTimePresetButton(presetContent, "Morning").isDisabled());
+            assertFalse(findTimePresetButton(presetContent, "Noon").isDisabled());
+
+            field.getPicker().setMinTime(LocalTime.NOON);
+
+            assertNull(field.getValue());
+            assertNull(field.getPicker().getValue());
+            assertEquals("", field.getEditor().getText());
+            assertTrue(findTimePresetButton(presetContent, "Morning").isDisabled());
+            assertFalse(findTimePresetButton(presetContent, "Noon").isDisabled());
         });
     }
 
@@ -198,7 +263,7 @@ final class M3PickerFieldTest {
                 dateField.queryAccessibleAttribute(AccessibleAttribute.SELECTED_ITEMS));
 
         M3TimePickerField timeField = new M3TimePickerField(LocalTime.of(10, 30));
-        timeField.setMinuteStep(15);
+        timeField.getPicker().setMinuteStep(15);
         timeField.executeAccessibleAction(AccessibleAction.BLOCK_INCREMENT);
         assertEquals(LocalTime.of(11, 30), timeField.getValue());
         assertEquals("11:30", timeField.getEditor().getText());
@@ -211,17 +276,17 @@ final class M3PickerFieldTest {
     void pickerFieldsRejectOutOfRangeAccessibleValueTargets() {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3DatePickerField dateField = new M3DatePickerField(LocalDate.of(2026, 5, 19));
-            dateField.setMinDate(LocalDate.of(2026, 5, 1));
-            dateField.setMaxDate(LocalDate.of(2026, 5, 31));
+            dateField.getPicker().setMinDate(LocalDate.of(2026, 5, 1));
+            dateField.getPicker().setMaxDate(LocalDate.of(2026, 5, 31));
             M3TimePickerField timeField = new M3TimePickerField(LocalTime.of(10, 30));
-            timeField.setMinTime(LocalTime.of(9, 0));
-            timeField.setMaxTime(LocalTime.of(17, 30));
+            timeField.getPicker().setMinTime(LocalTime.of(9, 0));
+            timeField.getPicker().setMaxTime(LocalTime.of(17, 30));
             M3DateRangePickerField rangeField = new M3DateRangePickerField(
                     LocalDate.of(2026, 5, 10),
                     LocalDate.of(2026, 5, 12)
             );
-            rangeField.setMinDate(LocalDate.of(2026, 5, 1));
-            rangeField.setMaxDate(LocalDate.of(2026, 5, 31));
+            rangeField.getPicker().setMinDate(LocalDate.of(2026, 5, 1));
+            rangeField.getPicker().setMaxDate(LocalDate.of(2026, 5, 31));
             M3DialogPane pane = new M3DialogPane();
             pane.setContent(new VBox(16.0, dateField, timeField, rangeField));
             Pane root = new Pane(pane);
@@ -376,7 +441,7 @@ final class M3PickerFieldTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             LocalDate anchor = LocalDate.of(2026, 5, 19);
             M3DatePickerField field = new M3DatePickerField(anchor);
-            field.setCommonPresets(anchor);
+            field.getPresets().setAll(M3DatePresets.common(anchor));
             Pane root = new Pane(field);
             Scene scene = new Scene(root, 640.0, 360.0);
             Stage stage = new Stage();
@@ -464,8 +529,8 @@ final class M3PickerFieldTest {
             LocalTime timeAnchor = LocalTime.of(10, 30);
             M3DatePickerField dateField = new M3DatePickerField(dateAnchor);
             M3TimePickerField timeField = new M3TimePickerField(timeAnchor);
-            dateField.setCommonPresets(dateAnchor);
-            timeField.setCommonPresets(timeAnchor);
+            dateField.getPresets().setAll(M3DatePresets.common(dateAnchor));
+            timeField.getPresets().setAll(M3TimePresets.common(timeAnchor));
             Pane root = new Pane(dateField, timeField);
             Scene scene = new Scene(root, 720.0, 260.0);
             Stage stage = new Stage();
@@ -534,7 +599,7 @@ final class M3PickerFieldTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             LocalDate anchor = LocalDate.of(2026, 5, 19);
             M3DatePickerField field = new M3DatePickerField(anchor);
-            field.setCommonPresets(anchor);
+            field.getPresets().setAll(M3DatePresets.common(anchor));
             M3DialogPane pane = new M3DialogPane();
             pane.setContent(field);
             pane.getButtonTypes().setAll(ButtonType.OK, ButtonType.CANCEL);

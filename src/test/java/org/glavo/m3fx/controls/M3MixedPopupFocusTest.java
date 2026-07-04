@@ -16,6 +16,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
+import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
@@ -27,6 +28,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Objects;
 
+import static org.glavo.m3fx.M3TestControls.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -121,7 +123,7 @@ final class M3MixedPopupFocusTest {
             M3MenuButton menuButton = new M3MenuButton("More", exportItem);
             Pane content = new Pane(menuButton);
             content.setPrefSize(360.0, 96.0);
-            M3Surface surface = new M3Surface(content);
+            M3Surface surface = surface(content);
             Stage stage = new Stage();
 
             try {
@@ -199,7 +201,7 @@ final class M3MixedPopupFocusTest {
             M3MenuButton menuButton = new M3MenuButton("More", exportItem);
             Pane content = new Pane(menuButton);
             content.setPrefSize(360.0, 96.0);
-            M3Surface surface = new M3Surface(content);
+            M3Surface surface = surface(content);
             Stage stage = new Stage();
 
             try {
@@ -302,7 +304,7 @@ final class M3MixedPopupFocusTest {
             M3MenuButton menuButton = new M3MenuButton("More", exportItem);
             Pane content = new Pane(menuButton);
             content.setPrefSize(360.0, 96.0);
-            M3Surface surface = new M3Surface(content);
+            M3Surface surface = surface(content);
             Stage stage = new Stage();
 
             try {
@@ -369,7 +371,7 @@ final class M3MixedPopupFocusTest {
             M3MenuButton menuButton = new M3MenuButton("More", exportItem);
             Pane content = new Pane(menuButton);
             content.setPrefSize(360.0, 96.0);
-            M3Surface surface = new M3Surface(content);
+            M3Surface surface = surface(content);
             Stage stage = new Stage();
 
             try {
@@ -802,7 +804,7 @@ final class M3MixedPopupFocusTest {
             M3FormRow actionRow = new M3FormRow("Actions", "Menu and help affordances", menuButton, helpActions);
             M3FormRow dateRow = new M3FormRow("Due date", "Date picker target", dateField);
             M3FormSection section = new M3FormSection("Project", actionRow, dateRow);
-            M3FormPane form = new M3FormPane(section);
+            M3FormPane form = formPane(section);
             Stage stage = new Stage();
 
             try {
@@ -884,7 +886,7 @@ final class M3MixedPopupFocusTest {
             M3TimePickerField timeField = new M3TimePickerField(LocalTime.of(9, 30));
             M3FormRow timeRow = new M3FormRow("Reminder", "Time picker target", timeField);
             M3FormSection section = new M3FormSection("Project", timeRow);
-            M3FormPane form = new M3FormPane(section);
+            M3FormPane form = formPane(section);
             Stage stage = new Stage();
 
             try {
@@ -921,7 +923,7 @@ final class M3MixedPopupFocusTest {
             );
             M3FormRow rangeRow = new M3FormRow("Window", "Date range picker target", rangeField);
             M3FormSection section = new M3FormSection("Project", rangeRow);
-            M3FormPane form = new M3FormPane(section);
+            M3FormPane form = formPane(section);
             Stage stage = new Stage();
 
             try {
@@ -984,18 +986,18 @@ final class M3MixedPopupFocusTest {
     void menuButtonRejectsDisabledDirectPickerValueTargetsBeforeOpeningMenu() {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3DatePickerField dateField = new M3DatePickerField(LocalDate.of(2026, 8, 10));
-            dateField.setMaxDate(LocalDate.of(2026, 8, 15));
+            dateField.getPicker().setMaxDate(LocalDate.of(2026, 8, 15));
             M3MenuButton dateMenuButton = new M3MenuButton("Date", dateField);
 
             M3TimePickerField timeField = new M3TimePickerField(LocalTime.of(10, 0));
-            timeField.setMaxTime(LocalTime.of(12, 0));
+            timeField.getPicker().setMaxTime(LocalTime.of(12, 0));
             M3MenuButton timeMenuButton = new M3MenuButton("Time", timeField);
 
             M3DateRangePickerField rangeField = new M3DateRangePickerField(
                     LocalDate.of(2026, 8, 10),
                     LocalDate.of(2026, 8, 12)
             );
-            rangeField.setMaxDate(LocalDate.of(2026, 8, 15));
+            rangeField.getPicker().setMaxDate(LocalDate.of(2026, 8, 15));
             M3MenuButton rangeMenuButton = new M3MenuButton("Range", rangeField);
             Stage stage = new Stage();
 
@@ -1040,12 +1042,12 @@ final class M3MixedPopupFocusTest {
     void menuButtonRejectsDisabledNestedPickerValueTargetsBeforeOpeningMenuBranch() {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3DatePickerField dateField = new M3DatePickerField(LocalDate.of(2026, 8, 10));
-            dateField.setMaxDate(LocalDate.of(2026, 8, 15));
+            dateField.getPicker().setMaxDate(LocalDate.of(2026, 8, 15));
             M3SubMenuItem dateScheduleItem = new M3SubMenuItem("Date schedule", dateField);
             M3MenuButton dateMenuButton = new M3MenuButton("Date", dateScheduleItem);
 
             M3TimePickerField timeField = new M3TimePickerField(LocalTime.of(10, 0));
-            timeField.setMaxTime(LocalTime.of(12, 0));
+            timeField.getPicker().setMaxTime(LocalTime.of(12, 0));
             M3SubMenuItem timeScheduleItem = new M3SubMenuItem("Time schedule", timeField);
             M3MenuButton timeMenuButton = new M3MenuButton("Time", timeScheduleItem);
 
@@ -1053,7 +1055,7 @@ final class M3MixedPopupFocusTest {
                     LocalDate.of(2026, 8, 10),
                     LocalDate.of(2026, 8, 12)
             );
-            rangeField.setMaxDate(LocalDate.of(2026, 8, 15));
+            rangeField.getPicker().setMaxDate(LocalDate.of(2026, 8, 15));
             M3SubMenuItem rangeScheduleItem = new M3SubMenuItem("Range schedule", rangeField);
             M3MenuButton rangeMenuButton = new M3MenuButton("Range", rangeScheduleItem);
             Stage stage = new Stage();
@@ -1102,18 +1104,18 @@ final class M3MixedPopupFocusTest {
     void subMenuItemRejectsDisabledPickerValueTargetsBeforeOpeningSubMenu() {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3DatePickerField dateField = new M3DatePickerField(LocalDate.of(2026, 8, 10));
-            dateField.setMaxDate(LocalDate.of(2026, 8, 15));
+            dateField.getPicker().setMaxDate(LocalDate.of(2026, 8, 15));
             M3SubMenuItem dateScheduleItem = new M3SubMenuItem("Date schedule", dateField);
 
             M3TimePickerField timeField = new M3TimePickerField(LocalTime.of(10, 0));
-            timeField.setMaxTime(LocalTime.of(12, 0));
+            timeField.getPicker().setMaxTime(LocalTime.of(12, 0));
             M3SubMenuItem timeScheduleItem = new M3SubMenuItem("Time schedule", timeField);
 
             M3DateRangePickerField rangeField = new M3DateRangePickerField(
                     LocalDate.of(2026, 8, 10),
                     LocalDate.of(2026, 8, 12)
             );
-            rangeField.setMaxDate(LocalDate.of(2026, 8, 15));
+            rangeField.getPicker().setMaxDate(LocalDate.of(2026, 8, 15));
             M3SubMenuItem rangeScheduleItem = new M3SubMenuItem("Range schedule", rangeField);
             Stage stage = new Stage();
 
@@ -1275,7 +1277,7 @@ final class M3MixedPopupFocusTest {
             M3MenuButton menuButton = new M3MenuButton("More", scheduleItem);
             Pane content = new Pane(menuButton);
             content.setPrefSize(360.0, 96.0);
-            M3Surface surface = new M3Surface(content);
+            M3Surface surface = surface(content);
             Stage stage = new Stage();
 
             try {
@@ -1312,7 +1314,7 @@ final class M3MixedPopupFocusTest {
             M3MenuButton menuButton = new M3MenuButton("More", scheduleItem);
             Pane content = new Pane(menuButton);
             content.setPrefSize(360.0, 96.0);
-            M3Surface surface = new M3Surface(content);
+            M3Surface surface = surface(content);
             Stage stage = new Stage();
 
             try {
@@ -1823,7 +1825,7 @@ final class M3MixedPopupFocusTest {
             dialogPane.setContent(new Pane());
             dialogPane.getButtonTypes().setAll(ButtonType.OK);
             M3TimePickerField tooltipTimeField = new M3TimePickerField(LocalTime.of(9, 30));
-            tooltipTimeField.setMaxTime(LocalTime.of(10, 0));
+            tooltipTimeField.getPicker().setMaxTime(LocalTime.of(10, 0));
             LocalTime disabledTime = LocalTime.of(11, 15);
             Stage stage = new Stage();
 
@@ -1941,7 +1943,7 @@ final class M3MixedPopupFocusTest {
                     LocalDate.of(2026, 6, 14),
                     LocalDate.of(2026, 6, 18)
             );
-            tooltipRangeField.setMaxDate(LocalDate.of(2026, 6, 20));
+            tooltipRangeField.getPicker().setMaxDate(LocalDate.of(2026, 6, 20));
             LocalDate disabledDate = LocalDate.of(2026, 6, 24);
             Stage stage = new Stage();
 
@@ -2213,7 +2215,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem firstItem = new M3MenuItem("First");
             M3MenuItem secondItem = new M3MenuItem("Second");
             M3MenuButton menuButton = new M3MenuButton("Open menu", firstItem, secondItem);
-            M3ButtonGroup group = new M3ButtonGroup(menuButton);
+            M3ButtonGroup group = buttonGroup(menuButton);
             Stage stage = new Stage();
 
             try {
@@ -2258,7 +2260,7 @@ final class M3MixedPopupFocusTest {
             );
             M3ListItem row = new M3ListItem("Project Alpha");
             row.setTrailing(rowAction);
-            M3ListView<M3ListItem> listView = new M3ListView<>(row);
+            M3ListView<M3ListItem> listView = listView(row);
             listView.setCellFactory(item -> item);
             listView.setFixedCellSize(72.0);
             Stage stage = new Stage();
@@ -2305,7 +2307,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem firstItem = new M3MenuItem("First");
             M3MenuItem secondItem = new M3MenuItem("Second");
             M3MenuButton menuButton = new M3MenuButton("Open menu", firstItem, secondItem);
-            M3ButtonGroup group = new M3ButtonGroup(menuButton);
+            M3ButtonGroup group = buttonGroup(menuButton);
             Stage stage = new Stage();
 
             try {
@@ -2337,7 +2339,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3MenuItem iconTarget = new M3MenuItem("Icon target");
             M3MenuButton iconMenu = new M3MenuButton("More", new M3MenuItem("First"), iconTarget);
-            M3IconToggleButtonGroup iconGroup = new M3IconToggleButtonGroup(
+            M3IconToggleButtonGroup iconGroup = iconToggleButtonGroup(
                     new M3IconToggleButton(iconMenu),
                     new M3IconToggleButton("B")
             );
@@ -2345,7 +2347,7 @@ final class M3MixedPopupFocusTest {
 
             M3MenuItem segmentedTarget = new M3MenuItem("Segment target");
             M3MenuButton segmentedMenu = new M3MenuButton("More", new M3MenuItem("First"), segmentedTarget);
-            M3SegmentedButtonGroup segmentedGroup = new M3SegmentedButtonGroup(
+            M3SegmentedButtonGroup segmentedGroup = segmentedButtonGroup(
                     new M3SegmentedButton("More", segmentedMenu),
                     new M3SegmentedButton("Other")
             );
@@ -2359,7 +2361,7 @@ final class M3MixedPopupFocusTest {
 
             M3MenuItem chipTarget = new M3MenuItem("Chip target");
             M3MenuButton chipMenu = new M3MenuButton("More", new M3MenuItem("First"), chipTarget);
-            M3ChipGroup chipGroup = new M3ChipGroup(
+            M3ChipGroup chipGroup = chipGroup(
                     new M3Chip("More", chipMenu),
                     new M3Chip("Other")
             );
@@ -2367,7 +2369,7 @@ final class M3MixedPopupFocusTest {
 
             M3MenuItem tabTarget = new M3MenuItem("Tab target");
             M3MenuButton tabMenu = new M3MenuButton("More", new M3MenuItem("First"), tabTarget);
-            M3TabBar tabBar = new M3TabBar(
+            M3TabBar tabBar = tabBar(
                     new M3Tab("More", tabMenu),
                     new M3Tab("Other")
             );
@@ -2381,7 +2383,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3MenuItem barTarget = new M3MenuItem("Bar target");
             M3MenuButton barMenu = new M3MenuButton("More", new M3MenuItem("First"), barTarget);
-            M3NavigationBar navigationBar = new M3NavigationBar(
+            M3NavigationBar navigationBar = navigationBar(
                     new M3NavigationItem("More", barMenu),
                     new M3NavigationItem("Other")
             );
@@ -2389,7 +2391,7 @@ final class M3MixedPopupFocusTest {
 
             M3MenuItem railTarget = new M3MenuItem("Rail target");
             M3MenuButton railMenu = new M3MenuButton("More", new M3MenuItem("First"), railTarget);
-            M3NavigationRail navigationRail = new M3NavigationRail(
+            M3NavigationRail navigationRail = navigationRail(
                     new M3NavigationItem("More", railMenu),
                     new M3NavigationItem("Other")
             );
@@ -2399,7 +2401,7 @@ final class M3MixedPopupFocusTest {
             M3MenuButton listMenu = new M3MenuButton("More", new M3MenuItem("First"), listTarget);
             M3ListItem listItem = new M3ListItem("More");
             listItem.setTrailing(listMenu);
-            M3ListPane listPane = new M3ListPane(listItem, new M3ListItem("Other"));
+            M3ListPane listPane = listPane(listItem, new M3ListItem("Other"));
             assertContainerRevealsNestedMenuPopupTarget(listPane, listMenu, listTarget, 460.0, 160.0);
 
             M3MenuItem carouselTarget = new M3MenuItem("Carousel target");
@@ -2409,7 +2411,7 @@ final class M3MixedPopupFocusTest {
             carouselMenu.resizeRelocate(24.0, 24.0, 160.0, 56.0);
             Pane otherItem = new Pane(new M3Text("Other"));
             otherItem.setPrefSize(180.0, 128.0);
-            M3Carousel carousel = new M3Carousel(carouselItem, otherItem);
+            M3Carousel carousel = carousel(carouselItem, otherItem);
             assertContainerRevealsNestedMenuPopupTarget(carousel, carouselMenu, carouselTarget, 560.0, 220.0);
         });
     }
@@ -2430,7 +2432,7 @@ final class M3MixedPopupFocusTest {
             );
             Pane secondItem = new Pane(ownerAction);
             secondItem.setPrefSize(240.0, 128.0);
-            M3Carousel carousel = new M3Carousel(firstItem, secondItem);
+            M3Carousel carousel = carousel(firstItem, secondItem);
             carousel.setAnimatedScroll(false);
             Stage stage = new Stage();
 
@@ -2480,7 +2482,7 @@ final class M3MixedPopupFocusTest {
             M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 9, 12));
             Pane secondItem = new Pane(field);
             secondItem.setPrefSize(300.0, 128.0);
-            M3Carousel carousel = new M3Carousel(firstItem, secondItem);
+            M3Carousel carousel = carousel(firstItem, secondItem);
             carousel.setAnimatedScroll(false);
             Stage stage = new Stage();
 
@@ -2531,7 +2533,7 @@ final class M3MixedPopupFocusTest {
             M3TimePickerField field = new M3TimePickerField(LocalTime.of(13, 15));
             Pane secondItem = new Pane(field);
             secondItem.setPrefSize(300.0, 128.0);
-            M3Carousel carousel = new M3Carousel(firstItem, secondItem);
+            M3Carousel carousel = carousel(firstItem, secondItem);
             carousel.setAnimatedScroll(false);
             Stage stage = new Stage();
 
@@ -2582,7 +2584,7 @@ final class M3MixedPopupFocusTest {
             M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 9, 12));
             Pane secondItem = new Pane(field);
             secondItem.setPrefSize(300.0, 128.0);
-            M3Carousel carousel = new M3Carousel(firstItem, secondItem);
+            M3Carousel carousel = carousel(firstItem, secondItem);
             carousel.setAnimatedScroll(false);
             Stage stage = new Stage();
 
@@ -2621,7 +2623,7 @@ final class M3MixedPopupFocusTest {
             M3TimePickerField field = new M3TimePickerField(LocalTime.of(13, 15));
             Pane secondItem = new Pane(field);
             secondItem.setPrefSize(300.0, 128.0);
-            M3Carousel carousel = new M3Carousel(firstItem, secondItem);
+            M3Carousel carousel = carousel(firstItem, secondItem);
             carousel.setAnimatedScroll(false);
             Stage stage = new Stage();
 
@@ -2662,7 +2664,7 @@ final class M3MixedPopupFocusTest {
             );
             Pane secondItem = new Pane(field);
             secondItem.setPrefSize(360.0, 128.0);
-            M3Carousel carousel = new M3Carousel(firstItem, secondItem);
+            M3Carousel carousel = carousel(firstItem, secondItem);
             carousel.setAnimatedScroll(false);
             Stage stage = new Stage();
 
@@ -2694,7 +2696,7 @@ final class M3MixedPopupFocusTest {
             M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 5, 20));
             Pane content = new Pane(field);
             content.setPrefSize(360.0, 96.0);
-            M3Surface surface = new M3Surface(content);
+            M3Surface surface = surface(content);
             Stage stage = new Stage();
 
             try {
@@ -2737,7 +2739,7 @@ final class M3MixedPopupFocusTest {
             M3TimePickerField field = new M3TimePickerField(LocalTime.of(10, 30));
             Pane content = new Pane(field);
             content.setPrefSize(360.0, 96.0);
-            M3Surface surface = new M3Surface(content);
+            M3Surface surface = surface(content);
             Stage stage = new Stage();
 
             try {
@@ -2782,7 +2784,7 @@ final class M3MixedPopupFocusTest {
             LocalDate targetDate = LocalDate.of(2026, 5, 21);
             Pane content = new Pane(field);
             content.setPrefSize(360.0, 96.0);
-            M3Surface surface = new M3Surface(content);
+            M3Surface surface = surface(content);
             Stage stage = new Stage();
 
             try {
@@ -2868,7 +2870,7 @@ final class M3MixedPopupFocusTest {
             LocalTime targetTime = LocalTime.of(11, 0);
             Pane content = new Pane(field);
             content.setPrefSize(360.0, 96.0);
-            M3Surface surface = new M3Surface(content);
+            M3Surface surface = surface(content);
             Stage stage = new Stage();
 
             try {
@@ -3949,7 +3951,7 @@ final class M3MixedPopupFocusTest {
             M3SplitButton splitButton = new M3SplitButton("Create", draftItem, publishItem);
             Pane content = new Pane(splitButton);
             content.setPrefSize(360.0, 96.0);
-            M3Surface surface = new M3Surface(content);
+            M3Surface surface = surface(content);
             Stage stage = new Stage();
 
             try {
@@ -3991,7 +3993,7 @@ final class M3MixedPopupFocusTest {
             M3SplitButton splitButton = new M3SplitButton("Create", draftItem, publishItem);
             Pane content = new Pane(splitButton);
             content.setPrefSize(360.0, 96.0);
-            M3Surface surface = new M3Surface(content);
+            M3Surface surface = surface(content);
             Stage stage = new Stage();
 
             try {
@@ -4271,10 +4273,10 @@ final class M3MixedPopupFocusTest {
                     tooltipAction
             );
             M3FabMenu fabMenu = new M3FabMenu();
-            fabMenu.addItem(ownerAction);
+            fabMenu.getItems().add(ownerAction);
             Pane content = new Pane(fabMenu);
             content.setPrefSize(360.0, 180.0);
-            M3Surface surface = new M3Surface(content);
+            M3Surface surface = surface(content);
             Stage stage = new Stage();
 
             try {
@@ -4335,10 +4337,10 @@ final class M3MixedPopupFocusTest {
                     tooltipAction
             );
             M3FabMenu fabMenu = new M3FabMenu();
-            fabMenu.addItem(ownerAction);
+            fabMenu.getItems().add(ownerAction);
             Pane content = new Pane(fabMenu);
             content.setPrefSize(360.0, 180.0);
-            M3Surface surface = new M3Surface(content);
+            M3Surface surface = surface(content);
             Stage stage = new Stage();
 
             try {
@@ -4378,10 +4380,10 @@ final class M3MixedPopupFocusTest {
             M3MenuItem archiveItem = new M3MenuItem("Archive");
             M3MenuButton menuButton = new M3MenuButton("Actions", saveItem, archiveItem);
             M3FabMenu fabMenu = new M3FabMenu();
-            fabMenu.addItem(menuButton);
+            fabMenu.getItems().add(menuButton);
             Pane content = new Pane(fabMenu);
             content.setPrefSize(360.0, 180.0);
-            M3Surface surface = new M3Surface(content);
+            M3Surface surface = surface(content);
             Stage stage = new Stage();
 
             try {
@@ -4421,7 +4423,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem archiveItem = new M3MenuItem("Archive");
             M3MenuButton menuButton = new M3MenuButton("Actions", saveItem, archiveItem);
             M3FabMenu fabMenu = new M3FabMenu();
-            fabMenu.addItem(menuButton);
+            fabMenu.getItems().add(menuButton);
             Stage stage = new Stage();
 
             try {
@@ -4460,10 +4462,10 @@ final class M3MixedPopupFocusTest {
             LocalDate targetDate = LocalDate.of(2026, 6, 16);
             M3DatePickerField field = new M3DatePickerField();
             M3FabMenu fabMenu = new M3FabMenu();
-            fabMenu.addItem(field);
+            fabMenu.getItems().add(field);
             Pane content = new Pane(fabMenu);
             content.setPrefSize(360.0, 180.0);
-            M3Surface surface = new M3Surface(content);
+            M3Surface surface = surface(content);
             Stage stage = new Stage();
 
             try {
@@ -4498,10 +4500,10 @@ final class M3MixedPopupFocusTest {
             LocalTime targetTime = LocalTime.of(14, 30);
             M3TimePickerField field = new M3TimePickerField(LocalTime.of(9, 30));
             M3FabMenu fabMenu = new M3FabMenu();
-            fabMenu.addItem(field);
+            fabMenu.getItems().add(field);
             Pane content = new Pane(fabMenu);
             content.setPrefSize(360.0, 180.0);
-            M3Surface surface = new M3Surface(content);
+            M3Surface surface = surface(content);
             Stage stage = new Stage();
 
             try {
@@ -4538,10 +4540,10 @@ final class M3MixedPopupFocusTest {
                     LocalDate.of(2026, 6, 18)
             );
             M3FabMenu fabMenu = new M3FabMenu();
-            fabMenu.addItem(field);
+            fabMenu.getItems().add(field);
             Pane content = new Pane(fabMenu);
             content.setPrefSize(420.0, 180.0);
-            M3Surface surface = new M3Surface(content);
+            M3Surface surface = surface(content);
             Stage stage = new Stage();
 
             try {
@@ -4596,10 +4598,10 @@ final class M3MixedPopupFocusTest {
                     tooltipAction
             );
             M3FabMenu fabMenu = new M3FabMenu();
-            fabMenu.addItem(ownerAction);
+            fabMenu.getItems().add(ownerAction);
             Pane content = new Pane(fabMenu);
             content.setPrefSize(360.0, 180.0);
-            M3Surface surface = new M3Surface(content);
+            M3Surface surface = surface(content);
             Stage stage = new Stage();
 
             try {
@@ -4635,7 +4637,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3SnackbarHost host = new M3SnackbarHost();
             M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
-            M3Surface surface = new M3Surface(host);
+            M3Surface surface = surface(host);
             Stage stage = new Stage();
 
             try {
@@ -4673,7 +4675,7 @@ final class M3MixedPopupFocusTest {
             M3SnackbarHost host = new M3SnackbarHost();
             M3Snackbar currentSnackbar = new M3Snackbar("Saved", "Undo");
             M3Snackbar queuedSnackbar = new M3Snackbar("Deleted", "Restore");
-            M3Surface surface = new M3Surface(host);
+            M3Surface surface = surface(host);
             Stage stage = new Stage();
 
             try {
@@ -4728,7 +4730,7 @@ final class M3MixedPopupFocusTest {
             M3SnackbarHost host = new M3SnackbarHost();
             M3Snackbar currentSnackbar = new M3Snackbar("Saved", "Undo");
             M3Snackbar queuedSnackbar = new M3Snackbar("Deleted", "Restore");
-            M3Surface surface = new M3Surface(host);
+            M3Surface surface = surface(host);
             Stage stage = new Stage();
 
             try {
@@ -4785,7 +4787,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3SnackbarHost host = new M3SnackbarHost();
             M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
-            M3Surface surface = new M3Surface(host);
+            M3Surface surface = surface(host);
             Stage stage = new Stage();
 
             try {
@@ -4858,7 +4860,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3SnackbarHost host = new M3SnackbarHost();
             M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
-            M3Surface surface = new M3Surface(host);
+            M3Surface surface = surface(host);
             Stage stage = new Stage();
 
             try {
@@ -4915,7 +4917,7 @@ final class M3MixedPopupFocusTest {
             M3SnackbarHost host = new M3SnackbarHost();
             M3Snackbar currentSnackbar = new M3Snackbar("Saved", "Undo");
             M3Snackbar queuedSnackbar = new M3Snackbar("Deleted", "Restore");
-            M3Surface surface = new M3Surface(host);
+            M3Surface surface = surface(host);
             Stage stage = new Stage();
 
             try {
@@ -4983,7 +4985,7 @@ final class M3MixedPopupFocusTest {
             M3SnackbarHost host = new M3SnackbarHost();
             M3Snackbar currentSnackbar = new M3Snackbar("Saved", "Undo");
             M3Snackbar queuedSnackbar = new M3Snackbar("Deleted", "Restore");
-            M3Surface surface = new M3Surface(host);
+            M3Surface surface = surface(host);
             Stage stage = new Stage();
 
             try {
@@ -5054,7 +5056,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3SnackbarHost host = new M3SnackbarHost();
             M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
-            M3Surface surface = new M3Surface(host);
+            M3Surface surface = surface(host);
             Stage stage = new Stage();
 
             try {
@@ -5119,7 +5121,7 @@ final class M3MixedPopupFocusTest {
             );
             M3Banner banner = new M3Banner("Connection interrupted", ownerAction);
             banner.setIcon(new M3Icon("!"));
-            M3Surface surface = new M3Surface(banner);
+            M3Surface surface = surface(banner);
             Stage stage = new Stage();
 
             try {
@@ -5175,7 +5177,7 @@ final class M3MixedPopupFocusTest {
             );
             M3Banner banner = new M3Banner("Connection interrupted", ownerAction);
             banner.setIcon(new M3Icon("!"));
-            M3Surface surface = new M3Surface(banner);
+            M3Surface surface = surface(banner);
             Stage stage = new Stage();
 
             try {
@@ -5219,7 +5221,7 @@ final class M3MixedPopupFocusTest {
             );
             M3Banner banner = new M3Banner("Connection interrupted", ownerAction);
             banner.setIcon(new M3Icon("!"));
-            M3Surface surface = new M3Surface(banner);
+            M3Surface surface = surface(banner);
             Stage stage = new Stage();
 
             try {
@@ -5564,7 +5566,7 @@ final class M3MixedPopupFocusTest {
                     tooltipAction
             );
             M3Card card = new M3Card(ownerAction);
-            M3Surface surface = new M3Surface(card);
+            M3Surface surface = surface(card);
             Stage stage = new Stage();
 
             try {
@@ -5619,7 +5621,7 @@ final class M3MixedPopupFocusTest {
                     tooltipAction
             );
             M3Card card = new M3Card(ownerAction);
-            M3Surface surface = new M3Surface(card);
+            M3Surface surface = surface(card);
             Stage stage = new Stage();
 
             try {
@@ -5662,7 +5664,7 @@ final class M3MixedPopupFocusTest {
                     tooltipAction
             );
             M3Card card = new M3Card(ownerAction);
-            M3Surface surface = new M3Surface(card);
+            M3Surface surface = surface(card);
             Stage stage = new Stage();
 
             try {
@@ -5709,7 +5711,7 @@ final class M3MixedPopupFocusTest {
             );
             M3ListItem listItem = new M3ListItem("Document");
             listItem.setTrailing(ownerAction);
-            M3Surface surface = new M3Surface(listItem);
+            M3Surface surface = surface(listItem);
             Stage stage = new Stage();
 
             try {
@@ -5765,7 +5767,7 @@ final class M3MixedPopupFocusTest {
             );
             M3ListItem listItem = new M3ListItem("Document");
             listItem.setTrailing(ownerAction);
-            M3Surface surface = new M3Surface(listItem);
+            M3Surface surface = surface(listItem);
             Stage stage = new Stage();
 
             try {
@@ -5809,7 +5811,7 @@ final class M3MixedPopupFocusTest {
             );
             M3ListItem listItem = new M3ListItem("Document");
             listItem.setTrailing(ownerAction);
-            M3Surface surface = new M3Surface(listItem);
+            M3Surface surface = surface(listItem);
             Stage stage = new Stage();
 
             try {
@@ -6842,22 +6844,22 @@ final class M3MixedPopupFocusTest {
     void hiddenSheetsRejectDisabledContentPickerValueTargetsBeforeShowing() {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3DatePickerField bottomDateField = new M3DatePickerField(LocalDate.of(2026, 8, 10));
-            bottomDateField.setMaxDate(LocalDate.of(2026, 8, 15));
+            bottomDateField.getPicker().setMaxDate(LocalDate.of(2026, 8, 15));
             M3BottomSheet bottomDateSheet = new M3BottomSheet("Bottom date", new Pane(bottomDateField));
             bottomDateSheet.setShown(false);
 
             M3DatePickerField sideDateField = new M3DatePickerField(LocalDate.of(2026, 8, 10));
-            sideDateField.setMaxDate(LocalDate.of(2026, 8, 15));
+            sideDateField.getPicker().setMaxDate(LocalDate.of(2026, 8, 15));
             M3SideSheet sideDateSheet = new M3SideSheet("Side date", new Pane(sideDateField));
             sideDateSheet.setShown(false);
 
             M3TimePickerField bottomTimeField = new M3TimePickerField(LocalTime.of(9, 0));
-            bottomTimeField.setMaxTime(LocalTime.of(12, 0));
+            bottomTimeField.getPicker().setMaxTime(LocalTime.of(12, 0));
             M3BottomSheet bottomTimeSheet = new M3BottomSheet("Bottom time", new Pane(bottomTimeField));
             bottomTimeSheet.setShown(false);
 
             M3TimePickerField sideTimeField = new M3TimePickerField(LocalTime.of(9, 0));
-            sideTimeField.setMaxTime(LocalTime.of(12, 0));
+            sideTimeField.getPicker().setMaxTime(LocalTime.of(12, 0));
             M3SideSheet sideTimeSheet = new M3SideSheet("Side time", new Pane(sideTimeField));
             sideTimeSheet.setShown(false);
 
@@ -6865,7 +6867,7 @@ final class M3MixedPopupFocusTest {
                     LocalDate.of(2026, 8, 10),
                     LocalDate.of(2026, 8, 12)
             );
-            bottomRangeField.setMaxDate(LocalDate.of(2026, 8, 15));
+            bottomRangeField.getPicker().setMaxDate(LocalDate.of(2026, 8, 15));
             M3BottomSheet bottomRangeSheet = new M3BottomSheet("Bottom range", new Pane(bottomRangeField));
             bottomRangeSheet.setShown(false);
 
@@ -6873,7 +6875,7 @@ final class M3MixedPopupFocusTest {
                     LocalDate.of(2026, 8, 10),
                     LocalDate.of(2026, 8, 12)
             );
-            sideRangeField.setMaxDate(LocalDate.of(2026, 8, 15));
+            sideRangeField.getPicker().setMaxDate(LocalDate.of(2026, 8, 15));
             M3SideSheet sideRangeSheet = new M3SideSheet("Side range", new Pane(sideRangeField));
             sideRangeSheet.setShown(false);
             Stage stage = new Stage();
@@ -6974,7 +6976,7 @@ final class M3MixedPopupFocusTest {
             M3Button searchHiddenAction = new M3Button("Search hidden");
             searchHiddenAction.setVisible(false);
             M3SearchBar searchBar = new M3SearchBar("Search");
-            searchBar.setTrailingActions(new StackPane(searchVisibleAction, searchHiddenAction));
+            searchBar.getTrailingActions().setAll(new StackPane(searchVisibleAction, searchHiddenAction));
 
             M3Button resultVisibleAction = new M3Button("Result visible");
             M3Button resultHiddenAction = new M3Button("Result hidden");
@@ -7052,7 +7054,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem archiveItem = new M3MenuItem("Archive");
             M3MenuButton menuButton = new M3MenuButton("Actions", archiveItem);
             M3SearchBar searchBar = new M3SearchBar("Search");
-            searchBar.setTrailingActions(menuButton);
+            searchBar.getTrailingActions().setAll(menuButton);
             Stage stage = new Stage();
 
             try {
@@ -7089,7 +7091,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem publishItem = new M3MenuItem("Publish");
             M3SplitButton splitButton = new M3SplitButton("Create", draftItem, publishItem);
             M3SearchBar searchBar = new M3SearchBar("Search");
-            searchBar.setTrailingActions(splitButton);
+            searchBar.getTrailingActions().setAll(splitButton);
 
             assertFalse(searchBar.isActive());
             assertContainerRevealsNestedSplitButtonPopupTarget(searchBar, splitButton, publishItem, 420.0, 56.0);
@@ -7105,7 +7107,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem disabledItem = new M3MenuItem("Disabled");
             M3MenuButton menuButton = unreachableTargetMenuButton(hiddenItem, disabledItem);
             M3SearchBar searchBar = new M3SearchBar("Search");
-            searchBar.setTrailingActions(menuButton);
+            searchBar.getTrailingActions().setAll(menuButton);
 
             assertFalse(searchBar.isActive());
             assertContainerRejectsUnreachableNestedMenuPopupTargets(
@@ -7128,7 +7130,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem disabledItem = new M3MenuItem("Disabled");
             M3SplitButton splitButton = unreachableTargetSplitButton(hiddenItem, disabledItem);
             M3SearchBar searchBar = new M3SearchBar("Search");
-            searchBar.setTrailingActions(splitButton);
+            searchBar.getTrailingActions().setAll(splitButton);
 
             assertFalse(searchBar.isActive());
             assertContainerRejectsUnreachableNestedSplitButtonPopupTargets(
@@ -7156,7 +7158,7 @@ final class M3MixedPopupFocusTest {
                     tooltipAction
             );
             M3SearchBar searchBar = new M3SearchBar("Search");
-            searchBar.setTrailingActions(ownerAction);
+            searchBar.getTrailingActions().setAll(ownerAction);
             Stage stage = new Stage();
 
             try {
@@ -7269,7 +7271,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem archiveItem = new M3MenuItem("Archive");
             M3MenuButton menuButton = new M3MenuButton("Actions", archiveItem);
             M3SearchView searchView = new M3SearchView("Search");
-            searchView.setTrailingActions(menuButton);
+            searchView.getTrailingActions().setAll(menuButton);
 
             searchView.deactivate();
             assertFalse(searchView.isActive());
@@ -7286,7 +7288,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem publishItem = new M3MenuItem("Publish");
             M3SplitButton splitButton = new M3SplitButton("Create", draftItem, publishItem);
             M3SearchView searchView = new M3SearchView("Search");
-            searchView.setTrailingActions(splitButton);
+            searchView.getTrailingActions().setAll(splitButton);
 
             searchView.deactivate();
             assertFalse(searchView.isActive());
@@ -7321,7 +7323,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem disabledItem = new M3MenuItem("Disabled");
             M3MenuButton menuButton = unreachableTargetMenuButton(hiddenItem, disabledItem);
             M3SearchView searchView = new M3SearchView("Search");
-            searchView.setTrailingActions(menuButton);
+            searchView.getTrailingActions().setAll(menuButton);
 
             searchView.deactivate();
             assertFalse(searchView.isActive());
@@ -7345,7 +7347,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem disabledItem = new M3MenuItem("Disabled");
             M3SplitButton splitButton = unreachableTargetSplitButton(hiddenItem, disabledItem);
             M3SearchView searchView = new M3SearchView("Search");
-            searchView.setTrailingActions(splitButton);
+            searchView.getTrailingActions().setAll(splitButton);
 
             searchView.deactivate();
             assertFalse(searchView.isActive());
@@ -7467,7 +7469,7 @@ final class M3MixedPopupFocusTest {
                     tooltipAction
             );
             M3SearchView searchView = new M3SearchView("Search");
-            searchView.setTrailingActions(ownerAction);
+            searchView.getTrailingActions().setAll(ownerAction);
             Stage stage = new Stage();
 
             try {
@@ -7503,7 +7505,7 @@ final class M3MixedPopupFocusTest {
             M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 6, 14));
             LocalDate targetDate = LocalDate.of(2026, 6, 25);
             M3SearchView searchView = new M3SearchView("Search schedule");
-            searchView.setTrailingActions(field);
+            searchView.getTrailingActions().setAll(field);
             Stage stage = new Stage();
 
             try {
@@ -7532,7 +7534,7 @@ final class M3MixedPopupFocusTest {
             M3TimePickerField field = new M3TimePickerField(LocalTime.of(9, 30));
             LocalTime targetTime = LocalTime.of(13, 45);
             M3SearchView searchView = new M3SearchView("Search schedule");
-            searchView.setTrailingActions(field);
+            searchView.getTrailingActions().setAll(field);
             Stage stage = new Stage();
 
             try {
@@ -7563,7 +7565,7 @@ final class M3MixedPopupFocusTest {
                     LocalDate.of(2026, 6, 18)
             );
             M3SearchView searchView = new M3SearchView("Search schedule");
-            searchView.setTrailingActions(field);
+            searchView.getTrailingActions().setAll(field);
             Stage stage = new Stage();
 
             try {
@@ -7700,7 +7702,7 @@ final class M3MixedPopupFocusTest {
             M3ListItem childItem = new M3ListItem("Destination");
             childItem.setTrailing(ownerAction);
             M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Navigation");
-            group.addItem(childItem);
+            group.getItems().add(childItem);
             group.setExpanded(false);
             Stage stage = new Stage();
 
@@ -7740,7 +7742,7 @@ final class M3MixedPopupFocusTest {
             M3ListItem childItem = new M3ListItem("Schedule");
             childItem.setTrailing(field);
             M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Navigation");
-            group.addItem(childItem);
+            group.getItems().add(childItem);
             group.setExpanded(false);
             Stage stage = new Stage();
 
@@ -7776,7 +7778,7 @@ final class M3MixedPopupFocusTest {
             M3ListItem childItem = new M3ListItem("Schedule");
             childItem.setTrailing(field);
             M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Navigation");
-            group.addItem(childItem);
+            group.getItems().add(childItem);
             group.setExpanded(false);
             Stage stage = new Stage();
 
@@ -7815,7 +7817,7 @@ final class M3MixedPopupFocusTest {
             M3ListItem childItem = new M3ListItem("Schedule");
             childItem.setTrailing(field);
             M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Navigation");
-            group.addItem(childItem);
+            group.getItems().add(childItem);
             group.setExpanded(false);
             Stage stage = new Stage();
 
@@ -7848,11 +7850,11 @@ final class M3MixedPopupFocusTest {
     void navigationDrawerGroupRejectsDisabledNestedChildDatePickerValueTarget() {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 8, 12));
-            field.setMaxDate(LocalDate.of(2026, 8, 18));
+            field.getPicker().setMaxDate(LocalDate.of(2026, 8, 18));
             M3ListItem childItem = new M3ListItem("Schedule");
             childItem.setTrailing(field);
             M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Navigation");
-            group.addItem(childItem);
+            group.getItems().add(childItem);
             group.setExpanded(false);
             Stage stage = new Stage();
 
@@ -7884,11 +7886,11 @@ final class M3MixedPopupFocusTest {
     void navigationDrawerGroupRejectsDisabledNestedChildTimePickerValueTarget() {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3TimePickerField field = new M3TimePickerField(LocalTime.of(9, 30));
-            field.setMaxTime(LocalTime.of(10, 0));
+            field.getPicker().setMaxTime(LocalTime.of(10, 0));
             M3ListItem childItem = new M3ListItem("Schedule");
             childItem.setTrailing(field);
             M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Navigation");
-            group.addItem(childItem);
+            group.getItems().add(childItem);
             group.setExpanded(false);
             Stage stage = new Stage();
 
@@ -7923,11 +7925,11 @@ final class M3MixedPopupFocusTest {
                     LocalDate.of(2026, 8, 12),
                     LocalDate.of(2026, 8, 18)
             );
-            field.setMaxDate(LocalDate.of(2026, 8, 18));
+            field.getPicker().setMaxDate(LocalDate.of(2026, 8, 18));
             M3ListItem childItem = new M3ListItem("Schedule");
             childItem.setTrailing(field);
             M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Navigation");
-            group.addItem(childItem);
+            group.getItems().add(childItem);
             group.setExpanded(false);
             Stage stage = new Stage();
 
@@ -7969,7 +7971,7 @@ final class M3MixedPopupFocusTest {
             M3ListItem childItem = new M3ListItem("Destination");
             childItem.setTrailing(ownerAction);
             M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Navigation");
-            group.addItem(childItem);
+            group.getItems().add(childItem);
             group.setExpanded(true);
             Stage stage = new Stage();
 
@@ -8024,9 +8026,9 @@ final class M3MixedPopupFocusTest {
             M3ListItem childItem = new M3ListItem("Destination");
             childItem.setTrailing(ownerAction);
             M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Navigation");
-            group.addItem(childItem);
+            group.getItems().add(childItem);
             group.setExpanded(true);
-            M3NavigationDrawer drawer = new M3NavigationDrawer(group);
+            M3NavigationDrawer drawer = navigationDrawer(group);
             Stage stage = new Stage();
 
             try {
@@ -8076,9 +8078,9 @@ final class M3MixedPopupFocusTest {
             M3ListItem childItem = new M3ListItem("Destination");
             childItem.setTrailing(menuButton);
             M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Navigation");
-            group.addItem(childItem);
+            group.getItems().add(childItem);
             group.setExpanded(false);
-            M3NavigationDrawer drawer = new M3NavigationDrawer(group);
+            M3NavigationDrawer drawer = navigationDrawer(group);
             Stage stage = new Stage();
 
             try {
@@ -8124,7 +8126,7 @@ final class M3MixedPopupFocusTest {
             );
             M3ListItem item = new M3ListItem("Destination");
             item.setTrailing(ownerAction);
-            M3NavigationDrawer drawer = new M3NavigationDrawer(item);
+            M3NavigationDrawer drawer = navigationDrawer(item);
             Stage stage = new Stage();
 
             try {
@@ -8170,7 +8172,7 @@ final class M3MixedPopupFocusTest {
             );
             M3ListItem item = new M3ListItem("Destination");
             item.setTrailing(ownerAction);
-            M3NavigationDrawer drawer = new M3NavigationDrawer(item);
+            M3NavigationDrawer drawer = navigationDrawer(item);
             Stage stage = new Stage();
 
             try {
@@ -8218,9 +8220,9 @@ final class M3MixedPopupFocusTest {
             M3ListItem childItem = new M3ListItem("Destination");
             childItem.setTrailing(ownerAction);
             M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Navigation");
-            group.addItem(childItem);
+            group.getItems().add(childItem);
             group.setExpanded(false);
-            M3NavigationDrawer drawer = new M3NavigationDrawer(group);
+            M3NavigationDrawer drawer = navigationDrawer(group);
             Stage stage = new Stage();
 
             try {
@@ -8260,9 +8262,9 @@ final class M3MixedPopupFocusTest {
             M3ListItem childItem = new M3ListItem("Schedule");
             childItem.setTrailing(field);
             M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Navigation");
-            group.addItem(childItem);
+            group.getItems().add(childItem);
             group.setExpanded(false);
-            M3NavigationDrawer drawer = new M3NavigationDrawer(group);
+            M3NavigationDrawer drawer = navigationDrawer(group);
             Stage stage = new Stage();
 
             try {
@@ -8298,9 +8300,9 @@ final class M3MixedPopupFocusTest {
             M3ListItem childItem = new M3ListItem("Schedule");
             childItem.setTrailing(field);
             M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Navigation");
-            group.addItem(childItem);
+            group.getItems().add(childItem);
             group.setExpanded(false);
-            M3NavigationDrawer drawer = new M3NavigationDrawer(group);
+            M3NavigationDrawer drawer = navigationDrawer(group);
             Stage stage = new Stage();
 
             try {
@@ -8339,9 +8341,9 @@ final class M3MixedPopupFocusTest {
             M3ListItem childItem = new M3ListItem("Schedule");
             childItem.setTrailing(field);
             M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Navigation");
-            group.addItem(childItem);
+            group.getItems().add(childItem);
             group.setExpanded(false);
-            M3NavigationDrawer drawer = new M3NavigationDrawer(group);
+            M3NavigationDrawer drawer = navigationDrawer(group);
             Stage stage = new Stage();
 
             try {
@@ -8373,13 +8375,13 @@ final class M3MixedPopupFocusTest {
     void navigationDrawerRejectsDisabledNestedCollapsedGroupDatePickerValueTarget() {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 8, 12));
-            field.setMaxDate(LocalDate.of(2026, 8, 18));
+            field.getPicker().setMaxDate(LocalDate.of(2026, 8, 18));
             M3ListItem childItem = new M3ListItem("Schedule");
             childItem.setTrailing(field);
             M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Navigation");
-            group.addItem(childItem);
+            group.getItems().add(childItem);
             group.setExpanded(false);
-            M3NavigationDrawer drawer = new M3NavigationDrawer(group);
+            M3NavigationDrawer drawer = navigationDrawer(group);
             Stage stage = new Stage();
 
             try {
@@ -8410,13 +8412,13 @@ final class M3MixedPopupFocusTest {
     void navigationDrawerRejectsDisabledNestedCollapsedGroupTimePickerValueTarget() {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3TimePickerField field = new M3TimePickerField(LocalTime.of(9, 30));
-            field.setMaxTime(LocalTime.of(10, 0));
+            field.getPicker().setMaxTime(LocalTime.of(10, 0));
             M3ListItem childItem = new M3ListItem("Schedule");
             childItem.setTrailing(field);
             M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Navigation");
-            group.addItem(childItem);
+            group.getItems().add(childItem);
             group.setExpanded(false);
-            M3NavigationDrawer drawer = new M3NavigationDrawer(group);
+            M3NavigationDrawer drawer = navigationDrawer(group);
             Stage stage = new Stage();
 
             try {
@@ -8450,13 +8452,13 @@ final class M3MixedPopupFocusTest {
                     LocalDate.of(2026, 8, 12),
                     LocalDate.of(2026, 8, 18)
             );
-            field.setMaxDate(LocalDate.of(2026, 8, 18));
+            field.getPicker().setMaxDate(LocalDate.of(2026, 8, 18));
             M3ListItem childItem = new M3ListItem("Schedule");
             childItem.setTrailing(field);
             M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Navigation");
-            group.addItem(childItem);
+            group.getItems().add(childItem);
             group.setExpanded(false);
-            M3NavigationDrawer drawer = new M3NavigationDrawer(group);
+            M3NavigationDrawer drawer = navigationDrawer(group);
             Stage stage = new Stage();
 
             try {
@@ -8599,7 +8601,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem saveItem = new M3MenuItem("Save");
             M3MenuItem archiveItem = new M3MenuItem("Archive");
             M3MenuButton menuButton = new M3MenuButton("Actions", saveItem, archiveItem);
-            M3Toolbar toolbar = new M3Toolbar(new M3Button("Back"), menuButton, new M3Button("Share"));
+            M3Toolbar toolbar = toolbar(new M3Button("Back"), menuButton, new M3Button("Share"));
 
             assertContainerRevealsNestedMenuPopupTarget(toolbar, menuButton, archiveItem, 520.0, 72.0);
         });
@@ -8612,7 +8614,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem draftItem = new M3MenuItem("Draft");
             M3MenuItem publishItem = new M3MenuItem("Publish");
             M3SplitButton splitButton = new M3SplitButton("Create", draftItem, publishItem);
-            M3Toolbar toolbar = new M3Toolbar(new M3Button("Back"), splitButton, new M3Button("Share"));
+            M3Toolbar toolbar = toolbar(new M3Button("Back"), splitButton, new M3Button("Share"));
 
             assertContainerRevealsNestedSplitButtonPopupTarget(toolbar, splitButton, publishItem, 560.0, 72.0);
         });
@@ -8705,7 +8707,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem hiddenItem = new M3MenuItem("Hidden");
             M3MenuItem disabledItem = new M3MenuItem("Disabled");
             M3MenuButton menuButton = unreachableTargetMenuButton(hiddenItem, disabledItem);
-            M3Toolbar toolbar = new M3Toolbar(new M3Button("Back"), menuButton, new M3Button("Share"));
+            M3Toolbar toolbar = toolbar(new M3Button("Back"), menuButton, new M3Button("Share"));
 
             assertContainerRejectsUnreachableNestedMenuPopupTargets(
                     toolbar,
@@ -8725,7 +8727,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem hiddenItem = new M3MenuItem("Hidden");
             M3MenuItem disabledItem = new M3MenuItem("Disabled");
             M3SplitButton splitButton = unreachableTargetSplitButton(hiddenItem, disabledItem);
-            M3Toolbar toolbar = new M3Toolbar(new M3Button("Back"), splitButton, new M3Button("Share"));
+            M3Toolbar toolbar = toolbar(new M3Button("Back"), splitButton, new M3Button("Share"));
 
             assertContainerRejectsUnreachableNestedSplitButtonPopupTargets(
                     toolbar,
@@ -8931,7 +8933,7 @@ final class M3MixedPopupFocusTest {
                     "Shows formatting details.",
                     tooltipAction
             );
-            M3Toolbar toolbar = new M3Toolbar(ownerAction, new M3Button("Share"));
+            M3Toolbar toolbar = toolbar(ownerAction, new M3Button("Share"));
             Stage stage = new Stage();
 
             try {
@@ -8970,7 +8972,7 @@ final class M3MixedPopupFocusTest {
                     "Shows formatting details.",
                     tooltipAction
             );
-            M3Toolbar toolbar = new M3Toolbar(ownerAction, new M3Button("Share"));
+            M3Toolbar toolbar = toolbar(ownerAction, new M3Button("Share"));
             Stage stage = new Stage();
 
             try {
@@ -9025,7 +9027,7 @@ final class M3MixedPopupFocusTest {
                     "Shows formatting details.",
                     tooltipMenu
             );
-            M3Toolbar toolbar = new M3Toolbar(ownerAction, new M3Button("Share"));
+            M3Toolbar toolbar = toolbar(ownerAction, new M3Button("Share"));
             Stage stage = new Stage();
 
             try {
@@ -9075,7 +9077,7 @@ final class M3MixedPopupFocusTest {
                     "Shows formatting details.",
                     tooltipMenu
             );
-            M3Toolbar toolbar = new M3Toolbar(ownerAction, new M3Button("Share"));
+            M3Toolbar toolbar = toolbar(ownerAction, new M3Button("Share"));
             Stage stage = new Stage();
 
             try {
@@ -9116,7 +9118,7 @@ final class M3MixedPopupFocusTest {
                     "Choose a target date.",
                     tooltipDateField
             );
-            M3Toolbar toolbar = new M3Toolbar(ownerAction, new M3Button("Share"));
+            M3Toolbar toolbar = toolbar(ownerAction, new M3Button("Share"));
             Stage stage = new Stage();
 
             try {
@@ -9151,7 +9153,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3Button ownerAction = new M3Button("Schedule");
             M3DatePickerField tooltipDateField = new M3DatePickerField(LocalDate.of(2026, 6, 14));
-            tooltipDateField.setMaxDate(LocalDate.of(2026, 6, 18));
+            tooltipDateField.getPicker().setMaxDate(LocalDate.of(2026, 6, 18));
             LocalDate disabledDate = LocalDate.of(2026, 6, 24);
             M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
@@ -9159,7 +9161,7 @@ final class M3MixedPopupFocusTest {
                     "Choose a target date.",
                     tooltipDateField
             );
-            M3Toolbar toolbar = new M3Toolbar(ownerAction, new M3Button("Share"));
+            M3Toolbar toolbar = toolbar(ownerAction, new M3Button("Share"));
             Stage stage = new Stage();
 
             try {
@@ -9199,7 +9201,7 @@ final class M3MixedPopupFocusTest {
                     "Choose a target time.",
                     tooltipTimeField
             );
-            M3Toolbar toolbar = new M3Toolbar(ownerAction, new M3Button("Share"));
+            M3Toolbar toolbar = toolbar(ownerAction, new M3Button("Share"));
             Stage stage = new Stage();
 
             try {
@@ -9240,7 +9242,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3Button ownerAction = new M3Button("Schedule");
             M3TimePickerField tooltipTimeField = new M3TimePickerField(LocalTime.of(9, 30));
-            tooltipTimeField.setMaxTime(LocalTime.of(10, 0));
+            tooltipTimeField.getPicker().setMaxTime(LocalTime.of(10, 0));
             LocalTime disabledTime = LocalTime.of(11, 15);
             M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
@@ -9248,7 +9250,7 @@ final class M3MixedPopupFocusTest {
                     "Choose a target time.",
                     tooltipTimeField
             );
-            M3Toolbar toolbar = new M3Toolbar(ownerAction, new M3Button("Share"));
+            M3Toolbar toolbar = toolbar(ownerAction, new M3Button("Share"));
             Stage stage = new Stage();
 
             try {
@@ -9292,7 +9294,7 @@ final class M3MixedPopupFocusTest {
                     "Choose a target range.",
                     tooltipRangeField
             );
-            M3Toolbar toolbar = new M3Toolbar(ownerAction, new M3Button("Share"));
+            M3Toolbar toolbar = toolbar(ownerAction, new M3Button("Share"));
             Stage stage = new Stage();
 
             try {
@@ -9336,7 +9338,7 @@ final class M3MixedPopupFocusTest {
                     LocalDate.of(2026, 6, 14),
                     LocalDate.of(2026, 6, 18)
             );
-            tooltipRangeField.setMaxDate(LocalDate.of(2026, 6, 20));
+            tooltipRangeField.getPicker().setMaxDate(LocalDate.of(2026, 6, 20));
             LocalDate disabledDate = LocalDate.of(2026, 6, 24);
             M3RichTooltip tooltip = installRichTooltip(
                     ownerAction,
@@ -9344,7 +9346,7 @@ final class M3MixedPopupFocusTest {
                     "Choose a target range.",
                     tooltipRangeField
             );
-            M3Toolbar toolbar = new M3Toolbar(ownerAction, new M3Button("Share"));
+            M3Toolbar toolbar = toolbar(ownerAction, new M3Button("Share"));
             Stage stage = new Stage();
 
             try {
@@ -9485,7 +9487,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3TimePickerField field = new M3TimePickerField(LocalTime.of(9, 30));
             LocalTime targetTime = LocalTime.of(10, 45);
-            M3Toolbar toolbar = new M3Toolbar(new M3Button("Back"), field, new M3Button("Save"));
+            M3Toolbar toolbar = toolbar(new M3Button("Back"), field, new M3Button("Save"));
             Stage stage = new Stage();
 
             try {
@@ -9512,7 +9514,7 @@ final class M3MixedPopupFocusTest {
             M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 6, 14));
             LocalDate targetDate = LocalDate.of(2026, 6, 21);
             M3SearchBar searchBar = new M3SearchBar("Search schedule");
-            searchBar.setTrailingActions(field);
+            searchBar.getTrailingActions().setAll(field);
             Stage stage = new Stage();
 
             try {
@@ -9540,7 +9542,7 @@ final class M3MixedPopupFocusTest {
             M3TimePickerField field = new M3TimePickerField(LocalTime.of(9, 30));
             LocalTime targetTime = LocalTime.of(12, 30);
             M3SearchBar searchBar = new M3SearchBar("Search schedule");
-            searchBar.setTrailingActions(field);
+            searchBar.getTrailingActions().setAll(field);
             Stage stage = new Stage();
 
             try {
@@ -9633,7 +9635,7 @@ final class M3MixedPopupFocusTest {
                     LocalDate.of(2026, 6, 14),
                     LocalDate.of(2026, 6, 18)
             );
-            M3Toolbar toolbar = new M3Toolbar(new M3Button("Back"), field, new M3Button("Save"));
+            M3Toolbar toolbar = toolbar(new M3Button("Back"), field, new M3Button("Save"));
             Stage stage = new Stage();
 
             try {
@@ -9666,7 +9668,7 @@ final class M3MixedPopupFocusTest {
                     LocalDate.of(2026, 6, 18)
             );
             M3SearchBar searchBar = new M3SearchBar("Search schedule");
-            searchBar.setTrailingActions(field);
+            searchBar.getTrailingActions().setAll(field);
             Stage stage = new Stage();
 
             try {
@@ -9696,13 +9698,13 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             LocalDate invalidDate = LocalDate.of(2026, 6, 24);
             M3DatePickerField searchBarField = new M3DatePickerField(LocalDate.of(2026, 6, 14));
-            searchBarField.setMaxDate(LocalDate.of(2026, 6, 18));
+            searchBarField.getPicker().setMaxDate(LocalDate.of(2026, 6, 18));
             M3SearchBar searchBar = new M3SearchBar("Search schedule");
-            searchBar.setTrailingActions(searchBarField);
+            searchBar.getTrailingActions().setAll(searchBarField);
             searchBar.setActive(false);
 
             M3DatePickerField resultField = new M3DatePickerField(LocalDate.of(2026, 6, 14));
-            resultField.setMaxDate(LocalDate.of(2026, 6, 18));
+            resultField.getPicker().setMaxDate(LocalDate.of(2026, 6, 18));
             M3SearchView searchView = new M3SearchView("Search results", new Pane(resultField));
             searchView.setActive(false);
             Stage stage = new Stage();

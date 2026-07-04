@@ -5,7 +5,6 @@ package org.glavo.m3fx.controls;
 
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
@@ -21,7 +20,13 @@ import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
+import org.glavo.m3fx.internal.M3FocusTraversal;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.skins.M3BottomAppBarSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -84,7 +89,7 @@ public class M3BottomAppBar extends Control {
             };
 
     /// The mutable regular action node list.
-    private final ObservableList<Node> actions = FXCollections.observableArrayList();
+    private final ObservableList<Node> actions = M3ObservableLists.nonNullElementList("action");
 
     // The bottom app bar container height token.
     private @Nullable StyleableDoubleProperty containerHeight;
@@ -116,7 +121,7 @@ public class M3BottomAppBar extends Control {
     /// @param actions the regular action nodes displayed in the bar
     public M3BottomAppBar(Node... actions) {
         initialize();
-        addActions(actions);
+        getActions().addAll(actions);
     }
 
     /// Creates a bottom app bar with floating action content, alignment, and regular actions.
@@ -141,33 +146,9 @@ public class M3BottomAppBar extends Control {
         return actions;
     }
 
-    /// Adds one regular action node.
-    ///
-    /// @param action the regular action node to add
-    public final void addAction(Node action) {
-        getActions().add(Objects.requireNonNull(action, "action"));
-    }
 
-    /// Adds regular actions after validating the action array.
-    ///
-    /// @param actions the regular action nodes to add
-    public final void addActions(Node... actions) {
-        validateActions(actions);
-        getActions().addAll(actions);
-    }
 
-    /// Replaces all regular action nodes.
-    ///
-    /// @param actions the replacement regular action nodes
-    public final void setActions(Node... actions) {
-        validateActions(actions);
-        getActions().setAll(actions);
-    }
 
-    /// Removes all regular action nodes.
-    public final void clearActions() {
-        getActions().clear();
-    }
 
     /// Returns the optional floating action node.
     ///
@@ -334,6 +315,7 @@ public class M3BottomAppBar extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TOOL_BAR);
+        setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleItem, this::showAccessibleItem);
         addEventFilter(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         floatingAction.addListener((observable, oldValue, newValue) -> notifyAccessibleItemsChanged());
@@ -409,13 +391,6 @@ public class M3BottomAppBar extends Control {
         );
     }
 
-    /// Validates a regular action array.
-    private static void validateActions(Node... actions) {
-        Objects.requireNonNull(actions, "actions");
-        for (Node action : actions) {
-            Objects.requireNonNull(action, "action");
-        }
-    }
 
     /// Notifies accessibility clients that the indexed bottom app bar item collection changed.
     private void notifyAccessibleItemsChanged() {
@@ -461,7 +436,7 @@ public class M3BottomAppBar extends Control {
         );
     }
 
-    /// CSS metadata for m3fx bottom app bar component tokens.
+    /// CSS metadata for M3FX bottom app bar component tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
         /// CSS metadata for the container height token.

@@ -19,6 +19,8 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import org.glavo.m3fx.internal.M3PresetNavigation;
+import org.glavo.m3fx.internal.M3FocusTraversal;
 import org.glavo.m3fx.FxTestUtils;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;

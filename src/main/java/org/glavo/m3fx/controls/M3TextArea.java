@@ -10,6 +10,7 @@ import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.scene.AccessibleRole;
 import javafx.scene.control.TextArea;
+import org.glavo.m3fx.internal.M3TextInputSupport;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 
@@ -25,7 +26,7 @@ import java.util.List;
 /// See [Material Design text fields](https://m3.material.io/components/text-fields/overview).
 @NotNullByDefault
 public class M3TextArea extends TextArea implements M3TextInput {
-    /// The base style class for m3fx text areas.
+    /// The base style class for M3FX text areas.
     public static final String STYLE_CLASS = "m3-text-area";
 
     /// Shared Material text input state and token plumbing.
@@ -169,7 +170,7 @@ public class M3TextArea extends TextArea implements M3TextInput {
         return getClassCssMetaData();
     }
 
-    /// Returns the user-agent stylesheet for m3fx text input controls.
+    /// Returns the user-agent stylesheet for M3FX text input controls.
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("text-field.css");
@@ -182,7 +183,7 @@ public class M3TextArea extends TextArea implements M3TextInput {
         setWrapText(true);
     }
 
-    /// CSS metadata for m3fx text area component tokens.
+    /// CSS metadata for M3FX text area component tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
         /// CSS metadata for the container height token.

@@ -98,6 +98,7 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
+import static org.glavo.m3fx.M3TestControls.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -552,7 +553,7 @@ final class M3ThemeTest {
         assertTrue(root.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
         assertFalse(root.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
         assertFalse(root.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
-        assertSame(theme, root.getProperties().get(M3ThemeManager.THEME_PROPERTY_KEY));
+        assertSame(theme, M3ThemeManager.getTheme(root));
         assertTrue(root.getStyle().contains("-m3-color-primary"));
         assertEquals(2, scene.getStylesheets().size());
         assertEquals(M3ThemeManager.stylesheetUrl(), scene.getStylesheets().get(0));
@@ -619,7 +620,7 @@ final class M3ThemeTest {
         assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
         assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
         assertEquals(root.getStyle(), popupRoot.getStyle());
-        assertSame(theme, popupRoot.getProperties().get(M3ThemeManager.THEME_PROPERTY_KEY));
+        assertSame(theme, M3ThemeManager.getTheme(popupRoot));
 
         M3Theme baselineTheme = M3Theme.defaultTheme();
         M3ThemeManager.install(scene, baselineTheme);
@@ -630,7 +631,7 @@ final class M3ThemeTest {
         assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
         assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
         assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
-        assertSame(baselineTheme, popupRoot.getProperties().get(M3ThemeManager.THEME_PROPERTY_KEY));
+        assertSame(baselineTheme, M3ThemeManager.getTheme(popupRoot));
     }
 
     /// Verifies that installed themes can be queried from scenes and roots.
@@ -685,7 +686,7 @@ final class M3ThemeTest {
         assertEquals(1, scene.getStylesheets().size());
         assertEquals(M3ThemeManager.themeStylesheetUrl(theme), scene.getStylesheets().get(0));
         assertFalse(root.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
-        assertFalse(root.getProperties().containsKey(M3ThemeManager.THEME_PROPERTY_KEY));
+        assertNull(M3ThemeManager.getTheme(root));
 
         M3ThemeManager.uninstallThemeStylesheet(scene);
         M3ThemeManager.uninstallThemeStylesheet(scene);
@@ -735,7 +736,7 @@ final class M3ThemeTest {
         assertTrue(scene.getStylesheets().get(0).endsWith("/styles/fallback.css"));
         assertTrue(root.getStyleClass().contains("root"));
         assertFalse(root.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
-        assertFalse(root.getProperties().containsKey(M3ThemeManager.THEME_PROPERTY_KEY));
+        assertNull(M3ThemeManager.getTheme(root));
     }
 
     /// Verifies that standalone fallback root styling follows runtime scene-root replacement.
@@ -780,7 +781,7 @@ final class M3ThemeTest {
 
         assertTrue(root.getStyleClass().contains("root"));
         assertFalse(root.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
-        assertFalse(root.getProperties().containsKey(M3ThemeManager.THEME_PROPERTY_KEY));
+        assertNull(M3ThemeManager.getTheme(root));
         assertTrue(scene.getStylesheets().get(0).endsWith("/styles/fallback.css"));
     }
 
@@ -843,7 +844,7 @@ final class M3ThemeTest {
 
         assertTrue(root.getStyleClass().contains("app-root"));
         assertFalse(root.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
-        assertFalse(root.getProperties().containsKey(M3ThemeManager.THEME_PROPERTY_KEY));
+        assertNull(M3ThemeManager.getTheme(root));
         assertEquals("-fx-padding: 4px;", root.getStyle());
         assertFalse(scene.getStylesheets().contains(M3ThemeManager.stylesheetUrl()));
         assertEquals(0, scene.getStylesheets().size());
@@ -854,14 +855,14 @@ final class M3ThemeTest {
     void installsGeneratedComponentStylesheet() {
         M3Button button = new M3Button("Button");
         M3Button groupedButton = new M3Button("Grouped");
-        M3ButtonGroup buttonGroup = new M3ButtonGroup(groupedButton);
-        M3ButtonGroup standardButtonGroup = new M3ButtonGroup(new M3Button("Standard A"), new M3Button("Standard B"));
+        M3ButtonGroup buttonGroup = buttonGroup(groupedButton);
+        M3ButtonGroup standardButtonGroup = buttonGroup(new M3Button("Standard A"), new M3Button("Standard B"));
         standardButtonGroup.setVariant(M3ButtonGroupVariant.STANDARD);
         standardButtonGroup.setSize(M3ButtonGroupSize.MEDIUM);
         M3IconToggleButtonGroup iconToggleButtonGroup =
-                new M3IconToggleButtonGroup(new M3IconToggleButton("A"), new M3IconToggleButton("B"));
+                iconToggleButtonGroup(new M3IconToggleButton("A"), new M3IconToggleButton("B"));
         M3SegmentedButtonGroup segmentedButtonGroup =
-                new M3SegmentedButtonGroup(new M3SegmentedButton("A"), new M3SegmentedButton("B"));
+                segmentedButtonGroup(new M3SegmentedButton("A"), new M3SegmentedButton("B"));
         M3SplitButton splitButton = new M3SplitButton("Split", new M3MenuItem("Action"));
         M3FabMenu fabMenu = new M3FabMenu(new M3FloatingActionButton(new M3Icon("A")));
         M3TextField textField = new M3TextField();
@@ -905,11 +906,11 @@ final class M3ThemeTest {
         M3Surface surface = new M3Surface();
         M3Button carouselFirst = new M3Button("First");
         M3Button carouselSecond = new M3Button("Second");
-        M3Carousel carousel = new M3Carousel(carouselFirst, carouselSecond);
+        M3Carousel carousel = carousel(carouselFirst, carouselSecond);
         carousel.select(carouselSecond);
         M3Icon icon = new M3Icon("I", M3IconSize.LARGE, M3IconVariant.PRIMARY);
         M3Chip chip = new M3Chip("Chip");
-        M3ChipGroup chipGroup = new M3ChipGroup(new M3Chip("First"), new M3Chip("Second"));
+        M3ChipGroup chipGroup = chipGroup(new M3Chip("First"), new M3Chip("Second"));
         M3FloatingActionButton fab = new M3FloatingActionButton();
         fab.setSize(M3FloatingActionButtonSize.LARGE);
         M3SegmentedButton segmentedButton = new M3SegmentedButton("Week");
@@ -1382,17 +1383,17 @@ final class M3ThemeTest {
         VBox richTooltipContainer = assertInstanceOf(VBox.class, richTooltip.getGraphic());
         M3NavigationItem barHome = new M3NavigationItem("Home", new M3Icon("H"));
         M3NavigationItem barSearch = new M3NavigationItem("Search", new M3Icon("S"));
-        M3NavigationBar navigationBar = new M3NavigationBar(barHome, barSearch);
+        M3NavigationBar navigationBar = navigationBar(barHome, barSearch);
         M3NavigationItem railHome = new M3NavigationItem("Home", new M3Icon("H"));
         M3NavigationItem railSearch = new M3NavigationItem("Search", new M3Icon("S"));
-        M3NavigationRail navigationRail = new M3NavigationRail(railHome, railSearch);
+        M3NavigationRail navigationRail = navigationRail(railHome, railSearch);
         M3ListItem drawerHome = new M3ListItem("Home");
         M3NavigationDrawerGroup drawerGroup = new M3NavigationDrawerGroup("Group");
         M3ListItem drawerChild = new M3ListItem("Child");
-        drawerGroup.addItem(drawerChild);
+        drawerGroup.getItems().add(drawerChild);
         drawerGroup.setExpanded(true);
-        M3NavigationDrawer navigationDrawer = new M3NavigationDrawer(drawerHome, drawerGroup);
-        M3Toolbar toolbar = new M3Toolbar(new M3IconButton(new M3Icon("B")), new M3IconButton(new M3Icon("I")));
+        M3NavigationDrawer navigationDrawer = navigationDrawer(drawerHome, drawerGroup);
+        M3Toolbar toolbar = toolbar(new M3IconButton(new M3Icon("B")), new M3IconButton(new M3Icon("I")));
         Pane root = new Pane(banner, richTooltipContainer, navigationBar, navigationRail, navigationDrawer, toolbar);
         Scene scene = new Scene(root);
 

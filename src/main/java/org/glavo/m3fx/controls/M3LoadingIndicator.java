@@ -17,6 +17,9 @@ import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3LoadingIndicatorSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -32,11 +35,15 @@ import java.util.Objects;
 /// `M3LoadingIndicator` displays one active shape that morphs as loading advances. Indeterminate indicators
 /// continuously rotate and morph between shape states, while determinate indicators use the progress value
 /// from `0.0` to `1.0` to choose the displayed shape. It is intended for loading affordances where Material
-/// Design 3 Expressive uses a dedicated loading indicator instead of a circular progress indicator. See
+/// Design 3 Expressive uses a dedicated loading indicator instead of a circular progress indicator.
+///
+/// The indeterminate animation follows [org.glavo.m3fx.animation.M3MotionSettings]. When full animations are
+/// disabled, the control keeps a simpler rotating affordance so an indeterminate operation still communicates
+/// activity without running the full morph sequence. See
 /// [Material Design loading indicators](https://m3.material.io/components/loading-indicator/overview).
 @NotNullByDefault
 public class M3LoadingIndicator extends Control {
-    /// The base style class for m3fx loading indicators.
+    /// The base style class for M3FX loading indicators.
     public static final String STYLE_CLASS = "m3-loading-indicator";
 
     /// The progress value that marks the control as indeterminate.
@@ -106,6 +113,8 @@ public class M3LoadingIndicator extends Control {
     }
 
     /// Returns the current progress value property.
+    ///
+    /// @return the writable progress value property
     public final DoubleProperty progressProperty() {
         if (progress == null) {
             progress = new DoublePropertyBase(INDETERMINATE_PROGRESS) {
@@ -162,6 +171,8 @@ public class M3LoadingIndicator extends Control {
     }
 
     /// Returns the visual variant property.
+    ///
+    /// @return the writable visual variant property
     public final ObjectProperty<M3LoadingIndicatorVariant> variantProperty() {
         if (variant == null) {
             variant = new SimpleObjectProperty<>(this, "variant", M3LoadingIndicatorVariant.DEFAULT) {
@@ -195,6 +206,8 @@ public class M3LoadingIndicator extends Control {
     }
 
     /// Returns the loading indicator container size token property.
+    ///
+    /// @return the styleable loading indicator container size property
     public final StyleableDoubleProperty containerSizeProperty() {
         if (containerSize == null) {
             containerSize = M3Css.nonNegativeStyleableDoubleProperty(
@@ -223,6 +236,8 @@ public class M3LoadingIndicator extends Control {
     }
 
     /// Returns the active indicator shape size token property.
+    ///
+    /// @return the styleable active indicator shape size property
     public final StyleableDoubleProperty indicatorSizeProperty() {
         if (indicatorSize == null) {
             indicatorSize = M3Css.nonNegativeStyleableDoubleProperty(
@@ -277,7 +292,7 @@ public class M3LoadingIndicator extends Control {
         };
     }
 
-    /// Returns the user-agent stylesheet for m3fx loading indicators.
+    /// Returns the user-agent stylesheet for M3FX loading indicators.
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("loading-indicator.css");
@@ -287,6 +302,7 @@ public class M3LoadingIndicator extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PROGRESS_INDICATOR);
+        setFocusTraversable(false);
         pseudoClassStateChanged(INDETERMINATE_PSEUDO_CLASS, true);
         pseudoClassStateChanged(CONTAINED_PSEUDO_CLASS, false);
         updateMetrics();
@@ -308,7 +324,7 @@ public class M3LoadingIndicator extends Control {
         return Math.min(1.0, progress);
     }
 
-    /// CSS metadata for m3fx loading indicator component tokens.
+    /// CSS metadata for M3FX loading indicator component tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
         /// CSS metadata for the loading indicator container size token.

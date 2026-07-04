@@ -5,6 +5,7 @@ package org.glavo.m3fx.skins;
 
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.VBox;
+import org.glavo.m3fx.controls.M3SearchBar;
 import org.glavo.m3fx.controls.M3SearchView;
 import org.jetbrains.annotations.NotNullByDefault;
 
@@ -17,12 +18,14 @@ public final class M3SearchViewSkin extends SkinBase<M3SearchView> {
     /// Creates a search view skin.
     ///
     /// @param control the search view controlled by this skin
-    public M3SearchViewSkin(M3SearchView control) {
+    /// @param searchBar the search bar owned by the control
+    /// @param resultsContainer the result container owned by the control
+    public M3SearchViewSkin(M3SearchView control, M3SearchBar searchBar, VBox resultsContainer) {
         super(control);
         container.setManaged(false);
         container.getStyleClass().add(M3SearchView.CONTENT_STYLE_CLASS);
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
-        container.getChildren().setAll(control.getSearchBar(), control.getResultsContainer());
+        container.getChildren().setAll(searchBar, resultsContainer);
         getChildren().add(container);
     }
 

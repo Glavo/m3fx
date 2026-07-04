@@ -16,6 +16,9 @@ import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3ProgressBarSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -33,11 +36,14 @@ import java.util.Objects;
 /// gap, stop indicator, and optional wave properties so the same API can render baseline and expressive
 /// progress styles.
 ///
-/// Use this control for horizontal loading feedback in a bounded area. See
+/// Use this control for horizontal loading feedback in a bounded area. Indeterminate progress keeps a basic
+/// moving segment when full animations are disabled through [org.glavo.m3fx.animation.M3MotionSettings], so
+/// reduced-motion mode still communicates activity. Positive wave amplitude and wavelength values enable the
+/// M3 Expressive wavy track geometry used by the generated component tokens. See
 /// [Material Design progress indicators](https://m3.material.io/components/progress-indicators/overview).
 @NotNullByDefault
 public class M3ProgressBar extends Control {
-    /// The base style class for m3fx progress bars.
+    /// The base style class for M3FX progress bars.
     public static final String STYLE_CLASS = "m3-progress-bar";
 
     /// The progress value that marks the control as indeterminate.
@@ -392,7 +398,7 @@ public class M3ProgressBar extends Control {
         };
     }
 
-    /// Returns the user-agent stylesheet for m3fx progress controls.
+    /// Returns the user-agent stylesheet for M3FX progress controls.
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("progress.css");
@@ -402,6 +408,7 @@ public class M3ProgressBar extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PROGRESS_INDICATOR);
+        setFocusTraversable(false);
         pseudoClassStateChanged(INDETERMINATE_PSEUDO_CLASS, true);
         updateMetrics();
     }
@@ -423,7 +430,7 @@ public class M3ProgressBar extends Control {
         return Math.min(1.0, progress);
     }
 
-    /// CSS metadata for m3fx progress bar component tokens.
+    /// CSS metadata for M3FX progress bar component tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
         /// CSS metadata for the track thickness token.

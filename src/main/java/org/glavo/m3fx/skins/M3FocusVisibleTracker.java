@@ -31,7 +31,7 @@ final class M3FocusVisibleTracker {
     /// Resolves JavaFX native focus-visible support when it is available at runtime.
     private static final @Nullable MethodHandle FOCUS_VISIBLE_PROPERTY_HANDLE = focusVisiblePropertyHandle();
 
-    /// The pseudo-class used by m3fx CSS for keyboard-visible focus feedback.
+    /// The pseudo-class used by M3FX CSS for keyboard-visible focus feedback.
     static final PseudoClass FOCUS_VISIBLE_PSEUDO_CLASS = PseudoClass.getPseudoClass("focus-visible");
 
     /// Scene-level fallback input trackers keyed weakly by scene.
@@ -56,7 +56,7 @@ final class M3FocusVisibleTracker {
     /// Handles native JavaFX focus-visible changes.
     private final ChangeListener<Boolean> nativeFocusVisibleListener;
 
-    /// The native JavaFX focus-visible property, or `null` when the runtime does not expose it.
+    // The native JavaFX focus-visible property, or `null` when the runtime does not expose it.
     private final @Nullable ReadOnlyBooleanProperty nativeFocusVisibleProperty;
 
     /// The scene currently registered for fallback input tracking.

@@ -26,11 +26,17 @@ import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import org.glavo.m3fx.internal.M3SelectionNavigation;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3MenuSkin;
+import org.glavo.m3fx.internal.M3KeyEvents;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
@@ -61,7 +67,7 @@ public class M3Menu extends Control {
     public static final String CONTAINER_STYLE_CLASS = "m3-menu-container";
 
     /// The mutable menu content.
-    private final ObservableList<Node> items = FXCollections.observableArrayList();
+    private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
 
     // The menu color style.
     private final ObjectProperty<M3MenuColorStyle> colorStyle =
@@ -103,7 +109,7 @@ public class M3Menu extends Control {
     };
 
     /// The selected menu items in child order.
-    private final ObservableList<M3MenuItem> selectedItems = FXCollections.observableArrayList();
+    private final ObservableList<M3MenuItem> selectedItems = M3ObservableLists.nonNullElementList("selectedItem");
 
     /// The read-only selected menu item view.
     private final @UnmodifiableView ObservableList<M3MenuItem> selectedItemsView =
@@ -182,7 +188,7 @@ public class M3Menu extends Control {
     /// @param items the initial non-null menu content nodes
     public M3Menu(Node... items) {
         initialize();
-        addItems(items);
+        getItems().addAll(items);
     }
 
     /// Returns the mutable child list used as menu content.
@@ -192,33 +198,9 @@ public class M3Menu extends Control {
         return items;
     }
 
-    /// Adds one menu content node.
-    ///
-    /// @param item the non-null node to append to the menu
-    public final void addItem(Node item) {
-        getItems().add(Objects.requireNonNull(item, "item"));
-    }
 
-    /// Adds menu content nodes.
-    ///
-    /// @param items the non-null nodes to append to the menu
-    public final void addItems(Node... items) {
-        validateItems(items);
-        getItems().addAll(items);
-    }
 
-    /// Replaces all menu content nodes.
-    ///
-    /// @param items the non-null nodes that replace the current menu content
-    public final void setItems(Node... items) {
-        validateItems(items);
-        getItems().setAll(items);
-    }
 
-    /// Removes all menu content nodes.
-    public final void clearItems() {
-        getItems().clear();
-    }
 
     /// Returns the menu color style.
     ///
@@ -484,6 +466,7 @@ public class M3Menu extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.MENU);
+        setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::requestAccessibleFocus, this::showAccessibleItem);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         addEventHandler(KeyEvent.KEY_TYPED, this::handleTypeAheadKeyTyped);
@@ -1331,11 +1314,4 @@ public class M3Menu extends Control {
         return new M3MenuSkin(this);
     }
 
-    /// Validates a menu item array.
-    private static void validateItems(Node... items) {
-        Objects.requireNonNull(items, "items");
-        for (Node item : items) {
-            Objects.requireNonNull(item, "item");
-        }
-    }
 }

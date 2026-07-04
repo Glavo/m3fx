@@ -16,6 +16,8 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3AvatarSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -206,6 +208,7 @@ public class M3Avatar extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.IMAGE_VIEW);
+        setFocusTraversable(false);
         text.addListener((observable, oldValue, newValue) -> updateAccessibleText());
         graphic.addListener((observable, oldValue, newValue) -> updateAccessibleText());
         updateVariantStyle();

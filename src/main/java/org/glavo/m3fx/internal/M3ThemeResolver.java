@@ -6,8 +6,8 @@ package org.glavo.m3fx.internal;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import org.glavo.m3fx.internal.theme.M3ThemeMetadata;
 import org.glavo.m3fx.theme.M3Theme;
-import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,7 +41,7 @@ public final class M3ThemeResolver {
         @Nullable Node current = owner;
         while (current != null) {
             if (current instanceof Parent parent) {
-                @Nullable M3Theme parentTheme = M3ThemeManager.getTheme(parent);
+                @Nullable M3Theme parentTheme = M3ThemeMetadata.getTheme(parent);
                 if (parentTheme != null) {
                     return parentTheme;
                 }
@@ -68,7 +68,7 @@ public final class M3ThemeResolver {
 
         @Nullable Node current = owner;
         while (current != null) {
-            if (current instanceof Parent parent && M3ThemeManager.getTheme(parent) != null) {
+            if (current instanceof Parent parent && M3ThemeMetadata.getTheme(parent) != null) {
                 return parent;
             }
             current = current.getParent();
@@ -82,6 +82,6 @@ public final class M3ThemeResolver {
     /// @return the installed scene theme, or `null` when the scene has no theme metadata
     public static @Nullable M3Theme findTheme(Scene scene) {
         Objects.requireNonNull(scene, "scene");
-        return M3ThemeManager.getTheme(scene);
+        return M3ThemeMetadata.getTheme(scene.getRoot());
     }
 }

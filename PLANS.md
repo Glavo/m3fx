@@ -2,7 +2,7 @@
 
 ## Purpose
 
-M3FX is a modular Material Design 3 component library for JavaFX. The project is still in active development, with remaining release work centered on API stability, visual parity, and release verification.
+M3FX is a modular Material Design 3 component library for JavaFX. The project is still in active development, with remaining release work centered on API freeze, final visual review, and release-candidate verification after source or build changes.
 
 ## Current Baseline
 
@@ -14,7 +14,7 @@ M3FX is a modular Material Design 3 component library for JavaFX. The project is
 - Material colors are generated through `org.glavo:MonetFX:0.4.0`.
 - The demo app is a separate Gradle subproject.
 - Baseline Material Design 3 is the primary compatibility target.
-- M3 Expressive is represented through profile-aware colors, typography, shape, component metrics, motion schemes, and motion behavior timings. Exact visual parity for every M3 Expressive component is still a release-scope decision.
+- M3 Expressive is represented through profile-aware colors, typography, shape, component metrics, motion schemes, and motion behavior timings. Full exact visual parity for every M3 Expressive component is deferred beyond the 1.0 baseline unless the component already has stable tokens and rendered-state coverage.
 
 ## Architecture
 
@@ -40,10 +40,10 @@ M3FX is a modular Material Design 3 component library for JavaFX. The project is
 - Multi-project Gradle build for the library and demo app.
 - Java module descriptors for the library and demo app.
 - Demo run, shadow jar, and jlink runtime-image tasks.
-- Demo shadow jar excludes JavaFX artifacts and verifies executable packaging.
+- Demo shadow jar excludes JavaFX artifacts and verifies executable packaging, demo resources, M3FX classes, and MonetFX runtime classes.
 - Host and cross-platform jlink support uses BellSoft LibericaJDK Full target jmods.
-- Platform and architecture jlink tasks cover Windows, Linux, and macOS on x64 and AArch64.
-- `releaseCheck` validates the default release path: `check`, demo shadow jar verification, and the default host-platform demo jlink runtime image.
+- Platform and architecture jlink tasks cover Windows, Linux, and macOS on x64 and AArch64 and have been verified through the aggregate all-platform task.
+- `releaseCheck` validates the default release path: `check`, `:demo:test`, demo shadow jar verification, and the default host-platform demo jlink runtime image.
 - Publication verification covers Maven metadata, main and sources jars, Maven artifact layout, and consumer resolution without publishing OpenJFX artifacts.
 - GitHub Actions runs release validation under Xvfb and uploads the verified demo shadow jar as an unarchived artifact.
 - Packaging guidance is documented in `docs/PACKAGING.md`.
@@ -78,17 +78,17 @@ M3FX is a modular Material Design 3 component library for JavaFX. The project is
 
 ## Release Readiness
 
-- The library is close to release-ready for baseline Material Design 3 plus documented M3 Expressive support.
-- Before 1.0, finish a public API review across the module export surface: `org.glavo.m3fx.animation`, `org.glavo.m3fx.controls`, `org.glavo.m3fx.theme`, and `org.glavo.m3fx.tokens`.
-- Before 1.0, decide whether full M3 Expressive visual parity for every component is in scope for 1.0 or explicitly deferred.
+- The library is a release candidate for baseline Material Design 3 plus documented M3 Expressive token, profile, motion, and component support.
+- Before 1.0, complete final human API sign-off across the module export surface: `org.glavo.m3fx.animation`, `org.glavo.m3fx.controls`, `org.glavo.m3fx.theme`, and `org.glavo.m3fx.tokens`. The exported package and public type inventory is covered by project contract tests.
+- Full M3 Expressive visual parity for every component is explicitly deferred beyond the 1.0 baseline; 1.0 documents the supported Expressive token/profile behavior and keeps component parity work incremental.
 - Before 1.0, run a final component-by-component visual pass on the demo in standard, expressive, dark, and right-to-left modes.
-- Before 1.0, complete final release validation after the final source, stylesheet, token, demo, or build-logic change.
-- Before publishing runtime images, complete all-platform and all-architecture jlink validation.
+- Before 1.0, rerun final release validation after the final source, stylesheet, token, demo, or build-logic change.
+- Before publishing runtime images, rerun all-platform and all-architecture jlink validation after any jlink, packaging, module, or dependency change.
 
 ## Next Goals
 
 - Finish the public API naming and package-surface review.
-- Continue improving M3 Expressive parity for components whose official target values are stable.
+- Continue improving M3 Expressive parity for components whose official target values are stable and whose visual states can be covered by rendered tests.
 - Visual and animation validation is tied to semantic states, stable animation pulses, rendered-pixel changes, and real focus or pointer interactions.
 - Audit less common mixed popup stacks for keyboard and accessibility parity, especially combinations of menus, pickers, tooltips, dialogs, sheets, snackbars, and search surfaces.
 - Demo page validation targets normal, selected, focused, pressed, disabled, RTL, and reduced-motion states for each implemented component where those states apply.
@@ -99,7 +99,7 @@ M3FX is a modular Material Design 3 component library for JavaFX. The project is
 - `compileTestJava` validates test source compilation.
 - `test` validates unit, behavior, visual, accessibility, and snapshot tests.
 - `check` validates compilation, tests, publication metadata, publication artifact layout, and build-local publication consumption.
-- `releaseCheck` validates the library publication path, executable demo shadow jar, and default demo jlink runtime image structure.
+- `releaseCheck` validates the library publication path, demo visual and behavior tests, executable demo shadow jar, and default demo jlink runtime image structure.
 - `shadowDemoJar` validates executable demo jar packaging without bundled JavaFX.
 - `jlinkDemoRuntime` validates the default demo runtime image.
 - `jlinkDemoAllPlatformArchitectureRuntimes` validates Windows, Linux, and macOS runtime images on x64 and AArch64.

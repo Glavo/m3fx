@@ -15,6 +15,8 @@ import javafx.css.converter.SizeConverter;
 import javafx.scene.AccessibleRole;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3BadgeSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -34,7 +36,7 @@ import java.util.Objects;
 /// See [Material Design badges](https://m3.material.io/components/badges/overview).
 @NotNullByDefault
 public class M3Badge extends Control {
-    /// The base style class for m3fx badges.
+    /// The base style class for M3FX badges.
     public static final String STYLE_CLASS = "m3-badge";
 
     /// The default small dot badge size.
@@ -92,6 +94,7 @@ public class M3Badge extends Control {
     public M3Badge(String text) {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TEXT);
+        setFocusTraversable(false);
         this.text.addListener((observable, oldValue, newValue) -> updateAccessibleText());
         maxCharacterCount.addListener((observable, oldValue, newValue) -> updateAccessibleText());
         setText(text);
@@ -344,13 +347,13 @@ public class M3Badge extends Control {
         return getClassCssMetaData();
     }
 
-    /// Returns the user-agent stylesheet for m3fx badges.
+    /// Returns the user-agent stylesheet for M3FX badges.
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("badge.css");
     }
 
-    /// CSS metadata for m3fx badge component tokens.
+    /// CSS metadata for M3FX badge component tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
         /// CSS metadata for the small size token.

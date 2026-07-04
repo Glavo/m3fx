@@ -3,7 +3,6 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
@@ -18,7 +17,13 @@ import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
+import org.glavo.m3fx.internal.M3FocusTraversal;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.skins.M3FormSectionSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -89,7 +94,7 @@ public class M3FormSection extends Control {
             };
 
     /// The mutable section content list.
-    private final ObservableList<Node> content = FXCollections.observableArrayList();
+    private final ObservableList<Node> content = M3ObservableLists.nonNullElementList("content");
 
     /// The listener used to refresh accessibility state when section content changes.
     private final ListChangeListener<Node> contentListener = change -> handleContentChanged();
@@ -113,7 +118,7 @@ public class M3FormSection extends Control {
     public M3FormSection(String titleText, Node... content) {
         initialize();
         setTitleText(titleText);
-        addContent(content);
+        getContent().addAll(content);
     }
 
     /// Creates a form section with a title, supporting text, and content.
@@ -125,7 +130,7 @@ public class M3FormSection extends Control {
         initialize();
         setTitleText(titleText);
         setSupportingText(supportingText);
-        addContent(content);
+        getContent().addAll(content);
     }
 
     /// Returns the section title.
@@ -177,33 +182,9 @@ public class M3FormSection extends Control {
         return content;
     }
 
-    /// Adds one section content node.
-    ///
-    /// @param content the section content node to add
-    public final void addContent(Node content) {
-        getContent().add(Objects.requireNonNull(content, "content"));
-    }
 
-    /// Adds section content nodes.
-    ///
-    /// @param content the section content nodes to add
-    public final void addContent(Node... content) {
-        validateContent(content);
-        getContent().addAll(content);
-    }
 
-    /// Replaces all section content nodes.
-    ///
-    /// @param content the replacement section content nodes
-    public final void setContent(Node... content) {
-        validateContent(content);
-        getContent().setAll(content);
-    }
 
-    /// Removes all section content nodes.
-    public final void clearContent() {
-        getContent().clear();
-    }
 
     /// Returns the vertical spacing between section content nodes.
     ///
@@ -317,6 +298,7 @@ public class M3FormSection extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
+        setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleItem, this::showAccessibleItem);
         getContent().addListener(contentListener);
         addEventFilter(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
@@ -345,13 +327,6 @@ public class M3FormSection extends Control {
         focusNotifier.refresh();
     }
 
-    /// Validates a varargs content array before mutation.
-    private static void validateContent(Node... content) {
-        Objects.requireNonNull(content, "content");
-        for (Node node : content) {
-            Objects.requireNonNull(node, "node");
-        }
-    }
 
     /// CSS metadata for M3FX form section layout tokens.
     @NotNullByDefault

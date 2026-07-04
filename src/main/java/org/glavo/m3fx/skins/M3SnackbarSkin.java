@@ -53,6 +53,8 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
 
         textLabel.textProperty().bind(control.textProperty());
         textLabel.setWrapText(true);
+        textLabel.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(textLabel, Priority.ALWAYS);
         actionButton.textProperty().bind(control.actionTextProperty());
         actionButton.setOnAction(event -> {
             event.consume();
@@ -113,6 +115,9 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
     /// Applies styleable component tokens to the snackbar container.
     private void updateTokenStyles() {
         M3Snackbar snackbar = getSkinnable();
+        container.setAlignment(M3NodeLayout.logicalStartCenterAlignment(snackbar));
+        textLabel.setAlignment(M3NodeLayout.logicalStartCenterAlignment(snackbar));
+
         double padding = snackbar.getContentPadding();
         double verticalPadding = padding / 2.0;
         double leadingPadding = padding;

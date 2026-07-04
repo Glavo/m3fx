@@ -21,6 +21,8 @@ import javafx.scene.control.ButtonBase;
 import javafx.scene.control.Skin;
 import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleGroup;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3RadioButtonSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -43,7 +45,7 @@ import java.util.function.Function;
 /// [Material Design radio buttons](https://m3.material.io/components/radio-button/overview).
 @NotNullByDefault
 public class M3RadioButton extends ButtonBase implements Toggle {
-    /// The base style class for m3fx radio buttons.
+    /// The base style class for M3FX radio buttons.
     public static final String STYLE_CLASS = "m3-radio-button";
 
     /// The selected pseudo-class used by radio buttons.
@@ -368,7 +370,7 @@ public class M3RadioButton extends ButtonBase implements Toggle {
         return new M3RadioButtonSkin(this);
     }
 
-    /// Returns the user-agent stylesheet for m3fx selection controls.
+    /// Returns the user-agent stylesheet for M3FX selection controls.
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("selection.css");
@@ -418,7 +420,7 @@ public class M3RadioButton extends ButtonBase implements Toggle {
         return M3Css.nonNegativeStyleableDoubleProperty(initialValue, this, name, cssMetaData, this::requestLayout);
     }
 
-    /// CSS metadata for m3fx radio button component tokens.
+    /// CSS metadata for M3FX radio button component tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
         /// CSS metadata for the touch target size token.

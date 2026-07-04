@@ -25,6 +25,9 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
@@ -101,7 +104,7 @@ public class M3SearchView extends Control {
     /// @param results the initial result nodes displayed below the search bar
     public M3SearchView(String promptText, Node... results) {
         this(promptText);
-        addResults(results);
+        getResults().addAll(results);
     }
 
     /// Returns the embedded search bar.
@@ -111,12 +114,6 @@ public class M3SearchView extends Control {
         return searchBar;
     }
 
-    /// Returns the result container used by the default skin.
-    ///
-    /// @return the result container used by the default skin
-    public final VBox getResultsContainer() {
-        return resultsBox;
-    }
 
     /// Returns the mutable result node list.
     ///
@@ -125,33 +122,9 @@ public class M3SearchView extends Control {
         return resultsBox.getChildren();
     }
 
-    /// Adds one result node.
-    ///
-    /// @param result the result node to add
-    public final void addResult(Node result) {
-        getResults().add(Objects.requireNonNull(result, "result"));
-    }
 
-    /// Adds result nodes.
-    ///
-    /// @param results the result nodes to add
-    public final void addResults(Node... results) {
-        validateResults(results);
-        getResults().addAll(results);
-    }
 
-    /// Replaces all result nodes.
-    ///
-    /// @param results the replacement result nodes
-    public final void setResults(Node... results) {
-        validateResults(results);
-        getResults().setAll(results);
-    }
 
-    /// Removes all result nodes.
-    public final void clearResults() {
-        getResults().clear();
-    }
 
     /// Returns the editable search input used by the embedded search bar.
     ///
@@ -188,31 +161,9 @@ public class M3SearchView extends Control {
         return searchBar.getTrailingActions();
     }
 
-    /// Adds one trailing action node to the embedded search bar.
-    ///
-    /// @param action the trailing action node to add
-    public final void addTrailingAction(Node action) {
-        searchBar.addTrailingAction(action);
-    }
 
-    /// Adds trailing action nodes to the embedded search bar.
-    ///
-    /// @param actions the trailing action nodes to add
-    public final void addTrailingActions(Node... actions) {
-        searchBar.addTrailingActions(actions);
-    }
 
-    /// Replaces all trailing action nodes in the embedded search bar.
-    ///
-    /// @param actions the replacement trailing action nodes
-    public final void setTrailingActions(Node... actions) {
-        searchBar.setTrailingActions(actions);
-    }
 
-    /// Removes all trailing action nodes from the embedded search bar.
-    public final void clearTrailingActions() {
-        searchBar.clearTrailingActions();
-    }
 
     /// Returns the text entered in the embedded search bar.
     ///
@@ -376,13 +327,14 @@ public class M3SearchView extends Control {
     /// @return the default Material Design 3 search view skin
     @Override
     protected Skin<?> createDefaultSkin() {
-        return new M3SearchViewSkin(this);
+        return new M3SearchViewSkin(this, searchBar, resultsBox);
     }
 
     /// Adds base style classes and configures search result behavior.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
+        setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleResult);
         resultsBox.getStyleClass().add(RESULTS_STYLE_CLASS);
         searchBar.activeProperty().addListener((observable, oldValue, newValue) -> {
@@ -861,11 +813,4 @@ public class M3SearchView extends Control {
         resultsBox.setTranslateY(active ? 0.0 : HIDDEN_RESULTS_TRANSLATE_Y);
     }
 
-    /// Validates a result node array.
-    private static void validateResults(Node... results) {
-        Objects.requireNonNull(results, "results");
-        for (Node result : results) {
-            Objects.requireNonNull(result, "result");
-        }
-    }
 }

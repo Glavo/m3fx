@@ -15,6 +15,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
+import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.skins.M3DateRangePickerFieldSkin;
 import org.glavo.m3fx.theme.M3Theme;
@@ -33,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Tests [M3DateRangePickerField] text editing, popup synchronization, and skin installation.
@@ -92,8 +94,8 @@ final class M3DateRangePickerFieldTest {
             assertEquals(field.getRangeErrorText(), field.getStartInputLayout().getErrorText());
             assertEquals(field.getRangeErrorText(), field.getEndInputLayout().getErrorText());
 
-            field.setMinDate(LocalDate.of(2026, 5, 10));
-            field.setMaxDate(LocalDate.of(2026, 5, 24));
+            field.getPicker().setMinDate(LocalDate.of(2026, 5, 10));
+            field.getPicker().setMaxDate(LocalDate.of(2026, 5, 24));
             field.getStartEditor().setText("2026-05-20");
             field.getEndEditor().setText("2026-05-25");
             assertFalse(field.commitEditorText());
@@ -134,7 +136,7 @@ final class M3DateRangePickerFieldTest {
             LocalDate anchor = LocalDate.of(2026, 5, 19);
             M3DateRangePickerField field = new M3DateRangePickerField();
 
-            field.setCommonPresets(anchor);
+            field.getPresets().setAll(M3DateRangePresets.common(anchor, field.getPicker().getFirstDayOfWeek()));
 
             assertEquals(6, field.getPresets().size());
             Node presetContent = assertInstanceOf(Node.class, field.getPicker().getParent());
@@ -145,19 +147,32 @@ final class M3DateRangePickerFieldTest {
             );
 
             M3DateRangePreset preset = M3DateRangePresets.nextDays(anchor, 7);
-            field.applyPreset(preset);
+            findPresetButton(presetContent, "Next 7 days").fire();
 
             assertEquals(preset.range(), field.getRange());
-            assertEquals(YearMonth.from(anchor), field.getDisplayedMonth());
+            assertEquals(YearMonth.from(anchor), field.getPicker().getDisplayedMonth());
             assertEquals("2026-05-19", field.getStartEditor().getText());
             assertEquals("2026-05-25", field.getEndEditor().getText());
 
-            field.clearPresets();
+            field.getPresets().clear();
 
             assertTrue(field.getPresets().isEmpty());
             assertFalse(assertInstanceOf(Node.class, field.getPicker().getParent()).getStyleClass()
                     .contains(M3DateRangePickerField.PRESET_CONTENT_STYLE_CLASS));
         });
+    }
+
+    /// Verifies that the date range preset list rejects null mutations without partial insertion.
+    @Test
+    @SuppressWarnings("DataFlowIssue")
+    void dateRangePickerFieldPresetListRejectsNullElements() {
+        LocalDate anchor = LocalDate.of(2026, 5, 19);
+        M3DateRangePickerField field = new M3DateRangePickerField();
+        M3DateRangePreset preset = M3DateRangePresets.today(anchor);
+
+        assertThrows(NullPointerException.class, () -> field.getPresets().add(null));
+        assertThrows(NullPointerException.class, () -> field.getPresets().addAll(preset, null));
+        assertTrue(field.getPresets().isEmpty());
     }
 
     /// Verifies that presets outside the current field bounds are rendered disabled.
@@ -166,10 +181,10 @@ final class M3DateRangePickerFieldTest {
         FxTestUtils.runOnFxThread(() -> {
             LocalDate anchor = LocalDate.of(2026, 5, 19);
             M3DateRangePickerField field = new M3DateRangePickerField();
-            field.setMinDate(anchor.plusDays(1));
-            field.setMaxDate(anchor.plusDays(30));
+            field.getPicker().setMinDate(anchor.plusDays(1));
+            field.getPicker().setMaxDate(anchor.plusDays(30));
 
-            field.setPresets(
+            field.getPresets().setAll(
                     M3DateRangePresets.today(anchor),
                     M3DateRangePresets.nextDays(anchor.plusDays(1), 7)
             );
@@ -180,12 +195,37 @@ final class M3DateRangePickerFieldTest {
         });
     }
 
+    /// Verifies that date range field bounds clear an excluded range and refresh preset buttons.
+    @Test
+    void dateRangePickerFieldBoundsClearExcludedRangeAndRefreshPresets() {
+        FxTestUtils.runOnFxThread(() -> {
+            LocalDate anchor = LocalDate.of(2026, 5, 19);
+            M3DateRangePickerField field = new M3DateRangePickerField(anchor, anchor.plusDays(1));
+            field.getPresets().setAll(M3DateRangePresets.today(anchor), M3DateRangePresets.tomorrow(anchor));
+
+            Node presetContent = assertInstanceOf(Node.class, field.getPicker().getParent());
+            assertFalse(findPresetButton(presetContent, "Today").isDisabled());
+            assertFalse(findPresetButton(presetContent, "Tomorrow").isDisabled());
+
+            field.getPicker().setMinDate(anchor.plusDays(1));
+
+            assertNull(field.getStartDate());
+            assertNull(field.getEndDate());
+            assertNull(field.getPicker().getStartDate());
+            assertNull(field.getPicker().getEndDate());
+            assertEquals("", field.getStartEditor().getText());
+            assertEquals("", field.getEndEditor().getText());
+            assertTrue(findPresetButton(presetContent, "Today").isDisabled());
+            assertFalse(findPresetButton(presetContent, "Tomorrow").isDisabled());
+        });
+    }
+
     /// Verifies that the range field forwards accessibility value actions to its popup picker.
     @Test
     void dateRangePickerFieldForwardsAccessibleValueActions() {
         FxTestUtils.runOnFxThread(() -> {
             M3DateRangePickerField field = new M3DateRangePickerField();
-            field.setDisplayedMonth(YearMonth.of(2026, 1));
+            field.getPicker().setDisplayedMonth(YearMonth.of(2026, 1));
 
             field.executeAccessibleAction(
                     AccessibleAction.SET_SELECTED_ITEMS,
@@ -206,7 +246,7 @@ final class M3DateRangePickerFieldTest {
             assertEquals("2026-01-12", field.getEndEditor().getText());
 
             field.clearRange();
-            field.setDisplayedMonth(YearMonth.of(2026, 1));
+            field.getPicker().setDisplayedMonth(YearMonth.of(2026, 1));
             field.executeAccessibleAction(AccessibleAction.INCREMENT);
             assertEquals(LocalDate.of(2026, 1, 2), field.getStartDate());
             assertNull(field.getEndDate());
@@ -312,7 +352,7 @@ final class M3DateRangePickerFieldTest {
                     anchor,
                     anchor.plusDays(6)
             );
-            field.setCommonPresets(anchor);
+            field.getPresets().setAll(M3DateRangePresets.common(anchor, field.getPicker().getFirstDayOfWeek()));
             Pane root = new Pane(field);
             Scene scene = new Scene(root, 760.0, 220.0);
             Stage stage = new Stage();
@@ -376,7 +416,7 @@ final class M3DateRangePickerFieldTest {
                     anchor.plusDays(6)
             );
             field.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
-            field.setCommonPresets(anchor);
+            field.getPresets().setAll(M3DateRangePresets.common(anchor, field.getPicker().getFirstDayOfWeek()));
             Pane root = new Pane(field);
             Scene scene = new Scene(root, 760.0, 220.0);
             Stage stage = new Stage();

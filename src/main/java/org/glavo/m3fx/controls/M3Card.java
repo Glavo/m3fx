@@ -20,6 +20,11 @@ import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
+import org.glavo.m3fx.internal.M3FocusTraversal;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3CardSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -41,7 +46,7 @@ import java.util.Objects;
 /// See [Material Design cards](https://m3.material.io/components/cards/overview).
 @NotNullByDefault
 public class M3Card extends Control {
-    /// The base style class for m3fx cards.
+    /// The base style class for M3FX cards.
     public static final String STYLE_CLASS = "m3-card";
 
     /// The default card container shape radius.
@@ -318,7 +323,7 @@ public class M3Card extends Control {
         return getClassCssMetaData();
     }
 
-    /// Returns the user-agent stylesheet for m3fx cards.
+    /// Returns the user-agent stylesheet for M3FX cards.
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("card.css");
@@ -483,7 +488,7 @@ public class M3Card extends Control {
         }
     }
 
-    /// CSS metadata for m3fx card component tokens.
+    /// CSS metadata for M3FX card component tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
         /// CSS metadata for the container shape token.

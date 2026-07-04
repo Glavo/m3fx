@@ -8,11 +8,8 @@ import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
 import javafx.beans.InvalidationListener;
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
-import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.collections.ObservableList;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
@@ -21,14 +18,18 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyEvent;
 import javafx.stage.Popup;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.M3PopupPositioning;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +44,7 @@ import java.util.Objects;
 /// See [Material Design menus](https://m3.material.io/components/menus/overview).
 @NotNullByDefault
 public class M3MenuButton extends M3Button {
-    /// The base style class for m3fx menu buttons.
+    /// The base style class for M3FX menu buttons.
     public static final String STYLE_CLASS = "m3-menu-button";
 
     /// The vertical gap between the button and popup menu.
@@ -110,7 +111,7 @@ public class M3MenuButton extends M3Button {
     /// @param items the initial non-null menu content nodes
     public M3MenuButton(String text, Node... items) {
         this(text);
-        addItems(items);
+        getItems().addAll(items);
     }
 
     /// Returns the menu displayed by this button.
@@ -125,143 +126,6 @@ public class M3MenuButton extends M3Button {
     /// @return the mutable menu content list
     public final ObservableList<Node> getItems() {
         return menu.getItems();
-    }
-
-    /// Adds one menu item node.
-    ///
-    /// @param item the non-null node to append to the menu
-    public final void addItem(Node item) {
-        getItems().add(Objects.requireNonNull(item, "item"));
-    }
-
-    /// Adds menu item nodes.
-    ///
-    /// @param items the non-null nodes to append to the menu
-    public final void addItems(Node... items) {
-        validateItems(items);
-        getItems().addAll(items);
-    }
-
-    /// Replaces all menu item nodes.
-    ///
-    /// @param items the non-null nodes that replace the current menu content
-    public final void setItems(Node... items) {
-        validateItems(items);
-        getItems().setAll(items);
-    }
-
-    /// Removes all menu item nodes.
-    public final void clearItems() {
-        getItems().clear();
-    }
-
-    /// Returns the menu item selection mode used by this button's menu.
-    ///
-    /// @return the active menu selection mode
-    public final M3MenuSelectionMode getSelectionMode() {
-        return menu.getSelectionMode();
-    }
-
-    /// Sets the menu item selection mode used by this button's menu.
-    ///
-    /// @param selectionMode the active menu selection mode
-    public final void setSelectionMode(M3MenuSelectionMode selectionMode) {
-        menu.setSelectionMode(selectionMode);
-    }
-
-    /// Returns the menu item selection mode property.
-    ///
-    /// @return the writable menu selection mode property
-    public final ObjectProperty<M3MenuSelectionMode> selectionModeProperty() {
-        return menu.selectionModeProperty();
-    }
-
-    /// Returns whether this button's menu allows all selectable items to be unselected.
-    ///
-    /// @return `true` when all selectable menu items may be unselected
-    public final boolean isAllowEmptySelection() {
-        return menu.isAllowEmptySelection();
-    }
-
-    /// Sets whether this button's menu allows all selectable items to be unselected.
-    ///
-    /// @param allowEmptySelection whether all selectable menu items may be unselected
-    public final void setAllowEmptySelection(boolean allowEmptySelection) {
-        menu.setAllowEmptySelection(allowEmptySelection);
-    }
-
-    /// Returns the empty-selection policy property for this button's menu.
-    ///
-    /// @return the writable empty-selection policy property
-    public final BooleanProperty allowEmptySelectionProperty() {
-        return menu.allowEmptySelectionProperty();
-    }
-
-    /// Returns the selected menu items in child order.
-    ///
-    /// @return an unmodifiable observable view of selected menu items
-    public final @UnmodifiableView ObservableList<M3MenuItem> getSelectedItems() {
-        return menu.getSelectedItems();
-    }
-
-    /// Returns the first selected menu item in child order.
-    ///
-    /// @return the first selected menu item, or `null` when selection is empty
-    public final @Nullable M3MenuItem getSelectedItem() {
-        return menu.getSelectedItem();
-    }
-
-    /// Returns the first selected menu item property.
-    ///
-    /// @return the read-only first selected menu item property
-    public final ReadOnlyObjectProperty<@Nullable M3MenuItem> selectedItemProperty() {
-        return menu.selectedItemProperty();
-    }
-
-    /// Returns the child index of the first selected menu item, or `-1` when no item is selected.
-    ///
-    /// @return the child index of the first selected menu item, or `-1` when no item is selected
-    public final int getSelectedIndex() {
-        return menu.getSelectedIndex();
-    }
-
-    /// Selects a menu item that belongs to this button's menu.
-    ///
-    /// @param item the selectable menu item to select
-    public final void select(M3MenuItem item) {
-        menu.select(item);
-    }
-
-    /// Selects the menu item at the given child index.
-    ///
-    /// @param index the child index of the selectable menu item
-    public final void selectIndex(int index) {
-        menu.selectIndex(index);
-    }
-
-    /// Selects the first menu item in this button's menu when one exists.
-    public final void selectFirst() {
-        menu.selectFirst();
-    }
-
-    /// Selects the last menu item in this button's menu when one exists.
-    public final void selectLast() {
-        menu.selectLast();
-    }
-
-    /// Selects the next menu item after the current selected item, wrapping at the end.
-    public final void selectNext() {
-        menu.selectNext();
-    }
-
-    /// Selects the previous menu item before the current selected item, wrapping at the start.
-    public final void selectPrevious() {
-        menu.selectPrevious();
-    }
-
-    /// Clears this button's menu selection when empty selection is allowed.
-    public final void clearSelection() {
-        menu.clearSelection();
     }
 
     /// Returns whether the menu popup is currently showing.
@@ -381,8 +245,8 @@ public class M3MenuButton extends M3Button {
             case FOCUS_NODE -> focusNode();
             case ITEM_COUNT -> getItems().size();
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getItems(), parameters);
-            case MULTIPLE_SELECTION -> getSelectionMode() == M3MenuSelectionMode.MULTIPLE;
-            case SELECTED_ITEMS -> getSelectedItems();
+            case MULTIPLE_SELECTION -> menu.getSelectionMode() == M3MenuSelectionMode.MULTIPLE;
+            case SELECTED_ITEMS -> menu.getSelectedItems();
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
     }
@@ -628,13 +492,6 @@ public class M3MenuButton extends M3Button {
         M3Animation.finishRunningAnimationsIfDisabled(this, showAnimation, hideAnimation);
     }
 
-    /// Validates a menu item array.
-    private static void validateItems(Node... items) {
-        Objects.requireNonNull(items, "items");
-        for (Node item : items) {
-            Objects.requireNonNull(item, "item");
-        }
-    }
 
     /// Copies owner motion and orientation settings into the popup-hosted menu.
     private void prepareMenuForPopup() {

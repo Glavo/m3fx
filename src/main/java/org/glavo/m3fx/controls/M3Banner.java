@@ -7,7 +7,6 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
-import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
@@ -23,7 +22,13 @@ import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
+import org.glavo.m3fx.internal.M3FocusTraversal;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.skins.M3BannerSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -79,7 +84,7 @@ public class M3Banner extends Control {
     private final ObjectProperty<@Nullable Node> icon = new SimpleObjectProperty<>(this, "icon");
 
     /// The mutable trailing action node list.
-    private final ObservableList<Node> actions = FXCollections.observableArrayList();
+    private final ObservableList<Node> actions = M3ObservableLists.nonNullElementList("action");
 
     // The minimum banner container height token.
     private @Nullable StyleableDoubleProperty containerMinHeight;
@@ -119,7 +124,7 @@ public class M3Banner extends Control {
     /// @param actions the trailing action nodes
     public M3Banner(String text, Node... actions) {
         this(text);
-        addActions(actions);
+        getActions().addAll(actions);
     }
 
     /// Returns the banner message text.
@@ -171,33 +176,9 @@ public class M3Banner extends Control {
         return actions;
     }
 
-    /// Adds one trailing action node.
-    ///
-    /// @param action the trailing action node to add
-    public final void addAction(Node action) {
-        getActions().add(Objects.requireNonNull(action, "action"));
-    }
 
-    /// Adds trailing actions after validating the action array.
-    ///
-    /// @param actions the trailing action nodes to add
-    public final void addActions(Node... actions) {
-        validateActions(actions);
-        getActions().addAll(actions);
-    }
 
-    /// Replaces all trailing action nodes.
-    ///
-    /// @param actions the replacement trailing action nodes
-    public final void setActions(Node... actions) {
-        validateActions(actions);
-        getActions().setAll(actions);
-    }
 
-    /// Removes all trailing action nodes.
-    public final void clearActions() {
-        getActions().clear();
-    }
 
     /// Returns the minimum banner container height token.
     ///
@@ -432,6 +413,7 @@ public class M3Banner extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
+        setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleItem, this::showAccessibleItem);
         text.addListener(observable -> updateAccessibleText());
         icon.addListener((observable, oldValue, newValue) -> notifyAccessibleItemsChanged());
@@ -461,13 +443,6 @@ public class M3Banner extends Control {
         );
     }
 
-    /// Validates a trailing action array.
-    private static void validateActions(Node... actions) {
-        Objects.requireNonNull(actions, "actions");
-        for (Node action : actions) {
-            Objects.requireNonNull(action, "action");
-        }
-    }
 
     /// Returns the current or first reachable accessibility focus node.
     private @Nullable Node accessibleFocusNode() {

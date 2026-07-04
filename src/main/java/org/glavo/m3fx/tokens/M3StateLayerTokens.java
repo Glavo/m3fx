@@ -149,7 +149,7 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
                 + "-m3-state-focus-indicator-inner-offset: " + M3TokenCss.pixels(focusIndicatorInnerOffset()) + ";";
     }
 
-    /// Converts state layer tokens into JavaFX CSS rules for m3fx controls.
+    /// Converts state layer tokens into JavaFX CSS rules for M3FX controls.
     ///
     /// @return JavaFX CSS rules for controls that render state layers or disabled opacity
     default String toControlStyleRules() {

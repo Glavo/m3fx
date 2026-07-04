@@ -12,7 +12,7 @@ import java.time.YearMonth;
 import java.util.List;
 import java.util.Objects;
 
-/// Provides reusable [M3DateRangePreset] factories for common date range choices.
+/// Provides reusable [M3DateRangePreset] values for common date range choices.
 ///
 /// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview).
 @NotNullByDefault
@@ -21,32 +21,13 @@ public final class M3DateRangePresets {
     private M3DateRangePresets() {
     }
 
-    /// Returns a custom preset with inclusive range endpoints.
-    ///
-    /// @param text the text shown for the preset action
-    /// @param startDate the first date included in the range
-    /// @param endDate the last date included in the range
-    /// @return a preset with the supplied inclusive range endpoints
-    public static M3DateRangePreset range(String text, LocalDate startDate, LocalDate endDate) {
-        return new M3DateRangePreset(text, startDate, endDate);
-    }
-
-    /// Returns a one-day preset for the supplied date.
-    ///
-    /// @param text the text shown for the preset action
-    /// @param date the date selected by the preset
-    /// @return a one-day preset for the supplied date
-    public static M3DateRangePreset singleDay(String text, LocalDate date) {
-        LocalDate validatedDate = Objects.requireNonNull(date, "date");
-        return new M3DateRangePreset(text, validatedDate, validatedDate);
-    }
-
     /// Returns a one-day preset for the supplied date labeled `Today`.
     ///
     /// @param date the date selected by the preset
     /// @return a one-day preset for the supplied date labeled `Today`
     public static M3DateRangePreset today(LocalDate date) {
-        return singleDay("Today", date);
+        LocalDate validatedDate = Objects.requireNonNull(date, "date");
+        return new M3DateRangePreset("Today", validatedDate, validatedDate);
     }
 
     /// Returns a one-day preset for the day after the supplied date.
@@ -54,7 +35,8 @@ public final class M3DateRangePresets {
     /// @param date the date used to derive tomorrow
     /// @return a one-day preset for the day after the supplied date
     public static M3DateRangePreset tomorrow(LocalDate date) {
-        return singleDay("Tomorrow", Objects.requireNonNull(date, "date").plusDays(1));
+        LocalDate tomorrow = Objects.requireNonNull(date, "date").plusDays(1);
+        return new M3DateRangePreset("Tomorrow", tomorrow, tomorrow);
     }
 
     /// Returns a preset starting at the supplied date and spanning the requested number of days.

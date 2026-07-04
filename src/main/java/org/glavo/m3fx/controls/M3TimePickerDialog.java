@@ -3,22 +3,22 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ObjectProperty;
-import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.scene.Node;
 import javafx.scene.control.ButtonType;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import org.glavo.m3fx.internal.M3PresetNavigation;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3NodeLayout;
+import org.glavo.m3fx.internal.M3ObservableLists;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.LocalTime;
-import java.util.Objects;
 
 /// A Material Design 3 dialog preset for selecting one time.
 ///
@@ -43,8 +43,8 @@ public class M3TimePickerDialog extends M3Dialog<LocalTime> {
     /// The time picker displayed as dialog content.
     private final M3TimePicker picker = new M3TimePicker();
 
-    /// The mutable preset list rendered before the picker.
-    private final ObservableList<M3TimePreset> presets = FXCollections.observableArrayList();
+    /// The mutable time preset list rendered before the picker.
+    private final ObservableList<M3TimePreset> presets = M3ObservableLists.nonNullElementList("preset");
 
     /// The wrapper used when the dialog renders preset actions next to the picker.
     private final HBox presetContent = new HBox(16.0);
@@ -61,147 +61,46 @@ public class M3TimePickerDialog extends M3Dialog<LocalTime> {
     }
 
     /// Creates a time picker dialog initialized with the supplied selected time.
+    ///
+    /// @param value the initially selected time, or `null` for no selected time
     public M3TimePickerDialog(@Nullable LocalTime value) {
         initialize();
         setValue(value);
     }
 
     /// Returns the time picker displayed by this dialog.
+    ///
+    /// @return the time picker displayed by this dialog
     public final M3TimePicker getPicker() {
         return picker;
     }
 
     /// Returns the mutable time preset list.
+    ///
+    /// @return the mutable time preset list
     public final ObservableList<M3TimePreset> getPresets() {
         return presets;
     }
 
-    /// Adds one time preset.
-    public final void addPreset(M3TimePreset preset) {
-        presets.add(Objects.requireNonNull(preset, "preset"));
-    }
-
-    /// Adds time presets after validating the preset array.
-    public final void addPresets(M3TimePreset... presets) {
-        validatePresets(presets);
-        this.presets.addAll(presets);
-    }
-
-    /// Replaces all time presets.
-    public final void setPresets(M3TimePreset... presets) {
-        validatePresets(presets);
-        this.presets.setAll(presets);
-    }
-
-    /// Replaces all time presets with the default common time set.
-    public final void setCommonPresets(LocalTime anchorTime) {
-        presets.setAll(M3TimePresets.common(anchorTime));
-    }
-
-    /// Removes all time presets.
-    public final void clearPresets() {
-        presets.clear();
-    }
-
     /// Returns the selected time, or `null` when no time is selected.
+    ///
+    /// @return the selected time, or `null` when no time is selected
     public final @Nullable LocalTime getValue() {
         return picker.getValue();
     }
 
     /// Sets the selected time, or clears selection when `null` is supplied.
+    ///
+    /// @param value the selected time, or `null` to clear selection
     public final void setValue(@Nullable LocalTime value) {
         picker.setValue(value);
     }
 
     /// Returns the selected time property.
+    ///
+    /// @return the selected time property from the picker
     public final ObjectProperty<@Nullable LocalTime> valueProperty() {
         return picker.valueProperty();
-    }
-
-    /// Clears the selected time.
-    public final void clearValue() {
-        picker.clearValue();
-    }
-
-    /// Returns whether the picker displays 24-hour time.
-    public final boolean isUse24HourClock() {
-        return picker.isUse24HourClock();
-    }
-
-    /// Sets whether the picker displays 24-hour time.
-    public final void setUse24HourClock(boolean use24HourClock) {
-        picker.setUse24HourClock(use24HourClock);
-    }
-
-    /// Returns the 24-hour display property from the picker.
-    public final BooleanProperty use24HourClockProperty() {
-        return picker.use24HourClockProperty();
-    }
-
-    /// Returns the minute interval used by the picker minute grid.
-    public final int getMinuteStep() {
-        return picker.getMinuteStep();
-    }
-
-    /// Sets the minute interval used by the picker minute grid.
-    public final void setMinuteStep(int minuteStep) {
-        picker.setMinuteStep(minuteStep);
-    }
-
-    /// Returns the minute step property from the picker.
-    public final IntegerProperty minuteStepProperty() {
-        return picker.minuteStepProperty();
-    }
-
-    /// Returns the earliest selectable time, or `null` when there is no lower bound.
-    public final @Nullable LocalTime getMinTime() {
-        return picker.getMinTime();
-    }
-
-    /// Sets the earliest selectable time, or clears the lower bound when `null` is supplied.
-    public final void setMinTime(@Nullable LocalTime minTime) {
-        picker.setMinTime(minTime);
-    }
-
-    /// Returns the minimum time property from the picker.
-    public final ObjectProperty<@Nullable LocalTime> minTimeProperty() {
-        return picker.minTimeProperty();
-    }
-
-    /// Returns the latest selectable time, or `null` when there is no upper bound.
-    public final @Nullable LocalTime getMaxTime() {
-        return picker.getMaxTime();
-    }
-
-    /// Sets the latest selectable time, or clears the upper bound when `null` is supplied.
-    public final void setMaxTime(@Nullable LocalTime maxTime) {
-        picker.setMaxTime(maxTime);
-    }
-
-    /// Returns the maximum time property from the picker.
-    public final ObjectProperty<@Nullable LocalTime> maxTimeProperty() {
-        return picker.maxTimeProperty();
-    }
-
-    /// Sets the selected time from hour and minute fields.
-    public final void setTime(int hour, int minute) {
-        picker.setTime(hour, minute);
-    }
-
-    /// Selects the current time with seconds and nanos cleared.
-    public final void selectNow() {
-        picker.selectNow();
-    }
-
-    /// Applies a time preset and leaves the dialog open for confirmation.
-    public final void applyPreset(M3TimePreset preset) {
-        picker.applyPreset(Objects.requireNonNull(preset, "preset"));
-        updateOkButtonState();
-    }
-
-    /// Returns whether the supplied time is outside the configured selectable range.
-    public final boolean isTimeDisabled(LocalTime time) {
-        return picker.isTimeDisabled(Objects.requireNonNull(time, "time"));
     }
 
     /// Configures dialog content, buttons, result conversion, and button state.
@@ -253,7 +152,7 @@ public class M3TimePickerDialog extends M3Dialog<LocalTime> {
         button.getStyleClass().add(PRESET_BUTTON_STYLE_CLASS);
         M3Css.setMaxWidthIfUnbound(button, Double.MAX_VALUE);
         button.setDisable(picker.isTimeDisabled(preset.time()));
-        button.setOnAction(event -> applyPreset(preset));
+        button.setOnAction(event -> picker.applyPreset(preset));
         return button;
     }
 
@@ -265,11 +164,4 @@ public class M3TimePickerDialog extends M3Dialog<LocalTime> {
         }
     }
 
-    /// Validates a time preset array.
-    private static void validatePresets(M3TimePreset... presets) {
-        Objects.requireNonNull(presets, "presets");
-        for (M3TimePreset preset : presets) {
-            Objects.requireNonNull(preset, "preset");
-        }
-    }
 }

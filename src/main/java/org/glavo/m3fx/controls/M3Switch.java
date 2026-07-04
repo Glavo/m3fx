@@ -17,6 +17,8 @@ import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.Skin;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3SwitchSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -38,7 +40,7 @@ import java.util.function.Function;
 /// radio buttons or segmented buttons. See [Material Design switches](https://m3.material.io/components/switch/overview).
 @NotNullByDefault
 public class M3Switch extends ButtonBase {
-    /// The base style class for m3fx switches.
+    /// The base style class for M3FX switches.
     public static final String STYLE_CLASS = "m3-switch";
 
     /// The selected pseudo-class used by switches.
@@ -344,7 +346,7 @@ public class M3Switch extends ButtonBase {
         return new M3SwitchSkin(this);
     }
 
-    /// Returns the user-agent stylesheet for m3fx selection controls.
+    /// Returns the user-agent stylesheet for M3FX selection controls.
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("selection.css");
@@ -391,7 +393,7 @@ public class M3Switch extends ButtonBase {
         return M3Css.nonNegativeStyleableDoubleProperty(initialValue, this, name, cssMetaData, invalidation);
     }
 
-    /// CSS metadata for m3fx switch component tokens.
+    /// CSS metadata for M3FX switch component tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
         /// CSS metadata for the touch target size token.

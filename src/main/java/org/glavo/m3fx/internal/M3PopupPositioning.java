@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Glavo
 // SPDX-License-Identifier: Apache-2.0
 
-package org.glavo.m3fx.controls;
+package org.glavo.m3fx.internal;
 
 import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
@@ -9,7 +9,6 @@ import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;
 import javafx.scene.layout.Region;
 import javafx.stage.Screen;
-import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -17,7 +16,7 @@ import java.util.List;
 
 /// Shared popup positioning helpers for menu-like M3FX controls.
 @NotNullByDefault
-final class M3PopupPositioning {
+public final class M3PopupPositioning {
     /// The distance kept between popup content and the screen's visual bounds.
     private static final double SCREEN_MARGIN = 8.0;
 
@@ -26,7 +25,7 @@ final class M3PopupPositioning {
     }
 
     /// Returns a menu popup position below the owner, flipping above when needed.
-    static @Nullable Placement menuBelowOrAbove(Node owner, Region content, double offsetY) {
+    public static @Nullable Placement menuBelowOrAbove(Node owner, Region content, double offsetY) {
         @Nullable Bounds ownerBounds = owner.localToScreen(owner.getBoundsInLocal());
         if (ownerBounds == null) {
             return null;
@@ -44,7 +43,7 @@ final class M3PopupPositioning {
     }
 
     /// Returns a submenu popup position beside the owner, flipping left when needed.
-    static @Nullable Placement subMenuBeside(Node owner, Region content, double offsetX) {
+    public static @Nullable Placement subMenuBeside(Node owner, Region content, double offsetX) {
         @Nullable Bounds ownerBounds = owner.localToScreen(owner.getBoundsInLocal());
         if (ownerBounds == null) {
             return null;
@@ -63,7 +62,7 @@ final class M3PopupPositioning {
     }
 
     /// Returns a menu popup position for known owner, screen, and content bounds.
-    static Placement menuBelowOrAbove(
+    public static Placement menuBelowOrAbove(
             Bounds ownerBounds,
             Rectangle2D visualBounds,
             double contentWidth,
@@ -86,7 +85,7 @@ final class M3PopupPositioning {
     }
 
     /// Returns a submenu popup position for known owner, screen, and content bounds.
-    static Placement subMenuBeside(
+    public static Placement subMenuBeside(
             Bounds ownerBounds,
             Rectangle2D visualBounds,
             double contentWidth,
@@ -96,8 +95,27 @@ final class M3PopupPositioning {
         return subMenuBeside(ownerBounds, visualBounds, contentWidth, contentHeight, offsetX, false);
     }
 
+    /// Returns a submenu popup position for known owner screen bounds and preferred side.
+    public static @Nullable Placement subMenuBeside(
+            Bounds ownerBounds,
+            Region content,
+            double offsetX,
+            boolean preferLeft
+    ) {
+        double contentWidth = contentWidth(content);
+        double contentHeight = contentHeight(content, contentWidth);
+        return subMenuBeside(
+                ownerBounds,
+                visualBoundsFor(ownerBounds),
+                contentWidth,
+                contentHeight,
+                offsetX,
+                preferLeft
+        );
+    }
+
     /// Returns a submenu popup position for known owner, screen, content bounds, and preferred side.
-    static Placement subMenuBeside(
+    public static Placement subMenuBeside(
             Bounds ownerBounds,
             Rectangle2D visualBounds,
             double contentWidth,
@@ -174,7 +192,7 @@ final class M3PopupPositioning {
 
     /// Describes a computed popup placement.
     @NotNullByDefault
-    static final class Placement {
+    public static final class Placement {
         /// The popup anchor position.
         private final Point2D point;
 
@@ -192,22 +210,22 @@ final class M3PopupPositioning {
         }
 
         /// Returns the popup x coordinate.
-        double x() {
+        public double x() {
             return point.getX();
         }
 
         /// Returns the popup y coordinate.
-        double y() {
+        public double y() {
             return point.getY();
         }
 
         /// Returns whether a side popup opens to the left of its owner.
-        boolean opensToLeft() {
+        public boolean opensToLeft() {
             return opensToLeft;
         }
 
         /// Returns whether a vertical popup opens above its owner.
-        boolean opensAbove() {
+        public boolean opensAbove() {
             return opensAbove;
         }
     }

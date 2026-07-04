@@ -24,11 +24,16 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Popup;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.M3PopupPositioning;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -68,7 +73,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
     /// The initial popup picker offset used for enter and exit motion.
     private static final double POPUP_TRANSITION_OFFSET_Y = 6.0;
 
-    // The selected value, or `null` when the field is empty.
+    // Internal storage for [valueProperty].
     private final ObjectProperty<@Nullable T> value =
             new SimpleObjectProperty<>(this, "value") {
                 /// Normalizes and validates values assigned through the property.
@@ -86,7 +91,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
                 }
             };
 
-    // The formatter used to convert between editor text and picker values.
+    // Internal storage for [formatterProperty].
     private final ObjectProperty<DateTimeFormatter> formatter =
             new SimpleObjectProperty<>(this, "formatter") {
                 /// Keeps formatter values non-null.
@@ -102,7 +107,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
                 }
             };
 
-    // The error message shown when editor text cannot be parsed.
+    // Internal storage for [invalidTextErrorTextProperty].
     private final StringProperty invalidTextErrorText =
             new SimpleStringProperty(this, "invalidTextErrorText") {
                 /// Keeps parse error text non-null.
@@ -112,7 +117,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
                 }
             };
 
-    // The error message shown when editor text parses outside the selectable range.
+    // Internal storage for [rangeErrorTextProperty].
     private final StringProperty rangeErrorText =
             new SimpleStringProperty(this, "rangeErrorText") {
                 /// Keeps range error text non-null.
@@ -147,7 +152,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
     private final M3PopupContextSynchronizer popupContextSynchronizer =
             new M3PopupContextSynchronizer(this, popupContent, M3Stylesheets.controlStylesheet("picker-field.css"));
 
-    // Whether the popup picker is currently showing.
+    // Internal storage for [showingProperty].
     private final ReadOnlyBooleanWrapper showing = new ReadOnlyBooleanWrapper(this, "showing");
 
     /// The picker popup enter animation.
@@ -544,6 +549,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
         M3ControlStyles.add(popupContent, popupStyleClass);
         M3ControlStyles.add(openButton, OPEN_BUTTON_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.COMBO_BOX);
+        setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this,
                 this::focusAccessibleNode,
                 this::showAccessibleItem,

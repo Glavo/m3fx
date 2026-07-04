@@ -18,6 +18,8 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.Skin;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3SegmentedButtonSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -37,7 +39,7 @@ import java.util.Objects;
 /// See [Material Design segmented buttons](https://m3.material.io/components/segmented-buttons/overview).
 @NotNullByDefault
 public class M3SegmentedButton extends ButtonBase {
-    /// The base style class for m3fx segmented buttons.
+    /// The base style class for M3FX segmented buttons.
     public static final String STYLE_CLASS = "m3-segmented-button";
 
     /// The selected pseudo-class used by segmented buttons.
@@ -254,7 +256,7 @@ public class M3SegmentedButton extends ButtonBase {
         return new M3SegmentedButtonSkin(this);
     }
 
-    /// Returns the user-agent stylesheet for m3fx segmented buttons.
+    /// Returns the user-agent stylesheet for M3FX segmented buttons.
     ///
     /// @return the segmented button user-agent stylesheet URL
     @Override
@@ -280,7 +282,7 @@ public class M3SegmentedButton extends ButtonBase {
         M3Css.setPaddingIfUnbound(this, new Insets(0.0, padding, 0.0, padding));
     }
 
-    /// CSS metadata for m3fx segmented button component tokens.
+    /// CSS metadata for M3FX segmented button component tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
         /// CSS metadata for the container height token.

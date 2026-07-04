@@ -7,6 +7,7 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
+import org.glavo.m3fx.internal.M3ControlStyles;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -19,7 +20,7 @@ import org.jetbrains.annotations.Nullable;
 /// See [Material Design menus](https://m3.material.io/components/menus/overview).
 @NotNullByDefault
 public class M3MenuItem extends M3ListItem {
-    /// The base style class for m3fx menu items.
+    /// The base style class for M3FX menu items.
     public static final String STYLE_CLASS = "m3-menu-item";
 
     /// Creates an empty menu item.

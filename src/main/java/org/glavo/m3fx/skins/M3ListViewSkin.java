@@ -30,6 +30,7 @@ import org.glavo.m3fx.internal.M3ListViewCell;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3ScrollReveal;
+import org.glavo.m3fx.internal.theme.M3ThemeMetadata;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -298,7 +299,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
 
     /// Handles observed theme metadata changes by refreshing visible row context.
     private void handleThemeRootPropertiesChanged(MapChangeListener.Change<?, ?> change) {
-        if (M3ThemeManager.THEME_PROPERTY_KEY.equals(change.getKey())) {
+        if (M3ThemeMetadata.isThemePropertyKey(change.getKey())) {
             refreshThemeObserversAndVisibleRows();
         }
     }

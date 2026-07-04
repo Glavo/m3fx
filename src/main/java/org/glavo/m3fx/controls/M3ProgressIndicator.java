@@ -15,6 +15,9 @@ import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3ProgressIndicatorSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -32,11 +35,14 @@ import java.util.Objects;
 /// thickness, active gap, and optional wave properties so the same API can render baseline and expressive
 /// circular progress styles.
 ///
-/// Use this control when loading feedback needs a compact circular affordance. See
+/// Use this control when loading feedback needs a compact circular affordance. Indeterminate progress keeps a
+/// basic rotating sweep when full animations are disabled through [org.glavo.m3fx.animation.M3MotionSettings],
+/// so reduced-motion mode still communicates activity. Positive wave amplitude and wavelength values enable
+/// the M3 Expressive wavy circular geometry used by the generated component tokens. See
 /// [Material Design progress indicators](https://m3.material.io/components/progress-indicators/overview).
 @NotNullByDefault
 public class M3ProgressIndicator extends Control {
-    /// The base style class for m3fx progress indicators.
+    /// The base style class for M3FX progress indicators.
     public static final String STYLE_CLASS = "m3-progress-indicator";
 
     /// The progress value that marks the control as indeterminate.
@@ -351,7 +357,7 @@ public class M3ProgressIndicator extends Control {
         };
     }
 
-    /// Returns the user-agent stylesheet for m3fx progress controls.
+    /// Returns the user-agent stylesheet for M3FX progress controls.
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("progress.css");
@@ -361,6 +367,7 @@ public class M3ProgressIndicator extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PROGRESS_INDICATOR);
+        setFocusTraversable(false);
         pseudoClassStateChanged(INDETERMINATE_PSEUDO_CLASS, true);
         updateMetrics();
     }
@@ -381,7 +388,7 @@ public class M3ProgressIndicator extends Control {
         return Math.min(1.0, progress);
     }
 
-    /// CSS metadata for m3fx progress indicator component tokens.
+    /// CSS metadata for M3FX progress indicator component tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
         /// CSS metadata for the circular indicator stroke thickness token.

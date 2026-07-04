@@ -1,14 +1,14 @@
 // Copyright (c) 2026 Glavo
 // SPDX-License-Identifier: Apache-2.0
 
-package org.glavo.m3fx.controls;
+package org.glavo.m3fx.internal;
 
 import javafx.collections.ObservableList;
 import javafx.scene.Node;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
-import org.glavo.m3fx.internal.M3NodeLayout;
+import org.glavo.m3fx.controls.M3Button;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -17,7 +17,7 @@ import java.util.function.BooleanSupplier;
 
 /// Provides keyboard traversal for picker field preset action columns.
 @NotNullByDefault
-final class M3PresetNavigation {
+public final class M3PresetNavigation {
     /// Prevents utility class instantiation.
     private M3PresetNavigation() {
     }
@@ -27,7 +27,7 @@ final class M3PresetNavigation {
     /// @param presetList the vertical list that owns preset action buttons
     /// @param orientationOwner the control whose effective orientation defines logical-start handoff
     /// @param focusPicker the action that moves focus from the preset list into the adjacent picker
-    static void install(VBox presetList, Node orientationOwner, BooleanSupplier focusPicker) {
+    public static void install(VBox presetList, Node orientationOwner, BooleanSupplier focusPicker) {
         Objects.requireNonNull(presetList, "presetList");
         Objects.requireNonNull(orientationOwner, "orientationOwner");
         Objects.requireNonNull(focusPicker, "focusPicker");

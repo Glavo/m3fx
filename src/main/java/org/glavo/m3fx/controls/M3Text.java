@@ -18,6 +18,8 @@ import javafx.scene.control.Labeled;
 import javafx.scene.control.Skin;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3TextSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -286,6 +288,7 @@ public class M3Text extends Labeled {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TEXT);
+        setFocusTraversable(false);
         updateRoleStyle();
         updateFont();
     }

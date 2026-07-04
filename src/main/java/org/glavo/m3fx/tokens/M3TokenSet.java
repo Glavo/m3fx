@@ -137,7 +137,7 @@ public sealed interface M3TokenSet permits M3TokenSetImpl {
                 + "-m3-menu-vibrant-selected-item-content-color: -m3-color-on-tertiary;";
     }
 
-    /// Converts component tokens into JavaFX CSS rules for m3fx controls.
+    /// Converts component tokens into JavaFX CSS rules for M3FX controls.
     default String toControlStyleRules() {
         return typographyTokens().toControlStyleRules()
                 + "\n\n"

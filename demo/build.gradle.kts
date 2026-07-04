@@ -184,8 +184,17 @@ tasks.register("verifyShadowJar") {
     doLast {
         val jarFile = archiveFile.get().asFile
         ZipFile(jarFile).use { zip ->
-            val forbiddenEntries = zip.entries().asSequence()
-                .map { it.name }
+            val entryNames = zip.entries().asSequence()
+                .map { entry -> entry.name }
+                .toSet()
+
+            fun requireEntry(entryName: String) {
+                if (entryName !in entryNames) {
+                    throw GradleException("The demo shadow JAR is missing $entryName")
+                }
+            }
+
+            val forbiddenEntries = entryNames.asSequence()
                 .filter { entryName ->
                     entryName.startsWith("javafx/")
                             || entryName.startsWith("com/sun/javafx/")
@@ -204,6 +213,14 @@ tasks.register("verifyShadowJar") {
             val expectedMainClass = "Main-Class: ${application.mainClass.get()}"
             if (!manifest.lineSequence().any { it.trimEnd() == expectedMainClass }) {
                 throw GradleException("The demo shadow JAR manifest is missing '$expectedMainClass'")
+            }
+
+            requireEntry("org/glavo/m3fx/demo/M3FXDemoLauncher.class")
+            requireEntry("org/glavo/m3fx/demo/M3FXDemoApp.class")
+            requireEntry("org/glavo/m3fx/demo/m3fx-demo.css")
+            requireEntry("org/glavo/m3fx/controls/M3Button.class")
+            if (entryNames.none { entryName -> entryName.startsWith("org/glavo/monetfx/") && entryName.endsWith(".class") }) {
+                throw GradleException("The demo shadow JAR is missing MonetFX runtime classes")
             }
 
             val fontEntry = zip.getEntry(demoFontResourcePath)

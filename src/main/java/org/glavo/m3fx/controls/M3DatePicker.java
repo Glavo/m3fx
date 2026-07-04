@@ -14,9 +14,12 @@ import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3DatePickerSkin;
+import org.glavo.m3fx.internal.M3KeyEvents;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -312,11 +315,6 @@ public class M3DatePicker extends Control {
         LocalDate date = Objects.requireNonNull(preset, "preset").date();
         selectDate(date);
         showMonth(YearMonth.from(date));
-    }
-
-    /// Clears the selected date.
-    public final void clearValue() {
-        setValue(null);
     }
 
     /// Shows the month before the current displayed month.

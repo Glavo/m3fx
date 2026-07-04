@@ -24,6 +24,11 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.DialogPane;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
+import org.glavo.m3fx.internal.M3FocusTraversal;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -44,7 +49,7 @@ import java.util.Objects;
 /// See [Material Design dialogs](https://m3.material.io/components/dialogs/overview).
 @NotNullByDefault
 public class M3DialogPane extends DialogPane {
-    /// The base style class for m3fx dialog panes.
+    /// The base style class for M3FX dialog panes.
     public static final String STYLE_CLASS = "m3-dialog-pane";
 
     /// The style class applied to the dialog action button bar.
@@ -116,6 +121,7 @@ public class M3DialogPane extends DialogPane {
     public M3DialogPane() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.DIALOG);
+        setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
         headerTextProperty().addListener((observable, oldValue, newValue) -> updateAccessibleText());
         contentTextProperty().addListener((observable, oldValue, newValue) -> updateAccessibleText());
@@ -406,7 +412,7 @@ public class M3DialogPane extends DialogPane {
         );
     }
 
-    /// Returns the user-agent stylesheet for m3fx dialog panes.
+    /// Returns the user-agent stylesheet for M3FX dialog panes.
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("dialog.css");
@@ -737,7 +743,7 @@ public class M3DialogPane extends DialogPane {
     /// Returns the preferred focus target for the dialog pane.
     private @Nullable Node firstFocusableItem() {
         @Nullable Node content = getContent();
-        @Nullable Node contentFocusTarget = M3Accessible.accessibleFocusTarget(content);
+        @Nullable Node contentFocusTarget = firstDialogContentFocusItem(content);
         if (contentFocusTarget != null) {
             return contentFocusTarget;
         }
@@ -756,6 +762,29 @@ public class M3DialogPane extends DialogPane {
             }
         }
         return null;
+    }
+
+    /// Returns the first dialog content item that can expose or receive focus.
+    private static @Nullable Node firstDialogContentFocusItem(@Nullable Node item) {
+        if (!M3Accessible.canReach(item)) {
+            return null;
+        }
+        if (item instanceof M3SnackbarHost) {
+            return item;
+        }
+        @Nullable Node directFocusTarget = M3Accessible.focusTarget(item);
+        if (directFocusTarget == item) {
+            return item;
+        }
+        if (item instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                @Nullable Node childFocusItem = firstDialogContentFocusItem(child);
+                if (childFocusItem != null) {
+                    return childFocusItem;
+                }
+            }
+        }
+        return directFocusTarget;
     }
 
     /// Returns the currently focused dialog item, falling back to the preferred dialog focus target.
@@ -863,7 +892,7 @@ public class M3DialogPane extends DialogPane {
         builder.append(text);
     }
 
-    /// CSS metadata for m3fx dialog pane component tokens.
+    /// CSS metadata for M3FX dialog pane component tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
         /// CSS metadata for the container shape token.

@@ -20,6 +20,9 @@ import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3SliderSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -42,7 +45,7 @@ import java.util.Objects;
 /// [Material Design sliders](https://m3.material.io/components/sliders/overview).
 @NotNullByDefault
 public class M3Slider extends Control {
-    /// The base style class for m3fx sliders.
+    /// The base style class for M3FX sliders.
     public static final String STYLE_CLASS = "m3-slider";
 
     /// The default minimum slider value.
@@ -707,7 +710,7 @@ public class M3Slider extends Control {
         }
     }
 
-    /// Returns the user-agent stylesheet for m3fx sliders.
+    /// Returns the user-agent stylesheet for M3FX sliders.
     ///
     /// @return the slider user-agent stylesheet URL
     @Override
@@ -773,7 +776,7 @@ public class M3Slider extends Control {
     }
 
 
-    /// CSS metadata for m3fx slider component tokens.
+    /// CSS metadata for M3FX slider component tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
         /// CSS metadata for the track thickness token.

@@ -8,7 +8,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 import java.time.LocalTime;
 import java.util.Objects;
 
-/// A labeled time that can be applied to an [M3TimePicker].
+/// A labeled time preset for an [M3TimePicker].
 ///
 /// See [Material Design time pickers](https://m3.material.io/components/time-pickers/overview).
 ///
@@ -34,8 +34,4 @@ public record M3TimePreset(String text, LocalTime time) {
         return time;
     }
 
-    /// Applies this preset to the supplied time picker.
-    public void applyTo(M3TimePicker picker) {
-        Objects.requireNonNull(picker, "picker").applyPreset(this);
-    }
 }

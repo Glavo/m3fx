@@ -38,7 +38,7 @@ import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
-/// A base animated skin for m3fx labeled button controls.
+/// A base animated skin for M3FX labeled button controls.
 @NotNullByDefault
 abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkinBase<C> {
     /// The scale applied by controls that opt into depth-style pressed motion.

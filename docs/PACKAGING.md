@@ -143,7 +143,7 @@ Use these tasks before distributing artifacts:
 ./gradlew jlinkDemoAllPlatformArchitectureRuntimes
 ```
 
-`releaseCheck` runs `check`, `shadowDemoJar`, and `jlinkDemoRuntime`. It is the local release gate for the library publication plus the host-platform demo distribution. It does not run the all-platform jlink aggregate task, so release builds can opt into the cross-platform runtime images they actually need.
+`releaseCheck` runs `check`, `:demo:test`, `shadowDemoJar`, and `jlinkDemoRuntime`. It is the local release gate for the library publication, demo visual and behavior tests, and the host-platform demo distribution. It does not run the all-platform jlink aggregate task, so release builds can opt into the cross-platform runtime images they actually need.
 
 The GitHub Actions release workflow runs the same `releaseCheck` entry point under Xvfb on Linux and then uploads the generated demo shadow jar with `archive: false`. It also uploads visual snapshot PNGs plus Gradle HTML and XML test reports with `if: always()` so failed or suspicious visual runs keep reviewable evidence.
 
@@ -155,6 +155,6 @@ The GitHub Actions release workflow runs the same `releaseCheck` entry point und
 
 `check` also resolves that build-local Maven publication through a Gradle consumer runtime configuration. The consumer verification requires the runtime dependency to resolve M3FX and MonetFX while rejecting transitive OpenJFX artifacts. The sources classifier availability is covered by the publication layout verification above.
 
-`shadowDemoJar` also runs the demo shadow jar verification task. The verification fails if JavaFX classes or JavaFX jar files are bundled into the shadow jar, if the executable manifest is missing, or if the packaged `AlibabaPuHuiTi-3-65-Medium.ttf` demo font is absent or empty.
+`shadowDemoJar` also runs the demo shadow jar verification task. The verification fails if JavaFX classes or JavaFX jar files are bundled into the shadow jar, if the executable manifest is missing, if required demo classes, demo CSS, M3FX classes, or MonetFX classes are absent, or if the packaged `AlibabaPuHuiTi-3-65-Medium.ttf` demo font is absent or empty.
 
 For smaller cross-platform release checks, run the fixed platform and architecture jlink tasks needed by the release instead of the aggregate task.

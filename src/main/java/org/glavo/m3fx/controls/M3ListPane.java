@@ -23,10 +23,17 @@ import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
+import org.glavo.m3fx.internal.M3SelectionNavigation;
+import org.glavo.m3fx.internal.M3FocusTraversal;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3ListPaneSkin;
+import org.glavo.m3fx.internal.M3KeyEvents;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
@@ -50,7 +57,7 @@ public class M3ListPane extends Control {
     public static final String STYLE_CLASS = "m3-list-pane";
 
     /// The mutable list content.
-    private final ObservableList<Node> items = FXCollections.observableArrayList();
+    private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
 
     /// Notifies accessibility clients when focus moves between list items.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -83,7 +90,7 @@ public class M3ListPane extends Control {
     };
 
     /// The selected list items in child order.
-    private final ObservableList<M3ListItem> selectedItems = FXCollections.observableArrayList();
+    private final ObservableList<M3ListItem> selectedItems = M3ObservableLists.nonNullElementList("selectedItem");
 
     /// The read-only selected list item view.
     private final @UnmodifiableView ObservableList<M3ListItem> selectedItemsView =
@@ -138,17 +145,9 @@ public class M3ListPane extends Control {
     /// Whether the list is currently synchronizing selected states.
     private boolean updatingSelection;
 
-    /// Creates an empty list.
+    /// Creates an empty list pane.
     public M3ListPane() {
         initialize();
-    }
-
-    /// Creates a list containing the supplied nodes.
-    ///
-    /// @param items the initial list content nodes
-    public M3ListPane(Node... items) {
-        initialize();
-        addItems(items);
     }
 
     /// Returns the mutable child list used as list content.
@@ -158,33 +157,9 @@ public class M3ListPane extends Control {
         return items;
     }
 
-    /// Adds one list content node.
-    ///
-    /// @param item the list content node to add
-    public final void addItem(Node item) {
-        getItems().add(Objects.requireNonNull(item, "item"));
-    }
 
-    /// Adds list content nodes.
-    ///
-    /// @param items the list content nodes to add
-    public final void addItems(Node... items) {
-        validateItems(items);
-        getItems().addAll(items);
-    }
 
-    /// Replaces all list content nodes.
-    ///
-    /// @param items the replacement list content nodes
-    public final void setItems(Node... items) {
-        validateItems(items);
-        getItems().setAll(items);
-    }
 
-    /// Removes all list content nodes.
-    public final void clearItems() {
-        getItems().clear();
-    }
 
     /// Returns the list item selection mode.
     ///
@@ -423,6 +398,7 @@ public class M3ListPane extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.LIST_VIEW);
+        setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleSelectionTarget, this::showAccessibleItem);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         addEventHandler(KeyEvent.KEY_TYPED, this::handleTypeAheadKeyTyped);
@@ -789,11 +765,4 @@ public class M3ListPane extends Control {
         return new M3ListPaneSkin(this);
     }
 
-    /// Validates a list item array.
-    private static void validateItems(Node... items) {
-        Objects.requireNonNull(items, "items");
-        for (Node item : items) {
-            Objects.requireNonNull(item, "item");
-        }
-    }
 }

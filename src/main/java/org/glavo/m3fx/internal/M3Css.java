@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Glavo
 // SPDX-License-Identifier: Apache-2.0
 
-package org.glavo.m3fx.controls;
+package org.glavo.m3fx.internal;
 
 import javafx.css.CssMetaData;
 import javafx.css.Styleable;
@@ -17,9 +17,9 @@ import java.util.IdentityHashMap;
 import java.util.Objects;
 import java.util.Set;
 
-/// Provides shared helpers for m3fx CSS-backed component tokens.
+/// Provides shared helpers for M3FX CSS-backed component tokens.
 @NotNullByDefault
-final class M3Css {
+public final class M3Css {
     /// Tracks the last minimum width written by M3FX metric helpers.
     private static final Object MIN_WIDTH_KEY = new Object();
 
@@ -49,19 +49,19 @@ final class M3Css {
     }
 
     /// Returns whether a styleable property can be set by CSS.
-    static boolean isSettable(StyleableDoubleProperty property) {
+    public static boolean isSettable(StyleableDoubleProperty property) {
         return !property.isBound()
                 && (!(property instanceof M3StyleableDoubleProperty m3Property) || !m3Property.isUserSet());
     }
 
     /// Returns whether a styleable object property can be set by CSS.
-    static boolean isSettable(StyleableObjectProperty<?> property) {
+    public static boolean isSettable(StyleableObjectProperty<?> property) {
         return !property.isBound()
                 && (!(property instanceof M3StyleableObjectProperty<?> m3Property) || !m3Property.isUserSet());
     }
 
     /// Writes a region minimum width when application code has not taken ownership of it.
-    static void setMinWidthIfUnbound(Region region, double width) {
+    public static void setMinWidthIfUnbound(Region region, double width) {
         if (shouldWriteMetric(
                 region,
                 MIN_WIDTH_KEY,
@@ -75,7 +75,7 @@ final class M3Css {
     }
 
     /// Writes a region preferred width when application code has not taken ownership of it.
-    static void setPrefWidthIfUnbound(Region region, double width) {
+    public static void setPrefWidthIfUnbound(Region region, double width) {
         if (shouldWriteMetric(
                 region,
                 PREF_WIDTH_KEY,
@@ -89,7 +89,7 @@ final class M3Css {
     }
 
     /// Writes a region maximum width when application code has not taken ownership of it.
-    static void setMaxWidthIfUnbound(Region region, double width) {
+    public static void setMaxWidthIfUnbound(Region region, double width) {
         if (shouldWriteMetric(
                 region,
                 MAX_WIDTH_KEY,
@@ -103,7 +103,7 @@ final class M3Css {
     }
 
     /// Writes a region minimum height when application code has not taken ownership of it.
-    static void setMinHeightIfUnbound(Region region, double height) {
+    public static void setMinHeightIfUnbound(Region region, double height) {
         if (shouldWriteMetric(
                 region,
                 MIN_HEIGHT_KEY,
@@ -117,7 +117,7 @@ final class M3Css {
     }
 
     /// Writes a region preferred height when application code has not taken ownership of it.
-    static void setPrefHeightIfUnbound(Region region, double height) {
+    public static void setPrefHeightIfUnbound(Region region, double height) {
         if (shouldWriteMetric(
                 region,
                 PREF_HEIGHT_KEY,
@@ -131,7 +131,7 @@ final class M3Css {
     }
 
     /// Writes a region maximum height when application code has not taken ownership of it.
-    static void setMaxHeightIfUnbound(Region region, double height) {
+    public static void setMaxHeightIfUnbound(Region region, double height) {
         if (shouldWriteMetric(
                 region,
                 MAX_HEIGHT_KEY,
@@ -145,7 +145,7 @@ final class M3Css {
     }
 
     /// Writes region padding when application code has not taken ownership of it.
-    static void setPaddingIfUnbound(Region region, Insets padding) {
+    public static void setPaddingIfUnbound(Region region, Insets padding) {
         if (shouldWriteMetric(
                 region,
                 PADDING_KEY,
@@ -159,7 +159,7 @@ final class M3Css {
     }
 
     /// Writes region padding without marking the metric as helper-owned.
-    static void setPaddingWithoutOwnershipIfUnbound(Region region, Insets padding) {
+    public static void setPaddingWithoutOwnershipIfUnbound(Region region, Insets padding) {
         if (region.paddingProperty().isBound()) {
             return;
         }
@@ -169,7 +169,7 @@ final class M3Css {
     }
 
     /// Writes region padding as an M3FX-owned metric.
-    static void setPaddingAsHelperOwned(Region region, Insets padding) {
+    public static void setPaddingAsHelperOwned(Region region, Insets padding) {
         if (region.paddingProperty().isBound()) {
             return;
         }
@@ -272,7 +272,7 @@ final class M3Css {
     }
 
     /// Creates a styleable non-negative component token property.
-    static StyleableDoubleProperty nonNegativeStyleableDoubleProperty(
+    public static StyleableDoubleProperty nonNegativeStyleableDoubleProperty(
             double initialValue,
             Object bean,
             String name,
@@ -290,7 +290,7 @@ final class M3Css {
     }
 
     /// Creates a styleable finite component token property.
-    static StyleableDoubleProperty finiteStyleableDoubleProperty(
+    public static StyleableDoubleProperty finiteStyleableDoubleProperty(
             double initialValue,
             Object bean,
             String name,
@@ -308,7 +308,7 @@ final class M3Css {
     }
 
     /// Creates a styleable object component token property.
-    static <T> StyleableObjectProperty<@Nullable T> styleableObjectProperty(
+    public static <T> StyleableObjectProperty<@Nullable T> styleableObjectProperty(
             @Nullable T initialValue,
             Object bean,
             String name,
@@ -319,7 +319,7 @@ final class M3Css {
     }
 
     /// Validates that a CSS size token is not negative.
-    static double nonNegative(double value, String name) {
+    public static double nonNegative(double value, String name) {
         if (value < 0.0) {
             throw new IllegalArgumentException(name + " must not be negative");
         }
@@ -327,7 +327,7 @@ final class M3Css {
     }
 
     /// Validates that a CSS numeric token is finite.
-    static double finite(double value, String name) {
+    public static double finite(double value, String name) {
         if (!Double.isFinite(value)) {
             throw new IllegalArgumentException(name + " must be finite");
         }

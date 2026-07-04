@@ -29,12 +29,18 @@ import javafx.scene.control.Skin;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.util.Callback;
+import org.glavo.m3fx.internal.M3SelectionNavigation;
+import org.glavo.m3fx.internal.M3FocusTraversal;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3ListViewCell;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
-import org.glavo.m3fx.internal.M3PopupStyles;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3ListViewSkin;
+import org.glavo.m3fx.internal.M3KeyEvents;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
@@ -69,7 +75,7 @@ public class M3ListView<T> extends Control {
     private static final double DEFAULT_ROW_HEIGHT = 56.0;
 
     /// The backing data items rendered by this view.
-    private final ObservableList<T> items = FXCollections.observableArrayList();
+    private final ObservableList<T> items = M3ObservableLists.nonNullElementList("item");
 
     // The list item factory used by virtualized cells.
     private final ObjectProperty<@Nullable Callback<? super T, ? extends M3ListItem>> cellFactory =
@@ -122,14 +128,14 @@ public class M3ListView<T> extends Control {
     private final BooleanProperty animatedScroll = new SimpleBooleanProperty(this, "animatedScroll", true);
 
     /// The selected indices in ascending order.
-    private final ObservableList<Integer> selectedIndices = FXCollections.observableArrayList();
+    private final ObservableList<Integer> selectedIndices = M3ObservableLists.nonNullElementList("selectedIndex");
 
     /// The read-only selected index view.
     private final @UnmodifiableView ObservableList<Integer> selectedIndicesView =
             FXCollections.unmodifiableObservableList(selectedIndices);
 
     /// The selected item values in ascending index order.
-    private final ObservableList<T> selectedItems = FXCollections.observableArrayList();
+    private final ObservableList<T> selectedItems = M3ObservableLists.nonNullElementList("selectedItem");
 
     /// The read-only selected item view.
     private final @UnmodifiableView ObservableList<T> selectedItemsView =
@@ -192,54 +198,12 @@ public class M3ListView<T> extends Control {
         initialize();
     }
 
-    /// Creates a virtualized list view containing the supplied data items.
-    ///
-    /// @param items the initial non-null data items
-    @SafeVarargs
-    public M3ListView(T... items) {
-        initialize();
-        addItems(items);
-    }
-
     /// Returns the mutable backing data list.
     ///
     /// @return the mutable observable data list rendered by this view
     public final ObservableList<T> getItems() {
         return items;
     }
-
-    /// Adds one data item.
-    ///
-    /// @param item the non-null data item to append
-    public final void addItem(T item) {
-        getItems().add(Objects.requireNonNull(item, "item"));
-    }
-
-    /// Adds data items.
-    ///
-    /// @param items the non-null data items to append
-    @SafeVarargs
-    public final void addItems(T... items) {
-        Objects.requireNonNull(items, "items");
-        validateItems(items);
-        Collections.addAll(getItems(), items);
-    }
-
-    /// Replaces all data items.
-    ///
-    /// @param items the non-null data items that replace the current list content
-    @SafeVarargs
-    public final void setItems(T... items) {
-        Objects.requireNonNull(items, "items");
-        validateItems(items);
-        getItems().setAll(items);
-    }
-
-    /// Removes all data items.
-    public final void clearItems() {
-        getItems().clear();
-    }
-
     /// Returns the factory used to create a list item for one data item.
     ///
     /// @return the cell factory, or `null` to use the default string-based item
@@ -666,8 +630,6 @@ public class M3ListView<T> extends Control {
     /// Adds base style classes and installs data listeners.
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
-        M3PopupStyles.addFallbackRootStyleClass(this);
-        M3PopupStyles.addStylesheet(this, M3Stylesheets.fallbackStylesheet());
         setAccessibleRole(AccessibleRole.LIST_VIEW);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
         setFocusTraversable(true);
@@ -1642,10 +1604,4 @@ public class M3ListView<T> extends Control {
         }
     }
 
-    /// Validates a data item array.
-    private static <T> void validateItems(T[] items) {
-        for (T item : items) {
-            Objects.requireNonNull(item, "item");
-        }
-    }
 }

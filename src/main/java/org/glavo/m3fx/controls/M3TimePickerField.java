@@ -3,16 +3,16 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.IntegerProperty;
-import javafx.beans.property.ObjectProperty;
-import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.scene.control.Skin;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import org.glavo.m3fx.internal.M3PresetNavigation;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3InternalIcon;
+import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.skins.M3PickerFieldSkin;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -47,7 +47,7 @@ public final class M3TimePickerField extends M3PickerField<LocalTime, M3TimePick
     public static final String PRESET_BUTTON_STYLE_CLASS = "m3-time-picker-field-preset-button";
 
     /// The mutable preset list rendered before the popup picker.
-    private final ObservableList<M3TimePreset> presets = FXCollections.observableArrayList();
+    private final ObservableList<M3TimePreset> presets = M3ObservableLists.nonNullElementList("preset");
 
     /// The wrapper used when the popup renders preset actions next to the picker.
     private final HBox presetContent = new HBox(16.0);
@@ -64,6 +64,8 @@ public final class M3TimePickerField extends M3PickerField<LocalTime, M3TimePick
     }
 
     /// Creates a time picker field initialized with the supplied value.
+    ///
+    /// @param value the initially selected time
     public M3TimePickerField(LocalTime value) {
         this(new M3TimePicker());
         setValue(value);
@@ -91,127 +93,24 @@ public final class M3TimePickerField extends M3PickerField<LocalTime, M3TimePick
     /// Returns whether this field can reveal the supplied accessibility time target.
     @Override
     protected boolean handlesAccessibleShowTarget(@Nullable Object parameter) {
-        return parameter instanceof LocalTime time && !isTimeDisabled(time);
+        return parameter instanceof LocalTime time && !getPicker().isTimeDisabled(time);
     }
 
     /// Returns the mutable time preset list rendered in the popup.
+    ///
+    /// @return the mutable time preset list rendered in the popup
     public ObservableList<M3TimePreset> getPresets() {
         return presets;
     }
 
-    /// Adds one time preset to the popup.
-    public void addPreset(M3TimePreset preset) {
-        presets.add(Objects.requireNonNull(preset, "preset"));
-    }
-
-    /// Adds time presets after validating the preset array.
-    public void addPresets(M3TimePreset... presets) {
-        validatePresets(presets);
-        this.presets.addAll(presets);
-    }
-
-    /// Replaces all time presets.
-    public void setPresets(M3TimePreset... presets) {
-        validatePresets(presets);
-        this.presets.setAll(presets);
-    }
-
-    /// Replaces all time presets with the default common time set.
-    public void setCommonPresets(LocalTime anchorTime) {
-        presets.setAll(M3TimePresets.common(anchorTime));
-    }
-
-    /// Removes all time presets from the popup.
-    public void clearPresets() {
-        presets.clear();
-    }
-
-    /// Returns whether the popup picker displays 24-hour time.
-    public boolean isUse24HourClock() {
-        return getPicker().isUse24HourClock();
-    }
-
-    /// Sets whether the popup picker displays 24-hour time.
-    public void setUse24HourClock(boolean use24HourClock) {
-        getPicker().setUse24HourClock(use24HourClock);
-    }
-
-    /// Returns the 24-hour display property from the popup time picker.
-    public BooleanProperty use24HourClockProperty() {
-        return getPicker().use24HourClockProperty();
-    }
-
-    /// Returns the minute interval used by the popup minute grid.
-    public int getMinuteStep() {
-        return getPicker().getMinuteStep();
-    }
-
-    /// Sets the minute interval used by the popup minute grid.
-    public void setMinuteStep(int minuteStep) {
-        getPicker().setMinuteStep(minuteStep);
-    }
-
-    /// Returns the minute step property from the popup time picker.
-    public IntegerProperty minuteStepProperty() {
-        return getPicker().minuteStepProperty();
-    }
-
-    /// Returns the earliest selectable time, or `null` when there is no lower bound.
-    public @Nullable LocalTime getMinTime() {
-        return getPicker().getMinTime();
-    }
-
-    /// Sets the earliest selectable time, or clears the lower bound when `null` is supplied.
-    public void setMinTime(@Nullable LocalTime minTime) {
-        getPicker().setMinTime(minTime);
-    }
-
-    /// Returns the minimum time property from the popup time picker.
-    public ObjectProperty<@Nullable LocalTime> minTimeProperty() {
-        return getPicker().minTimeProperty();
-    }
-
-    /// Returns the latest selectable time, or `null` when there is no upper bound.
-    public @Nullable LocalTime getMaxTime() {
-        return getPicker().getMaxTime();
-    }
-
-    /// Sets the latest selectable time, or clears the upper bound when `null` is supplied.
-    public void setMaxTime(@Nullable LocalTime maxTime) {
-        getPicker().setMaxTime(maxTime);
-    }
-
-    /// Returns the maximum time property from the popup time picker.
-    public ObjectProperty<@Nullable LocalTime> maxTimeProperty() {
-        return getPicker().maxTimeProperty();
-    }
-
-    /// Sets the selected time from hour and minute fields.
-    public void setTime(int hour, int minute) {
-        setValue(LocalTime.of(hour, minute));
-    }
-
-    /// Selects the current time with seconds and nanos cleared.
-    public void selectNow() {
-        setValue(normalizeValue(LocalTime.now()));
-    }
-
     /// Applies a time preset, updates the editor, and closes the popup when it is showing.
-    public void applyPreset(M3TimePreset preset) {
+    ///
+    /// @param preset the time preset to apply
+    private void applyPreset(M3TimePreset preset) {
         setValue(Objects.requireNonNull(preset, "preset").time());
         if (isShowing()) {
             hidePicker();
         }
-    }
-
-    /// Clears the selected time.
-    public void clearValue() {
-        setValue(null);
-    }
-
-    /// Returns whether the supplied time is outside the configured selectable range.
-    public boolean isTimeDisabled(LocalTime time) {
-        return getPicker().isTimeDisabled(time);
     }
 
     /// Creates the default Material Design 3 picker field skin.
@@ -259,9 +158,23 @@ public final class M3TimePickerField extends M3PickerField<LocalTime, M3TimePick
         presetList.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
         presetList.alignmentProperty().bind(M3NodeLayout.createLogicalStartTopAlignmentBinding(this));
         M3PresetNavigation.install(presetList, this, () -> M3Accessible.requestAccessibleFocus(this, getPicker()));
-        getPicker().minTimeProperty().addListener((observable, oldValue, newValue) -> updatePresetContent());
-        getPicker().maxTimeProperty().addListener((observable, oldValue, newValue) -> updatePresetContent());
+        getPicker().minTimeProperty().addListener((observable, oldValue, newValue) -> handleSelectableBoundsChanged());
+        getPicker().maxTimeProperty().addListener((observable, oldValue, newValue) -> handleSelectableBoundsChanged());
         presets.addListener(presetsListener);
+    }
+
+    /// Refreshes preset state and clears the selected time when picker bounds exclude it.
+    private void handleSelectableBoundsChanged() {
+        updatePresetContent();
+        clearValueIfOutOfBounds();
+    }
+
+    /// Clears the selected time when current bounds exclude it.
+    private void clearValueIfOutOfBounds() {
+        @Nullable LocalTime value = getValue();
+        if (value != null && getPicker().isTimeDisabled(value)) {
+            setValue(null);
+        }
     }
 
     /// Rebuilds popup content from the current preset list.
@@ -294,11 +207,4 @@ public final class M3TimePickerField extends M3PickerField<LocalTime, M3TimePick
         return button;
     }
 
-    /// Validates a time preset array.
-    private static void validatePresets(M3TimePreset... presets) {
-        Objects.requireNonNull(presets, "presets");
-        for (M3TimePreset preset : presets) {
-            Objects.requireNonNull(preset, "preset");
-        }
-    }
 }

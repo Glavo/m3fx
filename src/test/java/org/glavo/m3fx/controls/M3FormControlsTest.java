@@ -45,6 +45,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
+import static org.glavo.m3fx.M3TestControls.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -82,8 +83,8 @@ final class M3FormControlsTest {
         FxTestUtils.runOnFxThread(() -> {
             M3FormRow first = new M3FormRow("Name", new Label("Content"));
             M3FormRow second = new M3FormRow("Email", new Label("Content"));
-            M3FormPane form = new M3FormPane(first);
-            form.addItem(second);
+            M3FormPane form = formPane(first);
+            form.getItems().add(second);
             form.setContentPadding(20.0);
             form.setRowSpacing(10.0);
             form.setStyle("-m3-content-padding: 20px; -m3-row-spacing: 10px;");
@@ -341,22 +342,37 @@ final class M3FormControlsTest {
         });
     }
 
-    /// Verifies that form validators reject duplicate registrations and update list state.
+    /// Verifies that form validators reject invalid input list mutations and update list state.
     @Test
+    @SuppressWarnings("DataFlowIssue")
     void formValidatorMaintainsDistinctInputs() {
         FxTestUtils.runOnFxThread(() -> {
             M3TextInputLayout first = new M3TextInputLayout(new M3TextField());
             M3TextInputLayout second = new M3TextInputLayout(new M3TextField());
+            M3TextInputLayout third = new M3TextInputLayout(new M3TextField());
             M3FormValidator validator = new M3FormValidator(first);
 
-            assertThrows(IllegalArgumentException.class, () -> validator.addInput(first));
-            assertThrows(IllegalArgumentException.class, () -> validator.addInputs(second, second));
-            assertTrue(validator.removeInput(first));
-            assertFalse(validator.removeInput(first));
+            assertThrows(NullPointerException.class, () -> validator.getInputs().add(null));
+            assertThrows(IllegalArgumentException.class, () -> validator.getInputs().add(first));
+            assertThrows(IllegalArgumentException.class, () -> validator.getInputs().addAll(second, second));
+            assertTrue(validator.getInputs().remove(first));
+            assertFalse(validator.getInputs().remove(first));
             assertTrue(validator.getInputs().isEmpty());
-            validator.addInputs(first, second);
+
+            validator.getInputs().addAll(first, second);
+
             assertEquals(List.of(first, second), validator.getInputs());
-            validator.clearInputs();
+            assertThrows(IllegalArgumentException.class, () -> validator.getInputs().setAll(first, first));
+            assertEquals(List.of(first, second), validator.getInputs());
+
+            validator.getInputs().set(1, third);
+
+            assertEquals(List.of(first, third), validator.getInputs());
+            assertThrows(IllegalArgumentException.class, () -> validator.getInputs().set(1, first));
+            assertEquals(List.of(first, third), validator.getInputs());
+
+            validator.getInputs().clear();
+
             assertTrue(validator.getInputs().isEmpty());
             assertFalse(validator.focusFirstInvalidInput());
         });
@@ -680,7 +696,7 @@ final class M3FormControlsTest {
             assertEquals(1, summary.getInvalidInputCount());
             assertSame(secondLayout, summary.getInvalidInput(0));
 
-            secondValidator.addInput(thirdLayout);
+            secondValidator.getInputs().add(thirdLayout);
             assertFalse(secondValidator.validate());
             root.applyCss();
             root.layout();
@@ -690,7 +706,7 @@ final class M3FormControlsTest {
             assertSame(thirdLayout, summary.getInvalidInput(1));
             assertEquals(2, summary.lookupAll("." + M3ValidationSummary.ITEM_STYLE_CLASS).size());
 
-            assertTrue(secondValidator.removeInput(secondLayout));
+            assertTrue(secondValidator.getInputs().remove(secondLayout));
             root.applyCss();
             root.layout();
 
@@ -698,7 +714,7 @@ final class M3FormControlsTest {
             assertSame(thirdLayout, summary.getInvalidInput(0));
             assertEquals(1, summary.lookupAll("." + M3ValidationSummary.ITEM_STYLE_CLASS).size());
 
-            secondValidator.clearInputs();
+            secondValidator.getInputs().clear();
             root.applyCss();
             root.layout();
 

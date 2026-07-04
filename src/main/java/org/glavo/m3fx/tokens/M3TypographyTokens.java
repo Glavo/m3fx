@@ -60,34 +60,6 @@ public sealed interface M3TypographyTokens permits M3TypographyTokensImpl {
     /// Returns the body small text style.
     M3TextStyle bodySmall();
 
-    /// Creates typography tokens from the original compact role subset.
-    static M3TypographyTokens create(
-            M3TextStyle displayLarge,
-            M3TextStyle headlineMedium,
-            M3TextStyle titleLarge,
-            M3TextStyle labelLarge,
-            M3TextStyle bodyLarge,
-            M3TextStyle bodyMedium
-    ) {
-        return create(
-                displayLarge,
-                displayLarge,
-                displayLarge,
-                headlineMedium,
-                headlineMedium,
-                headlineMedium,
-                titleLarge,
-                titleLarge,
-                titleLarge,
-                labelLarge,
-                labelLarge,
-                labelLarge,
-                bodyLarge,
-                bodyMedium,
-                bodyMedium
-        );
-    }
-
     /// Creates typography tokens.
     static M3TypographyTokens create(
             M3TextStyle displayLarge,

@@ -18,8 +18,12 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.internal.M3DisclosureIcon;
+import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3NavigationDrawerGroupSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -64,7 +68,7 @@ public final class M3NavigationDrawerGroup extends Control {
     };
 
     /// The child destination items shown when the group is expanded.
-    private final ObservableList<M3ListItem> items = FXCollections.observableArrayList();
+    private final ObservableList<M3ListItem> items = M3ObservableLists.nonNullElementList("item");
 
     /// The header list item that toggles the group.
     private final M3ListItem headerItem = new M3ListItem();
@@ -154,33 +158,6 @@ public final class M3NavigationDrawerGroup extends Control {
         return items;
     }
 
-    /// Adds one child destination item.
-    ///
-    /// @param item the non-null child destination item to append
-    public void addItem(M3ListItem item) {
-        getItems().add(Objects.requireNonNull(item, "item"));
-    }
-
-    /// Adds child destination items.
-    ///
-    /// @param items the non-null child destination items to append
-    public void addItems(M3ListItem... items) {
-        validateItems(items);
-        getItems().addAll(items);
-    }
-
-    /// Replaces all child destination items.
-    ///
-    /// @param items the non-null child destination items that replace the current content
-    public void setItems(M3ListItem... items) {
-        validateItems(items);
-        getItems().setAll(items);
-    }
-
-    /// Removes all child destination items.
-    public void clearItems() {
-        getItems().clear();
-    }
 
     /// Returns the header list item owned by this group.
     ///
@@ -352,11 +329,4 @@ public final class M3NavigationDrawerGroup extends Control {
         focusNotifier.refresh();
     }
 
-    /// Validates a child destination item array.
-    private static void validateItems(M3ListItem... items) {
-        Objects.requireNonNull(items, "items");
-        for (M3ListItem item : items) {
-            Objects.requireNonNull(item, "item");
-        }
-    }
 }

@@ -22,7 +22,6 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.beans.value.ChangeListener;
-import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.css.PseudoClass;
@@ -46,8 +45,15 @@ import javafx.scene.shape.LineTo;
 import javafx.scene.shape.MoveTo;
 import javafx.scene.shape.Path;
 import javafx.scene.shape.QuadCurveTo;
+import org.glavo.m3fx.internal.M3TextInputSupport;
+import org.glavo.m3fx.internal.M3FocusTraversal;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3NodeLayout;
@@ -56,7 +62,6 @@ import org.glavo.m3fx.skins.M3TextInputLayoutSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
-import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -250,11 +255,7 @@ public class M3TextInputLayout extends Control {
             };
 
     /// The additional validators applied after the primary validator.
-    private final ObservableList<M3TextInputValidator> validators = FXCollections.observableArrayList();
-
-    /// The read-only additional validator list.
-    private final @UnmodifiableView ObservableList<M3TextInputValidator> validatorsView =
-            FXCollections.unmodifiableObservableList(validators);
+    private final ObservableList<M3TextInputValidator> validators = M3ObservableLists.nonNullElementList("validator");
 
     // The last error text produced by the validator.
     private final ReadOnlyStringWrapper validationErrorText =
@@ -627,36 +628,9 @@ public class M3TextInputLayout extends Control {
         return validator;
     }
 
-    /// Returns the additional validators applied after the primary validator.
-    public final @UnmodifiableView ObservableList<M3TextInputValidator> getValidators() {
-        return validatorsView;
-    }
-
-    /// Adds an additional validator to the end of the validation pipeline.
-    public final void addValidator(M3TextInputValidator validator) {
-        validators.add(Objects.requireNonNull(validator, "validator"));
-    }
-
-    /// Adds additional validators to the end of the validation pipeline.
-    public final void addValidators(M3TextInputValidator... validators) {
-        validateValidators(validators);
-        this.validators.addAll(validators);
-    }
-
-    /// Replaces the additional validation pipeline.
-    public final void setValidators(M3TextInputValidator... validators) {
-        validateValidators(validators);
-        this.validators.setAll(validators);
-    }
-
-    /// Removes an additional validator from the validation pipeline.
-    public final void removeValidator(M3TextInputValidator validator) {
-        validators.remove(Objects.requireNonNull(validator, "validator"));
-    }
-
-    /// Removes all additional validators from the validation pipeline.
-    public final void clearValidators() {
-        validators.clear();
+    /// Returns the mutable additional validator pipeline applied after the primary validator.
+    public final ObservableList<M3TextInputValidator> getValidators() {
+        return validators;
     }
 
     /// Returns the last error text produced by the validator.
@@ -773,10 +747,6 @@ public class M3TextInputLayout extends Control {
         return clearButtonEnabled;
     }
 
-    /// Returns the built-in clear button used when clear-button support is enabled.
-    public final M3IconButton getClearButton() {
-        return clearButton;
-    }
 
     /// Clears the wrapped input text when one is installed and writable.
     public final void clearText() {
@@ -824,15 +794,6 @@ public class M3TextInputLayout extends Control {
         return M3Stylesheets.controlStylesheet("text-field.css");
     }
 
-    /// Returns the input and adornment container used by the default skin.
-    public final StackPane getInputContainer() {
-        return inputContainer;
-    }
-
-    /// Returns the supporting text and counter row used by the default skin.
-    public final HBox getSupportingRow() {
-        return supportingRow;
-    }
 
     /// Returns accessibility attributes for the wrapped input and supporting text.
     @Override
@@ -862,6 +823,7 @@ public class M3TextInputLayout extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
+        setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleSlotNavigationKey);
 
@@ -909,7 +871,7 @@ public class M3TextInputLayout extends Control {
     /// Creates the default Material Design 3 text input layout skin.
     @Override
     protected Skin<?> createDefaultSkin() {
-        return new M3TextInputLayoutSkin(this);
+        return new M3TextInputLayoutSkin(this, inputContainer, supportingRow);
     }
 
     /// Installs the current input node and removes state from the previous input.
@@ -1917,13 +1879,6 @@ public class M3TextInputLayout extends Control {
         return characterLimit;
     }
 
-    /// Validates additional validators before installing them.
-    private static void validateValidators(M3TextInputValidator... validators) {
-        Objects.requireNonNull(validators, "validators");
-        for (M3TextInputValidator validator : validators) {
-            Objects.requireNonNull(validator, "validator");
-        }
-    }
 
     /// Returns the text length of a JavaFX text input control.
     private static int textLength(TextInputControl input) {

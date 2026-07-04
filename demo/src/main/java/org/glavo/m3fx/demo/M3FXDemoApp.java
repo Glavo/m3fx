@@ -559,7 +559,7 @@ public final class M3FXDemoApp extends Application {
         drawerGroup.getHeaderItem().setUserData(group);
         drawerGroup.expandedProperty().addListener((observable, oldValue, newValue) -> refreshSidebarSelection());
         for (DemoPage page : group.pages) {
-            drawerGroup.addItem(createSidebarPageItem(page, true));
+            drawerGroup.getItems().add(createSidebarPageItem(page, true));
         }
         return drawerGroup;
     }
@@ -717,7 +717,7 @@ public final class M3FXDemoApp extends Application {
         }
     }
 
-    /// Schedules scrolling the active sidebar destination after initial layout and disclosure motion settle.
+    /// Schedules scrolling the active sidebar destination after layout and disclosure motion settle.
     private void scrollSidebarPageIntoViewLater(DemoPage page) {
         cancelSidebarScrollRetry();
         Platform.runLater(() -> {
@@ -725,10 +725,12 @@ public final class M3FXDemoApp extends Application {
             Platform.runLater(() -> scrollSidebarPageIntoViewIfCurrent(page));
         });
 
-        Timeline retryAnimation = new Timeline(new KeyFrame(
-                Duration.millis(500.0),
-                event -> scrollSidebarPageIntoViewIfCurrent(page)
-        ));
+        Timeline retryAnimation = new Timeline(
+                new KeyFrame(Duration.millis(120.0), event -> scrollSidebarPageIntoViewIfCurrent(page)),
+                new KeyFrame(Duration.millis(260.0), event -> scrollSidebarPageIntoViewIfCurrent(page)),
+                new KeyFrame(Duration.millis(420.0), event -> scrollSidebarPageIntoViewIfCurrent(page)),
+                new KeyFrame(Duration.millis(680.0), event -> scrollSidebarPageIntoViewIfCurrent(page))
+        );
         sidebarScrollRetryAnimation = retryAnimation;
         retryAnimation.setOnFinished(event -> {
             if (sidebarScrollRetryAnimation == retryAnimation) {
@@ -839,7 +841,7 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the component overview page.
     private Node createComponentsOverviewPage() {
-        M3ListPane primaryComponents = new M3ListPane(
+        M3ListPane primaryComponents = createListPane(
                 createOverviewItem("App bars", "Top and bottom app bars for persistent actions."),
                 createOverviewItem("Buttons", "Common actions, icon buttons, split buttons, and FABs."),
                 createOverviewItem("Text fields", "Filled, outlined, validation, and supporting text patterns."),
@@ -849,7 +851,7 @@ public final class M3FXDemoApp extends Application {
         primaryComponents.getStyleClass().add("demo-overview-list");
         primaryComponents.setMaxWidth(720.0);
 
-        M3ListPane feedbackComponents = new M3ListPane(
+        M3ListPane feedbackComponents = createListPane(
                 createOverviewItem("Loading & progress", "Linear and circular progress plus loading indicators."),
                 createOverviewItem("Date & time pickers", "Date, range, and time selection controls."),
                 createOverviewItem("Dialogs & sheets", "Dialogs, bottom sheets, side sheets, scrims, and snackbars."),
@@ -879,7 +881,7 @@ public final class M3FXDemoApp extends Application {
         M3FabMenu fabMenu = createFabMenu();
         fabMenu.setExpanded(true);
 
-        M3ButtonGroup actionGroup = new M3ButtonGroup(
+        M3ButtonGroup actionGroup = createButtonGroup(
                 new M3Button("Archive", M3ButtonVariant.TONAL),
                 new M3Button("Share", M3ButtonVariant.TONAL),
                 new M3Button("Edit", M3ButtonVariant.TONAL)
@@ -922,7 +924,7 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the button group component page.
     private Node createButtonGroupsPage() {
-        M3ButtonGroup standardGroup = new M3ButtonGroup(
+        M3ButtonGroup standardGroup = createButtonGroup(
                 new M3Button("Archive", M3ButtonVariant.TONAL),
                 new M3Button("Share", M3ButtonVariant.TONAL),
                 new M3Button("Edit", M3ButtonVariant.TONAL)
@@ -930,7 +932,7 @@ public final class M3FXDemoApp extends Application {
         standardGroup.setVariant(M3ButtonGroupVariant.STANDARD);
         standardGroup.setSize(M3ButtonGroupSize.MEDIUM);
 
-        M3ButtonGroup connectedTonalGroup = new M3ButtonGroup(
+        M3ButtonGroup connectedTonalGroup = createButtonGroup(
                 new M3Button("Edit", M3ButtonVariant.TONAL),
                 new M3Button("Share", M3ButtonVariant.TONAL),
                 new M3Button("Archive", M3ButtonVariant.TONAL)
@@ -938,7 +940,7 @@ public final class M3FXDemoApp extends Application {
         connectedTonalGroup.setVariant(M3ButtonGroupVariant.CONNECTED);
         connectedTonalGroup.setSize(M3ButtonGroupSize.SMALL);
 
-        M3ButtonGroup connectedOutlinedGroup = new M3ButtonGroup(
+        M3ButtonGroup connectedOutlinedGroup = createButtonGroup(
                 new M3Button("Day", M3ButtonVariant.OUTLINED),
                 new M3Button("Week", M3ButtonVariant.OUTLINED),
                 new M3Button("Month", M3ButtonVariant.OUTLINED)
@@ -948,7 +950,7 @@ public final class M3FXDemoApp extends Application {
 
         M3Button disabled = new M3Button("Disabled", M3ButtonVariant.FILLED);
         disabled.setDisable(true);
-        M3ButtonGroup connectedFilledGroup = new M3ButtonGroup(
+        M3ButtonGroup connectedFilledGroup = createButtonGroup(
                 new M3Button("Accept", M3ButtonVariant.FILLED),
                 new M3Button("Review", M3ButtonVariant.FILLED),
                 disabled
@@ -958,23 +960,23 @@ public final class M3FXDemoApp extends Application {
 
         VBox sizeScale = new VBox(12.0);
         sizeScale.getChildren().addAll(
-                new M3ButtonGroup(
+                createButtonGroup(
                         new M3Button("XS", M3ButtonVariant.TONAL),
                         new M3Button("Group", M3ButtonVariant.TONAL)
                 ),
-                new M3ButtonGroup(
+                createButtonGroup(
                         new M3Button("Small", M3ButtonVariant.TONAL),
                         new M3Button("Group", M3ButtonVariant.TONAL)
                 ),
-                new M3ButtonGroup(
+                createButtonGroup(
                         new M3Button("Medium", M3ButtonVariant.TONAL),
                         new M3Button("Group", M3ButtonVariant.TONAL)
                 ),
-                new M3ButtonGroup(
+                createButtonGroup(
                         new M3Button("Large", M3ButtonVariant.TONAL),
                         new M3Button("Group", M3ButtonVariant.TONAL)
                 ),
-                new M3ButtonGroup(
+                createButtonGroup(
                         new M3Button("XL", M3ButtonVariant.TONAL),
                         new M3Button("Group", M3ButtonVariant.TONAL)
                 )
@@ -1257,7 +1259,7 @@ public final class M3FXDemoApp extends Application {
         validatedEmail.setPrefWidth(340.0);
         M3TextInputLayout validatedEmailLayout = createTextInputLayout(validatedEmail, "Validation runs on focus loss");
         validatedEmailLayout.setValidator(M3TextInputValidators.required("Email is required"));
-        validatedEmailLayout.addValidator(M3TextInputValidators.pattern(
+        validatedEmailLayout.getValidators().add(M3TextInputValidators.pattern(
                 Pattern.compile("[^@\\s]+@[^@\\s]+\\.[^@\\s]+"),
                 "Use an email address"
         ));
@@ -1438,7 +1440,7 @@ public final class M3FXDemoApp extends Application {
         M3Chip selectedInput = createChip("Assigned", M3ChipVariant.INPUT, true, false);
         selectedInput.setGraphic(createNavigationIcon("check"));
 
-        M3ChipGroup multiSelect = new M3ChipGroup(
+        M3ChipGroup multiSelect = createChipGroup(
                 createChip("Work", M3ChipVariant.FILTER, true, false),
                 createChip("Personal", M3ChipVariant.FILTER, false, false),
                 createChip("Travel", M3ChipVariant.FILTER, true, false),
@@ -1446,7 +1448,7 @@ public final class M3FXDemoApp extends Application {
         );
         multiSelect.setPrefWrapLength(360.0);
 
-        M3ChipGroup singleSelect = new M3ChipGroup(
+        M3ChipGroup singleSelect = createChipGroup(
                 createChip("All", M3ChipVariant.FILTER, false, false),
                 createChip("Open", M3ChipVariant.FILTER, false, false),
                 createChip("Closed", M3ChipVariant.FILTER, false, false)
@@ -1472,7 +1474,7 @@ public final class M3FXDemoApp extends Application {
         field.setLabelText("Event date");
         field.setSupportingText("Editable ISO date with popup calendar");
         field.getEditor().setVariant(M3TextInputVariant.OUTLINED);
-        field.setCommonPresets(today);
+        field.getPresets().setAll(M3DatePresets.common(today));
         field.setPrefWidth(320.0);
         field.setMaxWidth(320.0);
 
@@ -1480,9 +1482,9 @@ public final class M3FXDemoApp extends Application {
         boundedField.setLabelText("Booking date");
         boundedField.setSupportingText("Limited to the next two weeks");
         boundedField.getEditor().setVariant(M3TextInputVariant.FILLED);
-        boundedField.setMinDate(today);
-        boundedField.setMaxDate(today.plusDays(14));
-        boundedField.setPresets(
+        boundedField.getPicker().setMinDate(today);
+        boundedField.getPicker().setMaxDate(today.plusDays(14));
+        boundedField.getPresets().setAll(
                 M3DatePresets.today(today),
                 M3DatePresets.tomorrow(today),
                 M3DatePresets.daysFrom(today, 7)
@@ -1497,9 +1499,9 @@ public final class M3FXDemoApp extends Application {
         rangeField.setEndSupportingText("Editable range end");
         rangeField.getStartEditor().setVariant(M3TextInputVariant.OUTLINED);
         rangeField.getEndEditor().setVariant(M3TextInputVariant.OUTLINED);
-        rangeField.setMinDate(today.minusDays(7));
-        rangeField.setMaxDate(today.plusDays(30));
-        rangeField.setCommonPresets(today);
+        rangeField.getPicker().setMinDate(today.minusDays(7));
+        rangeField.getPicker().setMaxDate(today.plusDays(30));
+        rangeField.getPresets().setAll(M3DateRangePresets.common(today, rangeField.getPicker().getFirstDayOfWeek()));
         rangeField.setPrefWidth(680.0);
         rangeField.setMaxWidth(680.0);
 
@@ -1540,9 +1542,9 @@ public final class M3FXDemoApp extends Application {
         field.setLabelText("Start time");
         field.setSupportingText("Editable 24-hour time with popup picker");
         field.getEditor().setVariant(M3TextInputVariant.OUTLINED);
-        field.setUse24HourClock(true);
-        field.setMinuteStep(15);
-        field.setCommonPresets(LocalTime.of(10, 30));
+        field.getPicker().setUse24HourClock(true);
+        field.getPicker().setMinuteStep(15);
+        field.getPresets().setAll(M3TimePresets.common(LocalTime.of(10, 30)));
         field.setPrefWidth(320.0);
         field.setMaxWidth(320.0);
 
@@ -1550,10 +1552,10 @@ public final class M3FXDemoApp extends Application {
         boundedField.setLabelText("Office hours");
         boundedField.setSupportingText("Limited to 09:00 through 17:30");
         boundedField.getEditor().setVariant(M3TextInputVariant.FILLED);
-        boundedField.setMinTime(LocalTime.of(9, 0));
-        boundedField.setMaxTime(LocalTime.of(17, 30));
-        boundedField.setMinuteStep(30);
-        boundedField.setPresets(M3TimePresets.morning(), M3TimePresets.noon(), M3TimePresets.afternoon());
+        boundedField.getPicker().setMinTime(LocalTime.of(9, 0));
+        boundedField.getPicker().setMaxTime(LocalTime.of(17, 30));
+        boundedField.getPicker().setMinuteStep(30);
+        boundedField.getPresets().setAll(M3TimePresets.morning(), M3TimePresets.noon(), M3TimePresets.afternoon());
         boundedField.setPrefWidth(320.0);
         boundedField.setMaxWidth(320.0);
 
@@ -1612,7 +1614,7 @@ public final class M3FXDemoApp extends Application {
                 createMenuItem("Delete", "delete", "")
         );
         menuButton.setVariant(M3ButtonVariant.OUTLINED);
-        menuButton.setSelectionMode(M3MenuSelectionMode.SINGLE);
+        menuButton.getMenu().setSelectionMode(M3MenuSelectionMode.SINGLE);
 
         M3MenuItem selected = createMenuItem("Selected item", "check", "");
         M3Menu selectedMenu = new M3Menu(selected, createMenuItem("Regular item", "label", ""));
@@ -1960,7 +1962,7 @@ public final class M3FXDemoApp extends Application {
         M3ListView<String> listView = new M3ListView<>();
         listView.getStyleClass().add("demo-virtualized-list");
         for (int i = 1; i <= 240; i++) {
-            listView.addItem("Virtualized row " + i);
+            listView.getItems().add("Virtualized row " + i);
         }
         listView.setSelectionMode(M3ListSelectionMode.SINGLE);
         listView.setFixedCellSize(72.0);
@@ -2099,7 +2101,7 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the carousel component page.
     private Node createCarouselPage() {
-        M3Carousel multiBrowse = new M3Carousel(
+        M3Carousel multiBrowse = createCarousel(
                 createCarouselCard("Morning focus", "Deep work block", M3CardVariant.FILLED, 220.0, 140.0),
                 createCarouselCard("Design review", "Component polish", M3CardVariant.ELEVATED, 240.0, 140.0),
                 createCarouselCard("Release notes", "Packaging updates", M3CardVariant.OUTLINED, 220.0, 140.0),
@@ -2114,7 +2116,7 @@ public final class M3FXDemoApp extends Application {
         M3Button next = new M3Button("Next", M3ButtonVariant.FILLED);
         next.setOnAction(event -> multiBrowse.selectNext());
 
-        M3Carousel compact = new M3Carousel(
+        M3Carousel compact = createCarousel(
                 createCarouselCard("Inbox", "24 unread", M3CardVariant.FILLED, 160.0, 112.0),
                 createCarouselCard("Tasks", "6 due", M3CardVariant.ELEVATED, 160.0, 112.0),
                 createCarouselCard("Files", "Recent docs", M3CardVariant.OUTLINED, 160.0, 112.0),
@@ -2324,7 +2326,7 @@ public final class M3FXDemoApp extends Application {
         for (String actionText : actionTexts) {
             M3Button action = new M3Button(actionText, M3ButtonVariant.TEXT);
             action.setOnAction(event -> showSnackbar(actionText + " pressed"));
-            banner.addAction(action);
+            banner.getActions().add(action);
         }
         return banner;
     }
@@ -2360,7 +2362,7 @@ public final class M3FXDemoApp extends Application {
                 new M3DateRangePickerField(LocalDate.now().plusDays(2), LocalDate.now().plusDays(6));
         availability.setStartLabelText("Start");
         availability.setEndLabelText("End");
-        availability.setCommonPresets(LocalDate.now());
+        availability.getPresets().setAll(M3DateRangePresets.common(LocalDate.now(), availability.getPicker().getFirstDayOfWeek()));
         availability.setPrefWidth(420.0);
         availability.setMaxWidth(420.0);
 
@@ -2423,7 +2425,7 @@ public final class M3FXDemoApp extends Application {
 
         validator.validate();
 
-        M3FormPane form = new M3FormPane(validationSummary, account, preferences, validation);
+        M3FormPane form = createFormPane(validationSummary, account, preferences, validation);
         form.getStyleClass().add("demo-form");
         form.setContentPadding(18.0);
         form.setPrefWidth(760.0);
@@ -2809,20 +2811,104 @@ public final class M3FXDemoApp extends Application {
         return slider;
     }
 
+    /// Creates a list pane sample with initial content nodes.
+    private static M3ListPane createListPane(Node... items) {
+        M3ListPane listPane = new M3ListPane();
+        listPane.getItems().addAll(items);
+        return listPane;
+    }
+
+    /// Creates a button group sample with initial buttons.
+    private static M3ButtonGroup createButtonGroup(M3Button... buttons) {
+        M3ButtonGroup group = new M3ButtonGroup();
+        group.getItems().addAll(buttons);
+        return group;
+    }
+
+    /// Creates a chip group sample with initial chips.
+    private static M3ChipGroup createChipGroup(M3Chip... chips) {
+        M3ChipGroup group = new M3ChipGroup();
+        group.getItems().addAll(chips);
+        return group;
+    }
+
+    /// Creates a carousel sample with initial items.
+    private static M3Carousel createCarousel(Node... items) {
+        M3Carousel carousel = new M3Carousel();
+        carousel.getItems().addAll(items);
+        return carousel;
+    }
+
+    /// Creates a form pane sample with initial items.
+    private static M3FormPane createFormPane(Node... items) {
+        M3FormPane formPane = new M3FormPane();
+        formPane.getItems().addAll(items);
+        return formPane;
+    }
+
+    /// Creates a segmented button group sample with initial buttons.
+    private static M3SegmentedButtonGroup createSegmentedButtonGroup(M3SegmentedButton... buttons) {
+        M3SegmentedButtonGroup group = new M3SegmentedButtonGroup();
+        group.getItems().addAll(buttons);
+        return group;
+    }
+
+    /// Creates a tab bar sample with initial tabs.
+    private static M3TabBar createTabBar(M3Tab... tabs) {
+        M3TabBar tabBar = new M3TabBar();
+        tabBar.getTabs().addAll(tabs);
+        return tabBar;
+    }
+
+    /// Creates a surface sample with initial content nodes.
+    private static M3Surface createSurface(Node... children) {
+        M3Surface surface = new M3Surface();
+        surface.getContent().addAll(children);
+        return surface;
+    }
+
+    /// Creates a navigation bar sample with initial items.
+    private static M3NavigationBar createNavigationBar(M3NavigationItem... items) {
+        M3NavigationBar navigationBar = new M3NavigationBar();
+        navigationBar.getItems().addAll(items);
+        return navigationBar;
+    }
+
+    /// Creates a navigation rail sample with initial items.
+    private static M3NavigationRail createNavigationRail(M3NavigationItem... items) {
+        M3NavigationRail navigationRail = new M3NavigationRail();
+        navigationRail.getItems().addAll(items);
+        return navigationRail;
+    }
+
+    /// Creates a navigation drawer sample with initial items.
+    private static M3NavigationDrawer createNavigationDrawer(Node... items) {
+        M3NavigationDrawer navigationDrawer = new M3NavigationDrawer();
+        navigationDrawer.getItems().addAll(items);
+        return navigationDrawer;
+    }
+
+    /// Creates an icon toggle button group sample with initial buttons.
+    private static M3IconToggleButtonGroup createIconToggleButtonGroup(M3IconToggleButton... buttons) {
+        M3IconToggleButtonGroup group = new M3IconToggleButtonGroup();
+        group.getItems().addAll(buttons);
+        return group;
+    }
+
     /// Creates a segmented button group sample.
     private static M3SegmentedButtonGroup createSegmentedGroup(String first, String second, String third) {
         M3SegmentedButton firstButton = new M3SegmentedButton(first);
         M3SegmentedButton secondButton = new M3SegmentedButton(second);
         secondButton.setSelected(true);
         M3SegmentedButton thirdButton = new M3SegmentedButton(third);
-        return new M3SegmentedButtonGroup(firstButton, secondButton, thirdButton);
+        return createSegmentedButtonGroup(firstButton, secondButton, thirdButton);
     }
 
     /// Creates a tab bar sample.
     private static M3TabBar createTabBar(String first, String second, String third) {
         M3Tab firstTab = new M3Tab(first);
         firstTab.setSelected(true);
-        return new M3TabBar(firstTab, new M3Tab(second), new M3Tab(third));
+        return createTabBar(firstTab, new M3Tab(second), new M3Tab(third));
     }
 
     /// Creates a toolbar sample.
@@ -2833,7 +2919,7 @@ public final class M3FXDemoApp extends Application {
         toolbar.setVariant(variant);
         toolbar.setOrientation(orientation);
         for (String iconName : iconNames) {
-            toolbar.addItem(createToolbarIconButton(iconName));
+            toolbar.getItems().add(createToolbarIconButton(iconName));
         }
         return toolbar;
     }
@@ -2851,7 +2937,7 @@ public final class M3FXDemoApp extends Application {
         topAppBar.setVariant(variant);
         topAppBar.setNavigation(createLeadingAppBarIconButton(navigationIcon));
         for (String actionIcon : actionIcons) {
-            topAppBar.addAction(createTrailingAppBarIconButton(actionIcon));
+            topAppBar.getActions().add(createTrailingAppBarIconButton(actionIcon));
         }
         topAppBar.setMaxWidth(Double.MAX_VALUE);
         return topAppBar;
@@ -2960,7 +3046,7 @@ public final class M3FXDemoApp extends Application {
             M3SurfaceElevation elevation
     ) {
         M3Text label = new M3Text(title, M3TextRole.TITLE_MEDIUM);
-        M3Surface surface = new M3Surface(label);
+        M3Surface surface = createSurface(label);
         surface.setVariant(variant);
         surface.setElevation(elevation);
         surface.setPrefSize(180.0, 96.0);
@@ -2986,7 +3072,7 @@ public final class M3FXDemoApp extends Application {
         M3NavigationItem thirdItem = createNavigationItem("Done", "done");
         secondItem.setBadge(new M3Badge("3"));
 
-        M3NavigationBar navigationBar = new M3NavigationBar(
+        M3NavigationBar navigationBar = createNavigationBar(
                 firstItem,
                 secondItem,
                 thirdItem
@@ -3003,7 +3089,7 @@ public final class M3FXDemoApp extends Application {
         M3NavigationItem fourthItem = createNavigationItem("Settings", "settings");
         secondItem.setBadge(new M3Badge("3"));
 
-        M3NavigationBar navigationBar = new M3NavigationBar(
+        M3NavigationBar navigationBar = createNavigationBar(
                 firstItem,
                 secondItem,
                 thirdItem,
@@ -3020,7 +3106,7 @@ public final class M3FXDemoApp extends Application {
         M3NavigationItem thirdItem = createNavigationItem("Done", "done");
         secondItem.setBadge(new M3Badge());
 
-        M3NavigationRail navigationRail = new M3NavigationRail(
+        M3NavigationRail navigationRail = createNavigationRail(
                 firstItem,
                 secondItem,
                 thirdItem
@@ -3037,7 +3123,7 @@ public final class M3FXDemoApp extends Application {
         M3NavigationItem fourthItem = createNavigationItem("Settings", "settings");
         secondItem.setBadge(new M3Badge());
 
-        M3NavigationRail navigationRail = new M3NavigationRail(
+        M3NavigationRail navigationRail = createNavigationRail(
                 firstItem,
                 secondItem,
                 thirdItem,
@@ -3055,7 +3141,7 @@ public final class M3FXDemoApp extends Application {
         M3ListItem fourthItem = createDrawerItem("Archive", "archive");
         secondItem.setTrailing(new M3Badge("3"));
 
-        M3NavigationDrawer navigationDrawer = new M3NavigationDrawer(
+        M3NavigationDrawer navigationDrawer = createNavigationDrawer(
                 firstItem,
                 secondItem,
                 new M3Divider(),
@@ -3068,7 +3154,7 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the sectioned navigation drawer sample.
     private static M3NavigationDrawer createSectionNavigationDrawer() {
-        M3NavigationDrawer navigationDrawer = new M3NavigationDrawer(
+        M3NavigationDrawer navigationDrawer = createNavigationDrawer(
                 createDrawerItem("Dashboard", "dashboard"),
                 createDrawerItem("Reports", "reports"),
                 createDrawerItem("Settings", "settings")
@@ -3216,7 +3302,7 @@ public final class M3FXDemoApp extends Application {
             String third,
             String... rest
     ) {
-        M3IconToggleButtonGroup group = new M3IconToggleButtonGroup(
+        M3IconToggleButtonGroup group = createIconToggleButtonGroup(
                 createIconToggleButton(first, variant, false),
                 createIconToggleButton(second, variant, false),
                 createIconToggleButton(third, variant, false)
@@ -3234,7 +3320,7 @@ public final class M3FXDemoApp extends Application {
         M3IconToggleButton firstButton = createIconToggleButton("bold", M3IconToggleButtonVariant.OUTLINED, false);
         M3IconToggleButton secondButton = createIconToggleButton("italic", M3IconToggleButtonVariant.OUTLINED, false);
         M3IconToggleButton thirdButton = createIconToggleButton("underline", M3IconToggleButtonVariant.OUTLINED, false);
-        M3IconToggleButtonGroup group = new M3IconToggleButtonGroup(
+        M3IconToggleButtonGroup group = createIconToggleButtonGroup(
                 firstButton,
                 secondButton,
                 thirdButton
@@ -3324,7 +3410,7 @@ public final class M3FXDemoApp extends Application {
         share.setOnAction(event -> showSnackbar("Theme-aware snackbar"));
         M3FloatingActionButton toggle = createFab("add", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.REGULAR);
         M3FabMenu menu = new M3FabMenu(toggle);
-        menu.addItems(create, edit, share);
+        menu.getItems().addAll(create, edit, share);
         return menu;
     }
 
@@ -3573,7 +3659,7 @@ public final class M3FXDemoApp extends Application {
     /// Opens a date picker dialog and reports the accepted date.
     private void showDatePickerDialog(LocalDate initialDate) {
         M3DatePickerDialog dialog = new M3DatePickerDialog(initialDate);
-        dialog.setCommonPresets(initialDate);
+        dialog.getPresets().setAll(M3DatePresets.common(initialDate));
         initDialogOwner(dialog);
         dialog.setOnHidden(event -> {
             LocalDate result = dialog.getResult();
@@ -3596,9 +3682,9 @@ public final class M3FXDemoApp extends Application {
     /// Opens a date range picker dialog with common range presets.
     private void showPresetDateRangePickerDialog(LocalDate anchorDate) {
         M3DateRangePickerDialog dialog = new M3DateRangePickerDialog();
-        dialog.setMinDate(anchorDate.minusMonths(1));
-        dialog.setMaxDate(anchorDate.plusMonths(3));
-        dialog.getPresets().setAll(M3DateRangePresets.common(anchorDate, dialog.getFirstDayOfWeek()));
+        dialog.getPicker().setMinDate(anchorDate.minusMonths(1));
+        dialog.getPicker().setMaxDate(anchorDate.plusMonths(3));
+        dialog.getPresets().setAll(M3DateRangePresets.common(anchorDate, dialog.getPicker().getFirstDayOfWeek()));
         initDialogOwner(dialog);
         dialog.setOnHidden(event -> {
             M3DateRange result = dialog.getResult();
@@ -3610,9 +3696,9 @@ public final class M3FXDemoApp extends Application {
     /// Opens a time picker dialog and reports the accepted time.
     private void showTimePickerDialog(LocalTime initialTime) {
         M3TimePickerDialog dialog = new M3TimePickerDialog(initialTime);
-        dialog.setUse24HourClock(true);
-        dialog.setMinuteStep(15);
-        dialog.setCommonPresets(initialTime);
+        dialog.getPicker().setUse24HourClock(true);
+        dialog.getPicker().setMinuteStep(15);
+        dialog.getPresets().setAll(M3TimePresets.common(initialTime));
         initDialogOwner(dialog);
         dialog.setOnHidden(event -> {
             LocalTime result = dialog.getResult();

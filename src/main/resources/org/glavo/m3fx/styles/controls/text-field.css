@@ -149,8 +149,31 @@
 .m3-text-input-layout-input.m3-outlined-field:error,
 .m3-text-input-layout-input.m3-outlined-field:error:hover,
 .m3-text-input-layout-input.m3-outlined-field:error:focused {
+    -fx-control-inner-background: transparent;
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
     -fx-border-color: transparent;
     -fx-border-width: 0;
+}
+
+.m3-text-input-layout-input.m3-text-area > .scroll-pane,
+.m3-text-input-layout-input.m3-text-area:focused > .scroll-pane,
+.m3-text-input-layout-input.m3-text-area > .scroll-pane > .viewport,
+.m3-text-input-layout-input.m3-text-area:focused > .scroll-pane > .viewport,
+.m3-text-input-layout-input.m3-text-area > .scroll-pane > .viewport > .content,
+.m3-text-input-layout-input.m3-text-area:focused > .scroll-pane > .viewport > .content,
+.m3-text-input-layout-input.m3-text-area .scroll-pane,
+.m3-text-input-layout-input.m3-text-area:focused .scroll-pane,
+.m3-text-input-layout-input.m3-text-area .viewport,
+.m3-text-input-layout-input.m3-text-area:focused .viewport,
+.m3-text-input-layout-input.m3-text-area .content,
+.m3-text-input-layout-input.m3-text-area:focused .content {
+    -fx-control-inner-background: transparent;
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
 }
 
 .m3-text-field:disabled,

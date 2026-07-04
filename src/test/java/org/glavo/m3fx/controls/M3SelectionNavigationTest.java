@@ -18,6 +18,8 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import org.glavo.m3fx.internal.M3SelectionNavigation;
+import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.FxTestUtils;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -28,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.glavo.m3fx.M3TestControls.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -373,7 +376,7 @@ final class M3SelectionNavigationTest {
             M3NavigationItem fourth = new M3NavigationItem("Fourth");
             M3NavigationItem fifth = new M3NavigationItem("Fifth");
             M3NavigationItem sixth = new M3NavigationItem("Sixth");
-            M3NavigationRail rail = new M3NavigationRail(first, second, third, fourth, fifth, sixth);
+            M3NavigationRail rail = navigationRail(first, second, third, fourth, fifth, sixth);
             VBox content = new VBox(rail);
             ScrollPane scrollPane = new ScrollPane(content);
             scrollPane.setFitToWidth(true);
@@ -407,7 +410,7 @@ final class M3SelectionNavigationTest {
             M3Button fourth = wideButton("Fourth");
             M3Button fifth = wideButton("Fifth");
             M3Button sixth = wideButton("Sixth");
-            M3ButtonGroup group = new M3ButtonGroup(first, second, third, fourth, fifth, sixth);
+            M3ButtonGroup group = buttonGroup(first, second, third, fourth, fifth, sixth);
             HBox content = new HBox(group);
             ScrollPane scrollPane = new ScrollPane(content);
             scrollPane.setFitToHeight(true);
@@ -440,7 +443,7 @@ final class M3SelectionNavigationTest {
             M3ListItem fourth = new M3ListItem("Fourth");
             M3ListItem fifth = new M3ListItem("Fifth");
             M3ListItem sixth = new M3ListItem("Sixth");
-            M3ListPane listPane = new M3ListPane(first, second, third, fourth, fifth, sixth);
+            M3ListPane listPane = listPane(first, second, third, fourth, fifth, sixth);
             VBox content = new VBox(listPane);
             ScrollPane scrollPane = new ScrollPane(content);
             scrollPane.setFitToWidth(true);
@@ -471,7 +474,7 @@ final class M3SelectionNavigationTest {
             M3ListItem labels = new M3ListItem("Labels");
             M3ListItem settings = new M3ListItem("Settings");
             M3ListItem search = new M3ListItem("Search");
-            M3ListPane listPane = new M3ListPane(archive, drafts, inbox, labels, settings, search);
+            M3ListPane listPane = listPane(archive, drafts, inbox, labels, settings, search);
             VBox content = new VBox(listPane);
             ScrollPane scrollPane = new ScrollPane(content);
             scrollPane.setFitToWidth(true);
@@ -500,7 +503,7 @@ final class M3SelectionNavigationTest {
         FxTestUtils.runOnFxThread(() -> {
             M3ListItem archive = new M3ListItem("Archive");
             M3ListItem settings = new M3ListItem("Settings");
-            M3ListPane listPane = new M3ListPane(archive, settings);
+            M3ListPane listPane = listPane(archive, settings);
             layout(listPane);
             assertTrue(M3Accessible.requestAccessibleFocus(listPane, archive));
 
@@ -519,7 +522,7 @@ final class M3SelectionNavigationTest {
         FxTestUtils.runOnFxThread(() -> {
             M3ListItem archive = new M3ListItem("Archive");
             M3ListItem settings = new M3ListItem("Settings");
-            M3ListPane listPane = new M3ListPane(archive, settings);
+            M3ListPane listPane = listPane(archive, settings);
             layout(listPane);
             assertTrue(M3Accessible.requestAccessibleFocus(listPane, archive));
 
@@ -589,7 +592,7 @@ final class M3SelectionNavigationTest {
     @Test
     void listViewModifiedNavigationKeysAreIgnored() {
         FxTestUtils.runOnFxThread(() -> {
-            M3ListView<String> listView = new M3ListView<>("Archive", "Settings", "Search");
+            M3ListView<String> listView = listView("Archive", "Settings", "Search");
             listView.setSelectionMode(M3ListSelectionMode.SINGLE);
             listView.selectIndex(0);
             layout(listView);
@@ -607,7 +610,7 @@ final class M3SelectionNavigationTest {
     @Test
     void listViewUnmodifiedNavigationKeysMoveFocusAndSelection() {
         FxTestUtils.runOnFxThread(() -> {
-            M3ListView<String> listView = new M3ListView<>("Archive", "Settings", "Search");
+            M3ListView<String> listView = listView("Archive", "Settings", "Search");
             listView.setSelectionMode(M3ListSelectionMode.SINGLE);
             listView.selectIndex(0);
             layout(listView);
@@ -630,7 +633,7 @@ final class M3SelectionNavigationTest {
             M3ListItem labels = new M3ListItem("Labels");
             M3ListItem settings = new M3ListItem("Settings");
             M3ListItem search = new M3ListItem("Search");
-            M3NavigationDrawer drawer = new M3NavigationDrawer(archive, drafts, inbox, labels, settings, search);
+            M3NavigationDrawer drawer = navigationDrawer(archive, drafts, inbox, labels, settings, search);
             VBox content = new VBox(drawer);
             ScrollPane scrollPane = new ScrollPane(content);
             scrollPane.setFitToWidth(true);
@@ -663,7 +666,7 @@ final class M3SelectionNavigationTest {
             M3Button fourth = wideButton("Fourth");
             M3Button fifth = wideButton("Fifth");
             M3Button sixth = wideButton("Sixth");
-            M3ButtonGroup group = new M3ButtonGroup(first, second, third, fourth, fifth, sixth);
+            M3ButtonGroup group = buttonGroup(first, second, third, fourth, fifth, sixth);
             HBox content = new HBox(group);
             ScrollPane scrollPane = new ScrollPane(content);
             scrollPane.setFitToHeight(true);
@@ -938,27 +941,27 @@ final class M3SelectionNavigationTest {
         FxTestUtils.runOnFxThread(() -> {
             M3NavigationItem navFirst = new M3NavigationItem("Home");
             M3NavigationItem navSecond = new M3NavigationItem("Settings");
-            M3NavigationBar navigationBar = new M3NavigationBar(navFirst, navSecond);
+            M3NavigationBar navigationBar = navigationBar(navFirst, navSecond);
             navigationBar.select(navSecond);
 
             M3NavigationItem railFirst = new M3NavigationItem("Inbox");
             M3NavigationItem railSecond = new M3NavigationItem("Archive");
-            M3NavigationRail navigationRail = new M3NavigationRail(railFirst, railSecond);
+            M3NavigationRail navigationRail = navigationRail(railFirst, railSecond);
             navigationRail.select(railSecond);
 
             M3Tab tabFirst = new M3Tab("Day");
             M3Tab tabSecond = new M3Tab("Week");
-            M3TabBar tabBar = new M3TabBar(tabFirst, tabSecond);
+            M3TabBar tabBar = tabBar(tabFirst, tabSecond);
             tabBar.select(tabSecond);
 
             M3SegmentedButton segmentedFirst = new M3SegmentedButton("Day");
             M3SegmentedButton segmentedSecond = new M3SegmentedButton("Week");
-            M3SegmentedButtonGroup segmentedGroup = new M3SegmentedButtonGroup(segmentedFirst, segmentedSecond);
+            M3SegmentedButtonGroup segmentedGroup = segmentedButtonGroup(segmentedFirst, segmentedSecond);
             segmentedGroup.select(segmentedSecond);
 
             M3IconToggleButton iconFirst = new M3IconToggleButton("A");
             M3IconToggleButton iconSecond = new M3IconToggleButton("B");
-            M3IconToggleButtonGroup iconGroup = new M3IconToggleButtonGroup(iconFirst, iconSecond);
+            M3IconToggleButtonGroup iconGroup = iconToggleButtonGroup(iconFirst, iconSecond);
             iconGroup.select(iconSecond);
 
             layout(new VBox(navigationBar, navigationRail, tabBar, segmentedGroup, iconGroup));
@@ -982,23 +985,23 @@ final class M3SelectionNavigationTest {
         FxTestUtils.runOnFxThread(() -> {
             M3NavigationItem navFirst = new M3NavigationItem("Home");
             M3NavigationItem navSecond = new M3NavigationItem("Settings");
-            M3NavigationBar navigationBar = new M3NavigationBar(navFirst, navSecond);
+            M3NavigationBar navigationBar = navigationBar(navFirst, navSecond);
 
             M3NavigationItem railFirst = new M3NavigationItem("Inbox");
             M3NavigationItem railSecond = new M3NavigationItem("Archive");
-            M3NavigationRail navigationRail = new M3NavigationRail(railFirst, railSecond);
+            M3NavigationRail navigationRail = navigationRail(railFirst, railSecond);
 
             M3Tab tabFirst = new M3Tab("Day");
             M3Tab tabSecond = new M3Tab("Week");
-            M3TabBar tabBar = new M3TabBar(tabFirst, tabSecond);
+            M3TabBar tabBar = tabBar(tabFirst, tabSecond);
 
             M3SegmentedButton segmentedFirst = new M3SegmentedButton("Day");
             M3SegmentedButton segmentedSecond = new M3SegmentedButton("Week");
-            M3SegmentedButtonGroup segmentedGroup = new M3SegmentedButtonGroup(segmentedFirst, segmentedSecond);
+            M3SegmentedButtonGroup segmentedGroup = segmentedButtonGroup(segmentedFirst, segmentedSecond);
 
             M3IconToggleButton iconFirst = new M3IconToggleButton("A");
             M3IconToggleButton iconSecond = new M3IconToggleButton("B");
-            M3IconToggleButtonGroup iconGroup = new M3IconToggleButtonGroup(iconFirst, iconSecond);
+            M3IconToggleButtonGroup iconGroup = iconToggleButtonGroup(iconFirst, iconSecond);
 
             VBox root = new VBox(navigationBar, navigationRail, tabBar, segmentedGroup, iconGroup);
             layout(root);

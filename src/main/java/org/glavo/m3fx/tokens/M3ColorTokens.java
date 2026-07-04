@@ -25,7 +25,7 @@ public sealed interface M3ColorTokens permits M3ColorTokensImpl {
     /// The default CSS prefix used for Monet color roles.
     String DEFAULT_CSS_PREFIX = "-monet";
 
-    /// The m3fx CSS prefix used for Material color roles.
+    /// The M3FX CSS prefix used for Material color roles.
     String M3_CSS_PREFIX = "-m3-color";
 
     /// Returns the MonetFX color scheme used by this token set.
@@ -81,7 +81,7 @@ public sealed interface M3ColorTokens permits M3ColorTokensImpl {
     ///
     /// @param color the JavaFX color to convert
     /// @return a JavaFX CSS `rgb(r,g,b)` color value
-    static String toRgb(Color color) {
+    private static String toRgb(Color color) {
         int red = (int) Math.round(color.getRed() * 255.0);
         int green = (int) Math.round(color.getGreen() * 255.0);
         int blue = (int) Math.round(color.getBlue() * 255.0);

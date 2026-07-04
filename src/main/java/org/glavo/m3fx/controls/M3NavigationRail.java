@@ -23,7 +23,13 @@ import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
+import org.glavo.m3fx.internal.M3SelectionNavigation;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.skins.M3NavigationRailSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -54,7 +60,7 @@ public class M3NavigationRail extends Control {
     private static final double DEFAULT_ITEM_SPACING = 8.0;
 
     /// The mutable navigation rail content.
-    private final ObservableList<Node> items = FXCollections.observableArrayList();
+    private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
 
     /// Notifies accessibility clients when focus moves between navigation items.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -71,7 +77,7 @@ public class M3NavigationRail extends Control {
             new ReadOnlyObjectWrapper<>(this, "selectedItem");
 
     /// The selected navigation items in child order.
-    private final ObservableList<M3NavigationItem> selectedItems = FXCollections.observableArrayList();
+    private final ObservableList<M3NavigationItem> selectedItems = M3ObservableLists.nonNullElementList("selectedItem");
 
     /// The read-only selected navigation item view.
     private final @UnmodifiableView ObservableList<M3NavigationItem> selectedItemsView =
@@ -127,14 +133,6 @@ public class M3NavigationRail extends Control {
         initialize();
     }
 
-    /// Creates a navigation rail containing the supplied items.
-    ///
-    /// @param items the initial non-null navigation items
-    public M3NavigationRail(M3NavigationItem... items) {
-        initialize();
-        addItems(items);
-    }
-
     /// Returns the mutable child list used as navigation rail items.
     ///
     /// @return the mutable navigation rail content list
@@ -142,33 +140,9 @@ public class M3NavigationRail extends Control {
         return items;
     }
 
-    /// Adds one navigation item.
-    ///
-    /// @param item the non-null navigation item to append
-    public final void addItem(M3NavigationItem item) {
-        getItems().add(Objects.requireNonNull(item, "item"));
-    }
 
-    /// Adds navigation items.
-    ///
-    /// @param items the non-null navigation items to append
-    public final void addItems(M3NavigationItem... items) {
-        validateItems(items);
-        getItems().addAll(items);
-    }
 
-    /// Replaces all navigation items.
-    ///
-    /// @param items the non-null navigation items that replace the current content
-    public final void setItems(M3NavigationItem... items) {
-        validateItems(items);
-        getItems().setAll(items);
-    }
 
-    /// Removes all navigation rail content.
-    public final void clearItems() {
-        getItems().clear();
-    }
 
     /// Returns the selected navigation items in child order.
     ///
@@ -434,6 +408,7 @@ public class M3NavigationRail extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TOOL_BAR);
+        setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleSelectionTarget, this::showAccessibleItem);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         getItems().addListener(childrenListener);
@@ -665,11 +640,4 @@ public class M3NavigationRail extends Control {
         }
     }
 
-    /// Validates a navigation item array.
-    private static void validateItems(M3NavigationItem... items) {
-        Objects.requireNonNull(items, "items");
-        for (M3NavigationItem item : items) {
-            Objects.requireNonNull(item, "item");
-        }
-    }
 }

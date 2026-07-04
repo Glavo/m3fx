@@ -26,6 +26,7 @@ val m3fxArtifactId = name
 val m3fxVersion = version.toString()
 val m3fxCoordinates = "$m3fxGroupId:$m3fxArtifactId:$m3fxVersion"
 val m3fxModuleId = "$m3fxGroupId:$m3fxArtifactId"
+val monetFxVersion = "0.4.0"
 
 repositories {
     mavenCentral()
@@ -49,7 +50,7 @@ fun DependencyHandler.addJavafxDependencies(configurationName: String, version: 
 
 dependencies {
     addJavafxDependencies("compileOnly", javafxVersion)
-    api("org.glavo:MonetFX:0.4.0")
+    api("org.glavo:MonetFX:$monetFxVersion")
     compileOnlyApi("org.jetbrains:annotations:26.1.0")
 
     testImplementation(platform("org.junit:junit-bom:6.0.0"))
@@ -73,8 +74,36 @@ java {
     withJavadocJar()
 }
 
+val monetFxJavadocLinkDirectory =
+    layout.buildDirectory.dir("generated/javadoc-links/monetfx-$monetFxVersion")
+
+val generateMonetFxJavadocElementList = tasks.register("generateMonetFxJavadocElementList") {
+    group = "documentation"
+    description = "Generates the offline Javadoc element list for MonetFX."
+
+    val outputDirectory = monetFxJavadocLinkDirectory
+    outputs.dir(outputDirectory)
+
+    doLast {
+        val elementList = outputDirectory.get().file("element-list").asFile
+        elementList.parentFile.mkdirs()
+        elementList.writeText(
+            """
+            module:org.glavo.monetfx
+            org.glavo.monetfx
+            org.glavo.monetfx.beans.binding
+            org.glavo.monetfx.beans.property
+            org.glavo.monetfx.beans.value
+            """.trimIndent() + System.lineSeparator(),
+            Charsets.UTF_8
+        )
+    }
+}
+
 tasks.withType<Javadoc> {
     val mainSourceDirectory = layout.projectDirectory.dir("src/main/java").asFile
+    dependsOn(generateMonetFxJavadocElementList)
+    inputs.dir(monetFxJavadocLinkDirectory)
     setSource(fileTree(mainSourceDirectory) {
         include("org/glavo/m3fx/controls/package-info.java")
     })
@@ -87,8 +116,11 @@ tasks.withType<Javadoc> {
         it.addStringOption("subpackages", "org.glavo.m3fx")
         it.links(
             "https://docs.oracle.com/en/java/javase/17/docs/api/",
-            "https://openjfx.io/javadoc/$javafxVersion/",
-            "https://javadoc.io/doc/org.glavo/MonetFX/0.4.0/"
+            "https://openjfx.io/javadoc/$javafxVersion/"
+        )
+        it.linksOffline(
+            "https://javadoc.io/doc/org.glavo/MonetFX/$monetFxVersion/",
+            monetFxJavadocLinkDirectory.get().asFile.absolutePath
         )
         it.addBooleanOption("html5", true)
         it.addBooleanOption("Werror", true)
@@ -237,8 +269,21 @@ val verifyPublicationMetadata = tasks.register("verifyPublicationMetadata") {
             throw GradleException("The generated Maven POM contains stale metadata: $staleFragments")
         }
 
-        if (pom.contains("<groupId>org.openjfx</groupId>")) {
+        if (pom.contains("<groupId>org.openjfx</groupId>")
+                || Regex("<artifactId>javafx-[^<]+</artifactId>").containsMatchIn(pom)) {
             throw GradleException("The library publication must not expose JavaFX dependencies.")
+        }
+
+        val monetFxDependency = Regex(
+            "<dependency>\\s*"
+                    + "<groupId>org\\.glavo</groupId>\\s*"
+                    + "<artifactId>MonetFX</artifactId>\\s*"
+                    + "<version>${Regex.escape(monetFxVersion)}</version>\\s*"
+                    + "<scope>compile</scope>\\s*"
+                    + "</dependency>"
+        )
+        if (!monetFxDependency.containsMatchIn(pom)) {
+            throw GradleException("MonetFX must be published as a compile dependency.")
         }
 
         val annotationsDependency = Regex(
@@ -524,9 +569,10 @@ tasks.register("shadowDemoJar") {
 
 tasks.register("releaseCheck") {
     group = "verification"
-    description = "Runs local release verification for the library publication and demo distribution."
+    description = "Runs local release verification for the library publication, demo tests, and demo distribution."
     dependsOn(
         tasks.named("check"),
+        project(":demo").tasks.named("test"),
         tasks.named("shadowDemoJar"),
         tasks.named("jlinkDemoRuntime")
     )

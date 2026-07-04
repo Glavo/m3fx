@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.controls;
 
+import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 

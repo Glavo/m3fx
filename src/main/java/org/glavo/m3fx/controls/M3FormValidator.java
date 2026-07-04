@@ -11,9 +11,11 @@ import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
+import javafx.collections.ModifiableObservableListBase;
 import javafx.collections.ObservableList;
 import javafx.scene.Node;
 import javafx.scene.control.TextInputControl;
+import org.glavo.m3fx.internal.M3Accessible;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
@@ -32,11 +34,7 @@ import java.util.Objects;
 @NotNullByDefault
 public final class M3FormValidator {
     /// The registered text input layouts.
-    private final ObservableList<M3TextInputLayout> inputs = FXCollections.observableArrayList();
-
-    /// The unmodifiable registered input list exposed to callers.
-    private final @UnmodifiableView ObservableList<M3TextInputLayout> inputsView =
-            FXCollections.unmodifiableObservableList(inputs);
+    private final ObservableList<M3TextInputLayout> inputs = new InputList();
 
     /// The currently invalid input layouts.
     private final ObservableList<M3TextInputLayout> invalidInputs = FXCollections.observableArrayList();
@@ -74,74 +72,17 @@ public final class M3FormValidator {
     ///
     /// @param inputs the input layouts to validate in order
     public M3FormValidator(M3TextInputLayout... inputs) {
-        addInputs(inputs);
+        this.inputs.addAll(inputs);
     }
 
-    /// Returns the registered input layouts in validation order.
+    /// Returns the mutable registered input list in validation order.
+    ///
+    /// Mutating this list installs and removes validation listeners, rejects `null` layouts, rejects duplicate
+    /// layout instances, and refreshes aggregate validation state.
     ///
     /// @return the registered input layouts in validation order
-    public @UnmodifiableView ObservableList<M3TextInputLayout> getInputs() {
-        return inputsView;
-    }
-
-    /// Adds one input layout to the end of the validation order.
-    ///
-    /// @param input the input layout to add
-    public void addInput(M3TextInputLayout input) {
-        M3TextInputLayout validatedInput = Objects.requireNonNull(input, "input");
-        validateNewInput(validatedInput);
-        installInput(validatedInput);
-        inputs.add(validatedInput);
-        refreshInvalidInputs();
-    }
-
-    /// Adds input layouts to the end of the validation order.
-    ///
-    /// @param inputs the input layouts to add
-    public void addInputs(M3TextInputLayout... inputs) {
-        List<M3TextInputLayout> validatedInputs = validatedNewInputs(inputs);
-        installInputs(validatedInputs);
-        this.inputs.addAll(validatedInputs);
-        refreshInvalidInputs();
-    }
-
-    /// Replaces the registered input layouts with the supplied layouts.
-    ///
-    /// @param inputs the replacement input layouts
-    public void setInputs(M3TextInputLayout... inputs) {
-        setInputs(validatedInputs(inputs));
-    }
-
-    /// Replaces the registered input layouts with the supplied layouts.
-    ///
-    /// @param inputs the replacement input layouts
-    public void setInputs(Collection<? extends M3TextInputLayout> inputs) {
-        List<M3TextInputLayout> validatedInputs = validatedInputs(inputs);
-        uninstallInputs(this.inputs);
-        this.inputs.setAll(validatedInputs);
-        installInputs(validatedInputs);
-        refreshInvalidInputs();
-    }
-
-    /// Removes one input layout from the validation order.
-    ///
-    /// @param input the input layout to remove
-    /// @return `true` when the input layout was registered and removed
-    public boolean removeInput(M3TextInputLayout input) {
-        M3TextInputLayout validatedInput = Objects.requireNonNull(input, "input");
-        boolean removed = inputs.remove(validatedInput);
-        if (removed) {
-            uninstallInput(validatedInput);
-            refreshInvalidInputs();
-        }
-        return removed;
-    }
-
-    /// Removes all registered input layouts.
-    public void clearInputs() {
-        uninstallInputs(inputs);
-        inputs.clear();
-        refreshInvalidInputs();
+    public ObservableList<M3TextInputLayout> getInputs() {
+        return inputs;
     }
 
     /// Returns the currently invalid input layouts in validation order.
@@ -299,24 +240,10 @@ public final class M3FormValidator {
         return false;
     }
 
-    /// Installs validation listeners on a group of input layouts.
-    private void installInputs(Collection<M3TextInputLayout> inputs) {
-        for (M3TextInputLayout input : inputs) {
-            installInput(input);
-        }
-    }
-
     /// Installs validation listeners on one input layout.
     private void installInput(M3TextInputLayout input) {
         input.validationErrorTextProperty().addListener(validationErrorTextListener);
         input.validationActiveProperty().addListener(validationActiveListener);
-    }
-
-    /// Removes validation listeners from a group of input layouts.
-    private void uninstallInputs(Collection<M3TextInputLayout> inputs) {
-        for (M3TextInputLayout input : inputs) {
-            uninstallInput(input);
-        }
     }
 
     /// Removes validation listeners from one input layout.
@@ -374,51 +301,156 @@ public final class M3FormValidator {
         return textInputFocusTarget != null ? textInputFocusTarget : M3Accessible.structuralFocusTarget(invalidInput);
     }
 
-    /// Returns a validated copy of input layout varargs.
-    private List<M3TextInputLayout> validatedInputs(M3TextInputLayout... inputs) {
-        Objects.requireNonNull(inputs, "inputs");
-        ArrayList<M3TextInputLayout> validatedInputs = new ArrayList<>(inputs.length);
-        for (M3TextInputLayout input : inputs) {
-            validatedInputs.add(Objects.requireNonNull(input, "input"));
-        }
-        validateDistinctInputs(validatedInputs);
-        return validatedInputs;
-    }
+    /// Mutable input list that keeps validator listeners synchronized with list contents.
+    private final class InputList extends ModifiableObservableListBase<M3TextInputLayout> {
+        /// The registered inputs.
+        private final ArrayList<M3TextInputLayout> backingList = new ArrayList<>();
 
-    /// Returns a validated copy of new input layout varargs.
-    private List<M3TextInputLayout> validatedNewInputs(M3TextInputLayout... inputs) {
-        List<M3TextInputLayout> validatedInputs = validatedInputs(inputs);
-        for (M3TextInputLayout input : validatedInputs) {
-            validateNewInput(input);
+        /// Returns the input at the requested index.
+        @Override
+        public M3TextInputLayout get(int index) {
+            return backingList.get(index);
         }
-        return validatedInputs;
-    }
 
-    /// Returns a validated copy of input layout collection values.
-    private List<M3TextInputLayout> validatedInputs(Collection<? extends M3TextInputLayout> inputs) {
-        Objects.requireNonNull(inputs, "inputs");
-        ArrayList<M3TextInputLayout> validatedInputs = new ArrayList<>(inputs.size());
-        for (M3TextInputLayout input : inputs) {
-            validatedInputs.add(Objects.requireNonNull(input, "input"));
+        /// Returns the number of registered inputs.
+        @Override
+        public int size() {
+            return backingList.size();
         }
-        validateDistinctInputs(validatedInputs);
-        return validatedInputs;
-    }
 
-    /// Validates that one input layout is not already registered.
-    private void validateNewInput(M3TextInputLayout input) {
-        if (inputs.contains(input)) {
-            throw new IllegalArgumentException("input is already registered");
+        /// Adds all inputs after validating the full mutation.
+        @Override
+        public boolean addAll(Collection<? extends M3TextInputLayout> inputs) {
+            return super.addAll(validatedAddCopy(inputs));
         }
-    }
 
-    /// Validates that input layouts contain no duplicates.
-    private static void validateDistinctInputs(List<M3TextInputLayout> inputs) {
-        for (int i = 0; i < inputs.size(); i++) {
-            M3TextInputLayout input = inputs.get(i);
-            for (int j = i + 1; j < inputs.size(); j++) {
-                if (input == inputs.get(j)) {
-                    throw new IllegalArgumentException("inputs must not contain duplicates");
+        /// Adds all inputs at an index after validating the full mutation.
+        @Override
+        public boolean addAll(int index, Collection<? extends M3TextInputLayout> inputs) {
+            return super.addAll(index, validatedAddCopy(inputs));
+        }
+
+        /// Adds all inputs after validating the full mutation.
+        @Override
+        public boolean addAll(M3TextInputLayout... inputs) {
+            return super.addAll(validatedAddCopy(inputs));
+        }
+
+        /// Replaces all inputs after validating the full replacement.
+        @Override
+        public boolean setAll(Collection<? extends M3TextInputLayout> inputs) {
+            return super.setAll(validatedReplacementCopy(inputs));
+        }
+
+        /// Replaces all inputs after validating the full replacement.
+        @Override
+        public boolean setAll(M3TextInputLayout... inputs) {
+            return super.setAll(validatedReplacementCopy(inputs));
+        }
+
+        /// Adds one input and installs its validation listeners.
+        @Override
+        protected void doAdd(int index, M3TextInputLayout input) {
+            M3TextInputLayout validatedInput = requireNewInput(input);
+            backingList.add(index, validatedInput);
+            installInput(validatedInput);
+            refreshInvalidInputs();
+        }
+
+        /// Replaces one input and updates validation listeners.
+        @Override
+        protected M3TextInputLayout doSet(int index, M3TextInputLayout input) {
+            M3TextInputLayout validatedInput = requireReplacementInput(index, input);
+            M3TextInputLayout oldInput = backingList.set(index, validatedInput);
+            if (oldInput != validatedInput) {
+                uninstallInput(oldInput);
+                installInput(validatedInput);
+                refreshInvalidInputs();
+            }
+            return oldInput;
+        }
+
+        /// Removes one input and uninstalls its validation listeners.
+        @Override
+        protected M3TextInputLayout doRemove(int index) {
+            M3TextInputLayout oldInput = backingList.remove(index);
+            uninstallInput(oldInput);
+            refreshInvalidInputs();
+            return oldInput;
+        }
+
+        /// Returns a validated copy for adding inputs.
+        private List<M3TextInputLayout> validatedAddCopy(Collection<? extends M3TextInputLayout> inputs) {
+            Objects.requireNonNull(inputs, "inputs");
+            ArrayList<M3TextInputLayout> copy = new ArrayList<>(inputs.size());
+            for (M3TextInputLayout input : inputs) {
+                copy.add(requireNewInput(input));
+            }
+            validateDistinctInputs(copy);
+            return copy;
+        }
+
+        /// Returns a validated copy for adding inputs.
+        private List<M3TextInputLayout> validatedAddCopy(M3TextInputLayout[] inputs) {
+            Objects.requireNonNull(inputs, "inputs");
+            ArrayList<M3TextInputLayout> copy = new ArrayList<>(inputs.length);
+            for (M3TextInputLayout input : inputs) {
+                copy.add(requireNewInput(input));
+            }
+            validateDistinctInputs(copy);
+            return copy;
+        }
+
+        /// Returns a validated copy for replacing all inputs.
+        private List<M3TextInputLayout> validatedReplacementCopy(Collection<? extends M3TextInputLayout> inputs) {
+            Objects.requireNonNull(inputs, "inputs");
+            ArrayList<M3TextInputLayout> copy = new ArrayList<>(inputs.size());
+            for (M3TextInputLayout input : inputs) {
+                copy.add(Objects.requireNonNull(input, "input"));
+            }
+            validateDistinctInputs(copy);
+            return copy;
+        }
+
+        /// Returns a validated copy for replacing all inputs.
+        private List<M3TextInputLayout> validatedReplacementCopy(M3TextInputLayout[] inputs) {
+            Objects.requireNonNull(inputs, "inputs");
+            ArrayList<M3TextInputLayout> copy = new ArrayList<>(inputs.length);
+            for (M3TextInputLayout input : inputs) {
+                copy.add(Objects.requireNonNull(input, "input"));
+            }
+            validateDistinctInputs(copy);
+            return copy;
+        }
+
+        /// Returns one non-null input that is not already registered.
+        private M3TextInputLayout requireNewInput(M3TextInputLayout input) {
+            M3TextInputLayout validatedInput = Objects.requireNonNull(input, "input");
+            if (backingList.contains(validatedInput)) {
+                throw new IllegalArgumentException("input is already registered");
+            }
+            return validatedInput;
+        }
+
+        /// Returns one non-null input that is not registered at another index.
+        private M3TextInputLayout requireReplacementInput(int replacementIndex, M3TextInputLayout input) {
+            M3TextInputLayout validatedInput = Objects.requireNonNull(input, "input");
+            for (int index = 0; index < backingList.size(); index++) {
+                if (index != replacementIndex && backingList.get(index) == validatedInput) {
+                    throw new IllegalArgumentException("input is already registered");
+                }
+            }
+            return validatedInput;
+        }
+
+        /// Validates that a candidate input list contains no duplicate instances.
+        private void validateDistinctInputs(List<M3TextInputLayout> inputs) {
+            for (int firstIndex = 0; firstIndex < inputs.size(); firstIndex++) {
+                M3TextInputLayout input = inputs.get(firstIndex);
+                for (int secondIndex = firstIndex + 1; secondIndex < inputs.size(); secondIndex++) {
+                    if (input == inputs.get(secondIndex)) {
+                        throw new IllegalArgumentException("inputs must not contain duplicates");
+                    }
                 }
             }
         }

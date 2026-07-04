@@ -12,7 +12,6 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
-import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.scene.AccessibleAction;
@@ -23,8 +22,13 @@ import javafx.scene.Scene;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
+import org.glavo.m3fx.internal.M3FocusTraversal;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3BottomSheetSkin;
@@ -109,7 +113,7 @@ public class M3BottomSheet extends Control {
             };
 
     /// The mutable trailing action node list.
-    private final ObservableList<Node> actions = FXCollections.observableArrayList();
+    private final ObservableList<Node> actions = M3ObservableLists.nonNullElementList("action");
 
     /// Notifies accessibility clients when focus moves between sheet content and action children.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -166,7 +170,6 @@ public class M3BottomSheet extends Control {
     /// @param actions the trailing action nodes
     public M3BottomSheet(String headline, @Nullable Node content, Node... actions) {
         this(headline, content);
-        validateActions(actions);
         getActions().addAll(actions);
     }
 
@@ -363,6 +366,7 @@ public class M3BottomSheet extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
+        setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
         headline.addListener((observable, oldValue, newValue) -> updateAccessibleText());
         content.addListener((observable, oldValue, newValue) -> {
@@ -558,11 +562,4 @@ public class M3BottomSheet extends Control {
         );
     }
 
-    /// Validates an action node array.
-    private static void validateActions(Node... actions) {
-        Objects.requireNonNull(actions, "actions");
-        for (Node action : actions) {
-            Objects.requireNonNull(action, "action");
-        }
-    }
 }

@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
-/// Resolves bundled m3fx stylesheet resources.
+/// Resolves bundled M3FX stylesheet resources.
 @NotNullByDefault
 public final class M3Stylesheets {
     /// The bundled stylesheet resource directory.
@@ -23,9 +23,9 @@ public final class M3Stylesheets {
     private M3Stylesheets() {
     }
 
-    /// Returns the base m3fx stylesheet URL.
+    /// Returns the base M3FX stylesheet URL.
     ///
-    /// @return the base m3fx stylesheet URL
+    /// @return the base M3FX stylesheet URL
     public static String baseStylesheet() {
         return stylesheet("base.css");
     }
@@ -37,10 +37,10 @@ public final class M3Stylesheets {
         return stylesheet("fallback.css");
     }
 
-    /// Returns a control-specific m3fx stylesheet URL.
+    /// Returns a control-specific M3FX stylesheet URL.
     ///
     /// @param name the stylesheet file name under the bundled `controls` stylesheet directory
-    /// @return the control-specific m3fx stylesheet URL
+    /// @return the control-specific M3FX stylesheet URL
     public static String controlStylesheet(String name) {
         Objects.requireNonNull(name, "name");
         return stylesheet("controls/" + name);

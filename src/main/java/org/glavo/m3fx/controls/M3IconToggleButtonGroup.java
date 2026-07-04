@@ -25,7 +25,13 @@ import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
+import org.glavo.m3fx.internal.M3SelectionNavigation;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.skins.M3IconToggleButtonGroupSkin;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -55,7 +61,7 @@ public class M3IconToggleButtonGroup extends Control {
     private static final double DEFAULT_SPACING = 8.0;
 
     /// The mutable toggle icon button group content.
-    private final ObservableList<Node> items = FXCollections.observableArrayList();
+    private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
 
     /// Notifies accessibility clients when focus moves between toggle icon buttons.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -85,7 +91,7 @@ public class M3IconToggleButtonGroup extends Control {
             };
 
     /// The selected icon toggle buttons in child order.
-    private final ObservableList<M3IconToggleButton> selectedButtons = FXCollections.observableArrayList();
+    private final ObservableList<M3IconToggleButton> selectedButtons = M3ObservableLists.nonNullElementList("selectedButton");
 
     /// The read-only selected icon toggle button view.
     private final @UnmodifiableView ObservableList<M3IconToggleButton> selectedButtonsView =
@@ -142,14 +148,6 @@ public class M3IconToggleButtonGroup extends Control {
         initialize();
     }
 
-    /// Creates a toggle icon button group containing the supplied buttons.
-    ///
-    /// @param buttons the initial toggle icon buttons
-    public M3IconToggleButtonGroup(M3IconToggleButton... buttons) {
-        initialize();
-        addButtons(buttons);
-    }
-
     /// Returns the mutable child list used as toggle icon button group content.
     ///
     /// @return the mutable child list used as toggle icon button group content
@@ -188,33 +186,9 @@ public class M3IconToggleButtonGroup extends Control {
         return spacing;
     }
 
-    /// Adds one toggle icon button.
-    ///
-    /// @param button the toggle icon button to add
-    public final void addButton(M3IconToggleButton button) {
-        getItems().add(Objects.requireNonNull(button, "button"));
-    }
 
-    /// Adds toggle icon buttons.
-    ///
-    /// @param buttons the toggle icon buttons to add
-    public final void addButtons(M3IconToggleButton... buttons) {
-        validateButtons(buttons);
-        getItems().addAll(buttons);
-    }
 
-    /// Replaces all toggle icon buttons.
-    ///
-    /// @param buttons the replacement toggle icon buttons
-    public final void setButtons(M3IconToggleButton... buttons) {
-        validateButtons(buttons);
-        getItems().setAll(buttons);
-    }
 
-    /// Removes all toggle icon button group content.
-    public final void clearItems() {
-        getItems().clear();
-    }
 
     /// Returns the icon toggle button selection mode.
     ///
@@ -466,6 +440,7 @@ public class M3IconToggleButtonGroup extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TOOL_BAR);
+        setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleSelectionTarget, this::showAccessibleItem);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         getItems().addListener(childrenListener);
@@ -706,13 +681,6 @@ public class M3IconToggleButtonGroup extends Control {
         return new M3IconToggleButtonGroupSkin(this);
     }
 
-    /// Validates a toggle icon button array.
-    private static void validateButtons(M3IconToggleButton... buttons) {
-        Objects.requireNonNull(buttons, "buttons");
-        for (M3IconToggleButton button : buttons) {
-            Objects.requireNonNull(button, "button");
-        }
-    }
 
     /// CSS metadata for icon toggle button group layout tokens.
     @NotNullByDefault

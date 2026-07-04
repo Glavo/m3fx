@@ -21,6 +21,9 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3SnackbarSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -41,7 +44,7 @@ import java.util.Objects;
 /// See [Material Design snackbars](https://m3.material.io/components/snackbar/overview).
 @NotNullByDefault
 public class M3Snackbar extends Control {
-    /// The base style class for m3fx snackbars.
+    /// The base style class for M3FX snackbars.
     public static final String STYLE_CLASS = "m3-snackbar";
 
     /// The default snackbar container shape radius.
@@ -106,6 +109,7 @@ public class M3Snackbar extends Control {
     public M3Snackbar(String text) {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TEXT);
+        setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
         this.text.addListener((observable, oldValue, newValue) -> {
             updateAccessibleText();
@@ -509,7 +513,7 @@ public class M3Snackbar extends Control {
         return getClassCssMetaData();
     }
 
-    /// Returns the user-agent stylesheet for m3fx snackbars.
+    /// Returns the user-agent stylesheet for M3FX snackbars.
     ///
     /// @return the snackbar user-agent stylesheet URL
     @Override
@@ -626,7 +630,7 @@ public class M3Snackbar extends Control {
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
     }
 
-    /// CSS metadata for m3fx snackbar component tokens.
+    /// CSS metadata for M3FX snackbar component tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
         /// CSS metadata for the container shape token.

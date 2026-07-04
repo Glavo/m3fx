@@ -1075,7 +1075,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         return builder.toString().trim();
     }
 
-    /// Converts component tokens into JavaFX CSS rules for m3fx controls.
+    /// Converts component tokens into JavaFX CSS rules for M3FX controls.
     ///
     /// @return JavaFX CSS rules that apply these component tokens to M3FX controls
     default String toControlStyleRules() {

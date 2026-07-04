@@ -27,14 +27,19 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.util.Duration;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.animation.M3MotionBehavior;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3PopupStyles;
 import org.glavo.m3fx.internal.M3ThemeResolver;
+import org.glavo.m3fx.internal.M3TooltipInstallation;
+import org.glavo.m3fx.internal.M3TooltipRegistry;
 import org.glavo.m3fx.skins.M3TooltipSkin;
 import org.glavo.m3fx.theme.M3Theme;
+import org.glavo.m3fx.internal.theme.M3ThemeMetadata;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.glavo.m3fx.tokens.M3ComponentTokens;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -67,9 +72,6 @@ public class M3Tooltip extends PopupControl {
     private static final String THEME_INHERITANCE_LISTENER_KEY =
             M3Tooltip.class.getName() + ".themeInheritanceListener";
 
-    /// The node property key used to store tooltip activation handlers.
-    private static final String INSTALLATION_KEY =
-            M3Tooltip.class.getName() + ".installation";
 
     /// The node property key used to store accessible help bindings.
     private static final String ACCESSIBLE_HELP_BINDING_KEY =
@@ -633,12 +635,12 @@ public class M3Tooltip extends PopupControl {
 
         TooltipInstallation installation = new TooltipInstallation(node, tooltip);
         installation.install();
-        node.getProperties().put(INSTALLATION_KEY, installation);
+        M3TooltipRegistry.install(node, installation);
     }
 
     /// Removes pointer activation handlers from the tooltip target.
     private static void uninstallActivation(Node node, @Nullable M3Tooltip tooltip) {
-        Object installation = node.getProperties().get(INSTALLATION_KEY);
+        M3TooltipInstallation installation = M3TooltipRegistry.installation(node);
         if (!(installation instanceof TooltipInstallation tooltipInstallation)) {
             return;
         }
@@ -646,7 +648,7 @@ public class M3Tooltip extends PopupControl {
             return;
         }
 
-        node.getProperties().remove(INSTALLATION_KEY);
+        M3TooltipRegistry.remove(node);
         tooltipInstallation.uninstall();
     }
 
@@ -655,39 +657,23 @@ public class M3Tooltip extends PopupControl {
     /// This supports composite accessibility containers, such as menus or app bars, whose child node owns a
     /// tooltip in a separate popup scene.
     static @Nullable Node activeInstalledTooltipFocusTarget(Node node) {
-        Objects.requireNonNull(node, "node");
-        Object installation = node.getProperties().get(INSTALLATION_KEY);
-        if (installation instanceof TooltipInstallation tooltipInstallation) {
-            return tooltipInstallation.activePopupFocusTarget();
-        }
-        return null;
+        return M3TooltipRegistry.activeInstalledTooltipFocusTarget(node);
     }
 
     /// Returns whether an installed interactive tooltip currently owns pointer or keyboard focus inside its popup.
     static boolean activeInstalledTooltipPopupOwnsInteraction(Node node) {
-        Objects.requireNonNull(node, "node");
-        Object installation = node.getProperties().get(INSTALLATION_KEY);
-        return installation instanceof TooltipInstallation tooltipInstallation
-                && tooltipInstallation.hasActivePopupInteraction();
+        return M3TooltipRegistry.activeInstalledTooltipPopupOwnsInteraction(node);
     }
 
     /// Returns whether an installed interactive tooltip exposes an action target requested by accessibility
     /// parameters.
     static boolean containsInstalledTooltipActionTarget(Node node, Object... parameters) {
-        Objects.requireNonNull(node, "node");
-        Objects.requireNonNull(parameters, "parameters");
-        Object installation = node.getProperties().get(INSTALLATION_KEY);
-        return installation instanceof TooltipInstallation tooltipInstallation
-                && tooltipInstallation.containsInteractiveFocusTarget(parameters);
+        return M3TooltipRegistry.containsInstalledTooltipActionTarget(node, parameters);
     }
 
     /// Shows an installed interactive tooltip and focuses the requested action target.
     static boolean showInstalledTooltipActionTarget(Node node, Object... parameters) {
-        Objects.requireNonNull(node, "node");
-        Objects.requireNonNull(parameters, "parameters");
-        Object installation = node.getProperties().get(INSTALLATION_KEY);
-        return installation instanceof TooltipInstallation tooltipInstallation
-                && tooltipInstallation.showInteractiveFocusTarget(parameters);
+        return M3TooltipRegistry.showInstalledTooltipActionTarget(node, parameters);
     }
 
     /// Installs an accessible help binding on the tooltip target.
@@ -812,7 +798,7 @@ public class M3Tooltip extends PopupControl {
 
     /// Stores pointer handlers installed on a tooltip target node.
     @NotNullByDefault
-    private static final class TooltipInstallation {
+    private static final class TooltipInstallation implements M3TooltipInstallation {
         /// The target node that owns the tooltip activation handlers.
         private final Node node;
 
@@ -895,6 +881,12 @@ public class M3Tooltip extends PopupControl {
             hideTimer.setOnFinished(event -> hideIfPointerOutside());
             durationTimer.setOnFinished(event -> hideAfterVisibleDuration());
             motionSettingsObserver = new M3MotionSettingsObserver(node, this::refreshMotionSettings);
+        }
+
+        /// Returns the installed tooltip.
+        @Override
+        public M3Tooltip tooltip() {
+            return tooltip;
         }
 
         /// Adds event handlers to the target node.
@@ -1087,7 +1079,8 @@ public class M3Tooltip extends PopupControl {
         }
 
         /// Returns the current focus owner inside the tooltip popup scene.
-        private @Nullable Node activePopupFocusTarget() {
+        @Override
+        public @Nullable Node activePopupFocusTarget() {
             if (!tooltip.isInteractive() || !tooltip.isShowing()) {
                 return null;
             }
@@ -1118,12 +1111,14 @@ public class M3Tooltip extends PopupControl {
         }
 
         /// Returns whether this installation exposes the requested interactive target.
-        private boolean containsInteractiveFocusTarget(Object... parameters) {
+        @Override
+        public boolean containsInteractiveFocusTarget(Object... parameters) {
             return tooltip.isInteractive() && tooltip.containsInteractiveActionTarget(parameters);
         }
 
         /// Shows the tooltip and focuses the requested interactive target.
-        private boolean showInteractiveFocusTarget(Object... parameters) {
+        @Override
+        public boolean showInteractiveFocusTarget(Object... parameters) {
             if (!containsInteractiveFocusTarget(parameters)) {
                 return false;
             }
@@ -1146,7 +1141,8 @@ public class M3Tooltip extends PopupControl {
         }
 
         /// Returns whether pointer or keyboard focus is currently inside the tooltip popup.
-        private boolean hasActivePopupInteraction() {
+        @Override
+        public boolean hasActivePopupInteraction() {
             return tooltip.isInteractive()
                     && tooltip.isShowing()
                     && (tooltipContainsPointer || tooltipContainsFocus);
@@ -1496,7 +1492,7 @@ public class M3Tooltip extends PopupControl {
 
         /// Reapplies inherited tooltip theme after an observed root theme property changes.
         private void handleThemeRootPropertiesChanged(MapChangeListener.Change<?, ?> change) {
-            if (Objects.equals(change.getKey(), M3ThemeManager.THEME_PROPERTY_KEY)) {
+            if (M3ThemeMetadata.isThemePropertyKey(change.getKey())) {
                 refreshThemeRootSubscriptions();
                 tooltip.inheritThemeFrom(node);
             }

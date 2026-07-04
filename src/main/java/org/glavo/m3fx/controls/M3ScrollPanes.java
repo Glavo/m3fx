@@ -21,6 +21,7 @@ import javafx.scene.control.TreeView;
 import javafx.scene.control.skin.VirtualFlow;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.Region;
+import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;

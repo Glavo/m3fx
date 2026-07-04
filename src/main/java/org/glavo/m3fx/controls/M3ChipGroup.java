@@ -27,7 +27,13 @@ import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
+import org.glavo.m3fx.internal.M3SelectionNavigation;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.skins.M3ChipGroupSkin;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -60,7 +66,7 @@ public class M3ChipGroup extends Control {
     private static final double DEFAULT_VERTICAL_GAP = 8.0;
 
     /// The mutable chip group content.
-    private final ObservableList<Node> items = FXCollections.observableArrayList();
+    private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
 
     /// Notifies accessibility clients when focus moves between chips.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -108,7 +114,7 @@ public class M3ChipGroup extends Control {
     };
 
     /// The currently selected chips in child order.
-    private final ObservableList<M3Chip> selectedChips = FXCollections.observableArrayList();
+    private final ObservableList<M3Chip> selectedChips = M3ObservableLists.nonNullElementList("selectedChip");
 
     /// The read-only view of currently selected chips.
     private final @UnmodifiableView ObservableList<M3Chip> selectedChipsView =
@@ -154,14 +160,6 @@ public class M3ChipGroup extends Control {
         initialize();
     }
 
-    /// Creates a chip group containing the supplied chips.
-    ///
-    /// @param chips the chips displayed by the group
-    public M3ChipGroup(M3Chip... chips) {
-        initialize();
-        addChips(chips);
-    }
-
     /// Returns the mutable child list used as chip group content.
     ///
     /// @return the mutable child list used as chip group content
@@ -169,33 +167,9 @@ public class M3ChipGroup extends Control {
         return items;
     }
 
-    /// Adds one chip.
-    ///
-    /// @param chip the chip to add
-    public final void addChip(M3Chip chip) {
-        getItems().add(Objects.requireNonNull(chip, "chip"));
-    }
 
-    /// Adds chips.
-    ///
-    /// @param chips the chips to add
-    public final void addChips(M3Chip... chips) {
-        validateChips(chips);
-        getItems().addAll(chips);
-    }
 
-    /// Replaces all chip nodes.
-    ///
-    /// @param chips the replacement chip nodes
-    public final void setChips(M3Chip... chips) {
-        validateChips(chips);
-        getItems().setAll(chips);
-    }
 
-    /// Removes all chip group content.
-    public final void clearItems() {
-        getItems().clear();
-    }
 
     /// Returns the preferred wrapping width used by the chip flow layout.
     ///
@@ -527,6 +501,7 @@ public class M3ChipGroup extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.LIST_VIEW);
+        setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleSelectionTarget, this::showAccessibleItem);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         getItems().addListener(childrenListener);
@@ -765,13 +740,6 @@ public class M3ChipGroup extends Control {
         return new M3ChipGroupSkin(this);
     }
 
-    /// Validates a chip array.
-    private static void validateChips(M3Chip... chips) {
-        Objects.requireNonNull(chips, "chips");
-        for (M3Chip chip : chips) {
-            Objects.requireNonNull(chip, "chip");
-        }
-    }
 
     /// CSS metadata for chip group layout tokens.
     @NotNullByDefault

@@ -8,7 +8,7 @@ The library provides JavaFX controls, skins, themes, generated Material token st
 
 M3FX is in active development. The current artifact version is `1.0-SNAPSHOT`.
 
-The baseline Material Design 3 profile is the primary compatibility target. M3 Expressive support is available through profile-aware color, typography, shape, motion, component, progress, loading, navigation, form, picker, menu, and surface tokens, but exact visual parity for every component remains an ongoing target.
+The baseline Material Design 3 profile is the primary 1.0 compatibility target. M3 Expressive support is available through profile-aware color, typography, shape, motion, component, progress, loading, navigation, form, picker, menu, and surface tokens. Full exact visual parity for every M3 Expressive component is tracked as post-baseline parity work unless a component already has stable tokens and rendered-state coverage.
 
 ## Requirements
 
@@ -130,13 +130,13 @@ Common local gates:
 ./gradlew jlinkDemoAllPlatformArchitectureRuntimes
 ```
 
-`check` covers compilation, tests, Maven publication metadata, publication artifact layout, and build-local publication consumption. `releaseCheck` adds demo shadow jar verification and the default host-platform demo jlink runtime image. The all-platform jlink aggregate validates Windows, Linux, and macOS runtime images on x64 and AArch64 targets.
+`check` covers compilation, tests, Maven publication metadata, publication artifact layout, and build-local publication consumption. `releaseCheck` adds demo tests, demo shadow jar verification, and the default host-platform demo jlink runtime image. The all-platform jlink aggregate validates Windows, Linux, and macOS runtime images on x64 and AArch64 targets.
 
 ## Packaging Notes
 
 - The library publishes JavaFX as compile-only because applications own JavaFX runtime artifacts.
 - The module descriptor uses transitive JavaFX readability because public M3FX APIs expose JavaFX types.
-- The demo shadow jar packages demo classes, M3FX, non-JavaFX dependencies, and the demo default font, but rejects bundled JavaFX entries.
+- The demo shadow jar packages demo classes, demo CSS, M3FX, MonetFX, non-JavaFX dependencies, and the demo default font, and verification rejects bundled JavaFX entries.
 - Jlink tasks download BellSoft LibericaJDK Full archives and use target `jmods` to create runtime images.
 
 ## License

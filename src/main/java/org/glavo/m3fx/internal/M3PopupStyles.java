@@ -5,6 +5,7 @@ package org.glavo.m3fx.internal;
 
 import javafx.css.Styleable;
 import javafx.scene.Parent;
+import org.glavo.m3fx.internal.theme.M3ThemeMetadata;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -54,7 +55,7 @@ public final class M3PopupStyles {
         }
         addFallbackRootStyleClass(popupRoot);
         preserveBaseStyle(popupRoot);
-        @Nullable M3Theme theme = themeRoot == null ? null : M3ThemeManager.getTheme(themeRoot);
+        @Nullable M3Theme theme = themeRoot == null ? null : M3ThemeMetadata.getTheme(themeRoot);
         if (themeRoot != null) {
             M3ThemeManager.copyThemeContext(themeRoot, popupRoot);
             if (theme != null) {
@@ -131,7 +132,7 @@ public final class M3PopupStyles {
     /// @param popupRoot the popup-hosted root whose copied theme context should be cleared
     private static void restoreBaseStyle(Parent popupRoot) {
         M3ThemeManager.clearThemeStyleClasses(popupRoot);
-        popupRoot.getProperties().remove(M3ThemeManager.THEME_PROPERTY_KEY);
+        M3ThemeMetadata.clearTheme(popupRoot);
         Object baseStyleValue = popupRoot.getProperties().get(BASE_STYLE_PROPERTY_KEY);
         popupRoot.setStyle(baseStyleValue instanceof String baseStyle ? baseStyle : "");
     }

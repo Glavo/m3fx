@@ -14,6 +14,8 @@ import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
+import javafx.geometry.BoundingBox;
+import javafx.geometry.Bounds;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
@@ -23,6 +25,10 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.stage.Popup;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3InternalIcon;
@@ -31,6 +37,8 @@ import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3ThemeResolver;
+import org.glavo.m3fx.internal.M3KeyEvents;
+import org.glavo.m3fx.internal.M3PopupPositioning;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -150,7 +158,7 @@ public class M3SubMenuItem extends M3MenuItem {
     /// @param items the submenu item nodes
     public M3SubMenuItem(String text, Node... items) {
         this(text);
-        addItems(items);
+        getItems().addAll(items);
     }
 
     /// Returns the submenu displayed by this item.
@@ -167,33 +175,9 @@ public class M3SubMenuItem extends M3MenuItem {
         return subMenu.getItems();
     }
 
-    /// Adds one submenu item node.
-    ///
-    /// @param item the submenu item node to add
-    public final void addItem(Node item) {
-        getItems().add(Objects.requireNonNull(item, "item"));
-    }
 
-    /// Adds submenu item nodes.
-    ///
-    /// @param items the submenu item nodes to add
-    public final void addItems(Node... items) {
-        validateItems(items);
-        getItems().addAll(items);
-    }
 
-    /// Replaces all submenu item nodes.
-    ///
-    /// @param items the replacement submenu item nodes
-    public final void setItems(Node... items) {
-        validateItems(items);
-        getItems().setAll(items);
-    }
 
-    /// Removes all submenu item nodes.
-    public final void clearItems() {
-        getItems().clear();
-    }
 
     /// Sets the menu that directly owns this submenu item.
     final void setOwnerMenu(@Nullable M3Menu ownerMenu) {
@@ -239,8 +223,13 @@ public class M3SubMenuItem extends M3MenuItem {
         popupContextSynchronizer.start();
         prepareSubMenuForPopup();
         M3Css.setMinWidthIfUnbound(subMenu, Math.max(getWidth(), subMenu.minWidth(-1.0)));
+        @Nullable Bounds anchorBounds = subMenuAnchorBounds();
+        if (anchorBounds == null) {
+            popupContextSynchronizer.stop();
+            return;
+        }
         @Nullable M3PopupPositioning.Placement placement =
-                M3PopupPositioning.subMenuBeside(this, subMenu, SUB_MENU_OFFSET_X);
+                M3PopupPositioning.subMenuBeside(anchorBounds, subMenu, SUB_MENU_OFFSET_X, isRightToLeft());
         if (placement == null) {
             popupContextSynchronizer.stop();
             return;
@@ -254,6 +243,28 @@ public class M3SubMenuItem extends M3MenuItem {
         notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
         notifyFocusNodeChanged();
         playShowAnimation();
+    }
+
+    /// Returns the screen bounds used to position the submenu popup.
+    private @Nullable Bounds subMenuAnchorBounds() {
+        @Nullable Bounds itemBounds = localToScreen(getBoundsInLocal());
+        if (itemBounds == null) {
+            return null;
+        }
+        if (ownerMenu == null) {
+            return itemBounds;
+        }
+
+        @Nullable Bounds ownerMenuBounds = ownerMenu.localToScreen(ownerMenu.getBoundsInLocal());
+        if (ownerMenuBounds == null) {
+            return itemBounds;
+        }
+        return new BoundingBox(
+                ownerMenuBounds.getMinX(),
+                itemBounds.getMinY(),
+                ownerMenuBounds.getWidth(),
+                itemBounds.getHeight()
+        );
     }
 
     /// Hides the submenu popup.
@@ -725,11 +736,4 @@ public class M3SubMenuItem extends M3MenuItem {
         return indicator;
     }
 
-    /// Validates a submenu item array.
-    private static void validateItems(Node... items) {
-        Objects.requireNonNull(items, "items");
-        for (Node item : items) {
-            Objects.requireNonNull(item, "item");
-        }
-    }
 }

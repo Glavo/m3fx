@@ -18,6 +18,8 @@ import javafx.scene.Node;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.Skin;
 import javafx.scene.layout.Region;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3FloatingActionButtonSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -38,7 +40,7 @@ import java.util.Objects;
 /// [Material Design floating action buttons](https://m3.material.io/components/floating-action-button/overview).
 @NotNullByDefault
 public class M3FloatingActionButton extends ButtonBase {
-    /// The base style class for m3fx floating action buttons.
+    /// The base style class for M3FX floating action buttons.
     public static final String STYLE_CLASS = "m3-fab";
 
     /// The default floating action button container size.
@@ -263,7 +265,7 @@ public class M3FloatingActionButton extends ButtonBase {
         return new M3FloatingActionButtonSkin(this);
     }
 
-    /// Returns the user-agent stylesheet for m3fx floating action buttons.
+    /// Returns the user-agent stylesheet for M3FX floating action buttons.
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("floating-action-button.css");
@@ -337,7 +339,7 @@ public class M3FloatingActionButton extends ButtonBase {
         }
     }
 
-    /// CSS metadata for m3fx floating action button component tokens.
+    /// CSS metadata for M3FX floating action button component tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
         /// CSS metadata for the container size token.

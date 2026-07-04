@@ -15,6 +15,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
+import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.skins.M3DateRangePickerSkin;
 import org.glavo.m3fx.theme.M3Theme;
@@ -202,7 +203,7 @@ final class M3DateRangePickerTest {
             second.setMinDate(LocalDate.of(2026, 6, 1));
             second.setMaxDate(LocalDate.of(2026, 6, 30));
             M3FormPane form = new M3FormPane();
-            form.setItems(first, second);
+            form.getItems().setAll(first, second);
             Stage stage = new Stage();
             try {
                 Pane root = new Pane(form);

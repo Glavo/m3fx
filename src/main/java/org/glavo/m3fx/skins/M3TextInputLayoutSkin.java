@@ -4,6 +4,8 @@
 package org.glavo.m3fx.skins;
 
 import javafx.scene.control.SkinBase;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3TextInputLayout;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -18,12 +20,16 @@ public final class M3TextInputLayoutSkin extends SkinBase<M3TextInputLayout> {
     private final VBox container = new VBox(ROW_SPACING);
 
     /// Creates a text input layout skin.
-    public M3TextInputLayoutSkin(M3TextInputLayout control) {
+    ///
+    /// @param control the text input layout controlled by this skin
+    /// @param inputContainer the input container owned by the control
+    /// @param supportingRow the supporting row owned by the control
+    public M3TextInputLayoutSkin(M3TextInputLayout control, StackPane inputContainer, HBox supportingRow) {
         super(control);
         container.setManaged(false);
         container.setFillWidth(true);
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
-        container.getChildren().setAll(control.getInputContainer(), control.getSupportingRow());
+        container.getChildren().setAll(inputContainer, supportingRow);
         getChildren().add(container);
     }
 

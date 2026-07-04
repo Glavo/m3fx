@@ -10,7 +10,7 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.Objects;
 
-/// Provides reusable [M3TimePreset] factories for common time choices.
+/// Provides reusable [M3TimePreset] values for common time choices.
 ///
 /// See [Material Design time pickers](https://m3.material.io/components/time-pickers/overview).
 @NotNullByDefault
@@ -19,17 +19,19 @@ public final class M3TimePresets {
     private M3TimePresets() {
     }
 
-    /// Returns a custom preset for one time.
-    public static M3TimePreset time(String text, LocalTime time) {
-        return new M3TimePreset(text, normalizeTime(time));
-    }
-
     /// Returns a preset for the supplied time labeled `Now`.
+    ///
+    /// @param time the time selected by the preset
+    /// @return a `Now` preset for the supplied time with seconds and nanos cleared
     public static M3TimePreset now(LocalTime time) {
-        return time("Now", time);
+        return new M3TimePreset("Now", normalizeTime(time));
     }
 
     /// Returns a preset offset by the requested number of minutes from the supplied time.
+    ///
+    /// @param time the anchor time
+    /// @param minuteOffset the number of minutes to add to the anchor time
+    /// @return a preset for the offset time with seconds and nanos cleared
     public static M3TimePreset minutesFrom(LocalTime time, int minuteOffset) {
         LocalTime anchorTime = normalizeTime(time);
         if (minuteOffset == 0) {
@@ -38,35 +40,48 @@ public final class M3TimePresets {
 
         int absoluteOffset = Math.abs(minuteOffset);
         String text = minuteOffset > 0 ? "In " + absoluteOffset + " min" : absoluteOffset + " min ago";
-        return time(text, anchorTime.plusMinutes(minuteOffset));
+        return new M3TimePreset(text, normalizeTime(anchorTime.plusMinutes(minuteOffset)));
     }
 
     /// Returns a preset for midnight.
+    ///
+    /// @return a `Midnight` preset selecting `LocalTime.MIDNIGHT`
     public static M3TimePreset midnight() {
-        return time("Midnight", LocalTime.MIDNIGHT);
+        return new M3TimePreset("Midnight", LocalTime.MIDNIGHT);
     }
 
     /// Returns a preset for 09:00.
+    ///
+    /// @return a `Morning` preset selecting 09:00
     public static M3TimePreset morning() {
-        return time("Morning", LocalTime.of(9, 0));
+        return new M3TimePreset("Morning", LocalTime.of(9, 0));
     }
 
     /// Returns a preset for 12:00.
+    ///
+    /// @return a `Noon` preset selecting `LocalTime.NOON`
     public static M3TimePreset noon() {
-        return time("Noon", LocalTime.NOON);
+        return new M3TimePreset("Noon", LocalTime.NOON);
     }
 
     /// Returns a preset for 15:00.
+    ///
+    /// @return an `Afternoon` preset selecting 15:00
     public static M3TimePreset afternoon() {
-        return time("Afternoon", LocalTime.of(15, 0));
+        return new M3TimePreset("Afternoon", LocalTime.of(15, 0));
     }
 
     /// Returns a preset for 18:00.
+    ///
+    /// @return an `Evening` preset selecting 18:00
     public static M3TimePreset evening() {
-        return time("Evening", LocalTime.of(18, 0));
+        return new M3TimePreset("Evening", LocalTime.of(18, 0));
     }
 
     /// Returns the default time preset list.
+    ///
+    /// @param time the anchor time used to compute relative presets
+    /// @return the immutable default time preset list
     public static @Unmodifiable List<M3TimePreset> common(LocalTime time) {
         LocalTime anchorTime = normalizeTime(time);
         return List.of(

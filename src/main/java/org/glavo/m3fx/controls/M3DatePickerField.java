@@ -3,21 +3,21 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.ObjectProperty;
-import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.scene.control.Skin;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import org.glavo.m3fx.internal.M3PresetNavigation;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3InternalIcon;
+import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.skins.M3PickerFieldSkin;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
@@ -48,7 +48,7 @@ public final class M3DatePickerField extends M3PickerField<LocalDate, M3DatePick
     public static final String PRESET_BUTTON_STYLE_CLASS = "m3-date-picker-field-preset-button";
 
     /// The mutable preset list rendered before the popup picker.
-    private final ObservableList<M3DatePreset> presets = FXCollections.observableArrayList();
+    private final ObservableList<M3DatePreset> presets = M3ObservableLists.nonNullElementList("preset");
 
     /// The wrapper used when the popup renders preset actions next to the picker.
     private final HBox presetContent = new HBox(16.0);
@@ -94,7 +94,7 @@ public final class M3DatePickerField extends M3PickerField<LocalDate, M3DatePick
     /// Returns whether this field can reveal the supplied accessibility date target.
     @Override
     protected boolean handlesAccessibleShowTarget(@Nullable Object parameter) {
-        return parameter instanceof LocalDate date && !isDateDisabled(date);
+        return parameter instanceof LocalDate date && !getPicker().isDateDisabled(date);
     }
 
     /// Returns the mutable date preset list rendered in the popup.
@@ -104,203 +104,16 @@ public final class M3DatePickerField extends M3PickerField<LocalDate, M3DatePick
         return presets;
     }
 
-    /// Adds one date preset to the popup.
-    ///
-    /// @param preset the date preset to add
-    public void addPreset(M3DatePreset preset) {
-        presets.add(Objects.requireNonNull(preset, "preset"));
-    }
-
-    /// Adds date presets after validating the preset array.
-    ///
-    /// @param presets the date presets to add
-    public void addPresets(M3DatePreset... presets) {
-        validatePresets(presets);
-        this.presets.addAll(presets);
-    }
-
-    /// Replaces all date presets.
-    ///
-    /// @param presets the replacement date presets
-    public void setPresets(M3DatePreset... presets) {
-        validatePresets(presets);
-        this.presets.setAll(presets);
-    }
-
-    /// Replaces all date presets with the default common date set.
-    ///
-    /// @param anchorDate the date used to compute relative common presets
-    public void setCommonPresets(LocalDate anchorDate) {
-        presets.setAll(M3DatePresets.common(anchorDate));
-    }
-
-    /// Removes all date presets from the popup.
-    public void clearPresets() {
-        presets.clear();
-    }
-
-    /// Returns the month currently displayed by the popup calendar grid.
-    ///
-    /// @return the month currently displayed by the popup calendar grid
-    public YearMonth getDisplayedMonth() {
-        return getPicker().getDisplayedMonth();
-    }
-
-    /// Sets the month displayed by the popup calendar grid.
-    ///
-    /// @param displayedMonth the month displayed by the popup calendar grid
-    public void setDisplayedMonth(YearMonth displayedMonth) {
-        getPicker().setDisplayedMonth(displayedMonth);
-    }
-
-    /// Returns the displayed month property from the popup date picker.
-    ///
-    /// @return the displayed month property from the popup date picker
-    public ObjectProperty<YearMonth> displayedMonthProperty() {
-        return getPicker().displayedMonthProperty();
-    }
-
-    /// Returns the weekday shown in the first popup calendar column.
-    ///
-    /// @return the weekday shown in the first popup calendar column
-    public DayOfWeek getFirstDayOfWeek() {
-        return getPicker().getFirstDayOfWeek();
-    }
-
-    /// Sets the weekday shown in the first popup calendar column.
-    ///
-    /// @param firstDayOfWeek the weekday shown in the first popup calendar column
-    public void setFirstDayOfWeek(DayOfWeek firstDayOfWeek) {
-        getPicker().setFirstDayOfWeek(firstDayOfWeek);
-    }
-
-    /// Returns the first day of week property from the popup date picker.
-    ///
-    /// @return the first day of week property from the popup date picker
-    public ObjectProperty<DayOfWeek> firstDayOfWeekProperty() {
-        return getPicker().firstDayOfWeekProperty();
-    }
-
-    /// Returns the earliest selectable date, or `null` when there is no lower bound.
-    ///
-    /// @return the earliest selectable date, or `null` when there is no lower bound
-    public @Nullable LocalDate getMinDate() {
-        return getPicker().getMinDate();
-    }
-
-    /// Sets the earliest selectable date, or clears the lower bound when `null` is supplied.
-    ///
-    /// @param minDate the earliest selectable date, or `null` to clear the lower bound
-    public void setMinDate(@Nullable LocalDate minDate) {
-        getPicker().setMinDate(minDate);
-    }
-
-    /// Returns the minimum date property from the popup date picker.
-    ///
-    /// @return the minimum date property from the popup date picker
-    public ObjectProperty<@Nullable LocalDate> minDateProperty() {
-        return getPicker().minDateProperty();
-    }
-
-    /// Returns the latest selectable date, or `null` when there is no upper bound.
-    ///
-    /// @return the latest selectable date, or `null` when there is no upper bound
-    public @Nullable LocalDate getMaxDate() {
-        return getPicker().getMaxDate();
-    }
-
-    /// Sets the latest selectable date, or clears the upper bound when `null` is supplied.
-    ///
-    /// @param maxDate the latest selectable date, or `null` to clear the upper bound
-    public void setMaxDate(@Nullable LocalDate maxDate) {
-        getPicker().setMaxDate(maxDate);
-    }
-
-    /// Returns the maximum date property from the popup date picker.
-    ///
-    /// @return the maximum date property from the popup date picker
-    public ObjectProperty<@Nullable LocalDate> maxDateProperty() {
-        return getPicker().maxDateProperty();
-    }
-
-    /// Returns whether adjacent-month days are visible in popup leading and trailing grid cells.
-    ///
-    /// @return `true` when adjacent-month days are visible
-    public boolean isShowAdjacentMonthDays() {
-        return getPicker().isShowAdjacentMonthDays();
-    }
-
-    /// Sets whether adjacent-month days are visible in popup leading and trailing grid cells.
-    ///
-    /// @param showAdjacentMonthDays whether adjacent-month days should be visible
-    public void setShowAdjacentMonthDays(boolean showAdjacentMonthDays) {
-        getPicker().setShowAdjacentMonthDays(showAdjacentMonthDays);
-    }
-
-    /// Returns the adjacent-month visibility property from the popup date picker.
-    ///
-    /// @return the adjacent-month visibility property from the popup date picker
-    public BooleanProperty showAdjacentMonthDaysProperty() {
-        return getPicker().showAdjacentMonthDaysProperty();
-    }
-
-    /// Selects a date if it is inside the configured range.
-    ///
-    /// @param date the date to select
-    public void selectDate(LocalDate date) {
-        setValue(Objects.requireNonNull(date, "date"));
-    }
-
-    /// Selects today's date when it is inside the configured range.
-    public void selectToday() {
-        selectDate(LocalDate.now());
-    }
-
     /// Applies a date preset, updates the editor, and closes the popup when it is showing.
     ///
     /// @param preset the date preset to apply
-    public void applyPreset(M3DatePreset preset) {
+    private void applyPreset(M3DatePreset preset) {
         LocalDate date = Objects.requireNonNull(preset, "preset").date();
         setValue(date);
         getPicker().showMonth(YearMonth.from(date));
         if (isShowing()) {
             hidePicker();
         }
-    }
-
-    /// Clears the selected date.
-    public void clearValue() {
-        setValue(null);
-    }
-
-    /// Shows the month before the current displayed month.
-    public void showPreviousMonth() {
-        getPicker().showPreviousMonth();
-    }
-
-    /// Shows the month after the current displayed month.
-    public void showNextMonth() {
-        getPicker().showNextMonth();
-    }
-
-    /// Shows the supplied month without changing the selected date.
-    ///
-    /// @param month the month to display
-    public void showMonth(YearMonth month) {
-        getPicker().showMonth(month);
-    }
-
-    /// Shows the month containing today's date without changing the selected date.
-    public void showToday() {
-        getPicker().showToday();
-    }
-
-    /// Returns whether the supplied date is outside the configured selectable range.
-    ///
-    /// @param date the date to test
-    /// @return `true` when the date is outside the configured selectable range
-    public boolean isDateDisabled(LocalDate date) {
-        return getPicker().isDateDisabled(date);
     }
 
     /// Creates the default Material Design 3 picker field skin.
@@ -348,9 +161,23 @@ public final class M3DatePickerField extends M3PickerField<LocalDate, M3DatePick
         presetList.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
         presetList.alignmentProperty().bind(M3NodeLayout.createLogicalStartTopAlignmentBinding(this));
         M3PresetNavigation.install(presetList, this, () -> M3Accessible.requestAccessibleFocus(this, getPicker()));
-        getPicker().minDateProperty().addListener((observable, oldValue, newValue) -> updatePresetContent());
-        getPicker().maxDateProperty().addListener((observable, oldValue, newValue) -> updatePresetContent());
+        getPicker().minDateProperty().addListener((observable, oldValue, newValue) -> handleSelectableBoundsChanged());
+        getPicker().maxDateProperty().addListener((observable, oldValue, newValue) -> handleSelectableBoundsChanged());
         presets.addListener(presetsListener);
+    }
+
+    /// Refreshes preset state and clears the selected date when picker bounds exclude it.
+    private void handleSelectableBoundsChanged() {
+        updatePresetContent();
+        clearValueIfOutOfBounds();
+    }
+
+    /// Clears the selected date when current bounds exclude it.
+    private void clearValueIfOutOfBounds() {
+        @Nullable LocalDate value = getValue();
+        if (value != null && getPicker().isDateDisabled(value)) {
+            setValue(null);
+        }
     }
 
     /// Rebuilds popup content from the current preset list.
@@ -383,11 +210,4 @@ public final class M3DatePickerField extends M3PickerField<LocalDate, M3DatePick
         return button;
     }
 
-    /// Validates a date preset array.
-    private static void validatePresets(M3DatePreset... presets) {
-        Objects.requireNonNull(presets, "presets");
-        for (M3DatePreset preset : presets) {
-            Objects.requireNonNull(preset, "preset");
-        }
-    }
 }

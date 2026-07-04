@@ -7,7 +7,6 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
-import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
 import javafx.css.Styleable;
@@ -22,7 +21,13 @@ import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
+import org.glavo.m3fx.internal.M3SelectionNavigation;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3NodeLayout;
+import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3ButtonGroupSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -71,7 +76,7 @@ public class M3ButtonGroup extends Control {
     private static final double DEFAULT_SPACING = -1.0;
 
     /// The mutable button group content.
-    private final ObservableList<Node> items = FXCollections.observableArrayList();
+    private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
 
     /// Notifies accessibility clients when focus moves between grouped buttons.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -134,14 +139,6 @@ public class M3ButtonGroup extends Control {
     /// Creates an empty button group.
     public M3ButtonGroup() {
         initialize();
-    }
-
-    /// Creates a button group with the supplied buttons.
-    ///
-    /// @param buttons the buttons displayed by the group
-    public M3ButtonGroup(M3Button... buttons) {
-        initialize();
-        addButtons(buttons);
     }
 
     /// Returns the mutable child list used as button group content.
@@ -224,33 +221,9 @@ public class M3ButtonGroup extends Control {
         return spacing;
     }
 
-    /// Adds one button to the group.
-    ///
-    /// @param button the button to add
-    public final void addButton(M3Button button) {
-        getItems().add(Objects.requireNonNull(button, "button"));
-    }
 
-    /// Adds buttons to the group.
-    ///
-    /// @param buttons the buttons to add
-    public final void addButtons(M3Button... buttons) {
-        validateButtons(buttons);
-        getItems().addAll(buttons);
-    }
 
-    /// Replaces all grouped buttons.
-    ///
-    /// @param buttons the replacement grouped buttons
-    public final void setButtons(M3Button... buttons) {
-        validateButtons(buttons);
-        getItems().setAll(buttons);
-    }
 
-    /// Removes all button group content.
-    public final void clearItems() {
-        getItems().clear();
-    }
 
     /// Returns the user-agent stylesheet for M3FX button groups.
     @Override
@@ -329,6 +302,7 @@ public class M3ButtonGroup extends Control {
         updateVariantStyle();
         updateSizeStyle();
         setAccessibleRole(AccessibleRole.TOOL_BAR);
+        setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleItem, this::showAccessibleItem);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         effectiveNodeOrientationProperty().addListener(effectiveNodeOrientationListener);
@@ -433,13 +407,6 @@ public class M3ButtonGroup extends Control {
         return new M3ButtonGroupSkin(this);
     }
 
-    /// Validates a button array.
-    private static void validateButtons(M3Button... buttons) {
-        Objects.requireNonNull(buttons, "buttons");
-        for (M3Button button : buttons) {
-            Objects.requireNonNull(button, "button");
-        }
-    }
 
     /// CSS metadata for button group layout tokens.
     @NotNullByDefault

@@ -21,6 +21,9 @@ import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.control.TextInputControl;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3ValidationSummarySkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -301,6 +304,7 @@ public class M3ValidationSummary extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
+        setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleInput);
         validator.addListener((observable, oldValue, newValue) -> updateValidator(oldValue, newValue));
         titleText.addListener(observable -> updateSummaryState());

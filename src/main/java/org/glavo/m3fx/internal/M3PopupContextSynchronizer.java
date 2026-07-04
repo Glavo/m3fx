@@ -10,6 +10,7 @@ import javafx.collections.ObservableList;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import org.glavo.m3fx.internal.theme.M3ThemeMetadata;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -184,7 +185,7 @@ public final class M3PopupContextSynchronizer {
 
     /// Handles installed-theme metadata changes on observed roots.
     private void handleThemeRootPropertiesChanged(MapChangeListener.Change<?, ?> change) {
-        if (Objects.equals(M3ThemeManager.THEME_PROPERTY_KEY, change.getKey())) {
+        if (M3ThemeMetadata.isThemePropertyKey(change.getKey())) {
             sync();
         }
     }

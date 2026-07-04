@@ -28,8 +28,12 @@ import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
 import javafx.util.Duration;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3SnackbarHostSkin;
@@ -49,7 +53,7 @@ import java.util.Objects;
 /// See [Material Design snackbars](https://m3.material.io/components/snackbar/overview).
 @NotNullByDefault
 public class M3SnackbarHost extends Control {
-    /// The base style class for m3fx snackbar hosts.
+    /// The base style class for M3FX snackbar hosts.
     public static final String STYLE_CLASS = "m3-snackbar-host";
 
     /// The initial vertical offset used by snackbar entrance and exit motion.
@@ -60,7 +64,7 @@ public class M3SnackbarHost extends Control {
             new ReadOnlyObjectWrapper<>(this, "snackbar");
 
     /// Pending snackbars waiting to be shown.
-    private final ObservableList<M3Snackbar> queue = FXCollections.observableArrayList();
+    private final ObservableList<M3Snackbar> queue = M3ObservableLists.nonNullElementList("snackbar");
 
     /// Read-only view of pending snackbars.
     private final @UnmodifiableView ObservableList<M3Snackbar> queueView =
@@ -105,6 +109,7 @@ public class M3SnackbarHost extends Control {
     public M3SnackbarHost() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
+        setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusCurrentAccessibleNode, this::showAccessibleSnackbar);
         setPickOnBounds(false);
         showing.addListener((observable, oldValue, newValue) -> {
@@ -310,7 +315,7 @@ public class M3SnackbarHost extends Control {
         dismiss();
     }
 
-    /// Returns the user-agent stylesheet for m3fx snackbar hosts.
+    /// Returns the user-agent stylesheet for M3FX snackbar hosts.
     ///
     /// @return the snackbar user-agent stylesheet URL
     @Override

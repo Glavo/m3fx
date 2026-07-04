@@ -27,11 +27,19 @@ import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import org.glavo.m3fx.internal.M3SelectionNavigation;
+import org.glavo.m3fx.internal.M3FocusTraversal;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3NavigationDrawerSkin;
+import org.glavo.m3fx.internal.M3KeyEvents;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
@@ -62,7 +70,7 @@ public class M3NavigationDrawer extends Control {
     private static final double DEFAULT_ITEM_SPACING = 4.0;
 
     /// The mutable navigation drawer content.
-    private final ObservableList<Node> items = FXCollections.observableArrayList();
+    private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
 
     /// Notifies accessibility clients when focus moves between visible drawer rows.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -73,7 +81,7 @@ public class M3NavigationDrawer extends Control {
             new ReadOnlyObjectWrapper<>(this, "selectedItem");
 
     /// The selected drawer list items in child order.
-    private final ObservableList<M3ListItem> selectedItems = FXCollections.observableArrayList();
+    private final ObservableList<M3ListItem> selectedItems = M3ObservableLists.nonNullElementList("selectedItem");
 
     /// The read-only selected drawer list item view.
     private final @UnmodifiableView ObservableList<M3ListItem> selectedItemsView =
@@ -143,14 +151,6 @@ public class M3NavigationDrawer extends Control {
         initialize();
     }
 
-    /// Creates a navigation drawer containing the supplied nodes.
-    ///
-    /// @param items the initial non-null drawer content nodes
-    public M3NavigationDrawer(Node... items) {
-        initialize();
-        addItems(items);
-    }
-
     /// Returns the mutable child list used as drawer content.
     ///
     /// @return the mutable drawer content list
@@ -158,33 +158,9 @@ public class M3NavigationDrawer extends Control {
         return items;
     }
 
-    /// Adds one drawer content node.
-    ///
-    /// @param item the non-null drawer content node to append
-    public final void addItem(Node item) {
-        getItems().add(Objects.requireNonNull(item, "item"));
-    }
 
-    /// Adds drawer content nodes.
-    ///
-    /// @param items the non-null drawer content nodes to append
-    public final void addItems(Node... items) {
-        validateItems(items);
-        getItems().addAll(items);
-    }
 
-    /// Replaces all drawer content nodes.
-    ///
-    /// @param items the non-null drawer content nodes that replace the current content
-    public final void setItems(Node... items) {
-        validateItems(items);
-        getItems().setAll(items);
-    }
 
-    /// Removes all drawer content nodes.
-    public final void clearItems() {
-        getItems().clear();
-    }
 
     /// Returns the selected drawer list items in child order.
     ///
@@ -406,6 +382,7 @@ public class M3NavigationDrawer extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.LIST_VIEW);
+        setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(
                 this,
                 this::requestAccessibleFocus,
@@ -1192,11 +1169,4 @@ public class M3NavigationDrawer extends Control {
         }
     }
 
-    /// Validates a drawer item array.
-    private static void validateItems(Node... items) {
-        Objects.requireNonNull(items, "items");
-        for (Node item : items) {
-            Objects.requireNonNull(item, "item");
-        }
-    }
 }

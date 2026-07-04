@@ -21,6 +21,8 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.Skin;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3ButtonSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -43,7 +45,7 @@ import java.util.Objects;
 /// in the [Material Design buttons](https://m3.material.io/components/buttons/overview) guidance.
 @NotNullByDefault
 public class M3Button extends ButtonBase {
-    /// The base style class for all m3fx buttons.
+    /// The base style class for all M3FX buttons.
     public static final String STYLE_CLASS = "m3-button";
 
     /// The pseudo-class used when this button is the default action.
@@ -367,7 +369,7 @@ public class M3Button extends ButtonBase {
         return new M3ButtonSkin(this);
     }
 
-    /// Returns the user-agent stylesheet for m3fx buttons.
+    /// Returns the user-agent stylesheet for M3FX buttons.
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("button.css");
@@ -420,7 +422,7 @@ public class M3Button extends ButtonBase {
         M3Css.setPaddingIfUnbound(this, new Insets(0.0, padding, 0.0, padding));
     }
 
-    /// CSS metadata for m3fx button component tokens.
+    /// CSS metadata for M3FX button component tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
         /// CSS metadata for the container height token.

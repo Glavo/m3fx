@@ -12,6 +12,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
+import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.theme.M3Theme;
@@ -20,10 +21,12 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import static org.glavo.m3fx.M3TestControls.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Verifies navigation drawer group layout behavior.
@@ -47,9 +50,9 @@ final class M3NavigationDrawerGroupTest {
             M3ListItem child = new M3ListItem("Editable child");
             child.setTrailingMedia(editor, M3ListItemSlotSize.WIDE_THUMBNAIL);
             M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Group");
-            group.addItem(child);
+            group.getItems().add(child);
             group.setExpanded(true);
-            M3NavigationDrawer drawer = new M3NavigationDrawer(group);
+            M3NavigationDrawer drawer = navigationDrawer(group);
             M3MotionSettings.setAnimationsEnabled(drawer, false);
 
             StackPane root = new StackPane(drawer);
@@ -82,9 +85,9 @@ final class M3NavigationDrawerGroupTest {
         FxTestUtils.runOnFxThread(() -> {
             M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Group");
             M3ListItem child = new M3ListItem("Child");
-            group.addItem(child);
+            group.getItems().add(child);
             group.setExpanded(false);
-            M3NavigationDrawer drawer = new M3NavigationDrawer(group);
+            M3NavigationDrawer drawer = navigationDrawer(group);
             M3MotionSettings.setAnimationsEnabled(drawer, false);
 
             StackPane root = new StackPane(drawer);
@@ -128,7 +131,7 @@ final class M3NavigationDrawerGroupTest {
             M3ListItem editable = new M3ListItem("Editable");
             editable.setTrailingMedia(editor, M3ListItemSlotSize.WIDE_THUMBNAIL);
             M3ListItem archive = new M3ListItem("Archive");
-            M3NavigationDrawer drawer = new M3NavigationDrawer(editable, archive);
+            M3NavigationDrawer drawer = navigationDrawer(editable, archive);
             M3MotionSettings.setAnimationsEnabled(drawer, false);
 
             StackPane root = new StackPane(drawer);
@@ -165,12 +168,24 @@ final class M3NavigationDrawerGroupTest {
         });
     }
 
+    /// Verifies that the child item list rejects null mutations without partial insertion.
+    @Test
+    @SuppressWarnings("DataFlowIssue")
+    void childItemListRejectsNullElements() {
+        M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Group");
+        M3ListItem child = new M3ListItem("Child");
+
+        assertThrows(NullPointerException.class, () -> group.getItems().add(null));
+        assertThrows(NullPointerException.class, () -> group.getItems().addAll(child, null));
+        assertTrue(group.getItems().isEmpty());
+    }
+
     /// Verifies expanded child rows contribute to preferred height for scroll pane content sizing.
     @Test
     void expandedChildRowsContributeToPreferredHeight() {
         FxTestUtils.runOnFxThread(() -> {
             M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Sheets");
-            group.addItems(new M3ListItem("Bottom sheets"), new M3ListItem("Side sheets"));
+            group.getItems().addAll(new M3ListItem("Bottom sheets"), new M3ListItem("Side sheets"));
             M3MotionSettings.setAnimationsEnabled(group, false);
 
             StackPane root = new StackPane(group);
@@ -202,9 +217,9 @@ final class M3NavigationDrawerGroupTest {
         FxTestUtils.runOnFxThread(() -> {
             M3ListItem child = new M3ListItem("Invoices");
             M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Workspaces");
-            group.addItem(child);
+            group.getItems().add(child);
             group.setExpanded(true);
-            M3NavigationDrawer drawer = new M3NavigationDrawer(group);
+            M3NavigationDrawer drawer = navigationDrawer(group);
             M3MotionSettings.setAnimationsEnabled(drawer, false);
 
             StackPane root = new StackPane(drawer);
@@ -259,7 +274,7 @@ final class M3NavigationDrawerGroupTest {
         FxTestUtils.runOnFxThread(() -> {
             M3ListItem inbox = new M3ListItem("Inbox");
             M3ListItem archive = new M3ListItem("Archive");
-            M3NavigationDrawer drawer = new M3NavigationDrawer(inbox, archive);
+            M3NavigationDrawer drawer = navigationDrawer(inbox, archive);
             StackPane root = new StackPane(drawer);
             Stage stage = new Stage();
             try {
@@ -290,9 +305,9 @@ final class M3NavigationDrawerGroupTest {
             M3ListItem bottomSheets = new M3ListItem("Bottom sheets");
             bottomSheets.setTrailing(hiddenAction);
             M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Sheets");
-            group.addItem(bottomSheets);
+            group.getItems().add(bottomSheets);
             group.setExpanded(false);
-            M3NavigationDrawer drawer = new M3NavigationDrawer(group);
+            M3NavigationDrawer drawer = navigationDrawer(group);
             M3MotionSettings.setAnimationsEnabled(drawer, false);
 
             StackPane root = new StackPane(drawer);
@@ -348,9 +363,9 @@ final class M3NavigationDrawerGroupTest {
         FxTestUtils.runOnFxThread(() -> {
             M3ListItem bottomSheets = new M3ListItem("Bottom sheets");
             M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Sheets");
-            group.addItem(bottomSheets);
+            group.getItems().add(bottomSheets);
             group.setExpanded(false);
-            M3NavigationDrawer drawer = new M3NavigationDrawer(group);
+            M3NavigationDrawer drawer = navigationDrawer(group);
             M3MotionSettings.setAnimationsEnabled(drawer, false);
 
             StackPane root = new StackPane(drawer);

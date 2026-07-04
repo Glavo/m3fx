@@ -5,7 +5,6 @@ package org.glavo.m3fx.controls;
 
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
@@ -21,7 +20,13 @@ import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
+import org.glavo.m3fx.internal.M3FocusTraversal;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.skins.M3SurfaceSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -51,7 +56,7 @@ public class M3Surface extends Control {
     private static final double DEFAULT_CONTENT_PADDING = 16.0;
 
     /// The mutable content nodes displayed inside the surface.
-    private final ObservableList<Node> content = FXCollections.observableArrayList();
+    private final ObservableList<Node> content = M3ObservableLists.nonNullElementList("content");
 
     /// Notifies accessibility clients when focus moves between content children.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -94,14 +99,6 @@ public class M3Surface extends Control {
     /// Creates an empty surface.
     public M3Surface() {
         initialize();
-    }
-
-    /// Creates a surface with content nodes.
-    ///
-    /// @param children the initial content nodes
-    public M3Surface(Node... children) {
-        initialize();
-        getContent().addAll(children);
     }
 
     /// Returns the mutable content nodes displayed inside the surface.
@@ -307,6 +304,7 @@ public class M3Surface extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
+        setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleItem, this::showAccessibleItem);
         getContent().addListener((ListChangeListener<Node>) change -> handleContentChanged());
         addEventFilter(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);

@@ -9,7 +9,6 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
-import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
@@ -26,7 +25,13 @@ import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
+import org.glavo.m3fx.internal.M3FocusTraversal;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.skins.M3TopAppBarSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -120,7 +125,7 @@ public class M3TopAppBar extends Control {
     private final ObjectProperty<@Nullable Node> navigation = new SimpleObjectProperty<>(this, "navigation");
 
     /// The mutable trailing action node list.
-    private final ObservableList<Node> actions = FXCollections.observableArrayList();
+    private final ObservableList<Node> actions = M3ObservableLists.nonNullElementList("action");
 
     // The small and centered app bar container height token.
     private @Nullable StyleableDoubleProperty containerHeight;
@@ -169,7 +174,7 @@ public class M3TopAppBar extends Control {
     public M3TopAppBar(String title, @Nullable Node navigation, Node... actions) {
         this(title);
         setNavigation(navigation);
-        addActions(actions);
+        getActions().addAll(actions);
     }
 
     /// Creates a top app bar with title text, variant, navigation content, and trailing actions.
@@ -255,27 +260,9 @@ public class M3TopAppBar extends Control {
         return actions;
     }
 
-    /// Adds one trailing action node.
-    public final void addAction(Node action) {
-        getActions().add(Objects.requireNonNull(action, "action"));
-    }
 
-    /// Adds trailing actions after validating the action array.
-    public final void addActions(Node... actions) {
-        validateActions(actions);
-        getActions().addAll(actions);
-    }
 
-    /// Replaces all trailing actions.
-    public final void setActions(Node... actions) {
-        validateActions(actions);
-        getActions().setAll(actions);
-    }
 
-    /// Removes all trailing actions.
-    public final void clearActions() {
-        getActions().clear();
-    }
 
     /// Returns the small and centered top app bar container height token.
     ///
@@ -508,6 +495,7 @@ public class M3TopAppBar extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TOOL_BAR);
+        setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleItem, this::showAccessibleItem);
         addEventFilter(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         title.addListener(observable -> updateAccessibleText());
@@ -586,13 +574,6 @@ public class M3TopAppBar extends Control {
         );
     }
 
-    /// Validates a trailing action array.
-    private static void validateActions(Node... actions) {
-        Objects.requireNonNull(actions, "actions");
-        for (Node action : actions) {
-            Objects.requireNonNull(action, "action");
-        }
-    }
 
     /// Updates the accessible text exposed by the app bar.
     private void updateAccessibleText() {
@@ -654,7 +635,7 @@ public class M3TopAppBar extends Control {
         );
     }
 
-    /// CSS metadata for m3fx top app bar component tokens.
+    /// CSS metadata for M3FX top app bar component tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
         /// CSS metadata for the small and centered container height token.

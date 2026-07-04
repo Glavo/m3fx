@@ -8,7 +8,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 import java.time.LocalDate;
 import java.util.Objects;
 
-/// A labeled inclusive date range that can be applied to an [M3DateRangePicker].
+/// A labeled inclusive date range preset for an [M3DateRangePicker].
 ///
 /// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview).
 ///
@@ -47,10 +47,4 @@ public record M3DateRangePreset(String text, M3DateRange range) {
         return range;
     }
 
-    /// Applies this preset to the supplied date range picker.
-    ///
-    /// @param picker the date range picker that receives this preset
-    public void applyTo(M3DateRangePicker picker) {
-        Objects.requireNonNull(picker, "picker").applyPreset(this);
-    }
 }

@@ -8,7 +8,6 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.StringProperty;
-import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.css.PseudoClass;
@@ -24,7 +23,13 @@ import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyEvent;
+import org.glavo.m3fx.internal.M3FocusTraversal;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3InternalIcon;
+import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3SearchBarSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -107,7 +112,7 @@ public class M3SearchBar extends Control {
     private final TextField editor = new TextField();
 
     /// The mutable trailing action list.
-    private final ObservableList<Node> trailingActions = FXCollections.observableArrayList();
+    private final ObservableList<Node> trailingActions = M3ObservableLists.nonNullElementList("action");
 
     /// Whether the next active-state change should avoid moving focus into the embedded editor.
     private boolean suppressActiveEditorFocus;
@@ -228,33 +233,9 @@ public class M3SearchBar extends Control {
         return trailingActions;
     }
 
-    /// Adds one trailing action node.
-    ///
-    /// @param action the trailing action node to add
-    public final void addTrailingAction(Node action) {
-        getTrailingActions().add(Objects.requireNonNull(action, "action"));
-    }
 
-    /// Adds trailing action nodes.
-    ///
-    /// @param actions the trailing action nodes to add
-    public final void addTrailingActions(Node... actions) {
-        validateActions(actions);
-        getTrailingActions().addAll(actions);
-    }
 
-    /// Replaces all trailing action nodes.
-    ///
-    /// @param actions the replacement trailing action nodes
-    public final void setTrailingActions(Node... actions) {
-        validateActions(actions);
-        getTrailingActions().setAll(actions);
-    }
 
-    /// Removes all trailing action nodes.
-    public final void clearTrailingActions() {
-        getTrailingActions().clear();
-    }
 
     /// Returns the action handler.
     ///
@@ -544,13 +525,6 @@ public class M3SearchBar extends Control {
         focusNotifier.refresh();
     }
 
-    /// Validates a trailing action array.
-    private static void validateActions(Node... actions) {
-        Objects.requireNonNull(actions, "actions");
-        for (Node action : actions) {
-            Objects.requireNonNull(action, "action");
-        }
-    }
 
     /// Creates the default leading search glyph node.
     private static Node defaultLeadingNode() {

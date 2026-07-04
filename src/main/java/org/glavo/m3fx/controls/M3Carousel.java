@@ -23,7 +23,12 @@ import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
+import org.glavo.m3fx.internal.M3FocusTraversal;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3NodeLayout;
+import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3CarouselSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -60,7 +65,7 @@ public class M3Carousel extends Control {
     private static final PseudoClass SELECTED_PSEUDO_CLASS = PseudoClass.getPseudoClass("selected");
 
     /// The mutable carousel item list.
-    private final ObservableList<Node> items = FXCollections.observableArrayList();
+    private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
 
     // The selected item index, or `-1` when no item is selected.
     private final IntegerProperty selectedIndex = new SimpleIntegerProperty(this, "selectedIndex", -1) {
@@ -85,7 +90,7 @@ public class M3Carousel extends Control {
             new ReadOnlyObjectWrapper<>(this, "selectedItem");
 
     /// The selected item exposed as an immutable observable list for accessibility clients.
-    private final ObservableList<Node> selectedItems = FXCollections.observableArrayList();
+    private final ObservableList<Node> selectedItems = M3ObservableLists.nonNullElementList("selectedItem");
 
     /// The read-only selected item view.
     private final @UnmodifiableView ObservableList<Node> selectedItemsView =
@@ -126,14 +131,6 @@ public class M3Carousel extends Control {
         initialize();
     }
 
-    /// Creates a carousel containing the supplied item nodes.
-    ///
-    /// @param items the item nodes displayed by the carousel
-    public M3Carousel(Node... items) {
-        initialize();
-        addItems(items);
-    }
-
     /// Returns the mutable carousel item list.
     ///
     /// @return the mutable carousel item list
@@ -141,33 +138,9 @@ public class M3Carousel extends Control {
         return items;
     }
 
-    /// Adds one carousel item.
-    ///
-    /// @param item the item node to add
-    public final void addItem(Node item) {
-        getItems().add(Objects.requireNonNull(item, "item"));
-    }
 
-    /// Adds carousel items.
-    ///
-    /// @param items the item nodes to add
-    public final void addItems(Node... items) {
-        validateItems(items);
-        getItems().addAll(items);
-    }
 
-    /// Replaces all carousel items.
-    ///
-    /// @param items the replacement item nodes
-    public final void setItems(Node... items) {
-        validateItems(items);
-        getItems().setAll(items);
-    }
 
-    /// Removes all carousel items.
-    public final void clearItems() {
-        getItems().clear();
-    }
 
     /// Returns the selected item index, or `-1` when no item is selected.
     ///
@@ -755,11 +728,4 @@ public class M3Carousel extends Control {
         return item.isVisible() && !item.isDisabled();
     }
 
-    /// Validates a carousel item array.
-    private static void validateItems(Node... items) {
-        Objects.requireNonNull(items, "items");
-        for (Node item : items) {
-            Objects.requireNonNull(item, "item");
-        }
-    }
 }

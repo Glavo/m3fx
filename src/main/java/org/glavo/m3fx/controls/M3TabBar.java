@@ -18,7 +18,12 @@ import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
+import org.glavo.m3fx.internal.M3SelectionNavigation;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.skins.M3TabBarSkin;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -46,7 +51,7 @@ public class M3TabBar extends Control {
     public static final String CONTAINER_STYLE_CLASS = "m3-tab-bar-container";
 
     /// The mutable tab content.
-    private final ObservableList<Node> tabs = FXCollections.observableArrayList();
+    private final ObservableList<Node> tabs = M3ObservableLists.nonNullElementList("tab");
 
     /// Notifies accessibility clients when focus moves between tabs.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -58,7 +63,7 @@ public class M3TabBar extends Control {
             new ReadOnlyObjectWrapper<>(this, "selectedTab");
 
     /// The selected tabs in child order.
-    private final ObservableList<M3Tab> selectedTabs = FXCollections.observableArrayList();
+    private final ObservableList<M3Tab> selectedTabs = M3ObservableLists.nonNullElementList("selectedTab");
 
     /// The read-only selected tab view.
     private final @UnmodifiableView ObservableList<M3Tab> selectedTabsView =
@@ -111,38 +116,14 @@ public class M3TabBar extends Control {
         initialize();
     }
 
-    /// Creates a tab bar containing the supplied tabs.
-    public M3TabBar(M3Tab... tabs) {
-        initialize();
-        addTabs(tabs);
-    }
-
     /// Returns the mutable child list used as tabs.
     public final ObservableList<Node> getTabs() {
         return tabs;
     }
 
-    /// Adds one tab.
-    public final void addTab(M3Tab tab) {
-        getTabs().add(Objects.requireNonNull(tab, "tab"));
-    }
 
-    /// Adds tabs.
-    public final void addTabs(M3Tab... tabs) {
-        validateTabs(tabs);
-        getTabs().addAll(tabs);
-    }
 
-    /// Replaces all tabs.
-    public final void setTabs(M3Tab... tabs) {
-        validateTabs(tabs);
-        getTabs().setAll(tabs);
-    }
 
-    /// Removes all tabs.
-    public final void clearTabs() {
-        getTabs().clear();
-    }
 
     /// Returns the selected tabs in child order.
     public final @UnmodifiableView ObservableList<M3Tab> getSelectedTabs() {
@@ -336,6 +317,7 @@ public class M3TabBar extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TAB_PANE);
+        setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleSelectionTarget, this::showAccessibleItem);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         getTabs().addListener(childrenListener);
@@ -532,11 +514,4 @@ public class M3TabBar extends Control {
         return new M3TabBarSkin(this);
     }
 
-    /// Validates a tab array.
-    private static void validateTabs(M3Tab... tabs) {
-        Objects.requireNonNull(tabs, "tabs");
-        for (M3Tab tab : tabs) {
-            Objects.requireNonNull(tab, "tab");
-        }
-    }
 }

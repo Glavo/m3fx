@@ -8,14 +8,12 @@ import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
-import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
-import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -31,19 +29,25 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
+import org.glavo.m3fx.internal.M3PresetNavigation;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3DateRangePickerFieldSkin;
 import org.glavo.m3fx.internal.M3NodeLayout;
+import org.glavo.m3fx.internal.M3PopupPositioning;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.DateTimeException;
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
@@ -89,7 +93,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// The initial popup picker offset used for enter and exit motion.
     private static final double POPUP_TRANSITION_OFFSET_Y = 6.0;
 
-    // The selected start date, or `null` when the range is empty.
+    // Internal storage for [startDateProperty].
     private final ObjectProperty<@Nullable LocalDate> startDate =
             new SimpleObjectProperty<>(this, "startDate") {
                 /// Validates direct property writes before applying them.
@@ -114,7 +118,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
                 }
             };
 
-    // The selected end date, or `null` while only a start date is selected.
+    // Internal storage for [endDateProperty].
     private final ObjectProperty<@Nullable LocalDate> endDate =
             new SimpleObjectProperty<>(this, "endDate") {
                 /// Validates direct property writes before applying them.
@@ -139,7 +143,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
                 }
             };
 
-    // The formatter used to convert between editor text and picker dates.
+    // Internal storage for [formatterProperty].
     private final ObjectProperty<DateTimeFormatter> formatter =
             new SimpleObjectProperty<>(this, "formatter") {
                 /// Keeps formatter values non-null.
@@ -155,7 +159,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
                 }
             };
 
-    // The error message shown when either editor text cannot be parsed.
+    // Internal storage for [invalidTextErrorTextProperty].
     private final StringProperty invalidTextErrorText =
             new SimpleStringProperty(this, "invalidTextErrorText") {
                 /// Keeps parse error text non-null.
@@ -165,7 +169,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
                 }
             };
 
-    // The error message shown when editor text parses outside the selectable range.
+    // Internal storage for [rangeErrorTextProperty].
     private final StringProperty rangeErrorText =
             new SimpleStringProperty(this, "rangeErrorText") {
                 /// Keeps range error text non-null.
@@ -191,7 +195,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     private final M3DateRangePicker picker = new M3DateRangePicker();
 
     /// The mutable preset list rendered before the popup picker.
-    private final ObservableList<M3DateRangePreset> presets = FXCollections.observableArrayList();
+    private final ObservableList<M3DateRangePreset> presets = M3ObservableLists.nonNullElementList("preset");
 
     /// The wrapper used when the popup renders preset actions next to the picker.
     private final HBox presetContent = new HBox(16.0);
@@ -218,7 +222,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     private final M3PopupContextSynchronizer popupContextSynchronizer =
             new M3PopupContextSynchronizer(this, popupContent, M3Stylesheets.controlStylesheet("picker-field.css"));
 
-    // Whether the popup picker is currently showing.
+    // Internal storage for [showingProperty].
     private final ReadOnlyBooleanWrapper showing = new ReadOnlyBooleanWrapper(this, "showing");
 
     /// The picker popup enter animation.
@@ -371,7 +375,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// Applies a date range preset, updates the editors, and closes the popup when it is showing.
     ///
     /// @param preset the date range preset to apply
-    public void applyPreset(M3DateRangePreset preset) {
+    private void applyPreset(M3DateRangePreset preset) {
         M3DateRange range = Objects.requireNonNull(preset, "preset").range();
         setRange(range);
         picker.showMonth(YearMonth.from(range.startDate()));
@@ -420,41 +424,6 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// @return the mutable date range preset list rendered in the popup
     public ObservableList<M3DateRangePreset> getPresets() {
         return presets;
-    }
-
-    /// Adds one date range preset to the popup.
-    ///
-    /// @param preset the date range preset to add
-    public void addPreset(M3DateRangePreset preset) {
-        presets.add(Objects.requireNonNull(preset, "preset"));
-    }
-
-    /// Adds date range presets after validating the preset array.
-    ///
-    /// @param presets the date range presets to add
-    public void addPresets(M3DateRangePreset... presets) {
-        validatePresets(presets);
-        this.presets.addAll(presets);
-    }
-
-    /// Replaces all date range presets.
-    ///
-    /// @param presets the replacement date range presets
-    public void setPresets(M3DateRangePreset... presets) {
-        validatePresets(presets);
-        this.presets.setAll(presets);
-    }
-
-    /// Replaces all date range presets with the default common range set.
-    ///
-    /// @param anchorDate the date used to derive relative common presets
-    public void setCommonPresets(LocalDate anchorDate) {
-        presets.setAll(M3DateRangePresets.common(anchorDate, getFirstDayOfWeek()));
-    }
-
-    /// Removes all date range presets from the popup.
-    public void clearPresets() {
-        presets.clear();
     }
 
     /// Returns the formatter used for editor text.
@@ -618,113 +587,6 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         return showing.getReadOnlyProperty();
     }
 
-    /// Returns the month currently displayed by the popup calendar grid.
-    ///
-    /// @return the month currently displayed by the popup calendar grid
-    public YearMonth getDisplayedMonth() {
-        return picker.getDisplayedMonth();
-    }
-
-    /// Sets the month displayed by the popup calendar grid.
-    ///
-    /// @param displayedMonth the month displayed by the popup calendar grid
-    public void setDisplayedMonth(YearMonth displayedMonth) {
-        picker.setDisplayedMonth(displayedMonth);
-    }
-
-    /// Returns the displayed month property from the popup picker.
-    ///
-    /// @return the displayed month property from the popup picker
-    public ObjectProperty<YearMonth> displayedMonthProperty() {
-        return picker.displayedMonthProperty();
-    }
-
-    /// Returns the weekday shown in the first popup calendar column.
-    ///
-    /// @return the weekday shown in the first popup calendar column
-    public DayOfWeek getFirstDayOfWeek() {
-        return picker.getFirstDayOfWeek();
-    }
-
-    /// Sets the weekday shown in the first popup calendar column.
-    ///
-    /// @param firstDayOfWeek the weekday shown in the first popup calendar column
-    public void setFirstDayOfWeek(DayOfWeek firstDayOfWeek) {
-        picker.setFirstDayOfWeek(firstDayOfWeek);
-    }
-
-    /// Returns the first day of week property from the popup picker.
-    ///
-    /// @return the first day of week property from the popup picker
-    public ObjectProperty<DayOfWeek> firstDayOfWeekProperty() {
-        return picker.firstDayOfWeekProperty();
-    }
-
-    /// Returns the earliest selectable date, or `null` when there is no lower bound.
-    ///
-    /// @return the earliest selectable date, or `null` when there is no lower bound
-    public @Nullable LocalDate getMinDate() {
-        return picker.getMinDate();
-    }
-
-    /// Sets the earliest selectable date, or clears the lower bound when `null` is supplied.
-    ///
-    /// @param minDate the earliest selectable date, or `null` to clear the lower bound
-    public void setMinDate(@Nullable LocalDate minDate) {
-        picker.setMinDate(minDate);
-        clearRangeIfOutOfBounds();
-    }
-
-    /// Returns the minimum date property from the popup picker.
-    ///
-    /// @return the minimum date property from the popup picker
-    public ObjectProperty<@Nullable LocalDate> minDateProperty() {
-        return picker.minDateProperty();
-    }
-
-    /// Returns the latest selectable date, or `null` when there is no upper bound.
-    ///
-    /// @return the latest selectable date, or `null` when there is no upper bound
-    public @Nullable LocalDate getMaxDate() {
-        return picker.getMaxDate();
-    }
-
-    /// Sets the latest selectable date, or clears the upper bound when `null` is supplied.
-    ///
-    /// @param maxDate the latest selectable date, or `null` to clear the upper bound
-    public void setMaxDate(@Nullable LocalDate maxDate) {
-        picker.setMaxDate(maxDate);
-        clearRangeIfOutOfBounds();
-    }
-
-    /// Returns the maximum date property from the popup picker.
-    ///
-    /// @return the maximum date property from the popup picker
-    public ObjectProperty<@Nullable LocalDate> maxDateProperty() {
-        return picker.maxDateProperty();
-    }
-
-    /// Returns whether adjacent-month days are visible in popup leading and trailing grid cells.
-    ///
-    /// @return `true` when adjacent-month days are visible
-    public boolean isShowAdjacentMonthDays() {
-        return picker.isShowAdjacentMonthDays();
-    }
-
-    /// Sets whether adjacent-month days are visible in popup leading and trailing grid cells.
-    ///
-    /// @param showAdjacentMonthDays whether adjacent-month days should be visible
-    public void setShowAdjacentMonthDays(boolean showAdjacentMonthDays) {
-        picker.setShowAdjacentMonthDays(showAdjacentMonthDays);
-    }
-
-    /// Returns the adjacent-month visibility property from the popup picker.
-    ///
-    /// @return the adjacent-month visibility property from the popup picker
-    public BooleanProperty showAdjacentMonthDaysProperty() {
-        return picker.showAdjacentMonthDaysProperty();
-    }
-
     /// Parses both editor texts, updates selected endpoints, and returns whether the text is valid.
     ///
     /// @return `true` when both editor texts can be committed as a valid range
@@ -846,6 +708,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
+        setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem,
                 this::handlesAccessibleShowTarget);
         startInputLayout.setLabelText("Start date");
@@ -892,8 +755,8 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         endEditor.textProperty().addListener((observable, oldValue, newValue) -> handleEditorTextChanged());
         picker.startDateProperty().addListener(observable -> schedulePickerRangeSync());
         picker.endDateProperty().addListener(observable -> schedulePickerRangeSync());
-        picker.minDateProperty().addListener((observable, oldValue, newValue) -> updatePresetContent());
-        picker.maxDateProperty().addListener((observable, oldValue, newValue) -> updatePresetContent());
+        picker.minDateProperty().addListener((observable, oldValue, newValue) -> handleSelectableBoundsChanged());
+        picker.maxDateProperty().addListener((observable, oldValue, newValue) -> handleSelectableBoundsChanged());
         presets.addListener(presetsListener);
         popupFocusNotifier.start();
     }
@@ -1107,6 +970,12 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
             throw new IllegalArgumentException("startDate must not be after endDate");
         }
+    }
+
+    /// Refreshes preset state and clears the selected range when picker bounds exclude it.
+    private void handleSelectableBoundsChanged() {
+        updatePresetContent();
+        clearRangeIfOutOfBounds();
     }
 
     /// Clears selected endpoints when current bounds exclude either endpoint.
@@ -1449,11 +1318,4 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         M3Animation.finishRunningAnimationsIfDisabled(this, showAnimation, hideAnimation);
     }
 
-    /// Validates a date range preset array.
-    private static void validatePresets(M3DateRangePreset... presets) {
-        Objects.requireNonNull(presets, "presets");
-        for (M3DateRangePreset preset : presets) {
-            Objects.requireNonNull(preset, "preset");
-        }
-    }
 }

@@ -27,7 +27,7 @@ import java.util.Objects;
 /// [Material color system](https://m3.material.io/styles/color/overview).
 @NotNullByDefault
 public sealed interface M3Theme permits M3ThemeImpl {
-    /// The default seed color used by m3fx.
+    /// The default seed color used by M3FX.
     Color DEFAULT_SEED_COLOR = Color.web("#6750a4");
 
     /// Returns the Material Design 3 token profile.
@@ -112,7 +112,7 @@ public sealed interface M3Theme permits M3ThemeImpl {
         return tokens().toRootStyleDeclarations();
     }
 
-    /// Converts component tokens into JavaFX CSS rules for m3fx controls.
+    /// Converts component tokens into JavaFX CSS rules for M3FX controls.
     default String toControlStyleRules() {
         return tokens().toControlStyleRules();
     }

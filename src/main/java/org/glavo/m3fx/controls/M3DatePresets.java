@@ -11,7 +11,7 @@ import java.time.YearMonth;
 import java.util.List;
 import java.util.Objects;
 
-/// Provides reusable [M3DatePreset] factories for common date choices.
+/// Provides reusable [M3DatePreset] values for common date choices.
 ///
 /// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview).
 @NotNullByDefault
@@ -20,21 +20,12 @@ public final class M3DatePresets {
     private M3DatePresets() {
     }
 
-    /// Returns a custom preset for one date.
-    ///
-    /// @param text the preset action text
-    /// @param date the date selected by the preset
-    /// @return a custom date preset
-    public static M3DatePreset date(String text, LocalDate date) {
-        return new M3DatePreset(text, date);
-    }
-
     /// Returns a preset for the supplied date labeled `Today`.
     ///
     /// @param date the date selected by the preset
     /// @return a `Today` preset for the supplied date
     public static M3DatePreset today(LocalDate date) {
-        return date("Today", date);
+        return new M3DatePreset("Today", date);
     }
 
     /// Returns a preset for the day after the supplied date.
@@ -42,7 +33,7 @@ public final class M3DatePresets {
     /// @param date the anchor date
     /// @return a `Tomorrow` preset for the day after the supplied date
     public static M3DatePreset tomorrow(LocalDate date) {
-        return date("Tomorrow", Objects.requireNonNull(date, "date").plusDays(1));
+        return new M3DatePreset("Tomorrow", Objects.requireNonNull(date, "date").plusDays(1));
     }
 
     /// Returns a preset for the day before the supplied date.
@@ -50,7 +41,7 @@ public final class M3DatePresets {
     /// @param date the anchor date
     /// @return a `Yesterday` preset for the day before the supplied date
     public static M3DatePreset yesterday(LocalDate date) {
-        return date("Yesterday", Objects.requireNonNull(date, "date").minusDays(1));
+        return new M3DatePreset("Yesterday", Objects.requireNonNull(date, "date").minusDays(1));
     }
 
     /// Returns a preset offset by the requested number of days from the supplied date.
@@ -72,7 +63,7 @@ public final class M3DatePresets {
 
         int absoluteOffset = Math.abs(dayOffset);
         String text = dayOffset > 0 ? "In " + absoluteOffset + " days" : absoluteOffset + " days ago";
-        return date(text, anchorDate.plusDays(dayOffset));
+        return new M3DatePreset(text, anchorDate.plusDays(dayOffset));
     }
 
     /// Returns a preset for the first day of the month containing the supplied date.
@@ -81,7 +72,7 @@ public final class M3DatePresets {
     /// @return a preset for the first day of the anchor date's month
     public static M3DatePreset thisMonthStart(LocalDate date) {
         YearMonth month = YearMonth.from(Objects.requireNonNull(date, "date"));
-        return date("Start of month", month.atDay(1));
+        return new M3DatePreset("Start of month", month.atDay(1));
     }
 
     /// Returns a preset for the first day of the month after the month containing the supplied date.
@@ -90,7 +81,7 @@ public final class M3DatePresets {
     /// @return a preset for the first day of the month after the anchor date's month
     public static M3DatePreset nextMonthStart(LocalDate date) {
         YearMonth month = YearMonth.from(Objects.requireNonNull(date, "date")).plusMonths(1);
-        return date("Next month", month.atDay(1));
+        return new M3DatePreset("Next month", month.atDay(1));
     }
 
     /// Returns the default single-date preset list.

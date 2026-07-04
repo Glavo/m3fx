@@ -10,6 +10,7 @@ import javafx.css.Styleable;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.theme.M3ThemeMetadata;
 import org.glavo.m3fx.tokens.M3Profile;
 import org.glavo.monetfx.Brightness;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -57,10 +58,7 @@ public final class M3ThemeManager {
     /// The style class applied to roots using a dark color scheme.
     public static final String DARK_BRIGHTNESS_STYLE_CLASS = "m3-dark";
 
-    /// The property key that stores the applied theme.
-    public static final String THEME_PROPERTY_KEY = M3ThemeManager.class.getName() + ".theme";
-
-    /// The property key that stores the root style before m3fx theme declarations were added.
+    /// The property key that stores the root style before M3FX theme declarations were added.
     private static final String BASE_STYLE_PROPERTY_KEY = M3ThemeManager.class.getName() + ".baseStyle";
 
     /// The directory name used for generated theme stylesheets.
@@ -77,7 +75,7 @@ public final class M3ThemeManager {
     private M3ThemeManager() {
     }
 
-    /// Installs a theme on a scene and adds the base m3fx stylesheet.
+    /// Installs a theme on a scene and adds the base M3FX stylesheet.
     public static void install(Scene scene, M3Theme theme) {
         Objects.requireNonNull(scene, "scene");
         Objects.requireNonNull(theme, "theme");
@@ -108,18 +106,15 @@ public final class M3ThemeManager {
         Object baseStyleValue = root.getProperties().get(BASE_STYLE_PROPERTY_KEY);
         String baseStyle = baseStyleValue instanceof String ? (String) baseStyleValue : "";
         root.setStyle(mergeStyles(baseStyle, theme.toRootStyleDeclarations()));
-        root.getProperties().put(THEME_PROPERTY_KEY, theme);
+        M3ThemeMetadata.setTheme(root, theme);
     }
 
     /// Returns the theme installed on a root node, or null when no M3FX theme is installed.
     public static @Nullable M3Theme getTheme(Parent root) {
-        Objects.requireNonNull(root, "root");
-
-        Object theme = root.getProperties().get(THEME_PROPERTY_KEY);
-        return theme instanceof M3Theme materialTheme ? materialTheme : null;
+        return M3ThemeMetadata.getTheme(root);
     }
 
-    /// Adds the base m3fx stylesheet to a scene if it is not already present.
+    /// Adds the base M3FX stylesheet to a scene if it is not already present.
     public static void installStylesheet(Scene scene) {
         Objects.requireNonNull(scene, "scene");
 
@@ -147,7 +142,7 @@ public final class M3ThemeManager {
         moveOrAdd(stylesheets, stylesheet, stylesheetIndex);
     }
 
-    /// Removes m3fx theme state and stylesheets from a scene.
+    /// Removes M3FX theme state and stylesheets from a scene.
     public static void uninstall(Scene scene) {
         Objects.requireNonNull(scene, "scene");
 
@@ -158,7 +153,7 @@ public final class M3ThemeManager {
         uninstallStylesheet(scene);
     }
 
-    /// Removes m3fx theme tokens from a root node.
+    /// Removes M3FX theme tokens from a root node.
     public static void uninstall(Parent root) {
         Objects.requireNonNull(root, "root");
 
@@ -166,13 +161,13 @@ public final class M3ThemeManager {
         Object baseStyleValue = root.getProperties().remove(BASE_STYLE_PROPERTY_KEY);
         if (baseStyleValue instanceof String baseStyle) {
             root.setStyle(baseStyle);
-        } else if (root.getProperties().containsKey(THEME_PROPERTY_KEY)) {
+        } else if (M3ThemeMetadata.hasTheme(root)) {
             root.setStyle("");
         }
-        root.getProperties().remove(THEME_PROPERTY_KEY);
+        M3ThemeMetadata.clearTheme(root);
     }
 
-    /// Removes the base m3fx stylesheet from a scene.
+    /// Removes the base M3FX stylesheet from a scene.
     public static void uninstallStylesheet(Scene scene) {
         Objects.requireNonNull(scene, "scene");
 
@@ -186,17 +181,17 @@ public final class M3ThemeManager {
 
         clearThemeStyleClasses(targetRoot);
 
-        Object themeValue = sourceRoot.getProperties().get(THEME_PROPERTY_KEY);
-        if (themeValue instanceof M3Theme theme) {
+        @Nullable M3Theme theme = M3ThemeMetadata.getTheme(sourceRoot);
+        if (theme != null) {
             applyThemeStyleClasses(targetRoot, theme);
-            targetRoot.getProperties().put(THEME_PROPERTY_KEY, theme);
+            M3ThemeMetadata.setTheme(targetRoot, theme);
         } else {
             copyStyleClassIfPresent(sourceRoot, targetRoot, ROOT_STYLE_CLASS);
             copyStyleClassIfPresent(sourceRoot, targetRoot, BASELINE_PROFILE_STYLE_CLASS);
             copyStyleClassIfPresent(sourceRoot, targetRoot, EXPRESSIVE_PROFILE_STYLE_CLASS);
             copyStyleClassIfPresent(sourceRoot, targetRoot, LIGHT_BRIGHTNESS_STYLE_CLASS);
             copyStyleClassIfPresent(sourceRoot, targetRoot, DARK_BRIGHTNESS_STYLE_CLASS);
-            targetRoot.getProperties().remove(THEME_PROPERTY_KEY);
+            M3ThemeMetadata.clearTheme(targetRoot);
         }
 
         targetRoot.setStyle(sourceRoot.getStyle());
@@ -231,12 +226,12 @@ public final class M3ThemeManager {
         }
     }
 
-    /// Sets the base m3fx stylesheet as the application user-agent stylesheet.
+    /// Sets the base M3FX stylesheet as the application user-agent stylesheet.
     public static void installUserAgentStylesheet() {
         Application.setUserAgentStylesheet(stylesheetUrl());
     }
 
-    /// Returns the base m3fx stylesheet URL.
+    /// Returns the base M3FX stylesheet URL.
     public static String stylesheetUrl() {
         return M3Stylesheets.baseStylesheet();
     }
@@ -408,7 +403,7 @@ public final class M3ThemeManager {
             snapshot = new RootThemeSnapshot(root);
             applyThemeStyleClasses(root, theme);
             root.setStyle(mergeStyles(snapshot.baseStyle, theme.toRootStyleDeclarations()));
-            root.getProperties().put(THEME_PROPERTY_KEY, theme);
+            M3ThemeMetadata.setTheme(root, theme);
         }
 
         /// Restores the root state that existed before the scene theme was applied.
@@ -455,9 +450,8 @@ public final class M3ThemeManager {
         private RootThemeSnapshot(Parent root) {
             rootReference = new WeakReference<>(root);
             baseStyle = root.getStyle();
-            Object themeValue = root.getProperties().get(THEME_PROPERTY_KEY);
-            hadTheme = themeValue instanceof M3Theme;
-            theme = hadTheme ? (M3Theme) themeValue : null;
+            theme = M3ThemeMetadata.getTheme(root);
+            hadTheme = theme != null;
             hadRootStyleClass = root.getStyleClass().contains(ROOT_STYLE_CLASS);
             hadBaselineProfileStyleClass = root.getStyleClass().contains(BASELINE_PROFILE_STYLE_CLASS);
             hadExpressiveProfileStyleClass = root.getStyleClass().contains(EXPRESSIVE_PROFILE_STYLE_CLASS);
@@ -478,9 +472,9 @@ public final class M3ThemeManager {
             restoreStyleClass(root, LIGHT_BRIGHTNESS_STYLE_CLASS, hadLightBrightnessStyleClass);
             restoreStyleClass(root, DARK_BRIGHTNESS_STYLE_CLASS, hadDarkBrightnessStyleClass);
             if (hadTheme && theme != null) {
-                root.getProperties().put(THEME_PROPERTY_KEY, theme);
+                M3ThemeMetadata.setTheme(root, theme);
             } else {
-                root.getProperties().remove(THEME_PROPERTY_KEY);
+                M3ThemeMetadata.clearTheme(root);
             }
         }
 

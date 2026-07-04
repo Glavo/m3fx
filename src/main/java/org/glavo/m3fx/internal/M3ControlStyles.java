@@ -1,22 +1,21 @@
 // Copyright (c) 2026 Glavo
 // SPDX-License-Identifier: Apache-2.0
 
-package org.glavo.m3fx.controls;
+package org.glavo.m3fx.internal;
 
 import javafx.beans.value.ChangeListener;
 import javafx.css.Styleable;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-/// Provides shared style-class helpers for m3fx controls.
+/// Provides shared style-class helpers for M3FX controls.
 @NotNullByDefault
-final class M3ControlStyles {
+public final class M3ControlStyles {
     /// The standard JavaFX scene root style class used by fallback token declarations.
     private static final String ROOT_STYLE_CLASS = "root";
 
@@ -29,7 +28,7 @@ final class M3ControlStyles {
     }
 
     /// Adds a style class if it is not already present.
-    static void add(Styleable node, String styleClass) {
+    public static void add(Styleable node, String styleClass) {
         List<String> styleClasses = node.getStyleClass();
         if (!styleClasses.contains(styleClass)) {
             styleClasses.add(styleClass);
@@ -38,7 +37,7 @@ final class M3ControlStyles {
     }
 
     /// Replaces one variant style class with another.
-    static void replaceVariant(Styleable node, String selectedStyleClass, String... variantStyleClasses) {
+    public static void replaceVariant(Styleable node, String selectedStyleClass, String... variantStyleClasses) {
         List<String> styleClasses = node.getStyleClass();
         for (String styleClass : variantStyleClasses) {
             styleClasses.remove(styleClass);

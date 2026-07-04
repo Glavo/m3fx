@@ -18,6 +18,7 @@ import javafx.stage.Window;
 import org.glavo.m3fx.internal.M3PopupStyles;
 import org.glavo.m3fx.internal.M3ThemeResolver;
 import org.glavo.m3fx.theme.M3Theme;
+import org.glavo.m3fx.internal.theme.M3ThemeMetadata;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -304,7 +305,7 @@ public class M3Dialog<R> extends Dialog<R> {
 
     /// Handles installed-theme metadata changes on observed owner roots.
     private void handleThemeRootPropertiesChanged(MapChangeListener.Change<?, ?> change) {
-        if (Objects.equals(M3ThemeManager.THEME_PROPERTY_KEY, change.getKey())) {
+        if (M3ThemeMetadata.isThemePropertyKey(change.getKey())) {
             refreshInheritedThemeContextAndApplyTheme();
         }
     }

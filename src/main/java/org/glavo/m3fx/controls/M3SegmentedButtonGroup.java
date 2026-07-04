@@ -26,7 +26,13 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
+import org.glavo.m3fx.internal.M3SelectionNavigation;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3NodeLayout;
+import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3SegmentedButtonGroupSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -50,7 +56,7 @@ import java.util.Objects;
 /// See [Material Design segmented buttons](https://m3.material.io/components/segmented-buttons/overview).
 @NotNullByDefault
 public class M3SegmentedButtonGroup extends Control {
-    /// The base style class for m3fx segmented button groups.
+    /// The base style class for M3FX segmented button groups.
     public static final String STYLE_CLASS = "m3-segmented-button-group";
 
     /// The style class applied when a segmented button is the only segment.
@@ -69,7 +75,7 @@ public class M3SegmentedButtonGroup extends Control {
     private static final double DEFAULT_SPACING = -1.0;
 
     /// The mutable segmented button group content.
-    private final ObservableList<Node> items = FXCollections.observableArrayList();
+    private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
 
     /// Notifies accessibility clients when focus moves between segmented buttons.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -99,7 +105,7 @@ public class M3SegmentedButtonGroup extends Control {
             };
 
     /// The selected segmented buttons in child order.
-    private final ObservableList<M3SegmentedButton> selectedButtons = FXCollections.observableArrayList();
+    private final ObservableList<M3SegmentedButton> selectedButtons = M3ObservableLists.nonNullElementList("selectedButton");
 
     /// The read-only selected segmented button view.
     private final @UnmodifiableView ObservableList<M3SegmentedButton> selectedButtonsView =
@@ -162,14 +168,6 @@ public class M3SegmentedButtonGroup extends Control {
         initialize();
     }
 
-    /// Creates a segmented button group with the supplied buttons.
-    ///
-    /// @param buttons the initial segmented buttons
-    public M3SegmentedButtonGroup(M3SegmentedButton... buttons) {
-        initialize();
-        addButtons(buttons);
-    }
-
     /// Returns the mutable child list used as segmented button group content.
     ///
     /// @return the mutable child list used as segmented button group content
@@ -208,33 +206,9 @@ public class M3SegmentedButtonGroup extends Control {
         return spacing;
     }
 
-    /// Adds one segmented button.
-    ///
-    /// @param button the segmented button to add
-    public final void addButton(M3SegmentedButton button) {
-        getItems().add(Objects.requireNonNull(button, "button"));
-    }
 
-    /// Adds segmented buttons.
-    ///
-    /// @param buttons the segmented buttons to add
-    public final void addButtons(M3SegmentedButton... buttons) {
-        validateButtons(buttons);
-        getItems().addAll(buttons);
-    }
 
-    /// Replaces all segmented buttons.
-    ///
-    /// @param buttons the replacement segmented buttons
-    public final void setButtons(M3SegmentedButton... buttons) {
-        validateButtons(buttons);
-        getItems().setAll(buttons);
-    }
 
-    /// Removes all segmented button group content.
-    public final void clearItems() {
-        getItems().clear();
-    }
 
     /// Returns the segmented button selection mode.
     ///
@@ -395,7 +369,7 @@ public class M3SegmentedButtonGroup extends Control {
         selectOnly(null);
     }
 
-    /// Returns the user-agent stylesheet for m3fx segmented button groups.
+    /// Returns the user-agent stylesheet for M3FX segmented button groups.
     ///
     /// @return the segmented button user-agent stylesheet URL
     @Override
@@ -497,6 +471,7 @@ public class M3SegmentedButtonGroup extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TOOL_BAR);
+        setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleSelectionTarget, this::showAccessibleItem);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         effectiveNodeOrientationProperty().addListener(effectiveNodeOrientationListener);
@@ -790,13 +765,6 @@ public class M3SegmentedButtonGroup extends Control {
         return new M3SegmentedButtonGroupSkin(this);
     }
 
-    /// Validates a segmented button array.
-    private static void validateButtons(M3SegmentedButton... buttons) {
-        Objects.requireNonNull(buttons, "buttons");
-        for (M3SegmentedButton button : buttons) {
-            Objects.requireNonNull(button, "button");
-        }
-    }
 
     /// CSS metadata for segmented button group layout tokens.
     @NotNullByDefault

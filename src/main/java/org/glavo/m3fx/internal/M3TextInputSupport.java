@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Glavo
 // SPDX-License-Identifier: Apache-2.0
 
-package org.glavo.m3fx.controls;
+package org.glavo.m3fx.internal;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
@@ -15,6 +15,8 @@ import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
 import javafx.geometry.Insets;
 import javafx.scene.control.TextInputControl;
+import org.glavo.m3fx.controls.M3TextInput;
+import org.glavo.m3fx.controls.M3TextInputVariant;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,24 +27,24 @@ import java.util.Objects;
 
 /// Provides shared state and token plumbing for Material text input controls.
 @NotNullByDefault
-final class M3TextInputSupport<C extends TextInputControl & M3TextInput> {
+public final class M3TextInputSupport<C extends TextInputControl & M3TextInput> {
     /// The default single-line text input container height.
-    static final double DEFAULT_FIELD_CONTAINER_HEIGHT = 56.0;
+    public static final double DEFAULT_FIELD_CONTAINER_HEIGHT = 56.0;
 
     /// The default multiline text input container height.
-    static final double DEFAULT_AREA_CONTAINER_HEIGHT = 112.0;
+    public static final double DEFAULT_AREA_CONTAINER_HEIGHT = 112.0;
 
     /// The default text input container shape radius.
-    static final double DEFAULT_CONTAINER_SHAPE = 4.0;
+    public static final double DEFAULT_CONTAINER_SHAPE = 4.0;
 
     /// The default horizontal content padding.
-    static final double DEFAULT_HORIZONTAL_PADDING = 16.0;
+    public static final double DEFAULT_HORIZONTAL_PADDING = 16.0;
 
     /// The default single-line vertical content padding.
-    static final double DEFAULT_FIELD_VERTICAL_PADDING = 8.0;
+    public static final double DEFAULT_FIELD_VERTICAL_PADDING = 8.0;
 
     /// The default multiline vertical content padding.
-    static final double DEFAULT_AREA_VERTICAL_PADDING = 16.0;
+    public static final double DEFAULT_AREA_VERTICAL_PADDING = 16.0;
 
     /// The pseudo-class used while an input renders its error state.
     private static final PseudoClass ERROR_PSEUDO_CLASS = PseudoClass.getPseudoClass("error");
@@ -71,7 +73,7 @@ final class M3TextInputSupport<C extends TextInputControl & M3TextInput> {
     // The visual variant property.
     private final ObjectProperty<M3TextInputVariant> variant;
 
-    /// Whether the owning input should render its error state.
+    // Whether the owning input should render its error state.
     private final BooleanProperty error;
 
     // The styleable container height token.
@@ -87,7 +89,7 @@ final class M3TextInputSupport<C extends TextInputControl & M3TextInput> {
     private @Nullable StyleableDoubleProperty verticalPadding;
 
     /// Creates shared text input state for a concrete JavaFX text input control.
-    M3TextInputSupport(
+    public M3TextInputSupport(
             C control,
             double defaultContainerHeight,
             double defaultVerticalPadding,
@@ -133,7 +135,7 @@ final class M3TextInputSupport<C extends TextInputControl & M3TextInput> {
     }
 
     /// Creates CSS metadata for a non-negative text input size token.
-    static <C extends TextInputControl & M3TextInput> CssMetaData<C, Number> createSizeCssMetaData(
+    public static <C extends TextInputControl & M3TextInput> CssMetaData<C, Number> createSizeCssMetaData(
             String property,
             double initialValue,
             StyleablePropertyProvider<C> provider
@@ -154,7 +156,7 @@ final class M3TextInputSupport<C extends TextInputControl & M3TextInput> {
     }
 
     /// Combines JavaFX text input CSS metadata with three Material text input token entries.
-    static <C extends TextInputControl & M3TextInput> List<CssMetaData<? extends Styleable, ?>> cssMetaData(
+    public static <C extends TextInputControl & M3TextInput> List<CssMetaData<? extends Styleable, ?>> cssMetaData(
             List<CssMetaData<? extends Styleable, ?>> baseCssMetaData,
             CssMetaData<C, Number> containerHeightCssMetaData,
             CssMetaData<C, Number> containerShapeCssMetaData,
@@ -168,7 +170,7 @@ final class M3TextInputSupport<C extends TextInputControl & M3TextInput> {
     }
 
     /// Combines JavaFX text input CSS metadata with four Material text input token entries.
-    static <C extends TextInputControl & M3TextInput> List<CssMetaData<? extends Styleable, ?>> cssMetaData(
+    public static <C extends TextInputControl & M3TextInput> List<CssMetaData<? extends Styleable, ?>> cssMetaData(
             List<CssMetaData<? extends Styleable, ?>> baseCssMetaData,
             CssMetaData<C, Number> containerHeightCssMetaData,
             CssMetaData<C, Number> containerShapeCssMetaData,
@@ -186,54 +188,54 @@ final class M3TextInputSupport<C extends TextInputControl & M3TextInput> {
     }
 
     /// Adds base styles and applies default text input metrics.
-    void initialize(String styleClass) {
+    public void initialize(String styleClass) {
         M3ControlStyles.add(control, styleClass);
         updateVariantStyle();
         updateMetrics();
     }
 
     /// Returns the text input variant.
-    M3TextInputVariant getVariant() {
+    public M3TextInputVariant getVariant() {
         return variant.get();
     }
 
     /// Sets the text input variant.
-    void setVariant(M3TextInputVariant variant) {
+    public void setVariant(M3TextInputVariant variant) {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
 
     /// Returns the text input variant property.
-    ObjectProperty<M3TextInputVariant> variantProperty() {
+    public ObjectProperty<M3TextInputVariant> variantProperty() {
         return variant;
     }
 
     /// Returns whether this input renders its error state.
-    boolean isError() {
+    public boolean isError() {
         return error.get();
     }
 
     /// Sets whether this input renders its error state.
-    void setError(boolean error) {
+    public void setError(boolean error) {
         this.error.set(error);
     }
 
     /// Returns the error state property.
-    BooleanProperty errorProperty() {
+    public BooleanProperty errorProperty() {
         return error;
     }
 
     /// Returns the preferred container height token.
-    double getContainerHeight() {
+    public double getContainerHeight() {
         return containerHeight == null ? defaultContainerHeight : containerHeight.get();
     }
 
     /// Sets the preferred container height token.
-    void setContainerHeight(double containerHeight) {
+    public void setContainerHeight(double containerHeight) {
         containerHeightProperty().set(M3Css.nonNegative(containerHeight, "containerHeight"));
     }
 
     /// Returns the preferred container height token property.
-    StyleableDoubleProperty containerHeightProperty() {
+    public StyleableDoubleProperty containerHeightProperty() {
         if (containerHeight == null) {
             containerHeight = createStyleableDoubleProperty(
                     defaultContainerHeight,
@@ -246,17 +248,17 @@ final class M3TextInputSupport<C extends TextInputControl & M3TextInput> {
     }
 
     /// Returns the container shape radius token.
-    double getContainerShape() {
+    public double getContainerShape() {
         return containerShape == null ? DEFAULT_CONTAINER_SHAPE : containerShape.get();
     }
 
     /// Sets the container shape radius token.
-    void setContainerShape(double containerShape) {
+    public void setContainerShape(double containerShape) {
         containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
     }
 
     /// Returns the container shape radius token property.
-    StyleableDoubleProperty containerShapeProperty() {
+    public StyleableDoubleProperty containerShapeProperty() {
         if (containerShape == null) {
             containerShape = createStyleableDoubleProperty(
                     DEFAULT_CONTAINER_SHAPE,
@@ -269,17 +271,17 @@ final class M3TextInputSupport<C extends TextInputControl & M3TextInput> {
     }
 
     /// Returns the horizontal content padding token.
-    double getHorizontalPadding() {
+    public double getHorizontalPadding() {
         return horizontalPadding == null ? DEFAULT_HORIZONTAL_PADDING : horizontalPadding.get();
     }
 
     /// Sets the horizontal content padding token.
-    void setHorizontalPadding(double horizontalPadding) {
+    public void setHorizontalPadding(double horizontalPadding) {
         horizontalPaddingProperty().set(M3Css.nonNegative(horizontalPadding, "horizontalPadding"));
     }
 
     /// Returns the horizontal content padding token property.
-    StyleableDoubleProperty horizontalPaddingProperty() {
+    public StyleableDoubleProperty horizontalPaddingProperty() {
         if (horizontalPadding == null) {
             horizontalPadding = createStyleableDoubleProperty(
                     DEFAULT_HORIZONTAL_PADDING,
@@ -292,17 +294,17 @@ final class M3TextInputSupport<C extends TextInputControl & M3TextInput> {
     }
 
     /// Returns the vertical content padding token.
-    double getVerticalPadding() {
+    public double getVerticalPadding() {
         return verticalPadding == null ? defaultVerticalPadding : verticalPadding.get();
     }
 
     /// Sets the vertical content padding token.
-    void setVerticalPadding(double verticalPadding) {
+    public void setVerticalPadding(double verticalPadding) {
         verticalPaddingProperty().set(M3Css.nonNegative(verticalPadding, "verticalPadding"));
     }
 
     /// Returns the vertical content padding token property.
-    StyleableDoubleProperty verticalPaddingProperty() {
+    public StyleableDoubleProperty verticalPaddingProperty() {
         CssMetaData<C, Number> cssMetaData = verticalPaddingCssMetaData;
         if (cssMetaData == null) {
             throw new UnsupportedOperationException("verticalPadding is not styleable for this input");
@@ -360,7 +362,7 @@ final class M3TextInputSupport<C extends TextInputControl & M3TextInput> {
     /// Provides a styleable double property for a text input control.
     @FunctionalInterface
     @NotNullByDefault
-    interface StyleablePropertyProvider<C extends TextInputControl & M3TextInput> {
+    public interface StyleablePropertyProvider<C extends TextInputControl & M3TextInput> {
         /// Returns the styleable property for a text input control.
         StyleableDoubleProperty property(C control);
     }

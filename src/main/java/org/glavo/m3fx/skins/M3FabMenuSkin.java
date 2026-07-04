@@ -7,6 +7,7 @@ import javafx.geometry.Pos;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3FabMenu;
+import org.glavo.m3fx.controls.M3FloatingActionButton;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default Material Design 3 skin for [M3FabMenu].
@@ -15,18 +16,24 @@ public final class M3FabMenuSkin extends SkinBase<M3FabMenu> {
     /// The internal vertical container.
     private final VBox container = new VBox();
 
+    /// The action item container owned by the skinnable control.
+    private final VBox actions;
+
     /// Creates a floating action button menu skin.
     ///
     /// @param control the floating action button menu controlled by this skin
-    public M3FabMenuSkin(M3FabMenu control) {
+    /// @param actions the action item container owned by the control
+    /// @param toggleButton the toggle button owned by the control
+    public M3FabMenuSkin(M3FabMenu control, VBox actions, M3FloatingActionButton toggleButton) {
         super(control);
+        this.actions = actions;
         container.setManaged(false);
         container.setAlignment(Pos.BOTTOM_RIGHT);
-        control.getActionsContainer().setAlignment(Pos.BOTTOM_RIGHT);
+        actions.setAlignment(Pos.BOTTOM_RIGHT);
         container.spacingProperty().bind(control.actionSpacingProperty());
-        control.getActionsContainer().spacingProperty().bind(control.actionSpacingProperty());
-        control.getActionsContainer().setFillWidth(false);
-        container.getChildren().setAll(control.getActionsContainer(), control.getToggleButton());
+        actions.spacingProperty().bind(control.actionSpacingProperty());
+        actions.setFillWidth(false);
+        container.getChildren().setAll(actions, toggleButton);
         getChildren().add(container);
     }
 
@@ -34,7 +41,7 @@ public final class M3FabMenuSkin extends SkinBase<M3FabMenu> {
     @Override
     public void dispose() {
         container.spacingProperty().unbind();
-        getSkinnable().getActionsContainer().spacingProperty().unbind();
+        actions.spacingProperty().unbind();
         container.getChildren().clear();
         super.dispose();
     }

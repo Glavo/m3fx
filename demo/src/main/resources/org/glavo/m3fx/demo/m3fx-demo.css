@@ -82,6 +82,21 @@
     -m3-horizontal-padding: 32px;
 }
 
+.m3-navigation-drawer.demo-sidebar-drawer .m3-list-item {
+    -m3-list-item-headline-color: -m3-color-on-surface;
+    -m3-list-item-supporting-color: -m3-color-on-surface-variant;
+    -m3-list-item-selected-content-color: -m3-color-on-secondary-container;
+}
+
+.m3-navigation-drawer.demo-sidebar-drawer .m3-list-item:selected {
+    -m3-list-item-headline-color: -m3-color-on-secondary-container;
+    -m3-list-item-supporting-color: -m3-color-on-secondary-container;
+}
+
+.m3-navigation-drawer.demo-sidebar-drawer .m3-list-item .demo-navigation-icon .demo-vector-icon {
+    -fx-fill: -m3-color-on-surface-variant;
+}
+
 .demo-scroll-pane {
     -fx-background-color: transparent;
     -fx-background: transparent;

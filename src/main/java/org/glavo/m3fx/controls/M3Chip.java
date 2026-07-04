@@ -20,6 +20,8 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.Skin;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3ChipSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -39,7 +41,7 @@ import java.util.Objects;
 /// See [Material Design chips](https://m3.material.io/components/chips/overview).
 @NotNullByDefault
 public class M3Chip extends ButtonBase {
-    /// The base style class for m3fx chips.
+    /// The base style class for M3FX chips.
     public static final String STYLE_CLASS = "m3-chip";
 
     /// The selected pseudo-class used by chips.
@@ -388,7 +390,7 @@ public class M3Chip extends ButtonBase {
         return new M3ChipSkin(this);
     }
 
-    /// Returns the user-agent stylesheet for m3fx chips.
+    /// Returns the user-agent stylesheet for M3FX chips.
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("chip.css");
@@ -445,7 +447,7 @@ public class M3Chip extends ButtonBase {
         }
     }
 
-    /// CSS metadata for m3fx chip component tokens.
+    /// CSS metadata for M3FX chip component tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
         /// CSS metadata for the container height token.

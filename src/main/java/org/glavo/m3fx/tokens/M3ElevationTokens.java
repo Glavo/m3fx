@@ -82,9 +82,9 @@ public sealed interface M3ElevationTokens permits M3ElevationTokensImpl {
         return builder.toString().trim();
     }
 
-    /// Converts elevation tokens into JavaFX CSS rules for m3fx controls.
+    /// Converts elevation tokens into JavaFX CSS rules for M3FX controls.
     ///
-    /// @return JavaFX CSS rules for m3fx controls using these elevation tokens
+    /// @return JavaFX CSS rules for M3FX controls using these elevation tokens
     default String toControlStyleRules() {
         StringBuilder builder = new StringBuilder();
         appendShadowRule(builder, ".m3-elevated-button", level3(), level1());

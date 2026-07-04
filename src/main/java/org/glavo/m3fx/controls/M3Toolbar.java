@@ -6,7 +6,6 @@ package org.glavo.m3fx.controls;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.ListChangeListener;
-import javafx.collections.ModifiableObservableListBase;
 import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
 import javafx.css.Styleable;
@@ -22,7 +21,13 @@ import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
+import org.glavo.m3fx.internal.M3FocusTraversal;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.skins.M3ToolbarSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -30,7 +35,6 @@ import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
@@ -71,7 +75,7 @@ public class M3Toolbar extends Control {
     private static final double DEFAULT_ITEM_SPACING = 0.0;
 
     /// The mutable toolbar item list.
-    private final ObservableList<Node> items = new NonNullNodeList();
+    private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
 
     // The toolbar visual variant backing property.
     private final ObjectProperty<M3ToolbarVariant> variant =
@@ -129,14 +133,6 @@ public class M3Toolbar extends Control {
         initialize();
     }
 
-    /// Creates a toolbar with the supplied items.
-    ///
-    /// @param items the initial toolbar items
-    public M3Toolbar(Node... items) {
-        initialize();
-        addItems(items);
-    }
-
     /// Returns the mutable toolbar item list.
     ///
     /// @return the mutable toolbar item list
@@ -144,33 +140,9 @@ public class M3Toolbar extends Control {
         return items;
     }
 
-    /// Adds one toolbar item.
-    ///
-    /// @param item the toolbar item to add
-    public final void addItem(Node item) {
-        getItems().add(Objects.requireNonNull(item, "item"));
-    }
 
-    /// Adds toolbar items after validating the item array.
-    ///
-    /// @param items the toolbar items to add
-    public final void addItems(Node... items) {
-        validateItems(items);
-        getItems().addAll(items);
-    }
 
-    /// Replaces all toolbar items.
-    ///
-    /// @param items the replacement toolbar items
-    public final void setItems(Node... items) {
-        validateItems(items);
-        getItems().setAll(items);
-    }
 
-    /// Removes all toolbar items.
-    public final void clearItems() {
-        getItems().clear();
-    }
 
     /// Returns the toolbar visual variant.
     ///
@@ -439,6 +411,7 @@ public class M3Toolbar extends Control {
     private void initialize() {
         M3ControlStyles.add(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TOOL_BAR);
+        setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleItem, this::showAccessibleItem);
         addEventFilter(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         getItems().addListener(itemsListener);
@@ -523,94 +496,6 @@ public class M3Toolbar extends Control {
                 cssMetaData,
                 this::updateMetrics
         );
-    }
-
-    /// Validates a toolbar item array.
-    private static void validateItems(Node... items) {
-        Objects.requireNonNull(items, "items");
-        for (Node item : items) {
-            Objects.requireNonNull(item, "item");
-        }
-    }
-
-    /// Validates a toolbar item collection before a bulk list mutation is applied.
-    private static void validateItems(Collection<? extends Node> items) {
-        Objects.requireNonNull(items, "items");
-        for (Node item : items) {
-            Objects.requireNonNull(item, "item");
-        }
-    }
-
-    /// Observable toolbar item list that rejects null values through direct list mutations.
-    @NotNullByDefault
-    private static final class NonNullNodeList extends ModifiableObservableListBase<Node> {
-        /// The backing storage for toolbar items.
-        private final List<Node> backing = new ArrayList<>();
-
-        /// Returns the item at the requested index.
-        @Override
-        public Node get(int index) {
-            return backing.get(index);
-        }
-
-        /// Returns the number of toolbar items.
-        @Override
-        public int size() {
-            return backing.size();
-        }
-
-        /// Adds all supplied items after validating the complete array.
-        @Override
-        public boolean addAll(Node... elements) {
-            validateItems(elements);
-            return super.addAll(elements);
-        }
-
-        /// Adds all supplied items after validating the complete collection.
-        @Override
-        public boolean addAll(Collection<? extends Node> elements) {
-            validateItems(elements);
-            return super.addAll(elements);
-        }
-
-        /// Inserts all supplied items after validating the complete collection.
-        @Override
-        public boolean addAll(int index, Collection<? extends Node> elements) {
-            validateItems(elements);
-            return super.addAll(index, elements);
-        }
-
-        /// Replaces all items after validating the complete array.
-        @Override
-        public boolean setAll(Node... elements) {
-            validateItems(elements);
-            return super.setAll(elements);
-        }
-
-        /// Replaces all items after validating the complete collection.
-        @Override
-        public boolean setAll(Collection<? extends Node> elements) {
-            validateItems(elements);
-            return super.setAll(elements);
-        }
-
-        /// Adds one already validated item to the backing storage.
-        @Override
-        protected void doAdd(int index, Node element) {
-            backing.add(index, Objects.requireNonNull(element, "item"));
-        }
-
-        /// Replaces one item in the backing storage.
-        @Override
-        protected Node doSet(int index, Node element) {
-            return backing.set(index, Objects.requireNonNull(element, "item"));
-        }
-
-        /// Removes one item from the backing storage.
-        @Override
-        protected Node doRemove(int index) {
-            return backing.remove(index);
-        }
     }
 
     /// CSS metadata for M3FX toolbar component tokens.

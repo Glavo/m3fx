@@ -16,9 +16,12 @@ import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3TimePickerSkin;
+import org.glavo.m3fx.internal.M3KeyEvents;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -270,11 +273,6 @@ public class M3TimePicker extends Control {
     /// Applies a labeled time preset.
     public final void applyPreset(M3TimePreset preset) {
         setValue(Objects.requireNonNull(preset, "preset").time());
-    }
-
-    /// Clears the selected time.
-    public final void clearValue() {
-        setValue(null);
     }
 
     /// Returns whether the supplied time is outside the configured selectable range.

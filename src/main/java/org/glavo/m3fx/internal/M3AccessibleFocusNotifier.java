@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Glavo
 // SPDX-License-Identifier: Apache-2.0
 
-package org.glavo.m3fx.controls;
+package org.glavo.m3fx.internal;
 
 import javafx.beans.value.ChangeListener;
 import javafx.scene.AccessibleAttribute;
@@ -21,7 +21,7 @@ import java.util.function.Supplier;
 /// the scene listener and change detection needed by app bars, groups, sheets, popup owners, and other slot
 /// containers.
 @NotNullByDefault
-final class M3AccessibleFocusNotifier {
+public final class M3AccessibleFocusNotifier {
     /// The node whose scene focus owner should be observed.
     private final Node sceneOwner;
 
@@ -52,7 +52,7 @@ final class M3AccessibleFocusNotifier {
     ///
     /// @param owner the node that owns and observes the `FOCUS_NODE` attribute
     /// @param focusNodeSupplier the supplier that returns the current accessible focus node
-    M3AccessibleFocusNotifier(Node owner, Supplier<@Nullable Node> focusNodeSupplier) {
+    public M3AccessibleFocusNotifier(Node owner, Supplier<@Nullable Node> focusNodeSupplier) {
         this(owner, owner, focusNodeSupplier);
     }
 
@@ -64,7 +64,7 @@ final class M3AccessibleFocusNotifier {
     /// @param notificationOwner the node that owns the `FOCUS_NODE` attribute
     /// @param sceneOwner the node whose scene focus owner is observed
     /// @param focusNodeSupplier the supplier that returns the current accessible focus node
-    M3AccessibleFocusNotifier(
+    public M3AccessibleFocusNotifier(
             Node notificationOwner,
             Node sceneOwner,
             Supplier<@Nullable Node> focusNodeSupplier
@@ -78,7 +78,7 @@ final class M3AccessibleFocusNotifier {
     }
 
     /// Creates a notifier for one owner node with a custom notification callback.
-    M3AccessibleFocusNotifier(
+    public M3AccessibleFocusNotifier(
             Node owner,
             Supplier<@Nullable Node> focusNodeSupplier,
             Runnable focusNodeChangedNotifier
@@ -87,7 +87,7 @@ final class M3AccessibleFocusNotifier {
     }
 
     /// Creates a notifier with a custom notification callback and observed scene node.
-    M3AccessibleFocusNotifier(
+    public M3AccessibleFocusNotifier(
             Node notificationOwner,
             Node sceneOwner,
             Supplier<@Nullable Node> focusNodeSupplier,
@@ -100,7 +100,7 @@ final class M3AccessibleFocusNotifier {
     }
 
     /// Starts listening to the observed node's current and future scenes.
-    void start() {
+    public void start() {
         if (started) {
             return;
         }
@@ -110,7 +110,7 @@ final class M3AccessibleFocusNotifier {
     }
 
     /// Stops listening and clears cached focus state.
-    void stop() {
+    public void stop() {
         if (!started) {
             return;
         }
@@ -120,7 +120,7 @@ final class M3AccessibleFocusNotifier {
     }
 
     /// Refreshes cached focus state after child content changes already notified accessibility clients.
-    void refresh() {
+    public void refresh() {
         lastFocusNode = focusNodeSupplier.get();
     }
 

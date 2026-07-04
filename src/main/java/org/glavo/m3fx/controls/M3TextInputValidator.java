@@ -14,5 +14,9 @@ import org.jetbrains.annotations.Nullable;
 @NotNullByDefault
 public interface M3TextInputValidator {
     /// Returns an error message for invalid input, or null when the input is valid.
+    ///
+    /// @param input the text input control being validated
+    /// @param text the current text value to validate
+    /// @return an error message for invalid input, or `null` when the input is valid
     @Nullable String validate(TextInputControl input, String text);
 }

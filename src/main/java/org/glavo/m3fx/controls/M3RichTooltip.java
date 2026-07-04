@@ -13,6 +13,8 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.animation.M3MotionBehavior;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -86,7 +88,7 @@ public class M3RichTooltip extends M3Tooltip {
     /// @param actions the action nodes displayed in the tooltip action row
     public M3RichTooltip(String title, String supportingText, Node... actions) {
         this(title, supportingText);
-        addActions(actions);
+        getActions().addAll(actions);
     }
 
 
@@ -139,33 +141,9 @@ public class M3RichTooltip extends M3Tooltip {
         return actions.getChildren();
     }
 
-    /// Adds one action node.
-    ///
-    /// @param action the action node to add
-    public final void addAction(Node action) {
-        getActions().add(Objects.requireNonNull(action, "action"));
-    }
 
-    /// Adds action nodes after validating the action array.
-    ///
-    /// @param actions the action nodes to add
-    public final void addActions(Node... actions) {
-        validateActions(actions);
-        getActions().addAll(actions);
-    }
 
-    /// Replaces all action nodes.
-    ///
-    /// @param actions the replacement action nodes
-    public final void setActions(Node... actions) {
-        validateActions(actions);
-        getActions().setAll(actions);
-    }
 
-    /// Removes all action nodes.
-    public final void clearActions() {
-        getActions().clear();
-    }
 
     /// Initializes rich tooltip content nodes, style classes, and property bindings.
     private void initializeRichTooltip() {
@@ -193,13 +171,6 @@ public class M3RichTooltip extends M3Tooltip {
         updateActionsVisibility();
     }
 
-    /// Validates an action array.
-    private static void validateActions(Node... actions) {
-        Objects.requireNonNull(actions, "actions");
-        for (Node action : actions) {
-            Objects.requireNonNull(action, "action");
-        }
-    }
 
     /// Updates visible labels and the inherited tooltip text used for accessible help.
     private void updateTextState() {

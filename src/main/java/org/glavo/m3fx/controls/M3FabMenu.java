@@ -29,6 +29,11 @@ import javafx.scene.control.Skin;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
+import org.glavo.m3fx.internal.M3FocusTraversal;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3InternalIcon;
@@ -141,12 +146,6 @@ public class M3FabMenu extends Control {
         return toggleButton;
     }
 
-    /// Returns the action item container used by the default skin.
-    ///
-    /// @return the action item container used by the default skin
-    public final VBox getActionsContainer() {
-        return actions;
-    }
 
     /// Returns the spacing between expanded action items.
     ///
@@ -185,33 +184,9 @@ public class M3FabMenu extends Control {
         return actions.getChildren();
     }
 
-    /// Adds one action item.
-    ///
-    /// @param item the action item to add
-    public final void addItem(Node item) {
-        getItems().add(Objects.requireNonNull(item, "item"));
-    }
 
-    /// Adds action items.
-    ///
-    /// @param items the action items to add
-    public final void addItems(Node... items) {
-        validateItems(items);
-        getItems().addAll(items);
-    }
 
-    /// Replaces all action items.
-    ///
-    /// @param items the replacement action items
-    public final void setItems(Node... items) {
-        validateItems(items);
-        getItems().setAll(items);
-    }
 
-    /// Removes all action items.
-    public final void clearItems() {
-        getItems().clear();
-    }
 
     /// Returns whether action items are currently expanded.
     ///
@@ -309,6 +284,7 @@ public class M3FabMenu extends Control {
         M3ControlStyles.add(actions, ACTIONS_STYLE_CLASS);
         M3ControlStyles.add(toggleButton, TOGGLE_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TOOL_BAR);
+        setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
         actions.getChildren().addListener(actionsListener);
         addEventHandler(ActionEvent.ACTION, this::handleActionItemAction);
@@ -712,16 +688,9 @@ public class M3FabMenu extends Control {
     /// Creates the default Material Design 3 floating action button menu skin.
     @Override
     protected Skin<?> createDefaultSkin() {
-        return new M3FabMenuSkin(this);
+        return new M3FabMenuSkin(this, actions, toggleButton);
     }
 
-    /// Validates an action item array.
-    private static void validateItems(Node... items) {
-        Objects.requireNonNull(items, "items");
-        for (Node item : items) {
-            Objects.requireNonNull(item, "item");
-        }
-    }
 
     /// CSS metadata for FAB menu layout tokens.
     @NotNullByDefault

@@ -8,7 +8,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 import java.time.LocalDate;
 import java.util.Objects;
 
-/// A labeled date that can be applied to an [M3DatePicker].
+/// A labeled date preset for an [M3DatePicker].
 ///
 /// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview).
 ///
@@ -38,10 +38,4 @@ public record M3DatePreset(String text, LocalDate date) {
         return date;
     }
 
-    /// Applies this preset to the supplied date picker.
-    ///
-    /// @param picker the date picker that should receive this preset
-    public void applyTo(M3DatePicker picker) {
-        Objects.requireNonNull(picker, "picker").applyPreset(this);
-    }
 }

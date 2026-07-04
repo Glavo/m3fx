@@ -18,6 +18,7 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.FxTestUtils;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -27,6 +28,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static org.glavo.m3fx.M3TestControls.*;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -161,6 +163,43 @@ final class M3AccessibleFocusRevealTest {
         });
     }
 
+    /// Verifies accessibility focus on a snackbar host reveals and focuses its current action node.
+    @Test
+    void snackbarHostAccessibleRequestFocusRevealsCurrentActionNode() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane spacer = new Pane();
+            spacer.setPrefHeight(240.0);
+            M3SnackbarHost host = new M3SnackbarHost();
+            host.setDisplayDuration(javafx.util.Duration.INDEFINITE);
+            host.setPrefSize(320.0, 96.0);
+            VBox content = new VBox(spacer, host);
+            ScrollPane scrollPane = new ScrollPane(content);
+            scrollPane.setFitToWidth(true);
+            scrollPane.setPrefSize(220.0, 120.0);
+
+            show(scrollPane, 220.0, 120.0);
+            host.show(new M3Snackbar("Saved", "Undo"));
+            scrollPane.applyCss();
+            scrollPane.resize(220.0, 120.0);
+            scrollPane.layout();
+            content.layout();
+            host.layout();
+            M3Snackbar snackbar = java.util.Objects.requireNonNull(host.getSnackbar(), "snackbar");
+            Node actionNode = java.util.Objects.requireNonNull(
+                    (Node) snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE),
+                    "actionNode"
+            );
+
+            assertFalse(host.isFocusTraversable());
+            assertTrue(M3Accessible.requestAccessibleFocus(content, host));
+
+            assertTrue(actionNode.isFocused());
+            assertSame(actionNode, host.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            assertTargetVisible(scrollPane, content, actionNode);
+            assertTrue(scrollPane.getVvalue() > 0.0, () -> "vvalue=" + scrollPane.getVvalue());
+        });
+    }
+
     /// Verifies accessibility focus on a closed menu button scrolls its owner into view.
     @Test
     void menuButtonAccessibleRequestFocusRevealsClosedButton() {
@@ -250,7 +289,7 @@ final class M3AccessibleFocusRevealTest {
             Pane spacer = new Pane();
             spacer.setPrefHeight(240.0);
             M3Button selectedItem = new M3Button("Selected");
-            M3Carousel carousel = new M3Carousel(selectedItem);
+            M3Carousel carousel = carousel(selectedItem);
             carousel.setAnimatedScroll(false);
             carousel.setPrefSize(180.0, 80.0);
             carousel.select(selectedItem);
@@ -413,7 +452,7 @@ final class M3AccessibleFocusRevealTest {
             scrollPane.layout();
             content.layout();
             layout.layout();
-            layout.getClearButton().requestFocus();
+            textInputClearButton(layout).requestFocus();
 
             layout.clearText();
 
@@ -460,7 +499,7 @@ final class M3AccessibleFocusRevealTest {
             spacer.setPrefHeight(240.0);
             M3Button filter = new M3Button("Filter");
             M3SearchBar searchBar = new M3SearchBar("Search");
-            searchBar.setTrailingActions(filter);
+            searchBar.getTrailingActions().setAll(filter);
             VBox content = new VBox(spacer, searchBar);
             ScrollPane scrollPane = new ScrollPane(content);
             scrollPane.setFitToWidth(true);
@@ -645,7 +684,7 @@ final class M3AccessibleFocusRevealTest {
         FxTestUtils.runOnFxThread(() -> {
             M3Button first = new M3Button("First");
             M3Button second = new M3Button("Second");
-            M3ButtonGroup trigger = new M3ButtonGroup(first, second);
+            M3ButtonGroup trigger = buttonGroup(first, second);
             trigger.setFocusTraversable(true);
             M3Button sideAction = new M3Button("Side action");
             M3Button bottomAction = new M3Button("Bottom action");
@@ -1272,6 +1311,15 @@ final class M3AccessibleFocusRevealTest {
             assertFalse(M3Accessible.showCurrentOrItem(owner, items));
             assertFalse(M3Accessible.showCurrentOrItem(owner, items, 1));
         });
+    }
+
+    /// Returns the built-in clear button currently installed in a text input layout.
+    private static M3IconButton textInputClearButton(M3TextInputLayout layout) {
+        layout.applyCss();
+        layout.layout();
+        Node child = layout.lookup("." + M3TextInputLayout.CLEAR_BUTTON_STYLE_CLASS);
+        assertTrue(child instanceof M3IconButton, () -> "clear button=" + child);
+        return (M3IconButton) child;
     }
 
     /// Shows the supplied scroll pane in a real JavaFX window and performs an initial layout pass.

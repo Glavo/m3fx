@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -63,6 +64,164 @@ final class ProjectContractTest {
             "org.glavo.m3fx.theme",
             "org.glavo.m3fx.tokens"
     );
+
+    /// The expected public top-level types exported by each API package.
+    private static final @Unmodifiable Map<String, @Unmodifiable Set<String>> EXPECTED_EXPORTED_TOP_LEVEL_TYPES =
+            Map.of(
+                    "org.glavo.m3fx.animation",
+                    typeNames("""
+                            M3Motion
+                            M3MotionBehavior
+                            M3MotionEasing
+                            M3MotionScheme
+                            M3MotionSettings
+                            M3MotionSpec
+                            """),
+                    "org.glavo.m3fx.controls",
+                    typeNames("""
+                            M3Avatar
+                            M3AvatarVariant
+                            M3Badge
+                            M3BadgedBox
+                            M3Banner
+                            M3BottomAppBar
+                            M3BottomAppBarFloatingActionAlignment
+                            M3BottomSheet
+                            M3Button
+                            M3ButtonGroup
+                            M3ButtonGroupSize
+                            M3ButtonGroupVariant
+                            M3ButtonVariant
+                            M3Card
+                            M3CardVariant
+                            M3Carousel
+                            M3CheckBox
+                            M3Chip
+                            M3ChipGroup
+                            M3ChipSelectionMode
+                            M3ChipStyle
+                            M3ChipVariant
+                            M3DatePicker
+                            M3DatePickerDialog
+                            M3DatePickerField
+                            M3DatePreset
+                            M3DatePresets
+                            M3DateRange
+                            M3DateRangePicker
+                            M3DateRangePickerDialog
+                            M3DateRangePickerField
+                            M3DateRangePreset
+                            M3DateRangePresets
+                            M3Dialog
+                            M3DialogPane
+                            M3Divider
+                            M3FabMenu
+                            M3FloatingActionButton
+                            M3FloatingActionButtonSize
+                            M3FloatingActionButtonVariant
+                            M3FormPane
+                            M3FormRow
+                            M3FormSection
+                            M3FormValidator
+                            M3Icon
+                            M3IconButton
+                            M3IconButtonShape
+                            M3IconButtonSize
+                            M3IconButtonWidth
+                            M3IconSize
+                            M3IconToggleButton
+                            M3IconToggleButtonGroup
+                            M3IconToggleButtonSelectionMode
+                            M3IconToggleButtonVariant
+                            M3IconVariant
+                            M3ListItem
+                            M3ListItemLineCount
+                            M3ListItemSlotSize
+                            M3ListPane
+                            M3ListSectionHeader
+                            M3ListSelectionMode
+                            M3ListView
+                            M3LoadingIndicator
+                            M3LoadingIndicatorVariant
+                            M3Menu
+                            M3MenuButton
+                            M3MenuColorStyle
+                            M3MenuItem
+                            M3MenuSectionHeader
+                            M3MenuSelectionMode
+                            M3NavigationBar
+                            M3NavigationDrawer
+                            M3NavigationDrawerGroup
+                            M3NavigationItem
+                            M3NavigationRail
+                            M3PasswordField
+                            M3PickerField
+                            M3ProgressBar
+                            M3ProgressIndicator
+                            M3RadioButton
+                            M3RichTooltip
+                            M3Scrim
+                            M3ScrollPanes
+                            M3SearchBar
+                            M3SearchView
+                            M3SegmentedButton
+                            M3SegmentedButtonGroup
+                            M3SegmentedButtonSelectionMode
+                            M3SheetVariant
+                            M3SideSheet
+                            M3Slider
+                            M3Snackbar
+                            M3SnackbarHost
+                            M3SplitButton
+                            M3SplitButtonSize
+                            M3SubMenuItem
+                            M3Surface
+                            M3SurfaceElevation
+                            M3SurfaceVariant
+                            M3Switch
+                            M3Tab
+                            M3TabBar
+                            M3Text
+                            M3TextArea
+                            M3TextField
+                            M3TextInput
+                            M3TextInputLayout
+                            M3TextInputValidator
+                            M3TextInputValidators
+                            M3TextInputVariant
+                            M3TextRole
+                            M3TimePicker
+                            M3TimePickerDialog
+                            M3TimePickerField
+                            M3TimePreset
+                            M3TimePresets
+                            M3Toolbar
+                            M3ToolbarVariant
+                            M3Tooltip
+                            M3TopAppBar
+                            M3TopAppBarVariant
+                            M3ValidationSummary
+                            """),
+                    "org.glavo.m3fx.theme",
+                    typeNames("""
+                            M3Theme
+                            M3ThemeManager
+                            """),
+                    "org.glavo.m3fx.tokens",
+                    typeNames("""
+                            M3ColorTokens
+                            M3ComponentTokens
+                            M3Density
+                            M3ElevationTokens
+                            M3MotionTokens
+                            M3Profile
+                            M3ShapeTokens
+                            M3StateLayerTokens
+                            M3TextStyle
+                            M3TokenSet
+                            M3TypographyTokens
+                            """)
+            );
 
     /// The public control source root scanned for M3FX control API shape constraints.
     private static final Path CONTROLS_SOURCE_ROOT =
@@ -187,6 +346,229 @@ final class ProjectContractTest {
             "(?:new\\s+CssMetaData<>|createSizeCssMetaData)\\(\\s*\"([^\"]+)\""
     );
 
+    /// Matches public `ObservableList` getter declarations in public control sources.
+    private static final Pattern PUBLIC_OBSERVABLE_LIST_GETTER_DECLARATION = Pattern.compile(
+            "public\\s+(?:final\\s+)?(@UnmodifiableView\\s+)?ObservableList\\s*<[^>]+>\\s+(get\\w+)\\s*\\("
+    );
+
+    /// The supported public static utility methods intentionally exported from the `controls` package.
+    private static final @Unmodifiable Set<String> SUPPORTED_PUBLIC_CONTROL_PACKAGE_STATIC_METHODS = Set.of(
+            "org.glavo.m3fx.controls.M3DatePresets#common(java.time.LocalDate)",
+            "org.glavo.m3fx.controls.M3DatePresets#daysFrom(java.time.LocalDate,int)",
+            "org.glavo.m3fx.controls.M3DatePresets#nextMonthStart(java.time.LocalDate)",
+            "org.glavo.m3fx.controls.M3DatePresets#today(java.time.LocalDate)",
+            "org.glavo.m3fx.controls.M3DatePresets#tomorrow(java.time.LocalDate)",
+            "org.glavo.m3fx.controls.M3DatePresets#thisMonthStart(java.time.LocalDate)",
+            "org.glavo.m3fx.controls.M3DatePresets#yesterday(java.time.LocalDate)",
+            "org.glavo.m3fx.controls.M3DateRangePresets#common(java.time.LocalDate,java.time.DayOfWeek)",
+            "org.glavo.m3fx.controls.M3DateRangePresets#nextDays(java.time.LocalDate,int)",
+            "org.glavo.m3fx.controls.M3DateRangePresets#nextMonth(java.time.LocalDate)",
+            "org.glavo.m3fx.controls.M3DateRangePresets#nextWeek(java.time.LocalDate,java.time.DayOfWeek)",
+            "org.glavo.m3fx.controls.M3DateRangePresets#previousDays(java.time.LocalDate,int)",
+            "org.glavo.m3fx.controls.M3DateRangePresets#thisMonth(java.time.LocalDate)",
+            "org.glavo.m3fx.controls.M3DateRangePresets#thisWeek(java.time.LocalDate,java.time.DayOfWeek)",
+            "org.glavo.m3fx.controls.M3DateRangePresets#today(java.time.LocalDate)",
+            "org.glavo.m3fx.controls.M3DateRangePresets#tomorrow(java.time.LocalDate)",
+            "org.glavo.m3fx.controls.M3ScrollPanes#disableSmoothScrolling(javafx.scene.control.ScrollPane)",
+            "org.glavo.m3fx.controls.M3ScrollPanes#enableSmoothScrolling(javafx.scene.control.ScrollPane)",
+            "org.glavo.m3fx.controls.M3ScrollPanes#isSmoothScrollingEnabled(javafx.scene.control.ScrollPane)",
+            "org.glavo.m3fx.controls.M3ScrollPanes#style(javafx.scene.control.ScrollBar)",
+            "org.glavo.m3fx.controls.M3ScrollPanes#style(javafx.scene.control.ScrollPane)",
+            "org.glavo.m3fx.controls.M3TextInputValidators#all(org.glavo.m3fx.controls.M3TextInputValidator[])",
+            "org.glavo.m3fx.controls.M3TextInputValidators#lengthBetween(int,int,java.lang.String,java.lang.String)",
+            "org.glavo.m3fx.controls.M3TextInputValidators#maxLength(int,java.lang.String)",
+            "org.glavo.m3fx.controls.M3TextInputValidators#minLength(int,java.lang.String)",
+            "org.glavo.m3fx.controls.M3TextInputValidators#none()",
+            "org.glavo.m3fx.controls.M3TextInputValidators#pattern(java.util.regex.Pattern,java.lang.String)",
+            "org.glavo.m3fx.controls.M3TextInputValidators#predicate(java.util.function.BiPredicate,java.lang.String)",
+            "org.glavo.m3fx.controls.M3TextInputValidators#required(java.lang.String)",
+            "org.glavo.m3fx.controls.M3TimePresets#afternoon()",
+            "org.glavo.m3fx.controls.M3TimePresets#common(java.time.LocalTime)",
+            "org.glavo.m3fx.controls.M3TimePresets#evening()",
+            "org.glavo.m3fx.controls.M3TimePresets#midnight()",
+            "org.glavo.m3fx.controls.M3TimePresets#minutesFrom(java.time.LocalTime,int)",
+            "org.glavo.m3fx.controls.M3TimePresets#morning()",
+            "org.glavo.m3fx.controls.M3TimePresets#noon()",
+            "org.glavo.m3fx.controls.M3TimePresets#now(java.time.LocalTime)",
+            "org.glavo.m3fx.controls.M3Tooltip#install(javafx.scene.Node,org.glavo.m3fx.controls.M3Tooltip)",
+            "org.glavo.m3fx.controls.M3Tooltip#uninstall(javafx.scene.Node,org.glavo.m3fx.controls.M3Tooltip)"
+    );
+
+    /// Picker wrapper methods that duplicate the embedded picker API instead of the wrapper value API.
+    private static final @Unmodifiable Map<String, @Unmodifiable Set<String>> FORBIDDEN_PICKER_WRAPPER_METHODS = Map.of(
+            "org.glavo.m3fx.controls.M3DatePickerDialog",
+            Set.of(
+                    "applyPreset",
+                    "clearValue",
+                    "displayedMonthProperty",
+                    "firstDayOfWeekProperty",
+                    "getDisplayedMonth",
+                    "getFirstDayOfWeek",
+                    "getMaxDate",
+                    "getMinDate",
+                    "isDateDisabled",
+                    "isShowAdjacentMonthDays",
+                    "maxDateProperty",
+                    "minDateProperty",
+                    "selectDate",
+                    "selectToday",
+                    "setDisplayedMonth",
+                    "setFirstDayOfWeek",
+                    "setMaxDate",
+                    "setMinDate",
+                    "setShowAdjacentMonthDays",
+                    "showAdjacentMonthDaysProperty",
+                    "showMonth",
+                    "showNextMonth",
+                    "showPreviousMonth",
+                    "showToday"
+            ),
+            "org.glavo.m3fx.controls.M3DatePickerField",
+            Set.of(
+                    "applyPreset",
+                    "clearValue",
+                    "selectDate",
+                    "selectToday"
+            ),
+            "org.glavo.m3fx.controls.M3DateRangePickerDialog",
+            Set.of(
+                    "applyPreset",
+                    "clearRange",
+                    "displayedMonthProperty",
+                    "endDateProperty",
+                    "firstDayOfWeekProperty",
+                    "getDisplayedMonth",
+                    "getEndDate",
+                    "getFirstDayOfWeek",
+                    "getMaxDate",
+                    "getMinDate",
+                    "getRange",
+                    "getStartDate",
+                    "isDateDisabled",
+                    "isDateInSelectedRange",
+                    "isRangeComplete",
+                    "isShowAdjacentMonthDays",
+                    "maxDateProperty",
+                    "minDateProperty",
+                    "selectDate",
+                    "selectToday",
+                    "setDisplayedMonth",
+                    "setEndDate",
+                    "setFirstDayOfWeek",
+                    "setMaxDate",
+                    "setMinDate",
+                    "setRange",
+                    "setShowAdjacentMonthDays",
+                    "setStartDate",
+                    "showAdjacentMonthDaysProperty",
+                    "showMonth",
+                    "showNextMonth",
+                    "showPreviousMonth",
+                    "showToday",
+                    "startDateProperty"
+            ),
+            "org.glavo.m3fx.controls.M3DateRangePickerField",
+            Set.of(
+                    "applyPreset"
+            ),
+            "org.glavo.m3fx.controls.M3TimePickerDialog",
+            Set.of(
+                    "applyPreset",
+                    "clearValue",
+                    "getMaxTime",
+                    "getMinTime",
+                    "getMinuteStep",
+                    "isTimeDisabled",
+                    "isUse24HourClock",
+                    "maxTimeProperty",
+                    "minTimeProperty",
+                    "minuteStepProperty",
+                    "selectNow",
+                    "setMaxTime",
+                    "setMinTime",
+                    "setMinuteStep",
+                    "setTime",
+                    "setUse24HourClock",
+                    "use24HourClockProperty"
+            ),
+            "org.glavo.m3fx.controls.M3TimePickerField",
+            Set.of(
+                    "applyPreset",
+                    "clearValue",
+                    "setTime",
+                    "selectNow"
+            )
+    );
+
+    /// Menu host methods that duplicate the embedded menu selection API instead of the popup host API.
+    private static final @Unmodifiable Map<String, @Unmodifiable Set<String>> FORBIDDEN_MENU_HOST_WRAPPER_METHODS = Map.of(
+            "org.glavo.m3fx.controls.M3MenuButton",
+            Set.of(
+                    "allowEmptySelectionProperty",
+                    "clearSelection",
+                    "getSelectedIndex",
+                    "getSelectedItem",
+                    "getSelectedItems",
+                    "getSelectionMode",
+                    "isAllowEmptySelection",
+                    "select",
+                    "selectFirst",
+                    "selectIndex",
+                    "selectLast",
+                    "selectNext",
+                    "selectPrevious",
+                    "selectedItemProperty",
+                    "selectionModeProperty",
+                    "setAllowEmptySelection",
+                    "setSelectionMode"
+            ),
+            "org.glavo.m3fx.controls.M3SplitButton",
+            Set.of(
+                    "allowEmptySelectionProperty",
+                    "clearSelection",
+                    "getSelectedIndex",
+                    "getSelectedItem",
+                    "getSelectedItems",
+                    "getSelectionMode",
+                    "isAllowEmptySelection",
+                    "select",
+                    "selectIndex",
+                    "selectedItemProperty",
+                    "selectionModeProperty",
+                    "setAllowEmptySelection",
+                    "setSelectionMode"
+            )
+    );
+
+    /// Pure mutable-list controls that expose population through their mutable list properties.
+    private static final @Unmodifiable Set<String> PURE_MUTABLE_LIST_CONTROLS_WITHOUT_BATCH_CONSTRUCTORS = Set.of(
+            "org.glavo.m3fx.controls.M3ButtonGroup",
+            "org.glavo.m3fx.controls.M3Carousel",
+            "org.glavo.m3fx.controls.M3ChipGroup",
+            "org.glavo.m3fx.controls.M3FormPane",
+            "org.glavo.m3fx.controls.M3IconToggleButtonGroup",
+            "org.glavo.m3fx.controls.M3ListPane",
+            "org.glavo.m3fx.controls.M3ListView",
+            "org.glavo.m3fx.controls.M3NavigationBar",
+            "org.glavo.m3fx.controls.M3NavigationDrawer",
+            "org.glavo.m3fx.controls.M3NavigationRail",
+            "org.glavo.m3fx.controls.M3SegmentedButtonGroup",
+            "org.glavo.m3fx.controls.M3Surface",
+            "org.glavo.m3fx.controls.M3TabBar",
+            "org.glavo.m3fx.controls.M3Toolbar"
+    );
+
+
+    /// Internal node accessors that must not be part of the public control API.
+    private static final @Unmodifiable Map<String, @Unmodifiable Set<String>> FORBIDDEN_INTERNAL_NODE_ACCESSORS = Map.of(
+            "org.glavo.m3fx.controls.M3FabMenu",
+            Set.of("getActionsContainer"),
+            "org.glavo.m3fx.controls.M3SearchView",
+            Set.of("getResultsContainer"),
+            "org.glavo.m3fx.controls.M3TextInputLayout",
+            Set.of("getClearButton", "getInputContainer", "getSupportingRow")
+    );
+
     /// Matches public static class CSS metadata entry points.
     private static final Pattern CLASS_CSS_METADATA_METHOD = Pattern.compile(
             "public\\s+static\\s+(?:@\\w+(?:\\([^)]*\\))?\\s+)*List\\s*<\\s*CssMetaData\\s*<\\s*"
@@ -231,14 +613,35 @@ final class ProjectContractTest {
             "ChoiceBox",
             "ListView",
             "MenuButton",
+            "PasswordField",
             "ProgressBar",
             "ProgressIndicator",
             "RadioButton",
             "Slider",
             "SplitMenuButton",
+            "TextArea",
+            "TextField",
             "ToggleButton",
             "Tooltip"
     );
+
+    /// Public controls that intentionally keep a concrete JavaFX text editing implementation.
+    private static final @Unmodifiable Map<String, String> ALLOWED_CONCRETE_CONTROL_SUPERCLASSES = Map.of(
+            "M3PasswordField", "PasswordField",
+            "M3TextArea", "TextArea",
+            "M3TextField", "TextField"
+    );
+
+    /// Direct concrete JavaFX superclass exceptions intentionally kept in the exported controls package.
+    private static final @Unmodifiable Map<String, String> ALLOWED_EXPORTED_CONTROL_DIRECT_JAVA_FX_SUPERCLASSES =
+            Map.of(
+                    "org.glavo.m3fx.controls.M3Dialog", "javafx.scene.control.Dialog",
+                    "org.glavo.m3fx.controls.M3DialogPane", "javafx.scene.control.DialogPane",
+                    "org.glavo.m3fx.controls.M3PasswordField", "javafx.scene.control.PasswordField",
+                    "org.glavo.m3fx.controls.M3TextArea", "javafx.scene.control.TextArea",
+                    "org.glavo.m3fx.controls.M3TextField", "javafx.scene.control.TextField",
+                    "org.glavo.m3fx.controls.M3Tooltip", "javafx.scene.control.PopupControl"
+            );
 
     /// Concrete JavaFX skins that M3FX skins must not inherit from directly.
     private static final @Unmodifiable List<String> FORBIDDEN_CONCRETE_SKIN_SUPERCLASSES = List.of(
@@ -285,7 +688,14 @@ final class ProjectContractTest {
     @Test
     void moduleExportsOnlyExpectedPublicApiPackages() throws IOException {
         assertEquals(EXPECTED_EXPORTED_API_PACKAGES, exportedPackageNames(),
-                "The public JPMS export surface must stay explicit");
+                "The public JPMS export surface must match the expected API packages");
+    }
+
+    /// Verifies that every exported public top-level type is part of the expected API surface.
+    @Test
+    void exportedPackagesExposeOnlyExpectedTopLevelTypes() throws IOException {
+        assertEquals(EXPECTED_EXPORTED_TOP_LEVEL_TYPES, exportedPublicTopLevelTypeNamesByPackage(),
+                "Exported public top-level API types must match the expected API surface");
     }
 
     /// Verifies that exported controls do not publish implementation helper node types.
@@ -345,6 +755,30 @@ final class ProjectContractTest {
                 () -> "Exported APIs must not expose types from unexported M3FX packages: " + leakedTypes);
     }
 
+    /// Verifies that exported APIs do not expose internal JavaFX properties-map storage keys.
+    @Test
+    void exportedApisDoNotExposePropertiesMapStorageKeys() throws Exception {
+        List<String> exposedKeys = new ArrayList<>();
+        for (String className : exportedTopLevelClassNames(exportedPackageNames())) {
+            Class<?> type = Class.forName(className, false, ProjectContractTest.class.getClassLoader());
+            if (!Modifier.isPublic(type.getModifiers())) {
+                continue;
+            }
+
+            for (Field field : type.getDeclaredFields()) {
+                int modifiers = field.getModifiers();
+                if (Modifier.isPublic(modifiers)
+                        && Modifier.isStatic(modifiers)
+                        && field.getName().endsWith("_KEY")) {
+                    exposedKeys.add(type.getName() + '#' + field.getName());
+                }
+            }
+        }
+
+        assertTrue(exposedKeys.isEmpty(),
+                () -> "Exported APIs must not expose JavaFX properties-map storage keys: " + exposedKeys);
+    }
+
     /// Verifies that public controls avoid inheriting from concrete JavaFX controls.
     @Test
     void publicControlsDoNotExtendConcreteJavaFxControls() throws IOException {
@@ -354,14 +788,42 @@ final class ProjectContractTest {
             for (int lineIndex = 0; lineIndex < lines.size(); lineIndex++) {
                 String line = lines.get(lineIndex);
                 var matcher = PUBLIC_CONTROL_EXTENDS_DECLARATION.matcher(line);
-                if (matcher.find() && FORBIDDEN_CONCRETE_CONTROL_SUPERCLASSES.contains(matcher.group(2))) {
-                    forbiddenInheritances.add(sourceFile + ":" + (lineIndex + 1) + ": " + line.trim());
+                if (matcher.find()) {
+                    String typeName = matcher.group(1);
+                    String superclassName = matcher.group(2);
+                    if (FORBIDDEN_CONCRETE_CONTROL_SUPERCLASSES.contains(superclassName)
+                            && !isAllowedConcreteControlInheritance(typeName, superclassName)) {
+                        forbiddenInheritances.add(sourceFile + ":" + (lineIndex + 1) + ": " + line.trim());
+                    }
                 }
             }
         }
 
         assertTrue(forbiddenInheritances.isEmpty(),
                 () -> "M3FX controls must not extend concrete JavaFX controls: " + forbiddenInheritances);
+    }
+
+    /// Verifies that concrete JavaFX superclass exceptions in exported controls match the allowed set.
+    @Test
+    void exportedControlsKeepConcreteJavaFxSuperclassExceptionsExplicit() throws Exception {
+        Map<String, String> concreteJavaFxSuperclasses = new HashMap<>();
+        for (String className : exportedTopLevelClassNames(exportedPackageNames())) {
+            Class<?> type = Class.forName(className, false, ProjectContractTest.class.getClassLoader());
+            if (!type.getPackageName().equals("org.glavo.m3fx.controls")
+                    || !Modifier.isPublic(type.getModifiers())) {
+                continue;
+            }
+
+            Class<?> superclass = type.getSuperclass();
+            if (superclass != null
+                    && superclass.getPackageName().equals("javafx.scene.control")
+                    && !Modifier.isAbstract(superclass.getModifiers())) {
+                concreteJavaFxSuperclasses.put(type.getName(), superclass.getName());
+            }
+        }
+
+        assertEquals(ALLOWED_EXPORTED_CONTROL_DIRECT_JAVA_FX_SUPERCLASSES, concreteJavaFxSuperclasses,
+                "Concrete JavaFX superclass exceptions in exported controls must match the allowed set");
     }
 
     /// Verifies that concrete public controls expose constructors and properties instead of static factories.
@@ -419,6 +881,177 @@ final class ProjectContractTest {
         assertTrue(staticFactories.isEmpty(),
                 () -> "Public component types must use constructors instead of static self factories: "
                         + staticFactories);
+    }
+
+    /// Verifies that exported `controls` package static utility methods match the supported API surface.
+    @Test
+    void publicControlPackageStaticUtilityMethodsStayStable() throws Exception {
+        Set<String> staticMethods = new TreeSet<>();
+        for (String className : exportedTopLevelClassNames(exportedPackageNames())) {
+            Class<?> type = Class.forName(className, false, ProjectContractTest.class.getClassLoader());
+            int typeModifiers = type.getModifiers();
+            if (!type.getPackageName().equals("org.glavo.m3fx.controls")
+                    || !Modifier.isPublic(typeModifiers)
+                    || type.isEnum()) {
+                continue;
+            }
+
+            for (Method method : type.getDeclaredMethods()) {
+                int methodModifiers = method.getModifiers();
+                if (Modifier.isPublic(methodModifiers)
+                        && Modifier.isStatic(methodModifiers)
+                        && !method.isSynthetic()
+                        && !method.getName().equals("getClassCssMetaData")) {
+                    staticMethods.add(publicMethodSignature(type, method));
+                }
+            }
+        }
+
+        assertEquals(SUPPORTED_PUBLIC_CONTROL_PACKAGE_STATIC_METHODS, staticMethods,
+                "Public controls package static utility methods must match the supported API surface");
+    }
+
+    /// Verifies that preset records remain immutable data carriers instead of publishing convenience actions.
+    @Test
+    void publicPresetRecordsExposeOnlyRecordAccessors() throws Exception {
+        List<String> actionMethods = new ArrayList<>();
+        for (String className : exportedTopLevelClassNames(exportedPackageNames())) {
+            Class<?> type = Class.forName(className, false, ProjectContractTest.class.getClassLoader());
+            if (!type.getPackageName().equals("org.glavo.m3fx.controls")
+                    || !Modifier.isPublic(type.getModifiers())
+                    || !type.isRecord()
+                    || !type.getSimpleName().endsWith("Preset")) {
+                continue;
+            }
+
+            Set<String> componentNames = recordComponentNames(type);
+            for (Method method : type.getDeclaredMethods()) {
+                if (isRecordInfrastructureMethod(method) || componentNames.contains(method.getName())) {
+                    continue;
+                }
+
+                int modifiers = method.getModifiers();
+                if (Modifier.isPublic(modifiers) && !Modifier.isStatic(modifiers)) {
+                    actionMethods.add(type.getName() + "#" + method.getName());
+                }
+            }
+        }
+
+        assertTrue(actionMethods.isEmpty(),
+                () -> "Public preset records must not expose action-style convenience methods: " + actionMethods);
+    }
+
+    /// Verifies that mutable-list controls expose list properties instead of duplicate list mutator methods.
+    @Test
+    void publicMutableListControlsDoNotExposeCollectionConvenienceMethods() throws Exception {
+        List<String> duplicateMethods = new ArrayList<>();
+        for (Map.Entry<String, Set<String>> entry : publicMutableObservableListGetterNamesByClass().entrySet()) {
+            Class<?> type = Class.forName(entry.getKey(), false, ProjectContractTest.class.getClassLoader());
+            int typeModifiers = type.getModifiers();
+            if (!Modifier.isPublic(typeModifiers) || Modifier.isAbstract(typeModifiers)) {
+                continue;
+            }
+
+            Set<String> forbiddenNames = new TreeSet<>();
+            for (String getterName : entry.getValue()) {
+                forbiddenNames.addAll(listMutatorsForGetter(getterName));
+            }
+
+            for (Method method : type.getDeclaredMethods()) {
+                if (Modifier.isPublic(method.getModifiers()) && forbiddenNames.contains(method.getName())) {
+                    duplicateMethods.add(type.getName() + '#' + method.getName());
+                }
+            }
+        }
+
+        duplicateMethods.sort(Comparator.naturalOrder());
+        assertTrue(duplicateMethods.isEmpty(),
+                () -> "Mutable-list controls must use their get*() ObservableList APIs instead of duplicate "
+                        + "collection convenience mutators: " + duplicateMethods);
+    }
+
+    /// Verifies that pure mutable-list controls do not duplicate list population through constructors.
+    @Test
+    void pureMutableListControlsDoNotExposeBatchConstructors() throws Exception {
+        List<String> batchConstructors = new ArrayList<>();
+        for (String className : PURE_MUTABLE_LIST_CONTROLS_WITHOUT_BATCH_CONSTRUCTORS) {
+            Class<?> type = Class.forName(className, false, ProjectContractTest.class.getClassLoader());
+            for (Constructor<?> constructor : type.getDeclaredConstructors()) {
+                if (!Modifier.isPublic(constructor.getModifiers())) {
+                    continue;
+                }
+
+                for (Class<?> parameterType : constructor.getParameterTypes()) {
+                    if (parameterType.isArray() || Iterable.class.isAssignableFrom(parameterType)) {
+                        batchConstructors.add(constructor.toGenericString());
+                        break;
+                    }
+                }
+            }
+        }
+
+        batchConstructors.sort(Comparator.naturalOrder());
+        assertTrue(batchConstructors.isEmpty(),
+                () -> "Pure mutable-list controls must use get*() list APIs instead of batch constructors: "
+                        + batchConstructors);
+    }
+
+
+    /// Verifies that picker wrapper controls keep picker actions on the embedded picker API.
+    @Test
+    void publicPickerWrappersDoNotExposeDuplicatePickerActions() throws Exception {
+        List<String> duplicateMethods = new ArrayList<>();
+        for (Map.Entry<String, Set<String>> entry : FORBIDDEN_PICKER_WRAPPER_METHODS.entrySet()) {
+            Class<?> type = Class.forName(entry.getKey(), false, ProjectContractTest.class.getClassLoader());
+            for (Method method : type.getDeclaredMethods()) {
+                if (Modifier.isPublic(method.getModifiers()) && entry.getValue().contains(method.getName())) {
+                    duplicateMethods.add(type.getName() + '#' + method.getName());
+                }
+            }
+        }
+
+        duplicateMethods.sort(Comparator.naturalOrder());
+        assertTrue(duplicateMethods.isEmpty(),
+                () -> "Picker wrapper controls must expose value/picker access instead of duplicate picker actions: "
+                        + duplicateMethods);
+    }
+
+    /// Verifies that menu host controls keep selection behavior on the embedded menu API.
+    @Test
+    void publicMenuHostsDoNotExposeDuplicateMenuSelectionActions() throws Exception {
+        List<String> duplicateMethods = new ArrayList<>();
+        for (Map.Entry<String, Set<String>> entry : FORBIDDEN_MENU_HOST_WRAPPER_METHODS.entrySet()) {
+            Class<?> type = Class.forName(entry.getKey(), false, ProjectContractTest.class.getClassLoader());
+            for (Method method : type.getDeclaredMethods()) {
+                if (Modifier.isPublic(method.getModifiers()) && entry.getValue().contains(method.getName())) {
+                    duplicateMethods.add(type.getName() + '#' + method.getName());
+                }
+            }
+        }
+
+        duplicateMethods.sort(Comparator.naturalOrder());
+        assertTrue(duplicateMethods.isEmpty(),
+                () -> "Menu host controls must expose popup-host APIs and keep selection on getMenu(): "
+                        + duplicateMethods);
+    }
+
+    /// Verifies that controls do not expose implementation nodes as public API shortcuts for skins or tests.
+    @Test
+    void publicControlsDoNotExposeInternalNodeAccessors() throws Exception {
+        List<String> exposedMethods = new ArrayList<>();
+        for (Map.Entry<String, Set<String>> entry : FORBIDDEN_INTERNAL_NODE_ACCESSORS.entrySet()) {
+            Class<?> type = Class.forName(entry.getKey(), false, ProjectContractTest.class.getClassLoader());
+            for (Method method : type.getDeclaredMethods()) {
+                if (Modifier.isPublic(method.getModifiers()) && entry.getValue().contains(method.getName())) {
+                    exposedMethods.add(type.getName() + '#' + method.getName());
+                }
+            }
+        }
+
+        exposedMethods.sort(Comparator.naturalOrder());
+        assertTrue(exposedMethods.isEmpty(),
+                () -> "Public controls must keep default-skin implementation nodes out of the API surface: "
+                        + exposedMethods);
     }
 
     /// Verifies that public controls with custom CSS metadata expose class and instance metadata entry points.
@@ -640,6 +1273,32 @@ final class ProjectContractTest {
         return false;
     }
 
+    /// Returns whether one concrete JavaFX superclass is an allowed public control API exception.
+    private static boolean isAllowedConcreteControlInheritance(String typeName, String superclassName) {
+        return superclassName.equals(ALLOWED_CONCRETE_CONTROL_SUPERCLASSES.get(typeName));
+    }
+
+    /// Returns the declared record component names for one record type.
+    private static @Unmodifiable Set<String> recordComponentNames(Class<?> type) {
+        Set<String> names = new TreeSet<>();
+        var components = type.getRecordComponents();
+        if (components != null) {
+            for (var component : components) {
+                names.add(component.getName());
+            }
+        }
+        return Set.copyOf(names);
+    }
+
+    /// Returns whether a method is generated record infrastructure.
+    private static boolean isRecordInfrastructureMethod(Method method) {
+        String name = method.getName();
+        if (method.getParameterCount() == 0) {
+            return name.equals("toString") || name.equals("hashCode");
+        }
+        return name.equals("equals") && method.getParameterCount() == 1;
+    }
+
     /// Returns every production Java source file in a stable order.
     private static @Unmodifiable List<Path> productionJavaSourceFiles() throws IOException {
         List<Path> sourceFiles = new ArrayList<>();
@@ -648,6 +1307,113 @@ final class ProjectContractTest {
         }
         sourceFiles.sort(Comparator.comparing(Path::toString));
         return List.copyOf(sourceFiles);
+    }
+
+    /// Returns a sorted immutable set from a text block containing one type name per line.
+    private static @Unmodifiable Set<String> typeNames(String names) {
+        Set<String> typeNames = new TreeSet<>();
+        names.lines()
+                .map(String::strip)
+                .filter(name -> !name.isEmpty())
+                .forEach(typeNames::add);
+        return Set.copyOf(typeNames);
+    }
+
+    /// Returns a stable public method signature string.
+    private static String publicMethodSignature(Class<?> owner, Method method) {
+        StringBuilder signature = new StringBuilder(owner.getName())
+                .append('#')
+                .append(method.getName())
+                .append('(');
+        Class<?>[] parameterTypes = method.getParameterTypes();
+        for (int index = 0; index < parameterTypes.length; index++) {
+            if (index > 0) {
+                signature.append(',');
+            }
+            signature.append(typeName(parameterTypes[index]));
+        }
+        return signature.append(')').toString();
+    }
+
+    /// Returns a stable source-like type name for method signatures.
+    private static String typeName(Class<?> type) {
+        if (type.isArray()) {
+            return typeName(type.getComponentType()) + "[]";
+        }
+        return type.getName();
+    }
+
+    /// Returns public mutable `ObservableList` getter names grouped by declaring class name.
+    private static Map<String, Set<String>> publicMutableObservableListGetterNamesByClass() throws IOException {
+        Map<String, Set<String>> gettersByClass = new TreeMap<>();
+        for (Path sourceFile : javaSourceFiles(CONTROLS_SOURCE_ROOT)) {
+            Set<String> getterNames = new TreeSet<>();
+            for (String line : Files.readAllLines(sourceFile)) {
+                Matcher matcher = PUBLIC_OBSERVABLE_LIST_GETTER_DECLARATION.matcher(line);
+                if (matcher.find() && matcher.group(1) == null) {
+                    getterNames.add(matcher.group(2));
+                }
+            }
+            if (!getterNames.isEmpty()) {
+                String fileName = sourceFile.getFileName().toString();
+                String typeName = fileName.substring(0, fileName.length() - ".java".length());
+                gettersByClass.put(packageName(sourceFile) + '.' + typeName, getterNames);
+            }
+        }
+        return gettersByClass;
+    }
+
+    /// Returns collection mutator names that duplicate the list returned by one getter.
+    private static @Unmodifiable Set<String> listMutatorsForGetter(String getterName) {
+        String pluralName = getterName.substring("get".length());
+        String singularName = singularListElementName(pluralName);
+        Set<String> names = new TreeSet<>();
+        names.add("add" + singularName);
+        names.add("add" + pluralName);
+        names.add("remove" + singularName);
+        names.add("remove" + pluralName);
+        names.add("set" + pluralName);
+        names.add("clear" + pluralName);
+        return Set.copyOf(names);
+    }
+
+    /// Returns the conventional singular element name for one list property name.
+    private static String singularListElementName(String pluralName) {
+        if (pluralName.endsWith("ies") && pluralName.length() > "ies".length()) {
+            return pluralName.substring(0, pluralName.length() - "ies".length()) + 'y';
+        }
+        if (pluralName.endsWith("s") && !pluralName.endsWith("ss") && pluralName.length() > 1) {
+            return pluralName.substring(0, pluralName.length() - 1);
+        }
+        return pluralName;
+    }
+
+    /// Returns public top-level type names grouped by exported package.
+    private static Map<String, Set<String>> exportedPublicTopLevelTypeNamesByPackage() throws IOException {
+        Map<String, Set<String>> typesByPackage = new TreeMap<>();
+        for (String packageName : exportedPackageNames()) {
+            typesByPackage.put(packageName, new TreeSet<>());
+        }
+
+        for (Path sourceRoot : exportedPackageSourceRoots()) {
+            for (Path sourceFile : javaSourceFiles(sourceRoot)) {
+                String packageName = packageName(sourceFile);
+                Set<String> packageTypes = typesByPackage.get(packageName);
+                if (packageTypes == null) {
+                    continue;
+                }
+
+                for (String line : Files.readAllLines(sourceFile)) {
+                    Matcher matcher = PUBLIC_TOP_LEVEL_TYPE_DECLARATION.matcher(line);
+                    if (matcher.find()) {
+                        packageTypes.add(matcher.group(1));
+                        break;
+                    }
+                }
+            }
+        }
+
+        return typesByPackage;
     }
 
     /// Returns every exported package name declared by the main module descriptor.

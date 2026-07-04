@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Glavo
 // SPDX-License-Identifier: Apache-2.0
 
-package org.glavo.m3fx.controls;
+package org.glavo.m3fx.internal;
 
 import javafx.collections.ObservableList;
 import javafx.geometry.Bounds;
@@ -12,9 +12,6 @@ import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Region;
-import org.glavo.m3fx.internal.M3FocusGuards;
-import org.glavo.m3fx.internal.M3NodeLayout;
-import org.glavo.m3fx.internal.M3ScrollReveal;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
@@ -28,7 +25,7 @@ import java.util.Set;
 
 /// Shared keyboard focus traversal helpers for Material containers.
 @NotNullByDefault
-final class M3FocusTraversal {
+public final class M3FocusTraversal {
     /// The fallback row height used for page focus traversal before targets have been measured.
     private static final double DEFAULT_PAGE_ROW_HEIGHT = 56.0;
 
@@ -40,12 +37,12 @@ final class M3FocusTraversal {
     }
 
     /// Handles horizontal keyboard traversal across the supplied focus targets.
-    static boolean handleHorizontalKeyFocus(Node owner, KeyEvent event, List<Node> focusableItems) {
+    public static boolean handleHorizontalKeyFocus(Node owner, KeyEvent event, List<Node> focusableItems) {
         return handleDirectionalKeyFocus(owner, event, focusableItems, true, false);
     }
 
     /// Handles directional keyboard traversal across the supplied focus targets.
-    static boolean handleDirectionalKeyFocus(
+    public static boolean handleDirectionalKeyFocus(
             Node owner,
             KeyEvent event,
             List<Node> focusableItems,
@@ -56,7 +53,7 @@ final class M3FocusTraversal {
     }
 
     /// Handles directional keyboard traversal across the supplied focus targets using a fallback focused index.
-    static boolean handleDirectionalKeyFocus(
+    public static boolean handleDirectionalKeyFocus(
             Node owner,
             KeyEvent event,
             List<Node> focusableItems,
@@ -76,7 +73,7 @@ final class M3FocusTraversal {
     }
 
     /// Handles directional keyboard traversal with explicit boundary wrapping behavior.
-    static boolean handleDirectionalKeyFocus(
+    public static boolean handleDirectionalKeyFocus(
             Node owner,
             KeyEvent event,
             List<Node> focusableItems,
@@ -98,7 +95,7 @@ final class M3FocusTraversal {
     }
 
     /// Handles directional keyboard traversal with an explicit event target fallback.
-    static boolean handleDirectionalKeyFocus(
+    public static boolean handleDirectionalKeyFocus(
             Node owner,
             KeyEvent event,
             List<Node> focusableItems,
@@ -144,7 +141,7 @@ final class M3FocusTraversal {
     }
 
     /// Returns reachable focus targets from an optional leading node followed by a node list.
-    static @Unmodifiable List<Node> focusTargets(@Nullable Node leading, ObservableList<? extends Node> items) {
+    public static @Unmodifiable List<Node> focusTargets(@Nullable Node leading, ObservableList<? extends Node> items) {
         Objects.requireNonNull(items, "items");
         List<Node> targets = new ArrayList<>();
         addFocusTarget(targets, leading);
@@ -155,7 +152,7 @@ final class M3FocusTraversal {
     }
 
     /// Returns reachable focus targets from a node list.
-    static @Unmodifiable List<Node> focusTargets(ObservableList<? extends Node> items) {
+    public static @Unmodifiable List<Node> focusTargets(ObservableList<? extends Node> items) {
         Objects.requireNonNull(items, "items");
         List<Node> targets = new ArrayList<>();
         for (Node item : items) {
@@ -165,7 +162,7 @@ final class M3FocusTraversal {
     }
 
     /// Returns every reachable focus target discovered in each item subtree.
-    static @Unmodifiable List<Node> focusTargetsInReachableTrees(ObservableList<? extends Node> items) {
+    public static @Unmodifiable List<Node> focusTargetsInReachableTrees(ObservableList<? extends Node> items) {
         Objects.requireNonNull(items, "items");
         List<Node> targets = new ArrayList<>();
         Set<Node> visited = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -176,7 +173,7 @@ final class M3FocusTraversal {
     }
 
     /// Returns every reachable focus target discovered in a nullable item subtree.
-    static @Unmodifiable List<Node> focusTargetsInReachableTree(@Nullable Node item) {
+    public static @Unmodifiable List<Node> focusTargetsInReachableTree(@Nullable Node item) {
         List<Node> targets = new ArrayList<>();
         Set<Node> visited = Collections.newSetFromMap(new IdentityHashMap<>());
         addFocusTargetsInReachableTree(targets, visited, item);
@@ -184,7 +181,7 @@ final class M3FocusTraversal {
     }
 
     /// Returns reachable focus targets from an arbitrary ordered item sequence.
-    static @Unmodifiable List<Node> focusTargets(Iterable<? extends Node> items) {
+    public static @Unmodifiable List<Node> focusTargets(Iterable<? extends Node> items) {
         Objects.requireNonNull(items, "items");
         List<Node> targets = new ArrayList<>();
         for (Node item : items) {
@@ -194,7 +191,7 @@ final class M3FocusTraversal {
     }
 
     /// Returns reachable focus targets from a node list followed by an optional trailing node.
-    static @Unmodifiable List<Node> focusTargets(ObservableList<? extends Node> items, @Nullable Node trailing) {
+    public static @Unmodifiable List<Node> focusTargets(ObservableList<? extends Node> items, @Nullable Node trailing) {
         Objects.requireNonNull(items, "items");
         List<Node> targets = new ArrayList<>();
         for (Node item : items) {
@@ -205,7 +202,7 @@ final class M3FocusTraversal {
     }
 
     /// Returns reachable focus targets from two optional node slots.
-    static @Unmodifiable List<Node> focusTargets(@Nullable Node first, @Nullable Node second) {
+    public static @Unmodifiable List<Node> focusTargets(@Nullable Node first, @Nullable Node second) {
         List<Node> targets = new ArrayList<>();
         addFocusTarget(targets, first);
         addFocusTarget(targets, second);
@@ -213,7 +210,7 @@ final class M3FocusTraversal {
     }
 
     /// Returns whether the current scene focus owner is inside the supplied container.
-    static boolean focusOwnerInside(Node owner, @Nullable Node container) {
+    public static boolean focusOwnerInside(Node owner, @Nullable Node container) {
         Objects.requireNonNull(owner, "owner");
         if (container == null) {
             return false;
@@ -225,12 +222,12 @@ final class M3FocusTraversal {
     }
 
     /// Returns whether the current scene focus owner is inside this owner and an editable text input.
-    static boolean focusOwnerInsideTextInput(Node owner) {
+    public static boolean focusOwnerInsideTextInput(Node owner) {
         return M3FocusGuards.focusOwnerInsideTextInput(owner);
     }
 
     /// Consumes owner-level navigation keys when a descendant text input owns focus.
-    static boolean consumeNavigationKeyIfFocusOwnerInsideTextInput(
+    public static boolean consumeNavigationKeyIfFocusOwnerInsideTextInput(
             Node owner,
             KeyEvent event,
             boolean horizontalEnabled,
@@ -480,7 +477,7 @@ final class M3FocusTraversal {
     }
 
     /// Returns the index of the focused target in the supplied target list.
-    static int focusedTargetIndex(Node owner, List<Node> targets) {
+    public static int focusedTargetIndex(Node owner, List<Node> targets) {
         return focusedTargetIndex(owner, targets, null);
     }
 

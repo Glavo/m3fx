@@ -19,6 +19,8 @@ import javafx.scene.control.Labeled;
 import javafx.scene.control.Skin;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3IconSkin;
 import org.jetbrains.annotations.NotNullByDefault;

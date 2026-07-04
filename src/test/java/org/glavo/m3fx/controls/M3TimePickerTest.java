@@ -19,6 +19,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
+import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.skins.M3TimePickerSkin;
 import org.glavo.m3fx.theme.M3Theme;
@@ -255,7 +256,7 @@ final class M3TimePickerTest {
             second.setMinTime(LocalTime.of(17, 0));
             second.setMaxTime(LocalTime.of(20, 0));
             M3FormPane form = new M3FormPane();
-            form.setItems(first, second);
+            form.getItems().setAll(first, second);
             Stage stage = new Stage();
             try {
                 Pane root = new Pane(form);

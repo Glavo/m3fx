@@ -18,6 +18,7 @@ import javafx.util.Callback;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListView;
 import org.glavo.m3fx.skins.M3ListViewCellSkin;
+import org.glavo.m3fx.internal.theme.M3ThemeMetadata;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -57,8 +58,7 @@ public final class M3ListViewCell<T> extends IndexedCell<T> {
         if (!getStyleClass().contains(STYLE_CLASS)) {
             getStyleClass().add(STYLE_CLASS);
         }
-        M3PopupStyles.addFallbackRootStyleClass(this);
-        M3PopupStyles.addStylesheet(this, M3Stylesheets.fallbackStylesheet());
+
         setAccessibleRole(AccessibleRole.LIST_ITEM);
         setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
         setText(null);
@@ -184,7 +184,7 @@ public final class M3ListViewCell<T> extends IndexedCell<T> {
     /// Clears copied theme metadata and restores the row item base style.
     private static void clearThemeContext(M3ListItem itemNode) {
         M3ThemeManager.clearThemeStyleClasses(itemNode);
-        itemNode.getProperties().remove(M3ThemeManager.THEME_PROPERTY_KEY);
+        M3ThemeMetadata.clearTheme(itemNode);
         Object baseStyleValue = itemNode.getProperties().get(BASE_STYLE_PROPERTY_KEY);
         itemNode.setStyle(baseStyleValue instanceof String baseStyle ? baseStyle : "");
     }

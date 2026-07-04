@@ -26,7 +26,10 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
-import org.glavo.m3fx.internal.M3PopupStyles;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3ListItemSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -47,7 +50,7 @@ import java.util.Objects;
 /// See [Material Design lists](https://m3.material.io/components/lists/overview).
 @NotNullByDefault
 public class M3ListItem extends Control {
-    /// The base style class for m3fx list items.
+    /// The base style class for M3FX list items.
     public static final String STYLE_CLASS = "m3-list-item";
 
     /// The selected pseudo-class used by list items.
@@ -198,8 +201,6 @@ public class M3ListItem extends Control {
     public M3ListItem(String headlineText) {
         installLineCountListeners();
         M3ControlStyles.add(this, STYLE_CLASS);
-        M3PopupStyles.addFallbackRootStyleClass(this);
-        M3PopupStyles.addStylesheet(this, M3Stylesheets.fallbackStylesheet());
         setAccessibleRole(AccessibleRole.LIST_ITEM);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
         setFocusTraversable(true);
@@ -792,7 +793,7 @@ public class M3ListItem extends Control {
         return getClassCssMetaData();
     }
 
-    /// Returns the user-agent stylesheet for m3fx list items.
+    /// Returns the user-agent stylesheet for M3FX list items.
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("list-item.css");
@@ -875,7 +876,7 @@ public class M3ListItem extends Control {
         );
     }
 
-    /// CSS metadata for m3fx list item component tokens.
+    /// CSS metadata for M3FX list item component tokens.
     @NotNullByDefault
     private static final class StyleableProperties {
         /// CSS metadata for the one-line height token.

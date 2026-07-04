@@ -3,14 +3,11 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
-import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.StringProperty;
 import javafx.beans.value.ChangeListener;
-import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
@@ -28,13 +25,18 @@ import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
+import org.glavo.m3fx.internal.M3SelectionNavigation;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3DisclosureIcon;
+import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3SplitButtonSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -81,7 +83,7 @@ public class M3SplitButton extends Control {
     private final M3DisclosureIcon menuIndicator = new M3DisclosureIcon();
 
     /// The focusable button parts exposed to accessibility and keyboard navigation.
-    private final ObservableList<Node> buttonParts = FXCollections.observableArrayList();
+    private final ObservableList<Node> buttonParts = M3ObservableLists.nonNullElementList("buttonPart");
 
     /// Notifies accessibility clients when focus moves between split button parts.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -146,7 +148,7 @@ public class M3SplitButton extends Control {
     /// @param items the menu item nodes shown by the menu side
     public M3SplitButton(String text, Node... items) {
         this(text);
-        addItems(items);
+        getItems().addAll(items);
     }
 
     /// Returns the primary action button.
@@ -317,121 +319,6 @@ public class M3SplitButton extends Control {
         return menuButton.getItems();
     }
 
-    /// Adds one menu item node.
-    ///
-    /// @param item the menu item node to add
-    public final void addItem(Node item) {
-        menuButton.addItem(item);
-    }
-
-    /// Adds menu item nodes.
-    ///
-    /// @param items the menu item nodes to add
-    public final void addItems(Node... items) {
-        menuButton.addItems(items);
-    }
-
-    /// Replaces all menu item nodes.
-    ///
-    /// @param items the replacement menu item nodes
-    public final void setItems(Node... items) {
-        menuButton.setItems(items);
-    }
-
-    /// Removes all menu item nodes.
-    public final void clearItems() {
-        menuButton.clearItems();
-    }
-
-    /// Returns the menu item selection mode.
-    ///
-    /// @return the menu item selection mode
-    public final M3MenuSelectionMode getSelectionMode() {
-        return menuButton.getSelectionMode();
-    }
-
-    /// Sets the menu item selection mode.
-    ///
-    /// @param selectionMode the menu item selection mode
-    public final void setSelectionMode(M3MenuSelectionMode selectionMode) {
-        menuButton.setSelectionMode(selectionMode);
-    }
-
-    /// Returns the menu item selection mode property.
-    ///
-    /// @return the menu item selection mode property
-    public final ObjectProperty<M3MenuSelectionMode> selectionModeProperty() {
-        return menuButton.selectionModeProperty();
-    }
-
-    /// Returns whether the menu allows all selectable items to be unselected.
-    ///
-    /// @return `true` if the menu allows all selectable items to be unselected
-    public final boolean isAllowEmptySelection() {
-        return menuButton.isAllowEmptySelection();
-    }
-
-    /// Sets whether the menu allows all selectable items to be unselected.
-    ///
-    /// @param allowEmptySelection whether the menu allows all selectable items to be unselected
-    public final void setAllowEmptySelection(boolean allowEmptySelection) {
-        menuButton.setAllowEmptySelection(allowEmptySelection);
-    }
-
-    /// Returns the empty-selection policy property for the menu.
-    ///
-    /// @return the empty-selection policy property for the menu
-    public final BooleanProperty allowEmptySelectionProperty() {
-        return menuButton.allowEmptySelectionProperty();
-    }
-
-    /// Returns the selected menu items in child order.
-    ///
-    /// @return the selected menu items in child order
-    public final @UnmodifiableView ObservableList<M3MenuItem> getSelectedItems() {
-        return menuButton.getSelectedItems();
-    }
-
-    /// Returns the first selected menu item in child order.
-    ///
-    /// @return the first selected menu item in child order, or `null` when selection is empty
-    public final @Nullable M3MenuItem getSelectedItem() {
-        return menuButton.getSelectedItem();
-    }
-
-    /// Returns the first selected menu item property.
-    ///
-    /// @return the read-only first selected menu item property
-    public final ReadOnlyObjectProperty<@Nullable M3MenuItem> selectedItemProperty() {
-        return menuButton.selectedItemProperty();
-    }
-
-    /// Returns the child index of the first selected menu item, or `-1` when no item is selected.
-    ///
-    /// @return the child index of the first selected menu item, or `-1` when no item is selected
-    public final int getSelectedIndex() {
-        return menuButton.getSelectedIndex();
-    }
-
-    /// Selects a menu item that belongs to this split button's menu.
-    ///
-    /// @param item the menu item to select
-    public final void select(M3MenuItem item) {
-        menuButton.select(item);
-    }
-
-    /// Selects the menu item at the given child index.
-    ///
-    /// @param index the child index to select
-    public final void selectIndex(int index) {
-        menuButton.selectIndex(index);
-    }
-
-    /// Clears this split button's menu selection when empty selection is allowed.
-    public final void clearSelection() {
-        menuButton.clearSelection();
-    }
-
     /// Shows the attached menu.
     public final void showMenu() {
         ensureButtonPartsInitialized();
@@ -494,7 +381,7 @@ public class M3SplitButton extends Control {
             case ITEM_AT_INDEX -> M3Accessible.itemAt(buttonParts, parameters);
             case FOCUS_NODE -> focusNode();
             case MULTIPLE_SELECTION -> menuButton.queryAccessibleAttribute(attribute, parameters);
-            case SELECTED_ITEMS -> getSelectedItems();
+            case SELECTED_ITEMS -> getMenu().getSelectedItems();
             case SUBMENU -> getMenu();
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
@@ -527,6 +414,7 @@ public class M3SplitButton extends Control {
         menuIndicator.expandedProperty().bind(menuButton.showingProperty());
         menuButton.setGraphic(menuIndicator);
         setAccessibleRole(AccessibleRole.TOOL_BAR);
+        setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(
                 this,
                 this::focusAccessibleNode,
