@@ -24,12 +24,16 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.DialogPane;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.stage.Window;
 import org.glavo.m3fx.internal.M3FocusTraversal;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.M3ModalFocusTrap;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
@@ -117,6 +121,14 @@ public class M3DialogPane extends DialogPane {
     private final M3AccessibleFocusNotifier focusNotifier =
             new M3AccessibleFocusNotifier(this, this::currentOrFirstFocusableItem);
 
+    /// Keeps keyboard traversal inside this dialog pane while it is hosted by a modal window.
+    private final M3ModalFocusTrap focusTrap = new M3ModalFocusTrap(
+            this,
+            this::isFocusTrapActive,
+            this::focusTrapTargets,
+            null
+    );
+
     /// Creates a dialog pane.
     public M3DialogPane() {
         M3ControlStyles.add(this, STYLE_CLASS);
@@ -133,7 +145,9 @@ public class M3DialogPane extends DialogPane {
                 requestContainerShapeStyleSync();
             }
         });
+        visibleProperty().addListener((observable, oldValue, newValue) -> focusTrap.update());
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleActionNavigationKey);
+        focusTrap.install();
         focusNotifier.start();
         updateMetrics();
         updateAccessibleText();
@@ -410,6 +424,27 @@ public class M3DialogPane extends DialogPane {
                 event,
                 M3FocusTraversal.focusTargets(actionButtons())
         );
+    }
+
+    /// Returns whether dialog keyboard focus should currently stay inside this pane.
+    private boolean isFocusTrapActive() {
+        @Nullable Scene scene = getScene();
+        if (scene == null || !isVisible()) {
+            return false;
+        }
+
+        @Nullable Window window = scene.getWindow();
+        return window instanceof Stage stage && stage.getModality() != Modality.NONE;
+    }
+
+    /// Returns the focus targets contained by this dialog pane in traversal order.
+    private List<Node> focusTrapTargets() {
+        ArrayList<Node> targets = new ArrayList<>();
+        targets.addAll(M3FocusTraversal.focusTargetsInReachableTree(getContent()));
+        for (Node button : actionButtons()) {
+            targets.addAll(M3FocusTraversal.focusTargetsInReachableTree(button));
+        }
+        return List.copyOf(targets);
     }
 
     /// Returns the user-agent stylesheet for M3FX dialog panes.

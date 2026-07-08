@@ -27,6 +27,7 @@ import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListView;
 import org.glavo.m3fx.internal.M3ListViewCell;
+import org.glavo.m3fx.internal.M3ListViewSkinAccess;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3ScrollReveal;
@@ -101,6 +102,63 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     private final M3MotionSettingsObserver motionSettingsObserver =
             new M3MotionSettingsObserver(getSkinnable(), this::refreshMotionSettings);
 
+    /// Internal bridge used by the owning list view to reach virtualized skin operations.
+    private final M3ListViewSkinAccess.Access access = new M3ListViewSkinAccess.Access() {
+        /// Refreshes the virtualized item count.
+        @Override
+        public void refreshItemCount() {
+            M3ListViewSkin.this.refreshItemCount();
+        }
+
+        /// Refreshes attached row state.
+        @Override
+        public void refreshCells() {
+            M3ListViewSkin.this.refreshCells();
+        }
+
+        /// Rebuilds attached rows after the cell factory changes.
+        @Override
+        public void rebuildCells() {
+            M3ListViewSkin.this.rebuildCells();
+        }
+
+        /// Refreshes focused-row state.
+        @Override
+        public void refreshFocus(boolean requestNodeFocus, boolean animated) {
+            M3ListViewSkin.this.refreshFocus(requestNodeFocus, animated);
+        }
+
+        /// Scrolls to a data item index.
+        @Override
+        public void scrollTo(int index, boolean animated) {
+            M3ListViewSkin.this.scrollTo(index, animated);
+        }
+
+        /// Returns the visible or reusable row node for an item index.
+        @Override
+        public @Nullable Node visibleItem(int index) {
+            return M3ListViewSkin.this.getVisibleItem(index);
+        }
+
+        /// Returns the currently attached row node for an item index.
+        @Override
+        public @Nullable Node attachedVisibleItem(int index) {
+            return M3ListViewSkin.this.getAttachedVisibleItem(index);
+        }
+
+        /// Returns the data index of the attached row containing a node.
+        @Override
+        public int attachedVisibleItemIndex(Node node) {
+            return M3ListViewSkin.this.getAttachedVisibleItemIndex(node);
+        }
+
+        /// Returns the first attached row accepted by a predicate.
+        @Override
+        public @Nullable Node findAttachedVisibleItem(Predicate<? super Node> predicate) {
+            return M3ListViewSkin.this.findAttachedVisibleItem(predicate);
+        }
+    };
+
     /// The currently running virtual flow scroll animation.
     private @Nullable Timeline smoothScrollAnimation;
 
@@ -137,6 +195,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         flow.setVertical(true);
         flow.setPannable(true);
         flow.setCellFactory(flow -> new M3ListViewCell<>(control));
+        M3ListViewSkinAccess.register(control, access);
         flow.fixedCellSizeProperty().bind(control.fixedCellSizeProperty());
         control.addEventFilter(ScrollEvent.SCROLL, smoothScrollHandler);
         getChildren().add(flow);
@@ -156,6 +215,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     @Override
     public void dispose() {
         M3ListView<T> listView = getSkinnable();
+        M3ListViewSkinAccess.unregister(listView, access);
         motionSettingsObserver.dispose();
         stopSmoothScrollAnimation();
         listView.removeEventFilter(ScrollEvent.SCROLL, smoothScrollHandler);
@@ -238,7 +298,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     }
 
     /// Updates the number of cells owned by the virtual flow.
-    public void refreshItemCount() {
+    private void refreshItemCount() {
         flow.setCellCount(getSkinnable().getItems().size());
         if (isSceneRefreshable()) {
             flow.requestLayout();
@@ -246,7 +306,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     }
 
     /// Requests visible cell state and layout updates.
-    public void refreshCells() {
+    private void refreshCells() {
         if (!isSceneRefreshable()) {
             return;
         }
@@ -257,7 +317,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     ///
     /// @param requestNodeFocus whether the focused cell should request keyboard focus
     /// @param animated whether scrolling the focused cell into view should animate
-    public void refreshFocus(boolean requestNodeFocus, boolean animated) {
+    private void refreshFocus(boolean requestNodeFocus, boolean animated) {
         focusRequestPending |= requestNodeFocus;
         if (!isSceneRefreshable()) {
             return;
@@ -276,7 +336,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     }
 
     /// Recreates visible cells after the cell factory changes.
-    public void rebuildCells() {
+    private void rebuildCells() {
         if (!isSceneRefreshable()) {
             return;
         }
@@ -393,7 +453,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     /// Scrolls the virtual flow to the supplied index.
     ///
     /// @param index the data item index to reveal
-    public void scrollTo(int index) {
+    private void scrollTo(int index) {
         scrollTo(index, true);
     }
 
@@ -401,7 +461,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     ///
     /// @param index the data item index to reveal
     /// @param animated whether the scroll should animate when animations are enabled
-    public void scrollTo(int index, boolean animated) {
+    private void scrollTo(int index, boolean animated) {
         scrollToIndex(index, animated);
     }
 
@@ -409,7 +469,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     ///
     /// @param index the data item index to query
     /// @return the rendered list item node, or `null` when the index is outside the data list
-    public @Nullable Node getVisibleItem(int index) {
+    private @Nullable Node getVisibleItem(int index) {
         if (index < 0 || index >= getSkinnable().getItems().size()) {
             return null;
         }
@@ -422,7 +482,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     ///
     /// @param index the data item index to query
     /// @return the rendered list item node, or `null` when the row is not currently materialized
-    public @Nullable Node getAttachedVisibleItem(int index) {
+    private @Nullable Node getAttachedVisibleItem(int index) {
         if (index < 0 || index >= getSkinnable().getItems().size()) {
             return null;
         }
@@ -435,7 +495,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     ///
     /// @param node the node to find in the attached visible rows
     /// @return the containing row index, or `-1` when the node is not in an attached row
-    public int getAttachedVisibleItemIndex(Node node) {
+    private int getAttachedVisibleItemIndex(Node node) {
         return flow.attachedVisibleItemIndex(node);
     }
 
@@ -443,7 +503,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     ///
     /// @param predicate the predicate used to select one attached visible list item
     /// @return the matching attached visible list item, or `null` when none matches
-    public @Nullable Node findAttachedVisibleItem(Predicate<? super Node> predicate) {
+    private @Nullable Node findAttachedVisibleItem(Predicate<? super Node> predicate) {
         return flow.findAttachedVisibleItem(predicate);
     }
 
@@ -795,7 +855,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         return possibleAncestor != null && containsNode(possibleAncestor, possibleDescendant);
     }
 
-    /// A public-API wrapper exposing protected virtual flow refresh hooks to this skin.
+    /// A private wrapper exposing protected virtual flow hooks to this skin.
     @NotNullByDefault
     private static final class ListViewVirtualFlow<T> extends VirtualFlow<M3ListViewCell<T>> {
         /// Requests visible cell relayout and selection refresh.

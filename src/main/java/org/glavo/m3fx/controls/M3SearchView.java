@@ -20,7 +20,6 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
-import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Region;
@@ -98,21 +97,6 @@ public class M3SearchView extends Control {
         setPromptText(promptText);
     }
 
-    /// Creates a search view with prompt text and initial result nodes.
-    ///
-    /// @param promptText the prompt text displayed by the embedded search bar
-    /// @param results the initial result nodes displayed below the search bar
-    public M3SearchView(String promptText, Node... results) {
-        this(promptText);
-        getResults().addAll(results);
-    }
-
-    /// Returns the embedded search bar.
-    ///
-    /// @return the embedded search bar
-    public final M3SearchBar getSearchBar() {
-        return searchBar;
-    }
 
 
     /// Returns the mutable result node list.
@@ -122,16 +106,6 @@ public class M3SearchView extends Control {
         return resultsBox.getChildren();
     }
 
-
-
-
-
-    /// Returns the editable search input used by the embedded search bar.
-    ///
-    /// @return the embedded editable search input
-    public final TextField getEditor() {
-        return searchBar.getEditor();
-    }
 
     /// Returns the leading content node from the embedded search bar.
     ///
@@ -160,10 +134,6 @@ public class M3SearchView extends Control {
     public final ObservableList<Node> getTrailingActions() {
         return searchBar.getTrailingActions();
     }
-
-
-
-
 
     /// Returns the text entered in the embedded search bar.
     ///
@@ -440,7 +410,7 @@ public class M3SearchView extends Control {
         if (getScene() != null
                 && getScene().getFocusOwner() == focusOwnerBefore
                 && currentFocusNode() == null
-                && M3Accessible.canReach(getEditor())) {
+                && M3Accessible.canReach(searchBar.editor())) {
             return focusEditor();
         }
         if (shown) {
@@ -657,7 +627,7 @@ public class M3SearchView extends Control {
     /// @return the focused result or search bar item when focus is inside this view, otherwise the search editor
     private Node accessibleFocusNode() {
         @Nullable Node focusNode = currentFocusNode();
-        return focusNode == null ? getEditor() : focusNode;
+        return focusNode == null ? searchBar.editor() : focusNode;
     }
 
     /// Focuses the current accessibility focus node, or the embedded editor when focus is outside this search view.
@@ -669,7 +639,7 @@ public class M3SearchView extends Control {
         }
         @Nullable Node focusNode = currentFocusNode();
         activate();
-        if (M3Accessible.showItem(this, focusNode == null ? getEditor() : focusNode)) {
+        if (M3Accessible.showItem(this, focusNode == null ? searchBar.editor() : focusNode)) {
             notifyFocusNodeChanged();
             return true;
         }
@@ -700,7 +670,7 @@ public class M3SearchView extends Control {
 
         @Nullable Node searchBarFocusNode = currentSearchBarFocusNode();
         if (searchBarFocusNode == null
-                || searchBarFocusNode == getEditor()
+                || searchBarFocusNode == searchBar.editor()
                 || searchBarFocusNode == searchBar) {
             return null;
         }
@@ -751,7 +721,7 @@ public class M3SearchView extends Control {
     ///
     /// @return `true` when the editor accepted focus
     private boolean focusEditor() {
-        if (M3Accessible.canReach(getEditor()) && M3Accessible.showItem(this, getEditor())) {
+        if (M3Accessible.canReach(searchBar.editor()) && M3Accessible.showItem(this, searchBar.editor())) {
             notifyFocusNodeChanged();
             return true;
         }

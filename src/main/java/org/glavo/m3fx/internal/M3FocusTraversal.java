@@ -140,6 +140,49 @@ public final class M3FocusTraversal {
         return true;
     }
 
+    /// Handles cyclic Tab and F6 keyboard traversal across the supplied focus targets.
+    public static boolean handleCyclicTabKeyFocus(Node owner, KeyEvent event, List<Node> focusableItems) {
+        Objects.requireNonNull(owner, "owner");
+        Objects.requireNonNull(event, "event");
+        Objects.requireNonNull(focusableItems, "focusableItems");
+        if (!isCyclicTraversalKey(event)) {
+            return false;
+        }
+
+        List<Node> reachableFocusItems = reachableFocusItems(focusableItems);
+        if (reachableFocusItems.isEmpty()) {
+            event.consume();
+            return true;
+        }
+
+        boolean backward = event.isShiftDown();
+        int focusedIndex = focusedTargetIndex(owner, reachableFocusItems);
+        Node target = focusedIndex < 0
+                ? reachableFocusItems.get(backward ? reachableFocusItems.size() - 1 : 0)
+                : adjacentTarget(reachableFocusItems, focusedIndex, !backward, true);
+        boolean focused = target.isFocusTraversable()
+                ? M3Accessible.showDirectItem(owner, target)
+                : M3Accessible.showItem(owner, target);
+        if (focused) {
+            event.consume();
+            return true;
+        }
+
+        event.consume();
+        return true;
+    }
+
+    /// Returns whether an event requests cyclic focus traversal without application shortcut modifiers.
+    private static boolean isCyclicTraversalKey(KeyEvent event) {
+        if (event.getCode() != KeyCode.TAB && event.getCode() != KeyCode.F6) {
+            return false;
+        }
+        return !event.isControlDown()
+                && !event.isAltDown()
+                && !event.isMetaDown()
+                && !event.isShortcutDown();
+    }
+
     /// Returns reachable focus targets from an optional leading node followed by a node list.
     public static @Unmodifiable List<Node> focusTargets(@Nullable Node leading, ObservableList<? extends Node> items) {
         Objects.requireNonNull(items, "items");

@@ -9,10 +9,12 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Bounds;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
@@ -32,6 +34,7 @@ import static org.glavo.m3fx.M3TestControls.*;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -530,7 +533,7 @@ final class M3AccessibleFocusRevealTest {
         FxTestUtils.runOnFxThread(() -> {
             Pane spacer = new Pane();
             spacer.setPrefHeight(240.0);
-            M3SearchView searchView = new M3SearchView("Search");
+            M3SearchView searchView = searchView("Search");
             VBox content = new VBox(spacer, searchView);
             ScrollPane scrollPane = new ScrollPane(content);
             scrollPane.setFitToWidth(true);
@@ -560,7 +563,7 @@ final class M3AccessibleFocusRevealTest {
             Pane spacer = new Pane();
             spacer.setPrefHeight(240.0);
             M3Button result = new M3Button("Result");
-            M3SearchView searchView = new M3SearchView("Search", result);
+            M3SearchView searchView = searchView("Search", result);
             VBox content = new VBox(spacer, searchView);
             ScrollPane scrollPane = new ScrollPane(content);
             scrollPane.setFitToWidth(true);
@@ -588,7 +591,7 @@ final class M3AccessibleFocusRevealTest {
             Pane spacer = new Pane();
             spacer.setPrefHeight(240.0);
             M3Button result = new M3Button("Result");
-            M3SearchView searchView = new M3SearchView("Search", result);
+            M3SearchView searchView = searchView("Search", result);
             VBox content = new VBox(spacer, searchView);
             ScrollPane scrollPane = new ScrollPane(content);
             scrollPane.setFitToWidth(true);
@@ -606,10 +609,11 @@ final class M3AccessibleFocusRevealTest {
 
             searchView.deactivate();
 
+            M3SearchBar embeddedSearchBar = searchViewSearchBar(searchView);
             Node focusOwner = scene.getFocusOwner();
-            assertSame(searchView.getSearchBar(), focusOwner);
-            assertNotSame(searchView.getEditor(), focusOwner);
-            assertTargetVisible(scrollPane, content, searchView.getSearchBar());
+            assertSame(embeddedSearchBar, focusOwner);
+            assertNotSame(searchBarEditor(embeddedSearchBar), focusOwner);
+            assertTargetVisible(scrollPane, content, embeddedSearchBar);
             assertTrue(scrollPane.getVvalue() > 0.0, () -> "vvalue=" + scrollPane.getVvalue());
         });
     }
@@ -688,8 +692,8 @@ final class M3AccessibleFocusRevealTest {
             trigger.setFocusTraversable(true);
             M3Button sideAction = new M3Button("Side action");
             M3Button bottomAction = new M3Button("Bottom action");
-            M3SideSheet sideSheet = new M3SideSheet("Details", new Label("Side"), sideAction);
-            M3BottomSheet bottomSheet = new M3BottomSheet("Queue", new Label("Bottom"), bottomAction);
+            M3SideSheet sideSheet = sideSheet("Details", new Label("Side"), sideAction);
+            M3BottomSheet bottomSheet = bottomSheet("Queue", new Label("Bottom"), bottomAction);
             Stage stage = new Stage();
             try {
                 sideSheet.setVariant(M3SheetVariant.MODAL);
@@ -1322,6 +1326,19 @@ final class M3AccessibleFocusRevealTest {
         return (M3IconButton) child;
     }
 
+    /// Returns the embedded editor exposed for accessibility by a search bar.
+    private static TextField searchBarEditor(M3SearchBar searchBar) {
+        return assertInstanceOf(TextField.class, searchBar.queryAccessibleAttribute(AccessibleAttribute.CONTENTS));
+    }
+
+    /// Returns the embedded search bar rendered by a search view.
+    private static M3SearchBar searchViewSearchBar(M3SearchView searchView) {
+        searchView.applyCss();
+        searchView.layout();
+        Node node = searchView.lookup("." + M3SearchBar.STYLE_CLASS);
+        assertTrue(node instanceof M3SearchBar, () -> "search bar=" + node);
+        return (M3SearchBar) node;
+    }
     /// Shows the supplied scroll pane in a real JavaFX window and performs an initial layout pass.
     private static Scene show(ScrollPane scrollPane, double width, double height) {
         Stage stage = new Stage();

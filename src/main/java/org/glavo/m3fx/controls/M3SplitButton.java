@@ -142,29 +142,6 @@ public class M3SplitButton extends Control {
         setText(text);
     }
 
-    /// Creates a split button with primary action text and menu items.
-    ///
-    /// @param text the primary action text
-    /// @param items the menu item nodes shown by the menu side
-    public M3SplitButton(String text, Node... items) {
-        this(text);
-        getItems().addAll(items);
-    }
-
-    /// Returns the primary action button.
-    ///
-    /// @return the primary action button
-    public final M3Button getActionButton() {
-        return actionButton;
-    }
-
-    /// Returns the attached menu button.
-    ///
-    /// @return the attached menu button
-    public final M3MenuButton getMenuButton() {
-        return menuButton;
-    }
-
     /// Returns the primary action text.
     ///
     /// @return the primary action text
@@ -559,9 +536,8 @@ public class M3SplitButton extends Control {
 
     /// Updates layout-direction-dependent edge states and child feedback geometry.
     private void updateNodeOrientationStyle() {
-        boolean rightToLeft = M3NodeLayout.isRightToLeft(this);
-        applyEdgeState(actionButton, !rightToLeft);
-        applyEdgeState(menuButton, rightToLeft);
+        applyEdgeState(actionButton, true);
+        applyEdgeState(menuButton, false);
         actionButton.requestLayout();
         menuButton.requestLayout();
         requestLayout();

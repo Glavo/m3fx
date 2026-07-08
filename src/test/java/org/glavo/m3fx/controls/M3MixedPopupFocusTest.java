@@ -803,7 +803,7 @@ final class M3MixedPopupFocusTest {
             HBox helpActions = new HBox(helpButton, disabledHelpButton);
             M3FormRow actionRow = new M3FormRow("Actions", "Menu and help affordances", menuButton, helpActions);
             M3FormRow dateRow = new M3FormRow("Due date", "Date picker target", dateField);
-            M3FormSection section = new M3FormSection("Project", actionRow, dateRow);
+            M3FormSection section = formSection("Project", actionRow, dateRow);
             M3FormPane form = formPane(section);
             Stage stage = new Stage();
 
@@ -885,7 +885,7 @@ final class M3MixedPopupFocusTest {
             LocalTime targetTime = LocalTime.of(11, 15);
             M3TimePickerField timeField = new M3TimePickerField(LocalTime.of(9, 30));
             M3FormRow timeRow = new M3FormRow("Reminder", "Time picker target", timeField);
-            M3FormSection section = new M3FormSection("Project", timeRow);
+            M3FormSection section = formSection("Project", timeRow);
             M3FormPane form = formPane(section);
             Stage stage = new Stage();
 
@@ -922,7 +922,7 @@ final class M3MixedPopupFocusTest {
                     LocalDate.of(2026, 7, 5)
             );
             M3FormRow rangeRow = new M3FormRow("Window", "Date range picker target", rangeField);
-            M3FormSection section = new M3FormSection("Project", rangeRow);
+            M3FormSection section = formSection("Project", rangeRow);
             M3FormPane form = formPane(section);
             Stage stage = new Stage();
 
@@ -1204,7 +1204,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem splitHidden = new M3MenuItem("Split hidden");
             splitHidden.setVisible(false);
             M3MenuItem splitVisible = new M3MenuItem("Split visible");
-            M3SplitButton splitButton = new M3SplitButton("Create", splitHidden, splitVisible);
+            M3SplitButton splitButton = splitButton("Create", splitHidden, splitVisible);
             Stage stage = new Stage();
 
             try {
@@ -2955,7 +2955,7 @@ final class M3MixedPopupFocusTest {
             menuButton.setVisible(false);
 
             M3MenuItem publishItem = new M3MenuItem("Publish");
-            M3SplitButton splitButton = new M3SplitButton("Create", publishItem);
+            M3SplitButton splitButton = splitButton("Create", publishItem);
             splitButton.setVisible(false);
 
             M3MenuItem nestedItem = new M3MenuItem("Nested");
@@ -3602,7 +3602,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3MenuItem draftItem = new M3MenuItem("Draft");
             M3MenuItem publishItem = new M3MenuItem("Publish");
-            M3SplitButton splitButton = new M3SplitButton("Create", draftItem, publishItem);
+            M3SplitButton splitButton = splitButton("Create", draftItem, publishItem);
             Pane content = new Pane(splitButton);
             content.setPrefSize(360.0, 96.0);
             M3DialogPane dialogPane = new M3DialogPane();
@@ -3632,8 +3632,8 @@ final class M3MixedPopupFocusTest {
                 publishItem.fireEvent(keyPressed(KeyCode.ESCAPE));
 
                 assertFalse(splitButton.isShowing());
-                assertTrue(splitButton.getMenuButton().isFocused());
-                assertSame(splitButton.getMenuButton(), dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertTrue(splitButtonMenuButton(splitButton).isFocused());
+                assertSame(splitButtonMenuButton(splitButton), dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
                 stage.close();
             }
@@ -3646,7 +3646,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3MenuItem draftItem = new M3MenuItem("Draft");
             M3MenuItem publishItem = new M3MenuItem("Publish");
-            M3SplitButton splitButton = new M3SplitButton("Create", draftItem, publishItem);
+            M3SplitButton splitButton = splitButton("Create", draftItem, publishItem);
             Pane content = new Pane(splitButton);
             content.setPrefSize(360.0, 96.0);
             M3DialogPane dialogPane = new M3DialogPane();
@@ -3686,7 +3686,7 @@ final class M3MixedPopupFocusTest {
             M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 6, 14));
             LocalDate targetDate = LocalDate.of(2026, 6, 21);
             M3SubMenuItem scheduleItem = new M3SubMenuItem("Schedule", field);
-            M3SplitButton splitButton = new M3SplitButton("Create", scheduleItem);
+            M3SplitButton splitButton = splitButton("Create", scheduleItem);
             Pane content = new Pane(splitButton);
             content.setPrefSize(360.0, 96.0);
             M3DialogPane dialogPane = new M3DialogPane();
@@ -3707,7 +3707,7 @@ final class M3MixedPopupFocusTest {
 
                 assertNestedSubMenuPickerValueTargetRoutedByContainer(
                         dialogPane,
-                        splitButton.getMenuButton(),
+                        splitButtonMenuButton(splitButton),
                         scheduleItem,
                         field,
                         targetDate
@@ -3731,7 +3731,7 @@ final class M3MixedPopupFocusTest {
                     LocalDate.of(2026, 6, 18)
             );
             M3SubMenuItem scheduleItem = new M3SubMenuItem("Schedule", field);
-            M3SplitButton splitButton = new M3SplitButton("Create", scheduleItem);
+            M3SplitButton splitButton = splitButton("Create", scheduleItem);
             Pane content = new Pane(splitButton);
             content.setPrefSize(420.0, 120.0);
             M3DialogPane dialogPane = new M3DialogPane();
@@ -3752,7 +3752,7 @@ final class M3MixedPopupFocusTest {
 
                 assertNestedSubMenuDateRangePickerValueTargetRoutedByContainer(
                         dialogPane,
-                        splitButton.getMenuButton(),
+                        splitButtonMenuButton(splitButton),
                         scheduleItem,
                         field,
                         targetDate
@@ -3773,7 +3773,7 @@ final class M3MixedPopupFocusTest {
             M3TimePickerField field = new M3TimePickerField(LocalTime.of(8, 30));
             LocalTime targetTime = LocalTime.of(9, 45);
             M3SubMenuItem scheduleItem = new M3SubMenuItem("Schedule", field);
-            M3SplitButton splitButton = new M3SplitButton("Create", scheduleItem);
+            M3SplitButton splitButton = splitButton("Create", scheduleItem);
             Pane content = new Pane(splitButton);
             content.setPrefSize(360.0, 96.0);
             M3DialogPane dialogPane = new M3DialogPane();
@@ -3794,7 +3794,7 @@ final class M3MixedPopupFocusTest {
 
                 assertNestedSubMenuPickerValueTargetRoutedByContainer(
                         dialogPane,
-                        splitButton.getMenuButton(),
+                        splitButtonMenuButton(splitButton),
                         scheduleItem,
                         field,
                         targetTime
@@ -3823,7 +3823,7 @@ final class M3MixedPopupFocusTest {
             );
             M3SubMenuItem recentItem = new M3SubMenuItem("Recent", pdfItem, htmlItem);
             M3SubMenuItem exportItem = new M3SubMenuItem("Export", recentItem);
-            M3SplitButton splitButton = new M3SplitButton("Create", exportItem);
+            M3SplitButton splitButton = splitButton("Create", exportItem);
             Pane content = new Pane(splitButton);
             content.setPrefSize(360.0, 120.0);
             M3DialogPane dialogPane = new M3DialogPane();
@@ -3855,7 +3855,7 @@ final class M3MixedPopupFocusTest {
                 assertTrue(tooltip.isShowing());
                 assertTrue(tooltipAction.isFocused());
                 assertSame(tooltipAction, splitButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-                assertSame(tooltipAction, splitButton.getMenuButton().queryAccessibleAttribute(
+                assertSame(tooltipAction, splitButtonMenuButton(splitButton).queryAccessibleAttribute(
                         AccessibleAttribute.FOCUS_NODE));
                 assertSame(tooltipAction, exportItem.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
                 assertSame(tooltipAction, recentItem.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
@@ -3869,7 +3869,7 @@ final class M3MixedPopupFocusTest {
                 assertTrue(exportItem.isSubMenuShowing());
                 assertTrue(recentItem.isSubMenuShowing());
                 assertSame(pdfItem, splitButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-                assertSame(pdfItem, splitButton.getMenuButton().queryAccessibleAttribute(
+                assertSame(pdfItem, splitButtonMenuButton(splitButton).queryAccessibleAttribute(
                         AccessibleAttribute.FOCUS_NODE));
                 assertSame(pdfItem, exportItem.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
                 assertSame(pdfItem, recentItem.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
@@ -3897,7 +3897,7 @@ final class M3MixedPopupFocusTest {
                     "Publishes the current draft.",
                     tooltipAction
             );
-            M3SplitButton splitButton = new M3SplitButton("Create", draftItem, publishItem);
+            M3SplitButton splitButton = splitButton("Create", draftItem, publishItem);
             Pane content = new Pane(splitButton);
             content.setPrefSize(360.0, 96.0);
             M3DialogPane dialogPane = new M3DialogPane();
@@ -3925,7 +3925,7 @@ final class M3MixedPopupFocusTest {
                 assertTrue(tooltip.isShowing());
                 assertTrue(tooltipAction.isFocused());
                 assertSame(tooltipAction, splitButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-                assertSame(tooltipAction, splitButton.getMenuButton().queryAccessibleAttribute(
+                assertSame(tooltipAction, splitButtonMenuButton(splitButton).queryAccessibleAttribute(
                         AccessibleAttribute.FOCUS_NODE));
                 assertPopupFocusRoutedByContainer(dialogPane, tooltipAction);
 
@@ -3948,7 +3948,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3MenuItem draftItem = new M3MenuItem("Draft");
             M3MenuItem publishItem = new M3MenuItem("Publish");
-            M3SplitButton splitButton = new M3SplitButton("Create", draftItem, publishItem);
+            M3SplitButton splitButton = splitButton("Create", draftItem, publishItem);
             Pane content = new Pane(splitButton);
             content.setPrefSize(360.0, 96.0);
             M3Surface surface = surface(content);
@@ -3976,8 +3976,8 @@ final class M3MixedPopupFocusTest {
                 publishItem.fireEvent(keyPressed(KeyCode.ESCAPE));
 
                 assertFalse(splitButton.isShowing());
-                assertTrue(splitButton.getMenuButton().isFocused());
-                assertSame(splitButton.getMenuButton(), surface.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertTrue(splitButtonMenuButton(splitButton).isFocused());
+                assertSame(splitButtonMenuButton(splitButton), surface.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
                 stage.close();
             }
@@ -3990,7 +3990,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3MenuItem draftItem = new M3MenuItem("Draft");
             M3MenuItem publishItem = new M3MenuItem("Publish");
-            M3SplitButton splitButton = new M3SplitButton("Create", draftItem, publishItem);
+            M3SplitButton splitButton = splitButton("Create", draftItem, publishItem);
             Pane content = new Pane(splitButton);
             content.setPrefSize(360.0, 96.0);
             M3Surface surface = surface(content);
@@ -4033,7 +4033,7 @@ final class M3MixedPopupFocusTest {
                     "Publishes the current draft.",
                     tooltipAction
             );
-            M3SplitButton splitButton = new M3SplitButton("Create", draftItem, publishItem);
+            M3SplitButton splitButton = splitButton("Create", draftItem, publishItem);
             Stage stage = new Stage();
 
             try {
@@ -4054,14 +4054,14 @@ final class M3MixedPopupFocusTest {
                 assertTrue(tooltip.isShowing());
                 assertTrue(publishItem.isFocused());
                 assertSame(publishItem, splitButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-                assertSame(publishItem, splitButton.getMenuButton().queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(publishItem, splitButtonMenuButton(splitButton).queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
                 publishItem.fireEvent(keyPressed(KeyCode.F6));
 
                 assertTrue(tooltipAction.isFocused());
                 assertTrue(tooltip.isShowing());
                 assertTrue(splitButton.isShowing());
-                assertSame(tooltipAction, splitButton.getMenuButton().queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(tooltipAction, splitButtonMenuButton(splitButton).queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
                 assertPopupFocusRoutedByContainer(splitButton, tooltipAction);
 
                 tooltipAction.fireEvent(keyPressed(KeyCode.ESCAPE));
@@ -4070,7 +4070,7 @@ final class M3MixedPopupFocusTest {
                 assertTrue(publishItem.isFocused());
                 assertTrue(splitButton.isShowing());
                 assertSame(publishItem, splitButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-                assertSame(publishItem, splitButton.getMenuButton().queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(publishItem, splitButtonMenuButton(splitButton).queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
                 tooltip.hide();
                 stage.close();
@@ -4091,7 +4091,7 @@ final class M3MixedPopupFocusTest {
                     "Publishes the current draft.",
                     tooltipAction
             );
-            M3SplitButton splitButton = new M3SplitButton("Create", draftItem, publishItem);
+            M3SplitButton splitButton = splitButton("Create", draftItem, publishItem);
             Stage stage = new Stage();
 
             try {
@@ -4112,7 +4112,7 @@ final class M3MixedPopupFocusTest {
                 assertTrue(splitButton.isShowing());
                 assertTrue(tooltip.isShowing());
                 assertTrue(tooltipAction.isFocused());
-                assertSame(tooltipAction, splitButton.getMenuButton().queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(tooltipAction, splitButtonMenuButton(splitButton).queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
                 assertPopupFocusRoutedByContainer(splitButton, tooltipAction);
 
                 tooltipAction.fireEvent(keyPressed(KeyCode.ESCAPE));
@@ -4143,7 +4143,7 @@ final class M3MixedPopupFocusTest {
             );
             M3SubMenuItem recentItem = new M3SubMenuItem("Recent", pdfItem, htmlItem);
             M3SubMenuItem exportItem = new M3SubMenuItem("Export", recentItem);
-            M3SplitButton splitButton = new M3SplitButton("Create", exportItem);
+            M3SplitButton splitButton = splitButton("Create", exportItem);
             Stage stage = new Stage();
 
             try {
@@ -4169,7 +4169,7 @@ final class M3MixedPopupFocusTest {
                 assertTrue(tooltip.isShowing());
                 assertTrue(tooltipAction.isFocused());
                 assertSame(tooltipAction, splitButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-                assertSame(tooltipAction, splitButton.getMenuButton().queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(tooltipAction, splitButtonMenuButton(splitButton).queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
                 assertSame(tooltipAction, exportItem.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
                 assertSame(tooltipAction, recentItem.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
                 assertPopupFocusRoutedByContainer(splitButton, tooltipAction);
@@ -4182,7 +4182,7 @@ final class M3MixedPopupFocusTest {
                 assertTrue(exportItem.isSubMenuShowing());
                 assertTrue(recentItem.isSubMenuShowing());
                 assertSame(pdfItem, splitButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-                assertSame(pdfItem, splitButton.getMenuButton().queryAccessibleAttribute(
+                assertSame(pdfItem, splitButtonMenuButton(splitButton).queryAccessibleAttribute(
                         AccessibleAttribute.FOCUS_NODE));
                 assertSame(pdfItem, exportItem.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
                 assertSame(pdfItem, recentItem.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
@@ -4199,7 +4199,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3TimePickerField field = new M3TimePickerField(LocalTime.of(8, 30));
             M3SubMenuItem scheduleItem = new M3SubMenuItem("Schedule", field);
-            M3SplitButton splitButton = new M3SplitButton("Create", scheduleItem);
+            M3SplitButton splitButton = splitButton("Create", scheduleItem);
             Stage stage = new Stage();
 
             try {
@@ -4214,7 +4214,7 @@ final class M3MixedPopupFocusTest {
 
                 assertNestedSubMenuPickerValueTargetRoutedByContainer(
                         splitButton,
-                        splitButton.getMenuButton(),
+                        splitButtonMenuButton(splitButton),
                         scheduleItem,
                         field,
                         LocalTime.of(9, 45)
@@ -4234,7 +4234,7 @@ final class M3MixedPopupFocusTest {
                     LocalDate.of(2026, 7, 12)
             );
             M3SubMenuItem scheduleItem = new M3SubMenuItem("Schedule", field);
-            M3SplitButton splitButton = new M3SplitButton("Create", scheduleItem);
+            M3SplitButton splitButton = splitButton("Create", scheduleItem);
             Stage stage = new Stage();
 
             try {
@@ -4249,7 +4249,7 @@ final class M3MixedPopupFocusTest {
 
                 assertNestedSubMenuDateRangePickerValueTargetRoutedByContainer(
                         splitButton,
-                        splitButton.getMenuButton(),
+                        splitButtonMenuButton(splitButton),
                         scheduleItem,
                         field,
                         LocalDate.of(2026, 7, 18)
@@ -5119,7 +5119,7 @@ final class M3MixedPopupFocusTest {
                     "Retries the interrupted task.",
                     tooltipAction
             );
-            M3Banner banner = new M3Banner("Connection interrupted", ownerAction);
+            M3Banner banner = banner("Connection interrupted", ownerAction);
             banner.setIcon(new M3Icon("!"));
             M3Surface surface = surface(banner);
             Stage stage = new Stage();
@@ -5175,7 +5175,7 @@ final class M3MixedPopupFocusTest {
                     "Retries the interrupted task.",
                     tooltipAction
             );
-            M3Banner banner = new M3Banner("Connection interrupted", ownerAction);
+            M3Banner banner = banner("Connection interrupted", ownerAction);
             banner.setIcon(new M3Icon("!"));
             M3Surface surface = surface(banner);
             Stage stage = new Stage();
@@ -5219,7 +5219,7 @@ final class M3MixedPopupFocusTest {
                     "Retries the interrupted task.",
                     tooltipAction
             );
-            M3Banner banner = new M3Banner("Connection interrupted", ownerAction);
+            M3Banner banner = banner("Connection interrupted", ownerAction);
             banner.setIcon(new M3Icon("!"));
             M3Surface surface = surface(banner);
             Stage stage = new Stage();
@@ -5261,7 +5261,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem saveItem = new M3MenuItem("Save");
             M3MenuItem archiveItem = new M3MenuItem("Archive");
             M3MenuButton menuButton = new M3MenuButton("Actions", saveItem, archiveItem);
-            M3Banner banner = new M3Banner("Sync required", menuButton);
+            M3Banner banner = banner("Sync required", menuButton);
             Stage stage = new Stage();
 
             try {
@@ -5302,7 +5302,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 6, 14));
             LocalDate targetDate = LocalDate.of(2026, 6, 22);
-            M3Banner banner = new M3Banner("Choose a due date", field);
+            M3Banner banner = banner("Choose a due date", field);
             Stage stage = new Stage();
 
             try {
@@ -5329,8 +5329,8 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3MenuItem draftItem = new M3MenuItem("Draft");
             M3MenuItem publishItem = new M3MenuItem("Publish");
-            M3SplitButton splitButton = new M3SplitButton("Create", draftItem, publishItem);
-            M3Banner banner = new M3Banner("Create an item", splitButton);
+            M3SplitButton splitButton = splitButton("Create", draftItem, publishItem);
+            M3Banner banner = banner("Create an item", splitButton);
             Stage stage = new Stage();
 
             try {
@@ -5356,8 +5356,8 @@ final class M3MixedPopupFocusTest {
                 publishItem.fireEvent(keyPressed(KeyCode.ESCAPE));
 
                 assertFalse(splitButton.isShowing());
-                assertTrue(splitButton.getMenuButton().isFocused());
-                assertSame(splitButton.getMenuButton(), banner.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertTrue(splitButtonMenuButton(splitButton).isFocused());
+                assertSame(splitButtonMenuButton(splitButton), banner.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
                 splitButton.hideMenu();
                 stage.close();
@@ -5372,7 +5372,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem hiddenItem = new M3MenuItem("Hidden");
             M3MenuItem disabledItem = new M3MenuItem("Disabled");
             M3MenuButton menuButton = unreachableTargetMenuButton(hiddenItem, disabledItem);
-            M3Banner banner = new M3Banner("Sync required", menuButton);
+            M3Banner banner = banner("Sync required", menuButton);
 
             assertContainerRejectsUnreachableNestedMenuPopupTargets(
                     banner,
@@ -5392,7 +5392,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem hiddenItem = new M3MenuItem("Hidden");
             M3MenuItem disabledItem = new M3MenuItem("Disabled");
             M3SplitButton splitButton = unreachableTargetSplitButton(hiddenItem, disabledItem);
-            M3Banner banner = new M3Banner("Create an item", splitButton);
+            M3Banner banner = banner("Create an item", splitButton);
 
             assertContainerRejectsUnreachableNestedSplitButtonPopupTargets(
                     banner,
@@ -5478,7 +5478,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3MenuItem draftItem = new M3MenuItem("Draft");
             M3MenuItem publishItem = new M3MenuItem("Publish");
-            M3SplitButton splitButton = new M3SplitButton("Create", draftItem, publishItem);
+            M3SplitButton splitButton = splitButton("Create", draftItem, publishItem);
             M3Card card = new M3Card(splitButton);
             Stage stage = new Stage();
 
@@ -5504,8 +5504,8 @@ final class M3MixedPopupFocusTest {
                 publishItem.fireEvent(keyPressed(KeyCode.ESCAPE));
 
                 assertFalse(splitButton.isShowing());
-                assertTrue(splitButton.getMenuButton().isFocused());
-                assertSame(splitButton.getMenuButton(), card.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertTrue(splitButtonMenuButton(splitButton).isFocused());
+                assertSame(splitButtonMenuButton(splitButton), card.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
                 splitButton.hideMenu();
                 stage.close();
@@ -5919,7 +5919,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3MenuItem draftItem = new M3MenuItem("Draft");
             M3MenuItem publishItem = new M3MenuItem("Publish");
-            M3SplitButton splitButton = new M3SplitButton("Create", draftItem, publishItem);
+            M3SplitButton splitButton = splitButton("Create", draftItem, publishItem);
             M3ListItem listItem = new M3ListItem("Template");
             listItem.setLeading(splitButton);
             Stage stage = new Stage();
@@ -5946,8 +5946,8 @@ final class M3MixedPopupFocusTest {
                 publishItem.fireEvent(keyPressed(KeyCode.ESCAPE));
 
                 assertFalse(splitButton.isShowing());
-                assertTrue(splitButton.getMenuButton().isFocused());
-                assertSame(splitButton.getMenuButton(), listItem.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertTrue(splitButtonMenuButton(splitButton).isFocused());
+                assertSame(splitButtonMenuButton(splitButton), listItem.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
                 splitButton.hideMenu();
                 stage.close();
@@ -6006,7 +6006,7 @@ final class M3MixedPopupFocusTest {
             M3MenuButton menuButton = new M3MenuButton("Actions", moveItem);
             Pane content = new Pane(menuButton);
             content.setPrefSize(260.0, 88.0);
-            M3SideSheet sheet = new M3SideSheet("Details", content);
+            M3SideSheet sheet = sideSheet("Details", content);
             sheet.setShown(false);
             Stage stage = new Stage();
 
@@ -6050,7 +6050,7 @@ final class M3MixedPopupFocusTest {
             M3MenuButton menuButton = new M3MenuButton("Actions", archiveItem);
             Pane content = new Pane(menuButton);
             content.setPrefSize(260.0, 88.0);
-            M3SideSheet sheet = new M3SideSheet("Details", content);
+            M3SideSheet sheet = sideSheet("Details", content);
             Stage stage = new Stage();
 
             try {
@@ -6103,7 +6103,7 @@ final class M3MixedPopupFocusTest {
             );
             Pane content = new Pane(ownerAction);
             content.setPrefSize(260.0, 88.0);
-            M3BottomSheet sheet = new M3BottomSheet("Queue", content);
+            M3BottomSheet sheet = bottomSheet("Queue", content);
             sheet.setShown(false);
             Stage stage = new Stage();
 
@@ -6150,7 +6150,7 @@ final class M3MixedPopupFocusTest {
             );
             Pane content = new Pane(ownerAction);
             content.setPrefSize(260.0, 88.0);
-            M3BottomSheet sheet = new M3BottomSheet("Queue", content);
+            M3BottomSheet sheet = bottomSheet("Queue", content);
             Stage stage = new Stage();
 
             try {
@@ -6202,7 +6202,7 @@ final class M3MixedPopupFocusTest {
             M3MenuButton menuButton = new M3MenuButton("Actions", moveItem);
             Pane content = new Pane(menuButton);
             content.setPrefSize(260.0, 88.0);
-            M3BottomSheet sheet = new M3BottomSheet("Queue", content);
+            M3BottomSheet sheet = bottomSheet("Queue", content);
             sheet.setShown(false);
             Stage stage = new Stage();
 
@@ -6248,7 +6248,7 @@ final class M3MixedPopupFocusTest {
             M3MenuButton menuButton = new M3MenuButton("Actions", archiveItem);
             Pane content = new Pane(menuButton);
             content.setPrefSize(260.0, 88.0);
-            M3BottomSheet sheet = new M3BottomSheet("Queue", content);
+            M3BottomSheet sheet = bottomSheet("Queue", content);
             Stage stage = new Stage();
 
             try {
@@ -6301,7 +6301,7 @@ final class M3MixedPopupFocusTest {
             );
             Pane content = new Pane(ownerAction);
             content.setPrefSize(260.0, 88.0);
-            M3SideSheet sheet = new M3SideSheet("Details", content);
+            M3SideSheet sheet = sideSheet("Details", content);
             sheet.setShown(false);
             Stage stage = new Stage();
 
@@ -6348,7 +6348,7 @@ final class M3MixedPopupFocusTest {
             );
             Pane content = new Pane(ownerAction);
             content.setPrefSize(260.0, 88.0);
-            M3SideSheet sheet = new M3SideSheet("Details", content);
+            M3SideSheet sheet = sideSheet("Details", content);
             Stage stage = new Stage();
 
             try {
@@ -6399,7 +6399,7 @@ final class M3MixedPopupFocusTest {
             M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 8, 12));
             Pane content = new Pane(field);
             content.setPrefSize(320.0, 96.0);
-            M3BottomSheet sheet = new M3BottomSheet("Schedule", content);
+            M3BottomSheet sheet = bottomSheet("Schedule", content);
             sheet.setShown(false);
             Stage stage = new Stage();
 
@@ -6435,7 +6435,7 @@ final class M3MixedPopupFocusTest {
             M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 8, 12));
             Pane content = new Pane(field);
             content.setPrefSize(320.0, 96.0);
-            M3BottomSheet sheet = new M3BottomSheet("Schedule", content);
+            M3BottomSheet sheet = bottomSheet("Schedule", content);
             Stage stage = new Stage();
 
             try {
@@ -6467,7 +6467,7 @@ final class M3MixedPopupFocusTest {
             M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 8, 12));
             Pane content = new Pane(field);
             content.setPrefSize(300.0, 96.0);
-            M3SideSheet sheet = new M3SideSheet("Schedule", content);
+            M3SideSheet sheet = sideSheet("Schedule", content);
             sheet.setShown(false);
             Stage stage = new Stage();
 
@@ -6503,7 +6503,7 @@ final class M3MixedPopupFocusTest {
             M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 8, 12));
             Pane content = new Pane(field);
             content.setPrefSize(300.0, 96.0);
-            M3SideSheet sheet = new M3SideSheet("Schedule", content);
+            M3SideSheet sheet = sideSheet("Schedule", content);
             Stage stage = new Stage();
 
             try {
@@ -6535,7 +6535,7 @@ final class M3MixedPopupFocusTest {
             M3TimePickerField field = new M3TimePickerField(LocalTime.of(8, 30));
             Pane content = new Pane(field);
             content.setPrefSize(320.0, 96.0);
-            M3BottomSheet sheet = new M3BottomSheet("Schedule", content);
+            M3BottomSheet sheet = bottomSheet("Schedule", content);
             sheet.setShown(false);
             Stage stage = new Stage();
 
@@ -6571,7 +6571,7 @@ final class M3MixedPopupFocusTest {
             M3TimePickerField field = new M3TimePickerField(LocalTime.of(8, 30));
             Pane content = new Pane(field);
             content.setPrefSize(320.0, 96.0);
-            M3BottomSheet sheet = new M3BottomSheet("Schedule", content);
+            M3BottomSheet sheet = bottomSheet("Schedule", content);
             Stage stage = new Stage();
 
             try {
@@ -6603,7 +6603,7 @@ final class M3MixedPopupFocusTest {
             M3TimePickerField field = new M3TimePickerField(LocalTime.of(9, 0));
             Pane content = new Pane(field);
             content.setPrefSize(300.0, 96.0);
-            M3SideSheet sheet = new M3SideSheet("Schedule", content);
+            M3SideSheet sheet = sideSheet("Schedule", content);
             sheet.setShown(false);
             Stage stage = new Stage();
 
@@ -6639,7 +6639,7 @@ final class M3MixedPopupFocusTest {
             M3TimePickerField field = new M3TimePickerField(LocalTime.of(9, 0));
             Pane content = new Pane(field);
             content.setPrefSize(300.0, 96.0);
-            M3SideSheet sheet = new M3SideSheet("Schedule", content);
+            M3SideSheet sheet = sideSheet("Schedule", content);
             Stage stage = new Stage();
 
             try {
@@ -6674,7 +6674,7 @@ final class M3MixedPopupFocusTest {
             );
             Pane content = new Pane(field);
             content.setPrefSize(380.0, 96.0);
-            M3BottomSheet sheet = new M3BottomSheet("Schedule", content);
+            M3BottomSheet sheet = bottomSheet("Schedule", content);
             sheet.setShown(false);
             Stage stage = new Stage();
 
@@ -6727,7 +6727,7 @@ final class M3MixedPopupFocusTest {
             );
             Pane content = new Pane(field);
             content.setPrefSize(380.0, 96.0);
-            M3BottomSheet sheet = new M3BottomSheet("Schedule", content);
+            M3BottomSheet sheet = bottomSheet("Schedule", content);
             Stage stage = new Stage();
 
             try {
@@ -6762,7 +6762,7 @@ final class M3MixedPopupFocusTest {
             );
             Pane content = new Pane(field);
             content.setPrefSize(380.0, 96.0);
-            M3SideSheet sheet = new M3SideSheet("Schedule", content);
+            M3SideSheet sheet = sideSheet("Schedule", content);
             sheet.setShown(false);
             Stage stage = new Stage();
 
@@ -6815,7 +6815,7 @@ final class M3MixedPopupFocusTest {
             );
             Pane content = new Pane(field);
             content.setPrefSize(380.0, 96.0);
-            M3SideSheet sheet = new M3SideSheet("Schedule", content);
+            M3SideSheet sheet = sideSheet("Schedule", content);
             Stage stage = new Stage();
 
             try {
@@ -6845,22 +6845,22 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3DatePickerField bottomDateField = new M3DatePickerField(LocalDate.of(2026, 8, 10));
             bottomDateField.getPicker().setMaxDate(LocalDate.of(2026, 8, 15));
-            M3BottomSheet bottomDateSheet = new M3BottomSheet("Bottom date", new Pane(bottomDateField));
+            M3BottomSheet bottomDateSheet = bottomSheet("Bottom date", new Pane(bottomDateField));
             bottomDateSheet.setShown(false);
 
             M3DatePickerField sideDateField = new M3DatePickerField(LocalDate.of(2026, 8, 10));
             sideDateField.getPicker().setMaxDate(LocalDate.of(2026, 8, 15));
-            M3SideSheet sideDateSheet = new M3SideSheet("Side date", new Pane(sideDateField));
+            M3SideSheet sideDateSheet = sideSheet("Side date", new Pane(sideDateField));
             sideDateSheet.setShown(false);
 
             M3TimePickerField bottomTimeField = new M3TimePickerField(LocalTime.of(9, 0));
             bottomTimeField.getPicker().setMaxTime(LocalTime.of(12, 0));
-            M3BottomSheet bottomTimeSheet = new M3BottomSheet("Bottom time", new Pane(bottomTimeField));
+            M3BottomSheet bottomTimeSheet = bottomSheet("Bottom time", new Pane(bottomTimeField));
             bottomTimeSheet.setShown(false);
 
             M3TimePickerField sideTimeField = new M3TimePickerField(LocalTime.of(9, 0));
             sideTimeField.getPicker().setMaxTime(LocalTime.of(12, 0));
-            M3SideSheet sideTimeSheet = new M3SideSheet("Side time", new Pane(sideTimeField));
+            M3SideSheet sideTimeSheet = sideSheet("Side time", new Pane(sideTimeField));
             sideTimeSheet.setShown(false);
 
             M3DateRangePickerField bottomRangeField = new M3DateRangePickerField(
@@ -6868,7 +6868,7 @@ final class M3MixedPopupFocusTest {
                     LocalDate.of(2026, 8, 12)
             );
             bottomRangeField.getPicker().setMaxDate(LocalDate.of(2026, 8, 15));
-            M3BottomSheet bottomRangeSheet = new M3BottomSheet("Bottom range", new Pane(bottomRangeField));
+            M3BottomSheet bottomRangeSheet = bottomSheet("Bottom range", new Pane(bottomRangeField));
             bottomRangeSheet.setShown(false);
 
             M3DateRangePickerField sideRangeField = new M3DateRangePickerField(
@@ -6876,7 +6876,7 @@ final class M3MixedPopupFocusTest {
                     LocalDate.of(2026, 8, 12)
             );
             sideRangeField.getPicker().setMaxDate(LocalDate.of(2026, 8, 15));
-            M3SideSheet sideRangeSheet = new M3SideSheet("Side range", new Pane(sideRangeField));
+            M3SideSheet sideRangeSheet = sideSheet("Side range", new Pane(sideRangeField));
             sideRangeSheet.setShown(false);
             Stage stage = new Stage();
 
@@ -6957,7 +6957,7 @@ final class M3MixedPopupFocusTest {
             M3Button bottomVisibleAction = new M3Button("Bottom visible");
             M3Button bottomHiddenAction = new M3Button("Bottom hidden");
             bottomHiddenAction.setVisible(false);
-            M3BottomSheet bottomSheet = new M3BottomSheet(
+            M3BottomSheet bottomSheet = bottomSheet(
                     "Bottom actions",
                     new StackPane(bottomVisibleAction, bottomHiddenAction)
             );
@@ -6966,7 +6966,7 @@ final class M3MixedPopupFocusTest {
             M3Button sideVisibleAction = new M3Button("Side visible");
             M3Button sideHiddenAction = new M3Button("Side hidden");
             sideHiddenAction.setVisible(false);
-            M3SideSheet sideSheet = new M3SideSheet(
+            M3SideSheet sideSheet = sideSheet(
                     "Side actions",
                     new StackPane(sideVisibleAction, sideHiddenAction)
             );
@@ -6983,7 +6983,7 @@ final class M3MixedPopupFocusTest {
             resultHiddenAction.setVisible(false);
             M3ListItem result = new M3ListItem("Result");
             result.setTrailing(new StackPane(resultVisibleAction, resultHiddenAction));
-            M3SearchView searchView = new M3SearchView("Search results", result);
+            M3SearchView searchView = searchView("Search results", result);
 
             M3Button outside = new M3Button("Outside");
             Stage stage = new Stage();
@@ -7089,7 +7089,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3MenuItem draftItem = new M3MenuItem("Draft");
             M3MenuItem publishItem = new M3MenuItem("Publish");
-            M3SplitButton splitButton = new M3SplitButton("Create", draftItem, publishItem);
+            M3SplitButton splitButton = splitButton("Create", draftItem, publishItem);
             M3SearchBar searchBar = new M3SearchBar("Search");
             searchBar.getTrailingActions().setAll(splitButton);
 
@@ -7194,7 +7194,7 @@ final class M3MixedPopupFocusTest {
             M3MenuButton menuButton = new M3MenuButton("Actions", archiveItem);
             M3ListItem result = new M3ListItem("Document");
             result.setTrailing(menuButton);
-            M3SearchView searchView = new M3SearchView("Search", result);
+            M3SearchView searchView = searchView("Search", result);
             Stage stage = new Stage();
 
             try {
@@ -7235,7 +7235,7 @@ final class M3MixedPopupFocusTest {
             M3MenuButton menuButton = new M3MenuButton("Actions", archiveItem);
             M3ListItem result = new M3ListItem("Document");
             result.setTrailing(menuButton);
-            M3SearchView searchView = new M3SearchView("Search", result);
+            M3SearchView searchView = searchView("Search", result);
             Stage stage = new Stage();
 
             try {
@@ -7270,7 +7270,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3MenuItem archiveItem = new M3MenuItem("Archive");
             M3MenuButton menuButton = new M3MenuButton("Actions", archiveItem);
-            M3SearchView searchView = new M3SearchView("Search");
+            M3SearchView searchView = searchView("Search");
             searchView.getTrailingActions().setAll(menuButton);
 
             searchView.deactivate();
@@ -7286,8 +7286,8 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3MenuItem draftItem = new M3MenuItem("Draft");
             M3MenuItem publishItem = new M3MenuItem("Publish");
-            M3SplitButton splitButton = new M3SplitButton("Create", draftItem, publishItem);
-            M3SearchView searchView = new M3SearchView("Search");
+            M3SplitButton splitButton = splitButton("Create", draftItem, publishItem);
+            M3SearchView searchView = searchView("Search");
             searchView.getTrailingActions().setAll(splitButton);
 
             searchView.deactivate();
@@ -7303,10 +7303,10 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3MenuItem draftItem = new M3MenuItem("Draft");
             M3MenuItem publishItem = new M3MenuItem("Publish");
-            M3SplitButton splitButton = new M3SplitButton("Create", draftItem, publishItem);
+            M3SplitButton splitButton = splitButton("Create", draftItem, publishItem);
             M3ListItem result = new M3ListItem("Document");
             result.setTrailing(splitButton);
-            M3SearchView searchView = new M3SearchView("Search", result);
+            M3SearchView searchView = searchView("Search", result);
 
             searchView.deactivate();
             assertFalse(searchView.isActive());
@@ -7322,7 +7322,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem hiddenItem = new M3MenuItem("Hidden");
             M3MenuItem disabledItem = new M3MenuItem("Disabled");
             M3MenuButton menuButton = unreachableTargetMenuButton(hiddenItem, disabledItem);
-            M3SearchView searchView = new M3SearchView("Search");
+            M3SearchView searchView = searchView("Search");
             searchView.getTrailingActions().setAll(menuButton);
 
             searchView.deactivate();
@@ -7346,7 +7346,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem hiddenItem = new M3MenuItem("Hidden");
             M3MenuItem disabledItem = new M3MenuItem("Disabled");
             M3SplitButton splitButton = unreachableTargetSplitButton(hiddenItem, disabledItem);
-            M3SearchView searchView = new M3SearchView("Search");
+            M3SearchView searchView = searchView("Search");
             searchView.getTrailingActions().setAll(splitButton);
 
             searchView.deactivate();
@@ -7372,7 +7372,7 @@ final class M3MixedPopupFocusTest {
             M3MenuButton menuButton = unreachableTargetMenuButton(hiddenItem, disabledItem);
             M3ListItem result = new M3ListItem("Document");
             result.setTrailing(menuButton);
-            M3SearchView searchView = new M3SearchView("Search", result);
+            M3SearchView searchView = searchView("Search", result);
 
             searchView.deactivate();
             assertFalse(searchView.isActive());
@@ -7397,7 +7397,7 @@ final class M3MixedPopupFocusTest {
             M3SplitButton splitButton = unreachableTargetSplitButton(hiddenItem, disabledItem);
             M3ListItem result = new M3ListItem("Document");
             result.setTrailing(splitButton);
-            M3SearchView searchView = new M3SearchView("Search", result);
+            M3SearchView searchView = searchView("Search", result);
 
             searchView.deactivate();
             assertFalse(searchView.isActive());
@@ -7427,7 +7427,7 @@ final class M3MixedPopupFocusTest {
             );
             M3ListItem result = new M3ListItem("Document");
             result.setTrailing(ownerAction);
-            M3SearchView searchView = new M3SearchView("Search", result);
+            M3SearchView searchView = searchView("Search", result);
             Stage stage = new Stage();
 
             try {
@@ -7468,7 +7468,7 @@ final class M3MixedPopupFocusTest {
                     "Shows search view options.",
                     tooltipAction
             );
-            M3SearchView searchView = new M3SearchView("Search");
+            M3SearchView searchView = searchView("Search");
             searchView.getTrailingActions().setAll(ownerAction);
             Stage stage = new Stage();
 
@@ -7504,7 +7504,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 6, 14));
             LocalDate targetDate = LocalDate.of(2026, 6, 25);
-            M3SearchView searchView = new M3SearchView("Search schedule");
+            M3SearchView searchView = searchView("Search schedule");
             searchView.getTrailingActions().setAll(field);
             Stage stage = new Stage();
 
@@ -7533,7 +7533,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3TimePickerField field = new M3TimePickerField(LocalTime.of(9, 30));
             LocalTime targetTime = LocalTime.of(13, 45);
-            M3SearchView searchView = new M3SearchView("Search schedule");
+            M3SearchView searchView = searchView("Search schedule");
             searchView.getTrailingActions().setAll(field);
             Stage stage = new Stage();
 
@@ -7564,7 +7564,7 @@ final class M3MixedPopupFocusTest {
                     LocalDate.of(2026, 6, 14),
                     LocalDate.of(2026, 6, 18)
             );
-            M3SearchView searchView = new M3SearchView("Search schedule");
+            M3SearchView searchView = searchView("Search schedule");
             searchView.getTrailingActions().setAll(field);
             Stage stage = new Stage();
 
@@ -7598,7 +7598,7 @@ final class M3MixedPopupFocusTest {
             LocalDate targetDate = LocalDate.of(2026, 6, 26);
             Pane result = new Pane(field);
             result.setPrefSize(640.0, 96.0);
-            M3SearchView searchView = new M3SearchView("Search schedule", result);
+            M3SearchView searchView = searchView("Search schedule", result);
             Stage stage = new Stage();
 
             try {
@@ -7629,7 +7629,7 @@ final class M3MixedPopupFocusTest {
             LocalTime targetTime = LocalTime.of(14, 30);
             Pane result = new Pane(field);
             result.setPrefSize(640.0, 96.0);
-            M3SearchView searchView = new M3SearchView("Search schedule", result);
+            M3SearchView searchView = searchView("Search schedule", result);
             Stage stage = new Stage();
 
             try {
@@ -7662,7 +7662,7 @@ final class M3MixedPopupFocusTest {
             );
             Pane result = new Pane(field);
             result.setPrefSize(640.0, 96.0);
-            M3SearchView searchView = new M3SearchView("Search schedule", result);
+            M3SearchView searchView = searchView("Search schedule", result);
             Stage stage = new Stage();
 
             try {
@@ -8491,7 +8491,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem saveItem = new M3MenuItem("Save");
             M3MenuItem archiveItem = new M3MenuItem("Archive");
             M3MenuButton menuButton = new M3MenuButton("Actions", saveItem, archiveItem);
-            M3TopAppBar appBar = new M3TopAppBar("Project", (Node) null, menuButton);
+            M3TopAppBar appBar = topAppBar("Project", (Node) null, menuButton);
             Stage stage = new Stage();
 
             try {
@@ -8524,7 +8524,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem saveItem = new M3MenuItem("Save");
             M3MenuItem archiveItem = new M3MenuItem("Archive");
             M3MenuButton menuButton = new M3MenuButton("Actions", saveItem, archiveItem);
-            M3TopAppBar appBar = new M3TopAppBar("Project", (Node) null, menuButton);
+            M3TopAppBar appBar = topAppBar("Project", (Node) null, menuButton);
             Stage stage = new Stage();
 
             try {
@@ -8561,8 +8561,8 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3MenuItem draftItem = new M3MenuItem("Draft");
             M3MenuItem publishItem = new M3MenuItem("Publish");
-            M3SplitButton splitButton = new M3SplitButton("Create", draftItem, publishItem);
-            M3TopAppBar appBar = new M3TopAppBar("Project", (Node) null, splitButton);
+            M3SplitButton splitButton = splitButton("Create", draftItem, publishItem);
+            M3TopAppBar appBar = topAppBar("Project", (Node) null, splitButton);
 
             assertContainerRevealsNestedSplitButtonPopupTarget(appBar, splitButton, publishItem, 640.0, 72.0);
         });
@@ -8575,7 +8575,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem saveItem = new M3MenuItem("Save");
             M3MenuItem archiveItem = new M3MenuItem("Archive");
             M3MenuButton menuButton = new M3MenuButton("Actions", saveItem, archiveItem);
-            M3BottomAppBar appBar = new M3BottomAppBar(new M3Button("Search"), menuButton);
+            M3BottomAppBar appBar = bottomAppBar(new M3Button("Search"), menuButton);
 
             assertContainerRevealsNestedMenuPopupTarget(appBar, menuButton, archiveItem, 640.0, 96.0);
         });
@@ -8587,8 +8587,8 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3MenuItem draftItem = new M3MenuItem("Draft");
             M3MenuItem publishItem = new M3MenuItem("Publish");
-            M3SplitButton splitButton = new M3SplitButton("Create", draftItem, publishItem);
-            M3BottomAppBar appBar = new M3BottomAppBar(new M3Button("Search"), splitButton);
+            M3SplitButton splitButton = splitButton("Create", draftItem, publishItem);
+            M3BottomAppBar appBar = bottomAppBar(new M3Button("Search"), splitButton);
 
             assertContainerRevealsNestedSplitButtonPopupTarget(appBar, splitButton, publishItem, 640.0, 96.0);
         });
@@ -8613,7 +8613,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3MenuItem draftItem = new M3MenuItem("Draft");
             M3MenuItem publishItem = new M3MenuItem("Publish");
-            M3SplitButton splitButton = new M3SplitButton("Create", draftItem, publishItem);
+            M3SplitButton splitButton = splitButton("Create", draftItem, publishItem);
             M3Toolbar toolbar = toolbar(new M3Button("Back"), splitButton, new M3Button("Share"));
 
             assertContainerRevealsNestedSplitButtonPopupTarget(toolbar, splitButton, publishItem, 560.0, 72.0);
@@ -8627,7 +8627,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem hiddenItem = new M3MenuItem("Hidden");
             M3MenuItem disabledItem = new M3MenuItem("Disabled");
             M3MenuButton menuButton = unreachableTargetMenuButton(hiddenItem, disabledItem);
-            M3TopAppBar appBar = new M3TopAppBar("Project", (Node) null, menuButton);
+            M3TopAppBar appBar = topAppBar("Project", (Node) null, menuButton);
 
             assertContainerRejectsUnreachableNestedMenuPopupTargets(
                     appBar,
@@ -8647,7 +8647,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem hiddenItem = new M3MenuItem("Hidden");
             M3MenuItem disabledItem = new M3MenuItem("Disabled");
             M3SplitButton splitButton = unreachableTargetSplitButton(hiddenItem, disabledItem);
-            M3TopAppBar appBar = new M3TopAppBar("Project", (Node) null, splitButton);
+            M3TopAppBar appBar = topAppBar("Project", (Node) null, splitButton);
 
             assertContainerRejectsUnreachableNestedSplitButtonPopupTargets(
                     appBar,
@@ -8667,7 +8667,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem hiddenItem = new M3MenuItem("Hidden");
             M3MenuItem disabledItem = new M3MenuItem("Disabled");
             M3MenuButton menuButton = unreachableTargetMenuButton(hiddenItem, disabledItem);
-            M3BottomAppBar appBar = new M3BottomAppBar(new M3Button("Search"), menuButton);
+            M3BottomAppBar appBar = bottomAppBar(new M3Button("Search"), menuButton);
 
             assertContainerRejectsUnreachableNestedMenuPopupTargets(
                     appBar,
@@ -8687,7 +8687,7 @@ final class M3MixedPopupFocusTest {
             M3MenuItem hiddenItem = new M3MenuItem("Hidden");
             M3MenuItem disabledItem = new M3MenuItem("Disabled");
             M3SplitButton splitButton = unreachableTargetSplitButton(hiddenItem, disabledItem);
-            M3BottomAppBar appBar = new M3BottomAppBar(new M3Button("Search"), splitButton);
+            M3BottomAppBar appBar = bottomAppBar(new M3Button("Search"), splitButton);
 
             assertContainerRejectsUnreachableNestedSplitButtonPopupTargets(
                     appBar,
@@ -8752,7 +8752,7 @@ final class M3MixedPopupFocusTest {
                     "Shows navigation details.",
                     tooltipAction
             );
-            M3TopAppBar appBar = new M3TopAppBar("Project", navigation);
+            M3TopAppBar appBar = topAppBar("Project", navigation);
             Stage stage = new Stage();
 
             try {
@@ -8791,7 +8791,7 @@ final class M3MixedPopupFocusTest {
                     "Shows project actions.",
                     tooltipAction
             );
-            M3TopAppBar appBar = new M3TopAppBar("Project", (Node) null, ownerAction);
+            M3TopAppBar appBar = topAppBar("Project", (Node) null, ownerAction);
             Stage stage = new Stage();
 
             try {
@@ -8835,7 +8835,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3MenuItem archiveItem = new M3MenuItem("Archive");
             M3MenuButton floatingAction = new M3MenuButton("Create", archiveItem);
-            M3BottomAppBar appBar = new M3BottomAppBar(
+            M3BottomAppBar appBar = bottomAppBar(
                     M3BottomAppBarFloatingActionAlignment.END,
                     floatingAction,
                     new M3Button("Search")
@@ -8879,7 +8879,7 @@ final class M3MixedPopupFocusTest {
                     "Shows creation details.",
                     tooltipAction
             );
-            M3BottomAppBar appBar = new M3BottomAppBar(
+            M3BottomAppBar appBar = bottomAppBar(
                     M3BottomAppBarFloatingActionAlignment.END,
                     floatingAction,
                     new M3Button("Search")
@@ -9380,7 +9380,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 6, 14));
             LocalDate targetDate = LocalDate.of(2026, 6, 18);
-            M3TopAppBar appBar = new M3TopAppBar("Schedule", (Node) null, field);
+            M3TopAppBar appBar = topAppBar("Schedule", (Node) null, field);
             Stage stage = new Stage();
 
             try {
@@ -9406,7 +9406,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3DatePickerField field = new M3DatePickerField(LocalDate.of(2026, 6, 14));
             LocalDate targetDate = LocalDate.of(2026, 6, 20);
-            M3BottomAppBar appBar = new M3BottomAppBar(new M3Button("Search"), field);
+            M3BottomAppBar appBar = bottomAppBar(new M3Button("Search"), field);
             Stage stage = new Stage();
 
             try {
@@ -9433,7 +9433,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3TimePickerField field = new M3TimePickerField(LocalTime.of(9, 30));
             LocalTime targetTime = LocalTime.of(10, 45);
-            M3TopAppBar appBar = new M3TopAppBar("Schedule", (Node) null, field);
+            M3TopAppBar appBar = topAppBar("Schedule", (Node) null, field);
             Stage stage = new Stage();
 
             try {
@@ -9460,7 +9460,7 @@ final class M3MixedPopupFocusTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3TimePickerField field = new M3TimePickerField(LocalTime.of(9, 30));
             LocalTime targetTime = LocalTime.of(11, 15);
-            M3BottomAppBar appBar = new M3BottomAppBar(new M3Button("Search"), field);
+            M3BottomAppBar appBar = bottomAppBar(new M3Button("Search"), field);
             Stage stage = new Stage();
 
             try {
@@ -9571,7 +9571,7 @@ final class M3MixedPopupFocusTest {
                     LocalDate.of(2026, 6, 14),
                     LocalDate.of(2026, 6, 18)
             );
-            M3TopAppBar appBar = new M3TopAppBar("Schedule", (Node) null, field);
+            M3TopAppBar appBar = topAppBar("Schedule", (Node) null, field);
             Stage stage = new Stage();
 
             try {
@@ -9603,7 +9603,7 @@ final class M3MixedPopupFocusTest {
                     LocalDate.of(2026, 6, 14),
                     LocalDate.of(2026, 6, 18)
             );
-            M3BottomAppBar appBar = new M3BottomAppBar(new M3Button("Search"), field);
+            M3BottomAppBar appBar = bottomAppBar(new M3Button("Search"), field);
             Stage stage = new Stage();
 
             try {
@@ -9705,7 +9705,7 @@ final class M3MixedPopupFocusTest {
 
             M3DatePickerField resultField = new M3DatePickerField(LocalDate.of(2026, 6, 14));
             resultField.getPicker().setMaxDate(LocalDate.of(2026, 6, 18));
-            M3SearchView searchView = new M3SearchView("Search results", new Pane(resultField));
+            M3SearchView searchView = searchView("Search results", new Pane(resultField));
             searchView.setActive(false);
             Stage stage = new Stage();
 
@@ -9845,8 +9845,8 @@ final class M3MixedPopupFocusTest {
             targetItem.fireEvent(keyPressed(KeyCode.ESCAPE));
 
             assertFalse(splitButton.isShowing());
-            assertTrue(splitButton.getMenuButton().isFocused());
-            assertSame(splitButton.getMenuButton(), container.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            assertTrue(splitButtonMenuButton(splitButton).isFocused());
+            assertSame(splitButtonMenuButton(splitButton), container.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
         } finally {
             splitButton.hideMenu();
             stage.close();
@@ -9860,11 +9860,27 @@ final class M3MixedPopupFocusTest {
         return new M3MenuButton("Actions", hiddenItem, disabledItem, new M3MenuItem("Visible"));
     }
 
+    /// Returns the primary action part exposed by a split button.
+    private static M3Button splitButtonActionButton(M3SplitButton splitButton) {
+        return assertInstanceOf(
+                M3Button.class,
+                splitButton.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0)
+        );
+    }
+
+    /// Returns the menu part exposed by a split button.
+    private static M3MenuButton splitButtonMenuButton(M3SplitButton splitButton) {
+        return assertInstanceOf(
+                M3MenuButton.class,
+                splitButton.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1)
+        );
+    }
+
     /// Creates a split button with one hidden and one disabled target item.
     private static M3SplitButton unreachableTargetSplitButton(M3MenuItem hiddenItem, M3MenuItem disabledItem) {
         hiddenItem.setVisible(false);
         disabledItem.setDisable(true);
-        return new M3SplitButton("Create", hiddenItem, disabledItem, new M3MenuItem("Visible"));
+        return splitButton("Create", hiddenItem, disabledItem, new M3MenuItem("Visible"));
     }
 
     /// Verifies menu-target rejection through one container without opening the menu or moving focus.
@@ -10404,7 +10420,7 @@ final class M3MixedPopupFocusTest {
             String supportingText,
             Node... actions
     ) {
-        M3RichTooltip tooltip = new M3RichTooltip(title, supportingText, actions);
+        M3RichTooltip tooltip = richTooltip(title, supportingText, actions);
         M3Tooltip.install(node, tooltip);
         return tooltip;
     }

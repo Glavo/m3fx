@@ -1473,7 +1473,7 @@ public final class M3FXDemoApp extends Application {
         M3DatePickerField field = new M3DatePickerField(today);
         field.setLabelText("Event date");
         field.setSupportingText("Editable ISO date with popup calendar");
-        field.getEditor().setVariant(M3TextInputVariant.OUTLINED);
+        field.setVariant(M3TextInputVariant.OUTLINED);
         field.getPresets().setAll(M3DatePresets.common(today));
         field.setPrefWidth(320.0);
         field.setMaxWidth(320.0);
@@ -1481,7 +1481,7 @@ public final class M3FXDemoApp extends Application {
         M3DatePickerField boundedField = new M3DatePickerField(today.plusDays(2));
         boundedField.setLabelText("Booking date");
         boundedField.setSupportingText("Limited to the next two weeks");
-        boundedField.getEditor().setVariant(M3TextInputVariant.FILLED);
+        boundedField.setVariant(M3TextInputVariant.FILLED);
         boundedField.getPicker().setMinDate(today);
         boundedField.getPicker().setMaxDate(today.plusDays(14));
         boundedField.getPresets().setAll(
@@ -1497,8 +1497,8 @@ public final class M3FXDemoApp extends Application {
         rangeField.setEndLabelText("End date");
         rangeField.setStartSupportingText("Editable range start");
         rangeField.setEndSupportingText("Editable range end");
-        rangeField.getStartEditor().setVariant(M3TextInputVariant.OUTLINED);
-        rangeField.getEndEditor().setVariant(M3TextInputVariant.OUTLINED);
+        rangeField.setStartVariant(M3TextInputVariant.OUTLINED);
+        rangeField.setEndVariant(M3TextInputVariant.OUTLINED);
         rangeField.getPicker().setMinDate(today.minusDays(7));
         rangeField.getPicker().setMaxDate(today.plusDays(30));
         rangeField.getPresets().setAll(M3DateRangePresets.common(today, rangeField.getPicker().getFirstDayOfWeek()));
@@ -1541,7 +1541,7 @@ public final class M3FXDemoApp extends Application {
         M3TimePickerField field = new M3TimePickerField(LocalTime.of(10, 30));
         field.setLabelText("Start time");
         field.setSupportingText("Editable 24-hour time with popup picker");
-        field.getEditor().setVariant(M3TextInputVariant.OUTLINED);
+        field.setVariant(M3TextInputVariant.OUTLINED);
         field.getPicker().setUse24HourClock(true);
         field.getPicker().setMinuteStep(15);
         field.getPresets().setAll(M3TimePresets.common(LocalTime.of(10, 30)));
@@ -1551,7 +1551,7 @@ public final class M3FXDemoApp extends Application {
         M3TimePickerField boundedField = new M3TimePickerField(LocalTime.of(9, 30));
         boundedField.setLabelText("Office hours");
         boundedField.setSupportingText("Limited to 09:00 through 17:30");
-        boundedField.getEditor().setVariant(M3TextInputVariant.FILLED);
+        boundedField.setVariant(M3TextInputVariant.FILLED);
         boundedField.getPicker().setMinTime(LocalTime.of(9, 0));
         boundedField.getPicker().setMaxTime(LocalTime.of(17, 30));
         boundedField.getPicker().setMinuteStep(30);
@@ -2133,9 +2133,11 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the side sheet component page.
     private Node createSideSheetsPage() {
-        M3SideSheet sideSheet = new M3SideSheet("Details", createSheetContent(), createIconButton("close"));
+        M3SideSheet sideSheet = new M3SideSheet("Details", createSheetContent());
+        sideSheet.getActions().add(createIconButton("close"));
 
-        M3SideSheet modalSideSheet = new M3SideSheet("Filters", createSheetContent(), createIconButton("close"));
+        M3SideSheet modalSideSheet = new M3SideSheet("Filters", createSheetContent());
+        modalSideSheet.getActions().add(createIconButton("close"));
         modalSideSheet.setVariant(M3SheetVariant.MODAL);
 
         return createGallery(
@@ -2145,7 +2147,8 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the bottom sheet component page.
     private Node createBottomSheetsPage() {
-        M3BottomSheet bottomSheet = new M3BottomSheet("Now playing", createSheetContent(), createIconButton("close"));
+        M3BottomSheet bottomSheet = new M3BottomSheet("Now playing", createSheetContent());
+        bottomSheet.getActions().add(createIconButton("close"));
         bottomSheet.setPrefWidth(520.0);
 
         M3BottomSheet compactBottomSheet = new M3BottomSheet("Compact", createSheetContent());
@@ -2374,7 +2377,9 @@ public final class M3FXDemoApp extends Application {
 
         M3FormSection account = new M3FormSection(
                 "Account",
-                "Common fields use the same label column and content alignment.",
+                "Common fields use the same label column and content alignment."
+        );
+        account.getContent().addAll(
                 new M3FormRow("Display name", "Primary profile label", displayNameLayout),
                 new M3FormRow("Email", "Validated on focus loss", emailLayout),
                 new M3FormRow("Availability", "Editable start and end dates", availability)
@@ -2382,7 +2387,9 @@ public final class M3FXDemoApp extends Application {
 
         M3FormSection preferences = new M3FormSection(
                 "Preferences",
-                "Boolean settings keep labels aligned with selection controls.",
+                "Boolean settings keep labels aligned with selection controls."
+        );
+        preferences.getContent().addAll(
                 new M3FormRow("Notifications", "Receive product and release updates", notifications),
                 new M3FormRow("Beta channel", "Tri-state checkbox in a form row", beta)
         );
@@ -2419,9 +2426,9 @@ public final class M3FXDemoApp extends Application {
 
         M3FormSection validation = new M3FormSection(
                 "Validation",
-                "Group-level validation keeps form feedback and focus movement coordinated.",
-                new M3FormRow("Actions", "Validate all registered inputs", validationActions)
+                "Group-level validation keeps form feedback and focus movement coordinated."
         );
+        validation.getContent().add(new M3FormRow("Actions", "Validate all registered inputs", validationActions));
 
         validator.validate();
 
@@ -2459,14 +2466,12 @@ public final class M3FXDemoApp extends Application {
         M3Button actionButton = new M3Button("Open", M3ButtonVariant.TEXT);
         actionButton.setOnAction(event -> showSnackbar("Theme-aware snackbar"));
         M3Button richAction = new M3Button("Rich action", M3ButtonVariant.OUTLINED);
-        M3Tooltip.install(
-                richAction,
-                new M3RichTooltip(
-                        "Generated theme",
-                        "The tooltip can inherit the owning scene theme and expose action nodes in the content surface.",
-                        actionButton
-                )
+        M3RichTooltip richActionTooltip = new M3RichTooltip(
+                "Generated theme",
+                "The tooltip can inherit the owning scene theme and expose action nodes in the content surface."
         );
+        richActionTooltip.getActions().add(actionButton);
+        M3Tooltip.install(richAction, richActionTooltip);
 
         return createGallery(
                 createShowcaseGroup("Plain", plain, longText, iconButton),
@@ -2655,8 +2660,8 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates a split button configured with the requested variant.
     private M3SplitButton createSplitButton(String text, M3ButtonVariant variant) {
-        M3SplitButton splitButton = new M3SplitButton(
-                text,
+        M3SplitButton splitButton = new M3SplitButton(text);
+        splitButton.getItems().addAll(
                 new M3MenuItem("Duplicate"),
                 new M3MenuItem("Move"),
                 new M3MenuItem("Delete")
@@ -3055,9 +3060,12 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates a bottom app bar sample.
     private static M3BottomAppBar createBottomAppBar() {
-        M3BottomAppBar bottomAppBar = new M3BottomAppBar(
-                M3BottomAppBarFloatingActionAlignment.END,
-                createFab("add", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.REGULAR),
+        M3BottomAppBar bottomAppBar = new M3BottomAppBar();
+        bottomAppBar.setFloatingActionAlignment(M3BottomAppBarFloatingActionAlignment.END);
+        bottomAppBar.setFloatingAction(
+                createFab("add", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.REGULAR)
+        );
+        bottomAppBar.getActions().addAll(
                 createTrailingAppBarIconButton("search"),
                 createTrailingAppBarIconButton("favorite")
         );

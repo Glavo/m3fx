@@ -77,6 +77,7 @@ import javafx.scene.shape.SVGPath;
 import javafx.scene.shape.Shape;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.glavo.m3fx.internal.M3SelectionNavigation;
@@ -93,6 +94,7 @@ import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3DisclosureIcon;
 import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3ListViewCell;
+import org.glavo.m3fx.internal.M3ModalFocusTrap;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
 import org.glavo.m3fx.internal.M3PopupStyles;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -169,6 +171,7 @@ import java.time.LocalTime;
 import java.time.YearMonth;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -445,7 +448,7 @@ final class M3ControlStyleTest {
                     new M3Button("One", M3ButtonVariant.TONAL),
                     new M3Button("Two", M3ButtonVariant.TONAL)
             );
-            M3SplitButton splitButton = new M3SplitButton("Split", new M3MenuItem("Split item"));
+            M3SplitButton splitButton = splitButton("Split", new M3MenuItem("Split item"));
             M3FloatingActionButton smallFab = new M3FloatingActionButton(new M3Icon("+"));
             smallFab.setSize(M3FloatingActionButtonSize.SMALL);
             M3FloatingActionButton largeFab = new M3FloatingActionButton(new M3Icon("*"));
@@ -542,8 +545,8 @@ final class M3ControlStyleTest {
             M3Card card = new M3Card(new Label("Card"), M3CardVariant.FILLED);
             M3Scrim scrim = new M3Scrim();
             scrim.setPrefSize(120.0, 80.0);
-            M3BottomSheet bottomSheet = new M3BottomSheet("Bottom sheet", new Label("Sheet content"), new M3Button("Done"));
-            M3SideSheet sideSheet = new M3SideSheet("Side sheet", new Label("Sheet content"), new M3Button("Close"));
+            M3BottomSheet bottomSheet = bottomSheet("Bottom sheet", new Label("Sheet content"), new M3Button("Done"));
+            M3SideSheet sideSheet = sideSheet("Side sheet", new Label("Sheet content"), new M3Button("Close"));
             M3Carousel carousel = carousel(
                     new M3Card(new Label("One")),
                     new M3Card(new Label("Two")),
@@ -564,7 +567,7 @@ final class M3ControlStyleTest {
             M3SearchBar searchBar = new M3SearchBar("Search");
             searchBar.setText("Query");
             searchBar.setActive(true);
-            M3SearchView searchView = new M3SearchView(
+            M3SearchView searchView = searchView(
                     "Search view",
                     new M3ListItem("Result A"),
                     new M3ListItem("Result B")
@@ -591,7 +594,7 @@ final class M3ControlStyleTest {
             M3LoadingIndicator containedLoadingIndicator = new M3LoadingIndicator();
             containedLoadingIndicator.setVariant(M3LoadingIndicatorVariant.CONTAINED);
 
-            M3Banner banner = new M3Banner("Banner", new M3Button("Action", M3ButtonVariant.TEXT));
+            M3Banner banner = banner("Banner", new M3Button("Action", M3ButtonVariant.TEXT));
             M3SnackbarHost snackbarHost = new M3SnackbarHost();
             snackbarHost.setDisplayDuration(Duration.INDEFINITE);
             M3Snackbar standaloneSnackbar = new M3Snackbar("Standalone snackbar", "Action");
@@ -599,14 +602,14 @@ final class M3ControlStyleTest {
             dialogPane.setHeaderText("Dialog");
             dialogPane.setContentText("Dialog content");
             dialogPane.getButtonTypes().setAll(ButtonType.OK, ButtonType.CANCEL);
-            M3TopAppBar topAppBar = new M3TopAppBar(
+            M3TopAppBar topAppBar = topAppBar(
                     "Top app bar",
                     M3TopAppBarVariant.MEDIUM,
                     new M3IconButton(new M3Icon("M")),
                     new M3IconButton(new M3Icon("S"))
             );
             topAppBar.setScrolledUnder(true);
-            M3BottomAppBar bottomAppBar = new M3BottomAppBar(
+            M3BottomAppBar bottomAppBar = bottomAppBar(
                     M3BottomAppBarFloatingActionAlignment.END,
                     new M3FloatingActionButton(new M3Icon("+")),
                     new M3IconButton(new M3Icon("A")),
@@ -615,7 +618,7 @@ final class M3ControlStyleTest {
             M3Toolbar toolbar = toolbar(new M3IconButton(new M3Icon("B")), new M3IconButton(new M3Icon("I")));
             toolbar.setVariant(M3ToolbarVariant.FLOATING);
             M3FormRow formRow = new M3FormRow("Field", "Supporting", new M3TextField("Value"));
-            M3FormSection formSection = new M3FormSection("Section", "Supporting", formRow);
+            M3FormSection formSection = formSection("Section", "Supporting", formRow);
             M3FormPane formPane = formPane(formSection);
             M3ValidationSummary validationSummary = new M3ValidationSummary();
             validationSummary.setShowWhenValid(true);
@@ -773,7 +776,7 @@ final class M3ControlStyleTest {
                 M3Button plainOwner = new M3Button("Plain owner");
                 M3Button richOwner = new M3Button("Rich owner");
                 M3Tooltip plainTooltip = new M3Tooltip("Plain tooltip");
-                M3RichTooltip richTooltip = new M3RichTooltip(
+                M3RichTooltip richTooltip = richTooltip(
                         "Rich tooltip",
                         "Standalone rich tooltip content",
                         new M3Button("Action", M3ButtonVariant.TEXT)
@@ -1679,7 +1682,7 @@ final class M3ControlStyleTest {
             assertEquals(6.0, progressBar.getWaveAmplitude(), 0.0001);
         });
 
-        M3BottomAppBar bottomAppBar = new M3BottomAppBar();
+        M3BottomAppBar bottomAppBar = bottomAppBar();
         assertBoundRegionMetricsPreserved(bottomAppBar, () -> {
             bottomAppBar.setContainerHeight(88.0);
             bottomAppBar.setHorizontalPadding(20.0);
@@ -1688,7 +1691,7 @@ final class M3ControlStyleTest {
             assertEquals(20.0, bottomAppBar.getHorizontalPadding(), 0.0001);
         });
 
-        M3TopAppBar topAppBar = new M3TopAppBar("Title");
+        M3TopAppBar topAppBar = topAppBar("Title");
         assertBoundRegionMetricsPreserved(topAppBar, () -> {
             topAppBar.setContainerHeight(72.0);
             topAppBar.setHorizontalPadding(20.0);
@@ -1725,7 +1728,7 @@ final class M3ControlStyleTest {
             assertEquals(520.0, dialogPane.getContainerMaxWidth(), 0.0001);
         });
 
-        M3Banner banner = new M3Banner("Message");
+        M3Banner banner = banner("Message");
         assertBoundRegionMetricsPreserved(banner, () -> {
             banner.setContainerMinHeight(92.0);
             banner.setVerticalPadding(22.0);
@@ -1743,11 +1746,11 @@ final class M3ControlStyleTest {
         assertGeneratedThemeCssPreservesBoundRegionMetrics(new M3ValidationSummary());
         assertGeneratedThemeCssPreservesBoundRegionMetrics(new M3Menu(new M3MenuItem("Item")));
         assertGeneratedThemeCssPreservesBoundRegionMetrics(new M3DialogPane());
-        assertGeneratedThemeCssPreservesBoundRegionMetrics(new M3Banner("Message"));
-        assertGeneratedThemeCssPreservesBoundRegionMetrics(new M3SideSheet("Details", new Label("Side content")));
-        assertGeneratedThemeCssPreservesBoundRegionMetrics(new M3BottomSheet("Queue", new Label("Bottom content")));
-        assertGeneratedThemeCssPreservesBoundRegionMetrics(new M3TopAppBar("Title"));
-        assertGeneratedThemeCssPreservesBoundRegionMetrics(new M3BottomAppBar());
+        assertGeneratedThemeCssPreservesBoundRegionMetrics(banner("Message"));
+        assertGeneratedThemeCssPreservesBoundRegionMetrics(sideSheet("Details", new Label("Side content")));
+        assertGeneratedThemeCssPreservesBoundRegionMetrics(bottomSheet("Queue", new Label("Bottom content")));
+        assertGeneratedThemeCssPreservesBoundRegionMetrics(topAppBar("Title"));
+        assertGeneratedThemeCssPreservesBoundRegionMetrics(bottomAppBar());
         assertGeneratedThemeCssPreservesBoundRegionMetrics(navigationBar(new M3NavigationItem("Home")));
         assertGeneratedThemeCssPreservesBoundRegionMetrics(navigationRail(new M3NavigationItem("Home")));
         assertGeneratedThemeCssPreservesBoundRegionMetrics(navigationDrawer(new M3ListItem("Home")));
@@ -2427,9 +2430,9 @@ final class M3ControlStyleTest {
         assertTrue(third.getStyleClass().contains(M3ButtonGroup.SINGLE_BUTTON_STYLE_CLASS));
     }
 
-    /// Verifies that button groups mirror physical edge style classes for right-to-left layout.
+    /// Verifies that button groups keep logical edge style classes for right-to-left painting.
     @Test
-    void buttonGroupMirrorsPositionStyleClassesForRightToLeft() {
+    void buttonGroupKeepsLogicalPositionStyleClassesForRightToLeft() {
         M3Button first = new M3Button("Archive");
         M3Button second = new M3Button("Share");
         M3Button third = new M3Button("Edit");
@@ -2437,9 +2440,9 @@ final class M3ControlStyleTest {
 
         group.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
 
-        assertTrue(first.getStyleClass().contains(M3ButtonGroup.LAST_BUTTON_STYLE_CLASS));
+        assertTrue(first.getStyleClass().contains(M3ButtonGroup.FIRST_BUTTON_STYLE_CLASS));
         assertTrue(second.getStyleClass().contains(M3ButtonGroup.MIDDLE_BUTTON_STYLE_CLASS));
-        assertTrue(third.getStyleClass().contains(M3ButtonGroup.FIRST_BUTTON_STYLE_CLASS));
+        assertTrue(third.getStyleClass().contains(M3ButtonGroup.LAST_BUTTON_STYLE_CLASS));
 
         group.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
 
@@ -2868,12 +2871,12 @@ final class M3ControlStyleTest {
                     new M3Button("Toolbar two")
             );
             assertMutableListRejectsNull(
-                    new M3TopAppBar().getActions(),
+                    topAppBar().getActions(),
                     new M3Button("A"),
                     new M3Button("B")
             );
             assertMutableListRejectsNull(
-                    new M3BottomAppBar().getActions(),
+                    bottomAppBar().getActions(),
                     new M3Button("A"),
                     new M3Button("B")
             );
@@ -2908,17 +2911,17 @@ final class M3ControlStyleTest {
                     new M3TimePreset("Evening", LocalTime.of(18, 0))
             );
             assertMutableListRejectsNull(
-                    new M3Banner().getActions(),
+                    banner().getActions(),
                     new M3Button("Dismiss"),
                     new M3Button("Retry")
             );
             assertMutableListRejectsNull(
-                    new M3BottomSheet().getActions(),
+                    bottomSheet().getActions(),
                     new M3Button("Cancel"),
                     new M3Button("Apply")
             );
             assertMutableListRejectsNull(
-                    new M3SideSheet().getActions(),
+                    sideSheet().getActions(),
                     new M3Button("Cancel"),
                     new M3Button("Apply")
             );
@@ -2929,11 +2932,11 @@ final class M3ControlStyleTest {
             );
             assertMutableListRejectsNull(
                     new M3FormPane().getItems(),
-                    new M3FormSection("First"),
-                    new M3FormSection("Second")
+                    formSection("First"),
+                    formSection("Second")
             );
             assertMutableListRejectsNull(
-                    new M3FormSection("Section").getContent(),
+                    formSection("Section").getContent(),
                     new M3FormRow("First", new M3TextField()),
                     new M3FormRow("Second", new M3TextField())
             );
@@ -3013,7 +3016,7 @@ final class M3ControlStyleTest {
                     new M3MenuItem("Save")
             );
             assertMutableListRejectsNull(
-                    new M3RichTooltip().getActions(),
+                    richTooltip().getActions(),
                     new M3Button("Action"),
                     new M3Button("More")
             );
@@ -3033,18 +3036,35 @@ final class M3ControlStyleTest {
                     new M3Button("B")
             );
             assertMutableListRejectsNull(
-                    new M3SearchView().getResults(),
+                    searchView().getResults(),
                     new M3ListItem("First"),
                     new M3ListItem("Second")
             );
             assertMutableListRejectsNull(
-                    new M3SearchView().getTrailingActions(),
+                    searchView().getTrailingActions(),
                     new M3Button("A"),
                     new M3Button("B")
             );
         });
     }
 
+    /// Verifies reviewed public batch constructors reject null arrays and elements before storing content.
+    @Test
+    @SuppressWarnings("DataFlowIssue")
+    void publicBatchConstructorsRejectNullInputs() {
+        M3MenuItem open = new M3MenuItem("Open");
+        M3TextInputLayout input = new M3TextInputLayout(new M3TextField("Name"));
+
+        assertThrows(NullPointerException.class, () -> new M3Menu((Node[]) null));
+        assertThrows(NullPointerException.class, () -> new M3Menu(open, null));
+        assertThrows(NullPointerException.class, () -> new M3MenuButton("Menu", (Node[]) null));
+        assertThrows(NullPointerException.class, () -> new M3MenuButton("Menu", open, null));
+        assertThrows(NullPointerException.class, () -> new M3SubMenuItem("Move to", (Node[]) null));
+        assertThrows(NullPointerException.class, () -> new M3SubMenuItem("Move to", open, null));
+        assertThrows(NullPointerException.class, () -> new M3FormValidator((M3TextInputLayout[]) null));
+        assertThrows(NullPointerException.class, () -> new M3FormValidator(input, null));
+        assertThrows(IllegalArgumentException.class, () -> new M3FormValidator(input, input));
+    }
     /// Verifies one mutable public list rejects null insertion paths before mutating content.
     @SuppressWarnings({"DataFlowIssue", "unchecked"})
     private static <T> void assertMutableListRejectsNull(ObservableList<T> list, T existing, T replacement) {
@@ -3059,7 +3079,7 @@ final class M3ControlStyleTest {
         assertSame(existing, list.get(0));
     }
 
-    /// Verifies that button group corners and feedback layers match right-to-left visual order.
+    /// Verifies that button group corners and feedback layers keep logical CSS shapes in right-to-left layout.
     @Test
     void buttonGroupUsesRightToLeftPositionSpecificShapes() {
         FxTestUtils.runOnFxThread(() -> {
@@ -3081,12 +3101,12 @@ final class M3ControlStyleTest {
             third.layout();
             root.applyCss();
 
-            assertRegionRoundedCorners(first, false, true, true, false);
+            assertRegionRoundedCorners(first, true, false, false, true);
             assertRegionRoundedCorners(second, false, false, false, false);
-            assertRegionRoundedCorners(third, true, false, false, true);
-            assertStateLayerRadii(first, 0.0, 20.0, 20.0, 0.0);
+            assertRegionRoundedCorners(third, false, true, true, false);
+            assertStateLayerRadii(first, 20.0, 0.0, 0.0, 20.0);
             assertStateLayerRadii(second, 0.0, 0.0, 0.0, 0.0);
-            assertStateLayerRadii(third, 20.0, 0.0, 0.0, 20.0);
+            assertStateLayerRadii(third, 0.0, 20.0, 20.0, 0.0);
         });
     }
 
@@ -3121,7 +3141,7 @@ final class M3ControlStyleTest {
     void splitButtonDelegatesActionAndMenuApis() {
         M3MenuItem first = new M3MenuItem("First");
         M3MenuItem second = new M3MenuItem("Second");
-        M3SplitButton splitButton = new M3SplitButton("Create", first, second);
+        M3SplitButton splitButton = splitButton("Create", first, second);
         AtomicInteger actions = new AtomicInteger();
 
         splitButton.setOnAction(event -> actions.incrementAndGet());
@@ -3133,14 +3153,14 @@ final class M3ControlStyleTest {
 
         assertEquals(1, actions.get());
         assertEquals("Create", splitButton.getText());
-        assertEquals(splitButton.getActionButton().getText(), splitButton.textProperty().get());
-        assertEquals(M3ButtonVariant.OUTLINED, splitButton.getActionButton().getVariant());
-        assertEquals(M3ButtonVariant.OUTLINED, splitButton.getMenuButton().getVariant());
+        assertEquals(splitButtonActionButton(splitButton).getText(), splitButton.textProperty().get());
+        assertEquals(M3ButtonVariant.OUTLINED, splitButtonActionButton(splitButton).getVariant());
+        assertEquals(M3ButtonVariant.OUTLINED, splitButtonMenuButton(splitButton).getVariant());
         assertEquals(second, splitButton.getMenu().getSelectedItem());
         assertEquals(1, splitButton.getMenu().getSelectedIndex());
         assertEquals(splitButton.getMenu(), splitButton.queryAccessibleAttribute(AccessibleAttribute.SUBMENU));
         assertEquals(2, splitButton.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
-        assertEquals(splitButton.getMenuButton(), splitButton.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+        assertEquals(splitButtonMenuButton(splitButton), splitButton.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
         assertFalse(splitButton.isShowing());
     }
 
@@ -3150,10 +3170,10 @@ final class M3ControlStyleTest {
         FxTestUtils.runOnFxThread(() -> {
             M3MenuItem draft = new M3MenuItem("Draft");
             M3MenuItem publish = new M3MenuItem("Publish");
-            M3SplitButton splitButton = new M3SplitButton("Create", draft, publish);
+            M3SplitButton splitButton = splitButton("Create", draft, publish);
             Stage stage = new Stage();
             try {
-                M3MotionSettings.setAnimationsEnabled(splitButton.getMenuButton(), false);
+                M3MotionSettings.setAnimationsEnabled(splitButtonMenuButton(splitButton), false);
                 Pane root = new Pane(splitButton);
                 stage.setScene(new Scene(root, 320.0, 160.0));
                 stage.show();
@@ -3174,19 +3194,19 @@ final class M3ControlStyleTest {
                 splitButton.executeAccessibleAction(AccessibleAction.COLLAPSE);
 
                 assertFalse(splitButton.isShowing());
-                assertTrue(splitButton.getMenuButton().isFocused());
+                assertTrue(splitButtonMenuButton(splitButton).isFocused());
                 assertSame(
-                        splitButton.getMenuButton(),
+                        splitButtonMenuButton(splitButton),
                         splitButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
                 );
 
                 splitButton.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0);
-                assertTrue(splitButton.getActionButton().isFocused());
+                assertTrue(splitButtonActionButton(splitButton).isFocused());
 
                 splitButton.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1);
-                assertTrue(splitButton.getMenuButton().isFocused());
+                assertTrue(splitButtonMenuButton(splitButton).isFocused());
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(splitButton.getMenuButton());
+                M3MotionSettings.clearAnimationsEnabled(splitButtonMenuButton(splitButton));
                 splitButton.hideMenu();
                 stage.close();
             }
@@ -3198,7 +3218,7 @@ final class M3ControlStyleTest {
     void splitButtonDelegatesAccessibleSelectionToPopupMenu() {
         M3MenuItem draft = new M3MenuItem("Draft");
         M3MenuItem publish = new M3MenuItem("Publish");
-        M3SplitButton splitButton = new M3SplitButton("Create", draft, publish);
+        M3SplitButton splitButton = splitButton("Create", draft, publish);
 
         splitButton.getMenu().setSelectionMode(M3MenuSelectionMode.MULTIPLE);
         splitButton.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, java.util.List.of(draft, publish));
@@ -3220,21 +3240,21 @@ final class M3ControlStyleTest {
         PseudoClass rightEdge = PseudoClass.getPseudoClass("right-edge");
 
         assertTrue(splitButton.getStyleClass().contains(M3SplitButton.STYLE_CLASS));
-        assertTrue(splitButton.getActionButton().getStyleClass().contains(M3SplitButton.ACTION_BUTTON_STYLE_CLASS));
-        assertTrue(splitButton.getMenuButton().getStyleClass().contains(M3SplitButton.MENU_BUTTON_STYLE_CLASS));
-        assertTrue(splitButton.getActionButton().getPseudoClassStates().contains(leftEdge));
-        assertTrue(splitButton.getMenuButton().getPseudoClassStates().contains(rightEdge));
-        assertFalse(splitButton.getActionButton().getStyleClass().contains("m3-split-button-left"));
-        assertFalse(splitButton.getActionButton().getStyleClass().contains("m3-split-button-right"));
-        assertFalse(splitButton.getMenuButton().getStyleClass().contains("m3-split-button-left"));
-        assertFalse(splitButton.getMenuButton().getStyleClass().contains("m3-split-button-right"));
+        assertTrue(splitButtonActionButton(splitButton).getStyleClass().contains(M3SplitButton.ACTION_BUTTON_STYLE_CLASS));
+        assertTrue(splitButtonMenuButton(splitButton).getStyleClass().contains(M3SplitButton.MENU_BUTTON_STYLE_CLASS));
+        assertTrue(splitButtonActionButton(splitButton).getPseudoClassStates().contains(leftEdge));
+        assertTrue(splitButtonMenuButton(splitButton).getPseudoClassStates().contains(rightEdge));
+        assertFalse(splitButtonActionButton(splitButton).getStyleClass().contains("m3-split-button-left"));
+        assertFalse(splitButtonActionButton(splitButton).getStyleClass().contains("m3-split-button-right"));
+        assertFalse(splitButtonMenuButton(splitButton).getStyleClass().contains("m3-split-button-left"));
+        assertFalse(splitButtonMenuButton(splitButton).getStyleClass().contains("m3-split-button-right"));
 
         applyCss(splitButton);
 
         assertInstanceOf(M3SplitButtonSkin.class, splitButton.getSkin());
-        assertInstanceOf(M3DisclosureIcon.class, splitButton.getMenuButton().getGraphic());
-        assertEquals(48.0, splitButton.getMenuButton().getPrefWidth(), 0.0001);
-        assertEquals(0.0, splitButton.getMenuButton().getHorizontalPadding(), 0.0001);
+        assertInstanceOf(M3DisclosureIcon.class, splitButtonMenuButton(splitButton).getGraphic());
+        assertEquals(48.0, splitButtonMenuButton(splitButton).getPrefWidth(), 0.0001);
+        assertEquals(0.0, splitButtonMenuButton(splitButton).getHorizontalPadding(), 0.0001);
     }
 
     /// Verifies that split button sizes resolve Material Expressive metrics from CSS.
@@ -3265,9 +3285,9 @@ final class M3ControlStyleTest {
         });
     }
 
-    /// Verifies that split button part shapes mirror under right-to-left layout.
+    /// Verifies that split buttons keep logical part shapes for right-to-left painting.
     @Test
-    void splitButtonMirrorsPartShapesForRightToLeft() {
+    void splitButtonKeepsLogicalPartShapesForRightToLeft() {
         FxTestUtils.runOnFxThread(() -> {
             M3SplitButton splitButton = createSplitButton(
                     "Export",
@@ -3284,24 +3304,24 @@ final class M3ControlStyleTest {
             root.layout();
             splitButton.resize(splitButton.prefWidth(-1.0), splitButton.prefHeight(-1.0));
             splitButton.layout();
-            splitButton.getActionButton().layout();
-            splitButton.getMenuButton().layout();
+            splitButtonActionButton(splitButton).layout();
+            splitButtonMenuButton(splitButton).layout();
             root.applyCss();
 
             PseudoClass leftEdge = PseudoClass.getPseudoClass("left-edge");
             PseudoClass rightEdge = PseudoClass.getPseudoClass("right-edge");
-            assertFalse(splitButton.getActionButton().getPseudoClassStates().contains(leftEdge));
-            assertTrue(splitButton.getActionButton().getPseudoClassStates().contains(rightEdge));
-            assertTrue(splitButton.getMenuButton().getPseudoClassStates().contains(leftEdge));
-            assertFalse(splitButton.getMenuButton().getPseudoClassStates().contains(rightEdge));
-            assertFalse(splitButton.getActionButton().getStyleClass().contains("m3-split-button-left"));
-            assertFalse(splitButton.getActionButton().getStyleClass().contains("m3-split-button-right"));
-            assertFalse(splitButton.getMenuButton().getStyleClass().contains("m3-split-button-left"));
-            assertFalse(splitButton.getMenuButton().getStyleClass().contains("m3-split-button-right"));
-            assertRegionRoundedCorners(splitButton.getActionButton(), false, true, true, false);
-            assertRegionRoundedCorners(splitButton.getMenuButton(), true, false, false, true);
-            assertStateLayerRadii(splitButton.getActionButton(), 0.0, 20.0, 20.0, 0.0);
-            assertStateLayerRadii(splitButton.getMenuButton(), 20.0, 0.0, 0.0, 20.0);
+            assertTrue(splitButtonActionButton(splitButton).getPseudoClassStates().contains(leftEdge));
+            assertFalse(splitButtonActionButton(splitButton).getPseudoClassStates().contains(rightEdge));
+            assertFalse(splitButtonMenuButton(splitButton).getPseudoClassStates().contains(leftEdge));
+            assertTrue(splitButtonMenuButton(splitButton).getPseudoClassStates().contains(rightEdge));
+            assertFalse(splitButtonActionButton(splitButton).getStyleClass().contains("m3-split-button-left"));
+            assertFalse(splitButtonActionButton(splitButton).getStyleClass().contains("m3-split-button-right"));
+            assertFalse(splitButtonMenuButton(splitButton).getStyleClass().contains("m3-split-button-left"));
+            assertFalse(splitButtonMenuButton(splitButton).getStyleClass().contains("m3-split-button-right"));
+            assertRegionRoundedCorners(splitButtonActionButton(splitButton), true, false, false, true);
+            assertRegionRoundedCorners(splitButtonMenuButton(splitButton), false, true, true, false);
+            assertStateLayerRadii(splitButtonActionButton(splitButton), 0.0, 20.0, 20.0, 0.0);
+            assertStateLayerRadii(splitButtonMenuButton(splitButton), 20.0, 0.0, 0.0, 20.0);
         });
     }
 
@@ -3350,8 +3370,8 @@ final class M3ControlStyleTest {
             assertSnapshotEdgeCorners(image, thirdGroupButton, true, false);
             assertSnapshotNodeBorderContainsContrast(image, day, Color.WHITE, 0.04);
             assertSnapshotNodeBorderContainsContrast(image, month, Color.WHITE, 0.04);
-            assertSnapshotEdgeCorners(image, splitButton.getActionButton(), false, true);
-            assertSnapshotEdgeCorners(image, splitButton.getMenuButton(), true, false);
+            assertSnapshotEdgeCorners(image, splitButtonActionButton(splitButton), false, true);
+            assertSnapshotEdgeCorners(image, splitButtonMenuButton(splitButton), true, false);
         });
     }
 
@@ -4396,7 +4416,6 @@ final class M3ControlStyleTest {
                 assertTrue(pickerFocusNode.isFocused());
                 assertTrue(M3Accessible.containsNode(field.getPicker(), pickerFocusNode));
                 assertSame(pickerFocusNode, carousel.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-
 
             } finally {
                 field.hidePicker();
@@ -6840,6 +6859,145 @@ final class M3ControlStyleTest {
                 stage.close();
             }
         });
+    }
+
+    /// Verifies that modal dialog panes keep Tab and F6 traversal inside content and actions.
+    @Test
+    void modalDialogPaneFocusTraversalCyclesThroughContentAndActions() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> FxTestUtils.assertNoCssWarnings(() -> {
+            M3TextField content = new M3TextField("Editable content");
+            ButtonType cancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+            ButtonType ok = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
+            M3Dialog<Void> dialog = new M3Dialog<>();
+            M3DialogPane dialogPane = dialog.getM3DialogPane();
+            dialogPane.setContent(content);
+            dialogPane.getButtonTypes().setAll(cancel, ok);
+            try {
+                dialog.show();
+                dialogPane.applyCss();
+                dialogPane.layout();
+
+                Node cancelButton = Objects.requireNonNull(dialogPane.lookupButton(cancel));
+                Node okButton = Objects.requireNonNull(dialogPane.lookupButton(ok));
+
+                content.requestFocus();
+                assertTrue(content.isFocused(), "dialog content should accept initial focus");
+
+                content.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.TAB));
+                assertTrue(cancelButton.isFocused(), "Tab should move from dialog content to the first action");
+
+                cancelButton.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.TAB));
+                assertTrue(okButton.isFocused(), "Tab should move between dialog actions");
+
+                okButton.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.TAB));
+                assertTrue(content.isFocused(), "Tab should wrap from the last dialog action to content");
+
+                content.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.TAB, true));
+                assertTrue(okButton.isFocused(), "Shift+Tab should wrap from content to the last dialog action");
+
+                okButton.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.F6));
+                assertTrue(content.isFocused(), "F6 should use the same dialog cycle as Tab");
+
+                content.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.F6, true));
+                assertTrue(okButton.isFocused(), "Shift+F6 should cycle backward inside the dialog pane");
+            } finally {
+                dialog.close();
+            }
+        }));
+    }
+
+    /// Verifies that modal dialog focus trapping leaves modified traversal shortcuts available.
+    @Test
+    void modalDialogPaneFocusTraversalLeavesModifiedShortcutsAvailable() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> FxTestUtils.assertNoCssWarnings(() -> {
+            M3TextField content = new M3TextField("Editable content");
+            ButtonType cancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+            ButtonType ok = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
+            M3Dialog<Void> dialog = new M3Dialog<>();
+            M3DialogPane dialogPane = dialog.getM3DialogPane();
+            dialogPane.setContent(content);
+            dialogPane.getButtonTypes().setAll(cancel, ok);
+            try {
+                dialog.show();
+                dialogPane.applyCss();
+                dialogPane.layout();
+
+                content.requestFocus();
+                assertTrue(content.isFocused(), "dialog content should accept initial focus");
+
+                KeyEvent controlTab = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.TAB, false, true, false, false);
+                content.fireEvent(controlTab);
+                assertFalse(controlTab.isConsumed(), "Ctrl+Tab should remain available to application shortcuts");
+
+                KeyEvent altF6 = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.F6, false, false, true, false);
+                content.fireEvent(altF6);
+                assertFalse(altF6.isConsumed(), "Alt+F6 should remain available to platform or application shortcuts");
+            } finally {
+                dialog.close();
+            }
+        }));
+    }
+
+    /// Verifies that hidden modal dialog panes release the scene focus trap to visible panes.
+    @Test
+    void hiddenModalDialogPaneReleasesFocusTrapToVisibleDialogPane() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> FxTestUtils.assertNoCssWarnings(() -> {
+            M3TextField firstContent = new M3TextField("First content");
+            M3DialogPane firstPane = new M3DialogPane();
+            firstPane.setContent(firstContent);
+            firstPane.getButtonTypes().setAll(ButtonType.OK);
+
+            M3TextField hiddenContent = new M3TextField("Hidden content");
+            M3DialogPane hiddenPane = new M3DialogPane();
+            hiddenPane.setContent(hiddenContent);
+            hiddenPane.getButtonTypes().setAll(ButtonType.OK);
+
+            VBox root = new VBox(firstPane, hiddenPane);
+            Stage stage = new Stage();
+            try {
+                stage.initModality(Modality.APPLICATION_MODAL);
+                stage.setScene(new Scene(root, 520.0, 360.0));
+                M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                M3ModalFocusTrap firstTrap = dialogPaneFocusTrap(firstPane);
+                M3ModalFocusTrap hiddenTrap = dialogPaneFocusTrap(hiddenPane);
+
+                root.getChildren().remove(hiddenPane);
+                root.getChildren().add(hiddenPane);
+                root.applyCss();
+                root.layout();
+
+                assertEquals(
+                        List.of(firstTrap, hiddenTrap),
+                        activeModalFocusTraps(stage.getScene()),
+                        "re-attached dialog pane should become the topmost modal focus trap"
+                );
+
+                hiddenPane.setVisible(false);
+                root.applyCss();
+                root.layout();
+
+                Scene scene = stage.getScene();
+                assertEquals(
+                        List.of(firstTrap),
+                        activeModalFocusTraps(scene),
+                        "hidden dialog pane should release its modal focus trap"
+                );
+
+                stage.hide();
+
+                assertEquals(
+                        List.of(),
+                        activeModalFocusTraps(scene),
+                        "hidden modal windows should release all scene focus traps"
+                );
+            } finally {
+                stage.close();
+            }
+        }));
     }
 
     /// Verifies that dialog panes expose focused descendants from nested popups hosted by dialog content.
@@ -9948,7 +10106,7 @@ final class M3ControlStyleTest {
     @Test
     void richTooltipUsesMaterialGraphicContent() {
         Label action = new Label("Action");
-        M3RichTooltip tooltip = new M3RichTooltip("Title", "Supporting text", action);
+        M3RichTooltip tooltip = richTooltip("Title", "Supporting text", action);
 
         assertTrue(tooltip.getStyleClass().contains(M3Tooltip.STYLE_CLASS));
         assertTrue(tooltip.getStyleClass().contains(M3RichTooltip.STYLE_CLASS));
@@ -9982,7 +10140,7 @@ final class M3ControlStyleTest {
             Stage stage = new Stage();
             M3Button action = new M3Button("Action");
             action.setStyle("-m3-horizontal-padding: 20px;");
-            M3RichTooltip tooltip = new M3RichTooltip("Title", "Supporting text", action);
+            M3RichTooltip tooltip = richTooltip("Title", "Supporting text", action);
             M3Theme expressiveTheme = M3Theme.fromSeed(
                     Color.web("#006a6a"),
                     M3Profile.EXPRESSIVE_2025,
@@ -10023,7 +10181,7 @@ final class M3ControlStyleTest {
         FxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3Tooltip plainTooltip = new M3Tooltip("Details");
-            M3RichTooltip richTooltip = new M3RichTooltip("Title", "Supporting text", new M3Button("Action"));
+            M3RichTooltip richTooltip = richTooltip("Title", "Supporting text", new M3Button("Action"));
             try {
                 Label owner = new Label("Owner");
                 StackPane ownerRoot = new StackPane(owner);
@@ -11478,7 +11636,6 @@ final class M3ControlStyleTest {
                 + "-m3-color-on-surface: rgb(25,26,27); "
                 + "-m3-color-on-surface-variant: rgb(28,29,30);";
     }
-
 
     /// Verifies that menu item action events bubble through the menu.
     @Test
@@ -12986,7 +13143,7 @@ final class M3ControlStyleTest {
             M3SubMenuItem subMenuItem = new M3SubMenuItem("Move to", subTarget);
 
             M3MenuItem splitTarget = new M3MenuItem("Split target");
-            M3SplitButton splitButton = new M3SplitButton("Create", splitTarget);
+            M3SplitButton splitButton = splitButton("Create", splitTarget);
 
             M3FloatingActionButton fabAction = new M3FloatingActionButton("A");
             M3FabMenu fabMenu = new M3FabMenu();
@@ -13034,8 +13191,8 @@ final class M3ControlStyleTest {
 
                 assertTrue(outside.isFocused());
                 assertFalse(splitButton.isShowing());
-                assertFalse(splitButton.getActionButton().isFocused());
-                assertFalse(splitButton.getMenuButton().isFocused());
+                assertFalse(splitButtonActionButton(splitButton).isFocused());
+                assertFalse(splitButtonMenuButton(splitButton).isFocused());
                 assertFalse(splitTarget.isFocused());
 
                 fabMenu.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
@@ -13060,11 +13217,11 @@ final class M3ControlStyleTest {
     void overlayOwnersSkipAccessibleRevealAndFocusWhenHiddenByAncestor() {
         FxTestUtils.runOnFxThread(() -> {
             M3Button sideAction = new M3Button("Side action");
-            M3SideSheet sideSheet = new M3SideSheet("Details", new Label("Side content"), sideAction);
+            M3SideSheet sideSheet = sideSheet("Details", new Label("Side content"), sideAction);
             sideSheet.hide();
 
             M3Button bottomAction = new M3Button("Bottom action");
-            M3BottomSheet bottomSheet = new M3BottomSheet("Queue", new Label("Bottom content"), bottomAction);
+            M3BottomSheet bottomSheet = bottomSheet("Queue", new Label("Bottom content"), bottomAction);
             bottomSheet.hide();
 
             M3Scrim scrim = new M3Scrim();
@@ -13159,7 +13316,7 @@ final class M3ControlStyleTest {
             M3MenuItem splitHtml = new M3MenuItem("HTML");
             M3SubMenuItem splitRecent = new M3SubMenuItem("Recent", splitPdf, splitHtml);
             M3SubMenuItem splitExport = new M3SubMenuItem("Export", splitRecent);
-            M3SplitButton splitButton = new M3SplitButton("Create", splitExport);
+            M3SplitButton splitButton = splitButton("Create", splitExport);
             Stage stage = new Stage();
             try {
                 M3MotionSettings.setAnimationsEnabled(menuButton, false);
@@ -13243,7 +13400,7 @@ final class M3ControlStyleTest {
             M3SubMenuItem formSubMenu = new M3SubMenuItem("Form move", formTarget);
             M3MenuButton formMenuButton = new M3MenuButton("Form menu", formSubMenu);
             M3FormRow formRow = new M3FormRow("Destination", "", formMenuButton, new M3Button("Edit"));
-            M3FormSection formSection = new M3FormSection("Routing", formRow);
+            M3FormSection formSection = formSection("Routing", formRow);
             M3FormPane formPane = formPane(formSection);
 
             M3MenuItem surfaceTarget = new M3MenuItem("Surface archive");
@@ -13575,8 +13732,11 @@ final class M3ControlStyleTest {
                 assertTrue(paneEditor.isFocused(), "static list type-ahead should not steal embedded text input focus");
                 assertSame(paneEditable, listPane.getSelectedItem());
 
-                M3ListViewSkin<?> skin = assertInstanceOf(M3ListViewSkin.class, listView.getSkin());
-                M3ListItem visibleEditable = assertInstanceOf(M3ListItem.class, skin.getAttachedVisibleItem(0));
+                assertInstanceOf(M3ListViewSkin.class, listView.getSkin());
+                M3ListItem visibleEditable = assertInstanceOf(
+                        M3ListItem.class,
+                        listView.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0)
+                );
                 M3TextField viewEditor = assertInstanceOf(M3TextField.class, visibleEditable.getTrailing());
                 assertContainerNavigationDoesNotStealTextInputFocus(root, listView, viewEditor, listView, KeyCode.DOWN);
                 listView.fireEvent(keyTypedEvent("s"));
@@ -14325,7 +14485,7 @@ final class M3ControlStyleTest {
         searchBar.fire();
 
         assertEquals("M3FX", searchBar.getText());
-        assertEquals("M3FX", searchBar.getEditor().getText());
+        assertEquals("M3FX", searchBarEditor(searchBar).getText());
         assertEquals("Search", searchBar.getPromptText());
         assertEquals(java.util.List.of(filter), searchBar.getTrailingActions());
         assertEquals(1, actions.get());
@@ -14391,10 +14551,10 @@ final class M3ControlStyleTest {
                 stage.show();
                 root.applyCss();
 
-                assertEquals(searchBar.getEditor(), searchBar.queryAccessibleAttribute(AccessibleAttribute.CONTENTS));
+                assertEquals(searchBarEditor(searchBar), searchBar.queryAccessibleAttribute(AccessibleAttribute.CONTENTS));
                 assertEquals(4, searchBar.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
                 assertEquals(leading, searchBar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
-                assertEquals(searchBar.getEditor(), searchBar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+                assertEquals(searchBarEditor(searchBar), searchBar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
                 assertEquals(clear, searchBar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 2));
                 assertEquals(filter, searchBar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 3));
                 assertNull(searchBar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 4));
@@ -14402,13 +14562,13 @@ final class M3ControlStyleTest {
                 searchBar.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
 
                 assertTrue(searchBar.isActive());
-                assertTrue(searchBar.getEditor().isFocused());
-                assertSame(searchBar.getEditor(), searchBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertTrue(searchBarEditor(searchBar).isFocused());
+                assertSame(searchBarEditor(searchBar), searchBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
                 searchBar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 0);
 
-                assertTrue(searchBar.getEditor().isFocused());
-                assertSame(searchBar.getEditor(), searchBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertTrue(searchBarEditor(searchBar).isFocused());
+                assertSame(searchBarEditor(searchBar), searchBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
                 searchBar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, filter);
 
@@ -14496,7 +14656,7 @@ final class M3ControlStyleTest {
             M3ListItem firstResult = new M3ListItem("First result");
             M3ListItem secondResult = new M3ListItem("Second result");
             secondResult.setTrailing(new M3Button("Open"));
-            M3SearchView searchView = new M3SearchView("Search", firstResult, secondResult);
+            M3SearchView searchView = searchView("Search", firstResult, secondResult);
             searchView.setLeading(leading);
             searchView.getTrailingActions().setAll(filter);
             searchView.setPrefWidth(380.0);
@@ -14557,7 +14717,7 @@ final class M3ControlStyleTest {
 
             M3Button viewFilter = new M3Button("Filter");
             M3ListItem result = new M3ListItem("Result");
-            M3SearchView searchView = new M3SearchView("Search", result);
+            M3SearchView searchView = searchView("Search", result);
             searchView.getTrailingActions().setAll(viewFilter);
 
             Pane root = new Pane(searchBar, searchView);
@@ -14607,9 +14767,9 @@ final class M3ControlStyleTest {
 
                 searchView.executeAccessibleAction(AccessibleAction.COLLAPSE);
                 assertFalse(searchView.isActive());
-                assertTrue(searchView.getSearchBar().isFocused());
+                assertTrue(searchViewSearchBar(searchView).isFocused());
                 assertSame(
-                        searchView.getSearchBar(),
+                        searchViewSearchBar(searchView),
                         searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
                 );
             } finally {
@@ -14631,7 +14791,7 @@ final class M3ControlStyleTest {
             M3Button resultPrimary = new M3Button("Open");
             M3Button resultSecondary = new M3Button("Preview");
             HBox resultRow = new HBox(resultPrimary, resultSecondary);
-            M3SearchView searchView = new M3SearchView("Search", resultRow);
+            M3SearchView searchView = searchView("Search", resultRow);
 
             Pane root = new Pane(searchBar, searchView);
             Stage stage = new Stage();
@@ -14749,7 +14909,7 @@ final class M3ControlStyleTest {
 
                 assertTrue(outside.isFocused());
                 assertFalse(searchBar.isActive());
-                assertFalse(searchBar.getEditor().isFocused());
+                assertFalse(searchBarEditor(searchBar).isFocused());
                 assertFalse(filter.isFocused());
 
                 searchBar.executeAccessibleAction(AccessibleAction.SHOW_ITEM, filter);
@@ -14762,7 +14922,7 @@ final class M3ControlStyleTest {
 
                 assertTrue(outside.isFocused());
                 assertFalse(searchBar.isActive());
-                assertSame(searchBar.getEditor(), searchBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertSame(searchBarEditor(searchBar), searchBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
                 stage.close();
             }
@@ -14773,7 +14933,7 @@ final class M3ControlStyleTest {
     @Test
     void searchComponentsApplyTokenMetrics() {
         M3SearchBar searchBar = new M3SearchBar("Search");
-        M3SearchView searchView = new M3SearchView("Search");
+        M3SearchView searchView = searchView("Search");
         M3ListItem result = new M3ListItem("Result");
         searchView.getResults().add(result);
         Pane root = new Pane(searchBar, searchView);
@@ -14844,7 +15004,7 @@ final class M3ControlStyleTest {
     @Test
     void searchViewMetricTokensPreserveBoundLayoutProperties() {
         M3ListItem result = new M3ListItem("Result");
-        M3SearchView searchView = new M3SearchView("Search", result);
+        M3SearchView searchView = searchView("Search", result);
         Pane root = new Pane(searchView);
         Scene scene = new Scene(root);
 
@@ -14874,7 +15034,7 @@ final class M3ControlStyleTest {
     @Test
     void searchViewPropagatesRightToLeftOrientationToSearchBarAndResults() {
         M3ListItem result = new M3ListItem("Result");
-        M3SearchView searchView = new M3SearchView("Search", result);
+        M3SearchView searchView = searchView("Search", result);
         searchView.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
         Pane root = new Pane(searchView);
         Scene scene = new Scene(root, 360.0, 140.0);
@@ -14884,7 +15044,7 @@ final class M3ControlStyleTest {
         searchView.resize(320.0, 120.0);
         searchView.layout();
 
-        assertEquals(NodeOrientation.RIGHT_TO_LEFT, searchView.getSearchBar().getEffectiveNodeOrientation());
+        assertEquals(NodeOrientation.RIGHT_TO_LEFT, searchViewSearchBar(searchView).getEffectiveNodeOrientation());
         assertEquals(NodeOrientation.RIGHT_TO_LEFT, result.getEffectiveNodeOrientation());
     }
 
@@ -14918,7 +15078,7 @@ final class M3ControlStyleTest {
     void searchViewOwnsSearchBarAndResults() {
         M3ListItem result = new M3ListItem("Result");
         M3ListItem replacement = new M3ListItem("Replacement");
-        M3SearchView searchView = new M3SearchView("Find", result);
+        M3SearchView searchView = searchView("Find", result);
         Label leading = new Label("S");
         M3IconButton trailing = createIconButton("C");
         AtomicInteger actions = new AtomicInteger();
@@ -14931,14 +15091,11 @@ final class M3ControlStyleTest {
         searchView.setText("button");
         searchView.fire();
 
-        assertEquals("button", searchView.getSearchBar().getText());
-        assertEquals("button", searchView.getEditor().getText());
+        assertEquals("button", searchView.getText());
         assertEquals("Find", searchView.getPromptText());
         assertEquals(leading, searchView.getLeading());
-        assertEquals(leading, searchView.getSearchBar().getLeading());
         assertEquals(leading, searchView.leadingProperty().get());
         assertEquals(trailing, searchView.getTrailingActions().get(0));
-        assertEquals(trailing, searchView.getSearchBar().getTrailingActions().get(0));
         assertEquals(result, searchView.getResults().get(0));
         assertEquals(1, actions.get());
 
@@ -14947,7 +15104,7 @@ final class M3ControlStyleTest {
         searchView.getTrailingActions().clear();
 
         assertEquals("", searchView.getText());
-        assertEquals("", searchView.getEditor().getText());
+
         assertFalse(searchView.isActive());
         assertTrue(searchView.getResults().isEmpty());
         assertTrue(searchView.getTrailingActions().isEmpty());
@@ -14956,13 +15113,13 @@ final class M3ControlStyleTest {
     /// Verifies that search views use active state to show or hide results.
     @Test
     void searchViewActiveStateControlsResultsVisibility() throws InterruptedException {
-        M3SearchView searchView = new M3SearchView("Find");
+        M3SearchView searchView = searchView("Find");
         M3ListItem result = new M3ListItem("Result");
         searchView.getResults().add(result);
         applyCss(searchView);
 
         assertTrue(searchView.isActive());
-        assertTrue(searchView.getSearchBar().isActive());
+        assertTrue(searchViewSearchBar(searchView).isActive());
 
         searchView.deactivate();
 
@@ -14999,7 +15156,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable Region> resultsReference = new AtomicReference<>();
 
         FxTestUtils.runOnFxThread(() -> {
-            M3SearchView searchView = new M3SearchView("Find", new M3ListItem("Result"));
+            M3SearchView searchView = searchView("Find", new M3ListItem("Result"));
             searchView.setPrefSize(320.0, 160.0);
 
             StackPane root = new StackPane(searchView);
@@ -15097,16 +15254,16 @@ final class M3ControlStyleTest {
 
                 leading.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
 
-                assertTrue(searchBar.getEditor().isFocused());
+                assertTrue(searchBarEditor(searchBar).isFocused());
 
-                searchBar.getEditor().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+                searchBarEditor(searchBar).fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
 
-                assertTrue(searchBar.getEditor().isFocused());
+                assertTrue(searchBarEditor(searchBar).isFocused());
 
                 filter.requestFocus();
                 filter.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
 
-                assertTrue(searchBar.getEditor().isFocused());
+                assertTrue(searchBarEditor(searchBar).isFocused());
 
                 filter.requestFocus();
                 filter.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
@@ -15147,7 +15304,7 @@ final class M3ControlStyleTest {
             M3Button leading = new M3Button("Menu");
             M3Button filter = new M3Button("Filter");
             M3ListItem result = new M3ListItem("Result");
-            M3SearchView searchView = new M3SearchView("Search", result);
+            M3SearchView searchView = searchView("Search", result);
             searchView.setLeading(leading);
             searchView.getTrailingActions().setAll(filter);
             StackPane root = new StackPane(searchView);
@@ -15163,8 +15320,8 @@ final class M3ControlStyleTest {
                 leading.requestFocus();
                 leading.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
 
-                assertTrue(searchView.getEditor().isFocused());
-                assertSame(searchView.getEditor(), searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertTrue(searchViewEditor(searchView).isFocused());
+                assertSame(searchViewEditor(searchView), searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
                 filter.requestFocus();
                 filter.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.HOME));
@@ -15172,8 +15329,8 @@ final class M3ControlStyleTest {
                 assertTrue(leading.isFocused());
                 assertSame(leading, searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
-                searchView.getEditor().requestFocus();
-                searchView.getEditor().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                searchViewEditor(searchView).requestFocus();
+                searchViewEditor(searchView).fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
 
                 assertTrue(result.isFocused());
 
@@ -15198,7 +15355,7 @@ final class M3ControlStyleTest {
         FxTestUtils.runOnFxThread(() -> {
             M3ListItem first = new M3ListItem("First");
             M3ListItem second = new M3ListItem("Second");
-            M3SearchView searchView = new M3SearchView("Search", first, second);
+            M3SearchView searchView = searchView("Search", first, second);
 
             Pane root = new Pane(searchView);
             Stage stage = new Stage();
@@ -15207,11 +15364,11 @@ final class M3ControlStyleTest {
                 stage.show();
                 root.applyCss();
 
-                searchView.getEditor().requestFocus();
-                assertTrue(searchView.getEditor().isFocused());
-                assertSame(searchView.getEditor(), searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                searchViewEditor(searchView).requestFocus();
+                assertTrue(searchViewEditor(searchView).isFocused());
+                assertSame(searchViewEditor(searchView), searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
-                searchView.getEditor().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                searchViewEditor(searchView).fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
                 assertTrue(first.isFocused());
                 assertSame(first, searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
@@ -15224,8 +15381,8 @@ final class M3ControlStyleTest {
                 assertSame(first, searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
                 first.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.UP));
-                assertTrue(searchView.getEditor().isFocused());
-                assertSame(searchView.getEditor(), searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertTrue(searchViewEditor(searchView).isFocused());
+                assertSame(searchViewEditor(searchView), searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
                 searchView.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
                 assertTrue(first.isFocused());
@@ -15237,11 +15394,11 @@ final class M3ControlStyleTest {
 
                 second.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ESCAPE));
                 assertFalse(searchView.isActive());
-                assertTrue(searchView.getSearchBar().isFocused());
+                assertTrue(searchViewSearchBar(searchView).isFocused());
 
-                searchView.getSearchBar().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER));
+                searchViewSearchBar(searchView).fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER));
                 assertTrue(searchView.isActive());
-                assertTrue(searchView.getEditor().isFocused());
+                assertTrue(searchViewEditor(searchView).isFocused());
             } finally {
                 stage.close();
             }
@@ -15257,7 +15414,7 @@ final class M3ControlStyleTest {
             M3ListItem first = new M3ListItem("First");
             M3ListItem second = new M3ListItem("Second");
             second.setTrailing(new M3Button("Open"));
-            M3SearchView searchView = new M3SearchView("Search", first, second);
+            M3SearchView searchView = searchView("Search", first, second);
             searchView.setLeading(leading);
             searchView.getTrailingActions().setAll(trailing);
             searchView.setPrefWidth(380.0);
@@ -15276,9 +15433,9 @@ final class M3ControlStyleTest {
                 root.layout();
                 searchView.layout();
 
-                searchView.getEditor().requestFocus();
-                assertTrue(searchView.getEditor().isFocused());
-                searchView.getEditor().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                searchViewEditor(searchView).requestFocus();
+                assertTrue(searchViewEditor(searchView).isFocused());
+                searchViewEditor(searchView).fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
                 assertTrue(first.isFocused());
                 assertSame(first, searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
@@ -15290,10 +15447,10 @@ final class M3ControlStyleTest {
                 assertSearchViewUsesLogicalGeometry(searchView, true);
                 assertTrue(first.isFocused());
                 first.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.UP));
-                assertTrue(searchView.getEditor().isFocused());
-                assertSame(searchView.getEditor(), searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                assertTrue(searchViewEditor(searchView).isFocused());
+                assertSame(searchViewEditor(searchView), searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
-                searchView.getEditor().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                searchViewEditor(searchView).fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
                 assertTrue(first.isFocused());
                 first.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
                 assertTrue(second.isFocused());
@@ -15329,7 +15486,7 @@ final class M3ControlStyleTest {
             M3ListItem seventh = new M3ListItem("Seventh");
             disabled.setDisable(true);
             hidden.setVisible(false);
-            M3SearchView searchView = new M3SearchView(
+            M3SearchView searchView = searchView(
                     "Search",
                     first,
                     disabled,
@@ -15358,11 +15515,11 @@ final class M3ControlStyleTest {
                 resizeRow(sixth);
                 resizeRow(seventh);
 
-                searchView.getEditor().requestFocus();
-                searchView.getEditor().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.HOME));
-                assertTrue(searchView.getEditor().isFocused());
+                searchViewEditor(searchView).requestFocus();
+                searchViewEditor(searchView).fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.HOME));
+                assertTrue(searchViewEditor(searchView).isFocused());
 
-                searchView.getEditor().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                searchViewEditor(searchView).fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
                 assertTrue(first.isFocused());
                 assertSame(first, searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
@@ -15390,7 +15547,7 @@ final class M3ControlStyleTest {
                 assertTrue(first.isFocused());
 
                 first.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.UP));
-                assertTrue(searchView.getEditor().isFocused());
+                assertTrue(searchViewEditor(searchView).isFocused());
 
                 searchView.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
                 assertTrue(first.isFocused());
@@ -15408,7 +15565,7 @@ final class M3ControlStyleTest {
             Pane hiddenResult = new Pane(hiddenAction);
             hiddenResult.setVisible(false);
             M3ListItem visibleResult = new M3ListItem("Visible");
-            M3SearchView searchView = new M3SearchView("Search", hiddenResult, visibleResult);
+            M3SearchView searchView = searchView("Search", hiddenResult, visibleResult);
             M3Button outside = new M3Button("Outside");
             Pane searchOwner = new Pane(searchView);
             VBox root = new VBox(8.0, outside, searchOwner);
@@ -15421,17 +15578,17 @@ final class M3ControlStyleTest {
                 root.applyCss();
                 root.layout();
 
-                searchView.getEditor().requestFocus();
-                searchView.getEditor().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+                searchViewEditor(searchView).requestFocus();
+                searchViewEditor(searchView).fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
 
                 assertTrue(visibleResult.isFocused());
                 assertFalse(hiddenAction.isFocused());
                 assertSame(visibleResult, searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
-                searchView.getEditor().requestFocus();
+                searchViewEditor(searchView).requestFocus();
                 searchView.executeAccessibleAction(AccessibleAction.SHOW_ITEM, hiddenAction);
 
-                assertTrue(searchView.getEditor().isFocused());
+                assertTrue(searchViewEditor(searchView).isFocused());
                 assertFalse(hiddenAction.isFocused());
 
                 outside.requestFocus();
@@ -15454,12 +15611,12 @@ final class M3ControlStyleTest {
     void sheetControlsOwnContentActionsAndVariants() {
         Label sideContent = new Label("Side content");
         M3IconButton closeAction = new M3IconButton();
-        M3SideSheet sideSheet = new M3SideSheet("Details", sideContent, closeAction);
+        M3SideSheet sideSheet = sideSheet("Details", sideContent, closeAction);
         sideSheet.setVariant(M3SheetVariant.MODAL);
 
         Label bottomContent = new Label("Bottom content");
         M3IconButton bottomAction = new M3IconButton();
-        M3BottomSheet bottomSheet = new M3BottomSheet("Queue", bottomContent, bottomAction);
+        M3BottomSheet bottomSheet = bottomSheet("Queue", bottomContent, bottomAction);
         bottomSheet.setDragHandleVisible(false);
 
         assertEquals("Details", sideSheet.getHeadline());
@@ -15476,10 +15633,10 @@ final class M3ControlStyleTest {
     /// Verifies that modal sheets dismiss from the Escape key.
     @Test
     void modalSheetsHideFromEscapeKey() {
-        M3SideSheet sideSheet = new M3SideSheet("Details", new Label("Side"));
-        M3BottomSheet bottomSheet = new M3BottomSheet("Queue", new Label("Bottom"));
-        M3SideSheet standardSideSheet = new M3SideSheet("Pinned", new Label("Side"));
-        M3BottomSheet standardBottomSheet = new M3BottomSheet("Pinned", new Label("Bottom"));
+        M3SideSheet sideSheet = sideSheet("Details", new Label("Side"));
+        M3BottomSheet bottomSheet = bottomSheet("Queue", new Label("Bottom"));
+        M3SideSheet standardSideSheet = sideSheet("Pinned", new Label("Side"));
+        M3BottomSheet standardBottomSheet = bottomSheet("Pinned", new Label("Bottom"));
         sideSheet.setVariant(M3SheetVariant.MODAL);
         bottomSheet.setVariant(M3SheetVariant.MODAL);
 
@@ -15501,8 +15658,8 @@ final class M3ControlStyleTest {
             M3Button trigger = new M3Button("Open");
             M3Button sideAction = new M3Button("Side action");
             M3Button bottomAction = new M3Button("Bottom action");
-            M3SideSheet sideSheet = new M3SideSheet("Details", new Label("Side"), sideAction);
-            M3BottomSheet bottomSheet = new M3BottomSheet("Queue", new Label("Bottom"), bottomAction);
+            M3SideSheet sideSheet = sideSheet("Details", new Label("Side"), sideAction);
+            M3BottomSheet bottomSheet = bottomSheet("Queue", new Label("Bottom"), bottomAction);
             Stage stage = new Stage();
             try {
                 sideSheet.setVariant(M3SheetVariant.MODAL);
@@ -15546,7 +15703,7 @@ final class M3ControlStyleTest {
             M3Button sideFirst = new M3Button("Side first");
             M3Button sideSecond = new M3Button("Side second");
             M3Button sideThird = new M3Button("Side third");
-            M3SideSheet sideSheet = new M3SideSheet(
+            M3SideSheet sideSheet = sideSheet(
                     "Details",
                     sideContent,
                     sideHidden,
@@ -15561,7 +15718,7 @@ final class M3ControlStyleTest {
             M3Button bottomFirst = new M3Button("Bottom first");
             M3Button bottomSecond = new M3Button("Bottom second");
             M3Button bottomThird = new M3Button("Bottom third");
-            M3BottomSheet bottomSheet = new M3BottomSheet(
+            M3BottomSheet bottomSheet = bottomSheet(
                     "Queue",
                     bottomContent,
                     bottomHidden,
@@ -15673,8 +15830,8 @@ final class M3ControlStyleTest {
             M3Button trigger = new M3Button("Open");
             M3Button sideAction = new M3Button("Side action");
             M3Button bottomAction = new M3Button("Bottom action");
-            M3SideSheet sideSheet = new M3SideSheet("Details", new Label("Side"), sideAction);
-            M3BottomSheet bottomSheet = new M3BottomSheet("Queue", new Label("Bottom"), bottomAction);
+            M3SideSheet sideSheet = sideSheet("Details", new Label("Side"), sideAction);
+            M3BottomSheet bottomSheet = bottomSheet("Queue", new Label("Bottom"), bottomAction);
             VBox root = new VBox(trigger, sideSheet, bottomSheet);
             Stage stage = new Stage();
             try {
@@ -15726,8 +15883,8 @@ final class M3ControlStyleTest {
     void sheetsExposeAccessibleStateAndActions() {
         Label sideContent = new Label("Side");
         Label bottomContent = new Label("Bottom");
-        M3SideSheet sideSheet = new M3SideSheet("Details", sideContent);
-        M3BottomSheet bottomSheet = new M3BottomSheet("Queue", bottomContent);
+        M3SideSheet sideSheet = sideSheet("Details", sideContent);
+        M3BottomSheet bottomSheet = bottomSheet("Queue", bottomContent);
 
         assertEquals("Details", sideSheet.getAccessibleText());
         assertEquals("Details", sideSheet.queryAccessibleAttribute(AccessibleAttribute.TEXT));
@@ -15770,11 +15927,11 @@ final class M3ControlStyleTest {
         FxTestUtils.runOnFxThread(() -> {
             M3Button sideContent = new M3Button("Side content");
             M3Button sideAction = new M3Button("Side action");
-            M3SideSheet sideSheet = new M3SideSheet("Details", sideContent, sideAction);
+            M3SideSheet sideSheet = sideSheet("Details", sideContent, sideAction);
 
             M3Button bottomContent = new M3Button("Bottom content");
             M3Button bottomAction = new M3Button("Bottom action");
-            M3BottomSheet bottomSheet = new M3BottomSheet("Queue", bottomContent, bottomAction);
+            M3BottomSheet bottomSheet = bottomSheet("Queue", bottomContent, bottomAction);
 
             Stage stage = new Stage();
             try {
@@ -15808,8 +15965,8 @@ final class M3ControlStyleTest {
     /// Verifies that sheet controls expose animated shown state changes.
     @Test
     void sheetControlsSupportAnimatedShownState() throws InterruptedException {
-        M3SideSheet sideSheet = new M3SideSheet("Details", new Label("Side"));
-        M3BottomSheet bottomSheet = new M3BottomSheet("Queue", new Label("Bottom"));
+        M3SideSheet sideSheet = sideSheet("Details", new Label("Side"));
+        M3BottomSheet bottomSheet = bottomSheet("Queue", new Label("Bottom"));
         Pane root = new Pane(sideSheet, bottomSheet);
         Scene scene = new Scene(root, 720.0, 480.0);
 
@@ -15887,8 +16044,8 @@ final class M3ControlStyleTest {
     /// Verifies that sheet component token metrics apply through the active theme.
     @Test
     void sheetComponentsApplyTokenMetrics() {
-        M3SideSheet sideSheet = new M3SideSheet("Details", new Label("Content"));
-        M3BottomSheet bottomSheet = new M3BottomSheet("Queue", new Label("Content"));
+        M3SideSheet sideSheet = sideSheet("Details", new Label("Content"));
+        M3BottomSheet bottomSheet = bottomSheet("Queue", new Label("Content"));
         Pane root = new Pane(sideSheet, bottomSheet);
         Scene scene = new Scene(root);
 
@@ -16633,9 +16790,9 @@ final class M3ControlStyleTest {
         assertTrue(third.getStyleClass().contains(M3SegmentedButtonGroup.SINGLE_SEGMENT_STYLE_CLASS));
     }
 
-    /// Verifies that segmented button groups mirror physical edge style classes for right-to-left layout.
+    /// Verifies that segmented button groups keep logical edge style classes for right-to-left painting.
     @Test
-    void segmentedButtonGroupMirrorsPositionStyleClassesForRightToLeft() {
+    void segmentedButtonGroupKeepsLogicalPositionStyleClassesForRightToLeft() {
         M3SegmentedButton first = new M3SegmentedButton("Day");
         M3SegmentedButton second = new M3SegmentedButton("Week");
         M3SegmentedButton third = new M3SegmentedButton("Month");
@@ -16643,9 +16800,9 @@ final class M3ControlStyleTest {
 
         group.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
 
-        assertTrue(first.getStyleClass().contains(M3SegmentedButtonGroup.LAST_SEGMENT_STYLE_CLASS));
+        assertTrue(first.getStyleClass().contains(M3SegmentedButtonGroup.FIRST_SEGMENT_STYLE_CLASS));
         assertTrue(second.getStyleClass().contains(M3SegmentedButtonGroup.MIDDLE_SEGMENT_STYLE_CLASS));
-        assertTrue(third.getStyleClass().contains(M3SegmentedButtonGroup.FIRST_SEGMENT_STYLE_CLASS));
+        assertTrue(third.getStyleClass().contains(M3SegmentedButtonGroup.LAST_SEGMENT_STYLE_CLASS));
 
         group.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
 
@@ -16684,7 +16841,7 @@ final class M3ControlStyleTest {
         });
     }
 
-    /// Verifies that segmented button corners and feedback layers match right-to-left visual order.
+    /// Verifies that segmented button corners and feedback layers keep logical CSS shapes in right-to-left layout.
     @Test
     void segmentedButtonGroupUsesRightToLeftPositionSpecificShapes() {
         FxTestUtils.runOnFxThread(() -> {
@@ -16707,13 +16864,13 @@ final class M3ControlStyleTest {
             month.layout();
             root.applyCss();
 
-            assertRegionRoundedCorners(day, false, true, true, false);
+            assertRegionRoundedCorners(day, true, false, false, true);
             assertRegionRoundedCorners(week, false, false, false, false);
-            assertRegionRoundedCorners(month, true, false, false, true);
-            assertStateLayerRadii(day, 0.0, 20.0, 20.0, 0.0);
+            assertRegionRoundedCorners(month, false, true, true, false);
+            assertStateLayerRadii(day, 20.0, 0.0, 0.0, 20.0);
             assertStateLayerRadii(week, 0.0, 0.0, 0.0, 0.0);
-            assertStateLayerRadii(month, 20.0, 0.0, 0.0, 20.0);
-            assertRegionRadii(segmentedButtonSelectionContainer(month), 19.0, 0.0, 0.0, 19.0);
+            assertStateLayerRadii(month, 0.0, 20.0, 20.0, 0.0);
+            assertRegionRadii(segmentedButtonSelectionContainer(month), 0.0, 19.0, 19.0, 0.0);
         });
     }
 
@@ -21678,10 +21835,13 @@ final class M3ControlStyleTest {
                 root.applyCss();
                 root.layout();
 
-                M3ListViewSkin<?> skin = assertInstanceOf(M3ListViewSkin.class, listView.getSkin());
+                assertInstanceOf(M3ListViewSkin.class, listView.getSkin());
                 M3ListItem row = assertInstanceOf(
                         M3ListItem.class,
-                        Objects.requireNonNull(skin.getAttachedVisibleItem(0), "row")
+                        Objects.requireNonNull(
+                                listView.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0),
+                                "row"
+                        )
                 );
 
                 assertSame(baselineTheme, M3ThemeManager.getTheme(row));
@@ -21725,10 +21885,13 @@ final class M3ControlStyleTest {
                 root.applyCss();
                 root.layout();
 
-                M3ListViewSkin<?> skin = assertInstanceOf(M3ListViewSkin.class, listView.getSkin());
+                assertInstanceOf(M3ListViewSkin.class, listView.getSkin());
                 M3ListItem row = assertInstanceOf(
                         M3ListItem.class,
-                        Objects.requireNonNull(skin.getAttachedVisibleItem(0), "row")
+                        Objects.requireNonNull(
+                                listView.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0),
+                                "row"
+                        )
                 );
 
                 assertSame(baselineTheme, M3ThemeManager.getTheme(row));
@@ -22293,7 +22456,7 @@ final class M3ControlStyleTest {
         Label navigation = new Label("Menu");
         Label search = new Label("Search");
         Label more = new Label("More");
-        M3TopAppBar topAppBar = new M3TopAppBar(
+        M3TopAppBar topAppBar = topAppBar(
                 "Inbox",
                 M3TopAppBarVariant.CENTER_ALIGNED,
                 navigation,
@@ -22323,7 +22486,7 @@ final class M3ControlStyleTest {
     /// Verifies that top app bar variants update style classes and layout state.
     @Test
     void topAppBarVariantsUpdateStyleClassesAndLayout() {
-        M3TopAppBar topAppBar = new M3TopAppBar("Inbox");
+        M3TopAppBar topAppBar = topAppBar("Inbox");
 
         assertEquals(M3TopAppBarVariant.SMALL, topAppBar.getVariant());
         assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.SMALL.getStyleClass()));
@@ -22359,7 +22522,7 @@ final class M3ControlStyleTest {
     /// Verifies that top app bar token rules apply container metrics.
     @Test
     void topAppBarAppliesMetrics() {
-        M3TopAppBar topAppBar = new M3TopAppBar("Inbox");
+        M3TopAppBar topAppBar = topAppBar("Inbox");
         Pane root = new Pane(topAppBar);
         Scene scene = new Scene(root);
 
@@ -22445,7 +22608,7 @@ final class M3ControlStyleTest {
     /// Verifies that app bar metric tokens are directly styleable from control CSS.
     @Test
     void appBarMetricTokensAreStyleable() {
-        M3TopAppBar topAppBar = new M3TopAppBar("Inbox");
+        M3TopAppBar topAppBar = topAppBar("Inbox");
         topAppBar.setStyle(
                 "-m3-container-height: 70px; "
                         + "-m3-medium-container-height: 118px; "
@@ -22457,7 +22620,7 @@ final class M3ControlStyleTest {
                         + "-m3-action-spacing: 11px;"
         );
 
-        M3BottomAppBar bottomAppBar = new M3BottomAppBar();
+        M3BottomAppBar bottomAppBar = bottomAppBar();
         bottomAppBar.setStyle(
                 "-m3-container-height: 86px; "
                         + "-m3-horizontal-padding: 20px; "
@@ -22516,7 +22679,7 @@ final class M3ControlStyleTest {
             M3Button search = new M3Button("Search");
             M3Button more = new M3Button("More");
             M3Button outside = new M3Button("Outside");
-            M3TopAppBar topAppBar = new M3TopAppBar("Inbox", navigation, hidden, disabled, search, more);
+            M3TopAppBar topAppBar = topAppBar("Inbox", navigation, hidden, disabled, search, more);
             VBox root = new VBox(8.0, topAppBar, outside);
             Stage stage = new Stage();
 
@@ -22563,7 +22726,7 @@ final class M3ControlStyleTest {
 
                 M3TextField editor = createTextField("Search", M3TextInputVariant.OUTLINED);
                 M3Button afterEditor = new M3Button("After editor");
-                M3TopAppBar editorAppBar = new M3TopAppBar("Editable");
+                M3TopAppBar editorAppBar = topAppBar("Editable");
                 editorAppBar.getActions().addAll(editor, afterEditor);
                 root.getChildren().add(editorAppBar);
                 assertContainerNavigationDoesNotStealTextInputFocus(root, editorAppBar, editor, afterEditor, KeyCode.RIGHT);
@@ -22583,7 +22746,7 @@ final class M3ControlStyleTest {
             M3Button share = new M3Button("Share");
             M3Button create = new M3Button("Create");
             M3Button outside = new M3Button("Outside");
-            M3BottomAppBar bottomAppBar = new M3BottomAppBar(
+            M3BottomAppBar bottomAppBar = bottomAppBar(
                     M3BottomAppBarFloatingActionAlignment.END,
                     create,
                     archive,
@@ -22637,7 +22800,7 @@ final class M3ControlStyleTest {
 
                 M3TextField editor = createTextField("Quick action", M3TextInputVariant.OUTLINED);
                 M3Button afterEditor = new M3Button("After editor");
-                M3BottomAppBar editorAppBar = new M3BottomAppBar(editor, afterEditor);
+                M3BottomAppBar editorAppBar = bottomAppBar(editor, afterEditor);
                 root.getChildren().add(editorAppBar);
                 assertContainerNavigationDoesNotStealTextInputFocus(root, editorAppBar, editor, afterEditor, KeyCode.RIGHT);
             } finally {
@@ -22649,7 +22812,7 @@ final class M3ControlStyleTest {
     /// Verifies that top app bars expose the Material scroll-under visual state through a pseudo-class.
     @Test
     void topAppBarScrolledUnderStateUsesPseudoClassAndCss() {
-        M3TopAppBar topAppBar = new M3TopAppBar("Inbox");
+        M3TopAppBar topAppBar = topAppBar("Inbox");
         PseudoClass scrolledUnder = PseudoClass.getPseudoClass("scrolled-under");
 
         StackPane root = new StackPane(topAppBar);
@@ -22681,12 +22844,12 @@ final class M3ControlStyleTest {
     /// Verifies that top app bar variants apply distinct Material title type scale roles.
     @Test
     void topAppBarVariantsApplyTitleTypeScale() {
-        M3TopAppBar small = new M3TopAppBar("Inbox");
-        M3TopAppBar centerAligned = new M3TopAppBar("Calendar");
+        M3TopAppBar small = topAppBar("Inbox");
+        M3TopAppBar centerAligned = topAppBar("Calendar");
         centerAligned.setVariant(M3TopAppBarVariant.CENTER_ALIGNED);
-        M3TopAppBar medium = new M3TopAppBar("Project");
+        M3TopAppBar medium = topAppBar("Project");
         medium.setVariant(M3TopAppBarVariant.MEDIUM);
-        M3TopAppBar large = new M3TopAppBar("Workspace");
+        M3TopAppBar large = topAppBar("Workspace");
         large.setVariant(M3TopAppBarVariant.LARGE);
 
         VBox root = new VBox(small, centerAligned, medium, large);
@@ -22779,7 +22942,7 @@ final class M3ControlStyleTest {
             M3IconButton search = createGeometryTopAppBarIcon("search");
             M3IconButton more = createGeometryTopAppBarIcon("more");
             M3IconButton account = createGeometryTopAppBarIcon("person");
-            M3TopAppBar topAppBar = new M3TopAppBar("Inbox", navigation, search, more);
+            M3TopAppBar topAppBar = topAppBar("Inbox", navigation, search, more);
             Pane root = new Pane(topAppBar);
             Scene scene = new Scene(root, 360.0, 96.0);
 
@@ -22819,7 +22982,7 @@ final class M3ControlStyleTest {
 
     /// Creates a top app bar with action targets suitable for deterministic layout assertions.
     private static M3TopAppBar createGeometryTopAppBar(String title, M3TopAppBarVariant variant) {
-        M3TopAppBar appBar = new M3TopAppBar(
+        M3TopAppBar appBar = topAppBar(
                 title,
                 variant,
                 createGeometryTopAppBarIcon("menu"),
@@ -23026,7 +23189,7 @@ final class M3ControlStyleTest {
             M3IconButton navigationButton = new M3IconButton(navigationIcon);
             M3IconButton searchButton = new M3IconButton(searchIcon);
             M3IconButton accountButton = new M3IconButton(accountIcon);
-            M3TopAppBar topAppBar = new M3TopAppBar(
+            M3TopAppBar topAppBar = topAppBar(
                     "Inbox",
                     navigationButton,
                     searchButton,
@@ -23090,7 +23253,7 @@ final class M3ControlStyleTest {
         Label search = new Label("Search");
         Label more = new Label("More");
         Label create = new Label("Create");
-        M3BottomAppBar bottomAppBar = new M3BottomAppBar(
+        M3BottomAppBar bottomAppBar = bottomAppBar(
                 M3BottomAppBarFloatingActionAlignment.CENTER,
                 create,
                 search
@@ -23117,7 +23280,7 @@ final class M3ControlStyleTest {
     /// Verifies that bottom app bars expose floating action alignment modes.
     @Test
     void bottomAppBarFloatingActionAlignmentUpdatesStyleClasses() {
-        M3BottomAppBar bottomAppBar = new M3BottomAppBar(new Label("Search"));
+        M3BottomAppBar bottomAppBar = bottomAppBar(new Label("Search"));
 
         assertEquals(M3BottomAppBarFloatingActionAlignment.END, bottomAppBar.getFloatingActionAlignment());
         assertTrue(bottomAppBar.getStyleClass().contains(
@@ -23155,7 +23318,7 @@ final class M3ControlStyleTest {
     /// Verifies that bottom app bar token rules apply container metrics.
     @Test
     void bottomAppBarAppliesMetrics() {
-        M3BottomAppBar bottomAppBar = new M3BottomAppBar();
+        M3BottomAppBar bottomAppBar = bottomAppBar();
         Pane root = new Pane(bottomAppBar);
         Scene scene = new Scene(root);
 
@@ -23198,7 +23361,7 @@ final class M3ControlStyleTest {
             M3IconButton search = createGeometryTopAppBarIcon("search");
             M3IconButton more = createGeometryTopAppBarIcon("more");
             M3IconButton account = createGeometryTopAppBarIcon("person");
-            M3BottomAppBar bottomAppBar = new M3BottomAppBar(search, more);
+            M3BottomAppBar bottomAppBar = bottomAppBar(search, more);
             Pane root = new Pane(bottomAppBar);
             Scene scene = new Scene(root, 360.0, 96.0);
 
@@ -23263,13 +23426,13 @@ final class M3ControlStyleTest {
             M3IconButton topNavigation = createGeometryTopAppBarIcon("menu");
             M3IconButton topSearch = createGeometryTopAppBarIcon("search");
             M3IconButton topMore = createGeometryTopAppBarIcon("more");
-            M3TopAppBar topAppBar = new M3TopAppBar("Inbox", topNavigation, topSearch, topMore);
+            M3TopAppBar topAppBar = topAppBar("Inbox", topNavigation, topSearch, topMore);
             topAppBar.setManaged(false);
 
             M3IconButton bottomSearch = createGeometryTopAppBarIcon("search");
             M3IconButton bottomMore = createGeometryTopAppBarIcon("more");
             M3IconButton bottomCreate = createGeometryTopAppBarIcon("add");
-            M3BottomAppBar bottomAppBar = new M3BottomAppBar(
+            M3BottomAppBar bottomAppBar = bottomAppBar(
                     M3BottomAppBarFloatingActionAlignment.END,
                     bottomCreate,
                     bottomSearch,
@@ -23348,7 +23511,7 @@ final class M3ControlStyleTest {
 
     /// Creates a bottom app bar with deterministic slot sizes for geometry tests.
     private static M3BottomAppBar createGeometryBottomAppBar(M3BottomAppBarFloatingActionAlignment alignment) {
-        return new M3BottomAppBar(
+        return bottomAppBar(
                 alignment,
                 createFixedGeometryRegion(56.0, 56.0),
                 createFixedGeometryRegion(48.0, 48.0),
@@ -23479,9 +23642,9 @@ final class M3ControlStyleTest {
     /// Verifies that app bars and banners create Material Design 3 skins.
     @Test
     void appBarsAndBannersCreateMaterialSkins() {
-        M3Banner banner = new M3Banner("Message");
-        M3TopAppBar topAppBar = new M3TopAppBar("Inbox");
-        M3BottomAppBar bottomAppBar = new M3BottomAppBar();
+        M3Banner banner = banner("Message");
+        M3TopAppBar topAppBar = topAppBar("Inbox");
+        M3BottomAppBar bottomAppBar = bottomAppBar();
         Pane root = new Pane(banner, topAppBar, bottomAppBar);
         Scene scene = new Scene(root);
 
@@ -23502,13 +23665,13 @@ final class M3ControlStyleTest {
         FxTestUtils.runOnFxThread(() -> {
             Label topNavigation = new Label("N");
             Label topAction = new Label("A");
-            M3TopAppBar topAppBar = new M3TopAppBar("Inbox", topNavigation, topAction);
+            M3TopAppBar topAppBar = topAppBar("Inbox", topNavigation, topAction);
             topAppBar.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
             topAppBar.setPrefWidth(420.0);
 
             Label bottomAction = new Label("B");
             Label floatingAction = new Label("F");
-            M3BottomAppBar bottomAppBar = new M3BottomAppBar(
+            M3BottomAppBar bottomAppBar = bottomAppBar(
                     M3BottomAppBarFloatingActionAlignment.END,
                     floatingAction,
                     bottomAction
@@ -24696,7 +24859,7 @@ final class M3ControlStyleTest {
             navigationBar.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
             navigationBar.select(navSecond);
 
-            M3SplitButton splitButton = new M3SplitButton("Create", new M3MenuItem("Draft"));
+            M3SplitButton splitButton = splitButton("Create", new M3MenuItem("Draft"));
             splitButton.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
 
             Label carouselFirst = new Label("First");
@@ -24766,11 +24929,11 @@ final class M3ControlStyleTest {
                 navigationBar.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
                 assertEquals(navSecond, navigationBar.getSelectedItem());
 
-                splitButton.getMenuButton().requestFocus();
+                splitButtonMenuButton(splitButton).requestFocus();
                 splitButton.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
-                assertTrue(splitButton.getActionButton().isFocused());
+                assertTrue(splitButtonActionButton(splitButton).isFocused());
                 splitButton.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
-                assertTrue(splitButton.getMenuButton().isFocused());
+                assertTrue(splitButtonMenuButton(splitButton).isFocused());
 
                 carousel.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
                 assertSame(carouselFirst, carousel.getSelectedItem());
@@ -25222,11 +25385,11 @@ final class M3ControlStyleTest {
         FxTestUtils.runOnFxThread(() -> {
             M3Button navigation = new M3Button("Navigation");
             M3Button topAction = new M3Button("Top action");
-            M3TopAppBar topAppBar = new M3TopAppBar("Inbox", navigation, topAction);
+            M3TopAppBar topAppBar = topAppBar("Inbox", navigation, topAction);
 
             M3Button bottomAction = new M3Button("Bottom action");
             M3Button floatingAction = new M3Button("Floating action");
-            M3BottomAppBar bottomAppBar = new M3BottomAppBar(
+            M3BottomAppBar bottomAppBar = bottomAppBar(
                     M3BottomAppBarFloatingActionAlignment.END,
                     floatingAction,
                     bottomAction
@@ -25257,7 +25420,7 @@ final class M3ControlStyleTest {
 
             M3ListItem firstResult = new M3ListItem("First result");
             M3ListItem secondResult = new M3ListItem("Second result");
-            M3SearchView searchView = new M3SearchView("Search", firstResult, secondResult);
+            M3SearchView searchView = searchView("Search", firstResult, secondResult);
             M3Button fabAction = new M3Button("Create note");
             M3FabMenu fabMenu = new M3FabMenu();
             fabMenu.getItems().add(fabAction);
@@ -25371,11 +25534,11 @@ final class M3ControlStyleTest {
 
             M3Button topNavigation = new M3Button("Menu");
             M3Button topAction = new M3Button("Search");
-            M3TopAppBar topAppBar = new M3TopAppBar("Inbox", topNavigation, topAction);
+            M3TopAppBar topAppBar = topAppBar("Inbox", topNavigation, topAction);
 
             M3Button bottomAction = new M3Button("Archive");
             M3Button floatingAction = new M3Button("Create");
-            M3BottomAppBar bottomAppBar = new M3BottomAppBar(
+            M3BottomAppBar bottomAppBar = bottomAppBar(
                     M3BottomAppBarFloatingActionAlignment.END,
                     floatingAction,
                     bottomAction
@@ -25384,13 +25547,13 @@ final class M3ControlStyleTest {
             M3Button surfaceAction = new M3Button("Surface action");
             M3Surface surface = surface(surfaceAction);
 
-            M3SplitButton splitButton = new M3SplitButton("Create", new M3MenuItem("Draft"));
+            M3SplitButton splitButton = splitButton("Create", new M3MenuItem("Draft"));
 
             M3Button formItem = new M3Button("Form item");
             M3FormPane formPane = formPane(formItem);
 
             M3Button sectionItem = new M3Button("Section item");
-            M3FormSection formSection = new M3FormSection("Section", sectionItem);
+            M3FormSection formSection = formSection("Section", sectionItem);
 
             M3Button rowContent = new M3Button("Row content");
             M3Button rowTrailing = new M3Button("Row trailing");
@@ -25445,7 +25608,7 @@ final class M3ControlStyleTest {
                 assertAccessibleFocus(topAppBar, topNavigation);
                 assertAccessibleFocus(bottomAppBar, bottomAction);
                 assertAccessibleFocus(surface, surfaceAction);
-                assertAccessibleFocus(splitButton, splitButton.getActionButton());
+                assertAccessibleFocus(splitButton, splitButtonActionButton(splitButton));
                 assertAccessibleFocus(formPane, formItem);
                 assertAccessibleFocus(formSection, sectionItem);
                 assertAccessibleFocus(formRow, rowContent);
@@ -25462,7 +25625,7 @@ final class M3ControlStyleTest {
     /// Verifies that form sections mirror text alignment when orientation changes at runtime.
     @Test
     void formSectionMirrorsTextAlignmentWhenOrientationChanges() {
-        M3FormSection section = new M3FormSection("Account", new Label("Content"));
+        M3FormSection section = formSection("Account", new Label("Content"));
         section.setSupportingText("Profile settings");
         section.setPrefWidth(360.0);
         Pane root = new Pane(section);
@@ -25576,7 +25739,7 @@ final class M3ControlStyleTest {
             M3Button sectionSecond = new M3Button("Section second");
             hidden.setVisible(false);
             disabled.setDisable(true);
-            M3FormSection section = new M3FormSection("Section", sectionFirst, hidden, disabled, sectionSecond);
+            M3FormSection section = formSection("Section", sectionFirst, hidden, disabled, sectionSecond);
 
             M3TextField editor = new M3TextField("M3FX");
             M3Button inputTrailing = new M3Button("Input trailing");
@@ -25833,7 +25996,6 @@ final class M3ControlStyleTest {
             }
         });
     }
-
 
     /// Verifies that actionable containers ignore activation keys while a nested text input owns focus.
     @Test
@@ -26100,18 +26262,18 @@ final class M3ControlStyleTest {
         FxTestUtils.runOnFxThread(() -> {
             Label sideContent = new Label("Side content");
             M3Button sideAction = createButton("Close", M3ButtonVariant.TEXT);
-            M3SideSheet sideSheet = new M3SideSheet("Details", sideContent, sideAction);
+            M3SideSheet sideSheet = sideSheet("Details", sideContent, sideAction);
             sideSheet.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
             sideSheet.setPrefSize(300.0, 160.0);
 
             Label bottomContent = new Label("Bottom content");
             M3Button bottomAction = createButton("Done", M3ButtonVariant.TEXT);
-            M3BottomSheet bottomSheet = new M3BottomSheet("Queue", bottomContent, bottomAction);
+            M3BottomSheet bottomSheet = bottomSheet("Queue", bottomContent, bottomAction);
             bottomSheet.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
             bottomSheet.setPrefSize(360.0, 160.0);
 
             Label sectionContent = new Label("Section content");
-            M3FormSection formSection = new M3FormSection("Account", sectionContent);
+            M3FormSection formSection = formSection("Account", sectionContent);
             formSection.setSupportingText("Preferences and profile settings");
             formSection.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
             formSection.setPrefWidth(360.0);
@@ -27607,6 +27769,80 @@ final class M3ControlStyleTest {
             assertTextAreasKeepInkInsideContentArea(row);
             assertVisualIconSlotsUseVectorGraphics(row);
             assertFixedTargetControlsKeepCenteredContent(row);
+        });
+    }
+
+    /// Verifies that a focused right-to-left outlined text area keeps content, notch, and adornments stable.
+    @Test
+    void focusedRightToLeftOutlinedTextAreaSnapshotKeepsContentAndAdornmentGeometry() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3TextArea textArea = createTextArea(
+                    "Material text areas share field colors\nbut keep multi-line height tokens.",
+                    M3TextInputVariant.OUTLINED
+            );
+            textArea.setPrefSize(360.0, 168.0);
+
+            M3TextInputLayout layout = new M3TextInputLayout(textArea, "Outlined multi-line input");
+            layout.setLabelText("RTL outlined text area");
+            layout.setLeading(visualIcon("text"));
+            layout.setTrailing(new M3IconButton(visualIcon("info")));
+            layout.setCharacterCounterVisible(true);
+            layout.setCharacterLimit(96);
+            layout.setPrefWidth(440.0);
+
+            Color surface = Color.rgb(248, 240, 249);
+            StackPane root = new StackPane(layout);
+            root.setAlignment(Pos.TOP_LEFT);
+            root.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            root.setStyle("-fx-background-color: rgb(248, 240, 249); -fx-padding: 28px; " + visualTestColors());
+
+            Stage stage = new Stage();
+            try {
+                Scene scene = new Scene(root, 520.0, 280.0);
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.resize(520.0, 280.0);
+                root.layout();
+
+                textArea.requestFocus();
+                root.applyCss();
+                root.layout();
+
+                assertTrue(textArea.isFocused());
+                assertEquals(NodeOrientation.RIGHT_TO_LEFT, layout.getEffectiveNodeOrientation());
+                assertEquals(NodeOrientation.RIGHT_TO_LEFT, textArea.getEffectiveNodeOrientation());
+                assertTextInputLayoutUsesLogicalGeometry(layout, true);
+
+                WritableImage image = snapshotImageOnFxThread(root);
+                Region content = lookupRegion(textArea, ".content");
+                assertTextAreaContentBackgroundMatches(
+                        image,
+                        content,
+                        surface,
+                        0.035,
+                        "focused RTL outlined text area content background"
+                );
+                assertTextAreaTextInkInsideContentArea(
+                        image,
+                        textArea,
+                        content,
+                        "focused RTL outlined text area"
+                );
+                assertSnapshotNodeContainsContrast(image, layout, surface, 0.04);
+                writeVisualSnapshot(image, java.nio.file.Path.of(
+                        "build",
+                        "reports",
+                        "m3fx-visual",
+                        "visual-input-layouts-rtl-focused-text-area.png"
+                ));
+                assertRenderedTextNodesStayInsideLayout(root);
+                assertVisualIconSlotsUseVectorGraphics(root);
+                assertFixedTargetControlsKeepCenteredContent(root);
+            } finally {
+                stage.close();
+            }
         });
     }
 
@@ -29365,14 +29601,14 @@ final class M3ControlStyleTest {
             );
             M3SearchBar searchBar = new M3SearchBar("Search");
             searchBar.setPrefWidth(280.0);
-            M3SearchView searchView = new M3SearchView(
+            M3SearchView searchView = searchView(
                     "Search view",
                     new M3ListItem("First result"),
                     new M3ListItem("Second result")
             );
             searchView.setPrefWidth(340.0);
 
-            M3TopAppBar topAppBar = new M3TopAppBar(
+            M3TopAppBar topAppBar = topAppBar(
                     "Top app bar",
                     M3TopAppBarVariant.CENTER_ALIGNED,
                     new M3IconButton(visualIcon("menu")),
@@ -29380,7 +29616,7 @@ final class M3ControlStyleTest {
                     new M3IconButton(visualIcon("more"))
             );
             topAppBar.setPrefWidth(520.0);
-            M3BottomAppBar bottomAppBar = new M3BottomAppBar(
+            M3BottomAppBar bottomAppBar = bottomAppBar(
                     M3BottomAppBarFloatingActionAlignment.END,
                     createGraphicFab(
                             visualIcon("add"),
@@ -29410,7 +29646,7 @@ final class M3ControlStyleTest {
             );
             navigationDrawer.setPrefWidth(280.0);
 
-            M3SideSheet sideSheet = new M3SideSheet(
+            M3SideSheet sideSheet = sideSheet(
                     "Side sheet",
                     visualLabel("Side sheet content"),
                     createButton("Action", M3ButtonVariant.TEXT)
@@ -29418,7 +29654,7 @@ final class M3ControlStyleTest {
             sideSheet.setVariant(M3SheetVariant.MODAL);
             sideSheet.setPrefSize(280.0, 180.0);
             sideSheet.show();
-            M3BottomSheet bottomSheet = new M3BottomSheet(
+            M3BottomSheet bottomSheet = bottomSheet(
                     "Bottom sheet",
                     visualLabel("Bottom sheet content"),
                     createButton("Done", M3ButtonVariant.TEXT)
@@ -29625,7 +29861,7 @@ final class M3ControlStyleTest {
             M3SearchBar searchBar = new M3SearchBar("Search");
             searchBar.setPrefWidth(300.0);
             M3ListItem searchResult = new M3ListItem("Expressive result");
-            M3SearchView searchView = new M3SearchView("Search", searchResult);
+            M3SearchView searchView = searchView("Search", searchResult);
             searchView.setPrefWidth(340.0);
             M3DatePicker datePicker = new M3DatePicker(LocalDate.of(2026, 5, 18));
             M3ListItem listItem = new M3ListItem("Expressive list item");
@@ -29633,9 +29869,9 @@ final class M3ControlStyleTest {
             M3Card card = new M3Card(new Label("Expressive card"), M3CardVariant.FILLED);
             card.setPrefSize(220.0, 96.0);
             M3Snackbar snackbar = new M3Snackbar("Expressive snackbar", "Action");
-            M3SideSheet sideSheet = new M3SideSheet("Details", new Label("Side sheet content"));
+            M3SideSheet sideSheet = sideSheet("Details", new Label("Side sheet content"));
             sideSheet.setPrefHeight(160.0);
-            M3BottomSheet bottomSheet = new M3BottomSheet("Queue", new Label("Bottom sheet content"));
+            M3BottomSheet bottomSheet = bottomSheet("Queue", new Label("Bottom sheet content"));
             bottomSheet.setPrefWidth(360.0);
             bottomSheet.setPrefHeight(180.0);
             M3NavigationItem navigationBarItem = createNavigationItem("Home", visualIcon("home"), true);
@@ -29653,13 +29889,13 @@ final class M3ControlStyleTest {
             drawerItem.setSelected(true);
             M3NavigationDrawer navigationDrawer = navigationDrawer(drawerItem);
             navigationDrawer.setPrefHeight(120.0);
-            M3TopAppBar topAppBar = new M3TopAppBar(
+            M3TopAppBar topAppBar = topAppBar(
                     "Expressive app bar",
                     new M3IconButton(visualIcon("back")),
                     new M3IconButton(visualIcon("person"))
             );
             topAppBar.setPrefWidth(560.0);
-            M3TopAppBar mediumTopAppBar = new M3TopAppBar(
+            M3TopAppBar mediumTopAppBar = topAppBar(
                     "Medium expressive app bar",
                     M3TopAppBarVariant.MEDIUM,
                     new M3IconButton(visualIcon("back")),
@@ -30319,7 +30555,7 @@ final class M3ControlStyleTest {
     void richTooltipSnapshotRendersPopupSurface() {
         FxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
-            M3RichTooltip tooltip = new M3RichTooltip(
+            M3RichTooltip tooltip = richTooltip(
                     "Rich tooltip",
                     "A wider tooltip surface can include a title, supporting text, and actions.",
                     createButton("Action", M3ButtonVariant.TEXT)
@@ -30672,19 +30908,19 @@ final class M3ControlStyleTest {
         M3Card card = new M3Card();
         card.setVariant(M3CardVariant.OUTLINED);
 
-        M3Banner banner = new M3Banner("Message");
+        M3Banner banner = banner("Message");
         M3Snackbar snackbar = new M3Snackbar("Message");
         M3SnackbarHost snackbarHost = new M3SnackbarHost();
         M3DialogPane dialogPane = new M3DialogPane();
-        M3TopAppBar topAppBar = new M3TopAppBar();
-        M3BottomAppBar bottomAppBar = new M3BottomAppBar();
+        M3TopAppBar topAppBar = topAppBar();
+        M3BottomAppBar bottomAppBar = bottomAppBar();
         M3Toolbar toolbar = new M3Toolbar();
-        M3SideSheet sideSheet = new M3SideSheet();
-        M3BottomSheet bottomSheet = new M3BottomSheet();
+        M3SideSheet sideSheet = sideSheet();
+        M3BottomSheet bottomSheet = bottomSheet();
         M3Scrim scrim = new M3Scrim();
         M3Carousel carousel = new M3Carousel();
         M3FormPane formPane = new M3FormPane();
-        M3FormSection formSection = new M3FormSection("Section");
+        M3FormSection formSection = formSection("Section");
         M3FormRow formRow = new M3FormRow();
         M3NavigationBar navigationBar = new M3NavigationBar();
         M3NavigationRail navigationRail = new M3NavigationRail();
@@ -30743,7 +30979,7 @@ final class M3ControlStyleTest {
         assertTrue(new M3TextInputLayout().getStyleClass().contains(M3TextInputLayout.STYLE_CLASS));
         assertTrue(new M3TextArea().getStyleClass().contains(M3TextArea.STYLE_CLASS));
         assertTrue(new M3Tooltip().getStyleClass().contains(M3Tooltip.STYLE_CLASS));
-        assertTrue(new M3RichTooltip().getStyleClass().contains(M3RichTooltip.STYLE_CLASS));
+        assertTrue(richTooltip().getStyleClass().contains(M3RichTooltip.STYLE_CLASS));
         assertTrue(new M3Avatar("A").getStyleClass().contains(M3Avatar.STYLE_CLASS));
         assertTrue(new M3Icon("A").getStyleClass().contains(M3Icon.STYLE_CLASS));
         assertTrue(new M3IconButton(new M3Icon("A")).getStyleClass().contains(M3IconButton.STYLE_CLASS));
@@ -30759,7 +30995,7 @@ final class M3ControlStyleTest {
         assertTrue(new M3MenuSectionHeader("File").getStyleClass().contains(M3MenuSectionHeader.STYLE_CLASS));
         assertTrue(new M3MenuButton("More").getStyleClass().contains(M3MenuButton.STYLE_CLASS));
         assertTrue(new M3SearchBar().getStyleClass().contains(M3SearchBar.STYLE_CLASS));
-        assertTrue(new M3SearchView().getStyleClass().contains(M3SearchView.STYLE_CLASS));
+        assertTrue(searchView().getStyleClass().contains(M3SearchView.STYLE_CLASS));
         assertTrue(new M3CheckBox().getStyleClass().contains(M3CheckBox.STYLE_CLASS));
         assertTrue(new M3RadioButton().getStyleClass().contains(M3RadioButton.STYLE_CLASS));
         assertTrue(new M3Switch().getStyleClass().contains(M3Switch.STYLE_CLASS));
@@ -31227,7 +31463,7 @@ final class M3ControlStyleTest {
 
         searchBar.executeAccessibleAction(AccessibleAction.SET_TEXT, "material");
         assertEquals("material", searchBar.queryAccessibleAttribute(AccessibleAttribute.TEXT));
-        assertEquals(searchBar.getEditor(), searchBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+        assertEquals(searchBarEditor(searchBar), searchBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
         searchBar.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
         assertEquals(true, searchBar.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
         searchBar.executeAccessibleAction(AccessibleAction.FIRE);
@@ -31235,14 +31471,18 @@ final class M3ControlStyleTest {
 
         M3ListItem first = new M3ListItem("First");
         M3ListItem second = new M3ListItem("Second");
-        M3SearchView searchView = new M3SearchView("Search", first, second);
+        M3SearchView searchView = searchView("Search", first, second);
         AtomicInteger viewActions = new AtomicInteger();
         searchView.setOnAction(event -> viewActions.incrementAndGet());
 
         assertEquals(true, searchView.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
         searchView.executeAccessibleAction(AccessibleAction.SET_TEXT, "query");
         assertEquals("query", searchView.queryAccessibleAttribute(AccessibleAttribute.TEXT));
-        assertEquals(searchView.getEditor(), searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+        TextField searchViewFocusNode = assertInstanceOf(
+                TextField.class,
+                searchView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
+        );
+        assertEquals("query", searchViewFocusNode.getText());
         assertEquals(2, searchView.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
         assertEquals(second, searchView.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
         searchView.executeAccessibleAction(AccessibleAction.COLLAPSE);
@@ -31286,7 +31526,7 @@ final class M3ControlStyleTest {
         Label navigation = new Label("Menu");
         Label search = new Label("Search");
         Label more = new Label("More");
-        M3TopAppBar topAppBar = new M3TopAppBar("Inbox", navigation, search, more);
+        M3TopAppBar topAppBar = topAppBar("Inbox", navigation, search, more);
 
         assertEquals("Inbox", topAppBar.queryAccessibleAttribute(AccessibleAttribute.TEXT));
         assertEquals("Inbox", topAppBar.getAccessibleText());
@@ -31303,7 +31543,7 @@ final class M3ControlStyleTest {
 
         Label bottomAction = new Label("Search");
         Label floatingAction = new Label("Create");
-        M3BottomAppBar bottomAppBar = new M3BottomAppBar(
+        M3BottomAppBar bottomAppBar = bottomAppBar(
                 M3BottomAppBarFloatingActionAlignment.END,
                 floatingAction,
                 bottomAction
@@ -31324,12 +31564,12 @@ final class M3ControlStyleTest {
             M3Button topNavigation = new M3Button("Menu");
             M3Button topSearch = new M3Button("Search");
             M3Button topAccount = new M3Button("Account");
-            M3TopAppBar topAppBar = new M3TopAppBar("Inbox", topNavigation, topSearch, topAccount);
+            M3TopAppBar topAppBar = topAppBar("Inbox", topNavigation, topSearch, topAccount);
 
             M3Button bottomSearch = new M3Button("Search");
             M3Button bottomMore = new M3Button("More");
             M3Button bottomCreate = new M3Button("Create");
-            M3BottomAppBar bottomAppBar = new M3BottomAppBar(
+            M3BottomAppBar bottomAppBar = bottomAppBar(
                     M3BottomAppBarFloatingActionAlignment.END,
                     bottomCreate,
                     bottomSearch,
@@ -31338,7 +31578,7 @@ final class M3ControlStyleTest {
 
             M3Button bannerDismiss = new M3Button("Dismiss");
             M3Button bannerAction = new M3Button("Action");
-            M3Banner banner = new M3Banner("Message", bannerDismiss, bannerAction);
+            M3Banner banner = banner("Message", bannerDismiss, bannerAction);
 
             M3Button surfacePrimary = new M3Button("Primary");
             M3Button surfaceSecondary = new M3Button("Secondary");
@@ -31359,7 +31599,7 @@ final class M3ControlStyleTest {
 
             M3Button sectionFirst = new M3Button("Section first");
             M3Button sectionSecond = new M3Button("Section second");
-            M3FormSection formSection = new M3FormSection("Settings", sectionFirst, sectionSecond);
+            M3FormSection formSection = formSection("Settings", sectionFirst, sectionSecond);
 
             M3Button groupFirst = new M3Button("Group first");
             M3Button groupSecond = new M3Button("Group second");
@@ -31374,11 +31614,11 @@ final class M3ControlStyleTest {
 
             M3Button sideContent = new M3Button("Side content");
             M3Button sideAction = new M3Button("Side action");
-            M3SideSheet sideSheet = new M3SideSheet("Side", sideContent, sideAction);
+            M3SideSheet sideSheet = sideSheet("Side", sideContent, sideAction);
 
             M3Button bottomContent = new M3Button("Bottom content");
             M3Button bottomAction = new M3Button("Bottom action");
-            M3BottomSheet bottomSheet = new M3BottomSheet("Bottom", bottomContent, bottomAction);
+            M3BottomSheet bottomSheet = bottomSheet("Bottom", bottomContent, bottomAction);
 
             VBox root = new VBox(
                     8.0,
@@ -31414,7 +31654,7 @@ final class M3ControlStyleTest {
                 assertCurrentAccessibleFocus(formPane, paneSecond);
                 assertCurrentAccessibleFocus(formSection, sectionSecond);
                 assertCurrentAccessibleFocus(buttonGroup, groupSecond);
-                assertCurrentAccessibleFocus(splitButton, splitButton.getMenuButton());
+                assertCurrentAccessibleFocus(splitButton, splitButtonMenuButton(splitButton));
                 assertCurrentAccessibleFocus(drawerGroup, drawerChild);
                 assertCurrentAccessibleFocus(sideSheet, sideAction);
                 assertCurrentAccessibleFocus(bottomSheet, bottomAction);
@@ -31522,7 +31762,7 @@ final class M3ControlStyleTest {
             M3SnackbarHost snackbarHost = new M3SnackbarHost();
             M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
 
-            M3SearchView searchView = new M3SearchView("Search", new M3Button("Result"));
+            M3SearchView searchView = searchView("Search", new M3Button("Result"));
 
             M3Surface surface = surface(buttonGroup, snackbarHost, searchView);
             Stage stage = new Stage();
@@ -31574,7 +31814,7 @@ final class M3ControlStyleTest {
             M3SnackbarHost snackbarHost = new M3SnackbarHost();
             M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
 
-            M3SearchView searchView = new M3SearchView("Search", new M3Button("Result"));
+            M3SearchView searchView = searchView("Search", new M3Button("Result"));
 
             M3Surface surface = surface(buttonGroup, snackbarHost, searchView);
             Stage stage = new Stage();
@@ -31608,7 +31848,7 @@ final class M3ControlStyleTest {
 
                 surface.executeAccessibleAction(AccessibleAction.SHOW_ITEM, searchView);
 
-                assertTrue(searchView.getEditor().isFocused());
+                assertTrue(searchViewEditor(searchView).isFocused());
             } finally {
                 stage.close();
             }
@@ -31621,7 +31861,7 @@ final class M3ControlStyleTest {
         FxTestUtils.runOnFxThread(() -> {
             M3Button firstResult = new M3Button("First result");
             M3Button secondResult = new M3Button("Second result");
-            M3SearchView searchView = new M3SearchView("Search", firstResult, secondResult);
+            M3SearchView searchView = searchView("Search", firstResult, secondResult);
             M3Surface surface = surface(searchView);
             Stage stage = new Stage();
             try {
@@ -31658,38 +31898,38 @@ final class M3ControlStyleTest {
         FxTestUtils.runOnFxThread(() -> {
             M3Button indexedSideContent = new M3Button("Side content");
             M3Button indexedSideAction = new M3Button("Side action");
-            M3SideSheet indexedSideSheet = new M3SideSheet("Details", indexedSideContent, indexedSideAction);
+            M3SideSheet indexedSideSheet = sideSheet("Details", indexedSideContent, indexedSideAction);
             M3Surface indexedSideSurface = surface(indexedSideSheet);
 
             M3Button directSideContent = new M3Button("Direct side content");
             M3Button directSideAction = new M3Button("Direct side action");
-            M3SideSheet directSideSheet = new M3SideSheet("Direct details", directSideContent, directSideAction);
+            M3SideSheet directSideSheet = sideSheet("Direct details", directSideContent, directSideAction);
             M3Surface directSideSurface = surface(directSideSheet);
 
             M3Button directBottomContent = new M3Button("Direct bottom content");
             M3Button directBottomAction = new M3Button("Direct bottom action");
             M3BottomSheet directBottomSheet =
-                    new M3BottomSheet("Direct queue", directBottomContent, directBottomAction);
+                    bottomSheet("Direct queue", directBottomContent, directBottomAction);
             M3Surface directBottomSurface = surface(directBottomSheet);
 
             M3Button formRowContent = new M3Button("Form row content");
             M3Button formRowAction = new M3Button("Form row action");
-            M3SideSheet formRowSheet = new M3SideSheet("Form details", formRowContent, formRowAction);
+            M3SideSheet formRowSheet = sideSheet("Form details", formRowContent, formRowAction);
             M3FormRow formRow = new M3FormRow("Form row", formRowSheet);
 
             M3Button bottomBarContent = new M3Button("Bottom bar content");
             M3Button bottomBarAction = new M3Button("Bottom bar action");
-            M3SideSheet bottomBarSheet = new M3SideSheet("Bottom bar details", bottomBarContent, bottomBarAction);
-            M3BottomAppBar bottomAppBar = new M3BottomAppBar(bottomBarSheet);
+            M3SideSheet bottomBarSheet = sideSheet("Bottom bar details", bottomBarContent, bottomBarAction);
+            M3BottomAppBar bottomAppBar = bottomAppBar(bottomBarSheet);
 
             M3Button topBarContent = new M3Button("Top bar content");
             M3Button topBarAction = new M3Button("Top bar action");
-            M3SideSheet topBarSheet = new M3SideSheet("Top bar details", topBarContent, topBarAction);
-            M3TopAppBar topAppBar = new M3TopAppBar("Top bar", (Node) null, topBarSheet);
+            M3SideSheet topBarSheet = sideSheet("Top bar details", topBarContent, topBarAction);
+            M3TopAppBar topAppBar = topAppBar("Top bar", (Node) null, topBarSheet);
 
             M3Button searchBarContent = new M3Button("Search bar content");
             M3Button searchBarAction = new M3Button("Search bar action");
-            M3SideSheet searchBarSheet = new M3SideSheet("Search bar details", searchBarContent, searchBarAction);
+            M3SideSheet searchBarSheet = sideSheet("Search bar details", searchBarContent, searchBarAction);
             M3SearchBar searchBar = new M3SearchBar("Search");
             searchBar.getTrailingActions().add(searchBarSheet);
 
@@ -31949,19 +32189,19 @@ final class M3ControlStyleTest {
         assertEquals(AccessibleRole.NODE, new M3Divider().getAccessibleRole());
         assertEquals(AccessibleRole.PARENT, new M3Surface().getAccessibleRole());
         assertEquals(AccessibleRole.PARENT, new M3FormPane().getAccessibleRole());
-        assertEquals(AccessibleRole.PARENT, new M3FormSection().getAccessibleRole());
+        assertEquals(AccessibleRole.PARENT, formSection().getAccessibleRole());
         assertEquals(AccessibleRole.PARENT, new M3FormRow().getAccessibleRole());
         assertEquals(AccessibleRole.PARENT, new M3ValidationSummary().getAccessibleRole());
         assertEquals(AccessibleRole.DIALOG, new M3DialogPane().getAccessibleRole());
         assertEquals(AccessibleRole.PARENT, passiveCard.getAccessibleRole());
         assertEquals(AccessibleRole.BUTTON, actionCard.getAccessibleRole());
         assertTrue(actionCard.isFocusTraversable());
-        assertEquals(AccessibleRole.PARENT, new M3Banner().getAccessibleRole());
+        assertEquals(AccessibleRole.PARENT, banner().getAccessibleRole());
         assertEquals(AccessibleRole.TEXT, snackbar.getAccessibleRole());
         assertEquals("Saved Undo", snackbar.getAccessibleText());
         assertEquals(AccessibleRole.PARENT, new M3SnackbarHost().getAccessibleRole());
-        assertEquals(AccessibleRole.PARENT, new M3SideSheet().getAccessibleRole());
-        assertEquals(AccessibleRole.PARENT, new M3BottomSheet().getAccessibleRole());
+        assertEquals(AccessibleRole.PARENT, sideSheet().getAccessibleRole());
+        assertEquals(AccessibleRole.PARENT, bottomSheet().getAccessibleRole());
         assertEquals(AccessibleRole.BUTTON, new M3Scrim().getAccessibleRole());
         assertEquals("Dismiss", new M3Scrim().getAccessibleText());
         assertEquals(AccessibleRole.LIST_VIEW, new M3Carousel().getAccessibleRole());
@@ -31971,7 +32211,7 @@ final class M3ControlStyleTest {
         assertEquals(AccessibleRole.MENU_ITEM, new M3SubMenuItem().getAccessibleRole());
         assertEquals(AccessibleRole.TEXT, new M3MenuSectionHeader().getAccessibleRole());
         assertEquals(AccessibleRole.PARENT, new M3SearchBar().getAccessibleRole());
-        assertEquals(AccessibleRole.PARENT, new M3SearchView().getAccessibleRole());
+        assertEquals(AccessibleRole.PARENT, searchView().getAccessibleRole());
         assertEquals(AccessibleRole.LIST_VIEW, new M3ListPane().getAccessibleRole());
         assertEquals(AccessibleRole.LIST_VIEW, new M3ListView<>().getAccessibleRole());
         assertEquals(AccessibleRole.LIST_ITEM, new M3ListViewCell<>(new M3ListView<>()).getAccessibleRole());
@@ -31985,8 +32225,8 @@ final class M3ControlStyleTest {
         assertEquals(AccessibleRole.TOGGLE_BUTTON, new M3SegmentedButton().getAccessibleRole());
         assertEquals(AccessibleRole.TAB_PANE, new M3TabBar().getAccessibleRole());
         assertEquals(AccessibleRole.TAB_ITEM, new M3Tab().getAccessibleRole());
-        assertEquals(AccessibleRole.TOOL_BAR, new M3TopAppBar().getAccessibleRole());
-        assertEquals(AccessibleRole.TOOL_BAR, new M3BottomAppBar().getAccessibleRole());
+        assertEquals(AccessibleRole.TOOL_BAR, topAppBar().getAccessibleRole());
+        assertEquals(AccessibleRole.TOOL_BAR, bottomAppBar().getAccessibleRole());
         assertEquals(AccessibleRole.TOOL_BAR, new M3NavigationBar().getAccessibleRole());
         assertEquals(AccessibleRole.TOOL_BAR, new M3NavigationRail().getAccessibleRole());
         assertEquals(AccessibleRole.LIST_VIEW, new M3NavigationDrawer().getAccessibleRole());
@@ -32056,27 +32296,27 @@ final class M3ControlStyleTest {
                 new M3Divider(),
                 new M3Surface(),
                 new M3FormPane(),
-                new M3FormSection(),
+                formSection(),
                 new M3FormRow(),
                 new M3ValidationSummary(),
                 new M3DialogPane(),
                 passiveCard,
-                new M3Banner(),
+                banner(),
                 new M3Snackbar(),
                 new M3SnackbarHost(),
-                new M3SideSheet(),
-                new M3BottomSheet(),
+                sideSheet(),
+                bottomSheet(),
                 new M3Menu(),
                 new M3MenuSectionHeader(),
-                new M3SearchView(),
+                searchView(),
                 new M3ListPane(),
                 new M3ListSectionHeader(),
                 new M3ChipGroup(),
                 new M3IconToggleButtonGroup(),
                 new M3SegmentedButtonGroup(),
                 new M3TabBar(),
-                new M3TopAppBar(),
-                new M3BottomAppBar(),
+                topAppBar(),
+                bottomAppBar(),
                 new M3NavigationBar(),
                 new M3NavigationRail(),
                 new M3NavigationDrawer(),
@@ -32117,7 +32357,7 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3Text(), "/styles/controls/text.css");
         assertUserAgentStylesheet(new M3Surface(), "/styles/controls/surface.css");
         assertUserAgentStylesheet(new M3FormPane(), "/styles/controls/form.css");
-        assertUserAgentStylesheet(new M3FormSection(), "/styles/controls/form.css");
+        assertUserAgentStylesheet(formSection(), "/styles/controls/form.css");
         assertUserAgentStylesheet(new M3FormRow(), "/styles/controls/form.css");
         assertUserAgentStylesheet(new M3ValidationSummary(), "/styles/controls/validation-summary.css");
         assertUserAgentStylesheet(new M3BadgedBox(), "/styles/controls/badge.css");
@@ -32126,9 +32366,9 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3SubMenuItem(), "/styles/controls/list-item.css");
         assertUserAgentStylesheet(new M3MenuSectionHeader(), "/styles/controls/menu.css");
         assertUserAgentStylesheet(new M3SearchBar(), "/styles/controls/search.css");
-        assertUserAgentStylesheet(new M3SearchView(), "/styles/controls/search.css");
-        assertUserAgentStylesheet(new M3SideSheet(), "/styles/controls/sheet.css");
-        assertUserAgentStylesheet(new M3BottomSheet(), "/styles/controls/sheet.css");
+        assertUserAgentStylesheet(searchView(), "/styles/controls/search.css");
+        assertUserAgentStylesheet(sideSheet(), "/styles/controls/sheet.css");
+        assertUserAgentStylesheet(bottomSheet(), "/styles/controls/sheet.css");
         assertUserAgentStylesheet(new M3Scrim(), "/styles/controls/scrim.css");
         assertUserAgentStylesheet(new M3CheckBox(), "/styles/controls/selection.css");
         assertUserAgentStylesheet(new M3RadioButton(), "/styles/controls/selection.css");
@@ -32145,8 +32385,8 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3LoadingIndicator(), "/styles/controls/loading-indicator.css");
         assertUserAgentStylesheet(new M3Divider(), "/styles/controls/divider.css");
         assertUserAgentStylesheet(new M3Badge(), "/styles/controls/badge.css");
-        assertUserAgentStylesheet(new M3TopAppBar(), "/styles/controls/top-app-bar.css");
-        assertUserAgentStylesheet(new M3BottomAppBar(), "/styles/controls/bottom-app-bar.css");
+        assertUserAgentStylesheet(topAppBar(), "/styles/controls/top-app-bar.css");
+        assertUserAgentStylesheet(bottomAppBar(), "/styles/controls/bottom-app-bar.css");
         assertUserAgentStylesheet(new M3NavigationBar(), "/styles/controls/navigation-bar.css");
         assertUserAgentStylesheet(new M3NavigationRail(), "/styles/controls/navigation-rail.css");
         assertUserAgentStylesheet(new M3NavigationDrawer(), "/styles/controls/navigation-drawer.css");
@@ -32159,7 +32399,7 @@ final class M3ControlStyleTest {
         assertUserAgentStylesheet(new M3Card(), "/styles/controls/card.css");
         assertUserAgentStylesheet(new M3DialogPane(), "/styles/controls/dialog.css");
         assertUserAgentStylesheet(new M3Carousel(), "/styles/controls/carousel.css");
-        assertUserAgentStylesheet(new M3Banner(), "/styles/controls/banner.css");
+        assertUserAgentStylesheet(banner(), "/styles/controls/banner.css");
         assertUserAgentStylesheet(new M3Snackbar(), "/styles/controls/snackbar.css");
         assertUserAgentStylesheet(new M3SnackbarHost(), "/styles/controls/snackbar.css");
     }
@@ -33024,6 +33264,30 @@ final class M3ControlStyleTest {
         );
     }
 
+    /// Returns the private modal focus trap owned by a dialog pane.
+    private static M3ModalFocusTrap dialogPaneFocusTrap(M3DialogPane dialogPane) {
+        try {
+            var field = M3DialogPane.class.getDeclaredField("focusTrap");
+            field.setAccessible(true);
+            return (M3ModalFocusTrap) field.get(dialogPane);
+        } catch (ReflectiveOperationException exception) {
+            throw new AssertionError(exception);
+        }
+    }
+
+    /// Returns the active modal focus traps registered for a scene.
+    @SuppressWarnings("unchecked")
+    private static List<M3ModalFocusTrap> activeModalFocusTraps(Scene scene) {
+        try {
+            var field = M3ModalFocusTrap.class.getDeclaredField("ACTIVE_TRAPS");
+            field.setAccessible(true);
+            Map<Scene, List<M3ModalFocusTrap>> traps = (Map<Scene, List<M3ModalFocusTrap>>) field.get(null);
+            @Nullable List<M3ModalFocusTrap> sceneTraps = traps.get(scene);
+            return sceneTraps == null ? List.of() : List.copyOf(sceneTraps);
+        } catch (ReflectiveOperationException exception) {
+            throw new AssertionError(exception);
+        }
+    }
 
     /// Returns whether a snackbar's exposed focus node currently owns focus.
     private static boolean snackbarFocusNodeFocused(@Nullable M3Snackbar snackbar) {
@@ -33105,7 +33369,6 @@ final class M3ControlStyleTest {
         @Nullable M3Tooltip tooltip = tooltipReference.get();
         return tooltip != null && !tooltip.isShowing();
     }
-
 
     /// Closes a real-window motion behavior test scene and clears local motion overrides.
     private static void closeMotionTestScene(
@@ -33483,7 +33746,6 @@ final class M3ControlStyleTest {
         frameScene.root.layout();
     }
 
-
     /// Returns whether circular progress has crossed a rendered indeterminate cycle seam without a visual jump.
     private static boolean progressIndicatorObservedSeamlessCycle(
             AtomicReference<@Nullable IndeterminateProgressMotionScene> sceneReference,
@@ -33514,7 +33776,6 @@ final class M3ControlStyleTest {
                         + ", limit=" + MAXIMUM_PROGRESS_INDICATOR_CYCLE_STEP_DEGREES
         );
     }
-
 
     /// Returns whether a loading indicator has rendered the requested number of distinct real-pulse frames.
     private static boolean loadingIndicatorObservedDistinctFrames(
@@ -33839,6 +34100,21 @@ final class M3ControlStyleTest {
         return (M3IconButton) child;
     }
 
+    /// Returns the embedded editor exposed for accessibility by a search bar.
+    private static TextField searchBarEditor(M3SearchBar searchBar) {
+        return assertInstanceOf(TextField.class, searchBar.queryAccessibleAttribute(AccessibleAttribute.CONTENTS));
+    }
+
+    /// Returns the embedded search bar rendered by a search view.
+    private static M3SearchBar searchViewSearchBar(M3SearchView searchView) {
+        return firstDescendantOfType(searchView, M3SearchBar.class);
+    }
+
+    /// Returns the embedded editor rendered by a search view.
+    private static TextField searchViewEditor(M3SearchView searchView) {
+        return searchBarEditor(searchViewSearchBar(searchView));
+    }
+
     /// Returns the rendered search result container for a search view.
     private static VBox searchViewResultsContainer(M3SearchView searchView) {
         searchView.applyCss();
@@ -34149,9 +34425,9 @@ final class M3ControlStyleTest {
     /// Shows controls that exercise finite overlay-owned state transitions with observable motion.
     private static OverlayOwnedStateMotionScene showOverlayOwnedStateMotionScene() {
         M3Scrim scrim = new M3Scrim();
-        M3SideSheet sideSheet = new M3SideSheet("Details", new Label("Side content"));
-        M3BottomSheet bottomSheet = new M3BottomSheet("Queue", new Label("Bottom content"));
-        M3SearchView searchView = new M3SearchView("Search", new M3ListItem("Result"));
+        M3SideSheet sideSheet = sideSheet("Details", new Label("Side content"));
+        M3BottomSheet bottomSheet = bottomSheet("Queue", new Label("Bottom content"));
+        M3SearchView searchView = searchView("Search", new M3ListItem("Result"));
         M3SnackbarHost snackbarHost = new M3SnackbarHost();
         M3FloatingActionButton action = new M3FloatingActionButton("A");
         M3FabMenu fabMenu = new M3FabMenu();
@@ -35824,7 +36100,7 @@ final class M3ControlStyleTest {
 
         Region leadingSlot = lookupRegion(searchBar, "." + M3SearchBar.LEADING_STYLE_CLASS);
         Region trailingBox = lookupRegion(searchBar, "." + M3SearchBar.TRAILING_STYLE_CLASS);
-        TextInputControl editor = searchBar.getEditor();
+        TextInputControl editor = searchBarEditor(searchBar);
         Bounds leadingBounds = leadingSlot.localToScene(leadingSlot.getBoundsInLocal());
         Bounds editorBounds = editor.localToScene(editor.getBoundsInLocal());
         Bounds trailingBounds = trailingBox.localToScene(trailingBox.getBoundsInLocal());
@@ -35853,7 +36129,7 @@ final class M3ControlStyleTest {
         searchView.applyCss();
         searchView.layout();
 
-        assertSearchBarUsesLogicalGeometry(searchView.getSearchBar(), rightToLeft);
+        assertSearchBarUsesLogicalGeometry(searchViewSearchBar(searchView), rightToLeft);
         assertEquals(
                 rightToLeft ? NodeOrientation.RIGHT_TO_LEFT : NodeOrientation.LEFT_TO_RIGHT,
                 searchViewResultsContainer(searchView).getEffectiveNodeOrientation()
@@ -36120,7 +36396,6 @@ final class M3ControlStyleTest {
         }
         throw new AssertionError("Missing " + orientation + " scroll bar below " + parent);
     }
-
 
     /// Returns whether the supplied path still uses the same sampled path elements.
     private static boolean pathElementsAreSame(Path path, List<PathElement> elements) {
@@ -36900,7 +37175,6 @@ final class M3ControlStyleTest {
         return false;
     }
 
-
     /// Verifies that visual-gallery icon slots use vector graphics instead of text fallback glyphs.
     private static void assertVisualIconSlotsUseVectorGraphics(Node root) {
         visitVisibleNodes(root, node -> {
@@ -37358,7 +37632,6 @@ final class M3ControlStyleTest {
         return null;
     }
 
-
     /// Returns a date picker day cell for the supplied date.
     private static ButtonBase dateCellForDate(M3DatePicker picker, LocalDate date) {
         for (Node node : picker.lookupAll("." + M3DatePicker.DAY_CELL_STYLE_CLASS)) {
@@ -37655,7 +37928,6 @@ final class M3ControlStyleTest {
         return item;
     }
 
-
     /// Returns a rendered pixel from a node-local coordinate in a root snapshot.
     private static Color snapshotNodePixel(WritableImage image, Node node, double x, double y) {
         var point = node.localToScene(x, y);
@@ -37664,7 +37936,7 @@ final class M3ControlStyleTest {
         return image.getPixelReader().getColor(pixelX, pixelY);
     }
 
-    /// Verifies that a rendered region has rounded or square top edge corners.
+    /// Verifies that a rendered region has rounded or square physical top edge corners.
     private static void assertSnapshotEdgeCorners(
             WritableImage image,
             Region region,
@@ -37672,15 +37944,22 @@ final class M3ControlStyleTest {
             boolean roundedRight
     ) {
         Color background = Color.WHITE;
-        double topY = 2.0;
-        double leftDistance = colorDistance(snapshotNodePixel(image, region, 2.0, topY), background);
-        double rightDistance =
-                colorDistance(snapshotNodePixel(image, region, region.getWidth() - 3.0, topY), background);
+        Bounds bounds = region.localToScene(region.getLayoutBounds());
+        double topY = bounds.getMinY() + 2.0;
+        double leftDistance = colorDistance(snapshotScenePixel(image, bounds.getMinX() + 2.0, topY), background);
+        double rightDistance = colorDistance(snapshotScenePixel(image, bounds.getMaxX() - 3.0, topY), background);
 
         assertEquals(roundedLeft, leftDistance < 0.04,
                 () -> "left corner distance=" + leftDistance + ", region=" + region);
         assertEquals(roundedRight, rightDistance < 0.04,
                 () -> "right corner distance=" + rightDistance + ", region=" + region);
+    }
+
+    /// Returns a rendered pixel from a scene coordinate in a root snapshot.
+    private static Color snapshotScenePixel(WritableImage image, double x, double y) {
+        int pixelX = clampPixelCoordinate((int) Math.round(x), (int) image.getWidth());
+        int pixelY = clampPixelCoordinate((int) Math.round(y), (int) image.getHeight());
+        return image.getPixelReader().getColor(pixelX, pixelY);
     }
 
     /// Clamps a pixel coordinate to a rendered snapshot dimension.
@@ -38576,6 +38855,22 @@ final class M3ControlStyleTest {
         return new M3Button(text, variant, onAction);
     }
 
+    /// Returns the primary action part exposed by a split button.
+    private static M3Button splitButtonActionButton(M3SplitButton splitButton) {
+        return assertInstanceOf(
+                M3Button.class,
+                splitButton.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0)
+        );
+    }
+
+    /// Returns the menu part exposed by a split button.
+    private static M3MenuButton splitButtonMenuButton(M3SplitButton splitButton) {
+        return assertInstanceOf(
+                M3MenuButton.class,
+                splitButton.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1)
+        );
+    }
+
     /// Creates a split button with the requested size.
     private static M3SplitButton createSizedSplitButton(M3SplitButtonSize size) {
         M3SplitButton splitButton = createSplitButton("Create", M3ButtonVariant.TONAL, new M3MenuItem("Draft"));
@@ -38593,17 +38888,18 @@ final class M3ControlStyleTest {
             double spacing
     ) {
         assertTrue(splitButton.getStyleClass().contains(size.getStyleClass()));
-        assertEquals(containerHeight, splitButton.getActionButton().getContainerHeight(), 0.0001);
-        assertEquals(containerHeight, splitButton.getMenuButton().getContainerHeight(), 0.0001);
-        assertEquals(actionHorizontalPadding, splitButton.getActionButton().getHorizontalPadding(), 0.0001);
-        assertEquals(menuButtonWidth, splitButton.getMenuButton().getPrefWidth(), 0.0001);
-        assertEquals(0.0, splitButton.getMenuButton().getHorizontalPadding(), 0.0001);
+        assertEquals(containerHeight, splitButtonActionButton(splitButton).getContainerHeight(), 0.0001);
+        assertEquals(containerHeight, splitButtonMenuButton(splitButton).getContainerHeight(), 0.0001);
+        assertEquals(actionHorizontalPadding, splitButtonActionButton(splitButton).getHorizontalPadding(), 0.0001);
+        assertEquals(menuButtonWidth, splitButtonMenuButton(splitButton).getPrefWidth(), 0.0001);
+        assertEquals(0.0, splitButtonMenuButton(splitButton).getHorizontalPadding(), 0.0001);
         assertEquals(spacing, splitButton.getSpacing(), 0.0001);
     }
 
     /// Creates a split button with the requested variant and menu items.
     private static M3SplitButton createSplitButton(String text, M3ButtonVariant variant, Node... items) {
-        M3SplitButton button = new M3SplitButton(text, items);
+        M3SplitButton button = new M3SplitButton(text);
+        button.getItems().addAll(items);
         button.setVariant(variant);
         return button;
     }
@@ -38646,7 +38942,7 @@ final class M3ControlStyleTest {
 
     /// Creates a banner with a leading icon and trailing actions.
     private static M3Banner createBanner(String text, Node icon, Node... actions) {
-        M3Banner banner = new M3Banner(text, actions);
+        M3Banner banner = banner(text, actions);
         banner.setIcon(Objects.requireNonNull(icon, "icon"));
         return banner;
     }
@@ -39260,13 +39556,31 @@ final class M3ControlStyleTest {
 
     /// Creates a key event for control behavior tests.
     private static KeyEvent keyEvent(EventType<KeyEvent> eventType, KeyCode code) {
-        return new KeyEvent(eventType, "", "", code, false, false, false, false);
+        return keyEvent(eventType, code, false);
+    }
+
+    /// Creates a key event for control behavior tests with an optional Shift modifier.
+    private static KeyEvent keyEvent(EventType<KeyEvent> eventType, KeyCode code, boolean shiftDown) {
+        return keyEvent(eventType, code, shiftDown, false, false, false);
+    }
+
+    /// Creates a key event for control behavior tests with explicit keyboard modifiers.
+    private static KeyEvent keyEvent(
+            EventType<KeyEvent> eventType,
+            KeyCode code,
+            boolean shiftDown,
+            boolean controlDown,
+            boolean altDown,
+            boolean metaDown
+    ) {
+        return new KeyEvent(eventType, "", "", code, shiftDown, controlDown, altDown, metaDown);
     }
 
     /// Creates a key event with an explicit source and target node.
     private static KeyEvent targetedKeyEvent(EventType<KeyEvent> eventType, KeyCode code, Node target) {
         return new KeyEvent(target, target, eventType, "", "", code, false, false, false, false);
     }
+
     /// Creates a typed key event for printable-key behavior tests.
     private static KeyEvent keyTypedEvent(String character) {
         return new KeyEvent(KeyEvent.KEY_TYPED, character, character, KeyCode.UNDEFINED, false, false, false, false);
@@ -39286,7 +39600,7 @@ final class M3ControlStyleTest {
             String supportingText,
             Node... actions
     ) {
-        M3RichTooltip tooltip = new M3RichTooltip(title, supportingText, actions);
+        M3RichTooltip tooltip = richTooltip(title, supportingText, actions);
         M3Tooltip.install(node, tooltip);
         return tooltip;
     }

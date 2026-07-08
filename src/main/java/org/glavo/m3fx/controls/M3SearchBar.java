@@ -201,7 +201,7 @@ public class M3SearchBar extends Control {
     /// Returns the editable search input used by this search bar.
     ///
     /// @return the embedded editable search input
-    public final TextField getEditor() {
+    final TextField editor() {
         return editor;
     }
 

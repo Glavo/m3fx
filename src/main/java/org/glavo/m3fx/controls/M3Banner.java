@@ -118,14 +118,6 @@ public class M3Banner extends Control {
         setText(text);
     }
 
-    /// Creates a banner with message text and trailing actions.
-    ///
-    /// @param text the banner message text
-    /// @param actions the trailing action nodes
-    public M3Banner(String text, Node... actions) {
-        this(text);
-        getActions().addAll(actions);
-    }
 
     /// Returns the banner message text.
     ///
@@ -175,10 +167,6 @@ public class M3Banner extends Control {
     public final ObservableList<Node> getActions() {
         return actions;
     }
-
-
-
-
 
     /// Returns the minimum banner container height token.
     ///
@@ -442,7 +430,6 @@ public class M3Banner extends Control {
                 M3FocusTraversal.focusTargets(getIcon(), getActions())
         );
     }
-
 
     /// Returns the current or first reachable accessibility focus node.
     private @Nullable Node accessibleFocusNode() {

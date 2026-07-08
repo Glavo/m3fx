@@ -142,7 +142,7 @@ public class M3FabMenu extends Control {
     /// Returns the toggle floating action button.
     ///
     /// @return the toggle floating action button
-    public final M3FloatingActionButton getToggleButton() {
+    final M3FloatingActionButton getToggleButton() {
         return toggleButton;
     }
 

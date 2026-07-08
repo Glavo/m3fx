@@ -170,23 +170,6 @@ public class M3TopAppBar extends Control {
         setTitle(title);
     }
 
-    /// Creates a top app bar with title text, navigation content, and trailing actions.
-    public M3TopAppBar(String title, @Nullable Node navigation, Node... actions) {
-        this(title);
-        setNavigation(navigation);
-        getActions().addAll(actions);
-    }
-
-    /// Creates a top app bar with title text, variant, navigation content, and trailing actions.
-    public M3TopAppBar(
-            String title,
-            M3TopAppBarVariant variant,
-            @Nullable Node navigation,
-            Node... actions
-    ) {
-        this(title, navigation, actions);
-        setVariant(variant);
-    }
 
     /// Returns the app bar title.
     public final String getTitle() {
@@ -259,10 +242,6 @@ public class M3TopAppBar extends Control {
     public final ObservableList<Node> getActions() {
         return actions;
     }
-
-
-
-
 
     /// Returns the small and centered top app bar container height token.
     ///
@@ -573,7 +552,6 @@ public class M3TopAppBar extends Control {
                 M3FocusTraversal.focusTargets(getNavigation(), getActions())
         );
     }
-
 
     /// Updates the accessible text exposed by the app bar.
     private void updateAccessibleText() {

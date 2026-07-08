@@ -112,6 +112,23 @@ final class M3PickerDialogTest {
         assertEquals(5, M3DatePresets.common(anchor).size());
     }
 
+    /// Verifies single-date preset factory failure paths and immutable common lists.
+    @Test
+    @SuppressWarnings("DataFlowIssue")
+    void datePresetFactoriesValidateInputsAndReturnImmutableLists() {
+        LocalDate anchor = LocalDate.of(2026, 5, 19);
+
+        assertThrows(NullPointerException.class, () -> M3DatePresets.today(null));
+        assertThrows(NullPointerException.class, () -> M3DatePresets.tomorrow(null));
+        assertThrows(NullPointerException.class, () -> M3DatePresets.yesterday(null));
+        assertThrows(NullPointerException.class, () -> M3DatePresets.daysFrom(null, 7));
+        assertThrows(NullPointerException.class, () -> M3DatePresets.thisMonthStart(null));
+        assertThrows(NullPointerException.class, () -> M3DatePresets.nextMonthStart(null));
+        assertThrows(NullPointerException.class, () -> M3DatePresets.common(null));
+        assertThrows(UnsupportedOperationException.class,
+                () -> M3DatePresets.common(anchor).add(M3DatePresets.today(anchor)));
+    }
+
     /// Verifies single-date dialog preset actions update the selected date.
     @Test
     void datePickerDialogAppliesPresetActions() {
@@ -189,6 +206,32 @@ final class M3PickerDialogTest {
                 M3DateRangePresets.nextMonth(anchor).range());
         assertEquals(6, M3DateRangePresets.common(anchor, DayOfWeek.MONDAY).size());
         assertThrows(IllegalArgumentException.class, () -> M3DateRangePresets.nextDays(anchor, 0));
+    }
+
+    /// Verifies date range preset factory failure paths and immutable common lists.
+    @Test
+    @SuppressWarnings("DataFlowIssue")
+    void dateRangePresetFactoriesValidateInputsAndReturnImmutableLists() {
+        LocalDate anchor = LocalDate.of(2026, 5, 19);
+
+        assertThrows(NullPointerException.class, () -> M3DateRangePresets.today(null));
+        assertThrows(NullPointerException.class, () -> M3DateRangePresets.tomorrow(null));
+        assertThrows(NullPointerException.class, () -> M3DateRangePresets.nextDays(null, 7));
+        assertThrows(NullPointerException.class, () -> M3DateRangePresets.previousDays(null, 7));
+        assertThrows(NullPointerException.class, () -> M3DateRangePresets.thisWeek(null, DayOfWeek.MONDAY));
+        assertThrows(NullPointerException.class, () -> M3DateRangePresets.thisWeek(anchor, null));
+        assertThrows(NullPointerException.class, () -> M3DateRangePresets.nextWeek(null, DayOfWeek.MONDAY));
+        assertThrows(NullPointerException.class, () -> M3DateRangePresets.nextWeek(anchor, null));
+        assertThrows(NullPointerException.class, () -> M3DateRangePresets.thisMonth(null));
+        assertThrows(NullPointerException.class, () -> M3DateRangePresets.nextMonth(null));
+        assertThrows(NullPointerException.class, () -> M3DateRangePresets.common(null, DayOfWeek.MONDAY));
+        assertThrows(NullPointerException.class, () -> M3DateRangePresets.common(anchor, null));
+        assertThrows(IllegalArgumentException.class, () -> M3DateRangePresets.nextDays(anchor, -1));
+        assertThrows(IllegalArgumentException.class, () -> M3DateRangePresets.previousDays(anchor, 0));
+        assertThrows(IllegalArgumentException.class, () -> M3DateRangePresets.previousDays(anchor, -1));
+        assertThrows(UnsupportedOperationException.class,
+                () -> M3DateRangePresets.common(anchor, DayOfWeek.MONDAY)
+                        .add(M3DateRangePresets.today(anchor)));
     }
 
     /// Verifies range dialog content, OK state, and result conversion.
@@ -390,6 +433,21 @@ final class M3PickerDialogTest {
         assertEquals(LocalTime.of(15, 0), M3TimePresets.afternoon().time());
         assertEquals(LocalTime.of(18, 0), M3TimePresets.evening().time());
         assertEquals(5, M3TimePresets.common(anchor).size());
+    }
+
+    /// Verifies time preset factory normalization, failure paths, and immutable common lists.
+    @Test
+    @SuppressWarnings("DataFlowIssue")
+    void timePresetFactoriesValidateInputsNormalizePrecisionAndReturnImmutableLists() {
+        LocalTime anchor = LocalTime.of(10, 30, 45, 123_000_000);
+
+        assertEquals(LocalTime.of(10, 30), M3TimePresets.minutesFrom(anchor, 0).time());
+        assertEquals(LocalTime.of(10, 45), M3TimePresets.minutesFrom(anchor, 15).time());
+        assertThrows(NullPointerException.class, () -> M3TimePresets.now(null));
+        assertThrows(NullPointerException.class, () -> M3TimePresets.minutesFrom(null, 15));
+        assertThrows(NullPointerException.class, () -> M3TimePresets.common(null));
+        assertThrows(UnsupportedOperationException.class,
+                () -> M3TimePresets.common(anchor).add(M3TimePresets.noon()));
     }
 
     /// Verifies time dialog preset actions update the selected time.

@@ -3,8 +3,12 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.scene.AccessibleAttribute;
+import javafx.scene.Node;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.HBox;
+import org.glavo.m3fx.controls.M3Button;
+import org.glavo.m3fx.controls.M3MenuButton;
 import org.glavo.m3fx.controls.M3SplitButton;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -24,8 +28,35 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
         container.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(control));
         container.spacingProperty().bind(control.spacingProperty());
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
-        container.getChildren().setAll(control.getActionButton(), control.getMenuButton());
+        container.getChildren().setAll(actionButton(control), menuButton(control));
         getChildren().add(container);
+    }
+
+    /// Returns the primary action button from the skinnable split button.
+    private static M3Button actionButton(M3SplitButton control) {
+        Node node = splitButtonPart(control, 0);
+        if (node instanceof M3Button button) {
+            return button;
+        }
+        throw new IllegalStateException("Split button action part must be an M3Button");
+    }
+
+    /// Returns the menu button from the skinnable split button.
+    private static M3MenuButton menuButton(M3SplitButton control) {
+        Node node = splitButtonPart(control, 1);
+        if (node instanceof M3MenuButton button) {
+            return button;
+        }
+        throw new IllegalStateException("Split button menu part must be an M3MenuButton");
+    }
+
+    /// Returns one indexed split button part exposed by accessibility.
+    private static Node splitButtonPart(M3SplitButton control, int index) {
+        Object part = control.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, index);
+        if (part instanceof Node node) {
+            return node;
+        }
+        throw new IllegalStateException("Split button part is missing at index " + index);
     }
 
     /// Removes child references before disposal.

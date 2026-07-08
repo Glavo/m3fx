@@ -123,65 +123,6 @@ public class M3DateRangePickerSkin extends SkinBase<M3DateRangePicker> {
         super.dispose();
     }
 
-    /// Returns the number of visible day cells currently exposed by the skin.
-    ///
-    /// @return the number of visible day cells currently exposed by the skin
-    public final int getVisibleDayCellCount() {
-        int count = 0;
-        for (DateCellButton dayCell : dayCells) {
-            if (isAccessibleDayCell(dayCell)) {
-                count++;
-            }
-        }
-        return count;
-    }
-
-    /// Returns a visible day cell by visible index.
-    ///
-    /// @param visibleIndex the zero-based index among visible day cells
-    /// @return the visible day cell at the requested index, or `null` when the index is out of range
-    public final @Nullable Node getVisibleDayCell(int visibleIndex) {
-        if (visibleIndex < 0) {
-            return null;
-        }
-
-        int currentIndex = 0;
-        for (DateCellButton dayCell : dayCells) {
-            if (!isAccessibleDayCell(dayCell)) {
-                continue;
-            }
-            if (currentIndex == visibleIndex) {
-                return dayCell;
-            }
-            currentIndex++;
-        }
-        return null;
-    }
-
-    /// Returns the visible day cell for a date.
-    ///
-    /// @param date the date represented by the requested day cell
-    /// @return the visible day cell for the date, or `null` when the date is not currently visible
-    public final @Nullable Node getDayCell(LocalDate date) {
-        for (DateCellButton dayCell : dayCells) {
-            if (isAccessibleDayCell(dayCell) && date.equals(dayCell.getUserData())) {
-                return dayCell;
-            }
-        }
-        return null;
-    }
-
-    /// Returns the first visible enabled day cell.
-    ///
-    /// @return the first visible enabled day cell, or `null` when none is available
-    public final @Nullable Node getFirstEnabledDayCell() {
-        for (DateCellButton dayCell : dayCells) {
-            if (isAccessibleDayCell(dayCell) && !dayCell.isDisabled()) {
-                return dayCell;
-            }
-        }
-        return null;
-    }
 
     /// Computes the minimum width from the calendar container.
     @Override

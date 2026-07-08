@@ -14,13 +14,13 @@ import javafx.collections.ListChangeListener;
 import javafx.geometry.Insets;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.Parent;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Rectangle;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3ListItem;
-import org.glavo.m3fx.controls.M3NavigationDrawer;
 import org.glavo.m3fx.controls.M3NavigationDrawerGroup;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
@@ -320,13 +320,13 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
         requestAncestorDrawerLayout();
     }
 
-    /// Requests layout on the ancestor navigation drawer while child rows change their revealed height.
+    /// Requests layout up to the containing scroll pane while child rows change their revealed height.
     private void requestAncestorDrawerLayout() {
         @Nullable Parent parent = getSkinnable().getParent();
         while (parent != null) {
             parent.requestLayout();
-            if (parent instanceof M3NavigationDrawer) {
-                return;
+            if (parent instanceof ScrollPane) {
+                break;
             }
             parent = parent.getParent();
         }

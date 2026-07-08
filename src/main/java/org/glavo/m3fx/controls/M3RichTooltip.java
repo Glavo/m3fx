@@ -81,16 +81,6 @@ public class M3RichTooltip extends M3Tooltip {
         setSupportingText(supportingText);
     }
 
-    /// Creates a rich tooltip with title, supporting text, and action nodes.
-    ///
-    /// @param title the title displayed at the top of the tooltip
-    /// @param supportingText the supporting text displayed below the title
-    /// @param actions the action nodes displayed in the tooltip action row
-    public M3RichTooltip(String title, String supportingText, Node... actions) {
-        this(title, supportingText);
-        getActions().addAll(actions);
-    }
-
 
     /// Returns the rich tooltip title.
     ///
@@ -141,10 +131,6 @@ public class M3RichTooltip extends M3Tooltip {
         return actions.getChildren();
     }
 
-
-
-
-
     /// Initializes rich tooltip content nodes, style classes, and property bindings.
     private void initializeRichTooltip() {
         M3ControlStyles.add(this, STYLE_CLASS);
@@ -170,7 +156,6 @@ public class M3RichTooltip extends M3Tooltip {
         updateTextState();
         updateActionsVisibility();
     }
-
 
     /// Updates visible labels and the inherited tooltip text used for accessible help.
     private void updateTextState() {

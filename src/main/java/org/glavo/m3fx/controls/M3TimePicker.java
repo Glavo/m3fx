@@ -13,6 +13,7 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
@@ -26,6 +27,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -431,58 +433,53 @@ public class M3TimePicker extends Control {
 
     /// Returns the number of visible selectable cells.
     private int accessibleCellCount() {
-        @Nullable M3TimePickerSkin skin = materialSkin();
-        return skin == null ? logicalCellCount() : skin.getVisibleCellCount();
+        List<Node> cells = accessibleTimeCells();
+        return getSkin() instanceof M3TimePickerSkin ? cells.size() : logicalCellCount();
     }
 
     /// Returns the visible selectable cell at an accessibility index.
     private @Nullable Node accessibleCellAt(Object... parameters) {
         int index = M3Accessible.indexParameter(parameters);
-        if (index < 0) {
+        if (index < 0 || !(getSkin() instanceof M3TimePickerSkin)) {
             return null;
         }
 
-        @Nullable M3TimePickerSkin skin = materialSkin();
-        return skin == null ? null : skin.getVisibleCell(index);
+        List<Node> cells = accessibleTimeCells();
+        return index < cells.size() ? cells.get(index) : null;
     }
 
     /// Returns the preferred focus node for the currently displayed time cells.
     private Node accessibleFocusNode() {
-        @Nullable M3TimePickerSkin skin = materialSkin();
-        if (skin == null) {
+        if (!(getSkin() instanceof M3TimePickerSkin)) {
             return this;
         }
 
-        @Nullable Node focusedCell = currentFocusedCell(skin);
+        @Nullable Node focusedCell = currentFocusedCell();
         if (focusedCell != null) {
             return focusedCell;
         }
 
         @Nullable LocalTime selectedTime = getValue();
         if (selectedTime != null) {
-            @Nullable Node selectedCell = skin.getCell(selectedTime);
+            @Nullable Node selectedCell = timeCellForTime(selectedTime);
             if (selectedCell != null && !selectedCell.isDisabled()) {
                 return selectedCell;
             }
         }
 
-        @Nullable Node firstEnabledCell = skin.getFirstEnabledCell();
+        @Nullable Node firstEnabledCell = firstEnabledTimeCell();
         return firstEnabledCell == null ? this : firstEnabledCell;
     }
 
     /// Returns the currently focused visible time cell, or `null` when focus is outside this picker.
-    private @Nullable Node currentFocusedCell(M3TimePickerSkin skin) {
+    private @Nullable Node currentFocusedCell() {
         @Nullable Node focusOwner = getScene() == null ? null : getScene().getFocusOwner();
         if (focusOwner == null) {
             return null;
         }
 
-        int count = skin.getVisibleCellCount();
-        for (int index = 0; index < count; index++) {
-            @Nullable Node cell = skin.getVisibleCell(index);
-            if (cell != null
-                    && !cell.isDisabled()
-                    && M3Accessible.containsNode(cell, focusOwner)) {
+        for (Node cell : accessibleTimeCells()) {
+            if (!cell.isDisabled() && M3Accessible.containsNode(cell, focusOwner)) {
                 return M3Accessible.canReach(focusOwner) ? focusOwner : cell;
             }
         }
@@ -531,8 +528,7 @@ public class M3TimePicker extends Control {
 
     /// Shows the rendered time cell for a time when it is visible.
     private boolean showAccessibleTime(LocalTime time) {
-        @Nullable M3TimePickerSkin skin = materialSkin();
-        @Nullable Node cell = skin == null ? null : skin.getCell(normalizeTime(time));
+        @Nullable Node cell = timeCellForTime(normalizeTime(time));
         return cell != null && !cell.isDisabled() && M3Accessible.showItem(this, cell);
     }
 
@@ -541,8 +537,7 @@ public class M3TimePicker extends Control {
         if (isTimeDisabled(time)) {
             return false;
         }
-        @Nullable M3TimePickerSkin skin = materialSkin();
-        return focusAccessibleNode(skin == null ? this : skin.getCell(normalizeTime(time)));
+        return focusAccessibleNode(timeCellForTime(normalizeTime(time)));
     }
 
     /// Returns the time item requested by accessibility parameters.
@@ -599,6 +594,54 @@ public class M3TimePicker extends Control {
         return item instanceof Node node && node.getUserData() instanceof LocalTime time ? time : null;
     }
 
+    /// Returns visible rendered time cells in layout traversal order.
+    private List<Node> accessibleTimeCells() {
+        ArrayList<Node> cells = new ArrayList<>();
+        collectAccessibleTimeCells(this, cells);
+        return cells;
+    }
+
+    /// Returns the rendered visible time cell for the supplied time.
+    private @Nullable Node timeCellForTime(LocalTime time) {
+        LocalTime normalizedTime = normalizeTime(time);
+        for (Node cell : accessibleTimeCells()) {
+            if (normalizedTime.equals(timeFromNode(cell))) {
+                return cell;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the first rendered visible enabled time cell.
+    private @Nullable Node firstEnabledTimeCell() {
+        for (Node cell : accessibleTimeCells()) {
+            if (!cell.isDisabled()) {
+                return cell;
+            }
+        }
+        return null;
+    }
+
+    /// Collects visible rendered time cells from a scene-graph subtree.
+    private static void collectAccessibleTimeCells(Node node, List<Node> cells) {
+        if (isAccessibleTimeCell(node)) {
+            cells.add(node);
+        }
+        if (node instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                collectAccessibleTimeCells(child, cells);
+            }
+        }
+    }
+
+    /// Returns whether a node is a visible rendered time cell.
+    private static boolean isAccessibleTimeCell(Node node) {
+        return node.getStyleClass().contains(CELL_STYLE_CLASS)
+                && timeFromNode(node) != null
+                && M3Accessible.isEffectivelyReachable(node)
+                && !node.isMouseTransparent();
+    }
+
     /// Returns the current logical selectable cell count before the skin is installed.
     private int logicalCellCount() {
         int hourCellCount = isUse24HourClock() ? 24 : 12;
@@ -607,11 +650,6 @@ public class M3TimePicker extends Control {
         return hourCellCount + minuteCellCount + periodCellCount;
     }
 
-    /// Returns the current Material time picker skin.
-    private @Nullable M3TimePickerSkin materialSkin() {
-        Skin<?> skin = getSkin();
-        return skin instanceof M3TimePickerSkin materialSkin ? materialSkin : null;
-    }
 
     /// Notifies accessibility clients that visible time cells changed.
     private void notifyAccessibleItemsChanged() {

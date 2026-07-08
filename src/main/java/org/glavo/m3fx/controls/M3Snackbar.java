@@ -540,8 +540,8 @@ public class M3Snackbar extends Control {
 
     /// Returns the rendered action button when one is visible.
     private @Nullable Node renderedActionButton() {
-        Skin<?> skin = getSkin();
-        return skin instanceof M3SnackbarSkin snackbarSkin ? snackbarSkin.getActionButton() : null;
+        @Nullable Node actionButton = lookup(".m3-snackbar-action");
+        return actionButton != null && actionButton.isManaged() ? actionButton : null;
     }
 
     /// Focuses the snackbar action button when it exists.

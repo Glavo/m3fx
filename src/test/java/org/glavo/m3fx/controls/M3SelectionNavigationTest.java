@@ -910,8 +910,8 @@ final class M3SelectionNavigationTest {
         FxTestUtils.runOnFxThread(() -> {
             VBox root = new VBox(
                     new M3BadgedBox(),
-                    new M3Banner("Message"),
-                    new M3BottomAppBar(),
+                    banner("Message"),
+                    bottomAppBar(),
                     new M3ButtonGroup(),
                     new M3ChipGroup(),
                     new M3FormPane(),
@@ -923,7 +923,7 @@ final class M3SelectionNavigationTest {
                     new M3Surface(),
                     new M3TabBar(),
                     new M3Toolbar(),
-                    new M3TopAppBar(),
+                    topAppBar(),
                     new M3SegmentedButtonGroup(),
                     new M3IconToggleButtonGroup()
             );

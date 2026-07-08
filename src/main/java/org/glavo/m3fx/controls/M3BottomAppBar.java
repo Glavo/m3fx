@@ -116,28 +116,6 @@ public class M3BottomAppBar extends Control {
         initialize();
     }
 
-    /// Creates a bottom app bar containing the supplied action nodes.
-    ///
-    /// @param actions the regular action nodes displayed in the bar
-    public M3BottomAppBar(Node... actions) {
-        initialize();
-        getActions().addAll(actions);
-    }
-
-    /// Creates a bottom app bar with floating action content, alignment, and regular actions.
-    ///
-    /// @param floatingActionAlignment the alignment of the optional floating action node
-    /// @param floatingAction the optional floating action node, or `null` for no floating action
-    /// @param actions the regular action nodes displayed in the bar
-    public M3BottomAppBar(
-            M3BottomAppBarFloatingActionAlignment floatingActionAlignment,
-            @Nullable Node floatingAction,
-            Node... actions
-    ) {
-        this(actions);
-        setFloatingActionAlignment(floatingActionAlignment);
-        setFloatingAction(floatingAction);
-    }
 
     /// Returns the mutable action node list.
     ///
@@ -145,10 +123,6 @@ public class M3BottomAppBar extends Control {
     public final ObservableList<Node> getActions() {
         return actions;
     }
-
-
-
-
 
     /// Returns the optional floating action node.
     ///
@@ -390,7 +364,6 @@ public class M3BottomAppBar extends Control {
                 M3FocusTraversal.focusTargets(getActions(), getFloatingAction())
         );
     }
-
 
     /// Notifies accessibility clients that the indexed bottom app bar item collection changed.
     private void notifyAccessibleItemsChanged() {

@@ -11,6 +11,7 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
@@ -27,6 +28,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.temporal.WeekFields;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -512,8 +514,8 @@ public class M3DatePicker extends Control {
 
     /// Returns the number of visible day cells.
     private int accessibleDayCellCount() {
-        @Nullable M3DatePickerSkin skin = materialSkin();
-        return skin == null ? visibleDateCount() : skin.getVisibleDayCellCount();
+        List<Node> cells = accessibleDayCells();
+        return getSkin() instanceof M3DatePickerSkin ? cells.size() : visibleDateCount();
     }
 
     /// Returns the visible day cell or logical date at an accessibility index.
@@ -523,28 +525,27 @@ public class M3DatePicker extends Control {
             return null;
         }
 
-        @Nullable M3DatePickerSkin skin = materialSkin();
-        if (skin != null) {
-            return skin.getVisibleDayCell(index);
+        if (getSkin() instanceof M3DatePickerSkin) {
+            List<Node> cells = accessibleDayCells();
+            return index < cells.size() ? cells.get(index) : null;
         }
         return visibleDateAt(index);
     }
 
     /// Returns the preferred focus node for the currently displayed dates.
     private Node accessibleFocusNode() {
-        @Nullable M3DatePickerSkin skin = materialSkin();
-        if (skin == null) {
+        if (!(getSkin() instanceof M3DatePickerSkin)) {
             return this;
         }
 
-        @Nullable Node focusedCell = currentFocusedDayCell(skin);
+        @Nullable Node focusedCell = currentFocusedDayCell();
         if (focusedCell != null) {
             return focusedCell;
         }
 
         @Nullable LocalDate selectedDate = getValue();
         if (selectedDate != null) {
-            @Nullable Node selectedCell = skin.getDayCell(selectedDate);
+            @Nullable Node selectedCell = dayCellForDate(selectedDate);
             if (selectedCell != null && !selectedCell.isDisabled()) {
                 return selectedCell;
             }
@@ -552,29 +553,25 @@ public class M3DatePicker extends Control {
 
         LocalDate today = LocalDate.now();
         if (YearMonth.from(today).equals(getDisplayedMonth())) {
-            @Nullable Node todayCell = skin.getDayCell(today);
+            @Nullable Node todayCell = dayCellForDate(today);
             if (todayCell != null && !todayCell.isDisabled()) {
                 return todayCell;
             }
         }
 
-        @Nullable Node firstEnabledCell = skin.getFirstEnabledDayCell();
+        @Nullable Node firstEnabledCell = firstEnabledDayCell();
         return firstEnabledCell == null ? this : firstEnabledCell;
     }
 
     /// Returns the currently focused visible day cell, or `null` when focus is outside this picker.
-    private @Nullable Node currentFocusedDayCell(M3DatePickerSkin skin) {
+    private @Nullable Node currentFocusedDayCell() {
         @Nullable Node focusOwner = getScene() == null ? null : getScene().getFocusOwner();
         if (focusOwner == null) {
             return null;
         }
 
-        int count = skin.getVisibleDayCellCount();
-        for (int index = 0; index < count; index++) {
-            @Nullable Node cell = skin.getVisibleDayCell(index);
-            if (cell != null
-                    && !cell.isDisabled()
-                    && M3Accessible.containsNode(cell, focusOwner)) {
+        for (Node cell : accessibleDayCells()) {
+            if (!cell.isDisabled() && M3Accessible.containsNode(cell, focusOwner)) {
                 return M3Accessible.canReach(focusOwner) ? focusOwner : cell;
             }
         }
@@ -627,8 +624,7 @@ public class M3DatePicker extends Control {
 
     /// Shows the rendered day cell for a date when it is visible.
     private boolean showAccessibleDate(LocalDate date) {
-        @Nullable M3DatePickerSkin skin = materialSkin();
-        @Nullable Node cell = skin == null ? null : skin.getDayCell(date);
+        @Nullable Node cell = dayCellForDate(date);
         return cell != null && !cell.isDisabled() && M3Accessible.showItem(this, cell);
     }
 
@@ -637,8 +633,7 @@ public class M3DatePicker extends Control {
         if (isDateDisabled(date)) {
             return false;
         }
-        @Nullable M3DatePickerSkin skin = materialSkin();
-        return focusAccessibleNode(skin == null ? this : skin.getDayCell(date));
+        return focusAccessibleNode(dayCellForDate(date));
     }
 
     /// Returns the day item requested by accessibility parameters.
@@ -695,6 +690,53 @@ public class M3DatePicker extends Control {
         return item instanceof Node node && node.getUserData() instanceof LocalDate date ? date : null;
     }
 
+    /// Returns visible rendered day cells in layout traversal order.
+    private List<Node> accessibleDayCells() {
+        ArrayList<Node> cells = new ArrayList<>();
+        collectAccessibleDayCells(this, cells);
+        return cells;
+    }
+
+    /// Returns the rendered visible day cell for the supplied date.
+    private @Nullable Node dayCellForDate(LocalDate date) {
+        for (Node cell : accessibleDayCells()) {
+            if (date.equals(dateFromNode(cell))) {
+                return cell;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the first rendered visible enabled day cell.
+    private @Nullable Node firstEnabledDayCell() {
+        for (Node cell : accessibleDayCells()) {
+            if (!cell.isDisabled()) {
+                return cell;
+            }
+        }
+        return null;
+    }
+
+    /// Collects visible rendered day cells from a scene-graph subtree.
+    private static void collectAccessibleDayCells(Node node, List<Node> cells) {
+        if (isAccessibleDayCell(node)) {
+            cells.add(node);
+        }
+        if (node instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                collectAccessibleDayCells(child, cells);
+            }
+        }
+    }
+
+    /// Returns whether a node is a visible rendered day cell.
+    private static boolean isAccessibleDayCell(Node node) {
+        return node.getStyleClass().contains(DAY_CELL_STYLE_CLASS)
+                && dateFromNode(node) != null
+                && M3Accessible.isEffectivelyReachable(node)
+                && !node.isMouseTransparent();
+    }
+
     /// Returns the date at a visible logical index.
     private @Nullable LocalDate visibleDateAt(int index) {
         if (index < 0 || index >= visibleDateCount()) {
@@ -721,11 +763,6 @@ public class M3DatePicker extends Control {
         return firstOfMonth.minusDays(leadingDays);
     }
 
-    /// Returns the current Material date picker skin.
-    private @Nullable M3DatePickerSkin materialSkin() {
-        Skin<?> skin = getSkin();
-        return skin instanceof M3DatePickerSkin materialSkin ? materialSkin : null;
-    }
 
     /// Notifies accessibility clients that visible day cells changed.
     private void notifyAccessibleItemsChanged() {

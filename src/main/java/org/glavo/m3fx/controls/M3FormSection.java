@@ -111,26 +111,21 @@ public class M3FormSection extends Control {
         initialize();
     }
 
-    /// Creates a form section with a title and content.
+    /// Creates a form section with a title.
     ///
     /// @param titleText the section title text
-    /// @param content the initial section content nodes
-    public M3FormSection(String titleText, Node... content) {
+    public M3FormSection(String titleText) {
         initialize();
         setTitleText(titleText);
-        getContent().addAll(content);
     }
 
-    /// Creates a form section with a title, supporting text, and content.
+    /// Creates a form section with a title and supporting text.
     ///
     /// @param titleText the section title text
     /// @param supportingText the supporting text displayed below the title
-    /// @param content the initial section content nodes
-    public M3FormSection(String titleText, String supportingText, Node... content) {
-        initialize();
-        setTitleText(titleText);
+    public M3FormSection(String titleText, String supportingText) {
+        this(titleText);
         setSupportingText(supportingText);
-        getContent().addAll(content);
     }
 
     /// Returns the section title.

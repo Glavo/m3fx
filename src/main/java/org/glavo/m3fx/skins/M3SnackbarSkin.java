@@ -77,13 +77,6 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
         updateTokenStyles();
     }
 
-    /// Returns the action button when the snackbar currently exposes an action.
-    ///
-    /// @return the rendered action button, or `null` when no action is visible
-    public final @Nullable M3Button getActionButton() {
-        return actionButton.isManaged() ? actionButton : null;
-    }
-
     /// Unbinds skin nodes and removes listeners before disposal.
     @Override
     public void dispose() {

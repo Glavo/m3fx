@@ -206,10 +206,6 @@ public class M3SegmentedButtonGroup extends Control {
         return spacing;
     }
 
-
-
-
-
     /// Returns the segmented button selection mode.
     ///
     /// @return the segmented button selection mode
@@ -717,14 +713,12 @@ public class M3SegmentedButtonGroup extends Control {
             }
         }
 
-        boolean rightToLeft = M3NodeLayout.isRightToLeft(this);
         int segmentIndex = 0;
         for (Node child : getItems()) {
             if (child instanceof M3SegmentedButton button) {
-                int visualSegmentIndex = rightToLeft ? segmentCount - segmentIndex - 1 : segmentIndex;
                 M3ControlStyles.replaceVariant(
                         button,
-                        segmentStyleClass(visualSegmentIndex, segmentCount),
+                        segmentStyleClass(segmentIndex, segmentCount),
                         SINGLE_SEGMENT_STYLE_CLASS,
                         FIRST_SEGMENT_STYLE_CLASS,
                         MIDDLE_SEGMENT_STYLE_CLASS,
@@ -764,7 +758,6 @@ public class M3SegmentedButtonGroup extends Control {
     protected Skin<?> createDefaultSkin() {
         return new M3SegmentedButtonGroupSkin(this);
     }
-
 
     /// CSS metadata for segmented button group layout tokens.
     @NotNullByDefault

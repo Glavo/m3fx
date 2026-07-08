@@ -3,8 +3,10 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.StackPane;
@@ -18,6 +20,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 /// Verifies text-input container slot navigation behavior.
 @NotNullByDefault
@@ -48,11 +51,11 @@ final class M3InputSlotNavigationTest {
                 boolean[] bubbled = {false};
                 root.addEventHandler(KeyEvent.KEY_PRESSED, event -> bubbled[0] = true);
 
-                searchBar.getEditor().requestFocus();
+                searchBarEditor(searchBar).requestFocus();
                 KeyEvent event = targetedKeyEvent(KeyCode.RIGHT, searchBar);
                 searchBar.fireEvent(event);
 
-                assertTrue(searchBar.getEditor().isFocused(), () -> "focused=" + scene.getFocusOwner());
+                assertTrue(searchBarEditor(searchBar).isFocused(), () -> "focused=" + scene.getFocusOwner());
                 assertFalse(action.isFocused());
                 assertFalse(bubbled[0]);
             } finally {
@@ -93,6 +96,11 @@ final class M3InputSlotNavigationTest {
                 stage.close();
             }
         });
+    }
+
+    /// Returns the embedded editor exposed for accessibility by a search bar.
+    private static TextField searchBarEditor(M3SearchBar searchBar) {
+        return assertInstanceOf(TextField.class, searchBar.queryAccessibleAttribute(AccessibleAttribute.CONTENTS));
     }
 
     /// Creates a pressed key event with an explicit source and target node.

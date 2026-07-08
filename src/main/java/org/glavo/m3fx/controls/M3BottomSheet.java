@@ -29,12 +29,15 @@ import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3ObservableLists;
+import org.glavo.m3fx.internal.M3ModalFocusTrap;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3BottomSheetSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 /// A Material Design 3 bottom sheet container.
@@ -84,6 +87,7 @@ public class M3BottomSheet extends Control {
                         return;
                     }
                     updateVariantStyle();
+                    focusTrap.update();
                 }
             };
 
@@ -95,6 +99,7 @@ public class M3BottomSheet extends Control {
             handleShownChanged(get());
             notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
             notifyFocusNodeChanged();
+            focusTrap.update();
         }
     };
 
@@ -124,6 +129,14 @@ public class M3BottomSheet extends Control {
                             getActions()
                     )
                     : null);
+
+    /// Keeps keyboard traversal inside this sheet while it is shown as a modal surface.
+    private final M3ModalFocusTrap focusTrap = new M3ModalFocusTrap(
+            this,
+            this::isModalFocusTrapActive,
+            this::modalFocusTargets,
+            this::hide
+    );
 
     /// The sheet show and hide animation.
     private final Timeline visibilityAnimation = new Timeline();
@@ -161,16 +174,6 @@ public class M3BottomSheet extends Control {
         initialize();
         setHeadline(headline);
         setContent(content);
-    }
-
-    /// Creates a bottom sheet with headline text, content, and trailing actions.
-    ///
-    /// @param headline the sheet headline text
-    /// @param content the sheet content node, or `null` for no content
-    /// @param actions the trailing action nodes
-    public M3BottomSheet(String headline, @Nullable Node content, Node... actions) {
-        this(headline, content);
-        getActions().addAll(actions);
     }
 
     /// Returns the sheet headline.
@@ -377,6 +380,7 @@ public class M3BottomSheet extends Control {
         });
         actions.addListener((ListChangeListener<Node>) change -> notifyAccessibleItemsChanged());
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
+        focusTrap.install();
         focusNotifier.start();
         updateVariantStyle();
         updateAccessibleText();
@@ -405,6 +409,19 @@ public class M3BottomSheet extends Control {
                 event,
                 M3FocusTraversal.focusTargets(getActions())
         );
+    }
+
+    /// Returns whether modal keyboard focus should currently stay inside this sheet.
+    private boolean isModalFocusTrapActive() {
+        return isShown() && getVariant() == M3SheetVariant.MODAL;
+    }
+
+    /// Returns the focus targets contained by this modal sheet in traversal order.
+    private List<Node> modalFocusTargets() {
+        ArrayList<Node> targets = new ArrayList<>();
+        targets.addAll(M3FocusTraversal.focusTargetsInReachableTree(getContent()));
+        targets.addAll(M3FocusTraversal.focusTargetsInReachableTrees(getActions()));
+        return List.copyOf(targets);
     }
 
     /// Processes shown state transitions and related focus bookkeeping.

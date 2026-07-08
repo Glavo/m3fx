@@ -7,6 +7,8 @@ import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
@@ -237,17 +239,141 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
         return value;
     }
 
-    /// Returns the editable text field shown inside the Material input layout.
+    /// Returns the current raw editor text.
     ///
-    /// @return the editable text field shown inside the Material input layout
-    public final M3TextField getEditor() {
+    /// This text may be temporarily invalid while the user is editing. Call [commitEditorText] to parse it into
+    /// [valueProperty].
+    ///
+    /// @return the current raw editor text
+    public final String getText() {
+        return editor.getText();
+    }
+
+    /// Sets the raw editor text.
+    ///
+    /// The value is not parsed until [commitEditorText] is called or the editor action commits it.
+    ///
+    /// @param text the raw editor text
+    public final void setText(String text) {
+        editor.setText(Objects.requireNonNull(text, "text"));
+    }
+
+    /// Returns the raw editor text property.
+    ///
+    /// @return the raw editor text property
+    public final StringProperty textProperty() {
+        return editor.textProperty();
+    }
+
+    /// Returns the text input variant used by the embedded editor.
+    ///
+    /// @return the text input variant used by the embedded editor
+    public final M3TextInputVariant getVariant() {
+        return editor.getVariant();
+    }
+
+    /// Sets the text input variant used by the embedded editor.
+    ///
+    /// @param variant the text input variant used by the embedded editor
+    public final void setVariant(M3TextInputVariant variant) {
+        editor.setVariant(variant);
+    }
+
+    /// Returns the embedded editor variant property.
+    ///
+    /// @return the embedded editor variant property
+    public final ObjectProperty<M3TextInputVariant> variantProperty() {
+        return editor.variantProperty();
+    }
+
+    /// Returns whether the character counter is visible below the editor.
+    ///
+    /// @return `true` when the character counter is visible
+    public final boolean isCharacterCounterVisible() {
+        return inputLayout.isCharacterCounterVisible();
+    }
+
+    /// Sets whether the character counter is visible below the editor.
+    ///
+    /// @param characterCounterVisible whether the character counter is visible
+    public final void setCharacterCounterVisible(boolean characterCounterVisible) {
+        inputLayout.setCharacterCounterVisible(characterCounterVisible);
+    }
+
+    /// Returns the character counter visibility property.
+    ///
+    /// @return the character counter visibility property
+    public final BooleanProperty characterCounterVisibleProperty() {
+        return inputLayout.characterCounterVisibleProperty();
+    }
+
+    /// Returns whether editor text is truncated to the configured character limit.
+    ///
+    /// @return `true` when editor text is truncated to the configured character limit
+    public final boolean isCharacterLimitEnforced() {
+        return inputLayout.isCharacterLimitEnforced();
+    }
+
+    /// Sets whether editor text is truncated to the configured character limit.
+    ///
+    /// @param characterLimitEnforced whether editor text is truncated to the configured character limit
+    public final void setCharacterLimitEnforced(boolean characterLimitEnforced) {
+        inputLayout.setCharacterLimitEnforced(characterLimitEnforced);
+    }
+
+    /// Returns the character limit enforcement property.
+    ///
+    /// @return the character limit enforcement property
+    public final BooleanProperty characterLimitEnforcedProperty() {
+        return inputLayout.characterLimitEnforcedProperty();
+    }
+
+    /// Returns the active character limit, or `-1` when no limit is active.
+    ///
+    /// @return the active character limit, or `-1` when no limit is active
+    public final int getCharacterLimit() {
+        return inputLayout.getCharacterLimit();
+    }
+
+    /// Sets the active character limit, or `-1` to disable the limit.
+    ///
+    /// @param characterLimit the active character limit, or `-1` to disable the limit
+    public final void setCharacterLimit(int characterLimit) {
+        inputLayout.setCharacterLimit(characterLimit);
+    }
+
+    /// Returns the character limit property.
+    ///
+    /// @return the character limit property
+    public final IntegerProperty characterLimitProperty() {
+        return inputLayout.characterLimitProperty();
+    }
+
+    /// Returns the current editor text character count.
+    ///
+    /// @return the current editor text character count
+    public final int getCharacterCount() {
+        return inputLayout.getCharacterCount();
+    }
+
+    /// Returns whether the current editor text exceeds the active character limit.
+    ///
+    /// @return `true` when the current editor text exceeds the active character limit
+    public final boolean isCharacterLimitExceeded() {
+        return inputLayout.isCharacterLimitExceeded();
+    }
+
+    /// Returns the embedded editable text field.
+    ///
+    /// @return the embedded editable text field
+    final M3TextField getEditor() {
         return editor;
     }
 
     /// Returns the Material text input layout used by this picker field.
     ///
     /// @return the Material text input layout used by this picker field
-    public final M3TextInputLayout getInputLayout() {
+    final M3TextInputLayout getInputLayout() {
         return inputLayout;
     }
 
@@ -476,6 +602,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
         return switch (attribute) {
             case EXPANDED -> isShowing();
             case FOCUS_NODE -> focusNode();
+            case ITEM_AT_INDEX -> accessibleItem(parameters);
             case SELECTED_ITEMS -> selectedItems();
             case SUBMENU -> picker;
             case TEXT -> editor.getText();
@@ -693,6 +820,16 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
     private List<T> selectedItems() {
         @Nullable T selectedValue = getValue();
         return selectedValue == null ? List.of() : List.of(selectedValue);
+    }
+
+    /// Returns the indexed accessibility child used by skins and assistive clients.
+    ///
+    /// @param parameters the accessibility index parameters
+    /// @return the indexed child, or `null` when the parameters do not address a child
+    private @Nullable Node accessibleItem(Object... parameters) {
+        return parameters.length == 1 && parameters[0] instanceof Integer index && index == 0
+                ? inputLayout
+                : null;
     }
 
     /// Returns the current keyboard focus node for accessibility clients.

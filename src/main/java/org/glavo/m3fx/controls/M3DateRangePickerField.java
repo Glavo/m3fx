@@ -384,31 +384,167 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         }
     }
 
+    /// Returns the current raw start-date editor text.
+    ///
+    /// This text may be temporarily invalid while the user is editing. Call [commitEditorText] to parse it into
+    /// [startDateProperty].
+    ///
+    /// @return the current raw start-date editor text
+    public String getStartText() {
+        return startEditor.getText();
+    }
+
+    /// Sets the raw start-date editor text.
+    ///
+    /// The value is not parsed until [commitEditorText] is called or the editor action commits it.
+    ///
+    /// @param startText the raw start-date editor text
+    public void setStartText(String startText) {
+        startEditor.setText(Objects.requireNonNull(startText, "startText"));
+    }
+
+    /// Returns the raw start-date editor text property.
+    ///
+    /// @return the raw start-date editor text property
+    public StringProperty startTextProperty() {
+        return startEditor.textProperty();
+    }
+
+    /// Returns the current raw end-date editor text.
+    ///
+    /// This text may be temporarily invalid while the user is editing. Call [commitEditorText] to parse it into
+    /// [endDateProperty].
+    ///
+    /// @return the current raw end-date editor text
+    public String getEndText() {
+        return endEditor.getText();
+    }
+
+    /// Sets the raw end-date editor text.
+    ///
+    /// The value is not parsed until [commitEditorText] is called or the editor action commits it.
+    ///
+    /// @param endText the raw end-date editor text
+    public void setEndText(String endText) {
+        endEditor.setText(Objects.requireNonNull(endText, "endText"));
+    }
+
+    /// Returns the raw end-date editor text property.
+    ///
+    /// @return the raw end-date editor text property
+    public StringProperty endTextProperty() {
+        return endEditor.textProperty();
+    }
+
+    /// Returns the text input variant used by the start-date editor.
+    ///
+    /// @return the text input variant used by the start-date editor
+    public M3TextInputVariant getStartVariant() {
+        return startEditor.getVariant();
+    }
+
+    /// Sets the text input variant used by the start-date editor.
+    ///
+    /// @param variant the text input variant used by the start-date editor
+    public void setStartVariant(M3TextInputVariant variant) {
+        startEditor.setVariant(variant);
+    }
+
+    /// Returns the start-date editor variant property.
+    ///
+    /// @return the start-date editor variant property
+    public ObjectProperty<M3TextInputVariant> startVariantProperty() {
+        return startEditor.variantProperty();
+    }
+
+    /// Returns the text input variant used by the end-date editor.
+    ///
+    /// @return the text input variant used by the end-date editor
+    public M3TextInputVariant getEndVariant() {
+        return endEditor.getVariant();
+    }
+
+    /// Sets the text input variant used by the end-date editor.
+    ///
+    /// @param variant the text input variant used by the end-date editor
+    public void setEndVariant(M3TextInputVariant variant) {
+        endEditor.setVariant(variant);
+    }
+
+    /// Returns the end-date editor variant property.
+    ///
+    /// @return the end-date editor variant property
+    public ObjectProperty<M3TextInputVariant> endVariantProperty() {
+        return endEditor.variantProperty();
+    }
+
+    /// Returns the current error text shown for the start-date editor.
+    ///
+    /// @return the current error text shown for the start-date editor
+    public String getStartErrorText() {
+        return startInputLayout.getErrorText();
+    }
+
+    /// Sets the current error text shown for the start-date editor.
+    ///
+    /// @param errorText the current error text shown for the start-date editor
+    public void setStartErrorText(String errorText) {
+        startInputLayout.setErrorText(errorText);
+    }
+
+    /// Returns the start-date editor error text property.
+    ///
+    /// @return the start-date editor error text property
+    public StringProperty startErrorTextProperty() {
+        return startInputLayout.errorTextProperty();
+    }
+
+    /// Returns the current error text shown for the end-date editor.
+    ///
+    /// @return the current error text shown for the end-date editor
+    public String getEndErrorText() {
+        return endInputLayout.getErrorText();
+    }
+
+    /// Sets the current error text shown for the end-date editor.
+    ///
+    /// @param errorText the current error text shown for the end-date editor
+    public void setEndErrorText(String errorText) {
+        endInputLayout.setErrorText(errorText);
+    }
+
+    /// Returns the end-date editor error text property.
+    ///
+    /// @return the end-date editor error text property
+    public StringProperty endErrorTextProperty() {
+        return endInputLayout.errorTextProperty();
+    }
+
     /// Returns the editable text field shown for the start date.
     ///
     /// @return the editable text field shown for the start date
-    public M3TextField getStartEditor() {
+    M3TextField getStartEditor() {
         return startEditor;
     }
 
     /// Returns the editable text field shown for the end date.
     ///
     /// @return the editable text field shown for the end date
-    public M3TextField getEndEditor() {
+    M3TextField getEndEditor() {
         return endEditor;
     }
 
     /// Returns the Material text input layout used by the start date editor.
     ///
     /// @return the Material text input layout used by the start date editor
-    public M3TextInputLayout getStartInputLayout() {
+    M3TextInputLayout getStartInputLayout() {
         return startInputLayout;
     }
 
     /// Returns the Material text input layout used by the end date editor.
     ///
     /// @return the Material text input layout used by the end date editor
-    public M3TextInputLayout getEndInputLayout() {
+    M3TextInputLayout getEndInputLayout() {
         return endInputLayout;
     }
 
@@ -676,6 +812,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         return switch (attribute) {
             case EXPANDED -> isShowing();
             case FOCUS_NODE -> focusNode();
+            case ITEM_AT_INDEX -> accessibleItem(parameters);
             case SELECTED_ITEMS -> selectedItems();
             case SUBMENU -> picker;
             case TEXT -> accessibleText();
@@ -1017,6 +1154,21 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
             return List.of();
         }
         return end == null ? List.of(start) : List.of(start, end);
+    }
+
+    /// Returns one indexed editor layout for accessibility clients and skins.
+    ///
+    /// @param parameters the accessibility index parameters
+    /// @return the indexed editor layout, or `null` when the parameters do not address a child
+    private @Nullable Node accessibleItem(Object... parameters) {
+        if (parameters.length != 1 || !(parameters[0] instanceof Integer index)) {
+            return null;
+        }
+        return switch (index) {
+            case 0 -> startInputLayout;
+            case 1 -> endInputLayout;
+            default -> null;
+        };
     }
 
     /// Returns combined editor text for accessibility clients.

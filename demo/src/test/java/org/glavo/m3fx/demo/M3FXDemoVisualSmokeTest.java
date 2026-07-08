@@ -12,6 +12,7 @@ import javafx.geometry.NodeOrientation;
 import javafx.geometry.Orientation;
 import javafx.geometry.Point2D;
 import javafx.geometry.Rectangle2D;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.Parent;
@@ -917,6 +918,7 @@ final class M3FXDemoVisualSmokeTest {
 
                     List<String> pageTitles = List.copyOf(app.demoPageTitles());
                     assertTrue(pageTitles.size() > 20, modeName + " demo should expose component pages");
+                    assertRegisteredDemoPageVisualCoverage(pageTitles);
 
                     stageReference.set(stage);
                     appReference.set(app);
@@ -940,6 +942,7 @@ final class M3FXDemoVisualSmokeTest {
                                 modeAssertion.accept(scene);
                                 assertCurrentPageTitle(scene, title);
                                 assertSidebarSelectionMatchesCurrentPage(app, title);
+                                assertSelectedSidebarItemInsideViewport(app, scene, title);
                                 assertMaterialDocumentationLink(scene, title);
                             }
                     );
@@ -953,6 +956,20 @@ final class M3FXDemoVisualSmokeTest {
                 }
             });
         }
+    }
+
+    /// Verifies that each registered demo page has release visual coverage.
+    private static void assertRegisteredDemoPageVisualCoverage(List<String> pageTitles) {
+        Set<String> registeredPages = Set.copyOf(pageTitles);
+        assertEquals(pageTitles.size(), registeredPages.size(),
+                "demo page titles must be unique so visual reports and sidebar lookup stay deterministic");
+        assertEquals(registeredPages, DEMO_PAGE_VISUAL_STATE_ASSERTIONS.keySet(),
+                "each registered demo page must have a page-specific visual state assertion");
+        assertTrue(registeredPages.containsAll(DEMO_VECTOR_ICON_PAGE_MINIMUMS.keySet()),
+                () -> "vector icon minimums reference unknown demo pages: "
+                        + DEMO_VECTOR_ICON_PAGE_MINIMUMS.keySet().stream()
+                                .filter(page -> !registeredPages.contains(page))
+                                .toList());
     }
 
     /// Verifies one rendered demo page header documentation link.
@@ -1564,8 +1581,8 @@ final class M3FXDemoVisualSmokeTest {
                         "inactive search view should not render hidden result text");
 
                 M3ListItem firstResult = assertInstanceOf(M3ListItem.class, activeView.getResults().get(0));
-                activeView.getEditor().requestFocus();
-                activeView.getEditor().fireEvent(new KeyEvent(KeyEvent.KEY_PRESSED, "", "", KeyCode.DOWN, false, false, false, false));
+                searchViewEditor(activeView).requestFocus();
+                searchViewEditor(activeView).fireEvent(new KeyEvent(KeyEvent.KEY_PRESSED, "", "", KeyCode.DOWN, false, false, false, false));
                 scene.getRoot().applyCss();
                 scene.getRoot().layout();
 
@@ -2841,41 +2858,54 @@ final class M3FXDemoVisualSmokeTest {
             Scene scene,
             List<M3TextInputLayout> layouts
     ) {
+        M3TextInputLayout filledAreaLayout = requireTextInputLayout(
+                layouts,
+                "Write longer notes across multiple lines.",
+                "Filled text area"
+        );
         M3TextInputLayout outlinedAreaLayout = requireTextInputLayout(
                 layouts,
                 "Material text areas share field colors but keep multi-line height tokens.",
                 "Outlined text area"
         );
-        scrollDemoPageNodeIntoView(scene, outlinedAreaLayout);
-        TextInputControl outlinedAreaInput = Objects.requireNonNull(
-                outlinedAreaLayout.getInput(),
-                "outlined area input"
+
+        assertFocusedMultilineTextInputSurfaceContract(
+                scene,
+                filledAreaLayout,
+                "focused filled multiline text input"
         );
-        outlinedAreaInput.requestFocus();
-        scene.getRoot().applyCss();
-        scene.getRoot().layout();
-        WritableImage focusedAreaImage = requireSnapshotWithNodeFullyVisible(
+        assertFocusedMultilineTextInputSurfaceContract(
                 scene,
                 outlinedAreaLayout,
                 "focused outlined multiline text input"
         );
+    }
+
+    /// Verifies one focused multiline text input content surface and floating label geometry.
+    private static void assertFocusedMultilineTextInputSurfaceContract(
+            Scene scene,
+            M3TextInputLayout layout,
+            String description
+    ) {
+        scrollDemoPageNodeIntoView(scene, layout);
+        TextInputControl input = Objects.requireNonNull(layout.getInput(), () -> description + " input");
+        input.requestFocus();
+        scene.getRoot().applyCss();
+        scene.getRoot().layout();
+        WritableImage focusedAreaImage = requireSnapshotWithNodeFullyVisible(scene, layout, description);
         writeVisualSnapshot(focusedAreaImage, Path.of(
                 "build",
                 "reports",
                 "m3fx-demo-visual",
-                "text-input-focused-multiline-surface.png"
+                "text-input-" + snapshotFileName(description) + ".png"
         ));
-        assertSnapshotHasVisibleContent(focusedAreaImage, "Focused multiline text input surface");
-        assertFocusedTextAreaContentBackgroundMatchesContainer(
-                focusedAreaImage,
-                outlinedAreaLayout,
-                "focused outlined multiline text input"
-        );
-        assertTextInputFloatingLabelInkAvoidsInputInk(
-                focusedAreaImage,
-                outlinedAreaLayout,
-                "focused outlined multiline text input"
-        );
+        assertSnapshotHasVisibleContent(focusedAreaImage, description);
+        assertFocusedTextAreaContentBackgroundMatchesContainer(focusedAreaImage, layout, description);
+        if (input instanceof M3TextInput textInput && textInput.getVariant() == M3TextInputVariant.OUTLINED) {
+            assertOutlinedFloatingLabelGeometry(layout, description);
+            assertOutlinedFloatingLabelBackgroundMatchesSurrounding(focusedAreaImage, layout, description);
+        }
+        assertTextInputFloatingLabelInkAvoidsInputInk(focusedAreaImage, layout, description);
     }
 
     /// Verifies that mirrored text inputs keep logical slots and text geometry separated.
@@ -3061,6 +3091,7 @@ final class M3FXDemoVisualSmokeTest {
                     Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                     assertCurrentPageTitle(scene, pageTitle);
                     assertSidebarSelectionMatchesCurrentPage(app, pageTitle);
+                    assertSelectedSidebarItemInsideViewport(app, scene, pageTitle);
                     assertSidebarVisualSelectionSettled(app, scene, pageTitle);
                 });
             }
@@ -3275,6 +3306,142 @@ final class M3FXDemoVisualSmokeTest {
         }
     }
 
+    /// Verifies mouse-wheel scrolling can reach the final destination while drawer groups are still expanding.
+    @Test
+    void sidebarWheelScrollingCanReachLastDestinationDuringGroupExpansion() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
+        AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
+
+        DemoFxTestUtils.runOnFxThread(() -> {
+            Stage stage = new Stage();
+            M3FXDemoApp app = new M3FXDemoApp();
+            app.start(stage);
+            stage.setWidth(1280.0);
+            stage.setHeight(720.0);
+
+            stageReference.set(stage);
+            appReference.set(app);
+            sceneReference.set(Objects.requireNonNull(app.activeScene(), "scene"));
+        });
+
+        try {
+            DemoFxTestUtils.runOnFxThreadWhenStable(
+                    () -> {
+                        Scene scene = sceneReference.get();
+                        if (scene == null) {
+                            return false;
+                        }
+                        scene.getRoot().applyCss();
+                        scene.getRoot().layout();
+
+                        @Nullable Node node = firstVisibleStyledDescendant(
+                                scene.getRoot(),
+                                "demo-sidebar-scroll-pane"
+                        );
+                        if (!(node instanceof ScrollPane scrollPane)) {
+                            return false;
+                        }
+
+                        if (scrollPane.getVvalue() < 0.98) {
+                            @Nullable M3ListItem eventTarget = firstVisibleUnselectedSidebarItemInSceneViewport(
+                                    scene.getRoot()
+                            );
+                            if (eventTarget != null) {
+                                for (int i = 0; i < 4; i++) {
+                                    fireVerticalWheelScroll(eventTarget, -720.0);
+                                }
+                            }
+                        }
+
+                        List<M3NavigationDrawerGroup> groups = demoSidebarDrawerGroups(scene.getRoot());
+                        if (groups.isEmpty() || groups.stream().anyMatch(group -> !group.isExpanded())) {
+                            return false;
+                        }
+                        M3ListItem lastItem = lastDemoSidebarItem(scene.getRoot());
+                        return scrollPane.getVvalue() > 0.95
+                                && "Scrims".equals(lastItem.getHeadlineText())
+                                && nodeInsideNearestScrollViewport(lastItem, CONTROL_EDGE_TOLERANCE);
+                    },
+                    SETTLED_STATE_PULSES,
+                    () -> "Timed out waiting for wheel scrolling during sidebar expansion to reveal the final item: "
+                            + sidebarScrollDebug(sceneReference.get()),
+                    () -> {
+                        M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
+                        Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                        app.showPageByTitle("Components Overview");
+                        scene.getRoot().applyCss();
+                        scene.getRoot().layout();
+
+                        ScrollPane sidebarScrollPane = assertInstanceOf(
+                                ScrollPane.class,
+                                requireVisibleStyledDescendant(
+                                        scene.getRoot(),
+                                        "demo-sidebar-scroll-pane",
+                                        "demo sidebar scroll pane"
+                                )
+                        );
+                        sidebarScrollPane.setVvalue(0.0);
+
+                        List<M3NavigationDrawerGroup> groups = demoSidebarDrawerGroups(scene.getRoot());
+                        assertFalse(groups.isEmpty(), "demo sidebar drawer groups");
+                        for (M3NavigationDrawerGroup group : groups) {
+                            group.setExpanded(false);
+                        }
+                        scene.getRoot().applyCss();
+                        scene.getRoot().layout();
+                        for (M3NavigationDrawerGroup group : groups) {
+                            group.setExpanded(true);
+                        }
+
+                        M3ListItem eventTarget = Objects.requireNonNull(
+                                firstVisibleUnselectedSidebarItemInSceneViewport(scene.getRoot()),
+                                "demo sidebar expansion wheel target"
+                        );
+                        for (int i = 0; i < 4; i++) {
+                            fireVerticalWheelScroll(eventTarget, -720.0);
+                        }
+                    },
+                    () -> {
+                        Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                        ScrollPane sidebarScrollPane = assertInstanceOf(
+                                ScrollPane.class,
+                                requireVisibleStyledDescendant(
+                                        scene.getRoot(),
+                                        "demo-sidebar-scroll-pane",
+                                        "demo sidebar scroll pane"
+                                )
+                        );
+                        assertTrue(sidebarScrollPane.getVvalue() > 0.95,
+                                () -> "wheel scrolling during expansion should move the sidebar near the bottom: "
+                                        + sidebarScrollDebug(scene));
+
+                        M3ListItem lastItem = lastDemoSidebarItem(scene.getRoot());
+                        assertEquals("Scrims", lastItem.getHeadlineText(),
+                                "last expansion-scrolled sidebar destination");
+                        assertNodeInsideNearestScrollViewport(lastItem,
+                                "last expansion-scrolled sidebar destination");
+
+                        WritableImage image = snapshot(scene);
+                        writeVisualSnapshot(image, Path.of(
+                                "build",
+                                "reports",
+                                "m3fx-demo-visual",
+                                "sidebar-expanding-wheel-bottom-scroll.png"
+                        ));
+                        assertSnapshotHasVisibleContent(image, "Sidebar expanding wheel bottom scroll");
+                    }
+            );
+        } finally {
+            DemoFxTestUtils.runOnFxThread(() -> {
+                Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
     /// Verifies mouse-wheel scrolling can reach the final destination after all sidebar groups expand.
     @Test
     void sidebarWheelScrollingCanReachLastExpandedDestination() throws InterruptedException {
@@ -3466,6 +3633,7 @@ final class M3FXDemoVisualSmokeTest {
                     Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                     assertCurrentPageTitle(scene, pageTitle);
                     assertSidebarSelectionMatchesCurrentPage(app, pageTitle);
+                    assertSelectedSidebarItemInsideViewport(app, scene, pageTitle);
 
                     WritableImage image = snapshot(scene);
                     writeVisualSnapshot(image, Path.of(
@@ -3529,6 +3697,7 @@ final class M3FXDemoVisualSmokeTest {
                     Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                     assertCurrentPageTitle(scene, pageTitle);
                     assertSidebarSelectionMatchesCurrentPage(app, pageTitle);
+                    assertSelectedSidebarItemInsideViewport(app, scene, pageTitle);
                     assertTrue(scene.getRoot().getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
                     assertTrue(scene.getRoot().getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
 
@@ -3590,6 +3759,7 @@ final class M3FXDemoVisualSmokeTest {
                     assertEquals(NodeOrientation.RIGHT_TO_LEFT, scene.getRoot().getEffectiveNodeOrientation());
                     assertCurrentPageTitle(scene, pageTitle);
                     assertSidebarSelectionMatchesCurrentPage(app, pageTitle);
+                    assertSelectedSidebarItemInsideViewport(app, scene, pageTitle);
 
                     WritableImage image = snapshot(scene);
                     writeVisualSnapshot(image, Path.of(
@@ -5596,7 +5766,6 @@ final class M3FXDemoVisualSmokeTest {
         return opacity > 0.05 && opacity < 0.95 && scaleX > 0.74 && scaleX < 0.99;
     }
 
-
     /// Returns the selected indicator node for a navigation item.
     private static @Nullable Node navigationIndicator(M3NavigationItem item) {
         return item.lookup(".m3-navigation-item-indicator");
@@ -6728,6 +6897,29 @@ final class M3FXDemoVisualSmokeTest {
                         + ": expected=" + expected + ", selected=" + selected);
     }
 
+    /// Verifies that the selected demo sidebar item is inside the sidebar scroll viewport.
+    private static void assertSelectedSidebarItemInsideViewport(M3FXDemoApp app, Scene scene, String pageTitle) {
+        String expected = Objects.requireNonNull(
+                app.currentPageNavigationTitle(),
+                () -> "No current page navigation title for " + pageTitle
+        );
+        M3ListItem selectedItem = Objects.requireNonNull(
+                selectedDemoSidebarItem(scene.getRoot(), expected),
+                () -> "No selected sidebar item for " + pageTitle + ": expected=" + expected
+        );
+        assertTrue(
+                nodeInsideNearestScrollViewport(selectedItem, CONTROL_EDGE_TOLERANCE),
+                () -> pageTitle + " selected sidebar item should be visible inside the sidebar viewport: expected="
+                        + expected
+                        + ", item="
+                        + selectedItem.localToScene(selectedItem.getBoundsInLocal())
+                        + ", viewport="
+                        + nearestScrollViewportBounds(selectedItem)
+                        + ", scroll="
+                        + sidebarScrollDebug(scene)
+        );
+    }
+
     /// Clicks one demo header theme button and verifies the header geometry after theme reapplication.
     private static void clickHeaderThemeButton(Scene scene, String text, String description) {
         Node header = requireVisibleStyledDescendant(scene.getRoot(), "demo-header", "demo header");
@@ -6951,7 +7143,10 @@ final class M3FXDemoVisualSmokeTest {
                 () -> {
                     M3FXDemoApp app = appReference.get();
                     Scene scene = sceneReference.get();
-                    return app != null && scene != null && sidebarVisualSelectionSettled(app, scene);
+                    return app != null
+                            && scene != null
+                            && sidebarVisualSelectionSettled(app, scene)
+                            && selectedSidebarItemInsideViewport(app, scene);
                 },
                 SETTLED_STATE_PULSES,
                 () -> {
@@ -7236,6 +7431,29 @@ final class M3FXDemoVisualSmokeTest {
         return null;
     }
 
+    /// Returns the selected demo sidebar item with the supplied headline text.
+    private static @Nullable M3ListItem selectedDemoSidebarItem(Node root, String text) {
+        for (M3ListItem item : demoSidebarItems(root)) {
+            if (item.isSelected() && text.equals(item.getHeadlineText())) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    /// Returns whether the current selected demo sidebar item is fully inside its scroll viewport.
+    private static boolean selectedSidebarItemInsideViewport(M3FXDemoApp app, Scene scene) {
+        scene.getRoot().applyCss();
+        scene.getRoot().layout();
+        @Nullable String expected = app.currentPageNavigationTitle();
+        if (expected == null) {
+            return false;
+        }
+
+        @Nullable M3ListItem selectedItem = selectedDemoSidebarItem(scene.getRoot(), expected);
+        return selectedItem != null && nodeInsideNearestScrollViewport(selectedItem, CONTROL_EDGE_TOLERANCE);
+    }
+
     /// Returns the last rendered demo sidebar item.
     private static M3ListItem lastDemoSidebarItem(Node root) {
         List<M3ListItem> items = demoSidebarItems(root);
@@ -7429,7 +7647,7 @@ final class M3FXDemoVisualSmokeTest {
     private static void assertSearchBarVisualGeometry(M3SearchBar searchBar) {
         assertTrue(hasRenderableBounds(searchBar), () -> "search bar has no renderable bounds: " + searchBar);
         Bounds searchBounds = searchBar.localToScene(searchBar.getBoundsInLocal());
-        Bounds editorBounds = searchBar.getEditor().localToScene(searchBar.getEditor().getBoundsInLocal());
+        Bounds editorBounds = searchBarEditor(searchBar).localToScene(searchBarEditor(searchBar).getBoundsInLocal());
         boolean embeddedInSearchView = nearestAncestorOfType(searchBar, M3SearchView.class) != null;
         double expectedHeight = 56.0;
 
@@ -7516,7 +7734,7 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies that an active search view keeps the embedded bar and result rows in one compact surface.
     private static void assertActiveSearchViewDemoGeometry(M3SearchView searchView) {
         Bounds viewBounds = searchView.localToScene(searchView.getBoundsInLocal());
-        Bounds barBounds = searchView.getSearchBar().localToScene(searchView.getSearchBar().getBoundsInLocal());
+        Bounds barBounds = searchViewSearchBar(searchView).localToScene(searchViewSearchBar(searchView).getBoundsInLocal());
         Bounds resultsBounds = searchResultsContainer(searchView)
                 .localToScene(searchResultsContainer(searchView).getBoundsInLocal());
 
@@ -7645,7 +7863,7 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies that an inactive search view collapses to its embedded search bar instead of reserving result space.
     private static void assertInactiveSearchViewDemoGeometry(M3SearchView searchView) {
         Bounds viewBounds = searchView.localToScene(searchView.getBoundsInLocal());
-        Bounds barBounds = searchView.getSearchBar().localToScene(searchView.getSearchBar().getBoundsInLocal());
+        Bounds barBounds = searchViewSearchBar(searchView).localToScene(searchViewSearchBar(searchView).getBoundsInLocal());
         assertTrue(containsBoundsWithTolerance(viewBounds, barBounds, CONTROL_EDGE_TOLERANCE),
                 () -> "inactive search view embedded bar leaves the view surface: bar="
                         + barBounds + ", view=" + viewBounds);
@@ -8743,7 +8961,6 @@ final class M3FXDemoVisualSmokeTest {
                 || node.getStyleClass().contains("demo-app-bar-icon");
     }
 
-
     /// Verifies that visible text nodes and their rendered ink are not clipped by scene or explicit ancestor clips.
     private static void assertVisibleTextInsideScene(Scene scene, String pageTitle) {
         Bounds sceneBounds = scene.getRoot().localToScene(scene.getRoot().getBoundsInLocal());
@@ -9141,7 +9358,6 @@ final class M3FXDemoVisualSmokeTest {
         return bounds.getHeight() <= 96.0;
     }
 
-
     /// Verifies that page-owned list item text segments stay inside their row and keep rendered ink within row bounds.
     private static void assertListItemTextSegmentGeometry(Scene scene, String pageTitle) {
         Bounds sceneBounds = scene.getRoot().localToScene(scene.getRoot().getBoundsInLocal());
@@ -9453,7 +9669,6 @@ final class M3FXDemoVisualSmokeTest {
         }
         return target instanceof Labeled labeled && !Objects.toString(labeled.getText(), "").isBlank();
     }
-
 
     /// Returns whether text ink centering is meaningful for a rendered fixed target.
     private static boolean shouldCheckRenderedTextInkCenter(
@@ -10132,13 +10347,18 @@ final class M3FXDemoVisualSmokeTest {
                 .sorted(java.util.Comparator.comparingDouble(button ->
                         button.localToScene(button.getBoundsInLocal()).getMinX()))
                 .toList();
-        assertSegmentedButtonPhysicalPositionClasses(physicalOrder, description);
+        assertSegmentedButtonPhysicalPositionClasses(
+                physicalOrder,
+                group.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT,
+                description
+        );
         assertSegmentedButtonAdjacency(physicalOrder, group.getSpacing(), description);
     }
 
-    /// Verifies the physical edge style classes of a segmented button group.
+    /// Verifies the edge style classes that render physical segmented-button corners in the current orientation.
     private static void assertSegmentedButtonPhysicalPositionClasses(
             List<M3SegmentedButton> physicalOrder,
+            boolean rightToLeft,
             String description
     ) {
         if (physicalOrder.size() == 1) {
@@ -10147,13 +10367,19 @@ final class M3FXDemoVisualSmokeTest {
             return;
         }
 
+        String leftEdgeStyle = rightToLeft
+                ? M3SegmentedButtonGroup.LAST_SEGMENT_STYLE_CLASS
+                : M3SegmentedButtonGroup.FIRST_SEGMENT_STYLE_CLASS;
+        String rightEdgeStyle = rightToLeft
+                ? M3SegmentedButtonGroup.FIRST_SEGMENT_STYLE_CLASS
+                : M3SegmentedButtonGroup.LAST_SEGMENT_STYLE_CLASS;
         M3SegmentedButton left = physicalOrder.get(0);
         M3SegmentedButton right = physicalOrder.get(physicalOrder.size() - 1);
-        assertTrue(left.getStyleClass().contains(M3SegmentedButtonGroup.FIRST_SEGMENT_STYLE_CLASS),
-                () -> description + " physical left segment should use the first-segment style class: "
+        assertTrue(left.getStyleClass().contains(leftEdgeStyle),
+                () -> description + " physical left segment should use " + leftEdgeStyle + ": "
                         + left.getStyleClass());
-        assertTrue(right.getStyleClass().contains(M3SegmentedButtonGroup.LAST_SEGMENT_STYLE_CLASS),
-                () -> description + " physical right segment should use the last-segment style class: "
+        assertTrue(right.getStyleClass().contains(rightEdgeStyle),
+                () -> description + " physical right segment should use " + rightEdgeStyle + ": "
                         + right.getStyleClass());
         for (int index = 1; index < physicalOrder.size() - 1; index++) {
             M3SegmentedButton middle = physicalOrder.get(index);
@@ -11859,9 +12085,10 @@ final class M3FXDemoVisualSmokeTest {
                         "FAB menu actions should use compact FAB size");
                 assertNotNull(firstVisibleDemoVectorIcon(action), "FAB menu action should use an SVG demo icon");
             }
-            assertEquals(M3FloatingActionButtonSize.REGULAR, menu.getToggleButton().getSize(),
+            M3FloatingActionButton toggleButton = fabMenuToggleButton(menu);
+            assertEquals(M3FloatingActionButtonSize.REGULAR, toggleButton.getSize(),
                     "FAB menu toggle should use the regular FAB size");
-            assertNotNull(firstVisibleDemoVectorIcon(menu.getToggleButton()),
+            assertNotNull(firstVisibleDemoVectorIcon(toggleButton),
                     "FAB menu toggle should use an SVG demo icon");
             if (menu.isExpanded()) {
                 assertFabMenuActionsStayInsideShowcase(menu);
@@ -11903,9 +12130,9 @@ final class M3FXDemoVisualSmokeTest {
         for (M3SplitButton splitButton : splitButtons) {
             assertEquals(3, splitButton.getItems().size(),
                     () -> "split button should expose three attached menu items: " + splitButton.getText());
-            assertEquals(splitButton.getVariant(), splitButton.getActionButton().getVariant(),
+            assertEquals(splitButton.getVariant(), splitButtonActionButton(splitButton).getVariant(),
                     "split action button variant should follow the owner");
-            assertEquals(splitButton.getVariant(), splitButton.getMenuButton().getVariant(),
+            assertEquals(splitButton.getVariant(), splitButtonMenuButton(splitButton).getVariant(),
                     "split menu button variant should follow the owner");
             assertSplitButtonPartsInsideOwner(splitButton);
         }
@@ -12369,11 +12596,11 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies that the primary and menu halves of a split button remain inside the owner control.
     private static void assertSplitButtonPartsInsideOwner(M3SplitButton splitButton) {
         Bounds ownerBounds = splitButton.localToScene(splitButton.getBoundsInLocal());
-        Bounds actionBounds = splitButton.getActionButton().localToScene(
-                splitButton.getActionButton().getBoundsInLocal()
+        Bounds actionBounds = splitButtonActionButton(splitButton).localToScene(
+                splitButtonActionButton(splitButton).getBoundsInLocal()
         );
-        Bounds menuBounds = splitButton.getMenuButton().localToScene(
-                splitButton.getMenuButton().getBoundsInLocal()
+        Bounds menuBounds = splitButtonMenuButton(splitButton).localToScene(
+                splitButtonMenuButton(splitButton).getBoundsInLocal()
         );
         assertTrue(containsBoundsWithTolerance(ownerBounds, actionBounds, CONTROL_EDGE_TOLERANCE),
                 () -> "split action button leaves owner bounds: owner="
@@ -14712,7 +14939,6 @@ final class M3FXDemoVisualSmokeTest {
         return null;
     }
 
-
     /// Verifies that rendered text fill contrasts with the sampled local background.
     private static void assertTextReadableAgainstBackground(WritableImage image, Text text, String description) {
         @Nullable Rectangle2D inkBounds = renderedTextInkBounds(image, text);
@@ -14824,6 +15050,22 @@ final class M3FXDemoVisualSmokeTest {
         return null;
     }
 
+    /// Returns the embedded editor exposed for accessibility by a search bar.
+    private static TextField searchBarEditor(M3SearchBar searchBar) {
+        return assertInstanceOf(TextField.class, searchBar.queryAccessibleAttribute(AccessibleAttribute.CONTENTS));
+    }
+
+    /// Returns the embedded search bar rendered by a search view.
+    private static M3SearchBar searchViewSearchBar(M3SearchView searchView) {
+        return visibleNodesOfType(searchView, M3SearchBar.class).stream()
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Expected embedded search bar in " + searchView));
+    }
+
+    /// Returns the embedded editor rendered by a search view.
+    private static TextField searchViewEditor(M3SearchView searchView) {
+        return searchBarEditor(searchViewSearchBar(searchView));
+    }
     /// Returns the internal search result container by its stable style class.
     private static VBox searchResultsContainer(M3SearchView searchView) {
         return assertInstanceOf(VBox.class, requireStyledDescendant(
@@ -15066,7 +15308,7 @@ final class M3FXDemoVisualSmokeTest {
         if (splitButton == null) {
             return null;
         }
-        M3Button actionButton = splitButton.getActionButton();
+        M3Button actionButton = splitButtonActionButton(splitButton);
         return actionButton.isVisible() && hasRenderableBounds(actionButton) ? actionButton : null;
     }
 
@@ -15076,8 +15318,24 @@ final class M3FXDemoVisualSmokeTest {
         if (splitButton == null) {
             return null;
         }
-        M3MenuButton menuButton = splitButton.getMenuButton();
+        M3MenuButton menuButton = splitButtonMenuButton(splitButton);
         return menuButton.isVisible() && hasRenderableBounds(menuButton) ? menuButton : null;
+    }
+
+    /// Returns the primary action part exposed by a split button.
+    private static M3Button splitButtonActionButton(M3SplitButton splitButton) {
+        return assertInstanceOf(
+                M3Button.class,
+                splitButton.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0)
+        );
+    }
+
+    /// Returns the menu part exposed by a split button.
+    private static M3MenuButton splitButtonMenuButton(M3SplitButton splitButton) {
+        return assertInstanceOf(
+                M3MenuButton.class,
+                splitButton.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1)
+        );
     }
 
     /// Returns the first visible M3 split button with the requested text.
@@ -15470,7 +15728,6 @@ final class M3FXDemoVisualSmokeTest {
                 && popupRoot.getOpacity() > 0.0;
     }
 
-
     /// Returns whether a bottom sheet has reached its fully shown state.
     private static boolean bottomSheetShown(@Nullable M3BottomSheet sheet) {
         return sheet != null
@@ -15481,7 +15738,6 @@ final class M3FXDemoVisualSmokeTest {
                 && Math.abs(sheet.getTranslateY()) <= CONTROL_EDGE_TOLERANCE
                 && hasRenderableBounds(sheet);
     }
-
 
     /// Returns whether a side sheet has reached its fully shown state.
     private static boolean sideSheetShown(@Nullable M3SideSheet sheet) {
@@ -15508,7 +15764,6 @@ final class M3FXDemoVisualSmokeTest {
                 && Math.abs(snackbar.getTranslateY()) <= CONTROL_EDGE_TOLERANCE
                 && hasRenderableBounds(snackbar);
     }
-
 
     /// Returns whether a FAB menu has reached its fully expanded visual state.
     private static boolean fabMenuExpandedSettled(@Nullable M3FabMenu menu) {
@@ -15833,6 +16088,15 @@ final class M3FXDemoVisualSmokeTest {
             }
         }
         return Color.color(red / count, green / count, blue / count, opacity / count);
+    }
+
+    /// Returns the rendered toggle button from a FAB menu skin.
+    private static M3FloatingActionButton fabMenuToggleButton(M3FabMenu menu) {
+        return assertInstanceOf(
+                M3FloatingActionButton.class,
+                menu.lookup("." + M3FabMenu.TOGGLE_STYLE_CLASS),
+                "FAB menu toggle button"
+        );
     }
 
     /// Verifies that expanded FAB menu action items remain within the owning demo showcase surface.
@@ -17444,7 +17708,8 @@ final class M3FXDemoVisualSmokeTest {
             String supportingText,
             Node... actions
     ) {
-        M3RichTooltip tooltip = new M3RichTooltip(title, supportingText, actions);
+        M3RichTooltip tooltip = new M3RichTooltip(title, supportingText);
+        tooltip.getActions().addAll(actions);
         M3Tooltip.install(node, tooltip);
         return tooltip;
     }

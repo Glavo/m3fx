@@ -221,10 +221,6 @@ public class M3ButtonGroup extends Control {
         return spacing;
     }
 
-
-
-
-
     /// Returns the user-agent stylesheet for M3FX button groups.
     @Override
     public String getUserAgentStylesheet() {
@@ -334,15 +330,13 @@ public class M3ButtonGroup extends Control {
             }
         }
 
-        boolean rightToLeft = M3NodeLayout.isRightToLeft(this);
         int buttonIndex = 0;
         for (Node child : getItems()) {
             if (child instanceof M3Button button) {
-                int visualButtonIndex = rightToLeft ? buttonCount - buttonIndex - 1 : buttonIndex;
                 M3ControlStyles.add(button, GROUPED_BUTTON_STYLE_CLASS);
                 M3ControlStyles.replaceVariant(
                         button,
-                        buttonStyleClass(visualButtonIndex, buttonCount),
+                        buttonStyleClass(buttonIndex, buttonCount),
                         SINGLE_BUTTON_STYLE_CLASS,
                         FIRST_BUTTON_STYLE_CLASS,
                         MIDDLE_BUTTON_STYLE_CLASS,
@@ -406,7 +400,6 @@ public class M3ButtonGroup extends Control {
     protected Skin<?> createDefaultSkin() {
         return new M3ButtonGroupSkin(this);
     }
-
 
     /// CSS metadata for button group layout tokens.
     @NotNullByDefault

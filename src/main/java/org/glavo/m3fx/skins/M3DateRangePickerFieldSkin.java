@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.HBox;
 import org.glavo.m3fx.controls.M3DateRangePickerField;
@@ -26,7 +27,7 @@ public final class M3DateRangePickerFieldSkin extends SkinBase<M3DateRangePicker
         container.setManaged(false);
         container.getStyleClass().add(M3DateRangePickerField.CONTAINER_STYLE_CLASS);
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
-        container.getChildren().setAll(control.getStartInputLayout(), control.getEndInputLayout());
+        container.getChildren().setAll(inputLayout(0), inputLayout(1));
         getChildren().add(container);
     }
 
@@ -113,12 +114,24 @@ public final class M3DateRangePickerFieldSkin extends SkinBase<M3DateRangePicker
     /// Lays out the internal two-field container.
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
-        M3TextInputLayout startInputLayout = getSkinnable().getStartInputLayout();
-        M3TextInputLayout endInputLayout = getSkinnable().getEndInputLayout();
+        M3TextInputLayout startInputLayout = inputLayout(0);
+        M3TextInputLayout endInputLayout = inputLayout(1);
         double spacing = container.getSpacing();
         double fieldWidth = Math.max(0.0, (width - spacing) / 2.0);
         startInputLayout.setPrefWidth(fieldWidth);
         endInputLayout.setPrefWidth(fieldWidth);
         container.resizeRelocate(x, y, width, height);
+    }
+
+    /// Returns one wrapped input layout exposed by the skinnable accessibility tree.
+    ///
+    /// @param index the indexed input layout to return
+    /// @return the indexed input layout
+    private M3TextInputLayout inputLayout(int index) {
+        Object item = getSkinnable().queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, index);
+        if (item instanceof M3TextInputLayout inputLayout) {
+            return inputLayout;
+        }
+        throw new IllegalStateException("date range picker field input layout is unavailable");
     }
 }

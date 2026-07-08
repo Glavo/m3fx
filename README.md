@@ -6,9 +6,11 @@ The library provides JavaFX controls, skins, themes, generated Material token st
 
 ## Status
 
-M3FX is in active development. The current artifact version is `1.0-SNAPSHOT`.
+M3FX is a `1.0-SNAPSHOT` release candidate for baseline Material Design 3 support. Remaining 1.0 work is focused on final API sign-off and final visual review rather than broad architecture changes.
 
 The baseline Material Design 3 profile is the primary 1.0 compatibility target. M3 Expressive support is available through profile-aware color, typography, shape, motion, component, progress, loading, navigation, form, picker, menu, and surface tokens. Full exact visual parity for every M3 Expressive component is tracked as post-baseline parity work unless a component already has stable tokens and rendered-state coverage.
+
+The exported package surface, public type inventory, static utility methods, duplicate wrapper methods, reviewed public batch constructors, and internal type exposure are covered by project contract tests.
 
 ## Requirements
 

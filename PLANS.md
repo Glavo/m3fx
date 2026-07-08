@@ -27,7 +27,7 @@ M3FX is a modular Material Design 3 component library for JavaFX. The project is
 - `org.glavo.m3fx.skins` owns non-exported custom skins for layout, drawing, interaction, state layers, ripple, animation behavior, and popup content.
 - Custom skins inherit JavaFX base skin classes such as `SkinBase`, `LabeledSkinBase`, or project skin bases. Popup skins use a project popup skin base because JavaFX `SkinBase` only accepts `Control` skinnables.
 - Foundation primitives such as `M3Icon` and `M3Text` support components but are not standalone Material component pages.
-- Public control APIs prefer constructors and explicit mutable properties over static convenience factories.
+- Public control APIs prefer constructors and explicit mutable properties over static convenience factories. Public batch constructors are limited to the reviewed menu, dialog, form section, and form validator entry points covered by project contract tests.
 - Text input controls intentionally retain JavaFX text input base classes to preserve editing, selection, clipboard, IME, undo/redo, and multiline behavior. Other M3FX controls avoid inheriting from concrete JavaFX controls where M3FX owns the behavior surface.
 - Controls use per-control user-agent stylesheets where JavaFX supports them. Popup-only styling remains in dedicated control CSS files loaded through the base stylesheet.
 - Popup context propagation mirrors owner stylesheets, local theme declarations, profile and brightness classes, node orientation, animation settings, motion schemes, and behavior timings into popup roots.
@@ -79,7 +79,7 @@ M3FX is a modular Material Design 3 component library for JavaFX. The project is
 ## Release Readiness
 
 - The library is a release candidate for baseline Material Design 3 plus documented M3 Expressive token, profile, motion, and component support.
-- Before 1.0, complete final human API sign-off across the module export surface: `org.glavo.m3fx.animation`, `org.glavo.m3fx.controls`, `org.glavo.m3fx.theme`, and `org.glavo.m3fx.tokens`. The exported package and public type inventory is covered by project contract tests.
+- Before 1.0, complete final human API sign-off across the module export surface: `org.glavo.m3fx.animation`, `org.glavo.m3fx.controls`, `org.glavo.m3fx.theme`, and `org.glavo.m3fx.tokens`. The exported package, public type inventory, static utility methods, duplicate wrapper methods, public batch constructors, and internal-type exposure are covered by project contract tests.
 - Full M3 Expressive visual parity for every component is explicitly deferred beyond the 1.0 baseline; 1.0 documents the supported Expressive token/profile behavior and keeps component parity work incremental.
 - Before 1.0, run a final component-by-component visual pass on the demo in standard, expressive, dark, and right-to-left modes.
 - Before 1.0, rerun final release validation after the final source, stylesheet, token, demo, or build-logic change.

@@ -199,6 +199,94 @@ final class M3FocusTraversalTest {
         });
     }
 
+    /// Verifies cyclic Tab and F6 traversal wraps across reachable targets.
+    @Test
+    void cyclicTabFocusWrapsAcrossReachableTargets() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Button first = new M3Button("First");
+            M3Button second = new M3Button("Second");
+            M3Button third = new M3Button("Third");
+            HBox owner = new HBox(first, second, third);
+
+            show(owner, 240.0, 60.0);
+            owner.applyCss();
+            owner.layout();
+            first.requestFocus();
+
+            KeyEvent tab = keyEvent(KeyCode.TAB);
+            assertTrue(M3FocusTraversal.handleCyclicTabKeyFocus(
+                    owner,
+                    tab,
+                    M3FocusTraversal.focusTargets(owner.getChildren())
+            ));
+            assertTrue(second.isFocused());
+            assertTrue(tab.isConsumed());
+
+            third.requestFocus();
+            KeyEvent wrappingTab = keyEvent(KeyCode.TAB);
+            assertTrue(M3FocusTraversal.handleCyclicTabKeyFocus(
+                    owner,
+                    wrappingTab,
+                    M3FocusTraversal.focusTargets(owner.getChildren())
+            ));
+            assertTrue(first.isFocused());
+            assertTrue(wrappingTab.isConsumed());
+
+            KeyEvent shiftTab = keyEvent(KeyCode.TAB, true, false, false, false);
+            assertTrue(M3FocusTraversal.handleCyclicTabKeyFocus(
+                    owner,
+                    shiftTab,
+                    M3FocusTraversal.focusTargets(owner.getChildren())
+            ));
+            assertTrue(third.isFocused());
+            assertTrue(shiftTab.isConsumed());
+
+            KeyEvent f6 = keyEvent(KeyCode.F6);
+            assertTrue(M3FocusTraversal.handleCyclicTabKeyFocus(
+                    owner,
+                    f6,
+                    M3FocusTraversal.focusTargets(owner.getChildren())
+            ));
+            assertTrue(first.isFocused());
+            assertTrue(f6.isConsumed());
+        });
+    }
+
+    /// Verifies modified Tab and F6 traversal keys are left to application shortcuts.
+    @Test
+    void modifiedCyclicTabFocusKeysAreIgnored() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Button first = new M3Button("First");
+            M3Button second = new M3Button("Second");
+            HBox owner = new HBox(first, second);
+
+            show(owner, 180.0, 60.0);
+            owner.applyCss();
+            owner.layout();
+            first.requestFocus();
+
+            KeyEvent controlTab = keyEvent(KeyCode.TAB, false, true, false, false);
+            assertFalse(M3FocusTraversal.handleCyclicTabKeyFocus(
+                    owner,
+                    controlTab,
+                    M3FocusTraversal.focusTargets(owner.getChildren())
+            ));
+            assertTrue(first.isFocused());
+            assertFalse(second.isFocused());
+            assertFalse(controlTab.isConsumed());
+
+            KeyEvent altF6 = keyEvent(KeyCode.F6, false, false, true, false);
+            assertFalse(M3FocusTraversal.handleCyclicTabKeyFocus(
+                    owner,
+                    altF6,
+                    M3FocusTraversal.focusTargets(owner.getChildren())
+            ));
+            assertTrue(first.isFocused());
+            assertFalse(second.isFocused());
+            assertFalse(altF6.isConsumed());
+        });
+    }
+
     /// Verifies preset-to-picker handoff consumes keys only when the picker accepts focus.
     @Test
     void presetHandoffConsumesOnlyAfterSuccessfulFocusTransfer() {
@@ -651,15 +739,26 @@ final class M3FocusTraversalTest {
 
     /// Creates a pressed key event for focus traversal behavior checks.
     private static KeyEvent keyEvent(KeyCode code) {
+        return keyEvent(code, false, false, false, false);
+    }
+
+    /// Creates a pressed key event for focus traversal behavior checks with explicit modifiers.
+    private static KeyEvent keyEvent(
+            KeyCode code,
+            boolean shiftDown,
+            boolean controlDown,
+            boolean altDown,
+            boolean metaDown
+    ) {
         return new KeyEvent(
                 KeyEvent.KEY_PRESSED,
                 code.getName(),
                 code.getName(),
                 code,
-                false,
-                false,
-                false,
-                false
+                shiftDown,
+                controlDown,
+                altDown,
+                metaDown
         );
     }
 

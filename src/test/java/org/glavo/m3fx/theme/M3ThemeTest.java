@@ -3,6 +3,8 @@
 
 package org.glavo.m3fx.theme;
 
+import javafx.scene.AccessibleAttribute;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.effect.Effect;
@@ -49,6 +51,7 @@ import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListSectionHeader;
 import org.glavo.m3fx.controls.M3LoadingIndicator;
 import org.glavo.m3fx.controls.M3Menu;
+import org.glavo.m3fx.controls.M3MenuButton;
 import org.glavo.m3fx.controls.M3MenuItem;
 import org.glavo.m3fx.controls.M3MenuSelectionMode;
 import org.glavo.m3fx.controls.M3NavigationBar;
@@ -863,7 +866,8 @@ final class M3ThemeTest {
                 iconToggleButtonGroup(new M3IconToggleButton("A"), new M3IconToggleButton("B"));
         M3SegmentedButtonGroup segmentedButtonGroup =
                 segmentedButtonGroup(new M3SegmentedButton("A"), new M3SegmentedButton("B"));
-        M3SplitButton splitButton = new M3SplitButton("Split", new M3MenuItem("Action"));
+        M3SplitButton splitButton = new M3SplitButton("Split");
+        splitButton.getItems().add(new M3MenuItem("Action"));
         M3FabMenu fabMenu = new M3FabMenu(new M3FloatingActionButton(new M3Icon("A")));
         M3TextField textField = new M3TextField();
         M3TextArea textArea = new M3TextArea();
@@ -883,7 +887,7 @@ final class M3ThemeTest {
         M3TimePicker timePicker = new M3TimePicker(LocalTime.of(10, 30));
         M3DatePickerField datePickerField = new M3DatePickerField(LocalDate.of(2026, 5, 18));
         M3FormPane formPane = new M3FormPane();
-        M3FormSection formSection = new M3FormSection("Account", new M3TextField());
+        M3FormSection formSection = formSection("Account", new M3TextField());
         M3FormRow formRow = new M3FormRow("Name", new M3TextField());
         M3TextInputLayout invalidInput = new M3TextInputLayout(new M3TextField(), "Project", "Required");
         invalidInput.setValidator(M3TextInputValidators.required("Project is required"));
@@ -982,9 +986,9 @@ final class M3ThemeTest {
         assertEquals(-1.0, segmentedButtonGroup.getSpacing(), 0.0001);
         assertEquals(14.0, fabMenu.getActionSpacing(), 0.0001);
         assertEquals(22.0, groupedButton.getHorizontalPadding(), 0.0001);
-        assertEquals(16.0, splitButton.getActionButton().getHorizontalPadding(), 0.0001);
-        assertEquals(48.0, splitButton.getMenuButton().getMinWidth(), 0.0001);
-        assertEquals(48.0, splitButton.getMenuButton().getPrefWidth(), 0.0001);
+        assertEquals(16.0, splitButtonActionButton(splitButton).getHorizontalPadding(), 0.0001);
+        assertEquals(48.0, splitButtonMenuButton(splitButton).getMinWidth(), 0.0001);
+        assertEquals(48.0, splitButtonMenuButton(splitButton).getPrefWidth(), 0.0001);
         assertEquals(64.0, textField.getContainerHeight(), 0.0001);
         assertEquals(20.0, textField.getHorizontalPadding(), 0.0001);
         assertEquals(128.0, textArea.getContainerHeight(), 0.0001);
@@ -1172,9 +1176,9 @@ final class M3ThemeTest {
         assertEquals(-1.0, segmentedButtonGroup.getSpacing(), 0.0001);
         assertEquals(12.0, fabMenu.getActionSpacing(), 0.0001);
         assertEquals(20.0, groupedButton.getHorizontalPadding(), 0.0001);
-        assertEquals(20.0, splitButton.getActionButton().getHorizontalPadding(), 0.0001);
-        assertEquals(48.0, splitButton.getMenuButton().getMinWidth(), 0.0001);
-        assertEquals(48.0, splitButton.getMenuButton().getPrefWidth(), 0.0001);
+        assertEquals(20.0, splitButtonActionButton(splitButton).getHorizontalPadding(), 0.0001);
+        assertEquals(48.0, splitButtonMenuButton(splitButton).getMinWidth(), 0.0001);
+        assertEquals(48.0, splitButtonMenuButton(splitButton).getPrefWidth(), 0.0001);
         assertEquals(56.0, textField.getContainerHeight(), 0.0001);
         assertEquals(16.0, textField.getHorizontalPadding(), 0.0001);
         assertEquals(112.0, textArea.getContainerHeight(), 0.0001);
@@ -1379,7 +1383,8 @@ final class M3ThemeTest {
         M3Banner banner = new M3Banner("Message");
         banner.getActions().add(new M3Button("Action"));
         M3Button tooltipAction = new M3Button("Action");
-        M3RichTooltip richTooltip = new M3RichTooltip("Title", "Supporting", tooltipAction);
+        M3RichTooltip richTooltip = new M3RichTooltip("Title", "Supporting");
+        richTooltip.getActions().add(tooltipAction);
         VBox richTooltipContainer = assertInstanceOf(VBox.class, richTooltip.getGraphic());
         M3NavigationItem barHome = new M3NavigationItem("Home", new M3Icon("H"));
         M3NavigationItem barSearch = new M3NavigationItem("Search", new M3Icon("S"));
@@ -1575,6 +1580,21 @@ final class M3ThemeTest {
         assertEquals(radius, shadow.getRadius(), 0.0001);
         assertEquals(spread, shadow.getSpread(), 0.0001);
         assertEquals(offsetY, shadow.getOffsetY(), 0.0001);
+    }
+
+    /// Returns the primary action part exposed by a split button.
+    private static M3Button splitButtonActionButton(M3SplitButton splitButton) {
+        return splitButtonPart(splitButton, M3Button.class, 0);
+    }
+
+    /// Returns the menu part exposed by a split button.
+    private static M3MenuButton splitButtonMenuButton(M3SplitButton splitButton) {
+        return splitButtonPart(splitButton, M3MenuButton.class, 1);
+    }
+
+    /// Returns one typed part exposed by a split button.
+    private static <T extends Node> T splitButtonPart(M3SplitButton splitButton, Class<T> type, int index) {
+        return assertInstanceOf(type, splitButton.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, index));
     }
 
     /// Verifies that an icon button keeps the fixed swatch metrics from application CSS.

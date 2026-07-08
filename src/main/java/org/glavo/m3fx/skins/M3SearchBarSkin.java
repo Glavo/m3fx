@@ -6,8 +6,10 @@ package org.glavo.m3fx.skins;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.control.SkinBase;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
@@ -53,14 +55,15 @@ public final class M3SearchBarSkin extends SkinBase<M3SearchBar> {
         leadingSlot.getStyleClass().add(M3SearchBar.LEADING_STYLE_CLASS);
         trailingBox.getStyleClass().add(M3SearchBar.TRAILING_STYLE_CLASS);
         trailingBox.setAlignment(Pos.CENTER);
-        HBox.setHgrow(control.getEditor(), Priority.ALWAYS);
+        TextField editor = editor(control);
+        HBox.setHgrow(editor, Priority.ALWAYS);
 
         control.leadingProperty().addListener(leadingListener);
         control.getTrailingActions().addListener(trailingActionsListener);
 
         updateLeading(control.getLeading());
         updateTrailingActions();
-        container.getChildren().setAll(leadingSlot, control.getEditor(), trailingBox);
+        container.getChildren().setAll(leadingSlot, editor, trailingBox);
         getChildren().add(container);
     }
 
@@ -154,6 +157,15 @@ public final class M3SearchBarSkin extends SkinBase<M3SearchBar> {
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
         container.resizeRelocate(x, y, width, height);
+    }
+
+    /// Returns the embedded editor exposed by the skinnable search bar.
+    private static TextField editor(M3SearchBar control) {
+        Object contents = control.queryAccessibleAttribute(AccessibleAttribute.CONTENTS);
+        if (contents instanceof TextField textField) {
+            return textField;
+        }
+        throw new IllegalStateException("Search bar contents must be a text field");
     }
 
     /// Updates the leading slot content.

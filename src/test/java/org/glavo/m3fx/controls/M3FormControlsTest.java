@@ -108,7 +108,7 @@ final class M3FormControlsTest {
     void formSectionMirrorsHeaderAndContent() {
         FxTestUtils.runOnFxThread(() -> {
             M3FormRow row = new M3FormRow("Field", new Label("Value"));
-            M3FormSection section = new M3FormSection("Account", "Profile fields", row);
+            M3FormSection section = formSection("Account", "Profile fields", row);
             section.setContentSpacing(18.0);
             section.setStyle("-m3-content-spacing: 18px;");
 
@@ -179,7 +179,7 @@ final class M3FormControlsTest {
     @Test
     void formControlsExposeUserAgentStylesheet() {
         assertTrue(new M3FormPane().getUserAgentStylesheet().endsWith("/styles/controls/form.css"));
-        assertTrue(new M3FormSection().getUserAgentStylesheet().endsWith("/styles/controls/form.css"));
+        assertTrue(formSection().getUserAgentStylesheet().endsWith("/styles/controls/form.css"));
         assertTrue(new M3FormRow().getUserAgentStylesheet().endsWith("/styles/controls/form.css"));
         assertTrue(new M3ValidationSummary().getUserAgentStylesheet()
                 .endsWith("/styles/controls/validation-summary.css"));

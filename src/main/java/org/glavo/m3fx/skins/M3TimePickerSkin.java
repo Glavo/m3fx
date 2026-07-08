@@ -104,56 +104,6 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
         super.dispose();
     }
 
-    /// Returns the number of visible selectable cells currently exposed by the skin.
-    public final int getVisibleCellCount() {
-        int count = 0;
-        for (Node cell : selectableCells()) {
-            if (isAccessibleCell(cell)) {
-                count++;
-            }
-        }
-        return count;
-    }
-
-    /// Returns a visible selectable cell by visible index.
-    public final @Nullable Node getVisibleCell(int visibleIndex) {
-        if (visibleIndex < 0) {
-            return null;
-        }
-
-        int currentIndex = 0;
-        for (Node cell : selectableCells()) {
-            if (!isAccessibleCell(cell)) {
-                continue;
-            }
-            if (currentIndex == visibleIndex) {
-                return cell;
-            }
-            currentIndex++;
-        }
-        return null;
-    }
-
-    /// Returns the first visible enabled cell representing the supplied time.
-    public final @Nullable Node getCell(LocalTime time) {
-        LocalTime normalizedTime = time.withSecond(0).withNano(0);
-        for (Node cell : selectableCells()) {
-            if (isAccessibleCell(cell) && normalizedTime.equals(cell.getUserData())) {
-                return cell;
-            }
-        }
-        return null;
-    }
-
-    /// Returns the first visible enabled selectable cell.
-    public final @Nullable Node getFirstEnabledCell() {
-        for (Node cell : selectableCells()) {
-            if (isAccessibleCell(cell) && !cell.isDisabled()) {
-                return cell;
-            }
-        }
-        return null;
-    }
 
     /// Computes the minimum width from the picker container.
     @Override
