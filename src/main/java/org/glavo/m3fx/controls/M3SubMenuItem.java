@@ -39,6 +39,7 @@ import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3ThemeResolver;
 import org.glavo.m3fx.internal.M3KeyEvents;
 import org.glavo.m3fx.internal.M3PopupPositioning;
+import org.glavo.m3fx.internal.M3ReachabilityObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -108,6 +109,10 @@ public class M3SubMenuItem extends M3MenuItem {
     /// Reports popup submenu focus changes through this item's accessibility node.
     private final M3AccessibleFocusNotifier popupFocusNotifier =
             new M3AccessibleFocusNotifier(this, subMenu, this::focusNode, this::notifyFocusNodeChanged);
+
+    /// Closes the popup when this item or one of its ancestors becomes unreachable.
+    private final M3ReachabilityObserver reachabilityObserver =
+            new M3ReachabilityObserver(this, this::hidePopupIfOwnerUnreachable);
 
     /// Notifies popup owners when this item's reported focus node changes.
     private final List<Runnable> focusNodeListeners = new ArrayList<>();
@@ -370,16 +375,6 @@ public class M3SubMenuItem extends M3MenuItem {
                 setSelected(false);
             }
         });
-        disabledProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue) {
-                hideSubMenu();
-            }
-        });
-        sceneProperty().addListener((observable, oldScene, newScene) -> {
-            if (newScene == null) {
-                hideSubMenu();
-            }
-        });
         hoverOpenDelay.setOnFinished(event -> {
             if (pointerInsideOwner) {
                 showSubMenu();
@@ -417,6 +412,14 @@ public class M3SubMenuItem extends M3MenuItem {
         subMenu.addEventHandler(MouseEvent.MOUSE_EXITED, this::handleSubMenuMouseExited);
         subMenu.addAccessibleFocusNodeListener(this::notifyFocusNodeChanged);
         popupFocusNotifier.start();
+        reachabilityObserver.install();
+    }
+
+    /// Hides the popup if its owner item can no longer be reached from its scene.
+    private void hidePopupIfOwnerUnreachable() {
+        if (popup.isShowing() && !M3Accessible.canReach(this)) {
+            hideSubMenu(false);
+        }
     }
 
     /// Returns the current submenu focus node for accessibility clients.

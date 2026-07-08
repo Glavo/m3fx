@@ -36,7 +36,7 @@ public enum M3TopAppBarVariant {
     /// Returns the style class associated with this variant.
     ///
     /// @return the style class applied by this variant
-    public String getStyleClass() {
+    String styleClass() {
         return styleClass;
     }
 }

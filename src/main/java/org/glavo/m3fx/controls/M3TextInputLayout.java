@@ -982,9 +982,9 @@ public class M3TextInputLayout extends Control {
         M3TextInputVariant variant = textInput == null ? M3TextInputVariant.FILLED : textInput.getVariant();
         M3ControlStyles.replaceVariant(
                 this,
-                variant.getStyleClass(),
-                M3TextInputVariant.FILLED.getStyleClass(),
-                M3TextInputVariant.OUTLINED.getStyleClass()
+                variant.styleClass(),
+                M3TextInputVariant.FILLED.styleClass(),
+                M3TextInputVariant.OUTLINED.styleClass()
         );
         updateLabelPadding();
         updateInputPadding();

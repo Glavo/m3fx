@@ -448,10 +448,10 @@ public class M3Toolbar extends Control {
     private void updateVariantStyle() {
         M3ControlStyles.replaceVariant(
                 this,
-                getVariant().getStyleClass(),
-                M3ToolbarVariant.STANDARD.getStyleClass(),
-                M3ToolbarVariant.FLOATING.getStyleClass(),
-                M3ToolbarVariant.DOCKED.getStyleClass()
+                getVariant().styleClass(),
+                M3ToolbarVariant.STANDARD.styleClass(),
+                M3ToolbarVariant.FLOATING.styleClass(),
+                M3ToolbarVariant.DOCKED.styleClass()
         );
     }
 

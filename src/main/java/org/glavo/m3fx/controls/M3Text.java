@@ -297,22 +297,22 @@ public class M3Text extends Labeled {
     private void updateRoleStyle() {
         M3ControlStyles.replaceVariant(
                 this,
-                getRole().getStyleClass(),
-                M3TextRole.DISPLAY_LARGE.getStyleClass(),
-                M3TextRole.DISPLAY_MEDIUM.getStyleClass(),
-                M3TextRole.DISPLAY_SMALL.getStyleClass(),
-                M3TextRole.HEADLINE_LARGE.getStyleClass(),
-                M3TextRole.HEADLINE_MEDIUM.getStyleClass(),
-                M3TextRole.HEADLINE_SMALL.getStyleClass(),
-                M3TextRole.TITLE_LARGE.getStyleClass(),
-                M3TextRole.TITLE_MEDIUM.getStyleClass(),
-                M3TextRole.TITLE_SMALL.getStyleClass(),
-                M3TextRole.LABEL_LARGE.getStyleClass(),
-                M3TextRole.LABEL_MEDIUM.getStyleClass(),
-                M3TextRole.LABEL_SMALL.getStyleClass(),
-                M3TextRole.BODY_LARGE.getStyleClass(),
-                M3TextRole.BODY_MEDIUM.getStyleClass(),
-                M3TextRole.BODY_SMALL.getStyleClass()
+                getRole().styleClass(),
+                M3TextRole.DISPLAY_LARGE.styleClass(),
+                M3TextRole.DISPLAY_MEDIUM.styleClass(),
+                M3TextRole.DISPLAY_SMALL.styleClass(),
+                M3TextRole.HEADLINE_LARGE.styleClass(),
+                M3TextRole.HEADLINE_MEDIUM.styleClass(),
+                M3TextRole.HEADLINE_SMALL.styleClass(),
+                M3TextRole.TITLE_LARGE.styleClass(),
+                M3TextRole.TITLE_MEDIUM.styleClass(),
+                M3TextRole.TITLE_SMALL.styleClass(),
+                M3TextRole.LABEL_LARGE.styleClass(),
+                M3TextRole.LABEL_MEDIUM.styleClass(),
+                M3TextRole.LABEL_SMALL.styleClass(),
+                M3TextRole.BODY_LARGE.styleClass(),
+                M3TextRole.BODY_MEDIUM.styleClass(),
+                M3TextRole.BODY_SMALL.styleClass()
         );
     }
 

@@ -41,6 +41,7 @@ import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.M3ReachabilityObserver;
 import org.glavo.m3fx.skins.M3DateRangePickerFieldSkin;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3PopupPositioning;
@@ -238,6 +239,10 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// Reports popup picker focus changes through this field's accessibility node.
     private final M3AccessibleFocusNotifier popupFocusNotifier =
             new M3AccessibleFocusNotifier(this, popupContent, this::focusNode, this::notifyFocusNodeChanged);
+
+    /// Closes the popup when this field or one of its ancestors becomes unreachable.
+    private final M3ReachabilityObserver reachabilityObserver =
+            new M3ReachabilityObserver(this, this::hidePopupIfOwnerUnreachable);
 
     /// Whether both field endpoints are currently being assigned through [setRange].
     private boolean applyingRange;
@@ -896,6 +901,14 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         picker.maxDateProperty().addListener((observable, oldValue, newValue) -> handleSelectableBoundsChanged());
         presets.addListener(presetsListener);
         popupFocusNotifier.start();
+        reachabilityObserver.install();
+    }
+
+    /// Hides the popup if its owner field can no longer be reached from its scene.
+    private void hidePopupIfOwnerUnreachable() {
+        if (popup.isShowing() && !M3Accessible.canReach(this)) {
+            hidePicker(false);
+        }
     }
 
     /// Creates one popup open button.

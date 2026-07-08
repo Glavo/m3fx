@@ -28,6 +28,7 @@ import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3PopupPositioning;
+import org.glavo.m3fx.internal.M3ReachabilityObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -82,6 +83,10 @@ public class M3MenuButton extends M3Button {
     /// Reports popup menu focus changes through this button's accessibility node.
     private final M3AccessibleFocusNotifier popupFocusNotifier =
             new M3AccessibleFocusNotifier(this, menu, this::focusNode, this::notifyPopupFocusNodeChanged);
+
+    /// Closes the popup when this button or one of its ancestors becomes unreachable.
+    private final M3ReachabilityObserver reachabilityObserver =
+            new M3ReachabilityObserver(this, this::hidePopupIfOwnerUnreachable);
 
     /// Notifies composite owners when this button's reported focus node changes.
     private final List<Runnable> popupFocusNodeListeners = new ArrayList<>();
@@ -299,7 +304,15 @@ public class M3MenuButton extends M3Button {
         menu.addEventHandler(javafx.event.ActionEvent.ACTION, event -> hideMenu(true));
         menu.addAccessibleFocusNodeListener(this::notifyPopupFocusNodeChanged);
         popupFocusNotifier.start();
+        reachabilityObserver.install();
         effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
+    }
+
+    /// Hides the popup if its owner button can no longer be reached from its scene.
+    private void hidePopupIfOwnerUnreachable() {
+        if (popup.isShowing() && !M3Accessible.canReach(this)) {
+            hideMenu(false);
+        }
     }
 
     /// Returns the current popup focus node for accessibility clients.

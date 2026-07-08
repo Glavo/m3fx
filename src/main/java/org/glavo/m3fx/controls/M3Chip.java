@@ -412,11 +412,11 @@ public class M3Chip extends ButtonBase {
     private void updateVariantStyle() {
         M3ControlStyles.replaceVariant(
                 this,
-                getVariant().getStyleClass(),
-                M3ChipVariant.ASSIST.getStyleClass(),
-                M3ChipVariant.FILTER.getStyleClass(),
-                M3ChipVariant.INPUT.getStyleClass(),
-                M3ChipVariant.SUGGESTION.getStyleClass()
+                getVariant().styleClass(),
+                M3ChipVariant.ASSIST.styleClass(),
+                M3ChipVariant.FILTER.styleClass(),
+                M3ChipVariant.INPUT.styleClass(),
+                M3ChipVariant.SUGGESTION.styleClass()
         );
     }
 
@@ -424,9 +424,9 @@ public class M3Chip extends ButtonBase {
     private void updateChipStyle() {
         M3ControlStyles.replaceVariant(
                 this,
-                getChipStyle().getStyleClass(),
-                M3ChipStyle.FLAT.getStyleClass(),
-                M3ChipStyle.ELEVATED.getStyleClass()
+                getChipStyle().styleClass(),
+                M3ChipStyle.FLAT.styleClass(),
+                M3ChipStyle.ELEVATED.styleClass()
         );
     }
 

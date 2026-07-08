@@ -377,10 +377,10 @@ public class M3BottomAppBar extends Control {
     private void updateFloatingActionAlignmentStyle() {
         M3ControlStyles.replaceVariant(
                 this,
-                getFloatingActionAlignment().getStyleClass(),
-                M3BottomAppBarFloatingActionAlignment.START.getStyleClass(),
-                M3BottomAppBarFloatingActionAlignment.CENTER.getStyleClass(),
-                M3BottomAppBarFloatingActionAlignment.END.getStyleClass()
+                getFloatingActionAlignment().styleClass(),
+                M3BottomAppBarFloatingActionAlignment.START.styleClass(),
+                M3BottomAppBarFloatingActionAlignment.CENTER.styleClass(),
+                M3BottomAppBarFloatingActionAlignment.END.styleClass()
         );
     }
 

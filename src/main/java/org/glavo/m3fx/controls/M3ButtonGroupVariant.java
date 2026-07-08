@@ -33,7 +33,7 @@ public enum M3ButtonGroupVariant {
     /// Returns the style class applied to button groups using this variant.
     ///
     /// @return the style class for this variant
-    public String getStyleClass() {
+    String styleClass() {
         return styleClass;
     }
 }

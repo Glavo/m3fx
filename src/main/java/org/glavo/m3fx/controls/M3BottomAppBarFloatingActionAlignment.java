@@ -33,7 +33,7 @@ public enum M3BottomAppBarFloatingActionAlignment {
     /// Returns the style class associated with this alignment.
     ///
     /// @return the style class applied by this alignment
-    public String getStyleClass() {
+    String styleClass() {
         return styleClass;
     }
 }

@@ -428,12 +428,12 @@ public class M3DialogPane extends DialogPane {
 
     /// Returns whether dialog keyboard focus should currently stay inside this pane.
     private boolean isFocusTrapActive() {
-        @Nullable Scene scene = getScene();
-        if (scene == null || !isVisible()) {
+        if (!M3Accessible.canReach(this)) {
             return false;
         }
 
-        @Nullable Window window = scene.getWindow();
+        @Nullable Scene scene = getScene();
+        @Nullable Window window = scene == null ? null : scene.getWindow();
         return window instanceof Stage stage && stage.getModality() != Modality.NONE;
     }
 

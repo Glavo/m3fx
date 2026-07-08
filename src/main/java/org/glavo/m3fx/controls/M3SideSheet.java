@@ -354,6 +354,7 @@ public class M3SideSheet extends Control {
             notifyFocusNodeChanged();
         });
         actions.addListener((ListChangeListener<Node>) change -> notifyAccessibleItemsChanged());
+        visibleProperty().addListener((observable, oldValue, newValue) -> focusTrap.update());
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
         focusTrap.install();
         focusNotifier.start();
@@ -388,7 +389,7 @@ public class M3SideSheet extends Control {
 
     /// Returns whether modal keyboard focus should currently stay inside this sheet.
     private boolean isModalFocusTrapActive() {
-        return isShown() && getVariant() == M3SheetVariant.MODAL;
+        return isShown() && getVariant() == M3SheetVariant.MODAL && M3Accessible.canReach(this);
     }
 
     /// Returns the focus targets contained by this modal sheet in traversal order.
@@ -549,9 +550,9 @@ public class M3SideSheet extends Control {
     private void updateVariantStyle() {
         M3ControlStyles.replaceVariant(
                 this,
-                getVariant().getStyleClass(),
-                M3SheetVariant.STANDARD.getStyleClass(),
-                M3SheetVariant.MODAL.getStyleClass()
+                getVariant().styleClass(),
+                M3SheetVariant.STANDARD.styleClass(),
+                M3SheetVariant.MODAL.styleClass()
         );
     }
 

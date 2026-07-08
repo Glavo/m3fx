@@ -40,14 +40,14 @@ public enum M3IconSize {
     /// Returns the style class for this icon size.
     ///
     /// @return the style class applied by this size role
-    public String getStyleClass() {
+    String styleClass() {
         return styleClass;
     }
 
     /// Returns the default pixel size for this icon size.
     ///
     /// @return the default icon size in pixels
-    public double getDefaultSize() {
+    double defaultSize() {
         return defaultSize;
     }
 }

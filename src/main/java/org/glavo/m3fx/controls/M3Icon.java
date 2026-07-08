@@ -50,7 +50,7 @@ public class M3Icon extends Labeled {
     private static final String DEFAULT_ICON_FONT_FAMILY = "System";
 
     /// The default icon size token.
-    private static final double DEFAULT_ICON_SIZE = M3IconSize.MEDIUM.getDefaultSize();
+    private static final double DEFAULT_ICON_SIZE = M3IconSize.MEDIUM.defaultSize();
 
     /// The default icon font weight token.
     private static final FontWeight DEFAULT_ICON_FONT_WEIGHT = FontWeight.MEDIUM;
@@ -204,7 +204,7 @@ public class M3Icon extends Labeled {
     ///
     /// @return the icon size token
     public final double getIconSize() {
-        return iconSize == null ? getSize().getDefaultSize() : iconSize.get();
+        return iconSize == null ? getSize().defaultSize() : iconSize.get();
     }
 
     /// Sets the icon size token.
@@ -310,11 +310,11 @@ public class M3Icon extends Labeled {
     private void updateSizeStyle() {
         M3ControlStyles.replaceVariant(
                 this,
-                getSize().getStyleClass(),
-                M3IconSize.SMALL.getStyleClass(),
-                M3IconSize.MEDIUM.getStyleClass(),
-                M3IconSize.LARGE.getStyleClass(),
-                M3IconSize.EXTRA_LARGE.getStyleClass()
+                getSize().styleClass(),
+                M3IconSize.SMALL.styleClass(),
+                M3IconSize.MEDIUM.styleClass(),
+                M3IconSize.LARGE.styleClass(),
+                M3IconSize.EXTRA_LARGE.styleClass()
         );
         if (iconSize == null) {
             updateFont();
@@ -326,14 +326,14 @@ public class M3Icon extends Labeled {
     private void updateVariantStyle() {
         M3ControlStyles.replaceVariant(
                 this,
-                getVariant().getStyleClass(),
-                M3IconVariant.PRIMARY.getStyleClass(),
-                M3IconVariant.SECONDARY.getStyleClass(),
-                M3IconVariant.TERTIARY.getStyleClass(),
-                M3IconVariant.ERROR.getStyleClass(),
-                M3IconVariant.ON_SURFACE.getStyleClass(),
-                M3IconVariant.ON_SURFACE_VARIANT.getStyleClass(),
-                M3IconVariant.INVERSE_ON_SURFACE.getStyleClass()
+                getVariant().styleClass(),
+                M3IconVariant.PRIMARY.styleClass(),
+                M3IconVariant.SECONDARY.styleClass(),
+                M3IconVariant.TERTIARY.styleClass(),
+                M3IconVariant.ERROR.styleClass(),
+                M3IconVariant.ON_SURFACE.styleClass(),
+                M3IconVariant.ON_SURFACE_VARIANT.styleClass(),
+                M3IconVariant.INVERSE_ON_SURFACE.styleClass()
         );
     }
 

@@ -36,6 +36,7 @@ import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3PopupPositioning;
+import org.glavo.m3fx.internal.M3ReachabilityObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -170,6 +171,10 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
     /// Reports popup picker focus changes through this field's accessibility node.
     private final M3AccessibleFocusNotifier popupFocusNotifier =
             new M3AccessibleFocusNotifier(this, popupContent, this::focusNode, this::notifyFocusNodeChanged);
+
+    /// Closes the popup when this field or one of its ancestors becomes unreachable.
+    private final M3ReachabilityObserver reachabilityObserver =
+            new M3ReachabilityObserver(this, this::hidePopupIfOwnerUnreachable);
 
     /// Whether value listeners are currently synchronizing the field and picker.
     private boolean synchronizingValue;
@@ -710,6 +715,14 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
         });
         popupContent.addEventHandler(KeyEvent.KEY_PRESSED, this::handlePickerKeyPressed);
         popupFocusNotifier.start();
+        reachabilityObserver.install();
+    }
+
+    /// Hides the popup if its owner field can no longer be reached from its scene.
+    private void hidePopupIfOwnerUnreachable() {
+        if (popup.isShowing() && !M3Accessible.canReach(this)) {
+            hidePicker(false);
+        }
     }
 
     /// Handles editor action commits.

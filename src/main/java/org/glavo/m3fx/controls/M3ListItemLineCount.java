@@ -33,7 +33,7 @@ public enum M3ListItemLineCount {
     /// Returns the number of text lines represented by this value.
     ///
     /// @return the number of text lines represented by this value
-    public int getLineCount() {
+    int getLineCount() {
         return lineCount;
     }
 }

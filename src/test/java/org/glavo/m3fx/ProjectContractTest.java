@@ -272,6 +272,13 @@ final class ProjectContractTest {
                     + "(?:class|interface|enum|record)\\s+(\\w+)\\b"
     );
 
+    /// Matches Java type declarations in production source files.
+    private static final Pattern TYPE_DECLARATION = Pattern.compile(
+            "^\\s*(?:public\\s+)?(?:(?:abstract|final|sealed|non-sealed)\\s+)*"
+                    + "(?:class|interface|enum|record)\\s+\\w+\\b",
+            Pattern.MULTILINE
+    );
+
     /// Public control type names that would expose implementation nodes rather than user-facing controls.
     private static final @Unmodifiable Set<String> FORBIDDEN_PUBLIC_CONTROL_TYPE_NAMES = Set.of(
             "M3DisclosureIcon",
@@ -397,6 +404,15 @@ final class ProjectContractTest {
             "org.glavo.m3fx.controls.M3Tooltip#uninstall(javafx.scene.Node,org.glavo.m3fx.controls.M3Tooltip)"
     );
 
+    /// Public `controls` package utility types that must remain stateless static entry points.
+    private static final @Unmodifiable Set<String> PUBLIC_CONTROL_UTILITY_TYPES = Set.of(
+            "org.glavo.m3fx.controls.M3DatePresets",
+            "org.glavo.m3fx.controls.M3DateRangePresets",
+            "org.glavo.m3fx.controls.M3ScrollPanes",
+            "org.glavo.m3fx.controls.M3TextInputValidators",
+            "org.glavo.m3fx.controls.M3TimePresets"
+    );
+
     /// The supported public static utility methods intentionally exported outside the `controls` package.
     private static final @Unmodifiable Map<String, @Unmodifiable Set<String>>
             SUPPORTED_PUBLIC_STATIC_METHODS_BY_NON_CONTROL_PACKAGE = Map.of(
@@ -489,6 +505,25 @@ final class ProjectContractTest {
                     org.glavo.m3fx.tokens.M3TypographyTokens#baseline()
                     org.glavo.m3fx.tokens.M3TypographyTokens#create(org.glavo.m3fx.tokens.M3TextStyle,org.glavo.m3fx.tokens.M3TextStyle,org.glavo.m3fx.tokens.M3TextStyle,org.glavo.m3fx.tokens.M3TextStyle,org.glavo.m3fx.tokens.M3TextStyle,org.glavo.m3fx.tokens.M3TextStyle,org.glavo.m3fx.tokens.M3TextStyle,org.glavo.m3fx.tokens.M3TextStyle,org.glavo.m3fx.tokens.M3TextStyle,org.glavo.m3fx.tokens.M3TextStyle,org.glavo.m3fx.tokens.M3TextStyle,org.glavo.m3fx.tokens.M3TextStyle,org.glavo.m3fx.tokens.M3TextStyle,org.glavo.m3fx.tokens.M3TextStyle,org.glavo.m3fx.tokens.M3TextStyle)
                     org.glavo.m3fx.tokens.M3TypographyTokens#expressive()
+                    """)
+    );
+
+    /// Public instance methods intentionally exported by public enums in each API package.
+    private static final @Unmodifiable Map<String, @Unmodifiable Set<String>>
+            SUPPORTED_PUBLIC_ENUM_INSTANCE_METHODS_BY_PACKAGE = Map.of(
+            "org.glavo.m3fx.animation",
+            typeNames("""
+                    org.glavo.m3fx.animation.M3MotionEasing#interpolator()
+                    org.glavo.m3fx.animation.M3MotionEasing#tokenName()
+                    """),
+            "org.glavo.m3fx.controls",
+            Set.of(),
+            "org.glavo.m3fx.theme",
+            Set.of(),
+            "org.glavo.m3fx.tokens",
+            typeNames("""
+                    org.glavo.m3fx.tokens.M3Profile#getColorSpecVersion()
+                    org.glavo.m3fx.tokens.M3Profile#getColorStyle()
                     """)
     );
 
@@ -937,6 +972,26 @@ final class ProjectContractTest {
                         + directCalls);
     }
 
+    /// Verifies that production type sources keep explicit default nullability.
+    @Test
+    void productionTypesDeclareDefaultNullability() throws IOException {
+        List<String> missingAnnotations = new ArrayList<>();
+        for (Path sourceFile : productionJavaSourceFiles()) {
+            String fileName = sourceFile.getFileName().toString();
+            if (fileName.equals("module-info.java") || fileName.equals("package-info.java")) {
+                continue;
+            }
+
+            String source = Files.readString(sourceFile);
+            if (!source.contains("@NotNullByDefault") && TYPE_DECLARATION.matcher(source).find()) {
+                missingAnnotations.add(sourceFile.toString());
+            }
+        }
+
+        assertTrue(missingAnnotations.isEmpty(),
+                () -> "Production type sources must declare @NotNullByDefault: " + missingAnnotations);
+    }
+
     /// Verifies that the module export surface matches the public package contract.
     @Test
     void moduleExportsOnlyExpectedPublicApiPackages() throws IOException {
@@ -1030,6 +1085,21 @@ final class ProjectContractTest {
 
         assertTrue(exposedKeys.isEmpty(),
                 () -> "Exported APIs must not expose JavaFX properties-map storage keys: " + exposedKeys);
+    }
+
+    /// Verifies that exported APIs expose fields only as immutable constants.
+    @Test
+    void exportedApisExposeOnlyConstantFields() throws Exception {
+        List<String> fieldViolations = new ArrayList<>();
+        for (String className : exportedTopLevelClassNames(exportedPackageNames())) {
+            Class<?> type = Class.forName(className, false, ProjectContractTest.class.getClassLoader());
+            if (Modifier.isPublic(type.getModifiers())) {
+                collectExportedFieldMutabilityViolations(type, fieldViolations);
+            }
+        }
+
+        assertTrue(fieldViolations.isEmpty(),
+                () -> "Exported APIs must expose fields only as immutable constants: " + fieldViolations);
     }
 
     /// Verifies that public controls avoid inheriting from concrete JavaFX controls.
@@ -1164,6 +1234,51 @@ final class ProjectContractTest {
                 "Public controls package static utility methods must match the supported API surface");
     }
 
+    /// Verifies that public control utility types stay stateless and constructor-free.
+    @Test
+    void publicControlUtilityTypesStayStateless() throws Exception {
+        List<String> violations = new ArrayList<>();
+        for (String className : PUBLIC_CONTROL_UTILITY_TYPES) {
+            Class<?> type = Class.forName(className, false, ProjectContractTest.class.getClassLoader());
+            if (!Modifier.isFinal(type.getModifiers())) {
+                violations.add(className + " must be final");
+            }
+
+            boolean hasPrivateNoArgConstructor = false;
+            for (Constructor<?> constructor : type.getDeclaredConstructors()) {
+                int modifiers = constructor.getModifiers();
+                if (constructor.getParameterCount() == 0 && Modifier.isPrivate(modifiers)) {
+                    hasPrivateNoArgConstructor = true;
+                }
+                if (Modifier.isPublic(modifiers) || Modifier.isProtected(modifiers)) {
+                    violations.add(className + " exposes " + constructor.toGenericString());
+                }
+                if (constructor.getParameterCount() > 0) {
+                    violations.add(className + " declares parameterized constructor " + constructor.toGenericString());
+                }
+            }
+            if (!hasPrivateNoArgConstructor) {
+                violations.add(className + " must declare one private no-arg constructor");
+            }
+
+            for (Field field : type.getDeclaredFields()) {
+                if (!field.isSynthetic() && !Modifier.isStatic(field.getModifiers())) {
+                    violations.add(className + " declares instance field " + field.getName());
+                }
+            }
+
+            for (Method method : type.getDeclaredMethods()) {
+                int modifiers = method.getModifiers();
+                if (Modifier.isPublic(modifiers) && !Modifier.isStatic(modifiers) && !method.isSynthetic()) {
+                    violations.add(className + " exposes instance method " + method.getName());
+                }
+            }
+        }
+
+        assertTrue(violations.isEmpty(),
+                () -> "Public control utility types must remain stateless static APIs: " + violations);
+    }
+
     /// Verifies that static utility methods exported outside `controls` match the supported API surface.
     @Test
     void publicNonControlPackageStaticUtilityMethodsStayStable() throws Exception {
@@ -1195,6 +1310,36 @@ final class ProjectContractTest {
 
         assertEquals(SUPPORTED_PUBLIC_STATIC_METHODS_BY_NON_CONTROL_PACKAGE, staticMethodsByPackage,
                 "Public non-control package static utility methods must match the supported API surface");
+    }
+
+    /// Verifies that public enum instance methods match the reviewed API surface.
+    @Test
+    void publicEnumInstanceMethodsStayReviewed() throws Exception {
+        Map<String, Set<String>> methodsByPackage = new TreeMap<>();
+        for (String packageName : EXPECTED_EXPORTED_API_PACKAGES) {
+            Set<String> enumMethods = new TreeSet<>();
+            for (String typeName : EXPECTED_EXPORTED_TOP_LEVEL_TYPES.get(packageName)) {
+                Class<?> type = Class.forName(packageName + '.' + typeName, false,
+                        ProjectContractTest.class.getClassLoader());
+                if (!type.isEnum()) {
+                    continue;
+                }
+
+                for (Method method : type.getDeclaredMethods()) {
+                    int modifiers = method.getModifiers();
+                    if (Modifier.isPublic(modifiers)
+                            && !Modifier.isStatic(modifiers)
+                            && !method.isSynthetic()
+                            && !method.isBridge()) {
+                        enumMethods.add(publicMethodSignature(type, method));
+                    }
+                }
+            }
+            methodsByPackage.put(packageName, Set.copyOf(enumMethods));
+        }
+
+        assertEquals(SUPPORTED_PUBLIC_ENUM_INSTANCE_METHODS_BY_PACKAGE, methodsByPackage,
+                "Public enum instance methods must match the reviewed API surface");
     }
 
     /// Verifies that preset records remain immutable data carriers instead of publishing convenience actions.
@@ -2067,6 +2212,32 @@ final class ProjectContractTest {
         }
     }
 
+    /// Collects exported field declarations that are not immutable constants.
+    private static void collectExportedFieldMutabilityViolations(Class<?> owner, List<String> violations) {
+        for (Field field : owner.getDeclaredFields()) {
+            if (!isPublicOrProtected(field) || field.isSynthetic() || field.isEnumConstant()) {
+                continue;
+            }
+
+            int modifiers = field.getModifiers();
+            String fieldName = owner.getName() + '#' + field.getName();
+            if (!Modifier.isStatic(modifiers)) {
+                violations.add(fieldName + " is an instance field");
+            } else if (!Modifier.isFinal(modifiers)) {
+                violations.add(fieldName + " is a mutable static field");
+            } else if (field.getType().isArray()) {
+                violations.add(fieldName + " is an array constant");
+            }
+        }
+
+        for (Class<?> nestedClass : owner.getDeclaredClasses()) {
+            int modifiers = nestedClass.getModifiers();
+            if (Modifier.isPublic(modifiers) || Modifier.isProtected(modifiers)) {
+                collectExportedFieldMutabilityViolations(nestedClass, violations);
+            }
+        }
+    }
+
     /// Returns whether a reflected member is public or protected.
     private static boolean isPublicOrProtected(Member member) {
         int modifiers = member.getModifiers();
@@ -2402,6 +2573,7 @@ final class ProjectContractTest {
         }
         return tokens;
     }
+
     /// Returns direct superclass names for public control source files.
     private static Map<String, String> publicControlSuperclasses() throws IOException {
         Map<String, String> superclasses = new HashMap<>();

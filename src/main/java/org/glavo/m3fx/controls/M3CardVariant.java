@@ -33,7 +33,7 @@ public enum M3CardVariant {
     /// Returns the JavaFX style class used by this variant.
     ///
     /// @return the style class applied by this variant
-    public String getStyleClass() {
+    String styleClass() {
         return styleClass;
     }
 }

@@ -328,7 +328,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
 
     /// Updates one optional node slot from its configured size role.
     private static void updateSlotMetrics(StackPane slot, Rectangle clip, M3ListItemSlotSize slotSize) {
-        if (!slotSize.isFixedSize()) {
+        if (!isFixedSlotSize(slotSize)) {
             slot.setMinSize(Region.USE_COMPUTED_SIZE, Region.USE_COMPUTED_SIZE);
             slot.setPrefSize(Region.USE_COMPUTED_SIZE, Region.USE_COMPUTED_SIZE);
             slot.setMaxSize(Region.USE_COMPUTED_SIZE, Region.USE_COMPUTED_SIZE);
@@ -336,9 +336,9 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
             return;
         }
 
-        double width = slotSize.getWidth();
-        double height = slotSize.getHeight();
-        double arc = slotSize.getShapeRadius() * 2.0;
+        double width = slotWidth(slotSize);
+        double height = slotHeight(slotSize);
+        double arc = slotShapeRadius(slotSize) * 2.0;
         slot.setMinSize(width, height);
         slot.setPrefSize(width, height);
         slot.setMaxSize(width, height);
@@ -347,6 +347,41 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         clip.setArcWidth(arc);
         clip.setArcHeight(arc);
         slot.setClip(clip);
+    }
+
+    /// Returns whether the slot size uses fixed slot metrics.
+    private static boolean isFixedSlotSize(M3ListItemSlotSize slotSize) {
+        return slotSize != M3ListItemSlotSize.AUTO;
+    }
+
+    /// Returns the fixed slot width for a slot size role.
+    private static double slotWidth(M3ListItemSlotSize slotSize) {
+        return switch (slotSize) {
+            case AUTO -> Region.USE_COMPUTED_SIZE;
+            case ICON -> 24.0;
+            case AVATAR -> 40.0;
+            case THUMBNAIL -> 56.0;
+            case WIDE_THUMBNAIL -> 64.0;
+        };
+    }
+
+    /// Returns the fixed slot height for a slot size role.
+    private static double slotHeight(M3ListItemSlotSize slotSize) {
+        return switch (slotSize) {
+            case AUTO -> Region.USE_COMPUTED_SIZE;
+            case ICON -> 24.0;
+            case AVATAR -> 40.0;
+            case THUMBNAIL, WIDE_THUMBNAIL -> 56.0;
+        };
+    }
+
+    /// Returns the clipping radius for a fixed slot size role.
+    private static double slotShapeRadius(M3ListItemSlotSize slotSize) {
+        return switch (slotSize) {
+            case AUTO, ICON -> 0.0;
+            case AVATAR -> 20.0;
+            case THUMBNAIL, WIDE_THUMBNAIL -> 4.0;
+        };
     }
 
     /// Updates the trailing group visibility from its text and node slots.

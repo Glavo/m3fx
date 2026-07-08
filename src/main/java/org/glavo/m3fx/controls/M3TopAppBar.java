@@ -571,11 +571,11 @@ public class M3TopAppBar extends Control {
     private void updateVariantStyle() {
         M3ControlStyles.replaceVariant(
                 this,
-                getVariant().getStyleClass(),
-                M3TopAppBarVariant.SMALL.getStyleClass(),
-                M3TopAppBarVariant.CENTER_ALIGNED.getStyleClass(),
-                M3TopAppBarVariant.MEDIUM.getStyleClass(),
-                M3TopAppBarVariant.LARGE.getStyleClass()
+                getVariant().styleClass(),
+                M3TopAppBarVariant.SMALL.styleClass(),
+                M3TopAppBarVariant.CENTER_ALIGNED.styleClass(),
+                M3TopAppBarVariant.MEDIUM.styleClass(),
+                M3TopAppBarVariant.LARGE.styleClass()
         );
     }
 

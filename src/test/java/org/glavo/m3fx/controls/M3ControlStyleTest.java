@@ -177,7 +177,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
@@ -924,13 +923,13 @@ final class M3ControlStyleTest {
         M3Button button = createButton("Button", M3ButtonVariant.FILLED, event -> actions.incrementAndGet());
 
         assertTrue(button.getStyleClass().contains(M3Button.STYLE_CLASS));
-        assertTrue(button.getStyleClass().contains(M3ButtonVariant.FILLED.getStyleClass()));
+        assertTrue(button.getStyleClass().contains(M3ButtonVariant.FILLED.styleClass()));
 
         button.setVariant(M3ButtonVariant.OUTLINED);
         button.fire();
 
         assertEquals(1, actions.get());
-        assertTrue(button.getStyleClass().contains(M3ButtonVariant.OUTLINED.getStyleClass()));
+        assertTrue(button.getStyleClass().contains(M3ButtonVariant.OUTLINED.styleClass()));
     }
 
     /// Verifies that m3fx buttons create the animated button skin.
@@ -2467,24 +2466,24 @@ final class M3ControlStyleTest {
 
         assertEquals(M3ButtonGroupVariant.CONNECTED, group.getVariant());
         assertEquals(M3ButtonGroupSize.SMALL, group.getSize());
-        assertTrue(group.getStyleClass().contains(M3ButtonGroupVariant.CONNECTED.getStyleClass()));
-        assertTrue(group.getStyleClass().contains(M3ButtonGroupSize.SMALL.getStyleClass()));
+        assertTrue(group.getStyleClass().contains(M3ButtonGroupVariant.CONNECTED.styleClass()));
+        assertTrue(group.getStyleClass().contains(M3ButtonGroupSize.SMALL.styleClass()));
 
         group.setVariant(M3ButtonGroupVariant.STANDARD);
         group.setSize(M3ButtonGroupSize.MEDIUM);
 
-        assertTrue(group.getStyleClass().contains(M3ButtonGroupVariant.STANDARD.getStyleClass()));
-        assertFalse(group.getStyleClass().contains(M3ButtonGroupVariant.CONNECTED.getStyleClass()));
-        assertTrue(group.getStyleClass().contains(M3ButtonGroupSize.MEDIUM.getStyleClass()));
-        assertFalse(group.getStyleClass().contains(M3ButtonGroupSize.SMALL.getStyleClass()));
+        assertTrue(group.getStyleClass().contains(M3ButtonGroupVariant.STANDARD.styleClass()));
+        assertFalse(group.getStyleClass().contains(M3ButtonGroupVariant.CONNECTED.styleClass()));
+        assertTrue(group.getStyleClass().contains(M3ButtonGroupSize.MEDIUM.styleClass()));
+        assertFalse(group.getStyleClass().contains(M3ButtonGroupSize.SMALL.styleClass()));
 
         group.variantProperty().set(null);
         group.sizeProperty().set(null);
 
         assertEquals(M3ButtonGroupVariant.CONNECTED, group.getVariant());
         assertEquals(M3ButtonGroupSize.SMALL, group.getSize());
-        assertTrue(group.getStyleClass().contains(M3ButtonGroupVariant.CONNECTED.getStyleClass()));
-        assertTrue(group.getStyleClass().contains(M3ButtonGroupSize.SMALL.getStyleClass()));
+        assertTrue(group.getStyleClass().contains(M3ButtonGroupVariant.CONNECTED.styleClass()));
+        assertTrue(group.getStyleClass().contains(M3ButtonGroupSize.SMALL.styleClass()));
     }
 
     /// Verifies that button group variant and size CSS tokens resolve without overriding each other.
@@ -2557,13 +2556,13 @@ final class M3ControlStyleTest {
         M3Button second = new M3Button("Share");
         M3Toolbar toolbar = toolbar(first, second);
 
-        assertTrue(toolbar.getStyleClass().contains(M3ToolbarVariant.STANDARD.getStyleClass()));
+        assertTrue(toolbar.getStyleClass().contains(M3ToolbarVariant.STANDARD.styleClass()));
         toolbar.setVariant(M3ToolbarVariant.FLOATING);
-        assertTrue(toolbar.getStyleClass().contains(M3ToolbarVariant.FLOATING.getStyleClass()));
-        assertFalse(toolbar.getStyleClass().contains(M3ToolbarVariant.STANDARD.getStyleClass()));
+        assertTrue(toolbar.getStyleClass().contains(M3ToolbarVariant.FLOATING.styleClass()));
+        assertFalse(toolbar.getStyleClass().contains(M3ToolbarVariant.STANDARD.styleClass()));
         toolbar.setVariant(M3ToolbarVariant.DOCKED);
-        assertTrue(toolbar.getStyleClass().contains(M3ToolbarVariant.DOCKED.getStyleClass()));
-        assertFalse(toolbar.getStyleClass().contains(M3ToolbarVariant.FLOATING.getStyleClass()));
+        assertTrue(toolbar.getStyleClass().contains(M3ToolbarVariant.DOCKED.styleClass()));
+        assertFalse(toolbar.getStyleClass().contains(M3ToolbarVariant.FLOATING.styleClass()));
 
         assertEquals(2, toolbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
         assertSame(first, toolbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
@@ -3410,14 +3409,14 @@ final class M3ControlStyleTest {
         );
 
         assertTrue(button.getStyleClass().contains(M3FloatingActionButton.STYLE_CLASS));
-        assertTrue(button.getStyleClass().contains(M3FloatingActionButtonVariant.PRIMARY.getStyleClass()));
-        assertTrue(button.getStyleClass().contains(M3FloatingActionButtonSize.REGULAR.getStyleClass()));
+        assertTrue(button.getStyleClass().contains(M3FloatingActionButtonVariant.PRIMARY.styleClass()));
+        assertTrue(button.getStyleClass().contains(M3FloatingActionButtonSize.REGULAR.styleClass()));
 
         button.setVariant(M3FloatingActionButtonVariant.TERTIARY);
         button.setSize(M3FloatingActionButtonSize.LARGE);
 
-        assertTrue(button.getStyleClass().contains(M3FloatingActionButtonVariant.TERTIARY.getStyleClass()));
-        assertTrue(button.getStyleClass().contains(M3FloatingActionButtonSize.LARGE.getStyleClass()));
+        assertTrue(button.getStyleClass().contains(M3FloatingActionButtonVariant.TERTIARY.styleClass()));
+        assertTrue(button.getStyleClass().contains(M3FloatingActionButtonSize.LARGE.styleClass()));
     }
 
     /// Verifies that floating action button menus expand, collapse, and manage action item state.
@@ -7711,7 +7710,7 @@ final class M3ControlStyleTest {
         assertFalse(label.getPseudoClassStates().contains(floating));
         assertEquals(Pos.CENTER_LEFT, StackPane.getAlignment(label));
         assertEquals(8.0, textField.getPadding().getTop(), 0.0001);
-        assertTrue(layout.getStyleClass().contains(M3TextInputVariant.FILLED.getStyleClass()));
+        assertTrue(layout.getStyleClass().contains(M3TextInputVariant.FILLED.styleClass()));
 
         textField.setText("support@example.com");
 
@@ -7722,7 +7721,7 @@ final class M3ControlStyleTest {
 
         textField.setVariant(M3TextInputVariant.OUTLINED);
 
-        assertTrue(layout.getStyleClass().contains(M3TextInputVariant.OUTLINED.getStyleClass()));
+        assertTrue(layout.getStyleClass().contains(M3TextInputVariant.OUTLINED.styleClass()));
 
         textField.clear();
 
@@ -10918,13 +10917,13 @@ final class M3ControlStyleTest {
         M3Avatar avatar = createAvatar("A", M3AvatarVariant.SECONDARY);
 
         assertEquals(M3AvatarVariant.SECONDARY, avatar.getVariant());
-        assertTrue(avatar.getStyleClass().contains(M3AvatarVariant.SECONDARY.getStyleClass()));
+        assertTrue(avatar.getStyleClass().contains(M3AvatarVariant.SECONDARY.styleClass()));
 
         avatar.setVariant(M3AvatarVariant.TERTIARY);
 
         assertEquals(M3AvatarVariant.TERTIARY, avatar.getVariant());
-        assertTrue(avatar.getStyleClass().contains(M3AvatarVariant.TERTIARY.getStyleClass()));
-        assertFalse(avatar.getStyleClass().contains(M3AvatarVariant.SECONDARY.getStyleClass()));
+        assertTrue(avatar.getStyleClass().contains(M3AvatarVariant.TERTIARY.styleClass()));
+        assertFalse(avatar.getStyleClass().contains(M3AvatarVariant.SECONDARY.styleClass()));
     }
 
     /// Verifies that icon size and color variants update style classes.
@@ -10936,8 +10935,8 @@ final class M3ControlStyleTest {
         assertEquals(M3IconVariant.ON_SURFACE_VARIANT, icon.getVariant());
         assertFalse(icon.isFocusTraversable());
         assertTrue(icon.getStyleClass().contains(M3Icon.STYLE_CLASS));
-        assertTrue(icon.getStyleClass().contains(M3IconSize.MEDIUM.getStyleClass()));
-        assertTrue(icon.getStyleClass().contains(M3IconVariant.ON_SURFACE_VARIANT.getStyleClass()));
+        assertTrue(icon.getStyleClass().contains(M3IconSize.MEDIUM.styleClass()));
+        assertTrue(icon.getStyleClass().contains(M3IconVariant.ON_SURFACE_VARIANT.styleClass()));
 
         icon.setSize(M3IconSize.LARGE);
         icon.setVariant(M3IconVariant.PRIMARY);
@@ -10947,10 +10946,10 @@ final class M3ControlStyleTest {
         assertEquals(M3IconVariant.PRIMARY, icon.getVariant());
         assertInstanceOf(M3IconSkin.class, icon.getSkin());
         assertEquals(32.0, icon.getIconSize(), 0.0001);
-        assertTrue(icon.getStyleClass().contains(M3IconSize.LARGE.getStyleClass()));
-        assertTrue(icon.getStyleClass().contains(M3IconVariant.PRIMARY.getStyleClass()));
-        assertFalse(icon.getStyleClass().contains(M3IconSize.MEDIUM.getStyleClass()));
-        assertFalse(icon.getStyleClass().contains(M3IconVariant.ON_SURFACE_VARIANT.getStyleClass()));
+        assertTrue(icon.getStyleClass().contains(M3IconSize.LARGE.styleClass()));
+        assertTrue(icon.getStyleClass().contains(M3IconVariant.PRIMARY.styleClass()));
+        assertFalse(icon.getStyleClass().contains(M3IconSize.MEDIUM.styleClass()));
+        assertFalse(icon.getStyleClass().contains(M3IconVariant.ON_SURFACE_VARIANT.styleClass()));
     }
 
     /// Verifies that icon font tokens apply through CSS.
@@ -11148,15 +11147,15 @@ final class M3ControlStyleTest {
         assertEquals(M3IconToggleButtonVariant.TONAL, button.getVariant());
         assertTrue(button.isSelected());
         assertTrue(button.getStyleClass().contains(M3IconToggleButton.STYLE_CLASS));
-        assertTrue(button.getStyleClass().contains(M3IconToggleButtonVariant.TONAL.getStyleClass()));
+        assertTrue(button.getStyleClass().contains(M3IconToggleButtonVariant.TONAL.styleClass()));
 
         button.setVariant(M3IconToggleButtonVariant.OUTLINED);
         button.setSelected(false);
 
         assertEquals(M3IconToggleButtonVariant.OUTLINED, button.getVariant());
         assertFalse(button.isSelected());
-        assertTrue(button.getStyleClass().contains(M3IconToggleButtonVariant.OUTLINED.getStyleClass()));
-        assertFalse(button.getStyleClass().contains(M3IconToggleButtonVariant.TONAL.getStyleClass()));
+        assertTrue(button.getStyleClass().contains(M3IconToggleButtonVariant.OUTLINED.styleClass()));
+        assertFalse(button.getStyleClass().contains(M3IconToggleButtonVariant.TONAL.styleClass()));
         assertFalse(button.getPseudoClassStates().contains(PseudoClass.getPseudoClass("selected")));
     }
 
@@ -11417,19 +11416,19 @@ final class M3ControlStyleTest {
         assertEquals(M3TextRole.BODY_LARGE, text.getRole());
         assertTrue(text.getStyleClass().contains(M3Text.STYLE_CLASS));
         assertInstanceOf(M3TextSkin.class, text.getSkin());
-        assertTrue(text.getStyleClass().contains(M3TextRole.BODY_LARGE.getStyleClass()));
+        assertTrue(text.getStyleClass().contains(M3TextRole.BODY_LARGE.styleClass()));
 
         text.setRole(M3TextRole.TITLE_LARGE);
 
         assertEquals(M3TextRole.TITLE_LARGE, text.getRole());
-        assertTrue(text.getStyleClass().contains(M3TextRole.TITLE_LARGE.getStyleClass()));
-        assertFalse(text.getStyleClass().contains(M3TextRole.BODY_LARGE.getStyleClass()));
+        assertTrue(text.getStyleClass().contains(M3TextRole.TITLE_LARGE.styleClass()));
+        assertFalse(text.getStyleClass().contains(M3TextRole.BODY_LARGE.styleClass()));
 
         text.setRole(M3TextRole.LABEL_SMALL);
 
         assertEquals(M3TextRole.LABEL_SMALL, text.getRole());
-        assertTrue(text.getStyleClass().contains(M3TextRole.LABEL_SMALL.getStyleClass()));
-        assertFalse(text.getStyleClass().contains(M3TextRole.TITLE_LARGE.getStyleClass()));
+        assertTrue(text.getStyleClass().contains(M3TextRole.LABEL_SMALL.styleClass()));
+        assertFalse(text.getStyleClass().contains(M3TextRole.TITLE_LARGE.styleClass()));
     }
 
     /// Verifies that text typography roles read font size tokens from the active theme.
@@ -11476,8 +11475,8 @@ final class M3ControlStyleTest {
 
         assertEquals(M3SurfaceVariant.PRIMARY_CONTAINER, surface.getVariant());
         assertEquals(M3SurfaceElevation.LEVEL3, surface.getElevation());
-        assertTrue(surface.getStyleClass().contains(M3SurfaceVariant.PRIMARY_CONTAINER.getStyleClass()));
-        assertTrue(surface.getStyleClass().contains(M3SurfaceElevation.LEVEL3.getStyleClass()));
+        assertTrue(surface.getStyleClass().contains(M3SurfaceVariant.PRIMARY_CONTAINER.styleClass()));
+        assertTrue(surface.getStyleClass().contains(M3SurfaceElevation.LEVEL3.styleClass()));
         assertEquals(20.0, surface.getContainerShape(), 0.0001);
         assertEquals(18.0, surface.getContentPadding(), 0.0001);
         assertEquals(18.0, surface.getPadding().getTop(), 0.0001);
@@ -15623,7 +15622,7 @@ final class M3ControlStyleTest {
         assertEquals(sideContent, sideSheet.getContent());
         assertEquals(closeAction, sideSheet.getActions().get(0));
         assertEquals(M3SheetVariant.MODAL, sideSheet.getVariant());
-        assertTrue(sideSheet.getStyleClass().contains(M3SheetVariant.MODAL.getStyleClass()));
+        assertTrue(sideSheet.getStyleClass().contains(M3SheetVariant.MODAL.styleClass()));
         assertEquals("Queue", bottomSheet.getHeadline());
         assertEquals(bottomContent, bottomSheet.getContent());
         assertEquals(bottomAction, bottomSheet.getActions().get(0));
@@ -16389,14 +16388,14 @@ final class M3ControlStyleTest {
         M3Chip chip = new M3Chip("Assist");
 
         assertEquals(M3ChipStyle.FLAT, chip.getChipStyle());
-        assertTrue(chip.getStyleClass().contains(M3ChipStyle.FLAT.getStyleClass()));
-        assertFalse(chip.getStyleClass().contains(M3ChipStyle.ELEVATED.getStyleClass()));
+        assertTrue(chip.getStyleClass().contains(M3ChipStyle.FLAT.styleClass()));
+        assertFalse(chip.getStyleClass().contains(M3ChipStyle.ELEVATED.styleClass()));
 
         chip.setChipStyle(M3ChipStyle.ELEVATED);
 
         assertEquals(M3ChipStyle.ELEVATED, chip.getChipStyle());
-        assertTrue(chip.getStyleClass().contains(M3ChipStyle.ELEVATED.getStyleClass()));
-        assertFalse(chip.getStyleClass().contains(M3ChipStyle.FLAT.getStyleClass()));
+        assertTrue(chip.getStyleClass().contains(M3ChipStyle.ELEVATED.styleClass()));
+        assertFalse(chip.getStyleClass().contains(M3ChipStyle.FLAT.styleClass()));
     }
 
     /// Verifies that chip interaction states keep Material colors.
@@ -22489,33 +22488,33 @@ final class M3ControlStyleTest {
         M3TopAppBar topAppBar = topAppBar("Inbox");
 
         assertEquals(M3TopAppBarVariant.SMALL, topAppBar.getVariant());
-        assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.SMALL.getStyleClass()));
+        assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.SMALL.styleClass()));
 
         topAppBar.setVariant(M3TopAppBarVariant.CENTER_ALIGNED);
 
         assertEquals(M3TopAppBarVariant.CENTER_ALIGNED, topAppBar.getVariant());
-        assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.CENTER_ALIGNED.getStyleClass()));
-        assertFalse(topAppBar.getStyleClass().contains(M3TopAppBarVariant.SMALL.getStyleClass()));
+        assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.CENTER_ALIGNED.styleClass()));
+        assertFalse(topAppBar.getStyleClass().contains(M3TopAppBarVariant.SMALL.styleClass()));
         assertEquals(64.0, topAppBar.getPrefHeight(), 0.0001);
 
         topAppBar.setVariant(M3TopAppBarVariant.MEDIUM);
 
         assertEquals(M3TopAppBarVariant.MEDIUM, topAppBar.getVariant());
-        assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.MEDIUM.getStyleClass()));
-        assertFalse(topAppBar.getStyleClass().contains(M3TopAppBarVariant.CENTER_ALIGNED.getStyleClass()));
+        assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.MEDIUM.styleClass()));
+        assertFalse(topAppBar.getStyleClass().contains(M3TopAppBarVariant.CENTER_ALIGNED.styleClass()));
         assertEquals(112.0, topAppBar.getPrefHeight(), 0.0001);
 
         topAppBar.setVariant(M3TopAppBarVariant.LARGE);
 
         assertEquals(M3TopAppBarVariant.LARGE, topAppBar.getVariant());
-        assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.LARGE.getStyleClass()));
-        assertFalse(topAppBar.getStyleClass().contains(M3TopAppBarVariant.MEDIUM.getStyleClass()));
+        assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.LARGE.styleClass()));
+        assertFalse(topAppBar.getStyleClass().contains(M3TopAppBarVariant.MEDIUM.styleClass()));
         assertEquals(152.0, topAppBar.getPrefHeight(), 0.0001);
 
         topAppBar.variantProperty().set(null);
 
         assertEquals(M3TopAppBarVariant.SMALL, topAppBar.getVariant());
-        assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.SMALL.getStyleClass()));
+        assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.SMALL.styleClass()));
         assertEquals(64.0, topAppBar.getPrefHeight(), 0.0001);
     }
 
@@ -23284,34 +23283,34 @@ final class M3ControlStyleTest {
 
         assertEquals(M3BottomAppBarFloatingActionAlignment.END, bottomAppBar.getFloatingActionAlignment());
         assertTrue(bottomAppBar.getStyleClass().contains(
-                M3BottomAppBarFloatingActionAlignment.END.getStyleClass()
+                M3BottomAppBarFloatingActionAlignment.END.styleClass()
         ));
 
         bottomAppBar.setFloatingActionAlignment(M3BottomAppBarFloatingActionAlignment.CENTER);
 
         assertEquals(M3BottomAppBarFloatingActionAlignment.CENTER, bottomAppBar.getFloatingActionAlignment());
         assertTrue(bottomAppBar.getStyleClass().contains(
-                M3BottomAppBarFloatingActionAlignment.CENTER.getStyleClass()
+                M3BottomAppBarFloatingActionAlignment.CENTER.styleClass()
         ));
         assertFalse(bottomAppBar.getStyleClass().contains(
-                M3BottomAppBarFloatingActionAlignment.END.getStyleClass()
+                M3BottomAppBarFloatingActionAlignment.END.styleClass()
         ));
 
         bottomAppBar.setFloatingActionAlignment(M3BottomAppBarFloatingActionAlignment.START);
 
         assertEquals(M3BottomAppBarFloatingActionAlignment.START, bottomAppBar.getFloatingActionAlignment());
         assertTrue(bottomAppBar.getStyleClass().contains(
-                M3BottomAppBarFloatingActionAlignment.START.getStyleClass()
+                M3BottomAppBarFloatingActionAlignment.START.styleClass()
         ));
         assertFalse(bottomAppBar.getStyleClass().contains(
-                M3BottomAppBarFloatingActionAlignment.CENTER.getStyleClass()
+                M3BottomAppBarFloatingActionAlignment.CENTER.styleClass()
         ));
 
         bottomAppBar.floatingActionAlignmentProperty().set(null);
 
         assertEquals(M3BottomAppBarFloatingActionAlignment.END, bottomAppBar.getFloatingActionAlignment());
         assertTrue(bottomAppBar.getStyleClass().contains(
-                M3BottomAppBarFloatingActionAlignment.END.getStyleClass()
+                M3BottomAppBarFloatingActionAlignment.END.styleClass()
         ));
     }
 
@@ -30896,10 +30895,10 @@ final class M3ControlStyleTest {
         fab.setSize(M3FloatingActionButtonSize.REGULAR);
 
         assertTrue(button.getStyleClass().contains(M3Button.STYLE_CLASS));
-        assertTrue(button.getStyleClass().contains(M3ButtonVariant.OUTLINED.getStyleClass()));
+        assertTrue(button.getStyleClass().contains(M3ButtonVariant.OUTLINED.styleClass()));
         assertTrue(fab.getStyleClass().contains(M3FloatingActionButton.STYLE_CLASS));
-        assertTrue(fab.getStyleClass().contains(M3FloatingActionButtonVariant.PRIMARY.getStyleClass()));
-        assertTrue(fab.getStyleClass().contains(M3FloatingActionButtonSize.REGULAR.getStyleClass()));
+        assertTrue(fab.getStyleClass().contains(M3FloatingActionButtonVariant.PRIMARY.styleClass()));
+        assertTrue(fab.getStyleClass().contains(M3FloatingActionButtonSize.REGULAR.styleClass()));
     }
 
     /// Verifies style classes for container controls.
@@ -30933,16 +30932,16 @@ final class M3ControlStyleTest {
         assertTrue(new M3SplitButton("Create").getStyleClass().contains(M3SplitButton.STYLE_CLASS));
         assertTrue(new M3FabMenu().getStyleClass().contains(M3FabMenu.STYLE_CLASS));
         assertTrue(card.getStyleClass().contains(M3Card.STYLE_CLASS));
-        assertTrue(card.getStyleClass().contains(M3CardVariant.OUTLINED.getStyleClass()));
+        assertTrue(card.getStyleClass().contains(M3CardVariant.OUTLINED.styleClass()));
         assertTrue(banner.getStyleClass().contains(M3Banner.STYLE_CLASS));
         assertTrue(snackbar.getStyleClass().contains(M3Snackbar.STYLE_CLASS));
         assertTrue(snackbarHost.getStyleClass().contains(M3SnackbarHost.STYLE_CLASS));
         assertTrue(dialogPane.getStyleClass().contains(M3DialogPane.STYLE_CLASS));
         assertTrue(topAppBar.getStyleClass().contains(M3TopAppBar.STYLE_CLASS));
-        assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.SMALL.getStyleClass()));
+        assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.SMALL.styleClass()));
         assertTrue(bottomAppBar.getStyleClass().contains(M3BottomAppBar.STYLE_CLASS));
         assertTrue(bottomAppBar.getStyleClass().contains(
-                M3BottomAppBarFloatingActionAlignment.END.getStyleClass()
+                M3BottomAppBarFloatingActionAlignment.END.styleClass()
         ));
         assertTrue(toolbar.getStyleClass().contains(M3Toolbar.STYLE_CLASS));
         assertTrue(sideSheet.getStyleClass().contains(M3SideSheet.STYLE_CLASS));
@@ -30974,7 +30973,7 @@ final class M3ControlStyleTest {
         chip.setVariant(M3ChipVariant.FILTER);
 
         assertTrue(textField.getStyleClass().contains(M3TextField.STYLE_CLASS));
-        assertTrue(textField.getStyleClass().contains(M3TextInputVariant.OUTLINED.getStyleClass()));
+        assertTrue(textField.getStyleClass().contains(M3TextInputVariant.OUTLINED.styleClass()));
         assertTrue(new M3PasswordField().getStyleClass().contains(M3PasswordField.STYLE_CLASS));
         assertTrue(new M3TextInputLayout().getStyleClass().contains(M3TextInputLayout.STYLE_CLASS));
         assertTrue(new M3TextArea().getStyleClass().contains(M3TextArea.STYLE_CLASS));
@@ -31007,7 +31006,7 @@ final class M3ControlStyleTest {
         assertTrue(new M3TimePicker().getStyleClass().contains(M3TimePicker.STYLE_CLASS));
         assertTrue(new M3TimePickerField().getStyleClass().contains(M3TimePickerField.STYLE_CLASS));
         assertTrue(chip.getStyleClass().contains(M3Chip.STYLE_CLASS));
-        assertTrue(chip.getStyleClass().contains(M3ChipVariant.FILTER.getStyleClass()));
+        assertTrue(chip.getStyleClass().contains(M3ChipVariant.FILTER.styleClass()));
         assertTrue(new M3ChipGroup().getStyleClass().contains(M3ChipGroup.STYLE_CLASS));
         assertTrue(new M3SegmentedButton("Day").getStyleClass().contains(M3SegmentedButton.STYLE_CLASS));
         assertTrue(new M3SegmentedButtonGroup().getStyleClass().contains(M3SegmentedButtonGroup.STYLE_CLASS));
@@ -38887,7 +38886,7 @@ final class M3ControlStyleTest {
             double menuButtonWidth,
             double spacing
     ) {
-        assertTrue(splitButton.getStyleClass().contains(size.getStyleClass()));
+        assertTrue(splitButton.getStyleClass().contains(size.styleClass()));
         assertEquals(containerHeight, splitButtonActionButton(splitButton).getContainerHeight(), 0.0001);
         assertEquals(containerHeight, splitButtonMenuButton(splitButton).getContainerHeight(), 0.0001);
         assertEquals(actionHorizontalPadding, splitButtonActionButton(splitButton).getHorizontalPadding(), 0.0001);

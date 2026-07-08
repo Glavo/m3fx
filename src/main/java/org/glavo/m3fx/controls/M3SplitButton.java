@@ -525,12 +525,12 @@ public class M3SplitButton extends Control {
     private void updateSizeStyle() {
         M3ControlStyles.replaceVariant(
                 this,
-                getSize().getStyleClass(),
-                M3SplitButtonSize.EXTRA_SMALL.getStyleClass(),
-                M3SplitButtonSize.SMALL.getStyleClass(),
-                M3SplitButtonSize.MEDIUM.getStyleClass(),
-                M3SplitButtonSize.LARGE.getStyleClass(),
-                M3SplitButtonSize.EXTRA_LARGE.getStyleClass()
+                getSize().styleClass(),
+                M3SplitButtonSize.EXTRA_SMALL.styleClass(),
+                M3SplitButtonSize.SMALL.styleClass(),
+                M3SplitButtonSize.MEDIUM.styleClass(),
+                M3SplitButtonSize.LARGE.styleClass(),
+                M3SplitButtonSize.EXTRA_LARGE.styleClass()
         );
     }
 

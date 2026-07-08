@@ -42,7 +42,7 @@ public enum M3SurfaceElevation {
     /// Returns the style class for this elevation level.
     ///
     /// @return the style class applied by this elevation level
-    public String getStyleClass() {
+    String styleClass() {
         return styleClass;
     }
 }

@@ -69,7 +69,7 @@ public enum M3TextRole {
     /// Returns the style class for this typography role.
     ///
     /// @return the style class applied by this typography role
-    public String getStyleClass() {
+    String styleClass() {
         return styleClass;
     }
 }

@@ -404,12 +404,12 @@ public class M3Button extends ButtonBase {
     private void updateVariantStyle() {
         M3ControlStyles.replaceVariant(
                 this,
-                getVariant().getStyleClass(),
-                M3ButtonVariant.FILLED.getStyleClass(),
-                M3ButtonVariant.TONAL.getStyleClass(),
-                M3ButtonVariant.OUTLINED.getStyleClass(),
-                M3ButtonVariant.TEXT.getStyleClass(),
-                M3ButtonVariant.ELEVATED.getStyleClass()
+                getVariant().styleClass(),
+                M3ButtonVariant.FILLED.styleClass(),
+                M3ButtonVariant.TONAL.styleClass(),
+                M3ButtonVariant.OUTLINED.styleClass(),
+                M3ButtonVariant.TEXT.styleClass(),
+                M3ButtonVariant.ELEVATED.styleClass()
         );
     }
 

@@ -3203,7 +3203,7 @@ public final class M3FXDemoApp extends Application {
             M3IconButtonWidth widthRole,
             M3IconButtonShape shape
     ) {
-        Node icon = createIconViewport(DemoIcons.primary(iconName), size.getDefaultIconSize());
+        Node icon = createIconViewport(DemoIcons.primary(iconName), defaultIconButtonGlyphSize(size));
         M3IconButton button = new M3IconButton(icon);
         button.setSize(size);
         button.setWidthRole(widthRole);
@@ -3292,7 +3292,7 @@ public final class M3FXDemoApp extends Application {
             M3IconButtonWidth widthRole,
             M3IconButtonShape shape
     ) {
-        Node icon = createIconViewport(DemoIcons.onSurfaceVariant(iconName), size.getDefaultIconSize());
+        Node icon = createIconViewport(DemoIcons.onSurfaceVariant(iconName), defaultIconButtonGlyphSize(size));
         M3IconToggleButton button = new M3IconToggleButton(icon);
         button.setVariant(variant);
         button.setSelected(selected);
@@ -3369,7 +3369,7 @@ public final class M3FXDemoApp extends Application {
 
     /// Wraps a demo SVG icon in a stable 24 dp viewport.
     private static StackPane createIconViewport(Node icon, String... styleClasses) {
-        return createIconViewport(icon, M3IconSize.MEDIUM.getDefaultSize(), styleClasses);
+        return createIconViewport(icon, defaultIconGlyphSize(M3IconSize.MEDIUM), styleClasses);
     }
 
     /// Wraps a demo SVG icon in a stable viewport with the requested icon size.
@@ -3390,7 +3390,7 @@ public final class M3FXDemoApp extends Application {
                 iconSize
         ));
         if (icon instanceof SVGPath svgIcon) {
-            double scale = iconSize / M3IconSize.MEDIUM.getDefaultSize();
+            double scale = iconSize / defaultIconGlyphSize(M3IconSize.MEDIUM);
             svgIcon.setScaleX(scale);
             svgIcon.setScaleY(scale);
         }
@@ -3433,8 +3433,8 @@ public final class M3FXDemoApp extends Application {
             case ON_SURFACE_VARIANT -> DemoIcons.onSurfaceVariant(iconName);
             case INVERSE_ON_SURFACE -> DemoIcons.inverseOnSurface(iconName);
         };
-        double iconSize = size.getDefaultSize();
-        double scale = iconSize / M3IconSize.MEDIUM.getDefaultSize();
+        double iconSize = defaultIconGlyphSize(size);
+        double scale = iconSize / defaultIconGlyphSize(M3IconSize.MEDIUM);
         icon.setScaleX(scale);
         icon.setScaleY(scale);
 
@@ -3446,6 +3446,27 @@ public final class M3FXDemoApp extends Application {
         viewport.setMouseTransparent(true);
         return viewport;
     }
+
+    /// Returns the default demo glyph size for an icon size role.
+    private static double defaultIconGlyphSize(M3IconSize size) {
+        return switch (size) {
+            case SMALL -> 18.0;
+            case MEDIUM -> 24.0;
+            case LARGE -> 32.0;
+            case EXTRA_LARGE -> 40.0;
+        };
+    }
+
+    /// Returns the default demo glyph size for an icon button size role.
+    private static double defaultIconButtonGlyphSize(M3IconButtonSize size) {
+        return switch (size) {
+            case EXTRA_SMALL -> 20.0;
+            case SMALL, MEDIUM -> 24.0;
+            case LARGE -> 32.0;
+            case EXTRA_LARGE -> 40.0;
+        };
+    }
+
     /// Creates a sample extended floating action button with a variant.
     private static M3FloatingActionButton createExtendedFab(String text, M3FloatingActionButtonVariant variant) {
         M3FloatingActionButton button = new M3FloatingActionButton(text);

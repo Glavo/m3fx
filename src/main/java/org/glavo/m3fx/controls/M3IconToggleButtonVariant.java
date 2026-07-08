@@ -37,7 +37,7 @@ public enum M3IconToggleButtonVariant {
     /// Returns the style class for this toggle icon button variant.
     ///
     /// @return the style class applied by this variant
-    public String getStyleClass() {
+    String styleClass() {
         return styleClass;
     }
 }

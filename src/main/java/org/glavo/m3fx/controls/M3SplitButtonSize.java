@@ -41,7 +41,7 @@ public enum M3SplitButtonSize {
     /// Returns the style class applied to split buttons using this size.
     ///
     /// @return the style class for this size
-    public String getStyleClass() {
+    String styleClass() {
         return styleClass;
     }
 }

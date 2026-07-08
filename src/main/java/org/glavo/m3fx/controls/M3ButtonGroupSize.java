@@ -41,7 +41,7 @@ public enum M3ButtonGroupSize {
     /// Returns the style class applied to button groups using this size.
     ///
     /// @return the style class for this size
-    public String getStyleClass() {
+    String styleClass() {
         return styleClass;
     }
 }

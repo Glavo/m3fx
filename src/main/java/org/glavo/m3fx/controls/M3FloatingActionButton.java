@@ -302,11 +302,11 @@ public class M3FloatingActionButton extends ButtonBase {
     private void updateVariantStyle() {
         M3ControlStyles.replaceVariant(
                 this,
-                getVariant().getStyleClass(),
-                M3FloatingActionButtonVariant.SURFACE.getStyleClass(),
-                M3FloatingActionButtonVariant.PRIMARY.getStyleClass(),
-                M3FloatingActionButtonVariant.SECONDARY.getStyleClass(),
-                M3FloatingActionButtonVariant.TERTIARY.getStyleClass()
+                getVariant().styleClass(),
+                M3FloatingActionButtonVariant.SURFACE.styleClass(),
+                M3FloatingActionButtonVariant.PRIMARY.styleClass(),
+                M3FloatingActionButtonVariant.SECONDARY.styleClass(),
+                M3FloatingActionButtonVariant.TERTIARY.styleClass()
         );
     }
 
@@ -314,10 +314,10 @@ public class M3FloatingActionButton extends ButtonBase {
     private void updateSizeStyle() {
         M3ControlStyles.replaceVariant(
                 this,
-                getSize().getStyleClass(),
-                M3FloatingActionButtonSize.SMALL.getStyleClass(),
-                M3FloatingActionButtonSize.REGULAR.getStyleClass(),
-                M3FloatingActionButtonSize.LARGE.getStyleClass()
+                getSize().styleClass(),
+                M3FloatingActionButtonSize.SMALL.styleClass(),
+                M3FloatingActionButtonSize.REGULAR.styleClass(),
+                M3FloatingActionButtonSize.LARGE.styleClass()
         );
     }
 

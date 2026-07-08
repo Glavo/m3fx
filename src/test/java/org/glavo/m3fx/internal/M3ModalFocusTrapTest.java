@@ -133,6 +133,44 @@ final class M3ModalFocusTrapTest {
         });
     }
 
+    /// Verifies that a stale inactive topmost trap does not block the active trap below it.
+    @Test
+    void staleInactiveTopmostTrapDoesNotBlockActiveTrap() {
+        FxTestUtils.runOnFxThread(() -> {
+            Button firstStart = new Button("First start");
+            Button firstEnd = new Button("First end");
+            VBox firstOwner = new VBox(firstStart, firstEnd);
+            Button secondStart = new Button("Second start");
+            Button secondEnd = new Button("Second end");
+            VBox secondOwner = new VBox(secondStart, secondEnd);
+            VBox root = new VBox(firstOwner, secondOwner);
+            boolean[] secondActive = {true};
+            M3ModalFocusTrap firstTrap = new M3ModalFocusTrap(
+                    firstOwner,
+                    () -> true,
+                    () -> List.of(firstStart, firstEnd),
+                    null
+            );
+            M3ModalFocusTrap secondTrap = new M3ModalFocusTrap(
+                    secondOwner,
+                    () -> secondActive[0],
+                    () -> List.of(secondStart, secondEnd),
+                    null
+            );
+            firstTrap.install();
+            secondTrap.install();
+            Scene scene = show(root, 320.0, 180.0);
+
+            secondActive[0] = false;
+            firstStart.requestFocus();
+            fireKey(scene, keyEvent(KeyCode.TAB));
+
+            assertTrue(firstEnd.isFocused(), "the active lower trap should handle Tab when the top trap becomes stale");
+            assertFalse(secondStart.isFocused());
+            assertFalse(secondEnd.isFocused());
+        });
+    }
+
     /// Verifies that a trap installed before a stage is shown starts handling traversal after the window is visible.
     @Test
     void trapInstalledBeforeWindowShownActivatesAfterShow() {

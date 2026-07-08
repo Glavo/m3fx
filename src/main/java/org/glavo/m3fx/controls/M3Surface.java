@@ -346,16 +346,16 @@ public class M3Surface extends Control {
     private void updateVariantStyle() {
         M3ControlStyles.replaceVariant(
                 this,
-                getVariant().getStyleClass(),
-                M3SurfaceVariant.SURFACE.getStyleClass(),
-                M3SurfaceVariant.CONTAINER_LOWEST.getStyleClass(),
-                M3SurfaceVariant.CONTAINER_LOW.getStyleClass(),
-                M3SurfaceVariant.CONTAINER.getStyleClass(),
-                M3SurfaceVariant.CONTAINER_HIGH.getStyleClass(),
-                M3SurfaceVariant.CONTAINER_HIGHEST.getStyleClass(),
-                M3SurfaceVariant.PRIMARY_CONTAINER.getStyleClass(),
-                M3SurfaceVariant.SECONDARY_CONTAINER.getStyleClass(),
-                M3SurfaceVariant.TERTIARY_CONTAINER.getStyleClass()
+                getVariant().styleClass(),
+                M3SurfaceVariant.SURFACE.styleClass(),
+                M3SurfaceVariant.CONTAINER_LOWEST.styleClass(),
+                M3SurfaceVariant.CONTAINER_LOW.styleClass(),
+                M3SurfaceVariant.CONTAINER.styleClass(),
+                M3SurfaceVariant.CONTAINER_HIGH.styleClass(),
+                M3SurfaceVariant.CONTAINER_HIGHEST.styleClass(),
+                M3SurfaceVariant.PRIMARY_CONTAINER.styleClass(),
+                M3SurfaceVariant.SECONDARY_CONTAINER.styleClass(),
+                M3SurfaceVariant.TERTIARY_CONTAINER.styleClass()
         );
     }
 
@@ -363,13 +363,13 @@ public class M3Surface extends Control {
     private void updateElevationStyle() {
         M3ControlStyles.replaceVariant(
                 this,
-                getElevation().getStyleClass(),
-                M3SurfaceElevation.LEVEL0.getStyleClass(),
-                M3SurfaceElevation.LEVEL1.getStyleClass(),
-                M3SurfaceElevation.LEVEL2.getStyleClass(),
-                M3SurfaceElevation.LEVEL3.getStyleClass(),
-                M3SurfaceElevation.LEVEL4.getStyleClass(),
-                M3SurfaceElevation.LEVEL5.getStyleClass()
+                getElevation().styleClass(),
+                M3SurfaceElevation.LEVEL0.styleClass(),
+                M3SurfaceElevation.LEVEL1.styleClass(),
+                M3SurfaceElevation.LEVEL2.styleClass(),
+                M3SurfaceElevation.LEVEL3.styleClass(),
+                M3SurfaceElevation.LEVEL4.styleClass(),
+                M3SurfaceElevation.LEVEL5.styleClass()
         );
     }
 

@@ -32,7 +32,7 @@ public enum M3IconButtonShape {
     /// Returns the style class applied to icon buttons using this shape.
     ///
     /// @return the style class for this shape
-    public String getStyleClass() {
+    String styleClass() {
         return styleClass;
     }
 }

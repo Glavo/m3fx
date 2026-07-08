@@ -46,7 +46,7 @@ public enum M3IconVariant {
     /// Returns the style class for this icon variant.
     ///
     /// @return the style class applied by this variant
-    public String getStyleClass() {
+    String styleClass() {
         return styleClass;
     }
 }

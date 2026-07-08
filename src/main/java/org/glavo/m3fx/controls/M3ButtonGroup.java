@@ -366,9 +366,9 @@ public class M3ButtonGroup extends Control {
     private void updateVariantStyle() {
         M3ControlStyles.replaceVariant(
                 this,
-                getVariant().getStyleClass(),
-                M3ButtonGroupVariant.STANDARD.getStyleClass(),
-                M3ButtonGroupVariant.CONNECTED.getStyleClass()
+                getVariant().styleClass(),
+                M3ButtonGroupVariant.STANDARD.styleClass(),
+                M3ButtonGroupVariant.CONNECTED.styleClass()
         );
     }
 
@@ -376,12 +376,12 @@ public class M3ButtonGroup extends Control {
     private void updateSizeStyle() {
         M3ControlStyles.replaceVariant(
                 this,
-                getSize().getStyleClass(),
-                M3ButtonGroupSize.EXTRA_SMALL.getStyleClass(),
-                M3ButtonGroupSize.SMALL.getStyleClass(),
-                M3ButtonGroupSize.MEDIUM.getStyleClass(),
-                M3ButtonGroupSize.LARGE.getStyleClass(),
-                M3ButtonGroupSize.EXTRA_LARGE.getStyleClass()
+                getSize().styleClass(),
+                M3ButtonGroupSize.EXTRA_SMALL.styleClass(),
+                M3ButtonGroupSize.SMALL.styleClass(),
+                M3ButtonGroupSize.MEDIUM.styleClass(),
+                M3ButtonGroupSize.LARGE.styleClass(),
+                M3ButtonGroupSize.EXTRA_LARGE.styleClass()
         );
     }
 

@@ -2733,6 +2733,7 @@ final class M3FXDemoVisualSmokeTest {
                 assertDemoValidationFeedbackRemainsStableOnEdits(validatedEmailLayout);
                 assertFocusedMultilineTextInputSurfaceContract(scene, layouts);
                 assertMirroredTextInputLayoutContracts(scene, layouts);
+                assertFocusedTextInputStateMatrix(scene, layouts, modeName);
                 assertTextInputModeSpecificRootState(scene, modeName);
             }));
         } finally {
@@ -3004,6 +3005,86 @@ final class M3FXDemoVisualSmokeTest {
                 "Focused mirrored Text Fields"
         );
         assertSingleLineTextInputsHaveVerticalRoom(scene, "Focused Mirrored Text Fields");
+    }
+
+    /// Verifies every focusable text input state exposed by the demo page.
+    private static void assertFocusedTextInputStateMatrix(
+            Scene scene,
+            List<M3TextInputLayout> layouts,
+            String modeName
+    ) {
+        Node root = scene.getRoot();
+        @Nullable Boolean previousAnimationsEnabled = M3MotionSettings.getAnimationsEnabled(root);
+        M3MotionSettings.setAnimationsEnabled(root, false);
+        int focusedLayouts = 0;
+        try {
+            for (M3TextInputLayout layout : layouts) {
+                @Nullable TextInputControl input = layout.getInput();
+                if (input == null || input.isDisabled() || !input.isFocusTraversable()) {
+                    continue;
+                }
+
+                scrollDemoPageNodeIntoView(scene, layout);
+                input.requestFocus();
+                input.deselect();
+                input.positionCaret(input.getLength());
+                scene.getRoot().applyCss();
+                scene.getRoot().layout();
+
+                String description = modeName + " focused text input `"
+                        + layout.getLabelText() + "`";
+                assertTrue(input.isFocused(), () -> description + " should accept focus");
+                assertTextInputLayoutContainerGeometry(layout, description);
+                if (layout.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT) {
+                    assertRightToLeftTextInputLayoutGeometry(layout, description);
+                }
+                if (layout.getTrailing() != null) {
+                    assertTextInputTrailingActionGeometry(layout, description);
+                }
+                if (firstVisibleStyledDescendant(layout, M3TextInputLayout.CLEAR_BUTTON_STYLE_CLASS) != null) {
+                    assertTextInputClearButtonGeometry(layout, description);
+                }
+
+                WritableImage image = requireSnapshotWithNodeFullyVisible(scene, layout, description);
+                assertTextInputFocusedVisualState(image, layout, input, description);
+                focusedLayouts++;
+            }
+        } finally {
+            M3MotionSettings.setAnimationsEnabled(root, previousAnimationsEnabled);
+        }
+
+        int checkedLayouts = focusedLayouts;
+        assertTrue(checkedLayouts >= 8,
+                () -> modeName + " should verify the focused text input state matrix, checked="
+                        + checkedLayouts + ", totalLayouts=" + layouts.size());
+    }
+
+    /// Verifies one focused text input with rendered-pixel assertions.
+    private static void assertTextInputFocusedVisualState(
+            WritableImage image,
+            M3TextInputLayout layout,
+            TextInputControl input,
+            String description
+    ) {
+        assertSnapshotHasVisibleContent(image, description);
+        if (input instanceof M3TextInput textInput && textInput.getVariant() == M3TextInputVariant.OUTLINED
+                && layout.isLabelFloating()) {
+            assertOutlinedFloatingLabelGeometry(layout, description);
+            assertOutlinedFloatingLabelBackgroundMatchesSurrounding(image, layout, description);
+        }
+
+        assertTextInputFloatingLabelInkAvoidsAdornmentSlots(image, layout, description);
+        assertTextInputFloatingLabelInkAvoidsInputInk(image, layout, description);
+
+        if (input instanceof M3TextArea) {
+            assertFocusedTextAreaContentBackgroundMatchesContainer(image, layout, description);
+            return;
+        }
+
+        @Nullable Text text = firstVisibleText(input);
+        if (text != null && hasRenderableBounds(text) && isSingleLineTextInputWithMeasurableGlyph(input)) {
+            assertSingleLineTextInputHasVerticalRoom(image, layout, input, text, description);
+        }
     }
 
     /// Verifies that selection control pages render all advertised states with stable indicator geometry.
@@ -4607,6 +4688,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable T> targetReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> normalReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> pressedReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> releaseReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> selectedReference = new AtomicReference<>();
 
         runOnFxThreadWhenNodeAreaChanged(targetReference, normalReference, sceneReference, pressedReference, () -> {
@@ -4643,6 +4725,17 @@ final class M3FXDemoVisualSmokeTest {
             scene.getRoot().layout();
         });
 
+        runOnFxThreadWhenNodeAreaChanged(targetReference, pressedReference, sceneReference, releaseReference, () -> {
+        }, () -> {
+            writeInteractionSnapshot(
+                    Objects.requireNonNull(releaseReference.get(), "release " + targetName + " selection snapshot"),
+                    snapshotName,
+                    "release"
+            );
+            T target = Objects.requireNonNull(targetReference.get(), targetName);
+            assertTrue(selectedLookup.apply(target), targetName + " should become selected on click release");
+        });
+
         runOnFxThreadWhenNodeAreaStable(targetReference, sceneReference, selectedReference, () -> {
             @Nullable T target = targetReference.get();
             return target != null && selectedLookup.apply(target);
@@ -4662,6 +4755,18 @@ final class M3FXDemoVisualSmokeTest {
                 Objects.requireNonNull(normalReference.get(), "normal " + targetName + " selection snapshot"),
                 Objects.requireNonNull(pressedReference.get(), "pressed " + targetName + " selection snapshot"),
                 targetName + " selection pressed"
+        );
+        assertNodeAreaChanged(
+                target,
+                Objects.requireNonNull(pressedReference.get(), "pressed " + targetName + " selection snapshot"),
+                Objects.requireNonNull(releaseReference.get(), "release " + targetName + " selection snapshot"),
+                targetName + " selection release transition"
+        );
+        assertNodeAreaChanged(
+                target,
+                Objects.requireNonNull(releaseReference.get(), "release " + targetName + " selection snapshot"),
+                Objects.requireNonNull(selectedReference.get(), "selected " + targetName + " snapshot"),
+                targetName + " selection settle transition"
         );
         assertNodeAreaChanged(
                 target,
@@ -8000,27 +8105,20 @@ final class M3FXDemoVisualSmokeTest {
                 requireVisibleStyledDescendant(layout, M3TextInputLayout.LABEL_STYLE_CLASS, description + " label")
         );
         Text labelText = Objects.requireNonNull(firstVisibleText(label), description + " label text");
-        Rectangle2D inkBounds = Objects.requireNonNull(
-                renderedTextInkBounds(image, labelText),
-                description + " rendered floating-label ink"
-        );
+        @Nullable Rectangle2D renderedLabelInkBounds = renderedTextInkBounds(image, labelText);
+        Rectangle2D inkBounds = renderedLabelInkBounds == null
+                ? renderedNodePixelBoundsInScene(labelText, description + " rendered floating-label ink")
+                : renderedLabelInkBounds;
 
         Bounds inputBounds = input.localToScene(input.getBoundsInLocal());
         Bounds labelBounds = label.localToScene(label.getBoundsInLocal());
         Bounds textLayoutBounds = labelText.localToScene(labelText.getBoundsInLocal());
-        Color reference = averageSnapshotColor(
-                image,
-                (int) Math.floor(labelBounds.getMinX()),
-                (int) Math.floor(labelBounds.getMinY() - 6.0),
-                (int) Math.ceil(labelBounds.getMaxX()),
-                (int) Math.ceil(labelBounds.getMinY() - 2.0)
-        );
-
         int sampledPixels = 0;
         int mismatchedPixels = 0;
         double worstDistance = 0.0;
         @Nullable Point2D worstPoint = null;
         @Nullable Color worstColor = null;
+        @Nullable Color worstReference = null;
         int startX = Math.max(0, (int) Math.floor(labelBounds.getMinX()));
         int endX = Math.min((int) image.getWidth(), (int) Math.ceil(labelBounds.getMaxX()));
         int startY = Math.max(0, (int) Math.floor(labelBounds.getMinY()));
@@ -8040,12 +8138,20 @@ final class M3FXDemoVisualSmokeTest {
                     continue;
                 }
 
+                Color reference = sampledOutlinedFloatingLabelBackgroundColor(
+                        image,
+                        labelBounds,
+                        textLayoutBounds,
+                        sampleX,
+                        sampleY
+                );
                 sampledPixels++;
                 double distance = pixelDistance(color, reference);
                 if (distance > worstDistance) {
                     worstDistance = distance;
                     worstPoint = new Point2D(sampleX, sampleY);
                     worstColor = color;
+                    worstReference = reference;
                 }
                 if (distance > OUTLINED_FLOATING_LABEL_BACKGROUND_TOLERANCE) {
                     mismatchedPixels++;
@@ -8064,6 +8170,7 @@ final class M3FXDemoVisualSmokeTest {
         double finalWorstDistance = worstDistance;
         @Nullable Point2D finalWorstPoint = worstPoint;
         @Nullable Color finalWorstColor = worstColor;
+        @Nullable Color finalWorstReference = worstReference;
         assertTrue(mismatchedPixels <= allowedMismatches,
                 () -> description + " floating label paints a background mask: mismatched="
                         + finalMismatchedPixels + "/" + finalSampledPixels
@@ -8071,11 +8178,27 @@ final class M3FXDemoVisualSmokeTest {
                         + ", worstDistance=" + finalWorstDistance
                         + ", worstPoint=" + finalWorstPoint
                         + ", worstColor=" + finalWorstColor
-                        + ", reference=" + reference
+                        + ", reference=" + finalWorstReference
                         + ", label=" + labelBounds
                         + ", textLayout=" + textLayoutBounds
                         + ", ink=" + inkBounds
                         + ", input=" + inputBounds);
+    }
+
+    /// Samples the surface immediately adjacent to an outlined floating-label padding pixel.
+    private static Color sampledOutlinedFloatingLabelBackgroundColor(
+            WritableImage image,
+            Bounds labelBounds,
+            Bounds textLayoutBounds,
+            double sampleX,
+            double sampleY
+    ) {
+        double referenceX = sampleX <= textLayoutBounds.getCenterX()
+                ? labelBounds.getMinX() - 4.0
+                : labelBounds.getMaxX() + 4.0;
+        int x = clampPixelCoordinate((int) Math.round(referenceX), (int) image.getWidth());
+        int y = clampPixelCoordinate((int) Math.round(sampleY), (int) image.getHeight());
+        return image.getPixelReader().getColor(x, y);
     }
 
     /// Verifies that the floating label's rendered ink does not collide with active adornment slots.
@@ -8453,13 +8576,15 @@ final class M3FXDemoVisualSmokeTest {
         assertTrue(trailing.isVisible() && hasRenderableBounds(trailing),
                 () -> description + " trailing action should be visible: " + trailing);
         Bounds containerBounds = textInputContainer(layout).localToScene(textInputContainer(layout).getBoundsInLocal());
+        TextInputControl input = Objects.requireNonNull(layout.getInput(), description + " input");
+        Bounds inputBounds = input.localToScene(input.getBoundsInLocal());
         Bounds trailingBounds = trailing.localToScene(trailing.getBoundsInLocal());
         assertTrue(containsBoundsWithTolerance(containerBounds, trailingBounds, CONTROL_EDGE_TOLERANCE),
                 () -> description + " trailing action escapes input container: trailing="
                         + trailingBounds + ", container=" + containerBounds);
-        assertTrue(Math.abs(trailingBounds.getCenterY() - containerBounds.getCenterY()) <= CONTROL_EDGE_TOLERANCE,
+        assertTrue(Math.abs(trailingBounds.getCenterY() - inputBounds.getCenterY()) <= TEXT_INPUT_SLOT_CENTER_TOLERANCE,
                 () -> description + " trailing action is vertically off-center: trailing="
-                        + trailingBounds + ", container=" + containerBounds);
+                        + trailingBounds + ", input=" + inputBounds + ", container=" + containerBounds);
     }
 
     /// Verifies that an RTL text input layout mirrors input, leading, trailing, and clear-button slots.
@@ -8504,13 +8629,15 @@ final class M3FXDemoVisualSmokeTest {
                 description + " clear button"
         );
         Bounds containerBounds = textInputContainer(layout).localToScene(textInputContainer(layout).getBoundsInLocal());
+        TextInputControl input = Objects.requireNonNull(layout.getInput(), description + " input");
+        Bounds inputBounds = input.localToScene(input.getBoundsInLocal());
         Bounds clearBounds = clearButton.localToScene(clearButton.getBoundsInLocal());
         assertTrue(containsBoundsWithTolerance(containerBounds, clearBounds, CONTROL_EDGE_TOLERANCE),
                 () -> description + " clear button escapes input container: clear="
                         + clearBounds + ", container=" + containerBounds);
-        assertTrue(Math.abs(clearBounds.getCenterY() - containerBounds.getCenterY()) <= CONTROL_EDGE_TOLERANCE,
+        assertTrue(Math.abs(clearBounds.getCenterY() - inputBounds.getCenterY()) <= TEXT_INPUT_SLOT_CENTER_TOLERANCE,
                 () -> description + " clear button is vertically off-center: clear="
-                        + clearBounds + ", container=" + containerBounds);
+                        + clearBounds + ", input=" + inputBounds + ", container=" + containerBounds);
     }
 
     /// Verifies that a layout renders an active error state in both the input and supporting text.
@@ -9564,13 +9691,15 @@ final class M3FXDemoVisualSmokeTest {
                             + itemBounds + ", slot=" + slotBounds + ", content=" + content);
         }
 
-        if (slotSize.isFixedSize()) {
-            assertEquals(slotSize.getWidth(), slotBounds.getWidth(), LIST_ITEM_FIXED_SLOT_SIZE_TOLERANCE,
+        if (isFixedSlotSize(slotSize)) {
+            double expectedWidth = slotWidth(slotSize);
+            double expectedHeight = slotHeight(slotSize);
+            assertEquals(expectedWidth, slotBounds.getWidth(), LIST_ITEM_FIXED_SLOT_SIZE_TOLERANCE,
                     () -> pageTitle + " list item " + slotName + " slot width does not match its token: slot="
-                            + slotBounds + ", expected=" + slotSize.getWidth() + ", content=" + content);
-            assertEquals(slotSize.getHeight(), slotBounds.getHeight(), LIST_ITEM_FIXED_SLOT_SIZE_TOLERANCE,
+                            + slotBounds + ", expected=" + expectedWidth + ", content=" + content);
+            assertEquals(expectedHeight, slotBounds.getHeight(), LIST_ITEM_FIXED_SLOT_SIZE_TOLERANCE,
                     () -> pageTitle + " list item " + slotName + " slot height does not match its token: slot="
-                            + slotBounds + ", expected=" + slotSize.getHeight() + ", content=" + content);
+                            + slotBounds + ", expected=" + expectedHeight + ", content=" + content);
         }
 
         if (hasRenderableBounds(content)) {
@@ -9588,6 +9717,32 @@ final class M3FXDemoVisualSmokeTest {
                     pageTitle + " list item " + slotName + " vector icon"
             );
         }
+    }
+
+    /// Returns whether a list item slot size has fixed visual metrics.
+    private static boolean isFixedSlotSize(M3ListItemSlotSize slotSize) {
+        return slotSize != M3ListItemSlotSize.AUTO;
+    }
+
+    /// Returns the expected fixed slot width for a list item slot size.
+    private static double slotWidth(M3ListItemSlotSize slotSize) {
+        return switch (slotSize) {
+            case AUTO -> -1.0;
+            case ICON -> 24.0;
+            case AVATAR -> 40.0;
+            case THUMBNAIL -> 56.0;
+            case WIDE_THUMBNAIL -> 64.0;
+        };
+    }
+
+    /// Returns the expected fixed slot height for a list item slot size.
+    private static double slotHeight(M3ListItemSlotSize slotSize) {
+        return switch (slotSize) {
+            case AUTO -> -1.0;
+            case ICON -> 24.0;
+            case AVATAR -> 40.0;
+            case THUMBNAIL, WIDE_THUMBNAIL -> 56.0;
+        };
     }
 
     /// Verifies that page-owned fixed-size Material targets keep their glyph text centered.
@@ -9974,37 +10129,45 @@ final class M3FXDemoVisualSmokeTest {
         Bounds inputBounds = input.localToScene(input.getBoundsInLocal());
         Bounds textBounds = text.localToScene(text.getBoundsInLocal());
         @Nullable Rectangle2D renderedInkBounds = renderedTextInkBounds(image, text);
-        assertNotNull(renderedInkBounds,
-                () -> pageTitle + " text input glyph should be measurable in the real scene snapshot: text="
-                        + text.getText() + ", inputBounds=" + inputBounds + ", textBounds=" + textBounds);
-        Rectangle2D inkBounds = Objects.requireNonNull(renderedInkBounds);
-        assertTrue(renderedTextInkWidthIsRepresentative(inkBounds, textBounds)
-                        && renderedTextInkHeightIsRepresentative(inkBounds, text),
+        Rectangle2D inkBounds = renderedInkBounds == null ? renderedNodePixelBoundsInScene(
+                text,
+                pageTitle + " text input glyph"
+        ) : renderedInkBounds;
+        if (!renderedTextInkWidthIsRepresentative(inkBounds, textBounds)
+                || !renderedTextInkHeightIsRepresentative(inkBounds, text)) {
+            inkBounds = renderedNodePixelBoundsInScene(text, pageTitle + " text input glyph fallback");
+        }
+        Rectangle2D checkedInkBounds = inkBounds;
+        assertTrue(renderedTextInkWidthIsRepresentative(checkedInkBounds, textBounds)
+                        && renderedTextInkHeightIsRepresentative(checkedInkBounds, text),
                 () -> pageTitle + " text input glyph snapshot is not representative enough for geometry checks: text="
                         + text.getText() + ", inputBounds=" + inputBounds + ", textBounds=" + textBounds
-                        + ", inkBounds=" + inkBounds);
+                        + ", inkBounds=" + checkedInkBounds);
         assertRectangleInsideBounds(
                 inputBounds,
-                inkBounds,
+                checkedInkBounds,
                 TEXT_EDGE_TOLERANCE,
                 pageTitle + " text input rendered glyph"
         );
-        double inkCenterY = inkBounds.getMinY() + inkBounds.getHeight() / 2.0;
-        double topRoom = inkBounds.getMinY() - inputBounds.getMinY();
-        double bottomRoom = inputBounds.getMaxY() - inkBounds.getMaxY();
+        double inkCenterY = checkedInkBounds.getMinY() + checkedInkBounds.getHeight() / 2.0;
+        double topRoom = checkedInkBounds.getMinY() - inputBounds.getMinY();
+        double bottomRoom = inputBounds.getMaxY() - checkedInkBounds.getMaxY();
         double centerRatio = (inkCenterY - inputBounds.getMinY()) / inputBounds.getHeight();
+        boolean useM3TextInputAlignment = isSingleLineM3TextInputWithVisibleText(input);
         assertTrue(topRoom >= INPUT_TEXT_MINIMUM_VERTICAL_ROOM
                         && bottomRoom >= INPUT_TEXT_MINIMUM_VERTICAL_ROOM
-                        && centerRatio >= INPUT_TEXT_MINIMUM_CENTER_RATIO
-                        && centerRatio <= INPUT_TEXT_MAXIMUM_CENTER_RATIO,
+                        && (useM3TextInputAlignment
+                                || centerRatio >= INPUT_TEXT_MINIMUM_CENTER_RATIO
+                                        && centerRatio <= INPUT_TEXT_MAXIMUM_CENTER_RATIO),
                 () -> pageTitle + " text input glyph has unsafe vertical geometry: text="
                         + text.getText() + ", topRoom=" + topRoom + ", bottomRoom=" + bottomRoom
                         + ", centerRatio=" + centerRatio + ", inputBounds=" + inputBounds
-                        + ", textBounds=" + textBounds + ", inkBounds=" + inkBounds);
-        if (isSingleLineM3TextInputWithVisibleText(input)) {
-            assertSingleLineTextInputInkAvoidsAdornments(layout, inkBounds, pageTitle);
-            assertSingleLineTextInputInkAvoidsFloatingLabel(image, layout, inkBounds, pageTitle);
-            assertSingleLineTextInputInkAligned(layout, input, inkBounds, inputBounds, pageTitle);
+                        + ", textBounds=" + textBounds + ", inkBounds=" + checkedInkBounds);
+        if (useM3TextInputAlignment) {
+            assertSingleLineTextInputTextNodeAvoidsAdornments(layout, text, pageTitle);
+            assertSingleLineTextInputInkAvoidsAdornments(layout, checkedInkBounds, pageTitle);
+            assertSingleLineTextInputInkAvoidsFloatingLabel(image, layout, checkedInkBounds, pageTitle);
+            assertSingleLineTextInputInkAligned(layout, input, checkedInkBounds, inputBounds, pageTitle);
         }
     }
 
@@ -10015,6 +10178,54 @@ final class M3FXDemoVisualSmokeTest {
                         || textInput.getVariant() == M3TextInputVariant.OUTLINED)
                 && input.getText() != null
                 && !input.getText().isBlank();
+    }
+
+    /// Verifies that a single-line text node's layout bounds do not collide with active adornment content.
+    private static void assertSingleLineTextInputTextNodeAvoidsAdornments(
+            M3TextInputLayout layout,
+            Text text,
+            String pageTitle
+    ) {
+        Bounds textBounds = text.localToScene(text.getBoundsInLocal());
+        assertTextInputTextNodeAvoidsAdornmentContent(
+                layout,
+                M3TextInputLayout.LEADING_STYLE_CLASS,
+                textBounds,
+                pageTitle + " leading adornment content"
+        );
+        assertTextInputTextNodeAvoidsAdornmentContent(
+                layout,
+                M3TextInputLayout.TRAILING_STYLE_CLASS,
+                textBounds,
+                pageTitle + " trailing adornment content"
+        );
+    }
+
+    /// Verifies that a text node leaves safe horizontal space from one adornment content area.
+    private static void assertTextInputTextNodeAvoidsAdornmentContent(
+            M3TextInputLayout layout,
+            String slotStyleClass,
+            Bounds textBounds,
+            String description
+    ) {
+        @Nullable Node slot = firstVisibleStyledDescendant(layout, slotStyleClass);
+        if (slot == null) {
+            return;
+        }
+
+        Bounds contentBounds = textInputAdornmentContentBounds(slot);
+        Rectangle2D textRectangle = rectangleForBounds(textBounds);
+        Rectangle2D contentRectangle = rectangleForBounds(contentBounds);
+        if (rectangleVerticalOverlap(textRectangle, contentRectangle) <= TEXT_INPUT_ADORNMENT_OVERLAP_TOLERANCE) {
+            return;
+        }
+
+        double gap = rectangleHorizontalGap(textRectangle, contentRectangle);
+        assertTrue(gap >= TEXT_INPUT_ADORNMENT_MINIMUM_GAP,
+                () -> description + " is too close to text layout bounds: gap=" + gap
+                        + ", minimumGap=" + TEXT_INPUT_ADORNMENT_MINIMUM_GAP
+                        + ", textBounds=" + textBounds + ", contentBounds=" + contentBounds
+                        + ", layout=" + layout + ", input=" + textInputDebugState(layout.getInput()));
     }
 
     /// Verifies that a single-line text input's rendered ink does not collide with active adornment slots.

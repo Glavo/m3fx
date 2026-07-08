@@ -220,11 +220,11 @@ public class M3Avatar extends Control {
     private void updateVariantStyle() {
         M3ControlStyles.replaceVariant(
                 this,
-                getVariant().getStyleClass(),
-                M3AvatarVariant.PRIMARY.getStyleClass(),
-                M3AvatarVariant.SECONDARY.getStyleClass(),
-                M3AvatarVariant.TERTIARY.getStyleClass(),
-                M3AvatarVariant.SURFACE.getStyleClass()
+                getVariant().styleClass(),
+                M3AvatarVariant.PRIMARY.styleClass(),
+                M3AvatarVariant.SECONDARY.styleClass(),
+                M3AvatarVariant.TERTIARY.styleClass(),
+                M3AvatarVariant.SURFACE.styleClass()
         );
     }
 

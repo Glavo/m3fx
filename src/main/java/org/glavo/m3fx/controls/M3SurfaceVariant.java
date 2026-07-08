@@ -52,7 +52,7 @@ public enum M3SurfaceVariant {
     /// Returns the style class for this surface variant.
     ///
     /// @return the style class applied by this variant
-    public String getStyleClass() {
+    String styleClass() {
         return styleClass;
     }
 }

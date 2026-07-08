@@ -324,10 +324,18 @@ public final class M3TextInputSupport<C extends TextInputControl & M3TextInput> 
     private void updateVariantStyle() {
         M3ControlStyles.replaceVariant(
                 control,
-                getVariant().getStyleClass(),
-                M3TextInputVariant.FILLED.getStyleClass(),
-                M3TextInputVariant.OUTLINED.getStyleClass()
+                variantStyleClass(getVariant()),
+                variantStyleClass(M3TextInputVariant.FILLED),
+                variantStyleClass(M3TextInputVariant.OUTLINED)
         );
+    }
+
+    /// Returns the style class used internally for a text input variant.
+    private static String variantStyleClass(M3TextInputVariant variant) {
+        return switch (variant) {
+            case FILLED -> "m3-filled-field";
+            case OUTLINED -> "m3-outlined-field";
+        };
     }
 
     /// Applies size-related component tokens to JavaFX layout properties.

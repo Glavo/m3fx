@@ -36,7 +36,7 @@ public enum M3ToolbarVariant {
     /// Returns the style class representing this variant.
     ///
     /// @return the style class representing this variant
-    public String getStyleClass() {
+    String styleClass() {
         return styleClass;
     }
 }

@@ -31,7 +31,7 @@ public enum M3ChipStyle {
     /// Returns the JavaFX style class used by this chip style.
     ///
     /// @return the style class applied by this chip style
-    public String getStyleClass() {
+    String styleClass() {
         return styleClass;
     }
 }

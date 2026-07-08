@@ -467,11 +467,11 @@ public class M3IconToggleButton extends ButtonBase {
     private void updateVariantStyle() {
         M3ControlStyles.replaceVariant(
                 this,
-                getVariant().getStyleClass(),
-                M3IconToggleButtonVariant.STANDARD.getStyleClass(),
-                M3IconToggleButtonVariant.FILLED.getStyleClass(),
-                M3IconToggleButtonVariant.TONAL.getStyleClass(),
-                M3IconToggleButtonVariant.OUTLINED.getStyleClass()
+                getVariant().styleClass(),
+                M3IconToggleButtonVariant.STANDARD.styleClass(),
+                M3IconToggleButtonVariant.FILLED.styleClass(),
+                M3IconToggleButtonVariant.TONAL.styleClass(),
+                M3IconToggleButtonVariant.OUTLINED.styleClass()
         );
     }
 
@@ -479,12 +479,12 @@ public class M3IconToggleButton extends ButtonBase {
     private void updateSizeStyle() {
         M3ControlStyles.replaceVariant(
                 this,
-                getSize().getStyleClass(),
-                M3IconButtonSize.EXTRA_SMALL.getStyleClass(),
-                M3IconButtonSize.SMALL.getStyleClass(),
-                M3IconButtonSize.MEDIUM.getStyleClass(),
-                M3IconButtonSize.LARGE.getStyleClass(),
-                M3IconButtonSize.EXTRA_LARGE.getStyleClass()
+                getSize().styleClass(),
+                M3IconButtonSize.EXTRA_SMALL.styleClass(),
+                M3IconButtonSize.SMALL.styleClass(),
+                M3IconButtonSize.MEDIUM.styleClass(),
+                M3IconButtonSize.LARGE.styleClass(),
+                M3IconButtonSize.EXTRA_LARGE.styleClass()
         );
     }
 
@@ -492,10 +492,10 @@ public class M3IconToggleButton extends ButtonBase {
     private void updateWidthStyle() {
         M3ControlStyles.replaceVariant(
                 this,
-                getWidthRole().getStyleClass(),
-                M3IconButtonWidth.NARROW.getStyleClass(),
-                M3IconButtonWidth.DEFAULT.getStyleClass(),
-                M3IconButtonWidth.WIDE.getStyleClass()
+                getWidthRole().styleClass(),
+                M3IconButtonWidth.NARROW.styleClass(),
+                M3IconButtonWidth.DEFAULT.styleClass(),
+                M3IconButtonWidth.WIDE.styleClass()
         );
     }
 
@@ -503,9 +503,9 @@ public class M3IconToggleButton extends ButtonBase {
     private void updateShapeStyle() {
         M3ControlStyles.replaceVariant(
                 this,
-                getIconButtonShape().getStyleClass(),
-                M3IconButtonShape.ROUND.getStyleClass(),
-                M3IconButtonShape.SQUARE.getStyleClass()
+                getIconButtonShape().styleClass(),
+                M3IconButtonShape.ROUND.styleClass(),
+                M3IconButtonShape.SQUARE.styleClass()
         );
     }
 

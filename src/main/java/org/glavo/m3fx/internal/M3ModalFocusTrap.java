@@ -192,7 +192,17 @@ public final class M3ModalFocusTrap {
         }
 
         List<M3ModalFocusTrap> traps = ACTIVE_TRAPS.get(scene);
-        return traps != null && !traps.isEmpty() && traps.get(traps.size() - 1) == this;
+        if (traps == null) {
+            return false;
+        }
+
+        for (int index = traps.size() - 1; index >= 0; index--) {
+            M3ModalFocusTrap trap = traps.get(index);
+            if (trap.installedScene == scene && trap.activeSupplier.getAsBoolean()) {
+                return trap == this;
+            }
+        }
+        return false;
     }
 
     /// Handles keyboard dismissal and cyclic focus traversal for the active modal owner.

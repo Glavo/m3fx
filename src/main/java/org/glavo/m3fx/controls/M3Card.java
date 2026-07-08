@@ -465,10 +465,10 @@ public class M3Card extends Control {
     private void updateVariantStyle() {
         M3ControlStyles.replaceVariant(
                 this,
-                getVariant().getStyleClass(),
-                M3CardVariant.ELEVATED.getStyleClass(),
-                M3CardVariant.FILLED.getStyleClass(),
-                M3CardVariant.OUTLINED.getStyleClass()
+                getVariant().styleClass(),
+                M3CardVariant.ELEVATED.styleClass(),
+                M3CardVariant.FILLED.styleClass(),
+                M3CardVariant.OUTLINED.styleClass()
         );
     }
 

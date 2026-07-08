@@ -34,7 +34,7 @@ public enum M3FloatingActionButtonSize {
     /// Returns the JavaFX style class used by this size.
     ///
     /// @return the style class applied by this size
-    public String getStyleClass() {
+    String styleClass() {
         return styleClass;
     }
 }

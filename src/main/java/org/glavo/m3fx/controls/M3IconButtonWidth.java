@@ -35,7 +35,7 @@ public enum M3IconButtonWidth {
     /// Returns the style class applied to icon buttons using this width.
     ///
     /// @return the style class for this width role
-    public String getStyleClass() {
+    String styleClass() {
         return styleClass;
     }
 }

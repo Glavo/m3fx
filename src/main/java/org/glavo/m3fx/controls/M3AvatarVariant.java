@@ -36,7 +36,7 @@ public enum M3AvatarVariant {
     /// Returns the style class for this avatar variant.
     ///
     /// @return the style class applied by this variant
-    public String getStyleClass() {
+    String styleClass() {
         return styleClass;
     }
 }
