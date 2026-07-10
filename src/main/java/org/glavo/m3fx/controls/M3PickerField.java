@@ -4,9 +4,6 @@
 package org.glavo.m3fx.controls;
 
 import javafx.animation.Animation;
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
-import javafx.animation.Timeline;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ObjectProperty;
@@ -33,6 +30,7 @@ import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
+import org.glavo.m3fx.internal.M3NodeTransition;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3PopupPositioning;
@@ -159,10 +157,10 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
     private final ReadOnlyBooleanWrapper showing = new ReadOnlyBooleanWrapper(this, "showing");
 
     /// The picker popup enter animation.
-    private final Timeline showAnimation = new Timeline();
+    private final M3NodeTransition showAnimation = new M3NodeTransition(popupContent);
 
     /// The picker popup exit animation.
-    private final Timeline hideAnimation = new Timeline();
+    private final M3NodeTransition hideAnimation = new M3NodeTransition(popupContent);
 
     /// Observes runtime motion settings while this field is attached to a scene.
     private final M3MotionSettingsObserver motionSettingsObserver =
@@ -703,6 +701,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
         popupContent.getChildren().setAll(picker);
         popup.setAutoHide(true);
         popup.getContent().add(popupContent);
+        hideAnimation.setOnFinished(event -> popup.hide());
         popup.setOnHidden(event -> handlePopupHidden());
 
         pickerValue.addListener((observable, oldValue, newValue) -> handlePickerValueChanged(newValue));
@@ -777,14 +776,14 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
             return;
         }
         M3MotionSpec spec = M3Animation.fastSpatial(this);
-        hideAnimation.getKeyFrames().setAll(new KeyFrame(
-                spec.duration(),
-                event -> popup.hide(),
-                new KeyValue(popupContent.opacityProperty(), 0.0, spec.interpolator()),
-                new KeyValue(popupContent.scaleXProperty(), POPUP_TRANSITION_SCALE, spec.interpolator()),
-                new KeyValue(popupContent.scaleYProperty(), POPUP_TRANSITION_SCALE, spec.interpolator()),
-                new KeyValue(popupContent.translateYProperty(), popupTransitionOffsetY, spec.interpolator())
-        ));
+        hideAnimation.configure(
+                spec,
+                0.0,
+                POPUP_TRANSITION_SCALE,
+                POPUP_TRANSITION_SCALE,
+                popupContent.getTranslateX(),
+                popupTransitionOffsetY
+        );
         M3Animation.playFromStart(this, hideAnimation);
     }
 
@@ -1034,13 +1033,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
     private void playShowAnimation() {
         showAnimation.stop();
         M3MotionSpec spec = M3Animation.fastSpatial(this);
-        showAnimation.getKeyFrames().setAll(new KeyFrame(
-                spec.duration(),
-                new KeyValue(popupContent.opacityProperty(), 1.0, spec.interpolator()),
-                new KeyValue(popupContent.scaleXProperty(), 1.0, spec.interpolator()),
-                new KeyValue(popupContent.scaleYProperty(), 1.0, spec.interpolator()),
-                new KeyValue(popupContent.translateYProperty(), 0.0, spec.interpolator())
-        ));
+        showAnimation.configure(spec, 1.0, 1.0, 1.0, popupContent.getTranslateX(), 0.0);
         M3Animation.playFromStart(this, showAnimation);
     }
 

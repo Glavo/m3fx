@@ -4,6 +4,7 @@
 package org.glavo.m3fx.skins;
 
 import javafx.beans.InvalidationListener;
+import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -34,6 +35,13 @@ public final class M3BottomAppBarSkin extends SkinBase<M3BottomAppBar> {
     /// Updates logical floating-action placement when node orientation changes.
     private final InvalidationListener nodeOrientationInvalidation = observable -> updateLayoutState();
 
+    /// Updates the floating action slot when the public node changes.
+    private final ChangeListener<@Nullable Node> floatingActionListener =
+            (observable, oldValue, newValue) -> updateFloatingAction(newValue);
+
+    /// Updates slot placement when the floating action alignment changes.
+    private final InvalidationListener floatingActionAlignmentInvalidation = observable -> updateLayoutState();
+
     /// Creates a bottom app bar skin.
     ///
     /// @param control the bottom app bar controlled by this skin
@@ -46,8 +54,8 @@ public final class M3BottomAppBarSkin extends SkinBase<M3BottomAppBar> {
         actions.getStyleClass().add(M3BottomAppBar.ACTIONS_STYLE_CLASS);
         floatingActionSlot.getStyleClass().add(M3BottomAppBar.FLOATING_ACTION_STYLE_CLASS);
 
-        control.floatingActionProperty().addListener((observable, oldValue, newValue) -> updateFloatingAction(newValue));
-        control.floatingActionAlignmentProperty().addListener((observable, oldValue, newValue) -> updateLayoutState());
+        control.floatingActionProperty().addListener(floatingActionListener);
+        control.floatingActionAlignmentProperty().addListener(floatingActionAlignmentInvalidation);
         control.nodeOrientationProperty().addListener(nodeOrientationInvalidation);
         control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
         control.getActions().addListener(actionsListener);
@@ -63,6 +71,8 @@ public final class M3BottomAppBarSkin extends SkinBase<M3BottomAppBar> {
     public void dispose() {
         M3BottomAppBar control = getSkinnable();
         control.getActions().removeListener(actionsListener);
+        control.floatingActionProperty().removeListener(floatingActionListener);
+        control.floatingActionAlignmentProperty().removeListener(floatingActionAlignmentInvalidation);
         control.nodeOrientationProperty().removeListener(nodeOrientationInvalidation);
         control.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
         actions.nodeOrientationProperty().unbind();

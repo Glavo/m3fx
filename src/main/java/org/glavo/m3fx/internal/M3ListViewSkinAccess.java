@@ -8,16 +8,14 @@ import org.glavo.m3fx.controls.M3ListView;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Map;
 import java.util.Objects;
-import java.util.WeakHashMap;
 import java.util.function.Predicate;
 
 /// Internal access point between [M3ListView] and its installed skin.
 @NotNullByDefault
 public final class M3ListViewSkinAccess {
-    /// Registered skin accessors keyed by their owning list view.
-    private static final Map<M3ListView<?>, Access> ACCESSORS = new WeakHashMap<>();
+    /// Opaque control property key for the currently installed skin accessor.
+    private static final Object ACCESS_KEY = new Object();
 
     /// Prevents utility class instantiation.
     private M3ListViewSkinAccess() {
@@ -28,7 +26,9 @@ public final class M3ListViewSkinAccess {
     /// @param listView the owning list view
     /// @param access the accessor supplied by the installed skin
     public static void register(M3ListView<?> listView, Access access) {
-        ACCESSORS.put(Objects.requireNonNull(listView, "listView"), Objects.requireNonNull(access, "access"));
+        Objects.requireNonNull(listView, "listView")
+                .getProperties()
+                .put(ACCESS_KEY, Objects.requireNonNull(access, "access"));
     }
 
     /// Unregisters a skin accessor when it still belongs to the supplied list view.
@@ -38,8 +38,8 @@ public final class M3ListViewSkinAccess {
     public static void unregister(M3ListView<?> listView, Access access) {
         Objects.requireNonNull(listView, "listView");
         Objects.requireNonNull(access, "access");
-        if (ACCESSORS.get(listView) == access) {
-            ACCESSORS.remove(listView);
+        if (listView.getProperties().get(ACCESS_KEY) == access) {
+            listView.getProperties().remove(ACCESS_KEY);
         }
     }
 
@@ -142,7 +142,8 @@ public final class M3ListViewSkinAccess {
 
     /// Returns the registered skin accessor for a list view.
     private static @Nullable Access access(M3ListView<?> listView) {
-        return ACCESSORS.get(Objects.requireNonNull(listView, "listView"));
+        Object value = Objects.requireNonNull(listView, "listView").getProperties().get(ACCESS_KEY);
+        return value instanceof Access access ? access : null;
     }
 
     /// Internal operations supplied by an installed list view skin.

@@ -4,6 +4,7 @@
 package org.glavo.m3fx.skins;
 
 import javafx.beans.InvalidationListener;
+import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -41,6 +42,13 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
     /// Requests slot layout again when the control size changes outside a normal parent layout pass.
     private final InvalidationListener sizeInvalidation = observable -> getSkinnable().requestLayout();
 
+    /// Updates the navigation slot when the public node changes.
+    private final ChangeListener<@Nullable Node> navigationListener =
+            (observable, oldValue, newValue) -> updateNavigation(newValue);
+
+    /// Updates geometry when the app bar variant changes.
+    private final InvalidationListener variantInvalidation = observable -> updateVariantLayout();
+
     /// Creates a top app bar skin.
     public M3TopAppBarSkin(M3TopAppBar control) {
         super(control);
@@ -54,9 +62,9 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
         actions.spacingProperty().bind(control.actionSpacingProperty());
         titleLabel.textProperty().bind(control.titleProperty());
 
-        control.navigationProperty().addListener((observable, oldValue, newValue) -> updateNavigation(newValue));
+        control.navigationProperty().addListener(navigationListener);
         control.getActions().addListener(actionsListener);
-        control.variantProperty().addListener((observable, oldValue, newValue) -> updateVariantLayout());
+        control.variantProperty().addListener(variantInvalidation);
         control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
         control.widthProperty().addListener(sizeInvalidation);
         control.heightProperty().addListener(sizeInvalidation);
@@ -73,6 +81,8 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
         M3TopAppBar control = getSkinnable();
         titleLabel.textProperty().unbind();
         control.getActions().removeListener(actionsListener);
+        control.navigationProperty().removeListener(navigationListener);
+        control.variantProperty().removeListener(variantInvalidation);
         control.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
         control.widthProperty().removeListener(sizeInvalidation);
         control.heightProperty().removeListener(sizeInvalidation);

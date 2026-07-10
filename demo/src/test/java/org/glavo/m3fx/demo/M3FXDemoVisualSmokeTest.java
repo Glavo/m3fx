@@ -957,6 +957,9 @@ final class M3FXDemoVisualSmokeTest {
     /// The tolerance used when checking rendered loading-indicator centroid stability in demo snapshots.
     private static final double LOADING_INDICATOR_PIXEL_CENTER_TOLERANCE = 4.0;
 
+    /// The tolerance used when comparing badge layout dimensions after pixel-grid snapping.
+    private static final double BADGE_LAYOUT_SIZE_TOLERANCE = 0.01;
+
     /// The long linear motion spec duration used to make animation frames visually observable in tests.
     private static final Duration OBSERVABLE_MOTION_DURATION = Duration.millis(600.0);
 
@@ -13723,7 +13726,7 @@ final class M3FXDemoVisualSmokeTest {
 
         assertTrue(badgeBounds.getHeight() >= 14.0 && badgeBounds.getHeight() <= 26.0,
                 () -> "large badge height is outside the Material range: " + badgeBounds);
-        assertTrue(badgeBounds.getWidth() >= badgeBounds.getHeight(),
+        assertTrue(badgeBounds.getWidth() + BADGE_LAYOUT_SIZE_TOLERANCE >= badgeBounds.getHeight(),
                 () -> "text badge should be at least as wide as it is tall: " + badgeBounds);
         assertNotNull(firstVisibleText(badge), () -> "text badge should render text: " + badge.getText());
     }

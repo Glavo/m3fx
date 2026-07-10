@@ -89,7 +89,6 @@ import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3DisclosureIcon;
 import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3ListViewCell;
-import org.glavo.m3fx.internal.M3ModalFocusTrap;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
 import org.glavo.m3fx.internal.M3PopupStyles;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -168,7 +167,6 @@ import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -7190,38 +7188,30 @@ final class M3ControlStyleTest {
                 root.applyCss();
                 root.layout();
 
-                M3ModalFocusTrap firstTrap = dialogPaneFocusTrap(firstPane);
-                M3ModalFocusTrap hiddenTrap = dialogPaneFocusTrap(hiddenPane);
+                Node firstOkButton = Objects.requireNonNull(firstPane.lookupButton(ButtonType.OK));
 
                 root.getChildren().remove(hiddenPane);
                 root.getChildren().add(hiddenPane);
                 root.applyCss();
                 root.layout();
 
-                assertEquals(
-                        List.of(firstTrap, hiddenTrap),
-                        activeModalFocusTraps(stage.getScene()),
-                        "re-attached dialog pane should become the topmost modal focus trap"
-                );
+                firstContent.requestFocus();
+                root.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.TAB));
+                assertTrue(hiddenContent.isFocused(), "re-attached dialog pane should own modal traversal");
 
                 hiddenPane.setVisible(false);
                 root.applyCss();
                 root.layout();
 
-                Scene scene = stage.getScene();
-                assertEquals(
-                        List.of(firstTrap),
-                        activeModalFocusTraps(scene),
-                        "hidden dialog pane should release its modal focus trap"
-                );
+                firstContent.requestFocus();
+                root.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.TAB));
+                assertTrue(firstOkButton.isFocused(), "visible dialog pane should regain modal traversal");
 
                 stage.hide();
 
-                assertEquals(
-                        List.of(),
-                        activeModalFocusTraps(scene),
-                        "hidden modal windows should release all scene focus traps"
-                );
+                KeyEvent tab = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.TAB);
+                root.fireEvent(tab);
+                assertFalse(tab.isConsumed(), "hidden modal windows should release scene traversal filters");
             } finally {
                 stage.close();
             }
@@ -20964,6 +20954,89 @@ final class M3ControlStyleTest {
         assertEquals("First", listView.getSelectedItem());
     }
 
+    /// Verifies that variable-height virtual lists keep trailing empty cells bounded and measurable.
+    @Test
+    void listViewBoundsVariableHeightTrailingCellPool() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3ListView<Integer> listView = new M3ListView<>();
+            listView.getItems().addAll(0, 1, 2);
+            listView.setCellFactory(value -> {
+                M3ListItem item = new M3ListItem("Row " + value);
+                if (value >= 1) {
+                    item.setSupportingText("Supporting text");
+                }
+                if (value >= 2) {
+                    item.setOverlineText("Overline");
+                }
+                return item;
+            });
+            listView.setPrefSize(260.0, 168.0);
+            StackPane root = new StackPane(listView);
+            Scene scene = new Scene(root, 300.0, 220.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            Stage stage = new Stage();
+            try {
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                List<? extends M3ListViewCell<?>> cells = listView.lookupAll("." + M3ListViewCell.STYLE_CLASS).stream()
+                        .map(node -> (M3ListViewCell<?>) node)
+                        .toList();
+                long renderedCellCount = cells.stream().filter(cell -> !cell.isEmpty()).count();
+
+                assertEquals(listView.getItems().size(), renderedCellCount);
+                assertTrue(cells.size() <= 16, () -> "materializedCellCount=" + cells.size());
+                assertTrue(cells.stream()
+                        .filter(M3ListViewCell::isEmpty)
+                        .allMatch(cell -> cell.getHeight() > 0.0 && cell.prefHeight(-1.0) > 0.0));
+                assertTrue(cells.stream()
+                        .filter(cell -> !cell.isEmpty())
+                        .allMatch(cell -> cell.getListItem() != null));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that virtual rows materialize during hidden-window pre-layout before the first show pulse.
+    @Test
+    void listViewMaterializesRowsDuringHiddenWindowPreLayout() {
+        FxTestUtils.runOnFxThread(() -> {
+            AtomicInteger factoryCalls = new AtomicInteger();
+            M3ListView<String> listView = listView("Archive", "Settings", "Search");
+            listView.setCellFactory(value -> {
+                factoryCalls.incrementAndGet();
+                return new M3ListItem(value);
+            });
+            listView.setPrefSize(260.0, 168.0);
+            StackPane root = new StackPane(listView);
+            Scene scene = new Scene(root, 300.0, 220.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            Stage stage = new Stage();
+            try {
+                stage.setScene(scene);
+                root.applyCss();
+                root.layout();
+
+                List<? extends M3ListViewCell<?>> renderedCells = listView.lookupAll("." + M3ListViewCell.STYLE_CLASS).stream()
+                        .map(node -> (M3ListViewCell<?>) node)
+                        .filter(cell -> !cell.isEmpty())
+                        .toList();
+
+                assertEquals(listView.getItems().size(), renderedCells.size());
+                assertTrue(factoryCalls.get() >= listView.getItems().size());
+                assertTrue(factoryCalls.get() <= 16, () -> "factoryCalls=" + factoryCalls.get());
+                assertTrue(renderedCells.stream().allMatch(cell -> cell.getListItem() != null));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that virtualized list views use VirtualFlow-backed cells instead of materializing every item.
     @Test
     void listViewVirtualizesRenderedItems() {
@@ -21019,6 +21092,72 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that variable-height list scrolling estimates content length from all attached data rows.
+    @Test
+    void listViewVariableHeightSmoothScrollingUsesVisibleAverageHeight() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3ListView<Integer> listView = new M3ListView<>();
+            for (int index = 0; index < 60; index++) {
+                listView.getItems().add(index);
+            }
+            listView.setCellFactory(value -> {
+                M3ListItem item = new M3ListItem("Row " + value);
+                if (value % 3 >= 1) {
+                    item.setSupportingText("Supporting text");
+                }
+                if (value % 3 == 2) {
+                    item.setOverlineText("Overline");
+                }
+                return item;
+            });
+            listView.setPrefSize(260.0, 216.0);
+            StackPane root = new StackPane(listView);
+            Scene scene = new Scene(root, 300.0, 260.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            Stage stage = new Stage();
+            try {
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                VirtualFlow<?> flow = assertInstanceOf(
+                        VirtualFlow.class,
+                        listView.lookup(".m3-list-view-flow")
+                );
+                List<? extends M3ListViewCell<?>> measuredCells = listView
+                        .lookupAll("." + M3ListViewCell.STYLE_CLASS)
+                        .stream()
+                        .map(node -> (M3ListViewCell<?>) node)
+                        .filter(cell -> !cell.isEmpty() && cell.getHeight() > 0.0)
+                        .toList();
+                double averageRowHeight = measuredCells.stream()
+                        .mapToDouble(M3ListViewCell::getHeight)
+                        .average()
+                        .orElseThrow();
+                long distinctRowHeights = measuredCells.stream()
+                        .mapToLong(cell -> Math.round(cell.getHeight()))
+                        .distinct()
+                        .count();
+                double scrollablePixels = averageRowHeight * listView.getItems().size() - flow.getHeight();
+                double deltaY = -72.0;
+                double expectedPosition = clampToUnit(flow.getPosition() - deltaY / scrollablePixels);
+
+                assertTrue(distinctRowHeights > 1L, () -> "measuredCells=" + measuredCells.size());
+                assertTrue(scrollablePixels > 0.0, () -> "scrollablePixels=" + scrollablePixels);
+                M3MotionSettings.setAnimationsEnabled(listView, false);
+                ScrollEvent event = scrollEvent(listView, 0.0, deltaY);
+                listView.fireEvent(event);
+
+                assertTrue(event.isConsumed());
+                assertEquals(expectedPosition, flow.getPosition(), 0.000001);
+            } finally {
+                M3MotionSettings.clearAnimationsEnabled(listView);
+                stage.close();
+            }
+        });
+    }
     /// Verifies that virtualized list views animate wheel scrolling through Material motion.
     @Test
     void listViewSmoothScrollingAnimatesWheelScroll() {
@@ -22617,6 +22756,30 @@ final class M3ControlStyleTest {
 
         assertEquals(0.0, row.getLayoutX(), 0.0001);
         assertEquals(NodeOrientation.LEFT_TO_RIGHT, row.getEffectiveNodeOrientation());
+    }
+
+    /// Verifies that cell layout stretches rows without overwriting application-owned width preferences.
+    @Test
+    void listViewCellPreservesUnboundFactoryRowWidthPreference() {
+        M3ListView<String> listView = listView("First");
+        M3ListItem row = new M3ListItem("First");
+        row.setPrefWidth(144.0);
+        listView.setCellFactory(value -> row);
+
+        M3ListViewCell<String> cell = new M3ListViewCell<>(listView);
+        Pane root = new Pane(cell);
+        Scene scene = new Scene(root, 320.0, 80.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        cell.updateIndex(0);
+        root.layout();
+        cell.resize(280.0, 56.0);
+        cell.layout();
+
+        assertSame(row, cell.getListItem());
+        assertEquals(144.0, row.getPrefWidth(), 0.0001);
+        assertEquals(280.0, row.getWidth(), 0.0001);
     }
 
     /// Verifies that virtualized list cells preserve application-bound row width constraints.
@@ -33246,31 +33409,6 @@ final class M3ControlStyleTest {
                 Objects.requireNonNull(loadingIndicatorMorphInterval, "loadingIndicatorMorphInterval"),
                 Objects.requireNonNull(loadingIndicatorGlobalRotationDuration, "loadingIndicatorGlobalRotationDuration")
         );
-    }
-
-    /// Returns the private modal focus trap owned by a dialog pane.
-    private static M3ModalFocusTrap dialogPaneFocusTrap(M3DialogPane dialogPane) {
-        try {
-            var field = M3DialogPane.class.getDeclaredField("focusTrap");
-            field.setAccessible(true);
-            return (M3ModalFocusTrap) field.get(dialogPane);
-        } catch (ReflectiveOperationException exception) {
-            throw new AssertionError(exception);
-        }
-    }
-
-    /// Returns the active modal focus traps registered for a scene.
-    @SuppressWarnings("unchecked")
-    private static List<M3ModalFocusTrap> activeModalFocusTraps(Scene scene) {
-        try {
-            var field = M3ModalFocusTrap.class.getDeclaredField("ACTIVE_TRAPS");
-            field.setAccessible(true);
-            Map<Scene, List<M3ModalFocusTrap>> traps = (Map<Scene, List<M3ModalFocusTrap>>) field.get(null);
-            @Nullable List<M3ModalFocusTrap> sceneTraps = traps.get(scene);
-            return sceneTraps == null ? List.of() : List.copyOf(sceneTraps);
-        } catch (ReflectiveOperationException exception) {
-            throw new AssertionError(exception);
-        }
     }
 
     /// Returns whether a snackbar's exposed focus node currently owns focus.

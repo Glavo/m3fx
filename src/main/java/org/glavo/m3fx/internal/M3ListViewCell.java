@@ -9,11 +9,9 @@ import javafx.event.EventHandler;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.IndexedCell;
 import javafx.scene.control.Skin;
-import javafx.stage.Window;
 import javafx.util.Callback;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListView;
@@ -109,9 +107,6 @@ public final class M3ListViewCell<T> extends IndexedCell<T> {
             clearContent();
             return;
         }
-        if (!isCellSceneShowing()) {
-            return;
-        }
 
         @Nullable Callback<? super T, ? extends M3ListItem> factory = getListView().getCellFactory();
         M3ListItem itemNode;
@@ -128,15 +123,7 @@ public final class M3ListViewCell<T> extends IndexedCell<T> {
         }
         setGraphic(itemNode);
         setText(null);
-        refreshListItemWidth();
         refreshSelection();
-    }
-
-    /// Lays out the cell and keeps the rendered list item width in sync.
-    @Override
-    protected void layoutChildren() {
-        refreshListItemWidth();
-        super.layoutChildren();
     }
 
     /// Returns accessibility attributes for this virtualized cell.
@@ -227,17 +214,6 @@ public final class M3ListViewCell<T> extends IndexedCell<T> {
         itemNode.setStyle(baseStyleValue instanceof String baseStyle ? baseStyle : "");
     }
 
-    /// Returns whether this cell is in a scene whose window is still visible.
-    private boolean isCellSceneShowing() {
-        @Nullable Scene scene = getScene();
-        if (scene == null) {
-            return false;
-        }
-
-        @Nullable Window window = scene.getWindow();
-        return window == null || window.isShowing();
-    }
-
     /// Replaces the rendered list item and updates event handlers.
     private void setListItem(@Nullable M3ListItem listItem) {
         if (this.listItem != null) {
@@ -298,18 +274,6 @@ public final class M3ListViewCell<T> extends IndexedCell<T> {
         pseudoClassStateChanged(FOCUS_VISIBLE_PSEUDO_CLASS, focusVisible);
         if (listItem != null) {
             listItem.pseudoClassStateChanged(FOCUS_VISIBLE_PSEUDO_CLASS, focusVisible);
-        }
-    }
-
-    /// Stretches the rendered list item to the current cell width.
-    private void refreshListItemWidth() {
-        if (listItem != null) {
-            double width = getWidth();
-            if (width > 0.0
-                    && !listItem.prefWidthProperty().isBound()
-                    && Double.compare(listItem.getPrefWidth(), width) != 0) {
-                listItem.setPrefWidth(width);
-            }
         }
     }
 

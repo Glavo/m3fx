@@ -6,7 +6,6 @@ package org.glavo.m3fx.skins;
 import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.geometry.HPos;
-import javafx.geometry.VPos;
 import javafx.scene.Node;
 import javafx.scene.control.SkinBase;
 import org.glavo.m3fx.internal.M3ListViewCell;
@@ -19,6 +18,9 @@ import org.jetbrains.annotations.Nullable;
 /// @param <T> the item type rendered by the skinned cell
 @NotNullByDefault
 public final class M3ListViewCellSkin<T> extends SkinBase<M3ListViewCell<T>> {
+    /// The fallback height used to measure empty trailing virtual-flow cells.
+    private static final double DEFAULT_ROW_HEIGHT = 56.0;
+
     /// The currently installed rendered row node.
     private @Nullable Node graphic;
 
@@ -90,7 +92,9 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListViewCell<T>> {
             double leftInset
     ) {
         Node row = graphic;
-        return row == null ? topInset + bottomInset : topInset + row.minHeight(width) + bottomInset;
+        return row == null
+                ? topInset + fallbackRowHeight() + bottomInset
+                : topInset + row.minHeight(width) + bottomInset;
     }
 
     /// Computes the preferred width from the rendered row.
@@ -130,7 +134,9 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListViewCell<T>> {
             double leftInset
     ) {
         Node row = graphic;
-        return row == null ? topInset + bottomInset : topInset + row.prefHeight(width) + bottomInset;
+        return row == null
+                ? topInset + fallbackRowHeight() + bottomInset
+                : topInset + row.prefHeight(width) + bottomInset;
     }
 
     /// Lays out the rendered row in the full cell content area.
@@ -164,7 +170,7 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListViewCell<T>> {
 
         double rowWidth = snapSizeX(boundedSize(
                 row.minWidth(height),
-                row.prefWidth(height),
+                width,
                 row.maxWidth(height),
                 width
         ));
@@ -187,6 +193,12 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListViewCell<T>> {
     /// Returns a child size bounded by its constraints and available size.
     private static double boundedSize(double minimum, double preferred, double maximum, double available) {
         return Math.min(available, Math.max(minimum, Math.min(preferred, maximum)));
+    }
+
+    /// Returns the row height used before a rendered item supplies content metrics.
+    private double fallbackRowHeight() {
+        double fixedCellSize = getSkinnable().getListView().getFixedCellSize();
+        return fixedCellSize > 0.0 ? fixedCellSize : DEFAULT_ROW_HEIGHT;
     }
 
     /// Returns the physical x coordinate for one horizontal alignment.

@@ -10,6 +10,7 @@ import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Tab;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
+import org.glavo.m3fx.internal.M3NodeTransition;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default skin for [M3Tab].
@@ -92,7 +93,14 @@ public class M3TabSkin extends M3LabeledButtonSkinBase<M3Tab> {
         double targetScale = selected ? 1.0 : HIDDEN_INDICATOR_SCALE;
         indicatorAnimation.stop();
         M3MotionSpec spec = M3Animation.defaultEffects(getSkinnable());
-        indicatorAnimation.configure(spec, targetOpacity, targetScale, activeIndicator.getScaleY());
+        indicatorAnimation.configure(
+                spec,
+                targetOpacity,
+                targetScale,
+                activeIndicator.getScaleY(),
+                activeIndicator.getTranslateX(),
+                activeIndicator.getTranslateY()
+        );
         M3Animation.playFromStart(getSkinnable(), indicatorAnimation);
     }
 

@@ -796,7 +796,7 @@ final class M3ThemeTest {
         Pane root = new Pane(button);
         Scene scene = new Scene(root);
         String applicationStylesheet = temporaryStylesheet("""
-                .m3-icon-button.test-seed-button {
+                .m3-button.m3-icon-button.test-seed-button {
                     -m3-container-height: 32px;
                     -m3-container-width: 32px;
                     -m3-container-shape: 999px;
@@ -836,6 +836,7 @@ final class M3ThemeTest {
         root.setStyle("-fx-padding: 4px;");
         Scene scene = new Scene(root);
         M3Theme theme = M3Theme.defaultTheme();
+        int initialPropertyCount = scene.getProperties().size();
 
         M3ThemeManager.install(scene, theme);
         assertEquals(2, scene.getStylesheets().size());
@@ -851,6 +852,7 @@ final class M3ThemeTest {
         assertEquals("-fx-padding: 4px;", root.getStyle());
         assertFalse(scene.getStylesheets().contains(M3ThemeManager.stylesheetUrl()));
         assertEquals(0, scene.getStylesheets().size());
+        assertEquals(initialPropertyCount, scene.getProperties().size());
     }
 
     /// Verifies that generated component stylesheets apply theme tokens to controls.
@@ -1603,6 +1605,7 @@ final class M3ThemeTest {
         assertEquals(32.0, button.getContainerHeight(), 0.0001);
         assertEquals(32.0, button.getContainerWidth(), 0.0001);
         assertEquals(999.0, button.getContainerShape(), 0.0001);
+        assertEquals(0.0, button.getHorizontalPadding(), 0.0001);
         assertEquals(32.0, button.getMinWidth(), 0.0001);
         assertEquals(32.0, button.getMinHeight(), 0.0001);
         assertEquals(32.0, button.getPrefWidth(), 0.0001);

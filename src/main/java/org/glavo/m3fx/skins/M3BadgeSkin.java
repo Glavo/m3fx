@@ -11,6 +11,7 @@ import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Badge;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
+import org.glavo.m3fx.internal.M3NodeTransition;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default skin for [M3Badge].
@@ -225,7 +226,7 @@ public class M3BadgeSkin extends SkinBase<M3Badge> {
         label.setScaleX(CONTENT_CHANGE_START_SCALE);
         label.setScaleY(CONTENT_CHANGE_START_SCALE);
         M3MotionSpec spec = M3Animation.fastEffects(getSkinnable());
-        contentAnimation.configure(spec, 1.0, 1.0, 1.0);
+        contentAnimation.configure(spec, 1.0, 1.0, 1.0, label.getTranslateX(), label.getTranslateY());
         M3Animation.playFromStart(getSkinnable(), contentAnimation);
     }
 

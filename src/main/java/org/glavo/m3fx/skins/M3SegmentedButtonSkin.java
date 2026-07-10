@@ -14,6 +14,7 @@ import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
+import org.glavo.m3fx.internal.M3NodeTransition;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default skin for [M3SegmentedButton].
@@ -133,7 +134,14 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
         double targetScale = selected ? 1.0 : HIDDEN_SELECTION_SCALE;
         selectionAnimation.stop();
         M3MotionSpec spec = M3Animation.defaultEffects(getSkinnable());
-        selectionAnimation.configure(spec, targetOpacity, targetScale, selectionContainer.getScaleY());
+        selectionAnimation.configure(
+                spec,
+                targetOpacity,
+                targetScale,
+                selectionContainer.getScaleY(),
+                selectionContainer.getTranslateX(),
+                selectionContainer.getTranslateY()
+        );
         M3Animation.playFromStart(getSkinnable(), selectionAnimation);
     }
 

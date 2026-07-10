@@ -17,12 +17,10 @@ import org.jetbrains.annotations.Nullable;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.ref.WeakReference;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.WeakHashMap;
 
 /// Tracks focus-visible changes for Material state feedback.
 @NotNullByDefault
@@ -33,8 +31,8 @@ final class M3FocusVisibleTracker {
     /// The pseudo-class used by M3FX CSS for keyboard-visible focus feedback.
     static final PseudoClass FOCUS_VISIBLE_PSEUDO_CLASS = PseudoClass.getPseudoClass("focus-visible");
 
-    /// Scene-level fallback input trackers keyed weakly by scene.
-    private static final Map<Scene, SceneInputTracker> SCENE_INPUT_TRACKERS = new WeakHashMap<>();
+    /// Opaque scene property key for the fallback input tracker.
+    private static final Object SCENE_INPUT_TRACKER_KEY = new Object();
 
     /// The owner node whose focus-visible state is tracked.
     private final Node owner;
@@ -144,9 +142,9 @@ final class M3FocusVisibleTracker {
         }
 
         fallbackScene = null;
-        @Nullable SceneInputTracker tracker = SCENE_INPUT_TRACKERS.get(scene);
+        @Nullable SceneInputTracker tracker = sceneInputTracker(scene);
         if (tracker != null && tracker.remove(this)) {
-            SCENE_INPUT_TRACKERS.remove(scene);
+            scene.getProperties().remove(SCENE_INPUT_TRACKER_KEY);
         }
     }
 
@@ -177,18 +175,24 @@ final class M3FocusVisibleTracker {
             return false;
         }
 
-        @Nullable SceneInputTracker tracker = SCENE_INPUT_TRACKERS.get(scene);
+        @Nullable SceneInputTracker tracker = sceneInputTracker(scene);
         return tracker != null && tracker.keyboardInteraction;
     }
 
     /// Returns or creates the fallback input tracker for one scene.
     private static SceneInputTracker fallbackTracker(Scene scene) {
-        SceneInputTracker tracker = SCENE_INPUT_TRACKERS.get(scene);
+        @Nullable SceneInputTracker tracker = sceneInputTracker(scene);
         if (tracker == null) {
             tracker = new SceneInputTracker(scene);
-            SCENE_INPUT_TRACKERS.put(scene, tracker);
+            scene.getProperties().put(SCENE_INPUT_TRACKER_KEY, tracker);
         }
         return tracker;
+    }
+
+    /// Returns the fallback input tracker currently owned by a scene.
+    private static @Nullable SceneInputTracker sceneInputTracker(Scene scene) {
+        Object value = scene.getProperties().get(SCENE_INPUT_TRACKER_KEY);
+        return value instanceof SceneInputTracker tracker ? tracker : null;
     }
 
     /// Returns a method handle for JavaFX native focus-visible support when the runtime exposes it.
@@ -222,7 +226,7 @@ final class M3FocusVisibleTracker {
     @NotNullByDefault
     private static final class SceneInputTracker {
         /// The scene whose input events are tracked.
-        private final WeakReference<Scene> sceneReference;
+        private final Scene scene;
 
         /// The installed focus-visible trackers in this scene.
         private final Set<M3FocusVisibleTracker> trackers =
@@ -242,16 +246,11 @@ final class M3FocusVisibleTracker {
 
         /// Creates a scene-level fallback input tracker.
         private SceneInputTracker(Scene scene) {
-            this.sceneReference = new WeakReference<>(scene);
+            this.scene = scene;
         }
 
         /// Adds one focus-visible tracker to this scene.
         private void add(M3FocusVisibleTracker tracker) {
-            @Nullable Scene scene = sceneReference.get();
-            if (scene == null) {
-                return;
-            }
-
             if (trackers.isEmpty()) {
                 scene.addEventFilter(KeyEvent.KEY_PRESSED, keyPressedHandler);
                 scene.addEventFilter(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
@@ -266,11 +265,6 @@ final class M3FocusVisibleTracker {
         /// Updates this scene's fallback modality and all registered focus-visible owners.
         private void updateModality(boolean keyboard) {
             keyboardInteraction = keyboard;
-            @Nullable Scene scene = sceneReference.get();
-            if (scene == null) {
-                return;
-            }
-
             @Nullable Node focusOwner = scene.getFocusOwner();
             if (focusOwner == null) {
                 return;
@@ -299,11 +293,8 @@ final class M3FocusVisibleTracker {
                 return false;
             }
 
-            @Nullable Scene scene = sceneReference.get();
-            if (scene != null) {
-                scene.removeEventFilter(KeyEvent.KEY_PRESSED, keyPressedHandler);
-                scene.removeEventFilter(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
-            }
+            scene.removeEventFilter(KeyEvent.KEY_PRESSED, keyPressedHandler);
+            scene.removeEventFilter(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
             return true;
         }
     }

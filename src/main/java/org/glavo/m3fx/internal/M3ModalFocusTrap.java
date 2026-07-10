@@ -14,17 +14,15 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.WeakHashMap;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 /// Keeps keyboard traversal inside one modal Material surface while it is active in a scene.
 @NotNullByDefault
 public final class M3ModalFocusTrap {
-    /// Active traps in each scene, ordered from oldest to most recently activated.
-    private static final Map<Scene, List<M3ModalFocusTrap>> ACTIVE_TRAPS = new WeakHashMap<>();
+    /// Opaque scene property key for active traps ordered from oldest to most recently activated.
+    private static final Object ACTIVE_TRAPS_KEY = new Object();
 
     /// The modal surface that owns focus traversal.
     private final Node owner;
@@ -166,21 +164,21 @@ public final class M3ModalFocusTrap {
 
     /// Registers this trap as the most recently activated trap in a scene.
     private void register(Scene scene) {
-        List<M3ModalFocusTrap> traps = ACTIVE_TRAPS.computeIfAbsent(scene, key -> new ArrayList<>());
+        List<M3ModalFocusTrap> traps = Objects.requireNonNull(trapStack(scene, true));
         traps.remove(this);
         traps.add(this);
     }
 
     /// Removes this trap from a scene's active trap stack.
     private void unregister(Scene scene) {
-        List<M3ModalFocusTrap> traps = ACTIVE_TRAPS.get(scene);
+        @Nullable List<M3ModalFocusTrap> traps = trapStack(scene, false);
         if (traps == null) {
             return;
         }
 
         traps.remove(this);
         if (traps.isEmpty()) {
-            ACTIVE_TRAPS.remove(scene);
+            scene.getProperties().remove(ACTIVE_TRAPS_KEY);
         }
     }
 
@@ -191,7 +189,7 @@ public final class M3ModalFocusTrap {
             return false;
         }
 
-        List<M3ModalFocusTrap> traps = ACTIVE_TRAPS.get(scene);
+        @Nullable List<M3ModalFocusTrap> traps = trapStack(scene, false);
         if (traps == null) {
             return false;
         }
@@ -203,6 +201,26 @@ public final class M3ModalFocusTrap {
             }
         }
         return false;
+    }
+
+    /// Returns the active trap stack owned by a scene, optionally creating it.
+    ///
+    /// @param scene the scene that owns the stack
+    /// @param create whether a missing stack should be created
+    /// @return the existing or created stack, or `null` when none exists and creation is disabled
+    @SuppressWarnings("unchecked")
+    private static @Nullable List<M3ModalFocusTrap> trapStack(Scene scene, boolean create) {
+        Object value = scene.getProperties().get(ACTIVE_TRAPS_KEY);
+        if (value instanceof List<?>) {
+            return (List<M3ModalFocusTrap>) value;
+        }
+        if (!create) {
+            return null;
+        }
+
+        List<M3ModalFocusTrap> traps = new ArrayList<>();
+        scene.getProperties().put(ACTIVE_TRAPS_KEY, traps);
+        return traps;
     }
 
     /// Handles keyboard dismissal and cyclic focus traversal for the active modal owner.

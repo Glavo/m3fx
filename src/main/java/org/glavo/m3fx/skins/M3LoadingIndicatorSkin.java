@@ -4,13 +4,10 @@
 package org.glavo.m3fx.skins;
 
 import javafx.animation.Animation;
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
-import javafx.animation.Timeline;
+import javafx.animation.Interpolator;
+import javafx.animation.Transition;
 import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
-import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.SimpleDoubleProperty;
 import javafx.scene.Scene;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.Region;
@@ -55,27 +52,23 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     /// The reusable shape morph scratch storage.
     private final M3ShapeMorph.Scratch shapeScratch = new M3ShapeMorph.Scratch();
 
-    // The animated phase used by indeterminate loading.
-    private final DoubleProperty indeterminatePhase = new SimpleDoubleProperty(this, "indeterminatePhase");
+    /// The animated phase used by indeterminate loading.
+    private double indeterminatePhase;
 
-    /// The indeterminate animation timeline.
-    private final Timeline indeterminateAnimation = new Timeline();
+    /// The reusable indeterminate morph segment transition.
+    private final MorphSegmentTransition indeterminateAnimation = new MorphSegmentTransition();
 
-    // The independent global rotation animation value.
-    private final DoubleProperty globalRotation = new SimpleDoubleProperty(this, "globalRotation");
+    /// The independent global rotation animation value.
+    private double globalRotation;
 
-    /// The independent global rotation animation timeline.
-    private final Timeline globalRotationAnimation = new Timeline();
+    /// The reusable independent global rotation transition.
+    private final GlobalRotationTransition globalRotationAnimation = new GlobalRotationTransition();
 
     /// The active morph segment index.
     private int currentMorphIndex;
 
     /// The target rotation at the beginning of the active morph segment.
     private double morphRotationTarget = QUARTER_ROTATION;
-
-    /// Requests layout after animation ticks.
-    private final InvalidationListener animationInvalidation =
-            observable -> getSkinnable().requestLayout();
 
     /// Updates indeterminate animation state when global or node-local motion settings change.
     private final M3MotionSettingsObserver motionSettingsObserver =
@@ -109,9 +102,6 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         indicator.setManaged(false);
         getChildren().addAll(container, indicator);
 
-        indeterminatePhase.addListener(animationInvalidation);
-        globalRotation.addListener(animationInvalidation);
-        globalRotationAnimation.setCycleCount(Animation.INDEFINITE);
         indeterminateAnimation.setOnFinished(event -> finishIndeterminateMorphSegment());
 
         control.variantProperty().addListener(layoutInvalidation);
@@ -131,8 +121,6 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         M3LoadingIndicator loadingIndicator = getSkinnable();
         indeterminateAnimation.stop();
         globalRotationAnimation.stop();
-        indeterminatePhase.removeListener(animationInvalidation);
-        globalRotation.removeListener(animationInvalidation);
         loadingIndicator.sceneProperty().removeListener(sceneInvalidation);
         @Nullable Scene scene = loadingIndicator.getScene();
         if (scene != null) {
@@ -152,7 +140,7 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         double indicatorSize = Math.min(loadingIndicator.getIndicatorSize(), Math.min(width, height));
         double centerX = x + width / 2.0;
         double centerY = y + height / 2.0;
-        double phase = indeterminatePhase.get();
+        double phase = indeterminatePhase;
 
         boolean contained = loadingIndicator.getVariant() == M3LoadingIndicatorVariant.CONTAINED;
         container.setVisible(contained);
@@ -204,8 +192,8 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     private void resetIndeterminateAnimationState() {
         currentMorphIndex = 0;
         morphRotationTarget = QUARTER_ROTATION;
-        indeterminatePhase.set(0.0);
-        globalRotation.set(0.0);
+        indeterminatePhase = 0.0;
+        globalRotation = 0.0;
     }
 
     /// Configures the active indeterminate morph segment.
@@ -214,53 +202,13 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         M3MotionSpec spec = M3Animation.defaultSpatial(getSkinnable());
         Duration morphInterval = behavior.loadingIndicatorMorphInterval();
         Duration activeDuration = activeMorphDuration(morphInterval, spec);
-        if (activeDuration.equals(morphInterval)) {
-            replaceKeyFrames(indeterminateAnimation,
-                    new KeyFrame(
-                            Duration.ZERO,
-                            new KeyValue(indeterminatePhase, currentMorphIndex, M3Motion.LINEAR)
-                    ),
-                    new KeyFrame(
-                            morphInterval,
-                            new KeyValue(
-                                    indeterminatePhase,
-                                    currentMorphIndex + 1.0,
-                                    spec.interpolator()
-                            )
-                    )
-            );
-        } else {
-            replaceKeyFrames(indeterminateAnimation,
-                    new KeyFrame(
-                            Duration.ZERO,
-                            new KeyValue(indeterminatePhase, currentMorphIndex, M3Motion.LINEAR)
-                    ),
-                    new KeyFrame(
-                            activeDuration,
-                            new KeyValue(
-                                    indeterminatePhase,
-                                    currentMorphIndex + 1.0,
-                                    spec.interpolator()
-                            )
-                    ),
-                    new KeyFrame(
-                            morphInterval,
-                            new KeyValue(indeterminatePhase, currentMorphIndex + 1.0, M3Motion.LINEAR)
-                    )
-            );
-        }
+        indeterminateAnimation.configure(morphInterval, activeDuration, spec.interpolator(), currentMorphIndex);
     }
 
     /// Configures the independent global rotation loop.
     private void configureGlobalRotationAnimation() {
         M3MotionBehavior behavior = M3Animation.motionBehavior(getSkinnable());
-        replaceKeyFrames(globalRotationAnimation,
-                new KeyFrame(Duration.ZERO, new KeyValue(globalRotation, 0.0, M3Motion.LINEAR)),
-                new KeyFrame(
-                        behavior.loadingIndicatorGlobalRotationDuration(),
-                        new KeyValue(globalRotation, 1.0, M3Motion.LINEAR)
-                )
-        );
+        globalRotationAnimation.configure(behavior.loadingIndicatorGlobalRotationDuration());
     }
 
     /// Advances to the next indeterminate morph segment and keeps the loop running.
@@ -274,7 +222,7 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         indeterminateAnimation.stop();
         currentMorphIndex = (currentMorphIndex + 1) % INDETERMINATE_SHAPE_COUNT;
         morphRotationTarget = positiveUnitModulo(morphRotationTarget + QUARTER_ROTATION);
-        indeterminatePhase.set(currentMorphIndex);
+        indeterminatePhase = currentMorphIndex;
         configureIndeterminateMorphSegment();
         indeterminateAnimation.playFromStart();
     }
@@ -300,7 +248,7 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
                     indicatorSize,
                     INDETERMINATE_SEQUENCE.scaleFactor(),
                     1.0,
-                    globalRotation.get(),
+                    globalRotation,
                     shapeScratch
             );
             return;
@@ -330,20 +278,13 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
 
     /// Returns the official-style indeterminate rotation phase for a morph segment.
     private double indeterminateRotationFor(double segmentProgress) {
-        return clamp(segmentProgress) * QUARTER_ROTATION + morphRotationTarget + globalRotation.get();
+        return clamp(segmentProgress) * QUARTER_ROTATION + morphRotationTarget + globalRotation;
     }
 
     /// Returns whether activity animations should pause for the current scene attachment state.
     private boolean shouldPauseActivityAnimations() {
         @Nullable Scene scene = getSkinnable().getScene();
         return scene == null || scene.getWindow() == null;
-    }
-
-    /// Replaces timeline key frames without mutating a running timeline.
-    private static void replaceKeyFrames(Timeline timeline, KeyFrame... keyFrames) {
-        timeline.stop();
-        timeline.getKeyFrames().clear();
-        timeline.getKeyFrames().addAll(keyFrames);
     }
 
     /// Returns the active morph duration used before the shape settles for the rest of the interval.
@@ -366,5 +307,88 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     /// Clamps a progress value to the visible range.
     private static double clamp(double value) {
         return Math.max(0.0, Math.min(1.0, value));
+    }
+
+    /// Reuses one transition object for every indeterminate morph segment.
+    @NotNullByDefault
+    private final class MorphSegmentTransition extends Transition {
+        /// The easing curve applied during the active part of the segment.
+        private Interpolator morphInterpolator = M3Motion.LINEAR;
+
+        /// The absolute sequence phase at the beginning of the segment.
+        private double startPhase;
+
+        /// The normalized part of the cycle occupied by active morphing.
+        private double activeFraction = 1.0;
+
+        /// Creates a linearly timed segment transition whose inner morph uses the Material easing curve.
+        private MorphSegmentTransition() {
+            setInterpolator(M3Motion.LINEAR);
+        }
+
+        /// Configures the next segment without allocating key frames or writable properties.
+        ///
+        /// @param interval the complete morph interval
+        /// @param activeDuration the part of the interval used for geometric interpolation
+        /// @param morphInterpolator the Material easing curve for the active part
+        /// @param startPhase the absolute sequence phase at the beginning of the segment
+        private void configure(
+                Duration interval,
+                Duration activeDuration,
+                Interpolator morphInterpolator,
+                double startPhase
+        ) {
+            stop();
+            setCycleDuration(interval);
+            this.morphInterpolator = morphInterpolator;
+            this.startPhase = startPhase;
+            double intervalMillis = interval.toMillis();
+            activeFraction = intervalMillis <= 0.0
+                    ? 1.0
+                    : clamp(activeDuration.toMillis() / intervalMillis);
+        }
+
+        /// Updates the primitive morph phase and requests layout only when the visible shape changes.
+        @Override
+        protected void interpolate(double fraction) {
+            double activeProgress = activeFraction <= 0.0
+                    ? 1.0
+                    : clamp(fraction / activeFraction);
+            double easedProgress = activeProgress >= 1.0
+                    ? 1.0
+                    : morphInterpolator.interpolate(0.0, 1.0, activeProgress);
+            double newPhase = startPhase + easedProgress;
+            if (Double.compare(indeterminatePhase, newPhase) != 0) {
+                indeterminatePhase = newPhase;
+                getSkinnable().requestLayout();
+            }
+        }
+    }
+
+    /// Reuses one indefinite transition for the independent linear rotation channel.
+    @NotNullByDefault
+    private final class GlobalRotationTransition extends Transition {
+        /// Creates a linearly timed indefinite rotation transition.
+        private GlobalRotationTransition() {
+            setInterpolator(M3Motion.LINEAR);
+            setCycleCount(Animation.INDEFINITE);
+        }
+
+        /// Updates the rotation cycle duration without allocating key frames or writable properties.
+        ///
+        /// @param duration the complete rotation duration
+        private void configure(Duration duration) {
+            stop();
+            setCycleDuration(duration);
+        }
+
+        /// Updates the primitive global rotation and requests the next path layout.
+        @Override
+        protected void interpolate(double fraction) {
+            if (Double.compare(globalRotation, fraction) != 0) {
+                globalRotation = fraction;
+                getSkinnable().requestLayout();
+            }
+        }
     }
 }

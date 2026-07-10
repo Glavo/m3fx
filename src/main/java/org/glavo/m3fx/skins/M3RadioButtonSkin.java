@@ -12,6 +12,7 @@ import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3RadioButton;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
+import org.glavo.m3fx.internal.M3NodeTransition;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default skin for [M3RadioButton].
@@ -112,7 +113,14 @@ public class M3RadioButtonSkin extends M3SelectionControlSkinBase<M3RadioButton>
         selectionAnimation.stop();
         M3MotionSpec spec = M3Animation.fastEffects(getSkinnable());
         double targetScale = selected ? 1.0 : HIDDEN_DOT_SCALE;
-        selectionAnimation.configure(spec, selected ? 1.0 : 0.0, targetScale, targetScale);
+        selectionAnimation.configure(
+                spec,
+                selected ? 1.0 : 0.0,
+                targetScale,
+                targetScale,
+                dot.getTranslateX(),
+                dot.getTranslateY()
+        );
         M3Animation.playFromStart(getSkinnable(), selectionAnimation);
     }
 

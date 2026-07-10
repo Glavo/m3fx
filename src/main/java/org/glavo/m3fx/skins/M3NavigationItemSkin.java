@@ -24,6 +24,7 @@ import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3FocusRequests;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3NodeLayout;
+import org.glavo.m3fx.internal.M3NodeTransition;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -364,7 +365,14 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
         double targetScale = selected ? 1.0 : HIDDEN_INDICATOR_SCALE;
         indicatorAnimation.stop();
         M3MotionSpec spec = M3Animation.defaultEffects(getSkinnable());
-        indicatorAnimation.configure(spec, targetOpacity, targetScale, indicator.getScaleY());
+        indicatorAnimation.configure(
+                spec,
+                targetOpacity,
+                targetScale,
+                indicator.getScaleY(),
+                indicator.getTranslateX(),
+                indicator.getTranslateY()
+        );
         M3Animation.playFromStart(getSkinnable(), indicatorAnimation);
     }
 

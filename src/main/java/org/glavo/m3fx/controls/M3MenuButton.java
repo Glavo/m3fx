@@ -4,9 +4,6 @@
 package org.glavo.m3fx.controls;
 
 import javafx.animation.Animation;
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
-import javafx.animation.Timeline;
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
@@ -26,6 +23,7 @@ import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
+import org.glavo.m3fx.internal.M3NodeTransition;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3PopupPositioning;
@@ -81,10 +79,10 @@ public class M3MenuButton extends M3Button {
     };
 
     /// The menu popup enter animation.
-    private final Timeline showAnimation = new Timeline();
+    private final M3NodeTransition showAnimation = new M3NodeTransition(menu);
 
     /// The menu popup exit animation.
-    private final Timeline hideAnimation = new Timeline();
+    private final M3NodeTransition hideAnimation = new M3NodeTransition(menu);
 
     /// Observes runtime motion settings while this button is attached to a scene.
     private final M3MotionSettingsObserver motionSettingsObserver =
@@ -220,14 +218,14 @@ public class M3MenuButton extends M3Button {
             return;
         }
         M3MotionSpec spec = M3Animation.fastSpatial(this);
-        hideAnimation.getKeyFrames().setAll(new KeyFrame(
-                spec.duration(),
-                event -> popup.hide(),
-                new KeyValue(menu.opacityProperty(), 0.0, spec.interpolator()),
-                new KeyValue(menu.scaleXProperty(), MENU_TRANSITION_SCALE, spec.interpolator()),
-                new KeyValue(menu.scaleYProperty(), MENU_TRANSITION_SCALE, spec.interpolator()),
-                new KeyValue(menu.translateYProperty(), MENU_TRANSITION_OFFSET_Y, spec.interpolator())
-        ));
+        hideAnimation.configure(
+                spec,
+                0.0,
+                MENU_TRANSITION_SCALE,
+                MENU_TRANSITION_SCALE,
+                menu.getTranslateX(),
+                MENU_TRANSITION_OFFSET_Y
+        );
         M3Animation.playFromStart(this, hideAnimation);
     }
 
@@ -300,6 +298,7 @@ public class M3MenuButton extends M3Button {
         );
         popup.setAutoHide(true);
         popup.getContent().add(menu);
+        hideAnimation.setOnFinished(event -> popup.hide());
         popup.setOnHidden(event -> {
             popupContextSynchronizer.stop();
             menu.hideSubMenusExcept(null);
@@ -492,13 +491,7 @@ public class M3MenuButton extends M3Button {
     private void playShowAnimation() {
         showAnimation.stop();
         M3MotionSpec spec = M3Animation.fastSpatial(this);
-        showAnimation.getKeyFrames().setAll(new KeyFrame(
-                spec.duration(),
-                new KeyValue(menu.opacityProperty(), 1.0, spec.interpolator()),
-                new KeyValue(menu.scaleXProperty(), 1.0, spec.interpolator()),
-                new KeyValue(menu.scaleYProperty(), 1.0, spec.interpolator()),
-                new KeyValue(menu.translateYProperty(), 0.0, spec.interpolator())
-        ));
+        showAnimation.configure(spec, 1.0, 1.0, 1.0, menu.getTranslateX(), 0.0);
         M3Animation.playFromStart(this, showAnimation);
     }
 

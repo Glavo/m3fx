@@ -28,7 +28,7 @@
     -fx-alignment: center;
 }
 
-.m3-icon-button.demo-seed-button {
+.m3-button.m3-icon-button.demo-seed-button {
     -m3-container-height: 32px;
     -m3-container-shape: 999px;
     -m3-horizontal-padding: 0px;

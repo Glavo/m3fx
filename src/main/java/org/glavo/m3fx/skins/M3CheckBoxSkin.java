@@ -11,6 +11,7 @@ import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3CheckBox;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
+import org.glavo.m3fx.internal.M3NodeTransition;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default skin for [M3CheckBox].
@@ -134,7 +135,14 @@ public class M3CheckBoxSkin extends M3SelectionControlSkinBase<M3CheckBox> {
         }
         M3MotionSpec spec = M3Animation.fastEffects(getSkinnable());
         double targetScale = visible ? 1.0 : HIDDEN_MARK_SCALE;
-        selectionAnimation.configure(spec, visible ? 1.0 : 0.0, targetScale, targetScale);
+        selectionAnimation.configure(
+                spec,
+                visible ? 1.0 : 0.0,
+                targetScale,
+                targetScale,
+                mark.getTranslateX(),
+                mark.getTranslateY()
+        );
         M3Animation.playFromStart(getSkinnable(), selectionAnimation);
     }
 

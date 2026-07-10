@@ -32,6 +32,7 @@ import org.glavo.m3fx.internal.M3FocusGuards;
 import org.glavo.m3fx.internal.M3FocusRequests;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3NodeLayout;
+import org.glavo.m3fx.internal.M3NodeTransition;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -458,7 +459,14 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
             updateSelectedChildPseudoClasses(false);
         }
         M3MotionSpec spec = M3Animation.defaultEffects(getSkinnable());
-        selectionAnimation.configure(spec, targetOpacity, targetScale, targetScale);
+        selectionAnimation.configure(
+                spec,
+                targetOpacity,
+                targetScale,
+                targetScale,
+                selectionContainer.getTranslateX(),
+                selectionContainer.getTranslateY()
+        );
         selectionAnimation.setOnFinished(event -> {
             if (getSkinnable().isSelected() == selected) {
                 updateSelectedChildPseudoClasses(selected);

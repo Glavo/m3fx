@@ -765,9 +765,9 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
             return fixedCellSize;
         }
 
-        double visibleCellHeight = flow.visibleCellHeight();
-        if (visibleCellHeight > 0.0) {
-            return visibleCellHeight;
+        double averageVisibleCellHeight = flow.averageVisibleCellHeight();
+        if (averageVisibleCellHeight > 0.0) {
+            return averageVisibleCellHeight;
         }
         return DEFAULT_ROW_HEIGHT;
     }
@@ -922,14 +922,18 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
             requestLayout();
         }
 
-        /// Returns the height of a currently attached cell, or zero before cells are measured.
-        private double visibleCellHeight() {
+        /// Returns the average height of attached data cells, or zero before cells are measured.
+        private double averageVisibleCellHeight() {
+            double totalHeight = 0.0;
+            int measuredCellCount = 0;
             for (M3ListViewCell<T> cell : getCells()) {
-                if (!cell.isEmpty() && cell.getHeight() > 0.0) {
-                    return cell.getHeight();
+                double cellHeight = cell.getHeight();
+                if (!cell.isEmpty() && Double.isFinite(cellHeight) && cellHeight > 0.0) {
+                    totalHeight += cellHeight;
+                    measuredCellCount++;
                 }
             }
-            return 0.0;
+            return measuredCellCount == 0 ? 0.0 : totalHeight / measuredCellCount;
         }
 
         /// Returns the index for the attached visible row that contains the supplied node.

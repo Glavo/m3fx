@@ -4,6 +4,7 @@
 package org.glavo.m3fx.skins;
 
 import javafx.beans.InvalidationListener;
+import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
@@ -38,6 +39,10 @@ public final class M3BannerSkin extends SkinBase<M3Banner> {
     /// Applies spacing token changes to internal layout nodes.
     private final InvalidationListener tokenInvalidation = observable -> updateTokenStyles();
 
+    /// Updates the icon slot when the public icon node changes.
+    private final ChangeListener<@Nullable Node> iconListener =
+            (observable, oldValue, newValue) -> updateIcon(newValue);
+
     /// Creates a banner skin.
     ///
     /// @param control the banner controlled by this skin
@@ -59,7 +64,7 @@ public final class M3BannerSkin extends SkinBase<M3Banner> {
         container.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(control));
         actions.alignmentProperty().bind(M3NodeLayout.createLogicalEndCenterAlignmentBinding(control));
 
-        control.iconProperty().addListener((observable, oldValue, newValue) -> updateIcon(newValue));
+        control.iconProperty().addListener(iconListener);
         control.getActions().addListener(actionsListener);
         control.contentSpacingProperty().addListener(tokenInvalidation);
         control.actionSpacingProperty().addListener(tokenInvalidation);
@@ -77,6 +82,7 @@ public final class M3BannerSkin extends SkinBase<M3Banner> {
         M3Banner control = getSkinnable();
         textLabel.textProperty().unbind();
         control.getActions().removeListener(actionsListener);
+        control.iconProperty().removeListener(iconListener);
         control.contentSpacingProperty().removeListener(tokenInvalidation);
         control.actionSpacingProperty().removeListener(tokenInvalidation);
         container.nodeOrientationProperty().unbind();

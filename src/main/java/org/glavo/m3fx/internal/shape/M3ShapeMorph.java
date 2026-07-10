@@ -31,12 +31,8 @@ public final class M3ShapeMorph {
     /// One full turn in radians.
     private static final double TWO_PI = Math.PI * 2.0;
 
-    /// Scratch storage reused by callers that do not provide their own scratch instance.
-    private static final ThreadLocal<Scratch> THREAD_SCRATCH = ThreadLocal.withInitial(Scratch::new);
-
     /// Material loading indicator indeterminate polygon sequence.
     private static final Sequence LOADING_INDICATOR_INDETERMINATE = sequence(
-            true,
             softBurst(),
             cookie9(),
             pentagon(),
@@ -78,36 +74,6 @@ public final class M3ShapeMorph {
     /// @return the indeterminate loading indicator morph sequence
     public static Sequence loadingIndicatorIndeterminate() {
         return LOADING_INDICATOR_INDETERMINATE;
-    }
-
-    /// Returns the number of cubic curves in this morph.
-    ///
-    /// @return the matched cubic curve count
-    public int curveCount() {
-        return matches.length;
-    }
-
-    /// Writes this morph at the requested progress to a JavaFX path.
-    ///
-    /// @param path the path to update
-    /// @param progress the morph progress from `0.0` to `1.0`
-    /// @param centerX the target center x-coordinate
-    /// @param centerY the target center y-coordinate
-    /// @param size the active indicator size in pixels
-    /// @param sequenceScale the scale factor used to keep rotating shapes inside the active size
-    /// @param extraScale the transient animation scale applied to the active shape
-    /// @param rotationTurns the clockwise rotation in turns
-    public void writeTo(
-            Path path,
-            double progress,
-            double centerX,
-            double centerY,
-            double size,
-            double sequenceScale,
-            double extraScale,
-            double rotationTurns
-    ) {
-        writeTo(path, progress, centerX, centerY, size, sequenceScale, extraScale, rotationTurns, THREAD_SCRATCH.get());
     }
 
     /// Writes this morph at the requested progress to a JavaFX path using reusable scratch storage.
@@ -209,23 +175,6 @@ public final class M3ShapeMorph {
         }
     }
 
-    /// Calculates the unrotated bounds of this morph after scaling.
-    ///
-    /// @param progress the morph progress
-    /// @param scale the output scale
-    /// @param scratch reusable temporary storage
-    private void calculateMorphedBounds(double progress, double scale, Scratch scratch) {
-        double[] bounds = scratch.bounds;
-        bounds[0] = Double.MAX_VALUE;
-        bounds[1] = Double.MAX_VALUE;
-        bounds[2] = -Double.MAX_VALUE;
-        bounds[3] = -Double.MAX_VALUE;
-        for (CubicPair match : matches) {
-            interpolateScaledCubic(match.start(), match.end(), progress, scale, scratch.cubic);
-            accumulateCubicBounds(scratch.cubic, bounds);
-        }
-    }
-
     /// Ensures that the path contains one move, the requested cubic count, and one close element.
     ///
     /// @param path the path to update
@@ -244,163 +193,6 @@ public final class M3ShapeMorph {
             path.getElements().add(new CubicCurveTo());
         }
         path.getElements().add(new ClosePath());
-    }
-
-    /// Interpolates a scaled cubic into a primitive destination array.
-    ///
-    /// @param start the start cubic
-    /// @param end the end cubic
-    /// @param fraction the interpolation fraction
-    /// @param scale the output scale
-    /// @param destination the destination array
-    private static void interpolateScaledCubic(
-            Cubic start,
-            Cubic end,
-            double fraction,
-            double scale,
-            double[] destination
-    ) {
-        destination[0] = interpolate(start.anchor0X(), end.anchor0X(), fraction) * scale;
-        destination[1] = interpolate(start.anchor0Y(), end.anchor0Y(), fraction) * scale;
-        destination[2] = interpolate(start.control0X(), end.control0X(), fraction) * scale;
-        destination[3] = interpolate(start.control0Y(), end.control0Y(), fraction) * scale;
-        destination[4] = interpolate(start.control1X(), end.control1X(), fraction) * scale;
-        destination[5] = interpolate(start.control1Y(), end.control1Y(), fraction) * scale;
-        destination[6] = interpolate(start.anchor1X(), end.anchor1X(), fraction) * scale;
-        destination[7] = interpolate(start.anchor1Y(), end.anchor1Y(), fraction) * scale;
-    }
-
-    /// Accumulates exact cubic bounds into a primitive bounds array.
-    ///
-    /// @param cubic the primitive cubic coordinates
-    /// @param bounds the mutable bounds array
-    private static void accumulateCubicBounds(double[] cubic, double[] bounds) {
-        double anchor0X = cubic[0];
-        double anchor0Y = cubic[1];
-        double control0X = cubic[2];
-        double control0Y = cubic[3];
-        double control1X = cubic[4];
-        double control1Y = cubic[5];
-        double anchor1X = cubic[6];
-        double anchor1Y = cubic[7];
-
-        if (Math.abs(anchor0X - anchor1X) < DISTANCE_EPSILON
-                && Math.abs(anchor0Y - anchor1Y) < DISTANCE_EPSILON) {
-            bounds[0] = Math.min(bounds[0], anchor0X);
-            bounds[1] = Math.min(bounds[1], anchor0Y);
-            bounds[2] = Math.max(bounds[2], anchor0X);
-            bounds[3] = Math.max(bounds[3], anchor0Y);
-            return;
-        }
-
-        double minX = Math.min(anchor0X, anchor1X);
-        double minY = Math.min(anchor0Y, anchor1Y);
-        double maxX = Math.max(anchor0X, anchor1X);
-        double maxY = Math.max(anchor0Y, anchor1Y);
-
-        double xa = -anchor0X + 3.0 * control0X - 3.0 * control1X + anchor1X;
-        double xb = 2.0 * anchor0X - 4.0 * control0X + 2.0 * control1X;
-        double xc = -anchor0X + control0X;
-        minX = accumulateCubicExtrema(xa, xb, xc, minX, true, cubic, true);
-        maxX = accumulateCubicExtrema(xa, xb, xc, maxX, false, cubic, true);
-
-        double ya = -anchor0Y + 3.0 * control0Y - 3.0 * control1Y + anchor1Y;
-        double yb = 2.0 * anchor0Y - 4.0 * control0Y + 2.0 * control1Y;
-        double yc = -anchor0Y + control0Y;
-        minY = accumulateCubicExtrema(ya, yb, yc, minY, true, cubic, false);
-        maxY = accumulateCubicExtrema(ya, yb, yc, maxY, false, cubic, false);
-
-        bounds[0] = Math.min(bounds[0], minX);
-        bounds[1] = Math.min(bounds[1], minY);
-        bounds[2] = Math.max(bounds[2], maxX);
-        bounds[3] = Math.max(bounds[3], maxY);
-    }
-
-    /// Accumulates one axis's cubic extrema into a range endpoint.
-    ///
-    /// @param a the quadratic coefficient
-    /// @param b the linear coefficient
-    /// @param c the constant coefficient
-    /// @param value the current range endpoint
-    /// @param minimum whether the endpoint is a minimum
-    /// @param cubic the primitive cubic coordinates
-    /// @param xAxis whether to sample x-values
-    /// @return the updated range endpoint
-    private static double accumulateCubicExtrema(
-            double a,
-            double b,
-            double c,
-            double value,
-            boolean minimum,
-            double[] cubic,
-            boolean xAxis
-    ) {
-        if (Math.abs(a) < DISTANCE_EPSILON) {
-            if (b != 0.0) {
-                value = accumulateCubicExtremum(c / -b, value, minimum, cubic, xAxis);
-            }
-            return value;
-        }
-
-        double discriminant = b * b - 4.0 * a * c;
-        if (discriminant < 0.0) {
-            return value;
-        }
-
-        double sqrt = Math.sqrt(discriminant);
-        value = accumulateCubicExtremum((-b + sqrt) / (2.0 * a), value, minimum, cubic, xAxis);
-        return accumulateCubicExtremum((-b - sqrt) / (2.0 * a), value, minimum, cubic, xAxis);
-    }
-
-    /// Accumulates one cubic extremum into a range endpoint.
-    ///
-    /// @param t the cubic parameter
-    /// @param value the current range endpoint
-    /// @param minimum whether the endpoint is a minimum
-    /// @param cubic the primitive cubic coordinates
-    /// @param xAxis whether to sample x-values
-    /// @return the updated range endpoint
-    private static double accumulateCubicExtremum(
-            double t,
-            double value,
-            boolean minimum,
-            double[] cubic,
-            boolean xAxis
-    ) {
-        if (t < 0.0 || t > 1.0) {
-            return value;
-        }
-
-        double candidate = cubicCoordinate(
-                xAxis ? cubic[0] : cubic[1],
-                xAxis ? cubic[2] : cubic[3],
-                xAxis ? cubic[4] : cubic[5],
-                xAxis ? cubic[6] : cubic[7],
-                t
-        );
-        return minimum ? Math.min(value, candidate) : Math.max(value, candidate);
-    }
-
-    /// Evaluates one cubic coordinate.
-    ///
-    /// @param anchor0 the start anchor coordinate
-    /// @param control0 the first control coordinate
-    /// @param control1 the second control coordinate
-    /// @param anchor1 the end anchor coordinate
-    /// @param t the cubic parameter
-    /// @return the coordinate value
-    private static double cubicCoordinate(
-            double anchor0,
-            double control0,
-            double control1,
-            double anchor1,
-            double t
-    ) {
-        double u = 1.0 - t;
-        return anchor0 * (u * u * u)
-                + control0 * (3.0 * t * u * u)
-                + control1 * (3.0 * t * t * u)
-                + anchor1 * (t * t * t);
     }
 
     /// Transforms one primitive morph point into path coordinate space.
@@ -437,10 +229,9 @@ public final class M3ShapeMorph {
 
     /// Creates a morph sequence from rounded polygons.
     ///
-    /// @param circular whether the final polygon should morph back to the first polygon
     /// @param polygons the source polygons
     /// @return the morph sequence
-    private static Sequence sequence(boolean circular, RoundedPolygon... polygons) {
+    private static Sequence sequence(RoundedPolygon... polygons) {
         if (polygons.length < 2) {
             throw new IllegalArgumentException("At least two polygons are required");
         }
@@ -450,9 +241,8 @@ public final class M3ShapeMorph {
             normalized[i] = polygons[i].normalized();
         }
 
-        int morphCount = circular ? normalized.length : normalized.length - 1;
-        M3ShapeMorph[] morphs = new M3ShapeMorph[morphCount];
-        for (int i = 0; i < morphCount; i++) {
+        M3ShapeMorph[] morphs = new M3ShapeMorph[normalized.length];
+        for (int i = 0; i < normalized.length; i++) {
             morphs[i] = new M3ShapeMorph(normalized[i], normalized[(i + 1) % normalized.length]);
         }
         return new Sequence(morphs, calculateScaleFactor(normalized));
@@ -627,9 +417,9 @@ public final class M3ShapeMorph {
 
     /// Creates the Material `circle` shape.
     ///
-    /// @param vertices the underlying vertex count
     /// @return the rounded polygon
-    private static RoundedPolygon circle(int vertices) {
+    private static RoundedPolygon circle() {
+        int vertices = 8;
         double theta = Math.PI / vertices;
         double polygonRadius = 1.0 / Math.cos(theta);
         return RoundedPolygon.regular(vertices, polygonRadius, 0.0, 0.0, new CornerRounding(1.0, 0.0), null);
@@ -639,7 +429,7 @@ public final class M3ShapeMorph {
     ///
     /// @return the rounded polygon
     private static RoundedPolygon oval() {
-        return circle(8).transformed((x, y) -> new Point(x, y * 0.7)).transformed(M3ShapeMorph::rotateNegative45);
+        return circle().transformed((x, y) -> new Point(x, y * 0.7)).transformed(M3ShapeMorph::rotateNegative45);
     }
 
     /// Creates the Material `pill` shape used by loading indicators.
@@ -867,12 +657,6 @@ public final class M3ShapeMorph {
     /// A scratch instance is mutable and should be used by only one animation writer at a time.
     @NotNullByDefault
     public static final class Scratch {
-        /// The temporary bounds array as left, top, right, and bottom.
-        private final double[] bounds = new double[4];
-
-        /// The temporary cubic coordinate array.
-        private final double[] cubic = new double[8];
-
         /// The temporary point coordinate array.
         private final double[] point = new double[2];
 
@@ -1845,9 +1629,6 @@ public final class M3ShapeMorph {
         /// The next vertex.
         private final Point next;
 
-        /// The rounding parameters.
-        private final CornerRounding rounding;
-
         /// The direction from the corner to the previous vertex.
         private final Point direction0;
 
@@ -1876,7 +1657,6 @@ public final class M3ShapeMorph {
             this.previous = previous;
             this.corner = corner;
             this.next = next;
-            this.rounding = rounding;
             this.direction0 = previous.subtract(corner).direction();
             this.direction1 = next.subtract(corner).direction();
             this.cornerRadius = rounding.radius();

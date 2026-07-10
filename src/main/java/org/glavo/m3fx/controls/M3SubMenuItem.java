@@ -4,10 +4,7 @@
 package org.glavo.m3fx.controls;
 
 import javafx.animation.Animation;
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
 import javafx.animation.PauseTransition;
-import javafx.animation.Timeline;
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
@@ -34,6 +31,7 @@ import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3NodeLayout;
+import org.glavo.m3fx.internal.M3NodeTransition;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3ThemeResolver;
@@ -97,10 +95,10 @@ public class M3SubMenuItem extends M3MenuItem {
     private final ReadOnlyBooleanWrapper subMenuShowing = new ReadOnlyBooleanWrapper(this, "subMenuShowing");
 
     /// The submenu popup enter animation.
-    private final Timeline showAnimation = new Timeline();
+    private final M3NodeTransition showAnimation = new M3NodeTransition(subMenu);
 
     /// The submenu popup exit animation.
-    private final Timeline hideAnimation = new Timeline();
+    private final M3NodeTransition hideAnimation = new M3NodeTransition(subMenu);
 
     /// Observes runtime motion settings while this item is attached to a scene.
     private final M3MotionSettingsObserver motionSettingsObserver =
@@ -313,14 +311,14 @@ public class M3SubMenuItem extends M3MenuItem {
             return;
         }
         M3MotionSpec spec = M3Animation.fastSpatial(this);
-        hideAnimation.getKeyFrames().setAll(new KeyFrame(
-                spec.duration(),
-                event -> popup.hide(),
-                new KeyValue(subMenu.opacityProperty(), 0.0, spec.interpolator()),
-                new KeyValue(subMenu.scaleXProperty(), SUB_MENU_TRANSITION_SCALE, spec.interpolator()),
-                new KeyValue(subMenu.scaleYProperty(), SUB_MENU_TRANSITION_SCALE, spec.interpolator()),
-                new KeyValue(subMenu.translateXProperty(), currentTransitionOffsetX, spec.interpolator())
-        ));
+        hideAnimation.configure(
+                spec,
+                0.0,
+                SUB_MENU_TRANSITION_SCALE,
+                SUB_MENU_TRANSITION_SCALE,
+                currentTransitionOffsetX,
+                subMenu.getTranslateY()
+        );
         M3Animation.playFromStart(this, hideAnimation);
     }
 
@@ -392,6 +390,7 @@ public class M3SubMenuItem extends M3MenuItem {
         });
         popup.setAutoHide(true);
         popup.getContent().add(subMenu);
+        hideAnimation.setOnFinished(event -> popup.hide());
         popup.setOnHidden(event -> {
             popupContextSynchronizer.stop();
             pointerInsideOwner = false;
@@ -617,13 +616,7 @@ public class M3SubMenuItem extends M3MenuItem {
     private void playShowAnimation() {
         showAnimation.stop();
         M3MotionSpec spec = M3Animation.fastSpatial(this);
-        showAnimation.getKeyFrames().setAll(new KeyFrame(
-                spec.duration(),
-                new KeyValue(subMenu.opacityProperty(), 1.0, spec.interpolator()),
-                new KeyValue(subMenu.scaleXProperty(), 1.0, spec.interpolator()),
-                new KeyValue(subMenu.scaleYProperty(), 1.0, spec.interpolator()),
-                new KeyValue(subMenu.translateXProperty(), 0.0, spec.interpolator())
-        ));
+        showAnimation.configure(spec, 1.0, 1.0, 1.0, 0.0, subMenu.getTranslateY());
         M3Animation.playFromStart(this, showAnimation);
     }
 

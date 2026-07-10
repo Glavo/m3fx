@@ -11,14 +11,13 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.theme.M3ThemeMetadata;
-import org.glavo.m3fx.tokens.M3Profile;
-import org.glavo.monetfx.Brightness;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -61,19 +60,31 @@ public final class M3ThemeManager {
     /// The property key that stores the root style before M3FX theme declarations were added.
     private static final String BASE_STYLE_PROPERTY_KEY = M3ThemeManager.class.getName() + ".baseStyle";
 
-    /// The directory name used for generated theme stylesheets.
-    private static final String THEME_STYLESHEET_DIRECTORY = "m3fx-theme-stylesheets";
+    /// The process-local directory used for generated theme stylesheets.
+    private static final Path THEME_STYLESHEET_DIRECTORY = Path.of(
+            System.getProperty("java.io.tmpdir"),
+            "m3fx-theme-stylesheets",
+            Long.toString(ProcessHandle.current().pid())
+    );
 
-    /// The map from scenes to their generated theme stylesheet URL.
-    private static final Map<Scene, String> THEME_STYLESHEETS = Collections.synchronizedMap(new WeakHashMap<>());
+    /// Opaque scene property key for the generated theme stylesheet URL.
+    private static final Object THEME_STYLESHEET_KEY = new Object();
 
-    /// The map from scenes to their active scene-root theme installations.
-    private static final Map<Scene, SceneThemeInstallation> SCENE_THEME_INSTALLATIONS =
-            Collections.synchronizedMap(new WeakHashMap<>());
+    /// Opaque scene property key for the active scene-root theme installation.
+    private static final Object SCENE_THEME_INSTALLATION_KEY = new Object();
 
     /// Generated stylesheet URLs keyed by immutable theme values.
     private static final Map<M3Theme, String> GENERATED_THEME_STYLESHEETS =
             Collections.synchronizedMap(new WeakHashMap<>());
+
+    static {
+        Thread cleanupThread = new Thread(
+                M3ThemeManager::deleteGeneratedThemeStylesheets,
+                "M3FX theme stylesheet cleanup"
+        );
+        cleanupThread.setContextClassLoader(null);
+        Runtime.getRuntime().addShutdownHook(cleanupThread);
+    }
 
     /// Prevents utility class instantiation.
     private M3ThemeManager() {
@@ -135,7 +146,8 @@ public final class M3ThemeManager {
 
         String stylesheet = themeStylesheetUrl(theme);
         List<String> stylesheets = scene.getStylesheets();
-        String previousStylesheet = THEME_STYLESHEETS.put(scene, stylesheet);
+        Object previousValue = scene.getProperties().put(THEME_STYLESHEET_KEY, stylesheet);
+        @Nullable String previousStylesheet = previousValue instanceof String value ? value : null;
         if (previousStylesheet != null && !previousStylesheet.equals(stylesheet)) {
             stylesheets.remove(previousStylesheet);
         }
@@ -224,7 +236,8 @@ public final class M3ThemeManager {
     public static void uninstallThemeStylesheet(Scene scene) {
         Objects.requireNonNull(scene, "scene");
 
-        String stylesheet = THEME_STYLESHEETS.remove(scene);
+        Object value = scene.getProperties().remove(THEME_STYLESHEET_KEY);
+        @Nullable String stylesheet = value instanceof String url ? url : null;
         if (stylesheet != null) {
             scene.getStylesheets().remove(stylesheet);
         }
@@ -252,14 +265,12 @@ public final class M3ThemeManager {
 
             String stylesheet = themeStylesheet(theme);
             String digest = sha256(stylesheet);
-            Path directory = Path.of(System.getProperty("java.io.tmpdir"), THEME_STYLESHEET_DIRECTORY);
-            Path file = directory.resolve("m3fx-theme-" + digest + ".css");
+            Path file = THEME_STYLESHEET_DIRECTORY.resolve("m3fx-theme-" + digest + ".css");
 
             try {
-                Files.createDirectories(directory);
+                Files.createDirectories(THEME_STYLESHEET_DIRECTORY);
                 if (!Files.exists(file)) {
                     Files.writeString(file, stylesheet, StandardCharsets.UTF_8);
-                    file.toFile().deleteOnExit();
                 }
             } catch (IOException e) {
                 throw new IllegalStateException("Failed to write generated M3FX theme stylesheet", e);
@@ -268,6 +279,24 @@ public final class M3ThemeManager {
             String url = file.toUri().toString();
             GENERATED_THEME_STYLESHEETS.put(theme, url);
             return url;
+        }
+    }
+
+    /// Deletes this process's generated theme stylesheets without retaining one shutdown entry per theme.
+    private static void deleteGeneratedThemeStylesheets() {
+        try (DirectoryStream<Path> files = Files.newDirectoryStream(THEME_STYLESHEET_DIRECTORY)) {
+            for (Path file : files) {
+                try {
+                    Files.deleteIfExists(file);
+                } catch (IOException ignored) {
+                }
+            }
+        } catch (IOException ignored) {
+        }
+
+        try {
+            Files.deleteIfExists(THEME_STYLESHEET_DIRECTORY);
+        } catch (IOException ignored) {
         }
     }
 
@@ -313,17 +342,21 @@ public final class M3ThemeManager {
 
     /// Installs a scene-owned theme and observes scene root replacement.
     private static void installSceneTheme(Scene scene, M3Theme theme) {
-        SceneThemeInstallation installation = SCENE_THEME_INSTALLATIONS.get(scene);
+        Object value = scene.getProperties().get(SCENE_THEME_INSTALLATION_KEY);
+        @Nullable SceneThemeInstallation installation =
+                value instanceof SceneThemeInstallation current ? current : null;
         if (installation == null) {
             installation = new SceneThemeInstallation(scene);
-            SCENE_THEME_INSTALLATIONS.put(scene, installation);
+            scene.getProperties().put(SCENE_THEME_INSTALLATION_KEY, installation);
         }
         installation.install(scene, theme);
     }
 
     /// Stops scene-root theme observation for a scene.
     private static boolean uninstallSceneTheme(Scene scene) {
-        @Nullable SceneThemeInstallation installation = SCENE_THEME_INSTALLATIONS.remove(scene);
+        Object value = scene.getProperties().remove(SCENE_THEME_INSTALLATION_KEY);
+        @Nullable SceneThemeInstallation installation =
+                value instanceof SceneThemeInstallation current ? current : null;
         if (installation != null) {
             installation.dispose(scene);
             return true;

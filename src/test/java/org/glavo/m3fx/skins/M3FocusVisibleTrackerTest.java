@@ -20,6 +20,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -167,6 +168,30 @@ final class M3FocusVisibleTrackerTest {
                 firstTracker.uninstall();
                 secondTracker.uninstall();
             }
+        });
+    }
+
+    /// Verifies that the scene-owned fallback tracker is released after its last owner uninstalls.
+    @Test
+    void fallbackTrackerReleasesSceneStateAfterLastUninstall() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane first = focusablePane();
+            Pane second = focusablePane();
+            HBox root = new HBox(first, second);
+            Scene scene = show(root, 160.0, 48.0);
+            int initialPropertyCount = scene.getProperties().size();
+            M3FocusVisibleTracker firstTracker = new M3FocusVisibleTracker(first, () -> {}, null);
+            M3FocusVisibleTracker secondTracker = new M3FocusVisibleTracker(second, () -> {}, null);
+
+            firstTracker.install();
+            secondTracker.install();
+            assertTrue(scene.getProperties().size() > initialPropertyCount);
+
+            firstTracker.uninstall();
+            assertTrue(scene.getProperties().size() > initialPropertyCount);
+
+            secondTracker.uninstall();
+            assertEquals(initialPropertyCount, scene.getProperties().size());
         });
     }
 

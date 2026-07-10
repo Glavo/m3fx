@@ -37,6 +37,7 @@ import org.glavo.m3fx.controls.M3TimePicker;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3FocusRequests;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
+import org.glavo.m3fx.internal.M3NodeTransition;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -267,7 +268,14 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         double scale = pressedScale(pressed);
         M3MotionSpec spec = pressed ? M3Animation.fastEffects(button) : M3Animation.defaultEffects(button);
         animation.stop();
-        animation.configure(spec, button.getOpacity(), scale, scale);
+        animation.configure(
+                spec,
+                button.getOpacity(),
+                scale,
+                scale,
+                button.getTranslateX(),
+                button.getTranslateY()
+        );
         M3Animation.playFromStart(button, animation);
     }
 

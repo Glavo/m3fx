@@ -3,9 +3,6 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
-import javafx.animation.Timeline;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.StringProperty;
@@ -30,6 +27,7 @@ import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
+import org.glavo.m3fx.internal.M3NodeTransition;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3SearchViewSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -71,7 +69,7 @@ public class M3SearchView extends Control {
     private final VBox resultsBox = new VBox();
 
     /// The search result visibility animation.
-    private final Timeline resultsVisibilityAnimation = new Timeline();
+    private final M3NodeTransition resultsVisibilityAnimation = new M3NodeTransition(resultsBox);
 
     /// Observes runtime motion settings while this search view is attached to a scene.
     private final M3MotionSettingsObserver motionSettingsObserver =
@@ -314,6 +312,11 @@ public class M3SearchView extends Control {
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleResult);
         resultsBox.getStyleClass().add(RESULTS_STYLE_CLASS);
+        resultsVisibilityAnimation.setOnFinished(event -> {
+            if (!isActive()) {
+                applyResultsVisibilityImmediately(false);
+            }
+        });
         searchBar.activeProperty().addListener((observable, oldValue, newValue) -> {
             boolean restoreSearchBarFocus = !newValue && focusedResultIndex() >= 0;
             notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
@@ -761,19 +764,24 @@ public class M3SearchView extends Control {
             resultsBox.setVisible(true);
             resultsBox.setManaged(true);
             M3MotionSpec spec = M3Animation.fastSpatial(this);
-            resultsVisibilityAnimation.getKeyFrames().setAll(new KeyFrame(
-                    spec.duration(),
-                    new KeyValue(resultsBox.opacityProperty(), 1.0, spec.interpolator()),
-                    new KeyValue(resultsBox.translateYProperty(), 0.0, spec.interpolator())
-            ));
+            resultsVisibilityAnimation.configure(
+                    spec,
+                    1.0,
+                    resultsBox.getScaleX(),
+                    resultsBox.getScaleY(),
+                    resultsBox.getTranslateX(),
+                    0.0
+            );
         } else if (resultsBox.isVisible()) {
             M3MotionSpec spec = M3Animation.fastSpatial(this);
-            resultsVisibilityAnimation.getKeyFrames().setAll(new KeyFrame(
-                    spec.duration(),
-                    event -> applyResultsVisibilityImmediately(false),
-                    new KeyValue(resultsBox.opacityProperty(), 0.0, spec.interpolator()),
-                    new KeyValue(resultsBox.translateYProperty(), HIDDEN_RESULTS_TRANSLATE_Y, spec.interpolator())
-            ));
+            resultsVisibilityAnimation.configure(
+                    spec,
+                    0.0,
+                    resultsBox.getScaleX(),
+                    resultsBox.getScaleY(),
+                    resultsBox.getTranslateX(),
+                    HIDDEN_RESULTS_TRANSLATE_Y
+            );
         } else {
             applyResultsVisibilityImmediately(false);
             return;

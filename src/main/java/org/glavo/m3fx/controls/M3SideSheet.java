@@ -3,9 +3,6 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
-import javafx.animation.Timeline;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -32,6 +29,7 @@ import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3ModalFocusTrap;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3NodeLayout;
+import org.glavo.m3fx.internal.M3NodeTransition;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3SideSheetSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -124,7 +122,7 @@ public class M3SideSheet extends Control {
     );
 
     /// The sheet show and hide animation.
-    private final Timeline visibilityAnimation = new Timeline();
+    private final M3NodeTransition visibilityAnimation = new M3NodeTransition(this);
 
     /// Observes runtime motion settings while this sheet is attached to a scene.
     private final M3MotionSettingsObserver motionSettingsObserver =
@@ -361,6 +359,11 @@ public class M3SideSheet extends Control {
         actions.addListener((ListChangeListener<Node>) change -> notifyAccessibleItemsChanged());
         visibleProperty().addListener((observable, oldValue, newValue) -> focusTrap.update());
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
+        visibilityAnimation.setOnFinished(event -> {
+            if (!isShown()) {
+                applyShownStateImmediately(false);
+            }
+        });
         focusTrap.install();
         focusNotifier.start();
         updateVariantStyle();
@@ -505,11 +508,14 @@ public class M3SideSheet extends Control {
             }
 
             M3MotionSpec spec = M3Animation.defaultSpatial(this);
-            visibilityAnimation.getKeyFrames().setAll(new KeyFrame(
-                    spec.duration(),
-                    new KeyValue(opacityProperty(), 1.0, spec.interpolator()),
-                    new KeyValue(translateXProperty(), 0.0, spec.interpolator())
-            ));
+            visibilityAnimation.configure(
+                    spec,
+                    1.0,
+                    getScaleX(),
+                    getScaleY(),
+                    0.0,
+                    getTranslateY()
+            );
             M3Animation.playFromStart(this, visibilityAnimation);
         } else {
             if (getScene() == null || !isVisible()) {
@@ -518,16 +524,14 @@ public class M3SideSheet extends Control {
             }
 
             M3MotionSpec spec = M3Animation.fastSpatial(this);
-            visibilityAnimation.getKeyFrames().setAll(new KeyFrame(
-                    spec.duration(),
-                    event -> {
-                        if (!isShown()) {
-                            applyShownStateImmediately(false);
-                        }
-                    },
-                    new KeyValue(opacityProperty(), 0.0, spec.interpolator()),
-                    new KeyValue(translateXProperty(), hiddenTranslateX(), spec.interpolator())
-            ));
+            visibilityAnimation.configure(
+                    spec,
+                    0.0,
+                    getScaleX(),
+                    getScaleY(),
+                    hiddenTranslateX(),
+                    getTranslateY()
+            );
             M3Animation.playFromStart(this, visibilityAnimation);
         }
     }

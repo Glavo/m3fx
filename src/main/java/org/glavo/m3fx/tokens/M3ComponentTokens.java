@@ -2259,9 +2259,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             String selector,
             IconButtonSizeTokens tokens
     ) {
+        String iconButtonSelector = ".m3-button.m3-icon-button" + selector;
+        String toggleButtonSelector = ".m3-icon-toggle-button" + selector;
         beginRule(
                 builder,
-                ".m3-icon-button" + selector + ", .m3-icon-toggle-button" + selector
+                iconButtonSelector + ", " + toggleButtonSelector
         );
         appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(tokens.containerHeight()));
         appendDeclaration(builder, "-m3-container-width", M3TokenCss.pixels(tokens.defaultWidth()));
@@ -2271,16 +2273,18 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendDeclaration(builder, "-m3-horizontal-padding", "0px");
         endRule(builder);
 
-        beginRule(builder, selector + ".m3-icon-button-narrow-width");
+        beginRule(builder, iconButtonSelector + ".m3-icon-button-narrow-width, "
+                + toggleButtonSelector + ".m3-icon-button-narrow-width");
         appendDeclaration(builder, "-m3-container-width", M3TokenCss.pixels(tokens.narrowWidth()));
         endRule(builder);
 
-        beginRule(builder, selector + ".m3-icon-button-wide-width");
+        beginRule(builder, iconButtonSelector + ".m3-icon-button-wide-width, "
+                + toggleButtonSelector + ".m3-icon-button-wide-width");
         appendDeclaration(builder, "-m3-container-width", M3TokenCss.pixels(tokens.wideWidth()));
         endRule(builder);
 
-        beginRule(builder, ".m3-icon-button" + selector + ".m3-outlined-button, "
-                + ".m3-icon-toggle-button" + selector + ".m3-outlined-icon-toggle-button");
+        beginRule(builder, iconButtonSelector + ".m3-outlined-button, "
+                + toggleButtonSelector + ".m3-outlined-icon-toggle-button");
         appendDeclaration(builder, "-fx-border-width", M3TokenCss.pixels(tokens.outlineWidth()));
         endRule(builder);
     }
@@ -2292,24 +2296,26 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             String selector,
             IconButtonSizeTokens tokens
     ) {
-        beginRule(builder, ".m3-icon-button-round" + selector);
+        String iconButtonSelector = ".m3-button.m3-icon-button" + selector;
+        String toggleButtonSelector = ".m3-icon-toggle-button" + selector;
+        beginRule(builder, iconButtonSelector + ".m3-icon-button-round");
         appendShapeDeclarations(builder, tokens.roundContainerShape());
         endRule(builder);
 
-        beginRule(builder, ".m3-icon-button-square" + selector);
+        beginRule(builder, iconButtonSelector + ".m3-icon-button-square");
         appendShapeDeclarations(builder, tokens.squareContainerShape());
         endRule(builder);
 
-        beginRule(builder, ".m3-icon-toggle-button.m3-icon-button-round" + selector + ":selected");
+        beginRule(builder, toggleButtonSelector + ".m3-icon-button-round:selected");
         appendShapeDeclarations(builder, tokens.selectedRoundContainerShape());
         endRule(builder);
 
-        beginRule(builder, ".m3-icon-toggle-button.m3-icon-button-square" + selector + ":selected");
+        beginRule(builder, toggleButtonSelector + ".m3-icon-button-square:selected");
         appendShapeDeclarations(builder, tokens.selectedSquareContainerShape());
         endRule(builder);
 
-        beginRule(builder, ".m3-icon-button" + selector + ":armed, .m3-icon-button" + selector + ":pressed, "
-                + ".m3-icon-toggle-button" + selector + ":armed, .m3-icon-toggle-button" + selector + ":pressed");
+        beginRule(builder, iconButtonSelector + ":armed, " + iconButtonSelector + ":pressed, "
+                + toggleButtonSelector + ":armed, " + toggleButtonSelector + ":pressed");
         appendShapeDeclarations(builder, tokens.pressedContainerShape());
         endRule(builder);
     }

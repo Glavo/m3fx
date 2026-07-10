@@ -3,9 +3,6 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
-import javafx.animation.Timeline;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ObjectProperty;
@@ -26,6 +23,7 @@ import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
+import org.glavo.m3fx.internal.M3NodeTransition;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -84,7 +82,7 @@ public class M3Scrim extends Region {
     private final BooleanProperty dismissOnClick = new SimpleBooleanProperty(this, "dismissOnClick", true);
 
     /// The scrim show and hide animation.
-    private final Timeline visibilityAnimation = new Timeline();
+    private final M3NodeTransition visibilityAnimation = new M3NodeTransition(this);
 
     /// Observes runtime motion settings while this scrim is attached to a scene.
     private final M3MotionSettingsObserver motionSettingsObserver =
@@ -102,6 +100,11 @@ public class M3Scrim extends Region {
         setFocusTraversable(true);
         setOpacity(getVisibleOpacity());
         setPickOnBounds(true);
+        visibilityAnimation.setOnFinished(event -> {
+            if (!isShown()) {
+                applyShownStateImmediately(false);
+            }
+        });
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
         setOnMouseClicked(event -> {
             if (isDismissOnClick() && event.getButton() == MouseButton.PRIMARY) {
@@ -299,10 +302,14 @@ public class M3Scrim extends Region {
             }
 
             M3MotionSpec spec = M3Animation.defaultEffects(this);
-            visibilityAnimation.getKeyFrames().setAll(new KeyFrame(
-                    spec.duration(),
-                    new KeyValue(opacityProperty(), getVisibleOpacity(), spec.interpolator())
-            ));
+            visibilityAnimation.configure(
+                    spec,
+                    getVisibleOpacity(),
+                    getScaleX(),
+                    getScaleY(),
+                    getTranslateX(),
+                    getTranslateY()
+            );
             M3Animation.playFromStart(this, visibilityAnimation);
         } else {
             if (getScene() == null || !isVisible()) {
@@ -311,15 +318,14 @@ public class M3Scrim extends Region {
             }
 
             M3MotionSpec spec = M3Animation.fastEffects(this);
-            visibilityAnimation.getKeyFrames().setAll(new KeyFrame(
-                    spec.duration(),
-                    event -> {
-                        if (!isShown()) {
-                            applyShownStateImmediately(false);
-                        }
-                    },
-                    new KeyValue(opacityProperty(), 0.0, spec.interpolator())
-            ));
+            visibilityAnimation.configure(
+                    spec,
+                    0.0,
+                    getScaleX(),
+                    getScaleY(),
+                    getTranslateX(),
+                    getTranslateY()
+            );
             M3Animation.playFromStart(this, visibilityAnimation);
         }
     }
