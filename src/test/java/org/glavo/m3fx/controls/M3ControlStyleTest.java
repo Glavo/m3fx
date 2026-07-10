@@ -18851,8 +18851,8 @@ final class M3ControlStyleTest {
 
         Region track = lookupRegion(slider, ".track");
         Region activeTrack = lookupRegion(slider, ".active-track");
-        assertRegionRadii(track, 12.0, 12.0, 12.0, 12.0);
-        assertRegionRadii(activeTrack, 12.0, 12.0, 12.0, 12.0);
+        assertRegionRadii(track, 0.0, 12.0, 12.0, 0.0);
+        assertRegionRadii(activeTrack, 12.0, 0.0, 0.0, 12.0);
     }
 
     /// Verifies that focused slider states keep Material track and thumb colors.
@@ -18969,6 +18969,112 @@ final class M3ControlStyleTest {
 
         assertFalse(lookupRegion(maximum, ".stop-indicator").isVisible());
         assertFalse(lookupRegion(hiddenByToken, ".stop-indicator").isVisible());
+    }
+
+    /// Verifies that centered sliders render an active range from the midpoint and inactive end stops on both sides.
+    @Test
+    void sliderCenteredTrackUsesMidpointAcrossDirections() {
+        M3Slider leftToRight = new M3Slider(-100.0, 100.0, -50.0);
+        M3Slider rightToLeft = new M3Slider(-100.0, 100.0, -50.0);
+        M3Slider vertical = new M3Slider(-100.0, 100.0, 50.0);
+        leftToRight.setCentered(true);
+        rightToLeft.setCentered(true);
+        rightToLeft.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+        vertical.setCentered(true);
+        vertical.setOrientation(Orientation.VERTICAL);
+        Pane root = new Pane(leftToRight, rightToLeft, vertical);
+        Scene scene = new Scene(root, 640.0, 240.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        leftToRight.resizeRelocate(0.0, 0.0, 220.0, 48.0);
+        rightToLeft.resizeRelocate(240.0, 0.0, 220.0, 48.0);
+        vertical.resizeRelocate(500.0, 0.0, 56.0, 180.0);
+        leftToRight.layout();
+        rightToLeft.layout();
+        vertical.layout();
+
+        assertTrue(leftToRight.getPseudoClassStates().contains(PseudoClass.getPseudoClass("centered")));
+        assertCenteredHorizontalSliderSegments(leftToRight, false);
+        assertCenteredHorizontalSliderSegments(rightToLeft, true);
+        assertCenteredVerticalSliderSegments(vertical);
+    }
+
+    /// Verifies that centered sliders keep a full handle gap when the value is very close to the midpoint.
+    @Test
+    void sliderCenteredTrackCollapsesShortActiveSegmentWithoutNegativeGeometry() {
+        M3Slider slider = new M3Slider(-100.0, 100.0, 2.0);
+        slider.setCentered(true);
+        Pane root = new Pane(slider);
+        Scene scene = new Scene(root, 260.0, 80.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        slider.resize(220.0, 48.0);
+        slider.layout();
+
+        Region activeTrack = lookupRegion(slider, ".active-track");
+        List<Region> inactiveTracks = visibleSliderRegions(slider, ".track");
+        inactiveTracks.sort((first, second) -> Double.compare(
+                first.getBoundsInParent().getMinX(),
+                second.getBoundsInParent().getMinX()
+        ));
+        assertEquals(0.0, activeTrack.getWidth(), 0.0001);
+        assertEquals(2, inactiveTracks.size());
+        assertEquals(slider.getThumbTrackGap() * 2.0,
+                inactiveTracks.get(1).getBoundsInParent().getMinX()
+                        - inactiveTracks.get(0).getBoundsInParent().getMaxX(),
+                0.0001);
+    }
+
+    /// Verifies that discrete sliders pool visible selectable-value stops and omit stops hidden by the handle.
+    @Test
+    void sliderDiscreteStopsFollowStepsActiveRangeAndDensityGuard() {
+        M3Slider slider = new M3Slider(0.0, 100.0, 50.0);
+        slider.setStepSize(10.0);
+        Pane root = new Pane(slider);
+        Scene scene = new Scene(root, 260.0, 80.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        slider.resize(220.0, 48.0);
+        slider.layout();
+        root.applyCss();
+
+        List<Region> visibleStops = visibleSliderRegions(slider, ".step-indicator");
+        assertEquals(9, visibleStops.size());
+        assertEquals(5, visibleStops.stream()
+                .filter(region -> region.getPseudoClassStates().contains(PseudoClass.getPseudoClass("active")))
+                .count());
+        assertEquals(4, visibleStops.stream()
+                .filter(region -> !region.getPseudoClassStates().contains(PseudoClass.getPseudoClass("active")))
+                .count());
+
+        slider.setStepSize(1.0);
+        slider.layout();
+
+        assertTrue(visibleSliderRegions(slider, ".step-indicator").isEmpty());
+    }
+
+    /// Verifies that disabled slider parts use the distinct MD3 active, inactive, handle, and stop opacities.
+    @Test
+    void sliderDisabledPartsUseMaterialOpacityRoles() {
+        M3Slider slider = new M3Slider(0.0, 100.0, 50.0);
+        slider.setDisable(true);
+        Pane root = new Pane(slider);
+        Scene scene = new Scene(root, 260.0, 80.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        slider.resize(220.0, 48.0);
+        slider.layout();
+        root.applyCss();
+
+        assertEquals(1.0, slider.getOpacity(), 0.0001);
+        assertEquals(0.12, lookupRegion(slider, ".track").getOpacity(), 0.0001);
+        assertEquals(0.38, lookupRegion(slider, ".active-track").getOpacity(), 0.0001);
+        assertEquals(0.38, lookupRegion(slider, ".thumb").getOpacity(), 0.0001);
+        assertEquals(0.38, lookupRegion(slider, ".stop-indicator").getOpacity(), 0.0001);
     }
 
     /// Verifies that progress component token properties are styleable from CSS.
@@ -37312,6 +37418,128 @@ final class M3ControlStyleTest {
         assertEquals(trackStart + trackCornerRadius, stopIndicatorBounds.getCenterY(), 0.0001);
         assertEquals(slider.getStopIndicatorSize(), stopIndicatorBounds.getWidth(), 0.0001);
         assertEquals(slider.getStopIndicatorSize(), stopIndicatorBounds.getHeight(), 0.0001);
+    }
+
+    /// Verifies centered horizontal slider segments and end stops in rendered scene coordinates.
+    private static void assertCenteredHorizontalSliderSegments(M3Slider slider, boolean rightToLeft) {
+        List<Region> inactiveTracks = visibleSliderRegions(slider, ".track");
+        List<Region> stopIndicators = visibleSliderRegions(slider, ".stop-indicator");
+        inactiveTracks.sort((first, second) -> Double.compare(
+                first.localToScene(first.getBoundsInLocal()).getMinX(),
+                second.localToScene(second.getBoundsInLocal()).getMinX()
+        ));
+        stopIndicators.sort((first, second) -> Double.compare(
+                first.localToScene(first.getBoundsInLocal()).getMinX(),
+                second.localToScene(second.getBoundsInLocal()).getMinX()
+        ));
+        assertEquals(2, inactiveTracks.size());
+        assertEquals(2, stopIndicators.size());
+
+        Region activeTrack = lookupRegion(slider, ".active-track");
+        Region thumb = lookupRegion(slider, ".thumb");
+        Bounds sliderBounds = slider.localToScene(slider.getBoundsInLocal());
+        Bounds leadingInactive = inactiveTracks.get(0).localToScene(inactiveTracks.get(0).getBoundsInLocal());
+        Bounds trailingInactive = inactiveTracks.get(1).localToScene(inactiveTracks.get(1).getBoundsInLocal());
+        Bounds activeBounds = activeTrack.localToScene(activeTrack.getBoundsInLocal());
+        Bounds thumbBounds = thumb.localToScene(thumb.getBoundsInLocal());
+        double trackStart = sliderBounds.getMinX() + slider.getThumbWidth() / 2.0;
+        double trackEnd = sliderBounds.getMaxX() - slider.getThumbWidth() / 2.0;
+        double trackCenter = (trackStart + trackEnd) / 2.0;
+        double logicalPosition = normalizedSliderValue(slider);
+        double visualPosition = rightToLeft ? 1.0 - logicalPosition : logicalPosition;
+        double thumbCenter = trackStart + (trackEnd - trackStart) * visualPosition;
+        double activeStart = thumbCenter < trackCenter
+                ? thumbCenter + slider.getThumbTrackGap()
+                : trackCenter;
+        double activeEnd = thumbCenter < trackCenter
+                ? trackCenter
+                : thumbCenter - slider.getThumbTrackGap();
+
+        assertEquals(thumbCenter, thumbBounds.getCenterX(), 0.0001);
+        assertEquals(trackStart, leadingInactive.getMinX(), 0.0001);
+        assertEquals(Math.min(trackCenter, thumbCenter - slider.getThumbTrackGap()),
+                leadingInactive.getMaxX(), 0.0001);
+        assertEquals(activeStart, activeBounds.getMinX(), 0.0001);
+        assertEquals(activeEnd, activeBounds.getMaxX(), 0.0001);
+        assertEquals(Math.max(trackCenter, thumbCenter + slider.getThumbTrackGap()),
+                trailingInactive.getMinX(), 0.0001);
+        assertEquals(trackEnd, trailingInactive.getMaxX(), 0.0001);
+        assertRegionRadii(activeTrack, 0.0, 0.0, 0.0, 0.0);
+
+        double stopRadius = slider.getStopIndicatorSize() / 2.0;
+        double trackCornerRadius = Math.max(
+                stopRadius,
+                Math.min(slider.getTrackThickness() / 2.0, slider.getTrackShape())
+        );
+        Bounds leadingStop = stopIndicators.get(0).localToScene(stopIndicators.get(0).getBoundsInLocal());
+        Bounds trailingStop = stopIndicators.get(1).localToScene(stopIndicators.get(1).getBoundsInLocal());
+        assertEquals(trackStart + trackCornerRadius, leadingStop.getCenterX(), 0.0001);
+        assertEquals(trackEnd - trackCornerRadius, trailingStop.getCenterX(), 0.0001);
+    }
+
+    /// Verifies centered vertical slider segments and end stops in rendered scene coordinates.
+    private static void assertCenteredVerticalSliderSegments(M3Slider slider) {
+        List<Region> inactiveTracks = visibleSliderRegions(slider, ".track");
+        List<Region> stopIndicators = visibleSliderRegions(slider, ".stop-indicator");
+        inactiveTracks.sort((first, second) -> Double.compare(
+                first.localToScene(first.getBoundsInLocal()).getMinY(),
+                second.localToScene(second.getBoundsInLocal()).getMinY()
+        ));
+        stopIndicators.sort((first, second) -> Double.compare(
+                first.localToScene(first.getBoundsInLocal()).getMinY(),
+                second.localToScene(second.getBoundsInLocal()).getMinY()
+        ));
+        assertEquals(2, inactiveTracks.size());
+        assertEquals(2, stopIndicators.size());
+
+        Region activeTrack = lookupRegion(slider, ".active-track");
+        Region thumb = lookupRegion(slider, ".thumb");
+        Bounds sliderBounds = slider.localToScene(slider.getBoundsInLocal());
+        Bounds upperInactive = inactiveTracks.get(0).localToScene(inactiveTracks.get(0).getBoundsInLocal());
+        Bounds lowerInactive = inactiveTracks.get(1).localToScene(inactiveTracks.get(1).getBoundsInLocal());
+        Bounds activeBounds = activeTrack.localToScene(activeTrack.getBoundsInLocal());
+        Bounds thumbBounds = thumb.localToScene(thumb.getBoundsInLocal());
+        double trackStart = sliderBounds.getMinY() + slider.getThumbWidth() / 2.0;
+        double trackEnd = sliderBounds.getMaxY() - slider.getThumbWidth() / 2.0;
+        double trackCenter = (trackStart + trackEnd) / 2.0;
+        double thumbCenter = trackEnd - (trackEnd - trackStart) * normalizedSliderValue(slider);
+        double activeStart = thumbCenter < trackCenter
+                ? thumbCenter + slider.getThumbTrackGap()
+                : trackCenter;
+        double activeEnd = thumbCenter < trackCenter
+                ? trackCenter
+                : thumbCenter - slider.getThumbTrackGap();
+
+        assertEquals(thumbCenter, thumbBounds.getCenterY(), 0.0001);
+        assertEquals(trackStart, upperInactive.getMinY(), 0.0001);
+        assertEquals(Math.min(trackCenter, thumbCenter - slider.getThumbTrackGap()),
+                upperInactive.getMaxY(), 0.0001);
+        assertEquals(activeStart, activeBounds.getMinY(), 0.0001);
+        assertEquals(activeEnd, activeBounds.getMaxY(), 0.0001);
+        assertEquals(Math.max(trackCenter, thumbCenter + slider.getThumbTrackGap()),
+                lowerInactive.getMinY(), 0.0001);
+        assertEquals(trackEnd, lowerInactive.getMaxY(), 0.0001);
+
+        double stopRadius = slider.getStopIndicatorSize() / 2.0;
+        double trackCornerRadius = Math.max(
+                stopRadius,
+                Math.min(slider.getTrackThickness() / 2.0, slider.getTrackShape())
+        );
+        Bounds upperStop = stopIndicators.get(0).localToScene(stopIndicators.get(0).getBoundsInLocal());
+        Bounds lowerStop = stopIndicators.get(1).localToScene(stopIndicators.get(1).getBoundsInLocal());
+        assertEquals(trackStart + trackCornerRadius, upperStop.getCenterY(), 0.0001);
+        assertEquals(trackEnd - trackCornerRadius, lowerStop.getCenterY(), 0.0001);
+    }
+
+    /// Returns visible slider regions matching a CSS selector.
+    private static List<Region> visibleSliderRegions(M3Slider slider, String selector) {
+        List<Region> regions = new ArrayList<>();
+        for (Node node : slider.lookupAll(selector)) {
+            if (node instanceof Region region && region.isVisible()) {
+                regions.add(region);
+            }
+        }
+        return regions;
     }
 
     /// Returns the slider value normalized to the supported range.

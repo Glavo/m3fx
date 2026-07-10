@@ -10,6 +10,7 @@ import javafx.beans.property.DoublePropertyBase;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ObjectPropertyBase;
 import javafx.css.CssMetaData;
+import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
@@ -36,11 +37,12 @@ import java.util.Objects;
 /// A Material Design 3 slider for selecting a numeric value from a continuous range.
 ///
 /// `M3Slider` exposes JavaFX-style `min`, `max`, `value`, orientation, and block-increment properties while
-/// rendering a Material track, active range, end stop indicator, thumb, focus state, and keyboard-accessible
-/// value changes. The
-/// `stepSize` property turns the control into a discrete slider whose pointer, keyboard, programmatic, and
-/// accessibility value changes snap to valid steps. The `valueChanging` property is set during direct pointer
-/// interaction so applications can distinguish committed changes from in-progress drags.
+/// rendering a Material track, active range, end stop indicators, thumb, focus state, and keyboard-accessible
+/// value changes. The `centered` property starts the active track at the range midpoint for positive and negative
+/// values. The `stepSize` property turns the control into a discrete slider whose selectable values are rendered as
+/// stop indicators and whose pointer, keyboard, programmatic, and accessibility value changes snap to valid steps.
+/// The `valueChanging` property is set during direct pointer interaction so applications can distinguish committed
+/// changes from in-progress drags.
 ///
 /// Use sliders for approximate or relative numeric choices. See
 /// [Material Design sliders](https://m3.material.io/components/sliders/overview).
@@ -48,6 +50,9 @@ import java.util.Objects;
 public class M3Slider extends Control {
     /// The base style class for M3FX sliders.
     public static final String STYLE_CLASS = "m3-slider";
+
+    /// The pseudo-class applied while the slider uses a centered active track.
+    private static final PseudoClass CENTERED_PSEUDO_CLASS = PseudoClass.getPseudoClass("centered");
 
     /// The default minimum slider value.
     private static final double DEFAULT_MIN = 0.0;
@@ -110,6 +115,9 @@ public class M3Slider extends Control {
     // Backing property for the public discrete step API.
     private @Nullable DoubleProperty stepSize;
 
+    // Backing property for the public centered-track API.
+    private @Nullable BooleanProperty centered;
+
     // Backing property for the public track thickness token API.
     private @Nullable StyleableDoubleProperty trackThickness;
 
@@ -138,8 +146,8 @@ public class M3Slider extends Control {
 
     /// Creates a slider with a range and initial value.
     ///
-    /// @param min the minimum slider value
-    /// @param max the maximum slider value
+    /// @param min   the minimum slider value
+    /// @param max   the maximum slider value
     /// @param value the initial slider value
     public M3Slider(double min, double max, double value) {
         initialize();
@@ -476,6 +484,53 @@ public class M3Slider extends Control {
         return stepSize;
     }
 
+    /// Returns whether the active track starts at the center of the slider.
+    ///
+    /// Centered sliders are intended for ranges where zero or another neutral value is represented by the
+    /// midpoint. The numeric range and value normalization remain unchanged; applications should normally use a
+    /// range whose neutral value lies at its midpoint.
+    ///
+    /// @return `true` when the slider uses a centered active track
+    public final boolean isCentered() {
+        return centered != null && centered.get();
+    }
+
+    /// Sets whether the active track starts at the center of the slider.
+    ///
+    /// @param centered whether the slider uses a centered active track
+    public final void setCentered(boolean centered) {
+        centeredProperty().set(centered);
+    }
+
+    /// Returns the centered-track property.
+    ///
+    /// @return the centered-track property
+    public final BooleanProperty centeredProperty() {
+        if (centered == null) {
+            centered = new BooleanPropertyBase(false) {
+                /// Updates the centered pseudo-class and track geometry.
+                @Override
+                protected void invalidated() {
+                    pseudoClassStateChanged(CENTERED_PSEUDO_CLASS, get());
+                    requestLayout();
+                }
+
+                /// Returns the owning bean.
+                @Override
+                public Object getBean() {
+                    return M3Slider.this;
+                }
+
+                /// Returns the property name.
+                @Override
+                public String getName() {
+                    return "centered";
+                }
+            };
+        }
+        return centered;
+    }
+
     /// Returns the slider track thickness token.
     ///
     /// @return the slider track thickness token in pixels
@@ -713,7 +768,7 @@ public class M3Slider extends Control {
 
     /// Returns accessibility attributes for the current slider value.
     ///
-    /// @param attribute the requested accessibility attribute
+    /// @param attribute  the requested accessibility attribute
     /// @param parameters the optional attribute parameters
     /// @return the attribute value, or `null` when unavailable
     @Override
@@ -733,7 +788,7 @@ public class M3Slider extends Control {
 
     /// Executes accessibility actions for value adjustment.
     ///
-    /// @param action the requested accessibility action
+    /// @param action     the requested accessibility action
     /// @param parameters the optional action parameters
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {

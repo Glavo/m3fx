@@ -63,7 +63,7 @@ M3FX is a modular Material Design 3 component library for JavaFX. The project is
 ### Components
 
 - Action controls: buttons, icon buttons, floating action buttons, FAB menus, split buttons, button groups, segmented buttons, tabs, chips, and icon toggle groups.
-- Selection controls: checkboxes, radio buttons, switches, sliders, progress bars, progress indicators, and loading indicators.
+- Selection controls: checkboxes, radio buttons, switches, standard and centered sliders with continuous or discrete stops, progress bars, progress indicators, and loading indicators.
 - Text input and forms: text fields, password fields, text areas, text input layouts, validators, form rows, form sections, form panes, and validation summaries.
 - Navigation and content: navigation bars, navigation rails, navigation drawers, lists, virtualized list views, list items, carousels, dividers, badges, avatars, surfaces, and cards.
 - Feedback and overlays: banners, dialogs, snackbars, tooltips, rich tooltips, scrims, bottom sheets, side sheets, top app bars, bottom app bars, and toolbars.

@@ -1503,6 +1503,22 @@ public final class M3FXDemoApp extends Application {
         vertical.setOrientation(Orientation.VERTICAL);
         vertical.setPrefSize(56.0, 180.0);
 
+        M3Slider centeredNegative = new M3Slider(-100.0, 100.0, -45.0);
+        centeredNegative.setCentered(true);
+        centeredNegative.setPrefWidth(260.0);
+        M3Slider centeredNeutral = new M3Slider(-100.0, 100.0, 0.0);
+        centeredNeutral.setCentered(true);
+        centeredNeutral.setPrefWidth(260.0);
+        M3Slider centeredPositive = new M3Slider(-100.0, 100.0, 60.0);
+        centeredPositive.setCentered(true);
+        centeredPositive.setStepSize(20.0);
+        centeredPositive.setPrefWidth(260.0);
+
+        M3Slider centeredVertical = new M3Slider(-100.0, 100.0, -40.0);
+        centeredVertical.setCentered(true);
+        centeredVertical.setOrientation(Orientation.VERTICAL);
+        centeredVertical.setPrefSize(56.0, 180.0);
+
         return createGallery(
                 createShowcaseGroup(
                         "Continuous",
@@ -1515,7 +1531,13 @@ public final class M3FXDemoApp extends Application {
                         createSteppedSlider(30.0, 10.0),
                         createSteppedSlider(70.0, 5.0)
                 ),
-                createShowcaseGroup("Vertical", vertical)
+                createShowcaseGroup(
+                        "Centered",
+                        centeredNegative,
+                        centeredNeutral,
+                        centeredPositive
+                ),
+                createShowcaseGroup("Vertical", vertical, centeredVertical)
         );
     }
 

@@ -17,6 +17,10 @@
     -fx-padding: 0px;
 }
 
+.m3-slider.m3-slider .step-indicator:active {
+    -fx-background-color: -m3-color-on-primary;
+}
+
 .m3-slider.m3-slider .track,
 .m3-slider.m3-slider:hover .track,
 .m3-slider.m3-slider:focused .track,
@@ -67,10 +71,22 @@
     -fx-background-color: -m3-color-primary;
 }
 
-.m3-slider:disabled {
+.m3-slider:disabled .track {
+    -fx-background-color: -m3-color-on-surface;
+    -fx-opacity: 0.12;
+}
+
+.m3-slider:disabled .active-track,
+.m3-slider:disabled .thumb {
+    -fx-background-color: -m3-color-on-surface;
     -fx-opacity: 0.38;
 }
 
 .m3-slider:disabled .stop-indicator {
     -fx-background-color: -m3-color-on-surface;
+    -fx-opacity: 0.38;
+}
+
+.m3-slider:disabled .step-indicator:active {
+    -fx-background-color: -m3-color-inverse-on-surface;
 }

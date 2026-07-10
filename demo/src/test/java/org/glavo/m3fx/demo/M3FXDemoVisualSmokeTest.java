@@ -13664,17 +13664,20 @@ final class M3FXDemoVisualSmokeTest {
         assertCurrentPageTitle(scene, "Sliders");
         assertVisibleText(root, "Continuous", "Sliders");
         assertVisibleText(root, "Discrete", "Sliders");
+        assertVisibleText(root, "Centered", "Sliders");
         assertVisibleText(root, "Vertical", "Sliders");
 
         List<M3Slider> sliders = visibleNodesOfType(page, M3Slider.class);
-        assertEquals(6, sliders.size(),
-                () -> "Sliders page should render six slider states, found " + sliders.size());
+        assertEquals(10, sliders.size(),
+                () -> "Sliders page should render ten slider states, found " + sliders.size());
         assertEquals(1, sliders.stream().filter(Node::isDisabled).count(),
                 "Sliders page should render one disabled slider");
-        assertEquals(1, sliders.stream().filter(slider -> slider.getOrientation() == Orientation.VERTICAL).count(),
-                "Sliders page should render one vertical slider");
-        assertEquals(2, sliders.stream().filter(slider -> slider.getStepSize() > 0.0).count(),
-                "Sliders page should render two discrete sliders");
+        assertEquals(2, sliders.stream().filter(slider -> slider.getOrientation() == Orientation.VERTICAL).count(),
+                "Sliders page should render two vertical sliders");
+        assertEquals(3, sliders.stream().filter(slider -> slider.getStepSize() > 0.0).count(),
+                "Sliders page should render three discrete sliders");
+        assertEquals(4, sliders.stream().filter(M3Slider::isCentered).count(),
+                "Sliders page should render four centered sliders");
         assertSelectionIndicatorsCentered(scene, "Sliders");
     }
 
@@ -15261,7 +15264,7 @@ final class M3FXDemoVisualSmokeTest {
                 || activeTrack == null
                 || thumb == null
                 || !hasRenderableBounds(inactiveTrack)
-                || !hasRenderableBounds(activeTrack)
+                || !slider.isCentered() && !hasRenderableBounds(activeTrack)
                 || !hasRenderableBounds(thumb)) {
             fail(pageTitle + " slider is missing track, active track, or thumb geometry: " + slider);
         }
@@ -15286,6 +15289,19 @@ final class M3FXDemoVisualSmokeTest {
                         + sliderBounds + ", thumb=" + thumbBounds);
 
         double logicalPosition = normalizedSliderPosition(slider);
+        if (slider.isCentered()) {
+            assertCenteredSliderTrackThumbGeometry(
+                    slider,
+                    sliderBounds,
+                    activeBounds,
+                    thumbBounds,
+                    logicalPosition,
+                    image,
+                    thumb,
+                    pageTitle
+            );
+            return;
+        }
         if (slider.getOrientation() == Orientation.VERTICAL) {
             assertVerticalSliderTrackThumbGeometry(slider, sliderBounds, inactiveBounds, activeBounds, thumbBounds,
                     logicalPosition, image, thumb, pageTitle);
@@ -15293,6 +15309,90 @@ final class M3FXDemoVisualSmokeTest {
             assertHorizontalSliderTrackThumbGeometry(slider, sliderBounds, inactiveBounds, activeBounds, thumbBounds,
                     logicalPosition, image, thumb, pageTitle);
         }
+    }
+
+    /// Verifies centered slider track segments, midpoint active range, end stops, and thumb geometry.
+    private static void assertCenteredSliderTrackThumbGeometry(
+            M3Slider slider,
+            Bounds sliderBounds,
+            Bounds activeBounds,
+            Bounds thumbBounds,
+            double logicalPosition,
+            WritableImage image,
+            Node thumb,
+            String pageTitle
+    ) {
+        List<Node> inactiveTracks = new ArrayList<>();
+        for (Node node : slider.lookupAll(".track")) {
+            if (node.isVisible() && hasRenderableBounds(node)) {
+                inactiveTracks.add(node);
+            }
+        }
+        assertEquals(2, inactiveTracks.size(),
+                () -> pageTitle + " centered slider should render two inactive track segments: " + slider);
+
+        List<Node> endStops = new ArrayList<>();
+        for (Node node : slider.lookupAll(".stop-indicator")) {
+            if (node.isVisible() && !node.getStyleClass().contains("step-indicator")) {
+                endStops.add(node);
+            }
+        }
+        assertEquals(2, endStops.size(),
+                () -> pageTitle + " centered slider should render two end stops: " + slider);
+
+        if (slider.getOrientation() == Orientation.VERTICAL) {
+            inactiveTracks.sort((first, second) -> Double.compare(
+                    first.localToScene(first.getBoundsInLocal()).getMinY(),
+                    second.localToScene(second.getBoundsInLocal()).getMinY()
+            ));
+            double trackStart = sliderBounds.getMinY() + slider.getThumbWidth() / 2.0;
+            double trackEnd = sliderBounds.getMaxY() - slider.getThumbWidth() / 2.0;
+            double trackCenter = (trackStart + trackEnd) / 2.0;
+            double thumbCenter = trackEnd - (trackEnd - trackStart) * logicalPosition;
+            Bounds upperInactive = inactiveTracks.get(0).localToScene(inactiveTracks.get(0).getBoundsInLocal());
+            Bounds lowerInactive = inactiveTracks.get(1).localToScene(inactiveTracks.get(1).getBoundsInLocal());
+            assertEquals(thumbCenter, thumbBounds.getCenterY(), 1.25);
+            assertEquals(trackStart, upperInactive.getMinY(), 1.25);
+            assertEquals(Math.min(trackCenter, thumbCenter - slider.getThumbTrackGap()),
+                    upperInactive.getMaxY(), 1.25);
+            assertEquals(Math.max(trackCenter, thumbCenter + slider.getThumbTrackGap()),
+                    lowerInactive.getMinY(), 1.25);
+            assertEquals(trackEnd, lowerInactive.getMaxY(), 1.25);
+            assertEquals(Math.min(trackCenter, thumbCenter) + (thumbCenter < trackCenter
+                            ? slider.getThumbTrackGap() : 0.0),
+                    activeBounds.getMinY(), 1.25);
+            assertEquals(Math.max(trackCenter, thumbCenter) - (thumbCenter > trackCenter
+                            ? slider.getThumbTrackGap() : 0.0),
+                    activeBounds.getMaxY(), 1.25);
+        } else {
+            inactiveTracks.sort((first, second) -> Double.compare(
+                    first.localToScene(first.getBoundsInLocal()).getMinX(),
+                    second.localToScene(second.getBoundsInLocal()).getMinX()
+            ));
+            double trackStart = sliderBounds.getMinX() + slider.getThumbWidth() / 2.0;
+            double trackEnd = sliderBounds.getMaxX() - slider.getThumbWidth() / 2.0;
+            double trackCenter = (trackStart + trackEnd) / 2.0;
+            double visualPosition = slider.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT
+                    ? 1.0 - logicalPosition
+                    : logicalPosition;
+            double thumbCenter = trackStart + (trackEnd - trackStart) * visualPosition;
+            Bounds leadingInactive = inactiveTracks.get(0).localToScene(inactiveTracks.get(0).getBoundsInLocal());
+            Bounds trailingInactive = inactiveTracks.get(1).localToScene(inactiveTracks.get(1).getBoundsInLocal());
+            assertEquals(thumbCenter, thumbBounds.getCenterX(), 1.25);
+            assertEquals(trackStart, leadingInactive.getMinX(), 1.25);
+            assertEquals(Math.min(trackCenter, thumbCenter - slider.getThumbTrackGap()),
+                    leadingInactive.getMaxX(), 1.25);
+            assertEquals(Math.max(trackCenter, thumbCenter + slider.getThumbTrackGap()),
+                    trailingInactive.getMinX(), 1.25);
+            assertEquals(trackEnd, trailingInactive.getMaxX(), 1.25);
+            assertEquals(Math.min(trackCenter, thumbCenter) + (thumbCenter < trackCenter
+                            ? slider.getThumbTrackGap() : 0.0),
+                    activeBounds.getMinX(), 1.25);
+            assertEquals(Math.max(trackCenter, thumbCenter) - (thumbCenter > trackCenter
+                            ? slider.getThumbTrackGap() : 0.0),
+                    activeBounds.getMaxX(), 1.25);
+        }
+        assertSliderThumbPixelsCentered(image, thumb, thumbBounds, pageTitle);
     }
 
     /// Verifies horizontal slider track segments, gap, and thumb geometry.

@@ -209,7 +209,7 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
                 + ".m3-fab:disabled, .m3-icon-toggle-button:disabled, "
                 + ".m3-segmented-button:disabled, .m3-text-field:disabled, "
                 + ".m3-password-field:disabled, "
-                + ".m3-slider:disabled, .m3-tab:disabled, .m3-progress-bar:disabled, .m3-progress-indicator:disabled, "
+                + ".m3-tab:disabled, .m3-progress-bar:disabled, .m3-progress-indicator:disabled, "
                 + ".m3-navigation-item:disabled, .m3-list-item:disabled, .m3-card:disabled, "
                 + ".m3-dialog-pane:disabled, .m3-snackbar:disabled, "
                 + ".m3-divider:disabled, .m3-badge:disabled";

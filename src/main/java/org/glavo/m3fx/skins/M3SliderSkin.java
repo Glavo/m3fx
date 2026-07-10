@@ -7,6 +7,7 @@ import javafx.beans.InvalidationListener;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.event.EventHandler;
+import javafx.css.PseudoClass;
 import javafx.geometry.Orientation;
 import javafx.geometry.Point2D;
 import javafx.scene.control.SkinBase;
@@ -14,6 +15,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Slider;
@@ -26,20 +28,35 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// The default skin for [M3Slider].
 @NotNullByDefault
 public class M3SliderSkin extends SkinBase<M3Slider> {
+    /// The pseudo-class used for stop indicators on the active track.
+    private static final PseudoClass ACTIVE_PSEUDO_CLASS = PseudoClass.getPseudoClass("active");
+
     /// The default horizontal preferred length for sliders without an explicit width.
     private static final double DEFAULT_HORIZONTAL_LENGTH = 200.0;
 
     /// The default vertical preferred length for sliders without an explicit height.
     private static final double DEFAULT_VERTICAL_LENGTH = 200.0;
 
+    /// The maximum number of pooled discrete stop nodes retained by one slider skin.
+    private static final int MAX_STEP_INDICATORS = 256;
+
     /// The visible slider track.
     private final Region track = new Region();
+
+    /// The second inactive track segment used by centered sliders.
+    private final Region secondaryTrack = new Region();
 
     /// The active slider track from the minimum value to the current value.
     private final Region activeTrack = new Region();
 
     /// The circular marker near the maximum-value end of the inactive track.
     private final Region stopIndicator = new Region();
+
+    /// The circular marker near the minimum-value end of a centered slider.
+    private final Region secondaryStopIndicator = new Region();
+
+    /// The pooled stop indicators for discrete slider values.
+    private final Pane stepIndicatorLayer = new Pane();
 
     /// The draggable slider thumb.
     private final Region thumb = new Region();
@@ -86,8 +103,11 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     /// Applies displayed-position changes directly to the slider's internal nodes.
     private final InvalidationListener displayedPositionInvalidation = observable -> updateDisplayedGeometry();
 
-    /// Applies track shape token changes to the visible track segments.
-    private final InvalidationListener trackShapeInvalidation = observable -> updateTrackStyle();
+    /// Applies orientation, mode, or track-shape changes to the visible track segments.
+    private final InvalidationListener trackStyleInvalidation = observable -> {
+        updateTrackStyle();
+        getSkinnable().requestLayout();
+    };
 
     /// Applies thumb width token changes to the visible thumb shape.
     private final InvalidationListener thumbStyleInvalidation = observable -> updateThumbStyle();
@@ -115,14 +135,29 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     public M3SliderSkin(M3Slider control) {
         super(control);
         track.getStyleClass().add("track");
+        secondaryTrack.getStyleClass().add("track");
         activeTrack.getStyleClass().add("active-track");
         stopIndicator.getStyleClass().add("stop-indicator");
+        secondaryStopIndicator.getStyleClass().add("stop-indicator");
         thumb.getStyleClass().add("thumb");
         track.setMouseTransparent(true);
+        secondaryTrack.setMouseTransparent(true);
         activeTrack.setMouseTransparent(true);
         stopIndicator.setMouseTransparent(true);
+        secondaryStopIndicator.setMouseTransparent(true);
+        stepIndicatorLayer.setMouseTransparent(true);
+        stepIndicatorLayer.setManaged(false);
         thumb.setMouseTransparent(true);
-        getChildren().addAll(track, activeTrack, stopIndicator, stateLayer, thumb);
+        getChildren().addAll(
+                track,
+                secondaryTrack,
+                activeTrack,
+                stepIndicatorLayer,
+                stopIndicator,
+                secondaryStopIndicator,
+                stateLayer,
+                thumb
+        );
         stateLayer.installStateTransitions(control);
         displayedPosition.set(valueToPosition(control.getValue()));
         displayedPosition.addListener(displayedPositionInvalidation);
@@ -130,11 +165,12 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         control.valueProperty().addListener(valueInvalidation);
         control.minProperty().addListener(rangeInvalidation);
         control.maxProperty().addListener(rangeInvalidation);
-        control.orientationProperty().addListener(layoutInvalidation);
+        control.orientationProperty().addListener(trackStyleInvalidation);
         control.effectiveNodeOrientationProperty().addListener(layoutInvalidation);
         control.trackThicknessProperty().addListener(layoutInvalidation);
-        control.trackShapeProperty().addListener(trackShapeInvalidation);
+        control.trackShapeProperty().addListener(trackStyleInvalidation);
         control.stopIndicatorSizeProperty().addListener(layoutInvalidation);
+        control.centeredProperty().addListener(trackStyleInvalidation);
         control.thumbSizeProperty().addListener(layoutInvalidation);
         control.thumbWidthProperty().addListener(layoutInvalidation);
         control.thumbWidthProperty().addListener(thumbStyleInvalidation);
@@ -159,11 +195,12 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         control.valueProperty().removeListener(valueInvalidation);
         control.minProperty().removeListener(rangeInvalidation);
         control.maxProperty().removeListener(rangeInvalidation);
-        control.orientationProperty().removeListener(layoutInvalidation);
+        control.orientationProperty().removeListener(trackStyleInvalidation);
         control.effectiveNodeOrientationProperty().removeListener(layoutInvalidation);
         control.trackThicknessProperty().removeListener(layoutInvalidation);
-        control.trackShapeProperty().removeListener(trackShapeInvalidation);
+        control.trackShapeProperty().removeListener(trackStyleInvalidation);
         control.stopIndicatorSizeProperty().removeListener(layoutInvalidation);
+        control.centeredProperty().removeListener(trackStyleInvalidation);
         control.thumbSizeProperty().removeListener(layoutInvalidation);
         control.thumbWidthProperty().removeListener(layoutInvalidation);
         control.thumbWidthProperty().removeListener(thumbStyleInvalidation);
@@ -182,39 +219,27 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
 
     /// Applies the slider track shape token to both track segments.
     private void updateTrackStyle() {
-        String shape = formatPixels(getSkinnable().getTrackShape());
-        track.setStyle(
-                "-fx-background-color: -m3-color-secondary-container;"
-                        + " -fx-background-insets: 0;"
-                        + " -fx-background-radius: " + shape + ";"
-                        + " -fx-border-color: transparent;"
-                        + " -fx-border-insets: 0;"
-                        + " -fx-border-radius: " + shape + ";"
-                        + " -fx-border-width: 0px;"
-        );
-        activeTrack.setStyle(
-                "-fx-background-color: -m3-color-primary;"
-                        + " -fx-background-insets: 0;"
-                        + " -fx-background-radius: " + shape + ";"
-                        + " -fx-border-color: transparent;"
-                        + " -fx-border-insets: 0;"
-                        + " -fx-border-radius: " + shape + ";"
-                        + " -fx-border-width: 0px;"
-        );
+        M3Slider slider = getSkinnable();
+        String shape = formatPixels(slider.getTrackShape());
+        String leadingRadii;
+        String trailingRadii;
+        if (slider.getOrientation() == Orientation.VERTICAL) {
+            leadingRadii = "0px 0px " + shape + " " + shape;
+            trailingRadii = shape + " " + shape + " 0px 0px";
+        } else {
+            leadingRadii = shape + " 0px 0px " + shape;
+            trailingRadii = "0px " + shape + " " + shape + " 0px";
+        }
+        track.setStyle("-fx-background-radius: " + trailingRadii + ";");
+        secondaryTrack.setStyle("-fx-background-radius: " + leadingRadii + ";");
+        activeTrack.setStyle("-fx-background-radius: " + (slider.isCentered() ? "0px" : leadingRadii) + ";");
     }
 
     /// Applies the slider thumb shape from the current short-side width token.
     private void updateThumbStyle() {
         String radius = formatPixels(getSkinnable().getThumbWidth() / 2.0);
         thumb.setStyle(
-                "-fx-background-color: -m3-color-primary;"
-                        + " -fx-background-insets: 0;"
-                        + " -fx-background-radius: " + radius + ";"
-                        + " -fx-border-color: transparent;"
-                        + " -fx-border-insets: 0;"
-                        + " -fx-border-width: 0px;"
-                        + " -fx-effect: null;"
-                        + " -fx-padding: 0px;"
+                "-fx-background-radius: " + radius + ";"
         );
     }
 
@@ -338,15 +363,37 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         double thumbX = thumbCenterX - thumbWidth / 2.0;
         double thumbY = y + (height - thumbSize) / 2.0;
 
-        double inactiveTrackStart = layoutHorizontalTrackSegments(
-                trackStart,
-                trackEnd,
-                trackY,
-                trackThickness,
-                thumbCenterX,
-                thumbTrackGap
-        );
-        layoutHorizontalStopIndicator(trackEnd, inactiveTrackStart, trackY, trackThickness);
+        if (getSkinnable().isCentered()) {
+            layoutHorizontalCenteredTrack(
+                    trackStart,
+                    trackEnd,
+                    trackY,
+                    trackThickness,
+                    thumbCenterX,
+                    thumbTrackGap
+            );
+        } else {
+            double inactiveTrackStart = layoutHorizontalStandardTrack(
+                    trackStart,
+                    trackEnd,
+                    trackY,
+                    trackThickness,
+                    thumbCenterX,
+                    thumbTrackGap
+            );
+            layoutHorizontalEndStop(
+                    stopIndicator,
+                    false,
+                    trackStart,
+                    trackEnd,
+                    inactiveTrackStart,
+                    trackEnd,
+                    trackY,
+                    trackThickness
+            );
+            secondaryStopIndicator.setVisible(false);
+        }
+        layoutStepIndicators(false, trackStart, trackEnd, trackY, trackThickness, thumbCenterX);
         stateLayer.layoutLayer(
                 thumbCenterX - getSkinnable().getTouchTargetSize() / 2.0,
                 y + (height - getSkinnable().getTouchTargetSize()) / 2.0,
@@ -360,7 +407,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     /// Positions horizontal active and inactive track segments around the handle gap.
     ///
     /// @return the leading edge of the inactive track segment
-    private double layoutHorizontalTrackSegments(
+    private double layoutHorizontalStandardTrack(
             double trackStart,
             double trackEnd,
             double trackY,
@@ -368,6 +415,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
             double thumbCenterX,
             double thumbTrackGap
     ) {
+        secondaryTrack.setVisible(false);
         double leadingGapEdge = clampToRange(thumbCenterX - thumbTrackGap, trackStart, trackEnd);
         double trailingGapEdge = clampToRange(thumbCenterX + thumbTrackGap, trackStart, trackEnd);
         activeTrack.resizeRelocate(trackStart, trackY, leadingGapEdge - trackStart, trackThickness);
@@ -375,10 +423,70 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         return trailingGapEdge;
     }
 
-    /// Positions the horizontal inactive-track stop indicator when enough track remains visible.
-    private void layoutHorizontalStopIndicator(
+    /// Positions centered horizontal active and inactive track segments around the handle gap.
+    private void layoutHorizontalCenteredTrack(
+            double trackStart,
             double trackEnd,
-            double inactiveTrackStart,
+            double trackY,
+            double trackThickness,
+            double thumbCenterX,
+            double thumbTrackGap
+    ) {
+        secondaryTrack.setVisible(true);
+        double centerX = (trackStart + trackEnd) / 2.0;
+        double leadingGapEdge = clampToRange(thumbCenterX - thumbTrackGap, trackStart, trackEnd);
+        double trailingGapEdge = clampToRange(thumbCenterX + thumbTrackGap, trackStart, trackEnd);
+        double leadingInactiveEnd;
+        double trailingInactiveStart;
+        if (trailingGapEdge < centerX) {
+            leadingInactiveEnd = leadingGapEdge;
+            trailingInactiveStart = centerX;
+            secondaryTrack.resizeRelocate(trackStart, trackY, leadingInactiveEnd - trackStart, trackThickness);
+            activeTrack.resizeRelocate(trailingGapEdge, trackY, centerX - trailingGapEdge, trackThickness);
+            track.resizeRelocate(centerX, trackY, trackEnd - centerX, trackThickness);
+        } else if (leadingGapEdge > centerX) {
+            leadingInactiveEnd = centerX;
+            trailingInactiveStart = trailingGapEdge;
+            secondaryTrack.resizeRelocate(trackStart, trackY, centerX - trackStart, trackThickness);
+            activeTrack.resizeRelocate(centerX, trackY, leadingGapEdge - centerX, trackThickness);
+            track.resizeRelocate(trailingInactiveStart, trackY, trackEnd - trailingInactiveStart, trackThickness);
+        } else {
+            leadingInactiveEnd = leadingGapEdge;
+            trailingInactiveStart = trailingGapEdge;
+            secondaryTrack.resizeRelocate(trackStart, trackY, leadingInactiveEnd - trackStart, trackThickness);
+            activeTrack.resizeRelocate(centerX, trackY, 0.0, trackThickness);
+            track.resizeRelocate(trailingInactiveStart, trackY, trackEnd - trailingInactiveStart, trackThickness);
+        }
+        layoutHorizontalEndStop(
+                secondaryStopIndicator,
+                true,
+                trackStart,
+                trackEnd,
+                trackStart,
+                leadingInactiveEnd,
+                trackY,
+                trackThickness
+        );
+        layoutHorizontalEndStop(
+                stopIndicator,
+                false,
+                trackStart,
+                trackEnd,
+                trailingInactiveStart,
+                trackEnd,
+                trackY,
+                trackThickness
+        );
+    }
+
+    /// Positions one horizontal end stop when enough adjacent inactive track remains visible.
+    private void layoutHorizontalEndStop(
+            Region indicator,
+            boolean leading,
+            double trackStart,
+            double trackEnd,
+            double inactiveStart,
+            double inactiveEnd,
             double trackY,
             double trackThickness
     ) {
@@ -389,11 +497,12 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
                 radius,
                 Math.min(trackThickness / 2.0, slider.getTrackShape())
         );
-        boolean visible = size > 0.0 && trackEnd - inactiveTrackStart > trackCornerRadius + radius;
-        stopIndicator.setVisible(visible);
+        boolean visible = size > 0.0 && inactiveEnd - inactiveStart > trackCornerRadius + radius;
+        indicator.setVisible(visible);
         if (visible) {
-            stopIndicator.resizeRelocate(
-                    trackEnd - trackCornerRadius - radius,
+            double centerX = leading ? trackStart + trackCornerRadius : trackEnd - trackCornerRadius;
+            indicator.resizeRelocate(
+                    centerX - radius,
                     trackY + (trackThickness - size) / 2.0,
                     size,
                     size
@@ -422,15 +531,37 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         double thumbX = x + (width - thumbSize) / 2.0;
         double thumbY = thumbCenterY - thumbWidth / 2.0;
 
-        double inactiveTrackEnd = layoutVerticalTrackSegments(
-                trackX,
-                trackStart,
-                trackEnd,
-                trackThickness,
-                thumbCenterY,
-                thumbTrackGap
-        );
-        layoutVerticalStopIndicator(trackX, trackStart, inactiveTrackEnd, trackThickness);
+        if (getSkinnable().isCentered()) {
+            layoutVerticalCenteredTrack(
+                    trackX,
+                    trackStart,
+                    trackEnd,
+                    trackThickness,
+                    thumbCenterY,
+                    thumbTrackGap
+            );
+        } else {
+            double inactiveTrackEnd = layoutVerticalStandardTrack(
+                    trackX,
+                    trackStart,
+                    trackEnd,
+                    trackThickness,
+                    thumbCenterY,
+                    thumbTrackGap
+            );
+            layoutVerticalEndStop(
+                    stopIndicator,
+                    true,
+                    trackX,
+                    trackStart,
+                    trackEnd,
+                    trackStart,
+                    inactiveTrackEnd,
+                    trackThickness
+            );
+            secondaryStopIndicator.setVisible(false);
+        }
+        layoutStepIndicators(true, trackStart, trackEnd, trackX, trackThickness, thumbCenterY);
         stateLayer.layoutLayer(
                 x + (width - getSkinnable().getTouchTargetSize()) / 2.0,
                 thumbCenterY - getSkinnable().getTouchTargetSize() / 2.0,
@@ -444,7 +575,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     /// Positions vertical active and inactive track segments around the handle gap.
     ///
     /// @return the trailing edge of the inactive track segment
-    private double layoutVerticalTrackSegments(
+    private double layoutVerticalStandardTrack(
             double trackX,
             double trackStart,
             double trackEnd,
@@ -452,6 +583,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
             double thumbCenterY,
             double thumbTrackGap
     ) {
+        secondaryTrack.setVisible(false);
         double upperGapEdge = clampToRange(thumbCenterY - thumbTrackGap, trackStart, trackEnd);
         double lowerGapEdge = clampToRange(thumbCenterY + thumbTrackGap, trackStart, trackEnd);
         track.resizeRelocate(trackX, trackStart, trackThickness, upperGapEdge - trackStart);
@@ -459,11 +591,71 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         return upperGapEdge;
     }
 
-    /// Positions the vertical inactive-track stop indicator when enough track remains visible.
-    private void layoutVerticalStopIndicator(
+    /// Positions centered vertical active and inactive track segments around the handle gap.
+    private void layoutVerticalCenteredTrack(
             double trackX,
             double trackStart,
-            double inactiveTrackEnd,
+            double trackEnd,
+            double trackThickness,
+            double thumbCenterY,
+            double thumbTrackGap
+    ) {
+        secondaryTrack.setVisible(true);
+        double centerY = (trackStart + trackEnd) / 2.0;
+        double upperGapEdge = clampToRange(thumbCenterY - thumbTrackGap, trackStart, trackEnd);
+        double lowerGapEdge = clampToRange(thumbCenterY + thumbTrackGap, trackStart, trackEnd);
+        double upperInactiveEnd;
+        double lowerInactiveStart;
+        if (lowerGapEdge < centerY) {
+            upperInactiveEnd = upperGapEdge;
+            lowerInactiveStart = centerY;
+            track.resizeRelocate(trackX, trackStart, trackThickness, upperInactiveEnd - trackStart);
+            activeTrack.resizeRelocate(trackX, lowerGapEdge, trackThickness, centerY - lowerGapEdge);
+            secondaryTrack.resizeRelocate(trackX, centerY, trackThickness, trackEnd - centerY);
+        } else if (upperGapEdge > centerY) {
+            upperInactiveEnd = centerY;
+            lowerInactiveStart = lowerGapEdge;
+            track.resizeRelocate(trackX, trackStart, trackThickness, centerY - trackStart);
+            activeTrack.resizeRelocate(trackX, centerY, trackThickness, upperGapEdge - centerY);
+            secondaryTrack.resizeRelocate(trackX, lowerInactiveStart, trackThickness, trackEnd - lowerInactiveStart);
+        } else {
+            upperInactiveEnd = upperGapEdge;
+            lowerInactiveStart = lowerGapEdge;
+            track.resizeRelocate(trackX, trackStart, trackThickness, upperInactiveEnd - trackStart);
+            activeTrack.resizeRelocate(trackX, centerY, trackThickness, 0.0);
+            secondaryTrack.resizeRelocate(trackX, lowerInactiveStart, trackThickness, trackEnd - lowerInactiveStart);
+        }
+        layoutVerticalEndStop(
+                stopIndicator,
+                true,
+                trackX,
+                trackStart,
+                trackEnd,
+                trackStart,
+                upperInactiveEnd,
+                trackThickness
+        );
+        layoutVerticalEndStop(
+                secondaryStopIndicator,
+                false,
+                trackX,
+                trackStart,
+                trackEnd,
+                lowerInactiveStart,
+                trackEnd,
+                trackThickness
+        );
+    }
+
+    /// Positions one vertical end stop when enough adjacent inactive track remains visible.
+    private void layoutVerticalEndStop(
+            Region indicator,
+            boolean upper,
+            double trackX,
+            double trackStart,
+            double trackEnd,
+            double inactiveStart,
+            double inactiveEnd,
             double trackThickness
     ) {
         M3Slider slider = getSkinnable();
@@ -473,15 +665,113 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
                 radius,
                 Math.min(trackThickness / 2.0, slider.getTrackShape())
         );
-        boolean visible = size > 0.0 && inactiveTrackEnd - trackStart > trackCornerRadius + radius;
-        stopIndicator.setVisible(visible);
+        boolean visible = size > 0.0 && inactiveEnd - inactiveStart > trackCornerRadius + radius;
+        indicator.setVisible(visible);
         if (visible) {
-            stopIndicator.resizeRelocate(
+            double centerY = upper ? trackStart + trackCornerRadius : trackEnd - trackCornerRadius;
+            indicator.resizeRelocate(
                     trackX + (trackThickness - size) / 2.0,
-                    trackStart + trackCornerRadius - radius,
+                    centerY - radius,
                     size,
                     size
             );
+        }
+    }
+
+    /// Positions pooled stop indicators for selectable discrete values.
+    private void layoutStepIndicators(
+            boolean vertical,
+            double trackStart,
+            double trackEnd,
+            double trackCrossStart,
+            double trackThickness,
+            double thumbCenter
+    ) {
+        M3Slider slider = getSkinnable();
+        stepIndicatorLayer.resizeRelocate(0.0, 0.0, slider.getWidth(), slider.getHeight());
+        double range = slider.getMax() - slider.getMin();
+        double stepSize = slider.getStepSize();
+        double indicatorSize = slider.getStopIndicatorSize();
+        double trackLength = trackEnd - trackStart;
+        if (!(range > 0.0) || !(stepSize > 0.0) || !(indicatorSize > 0.0) || !(trackLength > 0.0)) {
+            hideUnusedStepIndicators(0);
+            return;
+        }
+
+        double stepCountValue = Math.floor(range / stepSize + 1.0e-9);
+        if (!Double.isFinite(stepCountValue) || stepCountValue > MAX_STEP_INDICATORS + 1.0) {
+            hideUnusedStepIndicators(0);
+            return;
+        }
+        int maximumStepIndex = (int) stepCountValue;
+        double spacing = trackLength * stepSize / range;
+        if (spacing < indicatorSize * 2.0) {
+            hideUnusedStepIndicators(0);
+            return;
+        }
+
+        double displayed = displayedPosition.get();
+        double activeStart = slider.isCentered() ? Math.min(0.5, displayed) : 0.0;
+        double activeEnd = slider.isCentered() ? Math.max(0.5, displayed) : displayed;
+        double indicatorRadius = indicatorSize / 2.0;
+        double thumbExclusionRadius = slider.getThumbTrackGap() + indicatorRadius;
+        int used = 0;
+        for (int stepIndex = 0; stepIndex <= maximumStepIndex; stepIndex++) {
+            double fraction = Math.min(1.0, stepIndex * stepSize / range);
+            boolean atMinimum = stepIndex == 0;
+            boolean atMaximum = Math.abs(1.0 - fraction) < 1.0e-9;
+            if (atMaximum || slider.isCentered() && atMinimum) {
+                continue;
+            }
+
+            double center = vertical
+                    ? trackEnd - trackLength * fraction
+                    : trackStart + trackLength * fraction;
+            if (Math.abs(center - thumbCenter) <= thumbExclusionRadius) {
+                continue;
+            }
+
+            Region indicator = stepIndicator(used++);
+            indicator.pseudoClassStateChanged(
+                    ACTIVE_PSEUDO_CLASS,
+                    fraction >= activeStart && fraction <= activeEnd
+            );
+            if (vertical) {
+                indicator.resizeRelocate(
+                        trackCrossStart + (trackThickness - indicatorSize) / 2.0,
+                        center - indicatorRadius,
+                        indicatorSize,
+                        indicatorSize
+                );
+            } else {
+                indicator.resizeRelocate(
+                        center - indicatorRadius,
+                        trackCrossStart + (trackThickness - indicatorSize) / 2.0,
+                        indicatorSize,
+                        indicatorSize
+                );
+            }
+            indicator.setVisible(true);
+        }
+        hideUnusedStepIndicators(used);
+    }
+
+    /// Returns one pooled discrete stop indicator, creating it when necessary.
+    private Region stepIndicator(int index) {
+        while (stepIndicatorLayer.getChildren().size() <= index) {
+            Region indicator = new Region();
+            indicator.getStyleClass().addAll("stop-indicator", "step-indicator");
+            indicator.setManaged(false);
+            indicator.setMouseTransparent(true);
+            stepIndicatorLayer.getChildren().add(indicator);
+        }
+        return (Region) stepIndicatorLayer.getChildren().get(index);
+    }
+
+    /// Hides pooled discrete stop indicators that are not used by the current layout.
+    private void hideUnusedStepIndicators(int used) {
+        for (int index = used; index < stepIndicatorLayer.getChildren().size(); index++) {
+            stepIndicatorLayer.getChildren().get(index).setVisible(false);
         }
     }
 
