@@ -4,9 +4,9 @@
 package org.glavo.m3fx.controls;
 
 import javafx.animation.Animation;
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
-import javafx.animation.Timeline;
+import javafx.animation.Transition;
+import javafx.beans.InvalidationListener;
+import javafx.beans.value.ChangeListener;
 import javafx.event.EventHandler;
 import javafx.event.EventTarget;
 import javafx.geometry.Bounds;
@@ -150,8 +150,30 @@ public final class M3ScrollPanes {
         /// Updates a running smooth scroll when motion settings change.
         private final M3MotionSettingsObserver motionSettingsObserver;
 
-        /// The currently running scroll animation.
-        private @Nullable Timeline animation;
+        /// The reusable transition that interpolates both scroll axes.
+        private final ScrollTransition animation;
+
+        /// Marks cached content metrics dirty after viewport or content geometry changes.
+        private final InvalidationListener scrollMetricsInvalidation = observable -> scrollMetricsDirty = true;
+
+        /// Updates the observed content node after the scroll pane content changes.
+        private final ChangeListener<@Nullable Node> contentListener =
+                (observable, oldContent, newContent) -> updateObservedContent(newContent);
+
+        /// The content node currently observed for geometry changes.
+        private @Nullable Node observedContent;
+
+        /// The observed content when it exposes preferred-size properties.
+        private @Nullable Region observedContentRegion;
+
+        /// Whether content width and height must be measured before the next scroll event.
+        private boolean scrollMetricsDirty = true;
+
+        /// The last measured content width.
+        private double cachedContentWidth;
+
+        /// The last measured content height.
+        private double cachedContentHeight;
 
         /// The accumulated horizontal target value.
         private double targetHValue;
@@ -168,10 +190,14 @@ public final class M3ScrollPanes {
         /// Creates and installs smooth wheel behavior.
         private SmoothScrollState(ScrollPane scrollPane) {
             this.scrollPane = scrollPane;
+            animation = new ScrollTransition(scrollPane);
             targetHValue = scrollPane.getHvalue();
             targetVValue = scrollPane.getVvalue();
-            targetHScrollablePixels = Math.max(0.0, contentWidth() - scrollPane.getViewportBounds().getWidth());
-            targetVScrollablePixels = Math.max(0.0, contentHeight() - scrollPane.getViewportBounds().getHeight());
+            updateObservedContent(scrollPane.getContent());
+            scrollPane.contentProperty().addListener(contentListener);
+            scrollPane.viewportBoundsProperty().addListener(scrollMetricsInvalidation);
+            scrollPane.fitToWidthProperty().addListener(scrollMetricsInvalidation);
+            scrollPane.fitToHeightProperty().addListener(scrollMetricsInvalidation);
             scrollPane.addEventFilter(ScrollEvent.SCROLL, scrollHandler);
             motionSettingsObserver = new M3MotionSettingsObserver(scrollPane, this::refreshMotionSettings);
         }
@@ -181,6 +207,11 @@ public final class M3ScrollPanes {
             motionSettingsObserver.dispose();
             stopAnimation();
             scrollPane.removeEventFilter(ScrollEvent.SCROLL, scrollHandler);
+            scrollPane.contentProperty().removeListener(contentListener);
+            scrollPane.viewportBoundsProperty().removeListener(scrollMetricsInvalidation);
+            scrollPane.fitToWidthProperty().removeListener(scrollMetricsInvalidation);
+            scrollPane.fitToHeightProperty().removeListener(scrollMetricsInvalidation);
+            updateObservedContent(null);
         }
 
         /// Handles one wheel or trackpad scroll event.
@@ -193,8 +224,9 @@ public final class M3ScrollPanes {
             double viewportHeight = scrollPane.getViewportBounds().getHeight();
             double horizontalDelta = scrollDeltaX(event);
             double verticalDelta = scrollDeltaY(event, viewportHeight);
-            double horizontalScrollablePixels = contentWidth() - viewportWidth;
-            double verticalScrollablePixels = contentHeight() - viewportHeight;
+            refreshScrollMetricsIfNeeded();
+            double horizontalScrollablePixels = Math.max(0.0, cachedContentWidth - viewportWidth);
+            double verticalScrollablePixels = Math.max(0.0, cachedContentHeight - viewportHeight);
             boolean canScrollHorizontally = canScroll(
                     scrollPane.getHmin(),
                     scrollPane.getHmax(),
@@ -205,7 +237,7 @@ public final class M3ScrollPanes {
                     scrollPane.getVmax(),
                     verticalScrollablePixels
             );
-            if (animation == null || animation.getStatus() == Animation.Status.STOPPED) {
+            if (animation.getStatus() == Animation.Status.STOPPED) {
                 targetHValue = scrollPane.getHvalue();
                 targetVValue = scrollPane.getVvalue();
             } else {
@@ -270,8 +302,7 @@ public final class M3ScrollPanes {
 
         /// Applies changed animation settings to the current smooth scroll operation.
         private void refreshMotionSettings() {
-            Timeline currentAnimation = animation;
-            if (currentAnimation == null) {
+            if (animation.getStatus() != Animation.Status.RUNNING) {
                 return;
             }
 
@@ -279,32 +310,64 @@ public final class M3ScrollPanes {
                 scrollPane.setHvalue(targetHValue);
                 scrollPane.setVvalue(targetVValue);
                 stopAnimation();
-            } else if (currentAnimation.getStatus() == Animation.Status.RUNNING) {
+            } else {
                 animateToTarget();
             }
         }
 
         /// Starts an animation toward the accumulated target values.
         private void animateToTarget() {
-            stopAnimation();
             M3MotionSpec spec = M3Animation.defaultSpatial(scrollPane);
-            Timeline timeline = new Timeline(new KeyFrame(
-                    spec.duration(),
-                    new KeyValue(scrollPane.hvalueProperty(), targetHValue, spec.interpolator()),
-                    new KeyValue(scrollPane.vvalueProperty(), targetVValue, spec.interpolator())
-            ));
-            animation = timeline;
-            timeline.setOnFinished(event -> animation = null);
-            M3Animation.playFromStart(scrollPane, timeline);
+            animation.configure(
+                    spec,
+                    scrollPane.getHvalue(),
+                    targetHValue,
+                    scrollPane.getVvalue(),
+                    targetVValue
+            );
+            M3Animation.playFromStart(scrollPane, animation);
         }
 
         /// Stops the current scroll animation.
         private void stopAnimation() {
-            Timeline currentAnimation = animation;
-            if (currentAnimation != null) {
-                currentAnimation.stop();
-                animation = null;
+            animation.stop();
+        }
+
+        /// Replaces the content geometry listener and invalidates cached scroll metrics.
+        private void updateObservedContent(@Nullable Node content) {
+            Node previousContent = observedContent;
+            if (previousContent == content) {
+                return;
             }
+            if (previousContent != null) {
+                previousContent.boundsInLocalProperty().removeListener(scrollMetricsInvalidation);
+            }
+            @Nullable Region previousRegion = observedContentRegion;
+            if (previousRegion != null) {
+                previousRegion.prefWidthProperty().removeListener(scrollMetricsInvalidation);
+                previousRegion.prefHeightProperty().removeListener(scrollMetricsInvalidation);
+            }
+            observedContent = content;
+            observedContentRegion = content instanceof Region region ? region : null;
+            if (content != null) {
+                content.boundsInLocalProperty().addListener(scrollMetricsInvalidation);
+            }
+            @Nullable Region contentRegion = observedContentRegion;
+            if (contentRegion != null) {
+                contentRegion.prefWidthProperty().addListener(scrollMetricsInvalidation);
+                contentRegion.prefHeightProperty().addListener(scrollMetricsInvalidation);
+            }
+            scrollMetricsDirty = true;
+        }
+
+        /// Recomputes content dimensions once after an observed geometry change.
+        private void refreshScrollMetricsIfNeeded() {
+            if (!scrollMetricsDirty) {
+                return;
+            }
+            cachedContentWidth = contentWidth();
+            cachedContentHeight = contentHeight();
+            scrollMetricsDirty = false;
         }
 
         /// Returns the current content width.
@@ -339,6 +402,54 @@ public final class M3ScrollPanes {
                 height = Math.max(height, preferredHeight);
             }
             return height;
+        }
+    }
+
+    /// A reusable two-axis transition for one scroll pane.
+    @NotNullByDefault
+    private static final class ScrollTransition extends Transition {
+        /// The scroll pane whose values are interpolated.
+        private final ScrollPane scrollPane;
+
+        /// The horizontal value at the beginning of the current transition.
+        private double startHValue;
+
+        /// The horizontal value at the end of the current transition.
+        private double targetHValue;
+
+        /// The vertical value at the beginning of the current transition.
+        private double startVValue;
+
+        /// The vertical value at the end of the current transition.
+        private double targetVValue;
+
+        /// Creates a reusable transition for a scroll pane.
+        private ScrollTransition(ScrollPane scrollPane) {
+            this.scrollPane = scrollPane;
+        }
+
+        /// Reconfigures this transition without replacing the animation object.
+        private void configure(
+                M3MotionSpec spec,
+                double startHValue,
+                double targetHValue,
+                double startVValue,
+                double targetVValue
+        ) {
+            stop();
+            setCycleDuration(spec.duration());
+            setInterpolator(spec.interpolator());
+            this.startHValue = startHValue;
+            this.targetHValue = targetHValue;
+            this.startVValue = startVValue;
+            this.targetVValue = targetVValue;
+        }
+
+        /// Interpolates both normalized scroll values for the current animation pulse.
+        @Override
+        protected void interpolate(double fraction) {
+            scrollPane.setHvalue(M3ScrollPanes.interpolate(startHValue, targetHValue, fraction));
+            scrollPane.setVvalue(M3ScrollPanes.interpolate(startVValue, targetVValue, fraction));
         }
     }
 
@@ -420,5 +531,10 @@ public final class M3ScrollPanes {
     /// Returns whether two scroll values are effectively equal.
     private static boolean close(double first, double second) {
         return Math.abs(first - second) <= EPSILON;
+    }
+
+    /// Interpolates linearly between two scalar values.
+    private static double interpolate(double start, double end, double fraction) {
+        return start + (end - start) * fraction;
     }
 }

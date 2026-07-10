@@ -546,6 +546,49 @@ final class M3ScrollPanesTest {
             }
         });
     }
+
+    /// Verifies that unchanged content geometry is not measured again for every wheel event.
+    @Test
+    void scrollPaneSmoothScrollingCachesStableContentMetrics() {
+        FxTestUtils.runOnFxThread(() -> {
+            CountingContent content = new CountingContent();
+            ScrollPane scrollPane = new ScrollPane(content);
+            scrollPane.setPrefSize(160.0, 120.0);
+            StackPane root = new StackPane(scrollPane);
+            Scene scene = new Scene(root, 180.0, 140.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(180.0, 140.0);
+            root.layout();
+            M3ScrollPanes.enableSmoothScrolling(scrollPane);
+            M3MotionSettings.setAnimationsEnabled(scrollPane, false);
+
+            try {
+                int initialWidthMeasurements = content.preferredWidthMeasurements;
+                int initialHeightMeasurements = content.preferredHeightMeasurements;
+                ScrollEvent firstEvent = scrollEvent(scrollPane, 0.0, -40.0);
+                scrollPane.fireEvent(firstEvent);
+
+                assertTrue(firstEvent.isConsumed(), () -> scrollPaneDebug(scrollPane, content, firstEvent));
+                assertTrue(content.preferredWidthMeasurements > initialWidthMeasurements);
+                assertTrue(content.preferredHeightMeasurements > initialHeightMeasurements);
+                int stableWidthMeasurements = content.preferredWidthMeasurements;
+                int stableHeightMeasurements = content.preferredHeightMeasurements;
+
+                ScrollEvent secondEvent = scrollEvent(scrollPane, 0.0, -40.0);
+                scrollPane.fireEvent(secondEvent);
+
+                assertTrue(secondEvent.isConsumed(), () -> scrollPaneDebug(scrollPane, content, secondEvent));
+                assertEquals(stableWidthMeasurements, content.preferredWidthMeasurements);
+                assertEquals(stableHeightMeasurements, content.preferredHeightMeasurements);
+            } finally {
+                M3ScrollPanes.disableSmoothScrolling(scrollPane);
+                M3MotionSettings.clearAnimationsEnabled(scrollPane);
+            }
+        });
+    }
+
     /// Verifies that platform text-line scroll units are converted to Material wheel distances.
     @Test
     void scrollPaneSmoothScrollingUsesTextLineScrollUnits() {
@@ -1048,6 +1091,30 @@ final class M3ScrollPanesTest {
                 return COLLAPSED_HEIGHT;
             }
             return EXPANDED_HEIGHT;
+        }
+    }
+
+    /// Region that records preferred-size computations for scroll performance assertions.
+    @NotNullByDefault
+    private static final class CountingContent extends Region {
+        /// The number of preferred-width computations.
+        private int preferredWidthMeasurements;
+
+        /// The number of preferred-height computations.
+        private int preferredHeightMeasurements;
+
+        /// Computes the preferred width and records the measurement.
+        @Override
+        protected double computePrefWidth(double height) {
+            preferredWidthMeasurements++;
+            return 160.0;
+        }
+
+        /// Computes the preferred height and records the measurement.
+        @Override
+        protected double computePrefHeight(double width) {
+            preferredHeightMeasurements++;
+            return 480.0;
         }
     }
 }

@@ -4,9 +4,7 @@
 package org.glavo.m3fx.skins;
 
 import javafx.animation.Animation;
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
-import javafx.animation.Timeline;
+import javafx.animation.Transition;
 import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.application.Platform;
@@ -32,7 +30,6 @@ import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3ScrollReveal;
 import org.glavo.m3fx.internal.theme.M3ThemeMetadata;
-import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -162,8 +159,8 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         }
     };
 
-    /// The currently running virtual flow scroll animation.
-    private @Nullable Timeline smoothScrollAnimation;
+    /// The reusable virtual flow scroll transition.
+    private final ListScrollTransition smoothScrollAnimation = new ListScrollTransition(flow);
 
     /// The completion callback attached to the currently running smooth scroll animation.
     private @Nullable Runnable smoothScrollOnFinished;
@@ -198,6 +195,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         flow.setVertical(true);
         flow.setPannable(true);
         flow.setCellFactory(flow -> new M3ListViewCell<>(control));
+        smoothScrollAnimation.setOnFinished(event -> finishSmoothScrollAnimation());
         M3ListViewSkinAccess.register(control, access);
         flow.fixedCellSizeProperty().bind(control.fixedCellSizeProperty());
         control.addEventFilter(ScrollEvent.SCROLL, smoothScrollHandler);
@@ -413,12 +411,12 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     /// Updates ancestors observed for local theme changes.
     private void updateObservedThemeAncestors() {
         clearObservedThemeAncestors();
-        @Nullable Node current = getSkinnable();
+        @Nullable Parent current = getSkinnable();
         while (current != null) {
-            if (current instanceof Parent parent && parent != observedSceneRoot) {
-                parent.getProperties().addListener(themeRootPropertiesListener);
-                parent.parentProperty().addListener(ancestorParentListener);
-                observedThemeAncestors.add(parent);
+            if (current != observedSceneRoot) {
+                current.getProperties().addListener(themeRootPropertiesListener);
+                current.parentProperty().addListener(ancestorParentListener);
+                observedThemeAncestors.add(current);
             }
             current = current.getParent();
         }
@@ -451,13 +449,6 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
 
         @Nullable Window window = scene.getWindow();
         return window == null || window.isShowing();
-    }
-
-    /// Scrolls the virtual flow to the supplied index.
-    ///
-    /// @param index the data item index to reveal
-    private void scrollTo(int index) {
-        scrollTo(index, true);
     }
 
     /// Scrolls the virtual flow to the supplied index, optionally animating the position change.
@@ -568,7 +559,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
             return;
         }
 
-        if (smoothScrollAnimation == null || smoothScrollAnimation.getStatus() == Animation.Status.STOPPED) {
+        if (smoothScrollAnimation.getStatus() == Animation.Status.STOPPED) {
             smoothScrollTargetPosition = flow.getPosition();
         }
 
@@ -595,22 +586,20 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
 
     /// Applies changed animation settings to the current smooth scroll operation.
     private void refreshMotionSettings() {
-        Timeline animation = smoothScrollAnimation;
-        if (animation == null) {
+        if (smoothScrollAnimation.getStatus() != Animation.Status.RUNNING) {
             return;
         }
 
         if (!M3Animation.areAnimationsEnabled(getSkinnable())) {
             @Nullable Runnable onFinished = smoothScrollOnFinished;
-            animation.stop();
-            smoothScrollAnimation = null;
+            smoothScrollAnimation.stop();
             smoothScrollOnFinished = null;
             flow.setPosition(smoothScrollTargetPosition);
             flow.requestLayout();
             if (onFinished != null) {
                 onFinished.run();
             }
-        } else if (animation.getStatus() == Animation.Status.RUNNING) {
+        } else {
             animateSmoothScroll(smoothScrollOnFinished);
         }
     }
@@ -678,7 +667,6 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
 
     /// Finishes focus updates after an animated index scroll reaches its target.
     private void finishAnimatedIndexScroll(int index) {
-        smoothScrollAnimation = null;
         flow.requestLayout();
         if (getSkinnable().getFocusedIndex() == index) {
             focusVisibleCellIfNeeded();
@@ -733,30 +721,24 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     private void animateSmoothScroll(@Nullable Runnable onFinished) {
         stopSmoothScrollAnimation();
         M3MotionSpec spec = M3Animation.defaultSpatial(getSkinnable());
-        Timeline timeline = new Timeline(new KeyFrame(
-                spec.duration(),
-                new KeyValue(flow.positionProperty(), smoothScrollTargetPosition, spec.interpolator())
-        ));
-        smoothScrollAnimation = timeline;
+        smoothScrollAnimation.configure(spec, flow.getPosition(), smoothScrollTargetPosition);
         smoothScrollOnFinished = onFinished;
-        timeline.setOnFinished(event -> {
-            smoothScrollAnimation = null;
-            smoothScrollOnFinished = null;
-            if (onFinished != null) {
-                onFinished.run();
-            }
-        });
-        M3Animation.playFromStart(getSkinnable(), timeline);
+        M3Animation.playFromStart(getSkinnable(), smoothScrollAnimation);
+    }
+
+    /// Runs the current smooth-scroll completion callback after the reusable transition finishes.
+    private void finishSmoothScrollAnimation() {
+        @Nullable Runnable onFinished = smoothScrollOnFinished;
+        smoothScrollOnFinished = null;
+        if (onFinished != null) {
+            onFinished.run();
+        }
     }
 
     /// Stops the running smooth scroll animation.
     private void stopSmoothScrollAnimation() {
-        Timeline animation = smoothScrollAnimation;
-        if (animation != null) {
-            animation.stop();
-            smoothScrollAnimation = null;
-            smoothScrollOnFinished = null;
-        }
+        smoothScrollAnimation.stop();
+        smoothScrollOnFinished = null;
     }
 
     /// Returns an estimated scrollable content height in pixels.
@@ -831,6 +813,39 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     /// Returns whether two scroll values are effectively equal.
     private static boolean close(double first, double second) {
         return Math.abs(first - second) <= EPSILON;
+    }
+
+    /// A reusable transition for one virtual flow position.
+    @NotNullByDefault
+    private static final class ListScrollTransition extends Transition {
+        /// The virtual flow whose normalized position is interpolated.
+        private final VirtualFlow<?> flow;
+
+        /// The normalized position at the beginning of the current transition.
+        private double startPosition;
+
+        /// The normalized position at the end of the current transition.
+        private double targetPosition;
+
+        /// Creates a reusable transition for a virtual flow.
+        private ListScrollTransition(VirtualFlow<?> flow) {
+            this.flow = flow;
+        }
+
+        /// Reconfigures the transition from the current position to a new accumulated target.
+        private void configure(M3MotionSpec spec, double startPosition, double targetPosition) {
+            stop();
+            setCycleDuration(spec.duration());
+            setInterpolator(spec.interpolator());
+            this.startPosition = startPosition;
+            this.targetPosition = targetPosition;
+        }
+
+        /// Interpolates the virtual flow position for the current animation pulse.
+        @Override
+        protected void interpolate(double fraction) {
+            flow.setPosition(startPosition + (targetPosition - startPosition) * fraction);
+        }
     }
 
     /// Returns whether one attached node contains another attached node.
