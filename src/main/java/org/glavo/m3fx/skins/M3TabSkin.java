@@ -28,6 +28,9 @@ public class M3TabSkin extends M3LabeledButtonSkinBase<M3Tab> {
     /// The active indicator animation timeline.
     private final M3NodeTransition indicatorAnimation = new M3NodeTransition(activeIndicator);
 
+    /// The last shape radius applied to the active indicator.
+    private double appliedIndicatorShape = Double.NaN;
+
     /// Settles running active-indicator transitions when runtime motion settings change.
     private final M3MotionSettingsObserver motionSettingsObserver =
             new M3MotionSettingsObserver(
@@ -83,8 +86,12 @@ public class M3TabSkin extends M3LabeledButtonSkinBase<M3Tab> {
         }
         double indicatorHeight = tab.getActiveIndicatorHeight();
         activeIndicator.resizeRelocate(0.0, tabHeight - indicatorHeight, tabWidth, indicatorHeight);
-        String radius = tab.getActiveIndicatorShape() + "px";
-        activeIndicator.setStyle("-fx-background-radius: " + radius + " " + radius + " 0px 0px;");
+        double indicatorShape = tab.getActiveIndicatorShape();
+        if (Double.compare(appliedIndicatorShape, indicatorShape) != 0) {
+            appliedIndicatorShape = indicatorShape;
+            String radius = indicatorShape + "px";
+            activeIndicator.setStyle("-fx-background-radius: " + radius + " " + radius + " 0px 0px;");
+        }
     }
 
     /// Animates the active indicator to the requested state.

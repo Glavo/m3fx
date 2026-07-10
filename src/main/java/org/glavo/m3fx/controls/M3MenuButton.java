@@ -14,6 +14,7 @@ import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.stage.Popup;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
@@ -31,9 +32,8 @@ import org.glavo.m3fx.internal.M3ReachabilityObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /// A Material Design 3 menu button backed by an M3FX menu popup.
 ///
@@ -97,7 +97,7 @@ public class M3MenuButton extends M3Button {
             new M3ReachabilityObserver(this, this::hidePopupIfOwnerUnreachable);
 
     /// Notifies composite owners when this button's reported focus node changes.
-    private final List<Runnable> popupFocusNodeListeners = new ArrayList<>();
+    private final CopyOnWriteArrayList<Runnable> popupFocusNodeListeners = new CopyOnWriteArrayList<>();
 
     /// Updates the popup menu orientation when this button's effective node orientation changes.
     private final InvalidationListener nodeOrientationInvalidation = observable -> updatePopupMenuOrientation();
@@ -163,13 +163,6 @@ public class M3MenuButton extends M3Button {
         if (!popupFocusNodeListeners.contains(listener)) {
             popupFocusNodeListeners.add(listener);
         }
-    }
-
-    /// Removes a popup-accessible focus-node listener.
-    ///
-    /// @param listener the listener to remove
-    final void removePopupFocusNodeListener(Runnable listener) {
-        popupFocusNodeListeners.remove(Objects.requireNonNull(listener, "listener"));
     }
 
     /// Shows the menu popup below this button.
@@ -374,7 +367,7 @@ public class M3MenuButton extends M3Button {
 
     /// Returns whether this menu button can reveal the supplied menu target without opening the popup.
     final boolean canShowAccessibleMenuItem(@Nullable Object parameter) {
-        return !isDisabled() && menu.canShowAccessibleItem(parameter);
+        return parameter != null && !isDisabled() && menu.canShowAccessibleItem(parameter);
     }
 
     /// Opens the popup menu and focuses the descendant supplied by accessibility parameters.
@@ -420,15 +413,9 @@ public class M3MenuButton extends M3Button {
 
     /// Handles keyboard dismissal while focus is inside the popup menu.
     private void handleMenuKeyPressed(KeyEvent event) {
-        switch (event.getCode()) {
-            case ESCAPE -> {
-                if (popup.isShowing()) {
-                    hideMenu(true);
-                    event.consume();
-                }
-            }
-            default -> {
-            }
+        if (event.getCode() == KeyCode.ESCAPE && popup.isShowing()) {
+            hideMenu(true);
+            event.consume();
         }
     }
 
@@ -462,9 +449,7 @@ public class M3MenuButton extends M3Button {
     private void notifyPopupFocusNodeChanged() {
         M3Accessible.notifyFocusNodeChanged(this);
         popupFocusNotifier.refresh();
-        for (Runnable listener : List.copyOf(popupFocusNodeListeners)) {
-            listener.run();
-        }
+        popupFocusNodeListeners.forEach(Runnable::run);
     }
 
     /// Synchronizes an already showing popup menu with this button's effective node orientation.

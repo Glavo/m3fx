@@ -11,6 +11,7 @@ import javafx.beans.InvalidationListener;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.collections.ObservableList;
+import javafx.scene.Scene;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.Pane;
 import javafx.scene.shape.Circle;
@@ -20,6 +21,7 @@ import javafx.scene.shape.Path;
 import javafx.scene.shape.PathElement;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.StrokeLineCap;
+import javafx.stage.Window;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.animation.M3MotionSpec;
@@ -27,6 +29,7 @@ import org.glavo.m3fx.controls.M3ProgressBar;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 
 /// The default skin for [M3ProgressBar].
 @NotNullByDefault
@@ -61,6 +64,24 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     /// The stop indicator rendered at the end of an expressive progress bar track.
     private final Circle stop = new Circle();
 
+    /// The resolved progress bar width from the latest layout.
+    private double resolvedWidth;
+
+    /// The resolved progress bar visual height from the latest layout.
+    private double resolvedHeight;
+
+    /// The resolved track thickness from the latest layout.
+    private double resolvedThickness;
+
+    /// The resolved track corner radius from the latest layout.
+    private double resolvedRadius;
+
+    /// The resolved expressive wave amplitude from the latest layout.
+    private double resolvedAmplitude;
+
+    /// Whether the progress bar has received valid layout geometry.
+    private boolean geometryReady;
+
     /// The progress value currently displayed by determinate progress.
     private final DoubleProperty displayedProgress = new SimpleDoubleProperty(this, "displayedProgress");
 
@@ -74,9 +95,9 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     /// The indeterminate animation timeline.
     private final Timeline indeterminateAnimation = new Timeline();
 
-    /// Requests layout after animation ticks.
+    /// Updates internal progress geometry after animation ticks without invalidating parent layout.
     private final InvalidationListener animationInvalidation =
-            observable -> getSkinnable().requestLayout();
+            observable -> updateAnimatedVisuals();
 
     /// Updates animations when the public progress value changes.
     private final InvalidationListener progressInvalidation = observable -> updateProgressAnimation(true);
@@ -155,12 +176,27 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         double trackY = y + (height - visualHeight) / 2.0;
         double radius = Math.min(progressBar.getTrackShape(), thickness / 2.0);
 
+        resolvedWidth = width;
+        resolvedHeight = visualHeight;
+        resolvedThickness = thickness;
+        resolvedRadius = radius;
+        resolvedAmplitude = amplitude;
+        geometryReady = true;
+
         container.resizeRelocate(x, trackY, width, visualHeight);
         clip.setWidth(width);
         clip.setHeight(visualHeight);
         clip.setArcWidth(radius * 2.0);
         clip.setArcHeight(radius * 2.0);
-        layoutBar(width, visualHeight, thickness, radius, amplitude);
+        updateAnimatedVisuals();
+    }
+
+    /// Updates the animated progress visuals using geometry resolved by the latest layout pass.
+    private void updateAnimatedVisuals() {
+        if (!geometryReady) {
+            return;
+        }
+        layoutBar(resolvedWidth, resolvedHeight, resolvedThickness, resolvedRadius, resolvedAmplitude);
     }
 
     /// Lays out the determinate or indeterminate bar region.
@@ -172,21 +208,32 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         }
 
         waveBar.setVisible(false);
-        stop.setVisible(false);
-        secondaryTrack.setVisible(false);
-        track.setVisible(true);
-        layoutRectangle(track, 0.0, 0.0, width, thickness, radius);
+        double centerY = height / 2.0;
+        double effectiveGap = Math.max(0.0, getSkinnable().getTrackGap()) + Math.max(0.0, thickness) / 2.0;
         if (progress == M3ProgressBar.INDETERMINATE_PROGRESS) {
+            stop.setVisible(false);
             double segmentWidth = Math.max(MIN_INDETERMINATE_SEGMENT_WIDTH, width * 0.32);
             double segmentX = indeterminateSegmentX(width, segmentWidth);
+            double segmentEnd = segmentX + segmentWidth;
+            layoutTrackSegment(track, 0.0, Math.min(width, segmentX - effectiveGap),
+                    centerY, thickness, radius);
+            layoutTrackSegment(secondaryTrack, Math.max(0.0, segmentEnd + effectiveGap),
+                    width - Math.max(0.0, segmentEnd + effectiveGap), centerY, thickness, radius);
             bar.setVisible(true);
-            layoutRectangle(bar, segmentX, 0.0, segmentWidth, thickness, radius);
+            layoutRectangle(bar, segmentX, centerY - thickness / 2.0, segmentWidth, thickness, radius);
             return;
         }
 
+        secondaryTrack.setVisible(false);
         double progressWidth = width * displayedProgress.get();
         bar.setVisible(progressWidth > 0.0);
-        layoutRectangle(bar, 0.0, 0.0, progressWidth, thickness, Math.min(radius, progressWidth / 2.0));
+        layoutRectangle(bar, 0.0, centerY - thickness / 2.0, progressWidth, thickness,
+                Math.min(radius, progressWidth / 2.0));
+        double stopDiameter = Math.min(thickness, getSkinnable().getStopSize());
+        double remaining = width - progressWidth;
+        double visibleStopDiameter = Math.max(0.0, Math.min(stopDiameter, remaining - effectiveGap));
+        layoutDeterminateTrackAndStop(width, centerY, thickness, radius, effectiveGap, progressWidth,
+                visibleStopDiameter);
     }
 
     /// Lays out the expressive wavy active path, separated track, and stop indicator.
@@ -356,13 +403,28 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         double progress = getSkinnable().getProgress();
         if (progress == M3ProgressBar.INDETERMINATE_PROGRESS) {
             determinateAnimation.stop();
-            startIndeterminateAnimation();
-            getSkinnable().requestLayout();
+            if (shouldPauseActivityAnimations()) {
+                indeterminateAnimation.stop();
+                indeterminatePosition.set(INDETERMINATE_START_POSITION);
+            } else {
+                startIndeterminateAnimation();
+            }
+            updateAnimatedVisuals();
         } else {
             indeterminateAnimation.stop();
             indeterminatePosition.set(INDETERMINATE_START_POSITION);
-            animateDisplayedProgress(clamp(progress), animateDeterminateProgress);
+            animateDisplayedProgress(
+                    clamp(progress),
+                    animateDeterminateProgress && !shouldPauseActivityAnimations()
+            );
         }
+    }
+
+    /// Returns whether pulse-driven progress animations should pause for the current window lifecycle state.
+    private boolean shouldPauseActivityAnimations() {
+        @Nullable Scene scene = getSkinnable().getScene();
+        @Nullable Window window = scene == null ? null : scene.getWindow();
+        return window == null || !window.isShowing();
     }
 
     /// Starts the indeterminate linear segment loop.

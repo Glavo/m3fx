@@ -3,13 +3,14 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.beans.InvalidationListener;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.ReadOnlyProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -40,9 +41,7 @@ import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 /// A Material Design 3 toggle icon button group.
@@ -112,11 +111,24 @@ public class M3IconToggleButtonGroup extends Control {
         }
     };
 
-    /// The selected-state listeners installed on group buttons.
-    private final Map<M3IconToggleButton, ChangeListener<Boolean>> selectedListeners = new HashMap<>();
+    /// Reusable storage for computing selected buttons without allocating on every refresh.
+    private final List<M3IconToggleButton> selectedButtonsScratch = new ArrayList<>();
 
-    /// The reachability listeners installed on group buttons.
-    private final Map<M3IconToggleButton, ChangeListener<Boolean>> reachabilityListeners = new HashMap<>();
+    /// Handles selected-state invalidation for every installed button.
+    private final InvalidationListener selectedInvalidation = observable -> {
+        if (observable instanceof ReadOnlyProperty<?> property
+                && property.getBean() instanceof M3IconToggleButton button) {
+            handleButtonSelectedChanged(button, button.isSelected());
+        }
+    };
+
+    /// Handles reachability invalidation for every installed button.
+    private final InvalidationListener reachabilityInvalidation = observable -> {
+        if (observable instanceof ReadOnlyProperty<?> property
+                && property.getBean() instanceof M3IconToggleButton button) {
+            handleButtonReachabilityChanged(button);
+        }
+    };
 
     /// Updates button listeners when children change.
     private final ListChangeListener<Node> childrenListener = change -> {
@@ -516,28 +528,16 @@ public class M3IconToggleButtonGroup extends Control {
 
     /// Installs a selected-state listener on a button.
     private void installButton(M3IconToggleButton button) {
-        ChangeListener<Boolean> listener = (observable, oldValue, newValue) ->
-                handleButtonSelectedChanged(button, newValue);
-        selectedListeners.put(button, listener);
-        button.selectedProperty().addListener(listener);
-        ChangeListener<Boolean> reachabilityListener = (observable, oldValue, newValue) ->
-                handleButtonReachabilityChanged(button);
-        reachabilityListeners.put(button, reachabilityListener);
-        button.disabledProperty().addListener(reachabilityListener);
-        button.visibleProperty().addListener(reachabilityListener);
+        button.selectedProperty().addListener(selectedInvalidation);
+        button.disabledProperty().addListener(reachabilityInvalidation);
+        button.visibleProperty().addListener(reachabilityInvalidation);
     }
 
     /// Removes the selected-state listener from a button.
     private void uninstallButton(M3IconToggleButton button) {
-        ChangeListener<Boolean> listener = selectedListeners.remove(button);
-        if (listener != null) {
-            button.selectedProperty().removeListener(listener);
-        }
-        ChangeListener<Boolean> reachabilityListener = reachabilityListeners.remove(button);
-        if (reachabilityListener != null) {
-            button.disabledProperty().removeListener(reachabilityListener);
-            button.visibleProperty().removeListener(reachabilityListener);
-        }
+        button.selectedProperty().removeListener(selectedInvalidation);
+        button.disabledProperty().removeListener(reachabilityInvalidation);
+        button.visibleProperty().removeListener(reachabilityInvalidation);
     }
 
     /// Keeps selected buttons consistent with the current group policy.
@@ -638,19 +638,22 @@ public class M3IconToggleButtonGroup extends Control {
 
     /// Refreshes selected button state from current child states.
     private void refreshSelectedButtons() {
-        List<M3IconToggleButton> previousSelection = List.copyOf(selectedButtons);
-        selectedButtons.clear();
+        selectedButtonsScratch.clear();
         for (Node child : getItems()) {
             if (child instanceof M3IconToggleButton button && button.isSelected()) {
                 if (isSelectableButton(button)) {
-                    selectedButtons.add(button);
+                    selectedButtonsScratch.add(button);
                 } else {
                     setButtonSelectedWithoutRefresh(button, false);
                 }
             }
         }
+        boolean selectionChanged = !selectedButtons.equals(selectedButtonsScratch);
+        if (selectionChanged) {
+            selectedButtons.setAll(selectedButtonsScratch);
+        }
         selectedButton.set(selectedButtons.isEmpty() ? null : selectedButtons.get(0));
-        if (!selectedButtons.equals(previousSelection)) {
+        if (selectionChanged) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
             M3Accessible.notifyFocusNodeChanged(this);
             focusNotifier.refresh();

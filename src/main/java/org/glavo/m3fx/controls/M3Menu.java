@@ -4,13 +4,14 @@
 package org.glavo.m3fx.controls;
 
 import javafx.animation.PauseTransition;
+import javafx.beans.InvalidationListener;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.ReadOnlyProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -42,10 +43,9 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /// A Material Design 3 menu surface.
 ///
@@ -119,17 +119,28 @@ public class M3Menu extends Control {
     private final ReadOnlyObjectWrapper<@Nullable M3MenuItem> selectedItem =
             new ReadOnlyObjectWrapper<>(this, "selectedItem");
 
-    /// The selected-state listeners installed on menu items.
-    private final Map<M3MenuItem, ChangeListener<Boolean>> selectedListeners = new HashMap<>();
+    /// Reusable storage for computing selected items without allocating on every refresh.
+    private final List<M3MenuItem> selectedItemsScratch = new ArrayList<>();
 
-    /// The reachability listeners installed on menu items.
-    private final Map<M3MenuItem, ChangeListener<Boolean>> reachabilityListeners = new HashMap<>();
+    /// Handles actions from every installed menu item.
+    private final EventHandler<ActionEvent> itemActionHandler = this::handleItemAction;
 
-    /// The action listeners installed on menu items.
-    private final Map<M3MenuItem, EventHandler<ActionEvent>> actionListeners = new HashMap<>();
+    /// Handles accessible focus changes from every installed submenu item.
+    private final Runnable subMenuFocusListener = this::notifyFocusNodeChanged;
 
-    /// The focus listeners installed on submenu items.
-    private final Map<M3SubMenuItem, Runnable> subMenuFocusListeners = new HashMap<>();
+    /// Handles selected-state invalidation for every installed menu item.
+    private final InvalidationListener selectedInvalidation = observable -> {
+        if (observable instanceof ReadOnlyProperty<?> property && property.getBean() instanceof M3MenuItem item) {
+            handleItemSelectedChanged(item, item.isSelected());
+        }
+    };
+
+    /// Handles reachability invalidation for every installed menu item.
+    private final InvalidationListener reachabilityInvalidation = observable -> {
+        if (observable instanceof ReadOnlyProperty<?> property && property.getBean() instanceof M3MenuItem item) {
+            handleItemReachabilityChanged(item);
+        }
+    };
 
     /// The current printable-key prefix used for menu type-ahead focus navigation.
     private final StringBuilder typeAheadBuffer = new StringBuilder();
@@ -146,25 +157,27 @@ public class M3Menu extends Control {
             new M3AccessibleFocusNotifier(this, this::focusedAccessibleNode, this::notifyFocusNodeChanged);
 
     /// Notifies popup owners when this menu's reported focus node changes.
-    private final List<Runnable> focusNodeListeners = new ArrayList<>();
+    private final CopyOnWriteArrayList<Runnable> focusNodeListeners = new CopyOnWriteArrayList<>();
 
     /// Updates item listeners and selection when children change.
     private final ListChangeListener<Node> childrenListener = change -> {
         while (change.next()) {
             for (Node child : change.getRemoved()) {
-                clearChildColorStylePseudoClass(child);
                 if (child instanceof M3MenuItem item) {
                     if (item instanceof M3SubMenuItem subMenuItem) {
                         subMenuItem.hideSubMenu();
                     }
                     uninstallItem(item);
                     item.setSelected(false);
+                } else {
+                    clearChildColorStylePseudoClass(child);
                 }
             }
             for (Node child : change.getAddedSubList()) {
-                updateChildColorStylePseudoClass(child);
                 if (child instanceof M3MenuItem item) {
                     installItem(item);
+                } else {
+                    updateChildColorStylePseudoClass(child);
                 }
             }
         }
@@ -240,13 +253,6 @@ public class M3Menu extends Control {
         if (!focusNodeListeners.contains(listener)) {
             focusNodeListeners.add(listener);
         }
-    }
-
-    /// Removes an accessible focus-node listener.
-    ///
-    /// @param listener the listener to remove
-    final void removeAccessibleFocusNodeListener(Runnable listener) {
-        focusNodeListeners.remove(Objects.requireNonNull(listener, "listener"));
     }
 
     /// Focuses the first enabled visible menu item when one exists.
@@ -515,7 +521,7 @@ public class M3Menu extends Control {
         M3Animation.updatePauseDuration(
                 typeAheadResetDelay,
                 M3Animation.motionBehavior(this).typeAheadResetDelay(),
-                typeAheadBuffer.length() > 0
+                !typeAheadBuffer.isEmpty()
         );
     }
 
@@ -717,7 +723,7 @@ public class M3Menu extends Control {
         }
         if (parameters[0] instanceof Number) {
             @Nullable Node item = M3Accessible.itemAt(getItems(), parameters);
-            if (!canRevealMenuActionItem(item)) {
+            if (isMenuActionItemUnreachable(item)) {
                 return false;
             }
             if (parameters.length == 1) {
@@ -872,7 +878,7 @@ public class M3Menu extends Control {
 
     /// Returns whether one menu item owns an unreachable requested target.
     private static boolean containsUnrevealableMenuActionTarget(Node item, @Nullable Object parameter) {
-        if (!canRevealMenuActionItem(item) && containsMenuActionTarget(item, parameter)) {
+        if (isMenuActionItemUnreachable(item) && containsMenuActionTarget(item, parameter)) {
             return true;
         }
         if (parameter instanceof Node target && M3Accessible.containsNode(item, target)) {
@@ -919,9 +925,9 @@ public class M3Menu extends Control {
             }
             return false;
         }
-        return M3Accessible.containsAccessibleActionTarget(item, parameter)
-                || item instanceof M3SubMenuItem subMenuItem
-                && containsMenuActionTarget(subMenuItem.getItems(), parameter);
+        return (parameter != null && M3Accessible.containsAccessibleActionTarget(item, parameter))
+                || (item instanceof M3SubMenuItem subMenuItem
+                && containsMenuActionTarget(subMenuItem.getItems(), parameter));
     }
 
     /// Returns whether a menu tree contains an accessibility target.
@@ -937,14 +943,14 @@ public class M3Menu extends Control {
         return false;
     }
 
-    /// Returns whether a menu item can become reachable when its owner popup is shown.
-    private static boolean canRevealMenuActionItem(@Nullable Node item) {
-        return item != null && item.isVisible() && !item.isDisabled();
+    /// Returns whether a menu item cannot become reachable when its owner popup is shown.
+    private static boolean isMenuActionItemUnreachable(@Nullable Node item) {
+        return item == null || !item.isVisible() || item.isDisabled();
     }
 
     /// Returns whether a physical descendant target can become reachable after the menu item is shown.
     private static boolean canRevealMenuActionNode(Node item, Node target) {
-        if (!canRevealMenuActionItem(item) || !target.isVisible() || target.isDisabled()) {
+        if (isMenuActionItemUnreachable(item) || !target.isVisible() || target.isDisabled()) {
             return false;
         }
         if (item == target) {
@@ -966,22 +972,12 @@ public class M3Menu extends Control {
         M3Accessible.setIndexOwner(item, getItems());
         if (item instanceof M3SubMenuItem subMenuItem) {
             subMenuItem.setOwnerMenu(this);
-            Runnable focusListener = this::notifyFocusNodeChanged;
-            subMenuFocusListeners.put(subMenuItem, focusListener);
-            subMenuItem.addAccessibleFocusNodeListener(focusListener);
+            subMenuItem.addAccessibleFocusNodeListener(subMenuFocusListener);
         }
-        EventHandler<ActionEvent> actionHandler = event -> handleItemAction(item, event);
-        actionListeners.put(item, actionHandler);
-        item.addEventHandler(ActionEvent.ACTION, actionHandler);
-        ChangeListener<Boolean> listener = (observable, oldValue, newValue) ->
-                handleItemSelectedChanged(item, newValue);
-        selectedListeners.put(item, listener);
-        item.selectedProperty().addListener(listener);
-        ChangeListener<Boolean> reachabilityListener = (observable, oldValue, newValue) ->
-                handleItemReachabilityChanged(item);
-        reachabilityListeners.put(item, reachabilityListener);
-        item.disabledProperty().addListener(reachabilityListener);
-        item.visibleProperty().addListener(reachabilityListener);
+        item.addEventHandler(ActionEvent.ACTION, itemActionHandler);
+        item.selectedProperty().addListener(selectedInvalidation);
+        item.disabledProperty().addListener(reachabilityInvalidation);
+        item.visibleProperty().addListener(reachabilityInvalidation);
     }
 
     /// Removes action and selected-state listeners from a menu item.
@@ -989,30 +985,19 @@ public class M3Menu extends Control {
         clearChildColorStylePseudoClass(item);
         M3Accessible.clearIndexOwner(item);
         if (item instanceof M3SubMenuItem subMenuItem) {
-            Runnable focusListener = subMenuFocusListeners.remove(subMenuItem);
-            if (focusListener != null) {
-                subMenuItem.removeAccessibleFocusNodeListener(focusListener);
-            }
+            subMenuItem.removeAccessibleFocusNodeListener(subMenuFocusListener);
             subMenuItem.setOwnerMenu(null);
         }
-        EventHandler<ActionEvent> actionHandler = actionListeners.remove(item);
-        if (actionHandler != null) {
-            item.removeEventHandler(ActionEvent.ACTION, actionHandler);
-        }
-        ChangeListener<Boolean> listener = selectedListeners.remove(item);
-        if (listener != null) {
-            item.selectedProperty().removeListener(listener);
-        }
-        ChangeListener<Boolean> reachabilityListener = reachabilityListeners.remove(item);
-        if (reachabilityListener != null) {
-            item.disabledProperty().removeListener(reachabilityListener);
-            item.visibleProperty().removeListener(reachabilityListener);
-        }
+        item.removeEventHandler(ActionEvent.ACTION, itemActionHandler);
+        item.selectedProperty().removeListener(selectedInvalidation);
+        item.disabledProperty().removeListener(reachabilityInvalidation);
+        item.visibleProperty().removeListener(reachabilityInvalidation);
     }
 
     /// Applies menu selection policy to an item action.
-    private void handleItemAction(M3MenuItem directItem, ActionEvent event) {
+    private void handleItemAction(ActionEvent event) {
         @Nullable M3MenuItem sourceItem = event.getSource() instanceof M3MenuItem item ? item : null;
+        @Nullable M3MenuItem directItem = directActionItem(sourceItem);
         boolean shouldForwardDetachedAction = shouldForwardDetachedAction(sourceItem, directItem);
         if (sourceItem == null
                 || !getItems().contains(sourceItem)
@@ -1038,6 +1023,19 @@ public class M3Menu extends Control {
         if (shouldForwardDetachedAction) {
             fireEvent(new ActionEvent(event.getSource(), this));
         }
+    }
+
+    /// Returns the direct child item that owns an action source in this menu tree.
+    private @Nullable M3MenuItem directActionItem(@Nullable M3MenuItem sourceItem) {
+        if (sourceItem == null) {
+            return null;
+        }
+        for (Node child : getItems()) {
+            if (child instanceof M3MenuItem item && containsMenuActionTarget(item, sourceItem)) {
+                return item;
+            }
+        }
+        return null;
     }
 
     /// Keeps externally changed item selected states consistent with the current menu policy.
@@ -1137,19 +1135,22 @@ public class M3Menu extends Control {
 
     /// Refreshes selected item state from current child item states.
     private void refreshSelectedItems() {
-        List<M3MenuItem> previousSelection = List.copyOf(selectedItems);
-        selectedItems.clear();
+        selectedItemsScratch.clear();
         for (Node child : getItems()) {
             if (child instanceof M3MenuItem item && item.isSelected()) {
                 if (isReachableSelectableMenuItem(item)) {
-                    selectedItems.add(item);
+                    selectedItemsScratch.add(item);
                 } else {
                     setItemSelectedWithoutRefresh(item, false);
                 }
             }
         }
+        boolean selectionChanged = !selectedItems.equals(selectedItemsScratch);
+        if (selectionChanged) {
+            selectedItems.setAll(selectedItemsScratch);
+        }
         selectedItem.set(selectedItems.isEmpty() ? null : selectedItems.get(0));
-        if (!selectedItems.equals(previousSelection)) {
+        if (selectionChanged) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
         }
     }
@@ -1250,9 +1251,7 @@ public class M3Menu extends Control {
     private void notifyFocusNodeChanged() {
         M3Accessible.notifyFocusNodeChanged(this);
         focusNotifier.refresh();
-        for (Runnable listener : List.copyOf(focusNodeListeners)) {
-            listener.run();
-        }
+        focusNodeListeners.forEach(Runnable::run);
     }
 
     /// Returns the focus node reported by an open submenu.

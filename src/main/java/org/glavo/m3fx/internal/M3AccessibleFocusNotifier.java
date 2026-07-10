@@ -10,6 +10,7 @@ import javafx.scene.Scene;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Supplier;
 
@@ -22,6 +23,12 @@ import java.util.function.Supplier;
 /// containers.
 @NotNullByDefault
 public final class M3AccessibleFocusNotifier {
+    /// Opaque scene property key for the shared focus-owner dispatcher.
+    private static final Object SCENE_DISPATCHER_KEY = new Object();
+
+    /// Empty notifier array shared by scene dispatchers with no observers.
+    private static final M3AccessibleFocusNotifier[] EMPTY_NOTIFIERS = new M3AccessibleFocusNotifier[0];
+
     /// The node whose scene focus owner should be observed.
     private final Node sceneOwner;
 
@@ -35,12 +42,8 @@ public final class M3AccessibleFocusNotifier {
     private final ChangeListener<@Nullable Scene> sceneListener =
             (observable, oldScene, newScene) -> updateScene(newScene);
 
-    /// Observes scene focus owner changes.
-    private final ChangeListener<@Nullable Node> focusOwnerListener =
-            (observable, oldFocusOwner, newFocusOwner) -> notifyIfFocusNodeChanged();
-
-    /// The scene that currently has `focusOwnerListener` installed.
-    private @Nullable Scene scene;
+    /// The scene dispatcher currently responsible for this notifier.
+    private @Nullable SceneFocusDispatcher sceneDispatcher;
 
     /// The previously reported current focus node.
     private @Nullable Node lastFocusNode;
@@ -126,18 +129,33 @@ public final class M3AccessibleFocusNotifier {
 
     /// Reattaches the focus owner listener to a new scene.
     private void updateScene(@Nullable Scene newScene) {
-        if (scene == newScene) {
+        SceneFocusDispatcher currentDispatcher = sceneDispatcher;
+        if (currentDispatcher != null && currentDispatcher.scene == newScene) {
             refresh();
             return;
         }
-        if (scene != null) {
-            scene.focusOwnerProperty().removeListener(focusOwnerListener);
-        }
-        scene = newScene;
-        if (scene != null) {
-            scene.focusOwnerProperty().addListener(focusOwnerListener);
+
+        unregisterSceneDispatcher();
+        if (newScene != null) {
+            SceneFocusDispatcher nextDispatcher = sceneDispatcher(newScene);
+            nextDispatcher.add(this);
+            sceneDispatcher = nextDispatcher;
         }
         refresh();
+    }
+
+    /// Removes this notifier from its current dispatcher and tears down an empty dispatcher.
+    private void unregisterSceneDispatcher() {
+        SceneFocusDispatcher currentDispatcher = sceneDispatcher;
+        if (currentDispatcher == null) {
+            return;
+        }
+
+        sceneDispatcher = null;
+        if (currentDispatcher.remove(this)
+                && currentDispatcher.scene.getProperties().get(SCENE_DISPATCHER_KEY) == currentDispatcher) {
+            currentDispatcher.scene.getProperties().remove(SCENE_DISPATCHER_KEY);
+        }
     }
 
     /// Notifies the owner when the focused accessibility child changes.
@@ -148,5 +166,107 @@ public final class M3AccessibleFocusNotifier {
         }
         lastFocusNode = focusNode;
         focusNodeChangedNotifier.run();
+    }
+
+    /// Returns whether a focus-owner transition can change this notifier's reported focus node.
+    private boolean observesFocusTransition(@Nullable Node oldFocusOwner, @Nullable Node newFocusOwner) {
+        return containsPhysicalNode(sceneOwner, oldFocusOwner) || containsPhysicalNode(sceneOwner, newFocusOwner);
+    }
+
+    /// Returns whether one node is the supplied root or a physical descendant of it.
+    private static boolean containsPhysicalNode(Node root, @Nullable Node node) {
+        @Nullable Node current = node;
+        while (current != null) {
+            if (current == root) {
+                return true;
+            }
+            current = current.getParent();
+        }
+        return false;
+    }
+
+    /// Returns the dispatcher owned by a scene, creating it when needed.
+    ///
+    /// @param scene the scene that owns the dispatcher
+    /// @return the existing or created dispatcher
+    private static SceneFocusDispatcher sceneDispatcher(Scene scene) {
+        Object value = scene.getProperties().get(SCENE_DISPATCHER_KEY);
+        if (value instanceof SceneFocusDispatcher dispatcher) {
+            return dispatcher;
+        }
+
+        SceneFocusDispatcher dispatcher = new SceneFocusDispatcher(scene);
+        scene.getProperties().put(SCENE_DISPATCHER_KEY, dispatcher);
+        return dispatcher;
+    }
+
+    /// Dispatches scene focus-owner transitions without allocating on the focus hot path.
+    @NotNullByDefault
+    private static final class SceneFocusDispatcher {
+        /// The scene that owns this dispatcher.
+        private final Scene scene;
+
+        /// The immutable-by-replacement notifier array used by focus dispatch.
+        private M3AccessibleFocusNotifier[] notifiers = EMPTY_NOTIFIERS;
+
+        /// Observes the scene's focus owner once for all registered notifiers.
+        private final ChangeListener<@Nullable Node> focusOwnerListener =
+                (observable, oldFocusOwner, newFocusOwner) -> dispatch(oldFocusOwner, newFocusOwner);
+
+        /// Creates a dispatcher owned by one scene.
+        private SceneFocusDispatcher(Scene scene) {
+            this.scene = scene;
+        }
+
+        /// Adds a notifier and installs the scene listener when the first notifier arrives.
+        private void add(M3AccessibleFocusNotifier notifier) {
+            for (M3AccessibleFocusNotifier current : notifiers) {
+                if (current == notifier) {
+                    return;
+                }
+            }
+
+            boolean wasEmpty = notifiers.length == 0;
+            M3AccessibleFocusNotifier[] expanded = Arrays.copyOf(notifiers, notifiers.length + 1);
+            expanded[notifiers.length] = notifier;
+            notifiers = expanded;
+            if (wasEmpty) {
+                scene.focusOwnerProperty().addListener(focusOwnerListener);
+            }
+        }
+
+        /// Removes a notifier and returns whether the dispatcher became empty.
+        private boolean remove(M3AccessibleFocusNotifier notifier) {
+            int index = -1;
+            for (int i = 0; i < notifiers.length; i++) {
+                if (notifiers[i] == notifier) {
+                    index = i;
+                    break;
+                }
+            }
+            if (index < 0) {
+                return false;
+            }
+
+            M3AccessibleFocusNotifier[] reduced = new M3AccessibleFocusNotifier[notifiers.length - 1];
+            System.arraycopy(notifiers, 0, reduced, 0, index);
+            System.arraycopy(notifiers, index + 1, reduced, index, reduced.length - index);
+            notifiers = reduced;
+            if (reduced.length == 0) {
+                scene.focusOwnerProperty().removeListener(focusOwnerListener);
+                return true;
+            }
+            return false;
+        }
+
+        /// Dispatches one focus transition through a stable array snapshot.
+        private void dispatch(@Nullable Node oldFocusOwner, @Nullable Node newFocusOwner) {
+            M3AccessibleFocusNotifier[] snapshot = notifiers;
+            for (M3AccessibleFocusNotifier notifier : snapshot) {
+                if (notifier.observesFocusTransition(oldFocusOwner, newFocusOwner)) {
+                    notifier.notifyIfFocusNodeChanged();
+                }
+            }
+        }
     }
 }

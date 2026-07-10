@@ -7,11 +7,11 @@ import javafx.animation.Animation;
 import javafx.animation.Interpolator;
 import javafx.animation.Transition;
 import javafx.beans.InvalidationListener;
-import javafx.beans.value.ChangeListener;
 import javafx.scene.Scene;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.Region;
 import javafx.scene.shape.Path;
+import javafx.stage.Window;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.animation.M3MotionBehavior;
@@ -52,6 +52,18 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     /// The reusable shape morph scratch storage.
     private final M3ShapeMorph.Scratch shapeScratch = new M3ShapeMorph.Scratch();
 
+    /// The resolved indicator center x-coordinate from the latest layout.
+    private double indicatorCenterX;
+
+    /// The resolved indicator center y-coordinate from the latest layout.
+    private double indicatorCenterY;
+
+    /// The resolved active indicator size from the latest layout.
+    private double resolvedIndicatorSize;
+
+    /// Whether the indicator has received valid layout geometry.
+    private boolean indicatorGeometryReady;
+
     /// The animated phase used by indeterminate loading.
     private double indeterminatePhase;
 
@@ -74,20 +86,6 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     private final M3MotionSettingsObserver motionSettingsObserver =
             new M3MotionSettingsObserver(getSkinnable(), this::updateAnimationState);
 
-    /// Updates indeterminate animation state when the scene enters or leaves a real window.
-    private final InvalidationListener windowInvalidation = observable -> updateAnimationState();
-
-    /// Updates indeterminate animation state when the control enters or leaves a scene.
-    private final ChangeListener<@Nullable Scene> sceneInvalidation = (observable, oldScene, newScene) -> {
-        if (oldScene != null) {
-            oldScene.windowProperty().removeListener(windowInvalidation);
-        }
-        if (newScene != null) {
-            newScene.windowProperty().addListener(windowInvalidation);
-        }
-        updateAnimationState();
-    };
-
     /// Requests layout after size-related token changes.
     private final InvalidationListener layoutInvalidation = observable -> getSkinnable().requestLayout();
 
@@ -107,11 +105,6 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         control.variantProperty().addListener(layoutInvalidation);
         control.containerSizeProperty().addListener(layoutInvalidation);
         control.indicatorSizeProperty().addListener(layoutInvalidation);
-        control.sceneProperty().addListener(sceneInvalidation);
-        @Nullable Scene scene = control.getScene();
-        if (scene != null) {
-            scene.windowProperty().addListener(windowInvalidation);
-        }
         updateAnimationState();
     }
 
@@ -121,11 +114,6 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         M3LoadingIndicator loadingIndicator = getSkinnable();
         indeterminateAnimation.stop();
         globalRotationAnimation.stop();
-        loadingIndicator.sceneProperty().removeListener(sceneInvalidation);
-        @Nullable Scene scene = loadingIndicator.getScene();
-        if (scene != null) {
-            scene.windowProperty().removeListener(windowInvalidation);
-        }
         motionSettingsObserver.dispose();
         loadingIndicator.variantProperty().removeListener(layoutInvalidation);
         loadingIndicator.containerSizeProperty().removeListener(layoutInvalidation);
@@ -140,14 +128,17 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         double indicatorSize = Math.min(loadingIndicator.getIndicatorSize(), Math.min(width, height));
         double centerX = x + width / 2.0;
         double centerY = y + height / 2.0;
-        double phase = indeterminatePhase;
+        indicatorCenterX = centerX;
+        indicatorCenterY = centerY;
+        resolvedIndicatorSize = indicatorSize;
+        indicatorGeometryReady = true;
 
         boolean contained = loadingIndicator.getVariant() == M3LoadingIndicatorVariant.CONTAINED;
         container.setVisible(contained);
         if (contained) {
             container.resizeRelocate(x, y, width, height);
         }
-        rebuildIndicatorPath(centerX, centerY, indicatorSize, phase);
+        updateIndicatorPath();
         indicator.setLayoutX(0.0);
         indicator.setLayoutY(0.0);
         indicator.setOpacity(loadingIndicator.isDisabled() ? 0.38 : 1.0);
@@ -159,7 +150,7 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
             indeterminateAnimation.stop();
             globalRotationAnimation.stop();
             resetIndeterminateAnimationState();
-            getSkinnable().requestLayout();
+            updateIndicatorPath();
         } else if (M3Animation.shouldReduceMotion(getSkinnable())) {
             indeterminateAnimation.stop();
             resetIndeterminateAnimationState();
@@ -228,16 +219,20 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     }
 
     /// Rebuilds the active shape path for the current animation state.
-    private void rebuildIndicatorPath(
-            double centerX,
-            double centerY,
-            double indicatorSize,
-            double phase
-    ) {
+    private void updateIndicatorPath() {
+        if (!indicatorGeometryReady) {
+            return;
+        }
+
+        double indicatorSize = resolvedIndicatorSize;
         if (indicatorSize <= 0.0) {
             indicator.getElements().clear();
             return;
         }
+
+        double centerX = indicatorCenterX;
+        double centerY = indicatorCenterY;
+        double phase = indeterminatePhase;
 
         if (M3Animation.shouldReduceMotion(getSkinnable())) {
             INDETERMINATE_SEQUENCE.morphAt(0).writeTo(
@@ -284,7 +279,8 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     /// Returns whether activity animations should pause for the current scene attachment state.
     private boolean shouldPauseActivityAnimations() {
         @Nullable Scene scene = getSkinnable().getScene();
-        return scene == null || scene.getWindow() == null;
+        @Nullable Window window = scene == null ? null : scene.getWindow();
+        return window == null || !window.isShowing();
     }
 
     /// Returns the active morph duration used before the shape settles for the rest of the interval.
@@ -348,7 +344,7 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
                     : clamp(activeDuration.toMillis() / intervalMillis);
         }
 
-        /// Updates the primitive morph phase and requests layout only when the visible shape changes.
+        /// Updates the primitive morph phase and rewrites the path only when the visible shape changes.
         @Override
         protected void interpolate(double fraction) {
             double activeProgress = activeFraction <= 0.0
@@ -360,7 +356,7 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
             double newPhase = startPhase + easedProgress;
             if (Double.compare(indeterminatePhase, newPhase) != 0) {
                 indeterminatePhase = newPhase;
-                getSkinnable().requestLayout();
+                updateIndicatorPath();
             }
         }
     }
@@ -382,12 +378,12 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
             setCycleDuration(duration);
         }
 
-        /// Updates the primitive global rotation and requests the next path layout.
+        /// Updates the primitive global rotation and rewrites the path directly.
         @Override
         protected void interpolate(double fraction) {
             if (Double.compare(globalRotation, fraction) != 0) {
                 globalRotation = fraction;
-                getSkinnable().requestLayout();
+                updateIndicatorPath();
             }
         }
     }

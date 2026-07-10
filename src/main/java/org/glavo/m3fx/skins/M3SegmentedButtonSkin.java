@@ -5,7 +5,6 @@ package org.glavo.m3fx.skins;
 
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
-import javafx.geometry.Insets;
 import javafx.scene.layout.Border;
 import javafx.scene.layout.BorderWidths;
 import javafx.scene.layout.Region;
@@ -16,6 +15,7 @@ import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 
 /// The default skin for [M3SegmentedButton].
 @NotNullByDefault
@@ -31,6 +31,18 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
 
     /// The selected container appearance animation.
     private final M3NodeTransition selectionAnimation = new M3NodeTransition(selectionContainer);
+
+    /// The last top-left radius applied to the selected container.
+    private double selectionTopLeftRadius = Double.NaN;
+
+    /// The last top-right radius applied to the selected container.
+    private double selectionTopRightRadius = Double.NaN;
+
+    /// The last bottom-right radius applied to the selected container.
+    private double selectionBottomRightRadius = Double.NaN;
+
+    /// The last bottom-left radius applied to the selected container.
+    private double selectionBottomLeftRadius = Double.NaN;
 
     /// Settles running selected-container transitions when runtime motion settings change.
     private final M3MotionSettingsObserver motionSettingsObserver =
@@ -91,13 +103,27 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
             height = button.getLayoutBounds().getHeight();
         }
 
-        Insets borderInsets = borderInsets(button);
-        double x = borderInsets.getLeft();
-        double y = borderInsets.getTop();
-        double selectionWidth = Math.max(0.0, width - borderInsets.getLeft() - borderInsets.getRight());
-        double selectionHeight = Math.max(0.0, height - borderInsets.getTop() - borderInsets.getBottom());
-        selectionContainer.resizeRelocate(x, y, selectionWidth, selectionHeight);
-        updateSelectionContainerShape(button, selectionWidth, selectionHeight, borderInsets);
+        @Nullable BorderWidths borderWidths = null;
+        Border border = button.getBorder();
+        if (border != null && !border.getStrokes().isEmpty()) {
+            borderWidths = border.getStrokes().get(0).getWidths();
+        }
+        double top = borderWidths == null ? 0.0 : borderWidths.getTop();
+        double right = borderWidths == null ? 0.0 : borderWidths.getRight();
+        double bottom = borderWidths == null ? 0.0 : borderWidths.getBottom();
+        double left = borderWidths == null ? 0.0 : borderWidths.getLeft();
+        double selectionWidth = Math.max(0.0, width - left - right);
+        double selectionHeight = Math.max(0.0, height - top - bottom);
+        selectionContainer.resizeRelocate(left, top, selectionWidth, selectionHeight);
+        updateSelectionContainerShape(
+                button,
+                selectionWidth,
+                selectionHeight,
+                top,
+                right,
+                bottom,
+                left
+        );
     }
 
     /// Updates the selected container shape for the current segment position.
@@ -105,26 +131,40 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
             M3SegmentedButton button,
             double width,
             double height,
-            Insets borderInsets
+            double topInset,
+            double rightInset,
+            double bottomInset,
+            double leftInset
     ) {
         double topLeft = hasTopLeftCorner(button)
-                ? innerCornerRadius(width, height, button.getContainerShape(), borderInsets.getLeft(), borderInsets.getTop())
+                ? innerCornerRadius(width, height, button.getContainerShape(), leftInset, topInset)
                 : 0.0;
         double topRight = hasTopRightCorner(button)
-                ? innerCornerRadius(width, height, button.getContainerShape(), borderInsets.getRight(), borderInsets.getTop())
+                ? innerCornerRadius(width, height, button.getContainerShape(), rightInset, topInset)
                 : 0.0;
         double bottomRight = hasTopRightCorner(button)
-                ? innerCornerRadius(width, height, button.getContainerShape(), borderInsets.getRight(), borderInsets.getBottom())
+                ? innerCornerRadius(width, height, button.getContainerShape(), rightInset, bottomInset)
                 : 0.0;
         double bottomLeft = hasTopLeftCorner(button)
-                ? innerCornerRadius(width, height, button.getContainerShape(), borderInsets.getLeft(), borderInsets.getBottom())
+                ? innerCornerRadius(width, height, button.getContainerShape(), leftInset, bottomInset)
                 : 0.0;
 
-        selectionContainer.setStyle("-fx-background-radius: "
+        if (Double.compare(selectionTopLeftRadius, topLeft) == 0
+                && Double.compare(selectionTopRightRadius, topRight) == 0
+                && Double.compare(selectionBottomRightRadius, bottomRight) == 0
+                && Double.compare(selectionBottomLeftRadius, bottomLeft) == 0) {
+            return;
+        }
+        selectionTopLeftRadius = topLeft;
+        selectionTopRightRadius = topRight;
+        selectionBottomRightRadius = bottomRight;
+        selectionBottomLeftRadius = bottomLeft;
+        String style = "-fx-background-radius: "
                 + formatPixels(topLeft) + " "
                 + formatPixels(topRight) + " "
                 + formatPixels(bottomRight) + " "
-                + formatPixels(bottomLeft) + ";");
+                + formatPixels(bottomLeft) + ";";
+        selectionContainer.setStyle(style);
         selectionContainer.applyCss();
     }
 
@@ -151,37 +191,26 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
         selectionContainer.setScaleX(selected ? 1.0 : HIDDEN_SELECTION_SCALE);
     }
 
-    /// Returns the first border stroke insets for the skinnable button.
-    private static Insets borderInsets(M3SegmentedButton button) {
-        Border border = button.getBorder();
-        if (border == null || border.getStrokes().isEmpty()) {
-            return Insets.EMPTY;
-        }
-
-        BorderWidths widths = border.getStrokes().get(0).getWidths();
-        return new Insets(widths.getTop(), widths.getRight(), widths.getBottom(), widths.getLeft());
-    }
-
     /// Returns whether the current segment has a rounded top-left corner.
     private static boolean hasTopLeftCorner(M3SegmentedButton button) {
         return button.getStyleClass().contains(M3SegmentedButtonGroup.SINGLE_SEGMENT_STYLE_CLASS)
                 || button.getStyleClass().contains(M3SegmentedButtonGroup.FIRST_SEGMENT_STYLE_CLASS)
-                || !hasKnownSegmentPosition(button);
+                || hasNoSegmentPosition(button);
     }
 
     /// Returns whether the current segment has a rounded top-right corner.
     private static boolean hasTopRightCorner(M3SegmentedButton button) {
         return button.getStyleClass().contains(M3SegmentedButtonGroup.SINGLE_SEGMENT_STYLE_CLASS)
                 || button.getStyleClass().contains(M3SegmentedButtonGroup.LAST_SEGMENT_STYLE_CLASS)
-                || !hasKnownSegmentPosition(button);
+                || hasNoSegmentPosition(button);
     }
 
-    /// Returns whether the current button has one of the segment position classes.
-    private static boolean hasKnownSegmentPosition(M3SegmentedButton button) {
-        return button.getStyleClass().contains(M3SegmentedButtonGroup.SINGLE_SEGMENT_STYLE_CLASS)
-                || button.getStyleClass().contains(M3SegmentedButtonGroup.FIRST_SEGMENT_STYLE_CLASS)
-                || button.getStyleClass().contains(M3SegmentedButtonGroup.MIDDLE_SEGMENT_STYLE_CLASS)
-                || button.getStyleClass().contains(M3SegmentedButtonGroup.LAST_SEGMENT_STYLE_CLASS);
+    /// Returns whether the current button has no segment position class.
+    private static boolean hasNoSegmentPosition(M3SegmentedButton button) {
+        return !button.getStyleClass().contains(M3SegmentedButtonGroup.SINGLE_SEGMENT_STYLE_CLASS)
+                && !button.getStyleClass().contains(M3SegmentedButtonGroup.FIRST_SEGMENT_STYLE_CLASS)
+                && !button.getStyleClass().contains(M3SegmentedButtonGroup.MIDDLE_SEGMENT_STYLE_CLASS)
+                && !button.getStyleClass().contains(M3SegmentedButtonGroup.LAST_SEGMENT_STYLE_CLASS);
     }
 
     /// Resolves a rounded inner corner radius after removing the outline stroke.

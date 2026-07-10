@@ -6,6 +6,7 @@ package org.glavo.m3fx.internal;
 import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
+import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionEasing;
 import org.glavo.m3fx.animation.M3MotionScheme;
@@ -99,21 +100,56 @@ final class M3MotionSettingsObserverTest {
                 assertEquals(2, refreshes.get());
 
                 root.getChildren().clear();
+                assertEquals(3, refreshes.get());
                 M3MotionSettings.setAnimationsEnabled(previousAnimationsEnabled);
 
-                assertEquals(2, refreshes.get());
+                assertEquals(3, refreshes.get());
 
                 root.getChildren().add(owner);
 
-                assertEquals(3, refreshes.get());
+                assertEquals(4, refreshes.get());
 
                 observer.dispose();
                 M3MotionSettings.setAnimationsEnabled(!previousAnimationsEnabled);
 
-                assertEquals(3, refreshes.get());
+                assertEquals(4, refreshes.get());
             } finally {
                 observer.dispose();
             }
         }));
+    }
+
+    /// Verifies that one observer refreshes when its scene enters, leaves, shows, or hides a window.
+    @Test
+    void observesSceneWindowLifecycle() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane owner = new Pane();
+            Scene scene = new Scene(owner);
+            AtomicInteger refreshes = new AtomicInteger();
+            M3MotionSettingsObserver observer = new M3MotionSettingsObserver(owner, refreshes::incrementAndGet);
+            Stage stage = new Stage();
+
+            try {
+                int attachedRefreshes = refreshes.get();
+                stage.setScene(scene);
+                assertTrue(refreshes.get() > attachedRefreshes);
+
+                int windowRefreshes = refreshes.get();
+                stage.show();
+                assertTrue(refreshes.get() > windowRefreshes);
+
+                int shownRefreshes = refreshes.get();
+                stage.hide();
+                assertTrue(refreshes.get() > shownRefreshes);
+
+                observer.dispose();
+                int disposedRefreshes = refreshes.get();
+                stage.show();
+                assertEquals(disposedRefreshes, refreshes.get());
+            } finally {
+                observer.dispose();
+                stage.close();
+            }
+        });
     }
 }

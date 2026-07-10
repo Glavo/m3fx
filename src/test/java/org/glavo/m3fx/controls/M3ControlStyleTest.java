@@ -19464,13 +19464,20 @@ final class M3ControlStyleTest {
 
         Rectangle track = progressBarPrimaryTrack(progressBar);
         Rectangle bar = (Rectangle) lookupShape(progressBar, ".bar");
-        assertEquals(200.0, track.getWidth(), 0.0001);
+        javafx.scene.shape.Circle stop = assertInstanceOf(
+                javafx.scene.shape.Circle.class,
+                lookupShape(progressBar, ".m3-progress-stop")
+        );
+        assertEquals(106.0, track.getX(), 0.0001);
+        assertEquals(84.0, track.getWidth(), 0.0001);
         assertEquals(100.0, bar.getWidth(), 0.0001);
         assertEquals(4.0, track.getArcWidth(), 0.0001);
         assertEquals(4.0, track.getArcHeight(), 0.0001);
         assertEquals(4.0, bar.getArcWidth(), 0.0001);
         assertEquals(4.0, bar.getArcHeight(), 0.0001);
-        assertTrue(bar.getBoundsInParent().getMaxX() <= track.getBoundsInParent().getMaxX() + 0.0001);
+        assertEquals(6.0, track.getX() - bar.getBoundsInParent().getMaxX(), 0.0001);
+        assertEquals(198.0, stop.getCenterX(), 0.0001);
+        assertEquals(2.0, stop.getRadius(), 0.0001);
     }
 
     /// Verifies that linear progress bars mirror their physical fill direction in right-to-left layouts.
@@ -19633,85 +19640,110 @@ final class M3ControlStyleTest {
     /// Verifies that determinate progress bar value changes are animated.
     @Test
     void progressBarSkinAnimatesDeterminateProgressChanges() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable Pane> rootReference = new AtomicReference<>();
         AtomicReference<@Nullable M3ProgressBar> progressBarReference = new AtomicReference<>();
         AtomicReference<@Nullable Rectangle> barReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThreadWhen(
-                () -> progressBarWidthSettled(progressBarReference, barReference, 180.0),
-                () -> {
-                    M3ProgressBar progressBar = new M3ProgressBar(0.1);
-                    Pane root = new Pane(progressBar);
-                    Scene scene = new Scene(root, 240.0, 40.0);
+        try {
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> progressBarWidthSettled(progressBarReference, barReference, 180.0),
+                    () -> {
+                        M3ProgressBar progressBar = new M3ProgressBar(0.1);
+                        progressBar.setManaged(false);
+                        Pane root = new Pane(progressBar);
+                        Scene scene = new Scene(root, 240.0, 40.0);
+                        Stage stage = new Stage();
 
-                    M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                    root.applyCss();
-                    progressBar.resize(200.0, 16.0);
-                    progressBar.layout();
+                        stageReference.set(stage);
+                        rootReference.set(root);
+                        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                        stage.setScene(scene);
+                        stage.show();
+                        root.applyCss();
+                        progressBar.resize(200.0, 16.0);
+                        progressBar.layout();
 
-                    Rectangle bar = (Rectangle) lookupShape(progressBar, ".bar");
-                    assertEquals(20.0, bar.getWidth(), 0.0001);
+                        Rectangle bar = (Rectangle) lookupShape(progressBar, ".bar");
+                        assertEquals(20.0, bar.getWidth(), 0.0001);
 
-                    progressBarReference.set(progressBar);
-                    barReference.set(bar);
-                    progressBar.setProgress(0.9);
-                    progressBar.layout();
+                        progressBarReference.set(progressBar);
+                        barReference.set(bar);
+                        progressBar.setProgress(0.9);
+                        progressBar.layout();
 
-                    assertTrue(bar.getWidth() < 180.0);
-                },
-                () -> {
-                    M3ProgressBar progressBar = Objects.requireNonNull(progressBarReference.get(), "progressBar");
-                    Rectangle bar = Objects.requireNonNull(barReference.get(), "bar");
-                    progressBar.layout();
+                        assertTrue(bar.getWidth() < 180.0);
+                    },
+                    () -> {
+                        M3ProgressBar progressBar =
+                                Objects.requireNonNull(progressBarReference.get(), "progressBar");
+                        Rectangle bar = Objects.requireNonNull(barReference.get(), "bar");
+                        progressBar.layout();
 
-                    assertEquals(180.0, bar.getWidth(), 0.0001);
-                }
-        );
+                        assertEquals(180.0, bar.getWidth(), 0.0001);
+                    }
+            );
+        } finally {
+            closeMotionTestScene(stageReference, rootReference);
+        }
     }
 
     /// Verifies that indeterminate progress bar segments move over time.
     @Test
     void progressBarSkinAnimatesIndeterminateProgress() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable Pane> rootReference = new AtomicReference<>();
         AtomicReference<@Nullable M3ProgressBar> progressBarReference = new AtomicReference<>();
         AtomicReference<@Nullable Rectangle> barReference = new AtomicReference<>();
         AtomicReference<@Nullable Double> initialX = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThreadWhen(
-                () -> {
-                    @Nullable M3ProgressBar progressBar = progressBarReference.get();
-                    @Nullable Rectangle bar = barReference.get();
-                    @Nullable Double x = initialX.get();
-                    if (progressBar == null || bar == null || x == null) {
-                        return false;
+        try {
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> {
+                        @Nullable M3ProgressBar progressBar = progressBarReference.get();
+                        @Nullable Rectangle bar = barReference.get();
+                        @Nullable Double x = initialX.get();
+                        if (progressBar == null || bar == null || x == null) {
+                            return false;
+                        }
+
+                        progressBar.layout();
+                        return Math.abs(bar.getX() - x) > 0.1;
+                    },
+                    () -> {
+                        M3ProgressBar progressBar = new M3ProgressBar();
+                        progressBar.setManaged(false);
+                        Pane root = new Pane(progressBar);
+                        Scene scene = new Scene(root, 240.0, 40.0);
+                        Stage stage = new Stage();
+
+                        stageReference.set(stage);
+                        rootReference.set(root);
+                        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                        stage.setScene(scene);
+                        stage.show();
+                        root.applyCss();
+                        progressBar.resize(200.0, 16.0);
+                        progressBar.layout();
+
+                        Rectangle bar = (Rectangle) lookupShape(progressBar, ".bar");
+                        progressBarReference.set(progressBar);
+                        barReference.set(bar);
+                        initialX.set(bar.getX());
+                    },
+                    () -> {
+                        M3ProgressBar progressBar =
+                                Objects.requireNonNull(progressBarReference.get(), "progressBar");
+                        Rectangle bar = Objects.requireNonNull(barReference.get(), "bar");
+                        double x = Objects.requireNonNull(initialX.get(), "initialX");
+                        progressBar.layout();
+
+                        assertTrue(Math.abs(bar.getX() - x) > 0.1);
                     }
-
-                    progressBar.layout();
-                    return Math.abs(bar.getX() - x) > 0.1;
-                },
-                () -> {
-                    M3ProgressBar progressBar = new M3ProgressBar();
-                    Pane root = new Pane(progressBar);
-                    Scene scene = new Scene(root, 240.0, 40.0);
-
-                    M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                    root.applyCss();
-                    progressBar.resize(200.0, 16.0);
-                    progressBar.layout();
-
-                    Rectangle bar = (Rectangle) lookupShape(progressBar, ".bar");
-                    progressBarReference.set(progressBar);
-                    barReference.set(bar);
-                    initialX.set(bar.getX());
-                },
-                () -> {
-                    M3ProgressBar progressBar =
-                            Objects.requireNonNull(progressBarReference.get(), "progressBar");
-                    Rectangle bar = Objects.requireNonNull(barReference.get(), "bar");
-                    double x = Objects.requireNonNull(initialX.get(), "initialX");
-                    progressBar.layout();
-
-                    assertTrue(Math.abs(bar.getX() - x) > 0.1);
-                }
-        );
+            );
+        } finally {
+            closeMotionTestScene(stageReference, rootReference);
+        }
     }
 
     /// Verifies that disabled full motion keeps a basic indeterminate progress bar loop.
@@ -20033,16 +20065,17 @@ final class M3ControlStyleTest {
         progressIndicator.resize(64.0, 64.0);
         progressIndicator.layout();
 
-        javafx.scene.shape.Circle track = (javafx.scene.shape.Circle) lookupShape(progressIndicator, ".track");
+        Arc track = (Arc) lookupShape(progressIndicator, ".track");
         Arc indicator = (Arc) lookupShape(progressIndicator, ".indicator");
-        assertEquals(30.0, track.getRadius(), 0.0001);
+        assertEquals(30.0, track.getRadiusX(), 0.0001);
+        assertEquals(30.0, track.getRadiusY(), 0.0001);
         assertEquals(30.0, indicator.getRadiusX(), 0.0001);
         assertEquals(30.0, indicator.getRadiusY(), 0.0001);
     }
 
-    /// Verifies that indeterminate circular progress hides the determinate track.
+    /// Verifies that indeterminate circular progress leaves a gapped inactive track around the active arc.
     @Test
-    void progressIndicatorSkinHidesTrackWhenIndeterminate() {
+    void progressIndicatorSkinShowsGappedTrackWhenIndeterminate() {
         M3ProgressIndicator progressIndicator = new M3ProgressIndicator();
         Pane root = new Pane(progressIndicator);
         Scene scene = new Scene(root, 80.0, 80.0);
@@ -20054,95 +20087,122 @@ final class M3ControlStyleTest {
 
         Shape track = lookupShape(progressIndicator, ".track");
         Arc indicator = (Arc) lookupShape(progressIndicator, ".indicator");
-        assertFalse(track.isVisible());
+        Arc trackArc = assertInstanceOf(Arc.class, track);
+        assertTrue(trackArc.isVisible());
+        assertTrue(trackArc.getLength() < 0.0);
+        assertTrue(Math.abs(trackArc.getLength()) < 360.0);
         assertTrue(indicator.getLength() < 0.0);
     }
 
     /// Verifies that determinate circular progress value changes are animated.
     @Test
     void progressIndicatorSkinAnimatesDeterminateProgressChanges() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable Pane> rootReference = new AtomicReference<>();
         AtomicReference<@Nullable M3ProgressIndicator> progressIndicatorReference = new AtomicReference<>();
         AtomicReference<@Nullable Arc> indicatorReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThreadWhen(
-                () -> progressIndicatorLengthSettled(progressIndicatorReference, indicatorReference, -324.0),
-                () -> {
-                    M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.1);
-                    Pane root = new Pane(progressIndicator);
-                    Scene scene = new Scene(root, 80.0, 80.0);
+        try {
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> progressIndicatorLengthSettled(progressIndicatorReference, indicatorReference, -324.0),
+                    () -> {
+                        M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.1);
+                        progressIndicator.setManaged(false);
+                        Pane root = new Pane(progressIndicator);
+                        Scene scene = new Scene(root, 80.0, 80.0);
+                        Stage stage = new Stage();
 
-                    M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                    root.applyCss();
-                    progressIndicator.resize(48.0, 48.0);
-                    progressIndicator.layout();
+                        stageReference.set(stage);
+                        rootReference.set(root);
+                        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                        stage.setScene(scene);
+                        stage.show();
+                        root.applyCss();
+                        progressIndicator.resize(48.0, 48.0);
+                        progressIndicator.layout();
 
-                    Arc indicator = (Arc) lookupShape(progressIndicator, ".indicator");
-                    assertEquals(-36.0, indicator.getLength(), 0.0001);
+                        Arc indicator = (Arc) lookupShape(progressIndicator, ".indicator");
+                        assertEquals(-36.0, indicator.getLength(), 0.0001);
 
-                    progressIndicatorReference.set(progressIndicator);
-                    indicatorReference.set(indicator);
-                    progressIndicator.setProgress(0.9);
-                    progressIndicator.layout();
+                        progressIndicatorReference.set(progressIndicator);
+                        indicatorReference.set(indicator);
+                        progressIndicator.setProgress(0.9);
+                        progressIndicator.layout();
 
-                    assertTrue(indicator.getLength() > -324.0);
-                },
-                () -> {
-                    M3ProgressIndicator progressIndicator =
-                            Objects.requireNonNull(progressIndicatorReference.get(), "progressIndicator");
-                    Arc indicator = Objects.requireNonNull(indicatorReference.get(), "indicator");
-                    progressIndicator.layout();
+                        assertTrue(indicator.getLength() > -324.0);
+                    },
+                    () -> {
+                        M3ProgressIndicator progressIndicator =
+                                Objects.requireNonNull(progressIndicatorReference.get(), "progressIndicator");
+                        Arc indicator = Objects.requireNonNull(indicatorReference.get(), "indicator");
+                        progressIndicator.layout();
 
-                    assertEquals(-324.0, indicator.getLength(), 0.0001);
-                }
-        );
+                        assertEquals(-324.0, indicator.getLength(), 0.0001);
+                    }
+            );
+        } finally {
+            closeMotionTestScene(stageReference, rootReference);
+        }
     }
 
     /// Verifies that indeterminate circular progress rotates without oversized sweeps.
     @Test
     void progressIndicatorSkinAnimatesIndeterminateProgress() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable Pane> rootReference = new AtomicReference<>();
         AtomicReference<@Nullable M3ProgressIndicator> progressIndicatorReference = new AtomicReference<>();
         AtomicReference<@Nullable Arc> indicatorReference = new AtomicReference<>();
         AtomicReference<@Nullable Double> initialStartAngle = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThreadWhen(
-                () -> {
-                    @Nullable M3ProgressIndicator progressIndicator = progressIndicatorReference.get();
-                    @Nullable Arc indicator = indicatorReference.get();
-                    @Nullable Double startAngle = initialStartAngle.get();
-                    if (progressIndicator == null || indicator == null || startAngle == null) {
-                        return false;
+        try {
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> {
+                        @Nullable M3ProgressIndicator progressIndicator = progressIndicatorReference.get();
+                        @Nullable Arc indicator = indicatorReference.get();
+                        @Nullable Double startAngle = initialStartAngle.get();
+                        if (progressIndicator == null || indicator == null || startAngle == null) {
+                            return false;
+                        }
+
+                        progressIndicator.layout();
+                        return Math.abs(indicator.getStartAngle() - startAngle) > 0.1;
+                    },
+                    () -> {
+                        M3ProgressIndicator progressIndicator = new M3ProgressIndicator();
+                        progressIndicator.setManaged(false);
+                        Pane root = new Pane(progressIndicator);
+                        Scene scene = new Scene(root, 80.0, 80.0);
+                        Stage stage = new Stage();
+
+                        stageReference.set(stage);
+                        rootReference.set(root);
+                        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                        stage.setScene(scene);
+                        stage.show();
+                        root.applyCss();
+                        progressIndicator.resize(48.0, 48.0);
+                        progressIndicator.layout();
+
+                        Arc indicator = (Arc) lookupShape(progressIndicator, ".indicator");
+                        progressIndicatorReference.set(progressIndicator);
+                        indicatorReference.set(indicator);
+                        initialStartAngle.set(indicator.getStartAngle());
+                    },
+                    () -> {
+                        M3ProgressIndicator progressIndicator =
+                                Objects.requireNonNull(progressIndicatorReference.get(), "progressIndicator");
+                        Arc indicator = Objects.requireNonNull(indicatorReference.get(), "indicator");
+                        double startAngle = Objects.requireNonNull(initialStartAngle.get(), "initialStartAngle");
+                        progressIndicator.layout();
+
+                        assertTrue(Math.abs(indicator.getStartAngle() - startAngle) > 0.1);
+                        assertTrue(indicator.getLength() <= -42.0);
+                        assertTrue(indicator.getLength() >= -96.0);
                     }
-
-                    progressIndicator.layout();
-                    return Math.abs(indicator.getStartAngle() - startAngle) > 0.1;
-                },
-                () -> {
-                    M3ProgressIndicator progressIndicator = new M3ProgressIndicator();
-                    Pane root = new Pane(progressIndicator);
-                    Scene scene = new Scene(root, 80.0, 80.0);
-
-                    M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                    root.applyCss();
-                    progressIndicator.resize(48.0, 48.0);
-                    progressIndicator.layout();
-
-                    Arc indicator = (Arc) lookupShape(progressIndicator, ".indicator");
-                    progressIndicatorReference.set(progressIndicator);
-                    indicatorReference.set(indicator);
-                    initialStartAngle.set(indicator.getStartAngle());
-                },
-                () -> {
-                    M3ProgressIndicator progressIndicator =
-                            Objects.requireNonNull(progressIndicatorReference.get(), "progressIndicator");
-                    Arc indicator = Objects.requireNonNull(indicatorReference.get(), "indicator");
-                    double startAngle = Objects.requireNonNull(initialStartAngle.get(), "initialStartAngle");
-                    progressIndicator.layout();
-
-                    assertTrue(Math.abs(indicator.getStartAngle() - startAngle) > 0.1);
-                    assertTrue(indicator.getLength() <= -42.0);
-                    assertTrue(indicator.getLength() >= -96.0);
-                }
-        );
+            );
+        } finally {
+            closeMotionTestScene(stageReference, rootReference);
+        }
     }
 
     /// Verifies that disabled full motion keeps a basic indeterminate circular progress loop.
@@ -20210,7 +20270,7 @@ final class M3ControlStyleTest {
         progressIndicator.resize(64.0, 64.0);
         progressIndicator.layout();
 
-        javafx.scene.shape.Circle track = (javafx.scene.shape.Circle) lookupShape(progressIndicator, ".track");
+        Arc track = (Arc) lookupShape(progressIndicator, ".track");
         Arc indicator = (Arc) lookupShape(progressIndicator, ".indicator");
         Path waveTrack = assertInstanceOf(
                 Path.class,
@@ -28575,11 +28635,11 @@ final class M3ControlStyleTest {
 
             WritableImage image = snapshotImageOnFxThread(root);
             Arc arc = (Arc) lookupShape(progressIndicator, ".indicator");
-            javafx.scene.shape.Circle track = (javafx.scene.shape.Circle) lookupShape(progressIndicator, ".track");
+            Arc track = (Arc) lookupShape(progressIndicator, ".track");
             var arcCenter = arc.localToScene(arc.getCenterX(), arc.getCenterY());
             int centerX = (int) Math.round(arcCenter.getX());
             int centerY = (int) Math.round(arcCenter.getY());
-            int radius = (int) Math.round(track.getRadius());
+            int radius = (int) Math.round(track.getRadiusX());
             Color arcPixel = image.getPixelReader().getColor(centerX, centerY - radius);
             Color trackPixel = image.getPixelReader().getColor(centerX - radius, centerY);
 

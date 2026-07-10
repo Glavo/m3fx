@@ -41,9 +41,8 @@ import org.glavo.m3fx.internal.M3ReachabilityObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /// A Material Design 3 menu item that opens a nested menu.
 ///
@@ -113,7 +112,7 @@ public class M3SubMenuItem extends M3MenuItem {
             new M3ReachabilityObserver(this, this::hidePopupIfOwnerUnreachable);
 
     /// Notifies popup owners when this item's reported focus node changes.
-    private final List<Runnable> focusNodeListeners = new ArrayList<>();
+    private final CopyOnWriteArrayList<Runnable> focusNodeListeners = new CopyOnWriteArrayList<>();
 
     /// The pointer-hover open delay.
     private final PauseTransition hoverOpenDelay = new PauseTransition();
@@ -598,9 +597,7 @@ public class M3SubMenuItem extends M3MenuItem {
     private void notifyFocusNodeChanged() {
         M3Accessible.notifyFocusNodeChanged(this);
         popupFocusNotifier.refresh();
-        for (Runnable listener : List.copyOf(focusNodeListeners)) {
-            listener.run();
-        }
+        focusNodeListeners.forEach(Runnable::run);
     }
 
     /// Applies initial visual state before the submenu is shown.

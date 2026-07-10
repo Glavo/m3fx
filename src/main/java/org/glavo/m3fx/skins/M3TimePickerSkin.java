@@ -313,8 +313,8 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
         boolean afternoon = selectedTime == null ? baseTime.getHour() >= 12 : selectedTime.getHour() >= 12;
         LocalTime amTime = baseTime.withHour(toActualHour(toDisplayHour(baseTime.getHour()), false));
         LocalTime pmTime = baseTime.withHour(toActualHour(toDisplayHour(baseTime.getHour()), true));
-        updateCell(amPeriodCell, "AM", amTime, !afternoon, !periodHasSelectableTime(control, false));
-        updateCell(pmPeriodCell, "PM", pmTime, afternoon, !periodHasSelectableTime(control, true));
+        updateCell(amPeriodCell, "AM", amTime, !afternoon, periodHasNoSelectableTime(control, false));
+        updateCell(pmPeriodCell, "PM", pmTime, afternoon, periodHasNoSelectableTime(control, true));
     }
 
     /// Ensures that a grid has the requested reusable cell set and placement.
@@ -363,7 +363,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
             cell.setUserData(time);
             cell.setAccessibleText(time.toString());
         }
-        setStyleClass(cell, M3TimePicker.SELECTED_CELL_STYLE_CLASS, selected);
+        setSelectedStyleClass(cell, selected);
         cell.setDisable(disabled);
     }
 
@@ -387,16 +387,16 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
         return false;
     }
 
-    /// Returns whether AM or PM contains at least one selectable time.
-    private boolean periodHasSelectableTime(M3TimePicker control, boolean afternoon) {
+    /// Returns whether AM or PM contains no selectable time.
+    private boolean periodHasNoSelectableTime(M3TimePicker control, boolean afternoon) {
         int startHour = afternoon ? 12 : 0;
         int endHour = afternoon ? 24 : 12;
         for (int hour = startHour; hour < endHour; hour++) {
             if (hourHasSelectableMinute(control, hour)) {
-                return true;
+                return false;
             }
         }
-        return false;
+        return true;
     }
 
     /// Returns a fallback time used when no value is selected.
@@ -419,32 +419,6 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
         cell.getStyleClass().add(roleStyleClass);
         cell.setOnAction(this::handleTimeCellAction);
         return cell;
-    }
-
-    /// Returns selectable cells in their visible traversal order.
-    private List<Node> selectableCells() {
-        ArrayList<Node> cells = new ArrayList<>();
-        cells.addAll(hourGrid.getChildren());
-        cells.addAll(minuteGrid.getChildren());
-        cells.addAll(periodRow.getChildren());
-        return cells;
-    }
-
-    /// Returns whether a time cell is visible to users and accessibility clients.
-    private static boolean isAccessibleCell(Node cell) {
-        return isEffectivelyReachable(cell) && !cell.isMouseTransparent();
-    }
-
-    /// Returns whether a node and its ancestor chain are visible and enabled.
-    private static boolean isEffectivelyReachable(Node node) {
-        @Nullable Node current = node;
-        while (current != null) {
-            if (!current.isVisible() || current.isDisabled()) {
-                return false;
-            }
-            current = current.getParent();
-        }
-        return true;
     }
 
     /// Formats an hour for the active display mode.
@@ -472,15 +446,15 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
         return value < 10 ? "0" + value : Integer.toString(value);
     }
 
-    /// Adds or removes a style class.
-    private static void setStyleClass(Node node, String styleClass, boolean active) {
+    /// Adds or removes the selected-cell style class.
+    private static void setSelectedStyleClass(Node node, boolean active) {
         List<String> styleClasses = node.getStyleClass();
         if (active) {
-            if (!styleClasses.contains(styleClass)) {
-                styleClasses.add(styleClass);
+            if (!styleClasses.contains(M3TimePicker.SELECTED_CELL_STYLE_CLASS)) {
+                styleClasses.add(M3TimePicker.SELECTED_CELL_STYLE_CLASS);
             }
         } else {
-            styleClasses.remove(styleClass);
+            styleClasses.remove(M3TimePicker.SELECTED_CELL_STYLE_CLASS);
         }
     }
 

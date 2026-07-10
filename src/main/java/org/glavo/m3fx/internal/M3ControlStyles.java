@@ -20,8 +20,18 @@ public final class M3ControlStyles {
     private static final String ROOT_STYLE_CLASS = "root";
 
     /// The node property key used to mark fallback stylesheet listener installation.
-    private static final String FALLBACK_STYLESHEET_LISTENER_KEY =
-            M3ControlStyles.class.getName() + ".fallbackStylesheetListener";
+    private static final Object FALLBACK_STYLESHEET_LISTENER_KEY = new Object();
+
+    /// The scene property key used to retain the single fallback stylesheet installation for that scene.
+    private static final Object FALLBACK_STYLESHEET_INSTALLATION_KEY = new Object();
+
+    /// The shared listener that installs fallback tokens when any marked control enters a scene.
+    private static final ChangeListener<@Nullable Scene> FALLBACK_SCENE_LISTENER =
+            (observable, oldScene, newScene) -> {
+                if (newScene != null) {
+                    installFallbackStylesheet(newScene);
+                }
+            };
 
     /// Prevents utility class instantiation.
     private M3ControlStyles() {
@@ -54,84 +64,60 @@ public final class M3ControlStyles {
             return;
         }
 
-        FallbackStylesheetInstallation installation = new FallbackStylesheetInstallation(node);
-        node.getProperties().put(FALLBACK_STYLESHEET_LISTENER_KEY, installation);
-        installation.install();
+        node.getProperties().put(FALLBACK_STYLESHEET_LISTENER_KEY, Boolean.TRUE);
+        node.sceneProperty().addListener(FALLBACK_SCENE_LISTENER);
+        @Nullable Scene scene = node.getScene();
+        if (scene != null) {
+            installFallbackStylesheet(scene);
+        }
     }
 
-    /// Tracks the scene root that needs standalone fallback token declarations for one control.
+    /// Tracks fallback token declarations and root replacement once for an entire scene.
     @NotNullByDefault
     private static final class FallbackStylesheetInstallation {
-        /// The control that requested standalone fallback token support.
-        private final Node node;
+        /// The scene that owns this installation.
+        private final Scene scene;
 
-        /// The listener that follows the control between scenes.
-        private final ChangeListener<@Nullable Scene> sceneListener =
-                (observable, oldScene, newScene) -> updateObservedScene(newScene);
-
-        /// The listener that follows replacement roots inside the current scene.
+        /// The listener that applies fallback declarations to replacement roots.
         private final ChangeListener<Parent> rootListener =
-                (observable, oldRoot, newRoot) -> applyFallbackStylesheet();
+                (observable, oldRoot, newRoot) -> apply();
 
-        /// The scene whose root listener is currently installed.
-        private @Nullable Scene observedScene;
-
-        /// Creates a fallback stylesheet installation for the requested node.
-        private FallbackStylesheetInstallation(Node node) {
-            this.node = node;
+        /// Creates a fallback stylesheet installation for one scene.
+        private FallbackStylesheetInstallation(Scene scene) {
+            this.scene = scene;
         }
 
-        /// Starts listening to the node and applies fallback styles to its current scene when present.
+        /// Starts following root replacement and applies the fallback declarations.
         private void install() {
-            node.sceneProperty().addListener(sceneListener);
-            updateObservedScene(node.getScene());
+            scene.rootProperty().addListener(rootListener);
+            apply();
         }
 
-        /// Moves the root listener from the previous scene to the new scene.
-        private void updateObservedScene(@Nullable Scene scene) {
-            if (observedScene != null) {
-                observedScene.rootProperty().removeListener(rootListener);
-            }
-
-            observedScene = scene;
-            if (scene != null) {
-                scene.rootProperty().addListener(rootListener);
-                applyFallbackStylesheet();
-            }
-        }
-
-        /// Applies fallback styles when the node still belongs to the observed scene root.
-        private void applyFallbackStylesheet() {
-            @Nullable Scene scene = observedScene;
-            if (scene != null && node.getScene() == scene && isInsideSceneRoot(scene)) {
-                addFallbackStylesheet(scene);
-            }
-        }
-
-        /// Returns whether the node is contained by the current scene root.
-        private boolean isInsideSceneRoot(Scene scene) {
+        /// Applies fallback styles to the current scene and root idempotently.
+        private void apply() {
             Parent root = scene.getRoot();
-            @Nullable Node current = node;
-            while (current != null) {
-                if (current == root) {
-                    return true;
-                }
-                current = current.getParent();
+            List<String> styleClasses = root.getStyleClass();
+            if (!styleClasses.contains(ROOT_STYLE_CLASS)) {
+                styleClasses.add(ROOT_STYLE_CLASS);
             }
-            return false;
+            String stylesheet = M3Stylesheets.fallbackStylesheet();
+            List<String> stylesheets = scene.getStylesheets();
+            if (!stylesheets.contains(stylesheet)) {
+                stylesheets.add(0, stylesheet);
+            }
         }
     }
 
-    /// Adds the fallback token stylesheet to the scene at the lowest application stylesheet priority.
-    private static void addFallbackStylesheet(Scene scene) {
-        List<String> styleClasses = scene.getRoot().getStyleClass();
-        if (!styleClasses.contains(ROOT_STYLE_CLASS)) {
-            styleClasses.add(ROOT_STYLE_CLASS);
+    /// Installs or reapplies scene-level fallback token declarations.
+    private static void installFallbackStylesheet(Scene scene) {
+        Object value = scene.getProperties().get(FALLBACK_STYLESHEET_INSTALLATION_KEY);
+        if (value instanceof FallbackStylesheetInstallation installation) {
+            installation.apply();
+            return;
         }
-        String stylesheet = M3Stylesheets.fallbackStylesheet();
-        List<String> stylesheets = scene.getStylesheets();
-        if (!stylesheets.contains(stylesheet)) {
-            stylesheets.add(0, stylesheet);
-        }
+
+        FallbackStylesheetInstallation installation = new FallbackStylesheetInstallation(scene);
+        scene.getProperties().put(FALLBACK_STYLESHEET_INSTALLATION_KEY, installation);
+        installation.install();
     }
 }

@@ -3,15 +3,16 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.beans.InvalidationListener;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.ReadOnlyProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -42,9 +43,7 @@ import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 /// A Material Design 3 chip group that lays chips out as a wrapping set.
@@ -124,11 +123,22 @@ public class M3ChipGroup extends Control {
     private final ReadOnlyObjectWrapper<@Nullable M3Chip> selectedChip =
             new ReadOnlyObjectWrapper<>(this, "selectedChip");
 
-    /// The selected-state listeners installed on chips.
-    private final Map<M3Chip, ChangeListener<Boolean>> selectedListeners = new HashMap<>();
+    /// Reusable storage for computing selected chips without allocating on every refresh.
+    private final List<M3Chip> selectedChipsScratch = new ArrayList<>();
 
-    /// The reachability listeners installed on chips.
-    private final Map<M3Chip, ChangeListener<Boolean>> reachabilityListeners = new HashMap<>();
+    /// Handles selected-state invalidation for every installed chip.
+    private final InvalidationListener selectedInvalidation = observable -> {
+        if (observable instanceof ReadOnlyProperty<?> property && property.getBean() instanceof M3Chip chip) {
+            handleChipSelectedChanged(chip, chip.isSelected());
+        }
+    };
+
+    /// Handles reachability invalidation for every installed chip.
+    private final InvalidationListener reachabilityInvalidation = observable -> {
+        if (observable instanceof ReadOnlyProperty<?> property && property.getBean() instanceof M3Chip chip) {
+            handleChipReachabilityChanged(chip);
+        }
+    };
 
     /// Updates chip listeners and selection when children change.
     private final ListChangeListener<Node> childrenListener = change -> {
@@ -572,28 +582,16 @@ public class M3ChipGroup extends Control {
 
     /// Installs a selected-state listener on a chip.
     private void installChip(M3Chip chip) {
-        ChangeListener<Boolean> listener = (observable, oldValue, newValue) ->
-                handleChipSelectedChanged(chip, newValue);
-        selectedListeners.put(chip, listener);
-        chip.selectedProperty().addListener(listener);
-        ChangeListener<Boolean> reachabilityListener = (observable, oldValue, newValue) ->
-                handleChipReachabilityChanged(chip);
-        reachabilityListeners.put(chip, reachabilityListener);
-        chip.disabledProperty().addListener(reachabilityListener);
-        chip.visibleProperty().addListener(reachabilityListener);
+        chip.selectedProperty().addListener(selectedInvalidation);
+        chip.disabledProperty().addListener(reachabilityInvalidation);
+        chip.visibleProperty().addListener(reachabilityInvalidation);
     }
 
     /// Removes the selected-state listener from a chip.
     private void uninstallChip(M3Chip chip) {
-        ChangeListener<Boolean> listener = selectedListeners.remove(chip);
-        if (listener != null) {
-            chip.selectedProperty().removeListener(listener);
-        }
-        ChangeListener<Boolean> reachabilityListener = reachabilityListeners.remove(chip);
-        if (reachabilityListener != null) {
-            chip.disabledProperty().removeListener(reachabilityListener);
-            chip.visibleProperty().removeListener(reachabilityListener);
-        }
+        chip.selectedProperty().removeListener(selectedInvalidation);
+        chip.disabledProperty().removeListener(reachabilityInvalidation);
+        chip.visibleProperty().removeListener(reachabilityInvalidation);
     }
 
     /// Keeps chip selected states consistent with the current group policy.
@@ -697,19 +695,22 @@ public class M3ChipGroup extends Control {
 
     /// Refreshes the selected chip list from current child states.
     private void refreshSelectedChips() {
-        List<M3Chip> previousSelection = List.copyOf(selectedChips);
-        selectedChips.clear();
+        selectedChipsScratch.clear();
         for (Node child : getItems()) {
             if (child instanceof M3Chip chip && chip.isSelected()) {
                 if (isSelectableChip(chip)) {
-                    selectedChips.add(chip);
+                    selectedChipsScratch.add(chip);
                 } else {
                     setChipSelectedWithoutRefresh(chip, false);
                 }
             }
         }
+        boolean selectionChanged = !selectedChips.equals(selectedChipsScratch);
+        if (selectionChanged) {
+            selectedChips.setAll(selectedChipsScratch);
+        }
         selectedChip.set(selectedChips.isEmpty() ? null : selectedChips.get(0));
-        if (!selectedChips.equals(previousSelection)) {
+        if (selectionChanged) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
             M3Accessible.notifyFocusNodeChanged(this);
             focusNotifier.refresh();

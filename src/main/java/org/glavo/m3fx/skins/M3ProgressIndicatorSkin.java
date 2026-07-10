@@ -11,16 +11,17 @@ import javafx.beans.InvalidationListener;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.collections.ObservableList;
+import javafx.scene.Scene;
 import javafx.scene.control.SkinBase;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Arc;
 import javafx.scene.shape.ArcType;
-import javafx.scene.shape.Circle;
 import javafx.scene.shape.LineTo;
 import javafx.scene.shape.MoveTo;
 import javafx.scene.shape.Path;
 import javafx.scene.shape.PathElement;
 import javafx.scene.shape.StrokeLineCap;
+import javafx.stage.Window;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.animation.M3MotionSpec;
@@ -28,6 +29,7 @@ import org.glavo.m3fx.controls.M3ProgressIndicator;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 
 /// The default skin for [M3ProgressIndicator].
 @NotNullByDefault
@@ -50,8 +52,8 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
     /// The fixed sample count for circular active indicator paths.
     private static final int CIRCULAR_INDICATOR_SAMPLE_STEPS = 32;
 
-    /// The track circle.
-    private final Circle track = new Circle();
+    /// The inactive track arc with gaps around the active indicator.
+    private final Arc track = new Arc();
 
     /// The progress arc.
     private final Arc indicator = new Arc();
@@ -61,6 +63,24 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
 
     /// The expressive wavy active indicator path.
     private final Path waveIndicator = new Path();
+
+    /// The resolved indicator center x-coordinate from the latest layout.
+    private double resolvedCenterX;
+
+    /// The resolved indicator center y-coordinate from the latest layout.
+    private double resolvedCenterY;
+
+    /// The resolved indicator radius from the latest layout.
+    private double resolvedRadius;
+
+    /// The resolved indicator stroke width from the latest layout.
+    private double resolvedStrokeWidth;
+
+    /// Whether the latest layout selected expressive wavy geometry.
+    private boolean resolvedWavy;
+
+    /// Whether the progress indicator has received valid layout geometry.
+    private boolean geometryReady;
 
     /// The progress value currently displayed by determinate progress.
     private final DoubleProperty displayedProgress = new SimpleDoubleProperty(this, "displayedProgress");
@@ -75,9 +95,9 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
     /// The indeterminate animation timeline.
     private final Timeline indeterminateAnimation = new Timeline();
 
-    /// Requests layout after animation ticks.
+    /// Updates internal progress geometry after animation ticks without invalidating parent layout.
     private final InvalidationListener animationInvalidation =
-            observable -> getSkinnable().requestLayout();
+            observable -> updateAnimatedVisuals();
 
     /// Updates animations when the public progress value changes.
     private final InvalidationListener progressInvalidation = observable -> updateProgressAnimation(true);
@@ -110,6 +130,7 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         indicator.setStrokeLineCap(StrokeLineCap.ROUND);
         waveTrack.setStrokeLineCap(StrokeLineCap.ROUND);
         waveIndicator.setStrokeLineCap(StrokeLineCap.ROUND);
+        track.setType(ArcType.OPEN);
         indicator.setType(ArcType.OPEN);
         getChildren().addAll(track, indicator, waveTrack, waveIndicator);
 
@@ -154,16 +175,25 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         double centerX = x + width / 2.0;
         double centerY = y + height / 2.0;
 
-        if (getSkinnable().getWaveAmplitude() > 0.0) {
+        resolvedCenterX = centerX;
+        resolvedCenterY = centerY;
+        resolvedRadius = radius;
+        resolvedStrokeWidth = strokeWidth;
+        resolvedWavy = getSkinnable().getWaveAmplitude() > 0.0;
+        geometryReady = true;
+
+        if (resolvedWavy) {
             layoutWavyIndicator(centerX, centerY, radius, strokeWidth);
             return;
         }
 
         waveTrack.setVisible(false);
         waveIndicator.setVisible(false);
+        indicator.setVisible(true);
         track.setCenterX(centerX);
         track.setCenterY(centerY);
-        track.setRadius(radius);
+        track.setRadiusX(radius);
+        track.setRadiusY(radius);
         track.setStrokeWidth(strokeWidth);
 
         indicator.setCenterX(centerX);
@@ -171,7 +201,19 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         indicator.setRadiusX(radius);
         indicator.setRadiusY(radius);
         indicator.setStrokeWidth(strokeWidth);
-        updateIndicatorArc();
+        updateAnimatedVisuals();
+    }
+
+    /// Updates the animated progress visuals using geometry resolved by the latest layout pass.
+    private void updateAnimatedVisuals() {
+        if (!geometryReady) {
+            return;
+        }
+        if (resolvedWavy) {
+            layoutWavyIndicator(resolvedCenterX, resolvedCenterY, resolvedRadius, resolvedStrokeWidth);
+        } else {
+            updateIndicatorArc();
+        }
     }
 
     /// Lays out expressive wavy circular progress paths.
@@ -223,18 +265,38 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
     private void updateIndicatorArc() {
         double progress = getSkinnable().getProgress();
         if (progress == M3ProgressIndicator.INDETERMINATE_PROGRESS) {
-            track.setVisible(false);
-            indicator.setStartAngle(90.0 - 360.0 * indeterminatePhase.get());
-            indicator.setLength(-indeterminateSweep(
-                    indeterminatePhase.get(),
+            double phase = indeterminatePhase.get();
+            double sweep = indeterminateSweep(
+                    phase,
                     !M3Animation.shouldReduceMotion(getSkinnable())
-            ));
+            );
+            indicator.setStartAngle(90.0 - 360.0 * phase);
+            indicator.setLength(-sweep);
+            updateTrackArc(phase, phase + sweep / 360.0);
             return;
         }
 
-        track.setVisible(true);
+        double displayed = displayedProgress.get();
         indicator.setStartAngle(90.0);
-        indicator.setLength(-360.0 * displayedProgress.get());
+        indicator.setLength(-360.0 * displayed);
+        updateTrackArc(0.0, displayed);
+    }
+
+    /// Updates the inactive track arc outside the active indicator and its two visual gaps.
+    private void updateTrackArc(double activeStart, double activeEnd) {
+        double gapFraction = circularGapFraction(
+                resolvedRadius,
+                getSkinnable().getTrackGap(),
+                resolvedStrokeWidth
+        );
+        double start = activeEnd + gapFraction;
+        double end = activeStart + 1.0 - gapFraction;
+        boolean visible = resolvedRadius > 0.0 && end > start;
+        track.setVisible(visible);
+        if (visible) {
+            track.setStartAngle(90.0 - 360.0 * start);
+            track.setLength(-360.0 * (end - start));
+        }
     }
 
     /// Updates determinate or indeterminate animation state for the current progress value.
@@ -242,13 +304,28 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         double progress = getSkinnable().getProgress();
         if (progress == M3ProgressIndicator.INDETERMINATE_PROGRESS) {
             determinateAnimation.stop();
-            startIndeterminateAnimation();
-            getSkinnable().requestLayout();
+            if (shouldPauseActivityAnimations()) {
+                indeterminateAnimation.stop();
+                indeterminatePhase.set(INDETERMINATE_START_PHASE);
+            } else {
+                startIndeterminateAnimation();
+            }
+            updateAnimatedVisuals();
         } else {
             indeterminateAnimation.stop();
             indeterminatePhase.set(INDETERMINATE_START_PHASE);
-            animateDisplayedProgress(clamp(progress), animateDeterminateProgress);
+            animateDisplayedProgress(
+                    clamp(progress),
+                    animateDeterminateProgress && !shouldPauseActivityAnimations()
+            );
         }
+    }
+
+    /// Returns whether pulse-driven progress animations should pause for the current window lifecycle state.
+    private boolean shouldPauseActivityAnimations() {
+        @Nullable Scene scene = getSkinnable().getScene();
+        @Nullable Window window = scene == null ? null : scene.getWindow();
+        return window == null || !window.isShowing();
     }
 
     /// Starts the indeterminate linear phase loop.

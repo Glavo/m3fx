@@ -136,6 +136,9 @@ public class M3ListView<T> extends Control {
     /// The selected item values in ascending index order.
     private final ObservableList<T> selectedItems = M3ObservableLists.nonNullElementList("selectedItem");
 
+    /// Reusable storage for computing selected item values without allocating on every refresh.
+    private final List<T> selectedItemsScratch = new ArrayList<>();
+
     /// The read-only selected item view.
     private final @UnmodifiableView ObservableList<T> selectedItemsView =
             FXCollections.unmodifiableObservableList(selectedItems);
@@ -650,7 +653,7 @@ public class M3ListView<T> extends Control {
         M3Animation.updatePauseDuration(
                 typeAheadResetDelay,
                 M3Animation.motionBehavior(this).typeAheadResetDelay(),
-                typeAheadBuffer.length() > 0
+                !typeAheadBuffer.isEmpty()
         );
     }
 
@@ -1074,9 +1077,6 @@ public class M3ListView<T> extends Control {
             return true;
         }
         if (parameter instanceof Node node) {
-            if (item == node) {
-                return true;
-            }
             return M3ListViewSkinAccess.attachedVisibleItem(this, index) == node;
         }
         return false;
@@ -1397,18 +1397,21 @@ public class M3ListView<T> extends Control {
 
     /// Refreshes selected item state from selected indices.
     private void refreshSelectedItems() {
-        List<T> previousItems = new ArrayList<>(selectedItems);
         int previousIndex = selectedIndex.get();
 
-        selectedItems.clear();
+        selectedItemsScratch.clear();
         for (Integer index : selectedIndices) {
-            selectedItems.add(getItems().get(index));
+            selectedItemsScratch.add(getItems().get(index));
+        }
+        boolean selectionChanged = !selectedItems.equals(selectedItemsScratch);
+        if (selectionChanged) {
+            selectedItems.setAll(selectedItemsScratch);
         }
 
         int firstIndex = selectedIndices.isEmpty() ? -1 : selectedIndices.get(0);
         selectedIndex.set(firstIndex);
         selectedItem.set(firstIndex < 0 ? null : getItems().get(firstIndex));
-        if (!selectedItems.equals(previousItems) || previousIndex != firstIndex) {
+        if (selectionChanged || previousIndex != firstIndex) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
             requestVisibleCellRefresh();
         }

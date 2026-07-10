@@ -74,11 +74,17 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
     private final ChangeListener<Boolean> expandedListener =
             (observable, oldValue, newValue) -> setExpandedState(newValue, getSkinnable().getScene() != null);
 
-    /// Requests layout when the effective node orientation changes at runtime.
-    private final InvalidationListener orientationInvalidation = observable -> getSkinnable().requestLayout();
+    /// Invalidates logical child padding when the effective node orientation changes at runtime.
+    private final InvalidationListener orientationInvalidation = observable -> {
+        appliedChildEdgeInset = Double.NaN;
+        getSkinnable().requestLayout();
+    };
 
     /// Whether child items are currently mounted in the viewport.
     private boolean childItemsMounted;
+
+    /// The child edge inset currently applied to the child container.
+    private double appliedChildEdgeInset = Double.NaN;
 
     /// Creates a navigation drawer group skin.
     ///
@@ -351,12 +357,14 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
 
     /// Updates the child container padding that creates indented selected row geometry.
     private void updateChildrenContainerPadding(double childEdgeInset) {
+        if (Double.compare(appliedChildEdgeInset, childEdgeInset) == 0) {
+            return;
+        }
+        appliedChildEdgeInset = childEdgeInset;
         Insets padding = childEdgeInset == 0.0
                 ? EMPTY_CHILD_PADDING
                 : M3NodeLayout.logicalInsets(getSkinnable(), 0.0, childEdgeInset, 0.0, 0.0);
-        if (!padding.equals(childrenContainer.getPadding())) {
-            childrenContainer.setPadding(padding);
-        }
+        childrenContainer.setPadding(padding);
     }
 
     /// Keeps one list item container inside the group content area.

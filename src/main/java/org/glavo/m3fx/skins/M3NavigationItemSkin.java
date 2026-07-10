@@ -58,6 +58,9 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
     /// The selected indicator animation timeline.
     private final M3NodeTransition indicatorAnimation = new M3NodeTransition(indicator);
 
+    /// The last shape radius applied to the selected indicator.
+    private double appliedIndicatorShape = Double.NaN;
+
     /// Handles primary mouse presses.
     private final EventHandler<MouseEvent> mousePressedHandler = this::handleMousePressed;
 
@@ -198,7 +201,10 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
         iconContainer.setMaxSize(indicatorWidth, indicatorHeight);
         indicator.resizeRelocate(0.0, 0.0, indicatorWidth, indicatorHeight);
         badgeContainer.resizeRelocate(0.0, 0.0, indicatorWidth, indicatorHeight);
-        indicator.setStyle("-fx-background-radius: " + indicatorShape + "px;");
+        if (Double.compare(appliedIndicatorShape, indicatorShape) != 0) {
+            appliedIndicatorShape = indicatorShape;
+            indicator.setStyle("-fx-background-radius: " + indicatorShape + "px;");
+        }
         content.resizeRelocate(x, y, width, height);
         layoutStateLayer();
     }

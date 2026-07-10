@@ -14,7 +14,6 @@ import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
 import javafx.scene.control.TextInputControl;
-import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
@@ -25,6 +24,7 @@ import javafx.scene.text.TextAlignment;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -84,6 +84,16 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
 
     /// Cached rendered item rows keyed by invalid input layout identity.
     private final Map<M3TextInputLayout, Node> itemRows = new IdentityHashMap<>();
+
+    /// Reusable invalid input list populated during one content update.
+    private final ArrayList<M3TextInputLayout> invalidInputsScratch = new ArrayList<>();
+
+    /// Reusable identity set used while reconciling observed inputs and rendered rows.
+    private final Set<M3TextInputLayout> invalidInputSetScratch =
+            Collections.newSetFromMap(new IdentityHashMap<>());
+
+    /// Reusable ordered row list used while reconciling the item container.
+    private final ArrayList<Node> itemRowsScratch = new ArrayList<>();
 
     /// Moves invalid input listeners when the summary validator changes.
     private final ChangeListener<@Nullable M3FormValidator> validatorListener =
@@ -242,7 +252,15 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
         }
 
         titleLabel.setText(control.getTitleText());
-        List<M3TextInputLayout> invalidInputs = shownInvalidInputs(control);
+        invalidInputsScratch.clear();
+        int invalidInputCount = control.getInvalidInputCount();
+        for (int index = 0; index < invalidInputCount; index++) {
+            @Nullable M3TextInputLayout input = control.getInvalidInput(index);
+            if (input != null && control.isInvalidInputShown(input)) {
+                invalidInputsScratch.add(input);
+            }
+        }
+        List<M3TextInputLayout> invalidInputs = invalidInputsScratch;
         updateObservedInvalidInputs(invalidInputs);
         if (invalidInputs.isEmpty()) {
             clearInvalidItemRows();
@@ -252,17 +270,27 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
             updateInvalidItemRows(invalidInputs);
             setContainerChildren(titleLabel, items);
         }
+        invalidInputsScratch.clear();
         control.requestLayout();
     }
 
     /// Updates listeners for invalid input row text and fallback prompt changes.
     private void updateObservedInvalidInputs(List<M3TextInputLayout> invalidInputs) {
-        Set<M3TextInputLayout> nextInputs = Collections.newSetFromMap(new IdentityHashMap<>());
-        nextInputs.addAll(invalidInputs);
+        invalidInputSetScratch.clear();
+        invalidInputSetScratch.addAll(invalidInputs);
 
-        for (M3TextInputLayout input : List.copyOf(observedInvalidInputs)) {
-            if (!nextInputs.contains(input)) {
-                removeObservedInvalidInput(input);
+        Iterator<M3TextInputLayout> iterator = observedInvalidInputs.iterator();
+        while (iterator.hasNext()) {
+            M3TextInputLayout input = iterator.next();
+            if (!invalidInputSetScratch.contains(input)) {
+                iterator.remove();
+                input.labelTextProperty().removeListener(invalidInputContentListener);
+                input.validationErrorTextProperty().removeListener(invalidInputContentListener);
+                input.inputProperty().removeListener(invalidInputContentListener);
+                @Nullable TextInputControl textInput = observedInvalidInputControls.remove(input);
+                if (textInput != null) {
+                    textInput.promptTextProperty().removeListener(invalidInputContentListener);
+                }
             }
         }
 
@@ -274,20 +302,7 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
             }
             updateObservedInvalidInputControl(input);
         }
-    }
-
-    /// Removes listeners from one invalid input row source.
-    private void removeObservedInvalidInput(M3TextInputLayout input) {
-        if (!observedInvalidInputs.remove(input)) {
-            return;
-        }
-        input.labelTextProperty().removeListener(invalidInputContentListener);
-        input.validationErrorTextProperty().removeListener(invalidInputContentListener);
-        input.inputProperty().removeListener(invalidInputContentListener);
-        @Nullable TextInputControl textInput = observedInvalidInputControls.remove(input);
-        if (textInput != null) {
-            textInput.promptTextProperty().removeListener(invalidInputContentListener);
-        }
+        invalidInputSetScratch.clear();
     }
 
     /// Updates the prompt listener for the wrapped input used as row-label fallback text.
@@ -307,34 +322,29 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
         }
     }
 
-    /// Returns invalid inputs that should be rendered by this summary.
-    private static List<M3TextInputLayout> shownInvalidInputs(M3ValidationSummary control) {
-        int invalidInputCount = control.getInvalidInputCount();
-        ArrayList<M3TextInputLayout> inputs = new ArrayList<>(invalidInputCount);
-        for (int index = 0; index < invalidInputCount; index++) {
-            @Nullable M3TextInputLayout input = control.getInvalidInput(index);
-            if (input != null && control.isInvalidInputShown(input)) {
-                inputs.add(input);
-            }
-        }
-        return inputs;
-    }
-
     /// Updates top-level summary children without publishing redundant list changes.
-    private void setContainerChildren(Node... children) {
+    private void setContainerChildren(Node first, Node second) {
         ObservableList<Node> currentChildren = container.getChildren();
-        if (!sameNodes(currentChildren, List.of(children))) {
-            currentChildren.setAll(children);
+        if (currentChildren.size() != 2
+                || currentChildren.get(0) != first
+                || currentChildren.get(1) != second) {
+            currentChildren.setAll(first, second);
         }
     }
 
     /// Updates rendered invalid item rows while preserving existing row nodes when possible.
     private void updateInvalidItemRows(List<M3TextInputLayout> invalidInputs) {
-        Set<M3TextInputLayout> nextInputs = Collections.newSetFromMap(new IdentityHashMap<>());
-        nextInputs.addAll(invalidInputs);
-        itemRows.keySet().removeIf(input -> !nextInputs.contains(input));
+        invalidInputSetScratch.clear();
+        invalidInputSetScratch.addAll(invalidInputs);
+        Iterator<M3TextInputLayout> iterator = itemRows.keySet().iterator();
+        while (iterator.hasNext()) {
+            if (!invalidInputSetScratch.contains(iterator.next())) {
+                iterator.remove();
+            }
+        }
 
-        ArrayList<Node> rows = new ArrayList<>(invalidInputs.size());
+        itemRowsScratch.clear();
+        itemRowsScratch.ensureCapacity(invalidInputs.size());
         for (M3TextInputLayout input : invalidInputs) {
             Node row = itemRows.get(input);
             if (row == null) {
@@ -343,13 +353,15 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
             } else {
                 updateItem(row, input);
             }
-            rows.add(row);
+            itemRowsScratch.add(row);
         }
 
         ObservableList<Node> children = items.getChildren();
-        if (!sameNodes(children, rows)) {
-            children.setAll(rows);
+        if (!sameNodes(children, itemRowsScratch)) {
+            children.setAll(itemRowsScratch);
         }
+        itemRowsScratch.clear();
+        invalidInputSetScratch.clear();
     }
 
     /// Removes rendered invalid item rows and cached row references.
@@ -516,12 +528,12 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
     }
 
     /// Moves focus to the adjacent invalid item row when one exists.
-    private boolean focusAdjacentItem(Node item, boolean forward) {
+    private void focusAdjacentItem(Node item, boolean forward) {
         int currentIndex = items.getChildren().indexOf(item);
         if (currentIndex < 0) {
-            return false;
+            return;
         }
-        return focusIndexedItem(currentIndex + (forward ? 1 : -1));
+        focusIndexedItem(currentIndex + (forward ? 1 : -1));
     }
 
     /// Moves focus to one invalid item row by rendered row index.

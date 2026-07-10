@@ -4,13 +4,14 @@
 package org.glavo.m3fx.controls;
 
 import javafx.animation.PauseTransition;
+import javafx.beans.InvalidationListener;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.ReadOnlyProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -38,9 +39,8 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 /// A Material Design 3 static list container for a small number of already-created nodes.
@@ -100,11 +100,22 @@ public class M3ListPane extends Control {
     private final ReadOnlyObjectWrapper<@Nullable M3ListItem> selectedItem =
             new ReadOnlyObjectWrapper<>(this, "selectedItem");
 
-    /// The selected-state listeners installed on list items.
-    private final Map<M3ListItem, ChangeListener<Boolean>> selectedListeners = new HashMap<>();
+    /// Reusable storage for computing selected items without allocating on every refresh.
+    private final List<M3ListItem> selectedItemsScratch = new ArrayList<>();
 
-    /// The reachability listeners installed on list items.
-    private final Map<M3ListItem, ChangeListener<Boolean>> reachabilityListeners = new HashMap<>();
+    /// Handles selected-state invalidation for every installed list item.
+    private final InvalidationListener selectedInvalidation = observable -> {
+        if (observable instanceof ReadOnlyProperty<?> property && property.getBean() instanceof M3ListItem item) {
+            handleItemSelectedChanged(item, item.isSelected());
+        }
+    };
+
+    /// Handles reachability invalidation for every installed list item.
+    private final InvalidationListener reachabilityInvalidation = observable -> {
+        if (observable instanceof ReadOnlyProperty<?> property && property.getBean() instanceof M3ListItem item) {
+            handleItemReachabilityChanged(item);
+        }
+    };
 
     /// Handles list item actions by applying the configured selection policy.
     private final EventHandler<ActionEvent> itemActionHandler = this::handleItemAction;
@@ -422,7 +433,7 @@ public class M3ListPane extends Control {
         M3Animation.updatePauseDuration(
                 typeAheadResetDelay,
                 M3Animation.motionBehavior(this).typeAheadResetDelay(),
-                typeAheadBuffer.length() > 0
+                !typeAheadBuffer.isEmpty()
         );
     }
 
@@ -576,29 +587,17 @@ public class M3ListPane extends Control {
     /// Installs action and selected-state listeners on a list item.
     private void installItem(M3ListItem item) {
         item.addEventHandler(ActionEvent.ACTION, itemActionHandler);
-        ChangeListener<Boolean> listener = (observable, oldValue, newValue) ->
-                handleItemSelectedChanged(item, newValue);
-        selectedListeners.put(item, listener);
-        item.selectedProperty().addListener(listener);
-        ChangeListener<Boolean> reachabilityListener = (observable, oldValue, newValue) ->
-                handleItemReachabilityChanged(item);
-        reachabilityListeners.put(item, reachabilityListener);
-        item.disabledProperty().addListener(reachabilityListener);
-        item.visibleProperty().addListener(reachabilityListener);
+        item.selectedProperty().addListener(selectedInvalidation);
+        item.disabledProperty().addListener(reachabilityInvalidation);
+        item.visibleProperty().addListener(reachabilityInvalidation);
     }
 
     /// Removes action and selected-state listeners from a list item.
     private void uninstallItem(M3ListItem item) {
         item.removeEventHandler(ActionEvent.ACTION, itemActionHandler);
-        ChangeListener<Boolean> listener = selectedListeners.remove(item);
-        if (listener != null) {
-            item.selectedProperty().removeListener(listener);
-        }
-        ChangeListener<Boolean> reachabilityListener = reachabilityListeners.remove(item);
-        if (reachabilityListener != null) {
-            item.disabledProperty().removeListener(reachabilityListener);
-            item.visibleProperty().removeListener(reachabilityListener);
-        }
+        item.selectedProperty().removeListener(selectedInvalidation);
+        item.disabledProperty().removeListener(reachabilityInvalidation);
+        item.visibleProperty().removeListener(reachabilityInvalidation);
     }
 
     /// Applies the configured selection policy to a list item action.
@@ -722,19 +721,22 @@ public class M3ListPane extends Control {
 
     /// Refreshes selected item state from current child item states.
     private void refreshSelectedItems() {
-        List<M3ListItem> previousSelection = List.copyOf(selectedItems);
-        selectedItems.clear();
+        selectedItemsScratch.clear();
         for (Node child : getItems()) {
             if (child instanceof M3ListItem item && item.isSelected()) {
                 if (isSelectableListItem(item)) {
-                    selectedItems.add(item);
+                    selectedItemsScratch.add(item);
                 } else {
                     setItemSelectedWithoutRefresh(item, false);
                 }
             }
         }
+        boolean selectionChanged = !selectedItems.equals(selectedItemsScratch);
+        if (selectionChanged) {
+            selectedItems.setAll(selectedItemsScratch);
+        }
         selectedItem.set(selectedItems.isEmpty() ? null : selectedItems.get(0));
-        if (!selectedItems.equals(previousSelection)) {
+        if (selectionChanged) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
             M3Accessible.notifyFocusNodeChanged(this);
             focusNotifier.refresh();

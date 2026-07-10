@@ -76,6 +76,9 @@ public final class M3NavigationDrawerGroup extends Control {
     /// The disclosure icon attached to the header item.
     private final M3DisclosureIcon disclosureIcon = new M3DisclosureIcon();
 
+    /// Cached header and currently visible child rows used by accessibility queries.
+    private final ObservableList<Node> accessibleItems = FXCollections.observableArrayList(headerItem);
+
     /// Applies child-item style classes as items are added and removed.
     private final ListChangeListener<M3ListItem> itemsListener = change -> {
         while (change.next()) {
@@ -259,19 +262,14 @@ public final class M3NavigationDrawerGroup extends Control {
 
     /// Returns the header row and currently visible child rows for accessibility indexing.
     private ObservableList<Node> accessibleContent() {
-        ObservableList<Node> content = FXCollections.observableArrayList();
-        content.add(headerItem);
-        if (isExpanded()) {
-            content.addAll(items);
-        }
-        return content;
+        return accessibleItems;
     }
 
     /// Expands the group when needed and focuses the requested accessible row.
     ///
     /// @param parameters optional accessibility target parameters
     /// @return `true` when focus moved to the requested or current row
-    final boolean showAccessibleItem(Object... parameters) {
+    boolean showAccessibleItem(Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
         if (parameters.length == 0) {
             expandForAccessibleReveal();
@@ -297,7 +295,7 @@ public final class M3NavigationDrawerGroup extends Control {
     /// Requests focus for the current accessible row, or the header row when no child owns focus.
     ///
     /// @return `true` when the current row accepted focus
-    final boolean focusAccessibleNode() {
+    boolean focusAccessibleNode() {
         if (M3Accessible.showCurrentOrItem(this, accessibleContent())) {
             notifyFocusNodeChanged();
             return true;
@@ -338,10 +336,20 @@ public final class M3NavigationDrawerGroup extends Control {
 
     /// Notifies accessibility clients that visible group rows changed.
     private void notifyAccessibleContentChanged() {
+        refreshAccessibleContent();
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyFocusNodeChanged();
         requestLayout();
+    }
+
+    /// Rebuilds the cached accessibility row order after disclosure or child-list changes.
+    private void refreshAccessibleContent() {
+        accessibleItems.clear();
+        accessibleItems.add(headerItem);
+        if (isExpanded()) {
+            accessibleItems.addAll(items);
+        }
     }
 
     /// Notifies and refreshes cached accessibility focus state.

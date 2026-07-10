@@ -3,11 +3,12 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.beans.InvalidationListener;
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.ReadOnlyProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -38,9 +39,7 @@ import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 /// A Material Design 3 navigation rail for primary destinations in medium-width layouts.
@@ -97,11 +96,24 @@ public class M3NavigationRail extends Control {
         }
     };
 
-    /// The selected-state listeners installed on navigation items.
-    private final Map<M3NavigationItem, ChangeListener<Boolean>> selectedListeners = new HashMap<>();
+    /// Reusable storage for computing selected items without allocating on every refresh.
+    private final List<M3NavigationItem> selectedItemsScratch = new ArrayList<>();
 
-    /// The reachability listeners installed on navigation items.
-    private final Map<M3NavigationItem, ChangeListener<Boolean>> reachabilityListeners = new HashMap<>();
+    /// Handles selected-state invalidation for every installed navigation item.
+    private final InvalidationListener selectedInvalidation = observable -> {
+        if (observable instanceof ReadOnlyProperty<?> property
+                && property.getBean() instanceof M3NavigationItem item) {
+            handleItemSelectedChanged(item, item.isSelected());
+        }
+    };
+
+    /// Handles reachability invalidation for every installed navigation item.
+    private final InvalidationListener reachabilityInvalidation = observable -> {
+        if (observable instanceof ReadOnlyProperty<?> property
+                && property.getBean() instanceof M3NavigationItem item) {
+            handleItemReachabilityChanged(item);
+        }
+    };
 
     /// Updates navigation item selection listeners when children change.
     private final ListChangeListener<Node> childrenListener = change -> {
@@ -447,28 +459,16 @@ public class M3NavigationRail extends Control {
 
     /// Installs a selected-state listener on a navigation item.
     private void installItem(M3NavigationItem item) {
-        ChangeListener<Boolean> listener = (observable, oldValue, newValue) ->
-                handleItemSelectedChanged(item, newValue);
-        selectedListeners.put(item, listener);
-        item.selectedProperty().addListener(listener);
-        ChangeListener<Boolean> reachabilityListener = (observable, oldValue, newValue) ->
-                handleItemReachabilityChanged(item);
-        reachabilityListeners.put(item, reachabilityListener);
-        item.disabledProperty().addListener(reachabilityListener);
-        item.visibleProperty().addListener(reachabilityListener);
+        item.selectedProperty().addListener(selectedInvalidation);
+        item.disabledProperty().addListener(reachabilityInvalidation);
+        item.visibleProperty().addListener(reachabilityInvalidation);
     }
 
     /// Removes the selected-state listener from a navigation item.
     private void uninstallItem(M3NavigationItem item) {
-        ChangeListener<Boolean> listener = selectedListeners.remove(item);
-        if (listener != null) {
-            item.selectedProperty().removeListener(listener);
-        }
-        ChangeListener<Boolean> reachabilityListener = reachabilityListeners.remove(item);
-        if (reachabilityListener != null) {
-            item.disabledProperty().removeListener(reachabilityListener);
-            item.visibleProperty().removeListener(reachabilityListener);
-        }
+        item.selectedProperty().removeListener(selectedInvalidation);
+        item.disabledProperty().removeListener(reachabilityInvalidation);
+        item.visibleProperty().removeListener(reachabilityInvalidation);
     }
 
     /// Keeps externally changed item selected states mutually exclusive.
@@ -479,7 +479,7 @@ public class M3NavigationRail extends Control {
 
         if (!isSelectableNavigationItem(item)) {
             if (selected) {
-                setItemSelected(item, false);
+                clearItemSelection(item);
                 if (!isAllowEmptySelection()) {
                     selectFirstItemIfNeeded();
                 }
@@ -500,7 +500,7 @@ public class M3NavigationRail extends Control {
     /// Keeps selection and accessibility state consistent when an item becomes unreachable.
     private void handleItemReachabilityChanged(M3NavigationItem item) {
         if (item.isSelected() && !isSelectableNavigationItem(item)) {
-            setItemSelected(item, false);
+            clearItemSelection(item);
         }
         enforceSelectionPolicy();
         M3Accessible.notifyFocusNodeChanged(this);
@@ -529,17 +529,17 @@ public class M3NavigationRail extends Control {
         selectItem(firstItem);
     }
 
-    /// Sets one navigation item's selected state and refreshes selected item state.
-    private void setItemSelected(M3NavigationItem item, boolean selected) {
-        setItemSelectedWithoutRefresh(item, selected);
+    /// Clears one navigation item's selected state and refreshes selected item state.
+    private void clearItemSelection(M3NavigationItem item) {
+        clearItemSelectionWithoutRefresh(item);
         refreshSelectedItems();
     }
 
-    /// Sets one navigation item's selected state without refreshing the aggregate selected item list.
-    private void setItemSelectedWithoutRefresh(M3NavigationItem item, boolean selected) {
+    /// Clears one navigation item's selected state without refreshing the aggregate selected item list.
+    private void clearItemSelectionWithoutRefresh(M3NavigationItem item) {
         updatingSelection = true;
         try {
-            item.setSelected(selected);
+            item.setSelected(false);
         } finally {
             updatingSelection = false;
         }
@@ -562,19 +562,22 @@ public class M3NavigationRail extends Control {
 
     /// Refreshes selected item state from current child states.
     private void refreshSelectedItems() {
-        List<M3NavigationItem> previousSelection = List.copyOf(selectedItems);
-        selectedItems.clear();
+        selectedItemsScratch.clear();
         for (Node child : getItems()) {
             if (child instanceof M3NavigationItem item && item.isSelected()) {
                 if (isSelectableNavigationItem(item)) {
-                    selectedItems.add(item);
+                    selectedItemsScratch.add(item);
                 } else {
-                    setItemSelectedWithoutRefresh(item, false);
+                    clearItemSelectionWithoutRefresh(item);
                 }
             }
         }
+        boolean selectionChanged = !selectedItems.equals(selectedItemsScratch);
+        if (selectionChanged) {
+            selectedItems.setAll(selectedItemsScratch);
+        }
         selectedItem.set(selectedItems.isEmpty() ? null : selectedItems.get(0));
-        if (!selectedItems.equals(previousSelection)) {
+        if (selectionChanged) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
             M3Accessible.notifyFocusNodeChanged(this);
             focusNotifier.refresh();
