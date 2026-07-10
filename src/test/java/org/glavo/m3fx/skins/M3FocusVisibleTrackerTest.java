@@ -50,7 +50,8 @@ final class M3FocusVisibleTrackerTest {
     void nativeFocusVisiblePropertyDrivesPseudoClass() {
         FxTestUtils.runOnFxThread(() -> {
             Pane pane = focusablePane();
-            show(new HBox(pane), 96.0, 48.0);
+            HBox root = new HBox(pane);
+            show(root, 96.0, 48.0);
             SimpleBooleanProperty nativeFocusVisible = new SimpleBooleanProperty(false);
             M3FocusVisibleTracker tracker = new M3FocusVisibleTracker(pane, () -> {}, nativeFocusVisible);
             tracker.install();
@@ -62,6 +63,13 @@ final class M3FocusVisibleTrackerTest {
 
                 nativeFocusVisible.set(false);
                 assertFalse(pane.getPseudoClassStates().contains(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS));
+
+                pane.requestFocus();
+                root.fireEvent(keyPressedEvent(KeyCode.A));
+                assertFalse(
+                        pane.getPseudoClassStates().contains(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS),
+                        "native focus-visible state must not be overridden by fallback scene modality"
+                );
             } finally {
                 tracker.uninstall();
             }

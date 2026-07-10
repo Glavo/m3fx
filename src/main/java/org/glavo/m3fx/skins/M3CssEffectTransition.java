@@ -8,6 +8,8 @@ import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
 import javafx.beans.value.ChangeListener;
+import javafx.collections.SetChangeListener;
+import javafx.css.PseudoClass;
 import javafx.scene.Node;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.effect.Effect;
@@ -35,8 +37,13 @@ final class M3CssEffectTransition {
     /// The node that receives the animated effect.
     private final Node target;
 
-    /// Tracks keyboard-visible focus state for the owner.
-    private final M3FocusVisibleTracker focusVisibleTracker;
+    /// Handles focus-visible pseudo-class changes produced by the shared interaction state layer.
+    private final SetChangeListener<PseudoClass> pseudoClassStateListener = change -> {
+        if (M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS.equals(change.getElementAdded())
+                || M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS.equals(change.getElementRemoved())) {
+            animateEffectFromCss();
+        }
+    };
 
     /// Observes runtime motion settings while the owner is attached to a scene.
     private final M3MotionSettingsObserver motionSettingsObserver;
@@ -45,13 +52,12 @@ final class M3CssEffectTransition {
     M3CssEffectTransition(Node owner, Node target) {
         this.owner = owner;
         this.target = target;
-        this.focusVisibleTracker = new M3FocusVisibleTracker(owner, this::animateEffectFromCss);
         this.motionSettingsObserver = new M3MotionSettingsObserver(owner, this::refreshMotionSettings);
     }
 
     /// Installs interaction listeners.
     void install() {
-        focusVisibleTracker.install();
+        owner.getPseudoClassStates().addListener(pseudoClassStateListener);
         owner.hoverProperty().addListener(interactionStateListener);
         owner.focusedProperty().addListener(interactionStateListener);
         owner.pressedProperty().addListener(interactionStateListener);
@@ -64,8 +70,8 @@ final class M3CssEffectTransition {
         owner.focusedProperty().removeListener(interactionStateListener);
         owner.pressedProperty().removeListener(interactionStateListener);
         owner.disabledProperty().removeListener(interactionStateListener);
+        owner.getPseudoClassStates().removeListener(pseudoClassStateListener);
         motionSettingsObserver.dispose();
-        focusVisibleTracker.uninstall();
         animation.stop();
     }
 

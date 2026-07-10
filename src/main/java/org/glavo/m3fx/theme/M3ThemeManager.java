@@ -71,6 +71,10 @@ public final class M3ThemeManager {
     private static final Map<Scene, SceneThemeInstallation> SCENE_THEME_INSTALLATIONS =
             Collections.synchronizedMap(new WeakHashMap<>());
 
+    /// Generated stylesheet URLs keyed by immutable theme values.
+    private static final Map<M3Theme, String> GENERATED_THEME_STYLESHEETS =
+            Collections.synchronizedMap(new WeakHashMap<>());
+
     /// Prevents utility class instantiation.
     private M3ThemeManager() {
     }
@@ -240,22 +244,31 @@ public final class M3ThemeManager {
     public static String themeStylesheetUrl(M3Theme theme) {
         Objects.requireNonNull(theme, "theme");
 
-        String stylesheet = themeStylesheet(theme);
-        String digest = sha256(stylesheet);
-        Path directory = Path.of(System.getProperty("java.io.tmpdir"), THEME_STYLESHEET_DIRECTORY);
-        Path file = directory.resolve("m3fx-theme-" + digest + ".css");
-
-        try {
-            Files.createDirectories(directory);
-            if (!Files.exists(file)) {
-                Files.writeString(file, stylesheet, StandardCharsets.UTF_8);
-                file.toFile().deleteOnExit();
+        synchronized (GENERATED_THEME_STYLESHEETS) {
+            @Nullable String cachedUrl = GENERATED_THEME_STYLESHEETS.get(theme);
+            if (cachedUrl != null) {
+                return cachedUrl;
             }
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to write generated M3FX theme stylesheet", e);
-        }
 
-        return file.toUri().toString();
+            String stylesheet = themeStylesheet(theme);
+            String digest = sha256(stylesheet);
+            Path directory = Path.of(System.getProperty("java.io.tmpdir"), THEME_STYLESHEET_DIRECTORY);
+            Path file = directory.resolve("m3fx-theme-" + digest + ".css");
+
+            try {
+                Files.createDirectories(directory);
+                if (!Files.exists(file)) {
+                    Files.writeString(file, stylesheet, StandardCharsets.UTF_8);
+                    file.toFile().deleteOnExit();
+                }
+            } catch (IOException e) {
+                throw new IllegalStateException("Failed to write generated M3FX theme stylesheet", e);
+            }
+
+            String url = file.toUri().toString();
+            GENERATED_THEME_STYLESHEETS.put(theme, url);
+            return url;
+        }
     }
 
     /// Creates the complete generated stylesheet for a theme.

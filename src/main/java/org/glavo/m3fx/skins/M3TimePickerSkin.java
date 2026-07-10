@@ -71,12 +71,37 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
     /// The AM/PM row shown in 12-hour mode.
     private final HBox periodRow = new HBox();
 
+    /// The reusable hour cells, allocated only when a clock mode requires them.
+    private final List<TimeCellButton> hourCells = new ArrayList<>(TWENTY_FOUR_HOUR_COLUMNS * COMPACT_GRID_COLUMNS);
+
+    /// The reusable minute cells, allocated only when a minute step requires them.
+    private final List<TimeCellButton> minuteCells = new ArrayList<>(60);
+
+    /// The persistent AM selection cell.
+    private final TimeCellButton amPeriodCell;
+
+    /// The persistent PM selection cell.
+    private final TimeCellButton pmPeriodCell;
+
+    /// The number of hour cells currently attached to the hour grid.
+    private int activeHourCellCount = -1;
+
+    /// The number of minute cells currently attached to the minute grid.
+    private int activeMinuteCellCount = -1;
+
+    /// Whether the AM and PM cells are currently attached to the period row.
+    private boolean periodCellsAttached;
+
     /// Refreshes visible text, style classes, and disabled states after control changes.
     private final InvalidationListener refreshListener = observable -> refresh();
 
     /// Creates a time picker skin.
     public M3TimePickerSkin(M3TimePicker control) {
         super(control);
+        amPeriodCell = createCell("AM", M3TimePicker.PERIOD_CELL_STYLE_CLASS);
+        pmPeriodCell = createCell("PM", M3TimePicker.PERIOD_CELL_STYLE_CLASS);
+        amPeriodCell.getStyleClass().add("m3-time-picker-period-start");
+        pmPeriodCell.getStyleClass().add("m3-time-picker-period-end");
         initializeNodes();
         installListeners(control);
         getChildren().add(container);
@@ -218,84 +243,128 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
         refreshPeriodRow(control, baseTime, selectedTime);
     }
 
-    /// Rebuilds the hour grid for the active clock mode.
+    /// Updates the reusable hour grid for the active clock mode.
     private void refreshHourGrid(M3TimePicker control, LocalTime baseTime, @Nullable LocalTime selectedTime) {
-        hourGrid.getChildren().clear();
         if (control.isUse24HourClock()) {
+            ensureGridCells(hourGrid, hourCells, 24, TWENTY_FOUR_HOUR_COLUMNS, M3TimePicker.HOUR_CELL_STYLE_CLASS);
             for (int hour = 0; hour < 24; hour++) {
                 LocalTime candidate = baseTime.withHour(hour);
-                TimeCellButton cell = createCell(formatTwoDigits(hour), M3TimePicker.HOUR_CELL_STYLE_CLASS);
-                cell.setUserData(candidate);
-                cell.setAccessibleText(candidate.toString());
-                setStyleClass(cell, M3TimePicker.SELECTED_CELL_STYLE_CLASS,
-                        selectedTime != null && selectedTime.getHour() == hour);
-                cell.setDisable(!hourHasSelectableMinute(control, hour));
-                cell.setOnAction(this::handleTimeCellAction);
-                hourGrid.add(cell, hour % TWENTY_FOUR_HOUR_COLUMNS, hour / TWENTY_FOUR_HOUR_COLUMNS);
+                updateCell(
+                        hourCells.get(hour),
+                        formatTwoDigits(hour),
+                        candidate,
+                        selectedTime != null && selectedTime.getHour() == hour,
+                        !hourHasSelectableMinute(control, hour)
+                );
             }
         } else {
+            ensureGridCells(hourGrid, hourCells, 12, COMPACT_GRID_COLUMNS, M3TimePicker.HOUR_CELL_STYLE_CLASS);
             boolean afternoon = baseTime.getHour() >= 12;
             for (int displayHour = 1; displayHour <= 12; displayHour++) {
                 int actualHour = toActualHour(displayHour, afternoon);
                 LocalTime candidate = baseTime.withHour(actualHour);
-                TimeCellButton cell = createCell(Integer.toString(displayHour), M3TimePicker.HOUR_CELL_STYLE_CLASS);
-                cell.setUserData(candidate);
-                cell.setAccessibleText(candidate.toString());
-                setStyleClass(cell, M3TimePicker.SELECTED_CELL_STYLE_CLASS,
-                        selectedTime != null && toDisplayHour(selectedTime.getHour()) == displayHour);
-                cell.setDisable(!hourHasSelectableMinute(control, actualHour));
-                cell.setOnAction(this::handleTimeCellAction);
                 int index = displayHour - 1;
-                hourGrid.add(cell, index % COMPACT_GRID_COLUMNS, index / COMPACT_GRID_COLUMNS);
+                updateCell(
+                        hourCells.get(index),
+                        Integer.toString(displayHour),
+                        candidate,
+                        selectedTime != null && toDisplayHour(selectedTime.getHour()) == displayHour,
+                        !hourHasSelectableMinute(control, actualHour)
+                );
             }
         }
     }
 
-    /// Rebuilds the minute grid for the active minute step.
+    /// Updates the reusable minute grid for the active minute step.
     private void refreshMinuteGrid(M3TimePicker control, LocalTime baseTime, @Nullable LocalTime selectedTime) {
-        minuteGrid.getChildren().clear();
+        int cellCount = 60 / control.getMinuteStep();
+        ensureGridCells(minuteGrid, minuteCells, cellCount, COMPACT_GRID_COLUMNS, M3TimePicker.MINUTE_CELL_STYLE_CLASS);
         int index = 0;
         for (int minute = 0; minute < 60; minute += control.getMinuteStep()) {
             LocalTime candidate = baseTime.withMinute(minute);
-            TimeCellButton cell = createCell(formatTwoDigits(minute), M3TimePicker.MINUTE_CELL_STYLE_CLASS);
-            cell.setUserData(candidate);
-            cell.setAccessibleText(candidate.toString());
-            setStyleClass(cell, M3TimePicker.SELECTED_CELL_STYLE_CLASS,
-                    selectedTime != null && selectedTime.getMinute() == minute);
-            cell.setDisable(control.isTimeDisabled(candidate));
-            cell.setOnAction(this::handleTimeCellAction);
-            minuteGrid.add(cell, index % COMPACT_GRID_COLUMNS, index / COMPACT_GRID_COLUMNS);
+            updateCell(
+                    minuteCells.get(index),
+                    formatTwoDigits(minute),
+                    candidate,
+                    selectedTime != null && selectedTime.getMinute() == minute,
+                    control.isTimeDisabled(candidate)
+            );
             index++;
         }
     }
 
-    /// Rebuilds the AM/PM row for 12-hour mode.
+    /// Updates the reusable AM/PM row for 12-hour mode.
     private void refreshPeriodRow(M3TimePicker control, LocalTime baseTime, @Nullable LocalTime selectedTime) {
-        periodRow.getChildren().clear();
         periodRow.setManaged(!control.isUse24HourClock());
         periodRow.setVisible(!control.isUse24HourClock());
         if (control.isUse24HourClock()) {
+            if (periodCellsAttached) {
+                periodRow.getChildren().clear();
+                periodCellsAttached = false;
+            }
             return;
         }
 
+        if (!periodCellsAttached) {
+            periodRow.getChildren().setAll(amPeriodCell, pmPeriodCell);
+            periodCellsAttached = true;
+        }
+
         boolean afternoon = selectedTime == null ? baseTime.getHour() >= 12 : selectedTime.getHour() >= 12;
-        TimeCellButton am = createCell("AM", M3TimePicker.PERIOD_CELL_STYLE_CLASS);
-        am.getStyleClass().add("m3-time-picker-period-start");
-        am.setUserData(baseTime.withHour(toActualHour(toDisplayHour(baseTime.getHour()), false)));
-        am.setAccessibleText(am.getUserData().toString());
-        am.setDisable(!periodHasSelectableTime(control, false));
-        setStyleClass(am, M3TimePicker.SELECTED_CELL_STYLE_CLASS, !afternoon);
-        am.setOnAction(this::handleTimeCellAction);
+        LocalTime amTime = baseTime.withHour(toActualHour(toDisplayHour(baseTime.getHour()), false));
+        LocalTime pmTime = baseTime.withHour(toActualHour(toDisplayHour(baseTime.getHour()), true));
+        updateCell(amPeriodCell, "AM", amTime, !afternoon, !periodHasSelectableTime(control, false));
+        updateCell(pmPeriodCell, "PM", pmTime, afternoon, !periodHasSelectableTime(control, true));
+    }
 
-        TimeCellButton pm = createCell("PM", M3TimePicker.PERIOD_CELL_STYLE_CLASS);
-        pm.getStyleClass().add("m3-time-picker-period-end");
-        pm.setUserData(baseTime.withHour(toActualHour(toDisplayHour(baseTime.getHour()), true)));
-        pm.setAccessibleText(pm.getUserData().toString());
-        pm.setDisable(!periodHasSelectableTime(control, true));
-        setStyleClass(pm, M3TimePicker.SELECTED_CELL_STYLE_CLASS, afternoon);
-        pm.setOnAction(this::handleTimeCellAction);
+    /// Ensures that a grid has the requested reusable cell set and placement.
+    private void ensureGridCells(
+            GridPane grid,
+            List<TimeCellButton> cells,
+            int cellCount,
+            int columnCount,
+            String roleStyleClass
+    ) {
+        while (cells.size() < cellCount) {
+            cells.add(createCell("", roleStyleClass));
+        }
 
-        periodRow.getChildren().addAll(am, pm);
+        boolean hourCells = grid == hourGrid;
+        int activeCellCount = hourCells ? activeHourCellCount : activeMinuteCellCount;
+        if (activeCellCount == cellCount) {
+            return;
+        }
+
+        grid.getChildren().setAll(cells.subList(0, cellCount));
+        for (int index = 0; index < cellCount; index++) {
+            TimeCellButton cell = cells.get(index);
+            GridPane.setColumnIndex(cell, index % columnCount);
+            GridPane.setRowIndex(cell, index / columnCount);
+        }
+        if (hourCells) {
+            activeHourCellCount = cellCount;
+        } else {
+            activeMinuteCellCount = cellCount;
+        }
+    }
+
+    /// Updates the mutable state of one already-attached time cell.
+    private static void updateCell(
+            TimeCellButton cell,
+            String text,
+            LocalTime time,
+            boolean selected,
+            boolean disabled
+    ) {
+        if (!cell.getText().equals(text)) {
+            cell.setText(text);
+        }
+        if (!time.equals(cell.getUserData())) {
+            cell.setUserData(time);
+            cell.setAccessibleText(time.toString());
+        }
+        setStyleClass(cell, M3TimePicker.SELECTED_CELL_STYLE_CLASS, selected);
+        cell.setDisable(disabled);
     }
 
     /// Selects the time represented by a cell action.
@@ -344,10 +413,11 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
         return label;
     }
 
-    /// Creates a selectable time cell.
-    private static TimeCellButton createCell(String text, String roleStyleClass) {
+    /// Creates a reusable selectable time cell.
+    private TimeCellButton createCell(String text, String roleStyleClass) {
         TimeCellButton cell = new TimeCellButton(text);
         cell.getStyleClass().add(roleStyleClass);
+        cell.setOnAction(this::handleTimeCellAction);
         return cell;
     }
 

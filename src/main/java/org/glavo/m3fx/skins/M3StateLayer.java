@@ -123,6 +123,48 @@ final class M3StateLayer extends Pane {
     /// The bottom-left radius currently applied to the overlay background.
     private double overlayBottomLeftRadius = Double.NaN;
 
+    /// The width currently applied to the focus indicator.
+    private double focusIndicatorWidth = Double.NaN;
+
+    /// The height currently applied to the focus indicator.
+    private double focusIndicatorHeight = Double.NaN;
+
+    /// The top-left radius currently applied to the focus indicator.
+    private double focusIndicatorTopLeftRadius = Double.NaN;
+
+    /// The top-right radius currently applied to the focus indicator.
+    private double focusIndicatorTopRightRadius = Double.NaN;
+
+    /// The bottom-right radius currently applied to the focus indicator.
+    private double focusIndicatorBottomRightRadius = Double.NaN;
+
+    /// The bottom-left radius currently applied to the focus indicator.
+    private double focusIndicatorBottomLeftRadius = Double.NaN;
+
+    /// The inner border inset currently applied to the focus indicator.
+    private double focusIndicatorInset = Double.NaN;
+
+    /// The border thickness currently applied to the focus indicator.
+    private double focusIndicatorThickness = Double.NaN;
+
+    /// The width currently represented by the rounded-rectangle clip.
+    private double clipWidth = Double.NaN;
+
+    /// The height currently represented by the rounded-rectangle clip.
+    private double clipHeight = Double.NaN;
+
+    /// The top-left radius currently represented by the rounded-rectangle clip.
+    private double clipTopLeftRadius = Double.NaN;
+
+    /// The top-right radius currently represented by the rounded-rectangle clip.
+    private double clipTopRightRadius = Double.NaN;
+
+    /// The bottom-right radius currently represented by the rounded-rectangle clip.
+    private double clipBottomRightRadius = Double.NaN;
+
+    /// The bottom-left radius currently represented by the rounded-rectangle clip.
+    private double clipBottomLeftRadius = Double.NaN;
+
     /// Creates a state layer.
     M3StateLayer() {
         getStyleClass().add(STYLE_CLASS);
@@ -567,14 +609,34 @@ final class M3StateLayer extends Pane {
         double adjustedTopRight = adjustedIndicatorRadius(topRight, -inwardOffset);
         double adjustedBottomRight = adjustedIndicatorRadius(bottomRight, -inwardOffset);
         double adjustedBottomLeft = adjustedIndicatorRadius(bottomLeft, -inwardOffset);
+        double thickness = tokens.focusIndicatorThickness();
         focusIndicator.resizeRelocate(0.0, 0.0, width, height);
+        if (Double.compare(focusIndicatorWidth, width) == 0
+                && Double.compare(focusIndicatorHeight, height) == 0
+                && Double.compare(focusIndicatorTopLeftRadius, adjustedTopLeft) == 0
+                && Double.compare(focusIndicatorTopRightRadius, adjustedTopRight) == 0
+                && Double.compare(focusIndicatorBottomRightRadius, adjustedBottomRight) == 0
+                && Double.compare(focusIndicatorBottomLeftRadius, adjustedBottomLeft) == 0
+                && Double.compare(focusIndicatorInset, inwardOffset) == 0
+                && Double.compare(focusIndicatorThickness, thickness) == 0) {
+            return;
+        }
+
+        focusIndicatorWidth = width;
+        focusIndicatorHeight = height;
+        focusIndicatorTopLeftRadius = adjustedTopLeft;
+        focusIndicatorTopRightRadius = adjustedTopRight;
+        focusIndicatorBottomRightRadius = adjustedBottomRight;
+        focusIndicatorBottomLeftRadius = adjustedBottomLeft;
+        focusIndicatorInset = inwardOffset;
+        focusIndicatorThickness = thickness;
         focusIndicator.setStyle("-fx-background-radius: "
                 + formatPixels(adjustedTopLeft) + " "
                 + formatPixels(adjustedTopRight) + " "
                 + formatPixels(adjustedBottomRight) + " "
                 + formatPixels(adjustedBottomLeft) + "; "
                 + "-fx-border-insets: " + formatPixels(inwardOffset) + "; "
-                + "-fx-border-width: " + formatPixels(tokens.focusIndicatorThickness()) + "; "
+                + "-fx-border-width: " + formatPixels(thickness) + "; "
                 + "-fx-border-radius: "
                 + formatPixels(adjustedTopLeft) + " "
                 + formatPixels(adjustedTopRight) + " "
@@ -597,6 +659,21 @@ final class M3StateLayer extends Pane {
 
     /// Updates the clip path to match the resolved rounded rectangle shape.
     private void updateClip(double width, double height, double topLeft, double topRight, double bottomRight, double bottomLeft) {
+        if (Double.compare(clipWidth, width) == 0
+                && Double.compare(clipHeight, height) == 0
+                && Double.compare(clipTopLeftRadius, topLeft) == 0
+                && Double.compare(clipTopRightRadius, topRight) == 0
+                && Double.compare(clipBottomRightRadius, bottomRight) == 0
+                && Double.compare(clipBottomLeftRadius, bottomLeft) == 0) {
+            return;
+        }
+
+        clipWidth = width;
+        clipHeight = height;
+        clipTopLeftRadius = topLeft;
+        clipTopRightRadius = topRight;
+        clipBottomRightRadius = bottomRight;
+        clipBottomLeftRadius = bottomLeft;
         clip.getElements().setAll(
                 new MoveTo(topLeft, 0.0),
                 new LineTo(width - topRight, 0.0),

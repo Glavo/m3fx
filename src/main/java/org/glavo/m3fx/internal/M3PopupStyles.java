@@ -28,6 +28,14 @@ public final class M3PopupStyles {
     /// The property key that stores a popup root style before copied theme declarations are applied.
     private static final String BASE_STYLE_PROPERTY_KEY = M3PopupStyles.class.getName() + ".baseStyle";
 
+    /// The property key that stores the last source stylesheet snapshot copied into a popup root.
+    private static final String SOURCE_STYLESHEETS_PROPERTY_KEY =
+            M3PopupStyles.class.getName() + ".sourceStylesheets";
+
+    /// The property key that stores the generated stylesheet added for a copied local theme.
+    private static final String COPIED_THEME_STYLESHEET_PROPERTY_KEY =
+            M3PopupStyles.class.getName() + ".copiedThemeStylesheet";
+
     /// Prevents utility class instantiation.
     private M3PopupStyles() {
     }
@@ -48,7 +56,7 @@ public final class M3PopupStyles {
         Objects.requireNonNull(sourceStylesheets, "sourceStylesheets");
         Objects.requireNonNull(controlStylesheets, "controlStylesheets");
 
-        popupRoot.getStylesheets().setAll(List.copyOf(sourceStylesheets));
+        synchronizeSourceStylesheets(popupRoot, sourceStylesheets);
         ensureFallbackStylesheet(popupRoot);
         for (String stylesheet : controlStylesheets) {
             addStylesheet(popupRoot, Objects.requireNonNull(stylesheet, "stylesheet"));
@@ -58,12 +66,46 @@ public final class M3PopupStyles {
         @Nullable M3Theme theme = themeRoot == null ? null : M3ThemeMetadata.getTheme(themeRoot);
         if (themeRoot != null) {
             M3ThemeManager.copyThemeContext(themeRoot, popupRoot);
-            if (theme != null) {
-                moveStylesheetToEnd(popupRoot, M3ThemeManager.themeStylesheetUrl(theme));
-            }
+            updateCopiedThemeStylesheet(popupRoot, sourceStylesheets, theme);
         } else {
             restoreBaseStyle(popupRoot);
+            updateCopiedThemeStylesheet(popupRoot, sourceStylesheets, null);
         }
+    }
+
+    /// Copies owner stylesheets only when the source list has changed since the previous synchronization.
+    private static void synchronizeSourceStylesheets(Parent popupRoot, List<String> sourceStylesheets) {
+        Object snapshot = popupRoot.getProperties().get(SOURCE_STYLESHEETS_PROPERTY_KEY);
+        if (snapshot instanceof List<?> sourceSnapshot && sourceSnapshot.equals(sourceStylesheets)) {
+            return;
+        }
+
+        popupRoot.getStylesheets().setAll(sourceStylesheets);
+        popupRoot.getProperties().put(SOURCE_STYLESHEETS_PROPERTY_KEY, List.copyOf(sourceStylesheets));
+    }
+
+    /// Updates the generated stylesheet inserted for a copied local theme.
+    private static void updateCopiedThemeStylesheet(
+            Parent popupRoot,
+            List<String> sourceStylesheets,
+            @Nullable M3Theme theme
+    ) {
+        Object previousValue = popupRoot.getProperties().get(COPIED_THEME_STYLESHEET_PROPERTY_KEY);
+        @Nullable String previousStylesheet = previousValue instanceof String stylesheet ? stylesheet : null;
+        @Nullable String stylesheet = theme == null ? null : M3ThemeManager.themeStylesheetUrl(theme);
+        if (previousStylesheet != null
+                && !previousStylesheet.equals(stylesheet)
+                && !sourceStylesheets.contains(previousStylesheet)) {
+            popupRoot.getStylesheets().remove(previousStylesheet);
+        }
+
+        if (stylesheet == null) {
+            popupRoot.getProperties().remove(COPIED_THEME_STYLESHEET_PROPERTY_KEY);
+            return;
+        }
+
+        moveStylesheetToEnd(popupRoot, stylesheet);
+        popupRoot.getProperties().put(COPIED_THEME_STYLESHEET_PROPERTY_KEY, stylesheet);
     }
 
     /// Adds one stylesheet URL to a popup root when it is not already present.

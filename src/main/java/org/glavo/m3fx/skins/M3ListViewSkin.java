@@ -73,8 +73,11 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     private final InvalidationListener focusedInvalidation = observable -> refreshCells();
 
     /// Tracks keyboard-visible focus for virtualized row focus indicators.
+    ///
+    /// Virtual rows use logical list focus rather than becoming the JavaFX scene focus owner, so this deliberately
+    /// uses scene-modality tracking instead of the list view's native focus-visible property.
     private final M3FocusVisibleTracker focusVisibleTracker =
-            new M3FocusVisibleTracker(getSkinnable(), this::refreshCells);
+            new M3FocusVisibleTracker(getSkinnable(), this::refreshCells, null);
 
     /// Suspends virtualized cell refreshes while the list view is detached and refreshes after reattachment.
     private final ChangeListener<@Nullable Scene> sceneListener =

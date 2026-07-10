@@ -22068,20 +22068,12 @@ final class M3ControlStyleTest {
                 root.layout();
 
                 assertEquals(1, listView.getFocusedIndex());
-                M3ListItem focusedRow = Objects.requireNonNull(assertInstanceOf(
-                        M3ListItem.class,
-                        listView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
-                ));
-                assertEquals("Settings", focusedRow.getHeadlineText());
+                assertSame(settingsAction, listView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
                 listView.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
 
                 assertEquals(1, listView.getFocusedIndex());
-                focusedRow = Objects.requireNonNull(assertInstanceOf(
-                        M3ListItem.class,
-                        listView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
-                ));
-                assertEquals("Settings", focusedRow.getHeadlineText());
+                assertSame(settingsAction, listView.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
                 stage.close();
             }

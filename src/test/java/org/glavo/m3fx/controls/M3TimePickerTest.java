@@ -109,6 +109,32 @@ final class M3TimePickerTest {
         });
     }
 
+    /// Verifies that value changes update existing time cells instead of recreating their skins.
+    @Test
+    void timePickerSkinReusesCellsAcrossValueChanges() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3TimePicker picker = new M3TimePicker(LocalTime.of(10, 15));
+            picker.setMinuteStep(15);
+            Pane root = new Pane(picker);
+            Scene scene = new Scene(root, 520.0, 360.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            picker.resize(460.0, 320.0);
+            picker.layout();
+
+            ButtonBase hourCell = cellByText(picker, M3TimePicker.HOUR_CELL_STYLE_CLASS, "10");
+            ButtonBase minuteCell = cellByText(picker, M3TimePicker.MINUTE_CELL_STYLE_CLASS, "15");
+            ButtonBase periodCell = cellByText(picker, M3TimePicker.PERIOD_CELL_STYLE_CLASS, "AM");
+
+            picker.setValue(LocalTime.of(11, 30));
+
+            assertSame(hourCell, cellByText(picker, M3TimePicker.HOUR_CELL_STYLE_CLASS, "10"));
+            assertSame(minuteCell, cellByText(picker, M3TimePicker.MINUTE_CELL_STYLE_CLASS, "15"));
+            assertSame(periodCell, cellByText(picker, M3TimePicker.PERIOD_CELL_STYLE_CLASS, "AM"));
+        });
+    }
+
     /// Verifies 24-hour mode, minute-step rendering, and bounded range disabled states.
     @Test
     void timePickerSupportsTwentyFourHourModeAndRanges() {

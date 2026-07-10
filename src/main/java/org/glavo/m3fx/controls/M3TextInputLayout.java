@@ -44,6 +44,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.shape.LineTo;
 import javafx.scene.shape.MoveTo;
 import javafx.scene.shape.Path;
+import javafx.scene.shape.PathElement;
 import javafx.scene.shape.QuadCurveTo;
 import org.glavo.m3fx.internal.M3TextInputSupport;
 import org.glavo.m3fx.internal.M3FocusTraversal;
@@ -396,6 +397,24 @@ public class M3TextInputLayout extends Control {
     /// The animated outline path rendered by outlined input layouts.
     private final Path outlinePath = new Path();
 
+    /// The reusable path elements that form the outlined input border and label notch.
+    private final PathElement @Unmodifiable [] outlinePathElements = {
+            new MoveTo(),
+            new LineTo(),
+            new MoveTo(),
+            new LineTo(),
+            new QuadCurveTo(),
+            new LineTo(),
+            new QuadCurveTo(),
+            new LineTo(),
+            new QuadCurveTo(),
+            new LineTo(),
+            new QuadCurveTo()
+    };
+
+    /// Whether the reusable outline path elements are currently attached to the path.
+    private boolean outlinePathElementsAttached;
+
     // The progress of the floating-label outline notch opening animation.
     private final DoubleProperty outlineNotchProgress =
             new SimpleDoubleProperty(this, "outlineNotchProgress") {
@@ -414,6 +433,9 @@ public class M3TextInputLayout extends Control {
 
     /// The slot that renders the trailing adornment.
     private final StackPane trailingSlot = new StackPane();
+
+    /// Whether the trailing slot has completed its first content synchronization.
+    private boolean trailingInitialized;
 
     /// The row containing supporting text, spacer, and counter labels.
     private final HBox supportingRow = new HBox();
@@ -1050,6 +1072,10 @@ public class M3TextInputLayout extends Control {
     private void updateTrailing() {
         @Nullable Node trailing = effectiveTrailing();
         @Nullable Node previousTrailing = installedTrailing;
+        if (trailingInitialized && previousTrailing == trailing) {
+            return;
+        }
+
         boolean restoreInputFocus = previousTrailing != trailing && isFocusInside(previousTrailing);
         installedTrailing = trailing;
         trailingSlot.getChildren().clear();
@@ -1066,6 +1092,7 @@ public class M3TextInputLayout extends Control {
         if (previousTrailing != trailing) {
             notifyAccessibleItemsChanged();
         }
+        trailingInitialized = true;
     }
 
     /// Returns the node that currently occupies the trailing adornment slot.
@@ -1429,20 +1456,20 @@ public class M3TextInputLayout extends Control {
     /// Rebuilds the animated outlined border path and floating-label notch.
     private void updateOutlinePath() {
         if (!outlinePath.isVisible()) {
-            outlinePath.getElements().clear();
+            clearOutlinePath();
             return;
         }
 
         TextInputControl input = installedInput;
         if (input == null) {
-            outlinePath.getElements().clear();
+            clearOutlinePath();
             return;
         }
 
         double width = inputContainer.getWidth();
         double height = inputContainer.getHeight();
         if (width <= 0.0 || height <= 0.0) {
-            outlinePath.getElements().clear();
+            clearOutlinePath();
             return;
         }
 
@@ -1473,19 +1500,49 @@ public class M3TextInputLayout extends Control {
             }
         }
 
-        outlinePath.getElements().setAll(
-                new MoveTo(topStartX, top),
-                new LineTo(notchStart, top),
-                new MoveTo(notchEnd, top),
-                new LineTo(topEndX, top),
-                new QuadCurveTo(right, top, right, top + radius),
-                new LineTo(right, bottom - radius),
-                new QuadCurveTo(right, bottom, right - radius, bottom),
-                new LineTo(left + radius, bottom),
-                new QuadCurveTo(left, bottom, left, bottom - radius),
-                new LineTo(left, top + radius),
-                new QuadCurveTo(left, top, topStartX, top)
-        );
+        ensureOutlinePathElements();
+        ((MoveTo) outlinePathElements[0]).setX(topStartX);
+        ((MoveTo) outlinePathElements[0]).setY(top);
+        ((LineTo) outlinePathElements[1]).setX(notchStart);
+        ((LineTo) outlinePathElements[1]).setY(top);
+        ((MoveTo) outlinePathElements[2]).setX(notchEnd);
+        ((MoveTo) outlinePathElements[2]).setY(top);
+        ((LineTo) outlinePathElements[3]).setX(topEndX);
+        ((LineTo) outlinePathElements[3]).setY(top);
+        updateOutlineCurve((QuadCurveTo) outlinePathElements[4], right, top, right, top + radius);
+        ((LineTo) outlinePathElements[5]).setX(right);
+        ((LineTo) outlinePathElements[5]).setY(bottom - radius);
+        updateOutlineCurve((QuadCurveTo) outlinePathElements[6], right, bottom, right - radius, bottom);
+        ((LineTo) outlinePathElements[7]).setX(left + radius);
+        ((LineTo) outlinePathElements[7]).setY(bottom);
+        updateOutlineCurve((QuadCurveTo) outlinePathElements[8], left, bottom, left, bottom - radius);
+        ((LineTo) outlinePathElements[9]).setX(left);
+        ((LineTo) outlinePathElements[9]).setY(top + radius);
+        updateOutlineCurve((QuadCurveTo) outlinePathElements[10], left, top, topStartX, top);
+    }
+
+    /// Attaches the reusable outline elements when the outlined variant first becomes drawable.
+    private void ensureOutlinePathElements() {
+        if (!outlinePathElementsAttached) {
+            outlinePath.getElements().setAll(outlinePathElements);
+            outlinePathElementsAttached = true;
+        }
+    }
+
+    /// Removes reusable outline elements while the outlined path is not drawable.
+    private void clearOutlinePath() {
+        if (outlinePathElementsAttached) {
+            outlinePath.getElements().clear();
+            outlinePathElementsAttached = false;
+        }
+    }
+
+    /// Updates one rounded outline corner without allocating a new path element.
+    private static void updateOutlineCurve(QuadCurveTo curve, double controlX, double controlY, double x, double y) {
+        curve.setControlX(controlX);
+        curve.setControlY(controlY);
+        curve.setX(x);
+        curve.setY(y);
     }
 
     /// Returns whether the wrapped input should be outlined by the layout.

@@ -47,6 +47,12 @@ public final class M3ListViewCell<T> extends IndexedCell<T> {
     /// The rendered list item currently owned by this cell.
     private @Nullable M3ListItem listItem;
 
+    /// The data item most recently rendered by this cell.
+    private @Nullable T renderedItem;
+
+    /// The factory that produced the currently rendered list item, or null for the built-in renderer.
+    private @Nullable Callback<? super T, ? extends M3ListItem> renderedCellFactory;
+
     /// Routes list item actions back into the list view selection policy.
     private final EventHandler<ActionEvent> itemActionHandler = this::handleItemAction;
 
@@ -107,8 +113,19 @@ public final class M3ListViewCell<T> extends IndexedCell<T> {
             return;
         }
 
-        M3ListItem itemNode = createListItem(item);
-        setListItem(itemNode);
+        @Nullable Callback<? super T, ? extends M3ListItem> factory = getListView().getCellFactory();
+        M3ListItem itemNode;
+        if (canReuseListItem(item, factory)) {
+            itemNode = Objects.requireNonNull(listItem, "listItem");
+            if (factory == null) {
+                updateDefaultListItem(itemNode, item);
+            }
+        } else {
+            itemNode = createListItem(item, factory);
+            setListItem(itemNode);
+            renderedItem = item;
+            renderedCellFactory = factory;
+        }
         setGraphic(itemNode);
         setText(null);
         refreshListItemWidth();
@@ -145,9 +162,30 @@ public final class M3ListViewCell<T> extends IndexedCell<T> {
         return new M3ListViewCellSkin<>(this);
     }
 
+    /// Returns whether the current rendered node can be reused for one virtual-flow update.
+    private boolean canReuseListItem(
+            @Nullable T item,
+            @Nullable Callback<? super T, ? extends M3ListItem> factory
+    ) {
+        if (listItem == null || factory != renderedCellFactory) {
+            return false;
+        }
+        return factory == null || item == renderedItem;
+    }
+
+    /// Updates the built-in row renderer for a new data item without replacing its node or skin.
+    private static <T> void updateDefaultListItem(M3ListItem itemNode, @Nullable T item) {
+        String headline = String.valueOf(item);
+        if (!itemNode.getHeadlineText().equals(headline)) {
+            itemNode.setHeadlineText(headline);
+        }
+    }
+
     /// Creates or delegates creation of the visual list item for one data item.
-    private M3ListItem createListItem(@Nullable T item) {
-        @Nullable Callback<? super T, ? extends M3ListItem> factory = getListView().getCellFactory();
+    private M3ListItem createListItem(
+            @Nullable T item,
+            @Nullable Callback<? super T, ? extends M3ListItem> factory
+    ) {
         M3ListItem itemNode = factory == null
                 ? new M3ListItem(String.valueOf(item))
                 : Objects.requireNonNull(factory.call(item), "cellFactory result");
@@ -208,6 +246,9 @@ public final class M3ListViewCell<T> extends IndexedCell<T> {
         this.listItem = listItem;
         if (listItem != null) {
             listItem.addEventHandler(ActionEvent.ACTION, itemActionHandler);
+        } else {
+            renderedItem = null;
+            renderedCellFactory = null;
         }
     }
 
