@@ -49,7 +49,6 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 /// A Material Design 3 tooltip.
@@ -533,15 +532,17 @@ public class M3Tooltip extends PopupControl {
             return;
         }
 
-        if (baseStyle == null) {
-            baseStyle = getStyle();
+        String resolvedBaseStyle = baseStyle;
+        if (resolvedBaseStyle == null) {
+            resolvedBaseStyle = getStyle();
+            baseStyle = resolvedBaseStyle;
         }
         M3ThemeManager.applyThemeStyleClasses(this, theme);
         String themeStyle = theme.toRootStyleDeclarations();
         if (usesPlainContainerStyle()) {
             themeStyle = mergeStyles(themeStyle, plainContainerStyle(theme.tokens().componentTokens().tooltip()));
         }
-        setStyle(mergeStyles(baseStyle, themeStyle));
+        setStyle(mergeStyles(resolvedBaseStyle, themeStyle));
         if (isShowing()) {
             @Nullable Node ownerNode = getOwnerNode();
             if (ownerNode != null) {
@@ -586,9 +587,9 @@ public class M3Tooltip extends PopupControl {
     /// Formats a CSS pixel value.
     private static String pixels(double value) {
         if (Math.rint(value) == value) {
-            return Long.toString((long) value) + "px";
+            return (long) value + "px";
         }
-        return Double.toString(value) + "px";
+        return value + "px";
     }
 
 
@@ -835,7 +836,7 @@ public class M3Tooltip extends PopupControl {
     /// Requests focus for one interactive popup target.
     private static boolean focusInteractiveTarget(@Nullable Node target) {
         @Nullable Node focusTarget = M3Accessible.focusTarget(target);
-        return M3Accessible.showDirectItem(focusTarget, focusTarget);
+        return focusTarget != null && M3Accessible.showDirectItem(focusTarget, focusTarget);
     }
 
     /// Stores pointer handlers installed on a tooltip target node.
@@ -1402,6 +1403,7 @@ public class M3Tooltip extends PopupControl {
 
         /// Falls back to zero duration when a null value is assigned.
         @Override
+        @SuppressWarnings("ConstantValue")
         protected void invalidated() {
             if (get() == null) {
                 set(Duration.ZERO);
@@ -1422,20 +1424,11 @@ public class M3Tooltip extends PopupControl {
     }
 
     /// Stores a tooltip text binding installed on a target node.
+    ///
+    /// @param tooltip the tooltip whose text is exposed as accessible help
+    /// @param listener the listener installed on the tooltip text property
     @NotNullByDefault
-    private static final class AccessibleHelpBinding {
-        /// The tooltip whose text is exposed as accessible help.
-        private final M3Tooltip tooltip;
-
-        /// The listener installed on the tooltip text property.
-        private final ChangeListener<@Nullable String> listener;
-
-        /// Creates an accessible help binding.
-        private AccessibleHelpBinding(M3Tooltip tooltip, ChangeListener<@Nullable String> listener) {
-            this.tooltip = tooltip;
-            this.listener = listener;
-        }
-
+    private record AccessibleHelpBinding(M3Tooltip tooltip, ChangeListener<@Nullable String> listener) {
         /// Removes this binding from the tooltip.
         private void uninstall() {
             tooltip.textProperty().removeListener(listener);
@@ -1475,7 +1468,10 @@ public class M3Tooltip extends PopupControl {
         private @Nullable Parent observedSceneRoot;
 
         /// The parent-chain nodes currently observed for local theme changes.
-        private final List<Parent> observedAncestorThemeRoots = new ArrayList<>();
+        private ArrayList<Parent> observedAncestorThemeRoots = new ArrayList<>();
+
+        /// Reusable storage for collecting the current target ancestor theme roots.
+        private ArrayList<Parent> ancestorThemeRootsScratch = new ArrayList<>();
 
         /// Creates a scene listener for a tooltip.
         private SceneThemeListener(Node node, M3Tooltip tooltip) {
@@ -1558,16 +1554,37 @@ public class M3Tooltip extends PopupControl {
 
         /// Updates observed parent-chain roots that may receive local themes.
         private void updateObservedAncestorThemeRoots() {
-            clearObservedAncestorThemeRoots();
+            ancestorThemeRootsScratch.clear();
             @Nullable Node current = node;
             while (current != null) {
                 if (current instanceof Parent parent && parent != observedSceneRoot) {
-                    parent.getProperties().addListener(ancestorThemeRootPropertiesListener);
-                    parent.parentProperty().addListener(ancestorParentListener);
-                    observedAncestorThemeRoots.add(parent);
+                    ancestorThemeRootsScratch.add(parent);
                 }
                 current = current.getParent();
             }
+
+            boolean unchanged = observedAncestorThemeRoots.size() == ancestorThemeRootsScratch.size();
+            for (int index = 0; unchanged && index < observedAncestorThemeRoots.size(); index++) {
+                unchanged = observedAncestorThemeRoots.get(index) == ancestorThemeRootsScratch.get(index);
+            }
+            if (unchanged) {
+                ancestorThemeRootsScratch.clear();
+                return;
+            }
+
+            for (Parent parent : observedAncestorThemeRoots) {
+                parent.getProperties().removeListener(ancestorThemeRootPropertiesListener);
+                parent.parentProperty().removeListener(ancestorParentListener);
+            }
+            for (Parent parent : ancestorThemeRootsScratch) {
+                parent.getProperties().addListener(ancestorThemeRootPropertiesListener);
+                parent.parentProperty().addListener(ancestorParentListener);
+            }
+
+            ArrayList<Parent> previousRoots = observedAncestorThemeRoots;
+            observedAncestorThemeRoots = ancestorThemeRootsScratch;
+            ancestorThemeRootsScratch = previousRoots;
+            ancestorThemeRootsScratch.clear();
         }
 
         /// Removes property listeners from all currently observed parent-chain roots.

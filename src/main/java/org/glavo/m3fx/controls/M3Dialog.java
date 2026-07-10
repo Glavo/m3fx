@@ -114,7 +114,10 @@ public class M3Dialog<R> extends Dialog<R> {
     private @Nullable ObservableList<String> observedOwnerStylesheets;
 
     /// Owner ancestors currently observed for local theme metadata and parent-chain changes.
-    private final List<Parent> observedAncestorThemeRoots = new ArrayList<>();
+    private ArrayList<Parent> observedAncestorThemeRoots = new ArrayList<>();
+
+    /// Reusable storage for collecting the current owner ancestor theme roots.
+    private ArrayList<Parent> ancestorThemeRootsScratch = new ArrayList<>();
 
     /// Whether inherited theme context listeners are currently registered.
     private boolean observingInheritedThemeContext;
@@ -411,16 +414,37 @@ public class M3Dialog<R> extends Dialog<R> {
 
     /// Updates observed owner ancestors that can receive or lose local themes.
     private void updateObservedAncestorThemeRoots() {
-        clearObservedAncestorThemeRoots();
+        ancestorThemeRootsScratch.clear();
         @Nullable Node current = ownerNode;
         while (current != null) {
             if (current instanceof Parent parent && parent != observedSceneRoot) {
-                parent.getProperties().addListener(ancestorThemeRootPropertiesListener);
-                parent.parentProperty().addListener(ancestorParentListener);
-                observedAncestorThemeRoots.add(parent);
+                ancestorThemeRootsScratch.add(parent);
             }
             current = current.getParent();
         }
+
+        boolean unchanged = observedAncestorThemeRoots.size() == ancestorThemeRootsScratch.size();
+        for (int index = 0; unchanged && index < observedAncestorThemeRoots.size(); index++) {
+            unchanged = observedAncestorThemeRoots.get(index) == ancestorThemeRootsScratch.get(index);
+        }
+        if (unchanged) {
+            ancestorThemeRootsScratch.clear();
+            return;
+        }
+
+        for (Parent parent : observedAncestorThemeRoots) {
+            parent.getProperties().removeListener(ancestorThemeRootPropertiesListener);
+            parent.parentProperty().removeListener(ancestorParentListener);
+        }
+        for (Parent parent : ancestorThemeRootsScratch) {
+            parent.getProperties().addListener(ancestorThemeRootPropertiesListener);
+            parent.parentProperty().addListener(ancestorParentListener);
+        }
+
+        ArrayList<Parent> previousRoots = observedAncestorThemeRoots;
+        observedAncestorThemeRoots = ancestorThemeRootsScratch;
+        ancestorThemeRootsScratch = previousRoots;
+        ancestorThemeRootsScratch.clear();
     }
 
     /// Removes local-theme listeners from all observed owner ancestors.

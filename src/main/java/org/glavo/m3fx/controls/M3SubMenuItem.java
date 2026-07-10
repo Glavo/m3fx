@@ -241,6 +241,7 @@ public class M3SubMenuItem extends M3MenuItem {
                 : SUB_MENU_TRANSITION_OFFSET_X;
         prepareSubMenuForShowAnimation();
         popup.show(this, placement.x(), placement.y());
+        reachabilityObserver.install();
         subMenuShowing.set(true);
         notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
         notifyFocusNodeChanged();
@@ -391,6 +392,7 @@ public class M3SubMenuItem extends M3MenuItem {
         popup.getContent().add(subMenu);
         hideAnimation.setOnFinished(event -> popup.hide());
         popup.setOnHidden(event -> {
+            reachabilityObserver.uninstall();
             popupContextSynchronizer.stop();
             pointerInsideOwner = false;
             pointerInsideSubMenu = false;
@@ -415,7 +417,6 @@ public class M3SubMenuItem extends M3MenuItem {
         subMenu.addEventHandler(MouseEvent.MOUSE_EXITED, this::handleSubMenuMouseExited);
         subMenu.addAccessibleFocusNodeListener(this::notifyFocusNodeChanged);
         popupFocusNotifier.start();
-        reachabilityObserver.install();
     }
 
     /// Hides the popup if its owner item can no longer be reached from its scene.

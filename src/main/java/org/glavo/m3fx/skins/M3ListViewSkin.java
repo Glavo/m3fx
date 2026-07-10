@@ -34,7 +34,6 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Predicate;
 
 /// The default virtualized skin for [M3ListView].
@@ -184,7 +183,10 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     private @Nullable Parent observedSceneRoot;
 
     /// List view ancestors currently observed for local theme installation or removal.
-    private final List<Parent> observedThemeAncestors = new ArrayList<>();
+    private ArrayList<Parent> observedThemeAncestors = new ArrayList<>();
+
+    /// Reusable storage for collecting the current list-view theme ancestor chain.
+    private ArrayList<Parent> themeAncestorsScratch = new ArrayList<>();
 
     /// Creates a virtualized list view skin.
     ///
@@ -410,16 +412,37 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
 
     /// Updates ancestors observed for local theme changes.
     private void updateObservedThemeAncestors() {
-        clearObservedThemeAncestors();
+        themeAncestorsScratch.clear();
         @Nullable Parent current = getSkinnable();
         while (current != null) {
             if (current != observedSceneRoot) {
-                current.getProperties().addListener(themeRootPropertiesListener);
-                current.parentProperty().addListener(ancestorParentListener);
-                observedThemeAncestors.add(current);
+                themeAncestorsScratch.add(current);
             }
             current = current.getParent();
         }
+
+        boolean unchanged = observedThemeAncestors.size() == themeAncestorsScratch.size();
+        for (int index = 0; unchanged && index < observedThemeAncestors.size(); index++) {
+            unchanged = observedThemeAncestors.get(index) == themeAncestorsScratch.get(index);
+        }
+        if (unchanged) {
+            themeAncestorsScratch.clear();
+            return;
+        }
+
+        for (Parent parent : observedThemeAncestors) {
+            parent.getProperties().removeListener(themeRootPropertiesListener);
+            parent.parentProperty().removeListener(ancestorParentListener);
+        }
+        for (Parent parent : themeAncestorsScratch) {
+            parent.getProperties().addListener(themeRootPropertiesListener);
+            parent.parentProperty().addListener(ancestorParentListener);
+        }
+
+        ArrayList<Parent> previousAncestors = observedThemeAncestors;
+        observedThemeAncestors = themeAncestorsScratch;
+        themeAncestorsScratch = previousAncestors;
+        themeAncestorsScratch.clear();
     }
 
     /// Stops observing previously tracked local theme ancestors.

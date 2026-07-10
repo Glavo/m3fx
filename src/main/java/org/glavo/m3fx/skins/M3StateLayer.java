@@ -138,13 +138,20 @@ final class M3StateLayer extends Pane {
     /// The control whose interaction states drive this layer.
     private @Nullable Node stateOwner;
 
-    /// Handles interaction state changes that should animate owner-state opacity.
-    private final ChangeListener<Boolean> interactionStateListener =
+    /// Handles disabled-state changes that should animate owner-state opacity.
+    private final ChangeListener<Boolean> disabledStateListener =
             (observable, oldValue, newValue) -> animateOverlayOpacityFromOwnerState();
 
-    /// Handles owner pseudo-class changes that should animate owner-state opacity.
-    private final SetChangeListener<PseudoClass> pseudoClassStateListener =
-            change -> animateOverlayOpacityFromOwnerState();
+    /// Handles relevant owner pseudo-class changes that should animate owner-state opacity.
+    private final SetChangeListener<PseudoClass> pseudoClassStateListener = change -> {
+        @Nullable PseudoClass pseudoClass = change.wasAdded() ? change.getElementAdded() : change.getElementRemoved();
+        if (pseudoClass == ARMED_PSEUDO_CLASS
+                || pseudoClass == HOVER_PSEUDO_CLASS
+                || pseudoClass == FOCUS_VISIBLE_PSEUDO_CLASS
+                || pseudoClass == PRESSED_PSEUDO_CLASS) {
+            animateOverlayOpacityFromOwnerState();
+        }
+    };
 
     /// Handles button armed changes that should expose the CSS armed pseudo-class.
     private final ChangeListener<Boolean> buttonArmedStateListener = (observable, oldValue, newValue) -> {
@@ -152,7 +159,6 @@ final class M3StateLayer extends Pane {
         if (owner != null) {
             owner.pseudoClassStateChanged(ARMED_PSEUDO_CLASS, newValue);
         }
-        animateOverlayOpacityFromOwnerState();
     };
 
     /// Tracks keyboard-visible focus state for the owner.
@@ -258,10 +264,7 @@ final class M3StateLayer extends Pane {
         stateOwner = owner;
         focusVisibleTracker = new M3FocusVisibleTracker(owner, this::animateOverlayOpacityFromOwnerState);
         focusVisibleTracker.install();
-        owner.hoverProperty().addListener(interactionStateListener);
-        owner.focusedProperty().addListener(interactionStateListener);
-        owner.pressedProperty().addListener(interactionStateListener);
-        owner.disabledProperty().addListener(interactionStateListener);
+        owner.disabledProperty().addListener(disabledStateListener);
         owner.getPseudoClassStates().addListener(pseudoClassStateListener);
         motionSettingsObserver = new M3MotionSettingsObserver(owner, this::refreshMotionSettings);
         if (owner instanceof ButtonBase button) {
@@ -285,10 +288,7 @@ final class M3StateLayer extends Pane {
             return;
         }
 
-        owner.hoverProperty().removeListener(interactionStateListener);
-        owner.focusedProperty().removeListener(interactionStateListener);
-        owner.pressedProperty().removeListener(interactionStateListener);
-        owner.disabledProperty().removeListener(interactionStateListener);
+        owner.disabledProperty().removeListener(disabledStateListener);
         owner.getPseudoClassStates().removeListener(pseudoClassStateListener);
         M3MotionSettingsObserver observer = motionSettingsObserver;
         if (observer != null) {
@@ -307,6 +307,8 @@ final class M3StateLayer extends Pane {
         stateOwner = null;
         overlayOpacityAnimation.stop();
         focusIndicatorOpacityAnimation.stop();
+        rippleAnimation.stop();
+        clearRipple();
     }
 
     /// Lays out the state layer within the skinnable component.

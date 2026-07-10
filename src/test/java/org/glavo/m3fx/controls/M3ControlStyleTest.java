@@ -13270,9 +13270,9 @@ final class M3ControlStyleTest {
         });
     }
 
-    /// Verifies that unrelated motion settings do not force popup context synchronization.
+    /// Verifies that motion changes update popup overrides without rebuilding stylesheet and theme context.
     @Test
-    void popupContextSynchronizerIgnoresUnrelatedMotionSettingChanges() {
+    void popupContextSynchronizerUpdatesOnlyRelevantMotionContext() {
         FxTestUtils.runOnFxThread(() -> {
             boolean previousAnimationsEnabled = M3MotionSettings.areAnimationsEnabled();
             Pane unrelated = new Pane();
@@ -13303,7 +13303,7 @@ final class M3ControlStyleTest {
 
                 M3MotionSettings.setAnimationsEnabled(root, false);
 
-                assertEquals(1, syncCount.get());
+                assertEquals(0, syncCount.get());
                 assertEquals(Boolean.FALSE, M3MotionSettings.getAnimationsEnabled(popupRoot));
                 assertFalse(M3MotionSettings.areAnimationsEnabled(popupRoot));
             } finally {

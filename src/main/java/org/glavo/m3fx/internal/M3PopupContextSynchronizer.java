@@ -16,7 +16,6 @@ import org.glavo.m3fx.animation.M3MotionBehavior;
 import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.internal.theme.M3ThemeMetadata;
-import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
@@ -59,7 +58,7 @@ public final class M3PopupContextSynchronizer {
 
     /// Handles owner effective orientation changes.
     private final ChangeListener<NodeOrientation> ownerOrientationListener =
-            (observable, oldValue, newValue) -> sync();
+            (observable, oldValue, newValue) -> syncNodeOrientationAndLayout();
 
     /// Handles global and node-local motion setting changes.
     private final InvalidationListener motionSettingsListener = observable -> syncIfMotionContextChanged();
@@ -99,7 +98,10 @@ public final class M3PopupContextSynchronizer {
     private @Nullable Parent observedThemeRoot;
 
     /// Owner ancestors currently observed for future local theme installation.
-    private final List<Parent> observedAncestorThemeRoots = new ArrayList<>();
+    private ArrayList<Parent> observedAncestorThemeRoots = new ArrayList<>();
+
+    /// Reusable storage for collecting the current owner ancestor chain.
+    private ArrayList<Parent> ancestorThemeRootsScratch = new ArrayList<>();
 
     /// Whether listeners are currently registered.
     private boolean running;
@@ -245,12 +247,37 @@ public final class M3PopupContextSynchronizer {
         }
     }
 
+    /// Updates orientation-dependent popup CSS and layout without rebuilding unrelated theme context.
+    private void syncNodeOrientationAndLayout() {
+        if (syncing) {
+            return;
+        }
+
+        syncing = true;
+        try {
+            syncNodeOrientation();
+            popupRoot.applyCss();
+            popupRoot.layout();
+        } finally {
+            syncing = false;
+        }
+    }
+
     /// Copies the owner's resolved motion settings into the popup root and records the copied context.
     private void syncMotionContext() {
         boolean animationsEnabled = M3MotionSettings.areAnimationsEnabled(owner);
         M3MotionScheme motionScheme = M3Animation.motionScheme(owner);
         M3MotionBehavior motionBehavior = M3Animation.motionBehavior(owner);
 
+        syncMotionContext(animationsEnabled, motionScheme, motionBehavior);
+    }
+
+    /// Copies already resolved motion settings into the popup root.
+    private void syncMotionContext(
+            boolean animationsEnabled,
+            M3MotionScheme motionScheme,
+            M3MotionBehavior motionBehavior
+    ) {
         cacheSyncedMotionContext(animationsEnabled, motionScheme, motionBehavior);
         M3MotionSettings.setAnimationsEnabled(popupRoot, animationsEnabled);
         M3MotionSettings.setMotionScheme(popupRoot, motionScheme);
@@ -273,7 +300,12 @@ public final class M3PopupContextSynchronizer {
             return;
         }
 
-        sync();
+        syncing = true;
+        try {
+            syncMotionContext(animationsEnabled, motionScheme, motionBehavior);
+        } finally {
+            syncing = false;
+        }
     }
 
     /// Records the owner-resolved motion settings copied during the latest synchronization pass.
@@ -367,18 +399,39 @@ public final class M3PopupContextSynchronizer {
 
     /// Updates the observed owner ancestors that could receive a local theme after the popup is already open.
     private void updateObservedAncestorThemeRoots() {
-        clearObservedAncestorThemeRoots();
+        ancestorThemeRootsScratch.clear();
         @Nullable Node current = owner;
         while (current != null) {
             if (current instanceof Parent parent
                     && parent != observedSceneRoot
                     && parent != observedThemeRoot) {
-                parent.getProperties().addListener(ancestorThemeRootPropertiesListener);
-                parent.parentProperty().addListener(ancestorParentListener);
-                observedAncestorThemeRoots.add(parent);
+                ancestorThemeRootsScratch.add(parent);
             }
             current = current.getParent();
         }
+
+        boolean unchanged = observedAncestorThemeRoots.size() == ancestorThemeRootsScratch.size();
+        for (int index = 0; unchanged && index < observedAncestorThemeRoots.size(); index++) {
+            unchanged = observedAncestorThemeRoots.get(index) == ancestorThemeRootsScratch.get(index);
+        }
+        if (unchanged) {
+            ancestorThemeRootsScratch.clear();
+            return;
+        }
+
+        for (Parent parent : observedAncestorThemeRoots) {
+            parent.getProperties().removeListener(ancestorThemeRootPropertiesListener);
+            parent.parentProperty().removeListener(ancestorParentListener);
+        }
+        for (Parent parent : ancestorThemeRootsScratch) {
+            parent.getProperties().addListener(ancestorThemeRootPropertiesListener);
+            parent.parentProperty().addListener(ancestorParentListener);
+        }
+
+        ArrayList<Parent> previousRoots = observedAncestorThemeRoots;
+        observedAncestorThemeRoots = ancestorThemeRootsScratch;
+        ancestorThemeRootsScratch = previousRoots;
+        ancestorThemeRootsScratch.clear();
     }
 
     /// Removes local-theme listeners from all previously observed owner ancestors.

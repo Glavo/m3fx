@@ -157,17 +157,19 @@ public final class M3FocusTraversal {
 
         boolean backward = event.isShiftDown();
         int focusedIndex = focusedTargetIndex(owner, reachableFocusItems);
-        Node target = focusedIndex < 0
-                ? reachableFocusItems.get(backward ? reachableFocusItems.size() - 1 : 0)
-                : adjacentTarget(reachableFocusItems, focusedIndex, !backward, true);
-        boolean focused = target.isFocusTraversable()
-                ? M3Accessible.showDirectItem(owner, target)
-                : M3Accessible.showItem(owner, target);
-        if (focused) {
-            event.consume();
-            return true;
+        int targetIndex;
+        if (focusedIndex < 0) {
+            targetIndex = backward ? reachableFocusItems.size() - 1 : 0;
+        } else {
+            targetIndex = Math.floorMod(focusedIndex + (backward ? -1 : 1), reachableFocusItems.size());
         }
 
+        Node target = reachableFocusItems.get(targetIndex);
+        if (target.isFocusTraversable()) {
+            M3Accessible.showDirectItem(owner, target);
+        } else {
+            M3Accessible.showItem(owner, target);
+        }
         event.consume();
         return true;
     }
@@ -186,7 +188,7 @@ public final class M3FocusTraversal {
     /// Returns reachable focus targets from an optional leading node followed by a node list.
     public static @Unmodifiable List<Node> focusTargets(@Nullable Node leading, ObservableList<? extends Node> items) {
         Objects.requireNonNull(items, "items");
-        List<Node> targets = new ArrayList<>();
+        List<Node> targets = new ArrayList<>(items.size() + 1);
         addFocusTarget(targets, leading);
         for (Node item : items) {
             addFocusTarget(targets, item);
@@ -197,7 +199,7 @@ public final class M3FocusTraversal {
     /// Returns reachable focus targets from a node list.
     public static @Unmodifiable List<Node> focusTargets(ObservableList<? extends Node> items) {
         Objects.requireNonNull(items, "items");
-        List<Node> targets = new ArrayList<>();
+        List<Node> targets = new ArrayList<>(items.size());
         for (Node item : items) {
             addFocusTarget(targets, item);
         }
@@ -236,7 +238,7 @@ public final class M3FocusTraversal {
     /// Returns reachable focus targets from a node list followed by an optional trailing node.
     public static @Unmodifiable List<Node> focusTargets(ObservableList<? extends Node> items, @Nullable Node trailing) {
         Objects.requireNonNull(items, "items");
-        List<Node> targets = new ArrayList<>();
+        List<Node> targets = new ArrayList<>(items.size() + 1);
         for (Node item : items) {
             addFocusTarget(targets, item);
         }
@@ -246,7 +248,7 @@ public final class M3FocusTraversal {
 
     /// Returns reachable focus targets from two optional node slots.
     public static @Unmodifiable List<Node> focusTargets(@Nullable Node first, @Nullable Node second) {
-        List<Node> targets = new ArrayList<>();
+        List<Node> targets = new ArrayList<>(2);
         addFocusTarget(targets, first);
         addFocusTarget(targets, second);
         return List.copyOf(targets);
@@ -312,19 +314,46 @@ public final class M3FocusTraversal {
     }
 
     /// Returns unique, currently reachable focus targets from a caller-supplied navigation list.
-    private static @Unmodifiable List<Node> reachableFocusItems(List<Node> items) {
+    private static List<Node> reachableFocusItems(List<Node> items) {
         if (items.isEmpty()) {
             return List.of();
         }
 
-        List<Node> targets = new ArrayList<>(items.size());
-        Set<Node> visited = Collections.newSetFromMap(new IdentityHashMap<>());
-        for (Node item : items) {
-            if (M3Accessible.canReach(item) && visited.add(item)) {
-                targets.add(item);
+        @Nullable ArrayList<Node> filteredTargets = null;
+        for (int index = 0; index < items.size(); index++) {
+            Node item = items.get(index);
+            boolean duplicate = false;
+            if (filteredTargets == null) {
+                for (int previousIndex = 0; previousIndex < index; previousIndex++) {
+                    if (items.get(previousIndex) == item) {
+                        duplicate = true;
+                        break;
+                    }
+                }
+            } else {
+                for (Node target : filteredTargets) {
+                    if (target == item) {
+                        duplicate = true;
+                        break;
+                    }
+                }
+            }
+
+            if (M3Accessible.canReach(item) && !duplicate) {
+                if (filteredTargets != null) {
+                    filteredTargets.add(item);
+                }
+                continue;
+            }
+
+            if (filteredTargets == null) {
+                filteredTargets = new ArrayList<>(items.size());
+                for (int previousIndex = 0; previousIndex < index; previousIndex++) {
+                    filteredTargets.add(items.get(previousIndex));
+                }
             }
         }
-        return List.copyOf(targets);
+        return filteredTargets == null ? items : filteredTargets;
     }
 
     /// Returns the fallback index after resolving a stale caller-supplied target list.

@@ -64,7 +64,7 @@ public class M3Slider extends Control {
     private static final double DEFAULT_STEP_SIZE = 0.0;
 
     /// The default slider track thickness.
-    private static final double DEFAULT_TRACK_THICKNESS = 4.0;
+    private static final double DEFAULT_TRACK_THICKNESS = 16.0;
 
     /// The default slider track shape radius.
     private static final double DEFAULT_TRACK_SHAPE = 999.0;

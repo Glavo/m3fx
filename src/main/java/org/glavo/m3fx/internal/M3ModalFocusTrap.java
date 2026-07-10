@@ -36,9 +36,6 @@ public final class M3ModalFocusTrap {
     /// Runs when Escape should dismiss the modal owner.
     private final @Nullable Runnable escapeAction;
 
-    /// Handles scene-level key presses before the normal JavaFX traversal engine runs.
-    private final EventHandler<KeyEvent> keyPressedHandler = this::handleKeyPressed;
-
     /// Tracks owner scene changes so filters move with the owner.
     private final ChangeListener<@Nullable Scene> sceneListener = (observable, oldScene, newScene) -> {
         observeScene(newScene);
@@ -152,83 +149,50 @@ public final class M3ModalFocusTrap {
         }
 
         if (installedScene != null) {
-            installedScene.removeEventFilter(KeyEvent.KEY_PRESSED, keyPressedHandler);
             unregister(installedScene);
         }
         installedScene = scene;
         if (scene != null) {
             register(scene);
-            scene.addEventFilter(KeyEvent.KEY_PRESSED, keyPressedHandler);
         }
     }
 
     /// Registers this trap as the most recently activated trap in a scene.
     private void register(Scene scene) {
-        List<M3ModalFocusTrap> traps = Objects.requireNonNull(trapStack(scene, true));
-        traps.remove(this);
-        traps.add(this);
+        getOrCreateTrapStack(scene).add(this);
     }
 
     /// Removes this trap from a scene's active trap stack.
     private void unregister(Scene scene) {
-        @Nullable List<M3ModalFocusTrap> traps = trapStack(scene, false);
-        if (traps == null) {
+        @Nullable SceneTrapStack trapStack = trapStack(scene);
+        if (trapStack == null || !trapStack.remove(this)) {
             return;
         }
 
-        traps.remove(this);
-        if (traps.isEmpty()) {
+        if (trapStack.isEmpty()) {
+            trapStack.dispose();
             scene.getProperties().remove(ACTIVE_TRAPS_KEY);
         }
     }
 
-    /// Returns whether this trap is the topmost active trap in its scene.
-    private boolean isTopmostActiveTrap() {
-        Scene scene = installedScene;
-        if (scene == null) {
-            return false;
-        }
-
-        @Nullable List<M3ModalFocusTrap> traps = trapStack(scene, false);
-        if (traps == null) {
-            return false;
-        }
-
-        for (int index = traps.size() - 1; index >= 0; index--) {
-            M3ModalFocusTrap trap = traps.get(index);
-            if (trap.installedScene == scene && trap.activeSupplier.getAsBoolean()) {
-                return trap == this;
-            }
-        }
-        return false;
-    }
-
-    /// Returns the active trap stack owned by a scene, optionally creating it.
-    ///
-    /// @param scene the scene that owns the stack
-    /// @param create whether a missing stack should be created
-    /// @return the existing or created stack, or `null` when none exists and creation is disabled
-    @SuppressWarnings("unchecked")
-    private static @Nullable List<M3ModalFocusTrap> trapStack(Scene scene, boolean create) {
+    /// Returns the active trap stack currently owned by a scene.
+    private static @Nullable SceneTrapStack trapStack(Scene scene) {
         Object value = scene.getProperties().get(ACTIVE_TRAPS_KEY);
-        if (value instanceof List<?>) {
-            return (List<M3ModalFocusTrap>) value;
-        }
-        if (!create) {
-            return null;
-        }
-
-        List<M3ModalFocusTrap> traps = new ArrayList<>();
-        scene.getProperties().put(ACTIVE_TRAPS_KEY, traps);
-        return traps;
+        return value instanceof SceneTrapStack trapStack ? trapStack : null;
     }
 
-    /// Handles keyboard dismissal and cyclic focus traversal for the active modal owner.
-    private void handleKeyPressed(KeyEvent event) {
-        if (event.isConsumed() || !activeSupplier.getAsBoolean() || !isTopmostActiveTrap()) {
-            return;
+    /// Returns the active trap stack owned by a scene, creating its single key filter when necessary.
+    private static SceneTrapStack getOrCreateTrapStack(Scene scene) {
+        @Nullable SceneTrapStack trapStack = trapStack(scene);
+        if (trapStack == null) {
+            trapStack = new SceneTrapStack(scene);
+            scene.getProperties().put(ACTIVE_TRAPS_KEY, trapStack);
         }
+        return trapStack;
+    }
 
+    /// Handles keyboard dismissal and cyclic focus traversal after this trap is selected as topmost.
+    private void handleTopmostKeyPressed(KeyEvent event) {
         switch (event.getCode()) {
             case ESCAPE -> {
                 if (escapeAction != null) {
@@ -238,6 +202,60 @@ public final class M3ModalFocusTrap {
             }
             case TAB, F6 -> M3FocusTraversal.handleCyclicTabKeyFocus(owner, event, focusTargetsSupplier.get());
             default -> {
+            }
+        }
+    }
+
+    /// Owns one scene-level key filter and the ordered traps registered in that scene.
+    @NotNullByDefault
+    private static final class SceneTrapStack {
+        /// The scene receiving the shared key filter.
+        private final Scene scene;
+
+        /// Active traps ordered from oldest to most recently activated.
+        private final ArrayList<M3ModalFocusTrap> traps = new ArrayList<>();
+
+        /// Dispatches each key press only to the topmost active trap.
+        private final EventHandler<KeyEvent> keyPressedHandler = this::handleKeyPressed;
+
+        /// Creates and installs a scene-level trap stack.
+        private SceneTrapStack(Scene scene) {
+            this.scene = scene;
+            scene.addEventFilter(KeyEvent.KEY_PRESSED, keyPressedHandler);
+        }
+
+        /// Moves one trap to the top of this stack.
+        private void add(M3ModalFocusTrap trap) {
+            traps.remove(trap);
+            traps.add(trap);
+        }
+
+        /// Removes one trap from this stack.
+        private boolean remove(M3ModalFocusTrap trap) {
+            return traps.remove(trap);
+        }
+
+        /// Returns whether this stack contains no traps.
+        private boolean isEmpty() {
+            return traps.isEmpty();
+        }
+
+        /// Removes the shared scene event filter after the final trap is unregistered.
+        private void dispose() {
+            scene.removeEventFilter(KeyEvent.KEY_PRESSED, keyPressedHandler);
+        }
+
+        /// Dispatches keyboard input to the most recently activated reachable trap.
+        private void handleKeyPressed(KeyEvent event) {
+            if (event.isConsumed()) {
+                return;
+            }
+            for (int index = traps.size() - 1; index >= 0; index--) {
+                M3ModalFocusTrap trap = traps.get(index);
+                if (trap.installedScene == scene && trap.activeSupplier.getAsBoolean()) {
+                    trap.handleTopmostKeyPressed(event);
+                    return;
+                }
             }
         }
     }

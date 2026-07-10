@@ -8,10 +8,8 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import org.jetbrains.annotations.NotNullByDefault;
 
-import java.util.Collections;
-import java.util.IdentityHashMap;
+import java.util.ArrayList;
 import java.util.Objects;
-import java.util.Set;
 
 /// Observes a node and its ancestor chain for reachability-affecting changes.
 @NotNullByDefault
@@ -23,10 +21,13 @@ public final class M3ReachabilityObserver {
     private final Runnable invalidationAction;
 
     /// The nodes in the currently observed ancestor chain.
-    private final Set<Node> observedNodes = Collections.newSetFromMap(new IdentityHashMap<>());
+    private final ArrayList<Node> observedNodes = new ArrayList<>();
 
-    /// Refreshes the observed chain and reports a reachability-affecting change.
-    private final InvalidationListener invalidationListener = observable -> handleInvalidated();
+    /// Reports a reachability-affecting state change without rebuilding the stable ancestor chain.
+    private final InvalidationListener stateInvalidationListener = observable -> handleStateInvalidated();
+
+    /// Refreshes the observed chain after one of its parent links changes.
+    private final InvalidationListener parentInvalidationListener = observable -> handleParentInvalidated();
 
     /// Whether the observer is currently installed.
     private boolean installed;
@@ -58,8 +59,16 @@ public final class M3ReachabilityObserver {
         removeObservedChain();
     }
 
+    /// Reports a possible reachability state change.
+    private void handleStateInvalidated() {
+        if (!installed) {
+            return;
+        }
+        invalidationAction.run();
+    }
+
     /// Refreshes ancestor listeners and reports a possible reachability change.
-    private void handleInvalidated() {
+    private void handleParentInvalidated() {
         if (!installed) {
             return;
         }
@@ -72,33 +81,28 @@ public final class M3ReachabilityObserver {
         removeObservedChain();
         Node current = owner;
         while (true) {
-            observe(current);
+            observedNodes.add(current);
+            current.visibleProperty().addListener(stateInvalidationListener);
+            current.parentProperty().addListener(parentInvalidationListener);
             Parent parent = current.getParent();
             if (parent == null) {
                 break;
             }
             current = parent;
         }
-    }
-
-    /// Adds listeners to one node in the observed chain.
-    private void observe(Node node) {
-        if (!observedNodes.add(node)) {
-            return;
-        }
-        node.visibleProperty().addListener(invalidationListener);
-        node.disabledProperty().addListener(invalidationListener);
-        node.parentProperty().addListener(invalidationListener);
-        node.sceneProperty().addListener(invalidationListener);
+        owner.disabledProperty().addListener(stateInvalidationListener);
+        owner.sceneProperty().addListener(stateInvalidationListener);
     }
 
     /// Removes listeners from all currently observed nodes.
     private void removeObservedChain() {
         for (Node node : observedNodes) {
-            node.visibleProperty().removeListener(invalidationListener);
-            node.disabledProperty().removeListener(invalidationListener);
-            node.parentProperty().removeListener(invalidationListener);
-            node.sceneProperty().removeListener(invalidationListener);
+            node.visibleProperty().removeListener(stateInvalidationListener);
+            node.parentProperty().removeListener(parentInvalidationListener);
+        }
+        if (!observedNodes.isEmpty()) {
+            owner.disabledProperty().removeListener(stateInvalidationListener);
+            owner.sceneProperty().removeListener(stateInvalidationListener);
         }
         observedNodes.clear();
     }

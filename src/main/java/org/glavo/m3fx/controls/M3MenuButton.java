@@ -187,6 +187,7 @@ public class M3MenuButton extends M3Button {
         }
         prepareMenuForShowAnimation();
         popup.show(this, placement.x(), placement.y());
+        reachabilityObserver.install();
         showing.set(true);
         notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
         notifyPopupFocusNodeChanged();
@@ -293,6 +294,7 @@ public class M3MenuButton extends M3Button {
         popup.getContent().add(menu);
         hideAnimation.setOnFinished(event -> popup.hide());
         popup.setOnHidden(event -> {
+            reachabilityObserver.uninstall();
             popupContextSynchronizer.stop();
             menu.hideSubMenusExcept(null);
             showing.set(false);
@@ -311,7 +313,6 @@ public class M3MenuButton extends M3Button {
         menu.addEventHandler(javafx.event.ActionEvent.ACTION, event -> hideMenu(true));
         menu.addAccessibleFocusNodeListener(this::notifyPopupFocusNodeChanged);
         popupFocusNotifier.start();
-        reachabilityObserver.install();
         effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
     }
 

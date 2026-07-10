@@ -29,8 +29,8 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
     /// The thumb position animation.
     private final M3DoubleTransition selectionAnimation = new M3DoubleTransition(thumbPosition);
 
-    /// Requests layout after thumb position changes.
-    private final InvalidationListener thumbPositionListener = observable -> getSkinnable().requestLayout();
+    /// Applies animated thumb position changes directly to the internal nodes.
+    private final InvalidationListener thumbPositionListener = observable -> layoutThumb();
 
     /// Applies size token changes to the switch layout.
     private final InvalidationListener metricsInvalidation = observable -> updateMetrics();
@@ -38,8 +38,8 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
     /// Applies track shape token changes to the switch track.
     private final InvalidationListener trackShapeInvalidation = observable -> updateTrackStyle();
 
-    /// Relayouts the pressed handle size.
-    private final InvalidationListener armedInvalidation = observable -> getSkinnable().requestLayout();
+    /// Applies the pressed handle size directly to the internal nodes.
+    private final InvalidationListener armedInvalidation = observable -> layoutThumb();
 
     /// Settles running thumb transitions when runtime motion settings change.
     private final M3MotionSettingsObserver motionSettingsObserver =

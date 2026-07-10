@@ -50,6 +50,21 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     /// The displayed value transition animation.
     private final M3DoubleTransition valueAnimation = new M3DoubleTransition(displayedPosition);
 
+    /// The latest content x-coordinate supplied by the skin layout pass.
+    private double layoutX;
+
+    /// The latest content y-coordinate supplied by the skin layout pass.
+    private double layoutY;
+
+    /// The latest content width supplied by the skin layout pass.
+    private double layoutWidth;
+
+    /// The latest content height supplied by the skin layout pass.
+    private double layoutHeight;
+
+    /// Whether cached content bounds are available for direct position updates.
+    private boolean hasLayoutBounds;
+
     /// Handles mouse presses on the slider control.
     private final EventHandler<MouseEvent> mousePressedHandler = this::handleMousePressed;
 
@@ -64,6 +79,9 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
 
     /// Requests layout after displayed position, orientation, or token changes.
     private final InvalidationListener layoutInvalidation = observable -> getSkinnable().requestLayout();
+
+    /// Applies displayed-position changes directly to the slider's internal nodes.
+    private final InvalidationListener displayedPositionInvalidation = observable -> updateDisplayedGeometry();
 
     /// Applies track shape token changes to the visible track segments.
     private final InvalidationListener trackShapeInvalidation = observable -> updateTrackStyle();
@@ -102,7 +120,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         getChildren().addAll(track, activeTrack, stateLayer, thumb);
         stateLayer.installStateTransitions(control);
         displayedPosition.set(valueToPosition(control.getValue()));
-        displayedPosition.addListener(layoutInvalidation);
+        displayedPosition.addListener(displayedPositionInvalidation);
 
         control.valueProperty().addListener(valueInvalidation);
         control.minProperty().addListener(rangeInvalidation);
@@ -131,7 +149,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     public void dispose() {
         M3Slider control = getSkinnable();
         valueAnimation.stop();
-        displayedPosition.removeListener(layoutInvalidation);
+        displayedPosition.removeListener(displayedPositionInvalidation);
         control.valueProperty().removeListener(valueInvalidation);
         control.minProperty().removeListener(rangeInvalidation);
         control.maxProperty().removeListener(rangeInvalidation);
@@ -260,6 +278,16 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     /// Positions the track and thumb inside the control bounds.
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
+        layoutX = x;
+        layoutY = y;
+        layoutWidth = width;
+        layoutHeight = height;
+        hasLayoutBounds = true;
+        layoutSliderGeometry(x, y, width, height);
+    }
+
+    /// Positions the slider nodes using the supplied content bounds and current displayed position.
+    private void layoutSliderGeometry(double x, double y, double width, double height) {
         M3Slider slider = getSkinnable();
         double thumbSize = slider.getThumbSize();
         double thumbWidth = slider.getThumbWidth();
@@ -272,6 +300,15 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         } else {
             layoutHorizontalSlider(x, y, width, height, thumbSize, thumbWidth, thumbTrackGap, trackThickness, position);
         }
+    }
+
+    /// Updates slider geometry without propagating an animation pulse into parent layout.
+    private void updateDisplayedGeometry() {
+        if (!hasLayoutBounds) {
+            getSkinnable().requestLayout();
+            return;
+        }
+        layoutSliderGeometry(layoutX, layoutY, layoutWidth, layoutHeight);
     }
 
     /// Positions horizontal slider nodes.
@@ -555,7 +592,6 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     private void setDisplayedPositionImmediately(double position) {
         valueAnimation.stop();
         displayedPosition.set(position);
-        getSkinnable().requestLayout();
     }
 
     /// Clamps a normalized value position to the supported range.
