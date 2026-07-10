@@ -23,6 +23,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextInputControl;
 import javafx.scene.control.ToggleGroup;
+import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
@@ -47,8 +48,9 @@ import org.glavo.m3fx.controls.M3BottomAppBarFloatingActionAlignment;
 import org.glavo.m3fx.controls.M3BottomSheet;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonGroup;
-import org.glavo.m3fx.controls.M3ButtonGroupSize;
 import org.glavo.m3fx.controls.M3ButtonGroupVariant;
+import org.glavo.m3fx.controls.M3ButtonShape;
+import org.glavo.m3fx.controls.M3ButtonSize;
 import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Card;
 import org.glavo.m3fx.controls.M3CardVariant;
@@ -80,8 +82,6 @@ import org.glavo.m3fx.controls.M3FormRow;
 import org.glavo.m3fx.controls.M3FormSection;
 import org.glavo.m3fx.controls.M3FormValidator;
 import org.glavo.m3fx.controls.M3IconButton;
-import org.glavo.m3fx.controls.M3IconButtonShape;
-import org.glavo.m3fx.controls.M3IconButtonSize;
 import org.glavo.m3fx.controls.M3IconButtonWidth;
 import org.glavo.m3fx.controls.M3IconSize;
 import org.glavo.m3fx.controls.M3IconToggleButton;
@@ -123,9 +123,9 @@ import org.glavo.m3fx.controls.M3SegmentedButtonSelectionMode;
 import org.glavo.m3fx.controls.M3SheetVariant;
 import org.glavo.m3fx.controls.M3SideSheet;
 import org.glavo.m3fx.controls.M3Slider;
+import org.glavo.m3fx.controls.M3Snackbar;
 import org.glavo.m3fx.controls.M3SnackbarHost;
 import org.glavo.m3fx.controls.M3SplitButton;
-import org.glavo.m3fx.controls.M3SplitButtonSize;
 import org.glavo.m3fx.controls.M3SubMenuItem;
 import org.glavo.m3fx.controls.M3Surface;
 import org.glavo.m3fx.controls.M3SurfaceElevation;
@@ -216,6 +216,9 @@ public final class M3FXDemoApp extends Application {
 
     /// The official components sidebar group for sheet components.
     private static final String SHEETS_GROUP = "Sheets";
+
+    /// The official components sidebar group for toolbar components.
+    private static final String TOOLBARS_GROUP = "Toolbars";
 
     /// The sidebar section for demo pages absent from the Material components navigation drawer.
     private static final String ADDITIONAL_DEMOS_GROUP = "Additional demos";
@@ -366,7 +369,9 @@ public final class M3FXDemoApp extends Application {
             seedButtons.getChildren().add(button);
         }
 
-        M3Button profileButton = new M3Button("Expressive");
+        M3Button profileButton = new M3Button(
+                profile == M3Profile.BASELINE_2021 ? "Expressive" : "Baseline"
+        );
         profileButton.setVariant(M3ButtonVariant.OUTLINED);
         profileButton.setOnAction(event -> {
             profile = profile == M3Profile.BASELINE_2021 ? M3Profile.EXPRESSIVE_2025 : M3Profile.BASELINE_2021;
@@ -374,7 +379,7 @@ public final class M3FXDemoApp extends Application {
             applyTheme();
         });
 
-        M3Button brightnessButton = new M3Button("Dark");
+        M3Button brightnessButton = new M3Button(brightness == Brightness.LIGHT ? "Dark" : "Light");
         brightnessButton.setVariant(M3ButtonVariant.TONAL);
         brightnessButton.setOnAction(event -> {
             brightness = brightness == Brightness.LIGHT ? Brightness.DARK : Brightness.LIGHT;
@@ -418,7 +423,6 @@ public final class M3FXDemoApp extends Application {
         return List.of(
                 new DemoPage("Components Overview", "Components overview", COMPONENTS_OVERVIEW_GROUP, "Browse the implemented Material Design 3 component demos", DemoMaterialDocs.COMPONENTS, this::createComponentsOverviewPage),
                 new DemoPage("App Bars", "App bars", APP_BARS_GROUP, "Top app bars with navigation and actions", DemoMaterialDocs.APP_BARS, this::createAppBarsPage),
-                new DemoPage("Bottom App Bars", "Bottom app bars", APP_BARS_GROUP, "Bottom app bars with floating action alignment", DemoMaterialDocs.BOTTOM_APP_BARS, this::createBottomAppBarsPage),
                 new DemoPage("Badges", "Badges", "Badges", "Dot, count, overflow, and attached badges", DemoMaterialDocs.BADGES, this::createBadgesPage),
                 new DemoPage("All Buttons", "All buttons", BUTTONS_GROUP, "Overview of button families and action patterns", DemoMaterialDocs.ALL_BUTTONS, this::createAllButtonsPage),
                 new DemoPage("Button Groups", "Button groups", BUTTONS_GROUP, "Connected groups for related actions", DemoMaterialDocs.BUTTON_GROUPS, this::createButtonGroupsPage),
@@ -453,7 +457,8 @@ public final class M3FXDemoApp extends Application {
                 new DemoPage("Switches", "Switch", "Switch", "On, off, and disabled switch states", DemoMaterialDocs.SWITCH, this::createSwitchesPage),
                 new DemoPage("Tabs", "Tabs", "Tabs", "Primary tabs with animated active indicators", DemoMaterialDocs.TABS, this::createTabsPage),
                 new DemoPage("Text Fields", "Text fields", "Text fields", "Filled, outlined, populated, error, and disabled fields", DemoMaterialDocs.TEXT_FIELDS, this::createTextFieldsPage),
-                new DemoPage("Toolbars", "Toolbars", "Toolbars", "Standard, floating, docked, and vertical action toolbars", DemoMaterialDocs.TOOLBARS, this::createToolbarsPage),
+                new DemoPage("Toolbars", "Toolbars", TOOLBARS_GROUP, "Standard, floating, docked, and vertical action toolbars", DemoMaterialDocs.TOOLBARS, this::createToolbarsPage),
+                new DemoPage("Bottom App Bars", "Bottom app bars", TOOLBARS_GROUP, "Legacy bottom app bars with floating action alignment", DemoMaterialDocs.BOTTOM_APP_BARS, this::createBottomAppBarsPage),
                 new DemoPage("Tooltips", "Tooltips", "Tooltips", "Plain and longer contextual help", DemoMaterialDocs.TOOLTIPS, this::createTooltipsPage),
                 new DemoPage("Banners", "Banners", ADDITIONAL_DEMOS_GROUP, "Persistent inline feedback with optional actions", DemoMaterialDocs.BANNERS, this::createBannersPage),
                 new DemoPage("Forms", "Forms", ADDITIONAL_DEMOS_GROUP, "Form rows and sections for structured input", DemoMaterialDocs.FORMS, this::createFormsPage),
@@ -488,6 +493,7 @@ public final class M3FXDemoApp extends Application {
         ScrollPane scrollPane = new ScrollPane(sidebar);
         scrollPane.getStyleClass().add("demo-sidebar-scroll-pane");
         M3ScrollPanes.style(scrollPane);
+        scrollPane.addEventFilter(ScrollEvent.SCROLL, event -> cancelSidebarScrollRetry());
         M3ScrollPanes.enableSmoothScrolling(scrollPane);
         scrollPane.setFitToWidth(true);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
@@ -689,10 +695,15 @@ public final class M3FXDemoApp extends Application {
         return null;
     }
 
-    /// Applies the dark expressive demo theme mode directly.
-    void setDarkExpressiveTheme() {
-        this.profile = M3Profile.EXPRESSIVE_2025;
-        this.brightness = Brightness.DARK;
+    /// Applies a presentation mode directly for rendered demo validation.
+    ///
+    /// @param profile the Material profile to install
+    /// @param brightness the theme brightness to install
+    /// @param animationsEnabled whether full component motion is enabled
+    void configurePresentation(M3Profile profile, Brightness brightness, boolean animationsEnabled) {
+        this.profile = Objects.requireNonNull(profile, "profile");
+        this.brightness = Objects.requireNonNull(brightness, "brightness");
+        this.animationsEnabled = animationsEnabled;
         applyTheme();
         applyMotionSettings();
         refreshCurrentPage();
@@ -904,7 +915,7 @@ public final class M3FXDemoApp extends Application {
                 createShowcaseGroup(
                         "Icon Buttons",
                         createIconButton("search"),
-                        createIconButton("favorite", M3IconButtonSize.MEDIUM, M3IconButtonWidth.WIDE, M3IconButtonShape.ROUND),
+                        createIconButton("favorite", M3ButtonSize.MEDIUM, M3IconButtonWidth.WIDE, M3ButtonShape.ROUND),
                         toggleGroup
                 ),
                 createShowcaseGroup(
@@ -930,7 +941,7 @@ public final class M3FXDemoApp extends Application {
                 new M3Button("Edit", M3ButtonVariant.TONAL)
         );
         standardGroup.setVariant(M3ButtonGroupVariant.STANDARD);
-        standardGroup.setSize(M3ButtonGroupSize.MEDIUM);
+        standardGroup.setSize(M3ButtonSize.MEDIUM);
 
         M3ButtonGroup connectedTonalGroup = createButtonGroup(
                 new M3Button("Edit", M3ButtonVariant.TONAL),
@@ -938,7 +949,7 @@ public final class M3FXDemoApp extends Application {
                 new M3Button("Archive", M3ButtonVariant.TONAL)
         );
         connectedTonalGroup.setVariant(M3ButtonGroupVariant.CONNECTED);
-        connectedTonalGroup.setSize(M3ButtonGroupSize.SMALL);
+        connectedTonalGroup.setSize(M3ButtonSize.SMALL);
 
         M3ButtonGroup connectedOutlinedGroup = createButtonGroup(
                 new M3Button("Day", M3ButtonVariant.OUTLINED),
@@ -946,7 +957,7 @@ public final class M3FXDemoApp extends Application {
                 new M3Button("Month", M3ButtonVariant.OUTLINED)
         );
         connectedOutlinedGroup.setVariant(M3ButtonGroupVariant.CONNECTED);
-        connectedOutlinedGroup.setSize(M3ButtonGroupSize.SMALL);
+        connectedOutlinedGroup.setSize(M3ButtonSize.SMALL);
 
         M3Button disabled = new M3Button("Disabled", M3ButtonVariant.FILLED);
         disabled.setDisable(true);
@@ -956,7 +967,7 @@ public final class M3FXDemoApp extends Application {
                 disabled
         );
         connectedFilledGroup.setVariant(M3ButtonGroupVariant.CONNECTED);
-        connectedFilledGroup.setSize(M3ButtonGroupSize.SMALL);
+        connectedFilledGroup.setSize(M3ButtonSize.SMALL);
 
         VBox sizeScale = new VBox(12.0);
         sizeScale.getChildren().addAll(
@@ -984,7 +995,7 @@ public final class M3FXDemoApp extends Application {
         for (int index = 0; index < sizeScale.getChildren().size(); index++) {
             M3ButtonGroup group = (M3ButtonGroup) sizeScale.getChildren().get(index);
             group.setVariant(M3ButtonGroupVariant.STANDARD);
-            group.setSize(M3ButtonGroupSize.values()[index]);
+            group.setSize(M3ButtonSize.values()[index]);
         }
 
         return createGallery(
@@ -1001,6 +1012,28 @@ public final class M3FXDemoApp extends Application {
         M3Button disabledFilled = new M3Button("Disabled", M3ButtonVariant.FILLED);
         disabledFilled.setDisable(true);
 
+        M3Button mediumWithIcon = createSizedButton(
+                "Create",
+                M3ButtonVariant.FILLED,
+                M3ButtonSize.MEDIUM,
+                M3ButtonShape.ROUND
+        );
+        mediumWithIcon.setGraphic(createIconViewport(
+                DemoIcons.onPrimary("add"),
+                defaultButtonGlyphSize(M3ButtonSize.MEDIUM)
+        ));
+
+        M3Button largeSquareWithIcon = createSizedButton(
+                "Launch",
+                M3ButtonVariant.TONAL,
+                M3ButtonSize.LARGE,
+                M3ButtonShape.SQUARE
+        );
+        largeSquareWithIcon.setGraphic(createIconViewport(
+                DemoIcons.onSecondaryContainer("send"),
+                defaultButtonGlyphSize(M3ButtonSize.LARGE)
+        ));
+
         return createGallery(
                 createShowcaseGroup(
                         "Button Variants",
@@ -1010,6 +1043,26 @@ public final class M3FXDemoApp extends Application {
                         new M3Button("Text", M3ButtonVariant.TEXT),
                         new M3Button("Elevated", M3ButtonVariant.ELEVATED),
                         disabledFilled
+                ),
+                createShowcaseGroup(
+                        "Button Sizes",
+                        createSizedButton("XS", M3ButtonVariant.FILLED, M3ButtonSize.EXTRA_SMALL, M3ButtonShape.ROUND),
+                        createSizedButton("Small", M3ButtonVariant.FILLED, M3ButtonSize.SMALL, M3ButtonShape.ROUND),
+                        createSizedButton("Medium", M3ButtonVariant.TONAL, M3ButtonSize.MEDIUM, M3ButtonShape.ROUND),
+                        createSizedButton("Large", M3ButtonVariant.TONAL, M3ButtonSize.LARGE, M3ButtonShape.ROUND),
+                        createSizedButton("XL", M3ButtonVariant.OUTLINED, M3ButtonSize.EXTRA_LARGE, M3ButtonShape.ROUND)
+                ),
+                createShowcaseGroup(
+                        "Button Shapes",
+                        createSizedButton("Round", M3ButtonVariant.FILLED, M3ButtonSize.SMALL, M3ButtonShape.ROUND),
+                        createSizedButton("Square", M3ButtonVariant.FILLED, M3ButtonSize.SMALL, M3ButtonShape.SQUARE),
+                        createSizedButton("Medium square", M3ButtonVariant.OUTLINED, M3ButtonSize.MEDIUM, M3ButtonShape.SQUARE),
+                        createSizedButton("Large square", M3ButtonVariant.TONAL, M3ButtonSize.LARGE, M3ButtonShape.SQUARE)
+                ),
+                createShowcaseGroup(
+                        "Buttons With Icons",
+                        mediumWithIcon,
+                        largeSquareWithIcon
                 )
         );
     }
@@ -1071,23 +1124,23 @@ public final class M3FXDemoApp extends Application {
                 ),
                 createShowcaseGroup(
                         "Icon Button Sizes",
-                        createIconButton("star", M3IconButtonSize.EXTRA_SMALL, M3IconButtonWidth.DEFAULT, M3IconButtonShape.ROUND),
-                        createIconButton("star", M3IconButtonSize.SMALL, M3IconButtonWidth.DEFAULT, M3IconButtonShape.ROUND),
-                        createIconButton("star", M3IconButtonSize.MEDIUM, M3IconButtonWidth.DEFAULT, M3IconButtonShape.ROUND),
-                        createIconButton("star", M3IconButtonSize.LARGE, M3IconButtonWidth.DEFAULT, M3IconButtonShape.ROUND),
-                        createIconButton("star", M3IconButtonSize.EXTRA_LARGE, M3IconButtonWidth.DEFAULT, M3IconButtonShape.ROUND)
+                        createIconButton("star", M3ButtonSize.EXTRA_SMALL, M3IconButtonWidth.DEFAULT, M3ButtonShape.ROUND),
+                        createIconButton("star", M3ButtonSize.SMALL, M3IconButtonWidth.DEFAULT, M3ButtonShape.ROUND),
+                        createIconButton("star", M3ButtonSize.MEDIUM, M3IconButtonWidth.DEFAULT, M3ButtonShape.ROUND),
+                        createIconButton("star", M3ButtonSize.LARGE, M3IconButtonWidth.DEFAULT, M3ButtonShape.ROUND),
+                        createIconButton("star", M3ButtonSize.EXTRA_LARGE, M3IconButtonWidth.DEFAULT, M3ButtonShape.ROUND)
                 ),
                 createShowcaseGroup(
                         "Icon Button Widths",
-                        createIconButton("search", M3IconButtonSize.MEDIUM, M3IconButtonWidth.NARROW, M3IconButtonShape.ROUND),
-                        createIconButton("search", M3IconButtonSize.MEDIUM, M3IconButtonWidth.DEFAULT, M3IconButtonShape.ROUND),
-                        createIconButton("search", M3IconButtonSize.MEDIUM, M3IconButtonWidth.WIDE, M3IconButtonShape.ROUND)
+                        createIconButton("search", M3ButtonSize.MEDIUM, M3IconButtonWidth.NARROW, M3ButtonShape.ROUND),
+                        createIconButton("search", M3ButtonSize.MEDIUM, M3IconButtonWidth.DEFAULT, M3ButtonShape.ROUND),
+                        createIconButton("search", M3ButtonSize.MEDIUM, M3IconButtonWidth.WIDE, M3ButtonShape.ROUND)
                 ),
                 createShowcaseGroup(
                         "Icon Button Shapes",
-                        createIconButton("favorite", M3IconButtonSize.MEDIUM, M3IconButtonWidth.DEFAULT, M3IconButtonShape.ROUND),
-                        createIconButton("favorite", M3IconButtonSize.MEDIUM, M3IconButtonWidth.DEFAULT, M3IconButtonShape.SQUARE),
-                        createIconButton("favorite", M3IconButtonSize.LARGE, M3IconButtonWidth.DEFAULT, M3IconButtonShape.SQUARE)
+                        createIconButton("favorite", M3ButtonSize.MEDIUM, M3IconButtonWidth.DEFAULT, M3ButtonShape.ROUND),
+                        createIconButton("favorite", M3ButtonSize.MEDIUM, M3IconButtonWidth.DEFAULT, M3ButtonShape.SQUARE),
+                        createIconButton("favorite", M3ButtonSize.LARGE, M3IconButtonWidth.DEFAULT, M3ButtonShape.SQUARE)
                 ),
                 createShowcaseGroup(
                         "Toggle Icon Buttons",
@@ -1109,16 +1162,16 @@ public final class M3FXDemoApp extends Application {
                 ),
                 createShowcaseGroup(
                         "Toggle Size And Shape",
-                        createIconToggleButton("favorite", M3IconToggleButtonVariant.FILLED, true,
-                                M3IconButtonSize.EXTRA_SMALL, M3IconButtonWidth.DEFAULT, M3IconButtonShape.ROUND),
-                        createIconToggleButton("favorite", M3IconToggleButtonVariant.FILLED, true,
-                                M3IconButtonSize.SMALL, M3IconButtonWidth.DEFAULT, M3IconButtonShape.ROUND),
-                        createIconToggleButton("favorite", M3IconToggleButtonVariant.FILLED, true,
-                                M3IconButtonSize.MEDIUM, M3IconButtonWidth.DEFAULT, M3IconButtonShape.ROUND),
-                        createIconToggleButton("favorite", M3IconToggleButtonVariant.FILLED, true,
-                                M3IconButtonSize.LARGE, M3IconButtonWidth.WIDE, M3IconButtonShape.SQUARE),
-                        createIconToggleButton("favorite", M3IconToggleButtonVariant.FILLED, true,
-                                M3IconButtonSize.EXTRA_LARGE, M3IconButtonWidth.WIDE, M3IconButtonShape.SQUARE)
+                        createExpressiveFavoriteToggleButton(
+                                M3ButtonSize.EXTRA_SMALL, M3IconButtonWidth.DEFAULT, M3ButtonShape.ROUND),
+                        createExpressiveFavoriteToggleButton(
+                                M3ButtonSize.SMALL, M3IconButtonWidth.DEFAULT, M3ButtonShape.ROUND),
+                        createExpressiveFavoriteToggleButton(
+                                M3ButtonSize.MEDIUM, M3IconButtonWidth.DEFAULT, M3ButtonShape.ROUND),
+                        createExpressiveFavoriteToggleButton(
+                                M3ButtonSize.LARGE, M3IconButtonWidth.WIDE, M3ButtonShape.SQUARE),
+                        createExpressiveFavoriteToggleButton(
+                                M3ButtonSize.EXTRA_LARGE, M3IconButtonWidth.WIDE, M3ButtonShape.SQUARE)
                 )
         );
     }
@@ -1234,10 +1287,23 @@ public final class M3FXDemoApp extends Application {
         rtlFilled.setPrefWidth(320.0);
         M3TextField rtlOutlined = createTextField("RTL outlined", "M3FX RTL", M3TextInputVariant.OUTLINED, false);
         rtlOutlined.setPrefWidth(320.0);
+        M3TextField rtlOutlinedAction = createTextField(
+                "RTL outlined action",
+                "M3FX RTL Action",
+                M3TextInputVariant.OUTLINED,
+                false
+        );
+        rtlOutlinedAction.setPrefWidth(360.0);
         M3PasswordField rtlPassword = new M3PasswordField("");
         rtlPassword.setVariant(M3TextInputVariant.OUTLINED);
         rtlPassword.setPromptText("RTL password");
         rtlPassword.setPrefWidth(320.0);
+        M3TextArea rtlOutlinedArea = createTextArea(
+                "RTL outlined text area",
+                "M3FX RTL multiline content keeps visual order.",
+                M3TextInputVariant.OUTLINED
+        );
+        rtlOutlinedArea.setPrefWidth(380.0);
 
         M3TextInputLayout filledLayout = createTextInputLayout(filled, "Supporting text");
         M3TextInputLayout filledTextLayout = createTextInputLayout(filledText, "Email address");
@@ -1292,9 +1358,18 @@ public final class M3FXDemoApp extends Application {
         rtlOutlinedLayout.setCharacterCounterVisible(true);
         rtlOutlinedLayout.setCharacterLimit(24);
         rtlOutlinedLayout.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+        M3TextInputLayout rtlOutlinedActionLayout = createTextInputLayout(rtlOutlinedAction, "RTL action target");
+        rtlOutlinedActionLayout.setTrailing(createIconButton("visibility"));
+        rtlOutlinedActionLayout.setCharacterCounterVisible(true);
+        rtlOutlinedActionLayout.setCharacterLimit(32);
+        rtlOutlinedActionLayout.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
         M3TextInputLayout rtlPasswordLayout = createTextInputLayout(rtlPassword, "RTL at least 8 characters");
         rtlPasswordLayout.setTrailing(createIconButton("visibility"));
         rtlPasswordLayout.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+        M3TextInputLayout rtlOutlinedAreaLayout = createTextInputLayout(rtlOutlinedArea, "RTL multi-line input");
+        rtlOutlinedAreaLayout.setCharacterCounterVisible(true);
+        rtlOutlinedAreaLayout.setCharacterLimit(96);
+        rtlOutlinedAreaLayout.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
 
         return createGallery(
                 createShowcaseGroup("Filled", filledLayout, filledTextLayout, filledDisabledLayout),
@@ -1302,7 +1377,14 @@ public final class M3FXDemoApp extends Application {
                 createShowcaseGroup("Validation", validatedEmailLayout, requiredProjectLayout),
                 createShowcaseGroup("Error", filledErrorLayout, outlinedErrorLayout, passwordErrorLayout, areaErrorLayout),
                 createShowcaseGroup("Text Areas", filledAreaLayout, outlinedAreaLayout),
-                createShowcaseGroup("Right-to-left", rtlFilledLayout, rtlOutlinedLayout, rtlPasswordLayout)
+                createShowcaseGroup(
+                        "Right-to-left",
+                        rtlFilledLayout,
+                        rtlOutlinedLayout,
+                        rtlOutlinedActionLayout,
+                        rtlPasswordLayout,
+                        rtlOutlinedAreaLayout
+                )
         );
     }
 
@@ -1317,6 +1399,12 @@ public final class M3FXDemoApp extends Application {
         M3SearchBar populated = new M3SearchBar("Search M3FX");
         populated.setText("Buttons");
         populated.setPrefWidth(420.0);
+
+        M3SearchBar rtlSearchBar = new M3SearchBar("RTL search");
+        rtlSearchBar.setText("M3FX");
+        rtlSearchBar.setPrefWidth(420.0);
+        rtlSearchBar.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+        rtlSearchBar.getTrailingActions().add(createIconButton("tune"));
 
         M3SearchView searchView = new M3SearchView("Search components");
         searchView.setPrefWidth(520.0);
@@ -1337,10 +1425,20 @@ public final class M3FXDemoApp extends Application {
         );
         inactiveView.deactivate();
 
+        M3SearchView rtlSearchView = new M3SearchView("RTL components");
+        rtlSearchView.setPrefWidth(520.0);
+        rtlSearchView.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+        rtlSearchView.getTrailingActions().add(createIconButton("tune"));
+        rtlSearchView.getResults().addAll(
+                createSearchResult("RTL Buttons", "Mirrored leading and trailing actions"),
+                createSearchResult("RTL Menus", "Mirrored result-row geometry")
+        );
+
         return createGallery(
-                createShowcaseGroup("Search Bars", searchBar, populated),
+                createShowcaseGroup("Search Bars", searchBar, populated, rtlSearchBar),
                 createShowcaseGroup("Search View", searchView),
-                createShowcaseGroup("Inactive View", inactiveView)
+                createShowcaseGroup("Inactive View", inactiveView),
+                createShowcaseGroup("Right-to-left", rtlSearchView)
         );
     }
 
@@ -1681,11 +1779,11 @@ public final class M3FXDemoApp extends Application {
         M3SplitButton medium = createSplitButton("Medium", M3ButtonVariant.TONAL);
         M3SplitButton large = createSplitButton("Large", M3ButtonVariant.TONAL);
         M3SplitButton extraLarge = createSplitButton("XL", M3ButtonVariant.TONAL);
-        extraSmall.setSize(M3SplitButtonSize.EXTRA_SMALL);
-        small.setSize(M3SplitButtonSize.SMALL);
-        medium.setSize(M3SplitButtonSize.MEDIUM);
-        large.setSize(M3SplitButtonSize.LARGE);
-        extraLarge.setSize(M3SplitButtonSize.EXTRA_LARGE);
+        extraSmall.setSize(M3ButtonSize.EXTRA_SMALL);
+        small.setSize(M3ButtonSize.SMALL);
+        medium.setSize(M3ButtonSize.MEDIUM);
+        large.setSize(M3ButtonSize.LARGE);
+        extraLarge.setSize(M3ButtonSize.EXTRA_LARGE);
 
         return createGallery(
                 createShowcaseGroup("Variants", tonal, outlined, filled, disabled),
@@ -3183,6 +3281,25 @@ public final class M3FXDemoApp extends Application {
         return new M3NavigationItem(text, createNavigationIcon(iconName));
     }
 
+    /// Creates a sample button with explicit Material size and shape roles.
+    ///
+    /// @param text the button label
+    /// @param variant the button color and elevation variant
+    /// @param size the Material button size
+    /// @param shape the resting Material button shape
+    /// @return the configured sample button
+    private static M3Button createSizedButton(
+            String text,
+            M3ButtonVariant variant,
+            M3ButtonSize size,
+            M3ButtonShape shape
+    ) {
+        M3Button button = new M3Button(text, variant);
+        button.setSize(size);
+        button.setButtonShape(shape);
+        return button;
+    }
+
     /// Creates a sample navigation icon.
     private static Node createNavigationIcon(String iconName) {
         StackPane icon = createSurfaceVariantIcon(iconName);
@@ -3199,15 +3316,15 @@ public final class M3FXDemoApp extends Application {
     /// Creates a sample icon button with Material Expressive sizing roles.
     private static M3IconButton createIconButton(
             String iconName,
-            M3IconButtonSize size,
+            M3ButtonSize size,
             M3IconButtonWidth widthRole,
-            M3IconButtonShape shape
+            M3ButtonShape shape
     ) {
         Node icon = createIconViewport(DemoIcons.primary(iconName), defaultIconButtonGlyphSize(size));
         M3IconButton button = new M3IconButton(icon);
         button.setSize(size);
         button.setWidthRole(widthRole);
-        button.setIconButtonShape(shape);
+        button.setButtonShape(shape);
         return button;
     }
 
@@ -3283,22 +3400,19 @@ public final class M3FXDemoApp extends Application {
         return button;
     }
 
-    /// Creates a sample toggle icon button with Material Expressive sizing roles.
-    private static M3IconToggleButton createIconToggleButton(
-            String iconName,
-            M3IconToggleButtonVariant variant,
-            boolean selected,
-            M3IconButtonSize size,
+    /// Creates a selected filled favorite toggle icon button with Material Expressive sizing roles.
+    private static M3IconToggleButton createExpressiveFavoriteToggleButton(
+            M3ButtonSize size,
             M3IconButtonWidth widthRole,
-            M3IconButtonShape shape
+            M3ButtonShape shape
     ) {
-        Node icon = createIconViewport(DemoIcons.onSurfaceVariant(iconName), defaultIconButtonGlyphSize(size));
+        Node icon = createIconViewport(DemoIcons.onSurfaceVariant("favorite"), defaultIconButtonGlyphSize(size));
         M3IconToggleButton button = new M3IconToggleButton(icon);
-        button.setVariant(variant);
-        button.setSelected(selected);
+        button.setVariant(M3IconToggleButtonVariant.FILLED);
+        button.setSelected(true);
         button.setSize(size);
         button.setWidthRole(widthRole);
-        button.setIconButtonShape(shape);
+        button.setButtonShape(shape);
         return button;
     }
 
@@ -3458,10 +3572,23 @@ public final class M3FXDemoApp extends Application {
     }
 
     /// Returns the default demo glyph size for an icon button size role.
-    private static double defaultIconButtonGlyphSize(M3IconButtonSize size) {
+    private static double defaultIconButtonGlyphSize(M3ButtonSize size) {
         return switch (size) {
             case EXTRA_SMALL -> 20.0;
             case SMALL, MEDIUM -> 24.0;
+            case LARGE -> 32.0;
+            case EXTRA_LARGE -> 40.0;
+        };
+    }
+
+    /// Returns the default glyph size for a labeled Material button size.
+    ///
+    /// @param size the Material button size
+    /// @return the labeled button glyph size in pixels
+    private static double defaultButtonGlyphSize(M3ButtonSize size) {
+        return switch (size) {
+            case EXTRA_SMALL, SMALL -> 20.0;
+            case MEDIUM -> 24.0;
             case LARGE -> 32.0;
             case EXTRA_LARGE -> 40.0;
         };
@@ -3478,7 +3605,8 @@ public final class M3FXDemoApp extends Application {
     /// Creates a compact sample card.
     private M3Card createSampleCard(String title, String overline, String body, M3CardVariant variant) {
         VBox content = createCardTextContent(title, overline, body);
-        M3Card card = new M3Card(content, variant, event -> showSnackbar("Theme-aware snackbar"));
+        M3Card card = new M3Card(content, variant);
+        card.setOnAction(event -> showSnackbar("Theme-aware snackbar"));
         card.getStyleClass().add("demo-card");
         card.setPrefSize(280.0, 168.0);
         return card;
@@ -3518,7 +3646,8 @@ public final class M3FXDemoApp extends Application {
 
         content.getChildren().addAll(media, header, actions);
 
-        M3Card card = new M3Card(content, variant, event -> showSnackbar("Theme-aware snackbar"));
+        M3Card card = new M3Card(content, variant);
+        card.setOnAction(event -> showSnackbar("Theme-aware snackbar"));
         card.getStyleClass().add("demo-card");
         card.setPrefSize(360.0, 300.0);
         return card;
@@ -3558,7 +3687,8 @@ public final class M3FXDemoApp extends Application {
         bodyLabel.getStyleClass().add("demo-card-body");
 
         content.getChildren().addAll(titleLabel, bodyLabel);
-        M3Card card = new M3Card(content, variant, event -> showSnackbar("Theme-aware snackbar"));
+        M3Card card = new M3Card(content, variant);
+        card.setOnAction(event -> showSnackbar("Theme-aware snackbar"));
         card.setPrefSize(width, height);
         return card;
     }
@@ -3750,7 +3880,7 @@ public final class M3FXDemoApp extends Application {
         if (snackbarHost == null) {
             return;
         }
-        snackbarHost.show(message);
+        snackbarHost.show(new M3Snackbar(message));
     }
 
     /// Shows the demo snackbar with an action.
@@ -3759,7 +3889,13 @@ public final class M3FXDemoApp extends Application {
         if (snackbarHost == null) {
             return;
         }
-        snackbarHost.show("Theme-aware snackbar", "Action", event -> snackbarHost.show("Action pressed"));
+
+        M3Snackbar snackbar = new M3Snackbar("Theme-aware snackbar", "Action");
+        snackbar.setOnAction(event -> {
+            snackbarHost.dismiss();
+            snackbarHost.show(new M3Snackbar("Action pressed"));
+        });
+        snackbarHost.show(snackbar);
     }
 
     /// Shows multiple demo snackbars through the host queue.
@@ -3768,9 +3904,15 @@ public final class M3FXDemoApp extends Application {
         if (snackbarHost == null) {
             return;
         }
-        snackbarHost.enqueue("First queued message");
-        snackbarHost.enqueue("Second queued message", "Undo", event -> snackbarHost.enqueue("Undo pressed"));
-        snackbarHost.enqueue("Third queued message");
+
+        M3Snackbar secondSnackbar = new M3Snackbar("Second queued message", "Undo");
+        secondSnackbar.setOnAction(event -> {
+            snackbarHost.dismiss();
+            snackbarHost.enqueue(new M3Snackbar("Undo pressed"));
+        });
+        snackbarHost.enqueue(new M3Snackbar("First queued message"));
+        snackbarHost.enqueue(secondSnackbar);
+        snackbarHost.enqueue(new M3Snackbar("Third queued message"));
     }
 
     /// Applies the current theme to the scene.

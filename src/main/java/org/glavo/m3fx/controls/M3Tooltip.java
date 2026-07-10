@@ -10,13 +10,13 @@ import javafx.beans.property.BooleanPropertyBase;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.MapChangeListener;
+import javafx.collections.ObservableList;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ObjectPropertyBase;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.geometry.Bounds;
-import javafx.geometry.NodeOrientation;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -26,6 +26,8 @@ import javafx.scene.control.Skin;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.Pane;
+import javafx.stage.WindowEvent;
 import javafx.util.Duration;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
@@ -33,7 +35,8 @@ import org.glavo.m3fx.animation.M3Motion;
 import org.glavo.m3fx.animation.M3MotionBehavior;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
-import org.glavo.m3fx.internal.M3PopupStyles;
+import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
+import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3ThemeResolver;
 import org.glavo.m3fx.internal.M3TooltipInstallation;
 import org.glavo.m3fx.internal.M3TooltipRegistry;
@@ -151,6 +154,15 @@ public class M3Tooltip extends PopupControl {
             applyTheme(get());
         }
     };
+
+    /// A detached theme root used when the tooltip has an explicit theme rather than an owner-inherited theme.
+    private final Pane explicitThemeRoot = new Pane();
+
+    /// The active popup context synchronizer while this tooltip is showing.
+    private @Nullable M3PopupContextSynchronizer popupContextSynchronizer;
+
+    /// The owner node currently supplying popup context.
+    private @Nullable Node popupContextOwner;
 
     /// The tooltip style before theme declarations were added.
     private @Nullable String baseStyle;
@@ -391,7 +403,7 @@ public class M3Tooltip extends PopupControl {
         return new M3TooltipSkin(this);
     }
 
-    /// Shows this tooltip and synchronizes popup content direction with the owner node.
+    /// Shows this tooltip and synchronizes popup context with the owner node.
     ///
     /// @param ownerNode the node that owns the popup
     /// @param anchorX the screen x coordinate for the popup anchor
@@ -400,7 +412,6 @@ public class M3Tooltip extends PopupControl {
     public void show(Node ownerNode, double anchorX, double anchorY) {
         Objects.requireNonNull(ownerNode, "ownerNode");
         super.show(ownerNode, anchorX, anchorY);
-        syncPopupNodeOrientation(ownerNode);
         syncPopupRootThemeContext(ownerNode);
     }
 
@@ -411,6 +422,7 @@ public class M3Tooltip extends PopupControl {
         setAutoFix(true);
         setAutoHide(true);
         setHideOnEscape(true);
+        addEventHandler(WindowEvent.WINDOW_HIDDEN, event -> stopPopupContextSynchronizer());
     }
 
     /// Sets the default visible duration without marking it as an application override.
@@ -504,6 +516,7 @@ public class M3Tooltip extends PopupControl {
 
     /// Applies or clears inline theme declarations on the tooltip.
     private void applyTheme(@Nullable M3Theme theme) {
+        updateExplicitThemeRoot(theme);
         if (theme == null) {
             M3ThemeManager.clearThemeStyleClasses(this);
             String currentBaseStyle = baseStyle;
@@ -534,6 +547,15 @@ public class M3Tooltip extends PopupControl {
             if (ownerNode != null) {
                 syncPopupRootThemeContext(ownerNode);
             }
+        }
+    }
+
+    /// Updates the detached theme root used for explicitly themed popup content.
+    private void updateExplicitThemeRoot(@Nullable M3Theme theme) {
+        if (theme != null && !themeInherited) {
+            M3ThemeManager.install(explicitThemeRoot, theme);
+        } else {
+            M3ThemeManager.uninstall(explicitThemeRoot);
         }
     }
 
@@ -569,48 +591,68 @@ public class M3Tooltip extends PopupControl {
         return Double.toString(value) + "px";
     }
 
-    /// Synchronizes popup content direction from the owner node while the tooltip is showing.
-    private void syncPopupNodeOrientation(Node ownerNode) {
-        Objects.requireNonNull(ownerNode, "ownerNode");
-        @Nullable Scene scene = getScene();
-        if (scene == null || scene.getRoot() == null) {
-            return;
-        }
-        scene.getRoot().setNodeOrientation(ownerNode.getEffectiveNodeOrientation());
-    }
 
     /// Synchronizes the popup scene root style classes with the owner theme context.
     private void syncPopupRootThemeContext(Node ownerNode) {
         Objects.requireNonNull(ownerNode, "ownerNode");
+        if (!isShowing()) {
+            stopPopupContextSynchronizer();
+            return;
+        }
+
+        @Nullable M3PopupContextSynchronizer synchronizer = popupContextSynchronizer;
+        if (synchronizer == null || popupContextOwner != ownerNode) {
+            startPopupContextSynchronizer(ownerNode);
+            return;
+        }
+
+        synchronizer.sync();
+    }
+
+    /// Starts observing and synchronizing popup root context from the supplied owner node.
+    private void startPopupContextSynchronizer(Node ownerNode) {
+        Objects.requireNonNull(ownerNode, "ownerNode");
+        stopPopupContextSynchronizer();
         @Nullable Scene popupScene = getScene();
         if (popupScene == null) {
             return;
         }
 
         Parent popupRoot = popupScene.getRoot();
-        M3PopupStyles.addFallbackRootStyleClass(popupRoot);
-        @Nullable M3Theme theme = getTheme();
-        if (theme != null) {
-            M3ThemeManager.applyThemeStyleClasses(popupRoot, theme);
-            return;
-        }
-
-        M3ThemeManager.clearThemeStyleClasses(popupRoot);
-        @Nullable Scene ownerScene = ownerNode.getScene();
-        if (ownerScene != null) {
-            copyThemeStyleClassIfPresent(ownerScene.getRoot(), popupRoot, M3ThemeManager.ROOT_STYLE_CLASS);
-            copyThemeStyleClassIfPresent(ownerScene.getRoot(), popupRoot, M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS);
-            copyThemeStyleClassIfPresent(ownerScene.getRoot(), popupRoot, M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS);
-            copyThemeStyleClassIfPresent(ownerScene.getRoot(), popupRoot, M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS);
-            copyThemeStyleClassIfPresent(ownerScene.getRoot(), popupRoot, M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS);
-        }
+        M3PopupContextSynchronizer synchronizer = new M3PopupContextSynchronizer(
+                ownerNode,
+                popupRoot,
+                () -> popupStylesheetSource(ownerNode),
+                () -> popupThemeSource(ownerNode),
+                M3Stylesheets.controlStylesheet("tooltip.css")
+        );
+        popupContextOwner = ownerNode;
+        popupContextSynchronizer = synchronizer;
+        synchronizer.start();
     }
 
-    /// Copies a theme style class between roots without replacing bound inline styles.
-    private static void copyThemeStyleClassIfPresent(Parent sourceRoot, Parent targetRoot, String styleClass) {
-        if (sourceRoot.getStyleClass().contains(styleClass) && !targetRoot.getStyleClass().contains(styleClass)) {
-            targetRoot.getStyleClass().add(styleClass);
+    /// Stops observing popup root context after this tooltip is hidden or retargeted.
+    private void stopPopupContextSynchronizer() {
+        @Nullable M3PopupContextSynchronizer synchronizer = popupContextSynchronizer;
+        if (synchronizer != null) {
+            synchronizer.stop();
+            popupContextSynchronizer = null;
         }
+        popupContextOwner = null;
+    }
+
+    /// Returns the stylesheet list that should be mirrored into the tooltip popup root.
+    private static @Nullable ObservableList<String> popupStylesheetSource(Node ownerNode) {
+        @Nullable Scene ownerScene = ownerNode.getScene();
+        return ownerScene == null ? null : ownerScene.getStylesheets();
+    }
+
+    /// Returns the theme root that should supply popup token declarations.
+    private @Nullable Parent popupThemeSource(Node ownerNode) {
+        if (getTheme() != null && !themeInherited) {
+            return explicitThemeRoot;
+        }
+        return M3ThemeResolver.findThemeRoot(ownerNode);
     }
 
     /// Installs a listener that keeps inherited tooltip themes in sync with the target node scene.
@@ -863,9 +905,6 @@ public class M3Tooltip extends PopupControl {
         /// Handles owner node scene changes.
         private final ChangeListener<@Nullable Scene> ownerSceneListener = this::handleOwnerSceneChanged;
 
-        /// Handles owner node orientation changes while the tooltip popup is showing.
-        private final ChangeListener<NodeOrientation> ownerNodeOrientationListener =
-                this::handleOwnerNodeOrientationChanged;
 
         /// Handles focus changes on the target node.
         private final ChangeListener<Boolean> focusListener = this::handleFocusedChanged;
@@ -898,7 +937,6 @@ public class M3Tooltip extends PopupControl {
             node.addEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
             node.focusedProperty().addListener(focusListener);
             node.sceneProperty().addListener(ownerSceneListener);
-            node.effectiveNodeOrientationProperty().addListener(ownerNodeOrientationListener);
             tooltip.showingProperty().addListener(showingListener);
             installOwnerSceneFilter(node.getScene());
         }
@@ -912,7 +950,6 @@ public class M3Tooltip extends PopupControl {
             node.removeEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
             node.focusedProperty().removeListener(focusListener);
             node.sceneProperty().removeListener(ownerSceneListener);
-            node.effectiveNodeOrientationProperty().removeListener(ownerNodeOrientationListener);
             tooltip.showingProperty().removeListener(showingListener);
             motionSettingsObserver.dispose();
             uninstallOwnerSceneFilter();
@@ -938,16 +975,6 @@ public class M3Tooltip extends PopupControl {
             installOwnerSceneFilter(newValue);
         }
 
-        /// Synchronizes visible tooltip popup direction when the owner direction changes.
-        private void handleOwnerNodeOrientationChanged(
-                ObservableValue<? extends NodeOrientation> observable,
-                NodeOrientation oldValue,
-                NodeOrientation newValue
-        ) {
-            if (tooltip.isShowing()) {
-                tooltip.syncPopupNodeOrientation(node);
-            }
-        }
 
         /// Schedules tooltip display after pointer entry.
         private void handleEntered(MouseEvent event) {
@@ -1036,9 +1063,6 @@ public class M3Tooltip extends PopupControl {
                 Boolean oldValue,
                 Boolean newValue
         ) {
-            if (newValue) {
-                tooltip.syncPopupNodeOrientation(node);
-            }
             if (newValue && tooltip.isInteractive()) {
                 installTooltipHoverHandlers();
             } else {
@@ -1220,10 +1244,6 @@ public class M3Tooltip extends PopupControl {
             }
 
             tooltip.show(node, screenBounds.getMinX(), screenBounds.getMaxY() + POPUP_VERTICAL_OFFSET);
-            @Nullable Scene tooltipScene = tooltip.getScene();
-            if (tooltipScene != null) {
-                M3Animation.copyResolvedMotionSettings(node, tooltipScene.getRoot());
-            }
             installTooltipHoverHandlers();
             scheduleAutoHide();
         }
@@ -1284,10 +1304,6 @@ public class M3Tooltip extends PopupControl {
                     tooltip.isShowing() && !isTooltipActive()
             );
             refreshAutoHideDuration();
-            @Nullable Scene scene = tooltip.getScene();
-            if (tooltip.isShowing() && scene != null && scene.getRoot() != null) {
-                M3Animation.copyResolvedMotionSettings(node, scene.getRoot());
-            }
         }
 
         /// Applies changed runtime motion settings to the visible-duration timer.

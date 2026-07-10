@@ -522,6 +522,11 @@ public class M3ListItem extends Control {
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
+        if (isDisabled()) {
+            super.executeAccessibleAction(action, parameters);
+            return;
+        }
+
         switch (action) {
             case FIRE -> fire();
             case REQUEST_FOCUS -> focusAccessibleNode();

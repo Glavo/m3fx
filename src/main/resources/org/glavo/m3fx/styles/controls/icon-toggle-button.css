@@ -23,39 +23,35 @@
     -fx-cursor: hand;
 }
 
-.m3-icon-button-extra-small {
+.m3-icon-toggle-button.m3-icon-button-extra-small {
     -m3-container-height: 32px;
     -m3-container-width: 32px;
     -m3-icon-button-icon-size: 20px;
     -m3-icon-button-outline-width: 1px;
 }
 
-.m3-icon-toggle-button-small,
-.m3-icon-button-small {
+.m3-icon-toggle-button.m3-icon-button-small {
     -m3-container-height: 40px;
     -m3-container-width: 40px;
     -m3-icon-button-icon-size: 24px;
     -m3-icon-button-outline-width: 1px;
 }
 
-.m3-icon-toggle-button-medium,
-.m3-icon-button-medium {
+.m3-icon-toggle-button.m3-icon-button-medium {
     -m3-container-height: 56px;
     -m3-container-width: 56px;
     -m3-icon-button-icon-size: 24px;
     -m3-icon-button-outline-width: 1px;
 }
 
-.m3-icon-toggle-button-large,
-.m3-icon-button-large {
+.m3-icon-toggle-button.m3-icon-button-large {
     -m3-container-height: 96px;
     -m3-container-width: 96px;
     -m3-icon-button-icon-size: 32px;
     -m3-icon-button-outline-width: 2px;
 }
 
-.m3-icon-toggle-button-extra-large,
-.m3-icon-button-extra-large {
+.m3-icon-toggle-button.m3-icon-button-extra-large {
     -m3-container-height: 136px;
     -m3-container-width: 136px;
     -m3-icon-button-icon-size: 40px;

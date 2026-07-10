@@ -142,10 +142,13 @@ public class M3TextInputLayout extends Control {
     /// The minimum horizontal gap animated into an outlined field notch.
     private static final double MINIMUM_NOTCH_GAP = 0.5;
 
-    /// The top input padding used when a single-line field has a floating label.
+    /// The top input padding used when a single-line filled field has a floating label.
     private static final double LABELED_SINGLE_LINE_TOP_PADDING = 20.0;
 
-    /// The top input padding used when a multiline field has a floating label.
+    /// The top input padding used when a single-line outlined field has a floating label.
+    private static final double OUTLINED_LABELED_SINGLE_LINE_TOP_PADDING = 11.0;
+
+    /// The top input padding used when a multiline filled field has a floating label.
     private static final double LABELED_MULTILINE_TOP_PADDING = 28.0;
 
     /// The label transition start opacity.
@@ -812,6 +815,11 @@ public class M3TextInputLayout extends Control {
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
+        if (isDisabled()) {
+            super.executeAccessibleAction(action, parameters);
+            return;
+        }
+
         switch (action) {
             case REQUEST_FOCUS -> focusAccessibleNode();
             case SHOW_ITEM -> showAccessibleItem(parameters);
@@ -1122,9 +1130,8 @@ public class M3TextInputLayout extends Control {
         } else if (needsRightToLeftFilledLeadingTextReservation(input)) {
             inputTrailing = Math.max(inputTrailing, ADORNED_HORIZONTAL_PADDING);
         }
-        // Outlined floating labels occupy the outline notch, not the input content area.
-        double top = isLabelFloating() && !isOutlinedInput()
-                ? Math.max(basePadding.getTop(), labeledTopPadding(input))
+        double top = isLabelFloating()
+                ? Math.max(basePadding.getTop(), labeledTopPadding(input, basePadding.getTop()))
                 : basePadding.getTop();
         double left = physicalLeftInset(inputLeading, inputTrailing);
         double right = physicalRightInset(inputLeading, inputTrailing);
@@ -1299,8 +1306,11 @@ public class M3TextInputLayout extends Control {
     }
 
     /// Returns the top padding required while a label is floating.
-    private static double labeledTopPadding(TextInputControl input) {
-        return input instanceof M3TextArea ? LABELED_MULTILINE_TOP_PADDING : LABELED_SINGLE_LINE_TOP_PADDING;
+    private double labeledTopPadding(TextInputControl input, double baseTopPadding) {
+        if (input instanceof M3TextArea) {
+            return isOutlinedInput() ? baseTopPadding : LABELED_MULTILINE_TOP_PADDING;
+        }
+        return isOutlinedInput() ? OUTLINED_LABELED_SINGLE_LINE_TOP_PADDING : LABELED_SINGLE_LINE_TOP_PADDING;
     }
 
     /// Applies the layout-owned error state to the wrapped input.

@@ -9,7 +9,6 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Bounds;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
-import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
@@ -282,6 +281,44 @@ final class M3AccessibleFocusRevealTest {
             assertTrue(menu.isFocused());
             assertTargetVisible(scrollPane, content, menu);
             assertTrue(scrollPane.getVvalue() > 0.0, () -> "vvalue=" + scrollPane.getVvalue());
+        });
+    }
+
+    /// Verifies installed rich tooltips expose popup action focus without closing when focus leaves the owner.
+    @Test
+    void installedRichTooltipActionFocusKeepsPopupInteractive() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Button owner = new M3Button("Tooltip owner");
+            M3Button action = new M3Button("Details");
+            M3RichTooltip tooltip = new M3RichTooltip(
+                    "Details",
+                    "Interactive rich tooltip actions should remain reachable after owner focus moves."
+            );
+            tooltip.getActions().add(action);
+            Pane root = new Pane(owner);
+            Stage stage = new Stage();
+
+            try {
+                stage.setScene(new Scene(root, 280.0, 160.0));
+                stage.show();
+                root.applyCss();
+                owner.resizeRelocate(24.0, 24.0, 160.0, 48.0);
+                root.layout();
+                M3Tooltip.install(owner, tooltip);
+
+                assertFalse(tooltip.isShowing());
+                assertTrue(M3Tooltip.containsInstalledTooltipActionTarget(owner, action));
+                assertTrue(M3Tooltip.showInstalledTooltipActionTarget(owner, action));
+
+                assertTrue(tooltip.isShowing());
+                assertTrue(action.isFocused());
+                assertSame(action, M3Tooltip.activeInstalledTooltipFocusTarget(owner));
+                assertTrue(M3Tooltip.activeInstalledTooltipPopupOwnsInteraction(owner));
+            } finally {
+                tooltip.hide();
+                M3Tooltip.uninstall(owner, tooltip);
+                stage.close();
+            }
         });
     }
 

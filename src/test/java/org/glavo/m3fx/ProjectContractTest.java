@@ -21,6 +21,7 @@ import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.RecordComponent;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.lang.reflect.WildcardType;
@@ -39,6 +40,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Verifies public API, compatibility, and stylesheet resource contracts that are not covered by compiler checks.
@@ -57,8 +59,8 @@ final class ProjectContractTest {
     private static final Pattern MODULE_EXPORT_DECLARATION = Pattern.compile("^\\s*exports\\s+([\\w.]+)\\s*;");
 
     /// Matches implementation type references that exported APIs must not expose through members.
-    private static final Pattern EXPORTED_INTERNAL_API_REFERENCE =
-            Pattern.compile("\\borg\\.glavo\\.m3fx\\.internal\\b|\\bM3Internal\\w*\\b");
+    private static final Pattern EXPORTED_IMPLEMENTATION_API_REFERENCE =
+            Pattern.compile("\\borg\\.glavo\\.m3fx\\.(?:internal|skins)\\b|\\bM3Internal\\w*\\b|\\bM3\\w*Skin\\b");
 
     /// The package set intentionally exported as the public JPMS API surface.
     private static final @Unmodifiable Set<String> EXPECTED_EXPORTED_API_PACKAGES = Set.of(
@@ -92,8 +94,9 @@ final class ProjectContractTest {
                             M3BottomSheet
                             M3Button
                             M3ButtonGroup
-                            M3ButtonGroupSize
                             M3ButtonGroupVariant
+                            M3ButtonShape
+                            M3ButtonSize
                             M3ButtonVariant
                             M3Card
                             M3CardVariant
@@ -128,8 +131,6 @@ final class ProjectContractTest {
                             M3FormValidator
                             M3Icon
                             M3IconButton
-                            M3IconButtonShape
-                            M3IconButtonSize
                             M3IconButtonWidth
                             M3IconSize
                             M3IconToggleButton
@@ -176,7 +177,7 @@ final class ProjectContractTest {
                             M3Snackbar
                             M3SnackbarHost
                             M3SplitButton
-                            M3SplitButtonSize
+                            M3ButtonSize
                             M3SubMenuItem
                             M3Surface
                             M3SurfaceElevation
@@ -225,6 +226,59 @@ final class ProjectContractTest {
                             M3TypographyTokens
                             """)
             );
+
+    /// The expected public nested types exported by each public top-level API type.
+    private static final @Unmodifiable Map<String, @Unmodifiable Set<String>>
+            EXPECTED_EXPORTED_PUBLIC_NESTED_TYPES_BY_CLASS = Map.of(
+            "org.glavo.m3fx.tokens.M3ComponentTokens",
+            typeNames("""
+                    AvatarTokens
+                    BadgeTokens
+                    BannerTokens
+                    BottomAppBarTokens
+                    ButtonGroupSizeTokens
+                    ButtonGroupTokens
+                    ButtonSizeTokens
+                    ButtonSizingTokens
+                    ButtonTokens
+                    CardTokens
+                    CarouselTokens
+                    ChipTokens
+                    DatePickerTokens
+                    DialogTokens
+                    DividerTokens
+                    FabTokens
+                    FieldTokens
+                    FormTokens
+                    IconButtonSizeTokens
+                    IconButtonTokens
+                    IconTokens
+                    ListItemTokens
+                    LoadingIndicatorTokens
+                    MenuTokens
+                    NavigationBarTokens
+                    NavigationDrawerTokens
+                    NavigationRailTokens
+                    PickerFieldTokens
+                    ProgressTokens
+                    ScrimTokens
+                    SearchTokens
+                    SelectionTokens
+                    SheetTokens
+                    SliderTokens
+                    SnackbarTokens
+                    SplitButtonSizeTokens
+                    SplitButtonTokens
+                    SurfaceTokens
+                    TabTokens
+                    TextAreaTokens
+                    TimePickerTokens
+                    ToolbarTokens
+                    TooltipTokens
+                    TopAppBarTokens
+                    ValidationSummaryTokens
+                    """)
+    );
 
     /// The public control source root scanned for M3FX control API shape constraints.
     private static final Path CONTROLS_SOURCE_ROOT =
@@ -309,7 +363,7 @@ final class ProjectContractTest {
     private static final Pattern PUBLIC_SKIN_DIRECT_IMPLEMENTATION = Pattern.compile(
             "^\\s*public\\s+(?:final\\s+|abstract\\s+|sealed\\s+|non-sealed\\s+)?"
                     + "class\\s+(\\w+)\\s*(?:<[^>{}]+>\\s*)?"
-                    + "(?:(?:extends\\s+[^{}]+?)\\s+)?implements\\s+(?:[\\w.]+\\.)?Skin\\b"
+                    + "(?:extends\\s+[^{}]+?\\s+)?implements\\s+(?:[\\w.]+\\.)?Skin\\b"
     );
 
     /// Matches `M3Stylesheets.controlStylesheet` references in production sources.
@@ -341,6 +395,20 @@ final class ProjectContractTest {
     private static final Pattern STYLE_CLASS_DECLARATION = Pattern.compile(
             "\\bSTYLE_CLASS\\s*=\\s*\"([^\"]+)\""
     );
+
+    /// Matches stable public M3FX CSS style class values.
+    private static final Pattern PUBLIC_STYLE_CLASS_VALUE = Pattern.compile("m3-[a-z0-9]+(?:-[a-z0-9]+)*");
+
+    /// Matches public static style class constant declarations in production source.
+    private static final Pattern PUBLIC_STYLE_CLASS_CONSTANT_DECLARATION = Pattern.compile(
+            "^\\s*public\\s+static\\s+final\\s+String\\s+(\\w*STYLE_CLASS)\\s*=\\s*([^;]+);"
+    );
+
+    /// Matches one string literal style class constant expression.
+    private static final Pattern STRING_LITERAL_STYLE_CLASS_VALUE = Pattern.compile("\"([^\"]*)\"");
+
+    /// Matches one style class constant reference expression.
+    private static final Pattern STYLE_CLASS_CONSTANT_REFERENCE = Pattern.compile("(?:(\\w+)\\.)?(\\w*STYLE_CLASS)");
 
     /// Matches CSS rules in generated component stylesheets.
     private static final Pattern CSS_RULE = Pattern.compile("(?s)([^{}]+)\\{([^{}]*)}");
@@ -479,7 +547,7 @@ final class ProjectContractTest {
             "org.glavo.m3fx.tokens",
             typeNames("""
                     org.glavo.m3fx.tokens.M3ColorTokens#create(org.glavo.monetfx.ColorScheme)
-                    org.glavo.m3fx.tokens.M3ComponentTokens#create(org.glavo.m3fx.tokens.M3ComponentTokens$ButtonTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ButtonTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ButtonTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ButtonTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ButtonTokens,org.glavo.m3fx.tokens.M3ComponentTokens$IconButtonTokens,org.glavo.m3fx.tokens.M3ComponentTokens$FabTokens,org.glavo.m3fx.tokens.M3ComponentTokens$IconTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ButtonGroupTokens,org.glavo.m3fx.tokens.M3ComponentTokens$SplitButtonTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ButtonTokens,org.glavo.m3fx.tokens.M3ComponentTokens$TabTokens,org.glavo.m3fx.tokens.M3ComponentTokens$FieldTokens,org.glavo.m3fx.tokens.M3ComponentTokens$TextAreaTokens,org.glavo.m3fx.tokens.M3ComponentTokens$FormTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ValidationSummaryTokens,org.glavo.m3fx.tokens.M3ComponentTokens$MenuTokens,org.glavo.m3fx.tokens.M3ComponentTokens$SearchTokens,org.glavo.m3fx.tokens.M3ComponentTokens$PickerFieldTokens,org.glavo.m3fx.tokens.M3ComponentTokens$DatePickerTokens,org.glavo.m3fx.tokens.M3ComponentTokens$TimePickerTokens,org.glavo.m3fx.tokens.M3ComponentTokens$SheetTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ScrimTokens,org.glavo.m3fx.tokens.M3ComponentTokens$SelectionTokens,org.glavo.m3fx.tokens.M3ComponentTokens$SliderTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ChipTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ProgressTokens,org.glavo.m3fx.tokens.M3ComponentTokens$LoadingIndicatorTokens,org.glavo.m3fx.tokens.M3ComponentTokens$SurfaceTokens,org.glavo.m3fx.tokens.M3ComponentTokens$CarouselTokens,org.glavo.m3fx.tokens.M3ComponentTokens$CardTokens,org.glavo.m3fx.tokens.M3ComponentTokens$DialogTokens,org.glavo.m3fx.tokens.M3ComponentTokens$SnackbarTokens,org.glavo.m3fx.tokens.M3ComponentTokens$BannerTokens,org.glavo.m3fx.tokens.M3ComponentTokens$TooltipTokens,org.glavo.m3fx.tokens.M3ComponentTokens$DividerTokens,org.glavo.m3fx.tokens.M3ComponentTokens$BadgeTokens,org.glavo.m3fx.tokens.M3ComponentTokens$AvatarTokens,org.glavo.m3fx.tokens.M3ComponentTokens$TopAppBarTokens,org.glavo.m3fx.tokens.M3ComponentTokens$BottomAppBarTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ToolbarTokens,org.glavo.m3fx.tokens.M3ComponentTokens$NavigationBarTokens,org.glavo.m3fx.tokens.M3ComponentTokens$NavigationRailTokens,org.glavo.m3fx.tokens.M3ComponentTokens$NavigationDrawerTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ListItemTokens)
+                    org.glavo.m3fx.tokens.M3ComponentTokens#create(org.glavo.m3fx.tokens.M3ComponentTokens$ButtonTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ButtonTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ButtonTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ButtonTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ButtonTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ButtonSizingTokens,org.glavo.m3fx.tokens.M3ComponentTokens$IconButtonTokens,org.glavo.m3fx.tokens.M3ComponentTokens$FabTokens,org.glavo.m3fx.tokens.M3ComponentTokens$IconTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ButtonGroupTokens,org.glavo.m3fx.tokens.M3ComponentTokens$SplitButtonTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ButtonTokens,org.glavo.m3fx.tokens.M3ComponentTokens$TabTokens,org.glavo.m3fx.tokens.M3ComponentTokens$FieldTokens,org.glavo.m3fx.tokens.M3ComponentTokens$TextAreaTokens,org.glavo.m3fx.tokens.M3ComponentTokens$FormTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ValidationSummaryTokens,org.glavo.m3fx.tokens.M3ComponentTokens$MenuTokens,org.glavo.m3fx.tokens.M3ComponentTokens$SearchTokens,org.glavo.m3fx.tokens.M3ComponentTokens$PickerFieldTokens,org.glavo.m3fx.tokens.M3ComponentTokens$DatePickerTokens,org.glavo.m3fx.tokens.M3ComponentTokens$TimePickerTokens,org.glavo.m3fx.tokens.M3ComponentTokens$SheetTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ScrimTokens,org.glavo.m3fx.tokens.M3ComponentTokens$SelectionTokens,org.glavo.m3fx.tokens.M3ComponentTokens$SliderTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ChipTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ProgressTokens,org.glavo.m3fx.tokens.M3ComponentTokens$LoadingIndicatorTokens,org.glavo.m3fx.tokens.M3ComponentTokens$SurfaceTokens,org.glavo.m3fx.tokens.M3ComponentTokens$CarouselTokens,org.glavo.m3fx.tokens.M3ComponentTokens$CardTokens,org.glavo.m3fx.tokens.M3ComponentTokens$DialogTokens,org.glavo.m3fx.tokens.M3ComponentTokens$SnackbarTokens,org.glavo.m3fx.tokens.M3ComponentTokens$BannerTokens,org.glavo.m3fx.tokens.M3ComponentTokens$TooltipTokens,org.glavo.m3fx.tokens.M3ComponentTokens$DividerTokens,org.glavo.m3fx.tokens.M3ComponentTokens$BadgeTokens,org.glavo.m3fx.tokens.M3ComponentTokens$AvatarTokens,org.glavo.m3fx.tokens.M3ComponentTokens$TopAppBarTokens,org.glavo.m3fx.tokens.M3ComponentTokens$BottomAppBarTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ToolbarTokens,org.glavo.m3fx.tokens.M3ComponentTokens$NavigationBarTokens,org.glavo.m3fx.tokens.M3ComponentTokens$NavigationRailTokens,org.glavo.m3fx.tokens.M3ComponentTokens$NavigationDrawerTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ListItemTokens)
                     org.glavo.m3fx.tokens.M3ComponentTokens#create(org.glavo.m3fx.tokens.M3Profile,org.glavo.m3fx.tokens.M3ShapeTokens,org.glavo.m3fx.tokens.M3Density)
                     org.glavo.m3fx.tokens.M3Density#of(double)
                     org.glavo.m3fx.tokens.M3Density#standard()
@@ -527,6 +595,397 @@ final class ProjectContractTest {
                     """)
     );
 
+    /// The reviewed public enum constants exported by API enum types.
+    private static final @Unmodifiable Set<String> EXPECTED_PUBLIC_ENUM_CONSTANTS = typeNames("""
+            org.glavo.m3fx.animation.M3MotionEasing#EMPHASIZED
+            org.glavo.m3fx.animation.M3MotionEasing#EMPHASIZED_ACCELERATE
+            org.glavo.m3fx.animation.M3MotionEasing#EMPHASIZED_DECELERATE
+            org.glavo.m3fx.animation.M3MotionEasing#LINEAR
+            org.glavo.m3fx.animation.M3MotionEasing#STANDARD
+            org.glavo.m3fx.animation.M3MotionEasing#STANDARD_ACCELERATE
+            org.glavo.m3fx.animation.M3MotionEasing#STANDARD_DECELERATE
+            org.glavo.m3fx.controls.M3AvatarVariant#PRIMARY
+            org.glavo.m3fx.controls.M3AvatarVariant#SECONDARY
+            org.glavo.m3fx.controls.M3AvatarVariant#SURFACE
+            org.glavo.m3fx.controls.M3AvatarVariant#TERTIARY
+            org.glavo.m3fx.controls.M3BottomAppBarFloatingActionAlignment#CENTER
+            org.glavo.m3fx.controls.M3BottomAppBarFloatingActionAlignment#END
+            org.glavo.m3fx.controls.M3BottomAppBarFloatingActionAlignment#START
+            org.glavo.m3fx.controls.M3ButtonShape#ROUND
+            org.glavo.m3fx.controls.M3ButtonShape#SQUARE
+            org.glavo.m3fx.controls.M3ButtonSize#EXTRA_LARGE
+            org.glavo.m3fx.controls.M3ButtonSize#EXTRA_SMALL
+            org.glavo.m3fx.controls.M3ButtonSize#LARGE
+            org.glavo.m3fx.controls.M3ButtonSize#MEDIUM
+            org.glavo.m3fx.controls.M3ButtonSize#SMALL
+            org.glavo.m3fx.controls.M3ButtonGroupVariant#CONNECTED
+            org.glavo.m3fx.controls.M3ButtonGroupVariant#STANDARD
+            org.glavo.m3fx.controls.M3ButtonVariant#ELEVATED
+            org.glavo.m3fx.controls.M3ButtonVariant#FILLED
+            org.glavo.m3fx.controls.M3ButtonVariant#OUTLINED
+            org.glavo.m3fx.controls.M3ButtonVariant#TEXT
+            org.glavo.m3fx.controls.M3ButtonVariant#TONAL
+            org.glavo.m3fx.controls.M3CardVariant#ELEVATED
+            org.glavo.m3fx.controls.M3CardVariant#FILLED
+            org.glavo.m3fx.controls.M3CardVariant#OUTLINED
+            org.glavo.m3fx.controls.M3ChipSelectionMode#MULTIPLE
+            org.glavo.m3fx.controls.M3ChipSelectionMode#SINGLE
+            org.glavo.m3fx.controls.M3ChipStyle#ELEVATED
+            org.glavo.m3fx.controls.M3ChipStyle#FLAT
+            org.glavo.m3fx.controls.M3ChipVariant#ASSIST
+            org.glavo.m3fx.controls.M3ChipVariant#FILTER
+            org.glavo.m3fx.controls.M3ChipVariant#INPUT
+            org.glavo.m3fx.controls.M3ChipVariant#SUGGESTION
+            org.glavo.m3fx.controls.M3FloatingActionButtonSize#LARGE
+            org.glavo.m3fx.controls.M3FloatingActionButtonSize#REGULAR
+            org.glavo.m3fx.controls.M3FloatingActionButtonSize#SMALL
+            org.glavo.m3fx.controls.M3FloatingActionButtonVariant#PRIMARY
+            org.glavo.m3fx.controls.M3FloatingActionButtonVariant#SECONDARY
+            org.glavo.m3fx.controls.M3FloatingActionButtonVariant#SURFACE
+            org.glavo.m3fx.controls.M3FloatingActionButtonVariant#TERTIARY
+            org.glavo.m3fx.controls.M3IconButtonWidth#DEFAULT
+            org.glavo.m3fx.controls.M3IconButtonWidth#NARROW
+            org.glavo.m3fx.controls.M3IconButtonWidth#WIDE
+            org.glavo.m3fx.controls.M3IconSize#EXTRA_LARGE
+            org.glavo.m3fx.controls.M3IconSize#LARGE
+            org.glavo.m3fx.controls.M3IconSize#MEDIUM
+            org.glavo.m3fx.controls.M3IconSize#SMALL
+            org.glavo.m3fx.controls.M3IconToggleButtonSelectionMode#MULTIPLE
+            org.glavo.m3fx.controls.M3IconToggleButtonSelectionMode#SINGLE
+            org.glavo.m3fx.controls.M3IconToggleButtonVariant#FILLED
+            org.glavo.m3fx.controls.M3IconToggleButtonVariant#OUTLINED
+            org.glavo.m3fx.controls.M3IconToggleButtonVariant#STANDARD
+            org.glavo.m3fx.controls.M3IconToggleButtonVariant#TONAL
+            org.glavo.m3fx.controls.M3IconVariant#ERROR
+            org.glavo.m3fx.controls.M3IconVariant#INVERSE_ON_SURFACE
+            org.glavo.m3fx.controls.M3IconVariant#ON_SURFACE
+            org.glavo.m3fx.controls.M3IconVariant#ON_SURFACE_VARIANT
+            org.glavo.m3fx.controls.M3IconVariant#PRIMARY
+            org.glavo.m3fx.controls.M3IconVariant#SECONDARY
+            org.glavo.m3fx.controls.M3IconVariant#TERTIARY
+            org.glavo.m3fx.controls.M3ListItemLineCount#ONE_LINE
+            org.glavo.m3fx.controls.M3ListItemLineCount#THREE_LINE
+            org.glavo.m3fx.controls.M3ListItemLineCount#TWO_LINE
+            org.glavo.m3fx.controls.M3ListItemSlotSize#AUTO
+            org.glavo.m3fx.controls.M3ListItemSlotSize#AVATAR
+            org.glavo.m3fx.controls.M3ListItemSlotSize#ICON
+            org.glavo.m3fx.controls.M3ListItemSlotSize#THUMBNAIL
+            org.glavo.m3fx.controls.M3ListItemSlotSize#WIDE_THUMBNAIL
+            org.glavo.m3fx.controls.M3ListSelectionMode#MULTIPLE
+            org.glavo.m3fx.controls.M3ListSelectionMode#NONE
+            org.glavo.m3fx.controls.M3ListSelectionMode#SINGLE
+            org.glavo.m3fx.controls.M3LoadingIndicatorVariant#CONTAINED
+            org.glavo.m3fx.controls.M3LoadingIndicatorVariant#DEFAULT
+            org.glavo.m3fx.controls.M3MenuColorStyle#STANDARD
+            org.glavo.m3fx.controls.M3MenuColorStyle#VIBRANT
+            org.glavo.m3fx.controls.M3MenuSelectionMode#MULTIPLE
+            org.glavo.m3fx.controls.M3MenuSelectionMode#NONE
+            org.glavo.m3fx.controls.M3MenuSelectionMode#SINGLE
+            org.glavo.m3fx.controls.M3SegmentedButtonSelectionMode#MULTIPLE
+            org.glavo.m3fx.controls.M3SegmentedButtonSelectionMode#SINGLE
+            org.glavo.m3fx.controls.M3SheetVariant#MODAL
+            org.glavo.m3fx.controls.M3SheetVariant#STANDARD
+            org.glavo.m3fx.controls.M3SurfaceElevation#LEVEL0
+            org.glavo.m3fx.controls.M3SurfaceElevation#LEVEL1
+            org.glavo.m3fx.controls.M3SurfaceElevation#LEVEL2
+            org.glavo.m3fx.controls.M3SurfaceElevation#LEVEL3
+            org.glavo.m3fx.controls.M3SurfaceElevation#LEVEL4
+            org.glavo.m3fx.controls.M3SurfaceElevation#LEVEL5
+            org.glavo.m3fx.controls.M3SurfaceVariant#CONTAINER
+            org.glavo.m3fx.controls.M3SurfaceVariant#CONTAINER_HIGH
+            org.glavo.m3fx.controls.M3SurfaceVariant#CONTAINER_HIGHEST
+            org.glavo.m3fx.controls.M3SurfaceVariant#CONTAINER_LOW
+            org.glavo.m3fx.controls.M3SurfaceVariant#CONTAINER_LOWEST
+            org.glavo.m3fx.controls.M3SurfaceVariant#PRIMARY_CONTAINER
+            org.glavo.m3fx.controls.M3SurfaceVariant#SECONDARY_CONTAINER
+            org.glavo.m3fx.controls.M3SurfaceVariant#SURFACE
+            org.glavo.m3fx.controls.M3SurfaceVariant#TERTIARY_CONTAINER
+            org.glavo.m3fx.controls.M3TextInputVariant#FILLED
+            org.glavo.m3fx.controls.M3TextInputVariant#OUTLINED
+            org.glavo.m3fx.controls.M3TextRole#BODY_LARGE
+            org.glavo.m3fx.controls.M3TextRole#BODY_MEDIUM
+            org.glavo.m3fx.controls.M3TextRole#BODY_SMALL
+            org.glavo.m3fx.controls.M3TextRole#DISPLAY_LARGE
+            org.glavo.m3fx.controls.M3TextRole#DISPLAY_MEDIUM
+            org.glavo.m3fx.controls.M3TextRole#DISPLAY_SMALL
+            org.glavo.m3fx.controls.M3TextRole#HEADLINE_LARGE
+            org.glavo.m3fx.controls.M3TextRole#HEADLINE_MEDIUM
+            org.glavo.m3fx.controls.M3TextRole#HEADLINE_SMALL
+            org.glavo.m3fx.controls.M3TextRole#LABEL_LARGE
+            org.glavo.m3fx.controls.M3TextRole#LABEL_MEDIUM
+            org.glavo.m3fx.controls.M3TextRole#LABEL_SMALL
+            org.glavo.m3fx.controls.M3TextRole#TITLE_LARGE
+            org.glavo.m3fx.controls.M3TextRole#TITLE_MEDIUM
+            org.glavo.m3fx.controls.M3TextRole#TITLE_SMALL
+            org.glavo.m3fx.controls.M3ToolbarVariant#DOCKED
+            org.glavo.m3fx.controls.M3ToolbarVariant#FLOATING
+            org.glavo.m3fx.controls.M3ToolbarVariant#STANDARD
+            org.glavo.m3fx.controls.M3TopAppBarVariant#CENTER_ALIGNED
+            org.glavo.m3fx.controls.M3TopAppBarVariant#LARGE
+            org.glavo.m3fx.controls.M3TopAppBarVariant#MEDIUM
+            org.glavo.m3fx.controls.M3TopAppBarVariant#SMALL
+            org.glavo.m3fx.tokens.M3Profile#BASELINE_2021
+            org.glavo.m3fx.tokens.M3Profile#EXPRESSIVE_2025
+            """);
+
+    /// The reviewed public field surface for exported public API types, excluding enum constants.
+    private static final @Unmodifiable Set<String> EXPECTED_PUBLIC_FIELDS = typeNames("""
+            org.glavo.m3fx.animation.M3Motion#EMPHASIZED_ACCELERATE:javafx.animation.Interpolator
+            org.glavo.m3fx.animation.M3Motion#EMPHASIZED_DECELERATE:javafx.animation.Interpolator
+            org.glavo.m3fx.animation.M3Motion#EMPHASIZED:javafx.animation.Interpolator
+            org.glavo.m3fx.animation.M3Motion#EXTRA_LONG1:javafx.util.Duration
+            org.glavo.m3fx.animation.M3Motion#EXTRA_LONG2:javafx.util.Duration
+            org.glavo.m3fx.animation.M3Motion#EXTRA_LONG3:javafx.util.Duration
+            org.glavo.m3fx.animation.M3Motion#EXTRA_LONG4:javafx.util.Duration
+            org.glavo.m3fx.animation.M3Motion#LINEAR:javafx.animation.Interpolator
+            org.glavo.m3fx.animation.M3Motion#LONG1:javafx.util.Duration
+            org.glavo.m3fx.animation.M3Motion#LONG2:javafx.util.Duration
+            org.glavo.m3fx.animation.M3Motion#LONG3:javafx.util.Duration
+            org.glavo.m3fx.animation.M3Motion#LONG4:javafx.util.Duration
+            org.glavo.m3fx.animation.M3Motion#MEDIUM1:javafx.util.Duration
+            org.glavo.m3fx.animation.M3Motion#MEDIUM2:javafx.util.Duration
+            org.glavo.m3fx.animation.M3Motion#MEDIUM3:javafx.util.Duration
+            org.glavo.m3fx.animation.M3Motion#MEDIUM4:javafx.util.Duration
+            org.glavo.m3fx.animation.M3Motion#SHORT1:javafx.util.Duration
+            org.glavo.m3fx.animation.M3Motion#SHORT2:javafx.util.Duration
+            org.glavo.m3fx.animation.M3Motion#SHORT3:javafx.util.Duration
+            org.glavo.m3fx.animation.M3Motion#SHORT4:javafx.util.Duration
+            org.glavo.m3fx.animation.M3Motion#STANDARD_ACCELERATE:javafx.animation.Interpolator
+            org.glavo.m3fx.animation.M3Motion#STANDARD_DECELERATE:javafx.animation.Interpolator
+            org.glavo.m3fx.animation.M3Motion#STANDARD:javafx.animation.Interpolator
+            org.glavo.m3fx.controls.M3Avatar#LABEL_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3Avatar#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3Badge#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3BadgedBox#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3Banner#ACTIONS_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3Banner#CONTAINER_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3Banner#ICON_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3Banner#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3Banner#TEXT_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3BottomAppBar#ACTION_SLOT_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3BottomAppBar#ACTIONS_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3BottomAppBar#FLOATING_ACTION_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3BottomAppBar#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3BottomSheet#ACTIONS_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3BottomSheet#CONTENT_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3BottomSheet#DRAG_HANDLE_CONTAINER_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3BottomSheet#DRAG_HANDLE_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3BottomSheet#HEADER_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3BottomSheet#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3BottomSheet#TITLE_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3Button#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3ButtonGroup#FIRST_BUTTON_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3ButtonGroup#GROUPED_BUTTON_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3ButtonGroup#LAST_BUTTON_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3ButtonGroup#MIDDLE_BUTTON_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3ButtonGroup#SINGLE_BUTTON_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3ButtonGroup#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3Card#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3Carousel#ITEM_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3Carousel#SELECTED_ITEM_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3Carousel#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3Carousel#TRACK_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3Carousel#VIEWPORT_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3CheckBox#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3Chip#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3ChipGroup#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DatePicker#CONTAINER_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DatePicker#DAY_CELL_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DatePicker#DAY_GRID_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DatePicker#HEADER_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DatePicker#MONTH_LABEL_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DatePicker#NAVIGATION_BUTTON_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DatePicker#OUTSIDE_MONTH_DAY_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DatePicker#SELECTED_DAY_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DatePicker#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DatePicker#TODAY_DAY_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DatePicker#WEEKDAY_LABEL_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DatePicker#WEEKDAY_ROW_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DatePickerDialog#DEFAULT_TITLE:java.lang.String
+            org.glavo.m3fx.controls.M3DatePickerDialog#PRESET_BUTTON_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DatePickerDialog#PRESET_CONTENT_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DatePickerDialog#PRESET_LIST_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DatePickerField#POPUP_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DatePickerField#PRESET_BUTTON_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DatePickerField#PRESET_CONTENT_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DatePickerField#PRESET_LIST_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DatePickerField#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DateRangePicker#DAY_GRID_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DateRangePicker#RANGE_END_DAY_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DateRangePicker#RANGE_MIDDLE_DAY_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DateRangePicker#RANGE_ROW_END_DAY_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DateRangePicker#RANGE_ROW_START_DAY_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DateRangePicker#RANGE_SINGLE_DAY_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DateRangePicker#RANGE_START_DAY_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DateRangePicker#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DateRangePicker#WEEKDAY_ROW_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DateRangePickerDialog#DEFAULT_TITLE:java.lang.String
+            org.glavo.m3fx.controls.M3DateRangePickerDialog#PRESET_BUTTON_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DateRangePickerDialog#PRESET_CONTENT_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DateRangePickerDialog#PRESET_LIST_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DateRangePickerField#CONTAINER_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DateRangePickerField#OPEN_BUTTON_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DateRangePickerField#POPUP_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DateRangePickerField#PRESET_BUTTON_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DateRangePickerField#PRESET_CONTENT_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DateRangePickerField#PRESET_LIST_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DateRangePickerField#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DialogPane#BUTTON_BAR_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DialogPane#BUTTON_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DialogPane#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3Divider#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3FabMenu#ACTION_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3FabMenu#ACTIONS_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3FabMenu#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3FabMenu#TOGGLE_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3FloatingActionButton#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3FormPane#CONTENT_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3FormPane#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3FormRow#CONTAINER_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3FormRow#CONTENT_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3FormRow#LABEL_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3FormRow#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3FormRow#SUPPORTING_TEXT_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3FormRow#TEXT_COLUMN_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3FormRow#TRAILING_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3FormSection#CONTENT_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3FormSection#HEADER_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3FormSection#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3FormSection#SUPPORTING_TEXT_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3FormSection#TITLE_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3Icon#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3IconButton#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3IconToggleButton#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3IconToggleButtonGroup#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3ListItem#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3ListPane#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3ListSectionHeader#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3ListView#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3LoadingIndicator#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3Menu#CONTAINER_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3Menu#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3MenuButton#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3MenuItem#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3MenuSectionHeader#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3NavigationBar#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3NavigationDrawer#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3NavigationDrawerGroup#CHILD_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3NavigationDrawerGroup#HEADER_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3NavigationDrawerGroup#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3NavigationItem#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3NavigationRail#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3PasswordField#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3PickerField#OPEN_BUTTON_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3PickerField#POPUP_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3PickerField#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3ProgressBar#INDETERMINATE_PROGRESS:double
+            org.glavo.m3fx.controls.M3ProgressBar#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3ProgressIndicator#INDETERMINATE_PROGRESS:double
+            org.glavo.m3fx.controls.M3ProgressIndicator#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3RadioButton#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3RichTooltip#ACTIONS_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3RichTooltip#CONTAINER_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3RichTooltip#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3RichTooltip#SUPPORTING_TEXT_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3RichTooltip#TITLE_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3Scrim#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3ScrollPanes#SCROLL_BAR_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3ScrollPanes#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3SearchBar#CONTENT_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3SearchBar#INPUT_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3SearchBar#LEADING_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3SearchBar#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3SearchBar#TRAILING_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3SearchView#CONTENT_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3SearchView#RESULTS_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3SearchView#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3SegmentedButton#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3SegmentedButtonGroup#FIRST_SEGMENT_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3SegmentedButtonGroup#LAST_SEGMENT_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3SegmentedButtonGroup#MIDDLE_SEGMENT_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3SegmentedButtonGroup#SINGLE_SEGMENT_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3SegmentedButtonGroup#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3SideSheet#ACTIONS_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3SideSheet#CONTENT_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3SideSheet#HEADER_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3SideSheet#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3SideSheet#TITLE_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3Slider#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3Snackbar#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3SnackbarHost#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3SplitButton#ACTION_BUTTON_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3SplitButton#MENU_BUTTON_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3SplitButton#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3SubMenuItem#INDICATOR_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3SubMenuItem#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3Surface#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3Switch#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3Tab#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TabBar#CONTAINER_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TabBar#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3Text#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TextArea#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TextField#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TextInputLayout#CLEAR_BUTTON_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TextInputLayout#COUNTER_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TextInputLayout#INPUT_CONTAINER_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TextInputLayout#INPUT_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TextInputLayout#LABEL_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TextInputLayout#LEADING_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TextInputLayout#OUTLINE_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TextInputLayout#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TextInputLayout#SUPPORTING_ROW_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TextInputLayout#SUPPORTING_TEXT_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TextInputLayout#TRAILING_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePicker#CELL_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePicker#CONTAINER_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePicker#DISPLAY_SEPARATOR_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePicker#DISPLAY_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePicker#GRID_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePicker#HOUR_CELL_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePicker#HOUR_DISPLAY_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePicker#MINUTE_CELL_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePicker#MINUTE_DISPLAY_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePicker#PERIOD_CELL_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePicker#PERIOD_DISPLAY_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePicker#PERIOD_ROW_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePicker#SECTION_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePicker#SECTION_TITLE_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePicker#SELECTED_CELL_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePicker#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePickerDialog#DEFAULT_TITLE:java.lang.String
+            org.glavo.m3fx.controls.M3TimePickerDialog#PRESET_BUTTON_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePickerDialog#PRESET_CONTENT_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePickerDialog#PRESET_LIST_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePickerField#POPUP_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePickerField#PRESET_BUTTON_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePickerField#PRESET_CONTENT_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePickerField#PRESET_LIST_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePickerField#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3Toolbar#ITEM_SLOT_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3Toolbar#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3Tooltip#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TopAppBar#ACTION_SLOT_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TopAppBar#ACTIONS_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TopAppBar#NAVIGATION_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TopAppBar#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TopAppBar#TITLE_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3ValidationSummary#EMPTY_TEXT_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3ValidationSummary#ITEM_ERROR_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3ValidationSummary#ITEM_LABEL_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3ValidationSummary#ITEM_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3ValidationSummary#ITEMS_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3ValidationSummary#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3ValidationSummary#TITLE_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.theme.M3Theme#DEFAULT_SEED_COLOR:javafx.scene.paint.Color
+            org.glavo.m3fx.theme.M3ThemeManager#BASELINE_PROFILE_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.theme.M3ThemeManager#DARK_BRIGHTNESS_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.theme.M3ThemeManager#EXPRESSIVE_PROFILE_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.theme.M3ThemeManager#LIGHT_BRIGHTNESS_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.theme.M3ThemeManager#ROOT_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.tokens.M3ColorTokens#DEFAULT_CSS_PREFIX:java.lang.String
+            org.glavo.m3fx.tokens.M3ColorTokens#M3_CSS_PREFIX:java.lang.String
+            """);
     /// Picker wrapper methods that duplicate the embedded picker API instead of the wrapper value API.
     private static final @Unmodifiable Map<String, @Unmodifiable Set<String>> FORBIDDEN_PICKER_WRAPPER_METHODS = Map.of(
             "org.glavo.m3fx.controls.M3DatePickerDialog",
@@ -673,6 +1132,181 @@ final class ProjectContractTest {
             )
     );
 
+    /// The reviewed public constructor surface for exported public API types.
+    private static final @Unmodifiable Set<String> EXPECTED_PUBLIC_CONSTRUCTORS = typeNames("""
+            org.glavo.m3fx.controls.M3Avatar()
+            org.glavo.m3fx.controls.M3Avatar(java.lang.String)
+            org.glavo.m3fx.controls.M3Avatar(javafx.scene.Node)
+            org.glavo.m3fx.controls.M3Badge()
+            org.glavo.m3fx.controls.M3Badge(int)
+            org.glavo.m3fx.controls.M3Badge(java.lang.String)
+            org.glavo.m3fx.controls.M3BadgedBox()
+            org.glavo.m3fx.controls.M3BadgedBox(javafx.scene.Node)
+            org.glavo.m3fx.controls.M3BadgedBox(javafx.scene.Node,org.glavo.m3fx.controls.M3Badge)
+            org.glavo.m3fx.controls.M3Banner()
+            org.glavo.m3fx.controls.M3Banner(java.lang.String)
+            org.glavo.m3fx.controls.M3BottomAppBar()
+            org.glavo.m3fx.controls.M3BottomSheet()
+            org.glavo.m3fx.controls.M3BottomSheet(java.lang.String)
+            org.glavo.m3fx.controls.M3BottomSheet(java.lang.String,javafx.scene.Node)
+            org.glavo.m3fx.controls.M3Button()
+            org.glavo.m3fx.controls.M3Button(java.lang.String)
+            org.glavo.m3fx.controls.M3Button(java.lang.String,javafx.scene.Node)
+            org.glavo.m3fx.controls.M3Button(java.lang.String,javafx.scene.Node,org.glavo.m3fx.controls.M3ButtonVariant)
+            org.glavo.m3fx.controls.M3Button(java.lang.String,org.glavo.m3fx.controls.M3ButtonVariant)
+            org.glavo.m3fx.controls.M3ButtonGroup()
+            org.glavo.m3fx.controls.M3Card()
+            org.glavo.m3fx.controls.M3Card(javafx.scene.Node)
+            org.glavo.m3fx.controls.M3Card(javafx.scene.Node,org.glavo.m3fx.controls.M3CardVariant)
+            org.glavo.m3fx.controls.M3Carousel()
+            org.glavo.m3fx.controls.M3CheckBox()
+            org.glavo.m3fx.controls.M3CheckBox(java.lang.String)
+            org.glavo.m3fx.controls.M3Chip()
+            org.glavo.m3fx.controls.M3Chip(java.lang.String)
+            org.glavo.m3fx.controls.M3Chip(java.lang.String,javafx.scene.Node)
+            org.glavo.m3fx.controls.M3ChipGroup()
+            org.glavo.m3fx.controls.M3DatePicker()
+            org.glavo.m3fx.controls.M3DatePicker(java.time.LocalDate)
+            org.glavo.m3fx.controls.M3DatePickerDialog()
+            org.glavo.m3fx.controls.M3DatePickerDialog(java.time.LocalDate)
+            org.glavo.m3fx.controls.M3DatePickerField()
+            org.glavo.m3fx.controls.M3DatePickerField(java.time.LocalDate)
+            org.glavo.m3fx.controls.M3DatePreset(java.lang.String,java.time.LocalDate)
+            org.glavo.m3fx.controls.M3DateRange(java.time.LocalDate,java.time.LocalDate)
+            org.glavo.m3fx.controls.M3DateRangePicker()
+            org.glavo.m3fx.controls.M3DateRangePicker(java.time.LocalDate,java.time.LocalDate)
+            org.glavo.m3fx.controls.M3DateRangePickerDialog()
+            org.glavo.m3fx.controls.M3DateRangePickerDialog(java.time.LocalDate,java.time.LocalDate)
+            org.glavo.m3fx.controls.M3DateRangePickerDialog(org.glavo.m3fx.controls.M3DateRange)
+            org.glavo.m3fx.controls.M3DateRangePickerField()
+            org.glavo.m3fx.controls.M3DateRangePickerField(java.time.LocalDate,java.time.LocalDate)
+            org.glavo.m3fx.controls.M3DateRangePreset(java.lang.String,java.time.LocalDate,java.time.LocalDate)
+            org.glavo.m3fx.controls.M3DateRangePreset(java.lang.String,org.glavo.m3fx.controls.M3DateRange)
+            org.glavo.m3fx.controls.M3Dialog()
+            org.glavo.m3fx.controls.M3Dialog(java.lang.String)
+            org.glavo.m3fx.controls.M3Dialog(java.lang.String,java.lang.String,java.lang.String,javafx.scene.control.ButtonType[])
+            org.glavo.m3fx.controls.M3DialogPane()
+            org.glavo.m3fx.controls.M3Divider()
+            org.glavo.m3fx.controls.M3Divider(javafx.geometry.Orientation)
+            org.glavo.m3fx.controls.M3FabMenu()
+            org.glavo.m3fx.controls.M3FabMenu(org.glavo.m3fx.controls.M3FloatingActionButton)
+            org.glavo.m3fx.controls.M3FloatingActionButton()
+            org.glavo.m3fx.controls.M3FloatingActionButton(java.lang.String)
+            org.glavo.m3fx.controls.M3FloatingActionButton(java.lang.String,javafx.scene.Node)
+            org.glavo.m3fx.controls.M3FloatingActionButton(javafx.scene.Node)
+            org.glavo.m3fx.controls.M3FormPane()
+            org.glavo.m3fx.controls.M3FormRow()
+            org.glavo.m3fx.controls.M3FormRow(java.lang.String,java.lang.String,javafx.scene.Node)
+            org.glavo.m3fx.controls.M3FormRow(java.lang.String,java.lang.String,javafx.scene.Node,javafx.scene.Node)
+            org.glavo.m3fx.controls.M3FormRow(java.lang.String,javafx.scene.Node)
+            org.glavo.m3fx.controls.M3FormSection()
+            org.glavo.m3fx.controls.M3FormSection(java.lang.String)
+            org.glavo.m3fx.controls.M3FormSection(java.lang.String,java.lang.String)
+            org.glavo.m3fx.controls.M3FormValidator()
+            org.glavo.m3fx.controls.M3FormValidator(org.glavo.m3fx.controls.M3TextInputLayout[])
+            org.glavo.m3fx.controls.M3Icon()
+            org.glavo.m3fx.controls.M3Icon(java.lang.String)
+            org.glavo.m3fx.controls.M3Icon(java.lang.String,org.glavo.m3fx.controls.M3IconSize,org.glavo.m3fx.controls.M3IconVariant)
+            org.glavo.m3fx.controls.M3IconButton()
+            org.glavo.m3fx.controls.M3IconButton(javafx.scene.Node)
+            org.glavo.m3fx.controls.M3IconToggleButton()
+            org.glavo.m3fx.controls.M3IconToggleButton(java.lang.String)
+            org.glavo.m3fx.controls.M3IconToggleButton(java.lang.String,org.glavo.m3fx.controls.M3IconSize,org.glavo.m3fx.controls.M3IconVariant)
+            org.glavo.m3fx.controls.M3IconToggleButton(javafx.scene.Node)
+            org.glavo.m3fx.controls.M3IconToggleButtonGroup()
+            org.glavo.m3fx.controls.M3ListItem()
+            org.glavo.m3fx.controls.M3ListItem(java.lang.String)
+            org.glavo.m3fx.controls.M3ListPane()
+            org.glavo.m3fx.controls.M3ListSectionHeader()
+            org.glavo.m3fx.controls.M3ListSectionHeader(java.lang.String)
+            org.glavo.m3fx.controls.M3ListView()
+            org.glavo.m3fx.controls.M3LoadingIndicator()
+            org.glavo.m3fx.controls.M3Menu()
+            org.glavo.m3fx.controls.M3Menu(javafx.scene.Node[])
+            org.glavo.m3fx.controls.M3MenuButton()
+            org.glavo.m3fx.controls.M3MenuButton(java.lang.String)
+            org.glavo.m3fx.controls.M3MenuButton(java.lang.String,javafx.scene.Node[])
+            org.glavo.m3fx.controls.M3MenuItem()
+            org.glavo.m3fx.controls.M3MenuItem(java.lang.String)
+            org.glavo.m3fx.controls.M3MenuItem(java.lang.String,javafx.scene.Node)
+            org.glavo.m3fx.controls.M3MenuItem(java.lang.String,javafx.scene.Node,javafx.scene.Node)
+            org.glavo.m3fx.controls.M3MenuSectionHeader()
+            org.glavo.m3fx.controls.M3MenuSectionHeader(java.lang.String)
+            org.glavo.m3fx.controls.M3NavigationBar()
+            org.glavo.m3fx.controls.M3NavigationDrawer()
+            org.glavo.m3fx.controls.M3NavigationDrawerGroup()
+            org.glavo.m3fx.controls.M3NavigationDrawerGroup(java.lang.String)
+            org.glavo.m3fx.controls.M3NavigationItem()
+            org.glavo.m3fx.controls.M3NavigationItem(java.lang.String)
+            org.glavo.m3fx.controls.M3NavigationItem(java.lang.String,javafx.scene.Node)
+            org.glavo.m3fx.controls.M3NavigationItem(java.lang.String,javafx.scene.Node,org.glavo.m3fx.controls.M3Badge)
+            org.glavo.m3fx.controls.M3NavigationRail()
+            org.glavo.m3fx.controls.M3PasswordField()
+            org.glavo.m3fx.controls.M3PasswordField(java.lang.String)
+            org.glavo.m3fx.controls.M3ProgressBar()
+            org.glavo.m3fx.controls.M3ProgressBar(double)
+            org.glavo.m3fx.controls.M3ProgressIndicator()
+            org.glavo.m3fx.controls.M3ProgressIndicator(double)
+            org.glavo.m3fx.controls.M3RadioButton()
+            org.glavo.m3fx.controls.M3RadioButton(java.lang.String)
+            org.glavo.m3fx.controls.M3RichTooltip()
+            org.glavo.m3fx.controls.M3RichTooltip(java.lang.String,java.lang.String)
+            org.glavo.m3fx.controls.M3Scrim()
+            org.glavo.m3fx.controls.M3SearchBar()
+            org.glavo.m3fx.controls.M3SearchBar(java.lang.String)
+            org.glavo.m3fx.controls.M3SearchView()
+            org.glavo.m3fx.controls.M3SearchView(java.lang.String)
+            org.glavo.m3fx.controls.M3SegmentedButton()
+            org.glavo.m3fx.controls.M3SegmentedButton(java.lang.String)
+            org.glavo.m3fx.controls.M3SegmentedButton(java.lang.String,javafx.scene.Node)
+            org.glavo.m3fx.controls.M3SegmentedButtonGroup()
+            org.glavo.m3fx.controls.M3SideSheet()
+            org.glavo.m3fx.controls.M3SideSheet(java.lang.String)
+            org.glavo.m3fx.controls.M3SideSheet(java.lang.String,javafx.scene.Node)
+            org.glavo.m3fx.controls.M3Slider()
+            org.glavo.m3fx.controls.M3Slider(double,double,double)
+            org.glavo.m3fx.controls.M3Snackbar()
+            org.glavo.m3fx.controls.M3Snackbar(java.lang.String)
+            org.glavo.m3fx.controls.M3Snackbar(java.lang.String,java.lang.String)
+            org.glavo.m3fx.controls.M3SnackbarHost()
+            org.glavo.m3fx.controls.M3SplitButton()
+            org.glavo.m3fx.controls.M3SplitButton(java.lang.String)
+            org.glavo.m3fx.controls.M3SubMenuItem()
+            org.glavo.m3fx.controls.M3SubMenuItem(java.lang.String)
+            org.glavo.m3fx.controls.M3SubMenuItem(java.lang.String,javafx.scene.Node[])
+            org.glavo.m3fx.controls.M3Surface()
+            org.glavo.m3fx.controls.M3Switch()
+            org.glavo.m3fx.controls.M3Switch(java.lang.String)
+            org.glavo.m3fx.controls.M3Tab()
+            org.glavo.m3fx.controls.M3Tab(java.lang.String)
+            org.glavo.m3fx.controls.M3Tab(java.lang.String,javafx.scene.Node)
+            org.glavo.m3fx.controls.M3TabBar()
+            org.glavo.m3fx.controls.M3Text()
+            org.glavo.m3fx.controls.M3Text(java.lang.String)
+            org.glavo.m3fx.controls.M3Text(java.lang.String,org.glavo.m3fx.controls.M3TextRole)
+            org.glavo.m3fx.controls.M3TextArea()
+            org.glavo.m3fx.controls.M3TextArea(java.lang.String)
+            org.glavo.m3fx.controls.M3TextField()
+            org.glavo.m3fx.controls.M3TextField(java.lang.String)
+            org.glavo.m3fx.controls.M3TextInputLayout()
+            org.glavo.m3fx.controls.M3TextInputLayout(javafx.scene.control.TextInputControl)
+            org.glavo.m3fx.controls.M3TextInputLayout(javafx.scene.control.TextInputControl,java.lang.String)
+            org.glavo.m3fx.controls.M3TextInputLayout(javafx.scene.control.TextInputControl,java.lang.String,java.lang.String)
+            org.glavo.m3fx.controls.M3TimePicker()
+            org.glavo.m3fx.controls.M3TimePicker(java.time.LocalTime)
+            org.glavo.m3fx.controls.M3TimePickerDialog()
+            org.glavo.m3fx.controls.M3TimePickerDialog(java.time.LocalTime)
+            org.glavo.m3fx.controls.M3TimePickerField()
+            org.glavo.m3fx.controls.M3TimePickerField(java.time.LocalTime)
+            org.glavo.m3fx.controls.M3TimePreset(java.lang.String,java.time.LocalTime)
+            org.glavo.m3fx.controls.M3Toolbar()
+            org.glavo.m3fx.controls.M3Tooltip()
+            org.glavo.m3fx.controls.M3Tooltip(java.lang.String)
+            org.glavo.m3fx.controls.M3TopAppBar()
+            org.glavo.m3fx.controls.M3TopAppBar(java.lang.String)
+            org.glavo.m3fx.controls.M3ValidationSummary()
+            org.glavo.m3fx.controls.M3ValidationSummary(org.glavo.m3fx.controls.M3FormValidator)
+            """);
     /// Public batch constructors intentionally kept as stable convenience API.
     private static final @Unmodifiable Set<String> EXPECTED_PUBLIC_CONTROL_BATCH_CONSTRUCTORS = Set.of(
             "org.glavo.m3fx.controls.M3Dialog(String,String,String,ButtonType[])",
@@ -1006,6 +1640,115 @@ final class ProjectContractTest {
                 "Exported public top-level API types must match the expected API surface");
     }
 
+    /// Verifies that public nested API types are explicitly reviewed.
+    @Test
+    void exportedPackagesExposeOnlyExpectedPublicNestedTypes() throws Exception {
+        Map<String, Set<String>> nestedTypesByClass = new TreeMap<>();
+        for (String className : exportedTopLevelClassNames(exportedPackageNames())) {
+            Class<?> type = Class.forName(className, false, ProjectContractTest.class.getClassLoader());
+            if (!Modifier.isPublic(type.getModifiers())) {
+                continue;
+            }
+
+            Set<String> nestedTypes = new TreeSet<>();
+            for (Class<?> nestedType : type.getDeclaredClasses()) {
+                int modifiers = nestedType.getModifiers();
+                if (Modifier.isPublic(modifiers) && !nestedType.isSynthetic()) {
+                    nestedTypes.add(nestedType.getSimpleName());
+                }
+            }
+            if (!nestedTypes.isEmpty()) {
+                nestedTypesByClass.put(type.getName(), Set.copyOf(nestedTypes));
+            }
+        }
+
+        assertEquals(EXPECTED_EXPORTED_PUBLIC_NESTED_TYPES_BY_CLASS, nestedTypesByClass,
+                "Exported public nested API types must match the expected API surface");
+    }
+
+    /// Verifies that public nested record API types remain immutable data carriers.
+    @Test
+    void exportedPublicNestedRecordsExposeOnlyRecordAccessors() throws Exception {
+        List<String> actionMethods = new ArrayList<>();
+        for (String className : EXPECTED_EXPORTED_PUBLIC_NESTED_TYPES_BY_CLASS.keySet()) {
+            Class<?> type = Class.forName(className, false, ProjectContractTest.class.getClassLoader());
+            for (Class<?> nestedType : type.getDeclaredClasses()) {
+                int nestedModifiers = nestedType.getModifiers();
+                if (!Modifier.isPublic(nestedModifiers) || nestedType.isSynthetic()) {
+                    continue;
+                }
+                if (!nestedType.isRecord()) {
+                    actionMethods.add(nestedType.getName() + " is not a record");
+                    continue;
+                }
+
+                Set<String> componentNames = recordComponentNames(nestedType);
+                for (Method method : nestedType.getDeclaredMethods()) {
+                    int modifiers = method.getModifiers();
+                    if (Modifier.isPublic(modifiers)
+                            && !method.isSynthetic()
+                            && !isRecordInfrastructureMethod(method)
+                            && !componentNames.contains(method.getName())) {
+                        actionMethods.add(nestedType.getName() + '#' + method.getName());
+                    }
+                }
+            }
+        }
+
+        actionMethods.sort(Comparator.naturalOrder());
+        assertTrue(actionMethods.isEmpty(),
+                () -> "Public nested record API types must not expose action-style convenience methods: "
+                        + actionMethods);
+    }
+
+    /// Verifies that public nested record API types expose only canonical constructors.
+    @Test
+    void exportedPublicNestedRecordsExposeOnlyCanonicalConstructors() throws Exception {
+        List<String> invalidConstructors = new ArrayList<>();
+        for (String className : EXPECTED_EXPORTED_PUBLIC_NESTED_TYPES_BY_CLASS.keySet()) {
+            Class<?> type = Class.forName(className, false, ProjectContractTest.class.getClassLoader());
+            for (Class<?> nestedType : type.getDeclaredClasses()) {
+                int nestedModifiers = nestedType.getModifiers();
+                if (!Modifier.isPublic(nestedModifiers) || nestedType.isSynthetic() || !nestedType.isRecord()) {
+                    continue;
+                }
+
+                List<Constructor<?>> publicConstructors = new ArrayList<>();
+                for (Constructor<?> constructor : nestedType.getDeclaredConstructors()) {
+                    if (Modifier.isPublic(constructor.getModifiers()) && !constructor.isSynthetic()) {
+                        publicConstructors.add(constructor);
+                    }
+                }
+                if (publicConstructors.size() != 1) {
+                    invalidConstructors.add(nestedType.getName() + " exposes "
+                            + publicConstructors.size() + " public constructors");
+                    continue;
+                }
+
+                RecordComponent[] components = nestedType.getRecordComponents();
+                Class<?>[] parameterTypes = publicConstructors.get(0).getParameterTypes();
+                if (components == null || parameterTypes.length != components.length) {
+                    invalidConstructors.add(nestedType.getName() + " constructor component count is wrong");
+                    continue;
+                }
+
+                for (int index = 0; index < components.length; index++) {
+                    if (!parameterTypes[index].equals(components[index].getType())) {
+                        invalidConstructors.add(nestedType.getName() + " constructor parameter " + index
+                                + " is " + parameterTypes[index].getName()
+                                + " instead of " + components[index].getType().getName());
+                    }
+                }
+            }
+        }
+
+        invalidConstructors.sort(Comparator.naturalOrder());
+        assertTrue(invalidConstructors.isEmpty(),
+                () -> "Public nested record API types must expose only canonical constructors: "
+                        + invalidConstructors);
+    }
+
+
     /// Verifies that exported controls do not publish implementation helper node types.
     @Test
     void exportedControlsDoNotPublishImplementationTypes() throws IOException {
@@ -1028,19 +1771,19 @@ final class ProjectContractTest {
                         + implementationTypes);
     }
 
-    /// Verifies that exported public and protected APIs do not expose internal implementation member types.
+    /// Verifies that exported public and protected APIs do not expose implementation member types.
     @Test
-    void exportedApisDoNotExposeInternalMemberTypes() throws IOException {
-        List<String> internalApiLeaks = new ArrayList<>();
+    void exportedApisDoNotExposeImplementationMemberTypes() throws IOException {
+        List<String> implementationApiLeaks = new ArrayList<>();
         for (Path sourceRoot : exportedPackageSourceRoots()) {
             for (Path sourceFile : javaSourceFiles(sourceRoot)) {
-                collectInternalApiLeaks(sourceFile, internalApiLeaks);
+                collectImplementationApiLeaks(sourceFile, implementationApiLeaks);
             }
         }
 
-        assertTrue(internalApiLeaks.isEmpty(),
-                () -> "Exported public/protected member APIs must not expose internal implementation types: "
-                        + internalApiLeaks);
+        assertTrue(implementationApiLeaks.isEmpty(),
+                () -> "Exported public/protected member APIs must not expose implementation types: "
+                        + implementationApiLeaks);
     }
 
     /// Verifies that compiled exported APIs do not expose unexported M3FX package types.
@@ -1100,6 +1843,21 @@ final class ProjectContractTest {
 
         assertTrue(fieldViolations.isEmpty(),
                 () -> "Exported APIs must expose fields only as immutable constants: " + fieldViolations);
+    }
+
+    /// Verifies that public field names and types remain a reviewed API surface.
+    @Test
+    void publicFieldsStayReviewed() throws Exception {
+        Set<String> fields = new TreeSet<>();
+        for (String className : exportedTopLevelClassNames(exportedPackageNames())) {
+            Class<?> type = Class.forName(className, false, ProjectContractTest.class.getClassLoader());
+            if (Modifier.isPublic(type.getModifiers())) {
+                collectExportedFieldSignatures(type, fields);
+            }
+        }
+
+        assertEquals(EXPECTED_PUBLIC_FIELDS, fields,
+                "Public fields must match the reviewed API surface");
     }
 
     /// Verifies that public controls avoid inheriting from concrete JavaFX controls.
@@ -1342,6 +2100,29 @@ final class ProjectContractTest {
                 "Public enum instance methods must match the reviewed API surface");
     }
 
+    /// Verifies that public enum constants remain a reviewed API surface.
+    @Test
+    void publicEnumConstantsStayReviewed() throws Exception {
+        Set<String> enumConstants = new TreeSet<>();
+        for (String className : exportedTopLevelClassNames(exportedPackageNames())) {
+            Class<?> type = Class.forName(className, false, ProjectContractTest.class.getClassLoader());
+            if (!Modifier.isPublic(type.getModifiers()) || !type.isEnum()) {
+                continue;
+            }
+
+            Object[] constants = type.getEnumConstants();
+            if (constants == null) {
+                continue;
+            }
+            for (Object constant : constants) {
+                enumConstants.add(type.getName() + '#' + ((Enum<?>) constant).name());
+            }
+        }
+
+        assertEquals(EXPECTED_PUBLIC_ENUM_CONSTANTS, enumConstants,
+                "Public enum constants must match the reviewed API surface");
+    }
+
     /// Verifies that preset records remain immutable data carriers instead of publishing convenience actions.
     @Test
     void publicPresetRecordsExposeOnlyRecordAccessors() throws Exception {
@@ -1399,6 +2180,95 @@ final class ProjectContractTest {
         assertTrue(duplicateMethods.isEmpty(),
                 () -> "Mutable-list controls must use their get*() ObservableList APIs instead of duplicate "
                         + "collection convenience mutators: " + duplicateMethods);
+    }
+
+    /// Verifies that public constructors remain an explicitly reviewed API surface.
+    @Test
+    void publicConstructorsStayStable() throws Exception {
+        Set<String> constructors = new TreeSet<>();
+        for (String className : exportedTopLevelClassNames(exportedPackageNames())) {
+            Class<?> type = Class.forName(className, false, ProjectContractTest.class.getClassLoader());
+            if (!Modifier.isPublic(type.getModifiers())) {
+                continue;
+            }
+
+            for (Constructor<?> constructor : type.getDeclaredConstructors()) {
+                if (Modifier.isPublic(constructor.getModifiers())) {
+                    constructors.add(publicConstructorSignature(constructor));
+                }
+            }
+        }
+
+        assertEquals(EXPECTED_PUBLIC_CONSTRUCTORS, constructors,
+                "Public constructors must match the reviewed API surface");
+    }
+
+    /// Verifies that public constructors do not bind action behavior directly.
+    @Test
+    void publicConstructorsDoNotAcceptBehaviorCallbacks() throws Exception {
+        List<String> constructors = new ArrayList<>();
+        for (String packageName : EXPECTED_EXPORTED_API_PACKAGES) {
+            for (String typeName : EXPECTED_EXPORTED_TOP_LEVEL_TYPES.get(packageName)) {
+                Class<?> type = Class.forName(packageName + '.' + typeName, false,
+                        ProjectContractTest.class.getClassLoader());
+                for (Constructor<?> constructor : type.getDeclaredConstructors()) {
+                    if (!Modifier.isPublic(constructor.getModifiers())) {
+                        continue;
+                    }
+                    for (Class<?> parameterType : constructor.getParameterTypes()) {
+                        if (isBehaviorCallbackParameter(parameterType)) {
+                            constructors.add(publicConstructorSignature(constructor));
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        constructors.sort(Comparator.naturalOrder());
+        assertTrue(constructors.isEmpty(),
+                () -> "Public constructors must expose behavior through properties, not callback parameters: "
+                        + constructors);
+    }
+
+    /// Verifies that public controls expose behavior callbacks through property-style setters.
+    @Test
+    void publicControlMethodsDoNotAcceptBehaviorCallbacksOutsideProperties() throws Exception {
+        List<String> methods = new ArrayList<>();
+        for (String typeName : EXPECTED_EXPORTED_TOP_LEVEL_TYPES.get("org.glavo.m3fx.controls")) {
+            Class<?> type = Class.forName("org.glavo.m3fx.controls." + typeName, false,
+                    ProjectContractTest.class.getClassLoader());
+            int modifiers = type.getModifiers();
+            if (!Modifier.isPublic(modifiers)
+                    || Modifier.isAbstract(modifiers)
+                    || type.isEnum()
+                    || type.isInterface()
+                    || type.isRecord()
+                    || Modifier.isStatic(modifiers)
+                    || PUBLIC_CONTROL_UTILITY_TYPES.contains(type.getName())) {
+                continue;
+            }
+
+            for (Method method : type.getDeclaredMethods()) {
+                int methodModifiers = method.getModifiers();
+                if (!Modifier.isPublic(methodModifiers)
+                        || Modifier.isStatic(methodModifiers)
+                        || method.isSynthetic()
+                        || isAllowedBehaviorCallbackMethod(method)) {
+                    continue;
+                }
+                for (Class<?> parameterType : method.getParameterTypes()) {
+                    if (isBehaviorCallbackParameter(parameterType)) {
+                        methods.add(publicMethodSignature(type, method));
+                        break;
+                    }
+                }
+            }
+        }
+
+        methods.sort(Comparator.naturalOrder());
+        assertTrue(methods.isEmpty(),
+                () -> "Public control behavior callbacks must use property-style setters: " + methods);
     }
 
     /// Verifies that the remaining public batch constructors are explicitly intentional.
@@ -1575,6 +2445,47 @@ final class ProjectContractTest {
                         + exposedMethods);
     }
 
+    /// Verifies that public style class constants stay in the M3FX CSS namespace.
+    @Test
+    void publicStyleClassConstantsUseM3Namespace() throws IOException {
+        List<String> invalidStyleClasses = new ArrayList<>();
+        for (Map.Entry<String, String> entry : publicStyleClassConstantValues().entrySet()) {
+            if (!PUBLIC_STYLE_CLASS_VALUE.matcher(entry.getValue()).matches()) {
+                invalidStyleClasses.add(entry.getKey() + "=" + entry.getValue());
+            }
+        }
+
+        assertTrue(invalidStyleClasses.isEmpty(),
+                () -> "Public style class constants must be stable m3-* CSS class names: "
+                        + invalidStyleClasses);
+    }
+
+    /// Verifies that public control root style classes do not collide with each other.
+    @Test
+    void publicControlRootStyleClassesAreUnique() throws IOException {
+        Map<String, String> ownerByStyleClass = new TreeMap<>();
+        List<String> duplicateRootStyleClasses = new ArrayList<>();
+        for (Map.Entry<String, String> entry : publicStyleClassConstantValues().entrySet()) {
+            String key = entry.getKey();
+            if (!key.startsWith("org.glavo.m3fx.controls.") || !key.endsWith("#STYLE_CLASS")) {
+                continue;
+            }
+
+            String styleClass = entry.getValue();
+            String owner = key.substring(0, key.indexOf('#'));
+            @org.jetbrains.annotations.Nullable String previousOwner = ownerByStyleClass.putIfAbsent(
+                    styleClass,
+                    owner
+            );
+            if (previousOwner != null) {
+                duplicateRootStyleClasses.add(styleClass + " is shared by " + previousOwner + " and " + owner);
+            }
+        }
+
+        assertTrue(duplicateRootStyleClasses.isEmpty(),
+                () -> "Public control root STYLE_CLASS constants must not collide: " + duplicateRootStyleClasses);
+    }
+
     /// Verifies that public controls with custom CSS metadata expose class and instance metadata entry points.
     @Test
     void publicStyleableControlsExposeCssMetaDataEntrypoints() throws IOException {
@@ -1643,7 +2554,7 @@ final class ProjectContractTest {
         List<String> invalidRules = new ArrayList<>();
         for (Path stylesheet : stylesheetFiles(CONTROL_STYLESHEET_RESOURCE_ROOT)) {
             collectUnsupportedControlRootLayoutRules(
-                    resourceRelativePath(CONTROL_STYLESHEET_RESOURCE_ROOT, stylesheet),
+                    controlStylesheetRelativePath(stylesheet),
                     Files.readString(stylesheet),
                     controlRootAlignmentSupport,
                     invalidRules
@@ -1744,7 +2655,7 @@ final class ProjectContractTest {
             }
         }
 
-        assertTrue(!referencedStylesheets.isEmpty(), "Production sources should reference bundled control CSS");
+        assertFalse(referencedStylesheets.isEmpty(), "Production sources should reference bundled control CSS");
         assertTrue(missingResources.isEmpty(),
                 () -> "controlStylesheet references must resolve to bundled resources: " + missingResources);
     }
@@ -1761,7 +2672,7 @@ final class ProjectContractTest {
 
         List<String> unreferencedResources = new ArrayList<>();
         for (Path stylesheet : stylesheetFiles(CONTROL_STYLESHEET_RESOURCE_ROOT)) {
-            String relativePath = resourceRelativePath(CONTROL_STYLESHEET_RESOURCE_ROOT, stylesheet);
+            String relativePath = controlStylesheetRelativePath(stylesheet);
             if (!referencedStylesheets.contains(relativePath)) {
                 unreferencedResources.add("controls/" + relativePath);
             }
@@ -1781,7 +2692,7 @@ final class ProjectContractTest {
 
         List<String> invalidRules = new ArrayList<>();
         for (Path stylesheet : stylesheetFiles(CONTROL_STYLESHEET_RESOURCE_ROOT)) {
-            String stylesheetName = resourceRelativePath(CONTROL_STYLESHEET_RESOURCE_ROOT, stylesheet);
+            String stylesheetName = controlStylesheetRelativePath(stylesheet);
             Set<String> ownedStyleClasses = rootStyleClassesByStylesheet.getOrDefault(stylesheetName, Set.of());
             Matcher matcher = CSS_RULE.matcher(Files.readString(stylesheet));
             while (matcher.find()) {
@@ -1807,7 +2718,7 @@ final class ProjectContractTest {
     @Test
     void stylesheetTokenLookupsResolveToGeneratedOrLocalDeclarations() throws IOException {
         Set<String> generatedTokens = tokenDeclarations(M3Theme.defaultTheme().tokens().toRootStyleDeclarations());
-        assertTrue(!generatedTokens.isEmpty(), "Generated root token declarations should not be empty");
+        assertFalse(generatedTokens.isEmpty(), "Generated root token declarations should not be empty");
 
         List<String> missingTokens = new ArrayList<>();
         for (Path stylesheet : projectStylesheetFiles()) {
@@ -1979,6 +2890,82 @@ final class ProjectContractTest {
         }
         return false;
     }
+
+    /// Returns resolved public style class constant values keyed by `ClassName#FIELD_NAME`.
+    private static Map<String, String> publicStyleClassConstantValues() throws IOException {
+        Map<String, String> expressions = publicStyleClassConstantExpressions();
+        Map<String, String> values = new TreeMap<>();
+        for (String key : expressions.keySet()) {
+            values.put(key, resolvePublicStyleClassConstant(key, expressions, new TreeSet<>()));
+        }
+        return values;
+    }
+
+    /// Returns source expressions for public style class constants keyed by `ClassName#FIELD_NAME`.
+    private static Map<String, String> publicStyleClassConstantExpressions() throws IOException {
+        Map<String, String> expressions = new TreeMap<>();
+        for (String packageName : EXPECTED_EXPORTED_API_PACKAGES) {
+            for (String typeName : EXPECTED_EXPORTED_TOP_LEVEL_TYPES.get(packageName)) {
+                Path sourceFile = Path.of("src", "main", "java")
+                        .resolve(packageName.replace('.', java.io.File.separatorChar))
+                        .resolve(typeName + ".java");
+                if (!Files.isRegularFile(sourceFile)) {
+                    continue;
+                }
+
+                for (String line : Files.readAllLines(sourceFile)) {
+                    Matcher matcher = PUBLIC_STYLE_CLASS_CONSTANT_DECLARATION.matcher(line);
+                    if (matcher.find()) {
+                        expressions.put(packageName + '.' + typeName + '#' + matcher.group(1), matcher.group(2).trim());
+                    }
+                }
+            }
+        }
+        return expressions;
+    }
+
+    /// Resolves one style class constant source expression without initializing production classes.
+    private static String resolvePublicStyleClassConstant(
+            String key,
+            Map<String, String> expressions,
+            Set<String> resolving
+    ) {
+        if (!resolving.add(key)) {
+            return "<cyclic style class reference: " + key + '>';
+        }
+
+        @org.jetbrains.annotations.Nullable String expression = expressions.get(key);
+        if (expression == null) {
+            return "<missing style class reference: " + key + '>';
+        }
+
+        try {
+            Matcher literalMatcher = STRING_LITERAL_STYLE_CLASS_VALUE.matcher(expression);
+            if (literalMatcher.matches()) {
+                return literalMatcher.group(1);
+            }
+
+            Matcher referenceMatcher = STYLE_CLASS_CONSTANT_REFERENCE.matcher(expression);
+            if (referenceMatcher.matches()) {
+                String ownerClassName = key.substring(0, key.indexOf('#'));
+                @org.jetbrains.annotations.Nullable String referencedTypeName = referenceMatcher.group(1);
+                String referencedFieldName = referenceMatcher.group(2);
+                String referencedClassName = referencedTypeName == null
+                        ? ownerClassName
+                        : ownerClassName.substring(0, ownerClassName.lastIndexOf('.') + 1) + referencedTypeName;
+                return resolvePublicStyleClassConstant(
+                        referencedClassName + '#' + referencedFieldName,
+                        expressions,
+                        resolving
+                );
+            }
+
+            return "<unsupported style class expression: " + expression + '>';
+        } finally {
+            resolving.remove(key);
+        }
+    }
+
     /// Returns public mutable `ObservableList` getter names grouped by declaring class name.
     private static Map<String, Set<String>> publicMutableObservableListGetterNamesByClass() throws IOException {
         Map<String, Set<String>> gettersByClass = new TreeMap<>();
@@ -2061,7 +3048,7 @@ final class ProjectContractTest {
                 packages.add(matcher.group(1));
             }
         }
-        assertTrue(!packages.isEmpty(), "The main module descriptor should export API packages");
+        assertFalse(packages.isEmpty(), "The main module descriptor should export API packages");
         return packages;
     }
 
@@ -2116,8 +3103,8 @@ final class ProjectContractTest {
         }
     }
 
-    /// Collects exported member declarations that expose internal implementation types.
-    private static void collectInternalApiLeaks(Path sourceFile, List<String> leaks) throws IOException {
+    /// Collects exported member declarations that expose implementation types.
+    private static void collectImplementationApiLeaks(Path sourceFile, List<String> leaks) throws IOException {
         List<String> lines = Files.readAllLines(sourceFile);
         StringBuilder declaration = new StringBuilder();
         int declarationLine = -1;
@@ -2146,7 +3133,7 @@ final class ProjectContractTest {
                 if (permitsIndex >= 0) {
                     exportedDeclaration = exportedDeclaration.substring(0, permitsIndex);
                 }
-                if (EXPORTED_INTERNAL_API_REFERENCE.matcher(exportedDeclaration).find()) {
+                if (EXPORTED_IMPLEMENTATION_API_REFERENCE.matcher(exportedDeclaration).find()) {
                     leaks.add(sourceFile + ":" + declarationLine + ": " + exportedDeclaration);
                 }
                 declarationLine = -1;
@@ -2212,6 +3199,27 @@ final class ProjectContractTest {
         }
     }
 
+    /// Collects exported public and protected field signatures.
+    private static void collectExportedFieldSignatures(Class<?> owner, Set<String> fields) {
+        for (Field field : owner.getDeclaredFields()) {
+            if (isPublicOrProtected(field) && !field.isSynthetic() && !field.isEnumConstant()) {
+                fields.add(publicFieldSignature(field));
+            }
+        }
+
+        for (Class<?> nestedClass : owner.getDeclaredClasses()) {
+            int modifiers = nestedClass.getModifiers();
+            if (Modifier.isPublic(modifiers) || Modifier.isProtected(modifiers)) {
+                collectExportedFieldSignatures(nestedClass, fields);
+            }
+        }
+    }
+
+    /// Returns a stable public field signature string.
+    private static String publicFieldSignature(Field field) {
+        return field.getDeclaringClass().getName() + '#' + field.getName() + ':' + typeName(field.getType());
+    }
+
     /// Collects exported field declarations that are not immutable constants.
     private static void collectExportedFieldMutabilityViolations(Class<?> owner, List<String> violations) {
         for (Field field : owner.getDeclaredFields()) {
@@ -2244,6 +3252,29 @@ final class ProjectContractTest {
         return Modifier.isPublic(modifiers) || Modifier.isProtected(modifiers);
     }
 
+    /// Returns whether one constructor parameter type represents behavior supplied by the caller.
+    private static boolean isBehaviorCallbackParameter(Class<?> parameterType) {
+        if (parameterType.isArray()) {
+            return isBehaviorCallbackParameter(parameterType.getComponentType());
+        }
+        if (javafx.event.EventHandler.class.isAssignableFrom(parameterType)
+                || javafx.util.Callback.class.isAssignableFrom(parameterType)
+                || Runnable.class.isAssignableFrom(parameterType)) {
+            return true;
+        }
+
+        String packageName = parameterType.getPackageName();
+        return packageName.equals("java.util.function")
+                || packageName.equals("javafx.beans")
+                || packageName.equals("javafx.beans.value");
+    }
+
+    /// Returns whether a public method is an intentional callback property setter.
+    private static boolean isAllowedBehaviorCallbackMethod(Method method) {
+        String name = method.getName();
+        return name.startsWith("setOn") || name.equals("setCellFactory");
+    }
+
     /// Returns whether one constructor parameter is a batch collection input.
     private static boolean hasBatchParameter(Class<?>[] parameterTypes) {
         for (Class<?> parameterType : parameterTypes) {
@@ -2252,6 +3283,19 @@ final class ProjectContractTest {
             }
         }
         return false;
+    }
+
+    /// Returns a stable public constructor signature string.
+    private static String publicConstructorSignature(Constructor<?> constructor) {
+        StringBuilder signature = new StringBuilder(constructor.getDeclaringClass().getName()).append('(');
+        Class<?>[] parameterTypes = constructor.getParameterTypes();
+        for (int index = 0; index < parameterTypes.length; index++) {
+            if (index > 0) {
+                signature.append(',');
+            }
+            signature.append(typeName(parameterTypes[index]));
+        }
+        return signature.append(')').toString();
     }
 
     /// Returns a stable public batch constructor signature for contract checks.
@@ -2316,8 +3360,6 @@ final class ProjectContractTest {
             for (Type lowerBound : wildcardType.getLowerBounds()) {
                 collectTypeLeaks(lowerBound, description + " lower bound", exportedPackages, leaks);
             }
-        } else if (type instanceof TypeVariable<?>) {
-            // Type variable bounds are checked at the class, constructor, or method declaration site.
         }
     }
 
@@ -2374,8 +3416,8 @@ final class ProjectContractTest {
             Set<String> baseClassNames
     ) {
         Set<String> visitedClasses = new TreeSet<>();
-        @org.jetbrains.annotations.Nullable String currentClass = className;
-        while (currentClass != null && visitedClasses.add(currentClass)) {
+        String currentClass = className;
+        while (visitedClasses.add(currentClass)) {
             @org.jetbrains.annotations.Nullable String superclassName = superclasses.get(currentClass);
             if (superclassName == null) {
                 return baseClassNames.contains(currentClass);
@@ -2591,8 +3633,8 @@ final class ProjectContractTest {
         return superclasses;
     }
 
-    /// Returns a stable slash-separated relative resource path.
-    private static String resourceRelativePath(Path root, Path resource) {
-        return root.relativize(resource).toString().replace('\\', '/');
+    /// Returns a stable slash-separated control stylesheet resource path.
+    private static String controlStylesheetRelativePath(Path resource) {
+        return CONTROL_STYLESHEET_RESOURCE_ROOT.relativize(resource).toString().replace('\\', '/');
     }
 }

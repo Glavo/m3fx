@@ -46,13 +46,6 @@ public final class M3ShapeMorph {
             oval()
     );
 
-    /// Material loading indicator determinate polygon sequence.
-    private static final Sequence LOADING_INDICATOR_DETERMINATE = sequence(
-            false,
-            circle(10).transformed(M3ShapeMorph::rotate18).normalized(),
-            softBurst()
-    );
-
     /// Matched cubic curve pairs used by this morph.
     private final CubicPair @Unmodifiable [] matches;
 
@@ -85,13 +78,6 @@ public final class M3ShapeMorph {
     /// @return the indeterminate loading indicator morph sequence
     public static Sequence loadingIndicatorIndeterminate() {
         return LOADING_INDICATOR_INDETERMINATE;
-    }
-
-    /// Returns the Material loading indicator determinate morph sequence.
-    ///
-    /// @return the determinate loading indicator morph sequence
-    public static Sequence loadingIndicatorDeterminate() {
-        return LOADING_INDICATOR_DETERMINATE;
     }
 
     /// Returns the number of cubic curves in this morph.

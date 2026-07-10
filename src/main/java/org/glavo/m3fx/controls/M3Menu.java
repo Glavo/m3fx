@@ -454,6 +454,11 @@ public class M3Menu extends Control {
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
+        if (isDisabled()) {
+            super.executeAccessibleAction(action, parameters);
+            return;
+        }
+
         switch (action) {
             case REQUEST_FOCUS -> requestAccessibleFocus();
             case SET_SELECTED_ITEMS -> setAccessibleSelectedItems(parameters);
@@ -492,11 +497,17 @@ public class M3Menu extends Control {
     /// Updates one direct child pseudo-class that depends on the current menu color style.
     private void updateChildColorStylePseudoClass(Node child) {
         child.pseudoClassStateChanged(VIBRANT_PSEUDO_CLASS, getColorStyle() == M3MenuColorStyle.VIBRANT);
+        if (child instanceof M3SubMenuItem subMenuItem) {
+            subMenuItem.getSubMenu().setColorStyle(getColorStyle());
+        }
     }
 
     /// Clears menu-owned color style pseudo-classes from a removed child.
     private static void clearChildColorStylePseudoClass(Node child) {
         child.pseudoClassStateChanged(VIBRANT_PSEUDO_CLASS, false);
+        if (child instanceof M3SubMenuItem subMenuItem) {
+            subMenuItem.getSubMenu().setColorStyle(M3MenuColorStyle.STANDARD);
+        }
     }
 
     /// Applies changed runtime motion settings to the type-ahead reset delay.

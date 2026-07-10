@@ -67,6 +67,35 @@ tasks.withType<JavaCompile> {
 tasks.test {
     useJUnitPlatform()
     maxHeapSize = providers.gradleProperty("m3fx.test.maxHeapSize").orElse("1g").get()
+
+    doLast {
+        val resultDirectory = reports.junitXml.outputLocation.get().asFile
+        val documentBuilder = javax.xml.parsers.DocumentBuilderFactory.newInstance().newDocumentBuilder()
+        val warnings = buildList {
+            fileTree(resultDirectory) {
+                include("TEST-*.xml")
+            }.forEach { resultFile ->
+                val document = documentBuilder.parse(resultFile)
+                val errorNodes = document.getElementsByTagName("system-err")
+                for (index in 0 until errorNodes.length) {
+                    errorNodes.item(index).textContent.lineSequence()
+                        .map(String::trim)
+                        .filter { line ->
+                            line.contains("Could not resolve '-m3-")
+                                    || line.contains("ClassCastException")
+                                    && line.contains("while converting value")
+                                    && line.contains("/org/glavo/m3fx/styles/")
+                        }
+                        .forEach { line -> add("${resultFile.name}: $line") }
+                }
+            }
+        }
+        if (warnings.isNotEmpty()) {
+            throw GradleException(
+                "M3FX CSS warnings were emitted during tests:\n" + warnings.joinToString("\n")
+            )
+        }
+    }
 }
 
 java {
@@ -307,6 +336,7 @@ val verifyPublicationArtifacts = tasks.register("verifyPublicationArtifacts") {
 
     val mainJar = tasks.named<org.gradle.jvm.tasks.Jar>("jar").flatMap { it.archiveFile }
     val sourcesJar = tasks.named<org.gradle.jvm.tasks.Jar>("sourcesJar").flatMap { it.archiveFile }
+    val javadocJar = tasks.named<org.gradle.jvm.tasks.Jar>("javadocJar").flatMap { it.archiveFile }
     val mainSourceDirectory = layout.projectDirectory.dir("src/main/java").asFile
     val mainModuleInfo = mainSourceDirectory.resolve("module-info.java")
     val mainResourceDirectory = layout.projectDirectory.dir("src/main/resources").asFile
@@ -317,8 +347,8 @@ val verifyPublicationArtifacts = tasks.register("verifyPublicationArtifacts") {
         include("org/glavo/m3fx/styles/**/*.css")
     }
 
-    dependsOn(tasks.named("jar"), tasks.named("sourcesJar"))
-    inputs.files(mainJar, sourcesJar, mainModuleInfo, mainJavaSources, mainStylesheetResources)
+    dependsOn(tasks.named("jar"), tasks.named("sourcesJar"), tasks.named("javadocJar"))
+    inputs.files(mainJar, sourcesJar, javadocJar, mainModuleInfo, mainJavaSources, mainStylesheetResources)
 
     doLast {
         fun jarEntries(file: File): Set<String> =
@@ -388,6 +418,12 @@ val verifyPublicationArtifacts = tasks.register("verifyPublicationArtifacts") {
         if (sourceEntries.any { it.endsWith(".class") }) {
             throw GradleException("Sources JAR must not contain compiled class files.")
         }
+
+        val javadocEntries = jarEntries(javadocJar.get().asFile)
+        requireEntry(javadocEntries, "index.html", "Javadoc JAR")
+        if (javadocEntries.any { it.endsWith(".java") || it.endsWith(".class") }) {
+            throw GradleException("Javadoc JAR must contain generated documentation only.")
+        }
     }
 }
 
@@ -438,6 +474,7 @@ val verifyMavenPublicationLayout = tasks.register("verifyMavenPublicationLayout"
 
         requirePublishedArtifact(null, "jar")
         requirePublishedArtifact("sources", "jar")
+        requirePublishedArtifact("javadoc", "jar")
         requirePublishedArtifact(null, "pom")
 
         if (fileNames.any { it.endsWith(".module") }) {

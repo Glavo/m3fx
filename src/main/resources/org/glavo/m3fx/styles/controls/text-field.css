@@ -45,9 +45,8 @@
 .m3-text-area.m3-text-area:focused .scroll-pane,
 .m3-text-area.m3-text-area .content,
 .m3-text-area.m3-text-area:focused .content {
-    -fx-control-inner-background: transparent;
-    -fx-background-color: transparent;
-    -fx-background: transparent;
+    -fx-background-color: -fx-control-inner-background;
+    -fx-background: -fx-control-inner-background;
     -fx-background-insets: 0;
     -fx-background-radius: 0;
 }
@@ -63,6 +62,7 @@
 .m3-password-field.m3-filled-field:hover,
 .m3-text-area.m3-filled-field,
 .m3-text-area.m3-filled-field:hover {
+    -fx-control-inner-background: -m3-color-surface-container-highest;
     -fx-background-color: -m3-color-surface-container-highest;
     -fx-background-insets: 0;
     -fx-background-radius: 4px 4px 0 0;
@@ -74,6 +74,7 @@
 .m3-text-field.m3-filled-field:focused,
 .m3-password-field.m3-filled-field:focused,
 .m3-text-area.m3-filled-field:focused {
+    -fx-control-inner-background: -m3-color-surface-container-highest;
     -fx-background-color: -m3-color-surface-container-highest;
     -fx-background-insets: 0;
     -fx-background-radius: 4px 4px 0 0;
@@ -169,13 +170,11 @@
 .m3-text-input-layout-input.m3-text-area:focused .viewport,
 .m3-text-input-layout-input.m3-text-area .content,
 .m3-text-input-layout-input.m3-text-area:focused .content {
-    -fx-control-inner-background: transparent;
-    -fx-background-color: transparent;
-    -fx-background: transparent;
+    -fx-background-color: -fx-control-inner-background;
+    -fx-background: -fx-control-inner-background;
     -fx-background-insets: 0;
     -fx-background-radius: 0;
 }
-
 .m3-text-field:disabled,
 .m3-password-field:disabled,
 .m3-text-area:disabled {
@@ -184,6 +183,18 @@
 
 .m3-text-input-container {
     -fx-alignment: center;
+}
+
+.m3-text-input-layout.m3-filled-field .m3-text-input-container {
+    -fx-background-color: -m3-color-surface-container-highest;
+    -fx-background-insets: 0;
+    -fx-background-radius: 4px 4px 0 0;
+}
+
+.m3-text-input-layout.m3-outlined-field .m3-text-input-container {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 4px;
 }
 
 .m3-text-input-outline {

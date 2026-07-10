@@ -159,11 +159,19 @@ public final class M3ScrollPanes {
         /// The accumulated vertical target value.
         private double targetVValue;
 
+        /// The scrollable horizontal pixel span used by the current target value.
+        private double targetHScrollablePixels;
+
+        /// The scrollable vertical pixel span used by the current target value.
+        private double targetVScrollablePixels;
+
         /// Creates and installs smooth wheel behavior.
         private SmoothScrollState(ScrollPane scrollPane) {
             this.scrollPane = scrollPane;
             targetHValue = scrollPane.getHvalue();
             targetVValue = scrollPane.getVvalue();
+            targetHScrollablePixels = Math.max(0.0, contentWidth() - scrollPane.getViewportBounds().getWidth());
+            targetVScrollablePixels = Math.max(0.0, contentHeight() - scrollPane.getViewportBounds().getHeight());
             scrollPane.addEventFilter(ScrollEvent.SCROLL, scrollHandler);
             motionSettingsObserver = new M3MotionSettingsObserver(scrollPane, this::refreshMotionSettings);
         }
@@ -179,11 +187,6 @@ public final class M3ScrollPanes {
         private void handleScroll(ScrollEvent event) {
             if (event.isDirect() || !isEventTargetForScrollPane(scrollPane, event.getTarget())) {
                 return;
-            }
-
-            if (animation == null || animation.getStatus() == Animation.Status.STOPPED) {
-                targetHValue = scrollPane.getHvalue();
-                targetVValue = scrollPane.getVvalue();
             }
 
             double viewportWidth = scrollPane.getViewportBounds().getWidth();
@@ -202,6 +205,27 @@ public final class M3ScrollPanes {
                     scrollPane.getVmax(),
                     verticalScrollablePixels
             );
+            if (animation == null || animation.getStatus() == Animation.Status.STOPPED) {
+                targetHValue = scrollPane.getHvalue();
+                targetVValue = scrollPane.getVvalue();
+            } else {
+                targetHValue = retargetScrollValue(
+                        targetHValue,
+                        targetHScrollablePixels,
+                        horizontalScrollablePixels,
+                        scrollPane.getHmin(),
+                        scrollPane.getHmax()
+                );
+                targetVValue = retargetScrollValue(
+                        targetVValue,
+                        targetVScrollablePixels,
+                        verticalScrollablePixels,
+                        scrollPane.getVmin(),
+                        scrollPane.getVmax()
+                );
+            }
+            targetHScrollablePixels = horizontalScrollablePixels;
+            targetVScrollablePixels = verticalScrollablePixels;
             if (event.isShiftDown() && canScrollHorizontally && Math.abs(horizontalDelta) <= EPSILON) {
                 horizontalDelta = verticalDelta;
                 verticalDelta = 0.0;
@@ -350,6 +374,23 @@ public final class M3ScrollPanes {
         double currentPixels = pixelsForValue(currentValue, minValue, maxValue, scrollablePixels);
         double targetPixels = clamp(currentPixels - scrollDelta, 0.0, scrollablePixels);
         return valueForPixels(targetPixels, minValue, maxValue, scrollablePixels);
+    }
+
+    /// Maps an in-flight target value from its previous pixel span to the current pixel span.
+    private static double retargetScrollValue(
+            double currentValue,
+            double previousScrollablePixels,
+            double currentScrollablePixels,
+            double minValue,
+            double maxValue
+    ) {
+        if (previousScrollablePixels <= EPSILON || currentScrollablePixels <= EPSILON || close(minValue, maxValue)) {
+            return currentValue;
+        }
+
+        double targetPixels = pixelsForValue(currentValue, minValue, maxValue, previousScrollablePixels);
+        return valueForPixels(clamp(targetPixels, 0.0, currentScrollablePixels), minValue, maxValue,
+                currentScrollablePixels);
     }
 
     /// Returns whether an axis has a meaningful scroll range.

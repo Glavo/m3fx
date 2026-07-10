@@ -19,6 +19,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import javax.imageio.ImageIO;
 
@@ -169,9 +170,80 @@ final class ControlVisualTestUtils {
                 Files.createDirectories(parent);
             }
             ImageIO.write(toBufferedImage(image), "png", path.toFile());
+            writeVisualSnapshotIndex(path);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    /// Writes a lightweight HTML index for generated core visual snapshots.
+    static void writeVisualSnapshotIndex(Path snapshotPath) throws IOException {
+        Path directory = snapshotPath.getParent();
+        if (directory == null) {
+            return;
+        }
+
+        List<Path> snapshots;
+        try (var stream = Files.list(directory)) {
+            snapshots = stream
+                    .filter(path -> path.getFileName().toString().endsWith(".png"))
+                    .sorted()
+                    .toList();
+        }
+
+        StringBuilder html = new StringBuilder();
+        html.append("""
+                <!doctype html>
+                <html lang="en">
+                <head>
+                  <meta charset="utf-8">
+                  <title>M3FX Core Visual Snapshots</title>
+                  <style>
+                    body { margin: 24px; font-family: system-ui, sans-serif; background: #fdf8ff; color: #1d1b20; }
+                    h1 { margin: 0 0 16px; font-size: 28px; }
+                    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+                    figure { margin: 0; border: 1px solid #cac4d0; border-radius: 8px; padding: 12px; background: #fff7ff; }
+                    img { display: block; width: 100%; height: auto; border-radius: 4px; background: #f7f2fa; }
+                    figcaption { margin-top: 8px; font-size: 13px; word-break: break-all; }
+                  </style>
+                </head>
+                <body>
+                  <h1>M3FX Core Visual Snapshots</h1>
+                  <div class="grid">
+                """);
+        for (Path snapshot : snapshots) {
+            appendVisualSnapshotFigure(html, snapshot);
+        }
+        html.append("""
+                  </div>
+                </body>
+                </html>
+                """);
+        Path indexPath = directory.resolve("index.html");
+        Files.writeString(indexPath, html.toString());
+    }
+
+    /// Appends one linked snapshot figure to the visual report index.
+    private static void appendVisualSnapshotFigure(StringBuilder html, Path snapshot) {
+        String fileName = snapshot.getFileName().toString();
+        html.append("    <figure><a href=\"")
+                .append(escapeHtml(fileName))
+                .append("\"><img src=\"")
+                .append(escapeHtml(fileName))
+                .append("\" alt=\"")
+                .append(escapeHtml(fileName))
+                .append("\"></a><figcaption>")
+                .append(escapeHtml(fileName))
+                .append("</figcaption></figure>\n");
+    }
+
+    /// Escapes text for HTML content and attributes.
+    private static String escapeHtml(String text) {
+        return text
+                .replace("&", "&amp;")
+                .replace("\"", "&quot;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;");
     }
 
     /// Verifies that a rendered pixel rectangle is contained by a node in scene coordinates.

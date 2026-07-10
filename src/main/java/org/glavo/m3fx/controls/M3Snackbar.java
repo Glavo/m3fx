@@ -129,22 +129,8 @@ public class M3Snackbar extends Control {
     /// @param text the snackbar message text
     /// @param actionText the action button text
     public M3Snackbar(String text, String actionText) {
-        this(text, actionText, null);
-    }
-
-    /// Creates a snackbar with message text, action button text, and an action handler.
-    ///
-    /// @param text the snackbar message text
-    /// @param actionText the action button text
-    /// @param onAction the action handler, or `null` for none
-    public M3Snackbar(
-            String text,
-            String actionText,
-            @Nullable EventHandler<ActionEvent> onAction
-    ) {
         this(text);
         setActionText(actionText);
-        setOnAction(onAction);
     }
 
     /// Returns the snackbar message text.
@@ -262,6 +248,11 @@ public class M3Snackbar extends Control {
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
+        if (isDisabled()) {
+            super.executeAccessibleAction(action, parameters);
+            return;
+        }
+
         switch (action) {
             case FIRE -> fireAction();
             case REQUEST_FOCUS -> focusAccessibleNode();

@@ -20,8 +20,8 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// The default Material Design 3 skin for [M3DisclosureIcon].
 @NotNullByDefault
 public final class M3DisclosureIconSkin extends SkinBase<M3DisclosureIcon> {
-    /// The icon layout box size.
-    private static final double ICON_SIZE = 24.0;
+    /// The reference viewport used by the disclosure triangle path.
+    private static final double REFERENCE_ICON_SIZE = 24.0;
 
     /// The collapsed arrow rotation in degrees.
     private static final double COLLAPSED_ROTATION = -90.0;
@@ -90,7 +90,7 @@ public final class M3DisclosureIconSkin extends SkinBase<M3DisclosureIcon> {
             double bottomInset,
             double leftInset
     ) {
-        return leftInset + ICON_SIZE + rightInset;
+        return leftInset + getSkinnable().getIconSize() + rightInset;
     }
 
     /// Computes the minimum height of the icon box.
@@ -102,7 +102,7 @@ public final class M3DisclosureIconSkin extends SkinBase<M3DisclosureIcon> {
             double bottomInset,
             double leftInset
     ) {
-        return topInset + ICON_SIZE + bottomInset;
+        return topInset + getSkinnable().getIconSize() + bottomInset;
     }
 
     /// Computes the preferred width of the icon box.
@@ -114,7 +114,7 @@ public final class M3DisclosureIconSkin extends SkinBase<M3DisclosureIcon> {
             double bottomInset,
             double leftInset
     ) {
-        return leftInset + ICON_SIZE + rightInset;
+        return leftInset + getSkinnable().getIconSize() + rightInset;
     }
 
     /// Computes the preferred height of the icon box.
@@ -126,7 +126,7 @@ public final class M3DisclosureIconSkin extends SkinBase<M3DisclosureIcon> {
             double bottomInset,
             double leftInset
     ) {
-        return topInset + ICON_SIZE + bottomInset;
+        return topInset + getSkinnable().getIconSize() + bottomInset;
     }
 
     /// Computes the maximum width of the icon box.
@@ -156,10 +156,12 @@ public final class M3DisclosureIconSkin extends SkinBase<M3DisclosureIcon> {
     /// Lays out the arrow inside the icon box.
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
-        double iconX = x + (width - ICON_SIZE) / 2.0;
-        double iconY = y + (height - ICON_SIZE) / 2.0;
-        arrow.setLayoutX(iconX);
-        arrow.setLayoutY(iconY);
+        double iconSize = getSkinnable().getIconSize();
+        double scale = iconSize / REFERENCE_ICON_SIZE;
+        arrow.setScaleX(scale);
+        arrow.setScaleY(scale);
+        arrow.setLayoutX(x + (width - REFERENCE_ICON_SIZE) / 2.0);
+        arrow.setLayoutY(y + (height - REFERENCE_ICON_SIZE) / 2.0);
     }
 
     /// Animates the arrow rotation to match the expanded state.

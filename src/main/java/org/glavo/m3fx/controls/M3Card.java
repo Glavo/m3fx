@@ -137,20 +137,6 @@ public class M3Card extends Control {
         setVariant(variant);
     }
 
-    /// Creates a card with content, variant, and action handler.
-    ///
-    /// @param content the card content node, or `null` for no content
-    /// @param variant the Material card variant
-    /// @param onAction the action handler invoked when the card fires, or `null` for a passive card
-    public M3Card(
-            @Nullable Node content,
-            M3CardVariant variant,
-            @Nullable EventHandler<ActionEvent> onAction
-    ) {
-        this(content, variant);
-        setOnAction(onAction);
-    }
-
     /// Returns the card content node.
     ///
     /// @return the card content node, or `null` when no content is set
@@ -347,6 +333,11 @@ public class M3Card extends Control {
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
+        if (isDisabled()) {
+            super.executeAccessibleAction(action, parameters);
+            return;
+        }
+
         switch (action) {
             case FIRE -> fire();
             case REQUEST_FOCUS -> focusAccessibleNode();

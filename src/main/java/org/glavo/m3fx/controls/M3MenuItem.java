@@ -3,8 +3,6 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import org.glavo.m3fx.internal.M3ControlStyles;
@@ -54,22 +52,6 @@ public class M3MenuItem extends M3ListItem {
     public M3MenuItem(String text, @Nullable Node leading, @Nullable Node trailing) {
         this(text, leading);
         setTrailing(trailing);
-    }
-
-    /// Creates a menu item with text, leading content, trailing content, and an action handler.
-    ///
-    /// @param text the item text
-    /// @param leading the leading slot node, or `null` for no leading content
-    /// @param trailing the trailing slot node, or `null` for no trailing content
-    /// @param onAction the action handler, or `null` for no handler
-    public M3MenuItem(
-            String text,
-            @Nullable Node leading,
-            @Nullable Node trailing,
-            @Nullable EventHandler<ActionEvent> onAction
-    ) {
-        this(text, leading, trailing);
-        setOnAction(onAction);
     }
 
 }

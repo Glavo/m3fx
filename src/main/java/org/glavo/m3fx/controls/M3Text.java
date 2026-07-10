@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.beans.binding.Bindings;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.css.CssMetaData;
@@ -34,7 +35,9 @@ import java.util.Objects;
 ///
 /// `M3Text` is an M3FX utility control rather than a standalone Material component. It renders text with an
 /// [M3TextRole], token-backed font family, size, line height, and weight so custom layouts can use the same
-/// typography model as built-in controls.
+/// typography model as built-in controls. The inherited `font` and `lineSpacing` properties are bound to the
+/// typography token properties; applications customize typography through the token properties rather than the
+/// inherited setters.
 ///
 /// See [Material Design typography](https://m3.material.io/styles/typography/overview) and
 /// [Material Design](https://m3.material.io/).
@@ -154,9 +157,7 @@ public class M3Text extends Labeled {
                     () -> {
                         if (typographyFontFamilyProperty().get() == null) {
                             typographyFontFamilyProperty().set(DEFAULT_TYPOGRAPHY_FONT_FAMILY);
-                            return;
                         }
-                        updateFont();
                     }
             );
         }
@@ -187,7 +188,7 @@ public class M3Text extends Labeled {
                     this,
                     "typographyFontSize",
                     StyleableProperties.TYPOGRAPHY_FONT_SIZE,
-                    this::updateFont
+                    this::requestLayout
             );
         }
         return typographyFontSize;
@@ -217,7 +218,7 @@ public class M3Text extends Labeled {
                     this,
                     "typographyLineHeight",
                     StyleableProperties.TYPOGRAPHY_LINE_HEIGHT,
-                    this::updateFont
+                    this::requestLayout
             );
         }
         return typographyLineHeight;
@@ -250,9 +251,7 @@ public class M3Text extends Labeled {
                     () -> {
                         if (typographyFontWeightProperty().get() == null) {
                             typographyFontWeightProperty().set(DEFAULT_TYPOGRAPHY_FONT_WEIGHT);
-                            return;
                         }
-                        updateFont();
                     }
             );
         }
@@ -290,7 +289,7 @@ public class M3Text extends Labeled {
         setAccessibleRole(AccessibleRole.TEXT);
         setFocusTraversable(false);
         updateRoleStyle();
-        updateFont();
+        bindTypographyProperties();
     }
 
     /// Applies the style class for the selected typography role.
@@ -316,15 +315,23 @@ public class M3Text extends Labeled {
         );
     }
 
-    /// Applies resolved typography font tokens to the inherited font property.
-    private void updateFont() {
-        double fontSize = getTypographyFontSize();
-        setFont(Font.font(
-                getTypographyFontFamily(),
-                getTypographyFontWeightValue(),
-                fontSize
+    /// Binds inherited text metrics to the styleable Material typography token properties.
+    private void bindTypographyProperties() {
+        fontProperty().bind(Bindings.createObjectBinding(
+                () -> Font.font(
+                        getTypographyFontFamily(),
+                        getTypographyFontWeightValue(),
+                        getTypographyFontSize()
+                ),
+                typographyFontFamilyProperty(),
+                typographyFontSizeProperty(),
+                typographyFontWeightProperty()
         ));
-        setLineSpacing(Math.max(0.0, getTypographyLineHeight() - fontSize));
+        lineSpacingProperty().bind(Bindings.createDoubleBinding(
+                () -> Math.max(0.0, getTypographyLineHeight() - getTypographyFontSize()),
+                typographyLineHeightProperty(),
+                typographyFontSizeProperty()
+        ));
     }
 
     /// Returns the resolved typography font weight token.

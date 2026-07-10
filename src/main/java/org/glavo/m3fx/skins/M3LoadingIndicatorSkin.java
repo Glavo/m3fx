@@ -34,10 +34,6 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     private static final M3ShapeMorph.Sequence INDETERMINATE_SEQUENCE =
             M3ShapeMorph.loadingIndicatorIndeterminate();
 
-    /// The Material loading indicator determinate morph sequence.
-    private static final M3ShapeMorph.Sequence DETERMINATE_SEQUENCE =
-            M3ShapeMorph.loadingIndicatorDeterminate();
-
     /// The number of default indeterminate shape states.
     private static final int INDETERMINATE_SHAPE_COUNT = INDETERMINATE_SEQUENCE.size();
 
@@ -58,12 +54,6 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
 
     /// The reusable shape morph scratch storage.
     private final M3ShapeMorph.Scratch shapeScratch = new M3ShapeMorph.Scratch();
-
-    // The progress value currently displayed by determinate progress.
-    private final DoubleProperty displayedProgress = new SimpleDoubleProperty(this, "displayedProgress");
-
-    /// The determinate progress transition timeline.
-    private final Timeline determinateAnimation = new Timeline();
 
     // The animated phase used by indeterminate loading.
     private final DoubleProperty indeterminatePhase = new SimpleDoubleProperty(this, "indeterminatePhase");
@@ -87,15 +77,12 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     private final InvalidationListener animationInvalidation =
             observable -> getSkinnable().requestLayout();
 
-    /// Updates animations when the public progress value changes.
-    private final InvalidationListener progressInvalidation = observable -> updateProgressAnimation(true);
-
     /// Updates indeterminate animation state when global or node-local motion settings change.
     private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(getSkinnable(), () -> updateProgressAnimation(false));
+            new M3MotionSettingsObserver(getSkinnable(), this::updateAnimationState);
 
     /// Updates indeterminate animation state when the scene enters or leaves a real window.
-    private final InvalidationListener windowInvalidation = observable -> updateProgressAnimation(false);
+    private final InvalidationListener windowInvalidation = observable -> updateAnimationState();
 
     /// Updates indeterminate animation state when the control enters or leaves a scene.
     private final ChangeListener<@Nullable Scene> sceneInvalidation = (observable, oldScene, newScene) -> {
@@ -105,7 +92,7 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         if (newScene != null) {
             newScene.windowProperty().addListener(windowInvalidation);
         }
-        updateProgressAnimation(false);
+        updateAnimationState();
     };
 
     /// Requests layout after size-related token changes.
@@ -122,14 +109,11 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         indicator.setManaged(false);
         getChildren().addAll(container, indicator);
 
-        displayedProgress.set(initialDisplayedProgress(control.getProgress()));
-        displayedProgress.addListener(animationInvalidation);
         indeterminatePhase.addListener(animationInvalidation);
         globalRotation.addListener(animationInvalidation);
         globalRotationAnimation.setCycleCount(Animation.INDEFINITE);
         indeterminateAnimation.setOnFinished(event -> finishIndeterminateMorphSegment());
 
-        control.progressProperty().addListener(progressInvalidation);
         control.variantProperty().addListener(layoutInvalidation);
         control.containerSizeProperty().addListener(layoutInvalidation);
         control.indicatorSizeProperty().addListener(layoutInvalidation);
@@ -138,20 +122,17 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         if (scene != null) {
             scene.windowProperty().addListener(windowInvalidation);
         }
-        updateProgressAnimation(false);
+        updateAnimationState();
     }
 
     /// Stops animations and removes listeners before the skin is disposed.
     @Override
     public void dispose() {
         M3LoadingIndicator loadingIndicator = getSkinnable();
-        determinateAnimation.stop();
         indeterminateAnimation.stop();
         globalRotationAnimation.stop();
-        displayedProgress.removeListener(animationInvalidation);
         indeterminatePhase.removeListener(animationInvalidation);
         globalRotation.removeListener(animationInvalidation);
-        loadingIndicator.progressProperty().removeListener(progressInvalidation);
         loadingIndicator.sceneProperty().removeListener(sceneInvalidation);
         @Nullable Scene scene = loadingIndicator.getScene();
         if (scene != null) {
@@ -171,52 +152,33 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         double indicatorSize = Math.min(loadingIndicator.getIndicatorSize(), Math.min(width, height));
         double centerX = x + width / 2.0;
         double centerY = y + height / 2.0;
-        double phase = loadingIndicator.isIndeterminate()
-                ? indeterminatePhase.get()
-                : displayedProgress.get();
+        double phase = indeterminatePhase.get();
 
         boolean contained = loadingIndicator.getVariant() == M3LoadingIndicatorVariant.CONTAINED;
         container.setVisible(contained);
         if (contained) {
             container.resizeRelocate(x, y, width, height);
         }
-        rebuildIndicatorPath(
-                centerX,
-                centerY,
-                indicatorSize,
-                phase,
-                loadingIndicator.isIndeterminate()
-        );
+        rebuildIndicatorPath(centerX, centerY, indicatorSize, phase);
         indicator.setLayoutX(0.0);
         indicator.setLayoutY(0.0);
         indicator.setOpacity(loadingIndicator.isDisabled() ? 0.38 : 1.0);
     }
 
-    /// Updates determinate or indeterminate animation state for the current progress value.
-    private void updateProgressAnimation(boolean animateDeterminateProgress) {
-        double progress = getSkinnable().getProgress();
-        if (progress == M3LoadingIndicator.INDETERMINATE_PROGRESS) {
-            determinateAnimation.stop();
-            displayedProgress.set(0.0);
-            if (shouldPauseActivityAnimations()) {
-                indeterminateAnimation.stop();
-                globalRotationAnimation.stop();
-                resetIndeterminateAnimationState();
-                getSkinnable().requestLayout();
-            } else if (M3Animation.shouldReduceMotion(getSkinnable())) {
-                indeterminateAnimation.stop();
-                resetIndeterminateAnimationState();
-                startBasicIndeterminateAnimation();
-            } else if (!animateDeterminateProgress
-                    || indeterminateAnimation.getStatus() != Animation.Status.RUNNING
-                    || globalRotationAnimation.getStatus() != Animation.Status.RUNNING) {
-                startIndeterminateAnimation();
-            }
-        } else {
+    /// Updates the loading animation for the current attachment and motion settings.
+    private void updateAnimationState() {
+        if (shouldPauseActivityAnimations()) {
             indeterminateAnimation.stop();
             globalRotationAnimation.stop();
             resetIndeterminateAnimationState();
-            animateDisplayedProgress(clamp(progress), animateDeterminateProgress);
+            getSkinnable().requestLayout();
+        } else if (M3Animation.shouldReduceMotion(getSkinnable())) {
+            indeterminateAnimation.stop();
+            resetIndeterminateAnimationState();
+            startBasicIndeterminateAnimation();
+        } else if (indeterminateAnimation.getStatus() != Animation.Status.RUNNING
+                || globalRotationAnimation.getStatus() != Animation.Status.RUNNING) {
+            startIndeterminateAnimation();
         }
     }
 
@@ -304,8 +266,7 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     /// Advances to the next indeterminate morph segment and keeps the loop running.
     private void finishIndeterminateMorphSegment() {
         M3LoadingIndicator loadingIndicator = getSkinnable();
-        if (!loadingIndicator.isIndeterminate()
-                || M3Animation.shouldReduceMotion(loadingIndicator)
+        if (M3Animation.shouldReduceMotion(loadingIndicator)
                 || shouldPauseActivityAnimations()) {
             return;
         }
@@ -318,80 +279,46 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         indeterminateAnimation.playFromStart();
     }
 
-    /// Animates the displayed determinate progress value.
-    private void animateDisplayedProgress(double targetProgress, boolean animate) {
-        determinateAnimation.stop();
-        if (!animate || M3Animation.shouldReduceMotion(getSkinnable())) {
-            displayedProgress.set(targetProgress);
-            return;
-        }
-
-        M3MotionSpec spec = M3Animation.fastSpatial(getSkinnable());
-        determinateAnimation.getKeyFrames().setAll(
-                new KeyFrame(
-                        spec.duration(),
-                        new KeyValue(displayedProgress, targetProgress, spec.interpolator())
-                )
-        );
-        M3Animation.playFromStart(getSkinnable(), determinateAnimation);
-    }
-
     /// Rebuilds the active shape path for the current animation state.
     private void rebuildIndicatorPath(
             double centerX,
             double centerY,
             double indicatorSize,
-            double phase,
-            boolean indeterminate
+            double phase
     ) {
         if (indicatorSize <= 0.0) {
             indicator.getElements().clear();
             return;
         }
 
-        if (indeterminate) {
-            if (M3Animation.shouldReduceMotion(getSkinnable())) {
-                INDETERMINATE_SEQUENCE.morphAt(0).writeTo(
-                        indicator,
-                        0.0,
-                        centerX,
-                        centerY,
-                        indicatorSize,
-                        INDETERMINATE_SEQUENCE.scaleFactor(),
-                        1.0,
-                        globalRotation.get(),
-                        shapeScratch
-                );
-                return;
-            }
-
-            double segmentProgress = phase - currentMorphIndex;
-            double progress = clamp(segmentProgress);
-            INDETERMINATE_SEQUENCE.morphAt(currentMorphIndex).writeTo(
+        if (M3Animation.shouldReduceMotion(getSkinnable())) {
+            INDETERMINATE_SEQUENCE.morphAt(0).writeTo(
                     indicator,
-                    progress,
+                    0.0,
                     centerX,
                     centerY,
                     indicatorSize,
                     INDETERMINATE_SEQUENCE.scaleFactor(),
-                    shapeScaleFor(segmentProgress),
-                    indeterminateRotationFor(segmentProgress),
-                    shapeScratch
-            );
-        } else {
-            double progress = smoothStep(clamp(phase));
-            DETERMINATE_SEQUENCE.morphAt(0).writeTo(
-                    indicator,
-                    progress,
-                    centerX,
-                    centerY,
-                    indicatorSize,
-                    DETERMINATE_SEQUENCE.scaleFactor(),
                     1.0,
-                    -phase * 0.5,
+                    globalRotation.get(),
                     shapeScratch
             );
+            return;
         }
+
+        double segmentProgress = phase - currentMorphIndex;
+        double progress = clamp(segmentProgress);
+        INDETERMINATE_SEQUENCE.morphAt(currentMorphIndex).writeTo(
+                indicator,
+                progress,
+                centerX,
+                centerY,
+                indicatorSize,
+                INDETERMINATE_SEQUENCE.scaleFactor(),
+                shapeScaleFor(segmentProgress),
+                indeterminateRotationFor(segmentProgress),
+                shapeScratch
+        );
     }
 
     /// Returns the active shape scale for the current animation state.
@@ -428,17 +355,6 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
 
         double activeMillis = Math.min(spec.duration().toMillis(), intervalMillis * MORPH_ACTIVE_FRACTION);
         return Duration.millis(Math.max(1.0, Math.min(intervalMillis, activeMillis)));
-    }
-
-    /// Returns a smooth interpolation fraction with zero velocity at both ends.
-    private static double smoothStep(double value) {
-        double clamped = clamp(value);
-        return clamped * clamped * (3.0 - 2.0 * clamped);
-    }
-
-    /// Returns the initial displayed progress value for a public progress value.
-    private static double initialDisplayedProgress(double progress) {
-        return progress == M3LoadingIndicator.INDETERMINATE_PROGRESS ? 0.0 : clamp(progress);
     }
 
     /// Returns a positive modulo result in the unit interval.

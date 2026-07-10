@@ -3,13 +3,18 @@
 
 package org.glavo.m3fx.internal;
 
+import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.collections.MapChangeListener;
 import javafx.collections.ObservableList;
+import javafx.geometry.NodeOrientation;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import org.glavo.m3fx.animation.M3MotionBehavior;
+import org.glavo.m3fx.animation.M3MotionScheme;
+import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.internal.theme.M3ThemeMetadata;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -21,12 +26,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-/// Synchronizes copied stylesheet and theme context for popup-hosted roots while they remain visible.
+/// Synchronizes detached popup context for popup-hosted roots while they remain visible.
 ///
 /// JavaFX popup content lives in a separate scene after it is shown, so ordinary scene inheritance is not enough
-/// for Material token lookups. This helper mirrors the owner scene stylesheet list and the nearest M3FX theme root
-/// into a detached popup root, then keeps that copy fresh when the owner scene, stylesheet list, or installed theme
-/// metadata changes during the popup lifetime.
+/// for Material token lookups. This helper mirrors the owner scene stylesheet list, nearest M3FX theme root,
+/// effective node orientation, and resolved motion settings into a detached popup root, then keeps that copy fresh
+/// when owner scene, stylesheet, theme, orientation, or motion settings change during the popup lifetime.
 @NotNullByDefault
 public final class M3PopupContextSynchronizer {
     /// The control or item that owns the popup content.
@@ -51,6 +56,13 @@ public final class M3PopupContextSynchronizer {
     /// Handles owner parent-chain changes.
     private final ChangeListener<@Nullable Parent> ownerParentListener =
             (observable, oldParent, newParent) -> sync();
+
+    /// Handles owner effective orientation changes.
+    private final ChangeListener<NodeOrientation> ownerOrientationListener =
+            (observable, oldValue, newValue) -> sync();
+
+    /// Handles global and node-local motion setting changes.
+    private final InvalidationListener motionSettingsListener = observable -> syncIfMotionContextChanged();
 
     /// Handles root changes on the current owner scene.
     private final ChangeListener<Parent> sceneRootListener =
@@ -91,6 +103,21 @@ public final class M3PopupContextSynchronizer {
 
     /// Whether listeners are currently registered.
     private boolean running;
+
+    /// Whether a synchronization pass is already in progress.
+    private boolean syncing;
+
+    /// Whether [syncedAnimationsEnabled], [syncedMotionScheme], and [syncedMotionBehavior] contain a snapshot.
+    private boolean hasSyncedMotionContext;
+
+    /// Last owner-resolved animation switch copied to the popup root.
+    private boolean syncedAnimationsEnabled;
+
+    /// Last owner-resolved motion scheme copied to the popup root.
+    private @Nullable M3MotionScheme syncedMotionScheme;
+
+    /// Last owner-resolved motion behavior copied to the popup root.
+    private @Nullable M3MotionBehavior syncedMotionBehavior;
 
     /// Creates a synchronizer that mirrors the owner scene stylesheets and nearest theme root.
     ///
@@ -144,6 +171,8 @@ public final class M3PopupContextSynchronizer {
         running = true;
         owner.sceneProperty().addListener(ownerSceneListener);
         owner.parentProperty().addListener(ownerParentListener);
+        owner.effectiveNodeOrientationProperty().addListener(ownerOrientationListener);
+        M3MotionSettings.addSettingsChangeListener(motionSettingsListener);
         refreshObservedThemeRoots();
         sync();
     }
@@ -157,30 +186,44 @@ public final class M3PopupContextSynchronizer {
         running = false;
         owner.sceneProperty().removeListener(ownerSceneListener);
         owner.parentProperty().removeListener(ownerParentListener);
+        owner.effectiveNodeOrientationProperty().removeListener(ownerOrientationListener);
+        M3MotionSettings.removeSettingsChangeListener(motionSettingsListener);
         updateObservedStylesheetSource(null);
         updateObservedScene(null);
         updateObservedSceneRoot(null);
         updateObservedThemeRoot(null);
         clearObservedAncestorThemeRoots();
+        clearSyncedMotionContext();
     }
 
-    /// Copies the latest owner stylesheet and theme context into the popup root.
+    /// Copies the latest owner stylesheet, theme, orientation, and motion context into the popup root.
     public void sync() {
-        @Nullable ObservableList<String> stylesheetSource = stylesheetSourceSupplier.get();
-        @Nullable Parent themeRoot = themeRootSupplier.get();
-        if (running) {
-            updateObservedStylesheetSource(stylesheetSource);
-            refreshObservedThemeRoots(themeRoot);
+        if (syncing) {
+            return;
         }
 
-        M3PopupStyles.preparePopupRoot(
-                popupRoot,
-                stylesheetSource == null ? List.of() : stylesheetSource,
-                themeRoot,
-                controlStylesheets
-        );
-        popupRoot.applyCss();
-        popupRoot.layout();
+        syncing = true;
+        try {
+            @Nullable ObservableList<String> stylesheetSource = stylesheetSourceSupplier.get();
+            @Nullable Parent themeRoot = themeRootSupplier.get();
+            if (running) {
+                updateObservedStylesheetSource(stylesheetSource);
+                refreshObservedThemeRoots(themeRoot);
+            }
+
+            syncNodeOrientation();
+            syncMotionContext();
+            M3PopupStyles.preparePopupRoot(
+                    popupRoot,
+                    stylesheetSource == null ? List.of() : stylesheetSource,
+                    themeRoot,
+                    controlStylesheets
+            );
+            popupRoot.applyCss();
+            popupRoot.layout();
+        } finally {
+            syncing = false;
+        }
     }
 
     /// Handles installed-theme metadata changes on observed roots.
@@ -188,6 +231,68 @@ public final class M3PopupContextSynchronizer {
         if (M3ThemeMetadata.isThemePropertyKey(change.getKey())) {
             sync();
         }
+    }
+
+    /// Mirrors the owner's effective orientation when the popup root is not already bound by its owner control.
+    private void syncNodeOrientation() {
+        if (popupRoot.nodeOrientationProperty().isBound()) {
+            return;
+        }
+
+        NodeOrientation ownerOrientation = owner.getEffectiveNodeOrientation();
+        if (popupRoot.getNodeOrientation() != ownerOrientation) {
+            popupRoot.setNodeOrientation(ownerOrientation);
+        }
+    }
+
+    /// Copies the owner's resolved motion settings into the popup root and records the copied context.
+    private void syncMotionContext() {
+        boolean animationsEnabled = M3MotionSettings.areAnimationsEnabled(owner);
+        M3MotionScheme motionScheme = M3Animation.motionScheme(owner);
+        M3MotionBehavior motionBehavior = M3Animation.motionBehavior(owner);
+
+        cacheSyncedMotionContext(animationsEnabled, motionScheme, motionBehavior);
+        M3MotionSettings.setAnimationsEnabled(popupRoot, animationsEnabled);
+        M3MotionSettings.setMotionScheme(popupRoot, motionScheme);
+        M3MotionSettings.setMotionBehavior(popupRoot, motionBehavior);
+    }
+
+    /// Synchronizes only when a settings notification changes this owner's resolved motion context.
+    private void syncIfMotionContextChanged() {
+        if (syncing) {
+            return;
+        }
+
+        boolean animationsEnabled = M3MotionSettings.areAnimationsEnabled(owner);
+        M3MotionScheme motionScheme = M3Animation.motionScheme(owner);
+        M3MotionBehavior motionBehavior = M3Animation.motionBehavior(owner);
+        if (hasSyncedMotionContext
+                && syncedAnimationsEnabled == animationsEnabled
+                && Objects.equals(syncedMotionScheme, motionScheme)
+                && Objects.equals(syncedMotionBehavior, motionBehavior)) {
+            return;
+        }
+
+        sync();
+    }
+
+    /// Records the owner-resolved motion settings copied during the latest synchronization pass.
+    private void cacheSyncedMotionContext(
+            boolean animationsEnabled,
+            M3MotionScheme motionScheme,
+            M3MotionBehavior motionBehavior
+    ) {
+        hasSyncedMotionContext = true;
+        syncedAnimationsEnabled = animationsEnabled;
+        syncedMotionScheme = motionScheme;
+        syncedMotionBehavior = motionBehavior;
+    }
+
+    /// Clears the cached owner-resolved motion context after listener teardown.
+    private void clearSyncedMotionContext() {
+        hasSyncedMotionContext = false;
+        syncedMotionScheme = null;
+        syncedMotionBehavior = null;
     }
 
     /// Updates the observed stylesheet list.

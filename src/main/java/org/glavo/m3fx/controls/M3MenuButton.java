@@ -11,6 +11,7 @@ import javafx.beans.InvalidationListener;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.collections.ObservableList;
+import javafx.css.PseudoClass;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -48,6 +49,9 @@ public class M3MenuButton extends M3Button {
     /// The base style class for M3FX menu buttons.
     public static final String STYLE_CLASS = "m3-menu-button";
 
+    /// The showing pseudo-class used while the owned menu popup is visible.
+    private static final PseudoClass SHOWING_PSEUDO_CLASS = PseudoClass.getPseudoClass("showing");
+
     /// The vertical gap between the button and popup menu.
     private static final double MENU_OFFSET_Y = 4.0;
 
@@ -68,7 +72,13 @@ public class M3MenuButton extends M3Button {
             new M3PopupContextSynchronizer(this, menu, M3Stylesheets.controlStylesheet("menu.css"));
 
     // Whether this menu button popup is currently showing.
-    private final ReadOnlyBooleanWrapper showing = new ReadOnlyBooleanWrapper(this, "showing");
+    private final ReadOnlyBooleanWrapper showing = new ReadOnlyBooleanWrapper(this, "showing") {
+        /// Updates the showing pseudo-class used by owner-specific component styling.
+        @Override
+        protected void invalidated() {
+            pseudoClassStateChanged(SHOWING_PSEUDO_CLASS, get());
+        }
+    };
 
     /// The menu popup enter animation.
     private final Timeline showAnimation = new Timeline();
@@ -263,6 +273,11 @@ public class M3MenuButton extends M3Button {
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
+        if (isDisabled()) {
+            super.executeAccessibleAction(action, parameters);
+            return;
+        }
+
         switch (action) {
             case SHOW_MENU, EXPAND -> showMenu();
             case COLLAPSE -> hideMenu(true);
@@ -499,18 +514,13 @@ public class M3MenuButton extends M3Button {
 
     /// Applies changed runtime motion settings to active popup menu animations.
     private void refreshMotionSettings() {
-        if (popup.isShowing()) {
-            M3Animation.copyResolvedMotionSettings(this, menu);
-        }
         M3Animation.finishRunningAnimationsIfDisabled(this, showAnimation, hideAnimation);
     }
 
 
-    /// Copies owner motion and orientation settings into the popup-hosted menu.
+    /// Synchronizes owner popup context into the popup-hosted menu.
     private void prepareMenuForPopup() {
         popupContextSynchronizer.sync();
-        M3Animation.copyResolvedMotionSettings(this, menu);
-        menu.setNodeOrientation(getEffectiveNodeOrientation());
         menu.applyCss();
     }
 }

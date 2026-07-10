@@ -42,7 +42,7 @@ import java.util.Objects;
 ///
 /// `M3ButtonGroup` lays out [M3Button] children as a standard separated group or as a connected group with
 /// coordinated outer and inner corners. The [variant][M3ButtonGroupVariant] controls whether grouped buttons keep
-/// their own rounded containers or join into a single visual set, and the [size][M3ButtonGroupSize] controls
+/// their own rounded containers or join into a single visual set, and the [size][M3ButtonSize] controls
 /// container height and group spacing through CSS tokens.
 ///
 /// See [Material Design button groups](https://m3.material.io/components/button-groups/overview).
@@ -70,7 +70,7 @@ public class M3ButtonGroup extends Control {
     private static final M3ButtonGroupVariant DEFAULT_VARIANT = M3ButtonGroupVariant.CONNECTED;
 
     /// The default button group size.
-    private static final M3ButtonGroupSize DEFAULT_SIZE = M3ButtonGroupSize.SMALL;
+    private static final M3ButtonSize DEFAULT_SIZE = M3ButtonSize.SMALL;
 
     /// The default spacing that lets adjacent grouped button borders overlap.
     private static final double DEFAULT_SPACING = -1.0;
@@ -99,7 +99,7 @@ public class M3ButtonGroup extends Control {
             };
 
     // The button group size property.
-    private final ObjectProperty<M3ButtonGroupSize> size =
+    private final ObjectProperty<M3ButtonSize> size =
             new SimpleObjectProperty<>(this, "size", DEFAULT_SIZE) {
                 /// Updates size style classes when the property changes.
                 @Override
@@ -109,6 +109,7 @@ public class M3ButtonGroup extends Control {
                         return;
                     }
                     updateSizeStyle();
+                    updateButtonStyles();
                     requestLayout();
                 }
             };
@@ -172,21 +173,21 @@ public class M3ButtonGroup extends Control {
     /// Returns the Material Expressive button group size.
     ///
     /// @return the Material Expressive button group size
-    public final M3ButtonGroupSize getSize() {
+    public final M3ButtonSize getSize() {
         return size.get();
     }
 
     /// Sets the Material Expressive button group size.
     ///
     /// @param size the Material Expressive button group size
-    public final void setSize(M3ButtonGroupSize size) {
+    public final void setSize(M3ButtonSize size) {
         this.size.set(Objects.requireNonNull(size, "size"));
     }
 
     /// Returns the Material Expressive button group size property.
     ///
     /// @return the Material Expressive button group size property
-    public final ObjectProperty<M3ButtonGroupSize> sizeProperty() {
+    public final ObjectProperty<M3ButtonSize> sizeProperty() {
         return size;
     }
 
@@ -256,6 +257,11 @@ public class M3ButtonGroup extends Control {
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
+        if (isDisabled()) {
+            super.executeAccessibleAction(action, parameters);
+            return;
+        }
+
         switch (action) {
             case REQUEST_FOCUS -> focusAccessibleItem();
             case SHOW_ITEM -> showAccessibleItem(parameters);
@@ -333,6 +339,7 @@ public class M3ButtonGroup extends Control {
         int buttonIndex = 0;
         for (Node child : getItems()) {
             if (child instanceof M3Button button) {
+                button.setSize(getSize());
                 M3ControlStyles.add(button, GROUPED_BUTTON_STYLE_CLASS);
                 M3ControlStyles.replaceVariant(
                         button,
@@ -376,13 +383,21 @@ public class M3ButtonGroup extends Control {
     private void updateSizeStyle() {
         M3ControlStyles.replaceVariant(
                 this,
-                getSize().styleClass(),
-                M3ButtonGroupSize.EXTRA_SMALL.styleClass(),
-                M3ButtonGroupSize.SMALL.styleClass(),
-                M3ButtonGroupSize.MEDIUM.styleClass(),
-                M3ButtonGroupSize.LARGE.styleClass(),
-                M3ButtonGroupSize.EXTRA_LARGE.styleClass()
+                sizeStyleClass(getSize()),
+                sizeStyleClass(M3ButtonSize.EXTRA_SMALL),
+                sizeStyleClass(M3ButtonSize.SMALL),
+                sizeStyleClass(M3ButtonSize.MEDIUM),
+                sizeStyleClass(M3ButtonSize.LARGE),
+                sizeStyleClass(M3ButtonSize.EXTRA_LARGE)
         );
+    }
+
+    /// Returns the button-group style class for one Material button size.
+    ///
+    /// @param size the Material button size
+    /// @return the button-group size style class
+    private static String sizeStyleClass(M3ButtonSize size) {
+        return "m3-button-group-" + size.cssSuffix();
     }
 
     /// Removes all button group style classes from a button.

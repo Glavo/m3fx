@@ -43,6 +43,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @return the elevated button component tokens
     ButtonTokens elevatedButton();
 
+    /// Returns the shared Material button size tokens.
+    ///
+    /// @return the five-step button size token scale
+    ButtonSizingTokens buttonSizing();
+
     /// Returns tokens used by icon buttons.
     ///
     /// @return the icon button component tokens
@@ -250,6 +255,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param outlinedButton the outlined button component tokens
     /// @param textButton the text button component tokens
     /// @param elevatedButton the elevated button component tokens
+    /// @param buttonSizing the five-step button size token scale
     /// @param iconButton the icon button component tokens
     /// @param floatingActionButton the floating action button component tokens
     /// @param icon the icon component tokens
@@ -297,6 +303,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             ButtonTokens outlinedButton,
             ButtonTokens textButton,
             ButtonTokens elevatedButton,
+            ButtonSizingTokens buttonSizing,
             IconButtonTokens iconButton,
             FabTokens floatingActionButton,
             IconTokens icon,
@@ -344,6 +351,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 outlinedButton,
                 textButton,
                 elevatedButton,
+                buttonSizing,
                 iconButton,
                 floatingActionButton,
                 icon,
@@ -398,7 +406,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         Objects.requireNonNull(shapeTokens, "shapeTokens");
         Objects.requireNonNull(density, "density");
 
-        double buttonHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 48.0 : 40.0);
+        double buttonHeight = density.apply(40.0);
         double iconSmallSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 20.0 : 18.0);
         double iconMediumSize = density.apply(24.0);
         double iconLargeSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 36.0 : 32.0);
@@ -553,19 +561,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double toolbarItemSlotSize = density.apply(expressive ? 56.0 : 48.0);
         double toolbarContentPadding = density.apply(expressive ? 10.0 : 8.0);
         double toolbarItemSpacing = density.apply(expressive ? 4.0 : 0.0);
-        double buttonHorizontalPadding = density.apply(expressive ? 28.0 : 24.0);
+        double buttonHorizontalPadding = density.apply(expressive ? 16.0 : 24.0);
         double textButtonHorizontalPadding = density.apply(expressive ? 16.0 : 12.0);
-        double groupedButtonHorizontalPadding = density.apply(expressive ? 22.0 : 20.0);
-        double buttonGroupConnectedSpacing = expressive ? density.apply(2.0) : -1.0;
-        double buttonGroupStandardSpacing = density.apply(expressive ? 12.0 : 12.0);
-        double buttonGroupConnectedInnerCorner = expressive ? shapeTokens.small() : 0.0;
-        double splitButtonContainerHeight = density.apply(40.0);
-        double splitButtonSpacing = expressive ? density.apply(2.0) : -1.0;
-        double splitButtonActionHorizontalPadding = density.apply(expressive ? 16.0 : 20.0);
-        double splitButtonMenuWidth = density.apply(48.0);
-        double splitButtonInnerCorner = expressive ? shapeTokens.extraSmall() : 0.0;
-        double splitButtonLargeInnerCorner = expressive ? shapeTokens.small() : 0.0;
-        double splitButtonExtraLargeInnerCorner = expressive ? shapeTokens.medium() : 0.0;
         double fabSmallHorizontalPadding = density.apply(expressive ? 14.0 : 12.0);
         double fabRegularHorizontalPadding = density.apply(expressive ? 18.0 : 16.0);
         double fabLargeHorizontalPadding = density.apply(expressive ? 28.0 : 24.0);
@@ -635,6 +632,63 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 new ButtonTokens(buttonHeight, shapeTokens.full(), buttonHorizontalPadding),
                 new ButtonTokens(buttonHeight, shapeTokens.full(), textButtonHorizontalPadding),
                 new ButtonTokens(buttonHeight, shapeTokens.full(), buttonHorizontalPadding),
+                new ButtonSizingTokens(
+                        new ButtonSizeTokens(
+                                density.apply(32.0),
+                                density.apply(20.0),
+                                shapeTokens.full(),
+                                shapeTokens.medium(),
+                                expressive ? shapeTokens.small() : shapeTokens.full(),
+                                density.apply(12.0),
+                                density.apply(12.0),
+                                density.apply(8.0),
+                                density.apply(1.0)
+                        ),
+                        new ButtonSizeTokens(
+                                density.apply(40.0),
+                                density.apply(20.0),
+                                shapeTokens.full(),
+                                shapeTokens.medium(),
+                                expressive ? shapeTokens.small() : shapeTokens.full(),
+                                buttonHorizontalPadding,
+                                textButtonHorizontalPadding,
+                                density.apply(8.0),
+                                density.apply(1.0)
+                        ),
+                        new ButtonSizeTokens(
+                                density.apply(56.0),
+                                density.apply(24.0),
+                                shapeTokens.full(),
+                                shapeTokens.large(),
+                                expressive ? shapeTokens.medium() : shapeTokens.full(),
+                                density.apply(24.0),
+                                density.apply(24.0),
+                                density.apply(8.0),
+                                density.apply(1.0)
+                        ),
+                        new ButtonSizeTokens(
+                                density.apply(96.0),
+                                density.apply(32.0),
+                                shapeTokens.full(),
+                                shapeTokens.extraLarge(),
+                                expressive ? shapeTokens.large() : shapeTokens.full(),
+                                density.apply(48.0),
+                                density.apply(48.0),
+                                density.apply(12.0),
+                                density.apply(2.0)
+                        ),
+                        new ButtonSizeTokens(
+                                density.apply(136.0),
+                                density.apply(40.0),
+                                shapeTokens.full(),
+                                shapeTokens.extraLarge(),
+                                expressive ? shapeTokens.large() : shapeTokens.full(),
+                                density.apply(64.0),
+                                density.apply(64.0),
+                                density.apply(16.0),
+                                density.apply(3.0)
+                        )
+                ),
                 new IconButtonTokens(
                         new IconButtonSizeTokens(
                                 density.apply(32.0),
@@ -715,23 +769,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         density.apply(expressive ? 14.0 : 12.0)
                 ),
                 new IconTokens(iconSmallSize, iconMediumSize, iconLargeSize, iconExtraLargeSize),
-                new ButtonGroupTokens(
-                        groupedButtonHorizontalPadding,
-                        buttonGroupConnectedSpacing,
-                        buttonGroupStandardSpacing,
-                        buttonGroupConnectedInnerCorner,
-                        -1.0,
-                        density.apply(expressive ? 10.0 : 8.0)
-                ),
-                new SplitButtonTokens(
-                        splitButtonContainerHeight,
-                        splitButtonSpacing,
-                        splitButtonActionHorizontalPadding,
-                        splitButtonMenuWidth,
-                        splitButtonInnerCorner,
-                        splitButtonLargeInnerCorner,
-                        splitButtonExtraLargeInnerCorner
-                ),
+                createButtonGroupTokens(expressive, density, shapeTokens),
+                createSplitButtonTokens(expressive, density),
                 new ButtonTokens(segmentedButtonHeight, shapeTokens.full(), segmentedButtonHorizontalPadding),
                 new TabTokens(
                         tabHeight,
@@ -1022,6 +1061,179 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         );
     }
 
+    /// Creates the five-step button-group token scale for one component profile.
+    ///
+    /// Button groups own spacing and connected inner-corner behavior. Their child buttons retain the shared
+    /// [ButtonSizingTokens] metrics for height, content padding, typography, icon size, and outline width.
+    ///
+    /// @param expressive whether the Expressive component profile is active
+    /// @param density the density transform applied to layout lengths
+    /// @param shapeTokens the shape system used by connected inner-corner aliases
+    /// @return the button-group size token scale
+    private static ButtonGroupTokens createButtonGroupTokens(
+            boolean expressive,
+            M3Density density,
+            M3ShapeTokens shapeTokens
+    ) {
+        double connectedSpacing = expressive ? density.apply(2.0) : -1.0;
+        return new ButtonGroupTokens(
+                createButtonGroupSizeTokens(
+                        density,
+                        32.0,
+                        18.0,
+                        connectedSpacing,
+                        expressive ? shapeTokens.small() : 0.0,
+                        expressive ? shapeTokens.extraSmall() : 0.0
+                ),
+                createButtonGroupSizeTokens(
+                        density,
+                        40.0,
+                        12.0,
+                        connectedSpacing,
+                        expressive ? shapeTokens.small() : 0.0,
+                        expressive ? shapeTokens.extraSmall() : 0.0
+                ),
+                createButtonGroupSizeTokens(
+                        density,
+                        56.0,
+                        8.0,
+                        connectedSpacing,
+                        expressive ? shapeTokens.small() : 0.0,
+                        expressive ? shapeTokens.extraSmall() : 0.0
+                ),
+                createButtonGroupSizeTokens(
+                        density,
+                        96.0,
+                        8.0,
+                        connectedSpacing,
+                        expressive ? shapeTokens.large() : 0.0,
+                        expressive ? shapeTokens.medium() : 0.0
+                ),
+                createButtonGroupSizeTokens(
+                        density,
+                        136.0,
+                        8.0,
+                        connectedSpacing,
+                        expressive ? shapeTokens.largeIncreased() : 0.0,
+                        expressive ? shapeTokens.large() : 0.0
+                ),
+                -1.0,
+                density.apply(expressive ? 10.0 : 8.0)
+        );
+    }
+
+    /// Creates tokens for one button-group size.
+    ///
+    /// @param density the density transform applied to layout lengths
+    /// @param containerHeight the baseline container height
+    /// @param standardSpacing the baseline spacing between standard-group items
+    /// @param connectedSpacing the resolved spacing between connected-group items
+    /// @param connectedInnerCorner the resting connected inner corner
+    /// @param connectedPressedInnerCorner the pressed connected inner corner
+    /// @return the size-specific button-group tokens
+    private static ButtonGroupSizeTokens createButtonGroupSizeTokens(
+            M3Density density,
+            double containerHeight,
+            double standardSpacing,
+            double connectedSpacing,
+            double connectedInnerCorner,
+            double connectedPressedInnerCorner
+    ) {
+        double resolvedContainerHeight = density.apply(containerHeight);
+        return new ButtonGroupSizeTokens(
+                resolvedContainerHeight,
+                density.apply(standardSpacing),
+                connectedSpacing,
+                connectedInnerCorner,
+                connectedPressedInnerCorner,
+                resolvedContainerHeight / 2.0
+        );
+    }
+
+    /// Creates the five-step split-button size scale for one component profile.
+    ///
+    /// Baseline keeps the legacy joined fallback shape while Expressive uses the current split-button spacing,
+    /// asymmetric leading-button padding, state corners, optical menu-icon offsets, and selected trailing shape.
+    ///
+    /// @param expressive whether the Expressive component profile is active
+    /// @param density the density transform applied to length tokens
+    /// @return the split-button size token scale
+    private static SplitButtonTokens createSplitButtonTokens(boolean expressive, M3Density density) {
+        double spacing = expressive ? density.apply(2.0) : -1.0;
+        return new SplitButtonTokens(
+                new SplitButtonSizeTokens(
+                        density.apply(32.0),
+                        spacing,
+                        expressive ? density.apply(4.0) : 0.0,
+                        expressive ? density.apply(8.0) : 0.0,
+                        expressive ? density.apply(8.0) : 0.0,
+                        density.apply(12.0),
+                        density.apply(expressive ? 10.0 : 12.0),
+                        density.apply(22.0),
+                        density.apply(1.0),
+                        density.apply(13.0),
+                        density.apply(13.0),
+                        expressive ? density.apply(16.0) : 0.0
+                ),
+                new SplitButtonSizeTokens(
+                        density.apply(40.0),
+                        spacing,
+                        expressive ? density.apply(4.0) : 0.0,
+                        expressive ? density.apply(12.0) : 0.0,
+                        expressive ? density.apply(12.0) : 0.0,
+                        density.apply(expressive ? 16.0 : 20.0),
+                        density.apply(expressive ? 12.0 : 20.0),
+                        density.apply(22.0),
+                        density.apply(1.0),
+                        density.apply(13.0),
+                        density.apply(13.0),
+                        expressive ? density.apply(20.0) : 0.0
+                ),
+                new SplitButtonSizeTokens(
+                        density.apply(56.0),
+                        spacing,
+                        expressive ? density.apply(4.0) : 0.0,
+                        expressive ? density.apply(12.0) : 0.0,
+                        expressive ? density.apply(12.0) : 0.0,
+                        density.apply(24.0),
+                        density.apply(24.0),
+                        density.apply(26.0),
+                        density.apply(2.0),
+                        density.apply(15.0),
+                        density.apply(15.0),
+                        expressive ? density.apply(28.0) : 0.0
+                ),
+                new SplitButtonSizeTokens(
+                        density.apply(96.0),
+                        spacing,
+                        expressive ? density.apply(8.0) : 0.0,
+                        expressive ? density.apply(20.0) : 0.0,
+                        expressive ? density.apply(20.0) : 0.0,
+                        density.apply(48.0),
+                        density.apply(48.0),
+                        density.apply(38.0),
+                        density.apply(3.0),
+                        density.apply(29.0),
+                        density.apply(29.0),
+                        expressive ? density.apply(48.0) : 0.0
+                ),
+                new SplitButtonSizeTokens(
+                        density.apply(136.0),
+                        spacing,
+                        expressive ? density.apply(12.0) : 0.0,
+                        expressive ? density.apply(20.0) : 0.0,
+                        expressive ? density.apply(20.0) : 0.0,
+                        density.apply(64.0),
+                        density.apply(64.0),
+                        density.apply(50.0),
+                        density.apply(6.0),
+                        density.apply(43.0),
+                        density.apply(43.0),
+                        expressive ? density.apply(68.0) : 0.0
+                )
+        );
+    }
+
     /// Converts component tokens into inline JavaFX CSS declarations.
     ///
     /// @return inline JavaFX CSS declarations for all component tokens
@@ -1032,6 +1244,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         append(builder, "button-outlined", outlinedButton());
         append(builder, "button-text", textButton());
         append(builder, "button-elevated", elevatedButton());
+        append(builder, buttonSizing());
         append(builder, iconButton());
         append(builder, floatingActionButton());
         append(builder, icon());
@@ -1085,6 +1298,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendButtonRule(builder, ".m3-outlined-button", outlinedButton());
         appendButtonRule(builder, ".m3-text-button", textButton());
         appendButtonRule(builder, ".m3-elevated-button", elevatedButton());
+        appendButtonSizeRules(builder, buttonSizing());
         appendIconButtonRules(builder, iconButton());
         appendIconRules(builder, icon());
         appendConnectedButtonRules(builder, filledButton(), buttonGroup());
@@ -1259,6 +1473,52 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-" + prefix + "-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
     }
 
+    /// Appends the five-step button size token declarations.
+    private static void append(StringBuilder builder, ButtonSizingTokens tokens) {
+        append(builder, "button-extra-small", tokens.extraSmall());
+        append(builder, "button-small", tokens.small());
+        append(builder, "button-medium", tokens.medium());
+        append(builder, "button-large", tokens.large());
+        append(builder, "button-extra-large", tokens.extraLarge());
+    }
+
+    /// Appends declarations for one Material button size.
+    private static void append(StringBuilder builder, String prefix, ButtonSizeTokens tokens) {
+        M3TokenCss.append(builder, "-m3-" + prefix + "-container-height", M3TokenCss.pixels(tokens.containerHeight()));
+        M3TokenCss.append(builder, "-m3-" + prefix + "-icon-size", M3TokenCss.pixels(tokens.iconSize()));
+        M3TokenCss.append(
+                builder,
+                "-m3-" + prefix + "-round-container-shape",
+                M3TokenCss.pixels(tokens.roundContainerShape())
+        );
+        M3TokenCss.append(
+                builder,
+                "-m3-" + prefix + "-square-container-shape",
+                M3TokenCss.pixels(tokens.squareContainerShape())
+        );
+        M3TokenCss.append(
+                builder,
+                "-m3-" + prefix + "-pressed-container-shape",
+                M3TokenCss.pixels(tokens.pressedContainerShape())
+        );
+        M3TokenCss.append(
+                builder,
+                "-m3-" + prefix + "-horizontal-padding",
+                M3TokenCss.pixels(tokens.horizontalPadding())
+        );
+        M3TokenCss.append(
+                builder,
+                "-m3-" + prefix + "-text-horizontal-padding",
+                M3TokenCss.pixels(tokens.textHorizontalPadding())
+        );
+        M3TokenCss.append(
+                builder,
+                "-m3-" + prefix + "-icon-label-space",
+                M3TokenCss.pixels(tokens.iconLabelSpace())
+        );
+        M3TokenCss.append(builder, "-m3-" + prefix + "-outline-width", M3TokenCss.pixels(tokens.outlineWidth()));
+    }
+
     /// Appends floating action button token declarations.
     private static void append(StringBuilder builder, FabTokens tokens) {
         M3TokenCss.append(builder, "-m3-fab-small-container-size", M3TokenCss.pixels(tokens.smallSize()));
@@ -1312,37 +1572,125 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         );
         M3TokenCss.append(builder, "-m3-" + prefix + "-outline-width", M3TokenCss.pixels(tokens.outlineWidth()));
     }
-    /// Appends button group token declarations.
+    /// Appends button-group token declarations.
     private static void append(StringBuilder builder, ButtonGroupTokens tokens) {
+        appendButtonGroupSizeDeclarations(builder, "-m3-button-group", tokens.small());
+        appendButtonGroupSizeDeclarations(builder, "-m3-button-group-extra-small", tokens.extraSmall());
+        appendButtonGroupSizeDeclarations(builder, "-m3-button-group-small", tokens.small());
+        appendButtonGroupSizeDeclarations(builder, "-m3-button-group-medium", tokens.medium());
+        appendButtonGroupSizeDeclarations(builder, "-m3-button-group-large", tokens.large());
+        appendButtonGroupSizeDeclarations(builder, "-m3-button-group-extra-large", tokens.extraLarge());
         M3TokenCss.append(
                 builder,
-                "-m3-button-group-button-horizontal-padding",
-                M3TokenCss.pixels(tokens.buttonHorizontalPadding())
+                "-m3-button-group-spacing",
+                M3TokenCss.pixels(tokens.small().connectedSpacing())
         );
-        M3TokenCss.append(builder, "-m3-button-group-spacing", M3TokenCss.pixels(tokens.buttonGroupSpacing()));
-        M3TokenCss.append(builder, "-m3-button-group-connected-spacing", M3TokenCss.pixels(tokens.buttonGroupSpacing()));
-        M3TokenCss.append(builder, "-m3-button-group-standard-spacing", M3TokenCss.pixels(tokens.standardButtonGroupSpacing()));
-        M3TokenCss.append(builder, "-m3-button-group-connected-inner-corner", M3TokenCss.pixels(tokens.buttonGroupConnectedInnerCorner()));
-        M3TokenCss.append(builder, "-m3-segmented-button-group-spacing", M3TokenCss.pixels(tokens.segmentedGroupSpacing()));
-        M3TokenCss.append(builder, "-m3-icon-toggle-button-group-spacing", M3TokenCss.pixels(tokens.iconToggleGroupSpacing()));
+        M3TokenCss.append(
+                builder,
+                "-m3-segmented-button-group-spacing",
+                M3TokenCss.pixels(tokens.segmentedGroupSpacing())
+        );
+        M3TokenCss.append(
+                builder,
+                "-m3-icon-toggle-button-group-spacing",
+                M3TokenCss.pixels(tokens.iconToggleGroupSpacing())
+        );
+    }
+
+    /// Appends inline declarations for one button-group size role.
+    ///
+    /// @param builder the target CSS declaration builder
+    /// @param prefix the property prefix for the size role
+    /// @param tokens the size-specific button-group tokens
+    private static void appendButtonGroupSizeDeclarations(
+            StringBuilder builder,
+            String prefix,
+            ButtonGroupSizeTokens tokens
+    ) {
+        M3TokenCss.append(builder, prefix + "-container-height", M3TokenCss.pixels(tokens.containerHeight()));
+        M3TokenCss.append(builder, prefix + "-standard-spacing", M3TokenCss.pixels(tokens.standardSpacing()));
+        M3TokenCss.append(builder, prefix + "-connected-spacing", M3TokenCss.pixels(tokens.connectedSpacing()));
+        M3TokenCss.append(
+                builder,
+                prefix + "-connected-inner-corner",
+                M3TokenCss.pixels(tokens.connectedInnerCorner())
+        );
+        M3TokenCss.append(
+                builder,
+                prefix + "-connected-pressed-inner-corner",
+                M3TokenCss.pixels(tokens.connectedPressedInnerCorner())
+        );
+        M3TokenCss.append(
+                builder,
+                prefix + "-connected-selected-inner-corner",
+                M3TokenCss.pixels(tokens.connectedSelectedInnerCorner())
+        );
     }
 
     /// Appends split button token declarations.
     private static void append(StringBuilder builder, SplitButtonTokens tokens) {
-        M3TokenCss.append(builder, "-m3-split-button-container-height", M3TokenCss.pixels(tokens.containerHeight()));
-        M3TokenCss.append(builder, "-m3-split-button-spacing", M3TokenCss.pixels(tokens.spacing()));
+        appendSplitButtonSizeDeclarations(builder, "-m3-split-button", tokens.small());
+        appendSplitButtonSizeDeclarations(builder, "-m3-split-button-extra-small", tokens.extraSmall());
+        appendSplitButtonSizeDeclarations(builder, "-m3-split-button-small", tokens.small());
+        appendSplitButtonSizeDeclarations(builder, "-m3-split-button-medium", tokens.medium());
+        appendSplitButtonSizeDeclarations(builder, "-m3-split-button-large", tokens.large());
+        appendSplitButtonSizeDeclarations(builder, "-m3-split-button-extra-large", tokens.extraLarge());
+    }
+
+    /// Appends inline declarations for one split-button size role.
+    ///
+    /// @param builder the target CSS declaration builder
+    /// @param prefix the property prefix for the size role
+    /// @param tokens the split-button size tokens
+    private static void appendSplitButtonSizeDeclarations(
+            StringBuilder builder,
+            String prefix,
+            SplitButtonSizeTokens tokens
+    ) {
+        M3TokenCss.append(builder, prefix + "-container-height", M3TokenCss.pixels(tokens.containerHeight()));
+        M3TokenCss.append(builder, prefix + "-spacing", M3TokenCss.pixels(tokens.spacing()));
+        M3TokenCss.append(builder, prefix + "-inner-corner", M3TokenCss.pixels(tokens.innerCorner()));
         M3TokenCss.append(
                 builder,
-                "-m3-split-button-action-horizontal-padding",
-                M3TokenCss.pixels(tokens.actionHorizontalPadding())
+                prefix + "-hovered-inner-corner",
+                M3TokenCss.pixels(tokens.hoveredInnerCorner())
         );
-        M3TokenCss.append(builder, "-m3-split-button-menu-width", M3TokenCss.pixels(tokens.menuButtonWidth()));
-        M3TokenCss.append(builder, "-m3-split-button-inner-corner", M3TokenCss.pixels(tokens.innerCorner()));
-        M3TokenCss.append(builder, "-m3-split-button-large-inner-corner", M3TokenCss.pixels(tokens.largeInnerCorner()));
         M3TokenCss.append(
                 builder,
-                "-m3-split-button-extra-large-inner-corner",
-                M3TokenCss.pixels(tokens.extraLargeInnerCorner())
+                prefix + "-pressed-inner-corner",
+                M3TokenCss.pixels(tokens.pressedInnerCorner())
+        );
+        M3TokenCss.append(
+                builder,
+                prefix + "-action-leading-space",
+                M3TokenCss.pixels(tokens.actionLeadingSpace())
+        );
+        M3TokenCss.append(
+                builder,
+                prefix + "-action-trailing-space",
+                M3TokenCss.pixels(tokens.actionTrailingSpace())
+        );
+        M3TokenCss.append(
+                builder,
+                prefix + "-menu-width",
+                M3TokenCss.pixels(tokens.menuLeadingSpace() + tokens.menuIconSize() + tokens.menuTrailingSpace())
+        );
+        M3TokenCss.append(builder, prefix + "-menu-icon-size", M3TokenCss.pixels(tokens.menuIconSize()));
+        M3TokenCss.append(builder, prefix + "-menu-icon-offset", M3TokenCss.pixels(tokens.menuIconOffset()));
+        M3TokenCss.append(
+                builder,
+                prefix + "-menu-leading-space",
+                M3TokenCss.pixels(tokens.menuLeadingSpace())
+        );
+        M3TokenCss.append(
+                builder,
+                prefix + "-menu-trailing-space",
+                M3TokenCss.pixels(tokens.menuTrailingSpace())
+        );
+        M3TokenCss.append(
+                builder,
+                prefix + "-selected-inner-corner",
+                M3TokenCss.pixels(tokens.selectedInnerCorner())
         );
     }
 
@@ -1825,6 +2173,56 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         endRule(builder);
     }
 
+    /// Appends generated metrics and state shapes for every Material button size.
+    private static void appendButtonSizeRules(StringBuilder builder, ButtonSizingTokens tokens) {
+        appendButtonSizeRules(builder, ".m3-button-extra-small", tokens.extraSmall());
+        appendButtonSizeRules(builder, ".m3-button-small", tokens.small());
+        appendButtonSizeRules(builder, ".m3-button-medium", tokens.medium());
+        appendButtonSizeRules(builder, ".m3-button-large", tokens.large());
+        appendButtonSizeRules(builder, ".m3-button-extra-large", tokens.extraLarge());
+    }
+
+    /// Appends generated metrics and shapes for one Material button size.
+    private static void appendButtonSizeRules(
+            StringBuilder builder,
+            String sizeSelector,
+            ButtonSizeTokens tokens
+    ) {
+        String selector = ".m3-button" + sizeSelector;
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(tokens.containerHeight()));
+        appendDeclaration(builder, "-m3-button-icon-size", M3TokenCss.pixels(tokens.iconSize()));
+        appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
+        appendDeclaration(builder, "-fx-graphic-text-gap", M3TokenCss.pixels(tokens.iconLabelSpace()));
+        endRule(builder);
+
+        beginRule(builder, selector + ".m3-text-button");
+        appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.textHorizontalPadding()));
+        endRule(builder);
+
+        beginRule(builder, selector + ".m3-outlined-button");
+        appendDeclaration(builder, "-fx-border-width", M3TokenCss.pixels(tokens.outlineWidth()));
+        endRule(builder);
+
+        beginRule(builder, selector + ".m3-button-round");
+        appendShapeDeclarations(builder, tokens.roundContainerShape());
+        endRule(builder);
+
+        beginRule(builder, selector + ".m3-button-square");
+        appendShapeDeclarations(builder, tokens.squareContainerShape());
+        endRule(builder);
+
+        beginRule(
+                builder,
+                selector + ".m3-button-round:armed, "
+                        + selector + ".m3-button-round:pressed, "
+                        + selector + ".m3-button-square:armed, "
+                        + selector + ".m3-button-square:pressed"
+        );
+        appendShapeDeclarations(builder, tokens.pressedContainerShape());
+        endRule(builder);
+    }
+
     /// Appends generated icon size rules.
     private static void appendIconRules(StringBuilder builder, IconTokens tokens) {
         appendIconRule(builder, ".m3-small-icon", tokens.smallSize());
@@ -1861,11 +2259,16 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             String selector,
             IconButtonSizeTokens tokens
     ) {
-        beginRule(builder, selector);
+        beginRule(
+                builder,
+                ".m3-icon-button" + selector + ", .m3-icon-toggle-button" + selector
+        );
         appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(tokens.containerHeight()));
         appendDeclaration(builder, "-m3-container-width", M3TokenCss.pixels(tokens.defaultWidth()));
+        appendDeclaration(builder, "-m3-button-icon-size", M3TokenCss.pixels(tokens.iconSize()));
         appendDeclaration(builder, "-m3-icon-button-icon-size", M3TokenCss.pixels(tokens.iconSize()));
         appendDeclaration(builder, "-m3-icon-button-outline-width", M3TokenCss.pixels(tokens.outlineWidth()));
+        appendDeclaration(builder, "-m3-horizontal-padding", "0px");
         endRule(builder);
 
         beginRule(builder, selector + ".m3-icon-button-narrow-width");
@@ -2000,237 +2403,418 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         );
     }
 
-    /// Appends connected button group override rules.
+    /// Appends standard and connected button-group rules for every Material size role.
     private static void appendConnectedButtonRules(
             StringBuilder builder,
             ButtonTokens tokens,
             ButtonGroupTokens groupTokens
     ) {
-        String radius = M3TokenCss.pixels(tokens.containerShape());
-        beginRule(builder, ".m3-button-group");
-        appendDeclaration(
+        String outerRadius = M3TokenCss.pixels(tokens.containerShape());
+        appendButtonGroupSizeRules(
                 builder,
-                "-m3-button-group-button-horizontal-padding",
-                M3TokenCss.pixels(groupTokens.buttonHorizontalPadding())
+                ".m3-button-group-extra-small",
+                groupTokens.extraSmall(),
+                outerRadius
         );
+        appendButtonGroupSizeRules(builder, ".m3-button-group-small", groupTokens.small(), outerRadius);
+        appendButtonGroupSizeRules(builder, ".m3-button-group-medium", groupTokens.medium(), outerRadius);
+        appendButtonGroupSizeRules(builder, ".m3-button-group-large", groupTokens.large(), outerRadius);
+        appendButtonGroupSizeRules(
+                builder,
+                ".m3-button-group-extra-large",
+                groupTokens.extraLarge(),
+                outerRadius
+        );
+    }
+
+    /// Appends spacing and connected-state shape rules for one button-group size.
+    ///
+    /// @param builder the target CSS builder
+    /// @param sizeSelector the button-group size selector
+    /// @param tokens the size-specific button-group tokens
+    /// @param outerRadius the fully rounded outer corner value
+    private static void appendButtonGroupSizeRules(
+            StringBuilder builder,
+            String sizeSelector,
+            ButtonGroupSizeTokens tokens,
+            String outerRadius
+    ) {
+        String groupSelector = ".m3-button-group" + sizeSelector;
+        beginRule(builder, groupSelector);
         appendDeclaration(
                 builder,
-                "-m3-button-group-connected-spacing",
-                M3TokenCss.pixels(groupTokens.buttonGroupSpacing())
+                "-m3-button-group-container-height",
+                M3TokenCss.pixels(tokens.containerHeight())
         );
         appendDeclaration(
                 builder,
                 "-m3-button-group-standard-spacing",
-                M3TokenCss.pixels(groupTokens.standardButtonGroupSpacing())
+                M3TokenCss.pixels(tokens.standardSpacing())
+        );
+        appendDeclaration(
+                builder,
+                "-m3-button-group-connected-spacing",
+                M3TokenCss.pixels(tokens.connectedSpacing())
         );
         appendDeclaration(
                 builder,
                 "-m3-button-group-connected-inner-corner",
-                M3TokenCss.pixels(groupTokens.buttonGroupConnectedInnerCorner())
+                M3TokenCss.pixels(tokens.connectedInnerCorner())
+        );
+        appendDeclaration(
+                builder,
+                "-m3-button-group-connected-pressed-inner-corner",
+                M3TokenCss.pixels(tokens.connectedPressedInnerCorner())
+        );
+        appendDeclaration(
+                builder,
+                "-m3-button-group-connected-selected-inner-corner",
+                M3TokenCss.pixels(tokens.connectedSelectedInnerCorner())
         );
         endRule(builder);
 
-        beginRule(builder, ".m3-button-group .m3-button.m3-grouped-button");
-        appendDeclaration(builder, "-m3-container-height", "-m3-button-group-container-height");
-        appendDeclaration(builder, "-m3-horizontal-padding", "-m3-button-group-button-horizontal-padding");
+        beginRule(builder, groupSelector + ".m3-standard-button-group");
+        appendDeclaration(builder, "-m3-button-group-spacing", M3TokenCss.pixels(tokens.standardSpacing()));
         endRule(builder);
 
-        String innerRadius = M3TokenCss.pixels(groupTokens.buttonGroupConnectedInnerCorner());
-        appendConnectedButtonShapeRule(
-                builder,
-                ".m3-button-group.m3-connected-button-group .m3-button.m3-button-group-single",
-                radius,
-                radius,
-                radius,
-                radius
-        );
-        appendConnectedButtonShapeRule(
-                builder,
-                ".m3-button-group.m3-connected-button-group .m3-button.m3-button-group-first",
-                radius,
-                innerRadius,
-                innerRadius,
-                radius
-        );
-        appendConnectedButtonShapeRule(
-                builder,
-                ".m3-button-group.m3-connected-button-group .m3-button.m3-button-group-middle",
-                innerRadius,
-                innerRadius,
-                innerRadius,
-                innerRadius
-        );
-        appendConnectedButtonShapeRule(
-                builder,
-                ".m3-button-group.m3-connected-button-group .m3-button.m3-button-group-last",
-                innerRadius,
-                radius,
-                radius,
-                innerRadius
-        );
-        appendConnectedButtonShapeRule(
-                builder,
-                ".m3-button-group.m3-connected-button-group.m3-button-group-large .m3-button.m3-button-group-first",
-                radius,
-                "16px",
-                "16px",
-                radius
-        );
-        appendConnectedButtonShapeRule(
-                builder,
-                ".m3-button-group.m3-connected-button-group.m3-button-group-large .m3-button.m3-button-group-middle",
-                "16px",
-                "16px",
-                "16px",
-                "16px"
-        );
-        appendConnectedButtonShapeRule(
-                builder,
-                ".m3-button-group.m3-connected-button-group.m3-button-group-large .m3-button.m3-button-group-last",
-                "16px",
-                radius,
-                radius,
-                "16px"
-        );
-        appendConnectedButtonShapeRule(
-                builder,
-                ".m3-button-group.m3-connected-button-group.m3-button-group-extra-large .m3-button.m3-button-group-first",
-                radius,
-                "28px",
-                "28px",
-                radius
-        );
-        appendConnectedButtonShapeRule(
-                builder,
-                ".m3-button-group.m3-connected-button-group.m3-button-group-extra-large .m3-button.m3-button-group-middle",
-                "28px",
-                "28px",
-                "28px",
-                "28px"
-        );
-        appendConnectedButtonShapeRule(
-                builder,
-                ".m3-button-group.m3-connected-button-group.m3-button-group-extra-large .m3-button.m3-button-group-last",
-                "28px",
-                radius,
-                radius,
-                "28px"
-        );
+        String connectedSelector = groupSelector + ".m3-connected-button-group";
+        beginRule(builder, connectedSelector);
+        appendDeclaration(builder, "-m3-button-group-spacing", M3TokenCss.pixels(tokens.connectedSpacing()));
+        endRule(builder);
 
+        appendConnectedButtonStateShapeRules(
+                builder,
+                connectedSelector,
+                "",
+                outerRadius,
+                M3TokenCss.pixels(tokens.connectedInnerCorner())
+        );
+        appendConnectedButtonStateShapeRules(
+                builder,
+                connectedSelector,
+                ":selected",
+                outerRadius,
+                M3TokenCss.pixels(tokens.connectedSelectedInnerCorner())
+        );
+        appendConnectedButtonStateShapeRules(
+                builder,
+                connectedSelector,
+                ":armed",
+                outerRadius,
+                M3TokenCss.pixels(tokens.connectedPressedInnerCorner())
+        );
+        appendConnectedButtonStateShapeRules(
+                builder,
+                connectedSelector,
+                ":pressed",
+                outerRadius,
+                M3TokenCss.pixels(tokens.connectedPressedInnerCorner())
+        );
     }
 
-    /// Appends split button override rules.
+    /// Appends position-specific connected-button shapes for one interaction state.
+    ///
+    /// @param builder the target CSS builder
+    /// @param groupSelector the connected button-group selector
+    /// @param stateSuffix the child pseudo-class suffix, or an empty string for the resting state
+    /// @param outerRadius the outer corner radius
+    /// @param innerRadius the inner corner radius for this state
+    private static void appendConnectedButtonStateShapeRules(
+            StringBuilder builder,
+            String groupSelector,
+            String stateSuffix,
+            String outerRadius,
+            String innerRadius
+    ) {
+        appendConnectedButtonShapeRule(
+                builder,
+                groupSelector + " .m3-button.m3-button-group-single" + stateSuffix,
+                outerRadius,
+                outerRadius,
+                outerRadius,
+                outerRadius
+        );
+        appendConnectedButtonShapeRule(
+                builder,
+                groupSelector + " .m3-button.m3-button-group-first" + stateSuffix,
+                outerRadius,
+                innerRadius,
+                innerRadius,
+                outerRadius
+        );
+        appendConnectedButtonShapeRule(
+                builder,
+                groupSelector + " .m3-button.m3-button-group-middle" + stateSuffix,
+                innerRadius,
+                innerRadius,
+                innerRadius,
+                innerRadius
+        );
+        appendConnectedButtonShapeRule(
+                builder,
+                groupSelector + " .m3-button.m3-button-group-last" + stateSuffix,
+                innerRadius,
+                outerRadius,
+                outerRadius,
+                innerRadius
+        );
+    }
+
+    /// Appends split-button size, logical spacing, icon, and state-shape rules.
     private static void appendSplitButtonRules(
             StringBuilder builder,
             ButtonTokens buttonTokens,
             SplitButtonTokens splitButtonTokens
     ) {
-        String radius = M3TokenCss.pixels(buttonTokens.containerShape());
-        String innerRadius = M3TokenCss.pixels(splitButtonTokens.innerCorner());
-        String largeInnerRadius = M3TokenCss.pixels(splitButtonTokens.largeInnerCorner());
-        String extraLargeInnerRadius = M3TokenCss.pixels(splitButtonTokens.extraLargeInnerCorner());
+        String outerRadius = M3TokenCss.pixels(buttonTokens.containerShape());
 
-        beginRule(builder, ".m3-split-button");
-        appendDeclaration(
+        appendSplitButtonSizeRule(builder, ".m3-split-button", splitButtonTokens.small(), outerRadius);
+        appendSplitButtonSizeRule(
                 builder,
-                "-m3-split-button-container-height",
-                M3TokenCss.pixels(splitButtonTokens.containerHeight())
+                ".m3-split-button.m3-split-button-extra-small",
+                splitButtonTokens.extraSmall(),
+                outerRadius
         );
-        appendDeclaration(builder, "-m3-split-button-spacing", M3TokenCss.pixels(splitButtonTokens.spacing()));
-        appendDeclaration(
-                builder,
-                "-m3-split-button-action-horizontal-padding",
-                M3TokenCss.pixels(splitButtonTokens.actionHorizontalPadding())
-        );
-        appendDeclaration(builder, "-m3-split-button-menu-width", M3TokenCss.pixels(splitButtonTokens.menuButtonWidth()));
-        endRule(builder);
-        appendSplitButtonSizeRule(builder, ".m3-split-button.m3-split-button-extra-small", 32.0, 12.0, 48.0);
         appendSplitButtonSizeRule(
                 builder,
                 ".m3-split-button.m3-split-button-small",
-                splitButtonTokens.containerHeight(),
-                splitButtonTokens.actionHorizontalPadding(),
-                splitButtonTokens.menuButtonWidth()
+                splitButtonTokens.small(),
+                outerRadius
         );
-        appendSplitButtonSizeRule(builder, ".m3-split-button.m3-split-button-medium", 56.0, 24.0, 56.0);
-        appendSplitButtonSizeRule(builder, ".m3-split-button.m3-split-button-large", 96.0, 48.0, 96.0);
-        appendSplitButtonSizeRule(builder, ".m3-split-button.m3-split-button-extra-large", 136.0, 64.0, 136.0);
-
-        beginRule(builder, ".m3-split-button .m3-button.m3-split-button-action");
-        appendDeclaration(builder, "-m3-container-height", "-m3-split-button-container-height");
-        appendDeclaration(builder, "-m3-horizontal-padding", "-m3-split-button-action-horizontal-padding");
-        endRule(builder);
-
-        beginRule(builder, ".m3-split-button .m3-button.m3-split-button-menu");
-        appendDeclaration(builder, "-m3-container-height", "-m3-split-button-container-height");
-        appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(0.0));
-        appendDeclaration(builder, "-fx-min-width", "-m3-split-button-menu-width");
-        appendDeclaration(builder, "-fx-pref-width", "-m3-split-button-menu-width");
-        endRule(builder);
-
-        appendConnectedButtonShapeRule(
+        appendSplitButtonSizeRule(
                 builder,
-                ".m3-split-button .m3-button:left-edge",
-                radius,
-                innerRadius,
-                innerRadius,
-                radius
+                ".m3-split-button.m3-split-button-medium",
+                splitButtonTokens.medium(),
+                outerRadius
         );
-        appendConnectedButtonShapeRule(
+        appendSplitButtonSizeRule(
                 builder,
-                ".m3-split-button .m3-button:right-edge",
-                innerRadius,
-                radius,
-                radius,
-                innerRadius
+                ".m3-split-button.m3-split-button-large",
+                splitButtonTokens.large(),
+                outerRadius
         );
-        appendConnectedButtonShapeRule(
+        appendSplitButtonSizeRule(
                 builder,
-                ".m3-split-button.m3-split-button-large .m3-button:left-edge",
-                radius,
-                largeInnerRadius,
-                largeInnerRadius,
-                radius
-        );
-        appendConnectedButtonShapeRule(
-                builder,
-                ".m3-split-button.m3-split-button-large .m3-button:right-edge",
-                largeInnerRadius,
-                radius,
-                radius,
-                largeInnerRadius
-        );
-        appendConnectedButtonShapeRule(
-                builder,
-                ".m3-split-button.m3-split-button-extra-large .m3-button:left-edge",
-                radius,
-                extraLargeInnerRadius,
-                extraLargeInnerRadius,
-                radius
-        );
-        appendConnectedButtonShapeRule(
-                builder,
-                ".m3-split-button.m3-split-button-extra-large .m3-button:right-edge",
-                extraLargeInnerRadius,
-                radius,
-                radius,
-                extraLargeInnerRadius
+                ".m3-split-button.m3-split-button-extra-large",
+                splitButtonTokens.extraLarge(),
+                outerRadius
         );
     }
 
-    /// Appends a split button size token CSS rule.
+    /// Appends generated split-button rules for one size role.
+    ///
+    /// @param builder the target generated stylesheet
+    /// @param ownerSelector the split-button owner selector
+    /// @param tokens the metrics for the size role
+    /// @param outerRadius the rounded outer-corner radius
     private static void appendSplitButtonSizeRule(
             StringBuilder builder,
-            String selector,
-            double containerHeight,
-            double actionHorizontalPadding,
-            double menuButtonWidth
+            String ownerSelector,
+            SplitButtonSizeTokens tokens,
+            String outerRadius
     ) {
-        beginRule(builder, selector);
-        appendDeclaration(builder, "-m3-split-button-container-height", M3TokenCss.pixels(containerHeight));
-        appendDeclaration(builder, "-m3-split-button-action-horizontal-padding", M3TokenCss.pixels(actionHorizontalPadding));
-        appendDeclaration(builder, "-m3-split-button-menu-width", M3TokenCss.pixels(menuButtonWidth));
+        double menuWidth = tokens.menuLeadingSpace() + tokens.menuIconSize() + tokens.menuTrailingSpace();
+        beginRule(builder, ownerSelector);
+        appendDeclaration(builder, "-m3-split-button-container-height", M3TokenCss.pixels(tokens.containerHeight()));
+        appendDeclaration(builder, "-m3-split-button-spacing", M3TokenCss.pixels(tokens.spacing()));
+        appendDeclaration(builder, "-m3-split-button-menu-width", M3TokenCss.pixels(menuWidth));
         endRule(builder);
+
+        beginRule(builder, ownerSelector + " .m3-button.m3-split-button-action");
+        appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(tokens.containerHeight()));
+        endRule(builder);
+
+        beginRule(builder, ownerSelector + " .m3-button.m3-split-button-action:left-edge");
+        appendDeclaration(
+                builder,
+                "-fx-padding",
+                "0 "
+                        + M3TokenCss.pixels(tokens.actionTrailingSpace())
+                        + " 0 "
+                        + M3TokenCss.pixels(tokens.actionLeadingSpace())
+        );
+        endRule(builder);
+
+        beginRule(builder, ownerSelector + " .m3-button.m3-split-button-action:right-edge");
+        appendDeclaration(
+                builder,
+                "-fx-padding",
+                "0 "
+                        + M3TokenCss.pixels(tokens.actionLeadingSpace())
+                        + " 0 "
+                        + M3TokenCss.pixels(tokens.actionTrailingSpace())
+        );
+        endRule(builder);
+
+        beginRule(builder, ownerSelector + " .m3-button.m3-split-button-menu");
+        appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(tokens.containerHeight()));
+        appendDeclaration(builder, "-m3-horizontal-padding", "0px");
+        appendDeclaration(builder, "-fx-min-width", M3TokenCss.pixels(menuWidth));
+        appendDeclaration(builder, "-fx-pref-width", M3TokenCss.pixels(menuWidth));
+        endRule(builder);
+
+        beginRule(builder, ownerSelector + " .m3-button.m3-split-button-menu:left-edge");
+        appendDeclaration(
+                builder,
+                "-fx-padding",
+                "0 "
+                        + M3TokenCss.pixels(tokens.menuLeadingSpace())
+                        + " 0 "
+                        + M3TokenCss.pixels(tokens.menuTrailingSpace())
+        );
+        endRule(builder);
+
+        beginRule(builder, ownerSelector + " .m3-button.m3-split-button-menu:right-edge");
+        appendDeclaration(
+                builder,
+                "-fx-padding",
+                "0 "
+                        + M3TokenCss.pixels(tokens.menuTrailingSpace())
+                        + " 0 "
+                        + M3TokenCss.pixels(tokens.menuLeadingSpace())
+        );
+        endRule(builder);
+
+        String indicatorSelector =
+                ownerSelector + " .m3-button.m3-split-button-menu .m3-disclosure-icon";
+        beginRule(builder, indicatorSelector);
+        appendDeclaration(builder, "-m3-disclosure-icon-size", M3TokenCss.pixels(tokens.menuIconSize()));
+        endRule(builder);
+
+        beginRule(
+                builder,
+                ownerSelector + " .m3-button.m3-split-button-menu:left-edge .m3-disclosure-icon"
+        );
+        appendDeclaration(builder, "-fx-translate-x", M3TokenCss.pixels(tokens.menuIconOffset()));
+        endRule(builder);
+
+        beginRule(
+                builder,
+                ownerSelector + " .m3-button.m3-split-button-menu:right-edge .m3-disclosure-icon"
+        );
+        appendDeclaration(builder, "-fx-translate-x", M3TokenCss.pixels(-tokens.menuIconOffset()));
+        endRule(builder);
+
+        beginRule(
+                builder,
+                ownerSelector + " .m3-button.m3-split-button-menu:showing .m3-disclosure-icon"
+        );
+        appendDeclaration(builder, "-fx-translate-x", "0px");
+        endRule(builder);
+
+        appendSplitButtonPartShapeRules(builder, ownerSelector, tokens, outerRadius);
+    }
+
+    /// Appends resting and interactive split-button corner rules for one size role.
+    ///
+    /// @param builder the target generated stylesheet
+    /// @param ownerSelector the split-button owner selector
+    /// @param tokens the metrics for the size role
+    /// @param outerRadius the rounded outer-corner radius
+    private static void appendSplitButtonPartShapeRules(
+            StringBuilder builder,
+            String ownerSelector,
+            SplitButtonSizeTokens tokens,
+            String outerRadius
+    ) {
+        appendSplitButtonEdgeShapeRules(
+                builder,
+                ownerSelector,
+                "",
+                outerRadius,
+                M3TokenCss.pixels(tokens.innerCorner())
+        );
+        appendSplitButtonEdgeShapeRules(
+                builder,
+                ownerSelector,
+                ":hover, :focused, :focus-visible",
+                outerRadius,
+                M3TokenCss.pixels(tokens.hoveredInnerCorner())
+        );
+        appendSplitButtonEdgeShapeRules(
+                builder,
+                ownerSelector,
+                ":armed, :pressed",
+                outerRadius,
+                M3TokenCss.pixels(tokens.pressedInnerCorner())
+        );
+
+        String selectedInnerRadius = M3TokenCss.pixels(tokens.selectedInnerCorner());
+        appendConnectedButtonShapeRule(
+                builder,
+                ownerSelector + " .m3-button.m3-split-button-menu:left-edge:showing",
+                outerRadius,
+                selectedInnerRadius,
+                selectedInnerRadius,
+                outerRadius
+        );
+        appendConnectedButtonShapeRule(
+                builder,
+                ownerSelector + " .m3-button.m3-split-button-menu:right-edge:showing",
+                selectedInnerRadius,
+                outerRadius,
+                outerRadius,
+                selectedInnerRadius
+        );
+    }
+
+    /// Appends physical left- and right-edge corner rules for split-button parts in one interaction state.
+    ///
+    /// @param builder the target generated stylesheet
+    /// @param ownerSelector the split-button owner selector
+    /// @param stateSuffixes comma-separated pseudo-class suffixes, or an empty string for the resting state
+    /// @param outerRadius the outer-corner radius
+    /// @param innerRadius the active inner-corner radius
+    private static void appendSplitButtonEdgeShapeRules(
+            StringBuilder builder,
+            String ownerSelector,
+            String stateSuffixes,
+            String outerRadius,
+            String innerRadius
+    ) {
+        if (stateSuffixes.isEmpty()) {
+            appendSplitButtonEdgeShapeRule(builder, ownerSelector, "", outerRadius, innerRadius);
+            return;
+        }
+        for (String stateSuffix : stateSuffixes.split(", ")) {
+            appendSplitButtonEdgeShapeRule(builder, ownerSelector, stateSuffix, outerRadius, innerRadius);
+        }
+    }
+
+    /// Appends both physical edge rules for one split-button interaction state.
+    ///
+    /// @param builder the target generated stylesheet
+    /// @param ownerSelector the split-button owner selector
+    /// @param stateSuffix the child pseudo-class suffix
+    /// @param outerRadius the outer-corner radius
+    /// @param innerRadius the inner-corner radius
+    private static void appendSplitButtonEdgeShapeRule(
+            StringBuilder builder,
+            String ownerSelector,
+            String stateSuffix,
+            String outerRadius,
+            String innerRadius
+    ) {
+        appendConnectedButtonShapeRule(
+                builder,
+                ownerSelector + " .m3-button.m3-split-button-action:left-edge" + stateSuffix
+                        + ", "
+                        + ownerSelector + " .m3-button.m3-split-button-menu:left-edge" + stateSuffix,
+                outerRadius,
+                innerRadius,
+                innerRadius,
+                outerRadius
+        );
+        appendConnectedButtonShapeRule(
+                builder,
+                ownerSelector + " .m3-button.m3-split-button-action:right-edge" + stateSuffix
+                        + ", "
+                        + ownerSelector + " .m3-button.m3-split-button-menu:right-edge" + stateSuffix,
+                innerRadius,
+                outerRadius,
+                outerRadius,
+                innerRadius
+        );
     }
 
     /// Appends a connected button position shape CSS rule.
@@ -3180,6 +3764,13 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendDeclaration(builder, "-m3-item-slot-size", M3TokenCss.pixels(tokens.itemSlotSize()));
         appendDeclaration(builder, "-m3-content-padding", M3TokenCss.pixels(tokens.contentPadding()));
         appendDeclaration(builder, "-m3-item-spacing", M3TokenCss.pixels(tokens.itemSpacing()));
+        endRule(builder);
+
+        beginRule(builder, ".m3-toolbar.m3-toolbar-standard");
+        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.containerShape()));
+        endRule(builder);
+
+        beginRule(builder, ".m3-toolbar.m3-toolbar-floating");
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.containerShape()));
         endRule(builder);
     }
@@ -3345,6 +3936,68 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         }
     }
 
+    /// Tokens used by the five Material button sizes.
+    ///
+    /// @param extraSmall the extra-small button size tokens
+    /// @param small the small button size tokens
+    /// @param medium the medium button size tokens
+    /// @param large the large button size tokens
+    /// @param extraLarge the extra-large button size tokens
+    @NotNullByDefault
+    record ButtonSizingTokens(
+            ButtonSizeTokens extraSmall,
+            ButtonSizeTokens small,
+            ButtonSizeTokens medium,
+            ButtonSizeTokens large,
+            ButtonSizeTokens extraLarge
+    ) {
+        /// Creates a five-step button size token scale.
+        public ButtonSizingTokens {
+            Objects.requireNonNull(extraSmall, "extraSmall");
+            Objects.requireNonNull(small, "small");
+            Objects.requireNonNull(medium, "medium");
+            Objects.requireNonNull(large, "large");
+            Objects.requireNonNull(extraLarge, "extraLarge");
+        }
+    }
+
+    /// Tokens used by one Material button size.
+    ///
+    /// @param containerHeight the visual container height
+    /// @param iconSize the icon glyph size
+    /// @param roundContainerShape the round resting container shape
+    /// @param squareContainerShape the rounded-square resting container shape
+    /// @param pressedContainerShape the pressed container shape
+    /// @param horizontalPadding the leading and trailing padding for non-text variants
+    /// @param textHorizontalPadding the leading and trailing padding for text variants
+    /// @param iconLabelSpace the spacing between an icon and label
+    /// @param outlineWidth the outlined variant stroke width
+    @NotNullByDefault
+    record ButtonSizeTokens(
+            double containerHeight,
+            double iconSize,
+            double roundContainerShape,
+            double squareContainerShape,
+            double pressedContainerShape,
+            double horizontalPadding,
+            double textHorizontalPadding,
+            double iconLabelSpace,
+            double outlineWidth
+    ) {
+        /// Creates tokens for one Material button size.
+        public ButtonSizeTokens {
+            validateNonNegative(containerHeight, "containerHeight");
+            validateNonNegative(iconSize, "iconSize");
+            validateNonNegative(roundContainerShape, "roundContainerShape");
+            validateNonNegative(squareContainerShape, "squareContainerShape");
+            validateNonNegative(pressedContainerShape, "pressedContainerShape");
+            validateNonNegative(horizontalPadding, "horizontalPadding");
+            validateNonNegative(textHorizontalPadding, "textHorizontalPadding");
+            validateNonNegative(iconLabelSpace, "iconLabelSpace");
+            validateNonNegative(outlineWidth, "outlineWidth");
+        }
+    }
+
     /// Tokens used by icon button size families.
     ///
     /// @param extraSmall the extra-small icon button size tokens
@@ -3474,62 +4127,133 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         }
     }
 
-    /// Tokens used by button groups.
+    /// The five-step Material button-group token scale.
     ///
-    /// @param buttonHorizontalPadding the horizontal padding applied to grouped buttons
-    /// @param buttonGroupSpacing the spacing between connected button group children
-    /// @param standardButtonGroupSpacing the spacing between standard button group children
-    /// @param buttonGroupConnectedInnerCorner the inner corner radius for connected button group children
+    /// @param extraSmall tokens for extra-small button groups
+    /// @param small tokens for small button groups
+    /// @param medium tokens for medium button groups
+    /// @param large tokens for large button groups
+    /// @param extraLarge tokens for extra-large button groups
     /// @param segmentedGroupSpacing the spacing between segmented button group children
     /// @param iconToggleGroupSpacing the spacing between icon toggle button group children
     @NotNullByDefault
     record ButtonGroupTokens(
-            double buttonHorizontalPadding,
-            double buttonGroupSpacing,
-            double standardButtonGroupSpacing,
-            double buttonGroupConnectedInnerCorner,
+            ButtonGroupSizeTokens extraSmall,
+            ButtonGroupSizeTokens small,
+            ButtonGroupSizeTokens medium,
+            ButtonGroupSizeTokens large,
+            ButtonGroupSizeTokens extraLarge,
             double segmentedGroupSpacing,
             double iconToggleGroupSpacing
     ) {
-        /// Creates button group tokens.
+        /// Creates a complete button-group token scale.
         public ButtonGroupTokens {
-            validateNonNegative(buttonHorizontalPadding, "buttonHorizontalPadding");
-            validateFinite(buttonGroupSpacing, "buttonGroupSpacing");
-            validateFinite(standardButtonGroupSpacing, "standardButtonGroupSpacing");
-            validateNonNegative(buttonGroupConnectedInnerCorner, "buttonGroupConnectedInnerCorner");
+            Objects.requireNonNull(extraSmall, "extraSmall");
+            Objects.requireNonNull(small, "small");
+            Objects.requireNonNull(medium, "medium");
+            Objects.requireNonNull(large, "large");
+            Objects.requireNonNull(extraLarge, "extraLarge");
             validateFinite(segmentedGroupSpacing, "segmentedGroupSpacing");
             validateNonNegative(iconToggleGroupSpacing, "iconToggleGroupSpacing");
         }
     }
 
-    /// Tokens used by split buttons.
+    /// Material button-group metrics for one size role.
     ///
-    /// @param containerHeight the default split button container height
-    /// @param spacing the spacing between the action and menu button parts
-    /// @param actionHorizontalPadding the horizontal padding applied to split button action parts
-    /// @param menuButtonWidth the preferred width of split button menu parts
-    /// @param innerCorner the inner corner radius for default split button parts
-    /// @param largeInnerCorner the inner corner radius for large split button parts
-    /// @param extraLargeInnerCorner the inner corner radius for extra-large split button parts
+    /// @param containerHeight the group container height
+    /// @param standardSpacing the spacing between standard-group children
+    /// @param connectedSpacing the spacing between connected-group children
+    /// @param connectedInnerCorner the resting connected inner-corner radius
+    /// @param connectedPressedInnerCorner the pressed connected inner-corner radius
+    /// @param connectedSelectedInnerCorner the selected connected inner-corner radius
+    @NotNullByDefault
+    record ButtonGroupSizeTokens(
+            double containerHeight,
+            double standardSpacing,
+            double connectedSpacing,
+            double connectedInnerCorner,
+            double connectedPressedInnerCorner,
+            double connectedSelectedInnerCorner
+    ) {
+        /// Creates button-group tokens for one size role.
+        public ButtonGroupSizeTokens {
+            validateNonNegative(containerHeight, "containerHeight");
+            validateFinite(standardSpacing, "standardSpacing");
+            validateFinite(connectedSpacing, "connectedSpacing");
+            validateNonNegative(connectedInnerCorner, "connectedInnerCorner");
+            validateNonNegative(connectedPressedInnerCorner, "connectedPressedInnerCorner");
+            validateNonNegative(connectedSelectedInnerCorner, "connectedSelectedInnerCorner");
+        }
+    }
+
+    /// The five-step Material split-button size token scale.
+    ///
+    /// @param extraSmall tokens for extra-small split buttons
+    /// @param small tokens for small split buttons
+    /// @param medium tokens for medium split buttons
+    /// @param large tokens for large split buttons
+    /// @param extraLarge tokens for extra-large split buttons
     @NotNullByDefault
     record SplitButtonTokens(
+            SplitButtonSizeTokens extraSmall,
+            SplitButtonSizeTokens small,
+            SplitButtonSizeTokens medium,
+            SplitButtonSizeTokens large,
+            SplitButtonSizeTokens extraLarge
+    ) {
+        /// Creates a complete split-button size token scale.
+        public SplitButtonTokens {
+            Objects.requireNonNull(extraSmall, "extraSmall");
+            Objects.requireNonNull(small, "small");
+            Objects.requireNonNull(medium, "medium");
+            Objects.requireNonNull(large, "large");
+            Objects.requireNonNull(extraLarge, "extraLarge");
+        }
+    }
+
+    /// Material split-button metrics for one size role.
+    ///
+    /// @param containerHeight the split-button container height
+    /// @param spacing the spacing between the leading and trailing button parts
+    /// @param innerCorner the resting inner-corner radius
+    /// @param hoveredInnerCorner the hovered and focused inner-corner radius
+    /// @param pressedInnerCorner the pressed inner-corner radius
+    /// @param actionLeadingSpace the logical leading padding of the primary action
+    /// @param actionTrailingSpace the logical trailing padding of the primary action
+    /// @param menuIconSize the trailing menu icon viewport size
+    /// @param menuIconOffset the unselected menu icon offset toward the group center
+    /// @param menuLeadingSpace the logical leading space around the trailing icon
+    /// @param menuTrailingSpace the logical trailing space around the trailing icon
+    /// @param selectedInnerCorner the inner-corner radius while the menu is showing
+    @NotNullByDefault
+    record SplitButtonSizeTokens(
             double containerHeight,
             double spacing,
-            double actionHorizontalPadding,
-            double menuButtonWidth,
             double innerCorner,
-            double largeInnerCorner,
-            double extraLargeInnerCorner
+            double hoveredInnerCorner,
+            double pressedInnerCorner,
+            double actionLeadingSpace,
+            double actionTrailingSpace,
+            double menuIconSize,
+            double menuIconOffset,
+            double menuLeadingSpace,
+            double menuTrailingSpace,
+            double selectedInnerCorner
     ) {
-        /// Creates split button tokens.
-        public SplitButtonTokens {
+        /// Validates split-button metrics for one size role.
+        public SplitButtonSizeTokens {
             validateNonNegative(containerHeight, "containerHeight");
             validateFinite(spacing, "spacing");
-            validateNonNegative(actionHorizontalPadding, "actionHorizontalPadding");
-            validateNonNegative(menuButtonWidth, "menuButtonWidth");
             validateNonNegative(innerCorner, "innerCorner");
-            validateNonNegative(largeInnerCorner, "largeInnerCorner");
-            validateNonNegative(extraLargeInnerCorner, "extraLargeInnerCorner");
+            validateNonNegative(hoveredInnerCorner, "hoveredInnerCorner");
+            validateNonNegative(pressedInnerCorner, "pressedInnerCorner");
+            validateNonNegative(actionLeadingSpace, "actionLeadingSpace");
+            validateNonNegative(actionTrailingSpace, "actionTrailingSpace");
+            validateNonNegative(menuIconSize, "menuIconSize");
+            validateNonNegative(menuIconOffset, "menuIconOffset");
+            validateNonNegative(menuLeadingSpace, "menuLeadingSpace");
+            validateNonNegative(menuTrailingSpace, "menuTrailingSpace");
+            validateNonNegative(selectedInnerCorner, "selectedInnerCorner");
         }
     }
 

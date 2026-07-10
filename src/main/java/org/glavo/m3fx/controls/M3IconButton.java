@@ -33,34 +33,11 @@ public class M3IconButton extends M3Button {
     /// The base style class for M3FX icon buttons.
     public static final String STYLE_CLASS = "m3-icon-button";
 
-    /// The default icon button size.
-    private static final M3IconButtonSize DEFAULT_SIZE = M3IconButtonSize.SMALL;
-
     /// The default icon button width role.
     private static final M3IconButtonWidth DEFAULT_WIDTH = M3IconButtonWidth.DEFAULT;
 
-    /// The default icon button shape.
-    private static final M3IconButtonShape DEFAULT_SHAPE = M3IconButtonShape.ROUND;
-
     /// The default icon button container width.
     private static final double DEFAULT_CONTAINER_WIDTH = 40.0;
-
-    /// The default icon button glyph size.
-    private static final double DEFAULT_ICON_SIZE = 24.0;
-
-    // The icon button size property.
-    private final ObjectProperty<M3IconButtonSize> size =
-            new SimpleObjectProperty<>(this, "size", DEFAULT_SIZE) {
-                /// Updates size style classes when the property changes.
-                @Override
-                protected void invalidated() {
-                    if (get() == null) {
-                        set(DEFAULT_SIZE);
-                        return;
-                    }
-                    updateSizeStyle();
-                }
-            };
 
     // The icon button width role property.
     private final ObjectProperty<M3IconButtonWidth> widthRole =
@@ -76,25 +53,8 @@ public class M3IconButton extends M3Button {
                 }
             };
 
-    // The icon button shape property.
-    private final ObjectProperty<M3IconButtonShape> iconButtonShape =
-            new SimpleObjectProperty<>(this, "iconButtonShape", DEFAULT_SHAPE) {
-                /// Updates shape style classes when the property changes.
-                @Override
-                protected void invalidated() {
-                    if (get() == null) {
-                        set(DEFAULT_SHAPE);
-                        return;
-                    }
-                    updateShapeStyle();
-                }
-            };
-
     // The styleable visual container width token.
     private @Nullable StyleableDoubleProperty containerWidth;
-
-    // The styleable icon glyph size token.
-    private @Nullable StyleableDoubleProperty iconSize;
 
     /// Creates an icon button without a graphic.
     public M3IconButton() {
@@ -109,27 +69,6 @@ public class M3IconButton extends M3Button {
         M3ControlStyles.add(this, STYLE_CLASS);
         setVariant(M3ButtonVariant.TEXT);
         initializeIconMetrics();
-    }
-
-    /// Returns the icon button size.
-    ///
-    /// @return the icon button size
-    public final M3IconButtonSize getSize() {
-        return size.get();
-    }
-
-    /// Sets the icon button size.
-    ///
-    /// @param size the icon button size
-    public final void setSize(M3IconButtonSize size) {
-        this.size.set(Objects.requireNonNull(size, "size"));
-    }
-
-    /// Returns the icon button size property.
-    ///
-    /// @return the icon button size property
-    public final ObjectProperty<M3IconButtonSize> sizeProperty() {
-        return size;
     }
 
     /// Returns the icon button width role.
@@ -151,27 +90,6 @@ public class M3IconButton extends M3Button {
     /// @return the icon button width role property
     public final ObjectProperty<M3IconButtonWidth> widthRoleProperty() {
         return widthRole;
-    }
-
-    /// Returns the icon button shape.
-    ///
-    /// @return the icon button shape
-    public final M3IconButtonShape getIconButtonShape() {
-        return iconButtonShape.get();
-    }
-
-    /// Sets the icon button shape.
-    ///
-    /// @param shape the icon button shape
-    public final void setIconButtonShape(M3IconButtonShape shape) {
-        this.iconButtonShape.set(Objects.requireNonNull(shape, "shape"));
-    }
-
-    /// Returns the icon button shape property.
-    ///
-    /// @return the icon button shape property
-    public final ObjectProperty<M3IconButtonShape> iconButtonShapeProperty() {
-        return iconButtonShape;
     }
 
     /// Returns the preferred visual container width token.
@@ -204,36 +122,6 @@ public class M3IconButton extends M3Button {
         return containerWidth;
     }
 
-    /// Returns the icon glyph size token.
-    ///
-    /// @return the icon glyph size in pixels
-    public final double getIconSize() {
-        return iconSize == null ? DEFAULT_ICON_SIZE : iconSize.get();
-    }
-
-    /// Sets the icon glyph size token.
-    ///
-    /// @param iconSize the icon glyph size in pixels
-    public final void setIconSize(double iconSize) {
-        iconSizeProperty().set(M3Css.nonNegative(iconSize, "iconSize"));
-    }
-
-    /// Returns the icon glyph size token property.
-    ///
-    /// @return the icon glyph size property
-    public final StyleableDoubleProperty iconSizeProperty() {
-        if (iconSize == null) {
-            iconSize = M3Css.nonNegativeStyleableDoubleProperty(
-                    DEFAULT_ICON_SIZE,
-                    this,
-                    "iconSize",
-                    StyleableProperties.ICON_SIZE,
-                    this::updateIconMetrics
-            );
-        }
-        return iconSize;
-    }
-
     /// Returns the CSS metadata for this control class.
     ///
     /// @return the CSS metadata for this control class
@@ -251,11 +139,11 @@ public class M3IconButton extends M3Button {
     private void initializeIconMetrics() {
         containerHeightProperty().addListener(observable -> updateIconMetrics());
         containerWidthProperty().addListener(observable -> updateIconMetrics());
-        iconSizeProperty().addListener(observable -> updateM3IconGraphicSize());
-        graphicProperty().addListener(observable -> updateM3IconGraphicSize());
-        updateSizeStyle();
+        sizeProperty().addListener(observable -> updateIconSizeStyle());
+        buttonShapeProperty().addListener(observable -> updateIconShapeStyle());
+        updateIconSizeStyle();
         updateWidthStyle();
-        updateShapeStyle();
+        updateIconShapeStyle();
         updateIconMetrics();
     }
 
@@ -269,27 +157,6 @@ public class M3IconButton extends M3Button {
         M3Css.setPrefHeightIfUnbound(this, height);
         M3Css.setMaxWidthIfUnbound(this, width);
         M3Css.setMaxHeightIfUnbound(this, height);
-        updateM3IconGraphicSize();
-    }
-
-    /// Applies the resolved icon button size token to direct M3FX icon graphics.
-    private void updateM3IconGraphicSize() {
-        if (getGraphic() instanceof M3Icon icon) {
-            icon.setIconSize(getIconSize());
-        }
-    }
-
-    /// Applies the current size style class.
-    private void updateSizeStyle() {
-        M3ControlStyles.replaceVariant(
-                this,
-                getSize().styleClass(),
-                M3IconButtonSize.EXTRA_SMALL.styleClass(),
-                M3IconButtonSize.SMALL.styleClass(),
-                M3IconButtonSize.MEDIUM.styleClass(),
-                M3IconButtonSize.LARGE.styleClass(),
-                M3IconButtonSize.EXTRA_LARGE.styleClass()
-        );
     }
 
     /// Applies the current width style class.
@@ -303,14 +170,43 @@ public class M3IconButton extends M3Button {
         );
     }
 
-    /// Applies the current shape style class.
-    private void updateShapeStyle() {
+    /// Applies the icon-button-specific class for the shared Material size.
+    private void updateIconSizeStyle() {
         M3ControlStyles.replaceVariant(
                 this,
-                getIconButtonShape().styleClass(),
-                M3IconButtonShape.ROUND.styleClass(),
-                M3IconButtonShape.SQUARE.styleClass()
+                iconSizeStyleClass(getSize()),
+                iconSizeStyleClass(M3ButtonSize.EXTRA_SMALL),
+                iconSizeStyleClass(M3ButtonSize.SMALL),
+                iconSizeStyleClass(M3ButtonSize.MEDIUM),
+                iconSizeStyleClass(M3ButtonSize.LARGE),
+                iconSizeStyleClass(M3ButtonSize.EXTRA_LARGE)
         );
+    }
+
+    /// Applies the icon-button-specific class for the shared Material shape.
+    private void updateIconShapeStyle() {
+        M3ControlStyles.replaceVariant(
+                this,
+                iconShapeStyleClass(getButtonShape()),
+                iconShapeStyleClass(M3ButtonShape.ROUND),
+                iconShapeStyleClass(M3ButtonShape.SQUARE)
+        );
+    }
+
+    /// Returns the icon-button style class for a shared Material size.
+    ///
+    /// @param size the Material button size
+    /// @return the icon-button size style class
+    private static String iconSizeStyleClass(M3ButtonSize size) {
+        return "m3-icon-button-" + size.cssSuffix();
+    }
+
+    /// Returns the icon-button style class for a shared Material shape.
+    ///
+    /// @param shape the Material button shape
+    /// @return the icon-button shape style class
+    private static String iconShapeStyleClass(M3ButtonShape shape) {
+        return "m3-icon-button-" + shape.cssSuffix();
     }
 
     /// CSS metadata for M3FX icon button component tokens.
@@ -332,29 +228,12 @@ public class M3IconButton extends M3Button {
                     }
                 };
 
-        /// CSS metadata for the icon glyph size token.
-        private static final CssMetaData<M3IconButton, Number> ICON_SIZE =
-                new CssMetaData<>("-m3-icon-button-icon-size", SizeConverter.getInstance(), DEFAULT_ICON_SIZE) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3IconButton control) {
-                        return M3Css.isSettable(control.iconSizeProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3IconButton control) {
-                        return control.iconSizeProperty();
-                    }
-                };
-
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(M3Button.getClassCssMetaData());
             styleables.add(CONTAINER_WIDTH);
-            styleables.add(ICON_SIZE);
             STYLEABLES = Collections.unmodifiableList(styleables);
         }
     }

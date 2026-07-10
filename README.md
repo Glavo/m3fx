@@ -6,11 +6,13 @@ The library provides JavaFX controls, skins, themes, generated Material token st
 
 ## Status
 
-M3FX is a `1.0-SNAPSHOT` release candidate for baseline Material Design 3 support. Remaining 1.0 work is focused on final API sign-off and final visual review rather than broad architecture changes.
+M3FX is a `1.0-SNAPSHOT` release candidate for baseline Material Design 3 support. The public API surface has completed its 1.0 review, and every registered demo page participates in the release visual matrix. Source changes remain gated by release verification rather than broad architecture changes.
 
 The baseline Material Design 3 profile is the primary 1.0 compatibility target. M3 Expressive support is available through profile-aware color, typography, shape, motion, component, progress, loading, navigation, form, picker, menu, and surface tokens. Full exact visual parity for every M3 Expressive component is tracked as post-baseline parity work unless a component already has stable tokens and rendered-state coverage.
 
-The exported package surface, public type inventory, static utility methods, duplicate wrapper methods, reviewed public batch constructors, and internal type exposure are covered by project contract tests.
+The exported package surface, public top-level and nested type inventory, constructor surface, enum constants, public field constants, static utility methods, style class namespace, duplicate wrapper methods, reviewed public batch constructors, and internal type exposure are covered by project contract tests.
+
+The release visual matrix renders all component pages in baseline light, expressive light, baseline dark, expressive dark, baseline RTL, expressive dark RTL, and reduced-motion modes. It captures reviewable screenshots while checking theme context, CSS warnings, sidebar navigation, documentation links, component geometry, and page-specific visual states.
 
 ## Requirements
 
@@ -132,7 +134,7 @@ Common local gates:
 ./gradlew jlinkDemoAllPlatformArchitectureRuntimes
 ```
 
-`check` covers compilation, tests, Maven publication metadata, publication artifact layout, and build-local publication consumption. `releaseCheck` adds demo tests, demo shadow jar verification, and the default host-platform demo jlink runtime image. The all-platform jlink aggregate validates Windows, Linux, and macOS runtime images on x64 and AArch64 targets.
+`check` covers compilation, tests, Maven publication metadata, main, sources, and Javadoc artifact structure, and build-local publication consumption. `releaseCheck` adds demo tests, demo shadow jar verification, and the default host-platform demo jlink runtime image. The all-platform jlink aggregate validates Windows, Linux, and macOS runtime images on x64 and AArch64 targets.
 
 ## Packaging Notes
 

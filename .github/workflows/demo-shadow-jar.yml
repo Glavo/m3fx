@@ -24,16 +24,18 @@ jobs:
           java-version: "21"
 
       - name: Run release check
-        run: xvfb-run -a ./gradlew -g .gradle-user-home releaseCheck --no-daemon
+        env:
+          GRADLE_USER_HOME: .gradle-user-home
+        run: xvfb-run -a ./gradlew releaseCheck --no-daemon
 
-      - name: Upload visual snapshots
+      - name: Upload visual reports
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: m3fx-visual-snapshots
+          name: m3fx-visual-reports
           path: |
-            build/reports/**/*.png
-            demo/build/reports/**/*.png
+            build/reports/m3fx-visual/
+            demo/build/reports/m3fx-demo-visual/
           if-no-files-found: ignore
           archive: false
 

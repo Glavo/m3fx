@@ -699,6 +699,11 @@ public class M3Slider extends Control {
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
+        if (isDisabled()) {
+            super.executeAccessibleAction(action, parameters);
+            return;
+        }
+
         switch (action) {
             case REQUEST_FOCUS -> M3Accessible.showDirectItem(this, this);
             case INCREMENT -> increment();

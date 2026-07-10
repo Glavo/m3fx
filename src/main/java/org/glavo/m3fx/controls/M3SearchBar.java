@@ -320,6 +320,11 @@ public class M3SearchBar extends Control {
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
+        if (isDisabled()) {
+            super.executeAccessibleAction(action, parameters);
+            return;
+        }
+
         switch (action) {
             case FIRE -> fire();
             case REQUEST_FOCUS -> focusAccessibleItem(accessibleFocusNode());

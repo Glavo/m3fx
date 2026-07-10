@@ -7,7 +7,6 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.StringProperty;
-import javafx.beans.value.ChangeListener;
 import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
@@ -17,7 +16,6 @@ import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
-import javafx.geometry.NodeOrientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -61,14 +59,14 @@ public class M3SplitButton extends Control {
     /// The style class applied to the menu button.
     public static final String MENU_BUTTON_STYLE_CLASS = "m3-split-button-menu";
 
-    /// The pseudo-class applied to the child button rendered on the physical left edge.
+    /// The pseudo-class applied to the local left edge before JavaFX node-orientation mirroring.
     private static final PseudoClass LEFT_EDGE_PSEUDO_CLASS = PseudoClass.getPseudoClass("left-edge");
 
-    /// The pseudo-class applied to the child button rendered on the physical right edge.
+    /// The pseudo-class applied to the local right edge before JavaFX node-orientation mirroring.
     private static final PseudoClass RIGHT_EDGE_PSEUDO_CLASS = PseudoClass.getPseudoClass("right-edge");
 
     /// The default Material Expressive split button size.
-    private static final M3SplitButtonSize DEFAULT_SIZE = M3SplitButtonSize.SMALL;
+    private static final M3ButtonSize DEFAULT_SIZE = M3ButtonSize.SMALL;
 
     /// The default spacing between the action and menu parts.
     private static final double DEFAULT_SPACING = -1.0;
@@ -93,10 +91,6 @@ public class M3SplitButton extends Control {
     private final M3AccessibleFocusNotifier popupFocusNotifier =
             new M3AccessibleFocusNotifier(this, menuButton.getMenu(), this::focusNode);
 
-    /// Updates physical edge style classes when the effective layout direction changes.
-    private final ChangeListener<NodeOrientation> effectiveNodeOrientationListener =
-            (observable, oldValue, newValue) -> updateNodeOrientationStyle();
-
     // Backing property for the public shared button variant API.
     private final ObjectProperty<M3ButtonVariant> variant =
             new SimpleObjectProperty<>(this, "variant", M3ButtonVariant.TONAL) {
@@ -112,7 +106,7 @@ public class M3SplitButton extends Control {
             };
 
     // The Material Expressive split button size property.
-    private final ObjectProperty<M3SplitButtonSize> size =
+    private final ObjectProperty<M3ButtonSize> size =
             new SimpleObjectProperty<>(this, "size", DEFAULT_SIZE) {
                 /// Updates size style classes when the property changes.
                 @Override
@@ -234,21 +228,21 @@ public class M3SplitButton extends Control {
     /// Returns the Material Expressive split button size.
     ///
     /// @return the Material Expressive split button size
-    public final M3SplitButtonSize getSize() {
+    public final M3ButtonSize getSize() {
         return size.get();
     }
 
     /// Sets the Material Expressive split button size.
     ///
     /// @param size the Material Expressive split button size
-    public final void setSize(M3SplitButtonSize size) {
+    public final void setSize(M3ButtonSize size) {
         this.size.set(Objects.requireNonNull(size, "size"));
     }
 
     /// Returns the Material Expressive split button size property.
     ///
     /// @return the Material Expressive split button size property
-    public final ObjectProperty<M3SplitButtonSize> sizeProperty() {
+    public final ObjectProperty<M3ButtonSize> sizeProperty() {
         return size;
     }
 
@@ -371,6 +365,11 @@ public class M3SplitButton extends Control {
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
+        if (isDisabled()) {
+            super.executeAccessibleAction(action, parameters);
+            return;
+        }
+
         switch (action) {
             case FIRE -> fire();
             case SHOW_MENU, EXPAND -> showMenu();
@@ -407,12 +406,11 @@ public class M3SplitButton extends Control {
         });
         menuButton.addPopupFocusNodeListener(this::notifyFocusNodeChanged);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
-        effectiveNodeOrientationProperty().addListener(effectiveNodeOrientationListener);
         focusNotifier.start();
         popupFocusNotifier.start();
         updateVariant();
         updateSizeStyle();
-        updateNodeOrientationStyle();
+        updatePartEdgeStyles();
     }
 
     /// Returns the current split button focus node, including popup menu focus while the menu is showing.
@@ -525,17 +523,27 @@ public class M3SplitButton extends Control {
     private void updateSizeStyle() {
         M3ControlStyles.replaceVariant(
                 this,
-                getSize().styleClass(),
-                M3SplitButtonSize.EXTRA_SMALL.styleClass(),
-                M3SplitButtonSize.SMALL.styleClass(),
-                M3SplitButtonSize.MEDIUM.styleClass(),
-                M3SplitButtonSize.LARGE.styleClass(),
-                M3SplitButtonSize.EXTRA_LARGE.styleClass()
+                sizeStyleClass(getSize()),
+                sizeStyleClass(M3ButtonSize.EXTRA_SMALL),
+                sizeStyleClass(M3ButtonSize.SMALL),
+                sizeStyleClass(M3ButtonSize.MEDIUM),
+                sizeStyleClass(M3ButtonSize.LARGE),
+                sizeStyleClass(M3ButtonSize.EXTRA_LARGE)
         );
+        actionButton.setSize(getSize());
+        menuButton.setSize(getSize());
     }
 
-    /// Updates layout-direction-dependent edge states and child feedback geometry.
-    private void updateNodeOrientationStyle() {
+    /// Returns the split-button style class for one Material button size.
+    ///
+    /// @param size the Material button size
+    /// @return the split-button size style class
+    private static String sizeStyleClass(M3ButtonSize size) {
+        return "m3-split-button-" + size.cssSuffix();
+    }
+
+    /// Applies local edge roles that JavaFX mirrors with the effective node orientation.
+    private void updatePartEdgeStyles() {
         applyEdgeState(actionButton, true);
         applyEdgeState(menuButton, false);
         actionButton.requestLayout();
@@ -543,7 +551,7 @@ public class M3SplitButton extends Control {
         requestLayout();
     }
 
-    /// Applies physical edge pseudo-classes and shape to a child button.
+    /// Applies local edge pseudo-classes to a child button before orientation mirroring.
     private static void applyEdgeState(M3Button button, boolean leftEdge) {
         button.pseudoClassStateChanged(LEFT_EDGE_PSEUDO_CLASS, leftEdge);
         button.pseudoClassStateChanged(RIGHT_EDGE_PSEUDO_CLASS, !leftEdge);

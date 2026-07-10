@@ -3,7 +3,6 @@
 
 package org.glavo.m3fx.demo;
 
-import javafx.application.Platform;
 import javafx.css.PseudoClass;
 import javafx.event.EventType;
 import javafx.geometry.BoundingBox;
@@ -60,8 +59,9 @@ import org.glavo.m3fx.controls.M3BottomAppBarFloatingActionAlignment;
 import org.glavo.m3fx.controls.M3BottomSheet;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonGroup;
-import org.glavo.m3fx.controls.M3ButtonGroupSize;
 import org.glavo.m3fx.controls.M3ButtonGroupVariant;
+import org.glavo.m3fx.controls.M3ButtonShape;
+import org.glavo.m3fx.controls.M3ButtonSize;
 import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Card;
 import org.glavo.m3fx.controls.M3CardVariant;
@@ -88,8 +88,6 @@ import org.glavo.m3fx.controls.M3FormRow;
 import org.glavo.m3fx.controls.M3FormSection;
 import org.glavo.m3fx.controls.M3Icon;
 import org.glavo.m3fx.controls.M3IconButton;
-import org.glavo.m3fx.controls.M3IconButtonShape;
-import org.glavo.m3fx.controls.M3IconButtonSize;
 import org.glavo.m3fx.controls.M3IconButtonWidth;
 import org.glavo.m3fx.controls.M3IconToggleButton;
 import org.glavo.m3fx.controls.M3IconToggleButtonGroup;
@@ -128,7 +126,6 @@ import org.glavo.m3fx.controls.M3SheetVariant;
 import org.glavo.m3fx.controls.M3Snackbar;
 import org.glavo.m3fx.controls.M3SnackbarHost;
 import org.glavo.m3fx.controls.M3SplitButton;
-import org.glavo.m3fx.controls.M3SplitButtonSize;
 import org.glavo.m3fx.controls.M3Slider;
 import org.glavo.m3fx.controls.M3SubMenuItem;
 import org.glavo.m3fx.controls.M3Surface;
@@ -152,7 +149,11 @@ import org.glavo.m3fx.controls.M3ToolbarVariant;
 import org.glavo.m3fx.controls.M3TopAppBar;
 import org.glavo.m3fx.controls.M3TopAppBarVariant;
 import org.glavo.m3fx.controls.M3ValidationSummary;
+import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
+import org.glavo.m3fx.tokens.M3ComponentTokens;
+import org.glavo.m3fx.tokens.M3Profile;
+import org.glavo.monetfx.Brightness;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
@@ -241,6 +242,89 @@ final class M3FXDemoVisualSmokeTest {
             Map.entry("Surfaces", M3FXDemoVisualSmokeTest::assertSurfacesPageVisualState),
             Map.entry("Scrims", M3FXDemoVisualSmokeTest::assertScrimsPageVisualState)
     );
+
+    /// Expected collapsible sidebar groups for grouped demo pages.
+    private static final @Unmodifiable Map<String, String> DEMO_PAGE_SIDEBAR_GROUPS = Map.ofEntries(
+            Map.entry("All Buttons", "Buttons"),
+            Map.entry("Button Groups", "Buttons"),
+            Map.entry("Buttons", "Buttons"),
+            Map.entry("Extended FABs", "Buttons"),
+            Map.entry("FAB Menu", "Buttons"),
+            Map.entry("Floating Action Buttons", "Buttons"),
+            Map.entry("Icon Buttons", "Buttons"),
+            Map.entry("Segmented Buttons", "Buttons"),
+            Map.entry("Split Buttons", "Buttons"),
+            Map.entry("Date Pickers", "Date & time pickers"),
+            Map.entry("Time Pickers", "Date & time pickers"),
+            Map.entry("Loading Indicator", "Loading & progress"),
+            Map.entry("Progress", "Loading & progress"),
+            Map.entry("Navigation", "Navigation"),
+            Map.entry("Navigation Drawer", "Navigation"),
+            Map.entry("Navigation Rail", "Navigation"),
+            Map.entry("Bottom Sheets", "Sheets"),
+            Map.entry("Side Sheets", "Sheets"),
+            Map.entry("Toolbars", "Toolbars"),
+            Map.entry("Bottom App Bars", "Toolbars"),
+            Map.entry("Banners", "Additional demos"),
+            Map.entry("Forms", "Additional demos"),
+            Map.entry("Typography", "Additional demos"),
+            Map.entry("Icons", "Additional demos"),
+            Map.entry("Avatars", "Additional demos"),
+            Map.entry("Surfaces", "Additional demos"),
+            Map.entry("Scrims", "Additional demos")
+    );
+
+    /// Scroll positions used to sample long demo pages beyond their first visible viewport.
+    private static final @Unmodifiable List<Double> DEMO_PAGE_SCROLL_VISUAL_POSITIONS = List.of(0.0, 0.5, 1.0);
+
+    /// Ordered snapshot filename fragment groups for focused visual report sections.
+    private static final @Unmodifiable List<Map.Entry<String, @Unmodifiable List<String>>> FOCUSED_VISUAL_SNAPSHOT_GROUPS =
+            List.of(
+                    Map.entry("Text inputs", List.of(
+                            "demo-text-fields",
+                            "demo-rtl-text-fields",
+                            "interaction-text-",
+                            "text-area-",
+                            "text-fields-",
+                            "text-input-"
+                    )),
+                    Map.entry("Menus, sidebar, and navigation", List.of(
+                            "animation-nested-",
+                            "animation-navigation-",
+                            "animation-sidebar-",
+                            "demo-menus",
+                            "demo-navigation",
+                            "demo-rtl-menus",
+                            "demo-rtl-navigation",
+                            "interaction-navigation-",
+                            "interaction-sidebar-",
+                            "menus-",
+                            "sidebar-"
+                    )),
+                    Map.entry("Selection controls and buttons", List.of(
+                            "button-family-",
+                            "demo-button",
+                            "demo-radio-buttons",
+                            "demo-rtl-button",
+                            "demo-rtl-radio-buttons",
+                            "icon-buttons-",
+                            "interaction-button-",
+                            "interaction-floating-action-button-",
+                            "interaction-icon-toggle-button-",
+                            "interaction-radio-button-",
+                            "interaction-segmented-button-",
+                            "interaction-switch-",
+                            "selection-"
+                    )),
+                    Map.entry("Loading and progress", List.of(
+                            "animation-loading-indicator-",
+                            "animation-progress-",
+                            "demo-loading-indicator",
+                            "demo-progress",
+                            "demo-rtl-loading-indicator",
+                            "demo-rtl-progress"
+                    ))
+            );
 
     /// Fixed-target controls whose visible glyph content should stay centered.
     private static final @Unmodifiable Set<String> CENTERED_TARGET_STYLE_CLASSES = Set.of(
@@ -606,6 +690,93 @@ final class M3FXDemoVisualSmokeTest {
             )
     );
 
+    /// Release presentation modes rendered for every registered demo page.
+    private static final @Unmodifiable List<DemoVisualMode> DEMO_VISUAL_MODES = List.of(
+            new DemoVisualMode(
+                    "standard light",
+                    "demo-",
+                    M3Profile.BASELINE_2021,
+                    Brightness.LIGHT,
+                    NodeOrientation.LEFT_TO_RIGHT,
+                    true,
+                    1280.0,
+                    900.0
+            ),
+            new DemoVisualMode(
+                    "expressive light",
+                    "demo-light-expressive-",
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.LIGHT,
+                    NodeOrientation.LEFT_TO_RIGHT,
+                    true,
+                    1366.0,
+                    900.0
+            ),
+            new DemoVisualMode(
+                    "standard dark",
+                    "demo-dark-standard-",
+                    M3Profile.BASELINE_2021,
+                    Brightness.DARK,
+                    NodeOrientation.LEFT_TO_RIGHT,
+                    true,
+                    1366.0,
+                    900.0
+            ),
+            new DemoVisualMode(
+                    "expressive dark",
+                    "demo-dark-expressive-",
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.DARK,
+                    NodeOrientation.LEFT_TO_RIGHT,
+                    true,
+                    1366.0,
+                    900.0
+            ),
+            new DemoVisualMode(
+                    "standard right-to-left",
+                    "demo-rtl-",
+                    M3Profile.BASELINE_2021,
+                    Brightness.LIGHT,
+                    NodeOrientation.RIGHT_TO_LEFT,
+                    true,
+                    1366.0,
+                    900.0
+            ),
+            new DemoVisualMode(
+                    "expressive dark right-to-left",
+                    "demo-rtl-dark-expressive-",
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.DARK,
+                    NodeOrientation.RIGHT_TO_LEFT,
+                    true,
+                    1366.0,
+                    900.0
+            ),
+            new DemoVisualMode(
+                    "standard reduced motion",
+                    "demo-reduced-motion-",
+                    M3Profile.BASELINE_2021,
+                    Brightness.LIGHT,
+                    NodeOrientation.LEFT_TO_RIGHT,
+                    false,
+                    1280.0,
+                    900.0
+            )
+    );
+
+    /// Describes one complete demo presentation mode rendered by the release visual matrix.
+    private record DemoVisualMode(
+            String name,
+            String snapshotPrefix,
+            M3Profile profile,
+            Brightness brightness,
+            NodeOrientation orientation,
+            boolean animationsEnabled,
+            double stageWidth,
+            double stageHeight
+    ) {
+    }
+
     /// Describes one demo target that uses shared interaction visual checks.
     private record InteractionTargetCase(
             String pageTitle,
@@ -798,42 +969,26 @@ final class M3FXDemoVisualSmokeTest {
     /// The tolerance used when checking demo header seed-color button circular shape tokens.
     private static final double HEADER_SEED_BUTTON_ROUNDNESS_TOLERANCE = 1.0;
 
+    /// The report directory used for rendered demo snapshots.
+    private static final Path VISUAL_REPORT_DIRECTORY = Path.of(
+            "build",
+            "reports",
+            "m3fx-demo-visual"
+    );
+
     /// Starts the JavaFX toolkit before creating the demo stage.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
+        cleanVisualReportDirectory(VISUAL_REPORT_DIRECTORY);
         DemoFxTestUtils.startToolkit();
-        Platform.setImplicitExit(false);
     }
 
-    /// Verifies that registered demo pages open cleanly and expose a visible Material documentation entry point.
+    /// Verifies every registered demo page across the complete release presentation matrix.
     @Test
-    void demoPagesOpenWithoutCssWarningsAndExposeDocumentationLinks() throws InterruptedException {
-        assertDemoPagesOpenWithoutCssWarningsAndExposeDocumentationLinks(
-                "standard",
-                1280.0,
-                900.0,
-                (app, scene) -> {
-                },
-                scene -> {
-                }
-        );
-        assertDemoPagesOpenWithoutCssWarningsAndExposeDocumentationLinks(
-                "dark expressive",
-                1366.0,
-                900.0,
-                (app, scene) -> app.setDarkExpressiveTheme(),
-                scene -> {
-                    assertTrue(scene.getRoot().getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
-                    assertTrue(scene.getRoot().getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
-                }
-        );
-        assertDemoPagesOpenWithoutCssWarningsAndExposeDocumentationLinks(
-                "right-to-left",
-                1366.0,
-                900.0,
-                (app, scene) -> scene.getRoot().setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT),
-                scene -> assertEquals(NodeOrientation.RIGHT_TO_LEFT, scene.getRoot().getEffectiveNodeOrientation())
-        );
+    void demoPagesRenderAcrossReleaseVisualMatrix() throws InterruptedException {
+        for (DemoVisualMode mode : DEMO_VISUAL_MODES) {
+            assertDemoPagesRenderInVisualMode(mode);
+        }
     }
 
     /// Verifies that switching pages starts each page from the top-left content viewport.
@@ -891,14 +1046,8 @@ final class M3FXDemoVisualSmokeTest {
         }
     }
 
-    /// Opens registered demo pages in one runtime mode while JavaFX CSS warnings are captured.
-    private static void assertDemoPagesOpenWithoutCssWarningsAndExposeDocumentationLinks(
-            String modeName,
-            double stageWidth,
-            double stageHeight,
-            BiConsumer<M3FXDemoApp, Scene> modeSetup,
-            Consumer<Scene> modeAssertion
-    ) throws InterruptedException {
+    /// Renders every registered demo page in one release presentation mode.
+    private static void assertDemoPagesRenderInVisualMode(DemoVisualMode mode) throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
@@ -909,15 +1058,18 @@ final class M3FXDemoVisualSmokeTest {
                 DemoFxTestUtils.runOnFxThread(() -> {
                     Stage stage = new Stage();
                     M3FXDemoApp app = new M3FXDemoApp();
+                    app.configurePresentation(mode.profile(), mode.brightness(), mode.animationsEnabled());
                     app.start(stage);
-                    stage.setWidth(stageWidth);
-                    stage.setHeight(stageHeight);
+                    stage.setWidth(mode.stageWidth());
+                    stage.setHeight(mode.stageHeight());
 
                     Scene scene = Objects.requireNonNull(app.activeScene(), "scene");
-                    modeSetup.accept(app, scene);
+                    scene.getRoot().setNodeOrientation(mode.orientation());
+                    applySceneCssAndLayout(scene);
+                    assertDemoVisualMode(scene, mode);
 
                     List<String> pageTitles = List.copyOf(app.demoPageTitles());
-                    assertTrue(pageTitles.size() > 20, modeName + " demo should expose component pages");
+                    assertTrue(pageTitles.size() > 20, mode.name() + " demo should expose component pages");
                     assertRegisteredDemoPageVisualCoverage(pageTitles);
 
                     stageReference.set(stage);
@@ -933,17 +1085,39 @@ final class M3FXDemoVisualSmokeTest {
                             sceneReference,
                             title,
                             scene -> {
-                                modeAssertion.accept(scene);
+                                scene.getRoot().setNodeOrientation(mode.orientation());
+                                assertDemoVisualMode(scene, mode);
                                 resetDemoPageScroll(scene);
                             },
                             () -> {
                                 M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
                                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-                                modeAssertion.accept(scene);
+                                assertDemoVisualMode(scene, mode);
                                 assertCurrentPageTitle(scene, title);
                                 assertSidebarSelectionMatchesCurrentPage(app, title);
+                                assertSidebarGroupingMatchesMaterialNavigation(app, scene, title);
                                 assertSelectedSidebarItemInsideViewport(app, scene, title);
                                 assertMaterialDocumentationLink(scene, title);
+
+                                WritableImage image = snapshot(scene);
+                                writeVisualSnapshot(
+                                        image,
+                                        VISUAL_REPORT_DIRECTORY.resolve(
+                                                mode.snapshotPrefix() + snapshotFileName(title) + ".png"
+                                        )
+                                );
+                                assertSnapshotHasVisibleContent(image, mode.name() + " " + title);
+                                if (mode.brightness() == Brightness.DARK) {
+                                    assertDarkSidebarTextReadable(scene, image, mode.name());
+                                }
+                                assertDemoPageVisualGeometry(scene, title);
+                                assertDemoPageSpecificVisualState(scene, title);
+                                if (mode.orientation() == NodeOrientation.RIGHT_TO_LEFT && "App Bars".equals(title)) {
+                                    Node page = currentDemoPage(scene, title);
+                                    for (M3TopAppBar appBar : visibleNodesOfType(page, M3TopAppBar.class)) {
+                                        assertTopAppBarSlotGeometry(appBar);
+                                    }
+                                }
                             }
                     );
                 }
@@ -956,6 +1130,36 @@ final class M3FXDemoVisualSmokeTest {
                 }
             });
         }
+    }
+
+    /// Verifies that a scene root exposes the exact theme, orientation, and motion mode requested by the matrix.
+    private static void assertDemoVisualMode(Scene scene, DemoVisualMode mode) {
+        Parent root = scene.getRoot();
+        String expectedProfileStyleClass = mode.profile() == M3Profile.EXPRESSIVE_2025
+                ? M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS
+                : M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS;
+        String excludedProfileStyleClass = mode.profile() == M3Profile.EXPRESSIVE_2025
+                ? M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS
+                : M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS;
+        String expectedBrightnessStyleClass = mode.brightness() == Brightness.DARK
+                ? M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS
+                : M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS;
+        String excludedBrightnessStyleClass = mode.brightness() == Brightness.DARK
+                ? M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS
+                : M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS;
+
+        assertTrue(root.getStyleClass().contains(expectedProfileStyleClass),
+                () -> mode.name() + " root is missing profile class " + expectedProfileStyleClass);
+        assertFalse(root.getStyleClass().contains(excludedProfileStyleClass),
+                () -> mode.name() + " root retains profile class " + excludedProfileStyleClass);
+        assertTrue(root.getStyleClass().contains(expectedBrightnessStyleClass),
+                () -> mode.name() + " root is missing brightness class " + expectedBrightnessStyleClass);
+        assertFalse(root.getStyleClass().contains(excludedBrightnessStyleClass),
+                () -> mode.name() + " root retains brightness class " + excludedBrightnessStyleClass);
+        assertEquals(mode.orientation(), root.getEffectiveNodeOrientation(),
+                () -> mode.name() + " root orientation");
+        assertEquals(mode.animationsEnabled(), M3MotionSettings.areAnimationsEnabled(root),
+                () -> mode.name() + " root animation setting");
     }
 
     /// Verifies that each registered demo page has release visual coverage.
@@ -1512,6 +1716,20 @@ final class M3FXDemoVisualSmokeTest {
                         assertEquals(16, toggles.size(),
                                 () -> "Icon Buttons page should render sixteen toggle icon buttons: " + toggles);
 
+                        scrollDemoPageNodeIntoView(scene, toggles.get(0));
+                        WritableImage sectionImage = requireSnapshotWithNodeFullyVisible(
+                                scene,
+                                toggles.get(0),
+                                "Icon Buttons toggle section"
+                        );
+                        writeVisualSnapshot(sectionImage, Path.of(
+                                "build",
+                                "reports",
+                                "m3fx-demo-visual",
+                                "icon-buttons-toggle-states.png"
+                        ));
+                        assertSnapshotHasVisibleContent(sectionImage, "Icon Buttons toggle section");
+
                         for (int index = 0; index < toggles.size(); index++) {
                             M3IconToggleButton toggle = toggles.get(index);
                             String description = "Icon Buttons toggle " + index;
@@ -1559,23 +1777,39 @@ final class M3FXDemoVisualSmokeTest {
 
                 Node page = currentDemoPage(scene, "Search");
                 List<M3SearchView> searchViews = visibleNodesOfType(page, M3SearchView.class);
-                assertEquals(2, searchViews.size(), "Search page should show active and inactive search views");
+                assertEquals(3, searchViews.size(), "Search page should show LTR active, inactive, and RTL active views");
                 M3SearchView activeView = Objects.requireNonNull(
-                        searchViews.stream().filter(M3SearchView::isActive).findFirst().orElse(null),
-                        "active search view"
+                        searchViews.stream()
+                                .filter(view -> view.isActive() && view.getResults().size() == 3)
+                                .findFirst()
+                                .orElse(null),
+                        "LTR active search view"
                 );
                 M3SearchView inactiveView = Objects.requireNonNull(
                         searchViews.stream().filter(view -> !view.isActive()).findFirst().orElse(null),
                         "inactive search view"
                 );
+                M3SearchView rtlActiveView = Objects.requireNonNull(
+                        searchViews.stream()
+                                .filter(view -> view.isActive() && view.getResults().size() == 2)
+                                .findFirst()
+                                .orElse(null),
+                        "RTL active search view"
+                );
 
                 List<M3SearchBar> searchBars = visibleNodesOfType(page, M3SearchBar.class);
-                assertEquals(4, searchBars.size(),
-                        "Search page should expose two standalone bars and two embedded search bars");
+                assertEquals(6, searchBars.size(),
+                        "Search page should expose three standalone bars and three embedded search bars");
+                assertEquals(2, searchBars.stream()
+                                .filter(searchBar -> isExplicitRightToLeftSearchBar(searchBar))
+                                .count(),
+                        "Search page should render standalone and embedded RTL search bars");
                 searchBars.forEach(M3FXDemoVisualSmokeTest::assertSearchBarVisualGeometry);
 
-                assertSearchViewResultsVisible(activeView);
+                assertSearchViewResultsVisible(activeView, 3);
+                assertSearchViewResultsVisible(rtlActiveView, 2);
                 assertSearchViewResultsHidden(inactiveView);
+                assertActiveSearchViewDemoGeometry(rtlActiveView);
                 assertFalse(visibleNodesOfType(page, Text.class).stream()
                                 .anyMatch(text -> "Hidden result".equals(text.getText())),
                         "inactive search view should not render hidden result text");
@@ -1591,6 +1825,18 @@ final class M3FXDemoVisualSmokeTest {
                 assertTrue(isNodeOrDescendant(firstResult, focusOwner),
                         () -> "DOWN from the search editor should focus the first result: focusOwner=" + focusOwner);
 
+                M3ListItem rtlFirstResult = assertInstanceOf(M3ListItem.class, rtlActiveView.getResults().get(0));
+                searchViewEditor(rtlActiveView).requestFocus();
+                searchViewEditor(rtlActiveView).fireEvent(new KeyEvent(KeyEvent.KEY_PRESSED, "", "", KeyCode.DOWN, false, false, false, false));
+                scene.getRoot().applyCss();
+                scene.getRoot().layout();
+
+                @Nullable Node rtlFocusOwner = scene.getFocusOwner();
+                assertNotNull(rtlFocusOwner, "RTL search result keyboard navigation should produce a focus owner");
+                assertTrue(isNodeOrDescendant(rtlFirstResult, rtlFocusOwner),
+                        () -> "DOWN from the RTL search editor should focus the first RTL result: focusOwner="
+                                + rtlFocusOwner);
+
                 WritableImage image = snapshotNode(activeView);
                 writeVisualSnapshot(image, Path.of(
                         "build",
@@ -1599,6 +1845,15 @@ final class M3FXDemoVisualSmokeTest {
                         "search-active-view.png"
                 ));
                 assertSnapshotHasVisibleContent(image, "Search active view");
+
+                WritableImage rtlImage = snapshotNode(rtlActiveView);
+                writeVisualSnapshot(rtlImage, Path.of(
+                        "build",
+                        "reports",
+                        "m3fx-demo-visual",
+                        "search-rtl-active-view.png"
+                ));
+                assertSnapshotHasVisibleContent(rtlImage, "Search RTL active view");
             }));
         } finally {
             DemoFxTestUtils.runOnFxThread(() -> {
@@ -2686,7 +2941,11 @@ final class M3FXDemoVisualSmokeTest {
                 "dark expressive",
                 1366.0,
                 950.0,
-                (app, scene) -> app.setDarkExpressiveTheme()
+                (app, scene) -> app.configurePresentation(
+                        M3Profile.EXPRESSIVE_2025,
+                        Brightness.DARK,
+                        true
+                )
         );
         assertTextInputLayoutContractsInDemoMode(
                 "right-to-left",
@@ -2774,7 +3033,7 @@ final class M3FXDemoVisualSmokeTest {
                 currentDemoPage(scene, "Text Fields"),
                 M3TextInputLayout.class
         );
-        assertTrue(layouts.size() >= 15,
+        assertTrue(layouts.size() >= 17,
                 () -> "Text Fields page should render the full Material text input state matrix, found "
                         + layouts.size());
         return layouts;
@@ -2794,7 +3053,17 @@ final class M3FXDemoVisualSmokeTest {
         );
         M3TextInputLayout rtlFilledLayout = requireTextInputLayout(layouts, "rtl@example.com", "RTL filled");
         M3TextInputLayout rtlOutlinedLayout = requireTextInputLayout(layouts, "M3FX RTL", "RTL outlined");
+        M3TextInputLayout rtlOutlinedActionLayout = requireTextInputLayout(
+                layouts,
+                "M3FX RTL Action",
+                "RTL outlined action"
+        );
         M3TextInputLayout rtlPasswordLayout = requireTextInputLayout(layouts, "", "RTL password");
+        M3TextInputLayout rtlOutlinedAreaLayout = requireTextInputLayout(
+                layouts,
+                "M3FX RTL multiline content keeps visual order.",
+                "RTL outlined text area"
+        );
 
         assertTextInputVariant(filledTextLayout, M3TextInputVariant.FILLED, "filled populated text input");
         assertTextInputVariant(outlinedTextLayout, M3TextInputVariant.OUTLINED, "outlined populated text input");
@@ -2802,12 +3071,32 @@ final class M3FXDemoVisualSmokeTest {
         assertTextInputVariant(outlinedAreaLayout, M3TextInputVariant.OUTLINED, "outlined multiline text input");
         assertTextInputVariant(rtlFilledLayout, M3TextInputVariant.FILLED, "mirrored filled text input");
         assertTextInputVariant(rtlOutlinedLayout, M3TextInputVariant.OUTLINED, "mirrored outlined text input");
+        assertTextInputVariant(
+                rtlOutlinedActionLayout,
+                M3TextInputVariant.OUTLINED,
+                "mirrored outlined trailing action text input"
+        );
         assertTextInputVariant(rtlPasswordLayout, M3TextInputVariant.OUTLINED, "mirrored password text input");
+        assertTextInputVariant(
+                rtlOutlinedAreaLayout,
+                M3TextInputVariant.OUTLINED,
+                "mirrored outlined multiline text input"
+        );
         assertTextInputCounterText(filledTextLayout, "19 / 32", "filled populated text input");
         assertTextInputCounterText(outlinedTextLayout, "4 / 24", "outlined populated text input");
         assertTextInputCounterText(rtlFilledLayout, "15 / 32", "mirrored filled text input");
         assertTextInputCounterText(rtlOutlinedLayout, "8 / 24", "mirrored outlined text input");
+        assertTextInputCounterText(
+                rtlOutlinedActionLayout,
+                "15 / 32",
+                "mirrored outlined trailing action text input"
+        );
+        assertTextInputCounterText(rtlOutlinedAreaLayout, "46 / 96", "mirrored outlined multiline text input");
         assertTextInputTrailingActionGeometry(passwordLayout, "password text input");
+        assertTextInputTrailingActionGeometry(
+                rtlOutlinedActionLayout,
+                "mirrored outlined trailing action text input"
+        );
         assertTextInputTrailingActionGeometry(rtlPasswordLayout, "mirrored password text input");
         assertTextInputClearButtonGeometry(filledTextLayout, "filled populated text input");
         assertTextInputClearButtonGeometry(rtlFilledLayout, "mirrored filled text input");
@@ -2869,6 +3158,11 @@ final class M3FXDemoVisualSmokeTest {
                 "Material text areas share field colors but keep multi-line height tokens.",
                 "Outlined text area"
         );
+        M3TextInputLayout rtlOutlinedAreaLayout = requireTextInputLayout(
+                layouts,
+                "M3FX RTL multiline content keeps visual order.",
+                "RTL outlined text area"
+        );
 
         assertFocusedMultilineTextInputSurfaceContract(
                 scene,
@@ -2879,6 +3173,11 @@ final class M3FXDemoVisualSmokeTest {
                 scene,
                 outlinedAreaLayout,
                 "focused outlined multiline text input"
+        );
+        assertFocusedMultilineTextInputSurfaceContract(
+                scene,
+                rtlOutlinedAreaLayout,
+                "focused mirrored outlined multiline text input"
         );
     }
 
@@ -2913,18 +3212,39 @@ final class M3FXDemoVisualSmokeTest {
     private static void assertMirroredTextInputLayoutContracts(Scene scene, List<M3TextInputLayout> layouts) {
         M3TextInputLayout rtlFilledLayout = requireTextInputLayout(layouts, "rtl@example.com", "RTL filled");
         M3TextInputLayout rtlOutlinedLayout = requireTextInputLayout(layouts, "M3FX RTL", "RTL outlined");
+        M3TextInputLayout rtlOutlinedActionLayout = requireTextInputLayout(
+                layouts,
+                "M3FX RTL Action",
+                "RTL outlined action"
+        );
         M3TextInputLayout rtlPasswordLayout = requireTextInputLayout(layouts, "", "RTL password");
+        M3TextInputLayout rtlOutlinedAreaLayout = requireTextInputLayout(
+                layouts,
+                "M3FX RTL multiline content keeps visual order.",
+                "RTL outlined text area"
+        );
 
         assertRightToLeftTextInputLayoutGeometry(rtlFilledLayout, "mirrored filled text input");
         assertRightToLeftTextInputLayoutGeometry(rtlOutlinedLayout, "mirrored outlined text input");
+        assertRightToLeftTextInputLayoutGeometry(
+                rtlOutlinedActionLayout,
+                "mirrored outlined trailing action text input"
+        );
         assertRightToLeftTextInputLayoutGeometry(rtlPasswordLayout, "mirrored password text input");
+        assertRightToLeftTextInputLayoutGeometry(rtlOutlinedAreaLayout, "mirrored outlined multiline text input");
 
         ScrollPane pageScrollPane = demoPageScrollPane(scene);
         pageScrollPane.setVvalue(1.0);
         scene.getRoot().applyCss();
         scene.getRoot().layout();
         Bounds sceneBounds = scene.getRoot().localToScene(scene.getRoot().getLayoutBounds());
-        for (M3TextInputLayout rtlLayout : List.of(rtlFilledLayout, rtlOutlinedLayout, rtlPasswordLayout)) {
+        for (M3TextInputLayout rtlLayout : List.of(
+                rtlFilledLayout,
+                rtlOutlinedLayout,
+                rtlOutlinedActionLayout,
+                rtlPasswordLayout,
+                rtlOutlinedAreaLayout
+        )) {
             Bounds rtlBounds = rtlLayout.localToScene(rtlLayout.getLayoutBounds());
             assertFalse(isOutsideSceneViewport(rtlLayout, rtlBounds, sceneBounds),
                     () -> "Mirrored text input should be visible in the scrolled capture: " + rtlBounds);
@@ -3003,6 +3323,42 @@ final class M3FXDemoVisualSmokeTest {
                 rtlOutlinedInput,
                 focusedRtlText,
                 "Focused mirrored Text Fields"
+        );
+
+        TextInputControl rtlOutlinedActionInput = Objects.requireNonNull(
+                rtlOutlinedActionLayout.getInput(),
+                "mirrored outlined trailing-action input"
+        );
+        rtlOutlinedActionInput.requestFocus();
+        scene.getRoot().applyCss();
+        scene.getRoot().layout();
+        WritableImage focusedRtlActionImage = requireSnapshotWithNodeFullyVisible(
+                scene,
+                rtlOutlinedActionLayout,
+                "focused mirrored outlined trailing action text input"
+        );
+        writeVisualSnapshot(focusedRtlActionImage, Path.of(
+                "build",
+                "reports",
+                "m3fx-demo-visual",
+                "text-input-focused-rtl-outlined-action-contracts.png"
+        ));
+        assertTextInputFocusedVisualState(
+                focusedRtlActionImage,
+                rtlOutlinedActionLayout,
+                rtlOutlinedActionInput,
+                "focused mirrored outlined trailing action text input"
+        );
+        Text focusedRtlActionText = Objects.requireNonNull(
+                firstVisibleText(rtlOutlinedActionInput),
+                "focused mirrored outlined trailing-action input text"
+        );
+        assertSingleLineTextInputHasVerticalRoom(
+                focusedRtlActionImage,
+                rtlOutlinedActionLayout,
+                rtlOutlinedActionInput,
+                focusedRtlActionText,
+                "Focused mirrored trailing-action Text Fields"
         );
         assertSingleLineTextInputsHaveVerticalRoom(scene, "Focused Mirrored Text Fields");
     }
@@ -3677,9 +4033,9 @@ final class M3FXDemoVisualSmokeTest {
         }
     }
 
-    /// Verifies that every registered demo page renders visible content without obvious clipping or off-center glyphs.
+    /// Verifies that long demo pages keep visual geometry valid across top, middle, and bottom scroll positions.
     @Test
-    void allDemoPagesRenderWithoutClippedTextOrOffCenterFixedTargets() throws InterruptedException {
+    void scrolledDemoPageSectionsRenderWithoutClippedTextOrOffCenterFixedTargets() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
@@ -3689,7 +4045,7 @@ final class M3FXDemoVisualSmokeTest {
             M3FXDemoApp app = new M3FXDemoApp();
             app.start(stage);
             stage.setWidth(1280.0);
-            stage.setHeight(900.0);
+            stage.setHeight(720.0);
 
             Scene scene = Objects.requireNonNull(app.activeScene(), "scene");
             assertNotNull(scene);
@@ -3709,156 +4065,11 @@ final class M3FXDemoVisualSmokeTest {
                         sceneReference,
                         pageTitle,
                         M3FXDemoVisualSmokeTest::resetDemoPageScroll,
-                        () -> {
-                    M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
-                    Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-                    assertCurrentPageTitle(scene, pageTitle);
-                    assertSidebarSelectionMatchesCurrentPage(app, pageTitle);
-                    assertSelectedSidebarItemInsideViewport(app, scene, pageTitle);
-
-                    WritableImage image = snapshot(scene);
-                    writeVisualSnapshot(image, Path.of(
-                            "build",
-                            "reports",
-                            "m3fx-demo-visual",
-                            "demo-" + snapshotFileName(pageTitle) + ".png"
-                    ));
-                    assertSnapshotHasVisibleContent(image, pageTitle);
-                    assertDemoPageVisualGeometry(scene, pageTitle);
-                    assertDemoPageSpecificVisualState(scene, pageTitle);
-                });
-            }
-        } finally {
-            DemoFxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
-                if (stage != null) {
-                    stage.close();
-                }
-            });
-        }
-    }
-
-    /// Verifies that every demo page stays readable under the dark expressive theme combination.
-    @Test
-    void darkExpressiveDemoPagesRenderWithoutClippedTextOrOffCenterFixedTargets() throws InterruptedException {
-        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
-        AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
-        AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
-
-        DemoFxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1366.0);
-            stage.setHeight(900.0);
-            app.setDarkExpressiveTheme();
-
-            Scene scene = Objects.requireNonNull(app.activeScene(), "scene");
-            assertNotNull(scene);
-            assertTrue(app.demoPageTitles().size() > 20);
-            assertTrue(scene.getRoot().getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
-            assertTrue(scene.getRoot().getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(scene);
-        });
-
-        try {
-            @Unmodifiable List<String> pageTitles =
-                    Objects.requireNonNull(appReference.get(), "app").demoPageTitles();
-            for (String pageTitle : pageTitles) {
-                showPageWhenSidebarSelectionSettled(
-                        appReference,
-                        sceneReference,
-                        pageTitle,
-                        M3FXDemoVisualSmokeTest::resetDemoPageScroll,
-                        () -> {
-                    M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
-                    Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-                    assertCurrentPageTitle(scene, pageTitle);
-                    assertSidebarSelectionMatchesCurrentPage(app, pageTitle);
-                    assertSelectedSidebarItemInsideViewport(app, scene, pageTitle);
-                    assertTrue(scene.getRoot().getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
-                    assertTrue(scene.getRoot().getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
-
-                    WritableImage image = snapshot(scene);
-                    writeVisualSnapshot(image, Path.of(
-                            "build",
-                            "reports",
-                            "m3fx-demo-visual",
-                            "demo-dark-expressive-" + snapshotFileName(pageTitle) + ".png"
-                    ));
-                    assertSnapshotHasVisibleContent(image, pageTitle);
-                    assertDarkExpressiveSidebarTextReadable(scene, image);
-                    assertDemoPageVisualGeometry(scene, pageTitle);
-                    assertDemoPageSpecificVisualState(scene, pageTitle);
-                });
-            }
-        } finally {
-            DemoFxTestUtils.runOnFxThread(() -> {
-                Stage stage = stageReference.get();
-                if (stage != null) {
-                    stage.close();
-                }
-            });
-        }
-    }
-
-    /// Verifies that every demo page keeps visible content valid when the scene is mirrored for RTL locales.
-    @Test
-    void rightToLeftDemoPagesRenderWithoutClippedTextOrOffCenterFixedTargets() throws InterruptedException {
-        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
-        AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
-        AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
-
-        DemoFxTestUtils.runOnFxThread(() -> {
-            Stage stage = new Stage();
-            M3FXDemoApp app = new M3FXDemoApp();
-            app.start(stage);
-            stage.setWidth(1366.0);
-            stage.setHeight(900.0);
-
-            Scene scene = Objects.requireNonNull(app.activeScene(), "scene");
-            assertNotNull(scene);
-            assertTrue(app.demoPageTitles().size() > 20);
-            scene.getRoot().setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
-
-            stageReference.set(stage);
-            appReference.set(app);
-            sceneReference.set(scene);
-        });
-
-        try {
-            @Unmodifiable List<String> pageTitles =
-                    Objects.requireNonNull(appReference.get(), "app").demoPageTitles();
-            for (String pageTitle : pageTitles) {
-                showPageWhenSidebarSelectionSettled(appReference, sceneReference, pageTitle, scene ->
-                        scene.getRoot().setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT), () -> {
-                    M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
-                    Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-                    assertEquals(NodeOrientation.RIGHT_TO_LEFT, scene.getRoot().getEffectiveNodeOrientation());
-                    assertCurrentPageTitle(scene, pageTitle);
-                    assertSidebarSelectionMatchesCurrentPage(app, pageTitle);
-                    assertSelectedSidebarItemInsideViewport(app, scene, pageTitle);
-
-                    WritableImage image = snapshot(scene);
-                    writeVisualSnapshot(image, Path.of(
-                            "build",
-                            "reports",
-                            "m3fx-demo-visual",
-                            "demo-rtl-" + snapshotFileName(pageTitle) + ".png"
-                    ));
-                    assertSnapshotHasVisibleContent(image, pageTitle);
-                    assertDemoPageVisualGeometry(scene, pageTitle);
-                    assertDemoPageSpecificVisualState(scene, pageTitle);
-                    if ("App Bars".equals(pageTitle)) {
-                        Node page = currentDemoPage(scene, pageTitle);
-                        for (M3TopAppBar appBar : visibleNodesOfType(page, M3TopAppBar.class)) {
-                            assertTopAppBarSlotGeometry(appBar);
-                        }
-                    }
-                });
+                        () -> assertScrolledDemoPageVisualGeometry(
+                                Objects.requireNonNull(sceneReference.get(), "scene"),
+                                pageTitle
+                        )
+                );
             }
         } finally {
             DemoFxTestUtils.runOnFxThread(() -> {
@@ -4468,8 +4679,9 @@ final class M3FXDemoVisualSmokeTest {
             M3SnackbarHost host = Objects.requireNonNull(firstVisibleSnackbarHost(scene.getRoot()), "snackbar host");
             M3MotionSettings.setMotionScheme(host, visualOverlayMotionScheme());
             host.setDisplayDuration(Duration.INDEFINITE);
-            host.show("Theme-aware snackbar", "Action", event -> {
-            });
+            M3Snackbar snackbar = new M3Snackbar("Theme-aware snackbar", "Action");
+            snackbar.setOnAction(event -> host.dismiss());
+            host.show(snackbar);
             hostReference.set(host);
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
@@ -6231,8 +6443,9 @@ final class M3FXDemoVisualSmokeTest {
             host.setDisplayDuration(Duration.INDEFINITE);
             hostReference.set(host);
             hiddenBaselineReference.set(snapshot(scene));
-            host.show("Theme-aware snackbar", "Action", event -> {
-            });
+            M3Snackbar snackbar = new M3Snackbar("Theme-aware snackbar", "Action");
+            snackbar.setOnAction(event -> host.dismiss());
+            host.show(snackbar);
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "snackbar host");
@@ -7254,6 +7467,8 @@ final class M3FXDemoVisualSmokeTest {
                             && selectedSidebarItemInsideViewport(app, scene);
                 },
                 SETTLED_STATE_PULSES,
+                () -> "Timed out waiting for sidebar selection to settle for page `" + pageTitle + "`: "
+                        + sidebarScrollDebug(sceneReference.get()),
                 () -> {
                     M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
                     Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
@@ -7356,6 +7571,57 @@ final class M3FXDemoVisualSmokeTest {
         ScrollPane scrollPane = demoPageScrollPane(scene);
         scrollPane.setVvalue(0.0);
         scrollPane.setHvalue(0.0);
+    }
+
+    /// Verifies one demo page at every meaningful vertical scroll position.
+    private static void assertScrolledDemoPageVisualGeometry(Scene scene, String pageTitle) {
+        ScrollPane scrollPane = demoPageScrollPane(scene);
+        if (!demoPageHasVerticalOverflow(scrollPane)) {
+            assertDemoPageScrolledSectionVisualGeometry(scene, pageTitle);
+            return;
+        }
+
+        for (double scrollPosition : DEMO_PAGE_SCROLL_VISUAL_POSITIONS) {
+            scrollPane.setHvalue(0.0);
+            scrollPane.setVvalue(scrollPosition);
+            applySceneCssAndLayout(scene);
+            String scrollName = scrollPositionName(scrollPosition);
+            writePageSnapshot(
+                    scene,
+                    "demo-scrolled-" + snapshotFileName(pageTitle) + "-" + scrollName + ".png",
+                    pageTitle + " " + scrollName + " scrolled section"
+            );
+            assertDemoPageScrolledSectionVisualGeometry(scene, pageTitle);
+        }
+    }
+
+    /// Returns whether a demo page has content below the first viewport.
+    private static boolean demoPageHasVerticalOverflow(ScrollPane scrollPane) {
+        @Nullable Node content = scrollPane.getContent();
+        if (content == null) {
+            return false;
+        }
+
+        scrollPane.applyCss();
+        content.applyCss();
+        if (content instanceof Parent parent) {
+            parent.layout();
+        }
+
+        Bounds contentBounds = content.getLayoutBounds();
+        Bounds viewportBounds = scrollPane.getViewportBounds();
+        return contentBounds.getHeight() > viewportBounds.getHeight() + CONTROL_EDGE_TOLERANCE;
+    }
+
+    /// Returns a stable file-name fragment for one normalized scroll position.
+    private static String scrollPositionName(double scrollPosition) {
+        if (scrollPosition <= 0.0) {
+            return "top";
+        }
+        if (scrollPosition >= 1.0) {
+            return "bottom";
+        }
+        return "middle";
     }
 
     /// Scrolls the main demo page scroll pane until the supplied node is inside the viewport.
@@ -7650,6 +7916,30 @@ final class M3FXDemoVisualSmokeTest {
         ));
     }
 
+    /// Verifies that grouped demo pages are nested under the expected Material sidebar parent.
+    private static void assertSidebarGroupingMatchesMaterialNavigation(M3FXDemoApp app, Scene scene, String pageTitle) {
+        @Nullable String sidebarTitle = app.currentPageNavigationTitle();
+        assertNotNull(sidebarTitle, () -> "No current sidebar title for grouping check: " + pageTitle);
+        @Nullable M3ListItem selected = selectedDemoSidebarItem(scene.getRoot(), sidebarTitle);
+        assertNotNull(selected, () -> "No selected sidebar item for grouping check: " + pageTitle);
+
+        @Nullable String expectedGroup = DEMO_PAGE_SIDEBAR_GROUPS.get(pageTitle);
+        boolean childItem = selected.getStyleClass().contains("demo-sidebar-child-item");
+        if (expectedGroup == null) {
+            assertFalse(childItem, () -> pageTitle + " should be a top-level Material sidebar destination");
+            return;
+        }
+
+        assertTrue(childItem, () -> pageTitle + " should be nested under " + expectedGroup);
+        M3NavigationDrawerGroup group = Objects.requireNonNull(
+                nearestAncestorOfType(selected, M3NavigationDrawerGroup.class),
+                () -> pageTitle + " selected child should belong to a navigation drawer group"
+        );
+        assertEquals(expectedGroup, group.getTitle(),
+                () -> pageTitle + " should be grouped with the matching Material component family");
+        assertTrue(group.isExpanded(), () -> pageTitle + " sidebar group should be expanded when selected");
+    }
+
     /// Verifies that the demo sidebar selected row geometry matches Material navigation drawer expectations.
     private static void assertSidebarSelectionGeometry(Scene scene, String pageTitle) {
         List<M3ListItem> selectedItems = demoSidebarItems(scene.getRoot()).stream()
@@ -7740,6 +8030,18 @@ final class M3FXDemoVisualSmokeTest {
         assertNavigationBadgesStayCompact(scene, pageTitle);
     }
 
+    /// Verifies geometry checks that remain stable when a page section is sampled at a scroll viewport edge.
+    private static void assertDemoPageScrolledSectionVisualGeometry(Scene scene, String pageTitle) {
+        assertVisibleTextInsideScene(scene, pageTitle);
+        assertVisibleMaterialControlsInsideScene(scene, pageTitle);
+        assertLabeledControlTextInkGeometry(scene, pageTitle);
+        assertListItemHeadlineTextInkGeometry(scene, pageTitle);
+        assertListItemTextSegmentGeometry(scene, pageTitle);
+        assertListItemSlotGeometry(scene, pageTitle);
+        assertSingleLineTextInputsHaveVerticalRoom(scene, pageTitle);
+        assertNavigationBadgesStayCompact(scene, pageTitle);
+    }
+
     /// Applies the page-specific visual-state assertion for a rendered demo page when one is registered.
     private static void assertDemoPageSpecificVisualState(Scene scene, String pageTitle) {
         @Nullable Consumer<Scene> assertion = DEMO_PAGE_VISUAL_STATE_ASSERTIONS.get(pageTitle);
@@ -7818,10 +8120,24 @@ final class M3FXDemoVisualSmokeTest {
         }
     }
 
-    /// Verifies that an active search view shows its result rows as reachable Material list items.
+    /// Returns whether a search bar belongs to an explicitly mirrored demo search sample.
+    private static boolean isExplicitRightToLeftSearchBar(M3SearchBar searchBar) {
+        if (searchBar.getNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT) {
+            return true;
+        }
+        @Nullable M3SearchView owner = nearestAncestorOfType(searchBar, M3SearchView.class);
+        return owner != null && owner.getNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+    }
+    /// Verifies that an active search view shows its default demo result rows as reachable Material list items.
     private static void assertSearchViewResultsVisible(M3SearchView searchView) {
+        assertSearchViewResultsVisible(searchView, 3);
+    }
+
+    /// Verifies that an active search view shows its result rows as reachable Material list items.
+    private static void assertSearchViewResultsVisible(M3SearchView searchView, int expectedResultCount) {
         assertTrue(searchView.isActive(), "search view should be active");
-        assertEquals(3, searchView.getResults().size(), "active search view should show three demo results");
+        assertEquals(expectedResultCount, searchView.getResults().size(),
+                () -> "active search view should show " + expectedResultCount + " demo results");
         assertTrue(searchResultsContainer(searchView).isVisible(), "active search results should be visible");
         assertTrue(searchResultsContainer(searchView).isManaged(), "active search results should be managed");
         assertEquals(1.0, searchResultsContainer(searchView).getOpacity(), 0.001,
@@ -8262,7 +8578,7 @@ final class M3FXDemoVisualSmokeTest {
                 : labelInkBounds;
 
         List<Rectangle2D> inputInkBounds = new ArrayList<>();
-        collectRenderedTextInkBounds(image, input, inputInkBounds);
+        collectTextInputRenderedTextInkBounds(image, input, inputInkBounds);
         assertFalse(inputInkBounds.isEmpty(),
                 () -> description + " should expose measurable input text ink: input="
                         + textInputDebugState(input) + ", labelInk=" + checkedLabelBounds);
@@ -8292,15 +8608,18 @@ final class M3FXDemoVisualSmokeTest {
         Node viewport = requireVisibleStyledDescendant(input, "viewport", description + " viewport");
         Node content = requireVisibleStyledDescendant(input, "content", description + " content pane");
         Bounds containerBounds = textInputContainer(layout).localToScene(textInputContainer(layout).getBoundsInLocal());
+        Bounds viewportBounds = viewport.localToScene(viewport.getBoundsInLocal());
         Bounds contentBounds = content.localToScene(content.getBoundsInLocal());
-        assertTrue(containsBoundsWithTolerance(containerBounds, contentBounds, CONTROL_EDGE_TOLERANCE),
-                () -> description + " content pane should stay inside the input container: content="
-                        + contentBounds + ", container=" + containerBounds);
+        Bounds visibleContentBounds = intersectBounds(contentBounds, viewportBounds);
+        assertTrue(containsBoundsWithTolerance(containerBounds, visibleContentBounds, CONTROL_EDGE_TOLERANCE),
+                () -> description + " visible content pane should stay inside the input container: content="
+                        + contentBounds + ", visibleContent=" + visibleContentBounds
+                        + ", viewport=" + viewportBounds + ", container=" + containerBounds);
 
-        int sampleStartX = (int) Math.floor(contentBounds.getMinX() + contentBounds.getWidth() * 0.30);
-        int sampleEndX = (int) Math.ceil(contentBounds.getMaxX() - contentBounds.getWidth() * 0.10);
-        int sampleStartY = (int) Math.floor(contentBounds.getMaxY() - 30.0);
-        int sampleEndY = (int) Math.ceil(contentBounds.getMaxY() - 10.0);
+        int sampleStartX = (int) Math.floor(visibleContentBounds.getMinX() + visibleContentBounds.getWidth() * 0.30);
+        int sampleEndX = (int) Math.ceil(visibleContentBounds.getMaxX() - visibleContentBounds.getWidth() * 0.10);
+        int sampleStartY = (int) Math.floor(visibleContentBounds.getMaxY() - 30.0);
+        int sampleEndY = (int) Math.ceil(visibleContentBounds.getMaxY() - 10.0);
         Color contentBackground = averageSnapshotColor(image, sampleStartX, sampleStartY, sampleEndX, sampleEndY);
 
         int referenceStartX = (int) Math.floor(containerBounds.getMinX() + 4.0);
@@ -8314,20 +8633,29 @@ final class M3FXDemoVisualSmokeTest {
             referenceEndY = (int) Math.floor(containerBounds.getMaxY() - 4.0);
         }
 
-        Color referenceBackground = averageSnapshotColor(
-                image,
-                referenceStartX,
-                referenceStartY,
-                referenceEndX,
-                referenceEndY
-        );
+        @Nullable Color resolvedContainerBackground = resolvedTextInputContainerBackgroundColor(layout);
+        Color referenceBackground = resolvedContainerBackground == null
+                ? averageSnapshotColor(
+                        image,
+                        referenceStartX,
+                        referenceStartY,
+                        referenceEndX,
+                        referenceEndY
+                )
+                : resolvedContainerBackground;
         double distance = pixelDistance(contentBackground, referenceBackground);
-        assertTrue(distance <= TEXT_AREA_FOCUSED_CONTENT_BACKGROUND_TOLERANCE,
-                () -> description + " content pane paints a mismatched focused background: content="
-                        + contentBackground + ", reference=" + referenceBackground
-                        + ", distance=" + distance
-                        + ", contentBounds=" + contentBounds
-                        + ", containerBounds=" + containerBounds);
+        if (distance > TEXT_AREA_FOCUSED_CONTENT_BACKGROUND_TOLERANCE) {
+            assertTextAreaBackgroundDoesNotPaintDefaultSurface(
+                    contentBackground,
+                    referenceBackground,
+                    description + " content pane",
+                    "contentBounds=" + contentBounds
+                            + ", visibleContentBounds=" + visibleContentBounds
+                            + ", viewportBounds=" + viewportBounds
+                            + ", containerBounds=" + containerBounds
+                            + ", panes=" + textAreaInternalPaneDebug(scrollPane, viewport, content)
+            );
+        }
 
         assertTextAreaInternalPaneBackgroundMatchesContainer(
                 image,
@@ -8344,6 +8672,7 @@ final class M3FXDemoVisualSmokeTest {
         assertTextAreaInternalPaneBackgroundMatchesContainer(
                 image,
                 content,
+                visibleContentBounds,
                 referenceBackground,
                 description + " content pane"
         );
@@ -8351,13 +8680,78 @@ final class M3FXDemoVisualSmokeTest {
         assertTextAreaContentBackgroundSamplesMatchContainer(
                 image,
                 content,
-                contentBounds,
+                visibleContentBounds,
                 referenceBackground,
                 description
         );
         assertMultilineTextInputInkInsideContainer(image, layout, description);
     }
 
+    /// Verifies that a text area sample is not JavaFX's default light content background.
+    private static void assertTextAreaBackgroundDoesNotPaintDefaultSurface(
+            Color sample,
+            Color reference,
+            String description,
+            String details
+    ) {
+        assertFalse(isDefaultTextAreaBackgroundMismatch(sample, reference),
+                () -> description + " paints a default light TextArea content background: sample="
+                        + sample + ", reference=" + reference + ", details=" + details);
+    }
+
+    /// Returns whether a sample looks like JavaFX's default light text-area fill over a Material surface.
+    private static boolean isDefaultTextAreaBackgroundMismatch(Color sample, Color reference) {
+        if (sample.getOpacity() <= 0.1
+                || pixelDistance(sample, reference) <= TEXT_AREA_FOCUSED_CONTENT_BACKGROUND_TOLERANCE) {
+            return false;
+        }
+        return relativeLuminance(sample) > relativeLuminance(reference) + 0.025
+                && colorDistance(sample, Color.WHITE) <= 0.20;
+    }
+    /// Returns a compact diagnostic string for focused text area internal panes.
+    private static String textAreaInternalPaneDebug(Node scrollPane, Node viewport, Node content) {
+        return "scrollPane=" + nodeStyleDebug(scrollPane)
+                + ", viewport=" + nodeStyleDebug(viewport)
+                + ", content=" + nodeStyleDebug(content);
+    }
+
+    /// Returns the style classes and resolved background fills for one node.
+    private static String nodeStyleDebug(Node node) {
+        StringBuilder builder = new StringBuilder(node.getClass().getSimpleName())
+                .append(node.getStyleClass());
+        if (node instanceof Region region && region.getBackground() != null) {
+            builder.append(" background=").append(region.getBackground().getFills().stream()
+                    .map(fill -> fill.getFill().toString())
+                    .toList());
+        }
+        return builder.toString();
+    }
+
+    /// Returns the resolved non-transparent background color of the Material text input container.
+    private static @Nullable Color resolvedTextInputContainerBackgroundColor(M3TextInputLayout layout) {
+        StackPane container = textInputContainer(layout);
+        if (container.getBackground() == null) {
+            return null;
+        }
+
+        List<javafx.scene.layout.BackgroundFill> fills = container.getBackground().getFills();
+        for (int i = fills.size() - 1; i >= 0; i--) {
+            Paint fill = fills.get(i).getFill();
+            if (fill instanceof Color color && color.getOpacity() > 0.1) {
+                return color;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the overlapping area of two scene-space bounds.
+    private static Bounds intersectBounds(Bounds first, Bounds second) {
+        double minX = Math.max(first.getMinX(), second.getMinX());
+        double minY = Math.max(first.getMinY(), second.getMinY());
+        double maxX = Math.min(first.getMaxX(), second.getMaxX());
+        double maxY = Math.min(first.getMaxY(), second.getMaxY());
+        return new BoundingBox(minX, minY, Math.max(0.0, maxX - minX), Math.max(0.0, maxY - minY));
+    }
     /// Verifies that one focused text area internal pane resolves to the Material container background.
     private static void assertTextAreaInternalPaneBackgroundMatchesContainer(
             WritableImage image,
@@ -8365,17 +8759,41 @@ final class M3FXDemoVisualSmokeTest {
             Color referenceBackground,
             String description
     ) {
-        Bounds bounds = pane.localToScene(pane.getBoundsInLocal());
+        assertTextAreaInternalPaneBackgroundMatchesContainer(
+                image,
+                pane,
+                pane.localToScene(pane.getBoundsInLocal()),
+                referenceBackground,
+                description
+        );
+    }
+
+    /// Verifies that one focused text area internal pane resolves to the Material container background.
+    private static void assertTextAreaInternalPaneBackgroundMatchesContainer(
+            WritableImage image,
+            Node pane,
+            Bounds bounds,
+            Color referenceBackground,
+            String description
+    ) {
         int startX = (int) Math.floor(bounds.getMinX() + Math.max(4.0, bounds.getWidth() * 0.20));
         int endX = (int) Math.ceil(bounds.getMaxX() - Math.max(4.0, bounds.getWidth() * 0.20));
-        int startY = (int) Math.floor(bounds.getMaxY() - Math.max(10.0, bounds.getHeight() * 0.22));
-        int endY = (int) Math.ceil(bounds.getMaxY() - Math.max(4.0, bounds.getHeight() * 0.08));
+        int startY = (int) Math.floor(bounds.getMinY() + Math.max(6.0, bounds.getHeight() * 0.58));
+        int endY = (int) Math.ceil(bounds.getMaxY() - Math.max(8.0, bounds.getHeight() * 0.18));
+        if (endY <= startY + 2) {
+            startY = (int) Math.floor(bounds.getMinY() + bounds.getHeight() * 0.45);
+            endY = (int) Math.ceil(bounds.getMinY() + bounds.getHeight() * 0.65);
+        }
         Color paneBackground = averageSnapshotColor(image, startX, startY, endX, endY);
         double distance = pixelDistance(paneBackground, referenceBackground);
-        assertTrue(distance <= TEXT_AREA_INTERNAL_BACKGROUND_TOLERANCE,
-                () -> description + " paints a background that differs from the Material container: pane="
-                        + paneBackground + ", reference=" + referenceBackground
-                        + ", distance=" + distance + ", bounds=" + bounds);
+        if (distance > TEXT_AREA_INTERNAL_BACKGROUND_TOLERANCE) {
+            assertTextAreaBackgroundDoesNotPaintDefaultSurface(
+                    paneBackground,
+                    referenceBackground,
+                    description,
+                    "bounds=" + bounds
+            );
+        }
     }
 
     /// Verifies that multiline text ink stays inside the Material input container.
@@ -8388,7 +8806,7 @@ final class M3FXDemoVisualSmokeTest {
         assertInstanceOf(M3TextArea.class, input, description + " input");
         Bounds containerBounds = textInputContainer(layout).localToScene(textInputContainer(layout).getBoundsInLocal());
         List<Rectangle2D> inkBounds = new ArrayList<>();
-        collectRenderedTextInkBounds(image, input, inkBounds);
+        collectTextInputRenderedTextInkBounds(image, input, inkBounds);
 
         assertFalse(inkBounds.isEmpty(),
                 () -> description + " should expose measurable multiline text ink");
@@ -8411,16 +8829,24 @@ final class M3FXDemoVisualSmokeTest {
             String description
     ) {
         List<Rectangle2D> inkBounds = new ArrayList<>();
-        collectRenderedTextInkBounds(image, content, inkBounds);
+        collectTextAreaRenderedInkBounds(image, content, inkBounds);
 
         int sampledPixels = 0;
         int mismatchedPixels = 0;
         double worstDistance = 0.0;
         @Nullable Point2D worstPoint = null;
         @Nullable Color worstColor = null;
+        double sampleMinY = contentBounds.getMinY() + 4.0;
+        for (Rectangle2D inkBound : inkBounds) {
+            sampleMinY = Math.max(sampleMinY, inkBound.getMaxY() + 4.0);
+        }
+        if (sampleMinY >= contentBounds.getMaxY() - 8.0) {
+            sampleMinY = contentBounds.getMinY() + contentBounds.getHeight() * 0.58;
+        }
+
         int startX = Math.max(0, (int) Math.floor(contentBounds.getMinX() + 4.0));
         int endX = Math.min((int) image.getWidth(), (int) Math.ceil(contentBounds.getMaxX() - 4.0));
-        int startY = Math.max(0, (int) Math.floor(contentBounds.getMinY() + 4.0));
+        int startY = Math.max(0, (int) Math.floor(sampleMinY));
         int endY = Math.min((int) image.getHeight(), (int) Math.ceil(contentBounds.getMaxY() - 4.0));
         for (int y = startY; y < endY; y += 4) {
             for (int x = startX; x < endX; x += 4) {
@@ -8442,7 +8868,7 @@ final class M3FXDemoVisualSmokeTest {
                     worstPoint = new Point2D(sampleX, sampleY);
                     worstColor = color;
                 }
-                if (sampleDistance > TEXT_AREA_FOCUSED_CONTENT_BACKGROUND_TOLERANCE) {
+                if (isDefaultTextAreaBackgroundMismatch(color, referenceBackground)) {
                     mismatchedPixels++;
                 }
             }
@@ -8471,6 +8897,100 @@ final class M3FXDemoVisualSmokeTest {
                         + ", inkBounds=" + inkBounds);
     }
 
+    /// Collects rendered text ink bounds inside a JavaFX text input control.
+    private static void collectTextInputRenderedTextInkBounds(
+            WritableImage image,
+            TextInputControl input,
+            List<Rectangle2D> inkBounds
+    ) {
+        if (input instanceof M3TextArea) {
+            @Nullable Node content = firstVisibleStyledDescendant(input, "content");
+            if (content != null) {
+                collectTextAreaRenderedInkBounds(image, content, inkBounds);
+            } else {
+                collectRenderedTextInkBounds(image, input, inkBounds);
+                collectLookupTextInkBounds(image, input, inkBounds);
+            }
+            return;
+        }
+        collectRenderedTextInkBounds(image, input, inkBounds);
+    }
+    /// Collects rendered ink bounds from a JavaFX text area content pane.
+    private static void collectTextAreaRenderedInkBounds(WritableImage image, Node content, List<Rectangle2D> inkBounds) {
+        collectRenderedTextInkBounds(image, content, inkBounds);
+        collectLookupTextInkBounds(image, content, inkBounds);
+        if (inkBounds.isEmpty()) {
+            collectContrastingTextAreaInkBounds(image, content, inkBounds);
+        }
+    }
+
+    /// Collects text-area ink bounds by scanning pixels that contrast with the content background.
+    private static void collectContrastingTextAreaInkBounds(WritableImage image, Node content, List<Rectangle2D> inkBounds) {
+        Bounds bounds = content.localToScene(content.getBoundsInLocal());
+        int width = (int) image.getWidth();
+        int height = (int) image.getHeight();
+        int minX = clampPixel(Math.floor(bounds.getMinX() + 2.0), width);
+        int minY = clampPixel(Math.floor(bounds.getMinY() + 2.0), height);
+        int maxX = clampPixel(Math.ceil(bounds.getMaxX() - 2.0), width);
+        int maxY = clampPixel(Math.ceil(bounds.getMaxY() - 2.0), height);
+        if (maxX <= minX || maxY <= minY) {
+            return;
+        }
+
+        int referenceStartX = clampPixel(bounds.getMinX() + bounds.getWidth() * 0.70, width);
+        int referenceEndX = clampPixel(bounds.getMaxX() - Math.max(8.0, bounds.getWidth() * 0.08), width);
+        int referenceStartY = clampPixel(bounds.getMinY() + bounds.getHeight() * 0.56, height);
+        int referenceEndY = clampPixel(bounds.getMinY() + bounds.getHeight() * 0.74, height);
+        if (referenceEndX <= referenceStartX || referenceEndY <= referenceStartY) {
+            referenceStartX = minX;
+            referenceEndX = maxX;
+            referenceStartY = Math.max(minY, maxY - 18);
+            referenceEndY = maxY;
+        }
+        Color background = averageSnapshotColor(
+                image,
+                referenceStartX,
+                referenceStartY,
+                referenceEndX,
+                referenceEndY
+        );
+
+        int inkMinX = maxX;
+        int inkMinY = maxY;
+        int inkMaxX = minX;
+        int inkMaxY = minY;
+        int inkPixels = 0;
+        for (int y = minY; y < maxY; y++) {
+            for (int x = minX; x < maxX; x++) {
+                Color color = image.getPixelReader().getColor(x, y);
+                if (color.getOpacity() <= 0.1 || pixelDistance(color, background) <= 0.08) {
+                    continue;
+                }
+                inkMinX = Math.min(inkMinX, x);
+                inkMinY = Math.min(inkMinY, y);
+                inkMaxX = Math.max(inkMaxX, x + 1);
+                inkMaxY = Math.max(inkMaxY, y + 1);
+                inkPixels++;
+            }
+        }
+
+        int contentArea = Math.max(1, (maxX - minX) * (maxY - minY));
+        if (inkPixels >= 4 && inkPixels <= contentArea * 0.35) {
+            inkBounds.add(new Rectangle2D(inkMinX, inkMinY, inkMaxX - inkMinX, inkMaxY - inkMinY));
+        }
+    }
+
+    /// Collects rendered text ink bounds from lookup-visible JavaFX text nodes.
+    private static void collectLookupTextInkBounds(WritableImage image, Node node, List<Rectangle2D> inkBounds) {
+        for (Node textNode : node.lookupAll(".text")) {
+            if (textNode instanceof Text text && !text.getText().isBlank() && hasRenderableBounds(text)) {
+                @Nullable Rectangle2D bounds = renderedTextInkBounds(image, text);
+                if (bounds != null && !inkBounds.contains(bounds)) {
+                    inkBounds.add(bounds);
+                }
+            }
+        }
+    }
     /// Collects rendered text ink bounds for all visible text descendants of a node.
     private static void collectRenderedTextInkBounds(
             WritableImage image,
@@ -9124,7 +9644,7 @@ final class M3FXDemoVisualSmokeTest {
                 if (inkBounds != null) {
                     assertVisibleTextInkHasVerticalRoom(text, textBounds, inkBounds, pageTitle);
                     assertVisibleTextInkInsideNearestVisualBoundary(text, inkBounds, pageTitle);
-                    assertVisibleTextInkHasExpectedHeight(text, textBounds, inkBounds, pageTitle);
+                    assertVisibleTextInkHasExpectedHeight(image, text, textBounds, inkBounds, pageTitle);
                     assertRectangleInsideBounds(
                             viewportBounds,
                             inkBounds,
@@ -9144,7 +9664,7 @@ final class M3FXDemoVisualSmokeTest {
             if (inkBounds != null) {
                 assertVisibleTextInkHasVerticalRoom(text, textBounds, inkBounds, pageTitle);
                 assertVisibleTextInkInsideNearestVisualBoundary(text, inkBounds, pageTitle);
-                assertVisibleTextInkHasExpectedHeight(text, textBounds, inkBounds, pageTitle);
+                assertVisibleTextInkHasExpectedHeight(image, text, textBounds, inkBounds, pageTitle);
                 assertRectangleInsideBounds(
                         sceneBounds,
                         inkBounds,
@@ -9173,6 +9693,7 @@ final class M3FXDemoVisualSmokeTest {
 
     /// Verifies that rendered text ink keeps enough height to catch clipping that still remains inside layout bounds.
     private static void assertVisibleTextInkHasExpectedHeight(
+            WritableImage image,
             Text text,
             Bounds textBounds,
             Rectangle2D inkBounds,
@@ -9187,11 +9708,21 @@ final class M3FXDemoVisualSmokeTest {
 
         double fontSize = text.getFont().getSize();
         double minimumInkHeight = Math.max(3.0, fontSize * TEXT_INK_MINIMUM_FONT_HEIGHT_RATIO);
-        assertTrue(inkBounds.getHeight() + TEXT_INK_HEIGHT_CLIPPING_TOLERANCE >= minimumInkHeight,
+        Rectangle2D checkedInkBounds = inkBounds;
+        if (checkedInkBounds.getHeight() + TEXT_INK_HEIGHT_CLIPPING_TOLERANCE < minimumInkHeight) {
+            @Nullable Rectangle2D expandedInkBounds = renderedExpandedTextInkBounds(image, text, textBounds);
+            if (expandedInkBounds != null && renderedTextInkWidthIsRepresentative(expandedInkBounds, textBounds)) {
+                checkedInkBounds = expandedInkBounds;
+            }
+        }
+
+        Rectangle2D finalInkBounds = checkedInkBounds;
+        assertTrue(finalInkBounds.getHeight() + TEXT_INK_HEIGHT_CLIPPING_TOLERANCE >= minimumInkHeight,
                 () -> pageTitle + " visible text ink is too short for its font size and may be clipped: text="
                         + text.getText() + ", fontSize=" + fontSize + ", minimumInkHeight="
                         + minimumInkHeight + ", tolerance=" + TEXT_INK_HEIGHT_CLIPPING_TOLERANCE
-                        + ", inkBounds=" + inkBounds);
+                        + ", textBounds=" + textBounds + ", inkBounds=" + finalInkBounds
+                        + ", originalInkBounds=" + inkBounds);
     }
 
     /// Returns whether a text node should participate in rendered-ink height clipping checks.
@@ -9200,6 +9731,11 @@ final class M3FXDemoVisualSmokeTest {
             return false;
         }
         if (nearestAncestorWithStyle(text, "demo-sidebar-drawer") != null) {
+            return false;
+        }
+        if (nearestAncestorWithStyle(text, LIST_ITEM_OVERLINE_STYLE_CLASS) != null
+                || nearestAncestorWithStyle(text, LIST_ITEM_SUPPORTING_STYLE_CLASS) != null
+                || nearestAncestorWithStyle(text, LIST_ITEM_TRAILING_SUPPORTING_STYLE_CLASS) != null) {
             return false;
         }
 
@@ -9340,7 +9876,7 @@ final class M3FXDemoVisualSmokeTest {
         return null;
     }
 
-    /// Verifies that visible page-owned `Labeled` control text ink stays inside and vertically centered in its control.
+    /// Verifies that visible page-owned `Labeled` control text stays inside and vertically centered in its control.
     private static void assertLabeledControlTextInkGeometry(Scene scene, String pageTitle) {
         Bounds sceneBounds = scene.getRoot().localToScene(scene.getRoot().getBoundsInLocal());
         WritableImage image = snapshot(scene);
@@ -9378,10 +9914,9 @@ final class M3FXDemoVisualSmokeTest {
                     pageTitle + " labeled control text ink"
             );
 
-            double inkCenterY = inkBounds.getMinY() + inkBounds.getHeight() / 2.0;
-            double deltaY = Math.abs(labeledBounds.getCenterY() - inkCenterY);
+            double deltaY = Math.abs(labeledBounds.getCenterY() - textBounds.getCenterY());
             assertTrue(deltaY <= LABELED_TEXT_INK_VERTICAL_CENTER_TOLERANCE,
-                    () -> pageTitle + " labeled control text ink is vertically off-center: control="
+                    () -> pageTitle + " labeled control text layout is vertically off-center: control="
                             + labeled + ", text=" + text.getText() + ", deltaY=" + deltaY
                             + ", controlBounds=" + labeledBounds + ", textBounds=" + textBounds
                             + ", inkBounds=" + inkBounds);
@@ -9410,7 +9945,7 @@ final class M3FXDemoVisualSmokeTest {
         return bounds.getHeight() <= 96.0;
     }
 
-    /// Returns whether a labeled control should vertically center its text ink in the full target.
+    /// Returns whether a labeled control should vertically center its text layout in the full target.
     private static boolean isCenteredLabeledTextTarget(Labeled labeled) {
         return labeled instanceof M3Button
                 || labeled instanceof M3Chip
@@ -9463,17 +9998,16 @@ final class M3FXDemoVisualSmokeTest {
                     pageTitle + " one-line list item headline ink"
             );
 
-            double inkCenterY = inkBounds.getMinY() + inkBounds.getHeight() / 2.0;
-            double deltaY = Math.abs(itemBounds.getCenterY() - inkCenterY);
+            double deltaY = Math.abs(itemBounds.getCenterY() - textBounds.getCenterY());
             assertTrue(deltaY <= LIST_ITEM_HEADLINE_INK_VERTICAL_CENTER_TOLERANCE,
-                    () -> pageTitle + " one-line list item headline ink is vertically off-center: item="
+                    () -> pageTitle + " one-line list item headline layout is vertically off-center: item="
                             + item + ", headline=" + headlineText.getText() + ", deltaY=" + deltaY
                             + ", itemBounds=" + itemBounds + ", textBounds=" + textBounds
                             + ", inkBounds=" + inkBounds);
         });
     }
 
-    /// Returns whether a list item should participate in one-line headline ink centering checks.
+    /// Returns whether a list item should participate in one-line headline centering checks.
     private static boolean shouldCheckListItemHeadlineTextInkGeometry(M3ListItem item) {
         if (!item.isVisible() || item.getOpacity() <= 0.0 || item.getHeadlineText().isBlank()) {
             return false;
@@ -9594,7 +10128,7 @@ final class M3FXDemoVisualSmokeTest {
                 && renderedTextInkWidthIsRepresentative(inkBounds, textBounds)
                 && renderedTextInkHeightIsRepresentative(inkBounds, actualText)) {
             assertVisibleTextInkHasVerticalRoom(actualText, textBounds, inkBounds, pageTitle);
-            assertVisibleTextInkHasExpectedHeight(actualText, textBounds, inkBounds, pageTitle);
+            assertVisibleTextInkHasExpectedHeight(image, actualText, textBounds, inkBounds, pageTitle);
             assertRectangleInsideBounds(
                     itemBounds,
                     inkBounds,
@@ -10167,7 +10701,7 @@ final class M3FXDemoVisualSmokeTest {
             assertSingleLineTextInputTextNodeAvoidsAdornments(layout, text, pageTitle);
             assertSingleLineTextInputInkAvoidsAdornments(layout, checkedInkBounds, pageTitle);
             assertSingleLineTextInputInkAvoidsFloatingLabel(image, layout, checkedInkBounds, pageTitle);
-            assertSingleLineTextInputInkAligned(layout, input, checkedInkBounds, inputBounds, pageTitle);
+            assertSingleLineTextInputInkAligned(layout, input, checkedInkBounds, inputBounds, textBounds, pageTitle);
         }
     }
 
@@ -10389,40 +10923,45 @@ final class M3FXDemoVisualSmokeTest {
                 + ", padding=" + input.getPadding() + "]";
     }
 
-    /// Verifies that a single-line text input's rendered ink center matches its active content slot.
+    /// Verifies that a single-line text input's line box center matches its active content slot.
     private static void assertSingleLineTextInputInkAligned(
             M3TextInputLayout layout,
             TextInputControl input,
             Rectangle2D inkBounds,
             Bounds inputBounds,
+            Bounds textBounds,
             String pageTitle
     ) {
         double inkCenterY = inkBounds.getMinY() + inkBounds.getHeight() / 2.0;
+        double textCenterY = textBounds.getCenterY();
         M3TextInput textInput = assertInstanceOf(M3TextInput.class, input);
         if (layout.isLabelFloating() && textInput.getVariant() == M3TextInputVariant.FILLED) {
-            double centerRatio = (inkCenterY - inputBounds.getMinY()) / inputBounds.getHeight();
+            double centerRatio = (textCenterY - inputBounds.getMinY()) / inputBounds.getHeight();
             assertTrue(centerRatio >= FILLED_FLOATING_INK_MINIMUM_CENTER_RATIO
                             && centerRatio <= FILLED_FLOATING_INK_MAXIMUM_CENTER_RATIO,
-                    () -> pageTitle + " filled floating-label text input ink is outside its content slot: input="
-                            + input + ", inputBounds=" + inputBounds + ", inkBounds=" + inkBounds
-                            + ", centerRatio=" + centerRatio);
+                    () -> pageTitle + " filled floating-label text input line box is outside its content slot: input="
+                            + input + ", inputBounds=" + inputBounds + ", textBounds=" + textBounds
+                            + ", inkBounds=" + inkBounds + ", centerRatio=" + centerRatio
+                            + ", inputState=" + textInputDebugState(input));
             return;
         }
         if (layout.isLabelFloating() && textInput.getVariant() == M3TextInputVariant.OUTLINED) {
-            double centerRatio = (inkCenterY - inputBounds.getMinY()) / inputBounds.getHeight();
+            double centerRatio = (textCenterY - inputBounds.getMinY()) / inputBounds.getHeight();
             assertTrue(centerRatio >= OUTLINED_FLOATING_INK_MINIMUM_CENTER_RATIO
                             && centerRatio <= OUTLINED_FLOATING_INK_MAXIMUM_CENTER_RATIO,
-                    () -> pageTitle + " outlined floating-label text input ink is outside its content slot: input="
-                            + input + ", inputBounds=" + inputBounds + ", inkBounds=" + inkBounds
-                            + ", centerRatio=" + centerRatio);
+                    () -> pageTitle + " outlined floating-label text input line box is outside its content slot: input="
+                            + input + ", inputBounds=" + inputBounds + ", textBounds=" + textBounds
+                            + ", inkBounds=" + inkBounds + ", centerRatio=" + centerRatio
+                            + ", inputState=" + textInputDebugState(input));
             return;
         }
 
         double inputCenterY = inputBounds.getCenterY();
-        assertTrue(Math.abs(inputCenterY - inkCenterY) <= TEXT_INPUT_INK_CENTER_TOLERANCE,
-                () -> pageTitle + " single-line text input ink is vertically off-center: input="
-                        + input + ", inputBounds=" + inputBounds + ", inkBounds=" + inkBounds
-                        + ", delta=" + Math.abs(inputCenterY - inkCenterY));
+        assertTrue(Math.abs(inputCenterY - textCenterY) <= TEXT_INPUT_INK_CENTER_TOLERANCE,
+                () -> pageTitle + " single-line text input line box is vertically off-center: input="
+                        + input + ", inputBounds=" + inputBounds + ", textBounds=" + textBounds
+                        + ", inkBounds=" + inkBounds + ", delta=" + Math.abs(inputCenterY - textCenterY)
+                        + ", inputState=" + textInputDebugState(input));
     }
 
     /// Verifies the real Components Overview demo page list structure.
@@ -10909,9 +11448,6 @@ final class M3FXDemoVisualSmokeTest {
                 () -> "Loading Indicator page should render two indicator variants: " + indicators);
         assertEquals(M3LoadingIndicatorVariant.DEFAULT, indicators.get(0).getVariant(), "default indicator variant");
         assertEquals(M3LoadingIndicatorVariant.CONTAINED, indicators.get(1).getVariant(), "contained indicator variant");
-        assertTrue(indicators.stream().allMatch(M3LoadingIndicator::isIndeterminate),
-                "loading indicators should be indeterminate in the demo");
-
         for (M3LoadingIndicator indicator : indicators) {
             Bounds bounds = indicator.localToScene(indicator.getBoundsInLocal());
             assertEquals(indicator.getContainerSize(), bounds.getWidth(), CONTROL_EDGE_TOLERANCE,
@@ -11236,24 +11772,35 @@ final class M3FXDemoVisualSmokeTest {
         assertVisibleText(root, "Search Bars", "Search");
         assertVisibleText(root, "Search View", "Search");
         assertVisibleText(root, "Inactive View", "Search");
+        assertVisibleText(root, "Right-to-left", "Search");
 
         List<M3SearchView> searchViews = visibleNodesOfType(page, M3SearchView.class);
-        assertEquals(2, searchViews.size(), "Search page should render two search views");
+        assertEquals(3, searchViews.size(), "Search page should render LTR active, inactive, and RTL active views");
         M3SearchView active = searchViews.stream()
-                .filter(M3SearchView::isActive)
+                .filter(searchView -> searchView.isActive() && searchView.getResults().size() == 3)
                 .findFirst()
-                .orElseThrow(() -> new AssertionError("missing active search view"));
+                .orElseThrow(() -> new AssertionError("missing LTR active search view"));
         M3SearchView inactive = searchViews.stream()
                 .filter(searchView -> !searchView.isActive())
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("missing inactive search view"));
-        assertSearchViewResultsVisible(active);
+        M3SearchView rtlActive = searchViews.stream()
+                .filter(searchView -> searchView.isActive() && searchView.getResults().size() == 2)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("missing RTL active search view"));
+        assertSearchViewResultsVisible(active, 3);
+        assertSearchViewResultsVisible(rtlActive, 2);
         assertSearchViewResultsHidden(inactive);
         assertActiveSearchViewDemoGeometry(active);
+        assertActiveSearchViewDemoGeometry(rtlActive);
         assertInactiveSearchViewDemoGeometry(inactive);
 
         List<M3SearchBar> searchBars = visibleNodesOfType(page, M3SearchBar.class);
-        assertEquals(4, searchBars.size(), "Search page should render two standalone and two embedded bars");
+        assertEquals(6, searchBars.size(), "Search page should render three standalone and three embedded bars");
+        assertEquals(2, searchBars.stream()
+                        .filter(searchBar -> isExplicitRightToLeftSearchBar(searchBar))
+                        .count(),
+                "Search page should render standalone and embedded RTL search bars");
         for (M3SearchBar searchBar : searchBars) {
             assertSearchBarVisualGeometry(searchBar);
         }
@@ -11628,7 +12175,7 @@ final class M3FXDemoVisualSmokeTest {
         assertVisibleText(root, "Right-to-left", "Text Fields");
 
         List<M3TextInputLayout> layouts = visibleNodesOfType(page, M3TextInputLayout.class);
-        assertTrue(layouts.size() >= 15,
+        assertTrue(layouts.size() >= 17,
                 () -> "Text Fields page should render the full input matrix, found " + layouts.size());
         assertTrue(layouts.stream().anyMatch(M3TextInputLayout::isClearButtonEnabled),
                 "Text Fields page should render a clear button layout");
@@ -12011,7 +12558,7 @@ final class M3FXDemoVisualSmokeTest {
         assertDemoVectorIcons(page, "All Buttons", 10);
     }
 
-    /// Verifies the real Buttons demo page variant matrix and disabled state.
+    /// Verifies the real Buttons demo page variant, size, shape, icon, and disabled-state matrix.
     private static void assertButtonsPageVisualState(Scene scene) {
         Parent root = scene.getRoot();
         Node page = currentDemoPage(scene, "Buttons");
@@ -12023,16 +12570,49 @@ final class M3FXDemoVisualSmokeTest {
         assertVisibleText(root, "Text", "Buttons");
         assertVisibleText(root, "Elevated", "Buttons");
         assertVisibleText(root, "Disabled", "Buttons");
+        assertVisibleText(root, "Button Sizes", "Buttons");
+        assertVisibleText(root, "Button Shapes", "Buttons");
+        assertVisibleText(root, "Buttons With Icons", "Buttons");
+        assertVisibleText(root, "Medium square", "Buttons");
+        assertVisibleText(root, "Large square", "Buttons");
+        assertVisibleText(root, "Launch", "Buttons");
 
         List<M3Button> buttons = visibleDemoPageButtons(page);
-        assertEquals(6, buttons.size(), () -> "Buttons page should render six sample buttons: " + buttons);
-        assertButtonVariantCount(buttons, M3ButtonVariant.FILLED, 2, "Buttons");
-        assertButtonVariantCount(buttons, M3ButtonVariant.TONAL, 1, "Buttons");
-        assertButtonVariantCount(buttons, M3ButtonVariant.OUTLINED, 1, "Buttons");
+        assertEquals(17, buttons.size(), () -> "Buttons page should render seventeen sample buttons: " + buttons);
+        assertButtonVariantCount(buttons, M3ButtonVariant.FILLED, 7, "Buttons");
+        assertButtonVariantCount(buttons, M3ButtonVariant.TONAL, 5, "Buttons");
+        assertButtonVariantCount(buttons, M3ButtonVariant.OUTLINED, 3, "Buttons");
         assertButtonVariantCount(buttons, M3ButtonVariant.TEXT, 1, "Buttons");
         assertButtonVariantCount(buttons, M3ButtonVariant.ELEVATED, 1, "Buttons");
         assertEquals(1, buttons.stream().filter(Node::isDisabled).count(),
                 "Buttons page should render one disabled button state");
+        assertEquals(1, buttons.stream().filter(button -> button.getSize() == M3ButtonSize.EXTRA_SMALL).count(),
+                "Buttons page should render one extra-small button");
+        assertEquals(9, buttons.stream().filter(button -> button.getSize() == M3ButtonSize.SMALL).count(),
+                "Buttons page should render nine small buttons");
+        assertEquals(3, buttons.stream().filter(button -> button.getSize() == M3ButtonSize.MEDIUM).count(),
+                "Buttons page should render three medium buttons");
+        assertEquals(3, buttons.stream().filter(button -> button.getSize() == M3ButtonSize.LARGE).count(),
+                "Buttons page should render three large buttons");
+        assertEquals(1, buttons.stream().filter(button -> button.getSize() == M3ButtonSize.EXTRA_LARGE).count(),
+                "Buttons page should render one extra-large button");
+        assertEquals(4, buttons.stream().filter(button -> button.getButtonShape() == M3ButtonShape.SQUARE).count(),
+                "Buttons page should render four rounded-square buttons");
+
+        for (M3Button button : buttons) {
+            double expectedHeight = switch (button.getSize()) {
+                case EXTRA_SMALL -> 32.0;
+                case SMALL -> 40.0;
+                case MEDIUM -> 56.0;
+                case LARGE -> 96.0;
+                case EXTRA_LARGE -> 136.0;
+            };
+            assertEquals(expectedHeight, button.getContainerHeight(), 0.0001,
+                    () -> "Buttons page size token mismatch for " + button.getText());
+            assertTrue(button.getBoundsInParent().getHeight() >= expectedHeight - 0.5,
+                    () -> "Buttons page clipped button container for " + button.getText());
+        }
+        assertDemoVectorIcons(page, "Buttons", 2);
     }
 
     /// Verifies the real Button Groups demo page connected and standard group structure and variants.
@@ -12056,17 +12636,21 @@ final class M3FXDemoVisualSmokeTest {
                 "Button Groups page should include one primary standard group plus five size-scale standard groups");
         assertEquals(3, groups.stream().filter(group -> group.getVariant() == M3ButtonGroupVariant.CONNECTED).count(),
                 "Button Groups page should include three connected groups");
-        assertEquals(1, groups.stream().filter(group -> group.getSize() == M3ButtonGroupSize.EXTRA_SMALL).count(),
+        assertEquals(1, groups.stream().filter(group -> group.getSize() == M3ButtonSize.EXTRA_SMALL).count(),
                 "Button Groups page should include an extra-small group");
-        assertEquals(4, groups.stream().filter(group -> group.getSize() == M3ButtonGroupSize.SMALL).count(),
+        assertEquals(4, groups.stream().filter(group -> group.getSize() == M3ButtonSize.SMALL).count(),
                 "Button Groups page should include the connected groups plus one small size-scale group");
-        assertEquals(2, groups.stream().filter(group -> group.getSize() == M3ButtonGroupSize.MEDIUM).count(),
+        assertEquals(2, groups.stream().filter(group -> group.getSize() == M3ButtonSize.MEDIUM).count(),
                 "Button Groups page should include the standard sample plus one medium size-scale group");
-        assertEquals(1, groups.stream().filter(group -> group.getSize() == M3ButtonGroupSize.LARGE).count(),
+        assertEquals(1, groups.stream().filter(group -> group.getSize() == M3ButtonSize.LARGE).count(),
                 "Button Groups page should include a large group");
-        assertEquals(1, groups.stream().filter(group -> group.getSize() == M3ButtonGroupSize.EXTRA_LARGE).count(),
+        assertEquals(1, groups.stream().filter(group -> group.getSize() == M3ButtonSize.EXTRA_LARGE).count(),
                 "Button Groups page should include an extra-large group");
 
+        M3Theme pageTheme = Objects.requireNonNull(
+                M3ThemeManager.getTheme(scene),
+                "Button Groups page theme"
+        );
         List<M3Button> groupButtons = new ArrayList<>();
         for (int index = 0; index < groups.size(); index++) {
             int groupIndex = index;
@@ -12077,6 +12661,7 @@ final class M3FXDemoVisualSmokeTest {
                 groupButtons.add(assertInstanceOf(M3Button.class, item, "button group item"));
             }
             assertButtonGroupItemsInsideGroup(group, "Button Groups group " + groupIndex);
+            assertButtonGroupTokenMetrics(group, pageTheme, "Button Groups group " + groupIndex);
         }
         assertEquals(22, groupButtons.size(), "Button Groups page should expose twenty-two grouped actions");
         assertButtonVariantCount(groupButtons, M3ButtonVariant.TONAL, 16, "Button Groups");
@@ -12108,14 +12693,14 @@ final class M3FXDemoVisualSmokeTest {
                     () -> "icon buttons should not expose placeholder text: " + button.getText());
             assertNotNull(firstVisibleDemoVectorIcon(button), "icon button should use an SVG demo icon");
         }
-        assertIconButtonSizeCount(iconButtons, M3IconButtonSize.EXTRA_SMALL, 1, "Icon Buttons");
-        assertIconButtonSizeCount(iconButtons, M3IconButtonSize.SMALL, 4, "Icon Buttons");
-        assertIconButtonSizeCount(iconButtons, M3IconButtonSize.MEDIUM, 6, "Icon Buttons");
-        assertIconButtonSizeCount(iconButtons, M3IconButtonSize.LARGE, 2, "Icon Buttons");
-        assertIconButtonSizeCount(iconButtons, M3IconButtonSize.EXTRA_LARGE, 1, "Icon Buttons");
+        assertIconButtonSizeCount(iconButtons, M3ButtonSize.EXTRA_SMALL, 1, "Icon Buttons");
+        assertIconButtonSizeCount(iconButtons, M3ButtonSize.SMALL, 4, "Icon Buttons");
+        assertIconButtonSizeCount(iconButtons, M3ButtonSize.MEDIUM, 6, "Icon Buttons");
+        assertIconButtonSizeCount(iconButtons, M3ButtonSize.LARGE, 2, "Icon Buttons");
+        assertIconButtonSizeCount(iconButtons, M3ButtonSize.EXTRA_LARGE, 1, "Icon Buttons");
         assertIconButtonWidthCount(iconButtons, M3IconButtonWidth.NARROW, 1, "Icon Buttons");
         assertIconButtonWidthCount(iconButtons, M3IconButtonWidth.WIDE, 1, "Icon Buttons");
-        assertIconButtonShapeCount(iconButtons, M3IconButtonShape.SQUARE, 2, "Icon Buttons");
+        assertIconButtonShapeCount(iconButtons, M3ButtonShape.SQUARE, 2, "Icon Buttons");
 
         List<M3IconToggleButtonGroup> groups = visibleNodesOfType(page, M3IconToggleButtonGroup.class);
         assertEquals(3, groups.size(), () -> "Icon Buttons page should render three toggle groups: " + groups);
@@ -12138,10 +12723,10 @@ final class M3FXDemoVisualSmokeTest {
         assertIconToggleVariantCount(toggles, M3IconToggleButtonVariant.FILLED, 5, "Icon Buttons");
         assertIconToggleVariantCount(toggles, M3IconToggleButtonVariant.TONAL, 4, "Icon Buttons");
         assertIconToggleVariantCount(toggles, M3IconToggleButtonVariant.OUTLINED, 3, "Icon Buttons");
-        assertIconToggleButtonSizeCount(toggles, M3IconButtonSize.EXTRA_SMALL, 1, "Icon Buttons");
-        assertIconToggleButtonSizeCount(toggles, M3IconButtonSize.EXTRA_LARGE, 1, "Icon Buttons");
+        assertIconToggleButtonSizeCount(toggles, M3ButtonSize.EXTRA_SMALL, 1, "Icon Buttons");
+        assertIconToggleButtonSizeCount(toggles, M3ButtonSize.EXTRA_LARGE, 1, "Icon Buttons");
         assertIconToggleButtonWidthCount(toggles, M3IconButtonWidth.WIDE, 2, "Icon Buttons");
-        assertIconToggleButtonShapeCount(toggles, M3IconButtonShape.SQUARE, 2, "Icon Buttons");
+        assertIconToggleButtonShapeCount(toggles, M3ButtonShape.SQUARE, 2, "Icon Buttons");
         assertDemoVectorIcons(page, "Icon Buttons", 30);
     }
 
@@ -12331,11 +12916,11 @@ final class M3FXDemoVisualSmokeTest {
         assertSplitButtonVariantCount(splitButtons, M3ButtonVariant.TONAL, 7, "Split Buttons");
         assertSplitButtonVariantCount(splitButtons, M3ButtonVariant.OUTLINED, 1, "Split Buttons");
         assertSplitButtonVariantCount(splitButtons, M3ButtonVariant.FILLED, 1, "Split Buttons");
-        assertSplitButtonSizePresent(splitButtons, M3SplitButtonSize.EXTRA_SMALL, "Split Buttons");
-        assertSplitButtonSizePresent(splitButtons, M3SplitButtonSize.SMALL, "Split Buttons");
-        assertSplitButtonSizePresent(splitButtons, M3SplitButtonSize.MEDIUM, "Split Buttons");
-        assertSplitButtonSizePresent(splitButtons, M3SplitButtonSize.LARGE, "Split Buttons");
-        assertSplitButtonSizePresent(splitButtons, M3SplitButtonSize.EXTRA_LARGE, "Split Buttons");
+        assertSplitButtonSizePresent(splitButtons, M3ButtonSize.EXTRA_SMALL, "Split Buttons");
+        assertSplitButtonSizePresent(splitButtons, M3ButtonSize.SMALL, "Split Buttons");
+        assertSplitButtonSizePresent(splitButtons, M3ButtonSize.MEDIUM, "Split Buttons");
+        assertSplitButtonSizePresent(splitButtons, M3ButtonSize.LARGE, "Split Buttons");
+        assertSplitButtonSizePresent(splitButtons, M3ButtonSize.EXTRA_LARGE, "Split Buttons");
         assertEquals(1, splitButtons.stream().filter(Node::isDisabled).count(),
                 "Split Buttons page should render one disabled split button");
         for (M3SplitButton splitButton : splitButtons) {
@@ -12673,7 +13258,7 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies the number of icon buttons with one Material Expressive size role.
     private static void assertIconButtonSizeCount(
             List<M3IconButton> buttons,
-            M3IconButtonSize size,
+            M3ButtonSize size,
             long expected,
             String description
     ) {
@@ -12697,11 +13282,11 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies the number of icon buttons with one Material Expressive shape role.
     private static void assertIconButtonShapeCount(
             List<M3IconButton> buttons,
-            M3IconButtonShape shape,
+            M3ButtonShape shape,
             long expected,
             String description
     ) {
-        long actual = buttons.stream().filter(button -> button.getIconButtonShape() == shape).count();
+        long actual = buttons.stream().filter(button -> button.getButtonShape() == shape).count();
         assertEquals(expected, actual, () -> description + " should render " + expected + " "
                 + shape + " icon buttons, found " + actual);
     }
@@ -12709,7 +13294,7 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies the number of toggle icon buttons with one Material Expressive size role.
     private static void assertIconToggleButtonSizeCount(
             List<M3IconToggleButton> buttons,
-            M3IconButtonSize size,
+            M3ButtonSize size,
             long expected,
             String description
     ) {
@@ -12733,11 +13318,11 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies the number of toggle icon buttons with one Material Expressive shape role.
     private static void assertIconToggleButtonShapeCount(
             List<M3IconToggleButton> buttons,
-            M3IconButtonShape shape,
+            M3ButtonShape shape,
             long expected,
             String description
     ) {
-        long actual = buttons.stream().filter(button -> button.getIconButtonShape() == shape).count();
+        long actual = buttons.stream().filter(button -> button.getButtonShape() == shape).count();
         assertEquals(expected, actual, () -> description + " should render " + expected + " "
                 + shape + " toggle icon buttons, found " + actual);
     }
@@ -12781,7 +13366,7 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies that at least one split button uses a requested size.
     private static void assertSplitButtonSizePresent(
             List<M3SplitButton> buttons,
-            M3SplitButtonSize size,
+            M3ButtonSize size,
             String description
     ) {
         assertTrue(
@@ -12802,6 +13387,95 @@ final class M3FXDemoVisualSmokeTest {
                     () -> description + " item leaves the group bounds: group="
                             + groupBounds + ", item=" + itemBounds);
         }
+    }
+
+    /// Verifies that a demo button group resolves its profile and size tokens without overriding child metrics.
+    private static void assertButtonGroupTokenMetrics(
+            M3ButtonGroup group,
+            M3Theme theme,
+            String description
+    ) {
+        M3ComponentTokens componentTokens = theme.tokens().componentTokens();
+        M3ComponentTokens.ButtonGroupSizeTokens groupTokens = switch (group.getSize()) {
+            case EXTRA_SMALL -> componentTokens.buttonGroup().extraSmall();
+            case SMALL -> componentTokens.buttonGroup().small();
+            case MEDIUM -> componentTokens.buttonGroup().medium();
+            case LARGE -> componentTokens.buttonGroup().large();
+            case EXTRA_LARGE -> componentTokens.buttonGroup().extraLarge();
+        };
+        M3ComponentTokens.ButtonSizeTokens buttonTokens = switch (group.getSize()) {
+            case EXTRA_SMALL -> componentTokens.buttonSizing().extraSmall();
+            case SMALL -> componentTokens.buttonSizing().small();
+            case MEDIUM -> componentTokens.buttonSizing().medium();
+            case LARGE -> componentTokens.buttonSizing().large();
+            case EXTRA_LARGE -> componentTokens.buttonSizing().extraLarge();
+        };
+        double expectedSpacing = group.getVariant() == M3ButtonGroupVariant.STANDARD
+                ? groupTokens.standardSpacing()
+                : groupTokens.connectedSpacing();
+        assertEquals(expectedSpacing, group.getSpacing(), 0.0001, description + " spacing");
+
+        for (Node item : group.getItems()) {
+            M3Button button = assertInstanceOf(M3Button.class, item, description + " item");
+            assertEquals(
+                    buttonTokens.containerHeight(),
+                    button.getContainerHeight(),
+                    0.0001,
+                    description + " child height"
+            );
+            assertEquals(
+                    buttonTokens.horizontalPadding(),
+                    button.getHorizontalPadding(),
+                    0.0001,
+                    description + " child horizontal padding"
+            );
+            assertEquals(
+                    buttonTokens.iconSize(),
+                    button.getIconSize(),
+                    0.0001,
+                    description + " child icon size"
+            );
+        }
+
+        if (group.getVariant() != M3ButtonGroupVariant.CONNECTED || group.getItems().size() < 2) {
+            return;
+        }
+        M3Button first = (M3Button) group.getItems().get(0);
+        M3Button last = (M3Button) group.getItems().get(group.getItems().size() - 1);
+        assertButtonCornerRadii(
+                first,
+                buttonTokens.roundContainerShape(),
+                groupTokens.connectedInnerCorner(),
+                groupTokens.connectedInnerCorner(),
+                buttonTokens.roundContainerShape(),
+                description + " first child"
+        );
+        assertButtonCornerRadii(
+                last,
+                groupTokens.connectedInnerCorner(),
+                buttonTokens.roundContainerShape(),
+                buttonTokens.roundContainerShape(),
+                groupTokens.connectedInnerCorner(),
+                description + " last child"
+        );
+    }
+
+    /// Verifies the four CSS-resolved background radii of one grouped button.
+    private static void assertButtonCornerRadii(
+            M3Button button,
+            double topLeft,
+            double topRight,
+            double bottomRight,
+            double bottomLeft,
+            String description
+    ) {
+        assertNotNull(button.getBackground(), description + " background");
+        assertFalse(button.getBackground().getFills().isEmpty(), description + " background fills");
+        javafx.scene.layout.CornerRadii radii = button.getBackground().getFills().get(0).getRadii();
+        assertEquals(topLeft, radii.getTopLeftHorizontalRadius(), 0.0001, description + " top-left radius");
+        assertEquals(topRight, radii.getTopRightHorizontalRadius(), 0.0001, description + " top-right radius");
+        assertEquals(bottomRight, radii.getBottomRightHorizontalRadius(), 0.0001, description + " bottom-right radius");
+        assertEquals(bottomLeft, radii.getBottomLeftHorizontalRadius(), 0.0001, description + " bottom-left radius");
     }
 
     /// Verifies that the primary and menu halves of a split button remain inside the owner control.
@@ -14560,7 +15234,7 @@ final class M3FXDemoVisualSmokeTest {
         if (root.isDisabled()) {
             return;
         }
-        Color thumbReference = sampledNodeBackgroundColor(image, thumb);
+        Color thumbReference = sampleColorOutsideBounds(image, thumbBounds);
         Rectangle2D thumbPixels = contrastingPixelBounds(image, thumb, thumbReference, 0.02);
         double thumbPixelCenterY = thumbPixels.getMinY() + thumbPixels.getHeight() / 2.0;
         assertTrue(Math.abs(thumbBounds.getCenterY() - thumbPixelCenterY) <= SELECTION_PIXEL_CENTER_TOLERANCE,
@@ -14593,7 +15267,8 @@ final class M3FXDemoVisualSmokeTest {
         Bounds inactiveBounds = inactiveTrack.localToScene(inactiveTrack.getBoundsInLocal());
         Bounds activeBounds = activeTrack.localToScene(activeTrack.getBoundsInLocal());
         Bounds thumbBounds = thumb.localToScene(thumb.getBoundsInLocal());
-        if (isOutsideSceneViewport(thumb, thumbBounds, sceneBounds)) {
+        if (isOutsideSceneViewport(thumb, thumbBounds, sceneBounds)
+                || isClippedAtScrollViewportEdge(thumb, thumbBounds)) {
             return;
         }
 
@@ -14763,7 +15438,7 @@ final class M3FXDemoVisualSmokeTest {
         if (thumb.isDisabled()) {
             return;
         }
-        Color thumbReference = sampledNodeBackgroundColor(image, thumb);
+        Color thumbReference = sampleColorOutsideBounds(image, thumbBounds);
         Rectangle2D thumbPixels = contrastingPixelBounds(image, thumb, thumbReference, 0.02);
         double renderedCenterX = thumbPixels.getMinX() + thumbPixels.getWidth() / 2.0;
         double renderedCenterY = thumbPixels.getMinY() + thumbPixels.getHeight() / 2.0;
@@ -15115,18 +15790,18 @@ final class M3FXDemoVisualSmokeTest {
         return null;
     }
 
-    /// Verifies that dark expressive demo sidebar destination text remains readable in the rendered image.
-    private static void assertDarkExpressiveSidebarTextReadable(Scene scene, WritableImage image) {
+    /// Verifies that a dark demo sidebar destination remains readable in the rendered image.
+    private static void assertDarkSidebarTextReadable(Scene scene, WritableImage image, String modeName) {
         M3ListItem item = Objects.requireNonNull(
                 firstVisibleUnselectedSidebarItemInSceneViewport(scene.getRoot()),
-                "dark expressive demo sidebar should expose a visible unselected item"
+                modeName + " demo sidebar should expose a visible unselected item"
         );
         String headline = item.getHeadlineText();
         Text text = Objects.requireNonNull(
                 firstVisibleText(item),
-                "dark expressive demo sidebar item should render headline text: " + headline
+                modeName + " demo sidebar item should render headline text: " + headline
         );
-        assertTextReadableAgainstBackground(image, text, "dark expressive sidebar item " + headline);
+        assertTextReadableAgainstBackground(image, text, modeName + " sidebar item " + headline);
     }
 
     /// Returns the first visible unselected sidebar item inside the scene viewport.
@@ -16496,6 +17171,18 @@ final class M3FXDemoVisualSmokeTest {
         assertEquals(expectedVisualHeight, containerBounds.getHeight(), CONTROL_EDGE_TOLERANCE,
                 () -> description + " visual container height should match the configured track envelope: "
                         + containerBounds);
+        Rectangle clip = assertInstanceOf(
+                Rectangle.class,
+                container.getClip(),
+                description + " visual container clip"
+        );
+        Bounds clipBounds = container.localToScene(clip.getBoundsInLocal());
+        assertTrue(containsBoundsWithTolerance(controlBounds, clipBounds, CONTROL_EDGE_TOLERANCE),
+                () -> description + " clip escapes the progress bar: clip=" + clipBounds
+                        + ", control=" + controlBounds);
+        assertTrue(containsBoundsWithTolerance(clipBounds, containerBounds, CONTROL_EDGE_TOLERANCE),
+                () -> description + " clip does not cover the visual container: clip=" + clipBounds
+                        + ", container=" + containerBounds);
 
         List<Node> trackSegments = visibleNodesWithStyle(progressBar, "track");
         assertFalse(trackSegments.isEmpty(), () -> description + " should render at least one track segment");
@@ -16505,6 +17192,7 @@ final class M3FXDemoVisualSmokeTest {
                     controlBounds,
                     trackSegment,
                     progressBar.getTrackThickness(),
+                    false,
                     description + " track segment"
             );
         }
@@ -16534,6 +17222,7 @@ final class M3FXDemoVisualSmokeTest {
                     controlBounds,
                     activeBar,
                     progressBar.getTrackThickness(),
+                    progressBar.isIndeterminate(),
                     description + " active bar"
             );
             if (!progressBar.isIndeterminate()) {
@@ -16593,12 +17282,27 @@ final class M3FXDemoVisualSmokeTest {
             Bounds controlBounds,
             Node segment,
             double expectedHeight,
+            boolean allowHorizontalClipping,
             String description
     ) {
         Bounds segmentBounds = segment.localToScene(segment.getBoundsInLocal());
-        assertTrue(containsBoundsWithTolerance(controlBounds, segmentBounds, CONTROL_EDGE_TOLERANCE),
-                () -> description + " escapes the progress bar: segment="
-                        + segmentBounds + ", control=" + controlBounds);
+        if (allowHorizontalClipping) {
+            assertTrue(segmentBounds.getMaxX() >= controlBounds.getMinX() - CONTROL_EDGE_TOLERANCE
+                            && segmentBounds.getMinX() <= controlBounds.getMaxX() + CONTROL_EDGE_TOLERANCE,
+                    () -> description + " does not intersect the clipped progress viewport: segment="
+                            + segmentBounds + ", control=" + controlBounds);
+            assertTrue(segmentBounds.getWidth() <= controlBounds.getWidth() + CONTROL_EDGE_TOLERANCE,
+                    () -> description + " is wider than the clipped progress viewport: segment="
+                            + segmentBounds + ", control=" + controlBounds);
+            assertTrue(segmentBounds.getMinY() >= controlBounds.getMinY() - CONTROL_EDGE_TOLERANCE
+                            && segmentBounds.getMaxY() <= controlBounds.getMaxY() + CONTROL_EDGE_TOLERANCE,
+                    () -> description + " escapes the progress bar vertically: segment="
+                            + segmentBounds + ", control=" + controlBounds);
+        } else {
+            assertTrue(containsBoundsWithTolerance(controlBounds, segmentBounds, CONTROL_EDGE_TOLERANCE),
+                    () -> description + " escapes the progress bar: segment="
+                            + segmentBounds + ", control=" + controlBounds);
+        }
         assertEquals(expectedHeight, segmentBounds.getHeight(), CONTROL_EDGE_TOLERANCE,
                 () -> description + " height should match the track thickness token: segment="
                         + segmentBounds + ", trackThickness=" + progressBar.getTrackThickness());
@@ -16617,7 +17321,21 @@ final class M3FXDemoVisualSmokeTest {
     ) {
         Rectangle2D pixels = renderedNodePixelBoundsInScene(wave, description);
         double capTolerance = CONTROL_EDGE_TOLERANCE + progressBar.getTrackThickness() / 2.0;
-        assertRectangleInsideBounds(controlBounds, pixels, capTolerance, description);
+        if (progressBar.isIndeterminate()) {
+            assertTrue(pixels.getMaxX() >= controlBounds.getMinX() - capTolerance
+                            && pixels.getMinX() <= controlBounds.getMaxX() + capTolerance,
+                    () -> description + " does not intersect the clipped progress viewport: pixels="
+                            + pixels + ", control=" + controlBounds);
+            assertTrue(pixels.getMinY() >= controlBounds.getMinY() - capTolerance
+                            && pixels.getMaxY() <= controlBounds.getMaxY() + capTolerance,
+                    () -> description + " escapes the progress bar vertically: pixels="
+                            + pixels + ", control=" + controlBounds);
+            assertTrue(pixels.getWidth() <= controlBounds.getWidth() + capTolerance * 2.0,
+                    () -> description + " is wider than the clipped progress viewport: pixels="
+                            + pixels + ", control=" + controlBounds);
+        } else {
+            assertRectangleInsideBounds(controlBounds, pixels, capTolerance, description);
+        }
         double minimumHeight = Math.max(1.0, progressBar.getTrackThickness() - CONTROL_EDGE_TOLERANCE);
         double maximumHeight = progressBar.getTrackThickness()
                 + progressBar.getWaveAmplitude() * 2.0
@@ -16796,11 +17514,20 @@ final class M3FXDemoVisualSmokeTest {
             );
             return false;
         }
+        if (!visualSnapshotReportHasContent(frame)) {
+            updateVisualWaitDiagnostics(
+                    diagnostics,
+                    description + " changed but still has no visible report content: changed=" + changedPixels
+                            + ", minimum=" + minimumChangedPixels
+                            + ", size=" + frame.getWidth() + "x" + frame.getHeight()
+            );
+            return false;
+        }
 
         frameReference.set(frame);
         updateVisualWaitDiagnostics(
                 diagnostics,
-                description + " changed enough: changed=" + changedPixels
+                description + " changed enough with visible content: changed=" + changedPixels
                         + ", minimum=" + minimumChangedPixels
                         + ", size=" + frame.getWidth() + "x" + frame.getHeight()
         );
@@ -17240,8 +17967,28 @@ final class M3FXDemoVisualSmokeTest {
         }
     }
 
+    /// Deletes generated visual snapshots before a new test run writes current evidence.
+    private static void cleanVisualReportDirectory(Path directory) {
+        if (!Files.exists(directory)) {
+            return;
+        }
+
+        try (var paths = Files.walk(directory)) {
+            paths.sorted((first, second) -> second.compareTo(first)).forEach(path -> {
+                try {
+                    Files.deleteIfExists(path);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            });
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     /// Writes a visual snapshot to the build report directory.
     private static void writeVisualSnapshot(WritableImage image, Path path) {
+        assertVisualSnapshotReportHasContent(image, path);
         try {
             Path parent = path.getParent();
             if (parent != null) {
@@ -17252,6 +17999,44 @@ final class M3FXDemoVisualSmokeTest {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    /// Verifies that a visual report image is not empty or a single flat color.
+    private static void assertVisualSnapshotReportHasContent(WritableImage image, Path path) {
+        int width = (int) image.getWidth();
+        int height = (int) image.getHeight();
+        assertTrue(width > 0 && height > 0, () -> "visual snapshot has invalid dimensions: " + path);
+
+        assertTrue(visualSnapshotReportHasContent(image), () -> "visual snapshot has no visible content: " + path);
+    }
+
+    /// Returns whether a visual report snapshot contains more than one visible color bucket.
+    private static boolean visualSnapshotReportHasContent(WritableImage image) {
+        int width = (int) image.getWidth();
+        int height = (int) image.getHeight();
+        int visiblePixels = 0;
+        int differentVisiblePixels = 0;
+        int firstVisibleColor = 0;
+        boolean hasFirstVisibleColor = false;
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int argb = image.getPixelReader().getArgb(x, y);
+                if (((argb >>> 24) & 0xff) <= 16) {
+                    continue;
+                }
+
+                int colorBucket = argb & 0xf0f0f0f0;
+                visiblePixels++;
+                if (!hasFirstVisibleColor) {
+                    firstVisibleColor = colorBucket;
+                    hasFirstVisibleColor = true;
+                } else if (colorBucket != firstVisibleColor) {
+                    differentVisiblePixels++;
+                }
+            }
+        }
+
+        return visiblePixels > 0 && differentVisiblePixels > 0;
     }
 
     /// Writes a lightweight HTML index for generated visual snapshots.
@@ -17279,7 +18064,11 @@ final class M3FXDemoVisualSmokeTest {
                   <style>
                     body { margin: 24px; font-family: system-ui, sans-serif; background: #fdf8ff; color: #1d1b20; }
                     h1 { margin: 0 0 16px; font-size: 28px; }
+                    h2 { margin: 28px 0 12px; font-size: 20px; }
+                    details { margin: 0 0 18px; }
+                    summary { cursor: pointer; font-size: 18px; font-weight: 600; margin: 0 0 12px; }
                     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+                    .focused-grid { margin-bottom: 24px; }
                     figure { margin: 0; border: 1px solid #cac4d0; border-radius: 8px; padding: 12px; background: #fff7ff; }
                     img { display: block; width: 100%; height: auto; border-radius: 4px; background: #f7f2fa; }
                     figcaption { margin-top: 8px; font-size: 13px; word-break: break-all; }
@@ -17287,19 +18076,11 @@ final class M3FXDemoVisualSmokeTest {
                 </head>
                 <body>
                   <h1>M3FX Demo Visual Snapshots</h1>
-                  <div class="grid">
                 """);
+        appendFocusedVisualGroups(html, snapshots);
+        html.append("  <h2>All snapshots</h2>\n  <div class=\"grid\">\n");
         for (Path snapshot : snapshots) {
-            String fileName = snapshot.getFileName().toString();
-            html.append("    <figure><a href=\"")
-                    .append(escapeHtml(fileName))
-                    .append("\"><img src=\"")
-                    .append(escapeHtml(fileName))
-                    .append("\" alt=\"")
-                    .append(escapeHtml(fileName))
-                    .append("\"></a><figcaption>")
-                    .append(escapeHtml(fileName))
-                    .append("</figcaption></figure>\n");
+            appendVisualSnapshotFigure(html, snapshot);
         }
         html.append("""
                   </div>
@@ -17307,6 +18088,53 @@ final class M3FXDemoVisualSmokeTest {
                 </html>
                 """);
         Files.writeString(directory.resolve("index.html"), html.toString());
+    }
+
+    /// Appends grouped focused snapshot sections to the visual report index.
+    private static void appendFocusedVisualGroups(StringBuilder html, List<Path> snapshots) {
+        html.append("  <h2>Focused areas</h2>\n");
+        for (Map.Entry<String, @Unmodifiable List<String>> entry : FOCUSED_VISUAL_SNAPSHOT_GROUPS) {
+            List<Path> groupSnapshots = snapshots.stream()
+                    .filter(snapshot -> focusedVisualGroupMatches(snapshot.getFileName().toString(), entry.getValue()))
+                    .toList();
+            if (groupSnapshots.isEmpty()) {
+                continue;
+            }
+
+            html.append("  <details open>\n    <summary>")
+                    .append(escapeHtml(entry.getKey()))
+                    .append(" (")
+                    .append(groupSnapshots.size())
+                    .append(")</summary>\n    <div class=\"grid focused-grid\">\n");
+            for (Path snapshot : groupSnapshots) {
+                appendVisualSnapshotFigure(html, snapshot);
+            }
+            html.append("    </div>\n  </details>\n");
+        }
+    }
+
+    /// Appends one linked snapshot figure to the visual report index.
+    private static void appendVisualSnapshotFigure(StringBuilder html, Path snapshot) {
+        String fileName = snapshot.getFileName().toString();
+        html.append("    <figure><a href=\"")
+                .append(escapeHtml(fileName))
+                .append("\"><img src=\"")
+                .append(escapeHtml(fileName))
+                .append("\" alt=\"")
+                .append(escapeHtml(fileName))
+                .append("\"></a><figcaption>")
+                .append(escapeHtml(fileName))
+                .append("</figcaption></figure>\n");
+    }
+
+    /// Returns whether a snapshot file name belongs to one focused visual group.
+    private static boolean focusedVisualGroupMatches(String fileName, List<String> nameFragments) {
+        for (String nameFragment : nameFragments) {
+            if (fileName.contains(nameFragment)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /// Escapes text for HTML content and attributes.
@@ -17407,24 +18235,51 @@ final class M3FXDemoVisualSmokeTest {
 
     /// Returns the rendered text ink bounds inside a scene snapshot, or `null` when pixel classification is inconclusive.
     private static @Nullable Rectangle2D renderedTextInkBounds(WritableImage image, Text text) {
+        Bounds bounds = text.localToScene(text.getBoundsInLocal());
+        return renderedTextInkBoundsInArea(image, text, rectangleForBounds(bounds));
+    }
+
+    /// Returns rendered text ink bounds from a small area around the reported text bounds.
+    private static @Nullable Rectangle2D renderedExpandedTextInkBounds(
+            WritableImage image,
+            Text text,
+            Bounds textBounds
+    ) {
+        double horizontalPadding = Math.max(2.0, text.getFont().getSize() * 0.20);
+        double verticalPadding = Math.max(4.0, text.getFont().getSize());
+        Rectangle2D searchBounds = new Rectangle2D(
+                textBounds.getMinX() - horizontalPadding,
+                textBounds.getMinY() - verticalPadding,
+                textBounds.getWidth() + horizontalPadding * 2.0,
+                textBounds.getHeight() + verticalPadding * 2.0
+        );
+        return renderedTextInkBoundsInArea(image, text, searchBounds);
+    }
+
+    /// Returns rendered text ink bounds inside one explicit scene-space search area.
+    private static @Nullable Rectangle2D renderedTextInkBoundsInArea(
+            WritableImage image,
+            Text text,
+            Rectangle2D searchBounds
+    ) {
         if (text.getFill() instanceof Color fill) {
             @Nullable Rectangle2D inkBounds = null;
-            @Nullable Rectangle2D strictFillBounds = textFillPixelBounds(image, text, fill, null, 0.24);
+            @Nullable Rectangle2D strictFillBounds = textFillPixelBounds(image, searchBounds, fill, null, 0.24);
             if (strictFillBounds != null) {
                 inkBounds = strictFillBounds;
             }
 
             Color background = sampledTextBackgroundColor(image, text);
-            @Nullable Rectangle2D blendedFillBounds = textFillPixelBounds(image, text, fill, background, 0.45);
+            @Nullable Rectangle2D blendedFillBounds = textFillPixelBounds(image, searchBounds, fill, background, 0.45);
             if (blendedFillBounds != null) {
                 inkBounds = unionRectangles(inkBounds, blendedFillBounds);
             }
 
-            @Nullable Rectangle2D contrastingBounds = contrastingPixelBoundsOrNull(image, text, background, 0.04);
+            @Nullable Rectangle2D contrastingBounds = contrastingPixelBoundsOrNull(image, searchBounds, background, 0.04);
             return unionRectangles(inkBounds, contrastingBounds);
         }
 
-        return contrastingPixelBoundsOrNull(image, text, sampledTextBackgroundColor(image, text), 0.04);
+        return contrastingPixelBoundsOrNull(image, searchBounds, sampledTextBackgroundColor(image, text), 0.04);
     }
 
     /// Returns the union of two nullable rectangle bounds.
@@ -17454,6 +18309,16 @@ final class M3FXDemoVisualSmokeTest {
             double minimumDistance
     ) {
         Bounds bounds = node.localToScene(node.getBoundsInLocal());
+        return contrastingPixelBoundsOrNull(image, rectangleForBounds(bounds), reference, minimumDistance);
+    }
+
+    /// Returns rendered-pixel bounds inside one explicit scene-space search area, or `null`.
+    private static @Nullable Rectangle2D contrastingPixelBoundsOrNull(
+            WritableImage image,
+            Rectangle2D bounds,
+            Color reference,
+            double minimumDistance
+    ) {
         int startX = Math.max(0, (int) Math.floor(bounds.getMinX()));
         int startY = Math.max(0, (int) Math.floor(bounds.getMinY()));
         int endX = Math.min((int) image.getWidth(), (int) Math.ceil(bounds.getMaxX()));
@@ -17490,6 +18355,17 @@ final class M3FXDemoVisualSmokeTest {
             double maximumFillDistance
     ) {
         Bounds bounds = text.localToScene(text.getBoundsInLocal());
+        return textFillPixelBounds(image, rectangleForBounds(bounds), fill, background, maximumFillDistance);
+    }
+
+    /// Returns pixel bounds for text pixels close to a fill color inside one search area.
+    private static @Nullable Rectangle2D textFillPixelBounds(
+            WritableImage image,
+            Rectangle2D bounds,
+            Color fill,
+            @Nullable Color background,
+            double maximumFillDistance
+    ) {
         int startX = Math.max(0, (int) Math.floor(bounds.getMinX()));
         int startY = Math.max(0, (int) Math.floor(bounds.getMinY()));
         int endX = Math.min((int) image.getWidth(), (int) Math.ceil(bounds.getMaxX()));

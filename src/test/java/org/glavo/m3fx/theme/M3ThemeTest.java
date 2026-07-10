@@ -23,7 +23,7 @@ import org.glavo.m3fx.controls.M3BottomAppBar;
 import org.glavo.m3fx.controls.M3BottomSheet;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonGroup;
-import org.glavo.m3fx.controls.M3ButtonGroupSize;
+import org.glavo.m3fx.controls.M3ButtonSize;
 import org.glavo.m3fx.controls.M3ButtonGroupVariant;
 import org.glavo.m3fx.controls.M3Card;
 import org.glavo.m3fx.controls.M3Carousel;
@@ -86,6 +86,7 @@ import org.glavo.m3fx.controls.M3TextRole;
 import org.glavo.m3fx.controls.M3TimePicker;
 import org.glavo.m3fx.controls.M3TopAppBar;
 import org.glavo.m3fx.controls.M3TopAppBarVariant;
+import org.glavo.m3fx.tokens.M3ComponentTokens;
 import org.glavo.m3fx.tokens.M3Density;
 import org.glavo.m3fx.tokens.M3Profile;
 import org.glavo.m3fx.tokens.M3TokenSet;
@@ -165,7 +166,10 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-selected-item-container-color: -m3-color-secondary-container"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-selected-item-content-color: -m3-color-on-secondary-container"));
         assertTrue(theme.toControlStyleRules().contains(".m3-filled-button"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-button.m3-grouped-button"));
+        assertTrue(theme.toControlStyleRules().contains(
+                ".m3-button-group.m3-button-group-small.m3-connected-button-group "
+                        + ".m3-button.m3-button-group-first"
+        ));
         assertTrue(theme.toControlStyleRules().contains(".m3-button.m3-split-button-menu"));
         assertTrue(theme.toControlStyleRules().contains(".m3-large-icon"));
         assertTrue(theme.toControlStyleRules().contains(".m3-display-medium-text"));
@@ -247,8 +251,8 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-motion-default-effects-easing: emphasized"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-motion-default-spatial-duration: 400ms"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-motion-sub-menu-hover-open-delay: 150ms"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-button-filled-container-height: 48px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-button-filled-horizontal-padding: 28px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-button-filled-container-height: 40px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-button-filled-horizontal-padding: 16px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-button-text-horizontal-padding: 16px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-icon-small-size: 20px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-icon-large-size: 36px"));
@@ -359,7 +363,6 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-section-header-horizontal-padding: 20px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-form-row-min-height: 72px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-validation-summary-content-padding: 20px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-button-group-button-horizontal-padding: 22px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-split-button-spacing: 2px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-split-button-menu-width: 48px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-icon-toggle-button-group-spacing: 10px"));
@@ -401,14 +404,23 @@ final class M3ThemeTest {
         assertNotNull(theme.tokens().componentTokens().timePicker());
         assertNotNull(theme.tokens().componentTokens().form());
         assertNotNull(theme.tokens().componentTokens().validationSummary());
-        assertEquals(28.0, theme.tokens().componentTokens().filledButton().horizontalPadding(), 0.0001);
+        assertEquals(16.0, theme.tokens().componentTokens().filledButton().horizontalPadding(), 0.0001);
         assertEquals(16.0, theme.tokens().componentTokens().textButton().horizontalPadding(), 0.0001);
         assertEquals(36.0, theme.tokens().componentTokens().icon().largeSize(), 0.0001);
-        assertEquals(22.0, theme.tokens().componentTokens().buttonGroup().buttonHorizontalPadding(), 0.0001);
-        assertEquals(48.0, theme.tokens().componentTokens().splitButton().menuButtonWidth(), 0.0001);
-        assertEquals(2.0, theme.tokens().componentTokens().buttonGroup().buttonGroupSpacing(), 0.0001);
-        assertEquals(12.0, theme.tokens().componentTokens().buttonGroup().standardButtonGroupSpacing(), 0.0001);
-        assertEquals(10.0, theme.tokens().componentTokens().buttonGroup().buttonGroupConnectedInnerCorner(), 0.0001);
+        M3ComponentTokens.SplitButtonSizeTokens smallSplitButton =
+                theme.tokens().componentTokens().splitButton().small();
+        assertEquals(
+                48.0,
+                smallSplitButton.menuLeadingSpace()
+                        + smallSplitButton.menuIconSize()
+                        + smallSplitButton.menuTrailingSpace(),
+                0.0001
+        );
+        M3ComponentTokens.ButtonGroupSizeTokens smallButtonGroup =
+                theme.tokens().componentTokens().buttonGroup().small();
+        assertEquals(2.0, smallButtonGroup.connectedSpacing(), 0.0001);
+        assertEquals(12.0, smallButtonGroup.standardSpacing(), 0.0001);
+        assertEquals(10.0, smallButtonGroup.connectedInnerCorner(), 0.0001);
         assertEquals(-1.0, theme.tokens().componentTokens().buttonGroup().segmentedGroupSpacing(), 0.0001);
         assertEquals(10.0, theme.tokens().componentTokens().buttonGroup().iconToggleGroupSpacing(), 0.0001);
         assertEquals(18.0, theme.tokens().componentTokens().floatingActionButton().regularHorizontalPadding(), 0.0001);
@@ -740,21 +752,9 @@ final class M3ThemeTest {
         assertTrue(root.getStyleClass().contains("root"));
         assertFalse(root.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
         assertNull(M3ThemeManager.getTheme(root));
-    }
 
-    /// Verifies that standalone fallback root styling follows runtime scene-root replacement.
-    @Test
-    void standaloneControlFallbackStylesheetFollowsSceneRootReplacement() {
-        M3Button button = new M3Button("Button");
-        Scene scene = new Scene(button);
-
-        button.applyCss();
-        button.layout();
-
-        assertTrue(scene.getStylesheets().get(0).endsWith("/styles/fallback.css"));
-        assertTrue(button.getStyleClass().contains("root"));
-
-        Pane replacementRoot = new Pane(button);
+        root.getChildren().clear();
+        Pane replacementRoot = new Pane(listItem);
         scene.setRoot(replacementRoot);
         replacementRoot.applyCss();
         replacementRoot.layout();
@@ -861,7 +861,7 @@ final class M3ThemeTest {
         M3ButtonGroup buttonGroup = buttonGroup(groupedButton);
         M3ButtonGroup standardButtonGroup = buttonGroup(new M3Button("Standard A"), new M3Button("Standard B"));
         standardButtonGroup.setVariant(M3ButtonGroupVariant.STANDARD);
-        standardButtonGroup.setSize(M3ButtonGroupSize.MEDIUM);
+        standardButtonGroup.setSize(M3ButtonSize.MEDIUM);
         M3IconToggleButtonGroup iconToggleButtonGroup =
                 iconToggleButtonGroup(new M3IconToggleButton("A"), new M3IconToggleButton("B"));
         M3SegmentedButtonGroup segmentedButtonGroup =
@@ -976,16 +976,16 @@ final class M3ThemeTest {
         M3ThemeManager.install(scene, expressiveTheme);
         root.applyCss();
 
-        assertEquals(48.0, button.getContainerHeight(), 0.0001);
-        assertEquals(28.0, button.getHorizontalPadding(), 0.0001);
+        assertEquals(40.0, button.getContainerHeight(), 0.0001);
+        assertEquals(16.0, button.getHorizontalPadding(), 0.0001);
         assertEquals(M3ButtonGroupVariant.CONNECTED, buttonGroup.getVariant());
-        assertEquals(M3ButtonGroupSize.SMALL, buttonGroup.getSize());
+        assertEquals(M3ButtonSize.SMALL, buttonGroup.getSize());
         assertEquals(2.0, buttonGroup.getSpacing(), 0.0001);
         assertEquals(8.0, standardButtonGroup.getSpacing(), 0.0001);
         assertEquals(10.0, iconToggleButtonGroup.getSpacing(), 0.0001);
         assertEquals(-1.0, segmentedButtonGroup.getSpacing(), 0.0001);
         assertEquals(14.0, fabMenu.getActionSpacing(), 0.0001);
-        assertEquals(22.0, groupedButton.getHorizontalPadding(), 0.0001);
+        assertEquals(16.0, groupedButton.getHorizontalPadding(), 0.0001);
         assertEquals(16.0, splitButtonActionButton(splitButton).getHorizontalPadding(), 0.0001);
         assertEquals(48.0, splitButtonMenuButton(splitButton).getMinWidth(), 0.0001);
         assertEquals(48.0, splitButtonMenuButton(splitButton).getPrefWidth(), 0.0001);
@@ -1175,8 +1175,9 @@ final class M3ThemeTest {
         assertEquals(8.0, iconToggleButtonGroup.getSpacing(), 0.0001);
         assertEquals(-1.0, segmentedButtonGroup.getSpacing(), 0.0001);
         assertEquals(12.0, fabMenu.getActionSpacing(), 0.0001);
-        assertEquals(20.0, groupedButton.getHorizontalPadding(), 0.0001);
-        assertEquals(20.0, splitButtonActionButton(splitButton).getHorizontalPadding(), 0.0001);
+        assertEquals(24.0, groupedButton.getHorizontalPadding(), 0.0001);
+        assertEquals(20.0, splitButtonActionButton(splitButton).getPadding().getLeft(), 0.0001);
+        assertEquals(20.0, splitButtonActionButton(splitButton).getPadding().getRight(), 0.0001);
         assertEquals(48.0, splitButtonMenuButton(splitButton).getMinWidth(), 0.0001);
         assertEquals(48.0, splitButtonMenuButton(splitButton).getPrefWidth(), 0.0001);
         assertEquals(56.0, textField.getContainerHeight(), 0.0001);

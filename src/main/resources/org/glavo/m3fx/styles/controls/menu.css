@@ -30,7 +30,7 @@
 
 
 .m3-menu .m3-menu-item:selected {
-    -m3-container-shape: -m3-menu-selected-item-container-shape;
+    -m3-container-shape: 4px;
 }
 
 

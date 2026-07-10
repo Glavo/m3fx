@@ -54,6 +54,7 @@ public final class FxTestUtils {
             latch.countDown();
         }
         await(latch);
+        Platform.setImplicitExit(false);
     }
 
     /// Runs a task on the FX application thread and propagates failures.

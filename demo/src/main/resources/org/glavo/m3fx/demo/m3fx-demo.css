@@ -248,8 +248,16 @@
     -fx-fill: -m3-color-primary;
 }
 
+.demo-vector-icon-on-primary {
+    -fx-fill: -m3-color-on-primary;
+}
+
 .demo-vector-icon-secondary {
     -fx-fill: -m3-color-secondary;
+}
+
+.demo-vector-icon-on-secondary-container {
+    -fx-fill: -m3-color-on-secondary-container;
 }
 
 .demo-vector-icon-tertiary {

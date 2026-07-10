@@ -15,6 +15,7 @@ import java.util.Objects;
 /// @param outlinedButton tokens used by outlined buttons
 /// @param textButton tokens used by text buttons
 /// @param elevatedButton tokens used by elevated buttons
+/// @param buttonSizing the five-step button size token scale
 /// @param iconButton tokens used by icon buttons
 /// @param floatingActionButton tokens used by floating action buttons
 /// @param icon tokens used by icon glyph primitives
@@ -62,6 +63,7 @@ public record M3ComponentTokensImpl(
         M3ComponentTokens.ButtonTokens outlinedButton,
         M3ComponentTokens.ButtonTokens textButton,
         M3ComponentTokens.ButtonTokens elevatedButton,
+        M3ComponentTokens.ButtonSizingTokens buttonSizing,
         M3ComponentTokens.IconButtonTokens iconButton,
         M3ComponentTokens.FabTokens floatingActionButton,
         M3ComponentTokens.IconTokens icon,
@@ -110,6 +112,7 @@ public record M3ComponentTokensImpl(
         Objects.requireNonNull(outlinedButton, "outlinedButton");
         Objects.requireNonNull(textButton, "textButton");
         Objects.requireNonNull(elevatedButton, "elevatedButton");
+        Objects.requireNonNull(buttonSizing, "buttonSizing");
         Objects.requireNonNull(iconButton, "iconButton");
         Objects.requireNonNull(floatingActionButton, "floatingActionButton");
         Objects.requireNonNull(icon, "icon");

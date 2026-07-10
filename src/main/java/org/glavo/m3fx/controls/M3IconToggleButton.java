@@ -48,13 +48,13 @@ public class M3IconToggleButton extends ButtonBase {
     private static final PseudoClass SELECTED_PSEUDO_CLASS = PseudoClass.getPseudoClass("selected");
 
     /// The default toggle icon button size.
-    private static final M3IconButtonSize DEFAULT_SIZE = M3IconButtonSize.SMALL;
+    private static final M3ButtonSize DEFAULT_SIZE = M3ButtonSize.SMALL;
 
     /// The default toggle icon button width role.
     private static final M3IconButtonWidth DEFAULT_WIDTH = M3IconButtonWidth.DEFAULT;
 
     /// The default toggle icon button shape.
-    private static final M3IconButtonShape DEFAULT_SHAPE = M3IconButtonShape.ROUND;
+    private static final M3ButtonShape DEFAULT_SHAPE = M3ButtonShape.ROUND;
 
     /// The default toggle icon button container height.
     private static final double DEFAULT_CONTAINER_HEIGHT = 40.0;
@@ -83,7 +83,7 @@ public class M3IconToggleButton extends ButtonBase {
             };
 
     // The toggle icon button size property.
-    private final ObjectProperty<M3IconButtonSize> size =
+    private final ObjectProperty<M3ButtonSize> size =
             new SimpleObjectProperty<>(this, "size", DEFAULT_SIZE) {
                 /// Updates size style classes when the property changes.
                 @Override
@@ -111,8 +111,8 @@ public class M3IconToggleButton extends ButtonBase {
             };
 
     // The toggle icon button shape property.
-    private final ObjectProperty<M3IconButtonShape> iconButtonShape =
-            new SimpleObjectProperty<>(this, "iconButtonShape", DEFAULT_SHAPE) {
+    private final ObjectProperty<M3ButtonShape> buttonShape =
+            new SimpleObjectProperty<>(this, "buttonShape", DEFAULT_SHAPE) {
                 /// Updates shape style classes when the property changes.
                 @Override
                 protected void invalidated() {
@@ -200,21 +200,21 @@ public class M3IconToggleButton extends ButtonBase {
     /// Returns the toggle icon button size.
     ///
     /// @return the toggle icon button size
-    public final M3IconButtonSize getSize() {
+    public final M3ButtonSize getSize() {
         return size.get();
     }
 
     /// Sets the toggle icon button size.
     ///
     /// @param size the toggle icon button size
-    public final void setSize(M3IconButtonSize size) {
+    public final void setSize(M3ButtonSize size) {
         this.size.set(Objects.requireNonNull(size, "size"));
     }
 
     /// Returns the toggle icon button size property.
     ///
     /// @return the toggle icon button size property
-    public final ObjectProperty<M3IconButtonSize> sizeProperty() {
+    public final ObjectProperty<M3ButtonSize> sizeProperty() {
         return size;
     }
 
@@ -242,22 +242,22 @@ public class M3IconToggleButton extends ButtonBase {
     /// Returns the toggle icon button shape.
     ///
     /// @return the toggle icon button shape
-    public final M3IconButtonShape getIconButtonShape() {
-        return iconButtonShape.get();
+    public final M3ButtonShape getButtonShape() {
+        return buttonShape.get();
     }
 
     /// Sets the toggle icon button shape.
     ///
     /// @param shape the toggle icon button shape
-    public final void setIconButtonShape(M3IconButtonShape shape) {
-        this.iconButtonShape.set(Objects.requireNonNull(shape, "shape"));
+    public final void setButtonShape(M3ButtonShape shape) {
+        this.buttonShape.set(Objects.requireNonNull(shape, "shape"));
     }
 
     /// Returns the toggle icon button shape property.
     ///
     /// @return the toggle icon button shape property
-    public final ObjectProperty<M3IconButtonShape> iconButtonShapeProperty() {
-        return iconButtonShape;
+    public final ObjectProperty<M3ButtonShape> buttonShapeProperty() {
+        return buttonShape;
     }
 
     /// Returns whether this toggle icon button is selected.
@@ -479,12 +479,12 @@ public class M3IconToggleButton extends ButtonBase {
     private void updateSizeStyle() {
         M3ControlStyles.replaceVariant(
                 this,
-                getSize().styleClass(),
-                M3IconButtonSize.EXTRA_SMALL.styleClass(),
-                M3IconButtonSize.SMALL.styleClass(),
-                M3IconButtonSize.MEDIUM.styleClass(),
-                M3IconButtonSize.LARGE.styleClass(),
-                M3IconButtonSize.EXTRA_LARGE.styleClass()
+                iconButtonSizeStyleClass(getSize()),
+                iconButtonSizeStyleClass(M3ButtonSize.EXTRA_SMALL),
+                iconButtonSizeStyleClass(M3ButtonSize.SMALL),
+                iconButtonSizeStyleClass(M3ButtonSize.MEDIUM),
+                iconButtonSizeStyleClass(M3ButtonSize.LARGE),
+                iconButtonSizeStyleClass(M3ButtonSize.EXTRA_LARGE)
         );
     }
 
@@ -503,10 +503,26 @@ public class M3IconToggleButton extends ButtonBase {
     private void updateShapeStyle() {
         M3ControlStyles.replaceVariant(
                 this,
-                getIconButtonShape().styleClass(),
-                M3IconButtonShape.ROUND.styleClass(),
-                M3IconButtonShape.SQUARE.styleClass()
+                iconButtonShapeStyleClass(getButtonShape()),
+                iconButtonShapeStyleClass(M3ButtonShape.ROUND),
+                iconButtonShapeStyleClass(M3ButtonShape.SQUARE)
         );
+    }
+
+    /// Returns the shared icon-button size style class for a Material size.
+    ///
+    /// @param size the Material button size
+    /// @return the icon-button size style class
+    private static String iconButtonSizeStyleClass(M3ButtonSize size) {
+        return "m3-icon-button-" + size.cssSuffix();
+    }
+
+    /// Returns the shared icon-button shape style class for a Material shape.
+    ///
+    /// @param shape the Material button shape
+    /// @return the icon-button shape style class
+    private static String iconButtonShapeStyleClass(M3ButtonShape shape) {
+        return "m3-icon-button-" + shape.cssSuffix();
     }
 
     /// Applies size-related component tokens to JavaFX layout properties.

@@ -22,8 +22,14 @@ final class DemoIcons {
     /// The style class used for primary-colored demo SVG icons.
     static final String PRIMARY_STYLE_CLASS = "demo-vector-icon-primary";
 
+    /// The style class used for icons drawn on primary containers.
+    static final String ON_PRIMARY_STYLE_CLASS = "demo-vector-icon-on-primary";
+
     /// The style class used for secondary-colored demo SVG icons.
     static final String SECONDARY_STYLE_CLASS = "demo-vector-icon-secondary";
+
+    /// The style class used for icons drawn on secondary containers.
+    static final String ON_SECONDARY_CONTAINER_STYLE_CLASS = "demo-vector-icon-on-secondary-container";
 
     /// The style class used for tertiary-colored demo SVG icons.
     static final String TERTIARY_STYLE_CLASS = "demo-vector-icon-tertiary";
@@ -55,12 +61,28 @@ final class DemoIcons {
         return create(name, PRIMARY_STYLE_CLASS);
     }
 
+    /// Creates an on-primary SVG icon.
+    ///
+    /// @param name the logical icon name
+    /// @return the configured SVG path
+    static SVGPath onPrimary(String name) {
+        return create(name, ON_PRIMARY_STYLE_CLASS);
+    }
+
     /// Creates a secondary-colored SVG icon.
     ///
     /// @param name the logical icon name
     /// @return the configured SVG path
     static SVGPath secondary(String name) {
         return create(name, SECONDARY_STYLE_CLASS);
+    }
+
+    /// Creates an on-secondary-container SVG icon.
+    ///
+    /// @param name the logical icon name
+    /// @return the configured SVG path
+    static SVGPath onSecondaryContainer(String name) {
+        return create(name, ON_SECONDARY_CONTAINER_STYLE_CLASS);
     }
 
     /// Creates a tertiary-colored SVG icon.

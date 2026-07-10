@@ -15,7 +15,7 @@
 }
 
 .m3-search-bar-content {
-    -fx-spacing: -m3-search-bar-content-spacing;
+    -fx-spacing: 16px;
 }
 
 .m3-search-bar-leading,
@@ -24,7 +24,7 @@
 }
 
 .m3-search-bar-trailing {
-    -fx-spacing: -m3-search-bar-trailing-actions-gap;
+    -fx-spacing: 0px;
 }
 
 .m3-search-bar-default-leading {
@@ -67,12 +67,12 @@
 }
 
 .m3-search-view-content {
-    -fx-spacing: -m3-search-view-bar-results-gap;
+    -fx-spacing: 0px;
 }
 
 .m3-search-view-results {
     -fx-spacing: 0px;
-    -fx-background-radius: -m3-search-view-results-shape;
+    -fx-background-radius: 0px;
     -fx-background-insets: 0;
 }
 

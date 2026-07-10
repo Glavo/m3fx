@@ -619,6 +619,11 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
+        if (isDisabled()) {
+            super.executeAccessibleAction(action, parameters);
+            return;
+        }
+
         switch (action) {
             case REQUEST_FOCUS -> focusAccessibleNode();
             case SHOW_MENU, EXPAND -> showPicker();
@@ -1008,10 +1013,9 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
         }
     }
 
-    /// Copies owner motion, CSS, and minimum-width state into the popup-hosted picker.
+    /// Synchronizes owner popup context and minimum-width state into the popup-hosted picker.
     private void preparePopupForShow() {
         popupContextSynchronizer.sync();
-        M3Animation.copyResolvedMotionSettings(this, popupContent);
         double fieldWidth = Math.max(0.0, inputLayout.getWidth());
         M3Css.setMinWidthIfUnbound(popupContent, Math.max(fieldWidth, popupContent.minWidth(-1.0)));
         popupContent.applyCss();
@@ -1052,9 +1056,6 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
 
     /// Applies changed runtime motion settings to active picker popup animations.
     private void refreshMotionSettings() {
-        if (popup.isShowing()) {
-            M3Animation.copyResolvedMotionSettings(this, popupContent);
-        }
         M3Animation.finishRunningAnimationsIfDisabled(this, showAnimation, hideAnimation);
     }
 

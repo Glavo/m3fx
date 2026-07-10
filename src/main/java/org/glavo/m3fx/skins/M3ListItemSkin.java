@@ -139,7 +139,6 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
 
     /// Animates the selected container and mirrors selected state to internal text nodes.
     private final ChangeListener<Boolean> selectedListener = (observable, oldValue, newValue) -> {
-        updateSelectedChildPseudoClasses(newValue);
         animateSelectionContainer(newValue);
     };
 
@@ -458,6 +457,10 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         double targetOpacity = selected ? 1.0 : 0.0;
         double targetScale = selected ? 1.0 : HIDDEN_SELECTION_SCALE;
         selectionAnimation.stop();
+        selectionAnimation.setOnFinished(null);
+        if (!selected) {
+            updateSelectedChildPseudoClasses(false);
+        }
         M3MotionSpec spec = M3Animation.defaultEffects(getSkinnable());
         selectionAnimation.getKeyFrames().setAll(new KeyFrame(
                 spec.duration(),
@@ -465,6 +468,11 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
                 new KeyValue(selectionContainer.scaleXProperty(), targetScale, spec.interpolator()),
                 new KeyValue(selectionContainer.scaleYProperty(), targetScale, spec.interpolator())
         ));
+        selectionAnimation.setOnFinished(event -> {
+            if (getSkinnable().isSelected() == selected) {
+                updateSelectedChildPseudoClasses(selected);
+            }
+        });
         M3Animation.playFromStart(getSkinnable(), selectionAnimation);
     }
 

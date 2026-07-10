@@ -14,7 +14,6 @@ import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.AccessibleRole;
@@ -37,8 +36,8 @@ import java.util.Objects;
 ///
 /// `M3Button` is built on JavaFX [ButtonBase] so it participates in the standard action-event, mnemonic,
 /// focus, accessibility, and default/cancel button mechanisms. The control adds Material variants through
-/// [M3ButtonVariant] and exposes token-backed sizing properties for the container height, shape, and horizontal
-/// padding.
+/// [M3ButtonVariant], the shared [M3ButtonSize] scale, [M3ButtonShape], and token-backed sizing properties for
+/// container height, icon size, shape, and horizontal padding.
 ///
 /// The default skin renders Material state layers, ripple feedback, focus indication, and variant-specific
 /// elevation. Use filled, tonal, outlined, text, or elevated variants according to the action emphasis described
@@ -54,6 +53,12 @@ public class M3Button extends ButtonBase {
     /// The pseudo-class used when this button is the cancel action.
     private static final PseudoClass CANCEL_PSEUDO_CLASS = PseudoClass.getPseudoClass("cancel");
 
+    /// The default Material button size.
+    private static final M3ButtonSize DEFAULT_SIZE = M3ButtonSize.SMALL;
+
+    /// The default Material button shape.
+    private static final M3ButtonShape DEFAULT_BUTTON_SHAPE = M3ButtonShape.ROUND;
+
     /// The default button container height.
     private static final double DEFAULT_CONTAINER_HEIGHT = 40.0;
 
@@ -62,6 +67,9 @@ public class M3Button extends ButtonBase {
 
     /// The default horizontal content padding.
     private static final double DEFAULT_HORIZONTAL_PADDING = 24.0;
+
+    /// The default icon glyph size.
+    private static final double DEFAULT_ICON_SIZE = 20.0;
 
     // The button variant property.
     private final ObjectProperty<M3ButtonVariant> variant = new SimpleObjectProperty<>(this, "variant", M3ButtonVariant.FILLED) {
@@ -76,6 +84,36 @@ public class M3Button extends ButtonBase {
         }
     };
 
+    // The Material button size property.
+    private final ObjectProperty<M3ButtonSize> size = new SimpleObjectProperty<>(this, "size", DEFAULT_SIZE) {
+        /// Updates size and typography style classes when the property changes.
+        @Override
+        protected void invalidated() {
+            if (get() == null) {
+                set(DEFAULT_SIZE);
+                return;
+            }
+            updateSizeStyle();
+            updateTypographyStyle();
+            requestLayout();
+        }
+    };
+
+    // The resting Material button shape property.
+    private final ObjectProperty<M3ButtonShape> buttonShape =
+            new SimpleObjectProperty<>(this, "buttonShape", DEFAULT_BUTTON_SHAPE) {
+                /// Updates the resting shape style class when the property changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(DEFAULT_BUTTON_SHAPE);
+                        return;
+                    }
+                    updateButtonShapeStyle();
+                    requestLayout();
+                }
+            };
+
     // The styleable container height token.
     private @Nullable StyleableDoubleProperty containerHeight;
 
@@ -84,6 +122,9 @@ public class M3Button extends ButtonBase {
 
     // The styleable horizontal padding token.
     private @Nullable StyleableDoubleProperty horizontalPadding;
+
+    // The styleable icon glyph size token.
+    private @Nullable StyleableDoubleProperty iconSize;
 
     // Whether this button is the default action in its containing context.
     private @Nullable BooleanProperty defaultButton;
@@ -118,7 +159,8 @@ public class M3Button extends ButtonBase {
     /// @param text the text displayed by the button
     /// @param variant the Material button variant
     public M3Button(String text, M3ButtonVariant variant) {
-        this(text, null, variant, null);
+        this(text);
+        setVariant(variant);
     }
 
     /// Creates a button with text, graphic content, and the requested variant.
@@ -127,37 +169,8 @@ public class M3Button extends ButtonBase {
     /// @param graphic the optional graphic displayed with the text
     /// @param variant the Material button variant
     public M3Button(String text, @Nullable Node graphic, M3ButtonVariant variant) {
-        this(text, graphic, variant, null);
-    }
-
-    /// Creates a button with text, the requested variant, and an action handler.
-    ///
-    /// @param text the text displayed by the button
-    /// @param variant the Material button variant
-    /// @param onAction the action handler invoked when the button fires, or `null` for no handler
-    public M3Button(
-            String text,
-            M3ButtonVariant variant,
-            @Nullable EventHandler<ActionEvent> onAction
-    ) {
-        this(text, null, variant, onAction);
-    }
-
-    /// Creates a button with text, graphic content, the requested variant, and an action handler.
-    ///
-    /// @param text the text displayed by the button
-    /// @param graphic the optional graphic displayed with the text
-    /// @param variant the Material button variant
-    /// @param onAction the action handler invoked when the button fires, or `null` for no handler
-    public M3Button(
-            String text,
-            @Nullable Node graphic,
-            M3ButtonVariant variant,
-            @Nullable EventHandler<ActionEvent> onAction
-    ) {
         this(text, graphic);
         setVariant(variant);
-        setOnAction(onAction);
     }
 
     /// Returns the button variant.
@@ -179,6 +192,51 @@ public class M3Button extends ButtonBase {
     /// @return the button variant property
     public final ObjectProperty<M3ButtonVariant> variantProperty() {
         return variant;
+    }
+
+    /// Returns the Material button size.
+    ///
+    /// @return the size that selects container, padding, icon, typography, outline, and shape tokens
+    public final M3ButtonSize getSize() {
+        return size.get();
+    }
+
+    /// Sets the Material button size.
+    ///
+    /// Extra-small, medium, large, and extra-large are Material Expressive sizes. Baseline themes retain the
+    /// baseline small-button treatment by default while still rendering explicitly requested larger sizes.
+    ///
+    /// @param size the Material button size
+    public final void setSize(M3ButtonSize size) {
+        this.size.set(Objects.requireNonNull(size, "size"));
+    }
+
+    /// Returns the Material button size property.
+    ///
+    /// @return the writable Material button size property
+    public final ObjectProperty<M3ButtonSize> sizeProperty() {
+        return size;
+    }
+
+    /// Returns the resting Material button shape.
+    ///
+    /// @return the resting round or rounded-square shape role
+    public final M3ButtonShape getButtonShape() {
+        return buttonShape.get();
+    }
+
+    /// Sets the resting Material button shape.
+    ///
+    /// @param buttonShape the resting round or rounded-square shape role
+    public final void setButtonShape(M3ButtonShape buttonShape) {
+        this.buttonShape.set(Objects.requireNonNull(buttonShape, "buttonShape"));
+    }
+
+    /// Returns the resting Material button shape property.
+    ///
+    /// @return the writable Material button shape property
+    public final ObjectProperty<M3ButtonShape> buttonShapeProperty() {
+        return buttonShape;
     }
 
     /// Sets whether this button is the default action in its containing context.
@@ -355,6 +413,39 @@ public class M3Button extends ButtonBase {
         return horizontalPadding;
     }
 
+    /// Returns the icon glyph size token.
+    ///
+    /// Direct [M3Icon] graphics are resized to this value after CSS resolves the active size tokens. Other
+    /// graphic nodes retain their application-controlled dimensions.
+    ///
+    /// @return the icon glyph size in pixels
+    public final double getIconSize() {
+        return iconSize == null ? DEFAULT_ICON_SIZE : iconSize.get();
+    }
+
+    /// Sets the icon glyph size token.
+    ///
+    /// @param iconSize the icon glyph size in pixels
+    public final void setIconSize(double iconSize) {
+        iconSizeProperty().set(M3Css.nonNegative(iconSize, "iconSize"));
+    }
+
+    /// Returns the icon glyph size token property.
+    ///
+    /// @return the styleable icon glyph size property
+    public final StyleableDoubleProperty iconSizeProperty() {
+        if (iconSize == null) {
+            iconSize = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_ICON_SIZE,
+                    this,
+                    "iconSize",
+                    StyleableProperties.ICON_SIZE,
+                    this::updateM3IconGraphicSize
+            );
+        }
+        return iconSize;
+    }
+
     /// Fires this button's action handler.
     @Override
     public void fire() {
@@ -396,7 +487,11 @@ public class M3Button extends ButtonBase {
         setFocusTraversable(true);
         setMnemonicParsing(true);
         setPickOnBounds(true);
+        graphicProperty().addListener(observable -> updateM3IconGraphicSize());
         updateVariantStyle();
+        updateSizeStyle();
+        updateButtonShapeStyle();
+        updateTypographyStyle();
         updateMetrics();
     }
 
@@ -413,6 +508,63 @@ public class M3Button extends ButtonBase {
         );
     }
 
+    /// Applies the active Material size style class.
+    private void updateSizeStyle() {
+        M3ControlStyles.replaceVariant(
+                this,
+                sizeStyleClass(getSize()),
+                sizeStyleClass(M3ButtonSize.EXTRA_SMALL),
+                sizeStyleClass(M3ButtonSize.SMALL),
+                sizeStyleClass(M3ButtonSize.MEDIUM),
+                sizeStyleClass(M3ButtonSize.LARGE),
+                sizeStyleClass(M3ButtonSize.EXTRA_LARGE)
+        );
+    }
+
+    /// Applies the active resting shape style class.
+    private void updateButtonShapeStyle() {
+        M3ControlStyles.replaceVariant(
+                this,
+                shapeStyleClass(getButtonShape()),
+                shapeStyleClass(M3ButtonShape.ROUND),
+                shapeStyleClass(M3ButtonShape.SQUARE)
+        );
+    }
+
+    /// Applies the Material typography role selected by the active size.
+    private void updateTypographyStyle() {
+        M3TextRole role = switch (getSize()) {
+            case EXTRA_SMALL, SMALL -> M3TextRole.LABEL_LARGE;
+            case MEDIUM -> M3TextRole.TITLE_MEDIUM;
+            case LARGE -> M3TextRole.HEADLINE_SMALL;
+            case EXTRA_LARGE -> M3TextRole.HEADLINE_LARGE;
+        };
+        M3ControlStyles.replaceVariant(
+                this,
+                role.styleClass(),
+                M3TextRole.LABEL_LARGE.styleClass(),
+                M3TextRole.TITLE_MEDIUM.styleClass(),
+                M3TextRole.HEADLINE_SMALL.styleClass(),
+                M3TextRole.HEADLINE_LARGE.styleClass()
+        );
+    }
+
+    /// Returns the control style class for one Material button size.
+    ///
+    /// @param size the Material button size
+    /// @return the button size style class
+    static String sizeStyleClass(M3ButtonSize size) {
+        return "m3-button-" + size.cssSuffix();
+    }
+
+    /// Returns the control style class for one Material button shape.
+    ///
+    /// @param shape the Material button shape
+    /// @return the button shape style class
+    static String shapeStyleClass(M3ButtonShape shape) {
+        return "m3-button-" + shape.cssSuffix();
+    }
+
     /// Applies size-related component tokens to JavaFX layout properties.
     private void updateMetrics() {
         double height = getContainerHeight();
@@ -420,6 +572,14 @@ public class M3Button extends ButtonBase {
         M3Css.setMinHeightIfUnbound(this, height);
         M3Css.setPrefHeightIfUnbound(this, height);
         M3Css.setPaddingIfUnbound(this, new Insets(0.0, padding, 0.0, padding));
+        updateM3IconGraphicSize();
+    }
+
+    /// Applies the resolved button icon token to a direct M3FX icon graphic.
+    private void updateM3IconGraphicSize() {
+        if (getGraphic() instanceof M3Icon icon) {
+            icon.setIconSize(getIconSize());
+        }
     }
 
     /// CSS metadata for M3FX button component tokens.
@@ -473,6 +633,22 @@ public class M3Button extends ButtonBase {
                     }
                 };
 
+        /// CSS metadata for the icon glyph size token.
+        private static final CssMetaData<M3Button, Number> ICON_SIZE =
+                new CssMetaData<>("-m3-button-icon-size", SizeConverter.getInstance(), DEFAULT_ICON_SIZE) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3Button control) {
+                        return M3Css.isSettable(control.iconSizeProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3Button control) {
+                        return control.iconSizeProperty();
+                    }
+                };
+
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
@@ -481,6 +657,7 @@ public class M3Button extends ButtonBase {
             styleables.add(CONTAINER_HEIGHT);
             styleables.add(CONTAINER_SHAPE);
             styleables.add(HORIZONTAL_PADDING);
+            styleables.add(ICON_SIZE);
             STYLEABLES = Collections.unmodifiableList(styleables);
         }
     }

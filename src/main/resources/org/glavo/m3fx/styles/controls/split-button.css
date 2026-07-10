@@ -1,47 +1,74 @@
 .m3-split-button {
     -m3-split-button-container-height: 40px;
-    -m3-split-button-spacing: -1px;
-    -m3-split-button-action-horizontal-padding: 20px;
-    -m3-split-button-menu-width: 48px;
-}
-
-.m3-profile-expressive .m3-split-button {
     -m3-split-button-spacing: 2px;
-    -m3-split-button-action-horizontal-padding: 16px;
+    -m3-split-button-action-leading-space: 16px;
+    -m3-split-button-action-trailing-space: 12px;
+    -m3-split-button-menu-width: 48px;
+    -m3-split-button-menu-icon-size: 22px;
+    -m3-split-button-menu-icon-offset: 1px;
+    -m3-split-button-menu-icon-right-offset: -1px;
 }
 
 .m3-split-button.m3-split-button-extra-small {
     -m3-split-button-container-height: 32px;
-    -m3-split-button-action-horizontal-padding: 12px;
+    -m3-split-button-action-leading-space: 12px;
+    -m3-split-button-action-trailing-space: 10px;
     -m3-split-button-menu-width: 48px;
+    -m3-split-button-menu-icon-size: 22px;
+    -m3-split-button-menu-icon-offset: 1px;
+    -m3-split-button-menu-icon-right-offset: -1px;
 }
 
 .m3-split-button.m3-split-button-small {
     -m3-split-button-container-height: 40px;
+    -m3-split-button-action-leading-space: 16px;
+    -m3-split-button-action-trailing-space: 12px;
     -m3-split-button-menu-width: 48px;
+    -m3-split-button-menu-icon-size: 22px;
+    -m3-split-button-menu-icon-offset: 1px;
+    -m3-split-button-menu-icon-right-offset: -1px;
 }
 
 .m3-split-button.m3-split-button-medium {
     -m3-split-button-container-height: 56px;
-    -m3-split-button-action-horizontal-padding: 24px;
+    -m3-split-button-action-leading-space: 24px;
+    -m3-split-button-action-trailing-space: 24px;
     -m3-split-button-menu-width: 56px;
+    -m3-split-button-menu-icon-size: 26px;
+    -m3-split-button-menu-icon-offset: 2px;
+    -m3-split-button-menu-icon-right-offset: -2px;
 }
 
 .m3-split-button.m3-split-button-large {
     -m3-split-button-container-height: 96px;
-    -m3-split-button-action-horizontal-padding: 48px;
+    -m3-split-button-action-leading-space: 48px;
+    -m3-split-button-action-trailing-space: 48px;
     -m3-split-button-menu-width: 96px;
+    -m3-split-button-menu-icon-size: 38px;
+    -m3-split-button-menu-icon-offset: 3px;
+    -m3-split-button-menu-icon-right-offset: -3px;
 }
 
 .m3-split-button.m3-split-button-extra-large {
     -m3-split-button-container-height: 136px;
-    -m3-split-button-action-horizontal-padding: 64px;
+    -m3-split-button-action-leading-space: 64px;
+    -m3-split-button-action-trailing-space: 64px;
     -m3-split-button-menu-width: 136px;
+    -m3-split-button-menu-icon-size: 50px;
+    -m3-split-button-menu-icon-offset: 6px;
+    -m3-split-button-menu-icon-right-offset: -6px;
 }
 
 .m3-split-button .m3-button.m3-split-button-action {
     -m3-container-height: -m3-split-button-container-height;
-    -m3-horizontal-padding: -m3-split-button-action-horizontal-padding;
+}
+
+.m3-split-button .m3-button.m3-split-button-action:left-edge {
+    -fx-padding: 0 -m3-split-button-action-trailing-space 0 -m3-split-button-action-leading-space;
+}
+
+.m3-split-button .m3-button.m3-split-button-action:right-edge {
+    -fx-padding: 0 -m3-split-button-action-leading-space 0 -m3-split-button-action-trailing-space;
 }
 
 .m3-split-button .m3-button.m3-split-button-menu {
@@ -51,44 +78,62 @@
     -fx-pref-width: -m3-split-button-menu-width;
 }
 
-.m3-split-button .m3-button:left-edge {
-    -fx-background-radius: 999px 0 0 999px;
-    -fx-border-radius: 999px 0 0 999px;
+.m3-split-button .m3-button.m3-split-button-menu .m3-disclosure-icon {
+    -m3-disclosure-icon-size: -m3-split-button-menu-icon-size;
 }
 
-.m3-split-button .m3-button:right-edge {
-    -fx-background-radius: 0 999px 999px 0;
-    -fx-border-radius: 0 999px 999px 0;
+.m3-split-button .m3-button.m3-split-button-menu:left-edge .m3-disclosure-icon {
+    -fx-translate-x: -m3-split-button-menu-icon-offset;
 }
 
-.m3-profile-expressive .m3-split-button .m3-button:left-edge {
-    -fx-background-radius: 999px 6px 6px 999px;
-    -fx-border-radius: 999px 6px 6px 999px;
+.m3-split-button .m3-button.m3-split-button-menu:right-edge .m3-disclosure-icon {
+    -fx-translate-x: -m3-split-button-menu-icon-right-offset;
 }
 
-.m3-profile-expressive .m3-split-button .m3-button:right-edge {
-    -fx-background-radius: 6px 999px 999px 6px;
-    -fx-border-radius: 6px 999px 999px 6px;
+.m3-split-button .m3-button.m3-split-button-menu:showing .m3-disclosure-icon {
+    -fx-translate-x: 0;
 }
 
-.m3-profile-expressive .m3-split-button.m3-split-button-large .m3-button:left-edge {
-    -fx-background-radius: 999px 10px 10px 999px;
-    -fx-border-radius: 999px 10px 10px 999px;
+.m3-split-button .m3-button.m3-split-button-action:left-edge,
+.m3-split-button .m3-button.m3-split-button-menu:left-edge {
+    -fx-background-radius: 999px 4px 4px 999px;
+    -fx-border-radius: 999px 4px 4px 999px;
 }
 
-.m3-profile-expressive .m3-split-button.m3-split-button-large .m3-button:right-edge {
-    -fx-background-radius: 10px 999px 999px 10px;
-    -fx-border-radius: 10px 999px 999px 10px;
+.m3-split-button .m3-button.m3-split-button-action:right-edge,
+.m3-split-button .m3-button.m3-split-button-menu:right-edge {
+    -fx-background-radius: 4px 999px 999px 4px;
+    -fx-border-radius: 4px 999px 999px 4px;
 }
 
-.m3-profile-expressive .m3-split-button.m3-split-button-extra-large .m3-button:left-edge {
-    -fx-background-radius: 999px 16px 16px 999px;
-    -fx-border-radius: 999px 16px 16px 999px;
+.m3-split-button.m3-split-button-large .m3-button.m3-split-button-action:left-edge,
+.m3-split-button.m3-split-button-large .m3-button.m3-split-button-menu:left-edge {
+    -fx-background-radius: 999px 8px 8px 999px;
+    -fx-border-radius: 999px 8px 8px 999px;
 }
 
-.m3-profile-expressive .m3-split-button.m3-split-button-extra-large .m3-button:right-edge {
-    -fx-background-radius: 16px 999px 999px 16px;
-    -fx-border-radius: 16px 999px 999px 16px;
+.m3-split-button.m3-split-button-large .m3-button.m3-split-button-action:right-edge,
+.m3-split-button.m3-split-button-large .m3-button.m3-split-button-menu:right-edge {
+    -fx-background-radius: 8px 999px 999px 8px;
+    -fx-border-radius: 8px 999px 999px 8px;
+}
+
+.m3-split-button.m3-split-button-extra-large .m3-button.m3-split-button-action:left-edge,
+.m3-split-button.m3-split-button-extra-large .m3-button.m3-split-button-menu:left-edge {
+    -fx-background-radius: 999px 12px 12px 999px;
+    -fx-border-radius: 999px 12px 12px 999px;
+}
+
+.m3-split-button.m3-split-button-extra-large .m3-button.m3-split-button-action:right-edge,
+.m3-split-button.m3-split-button-extra-large .m3-button.m3-split-button-menu:right-edge {
+    -fx-background-radius: 12px 999px 999px 12px;
+    -fx-border-radius: 12px 999px 999px 12px;
+}
+
+.m3-split-button .m3-button.m3-split-button-menu:left-edge:showing,
+.m3-split-button .m3-button.m3-split-button-menu:right-edge:showing {
+    -fx-background-radius: 999px;
+    -fx-border-radius: 999px;
 }
 
 .m3-split-button .m3-button.m3-split-button-action:disabled,

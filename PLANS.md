@@ -2,7 +2,7 @@
 
 ## Purpose
 
-M3FX is a modular Material Design 3 component library for JavaFX. The project is still in active development, with remaining release work centered on API freeze, final visual review, and release-candidate verification after source or build changes.
+M3FX is a modular Material Design 3 component library for JavaFX. The project is still in active development, with remaining release work centered on final visual review and release-candidate verification after source or build changes.
 
 ## Current Baseline
 
@@ -44,8 +44,8 @@ M3FX is a modular Material Design 3 component library for JavaFX. The project is
 - Host and cross-platform jlink support uses BellSoft LibericaJDK Full target jmods.
 - Platform and architecture jlink tasks cover Windows, Linux, and macOS on x64 and AArch64 and have been verified through the aggregate all-platform task.
 - `releaseCheck` validates the default release path: `check`, `:demo:test`, demo shadow jar verification, and the default host-platform demo jlink runtime image.
-- Publication verification covers Maven metadata, main and sources jars, Maven artifact layout, and consumer resolution without publishing OpenJFX artifacts.
-- GitHub Actions runs release validation under Xvfb and uploads the verified demo shadow jar as an unarchived artifact.
+- Publication verification covers Maven metadata, main, sources, and Javadoc artifact structure, Maven artifact layout, and consumer resolution without publishing OpenJFX artifacts.
+- GitHub Actions runs release validation under Xvfb and uploads visual reports, test reports, and the verified demo shadow jar as unarchived artifacts.
 - Packaging guidance is documented in `docs/PACKAGING.md`.
 - The root README documents status, dependency ownership, JPMS usage, theme installation, component status, demo execution, packaging tasks, validation entry points, and licensing.
 
@@ -72,25 +72,24 @@ M3FX is a modular Material Design 3 component library for JavaFX. The project is
 ### Demo And Visual Validation
 
 - The demo app is organized as Material component pages with documentation links to `https://m3.material.io/`.
-- The demo includes standard, dark, expressive, and right-to-left visual paths.
-- Visual smoke tests render registered demo pages, check CSS warnings, inspect layout bounds, sample pixels for important states, and exercise interaction frames.
+- The release visual matrix renders every registered page in baseline light, expressive light, baseline dark, expressive dark, baseline RTL, expressive dark RTL, and reduced-motion modes.
+- Visual smoke tests capture reviewable screenshots, check theme context and CSS warnings, inspect layout bounds, sample pixels for important states, and exercise interaction frames. The root test task also rejects unresolved M3FX token lookups and CSS conversion warnings recorded in JUnit output.
 - Core control tests cover tokens, CSS metadata, fallback stylesheets, accessibility, focus traversal, mixed popup focus routing, RTL behavior, animation enablement, reduced motion, and styleable metrics.
+- Mixed popup focus integration uses representative semantic scenarios across nested menus, pickers, rich tooltips, dialogs, sheets, snackbars, search, virtualized lists, navigation drawers, and toolbars. Per-control suites validate the underlying focus and accessibility contracts without duplicating every container and popup permutation.
 
 ## Release Readiness
 
 - The library is a release candidate for baseline Material Design 3 plus documented M3 Expressive token, profile, motion, and component support.
-- Before 1.0, complete final human API sign-off across the module export surface: `org.glavo.m3fx.animation`, `org.glavo.m3fx.controls`, `org.glavo.m3fx.theme`, and `org.glavo.m3fx.tokens`. The exported package, public type inventory, static utility methods, duplicate wrapper methods, public batch constructors, and internal-type exposure are covered by project contract tests.
+- The 1.0 public API review is complete across `org.glavo.m3fx.animation`, `org.glavo.m3fx.controls`, `org.glavo.m3fx.theme`, and `org.glavo.m3fx.tokens`. The reviewed surface includes exported packages, public top-level and nested types, constructors, enum constants, public field constants, static utility methods, style class names, duplicate wrapper methods, batch constructors, JavaFX superclass exceptions, and internal-type exposure.
 - Full M3 Expressive visual parity for every component is explicitly deferred beyond the 1.0 baseline; 1.0 documents the supported Expressive token/profile behavior and keeps component parity work incremental.
-- Before 1.0, run a final component-by-component visual pass on the demo in standard, expressive, dark, and right-to-left modes.
-- Before 1.0, rerun final release validation after the final source, stylesheet, token, demo, or build-logic change.
+- The component-by-component release visual matrix covers all 46 registered demo pages across seven theme, direction, and motion combinations.
+- Any source, stylesheet, token, demo, or build-logic change must be followed by final `releaseCheck` validation before publication.
 - Before publishing runtime images, rerun all-platform and all-architecture jlink validation after any jlink, packaging, module, or dependency change.
 
-## Next Goals
+## Post-1.0 Goals
 
-- Finish the public API naming and package-surface review.
 - Continue improving M3 Expressive parity for components whose official target values are stable and whose visual states can be covered by rendered tests.
-- Visual and animation validation is tied to semantic states, stable animation pulses, rendered-pixel changes, and real focus or pointer interactions.
-- Audit less common mixed popup stacks for keyboard and accessibility parity, especially combinations of menus, pickers, tooltips, dialogs, sheets, snackbars, and search surfaces.
+- Continue extending visual and animation validation through semantic states, stable animation pulses, rendered-pixel changes, and real focus or pointer interactions.
 - Demo page validation targets normal, selected, focused, pressed, disabled, RTL, and reduced-motion states for each implemented component where those states apply.
 
 ## Validation Entry Points
@@ -98,7 +97,7 @@ M3FX is a modular Material Design 3 component library for JavaFX. The project is
 - `compileJava` validates main source compilation.
 - `compileTestJava` validates test source compilation.
 - `test` validates unit, behavior, visual, accessibility, and snapshot tests.
-- `check` validates compilation, tests, publication metadata, publication artifact layout, and build-local publication consumption.
+- `check` validates compilation, tests, publication metadata, main, sources, and Javadoc artifact structure, and build-local publication consumption.
 - `releaseCheck` validates the library publication path, demo visual and behavior tests, executable demo shadow jar, and default demo jlink runtime image structure.
 - `shadowDemoJar` validates executable demo jar packaging without bundled JavaFX.
 - `jlinkDemoRuntime` validates the default demo runtime image.

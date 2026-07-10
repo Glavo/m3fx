@@ -192,10 +192,27 @@ public final class M3NavigationDrawerGroup extends Control {
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
+        if (isDisabled()) {
+            super.executeAccessibleAction(action, parameters);
+            return;
+        }
+
         switch (action) {
-            case FIRE -> setExpanded(!isExpanded());
-            case EXPAND -> setExpanded(true);
-            case COLLAPSE -> setExpanded(false);
+            case FIRE -> {
+                if (M3Accessible.isEffectivelyReachable(this)) {
+                    setExpanded(!isExpanded());
+                }
+            }
+            case EXPAND -> {
+                if (M3Accessible.isEffectivelyReachable(this)) {
+                    setExpanded(true);
+                }
+            }
+            case COLLAPSE -> {
+                if (M3Accessible.isEffectivelyReachable(this)) {
+                    setExpanded(false);
+                }
+            }
             case REQUEST_FOCUS -> focusAccessibleNode();
             case SHOW_ITEM -> showAccessibleItem(parameters);
             default -> super.executeAccessibleAction(action, parameters);
@@ -222,7 +239,11 @@ public final class M3NavigationDrawerGroup extends Control {
         M3ControlStyles.add(headerItem, HEADER_STYLE_CLASS);
         headerItem.headlineTextProperty().bind(title);
         headerItem.setTrailingMedia(disclosureIcon, M3ListItemSlotSize.ICON);
-        headerItem.setOnAction(event -> setExpanded(!isExpanded()));
+        headerItem.setOnAction(event -> {
+            if (M3Accessible.isEffectivelyReachable(this)) {
+                setExpanded(!isExpanded());
+            }
+        });
         disclosureIcon.expandedProperty().bind(expanded);
         items.addListener(itemsListener);
         title.addListener((observable, oldValue, newValue) -> {

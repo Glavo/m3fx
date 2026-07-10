@@ -6,7 +6,10 @@ package org.glavo.m3fx.controls;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
+import javafx.collections.ListChangeListener;
 import javafx.collections.MapChangeListener;
+import javafx.collections.ObservableList;
+import javafx.geometry.NodeOrientation;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -66,6 +69,10 @@ public class M3Dialog<R> extends Dialog<R> {
     private final ChangeListener<@Nullable Parent> ownerNodeParentListener =
             (observable, oldParent, newParent) -> refreshInheritedThemeContextAndApplyTheme();
 
+    /// Handles owner-node effective orientation changes while this dialog is showing.
+    private final ChangeListener<NodeOrientation> ownerNodeOrientationListener =
+            (observable, oldValue, newValue) -> syncOwnerNodeOrientation();
+
     /// Handles owner-window scene changes while this dialog is observing inherited theme context.
     private final ChangeListener<@Nullable Scene> ownerWindowSceneListener =
             (observable, oldScene, newScene) -> refreshInheritedThemeContextAndApplyTheme();
@@ -73,6 +80,14 @@ public class M3Dialog<R> extends Dialog<R> {
     /// Handles root changes on the currently observed owner scene.
     private final ChangeListener<Parent> ownerSceneRootListener =
             (observable, oldRoot, newRoot) -> refreshInheritedThemeContextAndApplyTheme();
+
+    /// Handles owner scene root effective orientation changes while this dialog is showing.
+    private final ChangeListener<NodeOrientation> ownerSceneRootOrientationListener =
+            (observable, oldValue, newValue) -> syncOwnerNodeOrientation();
+
+    /// Handles owner scene stylesheet mutations while the dialog is showing.
+    private final ListChangeListener<String> ownerSceneStylesheetsListener =
+            change -> applyEffectiveTheme();
 
     /// Handles theme metadata changes on the owner scene root.
     private final MapChangeListener<Object, Object> sceneRootPropertiesListener =
@@ -95,11 +110,20 @@ public class M3Dialog<R> extends Dialog<R> {
     /// The owner scene root currently observed for theme metadata changes.
     private @Nullable Parent observedSceneRoot;
 
+    /// The owner scene stylesheet list currently observed for dialog stylesheet mirroring.
+    private @Nullable ObservableList<String> observedOwnerStylesheets;
+
     /// Owner ancestors currently observed for local theme metadata and parent-chain changes.
     private final List<Parent> observedAncestorThemeRoots = new ArrayList<>();
 
     /// Whether inherited theme context listeners are currently registered.
     private boolean observingInheritedThemeContext;
+
+    /// The dialog pane orientation value before owner orientation mirroring began.
+    private NodeOrientation baseNodeOrientationBeforeInheritance = NodeOrientation.INHERIT;
+
+    /// Whether the dialog pane currently contains a mirrored owner orientation value.
+    private boolean inheritedNodeOrientationApplied;
 
     /// Creates a Material Design 3 dialog.
     public M3Dialog() {
@@ -109,6 +133,7 @@ public class M3Dialog<R> extends Dialog<R> {
         addEventFilter(DialogEvent.DIALOG_SHOWING, event -> {
             refreshOwnerWindowFromNode();
             startInheritedThemeContextObservation();
+            syncOwnerNodeOrientation();
             applyEffectiveTheme();
         });
         addEventFilter(DialogEvent.DIALOG_HIDDEN, event -> stopInheritedThemeContextObservation());
@@ -193,6 +218,7 @@ public class M3Dialog<R> extends Dialog<R> {
         if (observingInheritedThemeContext && previousOwnerNode != null) {
             previousOwnerNode.sceneProperty().removeListener(ownerNodeSceneListener);
             previousOwnerNode.parentProperty().removeListener(ownerNodeParentListener);
+            previousOwnerNode.effectiveNodeOrientationProperty().removeListener(ownerNodeOrientationListener);
         }
 
         ownerNode = Objects.requireNonNull(owner, "owner");
@@ -200,6 +226,7 @@ public class M3Dialog<R> extends Dialog<R> {
         if (observingInheritedThemeContext) {
             owner.sceneProperty().addListener(ownerNodeSceneListener);
             owner.parentProperty().addListener(ownerNodeParentListener);
+            owner.effectiveNodeOrientationProperty().addListener(ownerNodeOrientationListener);
             refreshInheritedThemeContextAndApplyTheme();
         }
     }
@@ -227,7 +254,9 @@ public class M3Dialog<R> extends Dialog<R> {
         if (effectiveTheme == null) {
             effectiveTheme = getOwnerTheme();
         }
-        applyTheme(getM3DialogPane(), effectiveTheme);
+        M3DialogPane pane = getM3DialogPane();
+        syncOwnerStylesheets(pane, effectiveTheme);
+        applyTheme(pane, effectiveTheme);
     }
 
     /// Returns the theme installed on the owner scene when one is available.
@@ -261,6 +290,7 @@ public class M3Dialog<R> extends Dialog<R> {
         if (node != null) {
             node.sceneProperty().addListener(ownerNodeSceneListener);
             node.parentProperty().addListener(ownerNodeParentListener);
+            node.effectiveNodeOrientationProperty().addListener(ownerNodeOrientationListener);
         }
         refreshInheritedThemeContextSources();
     }
@@ -276,10 +306,13 @@ public class M3Dialog<R> extends Dialog<R> {
         if (node != null) {
             node.sceneProperty().removeListener(ownerNodeSceneListener);
             node.parentProperty().removeListener(ownerNodeParentListener);
+            node.effectiveNodeOrientationProperty().removeListener(ownerNodeOrientationListener);
         }
+        restoreBaseNodeOrientation();
         updateObservedOwnerWindow(null);
         updateObservedOwnerScene(null);
         updateObservedSceneRoot(null);
+        updateObservedOwnerStylesheets(null);
         clearObservedAncestorThemeRoots();
     }
 
@@ -289,6 +322,7 @@ public class M3Dialog<R> extends Dialog<R> {
         @Nullable Scene ownerScene = ownerThemeScene();
         updateObservedOwnerScene(ownerScene);
         updateObservedSceneRoot(ownerScene == null ? null : ownerScene.getRoot());
+        updateObservedOwnerStylesheets(ownerScene == null ? null : ownerScene.getStylesheets());
         updateObservedAncestorThemeRoots();
     }
 
@@ -310,12 +344,11 @@ public class M3Dialog<R> extends Dialog<R> {
         }
     }
 
-    /// Refreshes inherited owner theme sources and reapplies the effective theme when no explicit theme is set.
+    /// Refreshes inherited owner context sources, orientation, and effective dialog theme.
     private void refreshInheritedThemeContextAndApplyTheme() {
         refreshInheritedThemeContextSources();
-        if (getTheme() == null) {
-            applyEffectiveTheme();
-        }
+        syncOwnerNodeOrientation();
+        applyEffectiveTheme();
     }
 
     /// Updates the observed owner window.
@@ -353,10 +386,26 @@ public class M3Dialog<R> extends Dialog<R> {
         }
         if (observedSceneRoot != null) {
             observedSceneRoot.getProperties().removeListener(sceneRootPropertiesListener);
+            observedSceneRoot.effectiveNodeOrientationProperty().removeListener(ownerSceneRootOrientationListener);
         }
         observedSceneRoot = sceneRoot;
         if (observedSceneRoot != null) {
             observedSceneRoot.getProperties().addListener(sceneRootPropertiesListener);
+            observedSceneRoot.effectiveNodeOrientationProperty().addListener(ownerSceneRootOrientationListener);
+        }
+    }
+
+    /// Updates the observed owner stylesheet list.
+    private void updateObservedOwnerStylesheets(@Nullable ObservableList<String> stylesheets) {
+        if (observedOwnerStylesheets == stylesheets) {
+            return;
+        }
+        if (observedOwnerStylesheets != null) {
+            observedOwnerStylesheets.removeListener(ownerSceneStylesheetsListener);
+        }
+        observedOwnerStylesheets = stylesheets;
+        if (observedOwnerStylesheets != null) {
+            observedOwnerStylesheets.addListener(ownerSceneStylesheetsListener);
         }
     }
 
@@ -381,6 +430,56 @@ public class M3Dialog<R> extends Dialog<R> {
             parent.parentProperty().removeListener(ancestorParentListener);
         }
         observedAncestorThemeRoots.clear();
+    }
+
+    /// Mirrors owner node or owner scene root orientation into the detached dialog pane.
+    private void syncOwnerNodeOrientation() {
+        @Nullable Node node = ownerNode;
+        @Nullable Node source = node != null && node.getScene() != null ? node : observedSceneRoot;
+        if (source == null) {
+            restoreBaseNodeOrientation();
+            return;
+        }
+
+        M3DialogPane pane = getM3DialogPane();
+        if (!inheritedNodeOrientationApplied) {
+            baseNodeOrientationBeforeInheritance = pane.getNodeOrientation();
+            inheritedNodeOrientationApplied = true;
+        }
+        pane.setNodeOrientation(source.getEffectiveNodeOrientation());
+    }
+
+    /// Restores the dialog pane orientation value that existed before owner orientation mirroring began.
+    private void restoreBaseNodeOrientation() {
+        if (!inheritedNodeOrientationApplied) {
+            return;
+        }
+        getM3DialogPane().setNodeOrientation(baseNodeOrientationBeforeInheritance);
+        baseNodeOrientationBeforeInheritance = NodeOrientation.INHERIT;
+        inheritedNodeOrientationApplied = false;
+    }
+
+    /// Mirrors owner scene stylesheets into the dialog pane while keeping M3FX base styles available.
+    private void syncOwnerStylesheets(M3DialogPane pane, @Nullable M3Theme effectiveTheme) {
+        @Nullable ObservableList<String> ownerStylesheets = observedOwnerStylesheets;
+        ObservableList<String> stylesheets = pane.getStylesheets();
+        if (ownerStylesheets == null) {
+            stylesheets.setAll(M3ThemeManager.stylesheetUrl());
+            return;
+        }
+
+        stylesheets.setAll(ownerStylesheets);
+        removeSupersededOwnerThemeStylesheet(stylesheets, effectiveTheme);
+        installStylesheet(pane);
+    }
+
+    /// Removes an owner-scene theme stylesheet when an explicit dialog theme should have priority.
+    private void removeSupersededOwnerThemeStylesheet(List<String> stylesheets, @Nullable M3Theme effectiveTheme) {
+        @Nullable Scene ownerScene = ownerThemeScene();
+        @Nullable M3Theme ownerSceneTheme = ownerScene == null ? null : M3ThemeResolver.findTheme(ownerScene);
+        if (ownerSceneTheme != null && ownerSceneTheme != effectiveTheme) {
+            stylesheets.remove(M3ThemeManager.themeStylesheetUrl(ownerSceneTheme));
+        }
     }
 
     /// Adds the shared M3FX stylesheet to the dialog pane.
@@ -420,7 +519,7 @@ public class M3Dialog<R> extends Dialog<R> {
         if (previousStylesheet instanceof String previous && !previous.equals(stylesheet)) {
             pane.getStylesheets().remove(previous);
         }
-        List<String> stylesheets = pane.getStylesheets();
+        ObservableList<String> stylesheets = pane.getStylesheets();
         int baseStylesheetIndex = stylesheets.indexOf(M3ThemeManager.stylesheetUrl());
         moveOrAdd(stylesheets, stylesheet, baseStylesheetIndex >= 0 ? baseStylesheetIndex + 1 : 0);
     }

@@ -346,6 +346,11 @@ public class M3BottomSheet extends Control {
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
+        if (isDisabled()) {
+            super.executeAccessibleAction(action, parameters);
+            return;
+        }
+
         switch (action) {
             case EXPAND -> {
                 if (M3Accessible.canReveal(this)) {

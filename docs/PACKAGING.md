@@ -145,15 +145,15 @@ Use these tasks before distributing artifacts:
 
 `releaseCheck` runs `check`, `:demo:test`, `shadowDemoJar`, and `jlinkDemoRuntime`. It is the local release gate for the library publication, demo visual and behavior tests, and the host-platform demo distribution. It does not run the all-platform jlink aggregate task, so release builds can opt into the cross-platform runtime images they actually need.
 
-The GitHub Actions release workflow runs the same `releaseCheck` entry point under Xvfb on Linux and then uploads the generated demo shadow jar with `archive: false`. It also uploads visual snapshot PNGs plus Gradle HTML and XML test reports with `if: always()` so failed or suspicious visual runs keep reviewable evidence.
+The GitHub Actions release workflow runs the same `releaseCheck` entry point under Xvfb on Linux and then uploads the generated demo shadow jar with `actions/upload-artifact@v7` and `archive: false`. It also uploads visual report directories, including snapshot PNGs and HTML indexes, plus Gradle HTML and XML test reports with `if: always()` so failed or suspicious visual runs keep reviewable evidence.
 
 `check` runs publication metadata verification. The verification generates the Maven POM and fails if copied project metadata remains or if JavaFX appears in the published dependency metadata.
 
-`check` also verifies the generated main jar and sources jar. The artifact verification fails if required module or API entries are missing, if any bundled M3FX stylesheet resource is absent from the main jar, if any main Java source is absent from the sources jar, or if the main jar bundles JavaFX implementation classes.
+`check` also verifies the generated main jar, sources jar, and Javadoc jar. The artifact verification fails if required module or API entries are missing, if any bundled M3FX stylesheet resource is absent from the main jar, if any main Java source is absent from the sources jar, if the Javadoc jar is not a generated documentation artifact, or if the main jar bundles JavaFX implementation classes.
 
-`check` cleans and then publishes the Maven publication to `build/verification-maven-repository` and verifies that the Maven repository layout contains exactly one main jar, sources jar, and POM, including timestamped SNAPSHOT artifacts when applicable, without Gradle module metadata or JavaFX artifacts. This verifies the real `maven-publish` wiring without writing to the user's local Maven cache.
+`check` cleans and then publishes the Maven publication to `build/verification-maven-repository` and verifies that the Maven repository layout contains exactly one main jar, sources jar, Javadoc jar, and POM, including timestamped SNAPSHOT artifacts when applicable, without Gradle module metadata or JavaFX artifacts. This verifies the real `maven-publish` wiring without writing to the user's local Maven cache.
 
-`check` also resolves that build-local Maven publication through a Gradle consumer runtime configuration. The consumer verification requires the runtime dependency to resolve M3FX and MonetFX while rejecting transitive OpenJFX artifacts. The sources classifier availability is covered by the publication layout verification above.
+`check` also resolves that build-local Maven publication through a Gradle consumer runtime configuration. The consumer verification requires the runtime dependency to resolve M3FX and MonetFX while rejecting transitive OpenJFX artifacts. The sources and Javadoc classifier availability is covered by the publication layout verification above.
 
 `shadowDemoJar` also runs the demo shadow jar verification task. The verification fails if JavaFX classes or JavaFX jar files are bundled into the shadow jar, if the executable manifest is missing, if required demo classes, demo CSS, M3FX classes, or MonetFX classes are absent, or if the packaged `AlibabaPuHuiTi-3-65-Medium.ttf` demo font is absent or empty.
 

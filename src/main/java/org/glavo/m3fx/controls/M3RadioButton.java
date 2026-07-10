@@ -349,15 +349,11 @@ public class M3RadioButton extends ButtonBase implements Toggle {
         return getClassCssMetaData();
     }
 
-    /// Toggles this radio button and fires its action handler.
+    /// Selects this radio button and fires its action handler when selection changes.
     @Override
     public void fire() {
-        if (isDisabled()) {
-            return;
-        }
-
-        if (getToggleGroup() == null || !isSelected()) {
-            setSelected(!isSelected());
+        if (!isDisabled() && !isSelected()) {
+            setSelected(true);
             fireEvent(new ActionEvent(this, this));
         }
     }

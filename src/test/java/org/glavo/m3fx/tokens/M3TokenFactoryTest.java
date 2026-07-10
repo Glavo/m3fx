@@ -138,7 +138,15 @@ final class M3TokenFactoryTest {
         assertEquals(51.0, tokenSet.componentTokens().filledButton().height(), 0.0001);
         assertEquals(70.0, tokenSet.componentTokens().floatingActionButton().regularSize(), 0.0001);
         assertEquals(33.0, tokenSet.componentTokens().icon().largeSize(), 0.0001);
-        assertEquals(49.0, tokenSet.componentTokens().splitButton().menuButtonWidth(), 0.0001);
+        M3ComponentTokens.SplitButtonSizeTokens smallSplitButton =
+                tokenSet.componentTokens().splitButton().small();
+        assertEquals(
+                49.0,
+                smallSplitButton.menuLeadingSpace()
+                        + smallSplitButton.menuIconSize()
+                        + smallSplitButton.menuTrailingSpace(),
+                0.0001
+        );
         assertEquals(15.0, tokenSet.componentTokens().floatingActionButton().menuActionSpacing(), 0.0001);
         assertEquals(10.0, tokenSet.componentTokens().buttonGroup().iconToggleGroupSpacing(), 0.0001);
         assertEquals(61.0, tokenSet.componentTokens().tab().containerHeight(), 0.0001);
@@ -258,7 +266,16 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-item-width: 68px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-split-button-menu-width: 49px"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-split-button-spacing: -2px"));
-        assertTrue(tokenSet.toControlStyleRules().contains("-fx-pref-width: -m3-split-button-menu-width"));
+        assertTrue(tokenSet.toControlStyleRules().contains("-fx-pref-width: 49px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains(
+                "-m3-button-group-extra-large-connected-inner-corner: 20px"
+        ));
+        assertTrue(tokenSet.toControlStyleRules().contains(
+                ".m3-button-group.m3-button-group-extra-large.m3-connected-button-group"
+        ));
+        assertTrue(tokenSet.toControlStyleRules().contains(
+                ".m3-button.m3-button-group-first:pressed"
+        ));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-tab-active-indicator"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-medium-container-height: 60px"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-large-container-height: 61px"));
@@ -383,11 +400,12 @@ final class M3TokenFactoryTest {
                 new M3ComponentTokens.ButtonTokens(53.0, 23.0, 19.0),
                 new M3ComponentTokens.ButtonTokens(54.0, 24.0, 20.0),
                 new M3ComponentTokens.ButtonTokens(55.0, 25.0, 21.0),
+                createButtonSizingTokens(),
                 createIconButtonTokens(),
                 new M3ComponentTokens.FabTokens(50.0, 70.0, 110.0, 14.0, 22.0, 30.0, 13.0, 17.0, 25.0, 15.0),
                 new M3ComponentTokens.IconTokens(19.0, 25.0, 33.0, 41.0),
-                new M3ComponentTokens.ButtonGroupTokens(23.0, -2.0, 11.0, 6.0, -3.0, 10.0),
-                new M3ComponentTokens.SplitButtonTokens(40.0, -2.0, 24.0, 49.0, 6.0, 8.0, 10.0),
+                createButtonGroupTokens(),
+                createSplitButtonTokens(),
                 new M3ComponentTokens.ButtonTokens(57.0, 26.0, 14.0),
                 new M3ComponentTokens.TabTokens(61.0, 91.0, 15.0, 4.0, 4.0),
                 new M3ComponentTokens.FieldTokens(66.0, 8.0, 18.0),
@@ -485,6 +503,49 @@ final class M3TokenFactoryTest {
         );
     }
 
+    /// Creates button size tokens with distinctive values for generated output assertions.
+    private static M3ComponentTokens.ButtonSizingTokens createButtonSizingTokens() {
+        return new M3ComponentTokens.ButtonSizingTokens(
+                new M3ComponentTokens.ButtonSizeTokens(32.0, 20.0, 999.0, 12.0, 8.0, 12.0, 11.0, 8.0, 1.0),
+                new M3ComponentTokens.ButtonSizeTokens(40.0, 20.0, 999.0, 12.0, 8.0, 16.0, 15.0, 8.0, 1.0),
+                new M3ComponentTokens.ButtonSizeTokens(56.0, 24.0, 999.0, 16.0, 12.0, 24.0, 23.0, 8.0, 1.0),
+                new M3ComponentTokens.ButtonSizeTokens(96.0, 32.0, 999.0, 28.0, 16.0, 48.0, 47.0, 12.0, 2.0),
+                new M3ComponentTokens.ButtonSizeTokens(136.0, 40.0, 999.0, 28.0, 16.0, 64.0, 63.0, 16.0, 3.0)
+        );
+    }
+
+    /// Creates button-group tokens with distinctive size values.
+    private static M3ComponentTokens.ButtonGroupTokens createButtonGroupTokens() {
+        return new M3ComponentTokens.ButtonGroupTokens(
+                new M3ComponentTokens.ButtonGroupSizeTokens(32.0, 18.0, -2.0, 4.0, 3.0, 16.0),
+                new M3ComponentTokens.ButtonGroupSizeTokens(40.0, 11.0, -2.0, 6.0, 4.0, 20.0),
+                new M3ComponentTokens.ButtonGroupSizeTokens(56.0, 9.0, -2.0, 8.0, 5.0, 28.0),
+                new M3ComponentTokens.ButtonGroupSizeTokens(96.0, 8.0, -2.0, 16.0, 12.0, 48.0),
+                new M3ComponentTokens.ButtonGroupSizeTokens(136.0, 7.0, -2.0, 20.0, 16.0, 68.0),
+                -3.0,
+                10.0
+        );
+    }
+
+    /// Creates split-button tokens with distinctive size values.
+    private static M3ComponentTokens.SplitButtonTokens createSplitButtonTokens() {
+        M3ComponentTokens.SplitButtonSizeTokens size = new M3ComponentTokens.SplitButtonSizeTokens(
+                40.0,
+                -2.0,
+                6.0,
+                7.0,
+                8.0,
+                24.0,
+                22.0,
+                29.0,
+                3.0,
+                10.0,
+                10.0,
+                20.0
+        );
+        return new M3ComponentTokens.SplitButtonTokens(size, size, size, size, size);
+    }
+
     /// Creates icon button tokens with distinctive size values.
     private static M3ComponentTokens.IconButtonTokens createIconButtonTokens() {
         return new M3ComponentTokens.IconButtonTokens(
@@ -505,6 +566,7 @@ final class M3TokenFactoryTest {
                 createRecord(M3ComponentTokens.ButtonTokens.class, values),
                 createRecord(M3ComponentTokens.ButtonTokens.class, values),
                 createRecord(M3ComponentTokens.ButtonTokens.class, values),
+                createRecord(M3ComponentTokens.ButtonSizingTokens.class, values),
                 createRecord(M3ComponentTokens.IconButtonTokens.class, values),
                 createRecord(M3ComponentTokens.FabTokens.class, values),
                 createRecord(M3ComponentTokens.IconTokens.class, values),

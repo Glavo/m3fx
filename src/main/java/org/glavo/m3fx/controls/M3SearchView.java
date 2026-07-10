@@ -200,7 +200,9 @@ public class M3SearchView extends Control {
 
     /// Fires the embedded search bar action event.
     public final void fire() {
-        searchBar.fire();
+        if (!isDisabled()) {
+            searchBar.fire();
+        }
     }
 
     /// Returns whether this search view is showing active search results.
@@ -277,6 +279,11 @@ public class M3SearchView extends Control {
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
+        if (isDisabled()) {
+            super.executeAccessibleAction(action, parameters);
+            return;
+        }
+
         switch (action) {
             case SET_TEXT -> {
                 if (parameters.length > 0 && parameters[0] instanceof String text) {

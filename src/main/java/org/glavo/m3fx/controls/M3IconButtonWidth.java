@@ -7,7 +7,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 /// Defines the Material Expressive width used by icon buttons and toggle icon buttons.
 ///
-/// The width role combines with [M3IconButtonSize] so compact, default, and wide icon-only actions can use the
+/// The width role combines with [M3ButtonSize] so compact, default, and wide icon-only actions can use the
 /// measurements from the Material Design 3 icon button specification.
 ///
 /// See [Material Design icon buttons](https://m3.material.io/components/icon-buttons/specs).

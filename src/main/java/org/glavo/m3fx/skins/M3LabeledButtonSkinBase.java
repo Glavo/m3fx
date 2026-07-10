@@ -19,6 +19,11 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundFill;
+import javafx.scene.layout.Border;
+import javafx.scene.layout.BorderStroke;
+import javafx.scene.layout.CornerRadii;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextBoundsType;
 import org.glavo.m3fx.animation.M3MotionSpec;
@@ -31,10 +36,10 @@ import org.glavo.m3fx.controls.M3IconToggleButton;
 import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
 import org.glavo.m3fx.controls.M3SplitButton;
+import org.glavo.m3fx.controls.M3TimePicker;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3FocusRequests;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
-import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -111,6 +116,8 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         control.widthProperty().addListener(stateLayerLayoutInvalidation);
         control.heightProperty().addListener(stateLayerLayoutInvalidation);
         control.layoutBoundsProperty().addListener(stateLayerLayoutInvalidation);
+        control.backgroundProperty().addListener(stateLayerLayoutInvalidation);
+        control.borderProperty().addListener(stateLayerLayoutInvalidation);
         control.armedProperty().addListener(armedListener);
         control.disabledProperty().addListener(disabledListener);
         layoutStateLayer();
@@ -122,6 +129,8 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         getSkinnable().widthProperty().removeListener(stateLayerLayoutInvalidation);
         getSkinnable().heightProperty().removeListener(stateLayerLayoutInvalidation);
         getSkinnable().layoutBoundsProperty().removeListener(stateLayerLayoutInvalidation);
+        getSkinnable().backgroundProperty().removeListener(stateLayerLayoutInvalidation);
+        getSkinnable().borderProperty().removeListener(stateLayerLayoutInvalidation);
         getSkinnable().armedProperty().removeListener(armedListener);
         motionSettingsObserver.dispose();
         getSkinnable().disabledProperty().removeListener(disabledListener);
@@ -298,13 +307,19 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
             return;
         }
 
-        if (graphic == null && button.getStyleClass().contains(M3DatePicker.DAY_CELL_STYLE_CLASS)) {
-            centerDateCellTextContent(x, y, width, height);
+        if (graphic == null && isFixedPickerCell(button)) {
+            centerFixedPickerCellTextContent(x, y, width, height);
         }
     }
 
-    /// Centers date-cell text by visual glyph bounds so rendered digits stay optically centered.
-    private void centerDateCellTextContent(double x, double y, double width, double height) {
+    /// Returns whether a button is a picker cell whose numeric text needs optical centering.
+    private static boolean isFixedPickerCell(ButtonBase button) {
+        return button.getStyleClass().contains(M3DatePicker.DAY_CELL_STYLE_CLASS)
+                || button.getStyleClass().contains(M3TimePicker.CELL_STYLE_CLASS);
+    }
+
+    /// Centers fixed picker-cell text by visual glyph bounds so rendered digits stay optically centered.
+    private void centerFixedPickerCellTextContent(double x, double y, double width, double height) {
         @Nullable Node textNode = firstTextNode();
         if (textNode == null) {
             return;
@@ -424,38 +439,62 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
 
     /// Lays out button feedback with button-group or split-button corner radii.
     private boolean layoutGroupedButtonStateLayer(M3Button button, double width, double height) {
+        boolean groupedShape = button.getStyleClass().contains(M3ButtonGroup.SINGLE_BUTTON_STYLE_CLASS)
+                || button.getStyleClass().contains(M3ButtonGroup.FIRST_BUTTON_STYLE_CLASS)
+                || button.getStyleClass().contains(M3ButtonGroup.MIDDLE_BUTTON_STYLE_CLASS)
+                || button.getStyleClass().contains(M3ButtonGroup.LAST_BUTTON_STYLE_CLASS)
+                || button.getStyleClass().contains(M3SplitButton.ACTION_BUTTON_STYLE_CLASS)
+                || button.getStyleClass().contains(M3SplitButton.MENU_BUTTON_STYLE_CLASS);
+        if (!groupedShape) {
+            return false;
+        }
+
+        @Nullable CornerRadii resolvedRadii = resolvedCornerRadii(button);
+        if (resolvedRadii != null) {
+            stateLayer.layoutLayer(
+                    0.0,
+                    0.0,
+                    width,
+                    height,
+                    resolvedRadii.getTopLeftHorizontalRadius(),
+                    resolvedRadii.getTopRightHorizontalRadius(),
+                    resolvedRadii.getBottomRightHorizontalRadius(),
+                    resolvedRadii.getBottomLeftHorizontalRadius()
+            );
+            return true;
+        }
+
         double radius = button.getContainerShape();
         if (button.getStyleClass().contains(M3ButtonGroup.SINGLE_BUTTON_STYLE_CLASS)) {
             stateLayer.layoutLayer(0.0, 0.0, width, height, radius);
-            return true;
-        }
-        boolean rightToLeft = M3NodeLayout.isRightToLeft(button);
-        boolean roundedLeft = false;
-        boolean roundedRight = false;
-        if (button.getStyleClass().contains(M3ButtonGroup.FIRST_BUTTON_STYLE_CLASS)) {
-            roundedLeft = true;
-        } else if (button.getStyleClass().contains(M3ButtonGroup.LAST_BUTTON_STYLE_CLASS)) {
-            roundedRight = true;
-        } else if (button.getStyleClass().contains(M3SplitButton.ACTION_BUTTON_STYLE_CLASS)) {
-            roundedLeft = !rightToLeft;
-            roundedRight = rightToLeft;
-        } else if (button.getStyleClass().contains(M3SplitButton.MENU_BUTTON_STYLE_CLASS)) {
-            roundedLeft = rightToLeft;
-            roundedRight = !rightToLeft;
-        }
-        if (roundedLeft) {
+        } else if (button.getStyleClass().contains(M3ButtonGroup.FIRST_BUTTON_STYLE_CLASS)
+                || button.getStyleClass().contains(M3SplitButton.ACTION_BUTTON_STYLE_CLASS)) {
             stateLayer.layoutLayer(0.0, 0.0, width, height, radius, 0.0, 0.0, radius);
-            return true;
-        }
-        if (button.getStyleClass().contains(M3ButtonGroup.MIDDLE_BUTTON_STYLE_CLASS)) {
+        } else if (button.getStyleClass().contains(M3ButtonGroup.MIDDLE_BUTTON_STYLE_CLASS)) {
             stateLayer.layoutLayer(0.0, 0.0, width, height, 0.0);
-            return true;
-        }
-        if (roundedRight) {
+        } else {
             stateLayer.layoutLayer(0.0, 0.0, width, height, 0.0, radius, radius, 0.0);
-            return true;
         }
-        return false;
+        return true;
+    }
+
+    /// Returns the CSS-resolved corner radii used by a grouped button surface.
+    ///
+    /// Transparent outlined backgrounds still expose their CSS radii. The border is used as a fallback for
+    /// application styles that remove all background fills.
+    private static @Nullable CornerRadii resolvedCornerRadii(M3Button button) {
+        Background background = button.getBackground();
+        if (background != null && !background.getFills().isEmpty()) {
+            BackgroundFill fill = background.getFills().get(0);
+            return fill.getRadii();
+        }
+
+        Border border = button.getBorder();
+        if (border != null && !border.getStrokes().isEmpty()) {
+            BorderStroke stroke = border.getStrokes().get(0);
+            return stroke.getRadii();
+        }
+        return null;
     }
 
     /// Returns the shape radius used to clip state layer feedback.

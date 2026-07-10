@@ -351,6 +351,11 @@ public class M3SubMenuItem extends M3MenuItem {
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
+        if (isDisabled()) {
+            super.executeAccessibleAction(action, parameters);
+            return;
+        }
+
         switch (action) {
             case SHOW_MENU, EXPAND -> showSubMenu();
             case COLLAPSE -> hideSubMenu(true);
@@ -634,9 +639,6 @@ public class M3SubMenuItem extends M3MenuItem {
 
     /// Applies changed runtime motion settings to active submenu popup animations.
     private void refreshMotionSettings() {
-        if (popup.isShowing()) {
-            M3Animation.copyResolvedMotionSettings(this, subMenu);
-        }
         M3Animation.finishRunningAnimationsIfDisabled(this, showAnimation, hideAnimation);
         refreshHoverDelays();
     }
@@ -697,11 +699,9 @@ public class M3SubMenuItem extends M3MenuItem {
         }
     }
 
-    /// Copies owner motion and orientation settings into the popup-hosted submenu.
+    /// Synchronizes owner popup context into the popup-hosted submenu.
     private void prepareSubMenuForPopup() {
         popupContextSynchronizer.sync();
-        M3Animation.copyResolvedMotionSettings(this, subMenu);
-        subMenu.setNodeOrientation(getEffectiveNodeOrientation());
         subMenu.applyCss();
     }
 

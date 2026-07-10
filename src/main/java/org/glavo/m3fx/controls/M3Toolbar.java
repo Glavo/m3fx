@@ -365,6 +365,11 @@ public class M3Toolbar extends Control {
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
+        if (isDisabled()) {
+            super.executeAccessibleAction(action, parameters);
+            return;
+        }
+
         switch (action) {
             case REQUEST_FOCUS -> focusAccessibleItem();
             case SHOW_ITEM -> showAccessibleItem(parameters);

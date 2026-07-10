@@ -17,8 +17,6 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -26,6 +24,7 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.util.Duration;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
@@ -188,59 +187,6 @@ public class M3SnackbarHost extends Control {
         return displayDuration;
     }
 
-    /// Shows a snackbar with message text.
-    ///
-    /// @param text the snackbar message text
-    public final void show(String text) {
-        M3Snackbar snackbar = new M3Snackbar(text);
-        show(snackbar);
-    }
-
-    /// Shows a snackbar with message text, action text, and an optional action handler.
-    ///
-    /// @param text the snackbar message text
-    /// @param actionText the action button text
-    /// @param actionHandler the action handler, or `null` for none
-    public final void show(
-            String text,
-            String actionText,
-            @Nullable EventHandler<ActionEvent> actionHandler
-    ) {
-        M3Snackbar snackbar = new M3Snackbar(text, actionText, event -> {
-            dismiss();
-            if (actionHandler != null) {
-                actionHandler.handle(event);
-            }
-        });
-        show(snackbar);
-    }
-
-    /// Adds a snackbar with message text to the end of the display queue.
-    ///
-    /// @param text the snackbar message text
-    public final void enqueue(String text) {
-        enqueue(new M3Snackbar(text));
-    }
-
-    /// Adds a snackbar with message text, action text, and an optional action handler to the display queue.
-    ///
-    /// @param text the snackbar message text
-    /// @param actionText the action button text
-    /// @param actionHandler the action handler, or `null` for none
-    public final void enqueue(
-            String text,
-            String actionText,
-            @Nullable EventHandler<ActionEvent> actionHandler
-    ) {
-        M3Snackbar snackbar = new M3Snackbar(text, actionText, event -> {
-            dismiss();
-            if (actionHandler != null) {
-                actionHandler.handle(event);
-            }
-        });
-        enqueue(snackbar);
-    }
-
     /// Adds the supplied snackbar to the end of the display queue.
     ///
     /// @param snackbar the snackbar to enqueue
@@ -357,6 +303,11 @@ public class M3SnackbarHost extends Control {
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
+        if (isDisabled()) {
+            super.executeAccessibleAction(action, parameters);
+            return;
+        }
+
         switch (action) {
             case COLLAPSE -> dismiss();
             case REQUEST_FOCUS -> {
@@ -375,15 +326,9 @@ public class M3SnackbarHost extends Control {
 
     /// Handles keyboard dismissal while focus is inside the snackbar host.
     private void handleKeyPressed(KeyEvent event) {
-        switch (event.getCode()) {
-            case ESCAPE -> {
-                if (isShowing()) {
-                    dismiss();
-                    event.consume();
-                }
-            }
-            default -> {
-            }
+        if (event.getCode() == KeyCode.ESCAPE && isShowing()) {
+            dismiss();
+            event.consume();
         }
     }
 

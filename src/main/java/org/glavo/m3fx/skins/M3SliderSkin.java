@@ -71,6 +71,9 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     /// Applies track shape token changes to the visible track segments.
     private final InvalidationListener trackShapeInvalidation = observable -> updateTrackStyle();
 
+    /// Applies thumb width token changes to the visible thumb shape.
+    private final InvalidationListener thumbStyleInvalidation = observable -> updateThumbStyle();
+
     /// Updates the displayed position after value changes.
     private final InvalidationListener valueInvalidation = observable -> updateDisplayedPosition();
 
@@ -113,11 +116,13 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         control.trackShapeProperty().addListener(trackShapeInvalidation);
         control.thumbSizeProperty().addListener(layoutInvalidation);
         control.thumbWidthProperty().addListener(layoutInvalidation);
+        control.thumbWidthProperty().addListener(thumbStyleInvalidation);
         control.thumbTrackGapProperty().addListener(layoutInvalidation);
         control.touchTargetSizeProperty().addListener(layoutInvalidation);
         control.disabledProperty().addListener(disabledInvalidation);
 
         updateTrackStyle();
+        updateThumbStyle();
         control.addEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
         control.addEventHandler(MouseEvent.MOUSE_DRAGGED, mouseDraggedHandler);
         control.addEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
@@ -139,6 +144,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         control.trackShapeProperty().removeListener(trackShapeInvalidation);
         control.thumbSizeProperty().removeListener(layoutInvalidation);
         control.thumbWidthProperty().removeListener(layoutInvalidation);
+        control.thumbWidthProperty().removeListener(thumbStyleInvalidation);
         control.thumbTrackGapProperty().removeListener(layoutInvalidation);
         control.touchTargetSizeProperty().removeListener(layoutInvalidation);
         motionSettingsObserver.dispose();
@@ -172,6 +178,21 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
                         + " -fx-border-insets: 0;"
                         + " -fx-border-radius: " + shape + ";"
                         + " -fx-border-width: 0px;"
+        );
+    }
+
+    /// Applies the slider thumb shape from the current short-side width token.
+    private void updateThumbStyle() {
+        String radius = formatPixels(getSkinnable().getThumbWidth() / 2.0);
+        thumb.setStyle(
+                "-fx-background-color: -m3-color-primary;"
+                        + " -fx-background-insets: 0;"
+                        + " -fx-background-radius: " + radius + ";"
+                        + " -fx-border-color: transparent;"
+                        + " -fx-border-insets: 0;"
+                        + " -fx-border-width: 0px;"
+                        + " -fx-effect: null;"
+                        + " -fx-padding: 0px;"
         );
     }
 
