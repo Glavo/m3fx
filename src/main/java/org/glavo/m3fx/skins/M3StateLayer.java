@@ -4,9 +4,8 @@
 package org.glavo.m3fx.skins;
 
 import javafx.animation.Animation;
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
-import javafx.animation.Timeline;
+import javafx.animation.Interpolator;
+import javafx.animation.Transition;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.SetChangeListener;
 import javafx.css.PseudoClass;
@@ -64,6 +63,18 @@ final class M3StateLayer extends Pane {
     /// The opacity used by the animated ripple at the start of a press.
     private static final double RIPPLE_START_OPACITY = 0.18;
 
+    /// The path element index occupied by the top-right clip corner.
+    private static final int CLIP_TOP_RIGHT_CORNER_INDEX = 2;
+
+    /// The path element index occupied by the bottom-right clip corner.
+    private static final int CLIP_BOTTOM_RIGHT_CORNER_INDEX = 4;
+
+    /// The path element index occupied by the bottom-left clip corner.
+    private static final int CLIP_BOTTOM_LEFT_CORNER_INDEX = 6;
+
+    /// The path element index occupied by the top-left clip corner.
+    private static final int CLIP_TOP_LEFT_CORNER_INDEX = 8;
+
     /// The persistent overlay node controlled by CSS pseudo-class rules.
     private final Region overlay = new Region();
 
@@ -76,14 +87,53 @@ final class M3StateLayer extends Pane {
     /// The clip that bounds overlay and ripple visuals to the component shape.
     private final Path clip = new Path();
 
-    /// The ripple expansion and release animation timeline.
-    private final Timeline rippleAnimation = new Timeline();
+    /// The reusable clip path starting point.
+    private final MoveTo clipStart = new MoveTo();
 
-    /// The overlay opacity animation timeline.
-    private final Timeline overlayOpacityAnimation = new Timeline();
+    /// The reusable clip top edge.
+    private final LineTo clipTopEdge = new LineTo();
 
-    /// The keyboard focus indicator opacity animation timeline.
-    private final Timeline focusIndicatorOpacityAnimation = new Timeline();
+    /// The reusable rounded top-right clip corner.
+    private final ArcTo clipTopRightArc = new ArcTo();
+
+    /// The reusable square top-right clip corner.
+    private final LineTo clipTopRightLine = new LineTo();
+
+    /// The reusable clip right edge.
+    private final LineTo clipRightEdge = new LineTo();
+
+    /// The reusable rounded bottom-right clip corner.
+    private final ArcTo clipBottomRightArc = new ArcTo();
+
+    /// The reusable square bottom-right clip corner.
+    private final LineTo clipBottomRightLine = new LineTo();
+
+    /// The reusable clip bottom edge.
+    private final LineTo clipBottomEdge = new LineTo();
+
+    /// The reusable rounded bottom-left clip corner.
+    private final ArcTo clipBottomLeftArc = new ArcTo();
+
+    /// The reusable square bottom-left clip corner.
+    private final LineTo clipBottomLeftLine = new LineTo();
+
+    /// The reusable clip left edge.
+    private final LineTo clipLeftEdge = new LineTo();
+
+    /// The reusable rounded top-left clip corner.
+    private final ArcTo clipTopLeftArc = new ArcTo();
+
+    /// The reusable square top-left clip corner.
+    private final LineTo clipTopLeftLine = new LineTo();
+
+    /// The reusable ripple expansion and release transition.
+    private final RippleTransition rippleAnimation = new RippleTransition(ripple);
+
+    /// The reusable overlay opacity transition.
+    private final OpacityTransition overlayOpacityAnimation = new OpacityTransition(overlay);
+
+    /// The reusable keyboard focus indicator opacity transition.
+    private final OpacityTransition focusIndicatorOpacityAnimation = new OpacityTransition(focusIndicator);
 
     /// The control whose interaction states drive this layer.
     private @Nullable Node stateOwner;
@@ -183,6 +233,18 @@ final class M3StateLayer extends Pane {
         ripple.setOpacity(0.0);
         focusIndicator.setOpacity(0.0);
         clip.setFill(Color.BLACK);
+        clip.getElements().addAll(
+                clipStart,
+                clipTopEdge,
+                clipTopRightArc,
+                clipRightEdge,
+                clipBottomRightArc,
+                clipBottomEdge,
+                clipBottomLeftArc,
+                clipLeftEdge,
+                clipTopLeftArc,
+                new ClosePath()
+        );
         getChildren().addAll(overlay, ripple, focusIndicator);
         setClip(clip);
     }
@@ -296,21 +358,8 @@ final class M3StateLayer extends Pane {
         ripple.setScaleY(0.0);
         ripple.setOpacity(RIPPLE_START_OPACITY);
         M3MotionSpec rippleSpec = M3Animation.defaultSpatial(owner);
-        rippleAnimation.getKeyFrames().setAll(
-                new KeyFrame(
-                        Duration.ZERO,
-                        new KeyValue(ripple.scaleXProperty(), 0.0, rippleSpec.interpolator()),
-                        new KeyValue(ripple.scaleYProperty(), 0.0, rippleSpec.interpolator()),
-                        new KeyValue(ripple.opacityProperty(), RIPPLE_START_OPACITY, rippleSpec.interpolator())
-                ),
-                new KeyFrame(
-                        rippleSpec.duration(),
-                        new KeyValue(ripple.scaleXProperty(), 1.0, rippleSpec.interpolator()),
-                        new KeyValue(ripple.scaleYProperty(), 1.0, rippleSpec.interpolator()),
-                        new KeyValue(ripple.opacityProperty(), RIPPLE_START_OPACITY, rippleSpec.interpolator())
-                )
-        );
-        M3Animation.playFromStart(owner, rippleAnimation);
+        rippleAnimation.configureExpansion(rippleSpec);
+        rippleAnimation.playFromStart();
     }
 
     /// Plays a bounded ripple from the layer center.
@@ -341,49 +390,19 @@ final class M3StateLayer extends Pane {
 
         M3MotionSpec expansionSpec = M3Animation.defaultSpatial(owner);
         M3MotionSpec fadeSpec = M3Animation.defaultEffects(owner);
-        Duration remainingExpansion = remainingRippleExpansionDuration(
+        double remainingExpansionMillis = remainingRippleExpansionMillis(
                 expansionSpec.duration(),
                 Math.max(startScaleX, startScaleY)
         );
-        Duration fadeDuration = fadeSpec.duration();
-        Duration fadeEnd = remainingExpansion.greaterThan(fadeDuration) ? remainingExpansion : fadeDuration;
-        if (remainingExpansion.greaterThan(Duration.ZERO)) {
-            rippleAnimation.getKeyFrames().setAll(
-                    new KeyFrame(
-                            Duration.ZERO,
-                            new KeyValue(ripple.scaleXProperty(), startScaleX, expansionSpec.interpolator()),
-                            new KeyValue(ripple.scaleYProperty(), startScaleY, expansionSpec.interpolator()),
-                            new KeyValue(ripple.opacityProperty(), startOpacity, fadeSpec.interpolator())
-                    ),
-                    new KeyFrame(
-                            remainingExpansion,
-                            new KeyValue(ripple.scaleXProperty(), 1.0, expansionSpec.interpolator()),
-                            new KeyValue(ripple.scaleYProperty(), 1.0, expansionSpec.interpolator())
-                    ),
-                    new KeyFrame(
-                            fadeEnd,
-                            new KeyValue(ripple.scaleXProperty(), 1.0, expansionSpec.interpolator()),
-                            new KeyValue(ripple.scaleYProperty(), 1.0, expansionSpec.interpolator()),
-                            new KeyValue(ripple.opacityProperty(), 0.0, fadeSpec.interpolator())
-                    )
-            );
-        } else {
-            rippleAnimation.getKeyFrames().setAll(
-                    new KeyFrame(
-                            Duration.ZERO,
-                            new KeyValue(ripple.scaleXProperty(), startScaleX, fadeSpec.interpolator()),
-                            new KeyValue(ripple.scaleYProperty(), startScaleY, fadeSpec.interpolator()),
-                            new KeyValue(ripple.opacityProperty(), startOpacity, fadeSpec.interpolator())
-                    ),
-                    new KeyFrame(
-                            fadeSpec.duration(),
-                            new KeyValue(ripple.scaleXProperty(), 1.0, fadeSpec.interpolator()),
-                            new KeyValue(ripple.scaleYProperty(), 1.0, fadeSpec.interpolator()),
-                            new KeyValue(ripple.opacityProperty(), 0.0, fadeSpec.interpolator())
-                    )
-            );
-        }
-        M3Animation.playFromStart(owner, rippleAnimation);
+        rippleAnimation.configureRelease(
+                startScaleX,
+                startScaleY,
+                startOpacity,
+                expansionSpec,
+                remainingExpansionMillis,
+                fadeSpec
+        );
+        rippleAnimation.playFromStart();
     }
 
     /// Mirrors a pseudo-class to the overlay and ripple nodes.
@@ -472,7 +491,12 @@ final class M3StateLayer extends Pane {
     }
 
     /// Animates one opacity node to a resolved owner-state target.
-    private static void animateOpacity(Node owner, Region node, Timeline animation, double targetOpacity) {
+    private static void animateOpacity(
+            Node owner,
+            Region node,
+            OpacityTransition animation,
+            double targetOpacity
+    ) {
         double startOpacity = node.getOpacity();
         animation.stop();
         node.setOpacity(startOpacity);
@@ -488,17 +512,8 @@ final class M3StateLayer extends Pane {
         }
 
         M3MotionSpec opacitySpec = M3Animation.fastEffects(owner);
-        animation.getKeyFrames().setAll(
-                new KeyFrame(
-                        Duration.ZERO,
-                        new KeyValue(node.opacityProperty(), startOpacity, opacitySpec.interpolator())
-                ),
-                new KeyFrame(
-                        opacitySpec.duration(),
-                        new KeyValue(node.opacityProperty(), targetOpacity, opacitySpec.interpolator())
-                )
-        );
-        M3Animation.playFromStart(owner, animation);
+        animation.configure(opacitySpec, startOpacity, targetOpacity);
+        animation.playFromStart();
     }
 
     /// Returns the target overlay opacity for the owner interaction state.
@@ -548,20 +563,155 @@ final class M3StateLayer extends Pane {
         return owner == null ? this : owner;
     }
 
+    /// A reusable transition for one state-layer opacity channel.
+    @NotNullByDefault
+    private static final class OpacityTransition extends Transition {
+        /// The region whose opacity is animated.
+        private final Region node;
+
+        /// The opacity at the beginning of the current transition.
+        private double startOpacity;
+
+        /// The opacity at the end of the current transition.
+        private double targetOpacity;
+
+        /// Creates an opacity transition for a state-layer region.
+        private OpacityTransition(Region node) {
+            this.node = node;
+        }
+
+        /// Reconfigures this transition without replacing its animation graph.
+        private void configure(M3MotionSpec spec, double startOpacity, double targetOpacity) {
+            stop();
+            setCycleDuration(spec.duration());
+            setInterpolator(spec.interpolator());
+            this.startOpacity = startOpacity;
+            this.targetOpacity = targetOpacity;
+        }
+
+        /// Applies the eased opacity for the current pulse.
+        @Override
+        protected void interpolate(double fraction) {
+            node.setOpacity(linearInterpolate(startOpacity, targetOpacity, fraction));
+        }
+    }
+
+    /// A reusable transition for ripple press expansion and release fading.
+    @NotNullByDefault
+    private static final class RippleTransition extends Transition {
+        /// The ripple region animated by this transition.
+        private final Region ripple;
+
+        /// The horizontal scale at the beginning of the current transition.
+        private double startScaleX;
+
+        /// The vertical scale at the beginning of the current transition.
+        private double startScaleY;
+
+        /// The opacity at the beginning of the current transition.
+        private double startOpacity;
+
+        /// The opacity at the end of the current transition.
+        private double targetOpacity;
+
+        /// The duration over which scale reaches its final value.
+        private double expansionDurationMillis;
+
+        /// The duration represented by the complete transition.
+        private double totalDurationMillis;
+
+        /// The easing curve used for scale expansion.
+        private Interpolator expansionInterpolator = Interpolator.LINEAR;
+
+        /// The easing curve used for opacity fading.
+        private Interpolator opacityInterpolator = Interpolator.LINEAR;
+
+        /// Creates a reusable transition for a ripple region.
+        private RippleTransition(Region ripple) {
+            this.ripple = ripple;
+            setInterpolator(Interpolator.LINEAR);
+        }
+
+        /// Configures press expansion while retaining a constant visible opacity.
+        private void configureExpansion(M3MotionSpec expansionSpec) {
+            stop();
+            Duration duration = expansionSpec.duration();
+            setCycleDuration(duration);
+            startScaleX = 0.0;
+            startScaleY = 0.0;
+            startOpacity = RIPPLE_START_OPACITY;
+            targetOpacity = RIPPLE_START_OPACITY;
+            expansionDurationMillis = duration.toMillis();
+            totalDurationMillis = expansionDurationMillis;
+            expansionInterpolator = expansionSpec.interpolator();
+            opacityInterpolator = Interpolator.LINEAR;
+        }
+
+        /// Configures a release that keeps unfinished expansion and fading on independent easing curves.
+        private void configureRelease(
+                double startScaleX,
+                double startScaleY,
+                double startOpacity,
+                M3MotionSpec expansionSpec,
+                double remainingExpansionMillis,
+                M3MotionSpec fadeSpec
+        ) {
+            stop();
+            double fadeDurationMillis = fadeSpec.duration().toMillis();
+            double totalDurationMillis = Math.max(remainingExpansionMillis, fadeDurationMillis);
+            setCycleDuration(Duration.millis(totalDurationMillis));
+            this.startScaleX = startScaleX;
+            this.startScaleY = startScaleY;
+            this.startOpacity = startOpacity;
+            targetOpacity = 0.0;
+            this.totalDurationMillis = totalDurationMillis;
+            if (remainingExpansionMillis > 0.0) {
+                expansionDurationMillis = remainingExpansionMillis;
+                expansionInterpolator = expansionSpec.interpolator();
+            } else {
+                expansionDurationMillis = fadeDurationMillis;
+                expansionInterpolator = fadeSpec.interpolator();
+            }
+            opacityInterpolator = fadeSpec.interpolator();
+        }
+
+        /// Applies independently eased scale and opacity values for the current pulse.
+        @Override
+        protected void interpolate(double fraction) {
+            double elapsedMillis = totalDurationMillis * fraction;
+            double expansionFraction = elapsedFraction(elapsedMillis, expansionDurationMillis);
+            double opacityFraction = elapsedFraction(elapsedMillis, totalDurationMillis);
+            ripple.setScaleX(expansionInterpolator.interpolate(startScaleX, 1.0, expansionFraction));
+            ripple.setScaleY(expansionInterpolator.interpolate(startScaleY, 1.0, expansionFraction));
+            ripple.setOpacity(opacityInterpolator.interpolate(startOpacity, targetOpacity, opacityFraction));
+        }
+    }
+
     /// Computes the ripple diameter needed to cover this layer from an origin point.
     private static double rippleDiameter(double x, double y, double width, double height) {
-        double left = x;
         double right = width - x;
-        double top = y;
         double bottom = height - y;
-        double radius = Math.hypot(Math.max(left, right), Math.max(top, bottom));
+        double radius = Math.hypot(Math.max(x, right), Math.max(y, bottom));
         return radius * 2.0;
     }
 
-    /// Returns the remaining expansion duration for a ripple released before it reaches full size.
-    private static Duration remainingRippleExpansionDuration(Duration fullDuration, double currentScale) {
+    /// Returns the remaining expansion time for a ripple released before it reaches full size.
+    private static double remainingRippleExpansionMillis(Duration fullDuration, double currentScale) {
         double clampedScale = Math.max(0.0, Math.min(1.0, currentScale));
-        return Duration.millis(fullDuration.toMillis() * (1.0 - clampedScale));
+        return fullDuration.toMillis() * (1.0 - clampedScale);
+    }
+
+    /// Returns elapsed progress clamped to the closed unit interval.
+    private static double elapsedFraction(double elapsedMillis, double durationMillis) {
+        if (durationMillis <= 0.0) {
+            return 1.0;
+        }
+        return Math.max(0.0, Math.min(1.0, elapsedMillis / durationMillis));
+    }
+
+    /// Interpolates linearly between two scalar values.
+    private static double linearInterpolate(double start, double end, double fraction) {
+        return start + (end - start) * fraction;
     }
 
     /// Resolves a token radius to a radius that can be represented within the current bounds.
@@ -674,37 +824,67 @@ final class M3StateLayer extends Pane {
         clipTopRightRadius = topRight;
         clipBottomRightRadius = bottomRight;
         clipBottomLeftRadius = bottomLeft;
-        clip.getElements().setAll(
-                new MoveTo(topLeft, 0.0),
-                new LineTo(width - topRight, 0.0),
-                arcTo(topRight, width, topRight),
-                new LineTo(width, height - bottomRight),
-                arcTo(bottomRight, width - bottomRight, height),
-                new LineTo(bottomLeft, height),
-                arcTo(bottomLeft, 0.0, height - bottomLeft),
-                new LineTo(0.0, topLeft),
-                arcTo(topLeft, topLeft, 0.0),
-                new ClosePath()
+        clipStart.setX(topLeft);
+        clipStart.setY(0.0);
+        clipTopEdge.setX(width - topRight);
+        clipTopEdge.setY(0.0);
+        updateClipCorner(
+                CLIP_TOP_RIGHT_CORNER_INDEX,
+                clipTopRightArc,
+                clipTopRightLine,
+                topRight,
+                width,
+                topRight
+        );
+        clipRightEdge.setX(width);
+        clipRightEdge.setY(height - bottomRight);
+        updateClipCorner(
+                CLIP_BOTTOM_RIGHT_CORNER_INDEX,
+                clipBottomRightArc,
+                clipBottomRightLine,
+                bottomRight,
+                width - bottomRight,
+                height
+        );
+        clipBottomEdge.setX(bottomLeft);
+        clipBottomEdge.setY(height);
+        updateClipCorner(
+                CLIP_BOTTOM_LEFT_CORNER_INDEX,
+                clipBottomLeftArc,
+                clipBottomLeftLine,
+                bottomLeft,
+                0.0,
+                height - bottomLeft
+        );
+        clipLeftEdge.setX(0.0);
+        clipLeftEdge.setY(topLeft);
+        updateClipCorner(
+                CLIP_TOP_LEFT_CORNER_INDEX,
+                clipTopLeftArc,
+                clipTopLeftLine,
+                topLeft,
+                topLeft,
+                0.0
         );
     }
 
-    /// Creates a corner arc or a zero-length line for square corners.
-    private static PathElement arcTo(double radius, double x, double y) {
-        if (radius <= 0.0) {
-            return new LineTo(x, y);
-        }
-
-        ArcTo arc = new ArcTo();
+    /// Updates one reusable clip corner and selects its rounded or square path element.
+    private void updateClipCorner(int index, ArcTo arc, LineTo line, double radius, double x, double y) {
         arc.setRadiusX(radius);
         arc.setRadiusY(radius);
         arc.setX(x);
         arc.setY(y);
         arc.setSweepFlag(true);
-        return arc;
+        line.setX(x);
+        line.setY(y);
+        PathElement target = radius <= 0.0 ? line : arc;
+        if (clip.getElements().get(index) != target) {
+            clip.getElements().set(index, target);
+        }
     }
 
     /// Formats a CSS pixel value.
     private static String formatPixels(double value) {
-        return Double.toString(value) + "px";
+        return value + "px";
     }
 }
