@@ -3,10 +3,6 @@
 
 package org.glavo.m3fx.skins;
 
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
-import javafx.animation.Timeline;
-import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.Insets;
@@ -33,7 +29,7 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
     private final Region selectionContainer = new Region();
 
     /// The selected container appearance animation.
-    private final Timeline selectionAnimation = new Timeline();
+    private final M3NodeTransition selectionAnimation = new M3NodeTransition(selectionContainer);
 
     /// Settles running selected-container transitions when runtime motion settings change.
     private final M3MotionSettingsObserver motionSettingsObserver =
@@ -137,11 +133,7 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
         double targetScale = selected ? 1.0 : HIDDEN_SELECTION_SCALE;
         selectionAnimation.stop();
         M3MotionSpec spec = M3Animation.defaultEffects(getSkinnable());
-        selectionAnimation.getKeyFrames().setAll(new KeyFrame(
-                spec.duration(),
-                new KeyValue(selectionContainer.opacityProperty(), targetOpacity, spec.interpolator()),
-                new KeyValue(selectionContainer.scaleXProperty(), targetScale, spec.interpolator())
-        ));
+        selectionAnimation.configure(spec, targetOpacity, targetScale, selectionContainer.getScaleY());
         M3Animation.playFromStart(getSkinnable(), selectionAnimation);
     }
 
@@ -199,8 +191,8 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
     /// Formats a CSS pixel value.
     private static String formatPixels(double value) {
         if (Math.rint(value) == value) {
-            return Long.toString((long) value) + "px";
+            return (long) value + "px";
         }
-        return Double.toString(value) + "px";
+        return value + "px";
     }
 }

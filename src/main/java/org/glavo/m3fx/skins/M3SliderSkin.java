@@ -3,9 +3,6 @@
 
 package org.glavo.m3fx.skins;
 
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
-import javafx.animation.Timeline;
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
@@ -47,11 +44,11 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     /// The thumb-bounded state layer used for hover, focus, pressed, and ripple feedback.
     private final M3StateLayer stateLayer = new M3StateLayer();
 
-    // The animated normalized thumb position.
+    /// The animated normalized thumb position.
     private final DoubleProperty displayedPosition = new SimpleDoubleProperty(this, "displayedPosition");
 
     /// The displayed value transition animation.
-    private final Timeline valueAnimation = new Timeline();
+    private final M3DoubleTransition valueAnimation = new M3DoubleTransition(displayedPosition);
 
     /// Handles mouse presses on the slider control.
     private final EventHandler<MouseEvent> mousePressedHandler = this::handleMousePressed;
@@ -550,10 +547,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
 
         valueAnimation.stop();
         M3MotionSpec spec = M3Animation.fastSpatial(getSkinnable());
-        valueAnimation.getKeyFrames().setAll(new KeyFrame(
-                spec.duration(),
-                new KeyValue(displayedPosition, targetPosition, spec.interpolator())
-        ));
+        valueAnimation.configure(spec, targetPosition);
         M3Animation.playFromStart(getSkinnable(), valueAnimation);
     }
 

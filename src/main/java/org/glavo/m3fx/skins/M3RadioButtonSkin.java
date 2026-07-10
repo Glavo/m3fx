@@ -3,9 +3,6 @@
 
 package org.glavo.m3fx.skins;
 
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
-import javafx.animation.Timeline;
 import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.scene.layout.Pane;
@@ -34,7 +31,7 @@ public class M3RadioButtonSkin extends M3SelectionControlSkinBase<M3RadioButton>
     private final Circle dot = new Circle();
 
     /// The selected dot appearance animation.
-    private final Timeline selectionAnimation = new Timeline();
+    private final M3NodeTransition selectionAnimation = new M3NodeTransition(dot);
 
     /// Applies radio geometry token changes to skin nodes.
     private final InvalidationListener metricsInvalidation = observable -> updateMetrics();
@@ -114,12 +111,8 @@ public class M3RadioButtonSkin extends M3SelectionControlSkinBase<M3RadioButton>
     private void animateSelectedState(boolean selected) {
         selectionAnimation.stop();
         M3MotionSpec spec = M3Animation.fastEffects(getSkinnable());
-        selectionAnimation.getKeyFrames().setAll(new KeyFrame(
-                spec.duration(),
-                new KeyValue(dot.opacityProperty(), selected ? 1.0 : 0.0, spec.interpolator()),
-                new KeyValue(dot.scaleXProperty(), selected ? 1.0 : HIDDEN_DOT_SCALE, spec.interpolator()),
-                new KeyValue(dot.scaleYProperty(), selected ? 1.0 : HIDDEN_DOT_SCALE, spec.interpolator())
-        ));
+        double targetScale = selected ? 1.0 : HIDDEN_DOT_SCALE;
+        selectionAnimation.configure(spec, selected ? 1.0 : 0.0, targetScale, targetScale);
         M3Animation.playFromStart(getSkinnable(), selectionAnimation);
     }
 

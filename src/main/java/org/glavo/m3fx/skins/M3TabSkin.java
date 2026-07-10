@@ -3,9 +3,6 @@
 
 package org.glavo.m3fx.skins;
 
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
-import javafx.animation.Timeline;
 import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.scene.layout.Region;
@@ -28,7 +25,7 @@ public class M3TabSkin extends M3LabeledButtonSkinBase<M3Tab> {
     private final Region activeIndicator = new Region();
 
     /// The active indicator animation timeline.
-    private final Timeline indicatorAnimation = new Timeline();
+    private final M3NodeTransition indicatorAnimation = new M3NodeTransition(activeIndicator);
 
     /// Settles running active-indicator transitions when runtime motion settings change.
     private final M3MotionSettingsObserver motionSettingsObserver =
@@ -95,13 +92,7 @@ public class M3TabSkin extends M3LabeledButtonSkinBase<M3Tab> {
         double targetScale = selected ? 1.0 : HIDDEN_INDICATOR_SCALE;
         indicatorAnimation.stop();
         M3MotionSpec spec = M3Animation.defaultEffects(getSkinnable());
-        indicatorAnimation.getKeyFrames().setAll(
-                new KeyFrame(
-                        spec.duration(),
-                        new KeyValue(activeIndicator.opacityProperty(), targetOpacity, spec.interpolator()),
-                        new KeyValue(activeIndicator.scaleXProperty(), targetScale, spec.interpolator())
-                )
-        );
+        indicatorAnimation.configure(spec, targetOpacity, targetScale, activeIndicator.getScaleY());
         M3Animation.playFromStart(getSkinnable(), indicatorAnimation);
     }
 

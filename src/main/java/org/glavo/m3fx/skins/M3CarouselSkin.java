@@ -3,10 +3,6 @@
 
 package org.glavo.m3fx.skins;
 
-import javafx.animation.Animation;
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
-import javafx.animation.Timeline;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.Bounds;
@@ -34,6 +30,9 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
     /// The internal viewport used to scroll the item track.
     private final ScrollPane viewport = new ScrollPane(track);
 
+    /// The reusable selected-item scroll transition.
+    private final M3DoubleTransition scrollAnimation = new M3DoubleTransition(viewport.hvalueProperty());
+
     /// Mirrors public item changes into the internal track.
     private final ListChangeListener<Node> itemsListener = change -> {
         updateItems();
@@ -50,9 +49,6 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
                     getSkinnable(),
                     this::refreshMotionSettings
             );
-
-    /// The currently running scroll animation.
-    private @Nullable Animation scrollAnimation;
 
     /// Whether scrolling should be retried after the next layout pass.
     private boolean pendingSelectedScroll;
@@ -216,39 +212,18 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
         }
 
         M3MotionSpec spec = M3Animation.defaultSpatial(getSkinnable());
-        Timeline timeline = new Timeline(new KeyFrame(
-                spec.duration(),
-                new KeyValue(viewport.hvalueProperty(), targetHValue, spec.interpolator())
-        ));
-        timeline.setOnFinished(event -> {
-            if (scrollAnimation == timeline) {
-                scrollAnimation = null;
-            }
-        });
-        scrollAnimation = timeline;
-        M3Animation.playFromStart(getSkinnable(), timeline);
+        scrollAnimation.configure(spec, targetHValue);
+        M3Animation.playFromStart(getSkinnable(), scrollAnimation);
     }
 
     /// Settles a running scroll animation if the carousel now resolves reduced motion.
     private void refreshMotionSettings() {
-        Animation animation = scrollAnimation;
-        if (animation == null) {
-            return;
-        }
-
-        M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), animation);
-        if (animation.getStatus() != Animation.Status.RUNNING && scrollAnimation == animation) {
-            scrollAnimation = null;
-        }
+        M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), scrollAnimation);
     }
 
     /// Stops the current scroll animation.
     private void stopScrollAnimation() {
-        Animation animation = scrollAnimation;
-        if (animation != null) {
-            animation.stop();
-            scrollAnimation = null;
-        }
+        scrollAnimation.stop();
     }
 
     /// Clamps a normalized scroll value to the supported range.

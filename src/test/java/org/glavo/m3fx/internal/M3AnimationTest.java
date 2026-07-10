@@ -64,6 +64,23 @@ final class M3AnimationTest {
         assertFalse(timeline.getStatus() == Timeline.Status.RUNNING);
     }
 
+    /// Verifies that disabled motion applies custom finite-transition end values and completion handlers.
+    @Test
+    void disabledMotionFinishesFiniteTransitionImmediately() {
+        Pane owner = new Pane();
+        M3MotionSettings.setAnimationsEnabled(owner, false);
+        DoubleProperty value = new SimpleDoubleProperty(0.0);
+        AtomicBoolean animationFinished = new AtomicBoolean(false);
+        TestFiniteTransition transition = new TestFiniteTransition(value);
+        transition.setOnFinished(event -> animationFinished.set(true));
+
+        M3Animation.playFromStart(owner, transition);
+
+        assertEquals(1.0, value.get(), 0.0001);
+        assertTrue(animationFinished.get());
+        assertEquals(Animation.Status.STOPPED, transition.getStatus());
+    }
+
     /// Verifies that animation defaults resolve the theme motion scheme through the parent chain.
     @Test
     void resolvesThemeMotionSchemeFromParentChain() {
@@ -137,5 +154,24 @@ final class M3AnimationTest {
             assertEquals(Duration.millis(100.0), transition.getDuration());
             assertEquals(Animation.Status.STOPPED, transition.getStatus());
         });
+    }
+
+    /// Finite transition used to verify synchronous reduced-motion completion.
+    @NotNullByDefault
+    private static final class TestFiniteTransition extends M3FiniteTransition {
+        /// The test property receiving interpolated values.
+        private final DoubleProperty value;
+
+        /// Creates a finite transition for a test property.
+        private TestFiniteTransition(DoubleProperty value) {
+            this.value = value;
+            setCycleDuration(Duration.millis(100.0));
+        }
+
+        /// Applies the current transition fraction to the test property.
+        @Override
+        protected void interpolate(double fraction) {
+            value.set(fraction);
+        }
     }
 }

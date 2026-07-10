@@ -3,9 +3,7 @@
 
 package org.glavo.m3fx.skins;
 
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
-import javafx.animation.Timeline;
+import javafx.animation.Animation;
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
@@ -17,6 +15,7 @@ import javafx.scene.Parent;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Rectangle;
 import org.glavo.m3fx.animation.M3MotionSpec;
@@ -59,7 +58,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
     };
 
     /// The expansion and collapse animation for child rows.
-    private final Timeline expansionAnimation = new Timeline();
+    private final M3DoubleTransition expansionAnimation = new M3DoubleTransition(expansionProgress);
 
     /// Settles running child-row expansion transitions when runtime motion settings change.
     private final M3MotionSettingsObserver motionSettingsObserver =
@@ -124,7 +123,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
             double bottomInset,
             double leftInset
     ) {
-        return leftInset + contentWidth(height, (region, dimension) -> region.minWidth(dimension)) + rightInset;
+        return leftInset + contentWidth(height, Region::minWidth) + rightInset;
     }
 
     /// Computes the minimum height from the internal item container.
@@ -136,7 +135,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
             double bottomInset,
             double leftInset
     ) {
-        return topInset + contentHeight(width, (region, dimension) -> region.minHeight(dimension)) + bottomInset;
+        return topInset + contentHeight(width, Region::minHeight) + bottomInset;
     }
 
     /// Computes the preferred width from the internal item container.
@@ -148,7 +147,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
             double bottomInset,
             double leftInset
     ) {
-        return leftInset + contentWidth(height, (region, dimension) -> region.prefWidth(dimension)) + rightInset;
+        return leftInset + contentWidth(height, Region::prefWidth) + rightInset;
     }
 
     /// Computes the preferred height from the internal item container.
@@ -160,7 +159,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
             double bottomInset,
             double leftInset
     ) {
-        return topInset + contentHeight(width, (region, dimension) -> region.prefHeight(dimension)) + bottomInset;
+        return topInset + contentHeight(width, Region::prefHeight) + bottomInset;
     }
 
     /// Computes the maximum width from the internal item container.
@@ -172,7 +171,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
             double bottomInset,
             double leftInset
     ) {
-        return leftInset + contentWidth(height, (region, dimension) -> region.maxWidth(dimension)) + rightInset;
+        return leftInset + contentWidth(height, Region::maxWidth) + rightInset;
     }
 
     /// Computes the maximum height from the internal item container.
@@ -184,7 +183,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
             double bottomInset,
             double leftInset
     ) {
-        return topInset + contentHeight(width, (region, dimension) -> region.maxHeight(dimension)) + bottomInset;
+        return topInset + contentHeight(width, Region::maxHeight) + bottomInset;
     }
 
     /// Lays out the header and clipped child row viewport.
@@ -267,20 +266,12 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
             return;
         }
 
-        boolean targetExpanded = expanded;
-        M3MotionSpec spec = targetExpanded
+        M3MotionSpec spec = expanded
                 ? M3Animation.defaultSpatial(getSkinnable())
                 : M3Animation.fastSpatial(getSkinnable());
-        expansionAnimation.getKeyFrames().setAll(new KeyFrame(
-                spec.duration(),
-                new KeyValue(
-                        expansionProgress,
-                        targetProgress,
-                        spec.interpolator()
-                )
-        ));
+        expansionAnimation.configure(spec, targetProgress);
         expansionAnimation.setOnFinished(event -> {
-            if (!targetExpanded) {
+            if (!expanded) {
                 unmountChildItems();
             }
             expansionAnimation.setOnFinished(null);
@@ -292,7 +283,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
     private boolean shouldMountChildItems() {
         return getSkinnable().isExpanded()
                 || expansionProgress.get() > 0.0
-                || expansionAnimation.getStatus() == Timeline.Status.RUNNING;
+                || expansionAnimation.getStatus() == Animation.Status.RUNNING;
     }
 
     /// Mounts current child rows into the child viewport.

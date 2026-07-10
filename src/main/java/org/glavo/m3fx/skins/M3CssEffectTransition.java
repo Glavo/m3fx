@@ -4,9 +4,6 @@
 package org.glavo.m3fx.skins;
 
 import javafx.animation.Animation;
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
-import javafx.animation.Timeline;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.SetChangeListener;
 import javafx.css.PseudoClass;
@@ -14,9 +11,9 @@ import javafx.scene.Node;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.effect.Effect;
 import javafx.scene.paint.Color;
-import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3FiniteTransition;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -28,8 +25,8 @@ final class M3CssEffectTransition {
     private final ChangeListener<Boolean> interactionStateListener =
             (observable, oldValue, newValue) -> animateEffectFromCss();
 
-    /// The animation timeline for drop shadow transitions.
-    private final Timeline animation = new Timeline();
+    /// The reusable animation for drop shadow transitions.
+    private final ShadowTransition animation = new ShadowTransition();
 
     /// The node whose pseudo-class states drive target effect resolution.
     private final Node owner;
@@ -111,24 +108,10 @@ final class M3CssEffectTransition {
         DropShadow targetShadow = end == null ? emptyShadow(start) : end;
         M3MotionSpec spec = M3Animation.fastEffects(owner);
         target.setEffect(animated);
-        animation.getKeyFrames().setAll(
-                keyFrame(Duration.ZERO, spec, animated, animated),
-                keyFrame(spec.duration(), spec, animated, targetShadow)
-        );
+        animation.configure(spec, animated, targetShadow);
+
         animation.setOnFinished(event -> target.setEffect(end));
         M3Animation.playFromStart(owner, animation);
-    }
-
-    /// Creates a key frame for the supplied shadow state.
-    private static KeyFrame keyFrame(Duration duration, M3MotionSpec spec, DropShadow animated, DropShadow state) {
-        return new KeyFrame(
-                duration,
-                new KeyValue(animated.radiusProperty(), state.getRadius(), spec.interpolator()),
-                new KeyValue(animated.spreadProperty(), state.getSpread(), spec.interpolator()),
-                new KeyValue(animated.offsetXProperty(), state.getOffsetX(), spec.interpolator()),
-                new KeyValue(animated.offsetYProperty(), state.getOffsetY(), spec.interpolator()),
-                new KeyValue(animated.colorProperty(), state.getColor(), spec.interpolator())
-        );
     }
 
     /// Creates a zero-strength shadow that can animate to or from another shadow.
@@ -175,5 +158,83 @@ final class M3CssEffectTransition {
     /// Returns a fully transparent color with the same hue as the reference color.
     private static Color transparent(Color color) {
         return new Color(color.getRed(), color.getGreen(), color.getBlue(), 0.0);
+    }
+
+    /// Reusable finite transition for the rendered parameters of one drop shadow.
+    private static final class ShadowTransition extends M3FiniteTransition {
+        /// The drop shadow receiving interpolated values during the current transition.
+        private @Nullable DropShadow shadow;
+
+        /// The starting radius.
+        private double startRadius;
+
+        /// The target radius.
+        private double targetRadius;
+
+        /// The starting spread.
+        private double startSpread;
+
+        /// The target spread.
+        private double targetSpread;
+
+        /// The starting horizontal offset.
+        private double startOffsetX;
+
+        /// The target horizontal offset.
+        private double targetOffsetX;
+
+        /// The starting vertical offset.
+        private double startOffsetY;
+
+        /// The target vertical offset.
+        private double targetOffsetY;
+
+        /// The starting color.
+        private Color startColor = Color.TRANSPARENT;
+
+        /// The target color.
+        private Color targetColor = Color.TRANSPARENT;
+
+        /// Creates an unconfigured shadow transition.
+        private ShadowTransition() {
+        }
+
+        /// Reconfigures the transition from the currently rendered shadow values.
+        private void configure(M3MotionSpec spec, DropShadow shadow, DropShadow target) {
+            stop();
+            setCycleDuration(spec.duration());
+            setInterpolator(spec.interpolator());
+            this.shadow = shadow;
+            startRadius = shadow.getRadius();
+            targetRadius = target.getRadius();
+            startSpread = shadow.getSpread();
+            targetSpread = target.getSpread();
+            startOffsetX = shadow.getOffsetX();
+            targetOffsetX = target.getOffsetX();
+            startOffsetY = shadow.getOffsetY();
+            targetOffsetY = target.getOffsetY();
+            startColor = shadow.getColor();
+            targetColor = target.getColor();
+        }
+
+        /// Applies the eased shadow parameters for the current pulse.
+        @Override
+        protected void interpolate(double fraction) {
+            DropShadow current = shadow;
+            if (current == null) {
+                return;
+            }
+
+            current.setRadius(interpolate(startRadius, targetRadius, fraction));
+            current.setSpread(interpolate(startSpread, targetSpread, fraction));
+            current.setOffsetX(interpolate(startOffsetX, targetOffsetX, fraction));
+            current.setOffsetY(interpolate(startOffsetY, targetOffsetY, fraction));
+            current.setColor(startColor.interpolate(targetColor, fraction));
+        }
+
+        /// Interpolates linearly between two scalar values.
+        private static double interpolate(double start, double end, double fraction) {
+            return start + (end - start) * fraction;
+        }
     }
 }

@@ -3,9 +3,6 @@
 
 package org.glavo.m3fx.skins;
 
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
-import javafx.animation.Timeline;
 import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.SetChangeListener;
@@ -96,7 +93,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     private final Rectangle trailingClip = new Rectangle();
 
     /// The selected container appearance animation.
-    private final Timeline selectionAnimation = new Timeline();
+    private final M3NodeTransition selectionAnimation = new M3NodeTransition(selectionContainer);
 
     /// The background radius currently applied to the state container.
     private double containerRadius = Double.NaN;
@@ -138,9 +135,8 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
             change -> updateMenuColorStylePseudoClasses();
 
     /// Animates the selected container and mirrors selected state to internal text nodes.
-    private final ChangeListener<Boolean> selectedListener = (observable, oldValue, newValue) -> {
-        animateSelectionContainer(newValue);
-    };
+    private final ChangeListener<Boolean> selectedListener =
+            (observable, oldValue, newValue) -> animateSelectionContainer(newValue);
 
     /// Clears transient interaction feedback when the item becomes disabled.
     private final ChangeListener<Boolean> disabledListener = (observable, oldValue, newValue) -> {
@@ -462,12 +458,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
             updateSelectedChildPseudoClasses(false);
         }
         M3MotionSpec spec = M3Animation.defaultEffects(getSkinnable());
-        selectionAnimation.getKeyFrames().setAll(new KeyFrame(
-                spec.duration(),
-                new KeyValue(selectionContainer.opacityProperty(), targetOpacity, spec.interpolator()),
-                new KeyValue(selectionContainer.scaleXProperty(), targetScale, spec.interpolator()),
-                new KeyValue(selectionContainer.scaleYProperty(), targetScale, spec.interpolator())
-        ));
+        selectionAnimation.configure(spec, targetOpacity, targetScale, targetScale);
         selectionAnimation.setOnFinished(event -> {
             if (getSkinnable().isSelected() == selected) {
                 updateSelectedChildPseudoClasses(selected);
@@ -495,9 +486,9 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     /// Formats a CSS pixel value.
     private static String formatPixels(double value) {
         if (Math.rint(value) == value) {
-            return Long.toString((long) value) + "px";
+            return (long) value + "px";
         }
-        return Double.toString(value) + "px";
+        return value + "px";
     }
 
     /// Installs behavior handlers for pointer and keyboard activation.

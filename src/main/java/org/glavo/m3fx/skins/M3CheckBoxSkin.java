@@ -3,9 +3,6 @@
 
 package org.glavo.m3fx.skins;
 
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
-import javafx.animation.Timeline;
 import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.scene.layout.Region;
@@ -30,7 +27,7 @@ public class M3CheckBoxSkin extends M3SelectionControlSkinBase<M3CheckBox> {
     private final Region mark = new Region();
 
     /// The selected mark appearance animation.
-    private final Timeline selectionAnimation = new Timeline();
+    private final M3NodeTransition selectionAnimation = new M3NodeTransition(mark);
 
     /// The currently displayed selected mark shape.
     private MarkKind displayedMarkKind = MarkKind.CHECK;
@@ -136,12 +133,8 @@ public class M3CheckBoxSkin extends M3SelectionControlSkinBase<M3CheckBox> {
             applyMarkState(false);
         }
         M3MotionSpec spec = M3Animation.fastEffects(getSkinnable());
-        selectionAnimation.getKeyFrames().setAll(new KeyFrame(
-                spec.duration(),
-                new KeyValue(mark.opacityProperty(), visible ? 1.0 : 0.0, spec.interpolator()),
-                new KeyValue(mark.scaleXProperty(), visible ? 1.0 : HIDDEN_MARK_SCALE, spec.interpolator()),
-                new KeyValue(mark.scaleYProperty(), visible ? 1.0 : HIDDEN_MARK_SCALE, spec.interpolator())
-        ));
+        double targetScale = visible ? 1.0 : HIDDEN_MARK_SCALE;
+        selectionAnimation.configure(spec, visible ? 1.0 : 0.0, targetScale, targetScale);
         M3Animation.playFromStart(getSkinnable(), selectionAnimation);
     }
 

@@ -61,13 +61,13 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     /// The stop indicator rendered at the end of an expressive progress bar track.
     private final Circle stop = new Circle();
 
-    // The progress value currently displayed by determinate progress.
+    /// The progress value currently displayed by determinate progress.
     private final DoubleProperty displayedProgress = new SimpleDoubleProperty(this, "displayedProgress");
 
-    /// The determinate progress transition timeline.
-    private final Timeline determinateAnimation = new Timeline();
+    /// The determinate progress transition.
+    private final M3DoubleTransition determinateAnimation = new M3DoubleTransition(displayedProgress);
 
-    // The animated position of the indeterminate segment.
+    /// The animated position of the indeterminate segment.
     private final DoubleProperty indeterminatePosition =
             new SimpleDoubleProperty(this, "indeterminatePosition", INDETERMINATE_START_POSITION);
 
@@ -395,12 +395,7 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         }
 
         M3MotionSpec spec = M3Animation.fastSpatial(getSkinnable());
-        determinateAnimation.getKeyFrames().setAll(
-                new KeyFrame(
-                        spec.duration(),
-                        new KeyValue(displayedProgress, targetProgress, spec.interpolator())
-                )
-        );
+        determinateAnimation.configure(spec, targetProgress);
         M3Animation.playFromStart(getSkinnable(), determinateAnimation);
     }
 

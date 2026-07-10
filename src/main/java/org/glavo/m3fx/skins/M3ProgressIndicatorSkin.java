@@ -62,13 +62,13 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
     /// The expressive wavy active indicator path.
     private final Path waveIndicator = new Path();
 
-    // The progress value currently displayed by determinate progress.
+    /// The progress value currently displayed by determinate progress.
     private final DoubleProperty displayedProgress = new SimpleDoubleProperty(this, "displayedProgress");
 
-    /// The determinate progress transition timeline.
-    private final Timeline determinateAnimation = new Timeline();
+    /// The determinate progress transition.
+    private final M3DoubleTransition determinateAnimation = new M3DoubleTransition(displayedProgress);
 
-    // The animated phase used by indeterminate progress.
+    /// The animated phase used by indeterminate progress.
     private final DoubleProperty indeterminatePhase =
             new SimpleDoubleProperty(this, "indeterminatePhase", INDETERMINATE_START_PHASE);
 
@@ -281,12 +281,7 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         }
 
         M3MotionSpec spec = M3Animation.fastSpatial(getSkinnable());
-        determinateAnimation.getKeyFrames().setAll(
-                new KeyFrame(
-                        spec.duration(),
-                        new KeyValue(displayedProgress, targetProgress, spec.interpolator())
-                )
-        );
+        determinateAnimation.configure(spec, targetProgress);
         M3Animation.playFromStart(getSkinnable(), determinateAnimation);
     }
 

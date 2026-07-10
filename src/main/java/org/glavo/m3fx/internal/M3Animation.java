@@ -157,19 +157,6 @@ public final class M3Animation {
         }
     }
 
-    /// Plays an animation from its current time or finishes it immediately when animations are disabled.
-    ///
-    /// @param owner the node whose animation settings should be honored
-    /// @param animation the animation to play or finish
-    public static void play(Node owner, Animation animation) {
-        Objects.requireNonNull(animation, "animation");
-        if (areAnimationsEnabled(owner)) {
-            animation.play();
-        } else {
-            finish(animation);
-        }
-    }
-
     /// Finishes an animation synchronously and invokes its completion handlers.
     ///
     /// @param animation the animation to settle at its final state
@@ -246,7 +233,9 @@ public final class M3Animation {
         if (stop) {
             animation.stop();
         }
-        if (animation instanceof Timeline timeline) {
+        if (animation instanceof M3FiniteTransition finiteTransition) {
+            finiteTransition.applyEndValues();
+        } else if (animation instanceof Timeline timeline) {
             finishTimeline(timeline);
         } else if (animation instanceof ParallelTransition parallelTransition) {
             for (Animation child : parallelTransition.getChildren()) {

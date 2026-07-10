@@ -3,9 +3,6 @@
 
 package org.glavo.m3fx.skins;
 
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
-import javafx.animation.Timeline;
 import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.event.EventHandler;
@@ -58,7 +55,7 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
     private final Label label = new Label();
 
     /// The selected indicator animation timeline.
-    private final Timeline indicatorAnimation = new Timeline();
+    private final M3NodeTransition indicatorAnimation = new M3NodeTransition(indicator);
 
     /// Handles primary mouse presses.
     private final EventHandler<MouseEvent> mousePressedHandler = this::handleMousePressed;
@@ -367,13 +364,7 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
         double targetScale = selected ? 1.0 : HIDDEN_INDICATOR_SCALE;
         indicatorAnimation.stop();
         M3MotionSpec spec = M3Animation.defaultEffects(getSkinnable());
-        indicatorAnimation.getKeyFrames().setAll(
-                new KeyFrame(
-                        spec.duration(),
-                        new KeyValue(indicator.opacityProperty(), targetOpacity, spec.interpolator()),
-                        new KeyValue(indicator.scaleXProperty(), targetScale, spec.interpolator())
-                )
-        );
+        indicatorAnimation.configure(spec, targetOpacity, targetScale, indicator.getScaleY());
         M3Animation.playFromStart(getSkinnable(), indicatorAnimation);
     }
 

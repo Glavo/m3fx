@@ -3,9 +3,6 @@
 
 package org.glavo.m3fx.skins;
 
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
-import javafx.animation.Timeline;
 import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.event.EventHandler;
@@ -50,7 +47,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
     private static final double PRESSED_SCALE = 0.98;
 
     /// The press animation timeline.
-    private final Timeline animation = new Timeline();
+    private final M3NodeTransition animation = new M3NodeTransition(getSkinnable());
 
     /// The bounded state layer used for hover, focus, pressed, and ripple feedback.
     private final M3StateLayer stateLayer = new M3StateLayer();
@@ -270,11 +267,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         double scale = pressedScale(pressed);
         M3MotionSpec spec = pressed ? M3Animation.fastEffects(button) : M3Animation.defaultEffects(button);
         animation.stop();
-        animation.getKeyFrames().setAll(new KeyFrame(
-                spec.duration(),
-                new KeyValue(button.scaleXProperty(), scale, spec.interpolator()),
-                new KeyValue(button.scaleYProperty(), scale, spec.interpolator())
-        ));
+        animation.configure(spec, button.getOpacity(), scale, scale);
         M3Animation.playFromStart(button, animation);
     }
 

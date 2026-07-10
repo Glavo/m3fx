@@ -3,9 +3,6 @@
 
 package org.glavo.m3fx.skins;
 
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
-import javafx.animation.Timeline;
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
@@ -26,11 +23,11 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
     /// The visual switch thumb.
     private final StackPane thumb = new StackPane();
 
-    // The animated thumb position from off to on.
+    /// The animated thumb position from off to on.
     private final DoubleProperty thumbPosition = new SimpleDoubleProperty(this, "thumbPosition");
 
     /// The thumb position animation.
-    private final Timeline selectionAnimation = new Timeline();
+    private final M3DoubleTransition selectionAnimation = new M3DoubleTransition(thumbPosition);
 
     /// Requests layout after thumb position changes.
     private final InvalidationListener thumbPositionListener = observable -> getSkinnable().requestLayout();
@@ -128,10 +125,7 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
     private void animateThumbPosition(boolean selected) {
         selectionAnimation.stop();
         M3MotionSpec spec = M3Animation.fastSpatial(getSkinnable());
-        selectionAnimation.getKeyFrames().setAll(new KeyFrame(
-                spec.duration(),
-                new KeyValue(thumbPosition, selected ? 1.0 : 0.0, spec.interpolator())
-        ));
+        selectionAnimation.configure(spec, selected ? 1.0 : 0.0);
         M3Animation.playFromStart(getSkinnable(), selectionAnimation);
     }
 

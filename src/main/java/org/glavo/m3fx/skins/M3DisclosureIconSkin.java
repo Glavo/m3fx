@@ -3,9 +3,6 @@
 
 package org.glavo.m3fx.skins;
 
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
-import javafx.animation.Timeline;
 import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.scene.control.SkinBase;
@@ -39,7 +36,7 @@ public final class M3DisclosureIconSkin extends SkinBase<M3DisclosureIcon> {
     private final SVGPath arrow = new SVGPath();
 
     /// The rotation animation played when expanded state changes.
-    private final Timeline rotationAnimation = new Timeline();
+    private final M3DoubleTransition rotationAnimation = new M3DoubleTransition(arrow.rotateProperty());
 
     /// Settles running rotation transitions when runtime motion settings change.
     private final M3MotionSettingsObserver motionSettingsObserver =
@@ -168,10 +165,7 @@ public final class M3DisclosureIconSkin extends SkinBase<M3DisclosureIcon> {
     private void animateExpandedState(boolean expanded) {
         rotationAnimation.stop();
         M3MotionSpec spec = M3Animation.fastSpatial(getSkinnable());
-        rotationAnimation.getKeyFrames().setAll(new KeyFrame(
-                spec.duration(),
-                new KeyValue(arrow.rotateProperty(), rotationFor(expanded, isRightToLeft()), spec.interpolator())
-        ));
+        rotationAnimation.configure(spec, rotationFor(expanded, isRightToLeft()));
         M3Animation.playFromStart(getSkinnable(), rotationAnimation);
     }
 

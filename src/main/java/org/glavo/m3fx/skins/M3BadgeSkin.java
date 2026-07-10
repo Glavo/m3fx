@@ -3,9 +3,6 @@
 
 package org.glavo.m3fx.skins;
 
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
-import javafx.animation.Timeline;
 import javafx.beans.InvalidationListener;
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
@@ -26,7 +23,7 @@ public class M3BadgeSkin extends SkinBase<M3Badge> {
     private final Label label = new Label();
 
     /// The badge content change animation.
-    private final Timeline contentAnimation = new Timeline();
+    private final M3NodeTransition contentAnimation = new M3NodeTransition(label);
 
     /// Updates text and metrics after display text inputs change.
     private final InvalidationListener textInvalidation = observable -> updateTextAndMetrics();
@@ -228,12 +225,7 @@ public class M3BadgeSkin extends SkinBase<M3Badge> {
         label.setScaleX(CONTENT_CHANGE_START_SCALE);
         label.setScaleY(CONTENT_CHANGE_START_SCALE);
         M3MotionSpec spec = M3Animation.fastEffects(getSkinnable());
-        contentAnimation.getKeyFrames().setAll(new KeyFrame(
-                spec.duration(),
-                new KeyValue(label.opacityProperty(), 1.0, spec.interpolator()),
-                new KeyValue(label.scaleXProperty(), 1.0, spec.interpolator()),
-                new KeyValue(label.scaleYProperty(), 1.0, spec.interpolator())
-        ));
+        contentAnimation.configure(spec, 1.0, 1.0, 1.0);
         M3Animation.playFromStart(getSkinnable(), contentAnimation);
     }
 
@@ -247,8 +239,8 @@ public class M3BadgeSkin extends SkinBase<M3Badge> {
     /// Formats a CSS pixel value.
     private static String formatPixels(double value) {
         if (Math.rint(value) == value) {
-            return Long.toString((long) value) + "px";
+            return (long) value + "px";
         }
-        return Double.toString(value) + "px";
+        return value + "px";
     }
 }
