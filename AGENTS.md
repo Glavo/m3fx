@@ -41,9 +41,3 @@ These rules apply to all Java code written or modified in this repository.
 - When invoking Gradle in this repository, always set `GRADLE_USER_HOME` to the workspace-local `.gradle-user-home` directory.
 - Prefer commands such as `./gradlew -g .gradle-user-home ...` or the equivalent environment-variable-based configuration.
 - When running Gradle `test` tasks, use a higher timeout of ten minutes.
-
-## Commit Messages
-
-- After each completed modification, generate a commit message for the user, but do not run git commands to create the commit.
-- The commit message must contain only one short summary paragraph, then one blank line, then `Assisted-by: codex:gpt-5.5`.
-- Do not include a detailed body between the summary paragraph and the `Assisted-by` trailer.
