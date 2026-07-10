@@ -57,6 +57,9 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     /// The virtualized cell container.
     private final ListViewVirtualFlow<T> flow = new ListViewVirtualFlow<>();
 
+    /// The reusable virtual flow scroll transition.
+    private final ListScrollTransition smoothScrollAnimation = new ListScrollTransition(flow);
+
     /// Updates virtual flow cell count when data items change.
     private final ListChangeListener<T> itemsListener = change -> refreshItemCount();
 
@@ -158,9 +161,6 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
             return M3ListViewSkin.this.findAttachedVisibleItem(predicate);
         }
     };
-
-    /// The reusable virtual flow scroll transition.
-    private final ListScrollTransition smoothScrollAnimation = new ListScrollTransition(flow);
 
     /// The completion callback attached to the currently running smooth scroll animation.
     private @Nullable Runnable smoothScrollOnFinished;
@@ -591,14 +591,8 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         }
 
         if (!M3Animation.areAnimationsEnabled(getSkinnable())) {
-            @Nullable Runnable onFinished = smoothScrollOnFinished;
             smoothScrollAnimation.stop();
-            smoothScrollOnFinished = null;
-            flow.setPosition(smoothScrollTargetPosition);
-            flow.requestLayout();
-            if (onFinished != null) {
-                onFinished.run();
-            }
+            finishSmoothScrollAnimation();
         } else {
             animateSmoothScroll(smoothScrollOnFinished);
         }
@@ -723,13 +717,20 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         M3MotionSpec spec = M3Animation.defaultSpatial(getSkinnable());
         smoothScrollAnimation.configure(spec, flow.getPosition(), smoothScrollTargetPosition);
         smoothScrollOnFinished = onFinished;
-        M3Animation.playFromStart(getSkinnable(), smoothScrollAnimation);
+        if (M3Animation.areAnimationsEnabled(getSkinnable())) {
+            smoothScrollAnimation.playFromStart();
+        } else {
+            smoothScrollAnimation.stop();
+            finishSmoothScrollAnimation();
+        }
     }
 
     /// Runs the current smooth-scroll completion callback after the reusable transition finishes.
     private void finishSmoothScrollAnimation() {
         @Nullable Runnable onFinished = smoothScrollOnFinished;
         smoothScrollOnFinished = null;
+        flow.setPosition(smoothScrollTargetPosition);
+        flow.requestLayout();
         if (onFinished != null) {
             onFinished.run();
         }

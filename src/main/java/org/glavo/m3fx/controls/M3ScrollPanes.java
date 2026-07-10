@@ -307,9 +307,7 @@ public final class M3ScrollPanes {
             }
 
             if (!M3Animation.areAnimationsEnabled(scrollPane)) {
-                scrollPane.setHvalue(targetHValue);
-                scrollPane.setVvalue(targetVValue);
-                stopAnimation();
+                animation.finish();
             } else {
                 animateToTarget();
             }
@@ -325,7 +323,11 @@ public final class M3ScrollPanes {
                     scrollPane.getVvalue(),
                     targetVValue
             );
-            M3Animation.playFromStart(scrollPane, animation);
+            if (M3Animation.areAnimationsEnabled(scrollPane)) {
+                animation.playFromStart();
+            } else {
+                animation.finish();
+            }
         }
 
         /// Stops the current scroll animation.
@@ -443,6 +445,13 @@ public final class M3ScrollPanes {
             this.targetHValue = targetHValue;
             this.startVValue = startVValue;
             this.targetVValue = targetVValue;
+        }
+
+        /// Stops this transition and applies its configured final scroll values synchronously.
+        private void finish() {
+            stop();
+            scrollPane.setHvalue(targetHValue);
+            scrollPane.setVvalue(targetVValue);
         }
 
         /// Interpolates both normalized scroll values for the current animation pulse.
