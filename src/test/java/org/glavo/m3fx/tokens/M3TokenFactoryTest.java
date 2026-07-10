@@ -241,6 +241,7 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-switch-pressed-handle-size: 28px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-slider-thumb-width: 7px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-slider-thumb-track-gap: 8px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-slider-stop-indicator-size: 6px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-chip-icon-horizontal-padding: 8px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-chip-element-spacing: 9px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-chip-icon-size: 18px"));
@@ -307,6 +308,7 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-scrim.m3-scrim"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-wavelength: 41px"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-stop-size: 7px"));
+        assertTrue(tokenSet.toControlStyleRules().contains("-m3-stop-indicator-size: 6px"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-avatar.m3-avatar"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-action-spacing: 7px"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-toolbar"));
@@ -452,7 +454,7 @@ final class M3TokenFactoryTest {
                         24.0,
                         28.0
                 ),
-                new M3ComponentTokens.SliderTokens(5.0, 18.0, 24.0, 7.0, 8.0, 50.0),
+                new M3ComponentTokens.SliderTokens(5.0, 18.0, 6.0, 24.0, 7.0, 8.0, 50.0),
                 new M3ComponentTokens.ChipTokens(34.0, 10.0, 15.0, 8.0, 9.0, 18.0, 24.0, 12.0, 1.0, 11.0, 13.0),
                 new M3ComponentTokens.ProgressTokens(5.0, 18.0, 52.0, 3.0, 41.0, 6.0, 7.0, 2.0, 16.0, 5.0),
                 new M3ComponentTokens.LoadingIndicatorTokens(63.0, 22.0),

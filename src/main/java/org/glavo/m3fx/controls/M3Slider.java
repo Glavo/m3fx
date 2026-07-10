@@ -36,7 +36,8 @@ import java.util.Objects;
 /// A Material Design 3 slider for selecting a numeric value from a continuous range.
 ///
 /// `M3Slider` exposes JavaFX-style `min`, `max`, `value`, orientation, and block-increment properties while
-/// rendering a Material track, active range, thumb, focus state, and keyboard-accessible value changes. The
+/// rendering a Material track, active range, end stop indicator, thumb, focus state, and keyboard-accessible
+/// value changes. The
 /// `stepSize` property turns the control into a discrete slider whose pointer, keyboard, programmatic, and
 /// accessibility value changes snap to valid steps. The `valueChanging` property is set during direct pointer
 /// interaction so applications can distinguish committed changes from in-progress drags.
@@ -68,6 +69,9 @@ public class M3Slider extends Control {
 
     /// The default slider track shape radius.
     private static final double DEFAULT_TRACK_SHAPE = 999.0;
+
+    /// The default slider stop indicator diameter.
+    private static final double DEFAULT_STOP_INDICATOR_SIZE = 4.0;
 
     /// The default slider handle long-side size.
     private static final double DEFAULT_THUMB_SIZE = 44.0;
@@ -111,6 +115,9 @@ public class M3Slider extends Control {
 
     // Backing property for the public track shape token API.
     private @Nullable StyleableDoubleProperty trackShape;
+
+    // Backing property for the public stop indicator size token API.
+    private @Nullable StyleableDoubleProperty stopIndicatorSize;
 
     // Backing property for the public thumb size token API.
     private @Nullable StyleableDoubleProperty thumbSize;
@@ -529,6 +536,38 @@ public class M3Slider extends Control {
         return trackShape;
     }
 
+    /// Returns the inactive-track stop indicator diameter token.
+    ///
+    /// @return the stop indicator diameter token in pixels
+    public final double getStopIndicatorSize() {
+        return stopIndicatorSize == null ? DEFAULT_STOP_INDICATOR_SIZE : stopIndicatorSize.get();
+    }
+
+    /// Sets the inactive-track stop indicator diameter token.
+    ///
+    /// A value of zero hides the stop indicator.
+    ///
+    /// @param stopIndicatorSize the non-negative stop indicator diameter token in pixels
+    public final void setStopIndicatorSize(double stopIndicatorSize) {
+        stopIndicatorSizeProperty().set(M3Css.nonNegative(stopIndicatorSize, "stopIndicatorSize"));
+    }
+
+    /// Returns the inactive-track stop indicator diameter token property.
+    ///
+    /// @return the stop indicator diameter token property
+    public final StyleableDoubleProperty stopIndicatorSizeProperty() {
+        if (stopIndicatorSize == null) {
+            stopIndicatorSize = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_STOP_INDICATOR_SIZE,
+                    this,
+                    "stopIndicatorSize",
+                    StyleableProperties.STOP_INDICATOR_SIZE,
+                    this::requestLayout
+            );
+        }
+        return stopIndicatorSize;
+    }
+
     /// Returns the slider handle long-side size token.
     ///
     /// @return the slider handle long-side size token in pixels
@@ -816,6 +855,26 @@ public class M3Slider extends Control {
                     }
                 };
 
+        /// CSS metadata for the stop indicator diameter token.
+        private static final CssMetaData<M3Slider, Number> STOP_INDICATOR_SIZE =
+                new CssMetaData<>(
+                        "-m3-stop-indicator-size",
+                        SizeConverter.getInstance(),
+                        DEFAULT_STOP_INDICATOR_SIZE
+                ) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3Slider control) {
+                        return M3Css.isSettable(control.stopIndicatorSizeProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3Slider control) {
+                        return control.stopIndicatorSizeProperty();
+                    }
+                };
+
         /// CSS metadata for the thumb long-side size token.
         private static final CssMetaData<M3Slider, Number> THUMB_SIZE =
                 new CssMetaData<>("-m3-thumb-size", SizeConverter.getInstance(), DEFAULT_THUMB_SIZE) {
@@ -887,6 +946,7 @@ public class M3Slider extends Control {
             List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Control.getClassCssMetaData());
             styleables.add(TRACK_THICKNESS);
             styleables.add(TRACK_SHAPE);
+            styleables.add(STOP_INDICATOR_SIZE);
             styleables.add(THUMB_SIZE);
             styleables.add(THUMB_WIDTH);
             styleables.add(THUMB_TRACK_GAP);

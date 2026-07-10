@@ -1,10 +1,20 @@
 .m3-slider {
     -m3-track-thickness: 16px;
     -m3-track-shape: 999px;
+    -m3-stop-indicator-size: 4px;
     -m3-thumb-size: 44px;
     -m3-thumb-width: 4px;
     -m3-thumb-track-gap: 6px;
     -m3-touch-target-size: 48px;
+}
+
+.m3-slider.m3-slider .stop-indicator {
+    -fx-background-color: -m3-color-on-secondary-container;
+    -fx-background-insets: 0;
+    -fx-background-radius: 999px;
+    -fx-border-color: transparent;
+    -fx-border-width: 0px;
+    -fx-padding: 0px;
 }
 
 .m3-slider.m3-slider .track,
@@ -59,4 +69,8 @@
 
 .m3-slider:disabled {
     -fx-opacity: 0.38;
+}
+
+.m3-slider:disabled .stop-indicator {
+    -fx-background-color: -m3-color-on-surface;
 }

@@ -1949,6 +1949,7 @@ final class M3ControlStyleTest {
         slider.setStyle(
                 "-m3-track-thickness: 4px; "
                         + "-m3-track-shape: 999px; "
+                        + "-m3-stop-indicator-size: 4px; "
                         + "-m3-thumb-size: 44px; "
                         + "-m3-thumb-width: 4px; "
                         + "-m3-thumb-track-gap: 6px; "
@@ -1956,6 +1957,7 @@ final class M3ControlStyleTest {
         );
         slider.setTrackThickness(8.0);
         slider.setTrackShape(12.0);
+        slider.setStopIndicatorSize(6.0);
         slider.setThumbSize(52.0);
         slider.setThumbWidth(8.0);
         slider.setThumbTrackGap(10.0);
@@ -2030,6 +2032,7 @@ final class M3ControlStyleTest {
 
         assertEquals(8.0, slider.getTrackThickness(), 0.0001);
         assertEquals(12.0, slider.getTrackShape(), 0.0001);
+        assertEquals(6.0, slider.getStopIndicatorSize(), 0.0001);
         assertEquals(52.0, slider.getThumbSize(), 0.0001);
         assertEquals(8.0, slider.getThumbWidth(), 0.0001);
         assertEquals(10.0, slider.getThumbTrackGap(), 0.0001);
@@ -18772,6 +18775,7 @@ final class M3ControlStyleTest {
         slider.setStyle(
                 "-m3-track-thickness: 8px; "
                         + "-m3-track-shape: 12px; "
+                        + "-m3-stop-indicator-size: 6px; "
                         + "-m3-thumb-size: 52px; "
                         + "-m3-thumb-width: 8px; "
                         + "-m3-thumb-track-gap: 10px; "
@@ -18782,6 +18786,7 @@ final class M3ControlStyleTest {
 
         assertEquals(8.0, slider.getTrackThickness(), 0.0001);
         assertEquals(12.0, slider.getTrackShape(), 0.0001);
+        assertEquals(6.0, slider.getStopIndicatorSize(), 0.0001);
         assertEquals(52.0, slider.getThumbSize(), 0.0001);
         assertEquals(8.0, slider.getThumbWidth(), 0.0001);
         assertEquals(10.0, slider.getThumbTrackGap(), 0.0001);
@@ -18866,9 +18871,11 @@ final class M3ControlStyleTest {
 
         Region track = lookupRegion(slider, ".track");
         Region activeTrack = lookupRegion(slider, ".active-track");
+        Region stopIndicator = lookupRegion(slider, ".stop-indicator");
         Region thumb = lookupRegion(slider, ".thumb");
         assertRegionFill(track, Color.rgb(7, 8, 9));
         assertRegionFill(activeTrack, Color.rgb(1, 2, 3));
+        assertRegionFill(stopIndicator, Color.rgb(10, 11, 12));
         assertNoBorder(track);
         assertRegionFill(thumb, Color.rgb(1, 2, 3));
         assertNoBorder(thumb);
@@ -18942,6 +18949,26 @@ final class M3ControlStyleTest {
         assertHorizontalSliderSegments(leftToRight, false);
         assertHorizontalSliderSegments(rightToLeft, true);
         assertVerticalSliderSegments(vertical);
+    }
+
+    /// Verifies that slider stop indicators disappear when no inactive track remains or their size is zero.
+    @Test
+    void sliderStopIndicatorVisibilityFollowsInactiveTrackAndSizeToken() {
+        M3Slider maximum = new M3Slider(0.0, 100.0, 100.0);
+        M3Slider hiddenByToken = new M3Slider(0.0, 100.0, 50.0);
+        hiddenByToken.setStopIndicatorSize(0.0);
+        Pane root = new Pane(maximum, hiddenByToken);
+        Scene scene = new Scene(root, 500.0, 100.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        maximum.resizeRelocate(0.0, 0.0, 220.0, 48.0);
+        hiddenByToken.resizeRelocate(240.0, 0.0, 220.0, 48.0);
+        maximum.layout();
+        hiddenByToken.layout();
+
+        assertFalse(lookupRegion(maximum, ".stop-indicator").isVisible());
+        assertFalse(lookupRegion(hiddenByToken, ".stop-indicator").isVisible());
     }
 
     /// Verifies that progress component token properties are styleable from CSS.
@@ -31178,6 +31205,7 @@ final class M3ControlStyleTest {
             assertEquals(18.0, filterChip.getHorizontalPadding(), 0.0001);
             assertEquals(48.0, checkBox.getTouchTargetSize(), 0.0001);
             assertEquals(16.0, slider.getTrackThickness(), 0.0001);
+            assertEquals(4.0, slider.getStopIndicatorSize(), 0.0001);
             assertEquals(44.0, slider.getThumbSize(), 0.0001);
             assertEquals(4.0, slider.getThumbWidth(), 0.0001);
             assertEquals(48.0, slider.getTouchTargetSize(), 0.0001);
@@ -37201,10 +37229,12 @@ final class M3ControlStyleTest {
     private static void assertHorizontalSliderSegments(M3Slider slider, boolean rightToLeft) {
         Region inactiveTrack = lookupRegion(slider, ".track");
         Region activeTrack = lookupRegion(slider, ".active-track");
+        Region stopIndicator = lookupRegion(slider, ".stop-indicator");
         Region thumb = lookupRegion(slider, ".thumb");
         Bounds sliderBounds = slider.localToScene(slider.getBoundsInLocal());
         Bounds inactiveBounds = inactiveTrack.localToScene(inactiveTrack.getBoundsInLocal());
         Bounds activeBounds = activeTrack.localToScene(activeTrack.getBoundsInLocal());
+        Bounds stopIndicatorBounds = stopIndicator.localToScene(stopIndicator.getBoundsInLocal());
         Bounds thumbBounds = thumb.localToScene(thumb.getBoundsInLocal());
         double trackStart = sliderBounds.getMinX() + slider.getThumbWidth() / 2.0;
         double trackEnd = sliderBounds.getMaxX() - slider.getThumbWidth() / 2.0;
@@ -37232,16 +37262,30 @@ final class M3ControlStyleTest {
                 ? activeBounds.getMinX() - inactiveBounds.getMaxX()
                 : inactiveBounds.getMinX() - activeBounds.getMaxX();
         assertEquals(slider.getThumbTrackGap() * 2.0, segmentGap, 0.0001);
+        double stopRadius = slider.getStopIndicatorSize() / 2.0;
+        double trackCornerRadius = Math.max(
+                stopRadius,
+                Math.min(slider.getTrackThickness() / 2.0, slider.getTrackShape())
+        );
+        double expectedStopCenter = rightToLeft
+                ? trackStart + trackCornerRadius
+                : trackEnd - trackCornerRadius;
+        assertTrue(stopIndicator.isVisible());
+        assertEquals(expectedStopCenter, stopIndicatorBounds.getCenterX(), 0.0001);
+        assertEquals(slider.getStopIndicatorSize(), stopIndicatorBounds.getWidth(), 0.0001);
+        assertEquals(slider.getStopIndicatorSize(), stopIndicatorBounds.getHeight(), 0.0001);
     }
 
     /// Verifies a vertical slider's rendered active and inactive segments around the handle gap.
     private static void assertVerticalSliderSegments(M3Slider slider) {
         Region inactiveTrack = lookupRegion(slider, ".track");
         Region activeTrack = lookupRegion(slider, ".active-track");
+        Region stopIndicator = lookupRegion(slider, ".stop-indicator");
         Region thumb = lookupRegion(slider, ".thumb");
         Bounds sliderBounds = slider.localToScene(slider.getBoundsInLocal());
         Bounds inactiveBounds = inactiveTrack.localToScene(inactiveTrack.getBoundsInLocal());
         Bounds activeBounds = activeTrack.localToScene(activeTrack.getBoundsInLocal());
+        Bounds stopIndicatorBounds = stopIndicator.localToScene(stopIndicator.getBoundsInLocal());
         Bounds thumbBounds = thumb.localToScene(thumb.getBoundsInLocal());
         double trackStart = sliderBounds.getMinY() + slider.getThumbWidth() / 2.0;
         double trackEnd = sliderBounds.getMaxY() - slider.getThumbWidth() / 2.0;
@@ -37259,6 +37303,15 @@ final class M3ControlStyleTest {
         assertEquals(slider.getThumbTrackGap() * 2.0,
                 activeBounds.getMinY() - inactiveBounds.getMaxY(),
                 0.0001);
+        double stopRadius = slider.getStopIndicatorSize() / 2.0;
+        double trackCornerRadius = Math.max(
+                stopRadius,
+                Math.min(slider.getTrackThickness() / 2.0, slider.getTrackShape())
+        );
+        assertTrue(stopIndicator.isVisible());
+        assertEquals(trackStart + trackCornerRadius, stopIndicatorBounds.getCenterY(), 0.0001);
+        assertEquals(slider.getStopIndicatorSize(), stopIndicatorBounds.getWidth(), 0.0001);
+        assertEquals(slider.getStopIndicatorSize(), stopIndicatorBounds.getHeight(), 0.0001);
     }
 
     /// Returns the slider value normalized to the supported range.

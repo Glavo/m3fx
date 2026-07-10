@@ -38,6 +38,9 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     /// The active slider track from the minimum value to the current value.
     private final Region activeTrack = new Region();
 
+    /// The circular marker near the maximum-value end of the inactive track.
+    private final Region stopIndicator = new Region();
+
     /// The draggable slider thumb.
     private final Region thumb = new Region();
 
@@ -113,11 +116,13 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         super(control);
         track.getStyleClass().add("track");
         activeTrack.getStyleClass().add("active-track");
+        stopIndicator.getStyleClass().add("stop-indicator");
         thumb.getStyleClass().add("thumb");
         track.setMouseTransparent(true);
         activeTrack.setMouseTransparent(true);
+        stopIndicator.setMouseTransparent(true);
         thumb.setMouseTransparent(true);
-        getChildren().addAll(track, activeTrack, stateLayer, thumb);
+        getChildren().addAll(track, activeTrack, stopIndicator, stateLayer, thumb);
         stateLayer.installStateTransitions(control);
         displayedPosition.set(valueToPosition(control.getValue()));
         displayedPosition.addListener(displayedPositionInvalidation);
@@ -129,6 +134,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         control.effectiveNodeOrientationProperty().addListener(layoutInvalidation);
         control.trackThicknessProperty().addListener(layoutInvalidation);
         control.trackShapeProperty().addListener(trackShapeInvalidation);
+        control.stopIndicatorSizeProperty().addListener(layoutInvalidation);
         control.thumbSizeProperty().addListener(layoutInvalidation);
         control.thumbWidthProperty().addListener(layoutInvalidation);
         control.thumbWidthProperty().addListener(thumbStyleInvalidation);
@@ -157,6 +163,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         control.effectiveNodeOrientationProperty().removeListener(layoutInvalidation);
         control.trackThicknessProperty().removeListener(layoutInvalidation);
         control.trackShapeProperty().removeListener(trackShapeInvalidation);
+        control.stopIndicatorSizeProperty().removeListener(layoutInvalidation);
         control.thumbSizeProperty().removeListener(layoutInvalidation);
         control.thumbWidthProperty().removeListener(layoutInvalidation);
         control.thumbWidthProperty().removeListener(thumbStyleInvalidation);
@@ -331,7 +338,15 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         double thumbX = thumbCenterX - thumbWidth / 2.0;
         double thumbY = y + (height - thumbSize) / 2.0;
 
-        layoutHorizontalTrackSegments(trackStart, trackEnd, trackY, trackThickness, thumbCenterX, thumbTrackGap);
+        double inactiveTrackStart = layoutHorizontalTrackSegments(
+                trackStart,
+                trackEnd,
+                trackY,
+                trackThickness,
+                thumbCenterX,
+                thumbTrackGap
+        );
+        layoutHorizontalStopIndicator(trackEnd, inactiveTrackStart, trackY, trackThickness);
         stateLayer.layoutLayer(
                 thumbCenterX - getSkinnable().getTouchTargetSize() / 2.0,
                 y + (height - getSkinnable().getTouchTargetSize()) / 2.0,
@@ -343,7 +358,9 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     }
 
     /// Positions horizontal active and inactive track segments around the handle gap.
-    private void layoutHorizontalTrackSegments(
+    ///
+    /// @return the leading edge of the inactive track segment
+    private double layoutHorizontalTrackSegments(
             double trackStart,
             double trackEnd,
             double trackY,
@@ -355,6 +372,33 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         double trailingGapEdge = clampToRange(thumbCenterX + thumbTrackGap, trackStart, trackEnd);
         activeTrack.resizeRelocate(trackStart, trackY, leadingGapEdge - trackStart, trackThickness);
         track.resizeRelocate(trailingGapEdge, trackY, trackEnd - trailingGapEdge, trackThickness);
+        return trailingGapEdge;
+    }
+
+    /// Positions the horizontal inactive-track stop indicator when enough track remains visible.
+    private void layoutHorizontalStopIndicator(
+            double trackEnd,
+            double inactiveTrackStart,
+            double trackY,
+            double trackThickness
+    ) {
+        M3Slider slider = getSkinnable();
+        double size = slider.getStopIndicatorSize();
+        double radius = size / 2.0;
+        double trackCornerRadius = Math.max(
+                radius,
+                Math.min(trackThickness / 2.0, slider.getTrackShape())
+        );
+        boolean visible = size > 0.0 && trackEnd - inactiveTrackStart > trackCornerRadius + radius;
+        stopIndicator.setVisible(visible);
+        if (visible) {
+            stopIndicator.resizeRelocate(
+                    trackEnd - trackCornerRadius - radius,
+                    trackY + (trackThickness - size) / 2.0,
+                    size,
+                    size
+            );
+        }
     }
 
     /// Positions vertical slider nodes.
@@ -378,7 +422,15 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         double thumbX = x + (width - thumbSize) / 2.0;
         double thumbY = thumbCenterY - thumbWidth / 2.0;
 
-        layoutVerticalTrackSegments(trackX, trackStart, trackEnd, trackThickness, thumbCenterY, thumbTrackGap);
+        double inactiveTrackEnd = layoutVerticalTrackSegments(
+                trackX,
+                trackStart,
+                trackEnd,
+                trackThickness,
+                thumbCenterY,
+                thumbTrackGap
+        );
+        layoutVerticalStopIndicator(trackX, trackStart, inactiveTrackEnd, trackThickness);
         stateLayer.layoutLayer(
                 x + (width - getSkinnable().getTouchTargetSize()) / 2.0,
                 thumbCenterY - getSkinnable().getTouchTargetSize() / 2.0,
@@ -390,7 +442,9 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     }
 
     /// Positions vertical active and inactive track segments around the handle gap.
-    private void layoutVerticalTrackSegments(
+    ///
+    /// @return the trailing edge of the inactive track segment
+    private double layoutVerticalTrackSegments(
             double trackX,
             double trackStart,
             double trackEnd,
@@ -402,6 +456,33 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         double lowerGapEdge = clampToRange(thumbCenterY + thumbTrackGap, trackStart, trackEnd);
         track.resizeRelocate(trackX, trackStart, trackThickness, upperGapEdge - trackStart);
         activeTrack.resizeRelocate(trackX, lowerGapEdge, trackThickness, trackEnd - lowerGapEdge);
+        return upperGapEdge;
+    }
+
+    /// Positions the vertical inactive-track stop indicator when enough track remains visible.
+    private void layoutVerticalStopIndicator(
+            double trackX,
+            double trackStart,
+            double inactiveTrackEnd,
+            double trackThickness
+    ) {
+        M3Slider slider = getSkinnable();
+        double size = slider.getStopIndicatorSize();
+        double radius = size / 2.0;
+        double trackCornerRadius = Math.max(
+                radius,
+                Math.min(trackThickness / 2.0, slider.getTrackShape())
+        );
+        boolean visible = size > 0.0 && inactiveTrackEnd - trackStart > trackCornerRadius + radius;
+        stopIndicator.setVisible(visible);
+        if (visible) {
+            stopIndicator.resizeRelocate(
+                    trackX + (trackThickness - size) / 2.0,
+                    trackStart + trackCornerRadius - radius,
+                    size,
+                    size
+            );
+        }
     }
 
     /// Starts value adjustment from a primary mouse press.
