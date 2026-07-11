@@ -3,12 +3,13 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
+import javafx.beans.WeakInvalidationListener;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.ReadOnlyProperty;
 import javafx.beans.property.ReadOnlyIntegerProperty;
 import javafx.beans.property.ReadOnlyIntegerWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
@@ -16,6 +17,9 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
+import javafx.beans.value.WeakChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -23,6 +27,7 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
@@ -34,12 +39,11 @@ import org.glavo.m3fx.internal.M3FocusTraversal;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
-import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3ListViewCell;
 import org.glavo.m3fx.internal.M3ListViewSkinAccess;
-import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.M3TypeAheadState;
 import org.glavo.m3fx.skins.M3ListViewSkin;
 import org.glavo.m3fx.internal.M3KeyEvents;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -51,7 +55,6 @@ import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 /// A Material Design 3 data-driven virtualized list view.
 ///
@@ -139,6 +142,9 @@ public class M3ListView<T> extends Control {
     /// Reusable storage for computing selected item values without allocating on every refresh.
     private final List<T> selectedItemsScratch = new ArrayList<>();
 
+    /// Reusable storage for remapping selected indices across backing-list structural changes.
+    private final List<Integer> selectedIndicesScratch = new ArrayList<>();
+
     /// The read-only selected item view.
     private final @UnmodifiableView ObservableList<T> selectedItemsView =
             FXCollections.unmodifiableObservableList(selectedItems);
@@ -157,11 +163,8 @@ public class M3ListView<T> extends Control {
     private final ReadOnlyObjectWrapper<@Nullable T> focusedItem =
             new ReadOnlyObjectWrapper<>(this, "focusedItem");
 
-    /// The current printable-key prefix used for list view type-ahead focus navigation.
-    private final StringBuilder typeAheadBuffer = new StringBuilder();
-
-    /// Clears the type-ahead prefix after the user stops typing.
-    private final PauseTransition typeAheadResetDelay = new PauseTransition();
+    /// The lazily activated printable-key prefix used for list view type-ahead focus navigation.
+    private final M3TypeAheadState typeAheadState = new M3TypeAheadState(this);
 
     /// The row index for a deferred explicit accessibility reveal request.
     private int pendingAccessibleRevealIndex = -1;
@@ -175,23 +178,27 @@ public class M3ListView<T> extends Control {
     /// Whether a deferred accessibility reveal retry is already queued.
     private boolean pendingAccessibleRevealScheduled;
 
-    /// Updates type-ahead timing when runtime motion settings change.
-    private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(this, this::refreshMotionSettings);
+    /// Updates selection and focus when a node data item or observed ancestor changes reachability.
+    private final InvalidationListener itemReachabilityStateInvalidation =
+            observable -> refreshDataItemReachabilityState();
 
-    /// Updates selection and focus state when a node data item or its ancestor reachability changes.
-    private final InvalidationListener itemReachabilityListener = observable -> refreshDataItemReachabilityState();
+    /// Weak state-listener wrapper installed on externally owned node data items and ancestors.
+    private final WeakInvalidationListener weakItemReachabilityStateInvalidation =
+            new WeakInvalidationListener(itemReachabilityStateInvalidation);
 
-    /// Nodes in current node data item ancestry chains observed for navigation reachability changes.
-    private final Set<Node> observedItemReachabilityNodes = Collections.newSetFromMap(new IdentityHashMap<>());
+    /// Incrementally migrates ancestry observers when a node data item or observed ancestor changes parent.
+    private final ChangeListener<@Nullable Parent> itemReachabilityParentListener =
+            this::handleItemReachabilityParentChanged;
 
-    /// Updates selection and cells when data items change.
-    private final ListChangeListener<T> itemsListener = change -> {
-        refreshDataItemReachabilityState();
-        notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
-        notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
-        M3ListViewSkinAccess.refreshItemCount(this);
-    };
+    /// Weak parent-listener wrapper installed on externally owned node data items and ancestors.
+    private final WeakChangeListener<@Nullable Parent> weakItemReachabilityParentListener =
+            new WeakChangeListener<>(itemReachabilityParentListener);
+
+    /// Reference counts for nodes shared by current data-item ancestry chains.
+    private final IdentityHashMap<Node, Integer> observedItemReachabilityNodeCounts = new IdentityHashMap<>();
+
+    /// Updates selection, focus, observers, and cells when data items change.
+    private final ListChangeListener<T> itemsListener = this::handleItemsChanged;
 
     /// Creates an empty virtualized list view.
     public M3ListView() {
@@ -384,7 +391,7 @@ public class M3ListView<T> extends Control {
     /// @param index the data item index to query
     /// @return `true` when the item index is selected
     public final boolean isIndexSelected(int index) {
-        return selectedIndices.contains(index);
+        return Collections.binarySearch(selectedIndices, index) >= 0;
     }
 
     /// Returns whether the supplied item index owns list keyboard focus.
@@ -632,7 +639,7 @@ public class M3ListView<T> extends Control {
 
     /// Adds base style classes and installs data listeners.
     private void initialize() {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.LIST_VIEW);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
         setFocusTraversable(true);
@@ -642,19 +649,9 @@ public class M3ListView<T> extends Control {
         updateItemReachabilityObservers();
         sceneProperty().addListener((observable, oldScene, newScene) -> {
             if (newScene == null) {
-                clearTypeAheadBuffer();
+                typeAheadState.clear();
             }
         });
-        typeAheadResetDelay.setOnFinished(event -> clearTypeAheadBuffer());
-    }
-
-    /// Applies changed runtime motion settings to the type-ahead reset delay.
-    private void refreshMotionSettings() {
-        M3Animation.updatePauseDuration(
-                typeAheadResetDelay,
-                M3Animation.motionBehavior(this).typeAheadResetDelay(),
-                !typeAheadBuffer.isEmpty()
-        );
     }
 
     /// Refreshes listeners for node data items whose visibility or disabled state affects navigation.
@@ -662,38 +659,106 @@ public class M3ListView<T> extends Control {
         removeItemReachabilityObservers();
         for (T item : getItems()) {
             if (item instanceof Node node) {
-                observeItemReachabilityChain(node);
+                adjustItemReachabilityChain(node, 1);
             }
         }
     }
 
-    /// Observes one node data item and its current parent chain.
-    private void observeItemReachabilityChain(Node node) {
+    /// Incrementally updates node ancestry observers from one backing-list change.
+    ///
+    /// @param change the backing-list change whose additions and removals should be observed
+    private void updateItemReachabilityObservers(ListChangeListener.Change<? extends T> change) {
+        while (change.next()) {
+            if (change.wasPermutated() || change.wasUpdated()) {
+                continue;
+            }
+            for (T removedItem : change.getRemoved()) {
+                if (removedItem instanceof Node node) {
+                    adjustItemReachabilityChain(node, -1);
+                }
+            }
+            for (T addedItem : change.getAddedSubList()) {
+                if (addedItem instanceof Node node) {
+                    adjustItemReachabilityChain(node, 1);
+                }
+            }
+        }
+    }
+
+    /// Adjusts observer reference counts for one node and its current parent chain.
+    ///
+    /// @param node the first node in the ancestry chain
+    /// @param delta the positive or negative reference-count adjustment
+    private void adjustItemReachabilityChain(@Nullable Node node, int delta) {
         @Nullable Node current = node;
         while (current != null) {
-            if (observedItemReachabilityNodes.add(current)) {
-                current.visibleProperty().addListener(itemReachabilityListener);
-                current.disabledProperty().addListener(itemReachabilityListener);
-                current.parentProperty().addListener(itemReachabilityListener);
-            }
+            adjustItemReachabilityNode(current, delta);
             current = current.getParent();
         }
     }
 
+    /// Adjusts the observer reference count for one node.
+    ///
+    /// @param node the observed node
+    /// @param delta the positive or negative reference-count adjustment
+    private void adjustItemReachabilityNode(Node node, int delta) {
+        int previousCount = observedItemReachabilityNodeCounts.getOrDefault(node, 0);
+        int newCount = previousCount + delta;
+        if (newCount <= 0) {
+            if (previousCount > 0) {
+                node.visibleProperty().removeListener(weakItemReachabilityStateInvalidation);
+                node.disabledProperty().removeListener(weakItemReachabilityStateInvalidation);
+                node.parentProperty().removeListener(weakItemReachabilityParentListener);
+                observedItemReachabilityNodeCounts.remove(node);
+            }
+            return;
+        }
+        if (previousCount == 0) {
+            node.visibleProperty().addListener(weakItemReachabilityStateInvalidation);
+            node.disabledProperty().addListener(weakItemReachabilityStateInvalidation);
+            node.parentProperty().addListener(weakItemReachabilityParentListener);
+        }
+        observedItemReachabilityNodeCounts.put(node, newCount);
+    }
+
+    /// Migrates shared ancestor observation counts after one observed node changes parent.
+    ///
+    /// @param observable the changed parent property
+    /// @param oldParent the former parent, or `null`
+    /// @param newParent the new parent, or `null`
+    private void handleItemReachabilityParentChanged(
+            ObservableValue<? extends @Nullable Parent> observable,
+            @Nullable Parent oldParent,
+            @Nullable Parent newParent
+    ) {
+        if (!(observable instanceof ReadOnlyProperty<?> property)
+                || !(property.getBean() instanceof Node node)) {
+            updateItemReachabilityObservers();
+            refreshDataItemReachabilityState();
+            return;
+        }
+        int referenceCount = observedItemReachabilityNodeCounts.getOrDefault(node, 0);
+        if (referenceCount <= 0) {
+            return;
+        }
+        adjustItemReachabilityChain(oldParent, -referenceCount);
+        adjustItemReachabilityChain(newParent, referenceCount);
+        refreshDataItemReachabilityState();
+    }
+
     /// Removes all node data item reachability listeners.
     private void removeItemReachabilityObservers() {
-        for (Node node : observedItemReachabilityNodes) {
-            node.visibleProperty().removeListener(itemReachabilityListener);
-            node.disabledProperty().removeListener(itemReachabilityListener);
-            node.parentProperty().removeListener(itemReachabilityListener);
+        for (Node node : observedItemReachabilityNodeCounts.keySet()) {
+            node.visibleProperty().removeListener(weakItemReachabilityStateInvalidation);
+            node.disabledProperty().removeListener(weakItemReachabilityStateInvalidation);
+            node.parentProperty().removeListener(weakItemReachabilityParentListener);
         }
-        observedItemReachabilityNodes.clear();
+        observedItemReachabilityNodeCounts.clear();
     }
 
     /// Refreshes selection, focus, and visible rows after node data item reachability changes.
     private void refreshDataItemReachabilityState() {
-        clearTypeAheadBuffer();
-        updateItemReachabilityObservers();
+        typeAheadState.clear();
         trimSelectedIndices();
         trimFocusedIndex();
         if (!isAllowEmptySelection() && getSelectionMode() != M3ListSelectionMode.NONE && selectedIndices.isEmpty()) {
@@ -703,6 +768,95 @@ public class M3ListView<T> extends Control {
         }
         M3Accessible.notifyFocusNodeChanged(this);
         requestVisibleCellRefresh();
+    }
+
+    /// Handles one backing-list change without discarding the logical selection and focus of surviving rows.
+    ///
+    /// @param change the structural or content change reported by the backing item list
+    private void handleItemsChanged(ListChangeListener.Change<? extends T> change) {
+        remapSelectionAndFocus(change);
+        change.reset();
+        updateItemReachabilityObservers(change);
+        refreshDataItemReachabilityState();
+        notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+        M3ListViewSkinAccess.refreshItemCount(this);
+    }
+
+    /// Remaps selected and focused indices across all subchanges in one backing-list notification.
+    ///
+    /// The reusable scratch list keeps item insertions, removals, replacements, and permutations allocation-free
+    /// after it has grown to the maximum simultaneous selection size.
+    ///
+    /// @param change the backing-list change to apply
+    private void remapSelectionAndFocus(ListChangeListener.Change<? extends T> change) {
+        selectedIndicesScratch.clear();
+        selectedIndicesScratch.addAll(selectedIndices);
+        int remappedFocusedIndex = focusedIndex.get();
+
+        while (change.next()) {
+            if (change.wasPermutated()) {
+                int from = change.getFrom();
+                int to = change.getTo();
+                for (int position = 0; position < selectedIndicesScratch.size(); position++) {
+                    int index = selectedIndicesScratch.get(position);
+                    if (index >= from && index < to) {
+                        selectedIndicesScratch.set(position, change.getPermutation(index));
+                    }
+                }
+                if (remappedFocusedIndex >= from && remappedFocusedIndex < to) {
+                    remappedFocusedIndex = change.getPermutation(remappedFocusedIndex);
+                }
+            } else if (!change.wasUpdated()) {
+                int from = change.getFrom();
+                int removedSize = change.getRemovedSize();
+                int addedSize = change.getAddedSize();
+                for (int position = selectedIndicesScratch.size() - 1; position >= 0; position--) {
+                    int remappedIndex = remapIndex(
+                            selectedIndicesScratch.get(position),
+                            from,
+                            removedSize,
+                            addedSize
+                    );
+                    if (remappedIndex < 0) {
+                        selectedIndicesScratch.remove(position);
+                    } else {
+                        selectedIndicesScratch.set(position, remappedIndex);
+                    }
+                }
+                remappedFocusedIndex = remapIndex(remappedFocusedIndex, from, removedSize, addedSize);
+            }
+        }
+
+        Collections.sort(selectedIndicesScratch);
+        if (!selectedIndices.equals(selectedIndicesScratch)) {
+            selectedIndices.setAll(selectedIndicesScratch);
+        }
+        selectedIndicesScratch.clear();
+
+        focusedIndex.set(remappedFocusedIndex);
+        focusedItem.set(remappedFocusedIndex < 0 || remappedFocusedIndex >= getItems().size()
+                ? null
+                : getItems().get(remappedFocusedIndex));
+    }
+
+    /// Remaps one old index across one contiguous add, remove, or replace operation.
+    ///
+    /// @param index the index before the change, or `-1` when no row is focused
+    /// @param from the first changed index
+    /// @param removedSize the number of removed items
+    /// @param addedSize the number of added items
+    /// @return the corresponding new index, or `-1` when the indexed row was removed without replacement
+    private static int remapIndex(int index, int from, int removedSize, int addedSize) {
+        if (index < 0 || index < from) {
+            return index;
+        }
+        int removedEnd = from + removedSize;
+        if (index < removedEnd) {
+            int offset = index - from;
+            return offset < addedSize ? from + offset : -1;
+        }
+        return index + addedSize - removedSize;
     }
 
     /// Applies the configured selection policy to a reachable cell activation.
@@ -759,14 +913,11 @@ public class M3ListView<T> extends Control {
         }
 
         String normalizedCharacter = M3SelectionNavigation.normalizeTypeAheadText(character);
-        typeAheadBuffer.append(normalizedCharacter);
-        typeAheadResetDelay.setDuration(M3Animation.motionBehavior(this).typeAheadResetDelay());
-        typeAheadResetDelay.playFromStart();
-        int target = typeAheadTarget(typeAheadBuffer.toString());
-        if (target < 0 && typeAheadBuffer.length() > 1) {
-            clearTypeAheadBuffer();
-            typeAheadBuffer.append(normalizedCharacter);
-            target = typeAheadTarget(typeAheadBuffer.toString());
+        typeAheadState.append(normalizedCharacter);
+        int target = typeAheadTarget(typeAheadState.getPrefix());
+        if (target < 0 && typeAheadState.length() > 1) {
+            typeAheadState.replace(normalizedCharacter);
+            target = typeAheadTarget(typeAheadState.getPrefix());
         }
         if (target < 0) {
             return;
@@ -779,15 +930,9 @@ public class M3ListView<T> extends Control {
         event.consume();
     }
 
-    /// Clears buffered type-ahead text and stops the pending reset timer.
-    private void clearTypeAheadBuffer() {
-        typeAheadBuffer.setLength(0);
-        typeAheadResetDelay.stop();
-    }
-
     /// Returns the next data item index matching the normalized type-ahead prefix.
     private int typeAheadTarget(String prefix) {
-        if (prefix.isEmpty() || getItems().isEmpty()) {
+        if (prefix.isEmpty() || getItems().isEmpty() || !M3Accessible.isEffectivelyReachable(this)) {
             return -1;
         }
 
@@ -797,8 +942,7 @@ public class M3ListView<T> extends Control {
             int index = Math.floorMod(anchor + offset, itemCount);
             T item = getItems().get(index);
             String text = item instanceof M3ListItem listItem ? listItem.getHeadlineText() : String.valueOf(item);
-            if (isItemNavigable(item)
-                    && M3SelectionNavigation.normalizeTypeAheadText(text).startsWith(prefix)) {
+            if (isDataItemReachable(item) && M3SelectionNavigation.matchesTypeAheadPrefix(text, prefix)) {
                 return index;
             }
         }
@@ -956,7 +1100,9 @@ public class M3ListView<T> extends Control {
             return;
         }
 
-        selectedIndices.setAll(indices);
+        if (!selectedIndices.equals(indices)) {
+            selectedIndices.setAll(indices);
+        }
         refreshSelectedItems();
         if (!isAllowEmptySelection()) {
             selectFirstItemIfNeeded();
@@ -1353,28 +1499,36 @@ public class M3ListView<T> extends Control {
     /// Selects one index and clears selection from the remaining items.
     private void selectOnly(int index) {
         if (index < 0) {
-            selectedIndices.clear();
+            if (!selectedIndices.isEmpty()) {
+                selectedIndices.clear();
+            }
         } else {
             checkItemIndex(index);
-            selectedIndices.setAll(index);
+            if (selectedIndices.size() != 1 || selectedIndices.get(0) != index) {
+                selectedIndices.setAll(index);
+            }
         }
         refreshSelectedItems();
     }
 
     /// Adds one selected index while preserving ascending order.
     private void addSelectedIndex(int index) {
-        if (!selectedIndices.contains(index)) {
-            selectedIndices.add(index);
-            Collections.sort(selectedIndices);
-            refreshSelectedItems();
+        int position = Collections.binarySearch(selectedIndices, index);
+        if (position >= 0) {
+            return;
         }
+        selectedIndices.add(-position - 1, index);
+        refreshSelectedItems();
     }
 
     /// Removes one selected index.
     private void removeSelectedIndex(int index) {
-        if (selectedIndices.remove(Integer.valueOf(index))) {
-            refreshSelectedItems();
+        int position = Collections.binarySearch(selectedIndices, index);
+        if (position < 0) {
+            return;
         }
+        selectedIndices.remove(position);
+        refreshSelectedItems();
     }
 
     /// Removes selected indices outside the current item range or no longer reachable by row navigation.
@@ -1403,10 +1557,11 @@ public class M3ListView<T> extends Control {
         for (Integer index : selectedIndices) {
             selectedItemsScratch.add(getItems().get(index));
         }
-        boolean selectionChanged = !selectedItems.equals(selectedItemsScratch);
+        boolean selectionChanged = !hasSameItemReferences(selectedItems, selectedItemsScratch);
         if (selectionChanged) {
             selectedItems.setAll(selectedItemsScratch);
         }
+        selectedItemsScratch.clear();
 
         int firstIndex = selectedIndices.isEmpty() ? -1 : selectedIndices.get(0);
         selectedIndex.set(firstIndex);
@@ -1415,6 +1570,27 @@ public class M3ListView<T> extends Control {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
             requestVisibleCellRefresh();
         }
+    }
+
+    /// Returns whether two selected-item lists contain the same object references in the same order.
+    ///
+    /// Value equality is insufficient because replacing a selected data value with an equal instance must update
+    /// the selected-items view to expose the instance currently stored in the backing list.
+    ///
+    /// @param first the current selected-item list
+    /// @param second the newly computed selected-item list
+    /// @return `true` when both lists contain the same references in the same order
+    private static boolean hasSameItemReferences(List<?> first, List<?> second) {
+        int size = first.size();
+        if (size != second.size()) {
+            return false;
+        }
+        for (int index = 0; index < size; index++) {
+            if (first.get(index) != second.get(index)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /// Updates the focused data item and asks the skin to keep its cell visible.
@@ -1565,13 +1741,15 @@ public class M3ListView<T> extends Control {
 
     /// Returns whether a data item index can receive list keyboard navigation.
     private boolean isIndexNavigable(int index) {
-        return index >= 0 && index < getItems().size() && isItemNavigable(getItems().get(index));
+        return index >= 0
+                && index < getItems().size()
+                && M3Accessible.isEffectivelyReachable(this)
+                && isDataItemReachable(getItems().get(index));
     }
 
-    /// Returns whether a data item can receive list keyboard navigation.
-    private boolean isItemNavigable(T item) {
-        return M3Accessible.isEffectivelyReachable(this)
-                && (!(item instanceof Node node) || M3Accessible.isEffectivelyReachable(node));
+    /// Returns whether a data item is reachable independently of the list view itself.
+    private boolean isDataItemReachable(T item) {
+        return !(item instanceof Node node) || M3Accessible.isEffectivelyReachable(node);
     }
 
     /// Requests visible cell state updates from the installed skin.

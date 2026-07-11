@@ -16,11 +16,13 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
 
+import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.RandomAccess;
 import java.util.Set;
 
 /// Shared keyboard focus traversal helpers for Material containers.
@@ -187,71 +189,132 @@ public final class M3FocusTraversal {
 
     /// Returns reachable focus targets from an optional leading node followed by a node list.
     public static @Unmodifiable List<Node> focusTargets(@Nullable Node leading, ObservableList<? extends Node> items) {
-        Objects.requireNonNull(items, "items");
-        List<Node> targets = new ArrayList<>(items.size() + 1);
-        addFocusTarget(targets, leading);
-        for (Node item : items) {
-            addFocusTarget(targets, item);
-        }
-        return List.copyOf(targets);
+        return focusTargets(leading, items, null);
     }
 
     /// Returns reachable focus targets from a node list.
     public static @Unmodifiable List<Node> focusTargets(ObservableList<? extends Node> items) {
-        Objects.requireNonNull(items, "items");
-        List<Node> targets = new ArrayList<>(items.size());
-        for (Node item : items) {
-            addFocusTarget(targets, item);
-        }
-        return List.copyOf(targets);
+        return focusTargets(null, items, null);
     }
 
     /// Returns every reachable focus target discovered in each item subtree.
     public static @Unmodifiable List<Node> focusTargetsInReachableTrees(ObservableList<? extends Node> items) {
+        return focusTargetsInReachableTrees(null, items);
+    }
+
+    /// Returns every reachable focus target from an optional leading subtree followed by item subtrees.
+    public static @Unmodifiable List<Node> focusTargetsInReachableTrees(
+            @Nullable Node leading,
+            Iterable<? extends Node> items
+    ) {
         Objects.requireNonNull(items, "items");
-        List<Node> targets = new ArrayList<>();
+        ArrayList<Node> targets = new ArrayList<>();
         Set<Node> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+        addFocusTargetsInReachableTree(targets, visited, leading);
         for (Node item : items) {
             addFocusTargetsInReachableTree(targets, visited, item);
         }
-        return List.copyOf(targets);
+        return freezeFocusTargets(targets);
     }
 
     /// Returns every reachable focus target discovered in a nullable item subtree.
     public static @Unmodifiable List<Node> focusTargetsInReachableTree(@Nullable Node item) {
-        List<Node> targets = new ArrayList<>();
+        ArrayList<Node> targets = new ArrayList<>();
         Set<Node> visited = Collections.newSetFromMap(new IdentityHashMap<>());
         addFocusTargetsInReachableTree(targets, visited, item);
-        return List.copyOf(targets);
+        return freezeFocusTargets(targets);
     }
 
     /// Returns reachable focus targets from an arbitrary ordered item sequence.
     public static @Unmodifiable List<Node> focusTargets(Iterable<? extends Node> items) {
         Objects.requireNonNull(items, "items");
-        List<Node> targets = new ArrayList<>();
+        ArrayList<Node> targets = new ArrayList<>();
         for (Node item : items) {
             addFocusTarget(targets, item);
         }
-        return List.copyOf(targets);
+        return freezeFocusTargets(targets);
     }
 
     /// Returns reachable focus targets from a node list followed by an optional trailing node.
     public static @Unmodifiable List<Node> focusTargets(ObservableList<? extends Node> items, @Nullable Node trailing) {
-        Objects.requireNonNull(items, "items");
-        List<Node> targets = new ArrayList<>(items.size() + 1);
-        for (Node item : items) {
-            addFocusTarget(targets, item);
-        }
-        addFocusTarget(targets, trailing);
-        return List.copyOf(targets);
+        return focusTargets(null, items, trailing);
     }
 
     /// Returns reachable focus targets from two optional node slots.
     public static @Unmodifiable List<Node> focusTargets(@Nullable Node first, @Nullable Node second) {
-        List<Node> targets = new ArrayList<>(2);
-        addFocusTarget(targets, first);
-        addFocusTarget(targets, second);
-        return List.copyOf(targets);
+        @Nullable Node firstTarget = M3Accessible.accessibleFocusTarget(first);
+        @Nullable Node secondTarget = M3Accessible.accessibleFocusTarget(second);
+        if (firstTarget == null) {
+            return secondTarget == null ? List.of() : List.of(secondTarget);
+        }
+        return secondTarget == null ? List.of(firstTarget) : List.of(firstTarget, secondTarget);
+    }
+
+    /// Returns reachable focus targets from three optional node slots.
+    public static @Unmodifiable List<Node> focusTargets(
+            @Nullable Node first,
+            @Nullable Node second,
+            @Nullable Node third
+    ) {
+        Node[] targets = new Node[3];
+        int size = addFocusTarget(targets, 0, first);
+        size = addFocusTarget(targets, size, second);
+        size = addFocusTarget(targets, size, third);
+        return immutableFocusTargets(targets, size);
+    }
+
+    /// Returns reachable focus targets from two optional leading slots followed by a node list.
+    public static @Unmodifiable List<Node> focusTargets(
+            @Nullable Node first,
+            @Nullable Node second,
+            ObservableList<? extends Node> items
+    ) {
+        Objects.requireNonNull(items, "items");
+        int capacity = items.size();
+        if (first != null) {
+            capacity++;
+        }
+        if (second != null) {
+            capacity++;
+        }
+        if (capacity == 0) {
+            return List.of();
+        }
+
+        Node[] targets = new Node[capacity];
+        int size = addFocusTarget(targets, 0, first);
+        size = addFocusTarget(targets, size, second);
+        for (Node item : items) {
+            size = addFocusTarget(targets, size, item);
+        }
+        return immutableFocusTargets(targets, size);
+    }
+
+    /// Returns reachable focus targets from optional edge slots and an observable item list.
+    private static @Unmodifiable List<Node> focusTargets(
+            @Nullable Node leading,
+            ObservableList<? extends Node> items,
+            @Nullable Node trailing
+    ) {
+        Objects.requireNonNull(items, "items");
+        int capacity = items.size();
+        if (leading != null) {
+            capacity++;
+        }
+        if (trailing != null) {
+            capacity++;
+        }
+        if (capacity == 0) {
+            return List.of();
+        }
+
+        Node[] targets = new Node[capacity];
+        int size = addFocusTarget(targets, 0, leading);
+        for (Node item : items) {
+            size = addFocusTarget(targets, size, item);
+        }
+        size = addFocusTarget(targets, size, trailing);
+        return immutableFocusTargets(targets, size);
     }
 
     /// Returns whether the current scene focus owner is inside the supplied container.
@@ -313,6 +376,33 @@ public final class M3FocusTraversal {
         }
     }
 
+    /// Adds one accessible focus target to a preallocated array and returns its next insertion index.
+    private static int addFocusTarget(Node[] targets, int index, @Nullable Node item) {
+        @Nullable Node focusTarget = M3Accessible.accessibleFocusTarget(item);
+        if (focusTarget != null) {
+            targets[index++] = focusTarget;
+        }
+        return index;
+    }
+
+    /// Returns an immutable target list backed by one freshly filled array.
+    private static @Unmodifiable List<Node> immutableFocusTargets(Node @Unmodifiable [] targets, int size) {
+        return switch (size) {
+            case 0 -> List.of();
+            case 1 -> List.of(targets[0]);
+            default -> new ImmutableFocusTargetList(targets, size);
+        };
+    }
+
+    /// Freezes a variable-length focus target buffer without copying its backing array.
+    private static @Unmodifiable List<Node> freezeFocusTargets(ArrayList<Node> targets) {
+        return switch (targets.size()) {
+            case 0 -> List.of();
+            case 1 -> List.of(targets.get(0));
+            default -> Collections.unmodifiableList(targets);
+        };
+    }
+
     /// Returns unique, currently reachable focus targets from a caller-supplied navigation list.
     private static List<Node> reachableFocusItems(List<Node> items) {
         if (items.isEmpty()) {
@@ -364,6 +454,9 @@ public final class M3FocusTraversal {
     ) {
         if (fallbackFocusedIndex < 0 || fallbackFocusedIndex >= originalItems.size()) {
             return -1;
+        }
+        if (originalItems == reachableItems) {
+            return fallbackFocusedIndex;
         }
 
         Node fallbackTarget = originalItems.get(fallbackFocusedIndex);
@@ -589,5 +682,33 @@ public final class M3FocusTraversal {
             }
         }
         return -1;
+    }
+
+    /// An immutable random-access view over a freshly populated focus-target array.
+    @NotNullByDefault
+    private static final class ImmutableFocusTargetList extends AbstractList<Node> implements RandomAccess {
+        /// The focus targets in traversal order.
+        private final Node @Unmodifiable [] elements;
+
+        /// The number of populated array entries exposed by this list.
+        private final int size;
+
+        /// Creates an immutable view over the populated prefix of an array.
+        private ImmutableFocusTargetList(Node @Unmodifiable [] elements, int size) {
+            this.elements = elements;
+            this.size = size;
+        }
+
+        /// Returns one focus target by traversal index.
+        @Override
+        public Node get(int index) {
+            return elements[Objects.checkIndex(index, size)];
+        }
+
+        /// Returns the number of focus targets in this view.
+        @Override
+        public int size() {
+            return size;
+        }
     }
 }

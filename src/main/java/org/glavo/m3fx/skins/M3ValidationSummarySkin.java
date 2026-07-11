@@ -4,9 +4,13 @@
 package org.glavo.m3fx.skins;
 
 import javafx.beans.InvalidationListener;
+import javafx.beans.Observable;
+import javafx.beans.WeakInvalidationListener;
+import javafx.beans.property.ReadOnlyProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.collections.WeakListChangeListener;
 import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.AccessibleRole;
@@ -27,6 +31,7 @@ import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import org.glavo.m3fx.controls.M3FormValidator;
@@ -73,8 +78,16 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
     /// Updates skin content when the validator invalid input list changes.
     private final ListChangeListener<M3TextInputLayout> invalidInputsListener = change -> updateContent();
 
-    /// Updates skin content when a rendered invalid input changes display text.
-    private final InvalidationListener invalidInputContentListener = observable -> updateContent();
+    /// Weak invalid-input listener that prevents a validator from retaining a detached summary skin.
+    private final WeakListChangeListener<M3TextInputLayout> weakInvalidInputsListener =
+            new WeakListChangeListener<>(invalidInputsListener);
+
+    /// Updates only the rendered row whose label, error, wrapped input, or prompt changed.
+    private final InvalidationListener invalidInputContentListener = this::updateInvalidInputContent;
+
+    /// Weak content listener that prevents invalid inputs from retaining a detached summary skin.
+    private final WeakInvalidationListener weakInvalidInputContentListener =
+            new WeakInvalidationListener(invalidInputContentListener);
 
     /// Invalid input layouts currently observed for row text changes.
     private final Set<M3TextInputLayout> observedInvalidInputs = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -132,7 +145,7 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
         updateValidator(control.getValidator());
         updateNodeOrientationLayout();
         updateContent();
-        getChildren().add(container);
+        getChildren().setAll(container);
     }
 
     /// Removes listeners, bindings, and child references before disposal.
@@ -155,6 +168,7 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
         updateObservedInvalidInputs(List.of());
         clearInvalidItemRows();
         container.getChildren().clear();
+        getChildren().remove(container);
         super.dispose();
     }
 
@@ -227,11 +241,11 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
     /// Moves the invalid input listener to a new validator.
     private void updateValidator(@Nullable M3FormValidator validator) {
         if (observedValidator != null) {
-            observedValidator.getInvalidInputs().removeListener(invalidInputsListener);
+            observedValidator.getInvalidInputs().removeListener(weakInvalidInputsListener);
         }
         observedValidator = validator;
         if (observedValidator != null) {
-            observedValidator.getInvalidInputs().addListener(invalidInputsListener);
+            observedValidator.getInvalidInputs().addListener(weakInvalidInputsListener);
         }
         updateContent();
     }
@@ -284,21 +298,21 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
             M3TextInputLayout input = iterator.next();
             if (!invalidInputSetScratch.contains(input)) {
                 iterator.remove();
-                input.labelTextProperty().removeListener(invalidInputContentListener);
-                input.validationErrorTextProperty().removeListener(invalidInputContentListener);
-                input.inputProperty().removeListener(invalidInputContentListener);
+                input.labelTextProperty().removeListener(weakInvalidInputContentListener);
+                input.validationErrorTextProperty().removeListener(weakInvalidInputContentListener);
+                input.inputProperty().removeListener(weakInvalidInputContentListener);
                 @Nullable TextInputControl textInput = observedInvalidInputControls.remove(input);
                 if (textInput != null) {
-                    textInput.promptTextProperty().removeListener(invalidInputContentListener);
+                    textInput.promptTextProperty().removeListener(weakInvalidInputContentListener);
                 }
             }
         }
 
         for (M3TextInputLayout input : invalidInputs) {
             if (observedInvalidInputs.add(input)) {
-                input.labelTextProperty().addListener(invalidInputContentListener);
-                input.validationErrorTextProperty().addListener(invalidInputContentListener);
-                input.inputProperty().addListener(invalidInputContentListener);
+                input.labelTextProperty().addListener(weakInvalidInputContentListener);
+                input.validationErrorTextProperty().addListener(weakInvalidInputContentListener);
+                input.inputProperty().addListener(weakInvalidInputContentListener);
             }
             updateObservedInvalidInputControl(input);
         }
@@ -313,13 +327,50 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
             return;
         }
         if (oldInput != null) {
-            oldInput.promptTextProperty().removeListener(invalidInputContentListener);
+            oldInput.promptTextProperty().removeListener(weakInvalidInputContentListener);
             observedInvalidInputControls.remove(input);
         }
         if (newInput != null) {
-            newInput.promptTextProperty().addListener(invalidInputContentListener);
+            newInput.promptTextProperty().addListener(weakInvalidInputContentListener);
             observedInvalidInputControls.put(input, newInput);
         }
+    }
+
+    /// Updates one cached row after an observed invalid-input content property changes.
+    private void updateInvalidInputContent(Observable observable) {
+        @Nullable M3TextInputLayout input = invalidInputForObservable(observable);
+        if (input == null) {
+            updateContent();
+            return;
+        }
+        if (observable == input.inputProperty()) {
+            updateObservedInvalidInputControl(input);
+        }
+
+        @Nullable Node row = itemRows.get(input);
+        if (row != null) {
+            updateItem(row, input);
+            getSkinnable().requestLayout();
+        }
+    }
+
+    /// Returns the observed invalid input that owns one changed property.
+    private @Nullable M3TextInputLayout invalidInputForObservable(Observable observable) {
+        if (!(observable instanceof ReadOnlyProperty<?> property)) {
+            return null;
+        }
+        Object bean = property.getBean();
+        if (bean instanceof M3TextInputLayout input && observedInvalidInputs.contains(input)) {
+            return input;
+        }
+        if (bean instanceof TextInputControl textInput) {
+            for (Map.Entry<M3TextInputLayout, TextInputControl> entry : observedInvalidInputControls.entrySet()) {
+                if (entry.getValue() == textInput) {
+                    return entry.getKey();
+                }
+            }
+        }
+        return null;
     }
 
     /// Updates top-level summary children without publishing redundant list changes.
@@ -385,31 +436,55 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
 
     /// Updates text and orientation-sensitive alignment for one cached invalid item row.
     private void updateItem(Node item, M3TextInputLayout input) {
-        item.setAccessibleText(itemLabel(input) + ": " + itemError(input));
+        String labelText = itemLabel(input);
+        String errorText = itemError(input);
+        String accessibleText = labelText + ": " + errorText;
+        if (!Objects.equals(item.getAccessibleText(), accessibleText)) {
+            item.setAccessibleText(accessibleText);
+        }
         if (!(item instanceof StackPane stackPane)) {
             return;
         }
 
         for (Node child : stackPane.getChildren()) {
             if (child instanceof VBox text) {
-                text.setAlignment(textAlignment());
-                StackPane.setAlignment(text, textAlignment());
-                updateItemTextLabels(text, input);
+                Pos alignment = textAlignment();
+                if (text.getAlignment() != alignment) {
+                    text.setAlignment(alignment);
+                }
+                if (StackPane.getAlignment(text) != alignment) {
+                    StackPane.setAlignment(text, alignment);
+                }
+                updateItemTextLabels(text, labelText, errorText, alignment, textTextAlignment());
                 return;
             }
         }
     }
 
     /// Updates labels hosted by one cached invalid item row text container.
-    private void updateItemTextLabels(VBox text, M3TextInputLayout input) {
+    private void updateItemTextLabels(
+            VBox text,
+            String labelText,
+            String errorText,
+            Pos alignment,
+            TextAlignment textAlignment
+    ) {
         for (Node child : text.getChildren()) {
             if (child instanceof Label label) {
-                label.setAlignment(textAlignment());
-                label.setTextAlignment(textTextAlignment());
+                if (label.getAlignment() != alignment) {
+                    label.setAlignment(alignment);
+                }
+                if (label.getTextAlignment() != textAlignment) {
+                    label.setTextAlignment(textAlignment);
+                }
                 if (label.getStyleClass().contains(M3ValidationSummary.ITEM_LABEL_STYLE_CLASS)) {
-                    label.setText(itemLabel(input));
+                    if (!labelText.equals(label.getText())) {
+                        label.setText(labelText);
+                    }
                 } else if (label.getStyleClass().contains(M3ValidationSummary.ITEM_ERROR_STYLE_CLASS)) {
-                    label.setText(itemError(input));
+                    if (!errorText.equals(label.getText())) {
+                        label.setText(errorText);
+                    }
                 }
             }
         }

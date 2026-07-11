@@ -36,6 +36,7 @@ import org.glavo.m3fx.animation.M3MotionBehavior;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
+import org.glavo.m3fx.internal.M3PopupWindows;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3ThemeResolver;
 import org.glavo.m3fx.internal.M3TooltipInstallation;
@@ -69,22 +70,6 @@ public class M3Tooltip extends PopupControl {
 
     /// The minimum grace period for moving the pointer from an interactive owner to its popup.
     private static final Duration INTERACTIVE_POINTER_TRANSFER_DELAY = M3Motion.SHORT4;
-
-    /// The node property key used to store theme inheritance listeners.
-    private static final String THEME_INHERITANCE_LISTENER_KEY =
-            M3Tooltip.class.getName() + ".themeInheritanceListener";
-
-
-    /// The node property key used to store accessible help bindings.
-    private static final String ACCESSIBLE_HELP_BINDING_KEY =
-            M3Tooltip.class.getName() + ".accessibleHelpBinding";
-
-    /// The node property key used to store the accessible help value replaced during installation.
-    private static final String ACCESSIBLE_HELP_PREVIOUS_VALUE_KEY =
-            M3Tooltip.class.getName() + ".accessibleHelpPreviousValue";
-
-    /// The sentinel used when a target node had no previous accessible help value.
-    private static final Object ACCESSIBLE_HELP_NULL_VALUE = new Object();
 
     // The text displayed by the tooltip.
     private final StringProperty text = new SimpleStringProperty(this, "text", "");
@@ -203,10 +188,7 @@ public class M3Tooltip extends PopupControl {
         Objects.requireNonNull(node, "node");
         Objects.requireNonNull(tooltip, "tooltip");
 
-        installThemeInheritance(node, tooltip);
-        installAccessibleHelp(node, tooltip);
         installActivation(node, tooltip);
-        tooltip.inheritThemeFrom(node);
     }
 
     /// Uninstalls a Material Design 3 tooltip from a node.
@@ -217,8 +199,6 @@ public class M3Tooltip extends PopupControl {
         Objects.requireNonNull(node, "node");
         Objects.requireNonNull(tooltip, "tooltip");
 
-        uninstallThemeInheritance(node);
-        uninstallAccessibleHelp(node);
         uninstallActivation(node, tooltip);
     }
 
@@ -410,7 +390,26 @@ public class M3Tooltip extends PopupControl {
     @Override
     public void show(Node ownerNode, double anchorX, double anchorY) {
         Objects.requireNonNull(ownerNode, "ownerNode");
-        super.show(ownerNode, anchorX, anchorY);
+        if (!M3PopupWindows.canShow(ownerNode)) {
+            stopPopupContextSynchronizer();
+            return;
+        }
+        try {
+            super.show(ownerNode, anchorX, anchorY);
+        } catch (RuntimeException | Error exception) {
+            try {
+                hide();
+            } catch (RuntimeException | Error cleanupFailure) {
+                exception.addSuppressed(cleanupFailure);
+            }
+            stopPopupContextSynchronizer();
+            throw exception;
+        }
+        if (!isShowing()) {
+            hide();
+            stopPopupContextSynchronizer();
+            return;
+        }
         syncPopupRootThemeContext(ownerNode);
     }
 
@@ -656,22 +655,6 @@ public class M3Tooltip extends PopupControl {
         return M3ThemeResolver.findThemeRoot(ownerNode);
     }
 
-    /// Installs a listener that keeps inherited tooltip themes in sync with the target node scene.
-    private static void installThemeInheritance(Node node, M3Tooltip tooltip) {
-        uninstallThemeInheritance(node);
-
-        SceneThemeListener listener = new SceneThemeListener(node, tooltip);
-        node.getProperties().put(THEME_INHERITANCE_LISTENER_KEY, listener);
-    }
-
-    /// Removes any previously installed theme inheritance listener from a node.
-    private static void uninstallThemeInheritance(Node node) {
-        Object listener = node.getProperties().remove(THEME_INHERITANCE_LISTENER_KEY);
-        if (listener instanceof SceneThemeListener sceneThemeListener) {
-            sceneThemeListener.dispose();
-        }
-    }
-
     /// Installs pointer activation handlers on the tooltip target.
     private static void installActivation(Node node, M3Tooltip tooltip) {
         uninstallActivation(node, null);
@@ -717,34 +700,6 @@ public class M3Tooltip extends PopupControl {
     /// Shows an installed interactive tooltip and focuses the requested action target.
     static boolean showInstalledTooltipActionTarget(Node node, Object... parameters) {
         return M3TooltipRegistry.showInstalledTooltipActionTarget(node, parameters);
-    }
-
-    /// Installs an accessible help binding on the tooltip target.
-    private static void installAccessibleHelp(Node node, M3Tooltip tooltip) {
-        uninstallAccessibleHelp(node);
-
-        @Nullable String previousHelp = node.getAccessibleHelp();
-        node.getProperties().put(
-                ACCESSIBLE_HELP_PREVIOUS_VALUE_KEY,
-                previousHelp == null ? ACCESSIBLE_HELP_NULL_VALUE : previousHelp
-        );
-        ChangeListener<@Nullable String> listener = (observable, oldValue, newValue) ->
-                node.setAccessibleHelp(accessibleHelpText(newValue));
-        tooltip.textProperty().addListener(listener);
-        node.getProperties().put(ACCESSIBLE_HELP_BINDING_KEY, new AccessibleHelpBinding(tooltip, listener));
-        node.setAccessibleHelp(accessibleHelpText(tooltip.getText()));
-    }
-
-    /// Removes an accessible help binding and restores the previous node help value.
-    private static void uninstallAccessibleHelp(Node node) {
-        Object binding = node.getProperties().remove(ACCESSIBLE_HELP_BINDING_KEY);
-        if (!(binding instanceof AccessibleHelpBinding accessibleHelpBinding)) {
-            return;
-        }
-
-        accessibleHelpBinding.uninstall();
-        Object previousValue = node.getProperties().remove(ACCESSIBLE_HELP_PREVIOUS_VALUE_KEY);
-        node.setAccessibleHelp(previousValue == ACCESSIBLE_HELP_NULL_VALUE ? null : (String) previousValue);
     }
 
     /// Returns text suitable for a node accessible help value.
@@ -842,32 +797,50 @@ public class M3Tooltip extends PopupControl {
     /// Stores pointer handlers installed on a tooltip target node.
     @NotNullByDefault
     private static final class TooltipInstallation implements M3TooltipInstallation {
+        /// Indicates that the reusable timer has no pending action.
+        private static final int NO_TIMER_ACTION = 0;
+
+        /// Indicates that the reusable timer will show the tooltip.
+        private static final int SHOW_TIMER_ACTION = 1;
+
+        /// Indicates that the reusable timer will hide the tooltip after pointer exit.
+        private static final int HIDE_TIMER_ACTION = 2;
+
+        /// Indicates that the reusable timer will enforce the visible-duration limit.
+        private static final int DURATION_TIMER_ACTION = 3;
+
         /// The target node that owns the tooltip activation handlers.
         private final Node node;
 
         /// The tooltip controlled by the installed handlers.
         private final M3Tooltip tooltip;
 
-        /// The delayed opening timer.
-        private final PauseTransition showTimer = new PauseTransition();
+        /// The reusable timer for delayed show, delayed hide, and visible-duration actions.
+        private final PauseTransition timer = new PauseTransition();
 
-        /// The delayed closing timer.
-        private final PauseTransition hideTimer = new PauseTransition();
-
-        /// The timer used to auto-close pointer-triggered tooltips.
-        private final PauseTransition durationTimer = new PauseTransition();
+        /// The action executed when [timer] finishes.
+        private int timerAction;
 
         /// Updates tooltip activation timings when runtime motion settings change.
         private final M3MotionSettingsObserver motionSettingsObserver;
+
+        /// Mirrors tooltip text into the target node's accessible help value.
+        private final ChangeListener<@Nullable String> accessibleHelpListener;
+
+        /// Observes the target hierarchy while this installation owns the node.
+        private @Nullable SceneThemeListener sceneThemeListener;
+
+        /// The accessible help value replaced by this installation.
+        private @Nullable String previousAccessibleHelp;
+
+        /// Whether this installation currently owns listeners and target-node state.
+        private boolean installed;
 
         /// The popup root node that currently has tooltip hover handlers installed.
         private @Nullable Node tooltipRoot;
 
         /// The popup scene that currently has a focus owner listener installed.
         private @Nullable Scene tooltipScene;
-
-        /// The owner scene that currently has keyboard traversal filtering installed.
-        private @Nullable Scene ownerScene;
 
         /// Whether the pointer is currently inside the target node.
         private boolean ownerContainsPointer;
@@ -903,10 +876,6 @@ public class M3Tooltip extends PopupControl {
         /// Handles keyboard dismissal while the target owns focus.
         private final javafx.event.EventHandler<KeyEvent> keyPressedHandler = this::handleKeyPressed;
 
-        /// Handles owner node scene changes.
-        private final ChangeListener<@Nullable Scene> ownerSceneListener = this::handleOwnerSceneChanged;
-
-
         /// Handles focus changes on the target node.
         private final ChangeListener<Boolean> focusListener = this::handleFocusedChanged;
 
@@ -917,10 +886,10 @@ public class M3Tooltip extends PopupControl {
         private TooltipInstallation(Node node, M3Tooltip tooltip) {
             this.node = node;
             this.tooltip = tooltip;
-            showTimer.setOnFinished(event -> showTooltip());
-            hideTimer.setOnFinished(event -> hideIfPointerOutside());
-            durationTimer.setOnFinished(event -> hideAfterVisibleDuration());
+            timer.setOnFinished(event -> handleTimerFinished());
             motionSettingsObserver = new M3MotionSettingsObserver(node, this::refreshMotionSettings);
+            accessibleHelpListener = (observable, oldValue, newValue) ->
+                    node.setAccessibleHelp(accessibleHelpText(newValue));
         }
 
         /// Returns the installed tooltip.
@@ -931,51 +900,53 @@ public class M3Tooltip extends PopupControl {
 
         /// Adds event handlers to the target node.
         private void install() {
+            if (installed) {
+                return;
+            }
+            installed = true;
+            previousAccessibleHelp = node.getAccessibleHelp();
+            tooltip.textProperty().addListener(accessibleHelpListener);
+            node.setAccessibleHelp(accessibleHelpText(tooltip.getText()));
+            sceneThemeListener = new SceneThemeListener(node, tooltip);
+            tooltip.inheritThemeFrom(node);
             node.addEventHandler(MouseEvent.MOUSE_ENTERED, enteredHandler);
             node.addEventHandler(MouseEvent.MOUSE_EXITED, exitedHandler);
             node.addEventHandler(MouseEvent.MOUSE_PRESSED, pressedHandler);
             node.addEventFilter(KeyEvent.KEY_PRESSED, keyPressedHandler);
-            node.addEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
             node.focusedProperty().addListener(focusListener);
-            node.sceneProperty().addListener(ownerSceneListener);
             tooltip.showingProperty().addListener(showingListener);
-            installOwnerSceneFilter(node.getScene());
         }
 
         /// Removes event handlers and stops pending timers.
         private void uninstall() {
+            if (!installed) {
+                return;
+            }
+            installed = false;
             node.removeEventHandler(MouseEvent.MOUSE_ENTERED, enteredHandler);
             node.removeEventHandler(MouseEvent.MOUSE_EXITED, exitedHandler);
             node.removeEventHandler(MouseEvent.MOUSE_PRESSED, pressedHandler);
             node.removeEventFilter(KeyEvent.KEY_PRESSED, keyPressedHandler);
-            node.removeEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
             node.focusedProperty().removeListener(focusListener);
-            node.sceneProperty().removeListener(ownerSceneListener);
             tooltip.showingProperty().removeListener(showingListener);
             motionSettingsObserver.dispose();
-            uninstallOwnerSceneFilter();
             uninstallTooltipHoverHandlers();
+            @Nullable SceneThemeListener themeListener = sceneThemeListener;
+            sceneThemeListener = null;
+            if (themeListener != null) {
+                themeListener.dispose();
+            }
+            tooltip.textProperty().removeListener(accessibleHelpListener);
+            node.setAccessibleHelp(previousAccessibleHelp);
+            previousAccessibleHelp = null;
             ownerContainsPointer = false;
             tooltipContainsPointer = false;
             tooltipContainsFocus = false;
-            showTimer.stop();
-            hideTimer.stop();
-            durationTimer.stop();
+            stopTimer();
             if (tooltip.isShowing()) {
                 tooltip.hide();
             }
         }
-
-        /// Updates scene-level keyboard handling when the owner node moves between scenes.
-        private void handleOwnerSceneChanged(
-                ObservableValue<? extends @Nullable Scene> observable,
-                @Nullable Scene oldValue,
-                @Nullable Scene newValue
-        ) {
-            uninstallOwnerSceneFilter();
-            installOwnerSceneFilter(newValue);
-        }
-
 
         /// Schedules tooltip display after pointer entry.
         private void handleEntered(MouseEvent event) {
@@ -1005,7 +976,9 @@ public class M3Tooltip extends PopupControl {
         /// Cancels pending hide while the pointer is inside an interactive tooltip popup.
         private void handleTooltipEntered(MouseEvent event) {
             tooltipContainsPointer = true;
-            hideTimer.stop();
+            if (timerAction == HIDE_TIMER_ACTION) {
+                stopTimer();
+            }
         }
 
         /// Schedules hiding once the pointer leaves an interactive tooltip popup.
@@ -1050,8 +1023,7 @@ public class M3Tooltip extends PopupControl {
                     && tooltipRoot != null
                     && M3Accessible.containsNode(tooltipRoot, newValue);
             if (tooltipContainsFocus) {
-                hideTimer.stop();
-                durationTimer.stop();
+                stopTimer();
             } else if (tooltip.isShowing()) {
                 scheduleHide();
             }
@@ -1067,6 +1039,9 @@ public class M3Tooltip extends PopupControl {
             if (newValue && tooltip.isInteractive()) {
                 installTooltipHoverHandlers();
             } else {
+                if (!newValue) {
+                    stopTimer();
+                }
                 tooltipContainsPointer = false;
                 tooltipContainsFocus = false;
                 uninstallTooltipHoverHandlers();
@@ -1148,9 +1123,7 @@ public class M3Tooltip extends PopupControl {
                 return false;
             }
 
-            showTimer.stop();
-            hideTimer.stop();
-            durationTimer.stop();
+            stopTimer();
             if (!tooltip.isShowing()) {
                 showTooltip();
             }
@@ -1176,8 +1149,7 @@ public class M3Tooltip extends PopupControl {
         /// Marks the interactive tooltip popup as owning keyboard focus after an explicit focus request.
         private void markTooltipFocusActive() {
             tooltipContainsFocus = true;
-            hideTimer.stop();
-            durationTimer.stop();
+            stopTimer();
             notifyOwnerFocusNodeChanged();
         }
 
@@ -1195,34 +1167,27 @@ public class M3Tooltip extends PopupControl {
 
         /// Schedules tooltip display after the configured show delay.
         private void scheduleShow() {
-            showTimer.stop();
-            hideTimer.stop();
+            stopTimer();
             if (tooltip.isInteractive() && tooltip.isShowing()) {
                 return;
             }
-            durationTimer.stop();
-            showTimer.setDuration(tooltip.effectiveShowDelay(node));
-            showTimer.playFromStart();
+            startTimer(SHOW_TIMER_ACTION, tooltip.effectiveShowDelay(node));
         }
 
         /// Schedules tooltip hiding after the configured hide delay.
         private void scheduleHide() {
-            showTimer.stop();
-            durationTimer.stop();
+            stopTimer();
             if (tooltip.isInteractive() && isTooltipActive()) {
                 return;
             }
             if (tooltip.isShowing()) {
-                hideTimer.setDuration(effectiveHideDelay());
-                hideTimer.playFromStart();
+                startTimer(HIDE_TIMER_ACTION, effectiveHideDelay());
             }
         }
 
         /// Hides the tooltip immediately and clears pending timers.
         private void hideImmediately() {
-            showTimer.stop();
-            hideTimer.stop();
-            durationTimer.stop();
+            stopTimer();
             ownerContainsPointer = false;
             tooltipContainsPointer = false;
             tooltipContainsFocus = false;
@@ -1237,7 +1202,6 @@ public class M3Tooltip extends PopupControl {
                 return;
             }
 
-            installOwnerSceneFilter(node.getScene());
             tooltip.inheritThemeFrom(node);
             Bounds screenBounds = node.localToScreen(node.getBoundsInLocal());
             if (screenBounds == null) {
@@ -1255,8 +1219,7 @@ public class M3Tooltip extends PopupControl {
             if (!isFiniteDuration(duration)) {
                 return;
             }
-            durationTimer.setDuration(duration);
-            durationTimer.playFromStart();
+            startTimer(DURATION_TIMER_ACTION, duration);
         }
 
         /// Returns the hide delay, adding pointer-transfer grace for interactive popups.
@@ -1294,53 +1257,81 @@ public class M3Tooltip extends PopupControl {
 
         /// Applies changed runtime motion settings to delayed tooltip activation timers.
         private void refreshMotionSettings() {
-            M3Animation.updatePauseDuration(
-                    showTimer,
-                    tooltip.effectiveShowDelay(node),
-                    ownerContainsPointer || ownerHasKeyboardFocus()
-            );
-            M3Animation.updatePauseDuration(
-                    hideTimer,
-                    effectiveHideDelay(),
-                    tooltip.isShowing() && !isTooltipActive()
-            );
-            refreshAutoHideDuration();
+            if (timerAction == SHOW_TIMER_ACTION) {
+                refreshRunningTimer(
+                        tooltip.effectiveShowDelay(node),
+                        ownerContainsPointer || ownerHasKeyboardFocus()
+                );
+            } else if (timerAction == HIDE_TIMER_ACTION) {
+                refreshRunningTimer(effectiveHideDelay(), tooltip.isShowing() && !isTooltipActive());
+            } else {
+                refreshAutoHideDuration();
+            }
         }
 
         /// Applies changed runtime motion settings to the visible-duration timer.
         private void refreshAutoHideDuration() {
             Duration duration = tooltip.effectiveShowDuration(node);
             if (!isFiniteDuration(duration)) {
-                durationTimer.stop();
+                if (timerAction == DURATION_TIMER_ACTION) {
+                    stopTimer();
+                }
                 return;
             }
 
             boolean shouldRun = tooltip.isShowing() && !hasActivePopupInteraction();
-            M3Animation.updatePauseDuration(durationTimer, duration, shouldRun);
-            if (shouldRun && durationTimer.getStatus() != Animation.Status.RUNNING) {
-                durationTimer.playFromStart();
-            }
-        }
-
-        /// Installs scene-level owner keyboard handling.
-        private void installOwnerSceneFilter(@Nullable Scene scene) {
-            if (ownerScene == scene) {
+            if (!shouldRun) {
+                if (timerAction == DURATION_TIMER_ACTION) {
+                    stopTimer();
+                }
                 return;
             }
-            uninstallOwnerSceneFilter();
-            ownerScene = scene;
-            if (ownerScene != null) {
-                ownerScene.addEventFilter(KeyEvent.KEY_PRESSED, keyPressedHandler);
-                ownerScene.addEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
+            if (timerAction != DURATION_TIMER_ACTION) {
+                startTimer(DURATION_TIMER_ACTION, duration);
+            } else {
+                refreshRunningTimer(duration, true);
             }
         }
 
-        /// Removes scene-level owner keyboard handling.
-        private void uninstallOwnerSceneFilter() {
-            if (ownerScene != null) {
-                ownerScene.removeEventFilter(KeyEvent.KEY_PRESSED, keyPressedHandler);
-                ownerScene.removeEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
-                ownerScene = null;
+        /// Starts the reusable timer with one pending action.
+        ///
+        /// @param action the action identifier executed after the delay
+        /// @param duration the delay before the action
+        private void startTimer(int action, Duration duration) {
+            timer.stop();
+            timerAction = action;
+            timer.setDuration(duration);
+            timer.playFromStart();
+        }
+
+        /// Stops the reusable timer and clears its pending action.
+        private void stopTimer() {
+            timer.stop();
+            timerAction = NO_TIMER_ACTION;
+        }
+
+        /// Reconfigures a running timer after motion behavior changes.
+        ///
+        /// @param duration the updated delay
+        /// @param restartIfRunning whether the active interaction still requires the timer
+        private void refreshRunningTimer(Duration duration, boolean restartIfRunning) {
+            boolean wasRunning = timer.getStatus() == Animation.Status.RUNNING;
+            M3Animation.updatePauseDuration(timer, duration, restartIfRunning);
+            if (wasRunning && !restartIfRunning) {
+                timerAction = NO_TIMER_ACTION;
+            }
+        }
+
+        /// Executes and clears the action owned by the reusable timer.
+        private void handleTimerFinished() {
+            int action = timerAction;
+            timerAction = NO_TIMER_ACTION;
+            switch (action) {
+                case SHOW_TIMER_ACTION -> showTooltip();
+                case HIDE_TIMER_ACTION -> hideIfPointerOutside();
+                case DURATION_TIMER_ACTION -> hideAfterVisibleDuration();
+                default -> {
+                }
             }
         }
 
@@ -1359,7 +1350,6 @@ public class M3Tooltip extends PopupControl {
             root.addEventHandler(MouseEvent.MOUSE_ENTERED, tooltipEnteredHandler);
             root.addEventHandler(MouseEvent.MOUSE_EXITED, tooltipExitedHandler);
             root.addEventFilter(KeyEvent.KEY_PRESSED, tooltipKeyPressedHandler);
-            root.addEventHandler(KeyEvent.KEY_PRESSED, tooltipKeyPressedHandler);
             tooltipScene = root.getScene();
             if (tooltipScene != null) {
                 tooltipScene.focusOwnerProperty().addListener(tooltipFocusOwnerListener);
@@ -1378,7 +1368,6 @@ public class M3Tooltip extends PopupControl {
                 root.removeEventHandler(MouseEvent.MOUSE_ENTERED, tooltipEnteredHandler);
                 root.removeEventHandler(MouseEvent.MOUSE_EXITED, tooltipExitedHandler);
                 root.removeEventFilter(KeyEvent.KEY_PRESSED, tooltipKeyPressedHandler);
-                root.removeEventHandler(KeyEvent.KEY_PRESSED, tooltipKeyPressedHandler);
                 tooltipRoot = null;
             }
             if (tooltipScene != null) {
@@ -1420,18 +1409,6 @@ public class M3Tooltip extends PopupControl {
         @Override
         public String getName() {
             return name;
-        }
-    }
-
-    /// Stores a tooltip text binding installed on a target node.
-    ///
-    /// @param tooltip the tooltip whose text is exposed as accessible help
-    /// @param listener the listener installed on the tooltip text property
-    @NotNullByDefault
-    private record AccessibleHelpBinding(M3Tooltip tooltip, ChangeListener<@Nullable String> listener) {
-        /// Removes this binding from the tooltip.
-        private void uninstall() {
-            tooltip.textProperty().removeListener(listener);
         }
     }
 

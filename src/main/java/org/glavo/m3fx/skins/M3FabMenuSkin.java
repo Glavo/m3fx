@@ -34,7 +34,7 @@ public final class M3FabMenuSkin extends SkinBase<M3FabMenu> {
         actions.spacingProperty().bind(control.actionSpacingProperty());
         actions.setFillWidth(false);
         container.getChildren().setAll(actions, toggleButton);
-        getChildren().add(container);
+        getChildren().setAll(container);
     }
 
     /// Removes child references before disposal.
@@ -43,6 +43,7 @@ public final class M3FabMenuSkin extends SkinBase<M3FabMenu> {
         container.spacingProperty().unbind();
         actions.spacingProperty().unbind();
         container.getChildren().clear();
+        getChildren().remove(container);
         super.dispose();
     }
 

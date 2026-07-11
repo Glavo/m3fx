@@ -130,7 +130,7 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         waveBar.setFill(null);
         waveBar.setStrokeLineCap(StrokeLineCap.ROUND);
         container.getChildren().addAll(track, secondaryTrack, bar, waveBar, stop);
-        getChildren().add(container);
+        getChildren().setAll(container);
 
         displayedProgress.set(initialDisplayedProgress(control.getProgress()));
         displayedProgress.addListener(animationInvalidation);
@@ -163,6 +163,7 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         progressBar.wavelengthProperty().removeListener(layoutInvalidation);
         progressBar.trackGapProperty().removeListener(layoutInvalidation);
         progressBar.stopSizeProperty().removeListener(layoutInvalidation);
+        getChildren().remove(container);
         super.dispose();
     }
 

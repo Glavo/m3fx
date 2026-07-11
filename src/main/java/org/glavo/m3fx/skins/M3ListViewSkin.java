@@ -201,7 +201,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         M3ListViewSkinAccess.register(control, access);
         flow.fixedCellSizeProperty().bind(control.fixedCellSizeProperty());
         control.addEventFilter(ScrollEvent.SCROLL, smoothScrollHandler);
-        getChildren().add(flow);
+        getChildren().setAll(flow);
 
         control.getItems().addListener(itemsListener);
         control.cellFactoryProperty().addListener(cellFactoryInvalidation);
@@ -234,6 +234,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         clearObservedThemeAncestors();
         flow.fixedCellSizeProperty().unbind();
         flow.setCellFactory(null);
+        getChildren().remove(flow);
         super.dispose();
     }
 

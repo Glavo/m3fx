@@ -148,7 +148,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         stepIndicatorLayer.setMouseTransparent(true);
         stepIndicatorLayer.setManaged(false);
         thumb.setMouseTransparent(true);
-        getChildren().addAll(
+        getChildren().setAll(
                 track,
                 secondaryTrack,
                 activeTrack,
@@ -214,6 +214,16 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         control.disabledProperty().removeListener(disabledInvalidation);
         stateLayer.uninstallStateTransitions();
         stateLayer.reset();
+        getChildren().removeAll(
+                track,
+                secondaryTrack,
+                activeTrack,
+                stepIndicatorLayer,
+                stopIndicator,
+                secondaryStopIndicator,
+                stateLayer,
+                thumb
+        );
         super.dispose();
     }
 

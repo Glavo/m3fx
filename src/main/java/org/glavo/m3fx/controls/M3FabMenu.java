@@ -285,7 +285,7 @@ public class M3FabMenu extends Control {
 
     /// Adds style classes, child structure, and default action behavior.
     private void initialize() {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         M3ControlStyles.add(actions, ACTIONS_STYLE_CLASS);
         M3ControlStyles.add(toggleButton, TOGGLE_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TOOL_BAR);

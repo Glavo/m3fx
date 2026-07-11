@@ -129,11 +129,9 @@ final class M3StateLayer extends Pane {
     /// The reusable ripple expansion and release transition.
     private final RippleTransition rippleAnimation = new RippleTransition(ripple);
 
-    /// The reusable overlay opacity transition.
-    private final OpacityTransition overlayOpacityAnimation = new OpacityTransition(overlay);
-
-    /// The reusable keyboard focus indicator opacity transition.
-    private final OpacityTransition focusIndicatorOpacityAnimation = new OpacityTransition(focusIndicator);
+    /// The reusable transition for persistent overlay and focus-indicator opacity.
+    private final StateOpacityTransition stateOpacityAnimation =
+            new StateOpacityTransition(overlay, focusIndicator);
 
     /// The control whose interaction states drive this layer.
     private @Nullable Node stateOwner;
@@ -276,11 +274,11 @@ final class M3StateLayer extends Pane {
 
     /// Synchronizes opacity with owner interaction states without starting an initial transition.
     private void synchronizeOwnerStateOpacity(Node owner) {
-        overlayOpacityAnimation.stop();
+        stateOpacityAnimation.stop();
         overlay.setOpacity(resolvedOverlayOpacity(owner));
-        focusIndicatorOpacityAnimation.stop();
         focusIndicator.setOpacity(resolvedFocusIndicatorOpacity(owner));
     }
+
     /// Removes opacity transition listeners from the current owner.
     void uninstallStateTransitions() {
         Node owner = stateOwner;
@@ -305,8 +303,7 @@ final class M3StateLayer extends Pane {
             focusVisibleTracker = null;
         }
         stateOwner = null;
-        overlayOpacityAnimation.stop();
-        focusIndicatorOpacityAnimation.stop();
+        stateOpacityAnimation.stop();
         rippleAnimation.stop();
         clearRipple();
     }
@@ -415,9 +412,8 @@ final class M3StateLayer extends Pane {
 
     /// Stops ripple animation and clears transient ripple state.
     void reset() {
-        overlayOpacityAnimation.stop();
+        stateOpacityAnimation.stop();
         overlay.setOpacity(0.0);
-        focusIndicatorOpacityAnimation.stop();
         focusIndicator.setOpacity(0.0);
         rippleAnimation.stop();
         clearRipple();
@@ -432,7 +428,7 @@ final class M3StateLayer extends Pane {
 
     /// Returns whether the overlay opacity is currently animating.
     boolean isOverlayOpacityAnimationRunning() {
-        return overlayOpacityAnimation.getStatus() == Animation.Status.RUNNING;
+        return stateOpacityAnimation.isOverlayAnimating();
     }
 
     /// Returns whether the ripple is currently animating.
@@ -442,7 +438,7 @@ final class M3StateLayer extends Pane {
 
     /// Returns whether the focus indicator is currently animating.
     boolean isFocusIndicatorOpacityAnimationRunning() {
-        return focusIndicatorOpacityAnimation.getStatus() == Animation.Status.RUNNING;
+        return stateOpacityAnimation.isFocusIndicatorAnimating();
     }
 
     /// Applies changed animation settings to currently running state-layer animations.
@@ -453,12 +449,9 @@ final class M3StateLayer extends Pane {
         }
 
         if (!M3Animation.areAnimationsEnabled(owner)) {
-            if (overlayOpacityAnimation.getStatus() == Animation.Status.RUNNING) {
-                overlayOpacityAnimation.stop();
+            if (stateOpacityAnimation.getStatus() == Animation.Status.RUNNING) {
+                stateOpacityAnimation.stop();
                 overlay.setOpacity(resolvedOverlayOpacity(owner));
-            }
-            if (focusIndicatorOpacityAnimation.getStatus() == Animation.Status.RUNNING) {
-                focusIndicatorOpacityAnimation.stop();
                 focusIndicator.setOpacity(resolvedFocusIndicatorOpacity(owner));
             }
             if (rippleAnimation.getStatus() == Animation.Status.RUNNING) {
@@ -468,54 +461,48 @@ final class M3StateLayer extends Pane {
             return;
         }
 
-        if (overlayOpacityAnimation.getStatus() == Animation.Status.RUNNING) {
+        if (stateOpacityAnimation.getStatus() == Animation.Status.RUNNING) {
             animateOverlayOpacityFromOwnerState();
-        }
-        if (focusIndicatorOpacityAnimation.getStatus() == Animation.Status.RUNNING) {
-            animateFocusIndicatorOpacityFromOwnerState(owner);
         }
     }
 
-    /// Animates from the current overlay opacity to the opacity resolved from the owner state.
+    /// Animates persistent state-layer opacity channels to values resolved from the owner state.
     void animateOverlayOpacityFromOwnerState() {
         Node owner = stateOwner;
         if (owner == null) {
             return;
         }
 
-        animateOpacity(owner, overlay, overlayOpacityAnimation, resolvedOverlayOpacity(owner));
-        animateFocusIndicatorOpacityFromOwnerState(owner);
-    }
+        double startOverlayOpacity = overlay.getOpacity();
+        double targetOverlayOpacity = resolvedOverlayOpacity(owner);
+        double startFocusIndicatorOpacity = focusIndicator.getOpacity();
+        double targetFocusIndicatorOpacity = resolvedFocusIndicatorOpacity(owner);
+        stateOpacityAnimation.stop();
 
-    /// Animates from the current focus indicator opacity to the owner keyboard focus state.
-    private void animateFocusIndicatorOpacityFromOwnerState(Node owner) {
-        animateOpacity(owner, focusIndicator, focusIndicatorOpacityAnimation, resolvedFocusIndicatorOpacity(owner));
-    }
-
-    /// Animates one opacity node to a resolved owner-state target.
-    private static void animateOpacity(
-            Node owner,
-            Region node,
-            OpacityTransition animation,
-            double targetOpacity
-    ) {
-        double startOpacity = node.getOpacity();
-        animation.stop();
-        node.setOpacity(startOpacity);
-
-        if (Double.compare(startOpacity, targetOpacity) == 0) {
-            node.setOpacity(targetOpacity);
+        boolean overlayChanged = Double.compare(startOverlayOpacity, targetOverlayOpacity) != 0;
+        boolean focusIndicatorChanged =
+                Double.compare(startFocusIndicatorOpacity, targetFocusIndicatorOpacity) != 0;
+        if (!overlayChanged && !focusIndicatorChanged) {
+            overlay.setOpacity(targetOverlayOpacity);
+            focusIndicator.setOpacity(targetFocusIndicatorOpacity);
             return;
         }
 
         if (!M3Animation.areAnimationsEnabled(owner)) {
-            node.setOpacity(targetOpacity);
+            overlay.setOpacity(targetOverlayOpacity);
+            focusIndicator.setOpacity(targetFocusIndicatorOpacity);
             return;
         }
 
         M3MotionSpec opacitySpec = M3Animation.fastEffects(owner);
-        animation.configure(opacitySpec, startOpacity, targetOpacity);
-        animation.playFromStart();
+        stateOpacityAnimation.configure(
+                opacitySpec,
+                startOverlayOpacity,
+                targetOverlayOpacity,
+                startFocusIndicatorOpacity,
+                targetFocusIndicatorOpacity
+        );
+        stateOpacityAnimation.playFromStart();
     }
 
     /// Returns the target overlay opacity for the owner interaction state.
@@ -565,36 +552,86 @@ final class M3StateLayer extends Pane {
         return owner == null ? this : owner;
     }
 
-    /// A reusable transition for one state-layer opacity channel.
+    /// A reusable transition for persistent state-layer opacity channels.
     @NotNullByDefault
-    private static final class OpacityTransition extends Transition {
-        /// The region whose opacity is animated.
-        private final Region node;
+    private static final class StateOpacityTransition extends Transition {
+        /// The persistent interaction overlay.
+        private final Region overlay;
 
-        /// The opacity at the beginning of the current transition.
-        private double startOpacity;
+        /// The keyboard focus indicator.
+        private final Region focusIndicator;
 
-        /// The opacity at the end of the current transition.
-        private double targetOpacity;
+        /// The overlay opacity at the beginning of the current transition.
+        private double startOverlayOpacity;
 
-        /// Creates an opacity transition for a state-layer region.
-        private OpacityTransition(Region node) {
-            this.node = node;
+        /// The overlay opacity at the end of the current transition.
+        private double targetOverlayOpacity;
+
+        /// The focus-indicator opacity at the beginning of the current transition.
+        private double startFocusIndicatorOpacity;
+
+        /// The focus-indicator opacity at the end of the current transition.
+        private double targetFocusIndicatorOpacity;
+
+        /// Whether the overlay channel changes during the current transition.
+        private boolean overlayAnimating;
+
+        /// Whether the focus-indicator channel changes during the current transition.
+        private boolean focusIndicatorAnimating;
+
+        /// Creates an opacity transition for the persistent state-layer regions.
+        private StateOpacityTransition(Region overlay, Region focusIndicator) {
+            this.overlay = overlay;
+            this.focusIndicator = focusIndicator;
         }
 
-        /// Reconfigures this transition without replacing its animation graph.
-        private void configure(M3MotionSpec spec, double startOpacity, double targetOpacity) {
+        /// Reconfigures both channels without replacing the animation graph.
+        private void configure(
+                M3MotionSpec spec,
+                double startOverlayOpacity,
+                double targetOverlayOpacity,
+                double startFocusIndicatorOpacity,
+                double targetFocusIndicatorOpacity
+        ) {
             stop();
             setCycleDuration(spec.duration());
             setInterpolator(spec.interpolator());
-            this.startOpacity = startOpacity;
-            this.targetOpacity = targetOpacity;
+            this.startOverlayOpacity = startOverlayOpacity;
+            this.targetOverlayOpacity = targetOverlayOpacity;
+            this.startFocusIndicatorOpacity = startFocusIndicatorOpacity;
+            this.targetFocusIndicatorOpacity = targetFocusIndicatorOpacity;
+            overlayAnimating = Double.compare(startOverlayOpacity, targetOverlayOpacity) != 0;
+            focusIndicatorAnimating =
+                    Double.compare(startFocusIndicatorOpacity, targetFocusIndicatorOpacity) != 0;
         }
 
-        /// Applies the eased opacity for the current pulse.
+        /// Returns whether the overlay channel is participating in a running transition.
+        private boolean isOverlayAnimating() {
+            return overlayAnimating && getStatus() == Animation.Status.RUNNING;
+        }
+
+        /// Returns whether the focus-indicator channel is participating in a running transition.
+        private boolean isFocusIndicatorAnimating() {
+            return focusIndicatorAnimating && getStatus() == Animation.Status.RUNNING;
+        }
+
+        /// Applies the eased opacity values for the current pulse.
         @Override
         protected void interpolate(double fraction) {
-            node.setOpacity(linearInterpolate(startOpacity, targetOpacity, fraction));
+            if (overlayAnimating) {
+                overlay.setOpacity(linearInterpolate(
+                        startOverlayOpacity,
+                        targetOverlayOpacity,
+                        fraction
+                ));
+            }
+            if (focusIndicatorAnimating) {
+                focusIndicator.setOpacity(linearInterpolate(
+                        startFocusIndicatorOpacity,
+                        targetFocusIndicatorOpacity,
+                        fraction
+                ));
+            }
         }
     }
 

@@ -62,7 +62,7 @@ public final class M3ScrollPanes {
     ///
     /// @param scrollPane the scroll pane to style
     public static void style(ScrollPane scrollPane) {
-        M3ControlStyles.add(Objects.requireNonNull(scrollPane, "scrollPane"), STYLE_CLASS);
+        M3ControlStyles.initialize(Objects.requireNonNull(scrollPane, "scrollPane"), STYLE_CLASS);
     }
 
     /// Enables Material smooth wheel scrolling for a JavaFX scroll pane.
@@ -80,6 +80,9 @@ public final class M3ScrollPanes {
     /// @param scrollPane the scroll pane whose smooth wheel scrolling should be removed
     public static void disableSmoothScrolling(ScrollPane scrollPane) {
         Objects.requireNonNull(scrollPane, "scrollPane");
+        if (!scrollPane.hasProperties()) {
+            return;
+        }
         @Nullable Object state = scrollPane.getProperties().remove(SMOOTH_SCROLL_STATE_KEY);
         if (state instanceof SmoothScrollState smoothScrollState) {
             smoothScrollState.dispose();
@@ -92,14 +95,15 @@ public final class M3ScrollPanes {
     /// @return `true` if smooth wheel scrolling is installed on the scroll pane
     public static boolean isSmoothScrollingEnabled(ScrollPane scrollPane) {
         Objects.requireNonNull(scrollPane, "scrollPane");
-        return scrollPane.getProperties().get(SMOOTH_SCROLL_STATE_KEY) instanceof SmoothScrollState;
+        return scrollPane.hasProperties()
+                && scrollPane.getProperties().get(SMOOTH_SCROLL_STATE_KEY) instanceof SmoothScrollState;
     }
 
     /// Adds the Material scroll style class to a standalone JavaFX scroll bar.
     ///
     /// @param scrollBar the scroll bar to style
     public static void style(ScrollBar scrollBar) {
-        M3ControlStyles.add(Objects.requireNonNull(scrollBar, "scrollBar"), SCROLL_BAR_STYLE_CLASS);
+        M3ControlStyles.initialize(Objects.requireNonNull(scrollBar, "scrollBar"), SCROLL_BAR_STYLE_CLASS);
     }
 
     /// Returns whether a scroll event target belongs directly to the supplied scroll pane.

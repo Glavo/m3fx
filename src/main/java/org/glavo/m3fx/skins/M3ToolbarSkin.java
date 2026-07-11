@@ -42,7 +42,7 @@ public final class M3ToolbarSkin extends SkinBase<M3Toolbar> {
         control.itemSpacingProperty().addListener(layoutInvalidation);
         updateContainerState();
         updateItems();
-        getChildren().add(container);
+        getChildren().setAll(container);
     }
 
     /// Removes listeners and child references before disposal.
@@ -55,6 +55,7 @@ public final class M3ToolbarSkin extends SkinBase<M3Toolbar> {
         control.itemSpacingProperty().removeListener(layoutInvalidation);
         container.nodeOrientationProperty().unbind();
         clearItemSlots();
+        getChildren().remove(container);
         super.dispose();
     }
 

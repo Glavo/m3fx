@@ -80,7 +80,7 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
         stateLayer.installStateTransitions(control);
         indicatorSlot.getChildren().add(stateLayer);
         container.getChildren().addAll(indicatorSlot, label);
-        getChildren().add(container);
+        getChildren().setAll(container);
         installInteractionHandlers(control);
         control.disabledProperty().addListener(disabledListener);
     }
@@ -101,6 +101,7 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
         control.removeEventHandler(MouseEvent.MOUSE_EXITED, mouseExitedHandler);
         control.removeEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
         control.removeEventHandler(KeyEvent.KEY_RELEASED, keyReleasedHandler);
+        getChildren().remove(container);
         super.dispose();
     }
 

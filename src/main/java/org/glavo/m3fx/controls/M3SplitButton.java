@@ -383,7 +383,7 @@ public class M3SplitButton extends Control {
 
     /// Adds base style classes, child buttons, and popup state forwarding.
     private void initialize() {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         M3ControlStyles.add(actionButton, ACTION_BUTTON_STYLE_CLASS);
         M3ControlStyles.add(menuButton, MENU_BUTTON_STYLE_CLASS);
         menuIndicator.setMouseTransparent(true);
@@ -404,7 +404,7 @@ public class M3SplitButton extends Control {
             notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
             notifyFocusNodeChanged();
         });
-        menuButton.addPopupFocusNodeListener(this::notifyFocusNodeChanged);
+        menuButton.setPopupFocusNodeListener(this::notifyFocusNodeChanged);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         focusNotifier.start();
         popupFocusNotifier.start();

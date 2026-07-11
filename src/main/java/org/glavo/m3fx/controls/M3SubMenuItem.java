@@ -37,12 +37,12 @@ import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3ThemeResolver;
 import org.glavo.m3fx.internal.M3KeyEvents;
 import org.glavo.m3fx.internal.M3PopupPositioning;
+import org.glavo.m3fx.internal.M3PopupWindows;
 import org.glavo.m3fx.internal.M3ReachabilityObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /// A Material Design 3 menu item that opens a nested menu.
 ///
@@ -93,11 +93,8 @@ public class M3SubMenuItem extends M3MenuItem {
     // Backing property for the public read-only submenu showing state API.
     private final ReadOnlyBooleanWrapper subMenuShowing = new ReadOnlyBooleanWrapper(this, "subMenuShowing");
 
-    /// The submenu popup enter animation.
-    private final M3NodeTransition showAnimation = new M3NodeTransition(subMenu);
-
-    /// The submenu popup exit animation.
-    private final M3NodeTransition hideAnimation = new M3NodeTransition(subMenu);
+    /// The reusable submenu popup enter and exit animation.
+    private final M3NodeTransition popupAnimation = new M3NodeTransition(subMenu);
 
     /// Observes runtime motion settings while this item is attached to a scene.
     private final M3MotionSettingsObserver motionSettingsObserver =
@@ -111,26 +108,23 @@ public class M3SubMenuItem extends M3MenuItem {
     private final M3ReachabilityObserver reachabilityObserver =
             new M3ReachabilityObserver(this, this::hidePopupIfOwnerUnreachable);
 
-    /// Notifies popup owners when this item's reported focus node changes.
-    private final CopyOnWriteArrayList<Runnable> focusNodeListeners = new CopyOnWriteArrayList<>();
-
     /// The pointer-hover open delay.
     private final PauseTransition hoverOpenDelay = new PauseTransition();
 
     /// The pointer-exit close delay.
     private final PauseTransition hoverCloseDelay = new PauseTransition();
 
-    /// Updates the indicator glyph and popup menu orientation when node orientation changes.
-    private final InvalidationListener nodeOrientationInvalidation = observable -> {
-        updateDefaultIndicatorDirection();
-        updateShowingSubMenuOrientation();
-    };
+    /// Updates the indicator glyph when node orientation changes.
+    private final InvalidationListener nodeOrientationInvalidation = observable -> updateDefaultIndicatorDirection();
 
     /// Whether an action from the submenu is being forwarded to this item's parent menu.
     private boolean forwardingSubMenuAction = false;
 
     /// Whether focus should return to this item after the submenu popup hides.
     private boolean focusOwnerOnHidden = false;
+
+    /// Whether the reusable popup animation is currently closing the submenu.
+    private boolean hidingPopup;
 
     /// Whether the pointer is currently over this menu item.
     private boolean pointerInsideOwner = false;
@@ -202,45 +196,47 @@ public class M3SubMenuItem extends M3MenuItem {
 
     /// Shows the submenu popup beside this item.
     public final void showSubMenu() {
-        if (!M3Accessible.canReach(this)) {
+        if (!M3Accessible.canReach(this) || !M3PopupWindows.canShow(this)) {
             return;
         }
         hoverOpenDelay.stop();
         hoverCloseDelay.stop();
         if (popup.isShowing()) {
-            hideAnimation.stop();
             subMenuShowing.set(true);
             playShowAnimation();
-            return;
-        }
-
-        Scene scene = getScene();
-        if (scene == null || scene.getWindow() == null) {
             return;
         }
 
         if (ownerMenu != null) {
             ownerMenu.hideSubMenusExcept(this);
         }
+        boolean popupShown = false;
         popupContextSynchronizer.start();
-        prepareSubMenuForPopup();
-        M3Css.setMinWidthIfUnbound(subMenu, Math.max(getWidth(), subMenu.minWidth(-1.0)));
-        @Nullable Bounds anchorBounds = subMenuAnchorBounds();
-        if (anchorBounds == null) {
-            popupContextSynchronizer.stop();
-            return;
+        try {
+            M3Css.setMinWidthIfUnbound(subMenu, Math.max(getWidth(), subMenu.minWidth(-1.0)));
+            @Nullable Bounds anchorBounds = subMenuAnchorBounds();
+            if (anchorBounds == null) {
+                return;
+            }
+            @Nullable M3PopupPositioning.Placement placement =
+                    M3PopupPositioning.subMenuBeside(anchorBounds, subMenu, SUB_MENU_OFFSET_X, isRightToLeft());
+            if (placement == null) {
+                return;
+            }
+            currentTransitionOffsetX = placement.opensToLeft()
+                    ? -SUB_MENU_TRANSITION_OFFSET_X
+                    : SUB_MENU_TRANSITION_OFFSET_X;
+            prepareSubMenuForShowAnimation();
+            if (!M3PopupWindows.show(popup, this, placement.x(), placement.y())) {
+                return;
+            }
+            popupShown = true;
+        } finally {
+            if (!popupShown) {
+                resetSubMenuAnimationState();
+                popupContextSynchronizer.stop();
+            }
         }
-        @Nullable M3PopupPositioning.Placement placement =
-                M3PopupPositioning.subMenuBeside(anchorBounds, subMenu, SUB_MENU_OFFSET_X, isRightToLeft());
-        if (placement == null) {
-            popupContextSynchronizer.stop();
-            return;
-        }
-        currentTransitionOffsetX = placement.opensToLeft()
-                ? -SUB_MENU_TRANSITION_OFFSET_X
-                : SUB_MENU_TRANSITION_OFFSET_X;
-        prepareSubMenuForShowAnimation();
-        popup.show(this, placement.x(), placement.y());
         reachabilityObserver.install();
         subMenuShowing.set(true);
         notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
@@ -275,29 +271,12 @@ public class M3SubMenuItem extends M3MenuItem {
         hideSubMenu(false);
     }
 
-    /// Adds a listener that runs when this submenu item's accessible focus node changes.
-    ///
-    /// @param listener the listener to add
-    final void addAccessibleFocusNodeListener(Runnable listener) {
-        Objects.requireNonNull(listener, "listener");
-        if (!focusNodeListeners.contains(listener)) {
-            focusNodeListeners.add(listener);
-        }
-    }
-
-    /// Removes an accessible focus-node listener.
-    ///
-    /// @param listener the listener to remove
-    final void removeAccessibleFocusNodeListener(Runnable listener) {
-        focusNodeListeners.remove(Objects.requireNonNull(listener, "listener"));
-    }
-
     /// Hides the submenu popup and optionally returns focus to this item.
     private void hideSubMenu(boolean focusOwner) {
         hoverOpenDelay.stop();
         hoverCloseDelay.stop();
         subMenu.hideSubMenusExcept(null);
-        focusOwnerOnHidden = focusOwner;
+        focusOwnerOnHidden |= focusOwner;
         if (!popup.isShowing()) {
             if (focusOwner && M3Accessible.canReach(this)) {
                 M3Accessible.showDirectItem(this, this);
@@ -306,12 +285,12 @@ public class M3SubMenuItem extends M3MenuItem {
             return;
         }
 
-        showAnimation.stop();
-        if (hideAnimation.getStatus() == Animation.Status.RUNNING) {
+        if (hidingPopup && popupAnimation.getStatus() == Animation.Status.RUNNING) {
             return;
         }
         M3MotionSpec spec = M3Animation.fastSpatial(this);
-        hideAnimation.configure(
+        hidingPopup = true;
+        popupAnimation.configure(
                 spec,
                 0.0,
                 SUB_MENU_TRANSITION_SCALE,
@@ -319,7 +298,7 @@ public class M3SubMenuItem extends M3MenuItem {
                 currentTransitionOffsetX,
                 subMenu.getTranslateY()
         );
-        M3Animation.playFromStart(this, hideAnimation);
+        M3Animation.playFromStart(this, popupAnimation);
     }
 
     /// Returns accessibility attributes for submenu content and expanded state.
@@ -390,7 +369,11 @@ public class M3SubMenuItem extends M3MenuItem {
         });
         popup.setAutoHide(true);
         popup.getContent().add(subMenu);
-        hideAnimation.setOnFinished(event -> popup.hide());
+        popupAnimation.setOnFinished(event -> {
+            if (hidingPopup) {
+                popup.hide();
+            }
+        });
         popup.setOnHidden(event -> {
             reachabilityObserver.uninstall();
             popupContextSynchronizer.stop();
@@ -400,11 +383,10 @@ public class M3SubMenuItem extends M3MenuItem {
             notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
             notifyFocusNodeChanged();
             resetSubMenuAnimationState();
-            if (focusOwnerOnHidden) {
-                focusOwnerOnHidden = false;
-                if (M3Accessible.canReach(this)) {
-                    M3Accessible.showDirectItem(this, this);
-                }
+            boolean restoreFocus = focusOwnerOnHidden;
+            focusOwnerOnHidden = false;
+            if (restoreFocus && M3Accessible.canReach(this)) {
+                M3Accessible.showDirectItem(this, this);
             }
         });
         addEventFilter(ActionEvent.ACTION, this::handleOwnActionEvent);
@@ -415,7 +397,7 @@ public class M3SubMenuItem extends M3MenuItem {
         subMenu.addEventHandler(ActionEvent.ACTION, this::handleSubMenuAction);
         subMenu.addEventHandler(MouseEvent.MOUSE_ENTERED, this::handleSubMenuMouseEntered);
         subMenu.addEventHandler(MouseEvent.MOUSE_EXITED, this::handleSubMenuMouseExited);
-        subMenu.addAccessibleFocusNodeListener(this::notifyFocusNodeChanged);
+        subMenu.setAccessibleFocusNodeListener(this::notifyFocusNodeChanged);
         popupFocusNotifier.start();
     }
 
@@ -598,12 +580,16 @@ public class M3SubMenuItem extends M3MenuItem {
     private void notifyFocusNodeChanged() {
         M3Accessible.notifyFocusNodeChanged(this);
         popupFocusNotifier.refresh();
-        focusNodeListeners.forEach(Runnable::run);
+        @Nullable M3Menu currentOwner = ownerMenu;
+        if (currentOwner != null) {
+            currentOwner.notifyDescendantFocusNodeChanged();
+        }
     }
 
     /// Applies initial visual state before the submenu is shown.
     private void prepareSubMenuForShowAnimation() {
-        hideAnimation.stop();
+        popupAnimation.stop();
+        hidingPopup = false;
         subMenu.setOpacity(0.0);
         subMenu.setScaleX(SUB_MENU_TRANSITION_SCALE);
         subMenu.setScaleY(SUB_MENU_TRANSITION_SCALE);
@@ -612,16 +598,17 @@ public class M3SubMenuItem extends M3MenuItem {
 
     /// Plays the submenu popup enter animation.
     private void playShowAnimation() {
-        showAnimation.stop();
+        popupAnimation.stop();
+        hidingPopup = false;
         M3MotionSpec spec = M3Animation.fastSpatial(this);
-        showAnimation.configure(spec, 1.0, 1.0, 1.0, 0.0, subMenu.getTranslateY());
-        M3Animation.playFromStart(this, showAnimation);
+        popupAnimation.configure(spec, 1.0, 1.0, 1.0, 0.0, subMenu.getTranslateY());
+        M3Animation.playFromStart(this, popupAnimation);
     }
 
     /// Resets transient submenu animation transforms.
     private void resetSubMenuAnimationState() {
-        showAnimation.stop();
-        hideAnimation.stop();
+        popupAnimation.stop();
+        hidingPopup = false;
         subMenu.setOpacity(1.0);
         subMenu.setScaleX(1.0);
         subMenu.setScaleY(1.0);
@@ -630,7 +617,7 @@ public class M3SubMenuItem extends M3MenuItem {
 
     /// Applies changed runtime motion settings to active submenu popup animations.
     private void refreshMotionSettings() {
-        M3Animation.finishRunningAnimationsIfDisabled(this, showAnimation, hideAnimation);
+        M3Animation.finishRunningAnimationsIfDisabled(this, popupAnimation);
         refreshHoverDelays();
     }
 
@@ -670,30 +657,12 @@ public class M3SubMenuItem extends M3MenuItem {
                 : M3InternalIcon.Glyph.CHEVRON_RIGHT);
     }
 
-
-    /// Synchronizes an already showing submenu popup with this item's effective node orientation.
-    private void updateShowingSubMenuOrientation() {
-        if (!popup.isShowing()) {
-            return;
-        }
-        subMenu.setNodeOrientation(getEffectiveNodeOrientation());
-        subMenu.applyCss();
-        subMenu.layout();
-        notifyFocusNodeChanged();
-    }
-
     /// Starts the pointer-exit close delay when the submenu is open.
     private void scheduleHoverClose() {
         if (popup.isShowing()) {
             hoverCloseDelay.setDuration(M3Animation.motionBehavior(this).subMenuHoverCloseDelay());
             hoverCloseDelay.playFromStart();
         }
-    }
-
-    /// Synchronizes owner popup context into the popup-hosted submenu.
-    private void prepareSubMenuForPopup() {
-        popupContextSynchronizer.sync();
-        subMenu.applyCss();
     }
 
     /// Returns stylesheets from the owning popup menu when this item is already inside a popup branch.

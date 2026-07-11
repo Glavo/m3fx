@@ -11,7 +11,6 @@ import javafx.scene.Node;
 import javafx.scene.control.SkinBase;
 import org.glavo.m3fx.controls.M3Badge;
 import org.glavo.m3fx.controls.M3BadgedBox;
-import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -48,7 +47,9 @@ public final class M3BadgedBoxSkin extends SkinBase<M3BadgedBox> {
         control.badgeOffsetXProperty().removeListener(badgePlacementInvalidation);
         control.badgeOffsetYProperty().removeListener(badgePlacementInvalidation);
         control.effectiveNodeOrientationProperty().removeListener(badgePlacementInvalidation);
-        getChildren().clear();
+        if (control.getSkin() == null || control.getSkin() == this) {
+            getChildren().clear();
+        }
         super.dispose();
     }
 

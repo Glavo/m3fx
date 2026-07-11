@@ -67,7 +67,7 @@ public final class M3FormSectionSkin extends SkinBase<M3FormSection> {
         supportingLabel.setMaxWidth(Double.MAX_VALUE);
         header.getChildren().addAll(titleLabel, supportingLabel);
         root.getChildren().addAll(header, content);
-        getChildren().add(root);
+        getChildren().setAll(root);
 
         control.getContent().addListener(contentListener);
         control.titleTextProperty().addListener(updateListener);
@@ -92,6 +92,7 @@ public final class M3FormSectionSkin extends SkinBase<M3FormSection> {
         header.nodeOrientationProperty().unbind();
         content.nodeOrientationProperty().unbind();
         content.getChildren().clear();
+        getChildren().remove(root);
         super.dispose();
     }
 

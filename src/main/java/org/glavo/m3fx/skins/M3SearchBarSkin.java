@@ -64,7 +64,7 @@ public final class M3SearchBarSkin extends SkinBase<M3SearchBar> {
         updateLeading(control.getLeading());
         updateTrailingActions();
         container.getChildren().setAll(leadingSlot, editor, trailingBox);
-        getChildren().add(container);
+        getChildren().setAll(container);
     }
 
     /// Removes listeners and child references before disposal.
@@ -78,6 +78,7 @@ public final class M3SearchBarSkin extends SkinBase<M3SearchBar> {
         trailingBox.getChildren().clear();
         leadingSlot.getChildren().clear();
         container.getChildren().clear();
+        getChildren().remove(container);
         super.dispose();
     }
 

@@ -45,21 +45,20 @@ public final class M3PopupStyles {
     /// @param popupRoot the popup-hosted root that will be styled before or after popup scene creation
     /// @param sourceStylesheets the owner scene or parent popup stylesheet list to copy
     /// @param themeRoot the local theme root to copy into the popup, or `null` for standalone fallback tokens
-    /// @param controlStylesheets additional popup-specific control stylesheet URLs to append if missing
+    /// @param controlStylesheet the popup-specific control stylesheet URL to append, or `null` for none
     public static void preparePopupRoot(
             Parent popupRoot,
             List<String> sourceStylesheets,
             @Nullable Parent themeRoot,
-            String... controlStylesheets
+            @Nullable String controlStylesheet
     ) {
         Objects.requireNonNull(popupRoot, "popupRoot");
         Objects.requireNonNull(sourceStylesheets, "sourceStylesheets");
-        Objects.requireNonNull(controlStylesheets, "controlStylesheets");
 
         synchronizeSourceStylesheets(popupRoot, sourceStylesheets);
         ensureFallbackStylesheet(popupRoot);
-        for (String stylesheet : controlStylesheets) {
-            addStylesheet(popupRoot, Objects.requireNonNull(stylesheet, "stylesheet"));
+        if (controlStylesheet != null) {
+            addStylesheet(popupRoot, controlStylesheet);
         }
         addFallbackRootStyleClass(popupRoot);
         preserveBaseStyle(popupRoot);
@@ -100,12 +99,16 @@ public final class M3PopupStyles {
         }
 
         if (stylesheet == null) {
-            popupRoot.getProperties().remove(COPIED_THEME_STYLESHEET_PROPERTY_KEY);
+            if (previousStylesheet != null) {
+                popupRoot.getProperties().remove(COPIED_THEME_STYLESHEET_PROPERTY_KEY);
+            }
             return;
         }
 
         moveStylesheetToEnd(popupRoot, stylesheet);
-        popupRoot.getProperties().put(COPIED_THEME_STYLESHEET_PROPERTY_KEY, stylesheet);
+        if (!stylesheet.equals(previousStylesheet)) {
+            popupRoot.getProperties().put(COPIED_THEME_STYLESHEET_PROPERTY_KEY, stylesheet);
+        }
     }
 
     /// Adds one stylesheet URL to a popup root when it is not already present.
@@ -144,7 +147,13 @@ public final class M3PopupStyles {
     /// @param stylesheet the stylesheet URL to move or add
     private static void moveStylesheetToEnd(Parent popupRoot, String stylesheet) {
         List<String> stylesheets = popupRoot.getStylesheets();
-        stylesheets.remove(stylesheet);
+        int currentIndex = stylesheets.indexOf(stylesheet);
+        if (currentIndex >= 0 && currentIndex == stylesheets.size() - 1) {
+            return;
+        }
+        if (currentIndex >= 0) {
+            stylesheets.remove(currentIndex);
+        }
         stylesheets.add(stylesheet);
     }
 
@@ -176,6 +185,9 @@ public final class M3PopupStyles {
         M3ThemeManager.clearThemeStyleClasses(popupRoot);
         M3ThemeMetadata.clearTheme(popupRoot);
         Object baseStyleValue = popupRoot.getProperties().get(BASE_STYLE_PROPERTY_KEY);
-        popupRoot.setStyle(baseStyleValue instanceof String baseStyle ? baseStyle : "");
+        String baseStyle = baseStyleValue instanceof String style ? style : "";
+        if (!Objects.equals(popupRoot.getStyle(), baseStyle)) {
+            popupRoot.setStyle(baseStyle);
+        }
     }
 }

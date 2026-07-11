@@ -25,7 +25,7 @@ public final class M3SurfaceSkin extends SkinBase<M3Surface> {
     public M3SurfaceSkin(M3Surface control) {
         super(control);
         container.setManaged(false);
-        getChildren().add(container);
+        getChildren().setAll(container);
         control.getContent().addListener(contentListener);
         updateContent();
     }
@@ -35,6 +35,7 @@ public final class M3SurfaceSkin extends SkinBase<M3Surface> {
     public void dispose() {
         getSkinnable().getContent().removeListener(contentListener);
         container.getChildren().clear();
+        getChildren().remove(container);
         super.dispose();
     }
 

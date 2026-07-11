@@ -36,7 +36,9 @@ import static org.glavo.m3fx.controls.ControlVisualTestUtils.snapshotImageOnFxTh
 import static org.glavo.m3fx.controls.ControlVisualTestUtils.visualTestColors;
 import static org.glavo.m3fx.controls.ControlVisualTestUtils.writeVisualSnapshot;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -113,6 +115,72 @@ final class M3DatePickerTest {
 
             assertEquals(LocalDate.of(2026, 5, 20), picker.getValue());
             assertTrue(targetCell.getStyleClass().contains(M3DatePicker.SELECTED_DAY_STYLE_CLASS));
+        });
+    }
+
+    /// Verifies that same-month selection and bound changes preserve reusable cell date mappings.
+    @Test
+    void datePickerSkinAvoidsDateRemappingForStateOnlyChanges() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3DatePicker picker = new M3DatePicker(LocalDate.of(2026, 5, 18));
+            Pane root = new Pane(picker);
+            Scene scene = new Scene(root, 420.0, 360.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            picker.resize(360.0, 340.0);
+            picker.layout();
+
+            List<ButtonBase> cells = picker.lookupAll("." + M3DatePicker.DAY_CELL_STYLE_CLASS)
+                    .stream()
+                    .map(node -> assertInstanceOf(ButtonBase.class, node))
+                    .toList();
+            List<Object> dateReferences = cells.stream().map(Node::getUserData).toList();
+
+            picker.setValue(LocalDate.of(2026, 5, 20));
+            picker.setMinDate(LocalDate.of(2026, 5, 5));
+            picker.setMaxDate(LocalDate.of(2026, 5, 28));
+
+            for (int index = 0; index < cells.size(); index++) {
+                assertSame(dateReferences.get(index), cells.get(index).getUserData());
+            }
+            assertTrue(dayCellForDate(picker, LocalDate.of(2026, 5, 20))
+                    .getStyleClass().contains(M3DatePicker.SELECTED_DAY_STYLE_CLASS));
+            assertTrue(dayCellForDate(picker, LocalDate.of(2026, 5, 4)).isDisabled());
+
+            Object previousFirstDate = cells.get(0).getUserData();
+            picker.setMaxDate(null);
+            picker.setMinDate(null);
+            picker.setDisplayedMonth(YearMonth.of(2026, 7));
+
+            assertNotSame(previousFirstDate, cells.get(0).getUserData());
+            assertEquals(YearMonth.of(2026, 7), YearMonth.from((LocalDate) cells.get(20).getUserData()));
+        });
+    }
+
+    /// Verifies that replacing a date picker skin detaches selection listeners from the retired cell grid.
+    @Test
+    void datePickerSkinReplacementDetachesRetiredGrid() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3DatePicker picker = new M3DatePicker(LocalDate.of(2026, 5, 18));
+            Pane root = new Pane(picker);
+            Scene scene = new Scene(root, 420.0, 360.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            picker.resize(360.0, 340.0);
+            picker.layout();
+            ButtonBase retiredSelectedCell = dayCellForDate(picker, LocalDate.of(2026, 5, 18));
+            ButtonBase retiredTargetCell = dayCellForDate(picker, LocalDate.of(2026, 5, 20));
+
+            picker.setSkin(new M3DatePickerSkin(picker));
+            picker.setValue(LocalDate.of(2026, 5, 20));
+            root.applyCss();
+            picker.layout();
+
+            assertNull(retiredSelectedCell.getScene());
+            assertNull(retiredTargetCell.getScene());
+            assertTrue(retiredSelectedCell.getStyleClass().contains(M3DatePicker.SELECTED_DAY_STYLE_CLASS));
+            assertFalse(retiredTargetCell.getStyleClass().contains(M3DatePicker.SELECTED_DAY_STYLE_CLASS));
         });
     }
 

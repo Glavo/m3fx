@@ -514,7 +514,7 @@ public class M3ChipGroup extends Control {
 
     /// Adds base style classes and installs child listeners.
     private void initialize() {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.LIST_VIEW);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleSelectionTarget, this::showAccessibleItem);
@@ -709,6 +709,8 @@ public class M3ChipGroup extends Control {
         if (selectionChanged) {
             selectedChips.setAll(selectedChipsScratch);
         }
+        selectedChipsScratch.clear();
+
         selectedChip.set(selectedChips.isEmpty() ? null : selectedChips.get(0));
         if (selectionChanged) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);

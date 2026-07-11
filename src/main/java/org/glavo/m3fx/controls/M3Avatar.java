@@ -206,7 +206,7 @@ public class M3Avatar extends Control {
 
     /// Initializes style classes, child nodes, and property listeners.
     private void initialize() {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.IMAGE_VIEW);
         setFocusTraversable(false);
         text.addListener((observable, oldValue, newValue) -> updateAccessibleText());

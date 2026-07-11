@@ -51,6 +51,9 @@ public final class M3ModalFocusTrap {
     /// Tracks window visibility changes so traps install after a prebuilt scene is shown and detach after hide.
     private final ChangeListener<Boolean> windowShowingListener = (observable, oldValue, newValue) -> update();
 
+    /// Whether owner lifecycle observation is currently installed.
+    private boolean installed;
+
     /// The scene currently observed for window changes.
     private @Nullable Scene observedScene;
 
@@ -80,6 +83,12 @@ public final class M3ModalFocusTrap {
 
     /// Starts tracking owner scene changes.
     public void install() {
+        if (installed) {
+            update();
+            return;
+        }
+
+        installed = true;
         owner.sceneProperty().addListener(sceneListener);
         observeScene(owner.getScene());
         update();
@@ -87,6 +96,11 @@ public final class M3ModalFocusTrap {
 
     /// Stops tracking owner scene changes and removes any installed scene filter.
     public void uninstall() {
+        if (!installed) {
+            return;
+        }
+
+        installed = false;
         owner.sceneProperty().removeListener(sceneListener);
         observeScene(null);
         installOnScene(null);

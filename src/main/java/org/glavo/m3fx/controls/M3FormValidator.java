@@ -10,6 +10,7 @@ import javafx.beans.property.ReadOnlyIntegerWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.value.ChangeListener;
+import javafx.beans.value.WeakChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ModifiableObservableListBase;
 import javafx.collections.ObservableList;
@@ -58,11 +59,32 @@ public final class M3FormValidator {
 
     /// Updates group state when one registered layout changes its validator-produced error text.
     private final ChangeListener<String> validationErrorTextListener =
-            (observable, oldValue, newValue) -> refreshInvalidInputs();
+            (observable, oldValue, newValue) -> {
+                if (oldValue.isEmpty() != newValue.isEmpty()) {
+                    requestAggregateRefresh(true, false);
+                }
+            };
+
+    /// Weak wrapper that prevents registered inputs from retaining an otherwise unreachable validator.
+    private final WeakChangeListener<String> weakValidationErrorTextListener =
+            new WeakChangeListener<>(validationErrorTextListener);
 
     /// Updates group state when one registered layout activates or clears validation.
     private final ChangeListener<Boolean> validationActiveListener =
-            (observable, oldValue, newValue) -> refreshInvalidInputs();
+            (observable, oldValue, newValue) -> requestAggregateRefresh(false, true);
+
+    /// Weak wrapper that prevents registered inputs from retaining an otherwise unreachable validator.
+    private final WeakChangeListener<Boolean> weakValidationActiveListener =
+            new WeakChangeListener<>(validationActiveListener);
+
+    /// The nesting depth of aggregate operations that defer form-state refreshes.
+    private int aggregateUpdateDepth;
+
+    /// Whether a deferred operation changed invalid-input membership.
+    private boolean invalidInputsRefreshPending;
+
+    /// Whether a deferred operation changed aggregate validation activation.
+    private boolean validationActiveRefreshPending;
 
     /// Creates an empty form validator.
     public M3FormValidator() {
@@ -153,10 +175,14 @@ public final class M3FormValidator {
     /// @return `true` when all registered input layouts validate successfully
     public boolean validate() {
         boolean valid = true;
-        for (M3TextInputLayout input : inputs) {
-            valid &= input.validate();
+        beginAggregateUpdate();
+        try {
+            for (M3TextInputLayout input : inputs) {
+                valid &= input.validate();
+            }
+        } finally {
+            endAggregateUpdate();
         }
-        refreshInvalidInputs();
         return valid;
     }
 
@@ -165,25 +191,36 @@ public final class M3FormValidator {
     /// @param input the registered input layout to validate
     /// @return `true` when the input layout validates successfully
     public boolean validateInput(M3TextInputLayout input) {
-        boolean valid = registeredInput(input).validate();
-        refreshInvalidInputs();
-        return valid;
+        beginAggregateUpdate();
+        try {
+            return registeredInput(input).validate();
+        } finally {
+            endAggregateUpdate();
+        }
     }
 
     /// Clears validator-produced error state on all registered input layouts.
     public void clearValidation() {
-        for (M3TextInputLayout input : inputs) {
-            input.clearValidation();
+        beginAggregateUpdate();
+        try {
+            for (M3TextInputLayout input : inputs) {
+                input.clearValidation();
+            }
+        } finally {
+            endAggregateUpdate();
         }
-        refreshInvalidInputs();
     }
 
     /// Clears validator-produced error state on one registered input layout.
     ///
     /// @param input the registered input layout whose validation state is cleared
     public void clearValidation(M3TextInputLayout input) {
-        registeredInput(input).clearValidation();
-        refreshInvalidInputs();
+        beginAggregateUpdate();
+        try {
+            registeredInput(input).clearValidation();
+        } finally {
+            endAggregateUpdate();
+        }
     }
 
     /// Requests focus on the first reachable invalid input layout.
@@ -242,47 +279,88 @@ public final class M3FormValidator {
 
     /// Installs validation listeners on one input layout.
     private void installInput(M3TextInputLayout input) {
-        input.validationErrorTextProperty().addListener(validationErrorTextListener);
-        input.validationActiveProperty().addListener(validationActiveListener);
+        input.validationErrorTextProperty().addListener(weakValidationErrorTextListener);
+        input.validationActiveProperty().addListener(weakValidationActiveListener);
     }
 
     /// Removes validation listeners from one input layout.
     private void uninstallInput(M3TextInputLayout input) {
-        input.validationErrorTextProperty().removeListener(validationErrorTextListener);
-        input.validationActiveProperty().removeListener(validationActiveListener);
+        input.validationErrorTextProperty().removeListener(weakValidationErrorTextListener);
+        input.validationActiveProperty().removeListener(weakValidationActiveListener);
     }
 
-    /// Rebuilds the invalid input list and read-only state properties.
-    private void refreshInvalidInputs() {
-        ArrayList<M3TextInputLayout> refreshedInvalidInputs = new ArrayList<>();
-        boolean validationActive = false;
+    /// Begins an operation that coalesces aggregate form-state refreshes.
+    private void beginAggregateUpdate() {
+        aggregateUpdateDepth++;
+    }
+
+    /// Ends an aggregate operation and publishes one consolidated state refresh.
+    private void endAggregateUpdate() {
+        aggregateUpdateDepth--;
+        if (aggregateUpdateDepth != 0) {
+            return;
+        }
+
+        boolean refreshInvalidInputs = invalidInputsRefreshPending;
+        boolean refreshValidationActive = validationActiveRefreshPending;
+        invalidInputsRefreshPending = false;
+        validationActiveRefreshPending = false;
+        refreshAggregateState(refreshInvalidInputs, refreshValidationActive);
+    }
+
+    /// Requests an immediate or deferred refresh of selected aggregate state.
+    private void requestAggregateRefresh(boolean refreshInvalidInputs, boolean refreshValidationActive) {
+        if (aggregateUpdateDepth > 0) {
+            invalidInputsRefreshPending |= refreshInvalidInputs;
+            validationActiveRefreshPending |= refreshValidationActive;
+            return;
+        }
+        refreshAggregateState(refreshInvalidInputs, refreshValidationActive);
+    }
+
+    /// Refreshes invalid membership and validation activation without allocating for stable membership.
+    private void refreshAggregateState(boolean refreshInvalidInputs, boolean refreshValidationActive) {
+        if (!refreshInvalidInputs && !refreshValidationActive) {
+            return;
+        }
+
+        int invalidCount = 0;
+        @Nullable M3TextInputLayout firstInvalid = null;
+        boolean invalidMembershipMatches = true;
+        boolean anyValidationActive = false;
         for (M3TextInputLayout input : inputs) {
-            validationActive |= input.isValidationActive();
-            if (input.isValidationError()) {
-                refreshedInvalidInputs.add(input);
+            if (refreshValidationActive) {
+                anyValidationActive |= input.isValidationActive();
+            }
+            if (refreshInvalidInputs && input.isValidationError()) {
+                if (firstInvalid == null) {
+                    firstInvalid = input;
+                }
+                if (invalidCount >= invalidInputs.size() || invalidInputs.get(invalidCount) != input) {
+                    invalidMembershipMatches = false;
+                }
+                invalidCount++;
             }
         }
 
-        if (!sameInputs(invalidInputs, refreshedInvalidInputs)) {
-            invalidInputs.setAll(refreshedInvalidInputs);
-        }
-        firstInvalidInput.set(refreshedInvalidInputs.isEmpty() ? null : refreshedInvalidInputs.get(0));
-        this.validationActive.set(validationActive);
-        invalidInputCount.set(refreshedInvalidInputs.size());
-        valid.set(refreshedInvalidInputs.isEmpty());
-    }
-
-    /// Returns whether two input lists contain the same layouts in the same order.
-    private static boolean sameInputs(List<M3TextInputLayout> first, List<M3TextInputLayout> second) {
-        if (first.size() != second.size()) {
-            return false;
-        }
-        for (int index = 0; index < first.size(); index++) {
-            if (first.get(index) != second.get(index)) {
-                return false;
+        if (refreshInvalidInputs) {
+            invalidMembershipMatches &= invalidCount == invalidInputs.size();
+            if (!invalidMembershipMatches) {
+                ArrayList<M3TextInputLayout> refreshedInvalidInputs = new ArrayList<>(invalidCount);
+                for (M3TextInputLayout input : inputs) {
+                    if (input.isValidationError()) {
+                        refreshedInvalidInputs.add(input);
+                    }
+                }
+                invalidInputs.setAll(refreshedInvalidInputs);
             }
+            firstInvalidInput.set(firstInvalid);
+            invalidInputCount.set(invalidCount);
+            valid.set(invalidCount == 0);
         }
-        return true;
+        if (refreshValidationActive) {
+            validationActive.set(anyValidationActive);
+        }
     }
 
     /// Returns a registered input layout or throws when the input is not managed by this validator.
@@ -321,31 +399,116 @@ public final class M3FormValidator {
         /// Adds all inputs after validating the full mutation.
         @Override
         public boolean addAll(Collection<? extends M3TextInputLayout> inputs) {
-            return super.addAll(validatedAddCopy(inputs));
+            List<M3TextInputLayout> copy = validatedAddCopy(inputs);
+            beginAggregateUpdate();
+            try {
+                return super.addAll(copy);
+            } finally {
+                endAggregateUpdate();
+            }
         }
 
         /// Adds all inputs at an index after validating the full mutation.
         @Override
         public boolean addAll(int index, Collection<? extends M3TextInputLayout> inputs) {
-            return super.addAll(index, validatedAddCopy(inputs));
+            List<M3TextInputLayout> copy = validatedAddCopy(inputs);
+            beginAggregateUpdate();
+            try {
+                return super.addAll(index, copy);
+            } finally {
+                endAggregateUpdate();
+            }
         }
 
         /// Adds all inputs after validating the full mutation.
         @Override
         public boolean addAll(M3TextInputLayout... inputs) {
-            return super.addAll(validatedAddCopy(inputs));
+            List<M3TextInputLayout> copy = validatedAddCopy(inputs);
+            beginAggregateUpdate();
+            try {
+                return super.addAll(copy);
+            } finally {
+                endAggregateUpdate();
+            }
         }
 
         /// Replaces all inputs after validating the full replacement.
         @Override
         public boolean setAll(Collection<? extends M3TextInputLayout> inputs) {
-            return super.setAll(validatedReplacementCopy(inputs));
+            List<M3TextInputLayout> copy = validatedReplacementCopy(inputs);
+            beginAggregateUpdate();
+            try {
+                return super.setAll(copy);
+            } finally {
+                endAggregateUpdate();
+            }
         }
 
         /// Replaces all inputs after validating the full replacement.
         @Override
         public boolean setAll(M3TextInputLayout... inputs) {
-            return super.setAll(validatedReplacementCopy(inputs));
+            List<M3TextInputLayout> copy = validatedReplacementCopy(inputs);
+            beginAggregateUpdate();
+            try {
+                return super.setAll(copy);
+            } finally {
+                endAggregateUpdate();
+            }
+        }
+
+        /// Removes all matching inputs with one aggregate state refresh.
+        @Override
+        public boolean removeAll(Collection<?> inputs) {
+            beginAggregateUpdate();
+            try {
+                return super.removeAll(inputs);
+            } finally {
+                endAggregateUpdate();
+            }
+        }
+
+        /// Removes all supplied inputs with one aggregate state refresh.
+        @Override
+        public boolean removeAll(M3TextInputLayout... inputs) {
+            beginAggregateUpdate();
+            try {
+                return super.removeAll(inputs);
+            } finally {
+                endAggregateUpdate();
+            }
+        }
+
+        /// Retains matching inputs with one aggregate state refresh.
+        @Override
+        public boolean retainAll(Collection<?> inputs) {
+            beginAggregateUpdate();
+            try {
+                return super.retainAll(inputs);
+            } finally {
+                endAggregateUpdate();
+            }
+        }
+
+        /// Retains supplied inputs with one aggregate state refresh.
+        @Override
+        public boolean retainAll(M3TextInputLayout... inputs) {
+            beginAggregateUpdate();
+            try {
+                return super.retainAll(inputs);
+            } finally {
+                endAggregateUpdate();
+            }
+        }
+
+        /// Removes an input range with one aggregate state refresh.
+        @Override
+        public void remove(int from, int to) {
+            beginAggregateUpdate();
+            try {
+                super.remove(from, to);
+            } finally {
+                endAggregateUpdate();
+            }
         }
 
         /// Adds one input and installs its validation listeners.
@@ -354,7 +517,7 @@ public final class M3FormValidator {
             M3TextInputLayout validatedInput = requireNewInput(input);
             backingList.add(index, validatedInput);
             installInput(validatedInput);
-            refreshInvalidInputs();
+            requestAggregateRefresh(true, true);
         }
 
         /// Replaces one input and updates validation listeners.
@@ -365,7 +528,7 @@ public final class M3FormValidator {
             if (oldInput != validatedInput) {
                 uninstallInput(oldInput);
                 installInput(validatedInput);
-                refreshInvalidInputs();
+                requestAggregateRefresh(true, true);
             }
             return oldInput;
         }
@@ -375,7 +538,7 @@ public final class M3FormValidator {
         protected M3TextInputLayout doRemove(int index) {
             M3TextInputLayout oldInput = backingList.remove(index);
             uninstallInput(oldInput);
-            refreshInvalidInputs();
+            requestAggregateRefresh(true, true);
             return oldInput;
         }
 

@@ -72,7 +72,7 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
         updateNavigation(control.getNavigation());
         updateActions();
         updateVariantLayout();
-        getChildren().addAll(navigationSlot, titleLabel, actions);
+        getChildren().setAll(navigationSlot, titleLabel, actions);
     }
 
     /// Removes listeners, bindings, and child references before disposal.
@@ -90,6 +90,7 @@ public final class M3TopAppBarSkin extends SkinBase<M3TopAppBar> {
         actions.spacingProperty().unbind();
         clearActionSlots();
         navigationSlot.getChildren().clear();
+        getChildren().removeAll(navigationSlot, titleLabel, actions);
         super.dispose();
     }
 

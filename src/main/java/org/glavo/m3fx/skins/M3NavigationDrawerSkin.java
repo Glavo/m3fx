@@ -28,7 +28,7 @@ public final class M3NavigationDrawerSkin extends SkinBase<M3NavigationDrawer> {
         container.setManaged(false);
         container.spacingProperty().bind(control.itemSpacingProperty());
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
-        getChildren().add(container);
+        getChildren().setAll(container);
         control.getItems().addListener(itemsListener);
         updateItems();
     }
@@ -40,6 +40,7 @@ public final class M3NavigationDrawerSkin extends SkinBase<M3NavigationDrawer> {
         container.spacingProperty().unbind();
         container.nodeOrientationProperty().unbind();
         container.getChildren().clear();
+        getChildren().remove(container);
         super.dispose();
     }
 

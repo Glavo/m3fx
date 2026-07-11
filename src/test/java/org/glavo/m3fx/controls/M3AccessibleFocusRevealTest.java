@@ -59,6 +59,32 @@ final class M3AccessibleFocusRevealTest {
         });
     }
 
+
+
+    /// Verifies containment across Parent links, logical list-item content, and cyclic logical edges.
+    @Test
+    void containmentHandlesParentAndCyclicLogicalContent() {
+        Pane child = new Pane();
+        Pane root = new Pane(child);
+        Pane unrelated = new Pane();
+
+        assertTrue(M3Accessible.containsNode(root, child));
+        assertFalse(M3Accessible.containsNode(root, unrelated));
+
+        M3ListItem first = new M3ListItem("First");
+        M3ListItem second = new M3ListItem("Second");
+        Pane logicalTarget = new Pane();
+        first.setLeading(second);
+        second.setLeading(first);
+        second.setTrailing(logicalTarget);
+
+        assertTrue(M3Accessible.containsNode(first, logicalTarget));
+        assertFalse(M3Accessible.containsNode(first, unrelated));
+        assertTrue(M3Accessible.containsAccessibleActionTarget(
+                first,
+                List.of(unrelated, logicalTarget)
+        ));
+    }
     /// Verifies direct accessibility focus reports success only when focus moves and reveals the target.
     @Test
     void directAccessibleFocusReportsSuccessAndRevealsTarget() {

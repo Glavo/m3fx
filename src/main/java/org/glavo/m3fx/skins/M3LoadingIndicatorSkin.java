@@ -98,7 +98,7 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         container.setManaged(false);
         indicator.getStyleClass().add("m3-loading-indicator-indicator");
         indicator.setManaged(false);
-        getChildren().addAll(container, indicator);
+        getChildren().setAll(container, indicator);
 
         indeterminateAnimation.setOnFinished(event -> finishIndeterminateMorphSegment());
 
@@ -118,6 +118,7 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         loadingIndicator.variantProperty().removeListener(layoutInvalidation);
         loadingIndicator.containerSizeProperty().removeListener(layoutInvalidation);
         loadingIndicator.indicatorSizeProperty().removeListener(layoutInvalidation);
+        getChildren().removeAll(container, indicator);
         super.dispose();
     }
 

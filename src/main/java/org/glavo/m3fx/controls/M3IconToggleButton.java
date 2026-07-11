@@ -450,7 +450,7 @@ public class M3IconToggleButton extends ButtonBase {
 
     /// Adds base style classes and applies the default variant.
     private void initialize() {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TOGGLE_BUTTON);
         setAlignment(Pos.CENTER);
         setFocusTraversable(true);

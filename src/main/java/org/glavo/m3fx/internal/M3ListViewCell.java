@@ -17,6 +17,7 @@ import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListView;
 import org.glavo.m3fx.skins.M3ListViewCellSkin;
 import org.glavo.m3fx.internal.theme.M3ThemeMetadata;
+import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -33,8 +34,6 @@ public final class M3ListViewCell<T> extends IndexedCell<T> {
     /// The base style class for M3FX list view cells.
     public static final String STYLE_CLASS = "m3-list-view-cell";
 
-    /// The property key that stores a row item style before copied theme declarations are applied.
-    private static final String BASE_STYLE_PROPERTY_KEY = M3ListViewCell.class.getName() + ".baseStyle";
 
     /// The pseudo-class used when this virtualized row owns logical keyboard focus.
     private static final PseudoClass FOCUS_VISIBLE_PSEUDO_CLASS = PseudoClass.getPseudoClass("focus-visible");
@@ -50,6 +49,27 @@ public final class M3ListViewCell<T> extends IndexedCell<T> {
 
     /// The factory that produced the currently rendered list item, or null for the built-in renderer.
     private @Nullable Callback<? super T, ? extends M3ListItem> renderedCellFactory;
+
+    /// The row inline style captured before temporary list-view theme context is applied.
+    private @Nullable String capturedThemeBaseStyle;
+
+    /// The row theme metadata captured before temporary list-view theme context is applied.
+    private @Nullable M3Theme capturedTheme;
+
+    /// Whether the row originally had the managed root style class.
+    private boolean capturedRootStyleClass;
+
+    /// Whether the row originally had the managed baseline profile style class.
+    private boolean capturedBaselineProfileStyleClass;
+
+    /// Whether the row originally had the managed expressive profile style class.
+    private boolean capturedExpressiveProfileStyleClass;
+
+    /// Whether the row originally had the managed light brightness style class.
+    private boolean capturedLightBrightnessStyleClass;
+
+    /// Whether the row originally had the managed dark brightness style class.
+    private boolean capturedDarkBrightnessStyleClass;
 
     /// Routes list item actions back into the list view selection policy.
     private final EventHandler<ActionEvent> itemActionHandler = this::handleItemAction;
@@ -118,6 +138,7 @@ public final class M3ListViewCell<T> extends IndexedCell<T> {
         } else {
             itemNode = createListItem(item, factory);
             setListItem(itemNode);
+            copyThemeContext(itemNode);
             renderedItem = item;
             renderedCellFactory = factory;
         }
@@ -184,41 +205,97 @@ public final class M3ListViewCell<T> extends IndexedCell<T> {
                 && Double.compare(itemNode.getMaxWidth(), Double.MAX_VALUE) != 0) {
             itemNode.setMaxWidth(Double.MAX_VALUE);
         }
-        copyThemeContext(itemNode);
         return itemNode;
     }
 
     /// Copies the current list view theme context into a virtualized row for early CSS passes.
     private void copyThemeContext(M3ListItem itemNode) {
-        preserveBaseStyle(itemNode);
+        restoreThemeContext();
+        captureThemeContext(itemNode);
         @Nullable Parent themeRoot = M3ThemeResolver.findThemeRoot(getListView());
         if (themeRoot != null) {
             M3ThemeManager.copyThemeContext(themeRoot, itemNode);
         } else {
-            clearThemeContext(itemNode);
+            M3ThemeManager.clearThemeStyleClasses(itemNode);
+            M3ThemeMetadata.clearTheme(itemNode);
         }
     }
 
-    /// Preserves the row item style that existed before copied theme declarations were applied.
-    private static void preserveBaseStyle(M3ListItem itemNode) {
-        if (!itemNode.getProperties().containsKey(BASE_STYLE_PROPERTY_KEY)) {
-            itemNode.getProperties().put(BASE_STYLE_PROPERTY_KEY, itemNode.getStyle());
-        }
+    /// Captures application-owned theme state before this cell temporarily overrides it.
+    private void captureThemeContext(M3ListItem itemNode) {
+        capturedThemeBaseStyle = itemNode.getStyle();
+        capturedTheme = M3ThemeMetadata.getTheme(itemNode);
+        capturedRootStyleClass = itemNode.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS);
+        capturedBaselineProfileStyleClass =
+                itemNode.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS);
+        capturedExpressiveProfileStyleClass =
+                itemNode.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS);
+        capturedLightBrightnessStyleClass =
+                itemNode.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS);
+        capturedDarkBrightnessStyleClass =
+                itemNode.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS);
     }
 
-    /// Clears copied theme metadata and restores the row item base style.
-    private static void clearThemeContext(M3ListItem itemNode) {
-        M3ThemeManager.clearThemeStyleClasses(itemNode);
-        M3ThemeMetadata.clearTheme(itemNode);
-        Object baseStyleValue = itemNode.getProperties().get(BASE_STYLE_PROPERTY_KEY);
-        itemNode.setStyle(baseStyleValue instanceof String baseStyle ? baseStyle : "");
+    /// Restores application-owned theme state before the current row is released or refreshed.
+    private void restoreThemeContext() {
+        @Nullable M3ListItem itemNode = listItem;
+        @Nullable String baseStyle = capturedThemeBaseStyle;
+        if (itemNode == null || baseStyle == null) {
+            return;
+        }
+
+        itemNode.setStyle(baseStyle);
+        restoreStyleClass(itemNode, M3ThemeManager.ROOT_STYLE_CLASS, capturedRootStyleClass);
+        restoreStyleClass(
+                itemNode,
+                M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS,
+                capturedBaselineProfileStyleClass
+        );
+        restoreStyleClass(
+                itemNode,
+                M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS,
+                capturedExpressiveProfileStyleClass
+        );
+        restoreStyleClass(
+                itemNode,
+                M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS,
+                capturedLightBrightnessStyleClass
+        );
+        restoreStyleClass(
+                itemNode,
+                M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS,
+                capturedDarkBrightnessStyleClass
+        );
+        @Nullable M3Theme originalTheme = capturedTheme;
+        if (originalTheme == null) {
+            M3ThemeMetadata.clearTheme(itemNode);
+        } else {
+            M3ThemeMetadata.setTheme(itemNode, originalTheme);
+        }
+        capturedThemeBaseStyle = null;
+        capturedTheme = null;
+    }
+
+    /// Restores one managed style class to its captured presence.
+    private static void restoreStyleClass(M3ListItem itemNode, String styleClass, boolean present) {
+        if (present) {
+            if (!itemNode.getStyleClass().contains(styleClass)) {
+                itemNode.getStyleClass().add(styleClass);
+            }
+        } else {
+            itemNode.getStyleClass().remove(styleClass);
+        }
     }
 
     /// Replaces the rendered list item and updates event handlers.
     private void setListItem(@Nullable M3ListItem listItem) {
+        if (this.listItem == listItem) {
+            return;
+        }
         if (this.listItem != null) {
             this.listItem.removeEventHandler(ActionEvent.ACTION, itemActionHandler);
         }
+        restoreThemeContext();
         this.listItem = listItem;
         if (listItem != null) {
             listItem.addEventHandler(ActionEvent.ACTION, itemActionHandler);

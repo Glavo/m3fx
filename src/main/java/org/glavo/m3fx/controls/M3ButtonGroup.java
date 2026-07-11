@@ -300,7 +300,7 @@ public class M3ButtonGroup extends Control {
 
     /// Adds base style classes and child list listeners.
     private void initialize() {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         updateVariantStyle();
         updateSizeStyle();
         setAccessibleRole(AccessibleRole.TOOL_BAR);

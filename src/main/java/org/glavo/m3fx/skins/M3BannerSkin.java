@@ -73,7 +73,7 @@ public final class M3BannerSkin extends SkinBase<M3Banner> {
         updateActions();
         updateTokenStyles();
         container.getChildren().setAll(iconSlot, textLabel, actions);
-        getChildren().add(container);
+        getChildren().setAll(container);
     }
 
     /// Removes listeners, bindings, and child references before disposal.
@@ -91,6 +91,7 @@ public final class M3BannerSkin extends SkinBase<M3Banner> {
         actions.getChildren().clear();
         iconSlot.getChildren().clear();
         container.getChildren().clear();
+        getChildren().remove(container);
         super.dispose();
     }
 

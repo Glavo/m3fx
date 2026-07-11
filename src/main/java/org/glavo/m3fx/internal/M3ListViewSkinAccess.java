@@ -38,7 +38,7 @@ public final class M3ListViewSkinAccess {
     public static void unregister(M3ListView<?> listView, Access access) {
         Objects.requireNonNull(listView, "listView");
         Objects.requireNonNull(access, "access");
-        if (listView.getProperties().get(ACCESS_KEY) == access) {
+        if (listView.hasProperties() && listView.getProperties().get(ACCESS_KEY) == access) {
             listView.getProperties().remove(ACCESS_KEY);
         }
     }
@@ -142,7 +142,11 @@ public final class M3ListViewSkinAccess {
 
     /// Returns the registered skin accessor for a list view.
     private static @Nullable Access access(M3ListView<?> listView) {
-        Object value = Objects.requireNonNull(listView, "listView").getProperties().get(ACCESS_KEY);
+        M3ListView<?> checkedListView = Objects.requireNonNull(listView, "listView");
+        if (!checkedListView.hasProperties()) {
+            return null;
+        }
+        Object value = checkedListView.getProperties().get(ACCESS_KEY);
         return value instanceof Access access ? access : null;
     }
 

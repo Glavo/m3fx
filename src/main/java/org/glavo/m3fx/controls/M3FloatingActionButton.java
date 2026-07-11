@@ -286,7 +286,7 @@ public class M3FloatingActionButton extends ButtonBase {
 
     /// Adds base style classes and applies token-driven metrics.
     private void initialize() {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.BUTTON);
         setAlignment(Pos.CENTER);
         setFocusTraversable(true);

@@ -50,7 +50,9 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListViewCell<T>> {
         M3ListViewCell<T> cell = getSkinnable();
         cell.graphicProperty().removeListener(graphicListener);
         cell.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
-        getChildren().clear();
+        if (cell.getSkin() == null || cell.getSkin() == this) {
+            getChildren().clear();
+        }
         graphic = null;
         super.dispose();
     }
@@ -217,12 +219,11 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListViewCell<T>> {
             return;
         }
 
-        if (oldGraphic != null) {
-            getChildren().remove(oldGraphic);
-        }
         this.graphic = graphic;
-        if (graphic != null) {
-            getChildren().add(graphic);
+        if (graphic == null) {
+            getChildren().clear();
+        } else {
+            getChildren().setAll(graphic);
         }
         getSkinnable().requestLayout();
     }

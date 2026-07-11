@@ -92,8 +92,26 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
     /// Whether the AM and PM cells are currently attached to the period row.
     private boolean periodCellsAttached;
 
-    /// Refreshes visible text, style classes, and disabled states after control changes.
-    private final InvalidationListener refreshListener = observable -> refresh();
+    /// Cached selectable-state values for each hour of the day.
+    private final boolean[] selectableHours = new boolean[24];
+
+    /// Whether at least one selectable time exists before noon.
+    private boolean amSelectable;
+
+    /// Whether at least one selectable time exists at or after noon.
+    private boolean pmSelectable;
+
+    /// Refreshes selected values and candidate times after the current value changes.
+    private final InvalidationListener valueInvalidation = observable -> refreshValue();
+
+    /// Rebuilds active grids and availability after clock-mode or minute-step changes.
+    private final InvalidationListener structureInvalidation = observable -> refreshAll();
+
+    /// Recomputes availability after selectable time bounds change.
+    private final InvalidationListener boundsInvalidation = observable -> refreshAll();
+
+    /// Whether hour and period availability has been initialized.
+    private boolean availabilityInitialized;
 
     /// Creates a time picker skin.
     public M3TimePickerSkin(M3TimePicker control) {
@@ -104,19 +122,19 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
         pmPeriodCell.getStyleClass().add("m3-time-picker-period-end");
         initializeNodes();
         installListeners(control);
-        getChildren().add(container);
-        refresh();
+        getChildren().setAll(container);
+        refreshAll();
     }
 
     /// Removes listeners before the skin is disposed.
     @Override
     public void dispose() {
         M3TimePicker control = getSkinnable();
-        control.valueProperty().removeListener(refreshListener);
-        control.use24HourClockProperty().removeListener(refreshListener);
-        control.minuteStepProperty().removeListener(refreshListener);
-        control.minTimeProperty().removeListener(refreshListener);
-        control.maxTimeProperty().removeListener(refreshListener);
+        control.valueProperty().removeListener(valueInvalidation);
+        control.use24HourClockProperty().removeListener(structureInvalidation);
+        control.minuteStepProperty().removeListener(structureInvalidation);
+        control.minTimeProperty().removeListener(boundsInvalidation);
+        control.maxTimeProperty().removeListener(boundsInvalidation);
         container.nodeOrientationProperty().unbind();
         display.nodeOrientationProperty().unbind();
         display.alignmentProperty().unbind();
@@ -126,6 +144,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
         hourGrid.nodeOrientationProperty().unbind();
         minuteGrid.nodeOrientationProperty().unbind();
         periodRow.nodeOrientationProperty().unbind();
+        getChildren().remove(container);
         super.dispose();
     }
 
@@ -217,34 +236,87 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
 
     /// Installs listeners that keep the skin synchronized with control state.
     private void installListeners(M3TimePicker control) {
-        control.valueProperty().addListener(refreshListener);
-        control.use24HourClockProperty().addListener(refreshListener);
-        control.minuteStepProperty().addListener(refreshListener);
-        control.minTimeProperty().addListener(refreshListener);
-        control.maxTimeProperty().addListener(refreshListener);
+        control.valueProperty().addListener(valueInvalidation);
+        control.use24HourClockProperty().addListener(structureInvalidation);
+        control.minuteStepProperty().addListener(structureInvalidation);
+        control.minTimeProperty().addListener(boundsInvalidation);
+        control.maxTimeProperty().addListener(boundsInvalidation);
     }
 
-    /// Updates visible labels, selectable cells, and disabled states.
-    private void refresh() {
+    /// Updates every visible value, grid structure, and selectable-state calculation.
+    private void refreshAll() {
         M3TimePicker control = getSkinnable();
         @Nullable LocalTime selectedTime = control.getValue();
         LocalTime baseTime = selectedTime == null ? fallbackTime(control) : selectedTime;
 
-        hourDisplay.setText(selectedTime == null ? "--" : formatHour(selectedTime, control.isUse24HourClock()));
-        minuteDisplay.setText(selectedTime == null ? "--" : formatTwoDigits(selectedTime.getMinute()));
-        periodDisplay.setText(control.isUse24HourClock() || selectedTime == null
-                ? ""
-                : selectedTime.getHour() < 12 ? "AM" : "PM");
-        periodDisplay.setManaged(!periodDisplay.getText().isEmpty());
-        periodDisplay.setVisible(!periodDisplay.getText().isEmpty());
+        refreshAvailability(control);
+        refreshDisplay(control, selectedTime);
+        refreshHourGrid(control, baseTime, selectedTime);
+        refreshMinuteGrid(control, baseTime, selectedTime);
+        refreshPeriodRow(control, baseTime, selectedTime);
+        availabilityInitialized = true;
+    }
 
+    /// Updates value-dependent cell state while retaining availability that is independent of the value.
+    private void refreshValue() {
+        if (!availabilityInitialized) {
+            refreshAll();
+            return;
+        }
+        M3TimePicker control = getSkinnable();
+        @Nullable LocalTime selectedTime = control.getValue();
+        LocalTime baseTime = selectedTime == null ? fallbackTime(control) : selectedTime;
+
+        refreshDisplay(control, selectedTime);
         refreshHourGrid(control, baseTime, selectedTime);
         refreshMinuteGrid(control, baseTime, selectedTime);
         refreshPeriodRow(control, baseTime, selectedTime);
     }
 
+    /// Recomputes hour and period availability after range or minute-step changes.
+    private void refreshAvailability(M3TimePicker control) {
+        boolean selectableBeforeNoon = false;
+        boolean selectableAfterNoon = false;
+        for (int hour = 0; hour < selectableHours.length; hour++) {
+            boolean selectable = hourHasSelectableMinute(control, hour);
+            selectableHours[hour] = selectable;
+            if (hour < 12) {
+                selectableBeforeNoon |= selectable;
+            } else {
+                selectableAfterNoon |= selectable;
+            }
+        }
+        amSelectable = selectableBeforeNoon;
+        pmSelectable = selectableAfterNoon;
+    }
+
+    /// Updates selected-time display labels without rewriting unchanged properties.
+    private void refreshDisplay(M3TimePicker control, @Nullable LocalTime selectedTime) {
+        String hourText = selectedTime == null ? "--" : formatHour(selectedTime, control.isUse24HourClock());
+        String minuteText = selectedTime == null ? "--" : formatTwoDigits(selectedTime.getMinute());
+        String periodText = control.isUse24HourClock() || selectedTime == null
+                ? ""
+                : selectedTime.getHour() < 12 ? "AM" : "PM";
+        if (!hourText.equals(hourDisplay.getText())) {
+            hourDisplay.setText(hourText);
+        }
+        if (!minuteText.equals(minuteDisplay.getText())) {
+            minuteDisplay.setText(minuteText);
+        }
+        if (!periodText.equals(periodDisplay.getText())) {
+            periodDisplay.setText(periodText);
+        }
+        boolean periodVisible = !periodText.isEmpty();
+        periodDisplay.setManaged(periodVisible);
+        periodDisplay.setVisible(periodVisible);
+    }
+
     /// Updates the reusable hour grid for the active clock mode.
-    private void refreshHourGrid(M3TimePicker control, LocalTime baseTime, @Nullable LocalTime selectedTime) {
+    private void refreshHourGrid(
+            M3TimePicker control,
+            LocalTime baseTime,
+            @Nullable LocalTime selectedTime
+    ) {
         if (control.isUse24HourClock()) {
             ensureGridCells(hourGrid, hourCells, 24, TWENTY_FOUR_HOUR_COLUMNS, M3TimePicker.HOUR_CELL_STYLE_CLASS);
             for (int hour = 0; hour < 24; hour++) {
@@ -254,7 +326,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
                         formatTwoDigits(hour),
                         candidate,
                         selectedTime != null && selectedTime.getHour() == hour,
-                        !hourHasSelectableMinute(control, hour)
+                        !selectableHours[hour]
                 );
             }
         } else {
@@ -269,7 +341,7 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
                         Integer.toString(displayHour),
                         candidate,
                         selectedTime != null && toDisplayHour(selectedTime.getHour()) == displayHour,
-                        !hourHasSelectableMinute(control, actualHour)
+                        !selectableHours[actualHour]
                 );
             }
         }
@@ -294,7 +366,11 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
     }
 
     /// Updates the reusable AM/PM row for 12-hour mode.
-    private void refreshPeriodRow(M3TimePicker control, LocalTime baseTime, @Nullable LocalTime selectedTime) {
+    private void refreshPeriodRow(
+            M3TimePicker control,
+            LocalTime baseTime,
+            @Nullable LocalTime selectedTime
+    ) {
         periodRow.setManaged(!control.isUse24HourClock());
         periodRow.setVisible(!control.isUse24HourClock());
         if (control.isUse24HourClock()) {
@@ -313,8 +389,20 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
         boolean afternoon = selectedTime == null ? baseTime.getHour() >= 12 : selectedTime.getHour() >= 12;
         LocalTime amTime = baseTime.withHour(toActualHour(toDisplayHour(baseTime.getHour()), false));
         LocalTime pmTime = baseTime.withHour(toActualHour(toDisplayHour(baseTime.getHour()), true));
-        updateCell(amPeriodCell, "AM", amTime, !afternoon, periodHasNoSelectableTime(control, false));
-        updateCell(pmPeriodCell, "PM", pmTime, afternoon, periodHasNoSelectableTime(control, true));
+        updateCell(
+                amPeriodCell,
+                "AM",
+                amTime,
+                !afternoon,
+                !amSelectable
+        );
+        updateCell(
+                pmPeriodCell,
+                "PM",
+                pmTime,
+                afternoon,
+                !pmSelectable
+        );
     }
 
     /// Ensures that a grid has the requested reusable cell set and placement.
@@ -385,18 +473,6 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
             }
         }
         return false;
-    }
-
-    /// Returns whether AM or PM contains no selectable time.
-    private boolean periodHasNoSelectableTime(M3TimePicker control, boolean afternoon) {
-        int startHour = afternoon ? 12 : 0;
-        int endHour = afternoon ? 24 : 12;
-        for (int hour = startHour; hour < endHour; hour++) {
-            if (hourHasSelectableMinute(control, hour)) {
-                return false;
-            }
-        }
-        return true;
     }
 
     /// Returns a fallback time used when no value is selected.

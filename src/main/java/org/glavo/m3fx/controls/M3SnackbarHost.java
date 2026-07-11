@@ -106,7 +106,7 @@ public class M3SnackbarHost extends Control {
 
     /// Creates an empty snackbar host.
     public M3SnackbarHost() {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusCurrentAccessibleNode, this::showAccessibleSnackbar);

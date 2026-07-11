@@ -3,7 +3,6 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.animation.PauseTransition;
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
@@ -29,10 +28,9 @@ import org.glavo.m3fx.internal.M3FocusTraversal;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
-import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3ObservableLists;
-import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.M3TypeAheadState;
 import org.glavo.m3fx.skins.M3ListPaneSkin;
 import org.glavo.m3fx.internal.M3KeyEvents;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -120,15 +118,8 @@ public class M3ListPane extends Control {
     /// Handles list item actions by applying the configured selection policy.
     private final EventHandler<ActionEvent> itemActionHandler = this::handleItemAction;
 
-    /// The current printable-key prefix used for list type-ahead focus navigation.
-    private final StringBuilder typeAheadBuffer = new StringBuilder();
-
-    /// Clears the type-ahead prefix after the user stops typing.
-    private final PauseTransition typeAheadResetDelay = new PauseTransition();
-
-    /// Updates type-ahead timing when runtime motion settings change.
-    private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(this, this::refreshMotionSettings);
+    /// The lazily activated printable-key prefix used for list type-ahead focus navigation.
+    private final M3TypeAheadState typeAheadState = new M3TypeAheadState(this);
 
     /// Updates item listeners and selection when children change.
     private final ListChangeListener<Node> childrenListener = change -> {
@@ -145,7 +136,7 @@ public class M3ListPane extends Control {
                 }
             }
         }
-        clearTypeAheadBuffer();
+        typeAheadState.clear();
         enforceSelectionPolicy();
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
@@ -412,7 +403,7 @@ public class M3ListPane extends Control {
 
     /// Adds base style classes and installs child listeners.
     private void initialize() {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.LIST_VIEW);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleSelectionTarget, this::showAccessibleItem);
@@ -422,19 +413,9 @@ public class M3ListPane extends Control {
         focusNotifier.start();
         sceneProperty().addListener((observable, oldScene, newScene) -> {
             if (newScene == null) {
-                clearTypeAheadBuffer();
+                typeAheadState.clear();
             }
         });
-        typeAheadResetDelay.setOnFinished(event -> clearTypeAheadBuffer());
-    }
-
-    /// Applies changed runtime motion settings to the type-ahead reset delay.
-    private void refreshMotionSettings() {
-        M3Animation.updatePauseDuration(
-                typeAheadResetDelay,
-                M3Animation.motionBehavior(this).typeAheadResetDelay(),
-                !typeAheadBuffer.isEmpty()
-        );
     }
 
     /// Applies keyboard navigation across enabled list items.
@@ -505,14 +486,11 @@ public class M3ListPane extends Control {
         }
 
         String normalizedCharacter = M3SelectionNavigation.normalizeTypeAheadText(character);
-        typeAheadBuffer.append(normalizedCharacter);
-        typeAheadResetDelay.setDuration(M3Animation.motionBehavior(this).typeAheadResetDelay());
-        typeAheadResetDelay.playFromStart();
-        @Nullable M3ListItem target = typeAheadTarget(typeAheadBuffer.toString());
-        if (target == null && typeAheadBuffer.length() > 1) {
-            clearTypeAheadBuffer();
-            typeAheadBuffer.append(normalizedCharacter);
-            target = typeAheadTarget(typeAheadBuffer.toString());
+        typeAheadState.append(normalizedCharacter);
+        @Nullable M3ListItem target = typeAheadTarget(typeAheadState.getPrefix());
+        if (target == null && typeAheadState.length() > 1) {
+            typeAheadState.replace(normalizedCharacter);
+            target = typeAheadTarget(typeAheadState.getPrefix());
         }
         if (target == null) {
             return;
@@ -523,12 +501,6 @@ public class M3ListPane extends Control {
             select(target);
         }
         event.consume();
-    }
-
-    /// Clears buffered type-ahead text and stops the pending reset timer.
-    private void clearTypeAheadBuffer() {
-        typeAheadBuffer.setLength(0);
-        typeAheadResetDelay.stop();
     }
 
     /// Returns the next enabled visible list item matching the normalized type-ahead prefix.
@@ -655,7 +627,7 @@ public class M3ListPane extends Control {
 
     /// Keeps selection and accessibility state consistent when an item becomes unreachable.
     private void handleItemReachabilityChanged(M3ListItem item) {
-        clearTypeAheadBuffer();
+        typeAheadState.clear();
         if (item.isSelected() && !isSelectableListItem(item)) {
             setItemSelected(item, false);
         }
@@ -735,6 +707,8 @@ public class M3ListPane extends Control {
         if (selectionChanged) {
             selectedItems.setAll(selectedItemsScratch);
         }
+        selectedItemsScratch.clear();
+
         selectedItem.set(selectedItems.isEmpty() ? null : selectedItems.get(0));
         if (selectionChanged) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);

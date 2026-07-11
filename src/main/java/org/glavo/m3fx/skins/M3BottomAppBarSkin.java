@@ -63,7 +63,7 @@ public final class M3BottomAppBarSkin extends SkinBase<M3BottomAppBar> {
         updateActions();
         updateFloatingAction(control.getFloatingAction());
         updateLayoutState();
-        getChildren().addAll(actions, floatingActionSlot);
+        getChildren().setAll(actions, floatingActionSlot);
     }
 
     /// Removes listeners and child references before disposal.
@@ -79,6 +79,7 @@ public final class M3BottomAppBarSkin extends SkinBase<M3BottomAppBar> {
         actions.spacingProperty().unbind();
         clearActionSlots();
         floatingActionSlot.getChildren().clear();
+        getChildren().removeAll(actions, floatingActionSlot);
         super.dispose();
     }
 

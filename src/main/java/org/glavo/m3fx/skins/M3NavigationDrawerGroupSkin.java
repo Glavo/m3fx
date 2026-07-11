@@ -98,7 +98,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
         childrenContainer.setSpacing(ITEM_SPACING);
         childrenContainer.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
         childViewport.getChildren().add(childrenContainer);
-        getChildren().addAll(control.getHeaderItem(), childViewport);
+        getChildren().setAll(control.getHeaderItem(), childViewport);
         control.getItems().addListener(itemsListener);
         control.expandedProperty().addListener(expandedListener);
         control.effectiveNodeOrientationProperty().addListener(orientationInvalidation);
@@ -108,15 +108,19 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
     /// Removes listeners and child references before disposal.
     @Override
     public void dispose() {
+        M3NavigationDrawerGroup control = getSkinnable();
         expansionAnimation.stop();
-        getSkinnable().getItems().removeListener(itemsListener);
+        control.getItems().removeListener(itemsListener);
         motionSettingsObserver.dispose();
-        getSkinnable().expandedProperty().removeListener(expandedListener);
-        getSkinnable().effectiveNodeOrientationProperty().removeListener(orientationInvalidation);
+        control.expandedProperty().removeListener(expandedListener);
+        control.effectiveNodeOrientationProperty().removeListener(orientationInvalidation);
         childViewport.nodeOrientationProperty().unbind();
         childrenContainer.nodeOrientationProperty().unbind();
         childrenContainer.getChildren().clear();
         childViewport.getChildren().clear();
+        if (control.getSkin() == null || control.getSkin() == this) {
+            getChildren().clear();
+        }
         super.dispose();
     }
 

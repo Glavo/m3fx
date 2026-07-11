@@ -15,6 +15,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
@@ -93,4 +94,31 @@ final class M3ThemeResolverTest {
 
         assertSame(localRoot, M3ThemeResolver.findThemeRoot(child));
     }
-}
+
+
+    /// Verifies absent theme and motion queries do not allocate properties on the owner chain.
+    @Test
+    void absentThemeQueriesDoNotAllocateNodeProperties() {
+        Pane root = new Pane();
+        Pane child = new Pane();
+        Pane nested = new Pane();
+        root.getChildren().add(child);
+        child.getChildren().add(nested);
+        Scene scene = new Scene(root);
+
+        assertFalse(scene.hasProperties());
+        assertFalse(root.hasProperties());
+        assertFalse(child.hasProperties());
+        assertFalse(nested.hasProperties());
+
+        assertNull(M3ThemeResolver.findTheme(nested));
+        assertNull(M3ThemeResolver.findThemeRoot(nested));
+        M3Animation.defaultEffects(nested);
+        M3Animation.motionBehavior(nested);
+        M3ThemeManager.uninstall(scene);
+
+        assertFalse(scene.hasProperties());
+        assertFalse(root.hasProperties());
+        assertFalse(child.hasProperties());
+        assertFalse(nested.hasProperties());
+    }}

@@ -5,6 +5,7 @@ package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
 import javafx.css.PseudoClass;
+import javafx.geometry.NodeOrientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
@@ -36,7 +37,9 @@ import static org.glavo.m3fx.controls.ControlVisualTestUtils.snapshotImageOnFxTh
 import static org.glavo.m3fx.controls.ControlVisualTestUtils.visualTestColors;
 import static org.glavo.m3fx.controls.ControlVisualTestUtils.writeVisualSnapshot;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -129,6 +132,76 @@ final class M3DateRangePickerTest {
             assertTrue(startCell.getStyleClass().contains(M3DateRangePicker.RANGE_START_DAY_STYLE_CLASS));
             assertTrue(middleCell.getStyleClass().contains(M3DateRangePicker.RANGE_MIDDLE_DAY_STYLE_CLASS));
             assertTrue(endCell.getStyleClass().contains(M3DateRangePicker.RANGE_END_DAY_STYLE_CLASS));
+        });
+    }
+
+    /// Verifies that same-month range, bound, and direction changes preserve reusable cell date mappings.
+    @Test
+    void dateRangePickerSkinAvoidsDateRemappingForStateOnlyChanges() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3DateRangePicker picker = new M3DateRangePicker();
+            picker.setDisplayedMonth(YearMonth.of(2026, 5));
+            Pane root = new Pane(picker);
+            Scene scene = new Scene(root, 420.0, 360.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            picker.resize(360.0, 340.0);
+            picker.layout();
+
+            List<ButtonBase> cells = picker.lookupAll("." + M3DatePicker.DAY_CELL_STYLE_CLASS)
+                    .stream()
+                    .map(node -> assertInstanceOf(ButtonBase.class, node))
+                    .toList();
+            List<Object> dateReferences = cells.stream().map(Node::getUserData).toList();
+
+            picker.setRange(LocalDate.of(2026, 5, 18), LocalDate.of(2026, 5, 22));
+            picker.setMinDate(LocalDate.of(2026, 5, 5));
+            picker.setMaxDate(LocalDate.of(2026, 5, 28));
+            picker.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+
+            for (int index = 0; index < cells.size(); index++) {
+                assertSame(dateReferences.get(index), cells.get(index).getUserData());
+                assertTrue(cells.get(index).getPseudoClassStates().contains(PseudoClass.getPseudoClass("rtl")));
+            }
+            assertTrue(dayCellForDate(picker, LocalDate.of(2026, 5, 20))
+                    .getStyleClass().contains(M3DateRangePicker.RANGE_MIDDLE_DAY_STYLE_CLASS));
+            assertTrue(dayCellForDate(picker, LocalDate.of(2026, 5, 4)).isDisabled());
+
+            Object previousFirstDate = cells.get(0).getUserData();
+            picker.setMaxDate(null);
+            picker.setMinDate(null);
+            picker.setDisplayedMonth(YearMonth.of(2026, 7));
+
+            assertNotSame(previousFirstDate, cells.get(0).getUserData());
+            assertEquals(YearMonth.of(2026, 7), YearMonth.from((LocalDate) cells.get(20).getUserData()));
+        });
+    }
+
+    /// Verifies that replacing a range picker skin detaches selection listeners from the retired cell grid.
+    @Test
+    void dateRangePickerSkinReplacementDetachesRetiredGrid() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3DateRangePicker picker = new M3DateRangePicker(
+                    LocalDate.of(2026, 5, 18),
+                    LocalDate.of(2026, 5, 22)
+            );
+            Pane root = new Pane(picker);
+            Scene scene = new Scene(root, 420.0, 360.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            picker.resize(360.0, 340.0);
+            picker.layout();
+            ButtonBase retiredMiddleCell = dayCellForDate(picker, LocalDate.of(2026, 5, 20));
+            ButtonBase retiredFutureCell = dayCellForDate(picker, LocalDate.of(2026, 5, 25));
+
+            picker.setSkin(new M3DateRangePickerSkin(picker));
+            picker.setRange(LocalDate.of(2026, 5, 24), LocalDate.of(2026, 5, 26));
+            root.applyCss();
+            picker.layout();
+
+            assertTrue(retiredMiddleCell.getStyleClass().contains(M3DateRangePicker.RANGE_MIDDLE_DAY_STYLE_CLASS));
+            assertFalse(retiredFutureCell.getStyleClass().contains(M3DateRangePicker.RANGE_MIDDLE_DAY_STYLE_CLASS));
         });
     }
 

@@ -24,7 +24,7 @@ public final class M3IconSkin extends SkinBase<M3Icon> {
     public M3IconSkin(M3Icon control) {
         super(control);
         initializeGlyph(control);
-        getChildren().add(glyph);
+        getChildren().setAll(glyph);
     }
 
     /// Unbinds glyph properties before disposing this skin.
@@ -34,6 +34,7 @@ public final class M3IconSkin extends SkinBase<M3Icon> {
         glyph.fontProperty().unbind();
         glyph.fillProperty().unbind();
         glyph.underlineProperty().unbind();
+        getChildren().remove(glyph);
         super.dispose();
     }
 

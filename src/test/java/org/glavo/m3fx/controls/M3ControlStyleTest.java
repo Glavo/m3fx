@@ -8,6 +8,7 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
@@ -9819,6 +9820,50 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that stable floating-label geometry is not rewritten for every entered character.
+    @Test
+    void textInputLayoutRetainsStableGeometryObjectsDuringTyping() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3TextField textField = new M3TextField("a");
+            textField.setVariant(M3TextInputVariant.OUTLINED);
+            textField.setPrefWidth(280.0);
+            M3TextInputLayout layout = new M3TextInputLayout(textField, "Project name", "Supporting text");
+            layout.setPrefWidth(280.0);
+
+            StackPane root = new StackPane(layout);
+            Scene scene = new Scene(root, 360.0, 120.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(360.0, 120.0);
+            root.layout();
+
+            Label label = assertInstanceOf(
+                    Label.class,
+                    layout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
+            );
+            Insets inputPadding = textField.getPadding();
+            Insets labelPadding = label.getPadding();
+            Insets labelMargin = Objects.requireNonNull(StackPane.getMargin(label), "floating label margin");
+            AtomicInteger inputPaddingChanges = new AtomicInteger();
+            AtomicInteger labelPaddingChanges = new AtomicInteger();
+            textField.paddingProperty().addListener(observable -> inputPaddingChanges.incrementAndGet());
+            label.paddingProperty().addListener(observable -> labelPaddingChanges.incrementAndGet());
+
+            for (int length = 2; length <= 64; length++) {
+                textField.setText("x".repeat(length));
+            }
+            root.layout();
+
+            assertSame(inputPadding, textField.getPadding());
+            assertSame(labelPadding, label.getPadding());
+            assertSame(labelMargin, StackPane.getMargin(label));
+            assertEquals(0, inputPaddingChanges.get());
+            assertEquals(0, labelPaddingChanges.get());
+            assertTrue(layout.isLabelFloating());
+        });
+    }
+
     /// Verifies that reusable text input validators cover common validation rules.
     @Test
     void textInputValidatorsProvideReusableRules() {
@@ -10212,6 +10257,49 @@ final class M3ControlStyleTest {
 
         M3Tooltip.uninstall(targetWithHelp, restoredTooltip);
         assertEquals("Existing help", targetWithHelp.getAccessibleHelp());
+    }
+
+    /// Verifies that uninstalling a replaced tooltip cannot tear down the current node installation.
+    @Test
+    void tooltipReplacementRetainsCurrentInstallationOwnership() {
+        FxTestUtils.runOnFxThread(() -> {
+            Label target = new Label("Target");
+            target.setAccessibleHelp("Existing help");
+            Pane root = new Pane(target);
+            M3Theme baselineTheme = M3Theme.defaultTheme();
+            M3Theme expressiveTheme = M3Theme.fromSeed(
+                    Color.web("#006a6a"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.DARK
+            );
+            M3ThemeManager.install(root, baselineTheme);
+            M3Tooltip replacedTooltip = new M3Tooltip("Replaced");
+            M3Tooltip currentTooltip = new M3Tooltip("Current");
+
+            M3Tooltip.install(target, replacedTooltip);
+            M3Tooltip.install(target, currentTooltip);
+
+            assertEquals("Current", target.getAccessibleHelp());
+            assertSame(baselineTheme, currentTooltip.getTheme());
+
+            replacedTooltip.setText("Stale replacement");
+
+            assertEquals("Current", target.getAccessibleHelp());
+
+            M3Tooltip.uninstall(target, replacedTooltip);
+            currentTooltip.setText("Updated current");
+            M3ThemeManager.install(root, expressiveTheme);
+
+            assertEquals("Updated current", target.getAccessibleHelp());
+            assertSame(expressiveTheme, currentTooltip.getTheme());
+
+            M3Tooltip.uninstall(target, currentTooltip);
+
+            assertEquals("Existing help", target.getAccessibleHelp());
+            currentTooltip.setText("Detached current");
+            assertEquals("Existing help", target.getAccessibleHelp());
+            M3ThemeManager.uninstall(root);
+        });
     }
 
     /// Verifies that installed tooltips open from keyboard focus and close from Escape.
@@ -13101,6 +13189,20 @@ final class M3ControlStyleTest {
                 assertTrue(popupRoot.getStylesheets().contains(controlStylesheet));
                 assertTrue(popupRoot.getStylesheets().contains(M3ThemeManager.themeStylesheetUrl(theme)));
 
+                AtomicInteger stylesheetChanges = new AtomicInteger();
+                AtomicInteger styleClassChanges = new AtomicInteger();
+                popupRoot.getStylesheets().addListener(
+                        (ListChangeListener<String>) change -> stylesheetChanges.incrementAndGet()
+                );
+                popupRoot.getStyleClass().addListener(
+                        (ListChangeListener<String>) change -> styleClassChanges.incrementAndGet()
+                );
+
+                synchronizer.sync();
+
+                assertEquals(0, stylesheetChanges.get());
+                assertEquals(0, styleClassChanges.get());
+
                 scene.getStylesheets().remove(firstStylesheet);
                 scene.getStylesheets().add(secondStylesheet);
 
@@ -13117,6 +13219,54 @@ final class M3ControlStyleTest {
             } finally {
                 synchronizer.stop();
             }
+        });
+    }
+
+    /// Verifies that popup context observation can restart without retaining stopped listeners or registering duplicates.
+    @Test
+    void popupContextSynchronizerRestartsCleanly() {
+        FxTestUtils.runOnFxThread(() -> {
+            Label owner = new Label("Owner");
+            Pane root = new Pane(owner);
+            Pane popupRoot = new Pane();
+            Scene scene = new Scene(root, 420.0, 220.0);
+            AtomicInteger stylesheetReads = new AtomicInteger();
+            String firstStylesheet = M3Stylesheets.controlStylesheet("button.css");
+            String secondStylesheet = M3Stylesheets.controlStylesheet("text-field.css");
+            M3PopupContextSynchronizer synchronizer = new M3PopupContextSynchronizer(
+                    owner,
+                    popupRoot,
+                    () -> {
+                        stylesheetReads.incrementAndGet();
+                        return scene.getStylesheets();
+                    },
+                    () -> null
+            );
+
+            synchronizer.start();
+            int readsAfterStart = stylesheetReads.get();
+            synchronizer.stop();
+
+            root.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            scene.getStylesheets().add(firstStylesheet);
+
+            assertEquals(readsAfterStart, stylesheetReads.get());
+            assertEquals(NodeOrientation.LEFT_TO_RIGHT, popupRoot.getEffectiveNodeOrientation());
+            assertFalse(popupRoot.getStylesheets().contains(firstStylesheet));
+
+            synchronizer.start();
+            int readsAfterRestart = stylesheetReads.get();
+
+            assertTrue(readsAfterRestart > readsAfterStart);
+            assertEquals(NodeOrientation.RIGHT_TO_LEFT, popupRoot.getEffectiveNodeOrientation());
+            assertTrue(popupRoot.getStylesheets().contains(firstStylesheet));
+
+            scene.getStylesheets().add(secondStylesheet);
+
+            assertEquals(readsAfterRestart + 1, stylesheetReads.get());
+            assertTrue(popupRoot.getStylesheets().contains(secondStylesheet));
+
+            synchronizer.stop();
         });
     }
 
@@ -15281,6 +15431,153 @@ final class M3ControlStyleTest {
                 stage.close();
             }
         });
+    }
+
+    /// Verifies that repeated dismissal calls retain an earlier popup focus-restoration request.
+    @Test
+    void repeatedPopupDismissalPreservesRequestedFocusRestoration() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable VBox> rootReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3MenuButton> menuButtonReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3SubMenuItem> subMenuItemReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3DatePickerField> dateFieldReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3DateRangePickerField> rangeFieldReference = new AtomicReference<>();
+
+        try {
+            FxTestUtils.runOnFxThread(() -> {
+                M3SubMenuItem subMenuItem = new M3SubMenuItem("Export", new M3MenuItem("PDF"));
+                M3MenuButton menuButton = new M3MenuButton("More", subMenuItem);
+                M3DatePickerField dateField = new M3DatePickerField();
+                M3DateRangePickerField rangeField = new M3DateRangePickerField();
+                VBox root = new VBox(12.0, menuButton, dateField, rangeField);
+                Stage stage = new Stage();
+
+                M3MotionSettings.setAnimationsEnabled(root, true);
+                stage.setScene(new Scene(root, 520.0, 360.0));
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                stageReference.set(stage);
+                rootReference.set(root);
+                menuButtonReference.set(menuButton);
+                subMenuItemReference.set(subMenuItem);
+                dateFieldReference.set(dateField);
+                rangeFieldReference.set(rangeField);
+            });
+
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> {
+                        @Nullable M3MenuButton menuButton = menuButtonReference.get();
+                        @Nullable M3SubMenuItem subMenuItem = subMenuItemReference.get();
+                        return menuButton != null
+                                && subMenuItem != null
+                                && menuButton.isShowing()
+                                && !subMenuItem.isSubMenuShowing()
+                                && subMenuItem.isFocused();
+                    },
+                    () -> {
+                        M3MenuButton menuButton = Objects.requireNonNull(menuButtonReference.get(), "menuButton");
+                        M3SubMenuItem subMenuItem =
+                                Objects.requireNonNull(subMenuItemReference.get(), "subMenuItem");
+                        menuButton.showMenu();
+                        subMenuItem.showSubMenu();
+                        subMenuItem.executeAccessibleAction(AccessibleAction.COLLAPSE);
+                        subMenuItem.hideSubMenu();
+                    },
+                    () -> {
+                        M3MenuButton menuButton = Objects.requireNonNull(menuButtonReference.get(), "menuButton");
+                        M3SubMenuItem subMenuItem =
+                                Objects.requireNonNull(subMenuItemReference.get(), "subMenuItem");
+                        assertTrue(menuButton.isShowing());
+                        assertFalse(subMenuItem.isSubMenuShowing());
+                        assertTrue(subMenuItem.isFocused());
+                    }
+            );
+
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> {
+                        @Nullable M3MenuButton menuButton = menuButtonReference.get();
+                        return menuButton != null && !menuButton.isShowing() && menuButton.isFocused();
+                    },
+                    () -> {
+                        M3MenuButton menuButton = Objects.requireNonNull(menuButtonReference.get(), "menuButton");
+                        menuButton.executeAccessibleAction(AccessibleAction.COLLAPSE);
+                        menuButton.hideMenu();
+                    },
+                    () -> {
+                        M3MenuButton menuButton = Objects.requireNonNull(menuButtonReference.get(), "menuButton");
+                        assertFalse(menuButton.isShowing());
+                        assertTrue(menuButton.isFocused());
+                    }
+            );
+
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> {
+                        @Nullable M3DatePickerField dateField = dateFieldReference.get();
+                        return dateField != null && !dateField.isShowing() && dateField.getEditor().isFocused();
+                    },
+                    () -> {
+                        M3DatePickerField dateField =
+                                Objects.requireNonNull(dateFieldReference.get(), "dateField");
+                        dateField.showPicker();
+                        dateField.executeAccessibleAction(AccessibleAction.COLLAPSE);
+                        dateField.hidePicker();
+                    },
+                    () -> {
+                        M3DatePickerField dateField =
+                                Objects.requireNonNull(dateFieldReference.get(), "dateField");
+                        assertFalse(dateField.isShowing());
+                        assertTrue(dateField.getEditor().isFocused());
+                    }
+            );
+
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> {
+                        @Nullable M3DateRangePickerField rangeField = rangeFieldReference.get();
+                        return rangeField != null
+                                && !rangeField.isShowing()
+                                && rangeField.getEndEditor().isFocused();
+                    },
+                    () -> {
+                        M3DateRangePickerField rangeField =
+                                Objects.requireNonNull(rangeFieldReference.get(), "rangeField");
+                        rangeField.getEndEditor().requestFocus();
+                        rangeField.showPicker();
+                        rangeField.executeAccessibleAction(AccessibleAction.COLLAPSE);
+                        rangeField.hidePicker();
+                    },
+                    () -> {
+                        M3DateRangePickerField rangeField =
+                                Objects.requireNonNull(rangeFieldReference.get(), "rangeField");
+                        assertFalse(rangeField.isShowing());
+                        assertTrue(rangeField.getEndEditor().isFocused());
+                    }
+            );
+        } finally {
+            FxTestUtils.runOnFxThread(() -> {
+                @Nullable M3MenuButton menuButton = menuButtonReference.get();
+                if (menuButton != null) {
+                    menuButton.hideMenu();
+                }
+                @Nullable M3DatePickerField dateField = dateFieldReference.get();
+                if (dateField != null) {
+                    dateField.hidePicker();
+                }
+                @Nullable M3DateRangePickerField rangeField = rangeFieldReference.get();
+                if (rangeField != null) {
+                    rangeField.hidePicker();
+                }
+                @Nullable VBox root = rootReference.get();
+                if (root != null) {
+                    M3MotionSettings.clearAnimationsEnabled(root);
+                }
+                @Nullable Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
     }
 
     /// Verifies that submenu actions close the owning popup menu and return focus to the menu button.
@@ -21147,6 +21444,112 @@ final class M3ControlStyleTest {
         assertEquals("First", listView.getSelectedItem());
     }
 
+    /// Verifies that virtualized list multi-selection stays sorted without redundant observable-list changes.
+    @Test
+    void listViewMaintainsSortedSelectionWithOneChangePerMutation() {
+        M3ListView<String> listView = listView("Zero", "One", "Two", "Three", "Four");
+        listView.setSelectionMode(M3ListSelectionMode.MULTIPLE);
+        AtomicInteger selectionChangeCount = new AtomicInteger();
+        listView.getSelectedIndices().addListener(
+                (javafx.collections.ListChangeListener<Integer>) change -> selectionChangeCount.incrementAndGet()
+        );
+
+        listView.selectIndex(4);
+        listView.selectIndex(1);
+        listView.selectIndex(3);
+        listView.selectIndex(3);
+
+        assertEquals(java.util.List.of(1, 3, 4), listView.getSelectedIndices());
+        assertEquals(java.util.List.of("One", "Three", "Four"), listView.getSelectedItems());
+        assertEquals(3, selectionChangeCount.get());
+
+        listView.clearSelection(3);
+        listView.clearSelection(3);
+
+        assertEquals(java.util.List.of(1, 4), listView.getSelectedIndices());
+        assertEquals(4, selectionChangeCount.get());
+    }
+
+    /// Verifies that selection and focus follow surviving rows across backing-list structural changes.
+    @Test
+    void listViewRemapsSelectionAndFocusAcrossStructuralChanges() {
+        M3ListView<String> listView = listView("Alpha", "Beta", "Gamma", "Delta");
+        listView.setSelectionMode(M3ListSelectionMode.MULTIPLE);
+        listView.selectIndex(1);
+        listView.selectIndex(3);
+        listView.focusIndex(2);
+
+        listView.getItems().add(0, "New");
+
+        assertEquals(java.util.List.of(2, 4), listView.getSelectedIndices());
+        assertEquals(java.util.List.of("Beta", "Delta"), listView.getSelectedItems());
+        assertEquals(3, listView.getFocusedIndex());
+        assertEquals("Gamma", listView.getFocusedItem());
+
+        listView.getItems().remove(1);
+
+        assertEquals(java.util.List.of(1, 3), listView.getSelectedIndices());
+        assertEquals(java.util.List.of("Beta", "Delta"), listView.getSelectedItems());
+        assertEquals(2, listView.getFocusedIndex());
+        assertEquals("Gamma", listView.getFocusedItem());
+
+        String replacementBeta = new String(new char[]{'B', 'e', 't', 'a'});
+        listView.getItems().set(1, replacementBeta);
+
+        assertSame(replacementBeta, listView.getSelectedItem());
+        assertSame(replacementBeta, listView.getSelectedItems().get(0));
+
+        listView.getItems().set(2, "Updated Gamma");
+
+        assertEquals(2, listView.getFocusedIndex());
+        assertEquals("Updated Gamma", listView.getFocusedItem());
+
+        listView.getItems().sort(java.util.Comparator.reverseOrder());
+
+        assertEquals(java.util.List.of(2, 3), listView.getSelectedIndices());
+        assertEquals(java.util.List.of("Delta", "Beta"), listView.getSelectedItems());
+        assertEquals(0, listView.getFocusedIndex());
+        assertEquals("Updated Gamma", listView.getFocusedItem());
+
+        listView.getItems().remove(0);
+
+        assertEquals(java.util.List.of(1, 2), listView.getSelectedIndices());
+        assertEquals(java.util.List.of("Delta", "Beta"), listView.getSelectedItems());
+        assertEquals(-1, listView.getFocusedIndex());
+        assertNull(listView.getFocusedItem());
+    }
+
+    /// Verifies that natural-order sorting emits a stable permutation for duplicate data values.
+    @Test
+    void listViewTracksStableNaturalOrderPermutations() {
+        M3ListView<String> listView = listView("Beta", "Alpha", "Alpha");
+        listView.setSelectionMode(M3ListSelectionMode.MULTIPLE);
+        listView.selectIndex(0);
+        listView.selectIndex(2);
+        listView.focusIndex(1);
+        AtomicInteger permutationCount = new AtomicInteger();
+        listView.getItems().addListener((javafx.collections.ListChangeListener<String>) change -> {
+            while (change.next()) {
+                if (change.wasPermutated()) {
+                    permutationCount.incrementAndGet();
+                }
+            }
+        });
+
+        listView.getItems().sort(null);
+
+        assertEquals(java.util.List.of("Alpha", "Alpha", "Beta"), listView.getItems());
+        assertEquals(1, permutationCount.get());
+        assertEquals(java.util.List.of(1, 2), listView.getSelectedIndices());
+        assertEquals(java.util.List.of("Alpha", "Beta"), listView.getSelectedItems());
+        assertEquals(0, listView.getFocusedIndex());
+        assertEquals("Alpha", listView.getFocusedItem());
+
+        listView.getItems().sort(null);
+
+        assertEquals(1, permutationCount.get());
+    }
+
     /// Verifies that variable-height virtual lists keep trailing empty cells bounded and measurable.
     @Test
     void listViewBoundsVariableHeightTrailingCellPool() {
@@ -22071,6 +22474,68 @@ final class M3ControlStyleTest {
 
         assertEquals(java.util.List.of(1), listView.getSelectedIndices());
         assertSame(second, listView.getSelectedItem());
+    }
+
+    /// Verifies that node data items track reachability through changing external ancestor chains.
+    @Test
+    void listViewTracksExternalNodeItemAncestorReachability() {
+        M3ListItem first = new M3ListItem("First");
+        M3ListItem second = new M3ListItem("Second");
+        StackPane firstParent = new StackPane(first);
+        StackPane secondParent = new StackPane();
+        M3ListView<M3ListItem> listView = listView(first, second);
+        listView.setSelectionMode(M3ListSelectionMode.MULTIPLE);
+        listView.selectIndex(0);
+        listView.focusIndex(0);
+
+        firstParent.setVisible(false);
+
+        assertTrue(listView.getSelectedIndices().isEmpty());
+        assertEquals(-1, listView.getFocusedIndex());
+
+        firstParent.setVisible(true);
+        firstParent.getChildren().remove(first);
+        secondParent.getChildren().add(first);
+        listView.selectIndex(0);
+        listView.focusIndex(0);
+
+        secondParent.setDisable(true);
+
+        assertTrue(listView.getSelectedIndices().isEmpty());
+        assertEquals(-1, listView.getFocusedIndex());
+
+        listView.selectIndex(1);
+        listView.focusIndex(1);
+        listView.getItems().remove(first);
+        first.setVisible(false);
+        secondParent.setDisable(false);
+
+        assertEquals(java.util.List.of(0), listView.getSelectedIndices());
+        assertSame(second, listView.getSelectedItem());
+        assertEquals(0, listView.getFocusedIndex());
+        assertSame(second, listView.getFocusedItem());
+    }
+
+    /// Verifies that shared node and ancestor observers remain active until their last data-item reference is removed.
+    @Test
+    void listViewReferenceCountsSharedReachabilityObservers() {
+        M3ListItem sharedItem = new M3ListItem("Shared");
+        M3ListItem sibling = new M3ListItem("Sibling");
+        StackPane sharedParent = new StackPane(sharedItem, sibling);
+        M3ListView<M3ListItem> listView = listView(sharedItem, sharedItem, sibling);
+        listView.setSelectionMode(M3ListSelectionMode.MULTIPLE);
+        listView.selectIndex(1);
+        listView.selectIndex(2);
+
+        listView.getItems().remove(0);
+        sharedItem.setVisible(false);
+
+        assertEquals(java.util.List.of(1), listView.getSelectedIndices());
+        assertSame(sibling, listView.getSelectedItem());
+
+        sharedParent.setDisable(true);
+
+        assertTrue(listView.getSelectedIndices().isEmpty());
     }
 
     /// Verifies that virtualized list page navigation moves by visible rows without wrapping.
@@ -23021,6 +23486,82 @@ final class M3ControlStyleTest {
         }
     }
 
+    /// Verifies that cell recycling restores all application-owned state on factory-provided rows.
+    @Test
+    void listViewCellRestoresFactoryRowThemeStateWhenRecycled() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Theme rowTheme = M3Theme.fromSeed(
+                    Color.web("#006a6a"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.DARK
+            );
+            M3Theme sceneTheme = M3Theme.defaultTheme();
+            M3Theme refreshedSceneTheme = M3Theme.fromSeed(
+                    Color.web("#b3261e"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.LIGHT
+            );
+            M3ListItem firstRow = new M3ListItem("First");
+            M3ListItem secondRow = new M3ListItem("Second");
+            firstRow.setStyle("-fx-opacity: 0.91;");
+            secondRow.setStyle("-fx-opacity: 0.87;");
+            M3ThemeManager.install(firstRow, rowTheme);
+            M3ThemeManager.install(secondRow, rowTheme);
+
+            String firstStyle = firstRow.getStyle();
+            String secondStyle = secondRow.getStyle();
+            List<String> firstStyleClasses = List.copyOf(firstRow.getStyleClass());
+            List<String> secondStyleClasses = List.copyOf(secondRow.getStyleClass());
+            int firstPropertyCount = firstRow.getProperties().size();
+            int secondPropertyCount = secondRow.getProperties().size();
+
+            M3ListView<String> listView = listView("First", "Second");
+            listView.setSelectionMode(M3ListSelectionMode.SINGLE);
+            listView.setCellFactory(value -> value.equals("First") ? firstRow : secondRow);
+            M3ListViewCell<String> cell = new M3ListViewCell<>(listView);
+            Pane root = new Pane(listView, cell);
+            new Scene(root, 480.0, 240.0);
+            M3ThemeManager.install(root, sceneTheme);
+
+            cell.updateIndex(0);
+
+            assertSame(firstRow, cell.getListItem());
+            assertSame(sceneTheme, M3ThemeManager.getTheme(firstRow));
+            assertTrue(firstRow.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
+            assertTrue(firstRow.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
+
+            M3ThemeManager.install(root, refreshedSceneTheme);
+            cell.refreshThemeContext();
+
+            assertSame(refreshedSceneTheme, M3ThemeManager.getTheme(firstRow));
+            assertTrue(firstRow.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
+            assertTrue(firstRow.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
+            firstRow.fire();
+            assertEquals(0, listView.getSelectedIndex());
+            listView.clearSelection();
+
+            cell.updateIndex(1);
+
+            assertSame(secondRow, cell.getListItem());
+            assertSame(refreshedSceneTheme, M3ThemeManager.getTheme(secondRow));
+            assertSame(rowTheme, M3ThemeManager.getTheme(firstRow));
+            assertEquals(firstStyle, firstRow.getStyle());
+            assertEquals(firstStyleClasses, firstRow.getStyleClass());
+            assertEquals(firstPropertyCount, firstRow.getProperties().size());
+            firstRow.fire();
+            assertEquals(-1, listView.getSelectedIndex());
+
+            cell.updateIndex(-1);
+
+            assertNull(cell.getListItem());
+            assertSame(rowTheme, M3ThemeManager.getTheme(secondRow));
+            assertEquals(secondStyle, secondRow.getStyle());
+            assertEquals(secondStyleClasses, secondRow.getStyleClass());
+            assertEquals(secondPropertyCount, secondRow.getProperties().size());
+            secondRow.fire();
+            assertEquals(-1, listView.getSelectedIndex());
+        });
+    }
     /// Verifies that visible virtualized rows follow runtime scene theme changes.
     @Test
     void listViewVisibleRowsReinheritRuntimeSceneThemeChanges() {

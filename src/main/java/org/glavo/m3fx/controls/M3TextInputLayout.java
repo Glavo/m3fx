@@ -64,7 +64,6 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -133,6 +132,10 @@ public class M3TextInputLayout extends Control {
 
     /// The horizontal notch padding used around floating labels.
     private static final double FLOATING_LABEL_HORIZONTAL_PADDING = 4.0;
+
+    /// The shared immutable padding around a floating label.
+    private static final Insets FLOATING_LABEL_PADDING =
+            new Insets(0.0, FLOATING_LABEL_HORIZONTAL_PADDING, 0.0, FLOATING_LABEL_HORIZONTAL_PADDING);
 
     /// The top margin used for filled floating labels.
     private static final double FILLED_FLOATING_LABEL_TOP_MARGIN = 4.0;
@@ -340,7 +343,7 @@ public class M3TextInputLayout extends Control {
                 updateTrailing();
                 if (isValidationActive() && isValidateOnTextChange()) {
                     updateValidation();
-                } else {
+                } else if (isCharacterCounterVisible() || getCharacterLimit() >= 0) {
                     updateInputErrorState();
                     updateSupportingRow();
                 }
@@ -505,6 +508,12 @@ public class M3TextInputLayout extends Control {
     /// Whether label motion has been initialized.
     private boolean labelMotionInitialized = false;
 
+    /// Whether the label currently renders wrapped-input focus state.
+    private boolean labelFocused = false;
+
+    /// Whether the label currently renders visual error state.
+    private boolean labelError = false;
+
     /// The node currently installed in the trailing slot.
     private @Nullable Node installedTrailing = null;
 
@@ -513,6 +522,21 @@ public class M3TextInputLayout extends Control {
 
     /// Whether supporting row motion has been initialized.
     private boolean supportingRowMotionInitialized = false;
+
+    /// The supporting message currently written to its label.
+    private String renderedSupportingMessage = "";
+
+    /// The character counter text currently written to its label.
+    private String renderedCounterText = "";
+
+    /// Whether the supporting message label is currently shown.
+    private boolean supportingMessageVisible = false;
+
+    /// Whether the character counter and spacer are currently shown.
+    private boolean counterVisible = false;
+
+    /// Whether the supporting row currently renders error state.
+    private boolean supportingError = false;
 
     /// Creates an empty text input layout.
     public M3TextInputLayout() {
@@ -717,9 +741,10 @@ public class M3TextInputLayout extends Control {
     /// Clears validator-produced error state without changing the configured validator.
     public final void clearValidation() {
         validationActive.set(false);
-        setValidationErrorText("");
-        updateInputErrorState();
-        updateSupportingRow();
+        if (setValidationErrorText("")) {
+            updateInputErrorState();
+            updateSupportingRow();
+        }
     }
 
     /// Returns whether the configured validator currently contributes an error.
@@ -851,7 +876,7 @@ public class M3TextInputLayout extends Control {
 
     /// Adds base style classes and supporting row children.
     private void initialize() {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
@@ -1027,20 +1052,46 @@ public class M3TextInputLayout extends Control {
         String text = getLabelText();
         boolean visible = input != null && !text.isBlank();
         boolean floating = visible && shouldFloatLabel(input);
+        boolean focused = isInputFocused();
+        boolean error = hasVisualErrorState();
+        boolean textChanged = !text.equals(label.getText());
+        boolean visibilityChanged = labelVisible != visible;
+        boolean floatingChanged = labelFloating != floating;
+        boolean focusChanged = labelFocused != focused;
+        boolean errorChanged = labelError != error;
 
-        label.setText(text);
-        label.setVisible(visible);
-        label.setManaged(visible);
-        StackPane.setAlignment(label, labelAlignment(floating));
-        label.pseudoClassStateChanged(FLOATING_PSEUDO_CLASS, floating);
-        label.pseudoClassStateChanged(FOCUSED_PSEUDO_CLASS, isInputFocused());
-        updateLabelErrorState();
-        updateLabelMotion(visible, floating);
+        if (!textChanged && !visibilityChanged && !floatingChanged && !focusChanged && !errorChanged) {
+            return;
+        }
+        if (textChanged) {
+            label.setText(text);
+        }
+        if (visibilityChanged) {
+            label.setVisible(visible);
+            label.setManaged(visible);
+        }
+        if (floatingChanged || visibilityChanged) {
+            StackPane.setAlignment(label, labelAlignment(floating));
+            label.pseudoClassStateChanged(FLOATING_PSEUDO_CLASS, floating);
+            updateLabelMotion(visible, floating);
+        }
+        if (focusChanged) {
+            label.pseudoClassStateChanged(FOCUSED_PSEUDO_CLASS, focused);
+        }
+        if (errorChanged) {
+            label.pseudoClassStateChanged(ERROR_PSEUDO_CLASS, error);
+        }
         labelFloating = floating;
         labelVisible = visible;
-        updateLabelPadding();
-        updateInputPadding();
-        updateOutlineState();
+        labelFocused = focused;
+        labelError = error;
+        if (floatingChanged || visibilityChanged) {
+            updateLabelPadding();
+            updateInputPadding();
+        }
+        if (floatingChanged || visibilityChanged || focusChanged || errorChanged) {
+            updateOutlineState();
+        }
     }
 
     /// Returns whether the label should float above input content.
@@ -1162,6 +1213,14 @@ public class M3TextInputLayout extends Control {
                 : basePadding.getTop();
         double left = physicalLeftInset(inputLeading, inputTrailing);
         double right = physicalRightInset(inputLeading, inputTrailing);
+        Insets currentPadding = input.getPadding();
+        if (Double.compare(currentPadding.getTop(), top) == 0
+                && Double.compare(currentPadding.getRight(), right) == 0
+                && Double.compare(currentPadding.getBottom(), basePadding.getBottom()) == 0
+                && Double.compare(currentPadding.getLeft(), left) == 0) {
+            updateInputAreaOffset(input);
+            return;
+        }
         writeInputPadding(input, new Insets(top, right, basePadding.getBottom(), left), true);
         updateInputAreaOffset(input);
     }
@@ -1271,23 +1330,34 @@ public class M3TextInputLayout extends Control {
                 ? rightToLeftLeadingOnlyCorrection(leadingInset, trailingInset)
                 : 0.0;
         textRight += rightToLeftLeadingOffset;
-        label.setTranslateX(rightToLeftLeadingOffset);
+        if (Double.compare(label.getTranslateX(), rightToLeftLeadingOffset) != 0) {
+            label.setTranslateX(rightToLeftLeadingOffset);
+        }
+        double marginTop;
+        double marginRight;
+        double marginLeft;
         if (isLabelFloating()) {
-            label.setPadding(new Insets(
-                    0.0,
-                    FLOATING_LABEL_HORIZONTAL_PADDING,
-                    0.0,
-                    FLOATING_LABEL_HORIZONTAL_PADDING
-            ));
-            StackPane.setMargin(label, new Insets(
-                    isOutlinedInput() ? OUTLINED_FLOATING_LABEL_TOP_MARGIN : FILLED_FLOATING_LABEL_TOP_MARGIN,
-                    Math.max(0.0, textRight - FLOATING_LABEL_HORIZONTAL_PADDING),
-                    0.0,
-                    Math.max(0.0, textLeft - FLOATING_LABEL_HORIZONTAL_PADDING)
-            ));
+            if (!FLOATING_LABEL_PADDING.equals(label.getPadding())) {
+                label.setPadding(FLOATING_LABEL_PADDING);
+            }
+            marginTop = isOutlinedInput() ? OUTLINED_FLOATING_LABEL_TOP_MARGIN : FILLED_FLOATING_LABEL_TOP_MARGIN;
+            marginRight = Math.max(0.0, textRight - FLOATING_LABEL_HORIZONTAL_PADDING);
+            marginLeft = Math.max(0.0, textLeft - FLOATING_LABEL_HORIZONTAL_PADDING);
         } else {
-            label.setPadding(Insets.EMPTY);
-            StackPane.setMargin(label, new Insets(0.0, textRight, 0.0, textLeft));
+            if (!Insets.EMPTY.equals(label.getPadding())) {
+                label.setPadding(Insets.EMPTY);
+            }
+            marginTop = 0.0;
+            marginRight = textRight;
+            marginLeft = textLeft;
+        }
+        @Nullable Insets currentMargin = StackPane.getMargin(label);
+        if (currentMargin == null
+                || Double.compare(currentMargin.getTop(), marginTop) != 0
+                || Double.compare(currentMargin.getRight(), marginRight) != 0
+                || Double.compare(currentMargin.getBottom(), 0.0) != 0
+                || Double.compare(currentMargin.getLeft(), marginLeft) != 0) {
+            StackPane.setMargin(label, new Insets(marginTop, marginRight, 0.0, marginLeft));
         }
     }
 
@@ -1350,7 +1420,9 @@ public class M3TextInputLayout extends Control {
 
         boolean error = hasErrorState();
         if (error) {
-            inputErrorWasApplied = setInputError(textInput, true);
+            if (!textInput.isError()) {
+                inputErrorWasApplied = setInputError(textInput, true);
+            }
         } else if (inputErrorWasApplied) {
             setInputError(textInput, false);
             inputErrorWasApplied = false;
@@ -1374,29 +1446,49 @@ public class M3TextInputLayout extends Control {
         boolean showCounter = isCharacterCounterVisible() && getInput() != null;
         boolean showRow = showMessage || showCounter;
         boolean error = hasErrorState();
-        String counterText = characterCounterText();
+        String counterText = showCounter ? characterCounterText() : "";
         boolean rowVisibilityChanged = supportingRowVisible != showRow;
+        boolean messageChanged = !renderedSupportingMessage.equals(message);
+        boolean counterTextChanged = !renderedCounterText.equals(counterText);
+        boolean messageVisibilityChanged = supportingMessageVisible != showMessage;
+        boolean counterVisibilityChanged = counterVisible != showCounter;
+        boolean errorChanged = supportingError != error;
 
-        supportingLabel.setText(message);
-        supportingLabel.setVisible(showMessage);
-        supportingLabel.setManaged(showMessage);
-        supportingLabel.pseudoClassStateChanged(ERROR_PSEUDO_CLASS, error);
-        label.pseudoClassStateChanged(ERROR_PSEUDO_CLASS, error);
-
-        supportingSpacer.setVisible(showCounter);
-        supportingSpacer.setManaged(showCounter);
-
-        counterLabel.setText(counterText);
-        counterLabel.setVisible(showCounter);
-        counterLabel.setManaged(showCounter);
-        counterLabel.pseudoClassStateChanged(ERROR_PSEUDO_CLASS, error);
-
-        supportingRow.setVisible(showRow);
-        supportingRow.setManaged(showRow);
-        supportingRow.pseudoClassStateChanged(ERROR_PSEUDO_CLASS, error);
-        updateLabelErrorState();
-        updateOutlineState();
-        updateSupportingRowMotion(showRow, rowVisibilityChanged);
+        if (messageChanged) {
+            supportingLabel.setText(message);
+            renderedSupportingMessage = message;
+        }
+        if (messageVisibilityChanged) {
+            supportingLabel.setVisible(showMessage);
+            supportingLabel.setManaged(showMessage);
+            supportingMessageVisible = showMessage;
+        }
+        if (counterTextChanged) {
+            counterLabel.setText(counterText);
+            renderedCounterText = counterText;
+        }
+        if (counterVisibilityChanged) {
+            supportingSpacer.setVisible(showCounter);
+            supportingSpacer.setManaged(showCounter);
+            counterLabel.setVisible(showCounter);
+            counterLabel.setManaged(showCounter);
+            counterVisible = showCounter;
+        }
+        if (rowVisibilityChanged) {
+            supportingRow.setVisible(showRow);
+            supportingRow.setManaged(showRow);
+        }
+        if (errorChanged) {
+            supportingLabel.pseudoClassStateChanged(ERROR_PSEUDO_CLASS, error);
+            counterLabel.pseudoClassStateChanged(ERROR_PSEUDO_CLASS, error);
+            supportingRow.pseudoClassStateChanged(ERROR_PSEUDO_CLASS, error);
+            supportingError = error;
+            updateLabelErrorState();
+            updateOutlineState();
+        }
+        if (rowVisibilityChanged || !supportingRowMotionInitialized) {
+            updateSupportingRowMotion(showRow, rowVisibilityChanged);
+        }
         supportingRowVisible = showRow;
     }
 
@@ -1440,7 +1532,11 @@ public class M3TextInputLayout extends Control {
 
     /// Updates the label error pseudo-class from both layout-owned and wrapped input error state.
     private void updateLabelErrorState() {
-        label.pseudoClassStateChanged(ERROR_PSEUDO_CLASS, hasVisualErrorState());
+        boolean error = hasVisualErrorState();
+        if (labelError != error) {
+            label.pseudoClassStateChanged(ERROR_PSEUDO_CLASS, error);
+            labelError = error;
+        }
     }
 
     /// Updates outline visibility, pseudo-classes, and geometry.
@@ -1670,17 +1766,20 @@ public class M3TextInputLayout extends Control {
     private boolean updateValidation() {
         TextInputControl input = getInput();
         if (input == null) {
-            setValidationErrorText("");
-            updateInputErrorState();
-            updateSupportingRow();
+            if (setValidationErrorText("")) {
+                updateInputErrorState();
+                updateSupportingRow();
+            }
             return true;
         }
 
         @Nullable String text = input.getText();
         @Nullable String errorText = firstValidationError(input, text == null ? "" : text);
-        setValidationErrorText(errorText == null ? "" : errorText);
+        boolean errorChanged = setValidationErrorText(errorText == null ? "" : errorText);
         updateInputErrorState();
-        updateSupportingRow();
+        if (errorChanged || isCharacterCounterVisible() || getCharacterLimit() >= 0) {
+            updateSupportingRow();
+        }
         return getValidationErrorText().isEmpty();
     }
 
@@ -1710,14 +1809,16 @@ public class M3TextInputLayout extends Control {
         }
     }
 
-    /// Updates validator-owned error text.
-    private void setValidationErrorText(String errorText) {
+    /// Updates validator-owned error text and returns whether its value changed.
+    private boolean setValidationErrorText(String errorText) {
         String validatedErrorText = Objects.requireNonNull(errorText, "errorText");
         String oldErrorText = getValidationErrorText();
-        validationErrorText.set(validatedErrorText);
-        if (!Objects.equals(oldErrorText, validatedErrorText)) {
-            notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
+        if (oldErrorText.equals(validatedErrorText)) {
+            return false;
         }
+        validationErrorText.set(validatedErrorText);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
+        return true;
     }
 
     /// Applies the active character limit by truncating wrapped input text when requested.
@@ -1836,20 +1937,7 @@ public class M3TextInputLayout extends Control {
 
     /// Returns the current reachable focus targets in logical input layout slot order.
     private @Unmodifiable List<Node> slotFocusTargets() {
-        List<Node> targets = new ArrayList<>();
-        @Nullable Node leading = getLeading();
-        if (leading != null) {
-            targets.add(leading);
-        }
-        TextInputControl input = getInput();
-        if (input != null) {
-            targets.add(input);
-        }
-        @Nullable Node trailing = effectiveTrailing();
-        if (trailing != null) {
-            targets.add(trailing);
-        }
-        return M3FocusTraversal.focusTargets(targets);
+        return M3FocusTraversal.focusTargets(getLeading(), getInput(), effectiveTrailing());
     }
 
     /// Returns the preferred focus item for this layout.

@@ -29,8 +29,11 @@ public final class M3SnackbarHostSkin extends SkinBase<M3SnackbarHost> {
     /// Removes listeners and hosted content before disposal.
     @Override
     public void dispose() {
-        getSkinnable().snackbarProperty().removeListener(snackbarListener);
-        getChildren().clear();
+        M3SnackbarHost control = getSkinnable();
+        control.snackbarProperty().removeListener(snackbarListener);
+        if (control.getSkin() == null || control.getSkin() == this) {
+            getChildren().clear();
+        }
         super.dispose();
     }
 

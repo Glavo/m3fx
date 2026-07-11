@@ -100,7 +100,7 @@ public final class M3BottomSheetSkin extends SkinBase<M3BottomSheet> {
         topArea.getChildren().setAll(dragHandleSlot, header);
         container.setTop(topArea);
         container.setCenter(contentSlot);
-        getChildren().add(container);
+        getChildren().setAll(container);
     }
 
     /// Removes listeners, bindings, and child references before disposal.
@@ -127,6 +127,7 @@ public final class M3BottomSheetSkin extends SkinBase<M3BottomSheet> {
         topArea.getChildren().clear();
         container.setTop(null);
         container.setCenter(null);
+        getChildren().remove(container);
         super.dispose();
     }
 

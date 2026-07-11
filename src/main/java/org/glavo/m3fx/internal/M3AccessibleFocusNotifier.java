@@ -26,8 +26,8 @@ public final class M3AccessibleFocusNotifier {
     /// Opaque scene property key for the shared focus-owner dispatcher.
     private static final Object SCENE_DISPATCHER_KEY = new Object();
 
-    /// Empty notifier array shared by scene dispatchers with no observers.
-    private static final M3AccessibleFocusNotifier[] EMPTY_NOTIFIERS = new M3AccessibleFocusNotifier[0];
+    /// Opaque node property key for notifiers registered under one physical focus subtree.
+    private static final Object NODE_NOTIFIERS_KEY = new Object();
 
     /// The node whose scene focus owner should be observed.
     private final Node sceneOwner;
@@ -168,23 +168,6 @@ public final class M3AccessibleFocusNotifier {
         focusNodeChangedNotifier.run();
     }
 
-    /// Returns whether a focus-owner transition can change this notifier's reported focus node.
-    private boolean observesFocusTransition(@Nullable Node oldFocusOwner, @Nullable Node newFocusOwner) {
-        return containsPhysicalNode(sceneOwner, oldFocusOwner) || containsPhysicalNode(sceneOwner, newFocusOwner);
-    }
-
-    /// Returns whether one node is the supplied root or a physical descendant of it.
-    private static boolean containsPhysicalNode(Node root, @Nullable Node node) {
-        @Nullable Node current = node;
-        while (current != null) {
-            if (current == root) {
-                return true;
-            }
-            current = current.getParent();
-        }
-        return false;
-    }
-
     /// Returns the dispatcher owned by a scene, creating it when needed.
     ///
     /// @param scene the scene that owns the dispatcher
@@ -200,14 +183,14 @@ public final class M3AccessibleFocusNotifier {
         return dispatcher;
     }
 
-    /// Dispatches scene focus-owner transitions without allocating on the focus hot path.
+    /// Dispatches scene focus-owner transitions by visiting only affected ancestor paths.
     @NotNullByDefault
     private static final class SceneFocusDispatcher {
         /// The scene that owns this dispatcher.
         private final Scene scene;
 
-        /// The immutable-by-replacement notifier array used by focus dispatch.
-        private M3AccessibleFocusNotifier[] notifiers = EMPTY_NOTIFIERS;
+        /// The number of notifiers currently registered in node properties for this scene.
+        private int notifierCount;
 
         /// Observes the scene's focus owner once for all registered notifiers.
         private final ChangeListener<@Nullable Node> focusOwnerListener =
@@ -220,53 +203,155 @@ public final class M3AccessibleFocusNotifier {
 
         /// Adds a notifier and installs the scene listener when the first notifier arrives.
         private void add(M3AccessibleFocusNotifier notifier) {
-            for (M3AccessibleFocusNotifier current : notifiers) {
+            Node notifierOwner = notifier.sceneOwner;
+            Object value = notifierOwner.hasProperties()
+                    ? notifierOwner.getProperties().get(NODE_NOTIFIERS_KEY)
+                    : null;
+            if (value instanceof M3AccessibleFocusNotifier current) {
                 if (current == notifier) {
                     return;
                 }
+                notifierOwner.getProperties().put(
+                        NODE_NOTIFIERS_KEY,
+                        new M3AccessibleFocusNotifier[]{current, notifier}
+                );
+            } else if (value instanceof M3AccessibleFocusNotifier[] currentNotifiers) {
+                for (M3AccessibleFocusNotifier current : currentNotifiers) {
+                    if (current == notifier) {
+                        return;
+                    }
+                }
+                M3AccessibleFocusNotifier[] expanded = Arrays.copyOf(
+                        currentNotifiers,
+                        currentNotifiers.length + 1
+                );
+                expanded[currentNotifiers.length] = notifier;
+                notifierOwner.getProperties().put(NODE_NOTIFIERS_KEY, expanded);
+            } else if (value == null) {
+                notifierOwner.getProperties().put(NODE_NOTIFIERS_KEY, notifier);
+            } else {
+                throw new IllegalStateException("Unexpected accessible focus notifier node property");
             }
 
-            boolean wasEmpty = notifiers.length == 0;
-            M3AccessibleFocusNotifier[] expanded = Arrays.copyOf(notifiers, notifiers.length + 1);
-            expanded[notifiers.length] = notifier;
-            notifiers = expanded;
-            if (wasEmpty) {
+            if (notifierCount++ == 0) {
                 scene.focusOwnerProperty().addListener(focusOwnerListener);
             }
         }
 
         /// Removes a notifier and returns whether the dispatcher became empty.
         private boolean remove(M3AccessibleFocusNotifier notifier) {
-            int index = -1;
-            for (int i = 0; i < notifiers.length; i++) {
-                if (notifiers[i] == notifier) {
-                    index = i;
-                    break;
-                }
-            }
-            if (index < 0) {
+            Node notifierOwner = notifier.sceneOwner;
+            if (!notifierOwner.hasProperties()) {
                 return false;
             }
 
-            M3AccessibleFocusNotifier[] reduced = new M3AccessibleFocusNotifier[notifiers.length - 1];
-            System.arraycopy(notifiers, 0, reduced, 0, index);
-            System.arraycopy(notifiers, index + 1, reduced, index, reduced.length - index);
-            notifiers = reduced;
-            if (reduced.length == 0) {
+            Object value = notifierOwner.getProperties().get(NODE_NOTIFIERS_KEY);
+            if (value == notifier) {
+                notifierOwner.getProperties().remove(NODE_NOTIFIERS_KEY);
+            } else if (value instanceof M3AccessibleFocusNotifier[] currentNotifiers) {
+                int index = -1;
+                for (int i = 0; i < currentNotifiers.length; i++) {
+                    if (currentNotifiers[i] == notifier) {
+                        index = i;
+                        break;
+                    }
+                }
+                if (index < 0) {
+                    return false;
+                }
+
+                if (currentNotifiers.length == 2) {
+                    notifierOwner.getProperties().put(
+                            NODE_NOTIFIERS_KEY,
+                            currentNotifiers[index == 0 ? 1 : 0]
+                    );
+                } else {
+                    M3AccessibleFocusNotifier[] reduced =
+                            new M3AccessibleFocusNotifier[currentNotifiers.length - 1];
+                    System.arraycopy(currentNotifiers, 0, reduced, 0, index);
+                    System.arraycopy(
+                            currentNotifiers,
+                            index + 1,
+                            reduced,
+                            index,
+                            reduced.length - index
+                    );
+                    notifierOwner.getProperties().put(NODE_NOTIFIERS_KEY, reduced);
+                }
+            } else {
+                return false;
+            }
+
+            notifierCount--;
+            if (notifierCount == 0) {
                 scene.focusOwnerProperty().removeListener(focusOwnerListener);
                 return true;
             }
             return false;
         }
 
-        /// Dispatches one focus transition through a stable array snapshot.
+        /// Dispatches one focus transition only through affected physical ancestor paths.
         private void dispatch(@Nullable Node oldFocusOwner, @Nullable Node newFocusOwner) {
-            M3AccessibleFocusNotifier[] snapshot = notifiers;
-            for (M3AccessibleFocusNotifier notifier : snapshot) {
-                if (notifier.observesFocusTransition(oldFocusOwner, newFocusOwner)) {
+            @Nullable Node commonAncestor = lowestCommonAncestor(oldFocusOwner, newFocusOwner);
+            dispatchPath(oldFocusOwner, commonAncestor);
+            dispatchPath(newFocusOwner, commonAncestor);
+            dispatchPath(commonAncestor, null);
+        }
+
+        /// Dispatches notifiers registered from one node up to, but excluding, the supplied ancestor.
+        private static void dispatchPath(@Nullable Node start, @Nullable Node endExclusive) {
+            @Nullable Node current = start;
+            while (current != endExclusive && current != null) {
+                @Nullable Node parent = current.getParent();
+                dispatchNode(current);
+                current = parent;
+            }
+        }
+
+        /// Dispatches every notifier registered directly on one physical subtree root.
+        private static void dispatchNode(Node node) {
+            if (!node.hasProperties()) {
+                return;
+            }
+
+            Object value = node.getProperties().get(NODE_NOTIFIERS_KEY);
+            if (value instanceof M3AccessibleFocusNotifier notifier) {
+                notifier.notifyIfFocusNodeChanged();
+            } else if (value instanceof M3AccessibleFocusNotifier[] notifiers) {
+                for (M3AccessibleFocusNotifier notifier : notifiers) {
                     notifier.notifyIfFocusNodeChanged();
                 }
             }
+        }
+
+        /// Returns the lowest physical ancestor shared by two nodes without allocating path collections.
+        private static @Nullable Node lowestCommonAncestor(@Nullable Node first, @Nullable Node second) {
+            int firstDepth = depth(first);
+            int secondDepth = depth(second);
+            while (firstDepth > secondDepth && first != null) {
+                first = first.getParent();
+                firstDepth--;
+            }
+            while (secondDepth > firstDepth && second != null) {
+                second = second.getParent();
+                secondDepth--;
+            }
+            while (first != second) {
+                first = first == null ? null : first.getParent();
+                second = second == null ? null : second.getParent();
+            }
+            return first;
+        }
+
+        /// Returns the number of nodes in one physical parent path.
+        private static int depth(@Nullable Node node) {
+            int depth = 0;
+            @Nullable Node current = node;
+            while (current != null) {
+                depth++;
+                current = current.getParent();
+            }
+            return depth;
         }
     }
 }

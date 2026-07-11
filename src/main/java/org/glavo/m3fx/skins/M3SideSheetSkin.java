@@ -79,7 +79,7 @@ public final class M3SideSheetSkin extends SkinBase<M3SideSheet> {
         header.getChildren().setAll(headlineLabel, spacer, actions);
         container.setTop(header);
         container.setCenter(contentSlot);
-        getChildren().add(container);
+        getChildren().setAll(container);
     }
 
     /// Removes listeners, bindings, and child references before disposal.
@@ -102,6 +102,7 @@ public final class M3SideSheetSkin extends SkinBase<M3SideSheet> {
         header.getChildren().clear();
         container.setTop(null);
         container.setCenter(null);
+        getChildren().remove(container);
         super.dispose();
     }
 

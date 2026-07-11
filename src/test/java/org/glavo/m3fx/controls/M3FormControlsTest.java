@@ -50,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -406,6 +407,63 @@ final class M3FormControlsTest {
             assertTrue(validator.getInvalidInputs().isEmpty());
         });
     }
+
+    /// Verifies that bulk validation and input mutations publish one consolidated invalid-input change.
+    @Test
+    void formValidatorCoalescesBulkAggregateChangesAndDetachesRemovedInputs() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3TextInputLayout first = requiredLayout("First");
+            M3TextInputLayout second = requiredLayout("Second");
+            M3TextInputLayout third = requiredLayout("Third");
+            assertFalse(first.validate());
+            assertFalse(second.validate());
+            assertFalse(third.validate());
+
+            M3FormValidator validator = new M3FormValidator();
+            AtomicInteger invalidListChanges = new AtomicInteger();
+            validator.getInvalidInputs().addListener((ListChangeListener<M3TextInputLayout>) change ->
+                    invalidListChanges.incrementAndGet());
+
+            validator.getInputs().addAll(first, second, third);
+
+            assertEquals(1, invalidListChanges.get());
+            assertEquals(List.of(first, second, third), validator.getInvalidInputs());
+            assertTrue(validator.isValidationActive());
+
+            validator.clearValidation();
+
+            assertEquals(2, invalidListChanges.get());
+            assertTrue(validator.getInvalidInputs().isEmpty());
+            assertFalse(validator.isValidationActive());
+
+            assertFalse(validator.validate());
+
+            assertEquals(3, invalidListChanges.get());
+            assertEquals(List.of(first, second, third), validator.getInvalidInputs());
+
+            validator.getInputs().remove(0, 2);
+
+            assertEquals(4, invalidListChanges.get());
+            assertEquals(List.of(third), validator.getInvalidInputs());
+            assertSame(third, validator.getFirstInvalidInput());
+
+            first.clearValidation();
+            second.clearValidation();
+            assertFalse(first.validate());
+            assertFalse(second.validate());
+
+            assertEquals(4, invalidListChanges.get());
+            assertEquals(List.of(third), validator.getInvalidInputs());
+
+            third.clearValidation();
+
+            assertEquals(5, invalidListChanges.get());
+            assertTrue(validator.getInvalidInputs().isEmpty());
+            assertTrue(validator.isValid());
+            assertFalse(validator.isValidationActive());
+        });
+    }
+
     /// Verifies that validation summaries render validator errors and expose accessibility targets.
     @Test
     void validationSummaryMirrorsValidatorErrorsIntoSkin() {
@@ -639,6 +697,43 @@ final class M3FormControlsTest {
                     row.lookup("." + M3ValidationSummary.ITEM_ERROR_STYLE_CLASS)
             );
             assertEquals("Account email is required", itemError.getText());
+        });
+    }
+
+    /// Verifies that replacing a validation summary skin detaches retired content listeners.
+    @Test
+    void replacingValidationSummarySkinDetachesRetiredInputListeners() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3TextInputLayout layout = requiredLayout("Account");
+            M3FormValidator validator = new M3FormValidator(layout);
+            M3ValidationSummary summary = new M3ValidationSummary(validator);
+            VBox root = new VBox(summary, layout);
+            Scene scene = new Scene(root, 520.0, 260.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            assertFalse(validator.validate());
+            root.applyCss();
+            root.layout();
+
+            Node retiredRow = firstValidationSummaryItem(summary);
+            Label retiredError = assertInstanceOf(
+                    Label.class,
+                    retiredRow.lookup("." + M3ValidationSummary.ITEM_ERROR_STYLE_CLASS)
+            );
+            assertEquals("Account is required", retiredError.getText());
+
+            summary.setSkin(new M3ValidationSummarySkin(summary));
+            layout.setValidator(M3TextInputValidators.required("Enter an account"));
+            root.applyCss();
+            root.layout();
+
+            assertEquals("Account is required", retiredError.getText());
+            Node currentRow = firstValidationSummaryItem(summary);
+            assertNotSame(retiredRow, currentRow);
+            Label currentError = assertInstanceOf(
+                    Label.class,
+                    currentRow.lookup("." + M3ValidationSummary.ITEM_ERROR_STYLE_CLASS)
+            );
+            assertEquals("Enter an account", currentError.getText());
         });
     }
 
@@ -897,6 +992,13 @@ final class M3FormControlsTest {
             assertSame(lastRow, scene.getFocusOwner());
             assertTrue(scrollPane.getVvalue() > 0.0, () -> "vvalue=" + scrollPane.getVvalue());
         });
+    }
+
+    /// Creates one empty required input layout for aggregate validation tests.
+    private static M3TextInputLayout requiredLayout(String label) {
+        M3TextInputLayout layout = new M3TextInputLayout(new M3TextField(), label, "Required");
+        layout.setValidator(M3TextInputValidators.required(label + " is required"));
+        return layout;
     }
 
     /// Returns the first rendered validation-summary item row.

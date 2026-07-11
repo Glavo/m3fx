@@ -43,6 +43,7 @@ import org.glavo.m3fx.internal.M3ReachabilityObserver;
 import org.glavo.m3fx.skins.M3DateRangePickerFieldSkin;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3PopupPositioning;
+import org.glavo.m3fx.internal.M3PopupWindows;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -224,11 +225,8 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     // Internal storage for [showingProperty].
     private final ReadOnlyBooleanWrapper showing = new ReadOnlyBooleanWrapper(this, "showing");
 
-    /// The picker popup enter animation.
-    private final M3NodeTransition showAnimation = new M3NodeTransition(popupContent);
-
-    /// The picker popup exit animation.
-    private final M3NodeTransition hideAnimation = new M3NodeTransition(popupContent);
+    /// The reusable picker popup enter and exit animation.
+    private final M3NodeTransition popupAnimation = new M3NodeTransition(popupContent);
 
     /// Observes runtime motion settings while this field is attached to a scene.
     private final M3MotionSettingsObserver motionSettingsObserver =
@@ -265,6 +263,9 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
 
     /// The editor that should receive focus after the popup hides.
     private @Nullable M3TextField focusEditorOnHidden;
+
+    /// Whether the reusable popup animation is currently closing the picker.
+    private boolean hidingPopup;
 
     /// The vertical offset used by the current popup hide animation.
     private double popupTransitionOffsetY = -POPUP_TRANSITION_OFFSET_Y;
@@ -757,30 +758,37 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
 
     /// Shows the picker popup when this field is attached to a window.
     public void showPicker() {
-        if (!M3Accessible.canReach(this) || popup.isShowing()) {
-            return;
-        }
-
-        Scene scene = getScene();
-        if (scene == null || scene.getWindow() == null) {
+        if (!M3Accessible.canReach(this) || popup.isShowing() || !M3PopupWindows.canShow(this)) {
             return;
         }
 
         if (popupOwnerEditor == null) {
             popupOwnerEditor = currentEditor();
         }
+        boolean popupShown = false;
         popupContextSynchronizer.start();
-        preparePopupForShow();
-        @Nullable M3PopupPositioning.Placement placement =
-                M3PopupPositioning.menuBelowOrAbove(this, popupContent, POPUP_OFFSET_Y);
-        if (placement == null) {
-            popupContextSynchronizer.stop();
-            return;
-        }
+        try {
+            preparePopupForShow();
+            @Nullable M3PopupPositioning.Placement placement =
+                    M3PopupPositioning.menuBelowOrAbove(this, popupContent, POPUP_OFFSET_Y);
+            if (placement == null) {
+                return;
+            }
 
-        popupTransitionOffsetY = placement.opensAbove() ? POPUP_TRANSITION_OFFSET_Y : -POPUP_TRANSITION_OFFSET_Y;
-        preparePopupForShowAnimation();
-        popup.show(this, placement.x(), placement.y());
+            popupTransitionOffsetY =
+                    placement.opensAbove() ? POPUP_TRANSITION_OFFSET_Y : -POPUP_TRANSITION_OFFSET_Y;
+            preparePopupForShowAnimation();
+            if (!M3PopupWindows.show(popup, this, placement.x(), placement.y())) {
+                return;
+            }
+            popupShown = true;
+        } finally {
+            if (!popupShown) {
+                resetPopupAnimationState();
+                popupOwnerEditor = null;
+                popupContextSynchronizer.stop();
+            }
+        }
         reachabilityObserver.install();
         showing.set(true);
         notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
@@ -852,7 +860,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
 
     /// Adds base style classes and installs event handling.
     private void initialize() {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem,
@@ -880,7 +888,11 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         M3PresetNavigation.install(presetList, this, this::focusPickerContent);
         popup.setAutoHide(true);
         popup.getContent().add(popupContent);
-        hideAnimation.setOnFinished(event -> popup.hide());
+        popupAnimation.setOnFinished(event -> {
+            if (hidingPopup) {
+                popup.hide();
+            }
+        });
         popup.setOnHidden(event -> handlePopupHidden());
 
         startOpenButton.setOnAction(event -> {
@@ -1392,7 +1404,6 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
 
     /// Synchronizes owner popup context and minimum-width state into the popup-hosted picker.
     private void preparePopupForShow() {
-        popupContextSynchronizer.sync();
         double fieldWidth = Math.max(0.0, getWidth());
         M3Css.setMinWidthIfUnbound(popupContent, Math.max(fieldWidth, popupContent.minWidth(-1.0)));
         popupContent.applyCss();
@@ -1400,7 +1411,8 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
 
     /// Applies initial visual state before the popup is shown.
     private void preparePopupForShowAnimation() {
-        hideAnimation.stop();
+        popupAnimation.stop();
+        hidingPopup = false;
         popupContent.setOpacity(0.0);
         popupContent.setScaleX(POPUP_TRANSITION_SCALE);
         popupContent.setScaleY(POPUP_TRANSITION_SCALE);
@@ -1409,10 +1421,11 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
 
     /// Plays the popup picker enter animation.
     private void playShowAnimation() {
-        showAnimation.stop();
+        popupAnimation.stop();
+        hidingPopup = false;
         M3MotionSpec spec = M3Animation.fastSpatial(this);
-        showAnimation.configure(spec, 1.0, 1.0, 1.0, popupContent.getTranslateX(), 0.0);
-        M3Animation.playFromStart(this, showAnimation);
+        popupAnimation.configure(spec, 1.0, 1.0, 1.0, popupContent.getTranslateX(), 0.0);
+        M3Animation.playFromStart(this, popupAnimation);
     }
 
     /// Hides the popup picker and optionally restores editor focus.
@@ -1421,13 +1434,15 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
             return;
         }
 
-        focusEditorOnHidden = focusEditor ? (popupOwnerEditor == null ? currentEditor() : popupOwnerEditor) : null;
-        showAnimation.stop();
-        if (hideAnimation.getStatus() == Animation.Status.RUNNING) {
+        if (focusEditor) {
+            focusEditorOnHidden = popupOwnerEditor == null ? currentEditor() : popupOwnerEditor;
+        }
+        if (hidingPopup && popupAnimation.getStatus() == Animation.Status.RUNNING) {
             return;
         }
         M3MotionSpec spec = M3Animation.fastSpatial(this);
-        hideAnimation.configure(
+        hidingPopup = true;
+        popupAnimation.configure(
                 spec,
                 0.0,
                 POPUP_TRANSITION_SCALE,
@@ -1435,7 +1450,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
                 popupContent.getTranslateX(),
                 popupTransitionOffsetY
         );
-        M3Animation.playFromStart(this, hideAnimation);
+        M3Animation.playFromStart(this, popupAnimation);
     }
 
     /// Handles popup hidden cleanup and optional focus return.
@@ -1457,8 +1472,8 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
 
     /// Resets transient popup picker animation transforms.
     private void resetPopupAnimationState() {
-        showAnimation.stop();
-        hideAnimation.stop();
+        popupAnimation.stop();
+        hidingPopup = false;
         popupContent.setOpacity(1.0);
         popupContent.setScaleX(1.0);
         popupContent.setScaleY(1.0);
@@ -1467,7 +1482,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
 
     /// Applies changed runtime motion settings to active picker popup animations.
     private void refreshMotionSettings() {
-        M3Animation.finishRunningAnimationsIfDisabled(this, showAnimation, hideAnimation);
+        M3Animation.finishRunningAnimationsIfDisabled(this, popupAnimation);
     }
 
 }

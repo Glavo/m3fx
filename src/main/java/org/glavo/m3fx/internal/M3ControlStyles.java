@@ -37,13 +37,20 @@ public final class M3ControlStyles {
     private M3ControlStyles() {
     }
 
-    /// Adds a style class if it is not already present.
+    /// Initializes a component root with its base style class and standalone fallback styling.
+    public static void initialize(Styleable node, String styleClass) {
+        add(node, styleClass);
+        if (node instanceof Node sceneNode) {
+            installFallbackStylesheet(sceneNode);
+        }
+    }
+
+    /// Adds a style class without installing scene-level component infrastructure.
     public static void add(Styleable node, String styleClass) {
         List<String> styleClasses = node.getStyleClass();
         if (!styleClasses.contains(styleClass)) {
             styleClasses.add(styleClass);
         }
-        installFallbackStylesheet(node);
     }
 
     /// Replaces one variant style class with another.
@@ -58,9 +65,8 @@ public final class M3ControlStyles {
     }
 
     /// Installs fallback token stylesheets for controls used without an application theme.
-    private static void installFallbackStylesheet(Styleable styleable) {
-        if (!(styleable instanceof Node node)
-                || node.getProperties().containsKey(FALLBACK_STYLESHEET_LISTENER_KEY)) {
+    private static void installFallbackStylesheet(Node node) {
+        if (node.getProperties().containsKey(FALLBACK_STYLESHEET_LISTENER_KEY)) {
             return;
         }
 

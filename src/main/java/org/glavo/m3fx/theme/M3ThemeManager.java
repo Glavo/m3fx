@@ -146,10 +146,13 @@ public final class M3ThemeManager {
 
         String stylesheet = themeStylesheetUrl(theme);
         List<String> stylesheets = scene.getStylesheets();
-        Object previousValue = scene.getProperties().put(THEME_STYLESHEET_KEY, stylesheet);
+        Object previousValue = scene.getProperties().get(THEME_STYLESHEET_KEY);
         @Nullable String previousStylesheet = previousValue instanceof String value ? value : null;
-        if (previousStylesheet != null && !previousStylesheet.equals(stylesheet)) {
-            stylesheets.remove(previousStylesheet);
+        if (!stylesheet.equals(previousStylesheet)) {
+            scene.getProperties().put(THEME_STYLESHEET_KEY, stylesheet);
+            if (previousStylesheet != null) {
+                stylesheets.remove(previousStylesheet);
+            }
         }
         int baseStylesheetIndex = stylesheets.indexOf(stylesheetUrl());
         int stylesheetIndex = baseStylesheetIndex >= 0
@@ -174,7 +177,9 @@ public final class M3ThemeManager {
         Objects.requireNonNull(root, "root");
 
         clearThemeStyleClasses(root);
-        Object baseStyleValue = root.getProperties().remove(BASE_STYLE_PROPERTY_KEY);
+        @Nullable Object baseStyleValue = root.hasProperties()
+                ? root.getProperties().remove(BASE_STYLE_PROPERTY_KEY)
+                : null;
         if (baseStyleValue instanceof String baseStyle) {
             root.setStyle(baseStyle);
         } else if (M3ThemeMetadata.hasTheme(root)) {
@@ -195,22 +200,44 @@ public final class M3ThemeManager {
         Objects.requireNonNull(sourceRoot, "sourceRoot");
         Objects.requireNonNull(targetRoot, "targetRoot");
 
-        clearThemeStyleClasses(targetRoot);
-
         @Nullable M3Theme theme = M3ThemeMetadata.getTheme(sourceRoot);
         if (theme != null) {
             applyThemeStyleClasses(targetRoot, theme);
             M3ThemeMetadata.setTheme(targetRoot, theme);
         } else {
-            copyStyleClassIfPresent(sourceRoot, targetRoot, ROOT_STYLE_CLASS);
-            copyStyleClassIfPresent(sourceRoot, targetRoot, BASELINE_PROFILE_STYLE_CLASS);
-            copyStyleClassIfPresent(sourceRoot, targetRoot, EXPRESSIVE_PROFILE_STYLE_CLASS);
-            copyStyleClassIfPresent(sourceRoot, targetRoot, LIGHT_BRIGHTNESS_STYLE_CLASS);
-            copyStyleClassIfPresent(sourceRoot, targetRoot, DARK_BRIGHTNESS_STYLE_CLASS);
+            List<String> sourceStyleClasses = sourceRoot.getStyleClass();
+            setStyleClassPresent(
+                    targetRoot,
+                    ROOT_STYLE_CLASS,
+                    sourceStyleClasses.contains(ROOT_STYLE_CLASS)
+            );
+            setStyleClassPresent(
+                    targetRoot,
+                    BASELINE_PROFILE_STYLE_CLASS,
+                    sourceStyleClasses.contains(BASELINE_PROFILE_STYLE_CLASS)
+            );
+            setStyleClassPresent(
+                    targetRoot,
+                    EXPRESSIVE_PROFILE_STYLE_CLASS,
+                    sourceStyleClasses.contains(EXPRESSIVE_PROFILE_STYLE_CLASS)
+            );
+            setStyleClassPresent(
+                    targetRoot,
+                    LIGHT_BRIGHTNESS_STYLE_CLASS,
+                    sourceStyleClasses.contains(LIGHT_BRIGHTNESS_STYLE_CLASS)
+            );
+            setStyleClassPresent(
+                    targetRoot,
+                    DARK_BRIGHTNESS_STYLE_CLASS,
+                    sourceStyleClasses.contains(DARK_BRIGHTNESS_STYLE_CLASS)
+            );
             M3ThemeMetadata.clearTheme(targetRoot);
         }
 
-        targetRoot.setStyle(sourceRoot.getStyle());
+        String sourceStyle = sourceRoot.getStyle();
+        if (!Objects.equals(targetRoot.getStyle(), sourceStyle)) {
+            targetRoot.setStyle(sourceStyle);
+        }
     }
 
     /// Applies root, profile, and brightness style classes for a theme without mutating inline token styles.
@@ -218,25 +245,56 @@ public final class M3ThemeManager {
         Objects.requireNonNull(root, "root");
         Objects.requireNonNull(theme, "theme");
 
-        if (!root.getStyleClass().contains(ROOT_STYLE_CLASS)) {
-            root.getStyleClass().add(ROOT_STYLE_CLASS);
-        }
-        updateThemeModeStyleClasses(root, theme);
+        String profileStyleClass = switch (theme.profile()) {
+            case BASELINE_2021 -> BASELINE_PROFILE_STYLE_CLASS;
+            case EXPRESSIVE_2025 -> EXPRESSIVE_PROFILE_STYLE_CLASS;
+        };
+        String brightnessStyleClass = switch (theme.brightness()) {
+            case LIGHT -> LIGHT_BRIGHTNESS_STYLE_CLASS;
+            case DARK -> DARK_BRIGHTNESS_STYLE_CLASS;
+        };
+
+        setStyleClassPresent(root, ROOT_STYLE_CLASS, true);
+        setStyleClassPresent(
+                root,
+                BASELINE_PROFILE_STYLE_CLASS,
+                BASELINE_PROFILE_STYLE_CLASS.equals(profileStyleClass)
+        );
+        setStyleClassPresent(
+                root,
+                EXPRESSIVE_PROFILE_STYLE_CLASS,
+                EXPRESSIVE_PROFILE_STYLE_CLASS.equals(profileStyleClass)
+        );
+        setStyleClassPresent(
+                root,
+                LIGHT_BRIGHTNESS_STYLE_CLASS,
+                LIGHT_BRIGHTNESS_STYLE_CLASS.equals(brightnessStyleClass)
+        );
+        setStyleClassPresent(
+                root,
+                DARK_BRIGHTNESS_STYLE_CLASS,
+                DARK_BRIGHTNESS_STYLE_CLASS.equals(brightnessStyleClass)
+        );
     }
 
     /// Removes root, profile, and brightness style classes managed by M3FX.
     public static void clearThemeStyleClasses(Styleable root) {
         Objects.requireNonNull(root, "root");
 
-        root.getStyleClass().remove(ROOT_STYLE_CLASS);
-        removeThemeModeStyleClasses(root);
+        setStyleClassPresent(root, ROOT_STYLE_CLASS, false);
+        setStyleClassPresent(root, BASELINE_PROFILE_STYLE_CLASS, false);
+        setStyleClassPresent(root, EXPRESSIVE_PROFILE_STYLE_CLASS, false);
+        setStyleClassPresent(root, LIGHT_BRIGHTNESS_STYLE_CLASS, false);
+        setStyleClassPresent(root, DARK_BRIGHTNESS_STYLE_CLASS, false);
     }
 
     /// Removes the generated theme stylesheet tracked for a scene.
     public static void uninstallThemeStylesheet(Scene scene) {
         Objects.requireNonNull(scene, "scene");
 
-        Object value = scene.getProperties().remove(THEME_STYLESHEET_KEY);
+        @Nullable Object value = scene.hasProperties()
+                ? scene.getProperties().remove(THEME_STYLESHEET_KEY)
+                : null;
         @Nullable String stylesheet = value instanceof String url ? url : null;
         if (stylesheet != null) {
             scene.getStylesheets().remove(stylesheet);
@@ -354,7 +412,9 @@ public final class M3ThemeManager {
 
     /// Stops scene-root theme observation for a scene.
     private static boolean uninstallSceneTheme(Scene scene) {
-        Object value = scene.getProperties().remove(SCENE_THEME_INSTALLATION_KEY);
+        @Nullable Object value = scene.hasProperties()
+                ? scene.getProperties().remove(SCENE_THEME_INSTALLATION_KEY)
+                : null;
         @Nullable SceneThemeInstallation installation =
                 value instanceof SceneThemeInstallation current ? current : null;
         if (installation != null) {
@@ -372,31 +432,17 @@ public final class M3ThemeManager {
         return baseStyle.stripTrailing() + " " + themeStyle;
     }
 
-    /// Updates profile and brightness classes on the themed root.
-    private static void updateThemeModeStyleClasses(Styleable root, M3Theme theme) {
-        removeThemeModeStyleClasses(root);
-        root.getStyleClass().add(switch (theme.profile()) {
-            case BASELINE_2021 -> BASELINE_PROFILE_STYLE_CLASS;
-            case EXPRESSIVE_2025 -> EXPRESSIVE_PROFILE_STYLE_CLASS;
-        });
-        root.getStyleClass().add(switch (theme.brightness()) {
-            case LIGHT -> LIGHT_BRIGHTNESS_STYLE_CLASS;
-            case DARK -> DARK_BRIGHTNESS_STYLE_CLASS;
-        });
-    }
-
-    /// Removes profile and brightness classes from the root.
-    private static void removeThemeModeStyleClasses(Styleable root) {
-        root.getStyleClass().remove(BASELINE_PROFILE_STYLE_CLASS);
-        root.getStyleClass().remove(EXPRESSIVE_PROFILE_STYLE_CLASS);
-        root.getStyleClass().remove(LIGHT_BRIGHTNESS_STYLE_CLASS);
-        root.getStyleClass().remove(DARK_BRIGHTNESS_STYLE_CLASS);
-    }
-
-    /// Copies a style class from one root to another when it is present.
-    private static void copyStyleClassIfPresent(Parent sourceRoot, Parent targetRoot, String styleClass) {
-        if (sourceRoot.getStyleClass().contains(styleClass)) {
-            targetRoot.getStyleClass().add(styleClass);
+    /// Adds or removes one managed style class only when its desired state differs.
+    private static void setStyleClassPresent(Styleable root, String styleClass, boolean present) {
+        List<String> styleClasses = root.getStyleClass();
+        boolean currentlyPresent = styleClasses.contains(styleClass);
+        if (currentlyPresent == present) {
+            return;
+        }
+        if (present) {
+            styleClasses.add(styleClass);
+        } else {
+            styleClasses.remove(styleClass);
         }
     }
 
@@ -419,8 +465,18 @@ public final class M3ThemeManager {
 
         /// Applies or replaces the scene-owned theme.
         private void install(Scene scene, M3Theme theme) {
+            Parent root = scene.getRoot();
+            @Nullable RootThemeSnapshot currentSnapshot = snapshot;
+            if (this.theme == theme && currentSnapshot != null && currentSnapshot.references(root)) {
+                return;
+            }
+
             this.theme = theme;
-            installRoot(scene.getRoot(), theme);
+            if (currentSnapshot != null && currentSnapshot.references(root)) {
+                applyTheme(root, theme, currentSnapshot.baseStyle);
+            } else {
+                installRoot(root, theme);
+            }
         }
 
         /// Removes the scene root listener.
@@ -446,9 +502,18 @@ public final class M3ThemeManager {
         /// Applies the scene theme to one root after saving its previous theme state.
         private void installRoot(Parent root, M3Theme theme) {
             restoreSnapshot();
-            snapshot = new RootThemeSnapshot(root);
+            RootThemeSnapshot nextSnapshot = new RootThemeSnapshot(root);
+            snapshot = nextSnapshot;
+            applyTheme(root, theme, nextSnapshot.baseStyle);
+        }
+
+        /// Applies one theme over the root style captured before scene theme installation.
+        private static void applyTheme(Parent root, M3Theme theme, String baseStyle) {
             applyThemeStyleClasses(root, theme);
-            root.setStyle(mergeStyles(snapshot.baseStyle, theme.toRootStyleDeclarations()));
+            String themedStyle = mergeStyles(baseStyle, theme.toRootStyleDeclarations());
+            if (!Objects.equals(root.getStyle(), themedStyle)) {
+                root.setStyle(themedStyle);
+            }
             M3ThemeMetadata.setTheme(root, theme);
         }
 
@@ -505,33 +570,29 @@ public final class M3ThemeManager {
             hadDarkBrightnessStyleClass = root.getStyleClass().contains(DARK_BRIGHTNESS_STYLE_CLASS);
         }
 
+        /// Returns whether this snapshot belongs to the supplied root.
+        private boolean references(Parent root) {
+            return rootReference.get() == root;
+        }
+
         /// Restores the captured theme state to the root.
         private void restore() {
             @Nullable Parent root = rootReference.get();
             if (root == null) {
                 return;
             }
-            root.setStyle(baseStyle);
-            restoreStyleClass(root, ROOT_STYLE_CLASS, hadRootStyleClass);
-            restoreStyleClass(root, BASELINE_PROFILE_STYLE_CLASS, hadBaselineProfileStyleClass);
-            restoreStyleClass(root, EXPRESSIVE_PROFILE_STYLE_CLASS, hadExpressiveProfileStyleClass);
-            restoreStyleClass(root, LIGHT_BRIGHTNESS_STYLE_CLASS, hadLightBrightnessStyleClass);
-            restoreStyleClass(root, DARK_BRIGHTNESS_STYLE_CLASS, hadDarkBrightnessStyleClass);
+            if (!Objects.equals(root.getStyle(), baseStyle)) {
+                root.setStyle(baseStyle);
+            }
+            setStyleClassPresent(root, ROOT_STYLE_CLASS, hadRootStyleClass);
+            setStyleClassPresent(root, BASELINE_PROFILE_STYLE_CLASS, hadBaselineProfileStyleClass);
+            setStyleClassPresent(root, EXPRESSIVE_PROFILE_STYLE_CLASS, hadExpressiveProfileStyleClass);
+            setStyleClassPresent(root, LIGHT_BRIGHTNESS_STYLE_CLASS, hadLightBrightnessStyleClass);
+            setStyleClassPresent(root, DARK_BRIGHTNESS_STYLE_CLASS, hadDarkBrightnessStyleClass);
             if (hadTheme && theme != null) {
                 M3ThemeMetadata.setTheme(root, theme);
             } else {
                 M3ThemeMetadata.clearTheme(root);
-            }
-        }
-
-        /// Restores one managed style class to its captured presence.
-        private static void restoreStyleClass(Parent root, String styleClass, boolean present) {
-            if (present) {
-                if (!root.getStyleClass().contains(styleClass)) {
-                    root.getStyleClass().add(styleClass);
-                }
-            } else {
-                root.getStyleClass().remove(styleClass);
             }
         }
     }

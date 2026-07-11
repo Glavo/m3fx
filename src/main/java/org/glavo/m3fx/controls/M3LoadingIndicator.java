@@ -204,7 +204,7 @@ public class M3LoadingIndicator extends Control {
 
     /// Adds base style classes and accessibility metadata.
     private void initialize() {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PROGRESS_INDICATOR);
         setFocusTraversable(false);
         pseudoClassStateChanged(CONTAINED_PSEUDO_CLASS, false);

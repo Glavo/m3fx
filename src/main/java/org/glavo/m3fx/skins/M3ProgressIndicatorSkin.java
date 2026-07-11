@@ -132,7 +132,7 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         waveIndicator.setStrokeLineCap(StrokeLineCap.ROUND);
         track.setType(ArcType.OPEN);
         indicator.setType(ArcType.OPEN);
-        getChildren().addAll(track, indicator, waveTrack, waveIndicator);
+        getChildren().setAll(track, indicator, waveTrack, waveIndicator);
 
         displayedProgress.set(initialDisplayedProgress(control.getProgress()));
         displayedProgress.addListener(animationInvalidation);
@@ -163,6 +163,7 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         progressIndicator.waveAmplitudeProperty().removeListener(layoutInvalidation);
         progressIndicator.wavelengthProperty().removeListener(layoutInvalidation);
         progressIndicator.trackGapProperty().removeListener(layoutInvalidation);
+        getChildren().removeAll(track, indicator, waveTrack, waveIndicator);
         super.dispose();
     }
 

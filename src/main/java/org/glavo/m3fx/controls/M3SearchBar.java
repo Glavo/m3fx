@@ -36,7 +36,6 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -354,7 +353,7 @@ public class M3SearchBar extends Control {
 
     /// Adds base style classes, default slots, and search behavior.
     private void initialize() {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         editor.getStyleClass().add(INPUT_STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         M3Accessible.installAccessibleActionRoute(this, () -> focusAccessibleItem(accessibleFocusNode()), this::showAccessibleItem);
@@ -507,14 +506,7 @@ public class M3SearchBar extends Control {
 
     /// Returns the current reachable focus targets in logical search bar slot order.
     private @Unmodifiable List<Node> slotFocusTargets() {
-        List<Node> targets = new ArrayList<>();
-        @Nullable Node leading = getLeading();
-        if (leading != null) {
-            targets.add(leading);
-        }
-        targets.add(editor);
-        targets.addAll(getTrailingActions());
-        return M3FocusTraversal.focusTargets(targets);
+        return M3FocusTraversal.focusTargets(getLeading(), editor, getTrailingActions());
     }
 
     /// Notifies accessibility clients that indexed child items changed.

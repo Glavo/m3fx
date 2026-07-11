@@ -34,7 +34,9 @@ public final class M3TooltipRegistry {
     /// @param node the tooltip target node
     public static void remove(Node node) {
         Objects.requireNonNull(node, "node");
-        node.getProperties().remove(INSTALLATION_KEY);
+        if (node.hasProperties()) {
+            node.getProperties().remove(INSTALLATION_KEY);
+        }
     }
 
     /// Returns the tooltip installation stored on a target node.
@@ -43,6 +45,9 @@ public final class M3TooltipRegistry {
     /// @return the stored installation, or `null`
     public static @Nullable M3TooltipInstallation installation(Node node) {
         Objects.requireNonNull(node, "node");
+        if (!node.hasProperties()) {
+            return null;
+        }
         Object installation = node.getProperties().get(INSTALLATION_KEY);
         return installation instanceof M3TooltipInstallation tooltipInstallation ? tooltipInstallation : null;
     }

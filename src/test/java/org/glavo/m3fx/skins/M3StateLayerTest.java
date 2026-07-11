@@ -11,6 +11,9 @@ import javafx.scene.layout.Region;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.controls.M3Button;
+import org.glavo.m3fx.controls.M3CheckBox;
+import org.glavo.m3fx.controls.M3NavigationItem;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.glavo.m3fx.tokens.M3Density;
@@ -364,6 +367,60 @@ final class M3StateLayerTest {
         });
     }
 
+    /// Verifies that replacing interactive skins detaches their retired shared state layers.
+    @Test
+    void replacingInteractiveSkinsDetachesRetiredStateLayers() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Button button = new M3Button("Button");
+            M3NavigationItem navigationItem = new M3NavigationItem("Navigation");
+            M3CheckBox checkBox = new M3CheckBox("Check box");
+            Pane root = new Pane(button, navigationItem, checkBox);
+            Scene scene = new Scene(root, 420.0, 180.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            M3MotionSettings.setAnimationsEnabled(root, false);
+            button.resizeRelocate(12.0, 12.0, 120.0, 40.0);
+            navigationItem.resizeRelocate(144.0, 12.0, 120.0, 64.0);
+            checkBox.resizeRelocate(276.0, 12.0, 120.0, 48.0);
+            root.applyCss();
+            root.layout();
+
+            Region retiredButtonOverlay = assertInstanceOf(
+                    Region.class,
+                    button.lookup("." + M3StateLayer.OVERLAY_STYLE_CLASS)
+            );
+            Region retiredNavigationOverlay = assertInstanceOf(
+                    Region.class,
+                    navigationItem.lookup("." + M3StateLayer.OVERLAY_STYLE_CLASS)
+            );
+            Region retiredCheckBoxOverlay = assertInstanceOf(
+                    Region.class,
+                    checkBox.lookup("." + M3StateLayer.OVERLAY_STYLE_CLASS)
+            );
+
+            button.setSkin(new M3ButtonSkin(button));
+            navigationItem.setSkin(new M3NavigationItemSkin(navigationItem));
+            checkBox.setSkin(new M3CheckBoxSkin(checkBox));
+            root.applyCss();
+            root.layout();
+
+            PseudoClass hover = PseudoClass.getPseudoClass("hover");
+            button.pseudoClassStateChanged(hover, true);
+            navigationItem.pseudoClassStateChanged(hover, true);
+            checkBox.pseudoClassStateChanged(hover, true);
+
+            assertFalse(hasAncestor(retiredButtonOverlay, button));
+            assertFalse(hasAncestor(retiredNavigationOverlay, navigationItem));
+            assertFalse(hasAncestor(retiredCheckBoxOverlay, checkBox));
+            assertEquals(0.0, retiredButtonOverlay.getOpacity(), 0.0001);
+            assertEquals(0.0, retiredNavigationOverlay.getOpacity(), 0.0001);
+            assertEquals(0.0, retiredCheckBoxOverlay.getOpacity(), 0.0001);
+            assertTrue(currentOverlay(button, retiredButtonOverlay).getOpacity() > 0.0);
+            assertTrue(currentOverlay(navigationItem, retiredNavigationOverlay).getOpacity() > 0.0);
+            assertTrue(currentOverlay(checkBox, retiredCheckBoxOverlay).getOpacity() > 0.0);
+        });
+    }
+
     /// Verifies that ripples remain visible until explicitly released.
     @Test
     void rippleHoldsUntilReleaseThenFades() throws InterruptedException {
@@ -493,10 +550,32 @@ final class M3StateLayerTest {
     }
 
     /// Returns a region looked up below a node.
-    private static Region lookupRegion(Pane node, String selector) {
+    private static Region lookupRegion(javafx.scene.Node node, String selector) {
         javafx.scene.Node child = node.lookup(selector);
         assertInstanceOf(Region.class, child);
         return (Region) child;
+    }
+
+    /// Returns the current state-layer overlay while excluding a retired Skin node.
+    private static Region currentOverlay(javafx.scene.Node owner, Region retiredOverlay) {
+        for (javafx.scene.Node candidate : owner.lookupAll("." + M3StateLayer.OVERLAY_STYLE_CLASS)) {
+            if (candidate != retiredOverlay) {
+                return assertInstanceOf(Region.class, candidate);
+            }
+        }
+        throw new AssertionError("Current state-layer overlay is missing");
+    }
+
+    /// Returns whether a node remains attached below a supplied ancestor.
+    private static boolean hasAncestor(javafx.scene.Node node, javafx.scene.Node ancestor) {
+        javafx.scene.Parent parent = node.getParent();
+        while (parent != null) {
+            if (parent == ancestor) {
+                return true;
+            }
+            parent = parent.getParent();
+        }
+        return false;
     }
 
     /// Shows a real-window state layer and starts a ripple from the supplied origin.

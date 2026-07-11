@@ -118,7 +118,7 @@ public class M3Card extends Control {
     ///
     /// @param content the card content node, or `null` for no content
     public M3Card(@Nullable Node content) {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
         setFocusTraversable(false);
         addEventFilter(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);

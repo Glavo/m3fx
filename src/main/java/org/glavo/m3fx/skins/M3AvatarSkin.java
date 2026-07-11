@@ -32,7 +32,7 @@ public final class M3AvatarSkin extends SkinBase<M3Avatar> {
         container.setManaged(false);
         textLabel.getStyleClass().add(M3Avatar.LABEL_STYLE_CLASS);
         textLabel.textProperty().bind(control.textProperty());
-        getChildren().add(container);
+        getChildren().setAll(container);
         control.graphicProperty().addListener(graphicInvalidation);
         updateContent();
     }
@@ -43,6 +43,7 @@ public final class M3AvatarSkin extends SkinBase<M3Avatar> {
         getSkinnable().graphicProperty().removeListener(graphicInvalidation);
         textLabel.textProperty().unbind();
         container.getChildren().clear();
+        getChildren().remove(container);
         super.dispose();
     }
 

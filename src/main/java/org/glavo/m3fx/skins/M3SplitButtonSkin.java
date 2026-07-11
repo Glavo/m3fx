@@ -29,7 +29,7 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
         container.spacingProperty().bind(control.spacingProperty());
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         container.getChildren().setAll(actionButton(control), menuButton(control));
-        getChildren().add(container);
+        getChildren().setAll(container);
     }
 
     /// Returns the primary action button from the skinnable split button.
@@ -66,6 +66,7 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
         container.spacingProperty().unbind();
         container.nodeOrientationProperty().unbind();
         container.getChildren().clear();
+        getChildren().remove(container);
         super.dispose();
     }
 

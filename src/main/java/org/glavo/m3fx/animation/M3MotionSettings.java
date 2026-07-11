@@ -40,23 +40,23 @@ public final class M3MotionSettings {
     /// The key used to store nullable node-local motion behavior overrides.
     private static final Object MOTION_BEHAVIOR_KEY = new Object();
 
-    // The global animation switch used when a node has no inherited override.
+    /// The global animation switch used when a node has no inherited override.
     private static final BooleanProperty animationsEnabled =
             new SimpleBooleanProperty(M3MotionSettings.class, "animationsEnabled", true);
 
-    // The global motion scheme used when a node has no inherited override and no installed theme.
+    /// The global motion scheme used when a node has no inherited override and no installed theme.
     private static final ObjectProperty<M3MotionScheme> motionScheme =
             new SimpleObjectProperty<>(M3MotionSettings.class, "motionScheme", M3MotionScheme.standard());
 
-    // The global motion behavior used when a node has no inherited override and no installed theme.
+    /// The global motion behavior used when a node has no inherited override and no installed theme.
     private static final ObjectProperty<M3MotionBehavior> motionBehavior =
             new SimpleObjectProperty<>(M3MotionSettings.class, "motionBehavior", M3MotionBehavior.standard());
 
-    // The revision incremented whenever any global or node-local motion setting changes.
+    /// The revision incremented whenever any global or node-local motion setting changes.
     private static final ReadOnlyLongWrapper settingsRevision =
             new ReadOnlyLongWrapper(M3MotionSettings.class, "settingsRevision");
 
-    // The read-only view of [settingsRevision].
+    /// The read-only view of [settingsRevision].
     private static final ReadOnlyLongProperty readOnlySettingsRevision = settingsRevision.getReadOnlyProperty();
 
     /// Listeners notified whenever global or node-local motion settings change.
@@ -64,9 +64,9 @@ public final class M3MotionSettings {
             new CopyOnWriteArrayList<>();
 
     static {
-        animationsEnabled.addListener(observable -> markSettingsChanged());
-        motionScheme.addListener(observable -> markSettingsChanged());
-        motionBehavior.addListener(observable -> markSettingsChanged());
+        animationsEnabled.addListener((observable, oldValue, newValue) -> markSettingsChanged());
+        motionScheme.addListener((observable, oldValue, newValue) -> markSettingsChanged());
+        motionBehavior.addListener((observable, oldValue, newValue) -> markSettingsChanged());
     }
 
     /// Prevents instantiation.
@@ -177,6 +177,9 @@ public final class M3MotionSettings {
     /// @return the node-local full-motion animation override, or `null` when the node inherits its setting
     public static @Nullable Boolean getAnimationsEnabled(Node node) {
         Objects.requireNonNull(node, "node");
+        if (!node.hasProperties()) {
+            return null;
+        }
         @Nullable Object value = node.getProperties().get(ANIMATIONS_ENABLED_KEY);
         return value instanceof Boolean booleanValue ? booleanValue : null;
     }
@@ -212,6 +215,9 @@ public final class M3MotionSettings {
     /// @return the node-local motion scheme override, or `null` when the node inherits its setting
     public static @Nullable M3MotionScheme getMotionScheme(Node node) {
         Objects.requireNonNull(node, "node");
+        if (!node.hasProperties()) {
+            return null;
+        }
         @Nullable Object value = node.getProperties().get(MOTION_SCHEME_KEY);
         return value instanceof M3MotionScheme scheme ? scheme : null;
     }
@@ -247,6 +253,9 @@ public final class M3MotionSettings {
     /// @return the node-local motion behavior override, or `null` when the node inherits its setting
     public static @Nullable M3MotionBehavior getMotionBehavior(Node node) {
         Objects.requireNonNull(node, "node");
+        if (!node.hasProperties()) {
+            return null;
+        }
         @Nullable Object value = node.getProperties().get(MOTION_BEHAVIOR_KEY);
         return value instanceof M3MotionBehavior behavior ? behavior : null;
     }

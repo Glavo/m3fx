@@ -107,7 +107,7 @@ public class M3Snackbar extends Control {
     ///
     /// @param text the snackbar message text
     public M3Snackbar(String text) {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TEXT);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);

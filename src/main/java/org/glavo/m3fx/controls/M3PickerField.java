@@ -34,6 +34,7 @@ import org.glavo.m3fx.internal.M3NodeTransition;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3PopupPositioning;
+import org.glavo.m3fx.internal.M3PopupWindows;
 import org.glavo.m3fx.internal.M3ReachabilityObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -156,11 +157,8 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
     // Internal storage for [showingProperty].
     private final ReadOnlyBooleanWrapper showing = new ReadOnlyBooleanWrapper(this, "showing");
 
-    /// The picker popup enter animation.
-    private final M3NodeTransition showAnimation = new M3NodeTransition(popupContent);
-
-    /// The picker popup exit animation.
-    private final M3NodeTransition hideAnimation = new M3NodeTransition(popupContent);
+    /// The reusable picker popup enter and exit animation.
+    private final M3NodeTransition popupAnimation = new M3NodeTransition(popupContent);
 
     /// Observes runtime motion settings while this field is attached to a scene.
     private final M3MotionSettingsObserver motionSettingsObserver =
@@ -182,6 +180,9 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
 
     /// Whether focus should return to the editor after the popup hides.
     private boolean focusEditorOnHidden;
+
+    /// Whether the reusable popup animation is currently closing the picker.
+    private boolean hidingPopup;
 
     /// The vertical offset used by the current popup hide animation.
     private double popupTransitionOffsetY = -POPUP_TRANSITION_OFFSET_Y;
@@ -556,27 +557,33 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
 
     /// Shows the picker popup when this field is attached to a window.
     public final void showPicker() {
-        if (!M3Accessible.canReach(this) || popup.isShowing()) {
+        if (!M3Accessible.canReach(this) || popup.isShowing() || !M3PopupWindows.canShow(this)) {
             return;
         }
 
-        Scene scene = getScene();
-        if (scene == null || scene.getWindow() == null) {
-            return;
-        }
-
+        boolean popupShown = false;
         popupContextSynchronizer.start();
-        preparePopupForShow();
-        @Nullable M3PopupPositioning.Placement placement =
-                M3PopupPositioning.menuBelowOrAbove(inputLayout, popupContent, POPUP_OFFSET_Y);
-        if (placement == null) {
-            popupContextSynchronizer.stop();
-            return;
-        }
+        try {
+            preparePopupForShow();
+            @Nullable M3PopupPositioning.Placement placement =
+                    M3PopupPositioning.menuBelowOrAbove(inputLayout, popupContent, POPUP_OFFSET_Y);
+            if (placement == null) {
+                return;
+            }
 
-        popupTransitionOffsetY = placement.opensAbove() ? POPUP_TRANSITION_OFFSET_Y : -POPUP_TRANSITION_OFFSET_Y;
-        preparePopupForShowAnimation();
-        popup.show(this, placement.x(), placement.y());
+            popupTransitionOffsetY =
+                    placement.opensAbove() ? POPUP_TRANSITION_OFFSET_Y : -POPUP_TRANSITION_OFFSET_Y;
+            preparePopupForShowAnimation();
+            if (!M3PopupWindows.show(popup, this, placement.x(), placement.y())) {
+                return;
+            }
+            popupShown = true;
+        } finally {
+            if (!popupShown) {
+                resetPopupAnimationState();
+                popupContextSynchronizer.stop();
+            }
+        }
         reachabilityObserver.install();
         showing.set(true);
         notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
@@ -679,7 +686,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
 
     /// Adds style classes, installs handlers, and prepares the popup.
     private void initialize(String styleClass, String popupStyleClass, String openButtonAccessibleText) {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         M3ControlStyles.add(this, styleClass);
         M3ControlStyles.add(popupContent, POPUP_STYLE_CLASS);
         M3ControlStyles.add(popupContent, popupStyleClass);
@@ -702,7 +709,11 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
         popupContent.getChildren().setAll(picker);
         popup.setAutoHide(true);
         popup.getContent().add(popupContent);
-        hideAnimation.setOnFinished(event -> popup.hide());
+        popupAnimation.setOnFinished(event -> {
+            if (hidingPopup) {
+                popup.hide();
+            }
+        });
         popup.setOnHidden(event -> handlePopupHidden());
 
         pickerValue.addListener((observable, oldValue, newValue) -> handlePickerValueChanged(newValue));
@@ -770,13 +781,13 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
             return;
         }
 
-        focusEditorOnHidden = focusEditor;
-        showAnimation.stop();
-        if (hideAnimation.getStatus() == Animation.Status.RUNNING) {
+        focusEditorOnHidden |= focusEditor;
+        if (hidingPopup && popupAnimation.getStatus() == Animation.Status.RUNNING) {
             return;
         }
         M3MotionSpec spec = M3Animation.fastSpatial(this);
-        hideAnimation.configure(
+        hidingPopup = true;
+        popupAnimation.configure(
                 spec,
                 0.0,
                 POPUP_TRANSITION_SCALE,
@@ -784,7 +795,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
                 popupContent.getTranslateX(),
                 popupTransitionOffsetY
         );
-        M3Animation.playFromStart(this, hideAnimation);
+        M3Animation.playFromStart(this, popupAnimation);
     }
 
     /// Handles a selected value coming from the popup picker.
@@ -1006,7 +1017,6 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
 
     /// Synchronizes owner popup context and minimum-width state into the popup-hosted picker.
     private void preparePopupForShow() {
-        popupContextSynchronizer.sync();
         double fieldWidth = Math.max(0.0, inputLayout.getWidth());
         M3Css.setMinWidthIfUnbound(popupContent, Math.max(fieldWidth, popupContent.minWidth(-1.0)));
         popupContent.applyCss();
@@ -1014,7 +1024,8 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
 
     /// Applies initial visual state before the popup is shown.
     private void preparePopupForShowAnimation() {
-        hideAnimation.stop();
+        popupAnimation.stop();
+        hidingPopup = false;
         popupContent.setOpacity(0.0);
         popupContent.setScaleX(POPUP_TRANSITION_SCALE);
         popupContent.setScaleY(POPUP_TRANSITION_SCALE);
@@ -1023,16 +1034,17 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
 
     /// Plays the popup picker enter animation.
     private void playShowAnimation() {
-        showAnimation.stop();
+        popupAnimation.stop();
+        hidingPopup = false;
         M3MotionSpec spec = M3Animation.fastSpatial(this);
-        showAnimation.configure(spec, 1.0, 1.0, 1.0, popupContent.getTranslateX(), 0.0);
-        M3Animation.playFromStart(this, showAnimation);
+        popupAnimation.configure(spec, 1.0, 1.0, 1.0, popupContent.getTranslateX(), 0.0);
+        M3Animation.playFromStart(this, popupAnimation);
     }
 
     /// Resets transient popup picker animation transforms.
     private void resetPopupAnimationState() {
-        showAnimation.stop();
-        hideAnimation.stop();
+        popupAnimation.stop();
+        hidingPopup = false;
         popupContent.setOpacity(1.0);
         popupContent.setScaleX(1.0);
         popupContent.setScaleY(1.0);
@@ -1041,7 +1053,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
 
     /// Applies changed runtime motion settings to active picker popup animations.
     private void refreshMotionSettings() {
-        M3Animation.finishRunningAnimationsIfDisabled(this, showAnimation, hideAnimation);
+        M3Animation.finishRunningAnimationsIfDisabled(this, popupAnimation);
     }
 
     /// Handles popup hidden cleanup and optional focus return.
@@ -1053,11 +1065,10 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
         notifyFocusNodeChanged();
         popupFocusNotifier.refresh();
         resetPopupAnimationState();
-        if (focusEditorOnHidden) {
-            focusEditorOnHidden = false;
-            if (M3Accessible.canReach(editor)) {
-                M3Accessible.showItem(this, editor);
-            }
+        boolean restoreFocus = focusEditorOnHidden;
+        focusEditorOnHidden = false;
+        if (restoreFocus && M3Accessible.canReach(editor)) {
+            M3Accessible.showItem(this, editor);
         }
     }
 

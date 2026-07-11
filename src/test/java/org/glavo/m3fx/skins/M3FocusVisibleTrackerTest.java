@@ -171,6 +171,100 @@ final class M3FocusVisibleTrackerTest {
         });
     }
 
+    /// Verifies fallback tracking transfers cleanly when its owner moves between scenes.
+    @Test
+    void fallbackTrackerTransfersBetweenScenes() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane pane = focusablePane();
+            HBox firstRoot = new HBox(pane);
+            Scene firstScene = show(firstRoot, 96.0, 48.0);
+            HBox secondRoot = new HBox();
+            Scene secondScene = show(secondRoot, 96.0, 48.0);
+            int firstInitialPropertyCount = firstScene.getProperties().size();
+            int secondInitialPropertyCount = secondScene.getProperties().size();
+            M3FocusVisibleTracker tracker = new M3FocusVisibleTracker(pane, () -> {}, null);
+
+            tracker.install();
+            try {
+                assertTrue(firstScene.getProperties().size() > firstInitialPropertyCount);
+                assertEquals(secondInitialPropertyCount, secondScene.getProperties().size());
+
+                firstRoot.getChildren().clear();
+                secondRoot.getChildren().add(pane);
+
+                assertEquals(firstInitialPropertyCount, firstScene.getProperties().size());
+                assertTrue(secondScene.getProperties().size() > secondInitialPropertyCount);
+
+                pane.requestFocus();
+                secondRoot.fireEvent(keyPressedEvent(KeyCode.A));
+                assertTrue(pane.getPseudoClassStates().contains(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS));
+
+                firstRoot.fireEvent(primaryMousePressedEvent());
+                assertTrue(pane.getPseudoClassStates().contains(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS));
+
+                secondRoot.fireEvent(primaryMousePressedEvent());
+                assertFalse(pane.getPseudoClassStates().contains(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS));
+            } finally {
+                tracker.uninstall();
+            }
+
+            assertEquals(firstInitialPropertyCount, firstScene.getProperties().size());
+            assertEquals(secondInitialPropertyCount, secondScene.getProperties().size());
+        });
+    }
+    /// Verifies duplicate fallback trackers on one owner remain independent across partial uninstall.
+    @Test
+    void duplicateFallbackTrackersShareOwnerRegistration() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane pane = focusablePane();
+            HBox root = new HBox(pane);
+            show(root, 96.0, 48.0);
+            int[] invalidations = new int[2];
+            M3FocusVisibleTracker firstTracker =
+                    new M3FocusVisibleTracker(pane, () -> invalidations[0]++, null);
+            M3FocusVisibleTracker secondTracker =
+                    new M3FocusVisibleTracker(pane, () -> invalidations[1]++, null);
+            firstTracker.install();
+            secondTracker.install();
+            try {
+                pane.requestFocus();
+                int firstBeforeKey = invalidations[0];
+                int secondBeforeKey = invalidations[1];
+
+                root.fireEvent(keyPressedEvent(KeyCode.A));
+
+                assertEquals(firstBeforeKey + 1, invalidations[0]);
+                assertEquals(secondBeforeKey + 1, invalidations[1]);
+                assertTrue(pane.getPseudoClassStates().contains(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS));
+
+                firstTracker.uninstall();
+                int firstAfterUninstall = invalidations[0];
+                int secondBeforePointer = invalidations[1];
+
+                root.fireEvent(primaryMousePressedEvent());
+
+                assertEquals(firstAfterUninstall, invalidations[0]);
+                assertEquals(secondBeforePointer + 1, invalidations[1]);
+                assertFalse(pane.getPseudoClassStates().contains(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS));
+
+                int secondBeforeSecondKey = invalidations[1];
+                root.fireEvent(keyPressedEvent(KeyCode.B));
+
+                assertEquals(firstAfterUninstall, invalidations[0]);
+                assertEquals(secondBeforeSecondKey + 1, invalidations[1]);
+                assertTrue(pane.getPseudoClassStates().contains(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS));
+            } finally {
+                firstTracker.uninstall();
+                secondTracker.uninstall();
+            }
+
+            int[] afterUninstall = invalidations.clone();
+            root.fireEvent(primaryMousePressedEvent());
+            assertEquals(afterUninstall[0], invalidations[0]);
+            assertEquals(afterUninstall[1], invalidations[1]);
+        });
+    }
+
     /// Verifies that the scene-owned fallback tracker is released after its last owner uninstalls.
     @Test
     void fallbackTrackerReleasesSceneStateAfterLastUninstall() {

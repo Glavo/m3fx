@@ -3,7 +3,6 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.animation.PauseTransition;
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
@@ -31,11 +30,10 @@ import org.glavo.m3fx.internal.M3SelectionNavigation;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
-import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3ObservableLists;
-import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.M3TypeAheadState;
 import org.glavo.m3fx.skins.M3MenuSkin;
 import org.glavo.m3fx.internal.M3KeyEvents;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -45,7 +43,6 @@ import org.jetbrains.annotations.UnmodifiableView;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /// A Material Design 3 menu surface.
 ///
@@ -125,9 +122,6 @@ public class M3Menu extends Control {
     /// Handles actions from every installed menu item.
     private final EventHandler<ActionEvent> itemActionHandler = this::handleItemAction;
 
-    /// Handles accessible focus changes from every installed submenu item.
-    private final Runnable subMenuFocusListener = this::notifyFocusNodeChanged;
-
     /// Handles selected-state invalidation for every installed menu item.
     private final InvalidationListener selectedInvalidation = observable -> {
         if (observable instanceof ReadOnlyProperty<?> property && property.getBean() instanceof M3MenuItem item) {
@@ -142,22 +136,15 @@ public class M3Menu extends Control {
         }
     };
 
-    /// The current printable-key prefix used for menu type-ahead focus navigation.
-    private final StringBuilder typeAheadBuffer = new StringBuilder();
-
-    /// Clears the type-ahead prefix after the user stops typing.
-    private final PauseTransition typeAheadResetDelay = new PauseTransition();
-
-    /// Updates type-ahead timing when runtime motion settings change.
-    private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(this, this::refreshMotionSettings);
+    /// The lazily activated printable-key prefix used for menu type-ahead focus navigation.
+    private final M3TypeAheadState typeAheadState = new M3TypeAheadState(this);
 
     /// Reports focused menu-item changes to accessibility clients.
     private final M3AccessibleFocusNotifier focusNotifier =
             new M3AccessibleFocusNotifier(this, this::focusedAccessibleNode, this::notifyFocusNodeChanged);
 
-    /// Notifies popup owners when this menu's reported focus node changes.
-    private final CopyOnWriteArrayList<Runnable> focusNodeListeners = new CopyOnWriteArrayList<>();
+    /// The single composite owner notified when this menu's reported focus node changes.
+    private @Nullable Runnable accessibleFocusNodeListener;
 
     /// Updates item listeners and selection when children change.
     private final ListChangeListener<Node> childrenListener = change -> {
@@ -181,7 +168,7 @@ public class M3Menu extends Control {
                 }
             }
         }
-        clearTypeAheadBuffer();
+        typeAheadState.clear();
         enforceSelectionPolicy();
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
@@ -245,14 +232,11 @@ public class M3Menu extends Control {
         }
     }
 
-    /// Adds a listener that runs when this menu's accessible focus node changes.
+    /// Sets the composite owner callback for accessible focus-node changes.
     ///
-    /// @param listener the listener to add
-    final void addAccessibleFocusNodeListener(Runnable listener) {
-        Objects.requireNonNull(listener, "listener");
-        if (!focusNodeListeners.contains(listener)) {
-            focusNodeListeners.add(listener);
-        }
+    /// @param listener the owner callback
+    final void setAccessibleFocusNodeListener(Runnable listener) {
+        accessibleFocusNodeListener = Objects.requireNonNull(listener, "listener");
     }
 
     /// Focuses the first enabled visible menu item when one exists.
@@ -475,7 +459,7 @@ public class M3Menu extends Control {
 
     /// Adds base style classes.
     private void initialize() {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.MENU);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::requestAccessibleFocus, this::showAccessibleItem);
@@ -486,10 +470,9 @@ public class M3Menu extends Control {
         updateColorStylePseudoClass();
         sceneProperty().addListener((observable, oldScene, newScene) -> {
             if (newScene == null) {
-                clearTypeAheadBuffer();
+                typeAheadState.clear();
             }
         });
-        typeAheadResetDelay.setOnFinished(event -> clearTypeAheadBuffer());
     }
 
     /// Updates the pseudo-class that represents the current menu color mapping.
@@ -514,15 +497,6 @@ public class M3Menu extends Control {
         if (child instanceof M3SubMenuItem subMenuItem) {
             subMenuItem.getSubMenu().setColorStyle(M3MenuColorStyle.STANDARD);
         }
-    }
-
-    /// Applies changed runtime motion settings to the type-ahead reset delay.
-    private void refreshMotionSettings() {
-        M3Animation.updatePauseDuration(
-                typeAheadResetDelay,
-                M3Animation.motionBehavior(this).typeAheadResetDelay(),
-                !typeAheadBuffer.isEmpty()
-        );
     }
 
     /// Applies keyboard navigation across enabled menu items.
@@ -612,14 +586,11 @@ public class M3Menu extends Control {
         }
 
         String normalizedCharacter = M3SelectionNavigation.normalizeTypeAheadText(character);
-        typeAheadBuffer.append(normalizedCharacter);
-        typeAheadResetDelay.setDuration(M3Animation.motionBehavior(this).typeAheadResetDelay());
-        typeAheadResetDelay.playFromStart();
-        @Nullable M3MenuItem target = typeAheadTarget(typeAheadBuffer.toString());
-        if (target == null && typeAheadBuffer.length() > 1) {
-            clearTypeAheadBuffer();
-            typeAheadBuffer.append(normalizedCharacter);
-            target = typeAheadTarget(typeAheadBuffer.toString());
+        typeAheadState.append(normalizedCharacter);
+        @Nullable M3MenuItem target = typeAheadTarget(typeAheadState.getPrefix());
+        if (target == null && typeAheadState.length() > 1) {
+            typeAheadState.replace(normalizedCharacter);
+            target = typeAheadTarget(typeAheadState.getPrefix());
         }
         if (target == null) {
             return;
@@ -628,12 +599,6 @@ public class M3Menu extends Control {
         focusMenuItem(target);
         applyKeyboardSelection(target);
         event.consume();
-    }
-
-    /// Clears buffered type-ahead text and stops the pending reset timer.
-    private void clearTypeAheadBuffer() {
-        typeAheadBuffer.setLength(0);
-        typeAheadResetDelay.stop();
     }
 
     /// Returns the next enabled visible menu item matching the normalized type-ahead prefix.
@@ -972,7 +937,6 @@ public class M3Menu extends Control {
         M3Accessible.setIndexOwner(item, getItems());
         if (item instanceof M3SubMenuItem subMenuItem) {
             subMenuItem.setOwnerMenu(this);
-            subMenuItem.addAccessibleFocusNodeListener(subMenuFocusListener);
         }
         item.addEventHandler(ActionEvent.ACTION, itemActionHandler);
         item.selectedProperty().addListener(selectedInvalidation);
@@ -985,7 +949,6 @@ public class M3Menu extends Control {
         clearChildColorStylePseudoClass(item);
         M3Accessible.clearIndexOwner(item);
         if (item instanceof M3SubMenuItem subMenuItem) {
-            subMenuItem.removeAccessibleFocusNodeListener(subMenuFocusListener);
             subMenuItem.setOwnerMenu(null);
         }
         item.removeEventHandler(ActionEvent.ACTION, itemActionHandler);
@@ -1070,7 +1033,7 @@ public class M3Menu extends Control {
 
     /// Keeps selection and accessibility state consistent when an item becomes unreachable.
     private void handleItemReachabilityChanged(M3MenuItem item) {
-        clearTypeAheadBuffer();
+        typeAheadState.clear();
         if (item.isSelected() && !isReachableSelectableMenuItem(item)) {
             setItemSelected(item, false);
         }
@@ -1149,6 +1112,8 @@ public class M3Menu extends Control {
         if (selectionChanged) {
             selectedItems.setAll(selectedItemsScratch);
         }
+        selectedItemsScratch.clear();
+
         selectedItem.set(selectedItems.isEmpty() ? null : selectedItems.get(0));
         if (selectionChanged) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
@@ -1251,7 +1216,10 @@ public class M3Menu extends Control {
     private void notifyFocusNodeChanged() {
         M3Accessible.notifyFocusNodeChanged(this);
         focusNotifier.refresh();
-        focusNodeListeners.forEach(Runnable::run);
+        @Nullable Runnable listener = accessibleFocusNodeListener;
+        if (listener != null) {
+            listener.run();
+        }
     }
 
     /// Returns the focus node reported by an open submenu.

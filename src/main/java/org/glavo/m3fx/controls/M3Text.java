@@ -285,7 +285,7 @@ public class M3Text extends Labeled {
 
     /// Initializes style classes.
     private void initialize() {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TEXT);
         setFocusTraversable(false);
         updateRoleStyle();

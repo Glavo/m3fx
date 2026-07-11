@@ -33,7 +33,7 @@ public class M3DividerSkin extends SkinBase<M3Divider> {
         container.getStyleClass().add("m3-divider-container");
         line.getStyleClass().add("m3-divider-line");
         container.getChildren().add(line);
-        getChildren().add(container);
+        getChildren().setAll(container);
 
         updateMetrics();
         control.orientationProperty().addListener(metricsInvalidation);
@@ -52,6 +52,8 @@ public class M3DividerSkin extends SkinBase<M3Divider> {
         divider.insetStartProperty().removeListener(metricsInvalidation);
         divider.insetEndProperty().removeListener(metricsInvalidation);
         divider.effectiveNodeOrientationProperty().removeListener(metricsInvalidation);
+        container.getChildren().clear();
+        getChildren().remove(container);
         super.dispose();
     }
 

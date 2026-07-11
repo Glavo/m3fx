@@ -7,7 +7,10 @@ import javafx.animation.Animation;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.SetChangeListener;
 import javafx.css.PseudoClass;
+import javafx.css.StyleOrigin;
+import javafx.css.StyleableProperty;
 import javafx.scene.Node;
+import javafx.scene.effect.BlurType;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.effect.Effect;
 import javafx.scene.paint.Color;
@@ -27,6 +30,12 @@ final class M3CssEffectTransition {
 
     /// The reusable animation for drop shadow transitions.
     private final ShadowTransition animation = new ShadowTransition();
+
+    /// The lazily created shadow mutated by every animated elevation transition.
+    private @Nullable DropShadow animatedShadow;
+
+    /// The CSS origin retained while the reusable shadow temporarily represents the resolved effect.
+    private StyleOrigin animationStyleOrigin = StyleOrigin.USER_AGENT;
 
     /// The node whose pseudo-class states drive target effect resolution.
     private final Node owner;
@@ -70,6 +79,7 @@ final class M3CssEffectTransition {
         owner.getPseudoClassStates().removeListener(pseudoClassStateListener);
         motionSettingsObserver.dispose();
         animation.stop();
+        settleAnimation();
     }
 
     /// Returns whether the effect transition is currently running.
@@ -86,77 +96,75 @@ final class M3CssEffectTransition {
 
     /// Animates from the current target effect to the CSS-resolved target effect.
     void animateEffectFromCss() {
-        DropShadow start = copyDropShadow(target.getEffect());
+        boolean supportedStart = animation.captureStart(target.getEffect());
         animation.stop();
         owner.applyCss();
         if (owner != target) {
             target.applyCss();
         }
-        DropShadow end = owner.isDisabled() ? null : copyDropShadow(target.getEffect());
+        Effect resolvedEffect = target.getEffect();
+        @Nullable DropShadow end = !owner.isDisabled() && resolvedEffect instanceof DropShadow shadow ? shadow : null;
+        boolean supportedEnd = owner.isDisabled() || resolvedEffect == null || end != null;
+        StyleableProperty<@Nullable Effect> effectProperty = styleableEffectProperty();
+        @Nullable StyleOrigin resolvedOrigin = effectProperty.getStyleOrigin();
+        StyleOrigin targetOrigin = resolvedOrigin == null ? StyleOrigin.USER_AGENT : resolvedOrigin;
 
-        if (sameDropShadow(start, end)) {
-            target.setEffect(end);
+        if (targetOrigin == StyleOrigin.USER) {
             return;
         }
 
-        if (!M3Animation.areAnimationsEnabled(owner)) {
-            target.setEffect(end);
+        if (!supportedStart
+                || !supportedEnd
+                || animation.matchesTarget(end)
+                || !M3Animation.areAnimationsEnabled(owner)) {
+            if (owner.isDisabled() && resolvedEffect != null) {
+                effectProperty.applyStyle(targetOrigin, null);
+            }
             return;
         }
 
-        DropShadow animated = start == null ? emptyShadow(end) : start;
-        DropShadow targetShadow = end == null ? emptyShadow(start) : end;
-        M3MotionSpec spec = M3Animation.fastEffects(owner);
-        target.setEffect(animated);
-        animation.configure(spec, animated, targetShadow);
-
-        animation.setOnFinished(event -> target.setEffect(end));
+        DropShadow animated = reusableAnimatedShadow();
+        animationStyleOrigin = targetOrigin;
+        animation.configure(M3Animation.fastEffects(owner), animated, end);
+        effectProperty.applyStyle(targetOrigin, animated);
         M3Animation.playFromStart(owner, animation);
     }
 
-    /// Creates a zero-strength shadow that can animate to or from another shadow.
-    private static DropShadow emptyShadow(@Nullable DropShadow reference) {
-        DropShadow shadow = new DropShadow();
-        shadow.setRadius(0.0);
-        shadow.setSpread(reference == null ? 0.0 : reference.getSpread());
-        shadow.setOffsetX(reference == null ? 0.0 : reference.getOffsetX());
-        shadow.setOffsetY(0.0);
-        shadow.setColor(reference == null ? Color.TRANSPARENT : transparent(reference.getColor()));
-        return shadow;
+    /// Returns the single mutable shadow used after this transition first needs animation.
+    private DropShadow reusableAnimatedShadow() {
+        DropShadow current = animatedShadow;
+        if (current == null) {
+            current = new DropShadow();
+            animatedShadow = current;
+            animation.setOnFinished(event -> settleAnimation());
+        }
+        return current;
     }
 
-    /// Copies a drop shadow effect, or returns null for unsupported effects.
-    private static @Nullable DropShadow copyDropShadow(@Nullable Effect effect) {
-        if (!(effect instanceof DropShadow shadow)) {
-            return null;
+    /// Applies the exact target state when an animation completes or its owning skin is disposed.
+    private void settleAnimation() {
+        DropShadow current = animatedShadow;
+        if (current == null || target.getEffect() != current) {
+            return;
         }
-
-        DropShadow copy = new DropShadow();
-        copy.setBlurType(shadow.getBlurType());
-        copy.setColor(shadow.getColor());
-        copy.setRadius(shadow.getRadius());
-        copy.setSpread(shadow.getSpread());
-        copy.setOffsetX(shadow.getOffsetX());
-        copy.setOffsetY(shadow.getOffsetY());
-        copy.setInput(shadow.getInput());
-        return copy;
+        animation.applyTarget();
+        if (!animation.hasTargetShadow()) {
+            StyleableProperty<@Nullable Effect> effectProperty = styleableEffectProperty();
+            effectProperty.applyStyle(animationStyleOrigin, null);
+        }
     }
 
-    /// Returns whether two shadows have the same rendered parameters.
-    private static boolean sameDropShadow(@Nullable DropShadow first, @Nullable DropShadow second) {
-        if (first == null || second == null) {
-            return first == second;
-        }
-
-        return Double.compare(first.getRadius(), second.getRadius()) == 0
-                && Double.compare(first.getSpread(), second.getSpread()) == 0
-                && Double.compare(first.getOffsetX(), second.getOffsetX()) == 0
-                && Double.compare(first.getOffsetY(), second.getOffsetY()) == 0
-                && first.getColor().equals(second.getColor());
+    /// Returns JavaFX's styleable effect property with its actual nullable value contract.
+    @SuppressWarnings("unchecked")
+    private StyleableProperty<@Nullable Effect> styleableEffectProperty() {
+        return (StyleableProperty<@Nullable Effect>) target.effectProperty();
     }
 
     /// Returns a fully transparent color with the same hue as the reference color.
     private static Color transparent(Color color) {
+        if (color.getRed() == 0.0 && color.getGreen() == 0.0 && color.getBlue() == 0.0) {
+            return Color.TRANSPARENT;
+        }
         return new Color(color.getRed(), color.getGreen(), color.getBlue(), 0.0);
     }
 
@@ -164,6 +172,24 @@ final class M3CssEffectTransition {
     private static final class ShadowTransition extends M3FiniteTransition {
         /// The drop shadow receiving interpolated values during the current transition.
         private @Nullable DropShadow shadow;
+
+        /// Whether the captured starting effect is a drop shadow rather than no effect.
+        private boolean startPresent;
+
+        /// Whether the configured target effect is a drop shadow rather than no effect.
+        private boolean targetPresent;
+
+        /// The starting blur algorithm.
+        private BlurType startBlurType = BlurType.THREE_PASS_BOX;
+
+        /// The target blur algorithm.
+        private BlurType targetBlurType = BlurType.THREE_PASS_BOX;
+
+        /// The starting input effect.
+        private @Nullable Effect startInput;
+
+        /// The target input effect.
+        private @Nullable Effect targetInput;
 
         /// The starting radius.
         private double startRadius;
@@ -195,26 +221,111 @@ final class M3CssEffectTransition {
         /// The target color.
         private Color targetColor = Color.TRANSPARENT;
 
+        /// Whether color interpolation is needed during each pulse.
+        private boolean animateColor;
+
         /// Creates an unconfigured shadow transition.
         private ShadowTransition() {
         }
 
-        /// Reconfigures the transition from the currently rendered shadow values.
-        private void configure(M3MotionSpec spec, DropShadow shadow, DropShadow target) {
+        /// Captures the currently rendered effect before CSS resolves the next interaction state.
+        private boolean captureStart(@Nullable Effect effect) {
+            if (effect == null) {
+                startPresent = false;
+                return true;
+            }
+            if (!(effect instanceof DropShadow start)) {
+                return false;
+            }
+
+            startPresent = true;
+            startBlurType = start.getBlurType();
+            startInput = start.getInput();
+            startRadius = start.getRadius();
+            startSpread = start.getSpread();
+            startOffsetX = start.getOffsetX();
+            startOffsetY = start.getOffsetY();
+            startColor = start.getColor();
+            return true;
+        }
+
+        /// Returns whether the captured start already equals the supplied target shadow.
+        private boolean matchesTarget(@Nullable DropShadow target) {
+            if (target == null) {
+                return !startPresent;
+            }
+            return startPresent
+                    && startBlurType == target.getBlurType()
+                    && startInput == target.getInput()
+                    && Double.compare(startRadius, target.getRadius()) == 0
+                    && Double.compare(startSpread, target.getSpread()) == 0
+                    && Double.compare(startOffsetX, target.getOffsetX()) == 0
+                    && Double.compare(startOffsetY, target.getOffsetY()) == 0
+                    && startColor.equals(target.getColor());
+        }
+
+        /// Reconfigures the transition from the captured start to the resolved target shadow.
+        private void configure(M3MotionSpec spec, DropShadow shadow, @Nullable DropShadow target) {
             stop();
             setCycleDuration(spec.duration());
             setInterpolator(spec.interpolator());
             this.shadow = shadow;
-            startRadius = shadow.getRadius();
-            targetRadius = target.getRadius();
-            startSpread = shadow.getSpread();
-            targetSpread = target.getSpread();
-            startOffsetX = shadow.getOffsetX();
-            targetOffsetX = target.getOffsetX();
-            startOffsetY = shadow.getOffsetY();
-            targetOffsetY = target.getOffsetY();
-            startColor = shadow.getColor();
-            targetColor = target.getColor();
+            targetPresent = target != null;
+            if (target != null) {
+                targetBlurType = target.getBlurType();
+                targetInput = target.getInput();
+                targetRadius = target.getRadius();
+                targetSpread = target.getSpread();
+                targetOffsetX = target.getOffsetX();
+                targetOffsetY = target.getOffsetY();
+                targetColor = target.getColor();
+                if (!startPresent) {
+                    startBlurType = targetBlurType;
+                    startInput = targetInput;
+                    startRadius = 0.0;
+                    startSpread = targetSpread;
+                    startOffsetX = targetOffsetX;
+                    startOffsetY = 0.0;
+                    startColor = transparent(targetColor);
+                }
+            } else {
+                targetBlurType = startBlurType;
+                targetInput = startInput;
+                targetRadius = 0.0;
+                targetSpread = startSpread;
+                targetOffsetX = startOffsetX;
+                targetOffsetY = 0.0;
+                targetColor = transparent(startColor);
+            }
+
+            shadow.setBlurType(targetPresent ? targetBlurType : startBlurType);
+            shadow.setInput(targetPresent ? targetInput : startInput);
+            shadow.setRadius(startRadius);
+            shadow.setSpread(startSpread);
+            shadow.setOffsetX(startOffsetX);
+            shadow.setOffsetY(startOffsetY);
+            shadow.setColor(startColor);
+            animateColor = !startColor.equals(targetColor);
+        }
+
+        /// Returns whether the configured target retains a visible shadow effect.
+        private boolean hasTargetShadow() {
+            return targetPresent;
+        }
+
+        /// Applies the exact configured target values to the reusable rendered shadow.
+        private void applyTarget() {
+            DropShadow current = shadow;
+            if (current == null) {
+                return;
+            }
+            current.setBlurType(targetBlurType);
+            current.setInput(targetInput);
+            current.setRadius(targetRadius);
+            current.setSpread(targetSpread);
+            current.setOffsetX(targetOffsetX);
+            current.setOffsetY(targetOffsetY);
+            current.setColor(targetColor);
         }
 
         /// Applies the eased shadow parameters for the current pulse.
@@ -229,7 +340,9 @@ final class M3CssEffectTransition {
             current.setSpread(interpolate(startSpread, targetSpread, fraction));
             current.setOffsetX(interpolate(startOffsetX, targetOffsetX, fraction));
             current.setOffsetY(interpolate(startOffsetY, targetOffsetY, fraction));
-            current.setColor(startColor.interpolate(targetColor, fraction));
+            if (animateColor) {
+                current.setColor(startColor.interpolate(targetColor, fraction));
+            }
         }
 
         /// Interpolates linearly between two scalar values.

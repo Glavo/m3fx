@@ -30,6 +30,7 @@ import java.util.function.BooleanSupplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Verifies popup lifecycle behavior when owners leave the reachable scene graph.
@@ -48,6 +49,63 @@ final class M3PopupReachabilityTest {
         FxTestUtils.runOnFxThread(() -> {
             for (Window window : List.copyOf(Window.getWindows())) {
                 window.hide();
+            }
+        });
+    }
+
+    /// Verifies that popup owners reject show requests before their stage becomes visible.
+    @Test
+    void popupOwnersDoNotRetainOwnersFromHiddenWindows() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3MenuButton menuButton = new M3MenuButton("More", new M3MenuItem("Archive"));
+            M3SubMenuItem subMenuItem = new M3SubMenuItem("Move to", new M3MenuItem("Inbox"));
+            M3DatePickerField dateField = new M3DatePickerField(LocalDate.of(2026, 5, 18));
+            M3TimePickerField timeField = new M3TimePickerField(LocalTime.of(10, 30));
+            M3DateRangePickerField rangeField = new M3DateRangePickerField(
+                    LocalDate.of(2026, 5, 18),
+                    LocalDate.of(2026, 5, 25)
+            );
+            M3Button tooltipOwner = new M3Button("Help");
+            M3Tooltip tooltip = new M3Tooltip("Tooltip");
+            VBox root = new VBox(
+                    8.0,
+                    menuButton,
+                    subMenuItem,
+                    dateField,
+                    timeField,
+                    rangeField,
+                    tooltipOwner
+            );
+            Stage stage = new Stage();
+
+            try {
+                stage.setScene(new Scene(root, 640.0, 480.0));
+                root.applyCss();
+                root.layout();
+
+                menuButton.showMenu();
+                subMenuItem.showSubMenu();
+                dateField.showPicker();
+                timeField.showPicker();
+                rangeField.showPicker();
+                tooltip.show(tooltipOwner, 0.0, 0.0);
+
+                assertFalse(menuButton.isShowing());
+                assertFalse(subMenuItem.isSubMenuShowing());
+                assertFalse(dateField.isShowing());
+                assertFalse(timeField.isShowing());
+                assertFalse(rangeField.isShowing());
+                assertFalse(tooltip.isShowing());
+                assertNull(tooltip.getOwnerNode());
+                assertNull(tooltip.getOwnerWindow());
+            } finally {
+                tooltip.hide();
+                rangeField.hidePicker();
+                timeField.hidePicker();
+                dateField.hidePicker();
+                subMenuItem.hideSubMenu();
+                menuButton.hideMenu();
+                stage.close();
             }
         });
     }

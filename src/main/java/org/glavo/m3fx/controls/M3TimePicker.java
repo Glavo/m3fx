@@ -335,7 +335,7 @@ public class M3TimePicker extends Control {
 
     /// Adds base style classes, accessibility role, and keyboard navigation.
     private void initialize() {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleTime,
                 this::handlesAccessibleShowTarget);

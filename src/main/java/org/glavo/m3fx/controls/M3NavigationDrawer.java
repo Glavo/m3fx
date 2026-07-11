@@ -3,7 +3,6 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.animation.PauseTransition;
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyProperty;
@@ -34,11 +33,10 @@ import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
-import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3ObservableLists;
-import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.M3TypeAheadState;
 import org.glavo.m3fx.skins.M3NavigationDrawerSkin;
 import org.glavo.m3fx.internal.M3KeyEvents;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -137,15 +135,8 @@ public class M3NavigationDrawer extends Control {
     /// Handles item actions by selecting the fired item.
     private final EventHandler<ActionEvent> itemActionHandler = this::handleItemAction;
 
-    /// The current printable-key prefix used for drawer type-ahead focus navigation.
-    private final StringBuilder typeAheadBuffer = new StringBuilder();
-
-    /// Clears the type-ahead prefix after the user stops typing.
-    private final PauseTransition typeAheadResetDelay = new PauseTransition();
-
-    /// Updates type-ahead timing when runtime motion settings change.
-    private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(this, this::refreshMotionSettings);
+    /// The lazily activated printable-key prefix used for drawer type-ahead focus navigation.
+    private final M3TypeAheadState typeAheadState = new M3TypeAheadState(this);
 
     /// Updates installed item listeners when drawer content changes.
     private final ListChangeListener<Node> childrenListener = change -> {
@@ -158,7 +149,7 @@ public class M3NavigationDrawer extends Control {
             }
         }
         refreshContentCaches();
-        clearTypeAheadBuffer();
+        typeAheadState.clear();
         enforceSelectionPolicy();
         notifyDrawerContentChanged();
     };
@@ -405,7 +396,7 @@ public class M3NavigationDrawer extends Control {
 
     /// Adds base style classes and installs content listeners.
     private void initialize() {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.LIST_VIEW);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(
@@ -420,19 +411,9 @@ public class M3NavigationDrawer extends Control {
         focusNotifier.start();
         sceneProperty().addListener((observable, oldScene, newScene) -> {
             if (newScene == null) {
-                clearTypeAheadBuffer();
+                typeAheadState.clear();
             }
         });
-        typeAheadResetDelay.setOnFinished(event -> clearTypeAheadBuffer());
-    }
-
-    /// Applies changed runtime motion settings to the type-ahead reset delay.
-    private void refreshMotionSettings() {
-        M3Animation.updatePauseDuration(
-                typeAheadResetDelay,
-                M3Animation.motionBehavior(this).typeAheadResetDelay(),
-                !typeAheadBuffer.isEmpty()
-        );
     }
 
     /// Applies keyboard navigation across enabled drawer items.
@@ -486,14 +467,11 @@ public class M3NavigationDrawer extends Control {
         }
 
         String normalizedCharacter = M3SelectionNavigation.normalizeTypeAheadText(character);
-        typeAheadBuffer.append(normalizedCharacter);
-        typeAheadResetDelay.setDuration(M3Animation.motionBehavior(this).typeAheadResetDelay());
-        typeAheadResetDelay.playFromStart();
-        @Nullable M3ListItem target = typeAheadTarget(typeAheadBuffer.toString());
-        if (target == null && typeAheadBuffer.length() > 1) {
-            clearTypeAheadBuffer();
-            typeAheadBuffer.append(normalizedCharacter);
-            target = typeAheadTarget(typeAheadBuffer.toString());
+        typeAheadState.append(normalizedCharacter);
+        @Nullable M3ListItem target = typeAheadTarget(typeAheadState.getPrefix());
+        if (target == null && typeAheadState.length() > 1) {
+            typeAheadState.replace(normalizedCharacter);
+            target = typeAheadTarget(typeAheadState.getPrefix());
         }
         if (target == null) {
             return;
@@ -505,12 +483,6 @@ public class M3NavigationDrawer extends Control {
         select(target);
         notifyAccessibleFocusChanged();
         event.consume();
-    }
-
-    /// Clears buffered type-ahead text and stops the pending reset timer.
-    private void clearTypeAheadBuffer() {
-        typeAheadBuffer.setLength(0);
-        typeAheadResetDelay.stop();
     }
 
     /// Returns the next enabled visible drawer item matching the normalized type-ahead prefix.
@@ -870,14 +842,14 @@ public class M3NavigationDrawer extends Control {
             }
         }
         refreshContentCaches();
-        clearTypeAheadBuffer();
+        typeAheadState.clear();
         enforceSelectionPolicy();
         notifyDrawerContentChanged();
     }
 
     /// Updates visible content and selection after one drawer group expands or collapses.
     private void handleGroupExpandedChanged(M3NavigationDrawerGroup group) {
-        clearTypeAheadBuffer();
+        typeAheadState.clear();
         if (!group.isExpanded()) {
             boolean restoreFocus = isFocusInsideGroupItems(group);
             if (group.getItems().contains(selectedItem.get())) {
@@ -927,7 +899,7 @@ public class M3NavigationDrawer extends Control {
 
     /// Keeps selection and accessibility state consistent when an item becomes unreachable.
     private void handleItemReachabilityChanged(M3ListItem item) {
-        clearTypeAheadBuffer();
+        typeAheadState.clear();
         if (item.isSelected() && !isSelectableDrawerItem(item)) {
             clearItemSelection(item);
         }
@@ -1031,6 +1003,8 @@ public class M3NavigationDrawer extends Control {
         if (selectionChanged) {
             selectedItems.setAll(selectedItemsScratch);
         }
+        selectedItemsScratch.clear();
+
         selectedItem.set(selectedItems.isEmpty() ? null : selectedItems.get(0));
         if (selectionChanged) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);

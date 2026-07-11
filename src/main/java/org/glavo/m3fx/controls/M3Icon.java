@@ -296,7 +296,7 @@ public class M3Icon extends Labeled {
 
     /// Initializes style classes, layout, and font defaults.
     private void initialize() {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TEXT);
         setFocusTraversable(false);
         setAlignment(Pos.CENTER);

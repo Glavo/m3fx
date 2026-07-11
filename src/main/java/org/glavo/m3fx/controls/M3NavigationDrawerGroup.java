@@ -238,7 +238,7 @@ public final class M3NavigationDrawerGroup extends Control {
 
     /// Adds base style classes and connects the header row with the group state.
     private void initialize() {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         M3ControlStyles.add(headerItem, HEADER_STYLE_CLASS);
         headerItem.headlineTextProperty().bind(title);
         headerItem.setTrailingMedia(disclosureIcon, M3ListItemSlotSize.ICON);

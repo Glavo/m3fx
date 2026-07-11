@@ -35,7 +35,6 @@ import org.glavo.m3fx.skins.M3SideSheetSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -345,7 +344,7 @@ public class M3SideSheet extends Control {
 
     /// Initializes style classes, accessibility metadata, and property listeners.
     private void initialize() {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
@@ -402,10 +401,7 @@ public class M3SideSheet extends Control {
 
     /// Returns the focus targets contained by this modal sheet in traversal order.
     private List<Node> modalFocusTargets() {
-        ArrayList<Node> targets = new ArrayList<>();
-        targets.addAll(M3FocusTraversal.focusTargetsInReachableTree(getContent()));
-        targets.addAll(M3FocusTraversal.focusTargetsInReachableTrees(getActions()));
-        return List.copyOf(targets);
+        return M3FocusTraversal.focusTargetsInReachableTrees(getContent(), getActions());
     }
 
     /// Processes shown state transitions and related focus bookkeeping.

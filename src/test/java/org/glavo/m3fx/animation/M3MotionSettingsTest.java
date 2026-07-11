@@ -89,26 +89,31 @@ final class M3MotionSettingsTest {
         });
     }
 
-    /// Verifies that explicit settings change listeners are called for each effective settings change.
+    /// Verifies that explicit listeners receive consecutive global and node-local settings changes.
     @Test
     void settingsChangeListenerReportsEachSettingsChange() {
-        Pane node = new Pane();
-        AtomicInteger changes = new AtomicInteger();
-        InvalidationListener listener = observable -> changes.incrementAndGet();
-        M3MotionSettings.addSettingsChangeListener(listener);
-        try {
-            M3MotionSettings.setAnimationsEnabled(node, false);
-            M3MotionSettings.setAnimationsEnabled(node, false);
-            M3MotionSettings.clearAnimationsEnabled(node);
+        FxTestUtils.runWithMotionSettingsPreserved(() -> {
+            boolean animationsEnabled = M3MotionSettings.areAnimationsEnabled();
+            Pane node = new Pane();
+            AtomicInteger changes = new AtomicInteger();
+            InvalidationListener listener = observable -> changes.incrementAndGet();
+            M3MotionSettings.addSettingsChangeListener(listener);
+            try {
+                M3MotionSettings.setAnimationsEnabled(!animationsEnabled);
+                M3MotionSettings.setAnimationsEnabled(animationsEnabled);
+                M3MotionSettings.setAnimationsEnabled(node, false);
+                M3MotionSettings.setAnimationsEnabled(node, false);
+                M3MotionSettings.clearAnimationsEnabled(node);
 
-            assertEquals(2, changes.get());
-        } finally {
-            M3MotionSettings.removeSettingsChangeListener(listener);
-        }
+                assertEquals(4, changes.get());
+            } finally {
+                M3MotionSettings.removeSettingsChangeListener(listener);
+            }
 
-        M3MotionSettings.setAnimationsEnabled(node, true);
+            M3MotionSettings.setAnimationsEnabled(node, true);
 
-        assertEquals(2, changes.get());
+            assertEquals(4, changes.get());
+        });
     }
 
     /// Verifies the global motion scheme switch.
@@ -189,4 +194,32 @@ final class M3MotionSettingsTest {
 
         assertNull(M3MotionSettings.getMotionBehavior(node));
     }
-}
+
+
+    /// Verifies read-only motion queries do not allocate JavaFX node property maps.
+    @Test
+    void motionQueriesDoNotAllocateNodePropertyMaps() {
+        FxTestUtils.runWithMotionSettingsPreserved(() -> {
+            Pane root = new Pane();
+            Pane child = new Pane();
+            Pane nested = new Pane();
+            root.getChildren().add(child);
+            child.getChildren().add(nested);
+
+            assertFalse(root.hasProperties());
+            assertFalse(child.hasProperties());
+            assertFalse(nested.hasProperties());
+
+            M3MotionSettings.areAnimationsEnabled(nested);
+            M3MotionSettings.getMotionScheme(root);
+            M3MotionSettings.getMotionScheme(child);
+            M3MotionSettings.getMotionScheme(nested);
+            M3MotionSettings.getMotionBehavior(root);
+            M3MotionSettings.getMotionBehavior(child);
+            M3MotionSettings.getMotionBehavior(nested);
+
+            assertFalse(root.hasProperties());
+            assertFalse(child.hasProperties());
+            assertFalse(nested.hasProperties());
+        });
+    }}

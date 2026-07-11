@@ -275,7 +275,7 @@ public class M3Tab extends ButtonBase {
 
     /// Adds base style classes and applies token metrics.
     private void initialize() {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TAB_ITEM);
         setFocusTraversable(true);
         setPickOnBounds(true);

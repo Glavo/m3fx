@@ -30,7 +30,7 @@ public final class M3FormPaneSkin extends SkinBase<M3FormPane> {
         super(control);
         content.setManaged(false);
         content.getStyleClass().add(M3FormPane.CONTENT_STYLE_CLASS);
-        getChildren().add(content);
+        getChildren().setAll(content);
 
         control.getItems().addListener(itemsListener);
         control.contentPaddingProperty().addListener(metricsListener);
@@ -47,6 +47,7 @@ public final class M3FormPaneSkin extends SkinBase<M3FormPane> {
         control.contentPaddingProperty().removeListener(metricsListener);
         control.rowSpacingProperty().removeListener(metricsListener);
         content.getChildren().clear();
+        getChildren().remove(content);
         super.dispose();
     }
 

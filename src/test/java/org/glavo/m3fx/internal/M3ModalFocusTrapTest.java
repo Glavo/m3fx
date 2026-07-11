@@ -218,10 +218,14 @@ final class M3ModalFocusTrapTest {
             Scene scene = show(root, 240.0, 120.0);
             int initialPropertyCount = scene.getProperties().size();
             trap.install();
+            trap.install();
             assertTrue(scene.getProperties().size() > initialPropertyCount);
 
             trap.uninstall();
             assertEquals(initialPropertyCount, scene.getProperties().size());
+
+            root.getChildren().remove(owner);
+            root.getChildren().add(owner);
             outside.requestFocus();
 
             KeyEvent tab = fireKey(scene, keyEvent(KeyCode.TAB));

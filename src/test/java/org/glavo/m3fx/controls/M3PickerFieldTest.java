@@ -363,6 +363,14 @@ final class M3PickerFieldTest {
             assertInstanceOf(M3PickerFieldSkin.class, timeField.getSkin());
             assertTrue(dateField.getInputLayout().getStyleClass().contains(M3TextInputLayout.STYLE_CLASS));
             assertTrue(timeField.getInputLayout().getStyleClass().contains(M3TextInputLayout.STYLE_CLASS));
+
+            dateField.setSkin(new M3PickerFieldSkin<>(dateField));
+            timeField.setSkin(new M3PickerFieldSkin<>(timeField));
+            root.applyCss();
+            root.layout();
+
+            assertSame(scene, dateField.getInputLayout().getScene());
+            assertSame(scene, timeField.getInputLayout().getScene());
         });
     }
 

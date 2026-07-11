@@ -12,7 +12,9 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.beans.InvalidationListener;
+import javafx.beans.WeakInvalidationListener;
 import javafx.collections.ListChangeListener;
+import javafx.collections.WeakListChangeListener;
 import javafx.css.PseudoClass;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
@@ -103,11 +105,26 @@ public class M3ValidationSummary extends Control {
         updateSummaryState();
     };
 
-    /// Updates summary state when an invalid input or ancestor visibility chain changes.
-    private final InvalidationListener reachabilityListener = observable -> {
+    /// Weak invalid-input listener that avoids retaining the summary through a long-lived validator.
+    private final WeakListChangeListener<M3TextInputLayout> weakInvalidInputsListener =
+            new WeakListChangeListener<>(invalidInputsListener);
+
+    /// Updates summary state when an observed node changes visibility or disabled state.
+    private final InvalidationListener reachabilityStateListener = observable -> updateSummaryState();
+
+    /// Weak state listener that avoids retaining the summary through observed external nodes.
+    private final WeakInvalidationListener weakReachabilityStateListener =
+            new WeakInvalidationListener(reachabilityStateListener);
+
+    /// Rebuilds reachability observation when an invalid input or ancestor changes parent.
+    private final InvalidationListener reachabilityParentListener = observable -> {
         updateReachabilityObservers();
         updateSummaryState();
     };
+
+    /// Weak parent listener that avoids retaining the summary through observed external nodes.
+    private final WeakInvalidationListener weakReachabilityParentListener =
+            new WeakInvalidationListener(reachabilityParentListener);
 
     /// Nodes in current summary and invalid input ancestry chains observed for row visibility changes.
     private final Set<Node> observedReachabilityNodes = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -307,7 +324,7 @@ public class M3ValidationSummary extends Control {
 
     /// Initializes style classes, accessibility metadata, and validator listeners.
     private void initialize() {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleInput);
@@ -322,10 +339,10 @@ public class M3ValidationSummary extends Control {
     /// Moves invalid input listeners from the old validator to the new validator.
     private void updateValidator(@Nullable M3FormValidator oldValidator, @Nullable M3FormValidator newValidator) {
         if (oldValidator != null) {
-            oldValidator.getInvalidInputs().removeListener(invalidInputsListener);
+            oldValidator.getInvalidInputs().removeListener(weakInvalidInputsListener);
         }
         if (newValidator != null) {
-            newValidator.getInvalidInputs().addListener(invalidInputsListener);
+            newValidator.getInvalidInputs().addListener(weakInvalidInputsListener);
         }
         updateReachabilityObservers();
         updateSummaryState();
@@ -351,9 +368,9 @@ public class M3ValidationSummary extends Control {
         @Nullable Node current = node;
         while (current != null) {
             if (observedReachabilityNodes.add(current)) {
-                current.visibleProperty().addListener(reachabilityListener);
-                current.disabledProperty().addListener(reachabilityListener);
-                current.parentProperty().addListener(reachabilityListener);
+                current.visibleProperty().addListener(weakReachabilityStateListener);
+                current.disabledProperty().addListener(weakReachabilityStateListener);
+                current.parentProperty().addListener(weakReachabilityParentListener);
             }
             current = current.getParent();
         }
@@ -362,9 +379,9 @@ public class M3ValidationSummary extends Control {
     /// Removes all summary and invalid input ancestry listeners.
     private void removeReachabilityObservers() {
         for (Node node : observedReachabilityNodes) {
-            node.visibleProperty().removeListener(reachabilityListener);
-            node.disabledProperty().removeListener(reachabilityListener);
-            node.parentProperty().removeListener(reachabilityListener);
+            node.visibleProperty().removeListener(weakReachabilityStateListener);
+            node.disabledProperty().removeListener(weakReachabilityStateListener);
+            node.parentProperty().removeListener(weakReachabilityParentListener);
         }
         observedReachabilityNodes.clear();
     }
@@ -484,8 +501,7 @@ public class M3ValidationSummary extends Control {
             return false;
         }
 
-        if ((parameters.length > 0 && parameters[0] instanceof Number)
-                || isDirectInvalidInputRequest(input, parameters)) {
+        if (parameters[0] instanceof Number || isDirectInvalidInputRequest(input, parameters)) {
             return focusInput(input);
         }
 
@@ -661,6 +677,9 @@ public class M3ValidationSummary extends Control {
 
     /// Returns the invalid input whose accessibility tree exposes the supplied action parameter.
     private @Nullable M3TextInputLayout invalidInputExposing(@Nullable Object parameter) {
+        if (parameter == null) {
+            return null;
+        }
         @Nullable M3FormValidator validator = getValidator();
         if (validator == null) {
             return null;

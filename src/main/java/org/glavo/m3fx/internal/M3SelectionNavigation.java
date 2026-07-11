@@ -435,7 +435,7 @@ public final class M3SelectionNavigation {
                     children.get(Math.floorMod(currentIndex + offset, childCount)),
                     type
             );
-            if (selectable != null && normalizeTypeAheadText(textProvider.apply(selectable)).startsWith(prefix)) {
+            if (selectable != null && matchesTypeAheadPrefix(textProvider.apply(selectable), prefix)) {
                 return selectable;
             }
         }
@@ -446,6 +446,29 @@ public final class M3SelectionNavigation {
     public static String normalizeTypeAheadText(String text) {
         Objects.requireNonNull(text, "text");
         return text.strip().toLowerCase(Locale.ROOT);
+    }
+
+    /// Returns whether text starts with an already normalized type-ahead prefix.
+    ///
+    /// Leading whitespace is skipped and case is compared without creating a normalized copy of the candidate text.
+    ///
+    /// @param text the candidate item text
+    /// @param normalizedPrefix the stripped lower-case prefix
+    /// @return `true` when the candidate starts with the supplied prefix
+    public static boolean matchesTypeAheadPrefix(String text, String normalizedPrefix) {
+        Objects.requireNonNull(text, "text");
+        Objects.requireNonNull(normalizedPrefix, "normalizedPrefix");
+        if (normalizedPrefix.isEmpty()) {
+            return true;
+        }
+
+        int start = 0;
+        int textLength = text.length();
+        while (start < textLength && Character.isWhitespace(text.charAt(start))) {
+            start++;
+        }
+        return textLength - start >= normalizedPrefix.length()
+                && text.regionMatches(true, start, normalizedPrefix, 0, normalizedPrefix.length());
     }
 
     /// Returns the selection target implied by a navigation key.

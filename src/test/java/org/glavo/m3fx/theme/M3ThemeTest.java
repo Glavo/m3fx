@@ -3,6 +3,8 @@
 
 package org.glavo.m3fx.theme;
 
+import javafx.collections.ListChangeListener;
+import javafx.collections.MapChangeListener;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -101,6 +103,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.glavo.m3fx.M3TestControls.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -561,8 +564,24 @@ final class M3ThemeTest {
         M3Theme theme = M3Theme.defaultTheme();
 
         M3ThemeManager.install(scene, theme);
+
+        AtomicInteger mutations = new AtomicInteger();
+        root.getStyleClass().addListener(
+                (ListChangeListener<String>) change -> mutations.incrementAndGet()
+        );
+        root.getProperties().addListener(
+                (MapChangeListener<Object, Object>) change -> mutations.incrementAndGet()
+        );
+        scene.getStylesheets().addListener(
+                (ListChangeListener<String>) change -> mutations.incrementAndGet()
+        );
+        scene.getProperties().addListener(
+                (MapChangeListener<Object, Object>) change -> mutations.incrementAndGet()
+        );
+
         M3ThemeManager.install(scene, theme);
 
+        assertEquals(0, mutations.get());
         assertTrue(root.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
         assertTrue(root.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
         assertTrue(root.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
@@ -595,8 +614,14 @@ final class M3ThemeTest {
         assertFalse(root.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
         assertFalse(root.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
 
+        AtomicInteger themeMetadataChanges = new AtomicInteger();
+        root.getProperties().addListener(
+                (MapChangeListener<Object, Object>) change -> themeMetadataChanges.incrementAndGet()
+        );
+
         M3ThemeManager.install(scene, expressiveDarkTheme);
 
+        assertEquals(1, themeMetadataChanges.get());
         assertTrue(root.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
         assertTrue(root.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
         assertTrue(root.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
@@ -636,6 +661,20 @@ final class M3ThemeTest {
         assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
         assertEquals(root.getStyle(), popupRoot.getStyle());
         assertSame(theme, M3ThemeManager.getTheme(popupRoot));
+
+        AtomicInteger styleClassChanges = new AtomicInteger();
+        AtomicInteger themeMetadataChanges = new AtomicInteger();
+        popupRoot.getStyleClass().addListener(
+                (ListChangeListener<String>) change -> styleClassChanges.incrementAndGet()
+        );
+        popupRoot.getProperties().addListener(
+                (MapChangeListener<Object, Object>) change -> themeMetadataChanges.incrementAndGet()
+        );
+
+        M3ThemeManager.copyThemeContext(root, popupRoot);
+
+        assertEquals(0, styleClassChanges.get());
+        assertEquals(0, themeMetadataChanges.get());
 
         M3Theme baselineTheme = M3Theme.defaultTheme();
         M3ThemeManager.install(scene, baselineTheme);
@@ -736,6 +775,45 @@ final class M3ThemeTest {
         assertEquals(320.0, navigationDrawer.getMinWidth(), 0.0001);
         assertEquals(320.0, navigationDrawer.getPrefWidth(), 0.0001);
         assertEquals(320.0, navigationDrawer.getMaxWidth(), 0.0001);
+    }
+
+    /// Verifies that transient item style classes do not allocate hidden scene infrastructure on application nodes.
+    @Test
+    void carouselItemStylingDoesNotAllocateNodeProperties() {
+        M3Carousel carousel = new M3Carousel();
+        Pane firstItem = new Pane();
+        Pane secondItem = new Pane();
+
+        assertFalse(firstItem.hasProperties());
+        assertFalse(secondItem.hasProperties());
+
+        carousel.getItems().addAll(firstItem, secondItem);
+        carousel.setSelectedIndex(1);
+
+        assertFalse(firstItem.hasProperties());
+        assertFalse(secondItem.hasProperties());
+
+        carousel.getItems().remove(firstItem);
+        carousel.clearSelection();
+
+        assertFalse(firstItem.hasProperties());
+        assertFalse(secondItem.hasProperties());
+    }
+
+    /// Verifies that standalone non-Control components still install fallback tokens for their scene.
+    @Test
+    void standaloneRegionComponentInstallsFallbackStylesheet() {
+        M3Scrim scrim = new M3Scrim();
+        Pane root = new Pane(scrim);
+        Scene scene = new Scene(root);
+
+        root.applyCss();
+        root.layout();
+
+        assertTrue(scene.getStylesheets().get(0).endsWith("/styles/fallback.css"));
+        assertTrue(root.getStyleClass().contains("root"));
+        assertFalse(root.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
+        assertNull(M3ThemeManager.getTheme(root));
     }
 
     /// Verifies that standalone controls install fallback token styles on a matching scene root.

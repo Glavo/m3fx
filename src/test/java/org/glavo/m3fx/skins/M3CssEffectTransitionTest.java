@@ -3,12 +3,16 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.css.StyleOrigin;
+import javafx.css.StyleableProperty;
 import javafx.scene.Scene;
 import javafx.scene.effect.DropShadow;
+import javafx.scene.effect.Effect;
+import javafx.scene.effect.GaussianBlur;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.FxTestUtils;
+import org.glavo.m3fx.animation.M3MotionSettings;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -17,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Tests CSS-resolved effect transitions.
@@ -108,6 +113,95 @@ final class M3CssEffectTransitionTest {
                 M3MotionSettings.clearAnimationsEnabled(owner);
                 transition.uninstall();
             }
+        });
+    }
+
+    /// Verifies that animated shadows retain their CSS origin and reuse one rendered effect across interruptions.
+    @Test
+    void animatedShadowRetainsCssOriginAndIsReused() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane owner = new Pane();
+            Region target = new Region();
+            owner.getChildren().add(target);
+            new Scene(owner, 100.0, 40.0);
+            M3CssEffectTransition transition = new M3CssEffectTransition(owner, target);
+
+            transition.install();
+            M3MotionSettings.setAnimationsEnabled(owner, true);
+            try {
+                target.setStyle("-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 8, 0.18, 0, 3);");
+                transition.animateEffectFromCss();
+                DropShadow firstAnimated = assertInstanceOf(DropShadow.class, target.getEffect());
+                @SuppressWarnings("unchecked")
+                StyleableProperty<Effect> effectProperty = (StyleableProperty<Effect>) target.effectProperty();
+
+                assertEquals(StyleOrigin.INLINE, effectProperty.getStyleOrigin());
+
+                target.setStyle("-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 12, 0.18, 0, 5);");
+                transition.animateEffectFromCss();
+
+                assertSame(firstAnimated, target.getEffect());
+                assertEquals(StyleOrigin.INLINE, effectProperty.getStyleOrigin());
+
+                M3MotionSettings.setAnimationsEnabled(owner, false);
+
+                DropShadow settled = assertInstanceOf(DropShadow.class, target.getEffect());
+                assertEquals(12.0, settled.getRadius(), 0.0001);
+                assertEquals(5.0, settled.getOffsetY(), 0.0001);
+                assertEquals(StyleOrigin.INLINE, effectProperty.getStyleOrigin());
+            } finally {
+                M3MotionSettings.clearAnimationsEnabled(owner);
+                transition.uninstall();
+            }
+        });
+    }
+
+    /// Verifies that uninstalling a running transition leaves the exact CSS target elevation rendered.
+    @Test
+    void uninstallSettlesRunningTransition() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane owner = new Pane();
+            Region target = new Region();
+            owner.getChildren().add(target);
+            new Scene(owner, 100.0, 40.0);
+            M3CssEffectTransition transition = new M3CssEffectTransition(owner, target);
+
+            transition.install();
+            target.setStyle("-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 8, 0.18, 0, 3);");
+            transition.animateEffectFromCss();
+            transition.uninstall();
+
+            DropShadow settled = assertInstanceOf(DropShadow.class, target.getEffect());
+            assertEquals(8.0, settled.getRadius(), 0.0001);
+            assertEquals(3.0, settled.getOffsetY(), 0.0001);
+            assertFalse(transition.isRunning());
+        });
+    }
+
+    /// Verifies that non-shadow application effects are preserved rather than interpreted as zero elevation.
+    @Test
+    void preservesUnsupportedCssEffects() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane owner = new Pane();
+            Region target = new Region();
+            owner.getChildren().add(target);
+            new Scene(owner, 100.0, 40.0);
+            M3CssEffectTransition transition = new M3CssEffectTransition(owner, target);
+            GaussianBlur customEffect = new GaussianBlur(4.0);
+
+            transition.install();
+            target.setEffect(customEffect);
+            transition.animateEffectFromCss();
+
+            assertSame(customEffect, target.getEffect());
+            assertFalse(transition.isRunning());
+
+            owner.setDisable(true);
+
+            assertSame(customEffect, target.getEffect());
+            assertFalse(transition.isRunning());
+
+            transition.uninstall();
         });
     }
 }

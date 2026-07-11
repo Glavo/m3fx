@@ -12,7 +12,6 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.image.WritableImage;
-import javafx.event.EventType;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
@@ -109,12 +108,14 @@ final class M3TimePickerTest {
         });
     }
 
-    /// Verifies that value changes update existing time cells instead of recreating their skins.
+    /// Verifies that value changes reuse time cells and retain equivalent minute candidates.
     @Test
     void timePickerSkinReusesCellsAcrossValueChanges() {
         FxTestUtils.runOnFxThread(() -> {
             M3TimePicker picker = new M3TimePicker(LocalTime.of(10, 15));
             picker.setMinuteStep(15);
+            picker.setMinTime(LocalTime.of(9, 0));
+            picker.setMaxTime(LocalTime.of(13, 30));
             Pane root = new Pane(picker);
             Scene scene = new Scene(root, 520.0, 360.0);
 
@@ -126,12 +127,61 @@ final class M3TimePickerTest {
             ButtonBase hourCell = cellByText(picker, M3TimePicker.HOUR_CELL_STYLE_CLASS, "10");
             ButtonBase minuteCell = cellByText(picker, M3TimePicker.MINUTE_CELL_STYLE_CLASS, "15");
             ButtonBase periodCell = cellByText(picker, M3TimePicker.PERIOD_CELL_STYLE_CLASS, "AM");
+            Object minuteCandidate = minuteCell.getUserData();
+
+            assertTrue(cellByText(picker, M3TimePicker.HOUR_CELL_STYLE_CLASS, "8").isDisabled());
+            assertFalse(cellByText(picker, M3TimePicker.HOUR_CELL_STYLE_CLASS, "9").isDisabled());
+
+            picker.setMinTime(LocalTime.of(10, 0));
+
+            assertTrue(cellByText(picker, M3TimePicker.HOUR_CELL_STYLE_CLASS, "9").isDisabled());
+            assertFalse(cellByText(picker, M3TimePicker.HOUR_CELL_STYLE_CLASS, "10").isDisabled());
+
+            picker.setValue(LocalTime.of(10, 30));
+
+            assertSame(minuteCandidate, minuteCell.getUserData());
 
             picker.setValue(LocalTime.of(11, 30));
 
             assertSame(hourCell, cellByText(picker, M3TimePicker.HOUR_CELL_STYLE_CLASS, "10"));
             assertSame(minuteCell, cellByText(picker, M3TimePicker.MINUTE_CELL_STYLE_CLASS, "15"));
             assertSame(periodCell, cellByText(picker, M3TimePicker.PERIOD_CELL_STYLE_CLASS, "AM"));
+
+            picker.setValue(LocalTime.of(13, 30));
+
+            assertSame(hourCell, cellByText(picker, M3TimePicker.HOUR_CELL_STYLE_CLASS, "10"));
+            assertFalse(cellByText(picker, M3TimePicker.HOUR_CELL_STYLE_CLASS, "1").isDisabled());
+            assertTrue(cellByText(picker, M3TimePicker.HOUR_CELL_STYLE_CLASS, "2").isDisabled());
+            assertFalse(periodCell.getStyleClass().contains(M3TimePicker.SELECTED_CELL_STYLE_CLASS));
+            assertTrue(cellByText(picker, M3TimePicker.PERIOD_CELL_STYLE_CLASS, "PM")
+                    .getStyleClass().contains(M3TimePicker.SELECTED_CELL_STYLE_CLASS));
+        });
+    }
+
+    /// Verifies that replacing a time picker skin detaches the retired skin from control changes.
+    @Test
+    void replacingTimePickerSkinDetachesRetiredListeners() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3TimePicker picker = new M3TimePicker(LocalTime.of(10, 15));
+            picker.setMinuteStep(15);
+            Pane root = new Pane(picker);
+            Scene scene = new Scene(root, 520.0, 360.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            picker.resize(460.0, 320.0);
+            picker.layout();
+
+            ButtonBase retiredSelectedCell = cellByText(picker, M3TimePicker.HOUR_CELL_STYLE_CLASS, "10");
+            ButtonBase retiredTargetCell = cellByText(picker, M3TimePicker.HOUR_CELL_STYLE_CLASS, "11");
+            assertTrue(retiredSelectedCell.getStyleClass().contains(M3TimePicker.SELECTED_CELL_STYLE_CLASS));
+            assertFalse(retiredTargetCell.getStyleClass().contains(M3TimePicker.SELECTED_CELL_STYLE_CLASS));
+
+            picker.setSkin(new M3TimePickerSkin(picker));
+            picker.setValue(LocalTime.of(11, 30));
+
+            assertTrue(retiredSelectedCell.getStyleClass().contains(M3TimePicker.SELECTED_CELL_STYLE_CLASS));
+            assertFalse(retiredTargetCell.getStyleClass().contains(M3TimePicker.SELECTED_CELL_STYLE_CLASS));
         });
     }
 
@@ -157,6 +207,21 @@ final class M3TimePickerTest {
             assertTrue(cellByText(picker, M3TimePicker.HOUR_CELL_STYLE_CLASS, "08").isDisabled());
             assertFalse(cellByText(picker, M3TimePicker.HOUR_CELL_STYLE_CLASS, "09").isDisabled());
             assertTrue(cellByText(picker, M3TimePicker.HOUR_CELL_STYLE_CLASS, "18").isDisabled());
+
+            picker.setValue(LocalTime.of(14, 30));
+            picker.setMinuteStep(10);
+
+            assertEquals(6, picker.lookupAll("." + M3TimePicker.MINUTE_CELL_STYLE_CLASS).size());
+            assertTrue(cellByText(picker, M3TimePicker.HOUR_CELL_STYLE_CLASS, "18").isDisabled());
+
+            picker.setUse24HourClock(false);
+
+            assertEquals(12, picker.lookupAll("." + M3TimePicker.HOUR_CELL_STYLE_CLASS).size());
+            assertEquals(2, picker.lookupAll("." + M3TimePicker.PERIOD_CELL_STYLE_CLASS).size());
+            assertTrue(cellByText(picker, M3TimePicker.HOUR_CELL_STYLE_CLASS, "2")
+                    .getStyleClass().contains(M3TimePicker.SELECTED_CELL_STYLE_CLASS));
+            assertTrue(cellByText(picker, M3TimePicker.PERIOD_CELL_STYLE_CLASS, "PM")
+                    .getStyleClass().contains(M3TimePicker.SELECTED_CELL_STYLE_CLASS));
         });
     }
 
@@ -166,16 +231,16 @@ final class M3TimePickerTest {
         M3TimePicker picker = new M3TimePicker(LocalTime.of(10, 30));
         picker.setMinuteStep(15);
 
-        picker.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+        picker.fireEvent(keyEvent(KeyCode.RIGHT));
         assertEquals(LocalTime.of(11, 30), picker.getValue());
 
-        picker.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.UP));
+        picker.fireEvent(keyEvent(KeyCode.UP));
         assertEquals(LocalTime.of(11, 45), picker.getValue());
 
-        picker.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+        picker.fireEvent(keyEvent(KeyCode.LEFT));
         assertEquals(LocalTime.of(10, 45), picker.getValue());
 
-        picker.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN));
+        picker.fireEvent(keyEvent(KeyCode.DOWN));
         assertEquals(LocalTime.of(10, 30), picker.getValue());
     }
 
@@ -185,8 +250,8 @@ final class M3TimePickerTest {
         M3TimePicker picker = new M3TimePicker(LocalTime.of(10, 30));
         picker.setMinuteStep(15);
 
-        picker.fireEvent(modifiedKeyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT, false, true, false, false));
-        picker.fireEvent(modifiedKeyEvent(KeyEvent.KEY_PRESSED, KeyCode.UP, true, false, false, false));
+        picker.fireEvent(modifiedKeyEvent(KeyCode.RIGHT, false, true));
+        picker.fireEvent(modifiedKeyEvent(KeyCode.UP, true, false));
 
         assertEquals(LocalTime.of(10, 30), picker.getValue());
     }
@@ -198,13 +263,13 @@ final class M3TimePickerTest {
         picker.setMinuteStep(15);
         picker.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
 
-        picker.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+        picker.fireEvent(keyEvent(KeyCode.RIGHT));
         assertEquals(LocalTime.of(9, 30), picker.getValue());
 
-        picker.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT));
+        picker.fireEvent(keyEvent(KeyCode.LEFT));
         assertEquals(LocalTime.of(10, 30), picker.getValue());
 
-        picker.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.UP));
+        picker.fireEvent(keyEvent(KeyCode.UP));
         assertEquals(LocalTime.of(10, 45), picker.getValue());
     }
 
@@ -480,20 +545,18 @@ final class M3TimePickerTest {
                 "time cell"
         );
     }
+
     /// Creates a modified key event for control behavior tests.
     private static KeyEvent modifiedKeyEvent(
-            EventType<KeyEvent> eventType,
             KeyCode code,
             boolean shiftDown,
-            boolean controlDown,
-            boolean altDown,
-            boolean metaDown
+            boolean controlDown
     ) {
-        return new KeyEvent(eventType, "", "", code, shiftDown, controlDown, altDown, metaDown);
+        return new KeyEvent(KeyEvent.KEY_PRESSED, "", "", code, shiftDown, controlDown, false, false);
     }
 
     /// Creates a key event for control behavior tests.
-    private static KeyEvent keyEvent(EventType<KeyEvent> eventType, KeyCode code) {
-        return new KeyEvent(eventType, "", "", code, false, false, false, false);
+    private static KeyEvent keyEvent(KeyCode code) {
+        return new KeyEvent(KeyEvent.KEY_PRESSED, "", "", code, false, false, false, false);
     }
 }

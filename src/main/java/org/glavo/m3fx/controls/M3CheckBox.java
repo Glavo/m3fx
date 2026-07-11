@@ -501,7 +501,7 @@ public class M3CheckBox extends ButtonBase {
 
     /// Adds base style classes.
     private void initialize() {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.CHECK_BOX);
         setAlignment(Pos.CENTER_LEFT);
         setFocusTraversable(true);

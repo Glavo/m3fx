@@ -189,7 +189,7 @@ public final class M3TextInputSupport<C extends TextInputControl & M3TextInput> 
 
     /// Adds base styles and applies default text input metrics.
     public void initialize(String styleClass) {
-        M3ControlStyles.add(control, styleClass);
+        M3ControlStyles.initialize(control, styleClass);
         updateVariantStyle();
         updateMetrics();
     }

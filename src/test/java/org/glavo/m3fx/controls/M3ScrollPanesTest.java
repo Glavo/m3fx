@@ -52,6 +52,18 @@ final class M3ScrollPanesTest {
         FxTestUtils.startToolkit();
     }
 
+
+
+    /// Verifies uninstalled smooth-scroll queries and cleanup do not allocate a node properties map.
+    @Test
+    void uninstalledSmoothScrollStateDoesNotAllocateProperties() {
+        ScrollPane scrollPane = new ScrollPane();
+
+        assertFalse(scrollPane.hasProperties());
+        assertFalse(M3ScrollPanes.isSmoothScrollingEnabled(scrollPane));
+        M3ScrollPanes.disableSmoothScrolling(scrollPane);
+        assertFalse(scrollPane.hasProperties());
+    }
     /// Verifies that Material scroll styling can be applied to JavaFX scroll panes.
     @Test
     void scrollPaneMaterialStyleAppliesScrollbarColors() {

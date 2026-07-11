@@ -70,7 +70,7 @@ public final class M3FormRowSkin extends SkinBase<M3FormRow> {
 
         textColumn.getChildren().addAll(label, supportingLabel);
         container.getChildren().addAll(textColumn, contentSlot, trailingSlot);
-        getChildren().add(container);
+        getChildren().setAll(container);
 
         installListeners(control);
         updateTextAlignment();
@@ -97,6 +97,7 @@ public final class M3FormRowSkin extends SkinBase<M3FormRow> {
         trailingSlot.alignmentProperty().unbind();
         contentSlot.getChildren().clear();
         trailingSlot.getChildren().clear();
+        getChildren().remove(container);
         super.dispose();
     }
 

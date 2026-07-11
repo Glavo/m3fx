@@ -36,7 +36,6 @@ import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3ModalFocusTrap;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -131,7 +130,7 @@ public class M3DialogPane extends DialogPane {
 
     /// Creates a dialog pane.
     public M3DialogPane() {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.DIALOG);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
@@ -444,12 +443,7 @@ public class M3DialogPane extends DialogPane {
 
     /// Returns the focus targets contained by this dialog pane in traversal order.
     private List<Node> focusTrapTargets() {
-        ArrayList<Node> targets = new ArrayList<>();
-        targets.addAll(M3FocusTraversal.focusTargetsInReachableTree(getContent()));
-        for (Node button : actionButtons()) {
-            targets.addAll(M3FocusTraversal.focusTargetsInReachableTree(button));
-        }
-        return List.copyOf(targets);
+        return M3FocusTraversal.focusTargetsInReachableTrees(getContent(), actionButtons());
     }
 
     /// Returns the user-agent stylesheet for M3FX dialog panes.
@@ -880,15 +874,15 @@ public class M3DialogPane extends DialogPane {
     }
 
     /// Returns the current dialog action buttons in button type order.
-    private @Unmodifiable List<Node> actionButtons() {
-        List<Node> buttons = new ArrayList<>();
+    private List<Node> actionButtons() {
+        ArrayList<Node> buttons = new ArrayList<>(getButtonTypes().size());
         for (ButtonType buttonType : getButtonTypes()) {
             @Nullable Node button = lookupButton(buttonType);
             if (button != null) {
                 buttons.add(button);
             }
         }
-        return List.copyOf(buttons);
+        return buttons;
     }
 
     /// Returns the default action button when one exists.

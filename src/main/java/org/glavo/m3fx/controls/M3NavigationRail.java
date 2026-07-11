@@ -423,7 +423,7 @@ public class M3NavigationRail extends Control {
 
     /// Adds base style classes and installs selection listeners.
     private void initialize() {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TOOL_BAR);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleSelectionTarget, this::showAccessibleItem);
@@ -576,6 +576,8 @@ public class M3NavigationRail extends Control {
         if (selectionChanged) {
             selectedItems.setAll(selectedItemsScratch);
         }
+        selectedItemsScratch.clear();
+
         selectedItem.set(selectedItems.isEmpty() ? null : selectedItems.get(0));
         if (selectionChanged) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);

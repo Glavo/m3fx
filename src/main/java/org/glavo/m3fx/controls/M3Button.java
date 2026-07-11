@@ -481,7 +481,7 @@ public class M3Button extends ButtonBase {
 
     /// Adds base style classes and applies the default variant.
     private void initialize() {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.BUTTON);
         setAlignment(Pos.CENTER);
         setFocusTraversable(true);

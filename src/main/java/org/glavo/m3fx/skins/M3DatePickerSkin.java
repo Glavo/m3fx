@@ -74,8 +74,29 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
     /// The reusable day cell buttons in row-major order.
     private final List<DateCellButton> dayCells = new ArrayList<>(DAY_CELL_COUNT);
 
-    /// Refreshes visible text, style classes, and disabled states after control changes.
-    private final InvalidationListener refreshListener = observable -> refresh();
+    /// The locale used to create the cached month formatter.
+    private @Nullable Locale cachedFormatLocale;
+
+    /// The cached formatter for the localized month heading.
+    private @Nullable DateTimeFormatter cachedMonthFormatter;
+
+    /// The month currently mapped into reusable day cells.
+    private @Nullable YearMonth mappedMonth;
+
+    /// The first day of week used by the current reusable day-cell mapping.
+    private @Nullable DayOfWeek mappedFirstDayOfWeek;
+
+    /// Whether the current reusable day-cell mapping exposes adjacent-month days.
+    private boolean mappedShowAdjacentMonthDays;
+
+    /// Refreshes the selected cell after value changes.
+    private final InvalidationListener selectionInvalidation = observable -> refreshSelection();
+
+    /// Refreshes calendar structure after month, weekday-order, or adjacent-day changes.
+    private final InvalidationListener calendarInvalidation = observable -> refreshCalendar();
+
+    /// Refreshes cell availability and navigation after date-bound changes.
+    private final InvalidationListener boundsInvalidation = observable -> refreshBounds();
 
     /// Updates logical layout when the effective node orientation changes.
     private final InvalidationListener nodeOrientationInvalidation = observable -> updateNodeOrientationLayout();
@@ -87,20 +108,20 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
         super(control);
         initializeNodes();
         installListeners(control);
-        getChildren().add(container);
-        refresh();
+        getChildren().setAll(container);
+        refreshCalendar();
     }
 
     /// Removes listeners before the skin is disposed.
     @Override
     public void dispose() {
         M3DatePicker control = getSkinnable();
-        control.valueProperty().removeListener(refreshListener);
-        control.displayedMonthProperty().removeListener(refreshListener);
-        control.firstDayOfWeekProperty().removeListener(refreshListener);
-        control.minDateProperty().removeListener(refreshListener);
-        control.maxDateProperty().removeListener(refreshListener);
-        control.showAdjacentMonthDaysProperty().removeListener(refreshListener);
+        control.valueProperty().removeListener(selectionInvalidation);
+        control.displayedMonthProperty().removeListener(calendarInvalidation);
+        control.firstDayOfWeekProperty().removeListener(calendarInvalidation);
+        control.minDateProperty().removeListener(boundsInvalidation);
+        control.maxDateProperty().removeListener(boundsInvalidation);
+        control.showAdjacentMonthDaysProperty().removeListener(calendarInvalidation);
         control.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
         container.nodeOrientationProperty().unbind();
         header.nodeOrientationProperty().unbind();
@@ -108,6 +129,7 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
         weekdayRow.nodeOrientationProperty().unbind();
         weekdayRow.alignmentProperty().unbind();
         dayGrid.nodeOrientationProperty().unbind();
+        getChildren().remove(container);
         super.dispose();
     }
 
@@ -203,24 +225,48 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
 
     /// Installs listeners that keep the skin synchronized with control state.
     private void installListeners(M3DatePicker control) {
-        control.valueProperty().addListener(refreshListener);
-        control.displayedMonthProperty().addListener(refreshListener);
-        control.firstDayOfWeekProperty().addListener(refreshListener);
-        control.minDateProperty().addListener(refreshListener);
-        control.maxDateProperty().addListener(refreshListener);
-        control.showAdjacentMonthDaysProperty().addListener(refreshListener);
+        control.valueProperty().addListener(selectionInvalidation);
+        control.displayedMonthProperty().addListener(calendarInvalidation);
+        control.firstDayOfWeekProperty().addListener(calendarInvalidation);
+        control.minDateProperty().addListener(boundsInvalidation);
+        control.maxDateProperty().addListener(boundsInvalidation);
+        control.showAdjacentMonthDaysProperty().addListener(calendarInvalidation);
         control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
     }
 
-    /// Updates all visible labels and day cells from the current control state.
-    private void refresh() {
+    /// Updates localized labels, date mappings, state classes, and navigation for a calendar structure change.
+    private void refreshCalendar() {
         M3DatePicker control = getSkinnable();
         YearMonth displayedMonth = control.getDisplayedMonth();
+        DayOfWeek firstDayOfWeek = control.getFirstDayOfWeek();
+        boolean showAdjacentMonthDays = control.isShowAdjacentMonthDays();
         Locale locale = Locale.getDefault(Locale.Category.FORMAT);
-        monthLabel.setText(DateTimeFormatter.ofPattern("MMMM uuuu", locale).format(displayedMonth.atDay(1)));
-        refreshWeekdayLabels(control, locale);
-        refreshDayCells(control, displayedMonth);
+        boolean localeChanged = !locale.equals(cachedFormatLocale);
+        boolean monthChanged = !displayedMonth.equals(mappedMonth);
+        boolean firstDayChanged = firstDayOfWeek != mappedFirstDayOfWeek;
+        boolean adjacentVisibilityChanged = showAdjacentMonthDays != mappedShowAdjacentMonthDays;
+        if (localeChanged || monthChanged) {
+            monthLabel.setText(monthFormatter(locale).format(displayedMonth.atDay(1)));
+        }
+        if (localeChanged || firstDayChanged) {
+            refreshWeekdayLabels(control, locale);
+        }
+        if (monthChanged || firstDayChanged || adjacentVisibilityChanged) {
+            refreshDayCellStructure(control, displayedMonth);
+            mappedMonth = displayedMonth;
+            mappedFirstDayOfWeek = firstDayOfWeek;
+            mappedShowAdjacentMonthDays = showAdjacentMonthDays;
+        }
+        refreshDayCellAvailability(control);
+        refreshSelection();
         refreshNavigationButtons(control, displayedMonth);
+    }
+
+    /// Updates disabled day states and navigation after optional date bounds change.
+    private void refreshBounds() {
+        M3DatePicker control = getSkinnable();
+        refreshDayCellAvailability(control);
+        refreshNavigationButtons(control, control.getDisplayedMonth());
     }
 
     /// Updates localized weekday labels starting from the configured first day.
@@ -232,8 +278,8 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
         }
     }
 
-    /// Updates day cell dates, labels, visibility, and state classes.
-    private void refreshDayCells(M3DatePicker control, YearMonth displayedMonth) {
+    /// Updates day cell dates, labels, visibility, and structural state classes.
+    private void refreshDayCellStructure(M3DatePicker control, YearMonth displayedMonth) {
         LocalDate firstOfMonth = displayedMonth.atDay(1);
         int leadingDays = Math.floorMod(
                 firstOfMonth.getDayOfWeek().getValue() - control.getFirstDayOfWeek().getValue(),
@@ -241,27 +287,54 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
         );
         LocalDate gridStart = firstOfMonth.minusDays(leadingDays);
         LocalDate today = LocalDate.now();
-        LocalDate selectedDate = control.getValue();
 
         for (int index = 0; index < DAY_CELL_COUNT; index++) {
             LocalDate date = gridStart.plusDays(index);
             DateCellButton dayCell = dayCells.get(index);
             boolean outsideMonth = !YearMonth.from(date).equals(displayedMonth);
             boolean visible = !outsideMonth || control.isShowAdjacentMonthDays();
-            boolean disabled = !visible || control.isDateDisabled(date);
             boolean todayDate = date.equals(today);
-            boolean selected = date.equals(selectedDate);
 
-            dayCell.setText(Integer.toString(date.getDayOfMonth()));
+            String dayText = Integer.toString(date.getDayOfMonth());
+            if (!dayText.equals(dayCell.getText())) {
+                dayCell.setText(dayText);
+            }
             dayCell.setUserData(date);
             dayCell.setAccessibleText(date.toString());
             dayCell.setVisible(visible);
             dayCell.setMouseTransparent(!visible);
-            dayCell.setDisable(disabled);
             setStyleClass(dayCell, M3DatePicker.OUTSIDE_MONTH_DAY_STYLE_CLASS, outsideMonth && visible);
             setStyleClass(dayCell, M3DatePicker.TODAY_DAY_STYLE_CLASS, todayDate && visible);
-            setStyleClass(dayCell, M3DatePicker.SELECTED_DAY_STYLE_CLASS, selected && visible);
         }
+    }
+
+    /// Updates disabled day states without rebuilding date mappings.
+    private void refreshDayCellAvailability(M3DatePicker control) {
+        for (DateCellButton dayCell : dayCells) {
+            if (dayCell.getUserData() instanceof LocalDate date) {
+                dayCell.setDisable(!dayCell.isVisible() || control.isDateDisabled(date));
+            }
+        }
+    }
+
+    /// Updates the selected-day state without rebuilding date mappings.
+    private void refreshSelection() {
+        @Nullable LocalDate selectedDate = getSkinnable().getValue();
+        for (DateCellButton dayCell : dayCells) {
+            boolean selected = dayCell.isVisible() && selectedDate != null && selectedDate.equals(dayCell.getUserData());
+            setStyleClass(dayCell, M3DatePicker.SELECTED_DAY_STYLE_CLASS, selected);
+        }
+    }
+
+    /// Returns the cached localized month formatter, rebuilding it only when the default format locale changes.
+    private DateTimeFormatter monthFormatter(Locale locale) {
+        DateTimeFormatter formatter = cachedMonthFormatter;
+        if (formatter == null || !locale.equals(cachedFormatLocale)) {
+            formatter = DateTimeFormatter.ofPattern("MMMM uuuu", locale);
+            cachedFormatLocale = locale;
+            cachedMonthFormatter = formatter;
+        }
+        return formatter;
     }
 
     /// Updates month navigation buttons according to optional date bounds.
@@ -322,23 +395,6 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
         DateCellButton button = new DateCellButton();
         button.setOnAction(this::handleDayCellAction);
         return button;
-    }
-
-    /// Returns whether a day cell is visible to users and accessibility clients.
-    private static boolean isAccessibleDayCell(DateCellButton dayCell) {
-        return isEffectivelyReachable(dayCell) && !dayCell.isMouseTransparent();
-    }
-
-    /// Returns whether a node and its ancestor chain are visible and enabled.
-    private static boolean isEffectivelyReachable(Node node) {
-        @Nullable Node current = node;
-        while (current != null) {
-            if (!current.isVisible() || current.isDisabled()) {
-                return false;
-            }
-            current = current.getParent();
-        }
-        return true;
     }
 
     /// Adds or removes a style class.

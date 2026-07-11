@@ -25,7 +25,7 @@ public final class M3ListPaneSkin extends SkinBase<M3ListPane> {
     public M3ListPaneSkin(M3ListPane control) {
         super(control);
         container.setManaged(false);
-        getChildren().add(container);
+        getChildren().setAll(container);
         control.getItems().addListener(itemsListener);
         updateItems();
     }
@@ -35,6 +35,7 @@ public final class M3ListPaneSkin extends SkinBase<M3ListPane> {
     public void dispose() {
         getSkinnable().getItems().removeListener(itemsListener);
         container.getChildren().clear();
+        getChildren().remove(container);
         super.dispose();
     }
 

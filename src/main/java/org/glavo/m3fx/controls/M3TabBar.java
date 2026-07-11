@@ -331,7 +331,7 @@ public class M3TabBar extends Control {
 
     /// Adds base style classes and installs selection listeners.
     private void initialize() {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TAB_PANE);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleSelectionTarget, this::showAccessibleItem);
@@ -484,6 +484,8 @@ public class M3TabBar extends Control {
         if (selectionChanged) {
             selectedTabs.setAll(selectedTabsScratch);
         }
+        selectedTabsScratch.clear();
+
         selectedTab.set(selectedTabs.isEmpty() ? null : selectedTabs.get(0));
         if (selectionChanged) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);

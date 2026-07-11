@@ -4,7 +4,6 @@
 package org.glavo.m3fx.controls;
 
 import javafx.animation.Animation;
-import javafx.beans.InvalidationListener;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.collections.ObservableList;
@@ -13,7 +12,6 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
-import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.stage.Popup;
@@ -28,12 +26,12 @@ import org.glavo.m3fx.internal.M3NodeTransition;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3PopupPositioning;
+import org.glavo.m3fx.internal.M3PopupWindows;
 import org.glavo.m3fx.internal.M3ReachabilityObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /// A Material Design 3 menu button backed by an M3FX menu popup.
 ///
@@ -78,11 +76,8 @@ public class M3MenuButton extends M3Button {
         }
     };
 
-    /// The menu popup enter animation.
-    private final M3NodeTransition showAnimation = new M3NodeTransition(menu);
-
-    /// The menu popup exit animation.
-    private final M3NodeTransition hideAnimation = new M3NodeTransition(menu);
+    /// The reusable menu popup enter and exit animation.
+    private final M3NodeTransition popupAnimation = new M3NodeTransition(menu);
 
     /// Observes runtime motion settings while this button is attached to a scene.
     private final M3MotionSettingsObserver motionSettingsObserver =
@@ -96,14 +91,14 @@ public class M3MenuButton extends M3Button {
     private final M3ReachabilityObserver reachabilityObserver =
             new M3ReachabilityObserver(this, this::hidePopupIfOwnerUnreachable);
 
-    /// Notifies composite owners when this button's reported focus node changes.
-    private final CopyOnWriteArrayList<Runnable> popupFocusNodeListeners = new CopyOnWriteArrayList<>();
-
-    /// Updates the popup menu orientation when this button's effective node orientation changes.
-    private final InvalidationListener nodeOrientationInvalidation = observable -> updatePopupMenuOrientation();
+    /// The single composite owner notified when this button's reported focus node changes.
+    private @Nullable Runnable popupFocusNodeListener;
 
     /// Whether focus should return to the owner button after the popup hides.
     private boolean focusOwnerOnHidden;
+
+    /// Whether the reusable popup animation is currently closing the menu.
+    private boolean hidingPopup;
 
     /// Creates an empty menu button.
     public M3MenuButton() {
@@ -155,38 +150,39 @@ public class M3MenuButton extends M3Button {
         return showing.getReadOnlyProperty();
     }
 
-    /// Adds a listener that runs when this button's popup-accessible focus node changes.
+    /// Sets the composite owner callback for popup-accessible focus changes.
     ///
-    /// @param listener the listener to add
-    final void addPopupFocusNodeListener(Runnable listener) {
-        Objects.requireNonNull(listener, "listener");
-        if (!popupFocusNodeListeners.contains(listener)) {
-            popupFocusNodeListeners.add(listener);
-        }
+    /// @param listener the callback to invoke
+    final void setPopupFocusNodeListener(Runnable listener) {
+        popupFocusNodeListener = Objects.requireNonNull(listener, "listener");
     }
 
     /// Shows the menu popup below this button.
     public final void showMenu() {
-        if (!M3Accessible.canReach(this) || popup.isShowing()) {
+        if (!M3Accessible.canReach(this) || popup.isShowing() || !M3PopupWindows.canShow(this)) {
             return;
         }
 
-        Scene scene = getScene();
-        if (scene == null || scene.getWindow() == null) {
-            return;
-        }
-
+        boolean popupShown = false;
         popupContextSynchronizer.start();
-        prepareMenuForPopup();
-        M3Css.setMinWidthIfUnbound(menu, Math.max(getWidth(), menu.minWidth(-1.0)));
-        @Nullable M3PopupPositioning.Placement placement =
-                M3PopupPositioning.menuBelowOrAbove(this, menu, MENU_OFFSET_Y);
-        if (placement == null) {
-            popupContextSynchronizer.stop();
-            return;
+        try {
+            M3Css.setMinWidthIfUnbound(menu, Math.max(getWidth(), menu.minWidth(-1.0)));
+            @Nullable M3PopupPositioning.Placement placement =
+                    M3PopupPositioning.menuBelowOrAbove(this, menu, MENU_OFFSET_Y);
+            if (placement == null) {
+                return;
+            }
+            prepareMenuForShowAnimation();
+            if (!M3PopupWindows.show(popup, this, placement.x(), placement.y())) {
+                return;
+            }
+            popupShown = true;
+        } finally {
+            if (!popupShown) {
+                resetMenuAnimationState();
+                popupContextSynchronizer.stop();
+            }
         }
-        prepareMenuForShowAnimation();
-        popup.show(this, placement.x(), placement.y());
         reachabilityObserver.install();
         showing.set(true);
         notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
@@ -206,13 +202,13 @@ public class M3MenuButton extends M3Button {
             return;
         }
 
-        focusOwnerOnHidden = focusOwner;
-        showAnimation.stop();
-        if (hideAnimation.getStatus() == Animation.Status.RUNNING) {
+        focusOwnerOnHidden |= focusOwner;
+        if (hidingPopup && popupAnimation.getStatus() == Animation.Status.RUNNING) {
             return;
         }
         M3MotionSpec spec = M3Animation.fastSpatial(this);
-        hideAnimation.configure(
+        hidingPopup = true;
+        popupAnimation.configure(
                 spec,
                 0.0,
                 MENU_TRANSITION_SCALE,
@@ -220,7 +216,7 @@ public class M3MenuButton extends M3Button {
                 menu.getTranslateX(),
                 MENU_TRANSITION_OFFSET_Y
         );
-        M3Animation.playFromStart(this, hideAnimation);
+        M3Animation.playFromStart(this, popupAnimation);
     }
 
     /// Toggles the menu popup when the button fires.
@@ -292,7 +288,11 @@ public class M3MenuButton extends M3Button {
         );
         popup.setAutoHide(true);
         popup.getContent().add(menu);
-        hideAnimation.setOnFinished(event -> popup.hide());
+        popupAnimation.setOnFinished(event -> {
+            if (hidingPopup) {
+                popup.hide();
+            }
+        });
         popup.setOnHidden(event -> {
             reachabilityObserver.uninstall();
             popupContextSynchronizer.stop();
@@ -301,19 +301,17 @@ public class M3MenuButton extends M3Button {
             notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
             notifyPopupFocusNodeChanged();
             resetMenuAnimationState();
-            if (focusOwnerOnHidden) {
-                focusOwnerOnHidden = false;
-                if (M3Accessible.canReach(this)) {
-                    M3Accessible.showDirectItem(this, this);
-                }
+            boolean restoreFocus = focusOwnerOnHidden;
+            focusOwnerOnHidden = false;
+            if (restoreFocus && M3Accessible.canReach(this)) {
+                M3Accessible.showDirectItem(this, this);
             }
         });
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
         menu.addEventHandler(KeyEvent.KEY_PRESSED, this::handleMenuKeyPressed);
         menu.addEventHandler(javafx.event.ActionEvent.ACTION, event -> hideMenu(true));
-        menu.addAccessibleFocusNodeListener(this::notifyPopupFocusNodeChanged);
+        menu.setAccessibleFocusNodeListener(this::notifyPopupFocusNodeChanged);
         popupFocusNotifier.start();
-        effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
     }
 
     /// Hides the popup if its owner button can no longer be reached from its scene.
@@ -450,23 +448,16 @@ public class M3MenuButton extends M3Button {
     private void notifyPopupFocusNodeChanged() {
         M3Accessible.notifyFocusNodeChanged(this);
         popupFocusNotifier.refresh();
-        popupFocusNodeListeners.forEach(Runnable::run);
-    }
-
-    /// Synchronizes an already showing popup menu with this button's effective node orientation.
-    private void updatePopupMenuOrientation() {
-        if (!popup.isShowing()) {
-            return;
+        @Nullable Runnable listener = popupFocusNodeListener;
+        if (listener != null) {
+            listener.run();
         }
-        menu.setNodeOrientation(getEffectiveNodeOrientation());
-        menu.applyCss();
-        menu.layout();
-        notifyPopupFocusNodeChanged();
     }
 
     /// Applies initial visual state before the popup is shown.
     private void prepareMenuForShowAnimation() {
-        hideAnimation.stop();
+        popupAnimation.stop();
+        hidingPopup = false;
         menu.setOpacity(0.0);
         menu.setScaleX(MENU_TRANSITION_SCALE);
         menu.setScaleY(MENU_TRANSITION_SCALE);
@@ -475,16 +466,17 @@ public class M3MenuButton extends M3Button {
 
     /// Plays the popup menu enter animation.
     private void playShowAnimation() {
-        showAnimation.stop();
+        popupAnimation.stop();
+        hidingPopup = false;
         M3MotionSpec spec = M3Animation.fastSpatial(this);
-        showAnimation.configure(spec, 1.0, 1.0, 1.0, menu.getTranslateX(), 0.0);
-        M3Animation.playFromStart(this, showAnimation);
+        popupAnimation.configure(spec, 1.0, 1.0, 1.0, menu.getTranslateX(), 0.0);
+        M3Animation.playFromStart(this, popupAnimation);
     }
 
     /// Resets transient popup menu animation transforms.
     private void resetMenuAnimationState() {
-        showAnimation.stop();
-        hideAnimation.stop();
+        popupAnimation.stop();
+        hidingPopup = false;
         menu.setOpacity(1.0);
         menu.setScaleX(1.0);
         menu.setScaleY(1.0);
@@ -493,13 +485,6 @@ public class M3MenuButton extends M3Button {
 
     /// Applies changed runtime motion settings to active popup menu animations.
     private void refreshMotionSettings() {
-        M3Animation.finishRunningAnimationsIfDisabled(this, showAnimation, hideAnimation);
-    }
-
-
-    /// Synchronizes owner popup context into the popup-hosted menu.
-    private void prepareMenuForPopup() {
-        popupContextSynchronizer.sync();
-        menu.applyCss();
+        M3Animation.finishRunningAnimationsIfDisabled(this, popupAnimation);
     }
 }

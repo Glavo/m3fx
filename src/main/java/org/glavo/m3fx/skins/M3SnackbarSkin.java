@@ -72,7 +72,7 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
 
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         container.getChildren().addAll(textLabel, actionButton);
-        getChildren().add(container);
+        getChildren().setAll(container);
         updateActionVisibility(control.getActionText());
         updateTokenStyles();
     }
@@ -94,6 +94,7 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
         snackbar.actionContainerHeightProperty().removeListener(tokenInvalidation);
         snackbar.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
         container.nodeOrientationProperty().unbind();
+        getChildren().remove(container);
         super.dispose();
     }
 

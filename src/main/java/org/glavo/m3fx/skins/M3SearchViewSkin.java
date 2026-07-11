@@ -26,7 +26,7 @@ public final class M3SearchViewSkin extends SkinBase<M3SearchView> {
         container.getStyleClass().add(M3SearchView.CONTENT_STYLE_CLASS);
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         container.getChildren().setAll(searchBar, resultsContainer);
-        getChildren().add(container);
+        getChildren().setAll(container);
     }
 
     /// Removes child references before disposal.
@@ -34,6 +34,7 @@ public final class M3SearchViewSkin extends SkinBase<M3SearchView> {
     public void dispose() {
         container.nodeOrientationProperty().unbind();
         container.getChildren().clear();
+        getChildren().remove(container);
         super.dispose();
     }
 

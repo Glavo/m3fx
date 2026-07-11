@@ -455,7 +455,7 @@ public class M3IconToggleButtonGroup extends Control {
 
     /// Adds base style classes and installs child listeners.
     private void initialize() {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TOOL_BAR);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleSelectionTarget, this::showAccessibleItem);
@@ -652,6 +652,8 @@ public class M3IconToggleButtonGroup extends Control {
         if (selectionChanged) {
             selectedButtons.setAll(selectedButtonsScratch);
         }
+        selectedButtonsScratch.clear();
+
         selectedButton.set(selectedButtons.isEmpty() ? null : selectedButtons.get(0));
         if (selectionChanged) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);

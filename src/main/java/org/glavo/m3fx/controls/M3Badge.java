@@ -92,7 +92,7 @@ public class M3Badge extends Control {
     ///
     /// @param text the badge text, or an empty string for a dot badge
     public M3Badge(String text) {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TEXT);
         setFocusTraversable(false);
         this.text.addListener((observable, oldValue, newValue) -> updateAccessibleText());

@@ -93,7 +93,7 @@ public class M3Scrim extends Region {
 
     /// Creates a scrim.
     public M3Scrim() {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.BUTTON);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, parameters -> parameters.length == 0 && showAccessibleItem());
         setAccessibleText("Dismiss");

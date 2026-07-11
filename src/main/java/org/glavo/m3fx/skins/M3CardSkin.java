@@ -54,7 +54,7 @@ public class M3CardSkin extends SkinBase<M3Card> {
         super(control);
         effectTransition = new M3CssEffectTransition(control, container);
         container.getStyleClass().add("m3-card-container");
-        getChildren().add(container);
+        getChildren().setAll(container);
         updateContent(control.getContent());
         updateTokenStyles();
         stateLayer.installStateTransitions(control);
@@ -80,6 +80,8 @@ public class M3CardSkin extends SkinBase<M3Card> {
         card.removeEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
         card.removeEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
         card.removeEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
+        container.getChildren().clear();
+        getChildren().remove(container);
         super.dispose();
     }
 

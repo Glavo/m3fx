@@ -165,7 +165,9 @@ public final class M3Css {
         }
 
         writePadding(region, padding);
-        region.getProperties().remove(PADDING_KEY);
+        if (region.hasProperties()) {
+            region.getProperties().remove(PADDING_KEY);
+        }
     }
 
     /// Writes region padding as an M3FX-owned metric.
@@ -191,7 +193,9 @@ public final class M3Css {
             double currentValue,
             double defaultValue
     ) {
-        Object previousValue = region.getProperties().get(key);
+        @Nullable Object previousValue = region.hasProperties()
+                ? region.getProperties().get(key)
+                : null;
         if (bound) {
             rememberSuspendedMetricIfOwned(region, key,
                     previousValue instanceof Number || previousValue == null
@@ -217,7 +221,9 @@ public final class M3Css {
             Object currentValue,
             Object defaultValue
     ) {
-        Object previousValue = region.getProperties().get(key);
+        @Nullable Object previousValue = region.hasProperties()
+                ? region.getProperties().get(key)
+                : null;
         if (bound) {
             rememberSuspendedMetricIfOwned(region, key,
                     previousValue != null || Objects.equals(currentValue, defaultValue));
@@ -251,6 +257,9 @@ public final class M3Css {
 
     /// Returns and clears whether a skipped helper-owned metric should be restored after unbinding.
     private static boolean consumeSuspendedMetric(Region region, Object key) {
+        if (!region.hasProperties()) {
+            return false;
+        }
         Object value = region.getProperties().get(SUSPENDED_METRICS_KEY);
         if (!(value instanceof Set<?> suspendedMetrics) || !suspendedMetrics.remove(key)) {
             return false;

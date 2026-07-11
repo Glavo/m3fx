@@ -63,7 +63,7 @@ public final class M3DisclosureIconSkin extends SkinBase<M3DisclosureIcon> {
         arrow.setManaged(false);
         arrow.setMouseTransparent(true);
         arrow.setRotate(rotationFor(control.isExpanded(), isRightToLeft()));
-        getChildren().add(arrow);
+        getChildren().setAll(arrow);
         control.expandedProperty().addListener(expandedListener);
         control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
     }
@@ -75,6 +75,7 @@ public final class M3DisclosureIconSkin extends SkinBase<M3DisclosureIcon> {
         motionSettingsObserver.dispose();
         getSkinnable().expandedProperty().removeListener(expandedListener);
         getSkinnable().effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
+        getChildren().remove(arrow);
         super.dispose();
     }
 

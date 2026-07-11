@@ -49,7 +49,7 @@ public class M3BadgeSkin extends SkinBase<M3Badge> {
         super(control);
         label.setManaged(false);
         label.getStyleClass().add("m3-badge-label");
-        getChildren().add(label);
+        getChildren().setAll(label);
 
         currentDisplayText = control.getDisplayText();
         updateText();
@@ -76,6 +76,7 @@ public class M3BadgeSkin extends SkinBase<M3Badge> {
         badge.largeMinWidthProperty().removeListener(metricsInvalidation);
         badge.containerShapeProperty().removeListener(metricsInvalidation);
         badge.horizontalPaddingProperty().removeListener(metricsInvalidation);
+        getChildren().remove(label);
         super.dispose();
     }
 

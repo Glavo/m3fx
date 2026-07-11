@@ -200,7 +200,7 @@ public class M3ListItem extends Control {
     /// @param headlineText the headline text displayed by the list item
     public M3ListItem(String headlineText) {
         installLineCountListeners();
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.LIST_ITEM);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
         setFocusTraversable(true);

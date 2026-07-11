@@ -62,7 +62,7 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
     public M3CarouselSkin(M3Carousel control) {
         super(control);
         installViewport();
-        getChildren().add(viewport);
+        getChildren().setAll(viewport);
         control.getItems().addListener(itemsListener);
         control.selectedIndexProperty().addListener(selectedIndexListener);
         updateItems();
@@ -77,6 +77,8 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
         getSkinnable().getItems().removeListener(itemsListener);
         getSkinnable().selectedIndexProperty().removeListener(selectedIndexListener);
         track.getChildren().clear();
+        viewport.setContent(null);
+        getChildren().remove(viewport);
         super.dispose();
     }
 

@@ -21,13 +21,16 @@ public final class M3PickerFieldSkin<T, P extends Control> extends SkinBase<M3Pi
     /// @param control the skinned picker field
     public M3PickerFieldSkin(M3PickerField<T, P> control) {
         super(control);
-        getChildren().add(inputLayout());
+        getChildren().setAll(inputLayout());
     }
 
     /// Removes child references before disposal.
     @Override
     public void dispose() {
-        getChildren().clear();
+        M3PickerField<T, P> control = getSkinnable();
+        if (control.getSkin() == null || control.getSkin() == this) {
+            getChildren().clear();
+        }
         super.dispose();
     }
 

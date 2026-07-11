@@ -146,7 +146,7 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
 
         iconContainer.getChildren().addAll(indicator, graphicContainer, badgeContainer);
         content.getChildren().addAll(iconContainer, label);
-        getChildren().addAll(stateLayer, content);
+        getChildren().setAll(stateLayer, content);
 
         stateLayer.installStateTransitions(control);
         updateText(control.getText());
@@ -184,6 +184,7 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
         item.disabledProperty().removeListener(disabledListener);
         uninstallInteractionHandlers(item);
         resetInteractionState();
+        getChildren().removeAll(stateLayer, content);
         super.dispose();
     }
 

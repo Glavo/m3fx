@@ -15,6 +15,7 @@ import javafx.stage.Stage;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.skins.M3NavigationDrawerGroupSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -204,6 +205,13 @@ final class M3NavigationDrawerGroupTest {
                 double expandedHeight = group.prefHeight(GROUP_WIDTH);
                 assertTrue(expandedHeight > collapsedHeight, () -> "collapsed=" + collapsedHeight
                         + ", expanded=" + expandedHeight);
+                assertEquals(2, group.lookupAll("." + M3NavigationDrawerGroup.CHILD_STYLE_CLASS).size());
+
+                group.setSkin(new M3NavigationDrawerGroupSkin(group));
+                root.applyCss();
+                root.layout();
+
+                assertSame(scene, group.getHeaderItem().getScene());
                 assertEquals(2, group.lookupAll("." + M3NavigationDrawerGroup.CHILD_STYLE_CLASS).size());
             } finally {
                 M3MotionSettings.clearAnimationsEnabled(group);

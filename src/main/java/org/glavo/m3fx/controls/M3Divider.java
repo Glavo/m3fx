@@ -75,7 +75,7 @@ public class M3Divider extends Control {
     ///
     /// @param orientation the divider orientation
     public M3Divider(Orientation orientation) {
-        M3ControlStyles.add(this, STYLE_CLASS);
+        M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.NODE);
         setFocusTraversable(false);
         setOrientation(orientation);

@@ -18,7 +18,6 @@ import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.internal.theme.M3ThemeMetadata;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,63 +44,11 @@ public final class M3PopupContextSynchronizer {
     /// Supplies the currently active theme root for popup token declarations.
     private final Supplier<@Nullable Parent> themeRootSupplier;
 
-    /// Additional popup-control stylesheet URLs appended after owner stylesheets.
-    private final String @Unmodifiable [] controlStylesheets;
+    /// The popup-control stylesheet appended after owner stylesheets, or `null` when none is needed.
+    private final @Nullable String controlStylesheet;
 
-    /// Handles owner scene changes.
-    private final ChangeListener<@Nullable Scene> ownerSceneListener =
-            (observable, oldScene, newScene) -> sync();
-
-    /// Handles owner parent-chain changes.
-    private final ChangeListener<@Nullable Parent> ownerParentListener =
-            (observable, oldParent, newParent) -> sync();
-
-    /// Handles owner effective orientation changes.
-    private final ChangeListener<NodeOrientation> ownerOrientationListener =
-            (observable, oldValue, newValue) -> syncNodeOrientationAndLayout();
-
-    /// Handles global and node-local motion setting changes.
-    private final InvalidationListener motionSettingsListener = observable -> syncIfMotionContextChanged();
-
-    /// Handles root changes on the current owner scene.
-    private final ChangeListener<Parent> sceneRootListener =
-            (observable, oldRoot, newRoot) -> sync();
-
-    /// Handles stylesheet list mutations from the current stylesheet source.
-    private final ListChangeListener<String> stylesheetSourceListener = change -> sync();
-
-    /// Handles theme metadata changes on the owner scene root.
-    private final MapChangeListener<Object, Object> sceneRootPropertiesListener = this::handleThemeRootPropertiesChanged;
-
-    /// Handles theme metadata changes on the currently resolved active theme root.
-    private final MapChangeListener<Object, Object> activeThemeRootPropertiesListener =
-            this::handleThemeRootPropertiesChanged;
-
-    /// Handles theme metadata changes on owner ancestors that may become the active local theme root.
-    private final MapChangeListener<Object, Object> ancestorThemeRootPropertiesListener =
-            this::handleThemeRootPropertiesChanged;
-
-    /// Handles parent-chain changes on owner ancestors while a popup remains visible.
-    private final ChangeListener<@Nullable Parent> ancestorParentListener =
-            (observable, oldParent, newParent) -> sync();
-
-    /// The stylesheet list currently observed for mutations.
-    private @Nullable ObservableList<String> observedStylesheetSource;
-
-    /// The scene currently observed for root changes.
-    private @Nullable Scene observedScene;
-
-    /// The scene root currently observed for theme metadata changes.
-    private @Nullable Parent observedSceneRoot;
-
-    /// The active theme root currently observed for direct theme metadata changes.
-    private @Nullable Parent observedThemeRoot;
-
-    /// Owner ancestors currently observed for future local theme installation.
-    private ArrayList<Parent> observedAncestorThemeRoots = new ArrayList<>();
-
-    /// Reusable storage for collecting the current owner ancestor chain.
-    private ArrayList<Parent> ancestorThemeRootsScratch = new ArrayList<>();
+    /// Runtime listeners and ancestor caches, created only after this synchronizer is first started.
+    private @Nullable Observation observation;
 
     /// Whether listeners are currently registered.
     private boolean running;
@@ -125,8 +72,24 @@ public final class M3PopupContextSynchronizer {
     ///
     /// @param owner the node that owns the popup content
     /// @param popupRoot the detached popup root to synchronize
-    /// @param controlStylesheets popup-specific control stylesheet URLs
-    public M3PopupContextSynchronizer(Node owner, Parent popupRoot, String... controlStylesheets) {
+    public M3PopupContextSynchronizer(Node owner, Parent popupRoot) {
+        this(
+                owner,
+                popupRoot,
+                () -> {
+                    @Nullable Scene scene = owner.getScene();
+                    return scene == null ? null : scene.getStylesheets();
+                },
+                () -> M3ThemeResolver.findThemeRoot(owner)
+        );
+    }
+
+    /// Creates a synchronizer that mirrors owner context and appends one popup-control stylesheet.
+    ///
+    /// @param owner the node that owns the popup content
+    /// @param popupRoot the detached popup root to synchronize
+    /// @param controlStylesheet the popup-specific control stylesheet URL
+    public M3PopupContextSynchronizer(Node owner, Parent popupRoot, String controlStylesheet) {
         this(
                 owner,
                 popupRoot,
@@ -135,7 +98,7 @@ public final class M3PopupContextSynchronizer {
                     return scene == null ? null : scene.getStylesheets();
                 },
                 () -> M3ThemeResolver.findThemeRoot(owner),
-                controlStylesheets
+                Objects.requireNonNull(controlStylesheet, "controlStylesheet")
         );
     }
 
@@ -145,22 +108,34 @@ public final class M3PopupContextSynchronizer {
     /// @param popupRoot the detached popup root to synchronize
     /// @param stylesheetSourceSupplier supplies the stylesheet list mirrored into the popup root
     /// @param themeRootSupplier supplies the current theme root copied into the popup root
-    /// @param controlStylesheets popup-specific control stylesheet URLs
+    public M3PopupContextSynchronizer(
+            Node owner,
+            Parent popupRoot,
+            Supplier<@Nullable ObservableList<String>> stylesheetSourceSupplier,
+            Supplier<@Nullable Parent> themeRootSupplier
+    ) {
+        this(owner, popupRoot, stylesheetSourceSupplier, themeRootSupplier, null);
+    }
+
+    /// Creates a synchronizer with custom context suppliers and an optional popup-control stylesheet.
+    ///
+    /// @param owner the node that owns the popup content
+    /// @param popupRoot the detached popup root to synchronize
+    /// @param stylesheetSourceSupplier supplies the stylesheet list mirrored into the popup root
+    /// @param themeRootSupplier supplies the current theme root copied into the popup root
+    /// @param controlStylesheet the popup-specific control stylesheet URL, or `null` when none is needed
     public M3PopupContextSynchronizer(
             Node owner,
             Parent popupRoot,
             Supplier<@Nullable ObservableList<String>> stylesheetSourceSupplier,
             Supplier<@Nullable Parent> themeRootSupplier,
-            String... controlStylesheets
+            @Nullable String controlStylesheet
     ) {
         this.owner = Objects.requireNonNull(owner, "owner");
         this.popupRoot = Objects.requireNonNull(popupRoot, "popupRoot");
         this.stylesheetSourceSupplier = Objects.requireNonNull(stylesheetSourceSupplier, "stylesheetSourceSupplier");
         this.themeRootSupplier = Objects.requireNonNull(themeRootSupplier, "themeRootSupplier");
-        this.controlStylesheets = Objects.requireNonNull(controlStylesheets, "controlStylesheets").clone();
-        for (String stylesheet : this.controlStylesheets) {
-            Objects.requireNonNull(stylesheet, "stylesheet");
-        }
+        this.controlStylesheet = controlStylesheet;
     }
 
     /// Starts observing owner context and immediately synchronizes the popup root.
@@ -171,11 +146,12 @@ public final class M3PopupContextSynchronizer {
         }
 
         running = true;
-        owner.sceneProperty().addListener(ownerSceneListener);
-        owner.parentProperty().addListener(ownerParentListener);
-        owner.effectiveNodeOrientationProperty().addListener(ownerOrientationListener);
-        M3MotionSettings.addSettingsChangeListener(motionSettingsListener);
-        refreshObservedThemeRoots();
+        Observation currentObservation = observation;
+        if (currentObservation == null) {
+            currentObservation = new Observation();
+            observation = currentObservation;
+        }
+        currentObservation.start();
         sync();
     }
 
@@ -186,15 +162,10 @@ public final class M3PopupContextSynchronizer {
         }
 
         running = false;
-        owner.sceneProperty().removeListener(ownerSceneListener);
-        owner.parentProperty().removeListener(ownerParentListener);
-        owner.effectiveNodeOrientationProperty().removeListener(ownerOrientationListener);
-        M3MotionSettings.removeSettingsChangeListener(motionSettingsListener);
-        updateObservedStylesheetSource(null);
-        updateObservedScene(null);
-        updateObservedSceneRoot(null);
-        updateObservedThemeRoot(null);
-        clearObservedAncestorThemeRoots();
+        Observation currentObservation = observation;
+        if (currentObservation != null) {
+            currentObservation.stop();
+        }
         clearSyncedMotionContext();
     }
 
@@ -209,8 +180,10 @@ public final class M3PopupContextSynchronizer {
             @Nullable ObservableList<String> stylesheetSource = stylesheetSourceSupplier.get();
             @Nullable Parent themeRoot = themeRootSupplier.get();
             if (running) {
-                updateObservedStylesheetSource(stylesheetSource);
-                refreshObservedThemeRoots(themeRoot);
+                Observation currentObservation = observation;
+                if (currentObservation != null) {
+                    currentObservation.refreshThemeRoots(stylesheetSource, themeRoot);
+                }
             }
 
             syncNodeOrientation();
@@ -219,19 +192,12 @@ public final class M3PopupContextSynchronizer {
                     popupRoot,
                     stylesheetSource == null ? List.of() : stylesheetSource,
                     themeRoot,
-                    controlStylesheets
+                    controlStylesheet
             );
             popupRoot.applyCss();
             popupRoot.layout();
         } finally {
             syncing = false;
-        }
-    }
-
-    /// Handles installed-theme metadata changes on observed roots.
-    private void handleThemeRootPropertiesChanged(MapChangeListener.Change<?, ?> change) {
-        if (M3ThemeMetadata.isThemePropertyKey(change.getKey())) {
-            sync();
         }
     }
 
@@ -327,119 +293,206 @@ public final class M3PopupContextSynchronizer {
         syncedMotionBehavior = null;
     }
 
-    /// Updates the observed stylesheet list.
-    private void updateObservedStylesheetSource(@Nullable ObservableList<String> stylesheetSource) {
-        if (observedStylesheetSource == stylesheetSource) {
-            return;
-        }
-        if (observedStylesheetSource != null) {
-            observedStylesheetSource.removeListener(stylesheetSourceListener);
-        }
-        observedStylesheetSource = stylesheetSource;
-        if (observedStylesheetSource != null) {
-            observedStylesheetSource.addListener(stylesheetSourceListener);
-        }
-    }
+    /// Owns listeners and mutable lookup caches used only while popup context is observed.
+    @NotNullByDefault
+    private final class Observation {
+        /// Handles owner scene changes.
+        private final ChangeListener<@Nullable Scene> ownerSceneListener =
+                (observable, oldScene, newScene) -> sync();
 
-    /// Refreshes every theme-related root observer from the current owner state.
-    private void refreshObservedThemeRoots() {
-        refreshObservedThemeRoots(themeRootSupplier.get());
-    }
+        /// Handles owner parent-chain changes.
+        private final ChangeListener<@Nullable Parent> ownerParentListener =
+                (observable, oldParent, newParent) -> sync();
 
-    /// Refreshes every theme-related root observer using a known active theme root.
-    private void refreshObservedThemeRoots(@Nullable Parent themeRoot) {
-        updateObservedScene(owner.getScene());
-        updateObservedSceneRoot(observedScene == null ? null : observedScene.getRoot());
-        updateObservedThemeRoot(themeRoot);
-        updateObservedAncestorThemeRoots();
-    }
+        /// Handles owner effective orientation changes.
+        private final ChangeListener<NodeOrientation> ownerOrientationListener =
+                (observable, oldValue, newValue) -> syncNodeOrientationAndLayout();
 
-    /// Updates the observed scene.
-    private void updateObservedScene(@Nullable Scene scene) {
-        if (observedScene == scene) {
-            return;
-        }
-        if (observedScene != null) {
-            observedScene.rootProperty().removeListener(sceneRootListener);
-        }
-        observedScene = scene;
-        if (observedScene != null) {
-            observedScene.rootProperty().addListener(sceneRootListener);
-        }
-    }
+        /// Handles global and node-local motion setting changes.
+        private final InvalidationListener motionSettingsListener = observable -> syncIfMotionContextChanged();
 
-    /// Updates the observed scene root.
-    private void updateObservedSceneRoot(@Nullable Parent sceneRoot) {
-        if (observedSceneRoot == sceneRoot) {
-            return;
-        }
-        if (observedSceneRoot != null) {
-            observedSceneRoot.getProperties().removeListener(sceneRootPropertiesListener);
-        }
-        observedSceneRoot = sceneRoot;
-        if (observedSceneRoot != null) {
-            observedSceneRoot.getProperties().addListener(sceneRootPropertiesListener);
-        }
-    }
+        /// Handles root changes on the current owner scene.
+        private final ChangeListener<Parent> sceneRootListener =
+                (observable, oldRoot, newRoot) -> sync();
 
-    /// Updates the observed active theme root.
-    private void updateObservedThemeRoot(@Nullable Parent themeRoot) {
-        @Nullable Parent nextThemeRoot = themeRoot == observedSceneRoot ? null : themeRoot;
-        if (observedThemeRoot == nextThemeRoot) {
-            return;
-        }
-        if (observedThemeRoot != null) {
-            observedThemeRoot.getProperties().removeListener(activeThemeRootPropertiesListener);
-        }
-        observedThemeRoot = nextThemeRoot;
-        if (observedThemeRoot != null) {
-            observedThemeRoot.getProperties().addListener(activeThemeRootPropertiesListener);
-        }
-    }
+        /// Handles stylesheet list mutations from the current stylesheet source.
+        private final ListChangeListener<String> stylesheetSourceListener = change -> sync();
 
-    /// Updates the observed owner ancestors that could receive a local theme after the popup is already open.
-    private void updateObservedAncestorThemeRoots() {
-        ancestorThemeRootsScratch.clear();
-        @Nullable Node current = owner;
-        while (current != null) {
-            if (current instanceof Parent parent
-                    && parent != observedSceneRoot
-                    && parent != observedThemeRoot) {
-                ancestorThemeRootsScratch.add(parent);
+        /// Handles theme metadata changes on the owner scene root.
+        private final MapChangeListener<Object, Object> sceneRootPropertiesListener =
+                this::handleThemeRootPropertiesChanged;
+
+        /// Handles theme metadata changes on the currently resolved active theme root.
+        private final MapChangeListener<Object, Object> activeThemeRootPropertiesListener =
+                this::handleThemeRootPropertiesChanged;
+
+        /// Handles theme metadata changes on owner ancestors that may become the active local theme root.
+        private final MapChangeListener<Object, Object> ancestorThemeRootPropertiesListener =
+                this::handleThemeRootPropertiesChanged;
+
+        /// Handles parent-chain changes on owner ancestors while a popup remains visible.
+        private final ChangeListener<@Nullable Parent> ancestorParentListener =
+                (observable, oldParent, newParent) -> sync();
+
+        /// The stylesheet list currently observed for mutations.
+        private @Nullable ObservableList<String> observedStylesheetSource;
+
+        /// The scene currently observed for root changes.
+        private @Nullable Scene observedScene;
+
+        /// The scene root currently observed for theme metadata changes.
+        private @Nullable Parent observedSceneRoot;
+
+        /// The active theme root currently observed for direct theme metadata changes.
+        private @Nullable Parent observedThemeRoot;
+
+        /// Owner ancestors currently observed for future local theme installation.
+        private ArrayList<Parent> observedAncestorThemeRoots = new ArrayList<>();
+
+        /// Reusable storage for collecting the current owner ancestor chain.
+        private ArrayList<Parent> ancestorThemeRootsScratch = new ArrayList<>();
+
+        /// Installs owner and global listeners before the first synchronization pass.
+        private void start() {
+            owner.sceneProperty().addListener(ownerSceneListener);
+            owner.parentProperty().addListener(ownerParentListener);
+            owner.effectiveNodeOrientationProperty().addListener(ownerOrientationListener);
+            M3MotionSettings.addSettingsChangeListener(motionSettingsListener);
+        }
+
+        /// Removes every external listener and clears observed object references.
+        private void stop() {
+            owner.sceneProperty().removeListener(ownerSceneListener);
+            owner.parentProperty().removeListener(ownerParentListener);
+            owner.effectiveNodeOrientationProperty().removeListener(ownerOrientationListener);
+            M3MotionSettings.removeSettingsChangeListener(motionSettingsListener);
+            updateObservedStylesheetSource(null);
+            updateObservedScene(null);
+            updateObservedSceneRoot(null);
+            updateObservedThemeRoot(null);
+            clearObservedAncestorThemeRoots();
+        }
+
+        /// Handles installed-theme metadata changes on observed roots.
+        private void handleThemeRootPropertiesChanged(MapChangeListener.Change<?, ?> change) {
+            if (M3ThemeMetadata.isThemePropertyKey(change.getKey())) {
+                sync();
             }
-            current = current.getParent();
         }
 
-        boolean unchanged = observedAncestorThemeRoots.size() == ancestorThemeRootsScratch.size();
-        for (int index = 0; unchanged && index < observedAncestorThemeRoots.size(); index++) {
-            unchanged = observedAncestorThemeRoots.get(index) == ancestorThemeRootsScratch.get(index);
+        /// Refreshes stylesheet and theme-related observers from one resolved context snapshot.
+        private void refreshThemeRoots(
+                @Nullable ObservableList<String> stylesheetSource,
+                @Nullable Parent themeRoot
+        ) {
+            updateObservedStylesheetSource(stylesheetSource);
+            updateObservedScene(owner.getScene());
+            updateObservedSceneRoot(observedScene == null ? null : observedScene.getRoot());
+            updateObservedThemeRoot(themeRoot);
+            updateObservedAncestorThemeRoots();
         }
-        if (unchanged) {
+
+        /// Updates the observed stylesheet list.
+        private void updateObservedStylesheetSource(@Nullable ObservableList<String> stylesheetSource) {
+            if (observedStylesheetSource == stylesheetSource) {
+                return;
+            }
+            if (observedStylesheetSource != null) {
+                observedStylesheetSource.removeListener(stylesheetSourceListener);
+            }
+            observedStylesheetSource = stylesheetSource;
+            if (observedStylesheetSource != null) {
+                observedStylesheetSource.addListener(stylesheetSourceListener);
+            }
+        }
+
+        /// Updates the observed scene.
+        private void updateObservedScene(@Nullable Scene scene) {
+            if (observedScene == scene) {
+                return;
+            }
+            if (observedScene != null) {
+                observedScene.rootProperty().removeListener(sceneRootListener);
+            }
+            observedScene = scene;
+            if (observedScene != null) {
+                observedScene.rootProperty().addListener(sceneRootListener);
+            }
+        }
+
+        /// Updates the observed scene root.
+        private void updateObservedSceneRoot(@Nullable Parent sceneRoot) {
+            if (observedSceneRoot == sceneRoot) {
+                return;
+            }
+            if (observedSceneRoot != null) {
+                observedSceneRoot.getProperties().removeListener(sceneRootPropertiesListener);
+            }
+            observedSceneRoot = sceneRoot;
+            if (observedSceneRoot != null) {
+                observedSceneRoot.getProperties().addListener(sceneRootPropertiesListener);
+            }
+        }
+
+        /// Updates the observed active theme root.
+        private void updateObservedThemeRoot(@Nullable Parent themeRoot) {
+            @Nullable Parent nextThemeRoot = themeRoot == observedSceneRoot ? null : themeRoot;
+            if (observedThemeRoot == nextThemeRoot) {
+                return;
+            }
+            if (observedThemeRoot != null) {
+                observedThemeRoot.getProperties().removeListener(activeThemeRootPropertiesListener);
+            }
+            observedThemeRoot = nextThemeRoot;
+            if (observedThemeRoot != null) {
+                observedThemeRoot.getProperties().addListener(activeThemeRootPropertiesListener);
+            }
+        }
+
+        /// Updates owner ancestors that could receive a local theme while the popup remains open.
+        private void updateObservedAncestorThemeRoots() {
             ancestorThemeRootsScratch.clear();
-            return;
+            @Nullable Node current = owner;
+            while (current != null) {
+                if (current instanceof Parent parent
+                        && parent != observedSceneRoot
+                        && parent != observedThemeRoot) {
+                    ancestorThemeRootsScratch.add(parent);
+                }
+                current = current.getParent();
+            }
+
+            boolean unchanged = observedAncestorThemeRoots.size() == ancestorThemeRootsScratch.size();
+            for (int index = 0; unchanged && index < observedAncestorThemeRoots.size(); index++) {
+                unchanged = observedAncestorThemeRoots.get(index) == ancestorThemeRootsScratch.get(index);
+            }
+            if (unchanged) {
+                ancestorThemeRootsScratch.clear();
+                return;
+            }
+
+            for (Parent parent : observedAncestorThemeRoots) {
+                parent.getProperties().removeListener(ancestorThemeRootPropertiesListener);
+                parent.parentProperty().removeListener(ancestorParentListener);
+            }
+            for (Parent parent : ancestorThemeRootsScratch) {
+                parent.getProperties().addListener(ancestorThemeRootPropertiesListener);
+                parent.parentProperty().addListener(ancestorParentListener);
+            }
+
+            ArrayList<Parent> previousRoots = observedAncestorThemeRoots;
+            observedAncestorThemeRoots = ancestorThemeRootsScratch;
+            ancestorThemeRootsScratch = previousRoots;
+            ancestorThemeRootsScratch.clear();
         }
 
-        for (Parent parent : observedAncestorThemeRoots) {
-            parent.getProperties().removeListener(ancestorThemeRootPropertiesListener);
-            parent.parentProperty().removeListener(ancestorParentListener);
+        /// Removes local-theme listeners from all previously observed owner ancestors.
+        private void clearObservedAncestorThemeRoots() {
+            for (Parent parent : observedAncestorThemeRoots) {
+                parent.getProperties().removeListener(ancestorThemeRootPropertiesListener);
+                parent.parentProperty().removeListener(ancestorParentListener);
+            }
+            observedAncestorThemeRoots.clear();
         }
-        for (Parent parent : ancestorThemeRootsScratch) {
-            parent.getProperties().addListener(ancestorThemeRootPropertiesListener);
-            parent.parentProperty().addListener(ancestorParentListener);
-        }
-
-        ArrayList<Parent> previousRoots = observedAncestorThemeRoots;
-        observedAncestorThemeRoots = ancestorThemeRootsScratch;
-        ancestorThemeRootsScratch = previousRoots;
-        ancestorThemeRootsScratch.clear();
-    }
-
-    /// Removes local-theme listeners from all previously observed owner ancestors.
-    private void clearObservedAncestorThemeRoots() {
-        for (Parent parent : observedAncestorThemeRoots) {
-            parent.getProperties().removeListener(ancestorThemeRootPropertiesListener);
-            parent.parentProperty().removeListener(ancestorParentListener);
-        }
-        observedAncestorThemeRoots.clear();
     }
 }

@@ -181,7 +181,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         HBox.setHgrow(textBox, Priority.ALWAYS);
         trailingBox.getChildren().addAll(trailingSupportingLabel, trailingSlot);
         container.getChildren().addAll(leadingSlot, textBox, trailingBox);
-        getChildren().addAll(selectionContainer, container, stateLayer);
+        getChildren().setAll(selectionContainer, container, stateLayer);
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         textBox.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         trailingBox.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
@@ -256,6 +256,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         textBox.alignmentProperty().unbind();
         trailingBox.nodeOrientationProperty().unbind();
         trailingBox.alignmentProperty().unbind();
+        getChildren().removeAll(selectionContainer, container, stateLayer);
         super.dispose();
     }
 
