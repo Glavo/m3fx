@@ -57,3 +57,8 @@
 .m3-icon:disabled {
     -fx-opacity: 0.38;
 }
+
+.m3-text-input-leading:disabled .m3-icon:disabled,
+.m3-text-input-trailing:disabled .m3-icon:disabled {
+    -fx-opacity: 1;
+}

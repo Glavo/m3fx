@@ -234,9 +234,9 @@ public class M3Menu extends Control {
 
     /// Sets the composite owner callback for accessible focus-node changes.
     ///
-    /// @param listener the owner callback
-    final void setAccessibleFocusNodeListener(Runnable listener) {
-        accessibleFocusNodeListener = Objects.requireNonNull(listener, "listener");
+    /// @param listener the owner callback, or `null` to detach the owner
+    final void setAccessibleFocusNodeListener(@Nullable Runnable listener) {
+        accessibleFocusNodeListener = listener;
     }
 
     /// Focuses the first enabled visible menu item when one exists.

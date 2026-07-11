@@ -3,7 +3,9 @@
 
 package org.glavo.m3fx.tokens;
 
+import javafx.scene.paint.Color;
 import org.glavo.m3fx.internal.tokens.M3TokenSetImpl;
+import org.glavo.monetfx.ColorRole;
 import org.glavo.monetfx.ColorScheme;
 import org.jetbrains.annotations.NotNullByDefault;
 
@@ -115,9 +117,33 @@ public sealed interface M3TokenSet permits M3TokenSetImpl {
                 + " "
                 + stateLayerTokens().toStyleDeclarations()
                 + " "
+                + stateColorStyleDeclarations(colorTokens(), stateLayerTokens())
+                + " "
                 + componentTokens().toStyleDeclarations()
                 + " "
                 + menuColorStyleDeclarations(profile());
+    }
+
+    /// Converts state-dependent on-surface colors into reusable alpha-preserving JavaFX paints.
+    private static String stateColorStyleDeclarations(
+            M3ColorTokens colorTokens,
+            M3StateLayerTokens stateLayerTokens
+    ) {
+        Color onSurface = colorTokens.get(ColorRole.ON_SURFACE);
+        return "-m3-state-disabled-container-color: "
+                + toRgba(onSurface, stateLayerTokens.disabledContainerOpacity()) + "; "
+                + "-m3-state-disabled-content-color: "
+                + toRgba(onSurface, stateLayerTokens.disabledContentOpacity()) + "; "
+                + "-m3-button-disabled-container-color: " + toRgba(onSurface, 0.10) + "; "
+                + "-m3-text-field-disabled-container-color: " + toRgba(onSurface, 0.04) + ";";
+    }
+
+    /// Converts a color and component opacity into a JavaFX CSS rgba paint.
+    private static String toRgba(Color color, double opacity) {
+        int red = (int) Math.round(color.getRed() * 255.0);
+        int green = (int) Math.round(color.getGreen() * 255.0);
+        int blue = (int) Math.round(color.getBlue() * 255.0);
+        return "rgba(" + red + "," + green + "," + blue + "," + M3TokenCss.format(opacity) + ")";
     }
 
     /// Converts menu color mappings into JavaFX inline CSS declarations.

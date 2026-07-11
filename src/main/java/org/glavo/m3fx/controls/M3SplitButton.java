@@ -401,13 +401,17 @@ public class M3SplitButton extends Control {
         menuButton.setHorizontalPadding(0.0);
         actionButton.addEventHandler(ActionEvent.ACTION, event -> hideMenu());
         menuButton.showingProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue) {
+                popupFocusNotifier.start();
+            } else {
+                popupFocusNotifier.stop();
+            }
             notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
             notifyFocusNodeChanged();
         });
         menuButton.setPopupFocusNodeListener(this::notifyFocusNodeChanged);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         focusNotifier.start();
-        popupFocusNotifier.start();
         updateVariant();
         updateSizeStyle();
         updatePartEdgeStyles();

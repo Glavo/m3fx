@@ -42,8 +42,13 @@ public final class M3ShapeMorph {
             oval()
     );
 
-    /// Matched cubic curve pairs used by this morph.
-    private final CubicPair @Unmodifiable [] matches;
+    /// Interleaved start and end cubic coordinates used by this morph.
+    ///
+    /// Each curve occupies sixteen values: eight start coordinates followed by eight end coordinates.
+    private final double @Unmodifiable [] coordinates;
+
+    /// The number of cubic curves stored in [coordinates].
+    private final int curveCount;
 
     /// The starting polygon center x-coordinate.
     private final double startCenterX;
@@ -62,7 +67,14 @@ public final class M3ShapeMorph {
     /// @param start the starting polygon
     /// @param end the ending polygon
     private M3ShapeMorph(RoundedPolygon start, RoundedPolygon end) {
-        this.matches = match(start, end).toArray(CubicPair[]::new);
+        List<CubicPair> matches = match(start, end);
+        this.curveCount = matches.size();
+        this.coordinates = new double[curveCount * 16];
+        for (int index = 0; index < curveCount; index++) {
+            CubicPair pair = matches.get(index);
+            writeCubicCoordinates(pair.start(), coordinates, index * 16);
+            writeCubicCoordinates(pair.end(), coordinates, index * 16 + 8);
+        }
         this.startCenterX = start.centerX;
         this.startCenterY = start.centerY;
         this.endCenterX = end.centerX;
@@ -98,7 +110,7 @@ public final class M3ShapeMorph {
             double rotationTurns,
             Scratch scratch
     ) {
-        ensurePathElements(path, matches.length);
+        ensurePathElements(path, curveCount);
         double scale = size * sequenceScale * extraScale;
         double morphCenterX = interpolate(startCenterX, endCenterX, progress) * scale;
         double morphCenterY = interpolate(startCenterY, endCenterY, progress) * scale;
@@ -109,10 +121,9 @@ public final class M3ShapeMorph {
         double sin = Math.sin(rotation);
 
         MoveTo moveTo = (MoveTo) path.getElements().get(0);
-        CubicPair firstMatch = matches[0];
         transformPoint(
-                interpolate(firstMatch.start().anchor0X(), firstMatch.end().anchor0X(), progress),
-                interpolate(firstMatch.start().anchor0Y(), firstMatch.end().anchor0Y(), progress),
+                interpolate(coordinates[0], coordinates[8], progress),
+                interpolate(coordinates[1], coordinates[9], progress),
                 scale,
                 offsetX,
                 offsetY,
@@ -125,14 +136,20 @@ public final class M3ShapeMorph {
         moveTo.setX(scratch.point[0]);
         moveTo.setY(scratch.point[1]);
 
-        for (int i = 0; i < matches.length; i++) {
-            CubicPair match = matches[i];
-            Cubic start = match.start();
-            Cubic end = match.end();
+        for (int i = 0; i < curveCount; i++) {
+            int coordinateOffset = i * 16;
             CubicCurveTo element = (CubicCurveTo) path.getElements().get(i + 1);
             transformPoint(
-                    interpolate(start.control0X(), end.control0X(), progress),
-                    interpolate(start.control0Y(), end.control0Y(), progress),
+                    interpolate(
+                            coordinates[coordinateOffset + 2],
+                            coordinates[coordinateOffset + 10],
+                            progress
+                    ),
+                    interpolate(
+                            coordinates[coordinateOffset + 3],
+                            coordinates[coordinateOffset + 11],
+                            progress
+                    ),
                     scale,
                     offsetX,
                     offsetY,
@@ -145,8 +162,16 @@ public final class M3ShapeMorph {
             element.setControlX1(scratch.point[0]);
             element.setControlY1(scratch.point[1]);
             transformPoint(
-                    interpolate(start.control1X(), end.control1X(), progress),
-                    interpolate(start.control1Y(), end.control1Y(), progress),
+                    interpolate(
+                            coordinates[coordinateOffset + 4],
+                            coordinates[coordinateOffset + 12],
+                            progress
+                    ),
+                    interpolate(
+                            coordinates[coordinateOffset + 5],
+                            coordinates[coordinateOffset + 13],
+                            progress
+                    ),
                     scale,
                     offsetX,
                     offsetY,
@@ -159,8 +184,16 @@ public final class M3ShapeMorph {
             element.setControlX2(scratch.point[0]);
             element.setControlY2(scratch.point[1]);
             transformPoint(
-                    interpolate(start.anchor1X(), end.anchor1X(), progress),
-                    interpolate(start.anchor1Y(), end.anchor1Y(), progress),
+                    interpolate(
+                            coordinates[coordinateOffset + 6],
+                            coordinates[coordinateOffset + 14],
+                            progress
+                    ),
+                    interpolate(
+                            coordinates[coordinateOffset + 7],
+                            coordinates[coordinateOffset + 15],
+                            progress
+                    ),
                     scale,
                     offsetX,
                     offsetY,
@@ -173,6 +206,22 @@ public final class M3ShapeMorph {
             element.setX(scratch.point[0]);
             element.setY(scratch.point[1]);
         }
+    }
+
+    /// Writes one cubic's coordinates into primitive morph storage.
+    ///
+    /// @param cubic the cubic to flatten
+    /// @param destination the destination coordinate array
+    /// @param offset the first destination index
+    private static void writeCubicCoordinates(Cubic cubic, double[] destination, int offset) {
+        destination[offset] = cubic.anchor0X();
+        destination[offset + 1] = cubic.anchor0Y();
+        destination[offset + 2] = cubic.control0X();
+        destination[offset + 3] = cubic.control0Y();
+        destination[offset + 4] = cubic.control1X();
+        destination[offset + 5] = cubic.control1Y();
+        destination[offset + 6] = cubic.anchor1X();
+        destination[offset + 7] = cubic.anchor1Y();
     }
 
     /// Ensures that the path contains one move, the requested cubic count, and one close element.

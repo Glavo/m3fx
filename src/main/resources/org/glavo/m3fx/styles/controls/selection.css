@@ -26,8 +26,10 @@
     -m3-track-height: 32px;
     -m3-state-layer-size: 40px;
     -m3-unselected-handle-size: 16px;
+    -m3-with-icon-handle-size: 24px;
     -m3-selected-handle-size: 24px;
     -m3-pressed-handle-size: 28px;
+    -m3-icon-size: 16px;
     -fx-text-fill: -m3-color-on-surface;
     -fx-font-size: 14px;
 }
@@ -67,6 +69,22 @@
     -fx-background-color: -m3-color-primary;
 }
 
+.m3-checkbox:armed .m3-state-layer,
+.m3-checkbox:armed .m3-ripple,
+.m3-radio-button:armed .m3-state-layer,
+.m3-radio-button:armed .m3-ripple {
+    -fx-background-color: -m3-color-primary;
+}
+
+.m3-checkbox:selected:armed .m3-state-layer,
+.m3-checkbox:selected:armed .m3-ripple,
+.m3-checkbox:indeterminate:armed .m3-state-layer,
+.m3-checkbox:indeterminate:armed .m3-ripple,
+.m3-radio-button:selected:armed .m3-state-layer,
+.m3-radio-button:selected:armed .m3-ripple {
+    -fx-background-color: -m3-color-on-surface;
+}
+
 .m3-checkbox .box,
 .m3-checkbox:hover .box,
 .m3-checkbox:focused .box,
@@ -79,6 +97,13 @@
     -fx-border-insets: 0;
     -fx-border-radius: 2px;
     -fx-border-width: 2px;
+}
+
+.m3-checkbox:hover .box,
+.m3-checkbox:focused .box,
+.m3-checkbox:armed .box,
+.m3-checkbox:pressed .box {
+    -fx-border-color: -m3-color-on-surface;
 }
 
 .m3-checkbox:selected .box,
@@ -144,6 +169,13 @@
     -fx-fill: transparent;
     -fx-stroke: -m3-color-on-surface-variant;
     -fx-stroke-width: 2px;
+}
+
+.m3-radio-button:hover .radio .ring,
+.m3-radio-button:focused .radio .ring,
+.m3-radio-button:armed .radio .ring,
+.m3-radio-button:pressed .radio .ring {
+    -fx-stroke: -m3-color-on-surface;
 }
 
 .m3-radio-button:selected .radio .ring,
@@ -223,6 +255,22 @@
     -fx-background-color: -m3-color-primary-container;
 }
 
+.m3-switch .m3-switch-icon-slot {
+    -fx-alignment: center;
+}
+
+.m3-switch .m3-switch-handle-icon {
+    -fx-background-color: -m3-color-surface-container-highest;
+    -fx-fill: -m3-color-surface-container-highest;
+    -fx-text-fill: -m3-color-surface-container-highest;
+}
+
+.m3-switch:selected .m3-switch-handle-icon {
+    -fx-background-color: -m3-color-primary;
+    -fx-fill: -m3-color-primary;
+    -fx-text-fill: -m3-color-primary;
+}
+
 .m3-checkbox:disabled .m3-selection-label,
 .m3-radio-button:disabled .m3-selection-label,
 .m3-switch:disabled .m3-selection-label {
@@ -289,7 +337,7 @@
 .m3-switch:disabled:focused .box,
 .m3-switch:disabled:armed .box,
 .m3-switch:disabled:pressed .box {
-    -fx-background-color: -m3-color-on-surface;
+    -fx-background-color: -m3-color-surface-container-highest;
     -fx-border-color: -m3-color-on-surface;
     -fx-opacity: -m3-state-disabled-container-opacity;
 }
@@ -319,4 +367,14 @@
 .m3-switch:selected:disabled:pressed .thumb {
     -fx-background-color: -m3-color-surface;
     -fx-opacity: 1;
+}
+
+.m3-switch:disabled .m3-switch-handle-icon {
+    -fx-opacity: -m3-state-disabled-content-opacity;
+}
+
+.m3-switch:selected:disabled .m3-switch-handle-icon {
+    -fx-background-color: -m3-color-on-surface;
+    -fx-fill: -m3-color-on-surface;
+    -fx-text-fill: -m3-color-on-surface;
 }

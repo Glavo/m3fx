@@ -5,6 +5,8 @@ package org.glavo.m3fx.controls;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.BooleanPropertyBase;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
 import javafx.css.Styleable;
@@ -15,6 +17,7 @@ import javafx.event.ActionEvent;
 import javafx.geometry.Pos;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
+import javafx.scene.Node;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.Skin;
 import org.glavo.m3fx.internal.M3ControlStyles;
@@ -64,11 +67,17 @@ public class M3Switch extends ButtonBase {
     /// The default unselected switch handle size.
     private static final double DEFAULT_UNSELECTED_HANDLE_SIZE = 16.0;
 
+    /// The default switch handle size when an icon is shown.
+    private static final double DEFAULT_WITH_ICON_HANDLE_SIZE = 24.0;
+
     /// The default selected switch handle size.
     private static final double DEFAULT_SELECTED_HANDLE_SIZE = 24.0;
 
     /// The default pressed switch handle size.
     private static final double DEFAULT_PRESSED_HANDLE_SIZE = 28.0;
+
+    /// The default selected or unselected handle icon size.
+    private static final double DEFAULT_ICON_SIZE = 16.0;
 
     // The styleable touch target size token.
     private @Nullable StyleableDoubleProperty touchTargetSize;
@@ -88,14 +97,26 @@ public class M3Switch extends ButtonBase {
     // The styleable unselected switch handle size token.
     private @Nullable StyleableDoubleProperty unselectedHandleSize;
 
+    // The styleable switch handle size used when an icon is shown.
+    private @Nullable StyleableDoubleProperty withIconHandleSize;
+
     // The styleable selected switch handle size token.
     private @Nullable StyleableDoubleProperty selectedHandleSize;
 
     // The styleable pressed switch handle size token.
     private @Nullable StyleableDoubleProperty pressedHandleSize;
 
+    // The styleable switch handle icon size token.
+    private @Nullable StyleableDoubleProperty iconSize;
+
     // The selected state property.
     private @Nullable BooleanProperty selected;
+
+    // The optional icon shown inside the selected handle.
+    private @Nullable ObjectProperty<@Nullable Node> selectedIcon;
+
+    // The optional icon shown inside the unselected handle.
+    private @Nullable ObjectProperty<@Nullable Node> unselectedIcon;
 
     /// Creates an empty switch.
     public M3Switch() {
@@ -144,6 +165,70 @@ public class M3Switch extends ButtonBase {
             };
         }
         return selected;
+    }
+
+    /// Returns the icon shown inside the handle while this switch is selected.
+    ///
+    /// @return the selected handle icon, or `null` when the selected handle has no icon
+    public final @Nullable Node getSelectedIcon() {
+        return selectedIcon == null ? null : selectedIcon.get();
+    }
+
+    /// Sets the icon shown inside the handle while this switch is selected.
+    ///
+    /// The icon should fit the current [iconSizeProperty] value. A node cannot be shared with another parent.
+    ///
+    /// @param selectedIcon the selected handle icon, or `null` for no icon
+    public final void setSelectedIcon(@Nullable Node selectedIcon) {
+        selectedIconProperty().set(selectedIcon);
+    }
+
+    /// Returns the selected handle icon property.
+    ///
+    /// @return the selected handle icon property
+    public final ObjectProperty<@Nullable Node> selectedIconProperty() {
+        if (selectedIcon == null) {
+            selectedIcon = new SimpleObjectProperty<>(this, "selectedIcon") {
+                /// Requests handle content layout when the selected icon changes.
+                @Override
+                protected void invalidated() {
+                    requestLayout();
+                }
+            };
+        }
+        return selectedIcon;
+    }
+
+    /// Returns the icon shown inside the handle while this switch is unselected.
+    ///
+    /// @return the unselected handle icon, or `null` when the unselected handle has no icon
+    public final @Nullable Node getUnselectedIcon() {
+        return unselectedIcon == null ? null : unselectedIcon.get();
+    }
+
+    /// Sets the icon shown inside the handle while this switch is unselected.
+    ///
+    /// The icon should fit the current [iconSizeProperty] value. A node cannot be shared with another parent.
+    ///
+    /// @param unselectedIcon the unselected handle icon, or `null` for no icon
+    public final void setUnselectedIcon(@Nullable Node unselectedIcon) {
+        unselectedIconProperty().set(unselectedIcon);
+    }
+
+    /// Returns the unselected handle icon property.
+    ///
+    /// @return the unselected handle icon property
+    public final ObjectProperty<@Nullable Node> unselectedIconProperty() {
+        if (unselectedIcon == null) {
+            unselectedIcon = new SimpleObjectProperty<>(this, "unselectedIcon") {
+                /// Requests handle content layout when the unselected icon changes.
+                @Override
+                protected void invalidated() {
+                    requestLayout();
+                }
+            };
+        }
+        return unselectedIcon;
     }
 
     /// Returns the preferred touch target size token.
@@ -274,6 +359,35 @@ public class M3Switch extends ButtonBase {
         return unselectedHandleSize;
     }
 
+    /// Returns the switch handle size used when the current state has an icon.
+    ///
+    /// @return the handle size in pixels
+    public final double getWithIconHandleSize() {
+        return withIconHandleSize == null ? DEFAULT_WITH_ICON_HANDLE_SIZE : withIconHandleSize.get();
+    }
+
+    /// Sets the switch handle size used when the current state has an icon.
+    ///
+    /// @param withIconHandleSize the handle size in pixels
+    public final void setWithIconHandleSize(double withIconHandleSize) {
+        withIconHandleSizeProperty().set(M3Css.nonNegative(withIconHandleSize, "withIconHandleSize"));
+    }
+
+    /// Returns the switch handle size property used when the current state has an icon.
+    ///
+    /// @return the with-icon handle size property
+    public final StyleableDoubleProperty withIconHandleSizeProperty() {
+        if (withIconHandleSize == null) {
+            withIconHandleSize = sizeProperty(
+                    DEFAULT_WITH_ICON_HANDLE_SIZE,
+                    "withIconHandleSize",
+                    StyleableProperties.WITH_ICON_HANDLE_SIZE,
+                    this::requestLayout
+            );
+        }
+        return withIconHandleSize;
+    }
+
     /// Returns the selected switch handle size token.
     public final double getSelectedHandleSize() {
         return selectedHandleSize == null ? DEFAULT_SELECTED_HANDLE_SIZE : selectedHandleSize.get();
@@ -318,6 +432,30 @@ public class M3Switch extends ButtonBase {
             );
         }
         return pressedHandleSize;
+    }
+
+    /// Returns the selected or unselected handle icon size token.
+    ///
+    /// @return the icon size in pixels
+    public final double getIconSize() {
+        return iconSize == null ? DEFAULT_ICON_SIZE : iconSize.get();
+    }
+
+    /// Sets the selected or unselected handle icon size token.
+    ///
+    /// @param iconSize the icon size in pixels
+    public final void setIconSize(double iconSize) {
+        iconSizeProperty().set(M3Css.nonNegative(iconSize, "iconSize"));
+    }
+
+    /// Returns the selected or unselected handle icon size property.
+    ///
+    /// @return the icon size property
+    public final StyleableDoubleProperty iconSizeProperty() {
+        if (iconSize == null) {
+            iconSize = sizeProperty(DEFAULT_ICON_SIZE, "iconSize", StyleableProperties.ICON_SIZE, this::requestLayout);
+        }
+        return iconSize;
     }
 
     /// Returns the CSS metadata for this control class.
@@ -424,6 +562,14 @@ public class M3Switch extends ButtonBase {
                         M3Switch::unselectedHandleSizeProperty
                 );
 
+        /// CSS metadata for the switch handle size token used when an icon is shown.
+        private static final CssMetaData<M3Switch, Number> WITH_ICON_HANDLE_SIZE =
+                sizeCssMetaData(
+                        "-m3-with-icon-handle-size",
+                        DEFAULT_WITH_ICON_HANDLE_SIZE,
+                        M3Switch::withIconHandleSizeProperty
+                );
+
         /// CSS metadata for the selected switch handle size token.
         private static final CssMetaData<M3Switch, Number> SELECTED_HANDLE_SIZE =
                 sizeCssMetaData("-m3-selected-handle-size", DEFAULT_SELECTED_HANDLE_SIZE, M3Switch::selectedHandleSizeProperty);
@@ -431,6 +577,10 @@ public class M3Switch extends ButtonBase {
         /// CSS metadata for the pressed switch handle size token.
         private static final CssMetaData<M3Switch, Number> PRESSED_HANDLE_SIZE =
                 sizeCssMetaData("-m3-pressed-handle-size", DEFAULT_PRESSED_HANDLE_SIZE, M3Switch::pressedHandleSizeProperty);
+
+        /// CSS metadata for the selected or unselected handle icon size token.
+        private static final CssMetaData<M3Switch, Number> ICON_SIZE =
+                sizeCssMetaData("-m3-icon-size", DEFAULT_ICON_SIZE, M3Switch::iconSizeProperty);
 
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
@@ -443,8 +593,10 @@ public class M3Switch extends ButtonBase {
             styleables.add(TRACK_HEIGHT);
             styleables.add(STATE_LAYER_SIZE);
             styleables.add(UNSELECTED_HANDLE_SIZE);
+            styleables.add(WITH_ICON_HANDLE_SIZE);
             styleables.add(SELECTED_HANDLE_SIZE);
             styleables.add(PRESSED_HANDLE_SIZE);
+            styleables.add(ICON_SIZE);
             STYLEABLES = Collections.unmodifiableList(styleables);
         }
 

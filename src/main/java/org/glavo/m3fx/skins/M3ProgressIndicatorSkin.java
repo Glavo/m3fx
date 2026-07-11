@@ -4,9 +4,7 @@
 package org.glavo.m3fx.skins;
 
 import javafx.animation.Animation;
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
-import javafx.animation.Timeline;
+import javafx.animation.Transition;
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
@@ -89,11 +87,10 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
     private final M3DoubleTransition determinateAnimation = new M3DoubleTransition(displayedProgress);
 
     /// The animated phase used by indeterminate progress.
-    private final DoubleProperty indeterminatePhase =
-            new SimpleDoubleProperty(this, "indeterminatePhase", INDETERMINATE_START_PHASE);
+    private double indeterminatePhase = INDETERMINATE_START_PHASE;
 
-    /// The indeterminate animation timeline.
-    private final Timeline indeterminateAnimation = new Timeline();
+    /// The reusable indeterminate phase transition.
+    private final IndeterminateTransition indeterminateAnimation = new IndeterminateTransition();
 
     /// Updates internal progress geometry after animation ticks without invalidating parent layout.
     private final InvalidationListener animationInvalidation =
@@ -136,8 +133,6 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
 
         displayedProgress.set(initialDisplayedProgress(control.getProgress()));
         displayedProgress.addListener(animationInvalidation);
-        indeterminatePhase.addListener(animationInvalidation);
-        indeterminateAnimation.setCycleCount(Animation.INDEFINITE);
 
         control.progressProperty().addListener(progressInvalidation);
         control.trackThicknessProperty().addListener(layoutInvalidation);
@@ -155,7 +150,6 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         determinateAnimation.stop();
         indeterminateAnimation.stop();
         displayedProgress.removeListener(animationInvalidation);
-        indeterminatePhase.removeListener(animationInvalidation);
         progressIndicator.progressProperty().removeListener(progressInvalidation);
         motionSettingsObserver.dispose();
         progressIndicator.trackThicknessProperty().removeListener(layoutInvalidation);
@@ -228,10 +222,10 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         double progress = progressIndicator.getProgress();
         if (progress == M3ProgressIndicator.INDETERMINATE_PROGRESS) {
             double sweepFraction = indeterminateSweep(
-                    indeterminatePhase.get(),
+                    indeterminatePhase,
                     !M3Animation.shouldReduceMotion(progressIndicator)
             ) / 360.0;
-            double start = indeterminatePhase.get();
+            double start = indeterminatePhase;
             layoutCircularTrackPath(waveTrack, centerX, centerY, radius, strokeWidth, start, start + sweepFraction);
             layoutCircularWavePath(
                     waveIndicator,
@@ -242,7 +236,7 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
                     progressIndicator.getWavelength(),
                     start,
                     start + sweepFraction,
-                    indeterminatePhase.get()
+                    indeterminatePhase
             );
             return;
         }
@@ -266,7 +260,7 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
     private void updateIndicatorArc() {
         double progress = getSkinnable().getProgress();
         if (progress == M3ProgressIndicator.INDETERMINATE_PROGRESS) {
-            double phase = indeterminatePhase.get();
+            double phase = indeterminatePhase;
             double sweep = indeterminateSweep(
                     phase,
                     !M3Animation.shouldReduceMotion(getSkinnable())
@@ -307,14 +301,14 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
             determinateAnimation.stop();
             if (shouldPauseActivityAnimations()) {
                 indeterminateAnimation.stop();
-                indeterminatePhase.set(INDETERMINATE_START_PHASE);
+                indeterminatePhase = INDETERMINATE_START_PHASE;
             } else {
                 startIndeterminateAnimation();
             }
             updateAnimatedVisuals();
         } else {
             indeterminateAnimation.stop();
-            indeterminatePhase.set(INDETERMINATE_START_PHASE);
+            indeterminatePhase = INDETERMINATE_START_PHASE;
             animateDisplayedProgress(
                     clamp(progress),
                     animateDeterminateProgress && !shouldPauseActivityAnimations()
@@ -332,22 +326,10 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
     /// Starts the indeterminate linear phase loop.
     private void startIndeterminateAnimation() {
         indeterminateAnimation.stop();
-        configureIndeterminateAnimation();
-        indeterminateAnimation.playFromStart();
-    }
-
-    /// Configures the indeterminate sweep with the current owner behavior timing.
-    private void configureIndeterminateAnimation() {
-        indeterminateAnimation.getKeyFrames().setAll(
-                new KeyFrame(
-                        Duration.ZERO,
-                        new KeyValue(indeterminatePhase, INDETERMINATE_START_PHASE, M3Motion.LINEAR)
-                ),
-                new KeyFrame(
-                        M3Animation.motionBehavior(getSkinnable()).circularProgressIndeterminateCycleDuration(),
-                        new KeyValue(indeterminatePhase, 1.0, M3Motion.LINEAR)
-                )
+        indeterminateAnimation.configure(
+                M3Animation.motionBehavior(getSkinnable()).circularProgressIndeterminateCycleDuration()
         );
+        indeterminateAnimation.playFromStart();
     }
 
     /// Animates the displayed determinate progress value.
@@ -531,5 +513,32 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
     /// Clamps a progress value to the visible range.
     private static double clamp(double value) {
         return Math.max(0.0, Math.min(1.0, value));
+    }
+
+    /// Reuses one transition for the indeterminate circular phase loop.
+    @NotNullByDefault
+    private final class IndeterminateTransition extends Transition {
+        /// Creates a linearly timed indefinite transition.
+        private IndeterminateTransition() {
+            setInterpolator(M3Motion.LINEAR);
+            setCycleCount(Animation.INDEFINITE);
+        }
+
+        /// Updates the loop duration without allocating key frames or writable properties.
+        ///
+        /// @param duration the complete indeterminate cycle duration
+        private void configure(Duration duration) {
+            stop();
+            setCycleDuration(duration);
+        }
+
+        /// Updates the primitive phase and active geometry for one animation pulse.
+        @Override
+        protected void interpolate(double fraction) {
+            if (Double.compare(indeterminatePhase, fraction) != 0) {
+                indeterminatePhase = fraction;
+                updateAnimatedVisuals();
+            }
+        }
     }
 }

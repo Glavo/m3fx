@@ -660,8 +660,13 @@ public class M3Tooltip extends PopupControl {
         uninstallActivation(node, null);
 
         TooltipInstallation installation = new TooltipInstallation(node, tooltip);
-        installation.install();
-        M3TooltipRegistry.install(node, installation);
+        try {
+            installation.install();
+            M3TooltipRegistry.install(node, installation);
+        } catch (RuntimeException | Error exception) {
+            installation.uninstall();
+            throw exception;
+        }
     }
 
     /// Removes pointer activation handlers from the tooltip target.
@@ -676,30 +681,6 @@ public class M3Tooltip extends PopupControl {
 
         M3TooltipRegistry.remove(node);
         tooltipInstallation.uninstall();
-    }
-
-    /// Returns the focused node inside an installed interactive tooltip popup for a target node.
-    ///
-    /// This supports composite accessibility containers, such as menus or app bars, whose child node owns a
-    /// tooltip in a separate popup scene.
-    static @Nullable Node activeInstalledTooltipFocusTarget(Node node) {
-        return M3TooltipRegistry.activeInstalledTooltipFocusTarget(node);
-    }
-
-    /// Returns whether an installed interactive tooltip currently owns pointer or keyboard focus inside its popup.
-    static boolean activeInstalledTooltipPopupOwnsInteraction(Node node) {
-        return M3TooltipRegistry.activeInstalledTooltipPopupOwnsInteraction(node);
-    }
-
-    /// Returns whether an installed interactive tooltip exposes an action target requested by accessibility
-    /// parameters.
-    static boolean containsInstalledTooltipActionTarget(Node node, Object... parameters) {
-        return M3TooltipRegistry.containsInstalledTooltipActionTarget(node, parameters);
-    }
-
-    /// Shows an installed interactive tooltip and focuses the requested action target.
-    static boolean showInstalledTooltipActionTarget(Node node, Object... parameters) {
-        return M3TooltipRegistry.showInstalledTooltipActionTarget(node, parameters);
     }
 
     /// Returns text suitable for a node accessible help value.

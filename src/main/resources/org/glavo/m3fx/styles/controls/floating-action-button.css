@@ -9,6 +9,9 @@
     -fx-font-size: 14px;
     -fx-font-weight: 500;
     -fx-cursor: hand;
+}
+
+.m3-fab {
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.20), 8, 0.18, 0, 2);
 }
 
@@ -111,6 +114,22 @@
     -fx-background-color: -m3-color-on-tertiary-container;
 }
 
-.m3-fab:disabled {
-    -fx-opacity: 0.38;
+.m3-fab.m3-surface-fab:disabled,
+.m3-fab.m3-primary-fab:disabled,
+.m3-fab.m3-secondary-fab:disabled,
+.m3-fab.m3-tertiary-fab:disabled {
+    -fx-background-color: -m3-button-disabled-container-color;
+    -fx-border-color: transparent;
+    -fx-cursor: default;
+    -fx-effect: null;
+    -fx-opacity: 1;
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-fab:disabled > * {
+    -fx-opacity: -m3-state-disabled-content-opacity;
+}
+
+.m3-fab:disabled .m3-icon {
+    -fx-text-fill: -m3-color-on-surface;
 }

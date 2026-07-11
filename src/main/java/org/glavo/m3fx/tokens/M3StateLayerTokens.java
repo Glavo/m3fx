@@ -205,10 +205,7 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
 
     /// Returns selectors for controls that expose disabled content opacity.
     private static String disabledStateSelectors() {
-        return ".m3-button:disabled, .m3-chip:disabled, .m3-icon-button:disabled, "
-                + ".m3-fab:disabled, .m3-icon-toggle-button:disabled, "
-                + ".m3-segmented-button:disabled, .m3-text-field:disabled, "
-                + ".m3-password-field:disabled, "
+        return ".m3-chip:disabled, .m3-segmented-button:disabled, "
                 + ".m3-tab:disabled, .m3-progress-bar:disabled, .m3-progress-indicator:disabled, "
                 + ".m3-navigation-item:disabled, .m3-list-item:disabled, .m3-card:disabled, "
                 + ".m3-dialog-pane:disabled, .m3-snackbar:disabled, "

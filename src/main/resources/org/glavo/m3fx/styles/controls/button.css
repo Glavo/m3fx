@@ -111,13 +111,16 @@
     -fx-background-color: -m3-color-surface-container-low;
     -fx-background-insets: 0;
     -fx-border-color: transparent;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 6, 0.18, 0, 1);
     -fx-text-fill: -m3-color-primary;
 }
 
 .m3-button.m3-elevated-button .m3-state-layer,
 .m3-button.m3-elevated-button .m3-ripple {
     -fx-background-color: -m3-color-primary;
+}
+
+.m3-button.m3-elevated-button {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 6, 0.18, 0, 1);
 }
 
 .m3-button.m3-elevated-button:hover,
@@ -478,7 +481,58 @@
 
 .m3-button:disabled,
 .m3-icon-button:disabled {
-    -fx-opacity: 0.38;
+    -fx-cursor: default;
+    -fx-effect: null;
+    -fx-opacity: 1;
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-button:disabled > *,
+.m3-icon-button:disabled > * {
+    -fx-opacity: -m3-state-disabled-content-opacity;
+}
+
+.m3-button.m3-filled-button:disabled,
+.m3-button.m3-tonal-button:disabled,
+.m3-button.m3-text-button:disabled,
+.m3-button.m3-elevated-button:disabled {
+    -fx-background-color: -m3-button-disabled-container-color;
+    -fx-border-color: transparent;
+    -fx-effect: null;
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-button.m3-outlined-button:disabled {
+    -fx-background-color: transparent;
+    -fx-border-color: -m3-color-outline-variant;
+    -fx-effect: null;
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-icon-button.m3-text-button:disabled,
+.m3-button.m3-snackbar-action:disabled {
+    -fx-background-color: transparent;
+}
+
+.m3-button:disabled .m3-icon,
+.m3-icon-button:disabled .m3-icon {
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-text-input-leading:disabled > .m3-button:disabled,
+.m3-text-input-leading:disabled > .m3-icon-button:disabled,
+.m3-text-input-trailing:disabled > .m3-button:disabled,
+.m3-text-input-trailing:disabled > .m3-icon-button:disabled {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-opacity: 1;
+}
+
+.m3-text-input-leading:disabled > .m3-button:disabled > *,
+.m3-text-input-leading:disabled > .m3-icon-button:disabled > *,
+.m3-text-input-trailing:disabled > .m3-button:disabled > *,
+.m3-text-input-trailing:disabled > .m3-icon-button:disabled > * {
+    -fx-opacity: 1;
 }
 
 .m3-button.m3-button:left-edge:left-edge {

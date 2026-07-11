@@ -6,6 +6,7 @@ package org.glavo.m3fx.internal;
 import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.event.WeakEventHandler;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Parent;
@@ -41,6 +42,12 @@ public final class M3ListViewCell<T> extends IndexedCell<T> {
     /// The owning virtualized list view.
     private final M3ListView<T> listView;
 
+    /// Routes list item actions back into the list view selection policy.
+    private final EventHandler<ActionEvent> itemActionHandler = this::handleItemAction;
+
+    /// Breaks the reference from an application-owned row back to this reusable cell.
+    private final WeakEventHandler<ActionEvent> weakItemActionHandler = new WeakEventHandler<>(itemActionHandler);
+
     /// The rendered list item currently owned by this cell.
     private @Nullable M3ListItem listItem;
 
@@ -71,8 +78,6 @@ public final class M3ListViewCell<T> extends IndexedCell<T> {
     /// Whether the row originally had the managed dark brightness style class.
     private boolean capturedDarkBrightnessStyleClass;
 
-    /// Routes list item actions back into the list view selection policy.
-    private final EventHandler<ActionEvent> itemActionHandler = this::handleItemAction;
 
     /// Creates a reusable list view cell.
     ///
@@ -86,6 +91,7 @@ public final class M3ListViewCell<T> extends IndexedCell<T> {
         setAccessibleRole(AccessibleRole.LIST_ITEM);
         setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
         setText(null);
+        visibleProperty().addListener(observable -> releaseInvisibleFactoryRow());
     }
 
     /// Returns the owning virtualized list view.
@@ -287,21 +293,21 @@ public final class M3ListViewCell<T> extends IndexedCell<T> {
         }
     }
 
-    /// Replaces the rendered list item and updates event handlers.
+    /// Replaces the rendered list item, weak action route, and temporary theme state.
     private void setListItem(@Nullable M3ListItem listItem) {
         if (this.listItem == listItem) {
             return;
         }
         if (this.listItem != null) {
-            this.listItem.removeEventHandler(ActionEvent.ACTION, itemActionHandler);
+            this.listItem.removeEventHandler(ActionEvent.ACTION, weakItemActionHandler);
         }
         restoreThemeContext();
         this.listItem = listItem;
-        if (listItem != null) {
-            listItem.addEventHandler(ActionEvent.ACTION, itemActionHandler);
-        } else {
+        if (listItem == null) {
             renderedItem = null;
             renderedCellFactory = null;
+        } else {
+            listItem.addEventHandler(ActionEvent.ACTION, weakItemActionHandler);
         }
     }
 
@@ -310,6 +316,15 @@ public final class M3ListViewCell<T> extends IndexedCell<T> {
         setListItem(null);
         setGraphic(null);
         setText(null);
+    }
+
+    /// Releases application-provided row state when this cell enters the virtual-flow pile.
+    ///
+    /// Default rows remain attached so the built-in renderer can reuse one node across scroll updates.
+    private void releaseInvisibleFactoryRow() {
+        if (!isVisible() && renderedCellFactory != null) {
+            clearContent();
+        }
     }
 
     /// Updates the list item's selected state from the owning view.

@@ -93,6 +93,7 @@ import org.glavo.m3fx.internal.M3ListViewCell;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
 import org.glavo.m3fx.internal.M3PopupStyles;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.M3TooltipRegistry;
 import org.glavo.m3fx.internal.shape.M3ShapeMorph;
 import org.glavo.m3fx.skins.M3AvatarSkin;
 import org.glavo.m3fx.skins.M3BadgeSkin;
@@ -170,6 +171,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -1399,6 +1401,111 @@ final class M3ControlStyleTest {
         assertLabeledColors(button, Color.rgb(16, 17, 18), Color.rgb(1, 2, 3));
     }
 
+    /// Verifies that disabled action controls render container and content opacity as separate Material layers.
+    @Test
+    void disabledActionControlsDoNotCompoundContainerAndContentOpacity() {
+        M3Theme theme = M3Theme.defaultTheme();
+        Color onSurface = theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SURFACE);
+        Color outlineVariant = theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.OUTLINE_VARIANT);
+        Color disabledContainer = withOpacity(onSurface, 0.10);
+
+        List<M3Button> buttons = new ArrayList<>();
+        List<Region> buttonGraphics = new ArrayList<>();
+        for (M3ButtonVariant variant : M3ButtonVariant.values()) {
+            Region graphic = new Region();
+            graphic.setPrefSize(12.0, 12.0);
+            M3Button button = new M3Button(variant.name(), graphic, variant);
+            button.setDisable(true);
+            buttons.add(button);
+            buttonGraphics.add(graphic);
+        }
+
+        Region iconGraphic = new Region();
+        iconGraphic.setPrefSize(12.0, 12.0);
+        M3IconButton iconButton = new M3IconButton(iconGraphic);
+        iconButton.setVariant(M3ButtonVariant.FILLED);
+        iconButton.setDisable(true);
+
+        Region fabGraphic = new Region();
+        fabGraphic.setPrefSize(12.0, 12.0);
+        M3FloatingActionButton fab = new M3FloatingActionButton(fabGraphic);
+        fab.setDisable(true);
+
+        Region outlinedToggleGraphic = new Region();
+        outlinedToggleGraphic.setPrefSize(12.0, 12.0);
+        M3IconToggleButton outlinedToggle = new M3IconToggleButton(outlinedToggleGraphic);
+        outlinedToggle.setVariant(M3IconToggleButtonVariant.OUTLINED);
+        outlinedToggle.setDisable(true);
+
+        Region selectedOutlinedToggleGraphic = new Region();
+        selectedOutlinedToggleGraphic.setPrefSize(12.0, 12.0);
+        M3IconToggleButton selectedOutlinedToggle = new M3IconToggleButton(selectedOutlinedToggleGraphic);
+        selectedOutlinedToggle.setVariant(M3IconToggleButtonVariant.OUTLINED);
+        selectedOutlinedToggle.setSelected(true);
+        selectedOutlinedToggle.setDisable(true);
+
+        M3Button dynamicallyDisabledElevated = new M3Button("Dynamic", M3ButtonVariant.ELEVATED);
+
+        HBox root = new HBox();
+        root.getChildren().addAll(buttons);
+        root.getChildren().addAll(
+                iconButton,
+                fab,
+                outlinedToggle,
+                selectedOutlinedToggle,
+                dynamicallyDisabledElevated
+        );
+        Scene scene = new Scene(root, 1200.0, 240.0);
+        M3ThemeManager.install(scene, theme);
+        root.applyCss();
+        root.layout();
+
+        for (int index = 0; index < buttons.size(); index++) {
+            M3Button button = buttons.get(index);
+            M3ButtonVariant variant = button.getVariant();
+            assertEquals(1.0, button.getOpacity(), 0.0001, () -> variant + " control opacity");
+            assertEquals(onSurface, button.getTextFill(), () -> variant + " disabled content color");
+            assertEquals(0.38, buttonGraphics.get(index).getOpacity(), 0.0001,
+                    () -> variant + " graphic opacity");
+            assertNull(button.getEffect(), () -> variant + " disabled elevation");
+            if (variant == M3ButtonVariant.OUTLINED) {
+                assertRegionFill(button, Color.TRANSPARENT);
+                assertBorderColor(button, outlineVariant);
+            } else {
+                assertRegionFill(button, disabledContainer);
+                assertBorderColor(button, Color.TRANSPARENT);
+            }
+        }
+
+        assertEquals(1.0, iconButton.getOpacity(), 0.0001);
+        assertRegionFill(iconButton, disabledContainer);
+        assertEquals(0.38, iconGraphic.getOpacity(), 0.0001);
+
+        assertEquals(1.0, fab.getOpacity(), 0.0001);
+        assertRegionFill(fab, disabledContainer);
+        assertEquals(0.38, fabGraphic.getOpacity(), 0.0001);
+        assertNull(fab.getEffect());
+
+        assertEquals(1.0, outlinedToggle.getOpacity(), 0.0001);
+        assertRegionFill(outlinedToggle, Color.TRANSPARENT);
+        assertBorderColor(outlinedToggle, outlineVariant);
+        assertEquals(0.38, outlinedToggleGraphic.getOpacity(), 0.0001);
+
+        assertEquals(1.0, selectedOutlinedToggle.getOpacity(), 0.0001);
+        assertRegionFill(selectedOutlinedToggle, disabledContainer);
+        assertBorderColor(selectedOutlinedToggle, Color.TRANSPARENT);
+        assertEquals(0.38, selectedOutlinedToggleGraphic.getOpacity(), 0.0001);
+
+        assertInstanceOf(
+                DropShadow.class,
+                dynamicallyDisabledElevated.getEffect(),
+                "enabled elevated button elevation"
+        );
+        dynamicallyDisabledElevated.setDisable(true);
+        root.applyCss();
+        assertNull(dynamicallyDisabledElevated.getEffect(), "dynamically disabled elevated button elevation");
+    }
+
     /// Verifies that only the elevated button variant owns button elevation.
     @Test
     void buttonElevationDoesNotLeakIntoNonElevatedVariants() {
@@ -1972,8 +2079,10 @@ final class M3ControlStyleTest {
                 -m3-track-height: 36px;
                 -m3-state-layer-size: 44px;
                 -m3-unselected-handle-size: 18px;
+                -m3-with-icon-handle-size: 27px;
                 -m3-selected-handle-size: 26px;
                 -m3-pressed-handle-size: 30px;
+                -m3-icon-size: 15px;
                 """);
         switchControl.setTouchTargetSize(60.0);
         switchControl.setTrackShape(10.0);
@@ -2094,8 +2203,10 @@ final class M3ControlStyleTest {
         switchControl.setTrackHeight(34.0);
         switchControl.setStateLayerSize(42.0);
         switchControl.setUnselectedHandleSize(18.0);
+        switchControl.setWithIconHandleSize(27.0);
         switchControl.setSelectedHandleSize(26.0);
         switchControl.setPressedHandleSize(30.0);
+        switchControl.setIconSize(15.0);
 
         M3Slider slider = new M3Slider(0.0, 100.0, 50.0);
         slider.setTrackThickness(7.0);
@@ -2210,8 +2321,10 @@ final class M3ControlStyleTest {
         assertEquals(34.0, switchControl.getTrackHeight(), 0.0001);
         assertEquals(42.0, switchControl.getStateLayerSize(), 0.0001);
         assertEquals(18.0, switchControl.getUnselectedHandleSize(), 0.0001);
+        assertEquals(27.0, switchControl.getWithIconHandleSize(), 0.0001);
         assertEquals(26.0, switchControl.getSelectedHandleSize(), 0.0001);
         assertEquals(30.0, switchControl.getPressedHandleSize(), 0.0001);
+        assertEquals(15.0, switchControl.getIconSize(), 0.0001);
 
         assertEquals(7.0, slider.getTrackThickness(), 0.0001);
         assertEquals(11.0, slider.getTrackShape(), 0.0001);
@@ -9051,6 +9164,17 @@ final class M3ControlStyleTest {
                         M3TextInputLayout layout = Objects.requireNonNull(layoutReference.get(), "layout");
 
                         assertTextInputLayoutFloatingPresentationIntermediate(layout);
+                        Path outline = assertInstanceOf(
+                                Path.class,
+                                layout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS)
+                        );
+                        double notchGap = outlineNotchGap(outline);
+                        TextInputControl input = Objects.requireNonNull(layout.getInput(), "input");
+
+                        input.setText("alpha2");
+                        layout.layout();
+
+                        assertEquals(notchGap, outlineNotchGap(outline), 0.0001);
                         layout.setSupportingText("Helper text");
                     }
             );
@@ -10796,7 +10920,7 @@ final class M3ControlStyleTest {
                             && tooltip != null
                             && tooltipRoot != null
                             && tooltip.isShowing()
-                            && M3Tooltip.activeInstalledTooltipPopupOwnsInteraction(target);
+                            && M3TooltipRegistry.activeInstalledTooltipPopupOwnsInteraction(target);
                 },
                 RICH_TOOLTIP_POPUP_OWNERSHIP_STABLE_PULSES,
                 () -> {
@@ -10837,7 +10961,7 @@ final class M3ControlStyleTest {
                     Node tooltipRoot = Objects.requireNonNull(tooltipRootReference.get(), "tooltipRoot");
                     try {
                         assertTrue(tooltip.isShowing());
-                        assertTrue(M3Tooltip.activeInstalledTooltipPopupOwnsInteraction(target));
+                        assertTrue(M3TooltipRegistry.activeInstalledTooltipPopupOwnsInteraction(target));
 
                         tooltipRoot.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_EXITED, 4.0, 4.0, false));
                     } finally {
@@ -10891,7 +11015,7 @@ final class M3ControlStyleTest {
                 double actionY = actionBounds.getMinY() + actionBounds.getHeight() / 2.0;
                 assertTrue(action.contains(actionX, actionY),
                         () -> "Rich tooltip action should contain its layout center: bounds=" + actionBounds);
-                assertTrue(M3Tooltip.activeInstalledTooltipPopupOwnsInteraction(target));
+                assertTrue(M3TooltipRegistry.activeInstalledTooltipPopupOwnsInteraction(target));
 
                 action.fireEvent(primaryMouseEvent(action, MouseEvent.MOUSE_ENTERED, actionX, actionY, false));
                 action.fireEvent(primaryMouseEvent(action, MouseEvent.MOUSE_PRESSED, actionX, actionY, true));
@@ -13267,6 +13391,56 @@ final class M3ControlStyleTest {
             assertTrue(popupRoot.getStylesheets().contains(secondStylesheet));
 
             synchronizer.stop();
+        });
+    }
+
+    /// Verifies a failed initial popup synchronization removes every listener and can be retried cleanly.
+    @Test
+    void popupContextSynchronizerRollsBackFailedStart() {
+        FxTestUtils.runOnFxThread(() -> {
+            Label owner = new Label("Owner");
+            Pane root = new Pane(owner);
+            Pane popupRoot = new Pane();
+            Scene scene = new Scene(root, 420.0, 220.0);
+            AtomicInteger stylesheetReads = new AtomicInteger();
+            AtomicBoolean failSynchronization = new AtomicBoolean(true);
+            String stylesheet = M3Stylesheets.controlStylesheet("button.css");
+            M3PopupContextSynchronizer synchronizer = new M3PopupContextSynchronizer(
+                    owner,
+                    popupRoot,
+                    () -> {
+                        stylesheetReads.incrementAndGet();
+                        if (failSynchronization.get()) {
+                            throw new IllegalStateException("stylesheet lookup failed");
+                        }
+                        return scene.getStylesheets();
+                    },
+                    () -> null
+            );
+
+            try {
+                assertThrows(IllegalStateException.class, synchronizer::start);
+                int failedStartReads = stylesheetReads.get();
+
+                root.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                scene.getStylesheets().add(stylesheet);
+                M3MotionSettings.setAnimationsEnabled(root, false);
+
+                assertEquals(failedStartReads, stylesheetReads.get());
+                assertEquals(NodeOrientation.LEFT_TO_RIGHT, popupRoot.getEffectiveNodeOrientation());
+                assertNull(M3MotionSettings.getAnimationsEnabled(popupRoot));
+                assertFalse(popupRoot.getStylesheets().contains(stylesheet));
+
+                failSynchronization.set(false);
+                synchronizer.start();
+
+                assertEquals(NodeOrientation.RIGHT_TO_LEFT, popupRoot.getEffectiveNodeOrientation());
+                assertEquals(Boolean.FALSE, M3MotionSettings.getAnimationsEnabled(popupRoot));
+                assertTrue(popupRoot.getStylesheets().contains(stylesheet));
+            } finally {
+                synchronizer.stop();
+                M3MotionSettings.clearAnimationsEnabled(root);
+            }
         });
     }
 
@@ -17436,8 +17610,100 @@ final class M3ControlStyleTest {
         assertEquals(2.0, filledField.getBorder().getStrokes().get(0).getWidths().getBottom(), 0.0001);
         assertRegionFill(outlinedField, Color.TRANSPARENT);
         assertBorderColor(outlinedField, Color.rgb(1, 2, 3));
-        assertEquals(2.0, outlinedField.getBorder().getStrokes().get(0).getWidths().getTop(), 0.0001);
+        assertEquals(3.0, outlinedField.getBorder().getStrokes().get(0).getWidths().getTop(), 0.0001);
     }
+
+    /// Verifies that disabled text inputs keep separate Material container, outline, and content opacities.
+    @Test
+    void disabledTextInputStatesUseMaterialComponentOpacities() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3TextField standaloneFilled = createTextField("Filled value", M3TextInputVariant.FILLED);
+            standaloneFilled.setDisable(true);
+            M3TextField standaloneOutlined = createTextField("Outlined value", M3TextInputVariant.OUTLINED);
+            standaloneOutlined.setDisable(true);
+
+            M3TextField wrappedFilled = createTextField("Wrapped filled", M3TextInputVariant.FILLED);
+            M3TextInputLayout filledLayout = new M3TextInputLayout(wrappedFilled, "Disabled supporting text");
+            filledLayout.setLabelText("Disabled filled");
+            M3Icon leading = new M3Icon("L");
+            filledLayout.setLeading(leading);
+            wrappedFilled.setDisable(true);
+
+            M3TextField wrappedOutlined = createTextField("Wrapped outlined", M3TextInputVariant.OUTLINED);
+            M3TextInputLayout outlinedLayout =
+                    new M3TextInputLayout(wrappedOutlined, "Disabled outlined supporting text");
+            outlinedLayout.setLabelText("Disabled outlined");
+            M3Icon trailingIcon = new M3Icon("T");
+            M3IconButton trailingButton = new M3IconButton(trailingIcon);
+            outlinedLayout.setTrailing(trailingButton);
+            wrappedOutlined.setDisable(true);
+
+            VBox root = new VBox(12.0, standaloneFilled, standaloneOutlined, filledLayout, outlinedLayout);
+            Scene scene = new Scene(root, 420.0, 360.0);
+            M3Theme theme = M3Theme.defaultTheme();
+            M3ThemeManager.install(scene, theme);
+            root.applyCss();
+            root.layout();
+
+            Color onSurface = theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SURFACE);
+            Color disabledFilledContainer = withOpacity(onSurface, 0.04);
+            Color disabledOutline = withOpacity(onSurface, 0.12);
+            Color disabledContent = withOpacity(onSurface, 0.38);
+
+            assertEquals(1.0, standaloneFilled.getOpacity(), 0.0001);
+            assertRegionFill(standaloneFilled, disabledFilledContainer);
+            assertBorderBottomColor(standaloneFilled, disabledContent);
+            assertEquals(1.0,
+                    standaloneFilled.getBorder().getStrokes().get(0).getWidths().getBottom(),
+                    0.0001);
+
+            assertEquals(1.0, standaloneOutlined.getOpacity(), 0.0001);
+            assertRegionFill(standaloneOutlined, Color.TRANSPARENT);
+            assertBorderColor(standaloneOutlined, disabledOutline);
+            assertEquals(1.0,
+                    standaloneOutlined.getBorder().getStrokes().get(0).getWidths().getTop(),
+                    0.0001);
+
+            PseudoClass inputDisabled = PseudoClass.getPseudoClass("input-disabled");
+            assertTrue(filledLayout.getPseudoClassStates().contains(inputDisabled));
+            assertTrue(outlinedLayout.getPseudoClassStates().contains(inputDisabled));
+            assertRegionFill(
+                    lookupRegion(filledLayout, "." + M3TextInputLayout.INPUT_CONTAINER_STYLE_CLASS),
+                    Color.TRANSPARENT
+            );
+            assertRegionFill(wrappedFilled, disabledFilledContainer);
+            assertBorderBottomColor(wrappedFilled, disabledContent);
+
+            Path outline = assertInstanceOf(
+                    Path.class,
+                    outlinedLayout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS)
+            );
+            assertEquals(onSurface, outline.getStroke());
+            assertEquals(0.12, outline.getOpacity(), 0.0001);
+
+            Label outlinedLabel = assertInstanceOf(
+                    Label.class,
+                    outlinedLayout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
+            );
+            assertEquals(disabledContent, outlinedLabel.getTextFill());
+            assertEquals(1.0, outlinedLabel.getOpacity(), 0.0001);
+
+            Region leadingSlot = lookupRegion(
+                    filledLayout,
+                    "." + M3TextInputLayout.LEADING_STYLE_CLASS
+            );
+            assertEquals(0.38, leadingSlot.getOpacity(), 0.0001);
+            assertEquals(1.0, leading.getOpacity(), 0.0001);
+            Region trailingSlot = lookupRegion(
+                    outlinedLayout,
+                    "." + M3TextInputLayout.TRAILING_STYLE_CLASS
+            );
+            assertEquals(0.38, trailingSlot.getOpacity(), 0.0001);
+            assertEquals(1.0, trailingButton.getOpacity(), 0.0001);
+            assertEquals(1.0, trailingIcon.getOpacity(), 0.0001);
+        });
+    }
+
     /// Verifies that focused text input layout labels use Material focused and error colors.
     @Test
     void textInputLayoutLabelUsesFocusedAndErrorColors() {
@@ -18265,8 +18531,10 @@ final class M3ControlStyleTest {
                 -m3-track-height: 36px;
                 -m3-state-layer-size: 44px;
                 -m3-unselected-handle-size: 18px;
+                -m3-with-icon-handle-size: 27px;
                 -m3-selected-handle-size: 26px;
                 -m3-pressed-handle-size: 30px;
+                -m3-icon-size: 15px;
                 """);
 
         applyCss(checkBox);
@@ -18292,14 +18560,130 @@ final class M3ControlStyleTest {
         assertEquals(36.0, switchControl.getTrackHeight(), 0.0001);
         assertEquals(44.0, switchControl.getStateLayerSize(), 0.0001);
         assertEquals(18.0, switchControl.getUnselectedHandleSize(), 0.0001);
+        assertEquals(27.0, switchControl.getWithIconHandleSize(), 0.0001);
         assertEquals(26.0, switchControl.getSelectedHandleSize(), 0.0001);
         assertEquals(30.0, switchControl.getPressedHandleSize(), 0.0001);
+        assertEquals(15.0, switchControl.getIconSize(), 0.0001);
         assertEquals(50.0, switchControl.getPrefHeight(), 0.0001);
 
         switchControl.setStyle(switchControl.getStyle() + " -m3-state-layer-size: 54px;");
         applyCss(switchControl);
         assertEquals(54.0, switchControl.getStateLayerSize(), 0.0001);
         assertEquals(54.0, switchControl.getPrefHeight(), 0.0001);
+    }
+
+    /// Verifies that switch handle icons use the MD3 icon slot, handle size, color roles, and ownership lifecycle.
+    @Test
+    void switchSupportsSelectedAndUnselectedHandleIcons() {
+        SVGPath selectedIcon = new SVGPath();
+        selectedIcon.setContent("M 2 8 L 6 12 L 14 3 L 12 1 L 6 8 L 4 6 Z");
+        selectedIcon.getStyleClass().add("application-selected-icon");
+        SVGPath unselectedIcon = new SVGPath();
+        unselectedIcon.setContent("M 3 3 L 13 13 M 13 3 L 3 13");
+        M3Switch switchControl = new M3Switch("Notifications");
+        switchControl.setSelectedIcon(selectedIcon);
+        switchControl.setUnselectedIcon(unselectedIcon);
+        M3MotionSettings.setAnimationsEnabled(switchControl, false);
+
+        Pane root = new Pane(switchControl);
+        Scene scene = new Scene(root, 180.0, 80.0);
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.setStyle("""
+                -m3-color-primary: rgb(1,2,3);
+                -m3-color-surface-container-highest: rgb(10,11,12);
+                -m3-color-on-surface: rgb(20,21,22);
+                """);
+        root.applyCss();
+        switchControl.resizeRelocate(20.0, 16.0, 140.0, 48.0);
+        switchControl.layout();
+
+        Region thumb = lookupRegion(switchControl, ".thumb");
+        Region iconSlot = lookupRegion(switchControl, ".m3-switch-icon-slot");
+        assertSame(iconSlot, unselectedIcon.getParent());
+        assertNull(selectedIcon.getParent());
+        assertEquals(24.0, thumb.getWidth(), 0.0001);
+        assertEquals(24.0, thumb.getHeight(), 0.0001);
+        assertEquals(16.0, iconSlot.getWidth(), 0.0001);
+        assertEquals(16.0, iconSlot.getHeight(), 0.0001);
+        assertEquals(Color.rgb(10, 11, 12), unselectedIcon.getFill());
+        assertTrue(unselectedIcon.getStyleClass().contains("m3-switch-handle-icon"));
+
+        switchControl.setDisable(true);
+        root.applyCss();
+        assertEquals(Color.rgb(10, 11, 12), unselectedIcon.getFill());
+        assertEquals(0.38, unselectedIcon.getOpacity(), 0.0001);
+
+        switchControl.setDisable(false);
+        switchControl.setSelected(true);
+        root.applyCss();
+        switchControl.layout();
+
+        assertSame(iconSlot, selectedIcon.getParent());
+        assertNull(unselectedIcon.getParent());
+        assertFalse(unselectedIcon.getStyleClass().contains("m3-switch-handle-icon"));
+        assertTrue(selectedIcon.getStyleClass().contains("application-selected-icon"));
+        assertTrue(selectedIcon.getStyleClass().contains("m3-switch-handle-icon"));
+        assertEquals(Color.rgb(1, 2, 3), selectedIcon.getFill());
+        assertEquals(1.0, iconSlot.getOpacity(), 0.0001);
+
+        switchControl.setDisable(true);
+        root.applyCss();
+        assertEquals(Color.rgb(20, 21, 22), selectedIcon.getFill());
+        assertEquals(0.38, selectedIcon.getOpacity(), 0.0001);
+
+        M3SwitchSkin skin = assertInstanceOf(M3SwitchSkin.class, switchControl.getSkin());
+        skin.dispose();
+
+        assertNull(selectedIcon.getParent());
+        assertFalse(selectedIcon.getStyleClass().contains("m3-switch-handle-icon"));
+        assertTrue(selectedIcon.getStyleClass().contains("application-selected-icon"));
+    }
+
+    /// Verifies MD3 hover, focus, pressed, and disabled color mappings for selection controls.
+    @Test
+    void selectionControlStateColorsFollowMaterialTokens() {
+        M3CheckBox checkBox = new M3CheckBox("Check");
+        M3RadioButton radioButton = new M3RadioButton("Radio");
+        M3Switch switchControl = new M3Switch("Switch");
+        Pane root = new Pane(checkBox, radioButton, switchControl);
+        Scene scene = new Scene(root, 420.0, 80.0);
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.setStyle("""
+                -m3-color-primary: rgb(1,2,3);
+                -m3-color-on-surface: rgb(4,5,6);
+                -m3-color-on-surface-variant: rgb(7,8,9);
+                -m3-color-surface-container-highest: rgb(10,11,12);
+                """);
+        root.applyCss();
+
+        Region checkBoxContainer = lookupRegion(checkBox, ".box");
+        Shape radioRing = radioRing(radioButton);
+        Region checkBoxStateLayer = lookupRegion(checkBox, ".m3-state-layer");
+        Region radioStateLayer = lookupRegion(radioButton, ".m3-state-layer");
+        assertBorderColor(checkBoxContainer, Color.rgb(7, 8, 9));
+        assertEquals(Color.rgb(7, 8, 9), radioRing.getStroke());
+
+        checkBox.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
+        radioButton.pseudoClassStateChanged(PseudoClass.getPseudoClass("focused"), true);
+        root.applyCss();
+        assertBorderColor(checkBoxContainer, Color.rgb(4, 5, 6));
+        assertEquals(Color.rgb(4, 5, 6), radioRing.getStroke());
+
+        checkBox.arm();
+        radioButton.arm();
+        root.applyCss();
+        assertRegionFill(checkBoxStateLayer, Color.rgb(1, 2, 3));
+        assertRegionFill(radioStateLayer, Color.rgb(1, 2, 3));
+
+        checkBox.setSelected(true);
+        radioButton.setSelected(true);
+        root.applyCss();
+        assertRegionFill(checkBoxStateLayer, Color.rgb(4, 5, 6));
+        assertRegionFill(radioStateLayer, Color.rgb(4, 5, 6));
+
+        switchControl.setDisable(true);
+        root.applyCss();
+        assertRegionFill(lookupRegion(switchControl, ".box"), Color.rgb(10, 11, 12));
     }
 
     /// Verifies that selection controls create Material Design 3 skins.
@@ -18985,7 +19369,7 @@ final class M3ControlStyleTest {
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         root.setStyle(root.getStyle()
                 + " -m3-color-primary: rgb(1,2,3);"
-                + " -m3-color-on-surface-variant: rgb(4,5,6);");
+                + " -m3-color-on-surface: rgb(4,5,6);");
         applyInteractivePseudoClasses(radioButton);
         root.applyCss();
         root.resize(160.0, 80.0);
@@ -19700,6 +20084,37 @@ final class M3ControlStyleTest {
         Path indicator = assertInstanceOf(Path.class, indicators.iterator().next());
         assertTrue(indicator.isVisible());
         assertTrue(indicator.getElements().size() > 24);
+    }
+
+    /// Verifies that disabled loading indicators apply Material content opacity exactly once.
+    @Test
+    void loadingIndicatorDisabledOpacityIsNotCompounded() {
+        M3LoadingIndicator defaultIndicator = new M3LoadingIndicator();
+        M3LoadingIndicator containedIndicator = new M3LoadingIndicator();
+        containedIndicator.setVariant(M3LoadingIndicatorVariant.CONTAINED);
+        defaultIndicator.setDisable(true);
+        containedIndicator.setDisable(true);
+
+        HBox root = new HBox(defaultIndicator, containedIndicator);
+        Scene scene = new Scene(root, 160.0, 80.0);
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        defaultIndicator.resize(48.0, 48.0);
+        containedIndicator.resize(48.0, 48.0);
+        defaultIndicator.layout();
+        containedIndicator.layout();
+
+        assertEquals(0.38, defaultIndicator.getOpacity(), 0.0001);
+        assertEquals(0.38, containedIndicator.getOpacity(), 0.0001);
+        assertEquals(1.0,
+                defaultIndicator.lookup(".m3-loading-indicator-indicator").getOpacity(),
+                0.0001);
+        assertEquals(1.0,
+                containedIndicator.lookup(".m3-loading-indicator-indicator").getOpacity(),
+                0.0001);
+        assertEquals(1.0,
+                containedIndicator.lookup(".m3-loading-indicator-container").getOpacity(),
+                0.0001);
     }
 
     /// Verifies that loading indicator morph frames reuse their path elements.
@@ -23562,6 +23977,70 @@ final class M3ControlStyleTest {
             assertEquals(-1, listView.getSelectedIndex());
         });
     }
+
+    /// Verifies that factory rows release temporary cell state while their cells remain in the virtual-flow pile.
+    @Test
+    void listViewReleasesFactoryRowsWhenCellsMoveToVirtualFlowPile() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Theme rowTheme = M3Theme.fromSeed(
+                    Color.web("#006a6a"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.DARK
+            );
+            M3Theme sceneTheme = M3Theme.defaultTheme();
+            M3ListItem firstRow = new M3ListItem("Row 0");
+            firstRow.setStyle("-fx-opacity: 0.83;");
+            M3ThemeManager.install(firstRow, rowTheme);
+            String firstRowStyle = firstRow.getStyle();
+            List<String> firstRowStyleClasses = List.copyOf(firstRow.getStyleClass());
+
+            M3ListView<Integer> listView = new M3ListView<>();
+            for (int index = 0; index < 64; index++) {
+                listView.getItems().add(index);
+            }
+            listView.setFixedCellSize(56.0);
+            listView.setPrefSize(320.0, 168.0);
+            listView.setSelectionMode(M3ListSelectionMode.SINGLE);
+            listView.setCellFactory(value -> value == 0 ? firstRow : new M3ListItem("Row " + value));
+
+            StackPane root = new StackPane(listView);
+            Scene scene = new Scene(root, 360.0, 220.0);
+            Stage stage = new Stage();
+            try {
+                M3ThemeManager.install(scene, sceneTheme);
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                assertSame(firstRow, listView.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+                assertTrue(firstRow.getParent() != null);
+                assertSame(sceneTheme, M3ThemeManager.getTheme(firstRow));
+
+                listView.scrollTo(48, false);
+                root.layout();
+                listView.layout();
+
+                assertNull(firstRow.getParent());
+                assertSame(rowTheme, M3ThemeManager.getTheme(firstRow));
+                assertEquals(firstRowStyle, firstRow.getStyle());
+                assertEquals(firstRowStyleClasses, firstRow.getStyleClass());
+                firstRow.fire();
+                assertEquals(-1, listView.getSelectedIndex());
+
+                listView.scrollTo(0, false);
+                root.layout();
+                listView.layout();
+
+                assertSame(firstRow, listView.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+                assertTrue(firstRow.getParent() != null);
+                assertSame(sceneTheme, M3ThemeManager.getTheme(firstRow));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that visible virtualized rows follow runtime scene theme changes.
     @Test
     void listViewVisibleRowsReinheritRuntimeSceneThemeChanges() {
@@ -24882,7 +25361,7 @@ final class M3ControlStyleTest {
         Text titleText = assertInstanceOf(Text.class, title.lookup(".text"));
 
         Bounds appBarBounds = appBar.localToScene(appBar.getBoundsInLocal());
-        Bounds navigationBounds = navigation.localToScene(navigation.getBoundsInLocal());
+        Bounds navigationBounds = navigation.localToScene(navigation.getLayoutBounds());
         Bounds titleBounds = title.localToScene(title.getBoundsInLocal());
         Bounds titleTextBounds = titleText.localToScene(titleText.getBoundsInLocal());
         Bounds actionsBounds = actions.localToScene(actions.getBoundsInLocal());
@@ -24983,7 +25462,7 @@ final class M3ControlStyleTest {
             List<Node> actionSlots,
             double rowCenterY
     ) {
-        Bounds navigationBounds = navigation.localToScene(navigation.getBoundsInLocal());
+        Bounds navigationBounds = navigation.localToScene(navigation.getLayoutBounds());
         assertEquals(48.0, navigationBounds.getWidth(), 1.0,
                 () -> "top app bar navigation slot width is not 48 dp: variant="
                         + appBar.getVariant() + ", navigation=" + navigationBounds);
@@ -24996,7 +25475,7 @@ final class M3ControlStyleTest {
                         + appBar.getVariant());
         @Nullable Bounds previousBounds = null;
         for (Node slot : actionSlots) {
-            Bounds slotBounds = slot.localToScene(slot.getBoundsInLocal());
+            Bounds slotBounds = slot.localToScene(slot.getLayoutBounds());
             assertEquals(48.0, slotBounds.getWidth(), 1.0,
                     () -> "top app bar action slot width is not 48 dp: variant="
                             + appBar.getVariant() + ", slot=" + slotBounds);
@@ -25099,7 +25578,7 @@ final class M3ControlStyleTest {
     /// Verifies that an app bar icon button keeps its fallback glyph centered in the Material action target.
     private static void assertAppBarIconButtonTargetGeometry(M3IconButton iconButton) {
         Node graphic = Objects.requireNonNull(iconButton.getGraphic(), "graphic");
-        Bounds buttonBounds = iconButton.localToScene(iconButton.getBoundsInLocal());
+        Bounds buttonBounds = iconButton.localToScene(iconButton.getLayoutBounds());
         Bounds graphicBounds = graphic.localToScene(graphic.getBoundsInLocal());
 
         assertEquals(40.0, buttonBounds.getWidth(), 1.0,
@@ -25477,7 +25956,7 @@ final class M3ControlStyleTest {
                 "bottom app bar action slot count does not match action nodes");
         @Nullable Bounds previousBounds = null;
         for (Node slot : actionSlots) {
-            Bounds slotBounds = slot.localToScene(slot.getBoundsInLocal());
+            Bounds slotBounds = slot.localToScene(slot.getLayoutBounds());
             assertEquals(48.0, slotBounds.getWidth(), 1.0,
                     () -> "bottom app bar action slot width is not 48 dp: " + slotBounds);
             assertEquals(48.0, slotBounds.getHeight(), 1.0,
@@ -28695,6 +29174,30 @@ final class M3ControlStyleTest {
                         OverlayOwnedStateMotionScene scene = Objects.requireNonNull(sceneReference.get(), "scene");
 
                         assertOverlayOwnedStateTransitionsIntermediate(scene);
+
+                        M3Snackbar snackbar = assertInstanceOf(
+                                M3Snackbar.class,
+                                scene.snackbarHost.getSnackbar()
+                        );
+                        double snackbarOpacity = snackbar.getOpacity();
+                        double snackbarTranslateY = snackbar.getTranslateY();
+                        double actionOpacity = scene.action.getOpacity();
+                        double actionScaleX = scene.action.getScaleX();
+                        double actionScaleY = scene.action.getScaleY();
+                        double actionTranslateY = scene.action.getTranslateY();
+
+                        scene.snackbarHost.dismiss();
+                        scene.snackbarHost.show(snackbar);
+                        scene.fabMenu.hide();
+                        scene.fabMenu.show();
+
+                        assertEquals(snackbarOpacity, snackbar.getOpacity(), 0.0001);
+                        assertEquals(snackbarTranslateY, snackbar.getTranslateY(), 0.0001);
+                        assertEquals(actionOpacity, scene.action.getOpacity(), 0.0001);
+                        assertEquals(actionScaleX, scene.action.getScaleX(), 0.0001);
+                        assertEquals(actionScaleY, scene.action.getScaleY(), 0.0001);
+                        assertEquals(actionTranslateY, scene.action.getTranslateY(), 0.0001);
+
                         M3MotionSettings.setAnimationsEnabled(scene.root, false);
                         scene.root.layout();
                         assertOverlayOwnedStateTransitionsSettled(scene);
@@ -28887,14 +29390,12 @@ final class M3ControlStyleTest {
             M3Button focusButton = createButton("Focus", M3ButtonVariant.FILLED);
             M3Button pressedButton = createButton("Pressed", M3ButtonVariant.FILLED);
             applyPseudoState(hoverButton, "hover");
-            applyPseudoState(focusButton, "focus-visible");
             applyPseudoState(pressedButton, "pressed");
 
             M3CheckBox hoverCheckBox = createCheckBox("Checkbox hover", true);
             M3RadioButton focusRadioButton = createRadioButton("Radio focus", true);
             M3Switch pressedSwitch = createSwitch("Switch pressed", true);
             applyPseudoState(hoverCheckBox, "hover");
-            applyPseudoState(focusRadioButton, "focus-visible");
             applyPseudoState(pressedSwitch, "pressed");
 
             M3Slider pressedSlider = new M3Slider(0.0, 100.0, 56.0);
@@ -28906,7 +29407,6 @@ final class M3ControlStyleTest {
                     true
             );
             applyPseudoState(pressedSlider, "pressed");
-            applyPseudoState(focusTab, "focus-visible");
             applyPseudoState(hoverNavigationItem, "hover");
 
             M3ListItem pressedListItem = new M3ListItem("Pressed list item");
@@ -28950,6 +29450,11 @@ final class M3ControlStyleTest {
             Scene scene = new Scene(root, 920.0, 560.0);
 
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            M3MotionSettings.setAnimationsEnabled(root, false);
+            root.applyCss();
+            applyPseudoState(focusButton, "focus-visible");
+            applyPseudoState(focusRadioButton, "focus-visible");
+            applyPseudoState(focusTab, "focus-visible");
             root.applyCss();
             root.resize(920.0, Math.ceil(root.prefHeight(920.0)));
             root.layout();
@@ -28970,6 +29475,27 @@ final class M3ControlStyleTest {
             assertStateLayerOpacity(hoverNavigationItem, 0.08);
             assertStateLayerOpacity(pressedListItem, 0.1);
             assertStateLayerOpacity(hoverCard, 0.08);
+            Region focusIndicator = lookupRegion(focusButton, ".m3-focus-indicator");
+            Bounds focusButtonBounds = focusButton.localToScene(focusButton.getLayoutBounds());
+            Bounds focusIndicatorBounds = focusIndicator.localToScene(focusIndicator.getLayoutBounds());
+            assertEquals(1.0, focusIndicator.getOpacity(), 0.0001);
+            assertTrue(focusIndicatorBounds.getMinX() < focusButtonBounds.getMinX());
+            assertTrue(focusIndicatorBounds.getMaxX() > focusButtonBounds.getMaxX());
+            Color focusRingPixel = snapshotScenePixel(
+                    image,
+                    focusIndicatorBounds.getMinX() + 1.0,
+                    focusIndicatorBounds.getCenterY()
+            );
+            Color focusRingBackground = snapshotScenePixel(
+                    image,
+                    focusIndicatorBounds.getMinX() - 2.0,
+                    focusIndicatorBounds.getCenterY()
+            );
+            assertTrue(colorDistance(focusRingPixel, focusRingBackground) > 0.04,
+                    () -> "outer focus indicator should render beyond the button bounds: ring="
+                            + focusRingPixel + ", background=" + focusRingBackground
+                            + ", indicatorBounds=" + focusIndicatorBounds
+                            + ", buttonBounds=" + focusButtonBounds);
             assertSnapshotNodeContainsContrast(image, hoverButton, Color.WHITE, 0.05);
             assertSnapshotNodeContainsContrast(image, focusButton, Color.WHITE, 0.05);
             assertSnapshotNodeContainsContrast(image, pressedButton, Color.WHITE, 0.05);
@@ -33897,6 +34423,13 @@ final class M3ControlStyleTest {
 
                 assertTrue(first.isFocused());
                 assertEquals(2, notifications.get());
+
+                notifier.start();
+                notifier.refresh();
+                second.requestFocus();
+
+                assertTrue(second.isFocused());
+                assertEquals(3, notifications.get());
             } finally {
                 notifier.stop();
                 popup.hide();
@@ -37189,8 +37722,8 @@ final class M3ControlStyleTest {
 
     /// Verifies the resolved shape radius used by a control's state layer.
     private static void assertStateLayerShape(Node node, double expectedRadius) {
-        Region container = lookupRegion(node, ".m3-state-layer-container");
-        assertInstanceOf(Path.class, container.getClip());
+        Region overlay = lookupRegion(node, ".m3-state-layer");
+        assertInstanceOf(Path.class, Objects.requireNonNull(overlay.getParent(), "clipped state content").getClip());
         assertStateLayerRadii(node, expectedRadius, expectedRadius, expectedRadius, expectedRadius);
     }
 
@@ -37451,6 +37984,11 @@ final class M3ControlStyleTest {
                 () -> description + " resolved to the light fallback on-surface token: " + fill);
         assertTrue(fill.getBrightness() >= 0.45,
                 () -> description + " should resolve to a readable dark-theme text color: " + fill);
+    }
+
+    /// Returns a color with the same RGB channels and the requested opacity.
+    private static Color withOpacity(Color color, double opacity) {
+        return new Color(color.getRed(), color.getGreen(), color.getBlue(), opacity);
     }
 
     /// Verifies that a region has no visible border strokes.

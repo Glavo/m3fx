@@ -1252,6 +1252,8 @@ public final class M3FXDemoApp extends Application {
         filledText.setPrefWidth(340.0);
         M3TextField filledDisabled = createTextField("Disabled filled", "Read only", M3TextInputVariant.FILLED, true);
         M3TextField outlined = createTextField("Outlined text field", "", M3TextInputVariant.OUTLINED, false);
+        M3TextField outlinedDisabled =
+                createTextField("Disabled outlined", "Read only", M3TextInputVariant.OUTLINED, true);
         M3TextField outlinedText = createTextField("Outlined with text", "M3FX", M3TextInputVariant.OUTLINED, false);
         outlinedText.setPrefWidth(320.0);
         M3PasswordField password = new M3PasswordField("");
@@ -1314,6 +1316,9 @@ public final class M3FXDemoApp extends Application {
         M3TextInputLayout filledDisabledLayout = createTextInputLayout(filledDisabled, "Disabled supporting text");
         filledDisabledLayout.setLeading(createSurfaceVariantIcon("lock"));
         M3TextInputLayout outlinedLayout = createTextInputLayout(outlined, "Outlined supporting text");
+        M3TextInputLayout outlinedDisabledLayout =
+                createTextInputLayout(outlinedDisabled, "Disabled outlined supporting text");
+        outlinedDisabledLayout.setLeading(createSurfaceVariantIcon("lock"));
         M3TextInputLayout outlinedTextLayout = createTextInputLayout(outlinedText, "Project name");
         outlinedTextLayout.setLeading(createSurfaceVariantIcon("text"));
         outlinedTextLayout.setCharacterCounterVisible(true);
@@ -1372,8 +1377,9 @@ public final class M3FXDemoApp extends Application {
         rtlOutlinedAreaLayout.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
 
         return createGallery(
-                createShowcaseGroup("Filled", filledLayout, filledTextLayout, filledDisabledLayout),
+                createShowcaseGroup("Filled", filledLayout, filledTextLayout),
                 createShowcaseGroup("Outlined", outlinedLayout, outlinedTextLayout, passwordLayout),
+                createShowcaseGroup("Disabled", filledDisabledLayout, outlinedDisabledLayout),
                 createShowcaseGroup("Validation", validatedEmailLayout, requiredProjectLayout),
                 createShowcaseGroup("Error", filledErrorLayout, outlinedErrorLayout, passwordErrorLayout, areaErrorLayout),
                 createShowcaseGroup("Text Areas", filledAreaLayout, outlinedAreaLayout),
@@ -1491,9 +1497,44 @@ public final class M3FXDemoApp extends Application {
         disabledOffSwitch.setDisable(true);
         disabledOnSwitch.setDisable(true);
 
+        M3Switch disabledIconOff = new M3Switch("Disabled icon off");
+        disabledIconOff.setUnselectedIcon(createSwitchHandleIcon("close"));
+        disabledIconOff.setDisable(true);
+        M3Switch disabledIconOn = new M3Switch("Disabled icon on");
+        disabledIconOn.setSelectedIcon(createSwitchHandleIcon("check"));
+        disabledIconOn.setSelected(true);
+        disabledIconOn.setDisable(true);
+
+        M3Switch selectedIconOff = new M3Switch("Selected icon off");
+        selectedIconOff.setSelectedIcon(createSwitchHandleIcon("check"));
+        M3Switch selectedIconOn = new M3Switch("Selected icon on");
+        selectedIconOn.setSelectedIcon(createSwitchHandleIcon("check"));
+        selectedIconOn.setSelected(true);
+
+        M3Switch bothIconsOff = new M3Switch("Both icons off");
+        bothIconsOff.setSelectedIcon(createSwitchHandleIcon("check"));
+        bothIconsOff.setUnselectedIcon(createSwitchHandleIcon("close"));
+        M3Switch bothIconsOn = new M3Switch("Both icons on");
+        bothIconsOn.setSelectedIcon(createSwitchHandleIcon("check"));
+        bothIconsOn.setUnselectedIcon(createSwitchHandleIcon("close"));
+        bothIconsOn.setSelected(true);
+
         return createGallery(
                 createShowcaseGroup("Interactive States", onSwitch, offSwitch),
-                createShowcaseGroup("Disabled States", disabledOffSwitch, disabledOnSwitch)
+                createShowcaseGroup(
+                        "Handle Icons",
+                        selectedIconOff,
+                        selectedIconOn,
+                        bothIconsOff,
+                        bothIconsOn
+                ),
+                createShowcaseGroup(
+                        "Disabled States",
+                        disabledOffSwitch,
+                        disabledOnSwitch,
+                        disabledIconOff,
+                        disabledIconOn
+                )
         );
     }
 
@@ -3326,6 +3367,15 @@ public final class M3FXDemoApp extends Application {
     private static Node createNavigationIcon(String iconName) {
         StackPane icon = createSurfaceVariantIcon(iconName);
         icon.getStyleClass().add("demo-navigation-icon");
+        return icon;
+    }
+
+    /// Creates a 16-pixel vector icon whose paint is supplied by the switch handle state.
+    private static SVGPath createSwitchHandleIcon(String iconName) {
+        SVGPath icon = DemoIcons.primary(iconName);
+        icon.getStyleClass().remove(DemoIcons.PRIMARY_STYLE_CLASS);
+        icon.setScaleX(2.0 / 3.0);
+        icon.setScaleY(2.0 / 3.0);
         return icon;
     }
 

@@ -20,6 +20,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3TooltipRegistry;
 import org.glavo.m3fx.FxTestUtils;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -333,13 +334,13 @@ final class M3AccessibleFocusRevealTest {
                 M3Tooltip.install(owner, tooltip);
 
                 assertFalse(tooltip.isShowing());
-                assertTrue(M3Tooltip.containsInstalledTooltipActionTarget(owner, action));
-                assertTrue(M3Tooltip.showInstalledTooltipActionTarget(owner, action));
+                assertTrue(M3TooltipRegistry.containsInstalledTooltipActionTarget(owner, action));
+                assertTrue(M3TooltipRegistry.showInstalledTooltipActionTarget(owner, action));
 
                 assertTrue(tooltip.isShowing());
                 assertTrue(action.isFocused());
-                assertSame(action, M3Tooltip.activeInstalledTooltipFocusTarget(owner));
-                assertTrue(M3Tooltip.activeInstalledTooltipPopupOwnsInteraction(owner));
+                assertSame(action, M3TooltipRegistry.activeInstalledTooltipFocusTarget(owner));
+                assertTrue(M3TooltipRegistry.activeInstalledTooltipPopupOwnsInteraction(owner));
             } finally {
                 tooltip.hide();
                 M3Tooltip.uninstall(owner, tooltip);

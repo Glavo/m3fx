@@ -244,9 +244,9 @@ final class M3StateLayerTest {
         });
     }
 
-    /// Verifies that keyboard-visible focus renders a bounded Material focus indicator for button-like controls.
+    /// Verifies that keyboard-visible focus renders an outer Material focus indicator for button-like controls.
     @Test
-    void focusVisibleRendersBoundedFocusIndicatorForButtonLikeControls() {
+    void focusVisibleRendersOuterFocusIndicatorForButtonLikeControls() {
         FxTestUtils.runOnFxThread(() -> {
             Pane owner = new Pane();
             owner.getStyleClass().add("m3-button");
@@ -279,18 +279,20 @@ final class M3StateLayerTest {
 
             Region focusIndicator = lookupRegion(stateLayer, ".m3-focus-indicator");
             assertEquals(0.0, focusIndicator.getOpacity(), 0.0001);
+            assertFalse(focusIndicator.isVisible());
 
             owner.pseudoClassStateChanged(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS, true);
             stateLayer.animateOverlayOpacityFromOwnerState();
 
             assertEquals(1.0, focusIndicator.getOpacity(), 0.0001);
-            assertEquals(0.0, focusIndicator.getLayoutX(), 0.0001);
-            assertEquals(0.0, focusIndicator.getLayoutY(), 0.0001);
-            assertEquals(100.0, focusIndicator.getWidth(), 0.0001);
-            assertEquals(40.0, focusIndicator.getHeight(), 0.0001);
+            assertTrue(focusIndicator.isVisible());
+            assertEquals(-7.0, focusIndicator.getLayoutX(), 0.0001);
+            assertEquals(-7.0, focusIndicator.getLayoutY(), 0.0001);
+            assertEquals(114.0, focusIndicator.getWidth(), 0.0001);
+            assertEquals(54.0, focusIndicator.getHeight(), 0.0001);
             assertTrue(focusIndicator.getStyle().contains("-fx-border-insets: 0.0px"));
             assertTrue(focusIndicator.getStyle().contains("-fx-border-width: 4.0px"));
-            assertTrue(focusIndicator.getStyle().contains("20.0px"));
+            assertTrue(focusIndicator.getStyle().contains("27.0px"));
             assertFalse(stateLayer.isFocusIndicatorOpacityAnimationRunning());
         });
     }
@@ -362,7 +364,15 @@ final class M3StateLayerTest {
             stateLayer.animateOverlayOpacityFromOwnerState();
 
             assertEquals(0.0, focusIndicator.getOpacity(), 0.0001);
+            assertTrue(focusIndicator.isVisible());
             assertTrue(stateLayer.isFocusIndicatorOpacityAnimationRunning());
+
+            M3MotionSettings.setAnimationsEnabled(owner, false);
+            owner.pseudoClassStateChanged(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS, false);
+            stateLayer.animateOverlayOpacityFromOwnerState();
+
+            assertEquals(0.0, focusIndicator.getOpacity(), 0.0001);
+            assertFalse(focusIndicator.isVisible());
             M3MotionSettings.clearAnimationsEnabled(owner);
         });
     }

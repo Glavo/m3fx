@@ -80,6 +80,10 @@
     -m3-state-dragged-opacity: 0.16;
     -m3-state-disabled-container-opacity: 0.12;
     -m3-state-disabled-content-opacity: 0.38;
+    -m3-state-disabled-container-color: rgba(29,27,32,0.12);
+    -m3-state-disabled-content-color: rgba(29,27,32,0.38);
+    -m3-button-disabled-container-color: rgba(29,27,32,0.1);
+    -m3-text-field-disabled-container-color: rgba(29,27,32,0.04);
     -m3-state-focus-indicator-color: -m3-color-secondary;
     -m3-state-focus-indicator-thickness: 3px;
     -m3-state-focus-indicator-outer-offset: 2px;

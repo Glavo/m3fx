@@ -140,6 +140,18 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-typescale-body-medium-tracking: 0.25px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-shape-corner-extra-extra-large: 48px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-state-focus-indicator-thickness: 3px"));
+        assertTrue(theme.toRootStyleDeclarations().contains(
+                "-m3-state-disabled-container-color: rgba(29,27,32,0.12)"
+        ));
+        assertTrue(theme.toRootStyleDeclarations().contains(
+                "-m3-state-disabled-content-color: rgba(29,27,32,0.38)"
+        ));
+        assertTrue(theme.toRootStyleDeclarations().contains(
+                "-m3-button-disabled-container-color: rgba(29,27,32,0.1)"
+        ));
+        assertTrue(theme.toRootStyleDeclarations().contains(
+                "-m3-text-field-disabled-container-color: rgba(29,27,32,0.04)"
+        ));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-button-filled-container-height"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-split-button-menu-width"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-fab-regular-container-size"));
@@ -282,8 +294,10 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-switch-track-height: 32px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-switch-state-layer-size: 40px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-switch-unselected-handle-size: 16px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-switch-with-icon-handle-size: 24px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-switch-selected-handle-size: 24px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-switch-pressed-handle-size: 28px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-switch-icon-size: 16px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-slider-track-thickness: 16px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-slider-thumb-size: 44px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-slider-thumb-width: 4px"));
@@ -454,8 +468,10 @@ final class M3ThemeTest {
         assertEquals(32.0, theme.tokens().componentTokens().selection().switchTrackHeight(), 0.0001);
         assertEquals(40.0, theme.tokens().componentTokens().selection().switchStateLayerSize(), 0.0001);
         assertEquals(16.0, theme.tokens().componentTokens().selection().switchUnselectedHandleSize(), 0.0001);
+        assertEquals(24.0, theme.tokens().componentTokens().selection().switchWithIconHandleSize(), 0.0001);
         assertEquals(24.0, theme.tokens().componentTokens().selection().switchSelectedHandleSize(), 0.0001);
         assertEquals(28.0, theme.tokens().componentTokens().selection().switchPressedHandleSize(), 0.0001);
+        assertEquals(16.0, theme.tokens().componentTokens().selection().switchIconSize(), 0.0001);
         assertEquals(16.0, theme.tokens().componentTokens().slider().trackThickness(), 0.0001);
         assertEquals(44.0, theme.tokens().componentTokens().slider().thumbSize(), 0.0001);
         assertEquals(4.0, theme.tokens().componentTokens().slider().thumbWidth(), 0.0001);

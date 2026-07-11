@@ -41,15 +41,15 @@ public final class M3MotionSettings {
     private static final Object MOTION_BEHAVIOR_KEY = new Object();
 
     /// The global animation switch used when a node has no inherited override.
-    private static final BooleanProperty animationsEnabled =
+    private static final BooleanProperty globalAnimationsEnabled =
             new SimpleBooleanProperty(M3MotionSettings.class, "animationsEnabled", true);
 
     /// The global motion scheme used when a node has no inherited override and no installed theme.
-    private static final ObjectProperty<M3MotionScheme> motionScheme =
+    private static final ObjectProperty<M3MotionScheme> globalMotionScheme =
             new SimpleObjectProperty<>(M3MotionSettings.class, "motionScheme", M3MotionScheme.standard());
 
     /// The global motion behavior used when a node has no inherited override and no installed theme.
-    private static final ObjectProperty<M3MotionBehavior> motionBehavior =
+    private static final ObjectProperty<M3MotionBehavior> globalMotionBehavior =
             new SimpleObjectProperty<>(M3MotionSettings.class, "motionBehavior", M3MotionBehavior.standard());
 
     /// The revision incremented whenever any global or node-local motion setting changes.
@@ -64,9 +64,9 @@ public final class M3MotionSettings {
             new CopyOnWriteArrayList<>();
 
     static {
-        animationsEnabled.addListener((observable, oldValue, newValue) -> markSettingsChanged());
-        motionScheme.addListener((observable, oldValue, newValue) -> markSettingsChanged());
-        motionBehavior.addListener((observable, oldValue, newValue) -> markSettingsChanged());
+        globalAnimationsEnabled.addListener((observable, oldValue, newValue) -> markSettingsChanged());
+        globalMotionScheme.addListener((observable, oldValue, newValue) -> markSettingsChanged());
+        globalMotionBehavior.addListener((observable, oldValue, newValue) -> markSettingsChanged());
     }
 
     /// Prevents instantiation.
@@ -77,63 +77,63 @@ public final class M3MotionSettings {
     ///
     /// @return `true` when global full-motion animations are enabled
     public static boolean areAnimationsEnabled() {
-        return animationsEnabled.get();
+        return globalAnimationsEnabled.get();
     }
 
     /// Sets whether full Material motion is globally enabled.
     ///
     /// @param enabled whether global full-motion animations should be enabled
     public static void setAnimationsEnabled(boolean enabled) {
-        animationsEnabled.set(enabled);
+        globalAnimationsEnabled.set(enabled);
     }
 
     /// Returns the global full-motion animation switch property.
     ///
     /// @return the writable global full-motion animation switch property
     public static BooleanProperty animationsEnabledProperty() {
-        return animationsEnabled;
+        return globalAnimationsEnabled;
     }
 
     /// Returns the global motion scheme.
     ///
     /// @return the global motion scheme
     public static M3MotionScheme getMotionScheme() {
-        return motionScheme.get();
+        return globalMotionScheme.get();
     }
 
     /// Sets the global motion scheme.
     ///
     /// @param scheme the global motion scheme
     public static void setMotionScheme(M3MotionScheme scheme) {
-        motionScheme.set(Objects.requireNonNull(scheme, "scheme"));
+        globalMotionScheme.set(Objects.requireNonNull(scheme, "scheme"));
     }
 
     /// Returns the global motion scheme property.
     ///
     /// @return the writable global motion scheme property
     public static ObjectProperty<M3MotionScheme> motionSchemeProperty() {
-        return motionScheme;
+        return globalMotionScheme;
     }
 
     /// Returns the global motion behavior.
     ///
     /// @return the global motion behavior
     public static M3MotionBehavior getMotionBehavior() {
-        return motionBehavior.get();
+        return globalMotionBehavior.get();
     }
 
     /// Sets the global motion behavior.
     ///
     /// @param behavior the global motion behavior
     public static void setMotionBehavior(M3MotionBehavior behavior) {
-        motionBehavior.set(Objects.requireNonNull(behavior, "behavior"));
+        globalMotionBehavior.set(Objects.requireNonNull(behavior, "behavior"));
     }
 
     /// Returns the global motion behavior property.
     ///
     /// @return the writable global motion behavior property
     public static ObjectProperty<M3MotionBehavior> motionBehaviorProperty() {
-        return motionBehavior;
+        return globalMotionBehavior;
     }
 
     /// Returns a read-only revision property that changes when any global or node-local motion setting changes.

@@ -73,8 +73,8 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     /// The independent global rotation animation value.
     private double globalRotation;
 
-    /// The reusable independent global rotation transition.
-    private final GlobalRotationTransition globalRotationAnimation = new GlobalRotationTransition();
+    /// The reusable fixed-shape rotation transition used by reduced motion.
+    private final BasicRotationTransition basicRotationAnimation = new BasicRotationTransition();
 
     /// The active morph segment index.
     private int currentMorphIndex;
@@ -113,7 +113,7 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     public void dispose() {
         M3LoadingIndicator loadingIndicator = getSkinnable();
         indeterminateAnimation.stop();
-        globalRotationAnimation.stop();
+        basicRotationAnimation.stop();
         motionSettingsObserver.dispose();
         loadingIndicator.variantProperty().removeListener(layoutInvalidation);
         loadingIndicator.containerSizeProperty().removeListener(layoutInvalidation);
@@ -142,22 +142,20 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         updateIndicatorPath();
         indicator.setLayoutX(0.0);
         indicator.setLayoutY(0.0);
-        indicator.setOpacity(loadingIndicator.isDisabled() ? 0.38 : 1.0);
     }
 
     /// Updates the loading animation for the current attachment and motion settings.
     private void updateAnimationState() {
         if (shouldPauseActivityAnimations()) {
             indeterminateAnimation.stop();
-            globalRotationAnimation.stop();
+            basicRotationAnimation.stop();
             resetIndeterminateAnimationState();
             updateIndicatorPath();
         } else if (M3Animation.shouldReduceMotion(getSkinnable())) {
             indeterminateAnimation.stop();
             resetIndeterminateAnimationState();
             startBasicIndeterminateAnimation();
-        } else if (indeterminateAnimation.getStatus() != Animation.Status.RUNNING
-                || globalRotationAnimation.getStatus() != Animation.Status.RUNNING) {
+        } else if (indeterminateAnimation.getStatus() != Animation.Status.RUNNING) {
             startIndeterminateAnimation();
         }
     }
@@ -165,19 +163,17 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
     /// Starts the indeterminate morph and global rotation loops.
     private void startIndeterminateAnimation() {
         indeterminateAnimation.stop();
-        globalRotationAnimation.stop();
+        basicRotationAnimation.stop();
         resetIndeterminateAnimationState();
         configureIndeterminateMorphSegment();
-        configureGlobalRotationAnimation();
         indeterminateAnimation.playFromStart();
-        globalRotationAnimation.playFromStart();
     }
 
     /// Starts the reduced indeterminate loop used when full motion is disabled.
     private void startBasicIndeterminateAnimation() {
-        globalRotationAnimation.stop();
-        configureGlobalRotationAnimation();
-        globalRotationAnimation.playFromStart();
+        basicRotationAnimation.stop();
+        configureBasicRotationAnimation();
+        basicRotationAnimation.playFromStart();
     }
 
     /// Resets indeterminate animation state to the first Compose morph segment.
@@ -194,13 +190,19 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         M3MotionSpec spec = M3Animation.defaultSpatial(getSkinnable());
         Duration morphInterval = behavior.loadingIndicatorMorphInterval();
         Duration activeDuration = activeMorphDuration(morphInterval, spec);
-        indeterminateAnimation.configure(morphInterval, activeDuration, spec.interpolator(), currentMorphIndex);
+        indeterminateAnimation.configure(
+                morphInterval,
+                activeDuration,
+                behavior.loadingIndicatorGlobalRotationDuration(),
+                spec.interpolator(),
+                currentMorphIndex
+        );
     }
 
-    /// Configures the independent global rotation loop.
-    private void configureGlobalRotationAnimation() {
+    /// Configures the fixed-shape reduced-motion rotation loop.
+    private void configureBasicRotationAnimation() {
         M3MotionBehavior behavior = M3Animation.motionBehavior(getSkinnable());
-        globalRotationAnimation.configure(behavior.loadingIndicatorGlobalRotationDuration());
+        basicRotationAnimation.configure(behavior.loadingIndicatorGlobalRotationDuration());
     }
 
     /// Advances to the next indeterminate morph segment and keeps the loop running.
@@ -318,6 +320,12 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         /// The normalized part of the cycle occupied by active morphing.
         private double activeFraction = 1.0;
 
+        /// The global rotation at the beginning of the segment.
+        private double startRotation;
+
+        /// The global rotation added over the complete segment.
+        private double rotationDelta;
+
         /// Creates a linearly timed segment transition whose inner morph uses the Material easing curve.
         private MorphSegmentTransition() {
             setInterpolator(M3Motion.LINEAR);
@@ -327,11 +335,13 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
         ///
         /// @param interval the complete morph interval
         /// @param activeDuration the part of the interval used for geometric interpolation
+        /// @param rotationDuration the duration of one complete independent rotation
         /// @param morphInterpolator the Material easing curve for the active part
         /// @param startPhase the absolute sequence phase at the beginning of the segment
         private void configure(
                 Duration interval,
                 Duration activeDuration,
+                Duration rotationDuration,
                 Interpolator morphInterpolator,
                 double startPhase
         ) {
@@ -339,10 +349,13 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
             setCycleDuration(interval);
             this.morphInterpolator = morphInterpolator;
             this.startPhase = startPhase;
+            this.startRotation = globalRotation;
             double intervalMillis = interval.toMillis();
             activeFraction = intervalMillis <= 0.0
                     ? 1.0
                     : clamp(activeDuration.toMillis() / intervalMillis);
+            double rotationMillis = rotationDuration.toMillis();
+            rotationDelta = rotationMillis <= 0.0 ? 0.0 : intervalMillis / rotationMillis;
         }
 
         /// Updates the primitive morph phase and rewrites the path only when the visible shape changes.
@@ -355,18 +368,21 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
                     ? 1.0
                     : morphInterpolator.interpolate(0.0, 1.0, activeProgress);
             double newPhase = startPhase + easedProgress;
-            if (Double.compare(indeterminatePhase, newPhase) != 0) {
+            double newRotation = positiveUnitModulo(startRotation + rotationDelta * fraction);
+            if (Double.compare(indeterminatePhase, newPhase) != 0
+                    || Double.compare(globalRotation, newRotation) != 0) {
                 indeterminatePhase = newPhase;
+                globalRotation = newRotation;
                 updateIndicatorPath();
             }
         }
     }
 
-    /// Reuses one indefinite transition for the independent linear rotation channel.
+    /// Reuses one indefinite transition for reduced-motion fixed-shape rotation.
     @NotNullByDefault
-    private final class GlobalRotationTransition extends Transition {
-        /// Creates a linearly timed indefinite rotation transition.
-        private GlobalRotationTransition() {
+    private final class BasicRotationTransition extends Transition {
+        /// Creates a linearly timed indefinite reduced-motion rotation transition.
+        private BasicRotationTransition() {
             setInterpolator(M3Motion.LINEAR);
             setCycleCount(Animation.INDEFINITE);
         }

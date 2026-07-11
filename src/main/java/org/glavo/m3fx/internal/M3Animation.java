@@ -4,12 +4,7 @@
 package org.glavo.m3fx.internal;
 
 import javafx.animation.Animation;
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
 import javafx.animation.PauseTransition;
-import javafx.animation.ParallelTransition;
-import javafx.animation.Timeline;
-import javafx.beans.value.WritableValue;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.Node;
@@ -22,9 +17,6 @@ import org.glavo.m3fx.theme.M3Theme;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
 import java.util.Objects;
 
 /// Internal helpers for honoring the M3FX motion settings around JavaFX animations.
@@ -144,53 +136,53 @@ public final class M3Animation {
         M3MotionSettings.setMotionBehavior(target, motionBehavior(source));
     }
 
-    /// Plays an animation from the beginning or finishes it immediately when animations are disabled.
+    /// Plays a finite transition from the beginning or finishes it immediately when animations are disabled.
     ///
     /// @param owner the node whose animation settings should be honored
-    /// @param animation the animation to play or finish
-    public static void playFromStart(Node owner, Animation animation) {
-        Objects.requireNonNull(animation, "animation");
+    /// @param transition the transition to play or finish
+    public static void playFromStart(Node owner, M3FiniteTransition transition) {
+        Objects.requireNonNull(transition, "transition");
         if (areAnimationsEnabled(owner)) {
-            animation.playFromStart();
+            transition.playFromStart();
         } else {
-            finish(animation);
+            finish(transition);
         }
     }
 
-    /// Finishes an animation synchronously and invokes its completion handlers.
+    /// Finishes a finite transition synchronously and invokes its completion handler.
     ///
-    /// @param animation the animation to settle at its final state
-    public static void finish(Animation animation) {
-        finish(animation, true);
+    /// @param transition the transition to settle at its final state
+    public static void finish(M3FiniteTransition transition) {
+        Objects.requireNonNull(transition, "transition");
+        transition.stop();
+        transition.applyEndValues();
+        invokeOnFinished(transition.getOnFinished());
     }
 
-    /// Finishes an animation only when it is currently running.
+    /// Finishes a finite transition only when it is currently running.
     ///
-    /// @param animation the animation to inspect
-    /// @return `true` when the animation was running and has been finished
-    public static boolean finishIfRunning(Animation animation) {
-        Objects.requireNonNull(animation, "animation");
-        if (animation.getStatus() != Animation.Status.RUNNING) {
-            return false;
+    /// @param transition the transition to inspect
+    public static void finishIfRunning(M3FiniteTransition transition) {
+        Objects.requireNonNull(transition, "transition");
+        if (transition.getStatus() == Animation.Status.RUNNING) {
+            finish(transition);
         }
-        finish(animation);
-        return true;
     }
 
-    /// Finishes running animations when the owner currently resolves animations as disabled.
+    /// Finishes running finite transitions when the owner currently resolves animations as disabled.
     ///
-    /// This is used by finite component-state transitions that already honor disabled motion when starting,
+    /// This is used by component-state transitions that already honor disabled motion when starting,
     /// but also need to settle when an application disables motion while the transition is in flight.
     ///
     /// @param owner the node whose inherited animation switch should be resolved
-    /// @param animations the animations to settle when disabled
-    public static void finishRunningAnimationsIfDisabled(Node owner, Animation... animations) {
-        Objects.requireNonNull(animations, "animations");
+    /// @param transitions the transitions to settle when disabled
+    public static void finishRunningAnimationsIfDisabled(Node owner, M3FiniteTransition... transitions) {
+        Objects.requireNonNull(transitions, "transitions");
         if (areAnimationsEnabled(owner)) {
             return;
         }
-        for (Animation animation : animations) {
-            finishIfRunning(animation);
+        for (M3FiniteTransition transition : transitions) {
+            finishIfRunning(transition);
         }
     }
 
@@ -224,75 +216,11 @@ public final class M3Animation {
         }
     }
 
-    /// Finishes an animation, optionally skipping `stop()` for animations embedded in a parent transition.
-    ///
-    /// @param animation the animation to settle at its final state
-    /// @param stop whether to stop the animation before applying final values
-    private static void finish(Animation animation, boolean stop) {
-        Objects.requireNonNull(animation, "animation");
-        if (stop) {
-            animation.stop();
-        }
-        if (animation instanceof M3FiniteTransition finiteTransition) {
-            finiteTransition.applyEndValues();
-        } else if (animation instanceof Timeline timeline) {
-            finishTimeline(timeline);
-        } else if (animation instanceof ParallelTransition parallelTransition) {
-            for (Animation child : parallelTransition.getChildren()) {
-                finish(child, false);
-            }
-        } else {
-            Duration totalDuration = animation.getTotalDuration();
-            if (isFinite(totalDuration)) {
-                animation.jumpTo(totalDuration);
-            }
-        }
-        invokeOnFinished(animation.getOnFinished());
-    }
-
-    /// Finishes a timeline by applying its final key values and final key-frame callbacks.
-    private static void finishTimeline(Timeline timeline) {
-        List<KeyFrame> keyFrames = new ArrayList<>(timeline.getKeyFrames());
-        keyFrames.sort(Comparator.comparingDouble(frame -> frame.getTime().toMillis()));
-        @Nullable Duration finalTime = null;
-        for (KeyFrame keyFrame : keyFrames) {
-            Duration time = keyFrame.getTime();
-            if (isFinite(time) && (finalTime == null || time.greaterThan(finalTime))) {
-                finalTime = time;
-            }
-            for (KeyValue keyValue : keyFrame.getValues()) {
-                applyKeyValue(keyValue);
-            }
-        }
-
-        if (finalTime == null) {
-            return;
-        }
-
-        for (KeyFrame keyFrame : keyFrames) {
-            if (keyFrame.getTime().equals(finalTime)) {
-                invokeOnFinished(keyFrame.getOnFinished());
-            }
-        }
-    }
-
-    /// Applies one key value to its target writable value.
-    @SuppressWarnings("unchecked")
-    private static void applyKeyValue(KeyValue keyValue) {
-        WritableValue<Object> target = (WritableValue<Object>) keyValue.getTarget();
-        target.setValue(keyValue.getEndValue());
-    }
-
     /// Invokes an animation completion handler when one is present.
     private static void invokeOnFinished(@Nullable EventHandler<ActionEvent> handler) {
         if (handler != null) {
             handler.handle(new ActionEvent());
         }
-    }
-
-    /// Returns whether a duration can be used as a concrete animation endpoint.
-    private static boolean isFinite(Duration duration) {
-        return !duration.isUnknown() && !duration.isIndefinite();
     }
 
     /// Finds the nearest node-local motion scheme override.

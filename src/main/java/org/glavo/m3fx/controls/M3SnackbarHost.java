@@ -4,10 +4,7 @@
 package org.glavo.m3fx.controls;
 
 import javafx.animation.Animation;
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
 import javafx.animation.PauseTransition;
-import javafx.animation.Timeline;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
@@ -26,12 +23,14 @@ import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.stage.Window;
 import javafx.util.Duration;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3FiniteTransition;
 import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -90,11 +89,14 @@ public class M3SnackbarHost extends Control {
     /// The automatic dismissal timer.
     private final PauseTransition displayTimer = new PauseTransition();
 
-    /// The active show animation.
-    private final Timeline showAnimation = new Timeline();
+    /// The reusable entrance animation.
+    private final SnackbarTransition showAnimation = new SnackbarTransition(true);
 
-    /// The active hide animation.
-    private final Timeline hideAnimation = new Timeline();
+    /// The reusable exit animation.
+    private final SnackbarTransition hideAnimation = new SnackbarTransition(false);
+
+    /// The snackbar associated with the current display timer.
+    private @Nullable M3Snackbar displayTimerTarget;
 
     /// Observes runtime motion settings while this host is attached to a scene.
     private final M3MotionSettingsObserver motionSettingsObserver =
@@ -118,6 +120,7 @@ public class M3SnackbarHost extends Control {
         queue.addListener((ListChangeListener<M3Snackbar>) change ->
                 notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT));
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
+        displayTimer.setOnFinished(event -> handleDisplayTimerFinished());
         focusNotifier.start();
     }
 
@@ -216,16 +219,19 @@ public class M3SnackbarHost extends Control {
     private void show(M3Snackbar snackbar, boolean transferActionFocus) {
         Objects.requireNonNull(snackbar, "snackbar");
 
-        displayTimer.stop();
-        showAnimation.stop();
-        hideAnimation.stop();
+        stopDisplayTimer();
+        stopTransition(showAnimation);
+        stopTransition(hideAnimation);
 
         @Nullable M3Snackbar previousSnackbar = getSnackbar();
-        if (previousSnackbar != snackbar) {
+        boolean enteringNewSnackbar = previousSnackbar != snackbar;
+        if (enteringNewSnackbar) {
             if (previousSnackbar != null) {
                 resetSnackbar(previousSnackbar);
             }
             this.snackbar.set(snackbar);
+            snackbar.setOpacity(0.0);
+            snackbar.setTranslateY(TRANSITION_OFFSET_Y);
             notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
             notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
             notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
@@ -249,8 +255,8 @@ public class M3SnackbarHost extends Control {
             return;
         }
 
-        displayTimer.stop();
-        showAnimation.stop();
+        stopDisplayTimer();
+        stopTransition(showAnimation);
         showing.set(false);
         playHideAnimation(currentSnackbar);
     }
@@ -332,74 +338,78 @@ public class M3SnackbarHost extends Control {
         }
     }
 
-    /// Plays the snackbar entrance animation.
+    /// Plays the snackbar entrance animation from its currently rendered state.
     private void playShowAnimation(M3Snackbar target) {
-        target.setOpacity(0.0);
-        target.setTranslateY(TRANSITION_OFFSET_Y);
-        M3MotionSpec spec = M3Animation.fastSpatial(this);
-        showAnimation.getKeyFrames().setAll(
-                new KeyFrame(
-                        spec.duration(),
-                        new KeyValue(target.opacityProperty(), 1.0, spec.interpolator()),
-                        new KeyValue(target.translateYProperty(), 0.0, spec.interpolator())
-                )
-        );
-        showAnimation.setOnFinished(event -> scheduleAutoDismiss(target));
-        M3Animation.playFromStart(this, showAnimation);
+        showAnimation.configure(M3Animation.fastSpatial(this), target, 1.0, 0.0);
+        playConfiguredTransition(showAnimation);
     }
 
-    /// Plays the snackbar exit animation.
+    /// Plays the snackbar exit animation from its currently rendered state.
     private void playHideAnimation(M3Snackbar target) {
-        hideAnimation.stop();
-        M3MotionSpec spec = M3Animation.fastSpatial(this);
-        hideAnimation.getKeyFrames().setAll(
-                new KeyFrame(
-                        spec.duration(),
-                        new KeyValue(target.opacityProperty(), 0.0, spec.interpolator()),
-                        new KeyValue(target.translateYProperty(), TRANSITION_OFFSET_Y, spec.interpolator())
-                )
+        hideAnimation.configure(
+                M3Animation.fastSpatial(this),
+                target,
+                0.0,
+                TRANSITION_OFFSET_Y
         );
-        hideAnimation.setOnFinished(event -> removeSnackbar(target));
-        M3Animation.playFromStart(this, hideAnimation);
+        playConfiguredTransition(hideAnimation);
     }
 
-    /// Applies changed runtime motion settings to the active snackbar animations.
+    /// Starts a configured transition or settles an already completed visual state.
+    private void playConfiguredTransition(SnackbarTransition transition) {
+        if (transition.isEntrance() && !transition.hasVisualChange()) {
+            M3Animation.finish(transition);
+        } else {
+            M3Animation.playFromStart(this, transition);
+        }
+    }
+
+    /// Stops one reusable transition and releases its snackbar target.
+    private static void stopTransition(SnackbarTransition transition) {
+        transition.stop();
+        transition.clearTarget();
+    }
+
+    /// Applies changed runtime motion settings and window lifecycle to active snackbar work.
     private void refreshMotionSettings() {
-        M3Animation.finishRunningAnimationsIfDisabled(this, showAnimation, hideAnimation);
+        if (!M3Animation.areAnimationsEnabled(this) || !isShowingWindow()) {
+            M3Animation.finishIfRunning(showAnimation);
+            M3Animation.finishIfRunning(hideAnimation);
+        }
         refreshDisplayTimer();
+    }
+
+    /// Returns whether this host is attached to a currently showing window.
+    private boolean isShowingWindow() {
+        @Nullable Scene scene = getScene();
+        @Nullable Window window = scene == null ? null : scene.getWindow();
+        return window != null && window.isShowing();
     }
 
     /// Schedules automatic dismissal for the target snackbar.
     private void scheduleAutoDismiss(M3Snackbar target) {
-        if (getSnackbar() != target || !showing.get()) {
-            return;
+        if (getSnackbar() == target && showing.get()) {
+            refreshDisplayTimer();
         }
-
-        if (getSnackbar() != target) {
-            return;
-        }
-        refreshDisplayTimer();
     }
 
     /// Applies the current display duration to the automatic dismissal timer.
     private void refreshDisplayTimer() {
         @Nullable M3Snackbar target = getSnackbar();
-        if (target == null || !showing.get()) {
-            displayTimer.stop();
+        Duration duration = getDisplayDuration();
+        if (target == null
+                || !showing.get()
+                || !isShowingWindow()
+                || duration.isUnknown()
+                || duration.isIndefinite()
+                || duration.lessThanOrEqualTo(Duration.ZERO)) {
+            stopDisplayTimer();
             return;
         }
 
-        Duration duration = getDisplayDuration();
-        if (duration.isUnknown() || duration.isIndefinite() || duration.lessThanOrEqualTo(Duration.ZERO)) {
-            displayTimer.stop();
-            return;
-        }
-        displayTimer.setOnFinished(event -> {
-            if (getSnackbar() == target && showing.get()) {
-                dismiss();
-            }
-        });
+        displayTimerTarget = target;
         if (showAnimation.getStatus() == Animation.Status.RUNNING) {
+            displayTimer.stop();
             displayTimer.setDuration(duration);
             return;
         }
@@ -409,6 +419,123 @@ public class M3SnackbarHost extends Control {
         }
     }
 
+    /// Stops automatic dismissal and releases the snackbar retained for its callback.
+    private void stopDisplayTimer() {
+        displayTimer.stop();
+        displayTimerTarget = null;
+    }
+
+    /// Dismisses the snackbar retained by the stable display timer callback.
+    private void handleDisplayTimerFinished() {
+        @Nullable M3Snackbar target = displayTimerTarget;
+        displayTimerTarget = null;
+        if (target != null && getSnackbar() == target && showing.get()) {
+            dismiss();
+        }
+    }
+
+    /// Handles completion of a reusable entrance or exit transition.
+    private void handleTransitionFinished(SnackbarTransition transition) {
+        @Nullable M3Snackbar target = transition.takeTarget();
+        if (target == null) {
+            return;
+        }
+        if (transition.isEntrance()) {
+            scheduleAutoDismiss(target);
+        } else {
+            removeSnackbar(target);
+        }
+    }
+
+    /// Reuses one primitive transition for a snackbar entrance or exit.
+    @NotNullByDefault
+    private final class SnackbarTransition extends M3FiniteTransition {
+        /// Whether this transition represents entrance rather than exit.
+        private final boolean entrance;
+
+        /// The snackbar receiving the current transition, or null while idle.
+        private @Nullable M3Snackbar target;
+
+        /// The starting opacity.
+        private double startOpacity;
+
+        /// The target opacity.
+        private double targetOpacity;
+
+        /// The starting vertical translation.
+        private double startTranslateY;
+
+        /// The target vertical translation.
+        private double targetTranslateY;
+
+        /// Whether the current start and target states differ visibly.
+        private boolean visualChange;
+
+        /// Creates a reusable snackbar transition.
+        private SnackbarTransition(boolean entrance) {
+            this.entrance = entrance;
+            setOnFinished(event -> handleTransitionFinished(this));
+        }
+
+        /// Captures current rendered values and configures the next target state.
+        private void configure(
+                M3MotionSpec spec,
+                M3Snackbar target,
+                double targetOpacity,
+                double targetTranslateY
+        ) {
+            stop();
+            clearTarget();
+            this.target = target;
+            startOpacity = target.getOpacity();
+            startTranslateY = target.getTranslateY();
+            this.targetOpacity = targetOpacity;
+            this.targetTranslateY = targetTranslateY;
+            visualChange = Double.compare(startOpacity, targetOpacity) != 0
+                    || Double.compare(startTranslateY, targetTranslateY) != 0;
+            setCycleDuration(spec.duration());
+            setInterpolator(spec.interpolator());
+        }
+
+        /// Returns whether this transition represents snackbar entrance.
+        private boolean isEntrance() {
+            return entrance;
+        }
+
+        /// Returns whether the configured state requires visible interpolation.
+        private boolean hasVisualChange() {
+            return visualChange;
+        }
+
+        /// Clears and returns the current target.
+        private @Nullable M3Snackbar takeTarget() {
+            @Nullable M3Snackbar currentTarget = target;
+            clearTarget();
+            return currentTarget;
+        }
+
+        /// Releases the current snackbar target.
+        private void clearTarget() {
+            target = null;
+            visualChange = false;
+        }
+
+        /// Applies one eased frame without allocating key frames or writable values.
+        @Override
+        protected void interpolate(double fraction) {
+            @Nullable M3Snackbar currentTarget = target;
+            if (currentTarget == null) {
+                return;
+            }
+            currentTarget.setOpacity(interpolate(startOpacity, targetOpacity, fraction));
+            currentTarget.setTranslateY(interpolate(startTranslateY, targetTranslateY, fraction));
+        }
+
+        /// Interpolates one primitive channel.
+        private static double interpolate(double start, double end, double fraction) {
+            return start + (end - start) * fraction;
+        }
+    }
     /// Removes the snackbar after its exit transition finishes.
     private void removeSnackbar(M3Snackbar target) {
         if (getSnackbar() != target) {

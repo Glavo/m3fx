@@ -320,5 +320,32 @@
 }
 
 .m3-icon-toggle-button:disabled {
-    -fx-opacity: 0.38;
+    -fx-cursor: default;
+    -fx-opacity: 1;
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-icon-toggle-button:disabled > * {
+    -fx-opacity: -m3-state-disabled-content-opacity;
+}
+
+.m3-icon-toggle-button.m3-standard-icon-toggle-button:disabled {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.m3-icon-toggle-button.m3-outlined-icon-toggle-button:disabled {
+    -fx-background-color: transparent;
+    -fx-border-color: -m3-color-outline-variant;
+}
+
+.m3-icon-toggle-button.m3-filled-icon-toggle-button:disabled,
+.m3-icon-toggle-button.m3-tonal-icon-toggle-button:disabled,
+.m3-icon-toggle-button.m3-outlined-icon-toggle-button:selected:disabled {
+    -fx-background-color: -m3-button-disabled-container-color;
+    -fx-border-color: transparent;
+}
+
+.m3-icon-toggle-button:disabled .m3-icon {
+    -fx-text-fill: -m3-color-on-surface;
 }

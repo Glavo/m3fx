@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Tests scene-aware runtime motion settings observation.
@@ -118,6 +119,30 @@ final class M3MotionSettingsObserverTest {
             } finally {
                 observer.dispose();
             }
+        }));
+    }
+
+    /// Verifies a failing initial refresh cannot leave owner or scene dispatcher registrations behind.
+    @Test
+    void rollsBackRegistrationWhenInitialRefreshFails() {
+        FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
+            Pane owner = new Pane();
+            Scene scene = new Scene(owner);
+            int ownerPropertyCount = owner.getProperties().size();
+            int scenePropertyCount = scene.getProperties().size();
+            AtomicInteger refreshes = new AtomicInteger();
+
+            assertThrows(IllegalStateException.class, () -> new M3MotionSettingsObserver(owner, () -> {
+                refreshes.incrementAndGet();
+                throw new IllegalStateException("refresh failed");
+            }));
+
+            assertEquals(1, refreshes.get());
+            assertEquals(ownerPropertyCount, owner.getProperties().size());
+            assertEquals(scenePropertyCount, scene.getProperties().size());
+
+            M3MotionSettings.setAnimationsEnabled(!M3MotionSettings.areAnimationsEnabled());
+            assertEquals(1, refreshes.get());
         }));
     }
 

@@ -20,9 +20,12 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Verifies scene-level modal focus trap ordering.
@@ -198,6 +201,52 @@ final class M3ModalFocusTrapTest {
             fireKey(scene, keyEvent(KeyCode.TAB));
 
             assertTrue(target.isFocused(), "trap should activate when a prebuilt owner scene becomes visible");
+        });
+    }
+
+    /// Verifies a failing initial active-state lookup removes scene and window lifecycle observation.
+    @Test
+    void failedInstallRollsBackLifecycleObservation() {
+        FxTestUtils.runOnFxThread(() -> {
+            Button target = new Button("Target");
+            VBox owner = new VBox(target);
+            AtomicBoolean failLookup = new AtomicBoolean(true);
+            AtomicInteger activeStateReads = new AtomicInteger();
+            M3ModalFocusTrap trap = new M3ModalFocusTrap(
+                    owner,
+                    () -> {
+                        activeStateReads.incrementAndGet();
+                        if (failLookup.get()) {
+                            throw new IllegalStateException("active state lookup failed");
+                        }
+                        return true;
+                    },
+                    () -> List.of(target),
+                    null
+            );
+            Stage stage = new Stage();
+            Scene scene = new Scene(owner, 240.0, 120.0);
+            stage.setScene(scene);
+            stage.show();
+            int scenePropertyCount = scene.getProperties().size();
+
+            assertThrows(IllegalStateException.class, trap::install);
+            assertEquals(1, activeStateReads.get());
+            assertEquals(scenePropertyCount, scene.getProperties().size());
+
+            failLookup.set(false);
+            stage.hide();
+            stage.show();
+
+            assertEquals(1, activeStateReads.get());
+            assertEquals(scenePropertyCount, scene.getProperties().size());
+
+            trap.install();
+            assertTrue(activeStateReads.get() > 1);
+            assertTrue(scene.getProperties().size() > scenePropertyCount);
+
+            trap.uninstall();
+            assertEquals(scenePropertyCount, scene.getProperties().size());
         });
     }
 

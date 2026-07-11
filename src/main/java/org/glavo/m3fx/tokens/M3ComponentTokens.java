@@ -610,8 +610,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double switchTrackHeight = density.apply(32.0);
         double switchStateLayerSize = density.apply(40.0);
         double switchUnselectedHandleSize = density.apply(16.0);
+        double switchWithIconHandleSize = density.apply(24.0);
         double switchSelectedHandleSize = density.apply(24.0);
         double switchPressedHandleSize = density.apply(28.0);
+        double switchIconSize = density.apply(16.0);
         double sliderTrackThickness = density.apply(16.0);
         double sliderStopIndicatorSize = density.apply(4.0);
         double sliderThumbSize = density.apply(44.0);
@@ -897,8 +899,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         switchTrackHeight,
                         switchStateLayerSize,
                         switchUnselectedHandleSize,
+                        switchWithIconHandleSize,
                         switchSelectedHandleSize,
-                        switchPressedHandleSize
+                        switchPressedHandleSize,
+                        switchIconSize
                 ),
                 new SliderTokens(
                         sliderTrackThickness,
@@ -1891,8 +1895,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-switch-track-height", M3TokenCss.pixels(tokens.switchTrackHeight()));
         M3TokenCss.append(builder, "-m3-switch-state-layer-size", M3TokenCss.pixels(tokens.switchStateLayerSize()));
         M3TokenCss.append(builder, "-m3-switch-unselected-handle-size", M3TokenCss.pixels(tokens.switchUnselectedHandleSize()));
+        M3TokenCss.append(builder, "-m3-switch-with-icon-handle-size", M3TokenCss.pixels(tokens.switchWithIconHandleSize()));
         M3TokenCss.append(builder, "-m3-switch-selected-handle-size", M3TokenCss.pixels(tokens.switchSelectedHandleSize()));
         M3TokenCss.append(builder, "-m3-switch-pressed-handle-size", M3TokenCss.pixels(tokens.switchPressedHandleSize()));
+        M3TokenCss.append(builder, "-m3-switch-icon-size", M3TokenCss.pixels(tokens.switchIconSize()));
     }
 
     /// Appends slider token declarations.
@@ -3423,8 +3429,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendDeclaration(builder, "-m3-track-height", M3TokenCss.pixels(tokens.switchTrackHeight()));
         appendDeclaration(builder, "-m3-state-layer-size", M3TokenCss.pixels(tokens.switchStateLayerSize()));
         appendDeclaration(builder, "-m3-unselected-handle-size", M3TokenCss.pixels(tokens.switchUnselectedHandleSize()));
+        appendDeclaration(builder, "-m3-with-icon-handle-size", M3TokenCss.pixels(tokens.switchWithIconHandleSize()));
         appendDeclaration(builder, "-m3-selected-handle-size", M3TokenCss.pixels(tokens.switchSelectedHandleSize()));
         appendDeclaration(builder, "-m3-pressed-handle-size", M3TokenCss.pixels(tokens.switchPressedHandleSize()));
+        appendDeclaration(builder, "-m3-icon-size", M3TokenCss.pixels(tokens.switchIconSize()));
         endRule(builder);
     }
 
@@ -4676,8 +4684,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param switchTrackHeight the switch track height
     /// @param switchStateLayerSize the switch state layer size
     /// @param switchUnselectedHandleSize the unselected switch handle size
+    /// @param switchWithIconHandleSize the switch handle size when it contains an icon
     /// @param switchSelectedHandleSize the selected switch handle size
     /// @param switchPressedHandleSize the pressed switch handle size
+    /// @param switchIconSize the selected or unselected switch handle icon size
     @NotNullByDefault
     record SelectionTokens(
             double touchTargetSize,
@@ -4695,8 +4705,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double switchTrackHeight,
             double switchStateLayerSize,
             double switchUnselectedHandleSize,
+            double switchWithIconHandleSize,
             double switchSelectedHandleSize,
-            double switchPressedHandleSize
+            double switchPressedHandleSize,
+            double switchIconSize
     ) {
         /// Creates selection tokens.
         public SelectionTokens {
@@ -4715,8 +4727,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(switchTrackHeight, "switchTrackHeight");
             validateNonNegative(switchStateLayerSize, "switchStateLayerSize");
             validateNonNegative(switchUnselectedHandleSize, "switchUnselectedHandleSize");
+            validateNonNegative(switchWithIconHandleSize, "switchWithIconHandleSize");
             validateNonNegative(switchSelectedHandleSize, "switchSelectedHandleSize");
             validateNonNegative(switchPressedHandleSize, "switchPressedHandleSize");
+            validateNonNegative(switchIconSize, "switchIconSize");
         }
     }
 

@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Tests allocation-free routing of shared accessible focus notifications.
@@ -136,6 +137,62 @@ final class M3AccessibleFocusNotifierTest {
                 unrelatedNotifier.stop();
                 stage.close();
             }
+        });
+    }
+
+    /// Verifies stopping a notifier clears cached focus without invoking application focus lookup code.
+    @Test
+    void stopDoesNotReadFocusSupplier() {
+        FxTestUtils.runOnFxThread(() -> {
+            VBox owner = new VBox();
+            new Scene(owner);
+            AtomicInteger supplierReads = new AtomicInteger();
+            M3AccessibleFocusNotifier notifier = new M3AccessibleFocusNotifier(
+                    owner,
+                    () -> {
+                        supplierReads.incrementAndGet();
+                        return owner;
+                    },
+                    () -> {
+                    }
+            );
+
+            notifier.start();
+            assertEquals(1, supplierReads.get());
+
+            notifier.stop();
+            notifier.stop();
+
+            assertEquals(1, supplierReads.get());
+        });
+    }
+
+    /// Verifies a failing initial focus lookup rolls back node and scene dispatcher registration.
+    @Test
+    void rollsBackRegistrationWhenInitialFocusLookupFails() {
+        FxTestUtils.runOnFxThread(() -> {
+            VBox owner = new VBox();
+            Scene scene = new Scene(owner);
+            int ownerPropertyCount = owner.getProperties().size();
+            int scenePropertyCount = scene.getProperties().size();
+            AtomicInteger supplierReads = new AtomicInteger();
+            M3AccessibleFocusNotifier notifier = new M3AccessibleFocusNotifier(
+                    owner,
+                    () -> {
+                        supplierReads.incrementAndGet();
+                        throw new IllegalStateException("focus lookup failed");
+                    },
+                    () -> {
+                    }
+            );
+
+            assertThrows(IllegalStateException.class, notifier::start);
+
+            assertEquals(1, supplierReads.get());
+            assertEquals(ownerPropertyCount, owner.getProperties().size());
+            assertEquals(scenePropertyCount, scene.getProperties().size());
+            notifier.stop();
+            assertEquals(1, supplierReads.get());
         });
     }
 

@@ -4,10 +4,7 @@
 package org.glavo.m3fx.internal;
 
 import javafx.animation.Animation;
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
 import javafx.animation.PauseTransition;
-import javafx.animation.Timeline;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.scene.layout.Pane;
@@ -35,33 +32,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /// Verifies Material motion settings and animation lifecycle behavior.
 @NotNullByDefault
 final class M3AnimationTest {
-    /// Starts the JavaFX toolkit before animation tests create timelines.
+    /// Starts the JavaFX toolkit before animation tests create transitions.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
         FxTestUtils.startToolkit();
-    }
-
-    /// Verifies that disabled motion completes timelines synchronously.
-    @Test
-    void disabledMotionFinishesTimelineImmediately() {
-        Pane owner = new Pane();
-        M3MotionSettings.setAnimationsEnabled(owner, false);
-        DoubleProperty value = new SimpleDoubleProperty(0.0);
-        AtomicBoolean keyFrameFinished = new AtomicBoolean(false);
-        AtomicBoolean animationFinished = new AtomicBoolean(false);
-        Timeline timeline = new Timeline(new KeyFrame(
-                Duration.millis(100.0),
-                event -> keyFrameFinished.set(true),
-                new KeyValue(value, 1.0)
-        ));
-        timeline.setOnFinished(event -> animationFinished.set(true));
-
-        M3Animation.playFromStart(owner, timeline);
-
-        assertEquals(1.0, value.get(), 0.0001);
-        assertTrue(keyFrameFinished.get());
-        assertTrue(animationFinished.get());
-        assertFalse(timeline.getStatus() == Timeline.Status.RUNNING);
     }
 
     /// Verifies that disabled motion applies custom finite-transition end values and completion handlers.

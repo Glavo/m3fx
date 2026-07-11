@@ -135,8 +135,3 @@
     -fx-background-radius: 999px;
     -fx-border-radius: 999px;
 }
-
-.m3-split-button .m3-button.m3-split-button-action:disabled,
-.m3-split-button .m3-button.m3-split-button-menu:disabled {
-    -fx-opacity: 0.38;
-}

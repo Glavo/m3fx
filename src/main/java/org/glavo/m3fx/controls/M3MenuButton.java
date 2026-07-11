@@ -173,16 +173,19 @@ public class M3MenuButton extends M3Button {
                 return;
             }
             prepareMenuForShowAnimation();
+            menu.setAccessibleFocusNodeListener(this::notifyPopupFocusNodeChanged);
             if (!M3PopupWindows.show(popup, this, placement.x(), placement.y())) {
                 return;
             }
             popupShown = true;
         } finally {
             if (!popupShown) {
+                menu.setAccessibleFocusNodeListener(null);
                 resetMenuAnimationState();
                 popupContextSynchronizer.stop();
             }
         }
+        popupFocusNotifier.start();
         reachabilityObserver.install();
         showing.set(true);
         notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
@@ -294,6 +297,8 @@ public class M3MenuButton extends M3Button {
             }
         });
         popup.setOnHidden(event -> {
+            menu.setAccessibleFocusNodeListener(null);
+            popupFocusNotifier.stop();
             reachabilityObserver.uninstall();
             popupContextSynchronizer.stop();
             menu.hideSubMenusExcept(null);
@@ -310,8 +315,6 @@ public class M3MenuButton extends M3Button {
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
         menu.addEventHandler(KeyEvent.KEY_PRESSED, this::handleMenuKeyPressed);
         menu.addEventHandler(javafx.event.ActionEvent.ACTION, event -> hideMenu(true));
-        menu.setAccessibleFocusNodeListener(this::notifyPopupFocusNodeChanged);
-        popupFocusNotifier.start();
     }
 
     /// Hides the popup if its owner button can no longer be reached from its scene.

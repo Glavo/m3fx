@@ -109,7 +109,15 @@ public final class M3AccessibleFocusNotifier {
         }
         started = true;
         sceneOwner.sceneProperty().addListener(sceneListener);
-        updateScene(sceneOwner.getScene());
+        try {
+            updateScene(sceneOwner.getScene());
+        } catch (RuntimeException | Error exception) {
+            started = false;
+            sceneOwner.sceneProperty().removeListener(sceneListener);
+            unregisterSceneDispatcher();
+            lastFocusNode = null;
+            throw exception;
+        }
     }
 
     /// Stops listening and clears cached focus state.
@@ -119,7 +127,8 @@ public final class M3AccessibleFocusNotifier {
         }
         started = false;
         sceneOwner.sceneProperty().removeListener(sceneListener);
-        updateScene(null);
+        unregisterSceneDispatcher();
+        lastFocusNode = null;
     }
 
     /// Refreshes cached focus state after child content changes already notified accessibility clients.

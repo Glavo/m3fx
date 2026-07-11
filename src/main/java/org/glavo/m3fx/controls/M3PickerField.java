@@ -584,6 +584,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
                 popupContextSynchronizer.stop();
             }
         }
+        popupFocusNotifier.start();
         reachabilityObserver.install();
         showing.set(true);
         notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
@@ -730,7 +731,6 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
             }
         });
         popupContent.addEventHandler(KeyEvent.KEY_PRESSED, this::handlePickerKeyPressed);
-        popupFocusNotifier.start();
     }
 
     /// Hides the popup if its owner field can no longer be reached from its scene.
@@ -1058,6 +1058,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
 
     /// Handles popup hidden cleanup and optional focus return.
     private void handlePopupHidden() {
+        popupFocusNotifier.stop();
         reachabilityObserver.uninstall();
         popupContextSynchronizer.stop();
         showing.set(false);

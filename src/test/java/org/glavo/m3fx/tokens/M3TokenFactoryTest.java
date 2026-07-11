@@ -179,8 +179,10 @@ final class M3TokenFactoryTest {
         assertEquals(32.0, tokenSet.componentTokens().selection().switchTrackHeight(), 0.0001);
         assertEquals(40.0, tokenSet.componentTokens().selection().switchStateLayerSize(), 0.0001);
         assertEquals(16.0, tokenSet.componentTokens().selection().switchUnselectedHandleSize(), 0.0001);
+        assertEquals(25.0, tokenSet.componentTokens().selection().switchWithIconHandleSize(), 0.0001);
         assertEquals(24.0, tokenSet.componentTokens().selection().switchSelectedHandleSize(), 0.0001);
         assertEquals(28.0, tokenSet.componentTokens().selection().switchPressedHandleSize(), 0.0001);
+        assertEquals(17.0, tokenSet.componentTokens().selection().switchIconSize(), 0.0001);
         assertEquals(62.0, tokenSet.componentTokens().bottomAppBar().containerHeight(), 0.0001);
         assertEquals(7.0, tokenSet.componentTokens().bottomAppBar().actionSpacing(), 0.0001);
         assertEquals(63.0, tokenSet.componentTokens().toolbar().containerHeight(), 0.0001);
@@ -188,6 +190,15 @@ final class M3TokenFactoryTest {
         assertEquals(72.0, tokenSet.componentTokens().navigationRail().containerWidth(), 0.0001);
         assertEquals(63.0, tokenSet.componentTokens().loadingIndicator().containerSize(), 0.0001);
         assertEquals(22.0, tokenSet.componentTokens().loadingIndicator().indicatorSize(), 0.0001);
+        assertTrue(tokenSet.toRootStyleDeclarations().contains(
+                "-m3-state-disabled-container-color: rgba(29,27,32,0.16)"
+        ));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains(
+                "-m3-state-disabled-content-color: rgba(29,27,32,0.44)"
+        ));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains(
+                "-m3-text-field-disabled-container-color: rgba(29,27,32,0.04)"
+        ));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-button-filled-container-height: 51px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-tab-container-height: 61px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-top-app-bar-container-height: 59px"));
@@ -237,8 +248,10 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-switch-track-height: 32px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-switch-state-layer-size: 40px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-switch-unselected-handle-size: 16px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-switch-with-icon-handle-size: 25px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-switch-selected-handle-size: 24px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-switch-pressed-handle-size: 28px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-switch-icon-size: 17px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-slider-thumb-width: 7px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-slider-thumb-track-gap: 8px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-slider-stop-indicator-size: 6px"));
@@ -451,8 +464,10 @@ final class M3TokenFactoryTest {
                         32.0,
                         40.0,
                         16.0,
+                        25.0,
                         24.0,
-                        28.0
+                        28.0,
+                        17.0
                 ),
                 new M3ComponentTokens.SliderTokens(5.0, 18.0, 6.0, 24.0, 7.0, 8.0, 50.0),
                 new M3ComponentTokens.ChipTokens(34.0, 10.0, 15.0, 8.0, 9.0, 18.0, 24.0, 12.0, 1.0, 11.0, 13.0),

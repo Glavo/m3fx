@@ -90,8 +90,16 @@ public final class M3ModalFocusTrap {
 
         installed = true;
         owner.sceneProperty().addListener(sceneListener);
-        observeScene(owner.getScene());
-        update();
+        try {
+            observeScene(owner.getScene());
+            update();
+        } catch (RuntimeException | Error exception) {
+            installed = false;
+            owner.sceneProperty().removeListener(sceneListener);
+            observeScene(null);
+            installOnScene(null);
+            throw exception;
+        }
     }
 
     /// Stops tracking owner scene changes and removes any installed scene filter.

@@ -96,6 +96,7 @@ public sealed interface M3ElevationTokens permits M3ElevationTokensImpl {
         appendShadowRule(builder, ".m3-fab", level4(), level2());
         appendShadowRule(builder, ".m3-fab:hover, .m3-fab:focus-visible", level5(), level3());
         appendShadowRule(builder, ".m3-fab:armed, .m3-fab:pressed", level4(), level2());
+        appendEffectResetRule(builder, ".m3-elevated-button:disabled, .m3-fab:disabled");
         appendShadowRule(builder, ".m3-elevated-card .m3-card-container", level4(), Math.max(level1(), level2() - level1()));
         appendShadowRule(builder, ".m3-elevated-card:hover .m3-card-container, .m3-elevated-card:focus-visible .m3-card-container", level5(), level3());
         appendShadowRule(builder, ".m3-elevated-card:pressed .m3-card-container", level4(), Math.max(level1(), level2() - level1()));

@@ -9,7 +9,6 @@ import javafx.beans.property.SimpleDoubleProperty;
 import javafx.event.EventHandler;
 import javafx.css.PseudoClass;
 import javafx.geometry.Orientation;
-import javafx.geometry.Point2D;
 import javafx.scene.control.SkinBase;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -892,14 +891,12 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
 
     /// Updates the value from a mouse event in the control coordinate space.
     private void updateValueFromMouse(MouseEvent event) {
-        M3Slider slider = getSkinnable();
-        Point2D point = slider.sceneToLocal(event.getSceneX(), event.getSceneY());
-        double position = mousePositionToValuePosition(point);
-        slider.adjustValue(positionToValue(position));
+        double position = mousePositionToValuePosition(event.getX(), event.getY());
+        getSkinnable().adjustValue(positionToValue(position));
     }
 
-    /// Converts a mouse coordinate to a normalized value position.
-    private double mousePositionToValuePosition(Point2D point) {
+    /// Converts a local mouse coordinate to a normalized value position.
+    private double mousePositionToValuePosition(double x, double y) {
         M3Slider slider = getSkinnable();
         double thumbWidth = slider.getThumbWidth();
         if (slider.getOrientation() == Orientation.VERTICAL) {
@@ -908,7 +905,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
                 return 0.0;
             }
             double start = thumbWidth / 2.0;
-            return clamp(1.0 - (point.getY() - start) / length);
+            return clamp(1.0 - (y - start) / length);
         }
 
         double length = Math.max(0.0, slider.getWidth() - thumbWidth);
@@ -916,7 +913,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
             return 0.0;
         }
         double start = thumbWidth / 2.0;
-        double position = clamp((point.getX() - start) / length);
+        double position = clamp((x - start) / length);
         return isHorizontalRightToLeft() ? 1.0 - position : position;
     }
 

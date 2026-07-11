@@ -9,6 +9,7 @@ import javafx.animation.Transition;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.SetChangeListener;
 import javafx.css.PseudoClass;
+import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.layout.Pane;
@@ -83,6 +84,7 @@ final class M3StateLayer extends Pane {
 
     /// The independent keyboard focus indicator ring.
     private final Region focusIndicator = new Region();
+
 
     /// The clip that bounds overlay and ripple visuals to the component shape.
     private final Path clip = new Path();
@@ -236,6 +238,11 @@ final class M3StateLayer extends Pane {
         overlay.setOpacity(0.0);
         ripple.setOpacity(0.0);
         focusIndicator.setOpacity(0.0);
+        focusIndicator.setVisible(false);
+        Group clippedContent = new Group(overlay, ripple);
+        clippedContent.setAutoSizeChildren(false);
+        clippedContent.setManaged(false);
+        clippedContent.setMouseTransparent(true);
         clip.setFill(Color.BLACK);
         clip.getElements().addAll(
                 clipStart,
@@ -249,8 +256,8 @@ final class M3StateLayer extends Pane {
                 clipTopLeftArc,
                 new ClosePath()
         );
-        getChildren().addAll(overlay, ripple, focusIndicator);
-        setClip(clip);
+        clippedContent.setClip(clip);
+        getChildren().addAll(clippedContent, focusIndicator);
     }
 
     /// Installs opacity transitions driven by the owner node's interaction states.
@@ -276,7 +283,7 @@ final class M3StateLayer extends Pane {
     private void synchronizeOwnerStateOpacity(Node owner) {
         stateOpacityAnimation.stop();
         overlay.setOpacity(resolvedOverlayOpacity(owner));
-        focusIndicator.setOpacity(resolvedFocusIndicatorOpacity(owner));
+        setFocusIndicatorOpacity(focusIndicator, resolvedFocusIndicatorOpacity(owner));
     }
 
     /// Removes opacity transition listeners from the current owner.
@@ -304,6 +311,7 @@ final class M3StateLayer extends Pane {
         }
         stateOwner = null;
         stateOpacityAnimation.stop();
+        setFocusIndicatorOpacity(focusIndicator, 0.0);
         rippleAnimation.stop();
         clearRipple();
     }
@@ -414,7 +422,7 @@ final class M3StateLayer extends Pane {
     void reset() {
         stateOpacityAnimation.stop();
         overlay.setOpacity(0.0);
-        focusIndicator.setOpacity(0.0);
+        setFocusIndicatorOpacity(focusIndicator, 0.0);
         rippleAnimation.stop();
         clearRipple();
     }
@@ -424,6 +432,12 @@ final class M3StateLayer extends Pane {
         ripple.setOpacity(0.0);
         ripple.setScaleX(0.0);
         ripple.setScaleY(0.0);
+    }
+
+    /// Applies focus-indicator opacity while excluding fully transparent rings from visual bounds and rendering.
+    private static void setFocusIndicatorOpacity(Region indicator, double opacity) {
+        indicator.setOpacity(opacity);
+        indicator.setVisible(opacity > 0.0);
     }
 
     /// Returns whether the overlay opacity is currently animating.
@@ -452,7 +466,7 @@ final class M3StateLayer extends Pane {
             if (stateOpacityAnimation.getStatus() == Animation.Status.RUNNING) {
                 stateOpacityAnimation.stop();
                 overlay.setOpacity(resolvedOverlayOpacity(owner));
-                focusIndicator.setOpacity(resolvedFocusIndicatorOpacity(owner));
+                setFocusIndicatorOpacity(focusIndicator, resolvedFocusIndicatorOpacity(owner));
             }
             if (rippleAnimation.getStatus() == Animation.Status.RUNNING) {
                 rippleAnimation.stop();
@@ -484,13 +498,13 @@ final class M3StateLayer extends Pane {
                 Double.compare(startFocusIndicatorOpacity, targetFocusIndicatorOpacity) != 0;
         if (!overlayChanged && !focusIndicatorChanged) {
             overlay.setOpacity(targetOverlayOpacity);
-            focusIndicator.setOpacity(targetFocusIndicatorOpacity);
+            setFocusIndicatorOpacity(focusIndicator, targetFocusIndicatorOpacity);
             return;
         }
 
         if (!M3Animation.areAnimationsEnabled(owner)) {
             overlay.setOpacity(targetOverlayOpacity);
-            focusIndicator.setOpacity(targetFocusIndicatorOpacity);
+            setFocusIndicatorOpacity(focusIndicator, targetFocusIndicatorOpacity);
             return;
         }
 
@@ -603,6 +617,7 @@ final class M3StateLayer extends Pane {
             overlayAnimating = Double.compare(startOverlayOpacity, targetOverlayOpacity) != 0;
             focusIndicatorAnimating =
                     Double.compare(startFocusIndicatorOpacity, targetFocusIndicatorOpacity) != 0;
+            focusIndicator.setVisible(startFocusIndicatorOpacity > 0.0 || targetFocusIndicatorOpacity > 0.0);
         }
 
         /// Returns whether the overlay channel is participating in a running transition.
@@ -626,11 +641,15 @@ final class M3StateLayer extends Pane {
                 ));
             }
             if (focusIndicatorAnimating) {
-                focusIndicator.setOpacity(linearInterpolate(
+                double opacity = linearInterpolate(
                         startFocusIndicatorOpacity,
                         targetFocusIndicatorOpacity,
                         fraction
-                ));
+                );
+                focusIndicator.setOpacity(opacity);
+                if (fraction >= 1.0 && targetFocusIndicatorOpacity <= 0.0) {
+                    focusIndicator.setVisible(false);
+                }
             }
         }
     }
@@ -793,15 +812,23 @@ final class M3StateLayer extends Pane {
         double offset = owner != null && usesInnerFocusIndicatorOffset(owner)
                 ? tokens.focusIndicatorInnerOffset()
                 : tokens.focusIndicatorOuterOffset();
-        double inwardOffset = Math.max(0.0, -offset);
-        double adjustedTopLeft = adjustedIndicatorRadius(topLeft, -inwardOffset);
-        double adjustedTopRight = adjustedIndicatorRadius(topRight, -inwardOffset);
-        double adjustedBottomRight = adjustedIndicatorRadius(bottomRight, -inwardOffset);
-        double adjustedBottomLeft = adjustedIndicatorRadius(bottomLeft, -inwardOffset);
         double thickness = tokens.focusIndicatorThickness();
-        focusIndicator.resizeRelocate(0.0, 0.0, width, height);
-        if (Double.compare(focusIndicatorWidth, width) == 0
-                && Double.compare(focusIndicatorHeight, height) == 0
+        double outwardExpansion = offset > 0.0 ? offset + thickness : 0.0;
+        double inwardOffset = Math.max(0.0, -offset);
+        double indicatorWidth = width + outwardExpansion * 2.0;
+        double indicatorHeight = height + outwardExpansion * 2.0;
+        double adjustedTopLeft = adjustedIndicatorRadius(topLeft, outwardExpansion - inwardOffset);
+        double adjustedTopRight = adjustedIndicatorRadius(topRight, outwardExpansion - inwardOffset);
+        double adjustedBottomRight = adjustedIndicatorRadius(bottomRight, outwardExpansion - inwardOffset);
+        double adjustedBottomLeft = adjustedIndicatorRadius(bottomLeft, outwardExpansion - inwardOffset);
+        focusIndicator.resizeRelocate(
+                -outwardExpansion,
+                -outwardExpansion,
+                indicatorWidth,
+                indicatorHeight
+        );
+        if (Double.compare(focusIndicatorWidth, indicatorWidth) == 0
+                && Double.compare(focusIndicatorHeight, indicatorHeight) == 0
                 && Double.compare(focusIndicatorTopLeftRadius, adjustedTopLeft) == 0
                 && Double.compare(focusIndicatorTopRightRadius, adjustedTopRight) == 0
                 && Double.compare(focusIndicatorBottomRightRadius, adjustedBottomRight) == 0
@@ -811,8 +838,8 @@ final class M3StateLayer extends Pane {
             return;
         }
 
-        focusIndicatorWidth = width;
-        focusIndicatorHeight = height;
+        focusIndicatorWidth = indicatorWidth;
+        focusIndicatorHeight = indicatorHeight;
         focusIndicatorTopLeftRadius = adjustedTopLeft;
         focusIndicatorTopRightRadius = adjustedTopRight;
         focusIndicatorBottomRightRadius = adjustedBottomRight;

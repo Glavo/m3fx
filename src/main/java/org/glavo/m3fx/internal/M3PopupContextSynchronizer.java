@@ -151,8 +151,15 @@ public final class M3PopupContextSynchronizer {
             currentObservation = new Observation();
             observation = currentObservation;
         }
-        currentObservation.start();
-        sync();
+        try {
+            currentObservation.start();
+            sync();
+        } catch (RuntimeException | Error exception) {
+            running = false;
+            currentObservation.stop();
+            clearSyncedMotionContext();
+            throw exception;
+        }
     }
 
     /// Stops observing owner context while leaving the popup root styled with its last synchronized values.

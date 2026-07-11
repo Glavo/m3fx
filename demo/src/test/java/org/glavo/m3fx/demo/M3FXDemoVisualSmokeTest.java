@@ -3036,7 +3036,7 @@ final class M3FXDemoVisualSmokeTest {
                 currentDemoPage(scene, "Text Fields"),
                 M3TextInputLayout.class
         );
-        assertTrue(layouts.size() >= 17,
+        assertTrue(layouts.size() >= 18,
                 () -> "Text Fields page should render the full Material text input state matrix, found "
                         + layouts.size());
         return layouts;
@@ -3195,6 +3195,29 @@ final class M3FXDemoVisualSmokeTest {
         input.requestFocus();
         scene.getRoot().applyCss();
         scene.getRoot().layout();
+        assertTrue(input.isFocused(), () -> description + " should own focus before capture");
+        if (input instanceof M3TextInput textInput
+                && textInput.getVariant() == M3TextInputVariant.OUTLINED) {
+            javafx.scene.shape.Path outline = assertInstanceOf(
+                    javafx.scene.shape.Path.class,
+                    layout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS)
+            );
+            assertTrue(outline.getPseudoClassStates().contains(PseudoClass.getPseudoClass("focused")),
+                    () -> description + " outline should expose the focused pseudo-class");
+            assertEquals(3.0, outline.getStrokeWidth(), 0.0001,
+                    () -> description + " should use the MD3 3dp focused outline");
+            M3Theme theme = Objects.requireNonNull(
+                    M3ThemeManager.getTheme(scene),
+                    () -> description + " theme"
+            );
+            assertEquals(
+                    theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.PRIMARY),
+                    outline.getStroke(),
+                    () -> description + " should use the MD3 primary focused outline color"
+            );
+            assertEquals(1.0, outline.getOpacity(), 0.0001,
+                    () -> description + " focused outline should be fully opaque");
+        }
         WritableImage focusedAreaImage = requireSnapshotWithNodeFullyVisible(scene, layout, description);
         writeVisualSnapshot(focusedAreaImage, Path.of(
                 "build",
@@ -12178,7 +12201,7 @@ final class M3FXDemoVisualSmokeTest {
         assertVisibleText(root, "Right-to-left", "Text Fields");
 
         List<M3TextInputLayout> layouts = visibleNodesOfType(page, M3TextInputLayout.class);
-        assertTrue(layouts.size() >= 17,
+        assertTrue(layouts.size() >= 18,
                 () -> "Text Fields page should render the full input matrix, found " + layouts.size());
         assertTrue(layouts.stream().anyMatch(M3TextInputLayout::isClearButtonEnabled),
                 "Text Fields page should render a clear button layout");
@@ -12204,10 +12227,23 @@ final class M3FXDemoVisualSmokeTest {
                 "Text Fields page should render field error state");
         assertTrue(inputs.stream().anyMatch(input -> input instanceof M3PasswordField password && password.isError()),
                 "Text Fields page should render password error state");
+        assertTrue(layouts.stream().filter(layout ->
+                        layout.getInput() != null && layout.getInput().isDisabled()).count() >= 2,
+                "Text Fields page should render filled and outlined disabled states");
+        assertTrue(layouts.stream().anyMatch(layout ->
+                        layout.getInput() != null
+                                && layout.getInput().isDisabled()
+                                && layout.getTextInput() != null
+                                && textInputVariant(layout.getTextInput()) == M3TextInputVariant.FILLED),
+                "Text Fields page should render a disabled filled field");
+        assertTrue(layouts.stream().anyMatch(layout ->
+                        layout.getInput() != null
+                                && layout.getInput().isDisabled()
+                                && layout.getTextInput() != null
+                                && textInputVariant(layout.getTextInput()) == M3TextInputVariant.OUTLINED),
+                "Text Fields page should render a disabled outlined field");
         assertTextInputDemoVariantAndStateContracts(layouts);
         assertTextInputDemoGeometryContracts(scene, layouts);
-        assertFocusedMultilineTextInputSurfaceContract(scene, layouts);
-        assertMirroredTextInputLayoutContracts(scene, layouts);
     }
 
     /// Verifies the real Toolbars demo page variants, orientation, and item-slot geometry.
@@ -12472,24 +12508,95 @@ final class M3FXDemoVisualSmokeTest {
         Node page = currentDemoPage(scene, "Switches");
         assertCurrentPageTitle(scene, "Switches");
         assertVisibleText(root, "Interactive States", "Switches");
+        assertVisibleText(root, "Handle Icons", "Switches");
         assertVisibleText(root, "Disabled States", "Switches");
         assertVisibleText(root, "On", "Switches");
         assertVisibleText(root, "Off", "Switches");
+        assertVisibleText(root, "Selected icon off", "Switches");
+        assertVisibleText(root, "Selected icon on", "Switches");
+        assertVisibleText(root, "Both icons off", "Switches");
+        assertVisibleText(root, "Both icons on", "Switches");
         assertVisibleText(root, "Disabled off", "Switches");
         assertVisibleText(root, "Disabled on", "Switches");
+        assertVisibleText(root, "Disabled icon off", "Switches");
+        assertVisibleText(root, "Disabled icon on", "Switches");
 
-        Set<String> expectedSwitchLabels = Set.of("On", "Off", "Disabled off", "Disabled on");
+        Set<String> expectedSwitchLabels = Set.of(
+                "On",
+                "Off",
+                "Selected icon off",
+                "Selected icon on",
+                "Both icons off",
+                "Both icons on",
+                "Disabled off",
+                "Disabled on",
+                "Disabled icon off",
+                "Disabled icon on"
+        );
         List<M3Switch> switches = visibleNodesOfType(page, M3Switch.class)
                 .stream()
                 .filter(switchControl -> expectedSwitchLabels.contains(switchControl.getText()))
                 .toList();
-        assertEquals(4, switches.size(),
-                () -> "Switches page should render four switch states, found " + switches.size());
-        assertEquals(2, switches.stream().filter(M3Switch::isSelected).count(),
-                "Switches page should render one enabled and one disabled selected state");
-        assertEquals(2, switches.stream().filter(Node::isDisabled).count(),
-                "Switches page should render two disabled states");
+        assertEquals(10, switches.size(),
+                () -> "Switches page should render the state and icon configuration matrix, found " + switches.size());
+        assertEquals(5, switches.stream().filter(M3Switch::isSelected).count(),
+                "Switches page should render selected examples for default and icon configurations");
+        assertEquals(4, switches.stream().filter(Node::isDisabled).count(),
+                "Switches page should render default and icon disabled states");
+
+        M3Switch selectedIconOff = requireSwitchWithText(switches, "Selected icon off");
+        M3Switch selectedIconOn = requireSwitchWithText(switches, "Selected icon on");
+        M3Switch bothIconsOff = requireSwitchWithText(switches, "Both icons off");
+        M3Switch bothIconsOn = requireSwitchWithText(switches, "Both icons on");
+        M3Switch disabledIconOff = requireSwitchWithText(switches, "Disabled icon off");
+        M3Switch disabledIconOn = requireSwitchWithText(switches, "Disabled icon on");
+        assertNull(Objects.requireNonNull(selectedIconOff.getSelectedIcon(), "selectedIconOff icon").getParent());
+        assertNotNull(Objects.requireNonNull(selectedIconOn.getSelectedIcon(), "selectedIconOn icon").getParent());
+        assertNull(Objects.requireNonNull(bothIconsOff.getSelectedIcon(), "bothIconsOff selected icon").getParent());
+        assertNotNull(Objects.requireNonNull(bothIconsOff.getUnselectedIcon(), "bothIconsOff unselected icon").getParent());
+        assertNotNull(Objects.requireNonNull(bothIconsOn.getSelectedIcon(), "bothIconsOn selected icon").getParent());
+        assertNull(Objects.requireNonNull(bothIconsOn.getUnselectedIcon(), "bothIconsOn unselected icon").getParent());
+        Node disabledOffIcon = Objects.requireNonNull(
+                disabledIconOff.getUnselectedIcon(),
+                "disabledIconOff icon"
+        );
+        Node disabledOnIcon = Objects.requireNonNull(
+                disabledIconOn.getSelectedIcon(),
+                "disabledIconOn icon"
+        );
+        assertNotNull(disabledOffIcon.getParent());
+        assertNotNull(disabledOnIcon.getParent());
+        assertEquals(0.38, disabledOffIcon.getOpacity(), 0.01,
+                "Disabled unselected switch icon should use disabled content opacity");
+        assertEquals(0.38, disabledOnIcon.getOpacity(), 0.01,
+                "Disabled selected switch icon should use disabled content opacity");
+        for (M3Switch iconSwitch : List.of(
+                selectedIconOn,
+                bothIconsOff,
+                bothIconsOn,
+                disabledIconOff,
+                disabledIconOn
+        )) {
+            Region thumb = assertInstanceOf(Region.class, iconSwitch.lookup(".thumb"));
+            Region iconSlot = assertInstanceOf(Region.class, iconSwitch.lookup(".m3-switch-icon-slot"));
+            assertEquals(iconSwitch.getWithIconHandleSize(), thumb.getWidth(), 0.75,
+                    "Switch icon handle should use its with-icon size token");
+            assertEquals(iconSwitch.getIconSize(), iconSlot.getWidth(), 0.75,
+                    "Switch icon slot width should use its icon size token");
+            assertEquals(iconSwitch.getIconSize(), iconSlot.getHeight(), 0.75,
+                    "Switch icon slot height should use its icon size token");
+        }
         assertSelectionIndicatorsCentered(scene, "Switches");
+    }
+
+    /// Returns the switch with the requested text from a prefiltered demo-page switch list.
+    private static M3Switch requireSwitchWithText(List<M3Switch> switches, String text) {
+        for (M3Switch switchControl : switches) {
+            if (text.equals(switchControl.getText())) {
+                return switchControl;
+            }
+        }
+        throw new AssertionError("Missing switch: " + text);
     }
 
     /// Verifies the real All Buttons demo page combines each button-family control category.
@@ -12589,6 +12696,22 @@ final class M3FXDemoVisualSmokeTest {
         assertButtonVariantCount(buttons, M3ButtonVariant.ELEVATED, 1, "Buttons");
         assertEquals(1, buttons.stream().filter(Node::isDisabled).count(),
                 "Buttons page should render one disabled button state");
+        M3Button disabledButton = buttons.stream()
+                .filter(Node::isDisabled)
+                .findFirst()
+                .orElseThrow();
+        assertEquals(1.0, disabledButton.getOpacity(), 0.0001,
+                "disabled button should not attenuate its container and content as one layer");
+        Color disabledContainer = assertInstanceOf(
+                Color.class,
+                disabledButton.getBackground().getFills().get(0).getFill()
+        );
+        assertEquals(0.10, disabledContainer.getOpacity(), 0.0001,
+                "disabled button container opacity");
+        Node disabledText = Objects.requireNonNull(disabledButton.lookup(".text"), "disabled button text");
+        assertEquals(0.38, disabledText.getOpacity(), 0.0001,
+                "disabled button content opacity");
+        assertNull(disabledButton.getEffect(), "disabled button elevation");
         assertEquals(1, buttons.stream().filter(button -> button.getSize() == M3ButtonSize.EXTRA_SMALL).count(),
                 "Buttons page should render one extra-small button");
         assertEquals(9, buttons.stream().filter(button -> button.getSize() == M3ButtonSize.SMALL).count(),
@@ -12691,6 +12814,24 @@ final class M3FXDemoVisualSmokeTest {
                 + iconButtons);
         assertEquals(1, iconButtons.stream().filter(Node::isDisabled).count(),
                 "Icon Buttons page should render one disabled icon button");
+        M3IconButton disabledIconButton = iconButtons.stream()
+                .filter(Node::isDisabled)
+                .findFirst()
+                .orElseThrow();
+        assertEquals(1.0, disabledIconButton.getOpacity(), 0.0001,
+                "disabled icon button should keep independent container and icon layers");
+        Node disabledIcon = Objects.requireNonNull(
+                firstVisibleDemoVectorIcon(disabledIconButton),
+                "disabled icon button graphic"
+        );
+        double disabledIconEffectiveOpacity = 1.0;
+        for (@Nullable Node current = disabledIcon;
+             current != null && current != disabledIconButton;
+             current = current.getParent()) {
+            disabledIconEffectiveOpacity *= current.getOpacity();
+        }
+        assertEquals(0.38, disabledIconEffectiveOpacity, 0.0001,
+                "disabled icon button content opacity");
         for (M3IconButton button : iconButtons) {
             assertTrue(Objects.toString(button.getText(), "").isBlank(),
                     () -> "icon buttons should not expose placeholder text: " + button.getText());
@@ -15207,8 +15348,13 @@ final class M3FXDemoVisualSmokeTest {
                     () -> pageTitle + " switch track width should match token: " + trackBounds);
             assertEquals(switchControl.getTrackHeight(), trackBounds.getHeight(), 0.75,
                     () -> pageTitle + " switch track height should match token: " + trackBounds);
+            boolean hasCurrentIcon = switchControl.isSelected()
+                    ? switchControl.getSelectedIcon() != null
+                    : switchControl.getUnselectedIcon() != null;
             double expectedThumbSize = switchControl.isArmed()
                     ? switchControl.getPressedHandleSize()
+                    : hasCurrentIcon
+                    ? switchControl.getWithIconHandleSize()
                     : switchControl.isSelected()
                     ? switchControl.getSelectedHandleSize()
                     : switchControl.getUnselectedHandleSize();

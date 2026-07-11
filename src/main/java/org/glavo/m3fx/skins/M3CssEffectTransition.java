@@ -103,8 +103,6 @@ final class M3CssEffectTransition {
             target.applyCss();
         }
         Effect resolvedEffect = target.getEffect();
-        @Nullable DropShadow end = !owner.isDisabled() && resolvedEffect instanceof DropShadow shadow ? shadow : null;
-        boolean supportedEnd = owner.isDisabled() || resolvedEffect == null || end != null;
         StyleableProperty<@Nullable Effect> effectProperty = styleableEffectProperty();
         @Nullable StyleOrigin resolvedOrigin = effectProperty.getStyleOrigin();
         StyleOrigin targetOrigin = resolvedOrigin == null ? StyleOrigin.USER_AGENT : resolvedOrigin;
@@ -113,13 +111,19 @@ final class M3CssEffectTransition {
             return;
         }
 
+        if (owner.isDisabled()) {
+            animation.stop();
+            effectProperty.applyStyle(targetOrigin, null);
+            return;
+        }
+
+        @Nullable DropShadow end = resolvedEffect instanceof DropShadow shadow ? shadow : null;
+        boolean supportedEnd = resolvedEffect == null || end != null;
+
         if (!supportedStart
                 || !supportedEnd
                 || animation.matchesTarget(end)
                 || !M3Animation.areAnimationsEnabled(owner)) {
-            if (owner.isDisabled() && resolvedEffect != null) {
-                effectProperty.applyStyle(targetOrigin, null);
-            }
             return;
         }
 

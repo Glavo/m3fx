@@ -55,7 +55,13 @@ public final class M3MotionSettingsObserver {
         Objects.requireNonNull(owner, "owner");
         this.refreshAction = Objects.requireNonNull(refreshAction, "refreshAction");
         this.ownerObserver = ownerObserver(owner);
-        ownerObserver.add(this);
+        try {
+            ownerObserver.add(this);
+        } catch (RuntimeException | Error exception) {
+            disposed = true;
+            ownerObserver.remove(this);
+            throw exception;
+        }
     }
 
     /// Stops observing scene and runtime motion setting changes.
@@ -226,17 +232,14 @@ public final class M3MotionSettingsObserver {
                 return;
             }
 
-            boolean wasRegistered = currentObserver != null;
             registrationVersion++;
             unregisterSceneObserver();
             if (scene != null) {
                 SceneObserver nextObserver = sceneObserver(scene);
                 nextObserver.add(this);
                 registeredSceneObserver = nextObserver;
-                requestRefresh();
-            } else if (wasRegistered) {
-                requestRefresh();
             }
+            requestRefresh();
         }
 
         /// Removes this owner from its current scene and releases an empty scene dispatcher.

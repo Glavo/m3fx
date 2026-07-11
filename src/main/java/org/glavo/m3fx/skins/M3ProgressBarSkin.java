@@ -4,9 +4,7 @@
 package org.glavo.m3fx.skins;
 
 import javafx.animation.Animation;
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
-import javafx.animation.Timeline;
+import javafx.animation.Transition;
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
@@ -89,11 +87,10 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     private final M3DoubleTransition determinateAnimation = new M3DoubleTransition(displayedProgress);
 
     /// The animated position of the indeterminate segment.
-    private final DoubleProperty indeterminatePosition =
-            new SimpleDoubleProperty(this, "indeterminatePosition", INDETERMINATE_START_POSITION);
+    private double indeterminatePosition = INDETERMINATE_START_POSITION;
 
-    /// The indeterminate animation timeline.
-    private final Timeline indeterminateAnimation = new Timeline();
+    /// The reusable indeterminate segment transition.
+    private final IndeterminateTransition indeterminateAnimation = new IndeterminateTransition();
 
     /// Updates internal progress geometry after animation ticks without invalidating parent layout.
     private final InvalidationListener animationInvalidation =
@@ -134,8 +131,6 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
 
         displayedProgress.set(initialDisplayedProgress(control.getProgress()));
         displayedProgress.addListener(animationInvalidation);
-        indeterminatePosition.addListener(animationInvalidation);
-        indeterminateAnimation.setCycleCount(Animation.INDEFINITE);
 
         control.progressProperty().addListener(progressInvalidation);
         control.trackThicknessProperty().addListener(layoutInvalidation);
@@ -154,7 +149,6 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         determinateAnimation.stop();
         indeterminateAnimation.stop();
         displayedProgress.removeListener(animationInvalidation);
-        indeterminatePosition.removeListener(animationInvalidation);
         progressBar.progressProperty().removeListener(progressInvalidation);
         motionSettingsObserver.dispose();
         progressBar.trackThicknessProperty().removeListener(layoutInvalidation);
@@ -262,7 +256,7 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
             layoutTrackSegment(secondaryTrack, Math.max(0.0, segmentEnd + effectiveGap),
                     width - Math.max(0.0, segmentEnd + effectiveGap), centerY, thickness, radius);
             layoutWavePath(waveBar, segmentX, segmentEnd, centerY, amplitude,
-                    getSkinnable().getWavelength(), indeterminatePosition.get());
+                    getSkinnable().getWavelength(), indeterminatePosition);
             return;
         }
 
@@ -396,7 +390,7 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
 
     /// Returns the logical x coordinate of the indeterminate segment.
     private double indeterminateSegmentX(double width, double segmentWidth) {
-        return -segmentWidth + (width + segmentWidth) * indeterminatePosition.get();
+        return -segmentWidth + (width + segmentWidth) * indeterminatePosition;
     }
 
     /// Updates determinate or indeterminate animation state for the current progress value.
@@ -406,14 +400,14 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
             determinateAnimation.stop();
             if (shouldPauseActivityAnimations()) {
                 indeterminateAnimation.stop();
-                indeterminatePosition.set(INDETERMINATE_START_POSITION);
+                indeterminatePosition = INDETERMINATE_START_POSITION;
             } else {
                 startIndeterminateAnimation();
             }
             updateAnimatedVisuals();
         } else {
             indeterminateAnimation.stop();
-            indeterminatePosition.set(INDETERMINATE_START_POSITION);
+            indeterminatePosition = INDETERMINATE_START_POSITION;
             animateDisplayedProgress(
                     clamp(progress),
                     animateDeterminateProgress && !shouldPauseActivityAnimations()
@@ -431,22 +425,10 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     /// Starts the indeterminate linear segment loop.
     private void startIndeterminateAnimation() {
         indeterminateAnimation.stop();
-        configureIndeterminateAnimation();
-        indeterminateAnimation.playFromStart();
-    }
-
-    /// Configures the indeterminate sweep with the current owner behavior timing.
-    private void configureIndeterminateAnimation() {
-        indeterminateAnimation.getKeyFrames().setAll(
-                new KeyFrame(
-                        Duration.ZERO,
-                        new KeyValue(indeterminatePosition, INDETERMINATE_START_POSITION, M3Motion.LINEAR)
-                ),
-                new KeyFrame(
-                        M3Animation.motionBehavior(getSkinnable()).linearProgressIndeterminateCycleDuration(),
-                        new KeyValue(indeterminatePosition, 1.0, M3Motion.LINEAR)
-                )
+        indeterminateAnimation.configure(
+                M3Animation.motionBehavior(getSkinnable()).linearProgressIndeterminateCycleDuration()
         );
+        indeterminateAnimation.playFromStart();
     }
 
     /// Animates the displayed determinate progress value.
@@ -487,5 +469,34 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         rectangle.setHeight(height);
         rectangle.setArcWidth(radius * 2.0);
         rectangle.setArcHeight(radius * 2.0);
+    }
+
+    /// Reuses one transition for the indeterminate linear segment loop.
+    @NotNullByDefault
+    private final class IndeterminateTransition extends Transition {
+        /// Creates a linearly timed indefinite transition.
+        private IndeterminateTransition() {
+            setInterpolator(M3Motion.LINEAR);
+            setCycleCount(Animation.INDEFINITE);
+        }
+
+        /// Updates the loop duration without allocating key frames or writable properties.
+        ///
+        /// @param duration the complete indeterminate cycle duration
+        private void configure(Duration duration) {
+            stop();
+            setCycleDuration(duration);
+        }
+
+        /// Updates the primitive segment position and active geometry for one animation pulse.
+        @Override
+        protected void interpolate(double fraction) {
+            double newPosition = INDETERMINATE_START_POSITION
+                    + (1.0 - INDETERMINATE_START_POSITION) * fraction;
+            if (Double.compare(indeterminatePosition, newPosition) != 0) {
+                indeterminatePosition = newPosition;
+                updateAnimatedVisuals();
+            }
+        }
     }
 }

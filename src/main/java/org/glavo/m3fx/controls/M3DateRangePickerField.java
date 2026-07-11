@@ -789,6 +789,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
                 popupContextSynchronizer.stop();
             }
         }
+        popupFocusNotifier.start();
         reachabilityObserver.install();
         showing.set(true);
         notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
@@ -917,7 +918,6 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         picker.minDateProperty().addListener((observable, oldValue, newValue) -> handleSelectableBoundsChanged());
         picker.maxDateProperty().addListener((observable, oldValue, newValue) -> handleSelectableBoundsChanged());
         presets.addListener(presetsListener);
-        popupFocusNotifier.start();
     }
 
     /// Hides the popup if its owner field can no longer be reached from its scene.
@@ -1455,6 +1455,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
 
     /// Handles popup hidden cleanup and optional focus return.
     private void handlePopupHidden() {
+        popupFocusNotifier.stop();
         reachabilityObserver.uninstall();
         popupContextSynchronizer.stop();
         showing.set(false);

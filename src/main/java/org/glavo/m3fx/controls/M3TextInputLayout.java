@@ -3,9 +3,7 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
-import javafx.animation.Timeline;
+import javafx.animation.Animation;
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
@@ -54,6 +52,7 @@ import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3FiniteTransition;
 import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
@@ -117,6 +116,10 @@ public class M3TextInputLayout extends Control {
 
     /// The pseudo-class used while the wrapped input is focused.
     private static final PseudoClass FOCUSED_PSEUDO_CLASS = PseudoClass.getPseudoClass("focused");
+
+    /// The pseudo-class used while the wrapped input is effectively disabled.
+    private static final PseudoClass INPUT_DISABLED_PSEUDO_CLASS =
+            PseudoClass.getPseudoClass("input-disabled");
 
     /// The pseudo-class used while the label is floating above entered text.
     private static final PseudoClass FLOATING_PSEUDO_CLASS = PseudoClass.getPseudoClass("floating");
@@ -353,6 +356,10 @@ public class M3TextInputLayout extends Control {
     private final ChangeListener<Boolean> focusListener =
             (observable, oldValue, newValue) -> handleInputFocusChanged(newValue);
 
+    /// The listener used to mirror the wrapped input disabled state onto this layout.
+    private final ChangeListener<Boolean> disabledListener =
+            (observable, oldValue, disabled) -> updateInputDisabledState(disabled);
+
     /// The listener used to mirror the wrapped input variant onto this layout.
     private final ChangeListener<M3TextInputVariant> variantListener =
             (observable, oldValue, newValue) -> updateInputVariantStyle();
@@ -462,14 +469,17 @@ public class M3TextInputLayout extends Control {
     private final M3AccessibleFocusNotifier focusNotifier =
             new M3AccessibleFocusNotifier(this, this::currentFocusNode);
 
-    /// The animation used when the label changes between resting and floating states.
-    private final Timeline labelAnimation = new Timeline();
+    /// The reusable animation used when the label changes between resting and floating states.
+    private final NodeVisualTransition labelAnimation =
+            new NodeVisualTransition(label, outlineNotchProgress);
 
-    /// The animation used when supporting row content appears or changes.
-    private final Timeline supportingRowAnimation = new Timeline();
+    /// The reusable animation used when supporting row content appears or changes.
+    private final NodeVisualTransition supportingRowAnimation =
+            new NodeVisualTransition(supportingRow, null);
 
-    /// The animation used when the built-in clear button enters the trailing slot.
-    private final Timeline trailingAnimation = new Timeline();
+    /// The reusable animation used when the built-in clear button enters the trailing slot.
+    private final NodeVisualTransition trailingAnimation =
+            new NodeVisualTransition(clearButton, null);
 
     /// Observes runtime motion settings while this layout is attached to a scene and is retained for this control lifetime.
     @SuppressWarnings("unused")
@@ -946,6 +956,7 @@ public class M3TextInputLayout extends Control {
         if (oldInput != null) {
             oldInput.textProperty().removeListener(textListener);
             oldInput.focusedProperty().removeListener(focusListener);
+            oldInput.disabledProperty().removeListener(disabledListener);
             oldInput.paddingProperty().removeListener(paddingListener);
             oldInput.translateXProperty().removeListener(translateXListener);
             oldInput.boundsInParentProperty().removeListener(outlineGeometryListener);
@@ -976,6 +987,7 @@ public class M3TextInputLayout extends Control {
             M3ControlStyles.add(newInput, INPUT_STYLE_CLASS);
             newInput.textProperty().addListener(textListener);
             newInput.focusedProperty().addListener(focusListener);
+            newInput.disabledProperty().addListener(disabledListener);
             newInput.boundsInParentProperty().addListener(outlineGeometryListener);
             if (newInput instanceof M3TextInput textInput) {
                 textInput.variantProperty().addListener(variantListener);
@@ -995,6 +1007,7 @@ public class M3TextInputLayout extends Control {
             inputContainer.getChildren().add(1, newInput);
         }
 
+        updateInputDisabledState(newInput != null && newInput.isDisabled());
         updateInputContainer();
         updateInputVariantStyle();
         updateLabel();
@@ -1012,6 +1025,11 @@ public class M3TextInputLayout extends Control {
     /// Handles keyboard focus traversal between input layout adornment slots.
     private void handleSlotNavigationKey(KeyEvent event) {
         M3FocusTraversal.handleHorizontalKeyFocus(this, event, slotFocusTargets());
+    }
+
+    /// Mirrors the wrapped input disabled state for component-level container styling.
+    private void updateInputDisabledState(boolean disabled) {
+        pseudoClassStateChanged(INPUT_DISABLED_PSEUDO_CLASS, disabled);
     }
 
     /// Updates floating label state and optionally validates when focus leaves the input.
@@ -1513,20 +1531,25 @@ public class M3TextInputLayout extends Control {
         }
 
         if (!changed) {
-            outlineNotchProgress.set(floating ? 1.0 : 0.0);
+            if (labelAnimation.getStatus() != Animation.Status.RUNNING) {
+                outlineNotchProgress.set(floating ? 1.0 : 0.0);
+            }
             return;
         }
 
+        boolean reversing = labelAnimation.getStatus() == Animation.Status.RUNNING;
         labelAnimation.stop();
-        label.setOpacity(LABEL_TRANSITION_START_OPACITY);
-        label.setTranslateY(floating ? LABEL_TRANSITION_OFFSET_Y : -LABEL_TRANSITION_OFFSET_Y);
-        M3MotionSpec spec = M3Animation.fastSpatial(this);
-        labelAnimation.getKeyFrames().setAll(new KeyFrame(
-                spec.duration(),
-                new KeyValue(label.opacityProperty(), 1.0, spec.interpolator()),
-                new KeyValue(label.translateYProperty(), 0.0, spec.interpolator()),
-                new KeyValue(outlineNotchProgress, floating ? 1.0 : 0.0, spec.interpolator())
-        ));
+        if (!reversing) {
+            label.setOpacity(LABEL_TRANSITION_START_OPACITY);
+            label.setTranslateY(floating ? LABEL_TRANSITION_OFFSET_Y : -LABEL_TRANSITION_OFFSET_Y);
+        }
+        labelAnimation.configure(
+                M3Animation.fastSpatial(this),
+                0.0,
+                1.0,
+                1.0,
+                floating ? 1.0 : 0.0
+        );
         M3Animation.playFromStart(this, labelAnimation);
     }
 
@@ -1693,13 +1716,13 @@ public class M3TextInputLayout extends Control {
         clearButton.setOpacity(0.0);
         clearButton.setScaleX(TRAILING_TRANSITION_START_SCALE);
         clearButton.setScaleY(TRAILING_TRANSITION_START_SCALE);
-        M3MotionSpec spec = M3Animation.fastEffects(this);
-        trailingAnimation.getKeyFrames().setAll(new KeyFrame(
-                spec.duration(),
-                new KeyValue(clearButton.opacityProperty(), 1.0, spec.interpolator()),
-                new KeyValue(clearButton.scaleXProperty(), 1.0, spec.interpolator()),
-                new KeyValue(clearButton.scaleYProperty(), 1.0, spec.interpolator())
-        ));
+        trailingAnimation.configure(
+                M3Animation.fastEffects(this),
+                clearButton.getTranslateY(),
+                1.0,
+                1.0,
+                0.0
+        );
         M3Animation.playFromStart(this, trailingAnimation);
     }
 
@@ -1729,13 +1752,131 @@ public class M3TextInputLayout extends Control {
         supportingRowAnimation.stop();
         supportingRow.setOpacity(0.0);
         supportingRow.setTranslateY(SUPPORTING_ROW_TRANSITION_OFFSET_Y);
-        M3MotionSpec spec = M3Animation.fastSpatial(this);
-        supportingRowAnimation.getKeyFrames().setAll(new KeyFrame(
-                spec.duration(),
-                new KeyValue(supportingRow.opacityProperty(), 1.0, spec.interpolator()),
-                new KeyValue(supportingRow.translateYProperty(), 0.0, spec.interpolator())
-        ));
+        supportingRowAnimation.configure(
+                M3Animation.fastSpatial(this),
+                0.0,
+                supportingRow.getScaleX(),
+                supportingRow.getScaleY(),
+                0.0
+        );
         M3Animation.playFromStart(this, supportingRowAnimation);
+    }
+
+    /// Reuses one primitive transition for a fixed presentation node and optional scalar channel.
+    @NotNullByDefault
+    private static final class NodeVisualTransition extends M3FiniteTransition {
+        /// The node receiving interpolated visual values.
+        private final Node target;
+
+        /// An optional scalar channel animated with the node values.
+        private final @Nullable DoubleProperty auxiliary;
+
+        /// The starting opacity.
+        private double startOpacity;
+
+
+        /// The starting vertical translation.
+        private double startTranslateY;
+
+        /// The target vertical translation.
+        private double targetTranslateY;
+
+        /// The starting horizontal scale.
+        private double startScaleX;
+
+        /// The target horizontal scale.
+        private double targetScaleX;
+
+        /// The starting vertical scale.
+        private double startScaleY;
+
+        /// The target vertical scale.
+        private double targetScaleY;
+
+        /// The starting auxiliary value.
+        private double startAuxiliary;
+
+        /// The target auxiliary value.
+        private double targetAuxiliary;
+
+        /// Whether opacity changes during the configured transition.
+        private boolean opacityAnimating;
+
+        /// Whether vertical translation changes during the configured transition.
+        private boolean translateYAnimating;
+
+        /// Whether horizontal scale changes during the configured transition.
+        private boolean scaleXAnimating;
+
+        /// Whether vertical scale changes during the configured transition.
+        private boolean scaleYAnimating;
+
+        /// Whether the optional scalar channel changes during the configured transition.
+        private boolean auxiliaryAnimating;
+
+        /// Creates a reusable transition for one stable target.
+        private NodeVisualTransition(Node target, @Nullable DoubleProperty auxiliary) {
+            this.target = Objects.requireNonNull(target, "target");
+            this.auxiliary = auxiliary;
+        }
+
+        /// Captures current values and configures the next target state.
+        private void configure(
+                M3MotionSpec spec,
+                double targetTranslateY,
+                double targetScaleX,
+                double targetScaleY,
+                double targetAuxiliary
+        ) {
+            stop();
+            startOpacity = target.getOpacity();
+            startTranslateY = target.getTranslateY();
+            startScaleX = target.getScaleX();
+            startScaleY = target.getScaleY();
+            this.targetTranslateY = targetTranslateY;
+            this.targetScaleX = targetScaleX;
+            this.targetScaleY = targetScaleY;
+            opacityAnimating = Double.compare(startOpacity, 1.0) != 0;
+            translateYAnimating = Double.compare(startTranslateY, targetTranslateY) != 0;
+            scaleXAnimating = Double.compare(startScaleX, targetScaleX) != 0;
+            scaleYAnimating = Double.compare(startScaleY, targetScaleY) != 0;
+            DoubleProperty currentAuxiliary = auxiliary;
+            if (currentAuxiliary != null) {
+                startAuxiliary = currentAuxiliary.get();
+                this.targetAuxiliary = targetAuxiliary;
+                auxiliaryAnimating = Double.compare(startAuxiliary, targetAuxiliary) != 0;
+            } else {
+                auxiliaryAnimating = false;
+            }
+            setCycleDuration(spec.duration());
+            setInterpolator(spec.interpolator());
+        }
+
+        /// Applies one eased frame without allocating key frames or writable values.
+        @Override
+        protected void interpolate(double fraction) {
+            if (opacityAnimating) {
+                target.setOpacity(interpolate(startOpacity, 1.0, fraction));
+            }
+            if (translateYAnimating) {
+                target.setTranslateY(interpolate(startTranslateY, targetTranslateY, fraction));
+            }
+            if (scaleXAnimating) {
+                target.setScaleX(interpolate(startScaleX, targetScaleX, fraction));
+            }
+            if (scaleYAnimating) {
+                target.setScaleY(interpolate(startScaleY, targetScaleY, fraction));
+            }
+            DoubleProperty currentAuxiliary = auxiliary;
+            if (auxiliaryAnimating && currentAuxiliary != null) {
+                currentAuxiliary.set(interpolate(startAuxiliary, targetAuxiliary, fraction));
+            }
+        }
+
+        /// Interpolates one primitive channel.
+        private static double interpolate(double start, double end, double fraction) {
+            return start + (end - start) * fraction;
+        }
     }
 
     /// Returns the supporting row text that should be visible.

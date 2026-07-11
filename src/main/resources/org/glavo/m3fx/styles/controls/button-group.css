@@ -139,7 +139,3 @@
     -fx-border-radius: -m3-button-group-connected-pressed-inner-corner 999px
         999px -m3-button-group-connected-pressed-inner-corner;
 }
-
-.m3-button-group .m3-button.m3-grouped-button:disabled {
-    -fx-opacity: 0.38;
-}

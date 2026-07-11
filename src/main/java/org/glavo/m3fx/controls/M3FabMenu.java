@@ -4,10 +4,6 @@
 package org.glavo.m3fx.controls;
 
 import javafx.animation.Animation;
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
-import javafx.animation.ParallelTransition;
-import javafx.animation.Timeline;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.ListChangeListener;
@@ -24,11 +20,13 @@ import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
+import javafx.stage.Window;
 import org.glavo.m3fx.internal.M3FocusTraversal;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
 import org.glavo.m3fx.internal.M3Accessible;
@@ -36,6 +34,7 @@ import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3FiniteTransition;
 import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -44,6 +43,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -96,8 +96,8 @@ public class M3FabMenu extends Control {
         }
     };
 
-    /// The currently running expand or collapse animation.
-    private @Nullable Animation animation;
+    /// The reusable expand and collapse animation for every action item.
+    private final ActionItemsTransition animation = new ActionItemsTransition();
 
     /// Observes runtime motion settings while this menu is attached to a scene.
     private final M3MotionSettingsObserver motionSettingsObserver =
@@ -111,12 +111,21 @@ public class M3FabMenu extends Control {
 
     /// Updates item styles and visibility when action items change.
     private final ListChangeListener<Node> actionsListener = change -> {
+        boolean interrupted = animation.getStatus() == Animation.Status.RUNNING;
+        stopAnimation();
         while (change.next()) {
             for (Node removed : change.getRemoved()) {
                 clearActionStyle(removed);
             }
             for (Node added : change.getAddedSubList()) {
                 installAction(added);
+            }
+        }
+        if (interrupted) {
+            if (isExpanded()) {
+                applyExpandedState();
+            } else {
+                applyCollapsedState();
             }
         }
         notifyAccessibleItemsChanged();
@@ -522,87 +531,56 @@ public class M3FabMenu extends Control {
     /// Plays the action item expand animation.
     private void playExpandAnimation() {
         prepareActionsForExpandedLayout();
-        ParallelTransition transition = new ParallelTransition();
-        M3MotionSpec spec = M3Animation.defaultSpatial(this);
-        int index = 0;
-        int itemCount = getItems().size();
-        for (Node item : getItems()) {
-            item.setOpacity(0.0);
-            item.setScaleX(ACTION_TRANSITION_SCALE);
-            item.setScaleY(ACTION_TRANSITION_SCALE);
-            item.setTranslateY(ACTION_TRANSITION_OFFSET_Y * Math.max(1, itemCount - index));
-            transition.getChildren().add(new Timeline(new KeyFrame(
-                    spec.duration(),
-                    new KeyValue(item.opacityProperty(), 1.0, spec.interpolator()),
-                    new KeyValue(item.scaleXProperty(), 1.0, spec.interpolator()),
-                    new KeyValue(item.scaleYProperty(), 1.0, spec.interpolator()),
-                    new KeyValue(item.translateYProperty(), 0.0, spec.interpolator())
-            )));
-            index++;
-        }
-        animation = transition;
-        transition.setOnFinished(event -> animation = null);
-        M3Animation.playFromStart(this, transition);
+        animation.configure(M3Animation.defaultSpatial(this), true);
+        playConfiguredAnimation();
     }
 
     /// Plays the action item collapse animation.
     private void playCollapseAnimation() {
-        ParallelTransition transition = new ParallelTransition();
-        M3MotionSpec spec = M3Animation.fastSpatial(this);
-        int index = 0;
-        int itemCount = getItems().size();
-        for (Node item : getItems()) {
-            transition.getChildren().add(new Timeline(new KeyFrame(
-                    spec.duration(),
-                    new KeyValue(item.opacityProperty(), 0.0, spec.interpolator()),
-                    new KeyValue(item.scaleXProperty(), ACTION_TRANSITION_SCALE, spec.interpolator()),
-                    new KeyValue(item.scaleYProperty(), ACTION_TRANSITION_SCALE, spec.interpolator()),
-                    new KeyValue(
-                            item.translateYProperty(),
-                            ACTION_TRANSITION_OFFSET_Y * Math.max(1, itemCount - index),
-                            spec.interpolator()
-                    )
-            )));
-            index++;
-        }
-        transition.setOnFinished(event -> {
-            animation = null;
-            if (!isExpanded()) {
-                applyCollapsedState();
-            }
-        });
-        animation = transition;
-        M3Animation.playFromStart(this, transition);
+        animation.configure(M3Animation.fastSpatial(this), false);
+        playConfiguredAnimation();
     }
 
-    /// Stops the current expand or collapse animation.
+    /// Starts the configured action transition using the resolved motion setting.
+    private void playConfiguredAnimation() {
+        M3Animation.playFromStart(this, animation);
+    }
+
+    /// Stops the current expand or collapse animation and releases its item references.
     private void stopAnimation() {
-        Animation currentAnimation = animation;
-        if (currentAnimation != null) {
-            currentAnimation.stop();
-            animation = null;
-        }
+        animation.stop();
+        animation.clearTargets();
     }
 
     /// Applies changed runtime motion settings to the active expand or collapse animation.
     private void refreshMotionSettings() {
-        if (M3Animation.areAnimationsEnabled(this)) {
-            return;
+        if (!M3Animation.areAnimationsEnabled(this) || !isShowingWindow()) {
+            M3Animation.finishIfRunning(animation);
         }
+    }
 
-        @Nullable Animation currentAnimation = animation;
-        if (currentAnimation != null && M3Animation.finishIfRunning(currentAnimation)) {
-            animation = null;
-        }
+    /// Returns whether this menu is attached to a currently showing window.
+    private boolean isShowingWindow() {
+        @Nullable Scene scene = getScene();
+        @Nullable Window window = scene == null ? null : scene.getWindow();
+        return window != null && window.isShowing();
     }
 
     /// Prepares action items to participate in layout while expanded.
     private void prepareActionsForExpandedLayout() {
         actions.setVisible(true);
         actions.setManaged(true);
+        int index = 0;
+        int itemCount = getItems().size();
         for (Node item : getItems()) {
+            if (Double.compare(item.getOpacity(), 0.0) == 0) {
+                item.setScaleX(ACTION_TRANSITION_SCALE);
+                item.setScaleY(ACTION_TRANSITION_SCALE);
+                item.setTranslateY(collapsedOffset(itemCount, index));
+            }
             item.setVisible(true);
             item.setManaged(true);
+            index++;
         }
         requestMenuLayout();
     }
@@ -622,8 +600,10 @@ public class M3FabMenu extends Control {
     private void applyCollapsedState() {
         actions.setVisible(false);
         actions.setManaged(false);
+        int index = 0;
+        int itemCount = getItems().size();
         for (Node item : getItems()) {
-            prepareCollapsedAction(item);
+            prepareCollapsedAction(item, collapsedOffset(itemCount, index++));
         }
         requestMenuLayout();
     }
@@ -641,7 +621,7 @@ public class M3FabMenu extends Control {
             item.setScaleY(1.0);
             item.setTranslateY(0.0);
         } else {
-            prepareCollapsedAction(item);
+            prepareCollapsedAction(item, collapsedOffset(getItems().size(), getItems().indexOf(item)));
         }
         requestMenuLayout();
     }
@@ -657,13 +637,118 @@ public class M3FabMenu extends Control {
     }
 
     /// Applies collapsed transforms to an action item.
-    private static void prepareCollapsedAction(Node item) {
+    private static void prepareCollapsedAction(Node item, double translateY) {
         item.setVisible(false);
         item.setManaged(false);
         item.setOpacity(0.0);
         item.setScaleX(ACTION_TRANSITION_SCALE);
         item.setScaleY(ACTION_TRANSITION_SCALE);
-        item.setTranslateY(ACTION_TRANSITION_OFFSET_Y);
+        item.setTranslateY(translateY);
+    }
+
+    /// Returns the collapsed vertical offset for one action item.
+    private static double collapsedOffset(int itemCount, int index) {
+        return ACTION_TRANSITION_OFFSET_Y * Math.max(1, itemCount - index);
+    }
+
+    /// Applies the final state after the reusable action animation completes.
+    private void handleActionAnimationFinished() {
+        animation.clearTargets();
+        if (isExpanded()) {
+            applyExpandedState();
+        } else {
+            applyCollapsedState();
+        }
+    }
+
+    /// Reuses primitive start-value storage for all FAB menu action transitions.
+    @NotNullByDefault
+    private final class ActionItemsTransition extends M3FiniteTransition {
+        /// Nodes participating in the current transition.
+        private @Nullable Node[] targets = new Node[0];
+
+        /// Starting opacity values parallel to [targets].
+        private double[] startOpacities = new double[0];
+
+        /// Starting horizontal scale values parallel to [targets].
+        private double[] startScaleX = new double[0];
+
+        /// Starting vertical scale values parallel to [targets].
+        private double[] startScaleY = new double[0];
+
+        /// Starting vertical translations parallel to [targets].
+        private double[] startTranslateY = new double[0];
+
+        /// The number of populated target slots.
+        private int targetCount;
+
+        /// Whether the configured transition expands rather than collapses actions.
+        private boolean expanding;
+
+        /// Creates a reusable action transition and installs its stable completion handler.
+        private ActionItemsTransition() {
+            setOnFinished(event -> handleActionAnimationFinished());
+        }
+
+        /// Captures current item transforms and configures their target state.
+        private void configure(M3MotionSpec spec, boolean expanding) {
+            stop();
+            clearTargets();
+            ObservableList<Node> items = getItems();
+            ensureCapacity(items.size());
+            targetCount = items.size();
+            this.expanding = expanding;
+            for (int index = 0; index < targetCount; index++) {
+                Node item = items.get(index);
+                targets[index] = item;
+                startOpacities[index] = item.getOpacity();
+                startScaleX[index] = item.getScaleX();
+                startScaleY[index] = item.getScaleY();
+                startTranslateY[index] = item.getTranslateY();
+            }
+            setCycleDuration(spec.duration());
+            setInterpolator(spec.interpolator());
+        }
+
+        /// Grows transition storage only when an item list exceeds the retained capacity.
+        private void ensureCapacity(int requiredCapacity) {
+            if (targets.length >= requiredCapacity) {
+                return;
+            }
+            int currentCapacity = targets.length;
+            int nextCapacity = Math.max(requiredCapacity, currentCapacity == 0 ? 4 : currentCapacity * 2);
+            targets = Arrays.copyOf(targets, nextCapacity);
+            startOpacities = Arrays.copyOf(startOpacities, nextCapacity);
+            startScaleX = Arrays.copyOf(startScaleX, nextCapacity);
+            startScaleY = Arrays.copyOf(startScaleY, nextCapacity);
+            startTranslateY = Arrays.copyOf(startTranslateY, nextCapacity);
+        }
+
+        /// Releases action node references after completion or interruption.
+        private void clearTargets() {
+            Arrays.fill(targets, 0, targetCount, null);
+            targetCount = 0;
+        }
+
+        /// Applies one eased frame without allocating writable values or animation nodes.
+        @Override
+        protected void interpolate(double fraction) {
+            double targetOpacity = expanding ? 1.0 : 0.0;
+            double targetScale = expanding ? 1.0 : ACTION_TRANSITION_SCALE;
+            for (int index = 0; index < targetCount; index++) {
+                Node item = Objects.requireNonNull(targets[index], "target");
+                double targetTranslateY = expanding ? 0.0 : collapsedOffset(targetCount, index);
+                item.setOpacity(interpolate(startOpacities[index], targetOpacity, fraction));
+                item.setScaleX(interpolate(startScaleX[index], targetScale, fraction));
+                item.setScaleY(interpolate(startScaleY[index], targetScale, fraction));
+                item.setTranslateY(interpolate(startTranslateY[index], targetTranslateY, fraction));
+            }
+        }
+
+        /// Interpolates one primitive channel.
+        private static double interpolate(double start, double end, double fraction) {
+            return start + (end - start) * fraction;
+        }
     }
 
     /// Removes menu-specific style classes and transient transforms from an action item.
