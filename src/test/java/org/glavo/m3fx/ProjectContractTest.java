@@ -157,6 +157,7 @@ final class ProjectContractTest {
                             M3NavigationDrawer
                             M3NavigationDrawerGroup
                             M3NavigationItem
+                            M3NavigationItemLayout
                             M3NavigationRail
                             M3PasswordField
                             M3PickerField
@@ -681,6 +682,8 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3MenuSelectionMode#MULTIPLE
             org.glavo.m3fx.controls.M3MenuSelectionMode#NONE
             org.glavo.m3fx.controls.M3MenuSelectionMode#SINGLE
+            org.glavo.m3fx.controls.M3NavigationItemLayout#HORIZONTAL
+            org.glavo.m3fx.controls.M3NavigationItemLayout#VERTICAL
             org.glavo.m3fx.controls.M3SegmentedButtonSelectionMode#MULTIPLE
             org.glavo.m3fx.controls.M3SegmentedButtonSelectionMode#SINGLE
             org.glavo.m3fx.controls.M3SheetVariant#MODAL
@@ -867,7 +870,9 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3MenuButton#STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3MenuItem#STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3MenuSectionHeader#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3NavigationBar#HORIZONTAL_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3NavigationBar#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3NavigationBar#VERTICAL_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3NavigationDrawer#STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3NavigationDrawerGroup#CHILD_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3NavigationDrawerGroup#HEADER_STYLE_CLASS:java.lang.String

@@ -1289,8 +1289,8 @@ final class M3ThemeTest {
         assertEquals(-1.0, segmentedButtonGroup.getSpacing(), 0.0001);
         assertEquals(12.0, fabMenu.getActionSpacing(), 0.0001);
         assertEquals(24.0, groupedButton.getHorizontalPadding(), 0.0001);
-        assertEquals(20.0, splitButtonActionButton(splitButton).getPadding().getLeft(), 0.0001);
-        assertEquals(20.0, splitButtonActionButton(splitButton).getPadding().getRight(), 0.0001);
+        assertEquals(16.0, splitButtonActionButton(splitButton).getPadding().getLeft(), 0.0001);
+        assertEquals(12.0, splitButtonActionButton(splitButton).getPadding().getRight(), 0.0001);
         assertEquals(48.0, splitButtonMenuButton(splitButton).getMinWidth(), 0.0001);
         assertEquals(48.0, splitButtonMenuButton(splitButton).getPrefWidth(), 0.0001);
         assertEquals(56.0, textField.getContainerHeight(), 0.0001);
@@ -1545,7 +1545,7 @@ final class M3ThemeTest {
         assertEquals(72.0, barHome.getIndicatorWidth(), 0.0001);
         assertEquals(36.0, barHome.getIndicatorHeight(), 0.0001);
         assertEquals(6.0, barHome.getContentSpacing(), 0.0001);
-        assertEquals(112.0, navigationRail.getPrefWidth(), 0.0001);
+        assertEquals(112.0, navigationRail.getCollapsedContainerWidth(), 0.0001);
         assertEquals(20.0, navigationRail.getPadding().getTop(), 0.0001);
         assertEquals(12.0, navigationRail.getPadding().getLeft(), 0.0001);
         assertEquals(12.0, navigationRail.getItemSpacing(), 0.0001);
@@ -1592,7 +1592,7 @@ final class M3ThemeTest {
         assertEquals(64.0, barHome.getIndicatorWidth(), 0.0001);
         assertEquals(32.0, barHome.getIndicatorHeight(), 0.0001);
         assertEquals(4.0, barHome.getContentSpacing(), 0.0001);
-        assertEquals(96.0, navigationRail.getPrefWidth(), 0.0001);
+        assertEquals(96.0, navigationRail.getCollapsedContainerWidth(), 0.0001);
         assertEquals(16.0, navigationRail.getPadding().getTop(), 0.0001);
         assertEquals(8.0, navigationRail.getPadding().getLeft(), 0.0001);
         assertEquals(8.0, navigationRail.getItemSpacing(), 0.0001);

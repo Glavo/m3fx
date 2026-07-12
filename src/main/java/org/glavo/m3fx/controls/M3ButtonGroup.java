@@ -18,6 +18,7 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
+import javafx.scene.control.ButtonBase;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
@@ -40,7 +41,7 @@ import java.util.Objects;
 
 /// A Material Design 3 button group for adjacent related action buttons.
 ///
-/// `M3ButtonGroup` lays out [M3Button] children as a standard separated group or as a connected group with
+/// `M3ButtonGroup` lays out Material [ButtonBase] children as a standard separated group or as a connected group with
 /// coordinated outer and inner corners. The [variant][M3ButtonGroupVariant] controls whether grouped buttons keep
 /// their own rounded containers or join into a single visual set, and the [size][M3ButtonSize] controls
 /// container height and group spacing through CSS tokens.
@@ -121,7 +122,7 @@ public class M3ButtonGroup extends Control {
     private final ListChangeListener<Node> childrenListener = change -> {
         while (change.next()) {
             for (Node child : change.getRemoved()) {
-                if (child instanceof M3Button button) {
+                if (child instanceof ButtonBase button) {
                     clearButtonStyle(button);
                 }
             }
@@ -331,15 +332,15 @@ public class M3ButtonGroup extends Control {
     private void updateButtonStyles() {
         int buttonCount = 0;
         for (Node child : getItems()) {
-            if (child instanceof M3Button) {
+            if (child instanceof ButtonBase) {
                 buttonCount++;
             }
         }
 
         int buttonIndex = 0;
         for (Node child : getItems()) {
-            if (child instanceof M3Button button) {
-                button.setSize(getSize());
+            if (child instanceof ButtonBase button) {
+                applyButtonSize(button);
                 M3ControlStyles.add(button, GROUPED_BUTTON_STYLE_CLASS);
                 M3ControlStyles.replaceVariant(
                         button,
@@ -355,6 +356,14 @@ public class M3ButtonGroup extends Control {
         }
     }
 
+    /// Applies the group size to a supported Material button child.
+    private void applyButtonSize(ButtonBase button) {
+        if (button instanceof M3Button materialButton) {
+            materialButton.setSize(getSize());
+        } else if (button instanceof M3IconToggleButton toggleButton) {
+            toggleButton.setSize(getSize());
+        }
+    }
     /// Returns the position style class for a grouped button index.
     private static String buttonStyleClass(int index, int count) {
         if (count == 1) {
@@ -401,7 +410,7 @@ public class M3ButtonGroup extends Control {
     }
 
     /// Removes all button group style classes from a button.
-    private static void clearButtonStyle(M3Button button) {
+    private static void clearButtonStyle(ButtonBase button) {
         button.getStyleClass().remove(GROUPED_BUTTON_STYLE_CLASS);
         button.getStyleClass().remove(SINGLE_BUTTON_STYLE_CLASS);
         button.getStyleClass().remove(FIRST_BUTTON_STYLE_CLASS);

@@ -69,7 +69,7 @@ public class M3SplitButton extends Control {
     private static final M3ButtonSize DEFAULT_SIZE = M3ButtonSize.SMALL;
 
     /// The default spacing between the action and menu parts.
-    private static final double DEFAULT_SPACING = -1.0;
+    private static final double DEFAULT_SPACING = 2.0;
 
     /// The primary action button.
     private final M3Button actionButton = new M3Button();

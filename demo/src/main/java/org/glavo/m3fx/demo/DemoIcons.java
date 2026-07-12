@@ -163,8 +163,10 @@ final class DemoIcons {
             case "email", "mail" -> "M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5z";
             case "error", "warning" -> "M12 2 1 21h22zM13 18h-2v-2h2zm0-4h-2v-4h2z";
             case "favorite" -> "M12 21.4l-1.4-1.3C5.4 15.4 2 12.3 2 8.5 2 5.4 4.4 3 7.5 3c1.7 0 3.4.8 4.5 2 1.1-1.2 2.8-2 4.5-2C19.6 3 22 5.4 22 8.5c0 3.8-3.4 6.9-8.6 11.6z";
-            case "folder", "open" -> "M10 4l2 2h8c1.1 0 2 .9 2 2v10c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z";
-            case "home" -> "M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z";
+            case "format_align_center" -> "M7 15v2h10v-2zm-4 4v2h18v-2zM3 11v2h18v-2zm4-4v2h10V7zM3 3v2h18V3z";
+            case "format_align_left" -> "M3 15v2h12v-2zm0 4v2h18v-2zm0-8v2h18v-2zm0-4v2h12V7zm0-4v2h18V3z";
+            case "format_align_right" -> "M9 15v2h12v-2zM3 19v2h18v-2zm0-8v2h18v-2zm6-4v2h12V7zM3 3v2h18V3z";            case "folder", "open" -> "M10 4l2 2h8c1.1 0 2 .9 2 2v10c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z";
+            case "group" -> "M16 11c1.7 0 3-1.3 3-3s-1.3-3-3-3-3 1.3-3 3 1.3 3 3 3zM8 11c1.7 0 3-1.3 3-3S9.7 5 8 5 5 6.3 5 8s1.3 3 3 3zm0 2c-2.3 0-7 1.2-7 3.5V19h14v-2.5C15 14.2 10.3 13 8 13zm8 0c-.3 0-.7 0-1.1.1 1.2.9 2.1 2 2.1 3.4V19h6v-2.5c0-2.3-4.7-3.5-7-3.5z";            case "home" -> "M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z";
             case "image" -> "M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 11.5l2.5 3 3.5-4.5L19 16H5z";
             case "inbox" -> "M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 14h-4c0 1.7-1.3 3-3 3s-3-1.3-3-3H5V5h14z";
             case "info", "i" -> "M11 17h2v-6h-2zm1-14a9 9 0 1 0 0 18 9 9 0 0 0 0-18zm-1 6h2V7h-2z";
@@ -174,7 +176,7 @@ final class DemoIcons {
             case "menu" -> "M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z";
             case "more" -> "M12 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm0 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z";
             case "move" -> "M12 2 6.5 7.5 8 9l3-3v12l-3-3-1.5 1.5L12 22l5.5-5.5L16 15l-3 3V6l3 3 1.5-1.5z";
-            case "notifications" -> "M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.1-1.6-5.6-4.5-6.3V4c0-.8-.7-1.5-1.5-1.5S10.5 3.2 10.5 4v.7C7.6 5.4 6 7.9 6 11v5l-2 2v1h16v-1z";
+            case "navigation" -> "M12 2 4.5 20.3l.7.7 6.8-3 6.8 3 .7-.7z";            case "notifications" -> "M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.1-1.6-5.6-4.5-6.3V4c0-.8-.7-1.5-1.5-1.5S10.5 3.2 10.5 4v.7C7.6 5.4 6 7.9 6 11v5l-2 2v1h16v-1z";
             case "person" -> "M12 12c2.2 0 4-1.8 4-4s-1.8-4-4-4-4 1.8-4 4 1.8 4 4 4zm0 2c-2.7 0-8 1.3-8 4v2h16v-2c0-2.7-5.3-4-8-4z";
             case "reports" -> "M5 9.2h3V19H5zm5-4h3V19h-3zm5 7h3V19h-3z";
             case "save" -> "M17 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V7zm-5 16a3 3 0 1 1 0-6 3 3 0 0 1 0 6zM6 8V5h9v3z";
@@ -187,7 +189,7 @@ final class DemoIcons {
             case "task" -> "M3 13h2v-2H3zm0 4h2v-2H3zm0-8h2V7H3zm4 4h14v-2H7zm0 4h14v-2H7zM7 7v2h14V7z";
             case "text" -> "M5 4v3h5v13h4V7h5V4z";
             case "tune" -> "M3 17v2h6v-2zm0-6v2h12v-2zm0-6v2h18V5zm14 12v2h4v-2zm-8-6v2h12v-2zm6-6v2h6V5z";
-            case "underline" -> "M12 17c3.3 0 6-2.7 6-6V3h-2.5v8c0 1.9-1.6 3.5-3.5 3.5S8.5 12.9 8.5 11V3H6v8c0 3.3 2.7 6 6 6zM5 19v2h14v-2z";
+            case "upload" -> "M5 17h14v2H5zm7-14 5.5 5.5H14V15h-4V8.5H6.5z";            case "underline" -> "M12 17c3.3 0 6-2.7 6-6V3h-2.5v8c0 1.9-1.6 3.5-3.5 3.5S8.5 12.9 8.5 11V3H6v8c0 3.3 2.7 6 6 6zM5 19v2h14v-2z";
             case "visibility" -> "M12 4.5C7 4.5 2.7 7.6 1 12c1.7 4.4 6 7.5 11 7.5s9.3-3.1 11-7.5c-1.7-4.4-6-7.5-11-7.5zm0 12.5a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-2a3 3 0 1 0 0-6 3 3 0 0 0 0 6z";
             case "work" -> "M20 6h-4V4c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-6 0h-4V4h4z";
             default -> throw new IllegalArgumentException("Unknown demo icon: " + name);

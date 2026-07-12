@@ -92,6 +92,21 @@ public class M3NavigationItem extends ButtonBase {
         }
     };
 
+    /// The icon and label arrangement selected by the owning navigation container.
+    private final ObjectProperty<M3NavigationItemLayout> itemLayout =
+            new SimpleObjectProperty<>(this, "itemLayout", M3NavigationItemLayout.VERTICAL) {
+                /// Maintains the matching layout style class and requests a new skin layout.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(M3NavigationItemLayout.VERTICAL);
+                        return;
+                    }
+                    updateItemLayoutStyleClass();
+                    requestLayout();
+                }
+            };
+
     // The badge displayed over the navigation item graphic.
     private final ObjectProperty<@Nullable M3Badge> badge = new SimpleObjectProperty<>(this, "badge");
 
@@ -147,6 +162,28 @@ public class M3NavigationItem extends ButtonBase {
         return selected;
     }
 
+    /// Returns the icon and label arrangement.
+    ///
+    /// @return the current navigation item layout
+    public final M3NavigationItemLayout getItemLayout() {
+        return itemLayout.get();
+    }
+
+    /// Sets the icon and label arrangement.
+    ///
+    /// Navigation bars and rails normally set this property for their child items.
+    ///
+    /// @param itemLayout the navigation item layout
+    public final void setItemLayout(M3NavigationItemLayout itemLayout) {
+        this.itemLayout.set(Objects.requireNonNull(itemLayout, "itemLayout"));
+    }
+
+    /// Returns the icon and label arrangement property.
+    ///
+    /// @return the writable navigation item layout property
+    public final ObjectProperty<M3NavigationItemLayout> itemLayoutProperty() {
+        return itemLayout;
+    }
     /// Returns the badge displayed over this item's graphic.
     ///
     /// @return the badge shown over the graphic, or `null` when no badge is set
@@ -404,9 +441,19 @@ public class M3NavigationItem extends ButtonBase {
         setAccessibleRole(AccessibleRole.BUTTON);
         setFocusTraversable(true);
         setPickOnBounds(true);
+        updateItemLayoutStyleClass();
         updateMetrics();
     }
 
+    /// Applies the style class matching the icon and label arrangement.
+    private void updateItemLayoutStyleClass() {
+        M3ControlStyles.replaceVariant(
+                this,
+                getItemLayout().styleClass(),
+                M3NavigationItemLayout.VERTICAL.styleClass(),
+                M3NavigationItemLayout.HORIZONTAL.styleClass()
+        );
+    }
     /// Applies size-related component tokens to JavaFX layout properties.
     private void updateMetrics() {
         double width = getItemWidth();

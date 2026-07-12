@@ -75,65 +75,65 @@
     -m3-button-group-connected-pressed-inner-corner: 16px;
 }
 
-.m3-button-group.m3-connected-button-group .m3-button.m3-button-group-single {
+.m3-button-group.m3-connected-button-group .m3-grouped-button.m3-button-group-single {
     -fx-background-radius: 999px;
     -fx-border-radius: 999px;
 }
 
-.m3-button-group.m3-connected-button-group .m3-button.m3-button-group-first {
+.m3-button-group.m3-connected-button-group .m3-grouped-button.m3-button-group-first {
     -fx-background-radius: 999px -m3-button-group-connected-inner-corner
         -m3-button-group-connected-inner-corner 999px;
     -fx-border-radius: 999px -m3-button-group-connected-inner-corner
         -m3-button-group-connected-inner-corner 999px;
 }
 
-.m3-button-group.m3-connected-button-group .m3-button.m3-button-group-middle {
+.m3-button-group.m3-connected-button-group .m3-grouped-button.m3-button-group-middle {
     -fx-background-radius: -m3-button-group-connected-inner-corner;
     -fx-border-radius: -m3-button-group-connected-inner-corner;
 }
 
-.m3-button-group.m3-connected-button-group .m3-button.m3-button-group-last {
+.m3-button-group.m3-connected-button-group .m3-grouped-button.m3-button-group-last {
     -fx-background-radius: -m3-button-group-connected-inner-corner 999px
         999px -m3-button-group-connected-inner-corner;
     -fx-border-radius: -m3-button-group-connected-inner-corner 999px
         999px -m3-button-group-connected-inner-corner;
 }
 
-.m3-button-group.m3-connected-button-group .m3-button.m3-button-group-first:selected {
+.m3-button-group.m3-connected-button-group .m3-grouped-button.m3-button-group-first:selected {
     -fx-background-radius: 999px -m3-button-group-connected-selected-inner-corner
         -m3-button-group-connected-selected-inner-corner 999px;
     -fx-border-radius: 999px -m3-button-group-connected-selected-inner-corner
         -m3-button-group-connected-selected-inner-corner 999px;
 }
 
-.m3-button-group.m3-connected-button-group .m3-button.m3-button-group-middle:selected {
+.m3-button-group.m3-connected-button-group .m3-grouped-button.m3-button-group-middle:selected {
     -fx-background-radius: -m3-button-group-connected-selected-inner-corner;
     -fx-border-radius: -m3-button-group-connected-selected-inner-corner;
 }
 
-.m3-button-group.m3-connected-button-group .m3-button.m3-button-group-last:selected {
+.m3-button-group.m3-connected-button-group .m3-grouped-button.m3-button-group-last:selected {
     -fx-background-radius: -m3-button-group-connected-selected-inner-corner 999px
         999px -m3-button-group-connected-selected-inner-corner;
     -fx-border-radius: -m3-button-group-connected-selected-inner-corner 999px
         999px -m3-button-group-connected-selected-inner-corner;
 }
 
-.m3-button-group.m3-connected-button-group .m3-button.m3-button-group-first:armed,
-.m3-button-group.m3-connected-button-group .m3-button.m3-button-group-first:pressed {
+.m3-button-group.m3-connected-button-group .m3-grouped-button.m3-button-group-first:armed,
+.m3-button-group.m3-connected-button-group .m3-grouped-button.m3-button-group-first:pressed {
     -fx-background-radius: 999px -m3-button-group-connected-pressed-inner-corner
         -m3-button-group-connected-pressed-inner-corner 999px;
     -fx-border-radius: 999px -m3-button-group-connected-pressed-inner-corner
         -m3-button-group-connected-pressed-inner-corner 999px;
 }
 
-.m3-button-group.m3-connected-button-group .m3-button.m3-button-group-middle:armed,
-.m3-button-group.m3-connected-button-group .m3-button.m3-button-group-middle:pressed {
+.m3-button-group.m3-connected-button-group .m3-grouped-button.m3-button-group-middle:armed,
+.m3-button-group.m3-connected-button-group .m3-grouped-button.m3-button-group-middle:pressed {
     -fx-background-radius: -m3-button-group-connected-pressed-inner-corner;
     -fx-border-radius: -m3-button-group-connected-pressed-inner-corner;
 }
 
-.m3-button-group.m3-connected-button-group .m3-button.m3-button-group-last:armed,
-.m3-button-group.m3-connected-button-group .m3-button.m3-button-group-last:pressed {
+.m3-button-group.m3-connected-button-group .m3-grouped-button.m3-button-group-last:armed,
+.m3-button-group.m3-connected-button-group .m3-grouped-button.m3-button-group-last:pressed {
     -fx-background-radius: -m3-button-group-connected-pressed-inner-corner 999px
         999px -m3-button-group-connected-pressed-inner-corner;
     -fx-border-radius: -m3-button-group-connected-pressed-inner-corner 999px

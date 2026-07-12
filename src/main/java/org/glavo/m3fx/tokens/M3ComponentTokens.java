@@ -776,7 +776,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 ),
                 new IconTokens(iconSmallSize, iconMediumSize, iconLargeSize, iconExtraLargeSize),
                 createButtonGroupTokens(expressive, density, shapeTokens),
-                createSplitButtonTokens(expressive, density),
+                createSplitButtonTokens(density),
                 new ButtonTokens(segmentedButtonHeight, shapeTokens.full(), segmentedButtonHorizontalPadding),
                 new TabTokens(
                         tabHeight,
@@ -1161,90 +1161,88 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         );
     }
 
-    /// Creates the five-step split-button size scale for one component profile.
+    /// Creates the five-step split-button size scale.
     ///
-    /// Baseline keeps the legacy joined fallback shape while Expressive uses the current split-button spacing,
-    /// asymmetric leading-button padding, state corners, optical menu-icon offsets, and selected trailing shape.
+    /// Split buttons are an Expressive component without a baseline joined variant, so all profiles retain the
+    /// current between-space, asymmetric padding, state corners, optical icon offsets, and selected trailing shape.
     ///
-    /// @param expressive whether the Expressive component profile is active
     /// @param density the density transform applied to length tokens
     /// @return the split-button size token scale
-    private static SplitButtonTokens createSplitButtonTokens(boolean expressive, M3Density density) {
-        double spacing = expressive ? density.apply(2.0) : -1.0;
+    private static SplitButtonTokens createSplitButtonTokens(M3Density density) {
+        double spacing = density.apply(2.0);
         return new SplitButtonTokens(
                 new SplitButtonSizeTokens(
                         density.apply(32.0),
                         spacing,
-                        expressive ? density.apply(4.0) : 0.0,
-                        expressive ? density.apply(8.0) : 0.0,
-                        expressive ? density.apply(8.0) : 0.0,
+                        density.apply(4.0),
+                        density.apply(8.0),
+                        density.apply(8.0),
                         density.apply(12.0),
-                        density.apply(expressive ? 10.0 : 12.0),
+                        density.apply(10.0),
                         density.apply(22.0),
                         density.apply(1.0),
                         density.apply(13.0),
                         density.apply(13.0),
-                        expressive ? density.apply(16.0) : 0.0
+                        density.apply(16.0)
                 ),
                 new SplitButtonSizeTokens(
                         density.apply(40.0),
                         spacing,
-                        expressive ? density.apply(4.0) : 0.0,
-                        expressive ? density.apply(12.0) : 0.0,
-                        expressive ? density.apply(12.0) : 0.0,
-                        density.apply(expressive ? 16.0 : 20.0),
-                        density.apply(expressive ? 12.0 : 20.0),
+                        density.apply(4.0),
+                        density.apply(12.0),
+                        density.apply(12.0),
+                        density.apply(16.0),
+                        density.apply(12.0),
                         density.apply(22.0),
                         density.apply(1.0),
                         density.apply(13.0),
                         density.apply(13.0),
-                        expressive ? density.apply(20.0) : 0.0
+                        density.apply(20.0)
                 ),
                 new SplitButtonSizeTokens(
                         density.apply(56.0),
                         spacing,
-                        expressive ? density.apply(4.0) : 0.0,
-                        expressive ? density.apply(12.0) : 0.0,
-                        expressive ? density.apply(12.0) : 0.0,
+                        density.apply(4.0),
+                        density.apply(12.0),
+                        density.apply(12.0),
                         density.apply(24.0),
                         density.apply(24.0),
                         density.apply(26.0),
                         density.apply(2.0),
                         density.apply(15.0),
                         density.apply(15.0),
-                        expressive ? density.apply(28.0) : 0.0
+                        density.apply(28.0)
                 ),
                 new SplitButtonSizeTokens(
                         density.apply(96.0),
                         spacing,
-                        expressive ? density.apply(8.0) : 0.0,
-                        expressive ? density.apply(20.0) : 0.0,
-                        expressive ? density.apply(20.0) : 0.0,
+                        density.apply(8.0),
+                        density.apply(20.0),
+                        density.apply(20.0),
                         density.apply(48.0),
                         density.apply(48.0),
                         density.apply(38.0),
                         density.apply(3.0),
                         density.apply(29.0),
                         density.apply(29.0),
-                        expressive ? density.apply(48.0) : 0.0
+                        density.apply(48.0)
                 ),
                 new SplitButtonSizeTokens(
                         density.apply(136.0),
                         spacing,
-                        expressive ? density.apply(12.0) : 0.0,
-                        expressive ? density.apply(20.0) : 0.0,
-                        expressive ? density.apply(20.0) : 0.0,
+                        density.apply(12.0),
+                        density.apply(20.0),
+                        density.apply(20.0),
                         density.apply(64.0),
                         density.apply(64.0),
                         density.apply(50.0),
                         density.apply(6.0),
                         density.apply(43.0),
                         density.apply(43.0),
-                        expressive ? density.apply(68.0) : 0.0
+                        density.apply(68.0)
                 )
         );
     }
-
     /// Converts component tokens into inline JavaFX CSS declarations.
     ///
     /// @return inline JavaFX CSS declarations for all component tokens
@@ -3818,6 +3816,12 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendDeclaration(builder, "-fx-pref-height", M3TokenCss.pixels(tokens.containerHeight()));
         appendDeclaration(builder, "-fx-padding", "0 " + M3TokenCss.pixels(tokens.horizontalPadding()));
         endRule(builder);
+
+        double densityScale = tokens.indicatorHeight() / 32.0;
+        beginRule(builder, ".m3-navigation-bar.m3-navigation-bar-horizontal");
+        appendDeclaration(builder, "-fx-min-height", M3TokenCss.pixels(64.0 * densityScale));
+        appendDeclaration(builder, "-fx-pref-height", M3TokenCss.pixels(64.0 * densityScale));
+        endRule(builder);
     }
 
     /// Appends a navigation item token CSS rule.
@@ -3829,6 +3833,16 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendDeclaration(builder, "-m3-indicator-height", M3TokenCss.pixels(tokens.indicatorHeight()));
         appendDeclaration(builder, "-m3-indicator-shape", M3TokenCss.pixels(tokens.indicatorShape()));
         appendDeclaration(builder, "-m3-content-spacing", M3TokenCss.pixels(tokens.contentSpacing()));
+        endRule(builder);
+
+        double densityScale = tokens.indicatorHeight() / 32.0;
+        beginRule(builder, ".m3-navigation-bar .m3-navigation-item-horizontal");
+        appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(64.0 * densityScale));
+        appendDeclaration(builder, "-m3-item-width", M3TokenCss.pixels(160.0 * densityScale));
+        appendDeclaration(builder, "-m3-indicator-width", M3TokenCss.pixels(64.0 * densityScale));
+        appendDeclaration(builder, "-m3-indicator-height", M3TokenCss.pixels(40.0 * densityScale));
+        appendDeclaration(builder, "-m3-indicator-shape", M3TokenCss.pixels(20.0 * densityScale));
+        appendDeclaration(builder, "-m3-content-spacing", M3TokenCss.pixels(4.0 * densityScale));
         endRule(builder);
     }
 
@@ -3842,8 +3856,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Appends a navigation rail token CSS rule.
     private static void appendNavigationRailRule(StringBuilder builder, NavigationRailTokens tokens) {
         beginRule(builder, ".m3-navigation-rail");
-        appendDeclaration(builder, "-fx-min-width", M3TokenCss.pixels(tokens.containerWidth()));
-        appendDeclaration(builder, "-fx-pref-width", M3TokenCss.pixels(tokens.containerWidth()));
+        double densityScale = tokens.indicatorHeight() / 32.0;
+        appendDeclaration(builder, "-m3-collapsed-container-width", M3TokenCss.pixels(tokens.containerWidth()));
+        appendDeclaration(builder, "-m3-expanded-container-width", M3TokenCss.pixels(280.0 * densityScale));
         appendDeclaration(builder, "-fx-padding", M3TokenCss.pixels(tokens.verticalPadding())
                 + " "
                 + M3TokenCss.pixels(tokens.horizontalPadding()));
@@ -3860,6 +3875,20 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendDeclaration(builder, "-m3-indicator-height", M3TokenCss.pixels(tokens.indicatorHeight()));
         appendDeclaration(builder, "-m3-indicator-shape", M3TokenCss.pixels(tokens.indicatorShape()));
         appendDeclaration(builder, "-m3-content-spacing", M3TokenCss.pixels(tokens.contentSpacing()));
+        endRule(builder);
+
+        double densityScale = tokens.indicatorHeight() / 32.0;
+        beginRule(builder, ".m3-navigation-rail:expanded .m3-navigation-item-horizontal");
+        appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(56.0 * densityScale));
+        appendDeclaration(
+                builder,
+                "-m3-item-width",
+                M3TokenCss.pixels(Math.max(0.0, 280.0 * densityScale - 2.0 * tokens.horizontalPadding()))
+        );
+        appendDeclaration(builder, "-m3-indicator-width", M3TokenCss.pixels(56.0 * densityScale));
+        appendDeclaration(builder, "-m3-indicator-height", M3TokenCss.pixels(56.0 * densityScale));
+        appendDeclaration(builder, "-m3-indicator-shape", M3TokenCss.pixels(28.0 * densityScale));
+        appendDeclaration(builder, "-m3-content-spacing", M3TokenCss.pixels(8.0 * densityScale));
         endRule(builder);
     }
 

@@ -1,8 +1,8 @@
 .m3-navigation-rail {
     -fx-background-color: -m3-color-surface-container;
     -fx-padding: 16px 8px 16px 8px;
-    -fx-min-width: 96px;
-    -fx-pref-width: 96px;
+    -m3-collapsed-container-width: 96px;
+    -m3-expanded-container-width: 280px;
     -m3-item-spacing: 8px;
     -fx-border-color: transparent -m3-color-outline-variant transparent transparent;
     -fx-border-width: 0 1px 0 0;
@@ -19,4 +19,24 @@
     -m3-indicator-width: 56px;
     -m3-indicator-height: 32px;
     -m3-indicator-shape: 16px;
+}
+
+.m3-navigation-rail:expanded {
+    -fx-background-color: -m3-color-surface;
+    -fx-padding: 16px 8px 16px 8px;
+    -m3-item-spacing: 0px;
+}
+
+.m3-navigation-rail:expanded .m3-navigation-item-horizontal.m3-navigation-item {
+    -m3-container-height: 56px;
+    -m3-item-width: 264px;
+    -m3-indicator-width: 56px;
+    -m3-indicator-height: 56px;
+    -m3-indicator-shape: 28px;
+    -m3-content-spacing: 8px;
+}
+
+.m3-navigation-rail:expanded .m3-navigation-item-label {
+    -fx-font-size: 14px;
+    -fx-font-weight: 600;
 }

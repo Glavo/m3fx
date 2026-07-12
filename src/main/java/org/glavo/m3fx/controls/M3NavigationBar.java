@@ -5,10 +5,12 @@ package org.glavo.m3fx.controls;
 
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -48,6 +50,12 @@ public class M3NavigationBar extends Control {
     /// The base style class for M3FX navigation bars.
     public static final String STYLE_CLASS = "m3-navigation-bar";
 
+    /// The style class used by compact vertical-item navigation bars.
+    public static final String VERTICAL_STYLE_CLASS = "m3-navigation-bar-vertical";
+
+    /// The style class used by medium-window horizontal-item navigation bars.
+    public static final String HORIZONTAL_STYLE_CLASS = "m3-navigation-bar-horizontal";
+
     /// The mutable navigation bar content.
     private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
 
@@ -71,6 +79,22 @@ public class M3NavigationBar extends Control {
     /// The read-only selected navigation item view.
     private final @UnmodifiableView ObservableList<M3NavigationItem> selectedItemsView =
             FXCollections.unmodifiableObservableList(selectedItems);
+
+    /// The icon and label arrangement applied to navigation items.
+    private final ObjectProperty<M3NavigationItemLayout> itemLayout =
+            new SimpleObjectProperty<>(this, "itemLayout", M3NavigationItemLayout.VERTICAL) {
+                /// Propagates layout changes to the installed navigation items.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(M3NavigationItemLayout.VERTICAL);
+                        return;
+                    }
+                    updateItemLayoutStyle();
+                    updateItemLayouts();
+                    requestLayout();
+                }
+            };
 
     // Whether the bar allows all navigation items to be unselected.
     private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection") {
@@ -143,6 +167,29 @@ public class M3NavigationBar extends Control {
 
 
 
+    /// Returns how child navigation items arrange their icon and label.
+    ///
+    /// @return the navigation item layout
+    public final M3NavigationItemLayout getItemLayout() {
+        return itemLayout.get();
+    }
+
+    /// Sets how child navigation items arrange their icon and label.
+    ///
+    /// Use [M3NavigationItemLayout#VERTICAL] in compact windows and
+    /// [M3NavigationItemLayout#HORIZONTAL] in medium windows.
+    ///
+    /// @param itemLayout the navigation item layout
+    public final void setItemLayout(M3NavigationItemLayout itemLayout) {
+        this.itemLayout.set(Objects.requireNonNull(itemLayout, "itemLayout"));
+    }
+
+    /// Returns the child navigation item layout property.
+    ///
+    /// @return the writable navigation item layout property
+    public final ObjectProperty<M3NavigationItemLayout> itemLayoutProperty() {
+        return itemLayout;
+    }
     /// Returns the selected navigation items in child order.
     ///
     /// @return an unmodifiable observable view of selected navigation items
@@ -366,6 +413,7 @@ public class M3NavigationBar extends Control {
     /// Adds base style classes and installs selection listeners.
     private void initialize() {
         M3ControlStyles.initialize(this, STYLE_CLASS);
+        updateItemLayoutStyle();
         setAccessibleRole(AccessibleRole.TOOL_BAR);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleSelectionTarget, this::showAccessibleItem);
@@ -402,6 +450,7 @@ public class M3NavigationBar extends Control {
 
     /// Installs a selected-state listener on a navigation item.
     private void installItem(M3NavigationItem item) {
+        item.setItemLayout(getItemLayout());
         item.selectedProperty().addListener(selectedInvalidation);
         item.disabledProperty().addListener(reachabilityInvalidation);
         item.visibleProperty().addListener(reachabilityInvalidation);
@@ -414,6 +463,25 @@ public class M3NavigationBar extends Control {
         item.visibleProperty().removeListener(reachabilityInvalidation);
     }
 
+    /// Applies the style class matching the compact or medium-window item arrangement.
+    private void updateItemLayoutStyle() {
+        M3ControlStyles.replaceVariant(
+                this,
+                getItemLayout() == M3NavigationItemLayout.HORIZONTAL
+                        ? HORIZONTAL_STYLE_CLASS
+                        : VERTICAL_STYLE_CLASS,
+                VERTICAL_STYLE_CLASS,
+                HORIZONTAL_STYLE_CLASS
+        );
+    }
+    /// Applies the configured layout to every navigation item child.
+    private void updateItemLayouts() {
+        for (Node child : getItems()) {
+            if (child instanceof M3NavigationItem item) {
+                item.setItemLayout(getItemLayout());
+            }
+        }
+    }
     /// Keeps externally changed item selected states mutually exclusive.
     private void handleItemSelectedChanged(M3NavigationItem item, boolean selected) {
         if (updatingSelection) {

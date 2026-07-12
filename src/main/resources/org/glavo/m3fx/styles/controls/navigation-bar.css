@@ -83,3 +83,22 @@
 .m3-navigation-item:disabled {
     -fx-opacity: 0.38;
 }
+
+.m3-profile-expressive .m3-navigation-bar {
+    -fx-min-height: 64px;
+    -fx-pref-height: 64px;
+}
+
+.m3-navigation-bar .m3-navigation-item-horizontal.m3-navigation-item {
+    -m3-container-height: 64px;
+    -m3-item-width: 160px;
+    -m3-indicator-width: 64px;
+    -m3-indicator-height: 40px;
+    -m3-indicator-shape: 20px;
+    -m3-content-spacing: 4px;
+}
+
+.m3-navigation-item-horizontal .m3-navigation-item-label {
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+}

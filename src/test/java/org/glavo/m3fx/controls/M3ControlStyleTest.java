@@ -2864,6 +2864,30 @@ final class M3ControlStyleTest {
         assertTrue(third.getStyleClass().contains(M3ButtonGroup.SINGLE_BUTTON_STYLE_CLASS));
     }
 
+    /// Verifies that connected button groups support selectable icon-toggle children and clean reused nodes.
+    @Test
+    void buttonGroupSupportsSelectableIconToggleChildren() {
+        M3IconToggleButton first = new M3IconToggleButton(new Label("A"));
+        M3IconToggleButton second = new M3IconToggleButton(new Label("B"));
+        M3IconToggleButton third = new M3IconToggleButton(new Label("C"));
+        first.setSelected(true);
+        M3ButtonGroup group = new M3ButtonGroup();
+        group.setSize(M3ButtonSize.MEDIUM);
+        group.getItems().addAll(first, second, third);
+
+        assertEquals(M3ButtonSize.MEDIUM, first.getSize());
+        assertTrue(first.getStyleClass().contains(M3ButtonGroup.GROUPED_BUTTON_STYLE_CLASS));
+        assertTrue(first.getStyleClass().contains(M3ButtonGroup.FIRST_BUTTON_STYLE_CLASS));
+        assertTrue(second.getStyleClass().contains(M3ButtonGroup.MIDDLE_BUTTON_STYLE_CLASS));
+        assertTrue(third.getStyleClass().contains(M3ButtonGroup.LAST_BUTTON_STYLE_CLASS));
+
+        group.getItems().remove(second);
+
+        assertFalse(second.getStyleClass().contains(M3ButtonGroup.GROUPED_BUTTON_STYLE_CLASS));
+        assertFalse(second.getStyleClass().contains(M3ButtonGroup.MIDDLE_BUTTON_STYLE_CLASS));
+        assertTrue(first.getStyleClass().contains(M3ButtonGroup.FIRST_BUTTON_STYLE_CLASS));
+        assertTrue(third.getStyleClass().contains(M3ButtonGroup.LAST_BUTTON_STYLE_CLASS));
+    }
     /// Verifies that button groups keep logical edge style classes for right-to-left painting.
     @Test
     void buttonGroupKeepsLogicalPositionStyleClassesForRightToLeft() {
@@ -3893,10 +3917,10 @@ final class M3ControlStyleTest {
             assertFalse(splitButtonActionButton(splitButton).getStyleClass().contains("m3-split-button-right"));
             assertFalse(splitButtonMenuButton(splitButton).getStyleClass().contains("m3-split-button-left"));
             assertFalse(splitButtonMenuButton(splitButton).getStyleClass().contains("m3-split-button-right"));
-            assertRegionRoundedCorners(splitButtonActionButton(splitButton), true, false, false, true);
-            assertRegionRoundedCorners(splitButtonMenuButton(splitButton), false, true, true, false);
-            assertStateLayerRadii(splitButtonActionButton(splitButton), 20.0, 0.0, 0.0, 20.0);
-            assertStateLayerRadii(splitButtonMenuButton(splitButton), 0.0, 20.0, 20.0, 0.0);
+            assertRegionRoundedCorners(splitButtonActionButton(splitButton), true, true, true, true);
+            assertRegionRoundedCorners(splitButtonMenuButton(splitButton), true, true, true, true);
+            assertStateLayerRadii(splitButtonActionButton(splitButton), 20.0, 4.0, 4.0, 20.0);
+            assertStateLayerRadii(splitButtonMenuButton(splitButton), 4.0, 20.0, 20.0, 4.0);
         });
     }
 
@@ -25184,6 +25208,52 @@ final class M3ControlStyleTest {
         assertEquals(java.util.List.of(home), navigationBar.getSelectedItems());
     }
 
+    /// Verifies that adaptive navigation bar layouts propagate to existing and newly added destinations.
+    @Test
+    void navigationBarPropagatesAdaptiveItemLayout() {
+        M3NavigationItem first = new M3NavigationItem("Home");
+        M3NavigationItem second = new M3NavigationItem("Search");
+        M3NavigationBar bar = new M3NavigationBar();
+        bar.getItems().add(first);
+
+        assertEquals(M3NavigationItemLayout.VERTICAL, first.getItemLayout());
+
+        bar.setItemLayout(M3NavigationItemLayout.HORIZONTAL);
+        bar.getItems().add(second);
+
+        assertEquals(M3NavigationItemLayout.HORIZONTAL, first.getItemLayout());
+        assertEquals(M3NavigationItemLayout.HORIZONTAL, second.getItemLayout());
+
+        bar.setItemLayout(M3NavigationItemLayout.VERTICAL);
+
+        assertEquals(M3NavigationItemLayout.VERTICAL, first.getItemLayout());
+        assertEquals(M3NavigationItemLayout.VERTICAL, second.getItemLayout());
+    }
+
+    /// Verifies that expanded navigation rails propagate horizontal destination layouts and accessibility state.
+    @Test
+    void navigationRailPropagatesExpandedItemLayout() {
+        M3NavigationItem first = new M3NavigationItem("Home");
+        M3NavigationItem second = new M3NavigationItem("Search");
+        M3NavigationRail rail = new M3NavigationRail();
+        rail.getItems().add(first);
+
+        assertFalse(rail.isExpanded());
+        assertEquals(M3NavigationItemLayout.VERTICAL, first.getItemLayout());
+
+        rail.setExpanded(true);
+        rail.getItems().add(second);
+
+        assertTrue(rail.isExpanded());
+        assertEquals(Boolean.TRUE, rail.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
+        assertEquals(M3NavigationItemLayout.HORIZONTAL, first.getItemLayout());
+        assertEquals(M3NavigationItemLayout.HORIZONTAL, second.getItemLayout());
+
+        rail.setExpanded(false);
+
+        assertEquals(M3NavigationItemLayout.VERTICAL, first.getItemLayout());
+        assertEquals(M3NavigationItemLayout.VERTICAL, second.getItemLayout());
+    }
     /// Verifies that navigation rails group items and keep a selected item.
     @Test
     void navigationRailGroupsItemsAndKeepsSelection() {
@@ -25250,7 +25320,7 @@ final class M3ControlStyleTest {
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         root.applyCss();
 
-        assertEquals(96.0, navigationRail.getPrefWidth(), 0.0001);
+        assertEquals(96.0, navigationRail.getCollapsedContainerWidth(), 0.0001);
         assertEquals(12.0, navigationRail.getItemSpacing(), 0.0001);
         assertEquals(80.0, home.getItemWidth(), 0.0001);
         assertEquals(56.0, home.getIndicatorWidth(), 0.0001);
@@ -33035,7 +33105,7 @@ final class M3ControlStyleTest {
             assertEquals(96.0, navigationBarItem.getItemWidth(), 0.0001);
             assertEquals(72.0, navigationBarItem.getIndicatorWidth(), 0.0001);
             assertEquals(6.0, navigationBarItem.getContentSpacing(), 0.0001);
-            assertEquals(112.0, navigationRail.getPrefWidth(), 0.0001);
+            assertEquals(112.0, navigationRail.getCollapsedContainerWidth(), 0.0001);
             assertEquals(96.0, navigationRailItem.getItemWidth(), 0.0001);
             assertEquals(6.0, navigationRailItem.getContentSpacing(), 0.0001);
             assertEquals(384.0, navigationDrawer.getPrefWidth(), 0.0001);
@@ -39386,7 +39456,19 @@ final class M3ControlStyleTest {
                 HBox.class,
                 searchBar.lookup("." + M3SearchBar.CONTENT_STYLE_CLASS)
         ).getAlignment());
-        assertEquals(alignment, firstDescendantOfType(splitButton, HBox.class).getAlignment());
+        M3Button actionButton = splitButtonActionButton(splitButton);
+        M3Button menuButton = splitButtonMenuButton(splitButton);
+        Bounds actionBounds = actionButton.localToScene(actionButton.getLayoutBounds());
+        Bounds menuBounds = menuButton.localToScene(menuButton.getLayoutBounds());
+        double gap;
+        if (alignment == Pos.CENTER_RIGHT) {
+            assertTrue(actionBounds.getMinX() > menuBounds.getMinX());
+            gap = actionBounds.getMinX() - menuBounds.getMaxX();
+        } else {
+            assertTrue(actionBounds.getMinX() < menuBounds.getMinX());
+            gap = menuBounds.getMinX() - actionBounds.getMaxX();
+        }
+        assertEquals(splitButton.getSpacing(), gap, 1.0);
     }
 
     /// Returns the first descendant of the requested node type.

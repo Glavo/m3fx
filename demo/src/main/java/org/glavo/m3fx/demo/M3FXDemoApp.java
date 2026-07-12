@@ -105,6 +105,7 @@ import org.glavo.m3fx.controls.M3NavigationBar;
 import org.glavo.m3fx.controls.M3NavigationDrawer;
 import org.glavo.m3fx.controls.M3NavigationDrawerGroup;
 import org.glavo.m3fx.controls.M3NavigationItem;
+import org.glavo.m3fx.controls.M3NavigationItemLayout;
 import org.glavo.m3fx.controls.M3NavigationRail;
 import org.glavo.m3fx.controls.M3PasswordField;
 import org.glavo.m3fx.controls.M3ProgressBar;
@@ -924,7 +925,7 @@ public final class M3FXDemoApp extends Application {
                 createShowcaseGroup(
                         "Floating Actions",
                         createFab("add", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.REGULAR),
-                        createExtendedFab("Create", M3FloatingActionButtonVariant.PRIMARY),
+                        createExtendedFab("Create", "add", M3FloatingActionButtonVariant.PRIMARY),
                         fabMenu
                 ),
                 createShowcaseGroup(
@@ -946,67 +947,41 @@ public final class M3FXDemoApp extends Application {
         standardGroup.setVariant(M3ButtonGroupVariant.STANDARD);
         standardGroup.setSize(M3ButtonSize.MEDIUM);
 
-        M3ButtonGroup connectedTonalGroup = createButtonGroup(
-                new M3Button("Edit", M3ButtonVariant.TONAL),
-                new M3Button("Share", M3ButtonVariant.TONAL),
-                new M3Button("Archive", M3ButtonVariant.TONAL)
+        M3ButtonGroup connectedSingleSelect = createConnectedToggleButtonGroup(
+                false,
+                "format_align_left",
+                "format_align_center",
+                "format_align_right"
         );
-        connectedTonalGroup.setVariant(M3ButtonGroupVariant.CONNECTED);
-        connectedTonalGroup.setSize(M3ButtonSize.SMALL);
+        connectedSingleSelect.setSize(M3ButtonSize.MEDIUM);
 
-        M3ButtonGroup connectedOutlinedGroup = createButtonGroup(
-                new M3Button("Day", M3ButtonVariant.OUTLINED),
-                new M3Button("Week", M3ButtonVariant.OUTLINED),
-                new M3Button("Month", M3ButtonVariant.OUTLINED)
+        M3ButtonGroup connectedMultiSelect = createConnectedToggleButtonGroup(
+                true,
+                "bold",
+                "italic",
+                "underline"
         );
-        connectedOutlinedGroup.setVariant(M3ButtonGroupVariant.CONNECTED);
-        connectedOutlinedGroup.setSize(M3ButtonSize.SMALL);
+        connectedMultiSelect.setSize(M3ButtonSize.MEDIUM);
 
-        M3Button disabled = new M3Button("Disabled", M3ButtonVariant.FILLED);
-        disabled.setDisable(true);
-        M3ButtonGroup connectedFilledGroup = createButtonGroup(
-                new M3Button("Accept", M3ButtonVariant.FILLED),
-                new M3Button("Review", M3ButtonVariant.FILLED),
-                disabled
+        M3ButtonGroup small = createButtonGroup(
+                new M3Button("Previous", M3ButtonVariant.TONAL),
+                new M3Button("Next", M3ButtonVariant.TONAL)
         );
-        connectedFilledGroup.setVariant(M3ButtonGroupVariant.CONNECTED);
-        connectedFilledGroup.setSize(M3ButtonSize.SMALL);
+        small.setVariant(M3ButtonGroupVariant.STANDARD);
+        small.setSize(M3ButtonSize.SMALL);
 
-        VBox sizeScale = new VBox(12.0);
-        sizeScale.getChildren().addAll(
-                createButtonGroup(
-                        new M3Button("XS", M3ButtonVariant.TONAL),
-                        new M3Button("Group", M3ButtonVariant.TONAL)
-                ),
-                createButtonGroup(
-                        new M3Button("Small", M3ButtonVariant.TONAL),
-                        new M3Button("Group", M3ButtonVariant.TONAL)
-                ),
-                createButtonGroup(
-                        new M3Button("Medium", M3ButtonVariant.TONAL),
-                        new M3Button("Group", M3ButtonVariant.TONAL)
-                ),
-                createButtonGroup(
-                        new M3Button("Large", M3ButtonVariant.TONAL),
-                        new M3Button("Group", M3ButtonVariant.TONAL)
-                ),
-                createButtonGroup(
-                        new M3Button("XL", M3ButtonVariant.TONAL),
-                        new M3Button("Group", M3ButtonVariant.TONAL)
-                )
+        M3ButtonGroup large = createButtonGroup(
+                new M3Button("Decline", M3ButtonVariant.OUTLINED),
+                new M3Button("Accept", M3ButtonVariant.FILLED)
         );
-        for (int index = 0; index < sizeScale.getChildren().size(); index++) {
-            M3ButtonGroup group = (M3ButtonGroup) sizeScale.getChildren().get(index);
-            group.setVariant(M3ButtonGroupVariant.STANDARD);
-            group.setSize(M3ButtonSize.values()[index]);
-        }
+        large.setVariant(M3ButtonGroupVariant.STANDARD);
+        large.setSize(M3ButtonSize.LARGE);
 
         return createGallery(
-                createShowcaseGroup("Standard Group", standardGroup),
-                createShowcaseGroup("Connected Tonal Group", connectedTonalGroup),
-                createShowcaseGroup("Connected Outlined Group", connectedOutlinedGroup),
-                createShowcaseGroup("Connected Filled Group", connectedFilledGroup),
-                createFullWidthShowcaseGroup("Size Scale", sizeScale)
+                createShowcaseGroup("Standard", standardGroup),
+                createShowcaseGroup("Connected Single Select", connectedSingleSelect),
+                createShowcaseGroup("Connected Multi Select", connectedMultiSelect),
+                createShowcaseGroup("Size Scale", small, large)
         );
     }
 
@@ -1074,10 +1049,11 @@ public final class M3FXDemoApp extends Application {
     private Node createExtendedFabsPage() {
         return createGallery(
                 createShowcaseGroup(
-                        "Extended FABs",
-                        createExtendedFab("Create", M3FloatingActionButtonVariant.SURFACE),
-                        createExtendedFab("Compose", M3FloatingActionButtonVariant.PRIMARY),
-                        createExtendedFab("Upload", M3FloatingActionButtonVariant.SECONDARY)
+                        "Color Roles",
+                        createExtendedFab("Create", "add", M3FloatingActionButtonVariant.SURFACE),
+                        createExtendedFab("Compose", "edit", M3FloatingActionButtonVariant.PRIMARY),
+                        createExtendedFab("Upload", "upload", M3FloatingActionButtonVariant.SECONDARY),
+                        createExtendedFab("Favorite", "favorite", M3FloatingActionButtonVariant.TERTIARY)
                 )
         );
     }
@@ -1105,10 +1081,17 @@ public final class M3FXDemoApp extends Application {
     private Node createFloatingActionButtonsPage() {
         return createGallery(
                 createShowcaseGroup(
-                        "Floating Action Buttons",
+                        "Sizes With Icons",
                         createFab("add", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.SMALL),
-                        createFab("add", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.REGULAR),
-                        createFab("spark", M3FloatingActionButtonVariant.TERTIARY, M3FloatingActionButtonSize.LARGE)
+                        createFab("edit", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.REGULAR),
+                        createFab("navigation", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.LARGE)
+                ),
+                createShowcaseGroup(
+                        "Color Roles",
+                        createFab("add", M3FloatingActionButtonVariant.SURFACE, M3FloatingActionButtonSize.REGULAR),
+                        createFab("edit", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.REGULAR),
+                        createFab("share", M3FloatingActionButtonVariant.SECONDARY, M3FloatingActionButtonSize.REGULAR),
+                        createFab("favorite", M3FloatingActionButtonVariant.TERTIARY, M3FloatingActionButtonSize.REGULAR)
                 )
         );
     }
@@ -1587,47 +1570,36 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the chip component page.
     private Node createChipsPage() {
-        M3Chip assist = createChip("Assist", M3ChipVariant.ASSIST, false, false);
-        assist.setGraphic(createNavigationIcon("info"));
-        M3Chip suggestion = createChip("Suggestion", M3ChipVariant.SUGGESTION, false, false);
-        M3Chip input = createChip("Input", M3ChipVariant.INPUT, false, false);
-        M3Chip filter = createChip("Filter", M3ChipVariant.FILTER, false, false);
-        M3Chip selectedFilter = createChip("Selected", M3ChipVariant.FILTER, true, false);
-        M3Chip disabled = createChip("Disabled", M3ChipVariant.ASSIST, false, true);
+        M3Chip assistDirections = createChip("Directions", M3ChipVariant.ASSIST, false, false);
+        assistDirections.setGraphic(createNavigationIcon("navigation"));
+        M3Chip assistCalendar = createChip("Add to calendar", M3ChipVariant.ASSIST, false, false);
+        assistCalendar.setGraphic(createNavigationIcon("calendar"));
+        assistCalendar.setChipStyle(M3ChipStyle.ELEVATED);
+        M3Chip assistDisabled = createChip("Disabled", M3ChipVariant.ASSIST, false, true);
 
-        M3Chip elevatedAssist = createChip("Elevated assist", M3ChipVariant.ASSIST, false, false);
-        elevatedAssist.setChipStyle(M3ChipStyle.ELEVATED);
-        M3Chip elevatedSuggestion = createChip("Elevated suggestion", M3ChipVariant.SUGGESTION, false, false);
-        elevatedSuggestion.setChipStyle(M3ChipStyle.ELEVATED);
-        M3Chip inputWithIcon = createChip("Profile", M3ChipVariant.INPUT, false, false);
-        inputWithIcon.setGraphic(createNavigationIcon("person"));
-        M3Chip selectedInput = createChip("Assigned", M3ChipVariant.INPUT, true, false);
-        selectedInput.setGraphic(createNavigationIcon("check"));
+        M3Chip filterAll = createChip("All", M3ChipVariant.FILTER, true, false);
+        M3Chip filterNearby = createChip("Nearby", M3ChipVariant.FILTER, false, false);
+        M3Chip filterOpen = createChip("Open now", M3ChipVariant.FILTER, true, false);
+        M3ChipGroup filters = createChipGroup(filterAll, filterNearby, filterOpen);
+        filters.setPrefWrapLength(420.0);
 
-        M3ChipGroup multiSelect = createChipGroup(
-                createChip("Work", M3ChipVariant.FILTER, true, false),
-                createChip("Personal", M3ChipVariant.FILTER, false, false),
-                createChip("Travel", M3ChipVariant.FILTER, true, false),
-                createChip("Finance", M3ChipVariant.FILTER, false, false)
-        );
-        multiSelect.setPrefWrapLength(360.0);
+        M3Chip inputPerson = createChip("Alex Morgan", M3ChipVariant.INPUT, false, false);
+        inputPerson.setGraphic(createNavigationIcon("person"));
+        M3Chip inputTeam = createChip("Design team", M3ChipVariant.INPUT, true, false);
+        inputTeam.setGraphic(createNavigationIcon("group"));
+        M3Chip inputDisabled = createChip("Unavailable", M3ChipVariant.INPUT, false, true);
 
-        M3ChipGroup singleSelect = createChipGroup(
-                createChip("All", M3ChipVariant.FILTER, false, false),
-                createChip("Open", M3ChipVariant.FILTER, false, false),
-                createChip("Closed", M3ChipVariant.FILTER, false, false)
-        );
-        singleSelect.setSelectionMode(M3ChipSelectionMode.SINGLE);
-        singleSelect.setAllowEmptySelection(false);
-        singleSelect.selectFirst();
+        M3Chip suggestionReply = createChip("Reply", M3ChipVariant.SUGGESTION, false, false);
+        M3Chip suggestionRemind = createChip("Remind me", M3ChipVariant.SUGGESTION, false, false);
+        suggestionRemind.setGraphic(createNavigationIcon("schedule"));
+        M3Chip suggestionElevated = createChip("View details", M3ChipVariant.SUGGESTION, false, false);
+        suggestionElevated.setChipStyle(M3ChipStyle.ELEVATED);
 
         return createGallery(
-                createShowcaseGroup("Variants", assist, suggestion, input, filter),
-                createShowcaseGroup("Elevated", elevatedAssist, elevatedSuggestion),
-                createShowcaseGroup("Icon Content", inputWithIcon, selectedInput),
-                createShowcaseGroup("States", selectedFilter, disabled),
-                createShowcaseGroup("Multi Select", multiSelect),
-                createShowcaseGroup("Single Select", singleSelect)
+                createShowcaseGroup("Assist Chips", assistDirections, assistCalendar, assistDisabled),
+                createShowcaseGroup("Filter Chips", filters),
+                createShowcaseGroup("Input Chips", inputPerson, inputTeam, inputDisabled),
+                createShowcaseGroup("Suggestion Chips", suggestionReply, suggestionRemind, suggestionElevated)
         );
     }
 
@@ -1841,21 +1813,17 @@ public final class M3FXDemoApp extends Application {
         M3SplitButton disabled = createSplitButton("Disabled", M3ButtonVariant.TONAL);
         disabled.setDisable(true);
 
-        M3SplitButton extraSmall = createSplitButton("XS", M3ButtonVariant.TONAL);
         M3SplitButton small = createSplitButton("Small", M3ButtonVariant.TONAL);
         M3SplitButton medium = createSplitButton("Medium", M3ButtonVariant.TONAL);
         M3SplitButton large = createSplitButton("Large", M3ButtonVariant.TONAL);
-        M3SplitButton extraLarge = createSplitButton("XL", M3ButtonVariant.TONAL);
-        extraSmall.setSize(M3ButtonSize.EXTRA_SMALL);
         small.setSize(M3ButtonSize.SMALL);
         medium.setSize(M3ButtonSize.MEDIUM);
         large.setSize(M3ButtonSize.LARGE);
-        extraLarge.setSize(M3ButtonSize.EXTRA_LARGE);
 
         return createGallery(
-                createShowcaseGroup("Variants", tonal, outlined, filled, elevated),
-                createShowcaseGroup("States", disabled),
-                createShowcaseGroup("Sizes", extraSmall, small, medium, large, extraLarge)
+                createShowcaseGroup("Color Roles", tonal, outlined, filled, elevated),
+                createShowcaseGroup("Disabled", disabled),
+                createShowcaseGroup("Size Scale", small, medium, large)
         );
     }
 
@@ -1965,24 +1933,26 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the navigation component page.
     private Node createNavigationPage() {
-        M3NavigationBar primary = createFourItemNavigationBar();
-        M3NavigationBar compact = createThreeItemNavigationBar();
-        compact.setStyle("-fx-pref-height: 88px; -fx-padding: 0 24px;");
+        M3NavigationBar compact = createFourItemNavigationBar();
+        M3NavigationBar medium = createFourItemNavigationBar();
+        medium.setItemLayout(M3NavigationItemLayout.HORIZONTAL);
+        medium.setMaxWidth(720.0);
 
         return createGallery(
-                createShowcaseGroup("Four Items", primary),
-                createShowcaseGroup("Three Items", compact)
+                createFullWidthShowcaseGroup("Compact Window", compact),
+                createFullWidthShowcaseGroup("Medium Window", medium)
         );
     }
 
     /// Creates the navigation rail component page.
     private Node createNavigationRailPage() {
-        M3NavigationRail primary = createFourItemNavigationRail();
-        M3NavigationRail compact = createThreeItemNavigationRail();
+        M3NavigationRail collapsed = createFourItemNavigationRail();
+        M3NavigationRail expandable = createFourItemNavigationRail();
+        expandable.setExpanded(true);
 
         return createGallery(
-                createShowcaseGroup("Four Items", primary),
-                createShowcaseGroup("Three Items", compact)
+                createShowcaseGroup("Collapsed", createNavigationRailPreview(collapsed)),
+                createShowcaseGroup("Expandable", createNavigationRailPreview(expandable))
         );
     }
 
@@ -3010,7 +2980,7 @@ public final class M3FXDemoApp extends Application {
     }
 
     /// Creates a button group sample with initial buttons.
-    private static M3ButtonGroup createButtonGroup(M3Button... buttons) {
+    private static M3ButtonGroup createButtonGroup(Node... buttons) {
         M3ButtonGroup group = new M3ButtonGroup();
         group.getItems().addAll(buttons);
         return group;
@@ -3550,6 +3520,41 @@ public final class M3FXDemoApp extends Application {
         return group;
     }
 
+    /// Creates a selectable connected icon button group.
+    private static M3ButtonGroup createConnectedToggleButtonGroup(boolean multiple, String... iconNames) {
+        M3ButtonGroup group = new M3ButtonGroup();
+        group.setVariant(M3ButtonGroupVariant.CONNECTED);
+        List<M3IconToggleButton> buttons = new ArrayList<>(iconNames.length);
+        for (int index = 0; index < iconNames.length; index++) {
+            M3IconToggleButton button = createIconToggleButton(
+                    iconNames[index],
+                    M3IconToggleButtonVariant.TONAL,
+                    index == 0 || multiple && index == iconNames.length - 1
+            );
+            buttons.add(button);
+            group.getItems().add(button);
+        }
+        if (!multiple) {
+            for (M3IconToggleButton button : buttons) {
+                button.setOnAction(event -> {
+                    for (M3IconToggleButton candidate : buttons) {
+                        candidate.setSelected(candidate == button);
+                    }
+                });
+            }
+        }
+        return group;
+    }
+
+    /// Creates an interactive collapsed or expanded navigation rail preview.
+    private static VBox createNavigationRailPreview(M3NavigationRail navigationRail) {
+        M3IconButton menuButton = createIconButton("menu");
+        menuButton.setOnAction(event -> navigationRail.setExpanded(!navigationRail.isExpanded()));
+        VBox preview = new VBox(12.0, menuButton, navigationRail);
+        preview.setAlignment(Pos.TOP_LEFT);
+        return preview;
+    }
+
     /// Creates a sample floating action button.
     private static M3FloatingActionButton createFab(
             String iconName,
@@ -3692,8 +3697,15 @@ public final class M3FXDemoApp extends Application {
     }
 
     /// Creates a sample extended floating action button with a variant.
-    private static M3FloatingActionButton createExtendedFab(String text, M3FloatingActionButtonVariant variant) {
-        M3FloatingActionButton button = new M3FloatingActionButton(text);
+    private static M3FloatingActionButton createExtendedFab(
+            String text,
+            String iconName,
+            M3FloatingActionButtonVariant variant
+    ) {
+        M3FloatingActionButton button = new M3FloatingActionButton(
+                text,
+                createIconViewport(DemoIcons.fab(iconName))
+        );
         button.setVariant(variant);
         button.setSize(M3FloatingActionButtonSize.REGULAR);
         return button;

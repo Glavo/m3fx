@@ -18,10 +18,11 @@ import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.Pane;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Badge;
 import org.glavo.m3fx.controls.M3NavigationItem;
+import org.glavo.m3fx.controls.M3NavigationItemLayout;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3FocusRequests;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
@@ -43,7 +44,7 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
     private final M3StateLayer stateLayer = new M3StateLayer();
 
     /// The visual content stack.
-    private final VBox content = new VBox();
+    private final Pane content = new Pane();
 
     /// The icon and selected indicator slot.
     private final StackPane iconContainer = new StackPane();
@@ -68,6 +69,12 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
 
     /// The last shape radius applied to the selected indicator.
     private double appliedIndicatorShape = Double.NaN;
+
+    /// The width currently used by the active indicator and state layer.
+    private double laidOutIndicatorWidth;
+
+    /// The height currently used by the active indicator and state layer.
+    private double laidOutIndicatorHeight;
 
     /// Handles primary mouse presses.
     private final EventHandler<MouseEvent> mousePressedHandler = this::handleMousePressed;
@@ -109,6 +116,10 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
     private final ChangeListener<@Nullable M3Badge> badgeListener =
             (observable, oldValue, newValue) -> updateBadge(newValue);
 
+    /// Requests layout when the icon and label arrangement changes.
+    private final ChangeListener<M3NavigationItemLayout> itemLayoutListener =
+            (observable, oldValue, newValue) -> getSkinnable().requestLayout();
+
     /// Animates the selected indicator when selection changes.
     private final ChangeListener<Boolean> selectedListener =
             (observable, oldValue, newValue) -> animateSelectedIndicator(newValue);
@@ -140,7 +151,7 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
         label.getStyleClass().add("m3-navigation-item-label");
 
         content.setManaged(false);
-        content.setAlignment(Pos.CENTER);
+        iconContainer.setManaged(false);
         iconContainer.setAlignment(Pos.CENTER);
         graphicContainer.setAlignment(Pos.CENTER);
         // Alignment is already resolved to a physical edge, so the container must not mirror it again.
@@ -168,6 +179,7 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
         control.textProperty().addListener(textListener);
         control.graphicProperty().addListener(graphicListener);
         control.badgeProperty().addListener(badgeListener);
+        control.itemLayoutProperty().addListener(itemLayoutListener);
         control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
         control.selectedProperty().addListener(selectedListener);
         control.disabledProperty().addListener(disabledListener);
@@ -183,6 +195,7 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
         item.textProperty().removeListener(textListener);
         item.graphicProperty().removeListener(graphicListener);
         item.badgeProperty().removeListener(badgeListener);
+        item.itemLayoutProperty().removeListener(itemLayoutListener);
         item.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
         motionSettingsObserver.dispose();
         item.selectedProperty().removeListener(selectedListener);
@@ -199,22 +212,100 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
         M3NavigationItem item = getSkinnable();
+        content.resizeRelocate(x, y, width, height);
+        if (item.getItemLayout() == M3NavigationItemLayout.HORIZONTAL) {
+            layoutHorizontalContent(width, height);
+        } else {
+            layoutVerticalContent(width, height);
+        }
+        applyIndicatorShape(item.getIndicatorShape());
+    }
+
+    /// Lays out a compact item with the label below the active indicator.
+    private void layoutVerticalContent(double width, double height) {
+        M3NavigationItem item = getSkinnable();
         double indicatorWidth = item.getIndicatorWidth();
         double indicatorHeight = item.getIndicatorHeight();
-        double indicatorShape = item.getIndicatorShape();
+        double labelWidth = label.isManaged() ? Math.min(width, label.prefWidth(-1.0)) : 0.0;
+        double labelHeight = label.isManaged() ? label.prefHeight(labelWidth) : 0.0;
+        double spacing = label.isManaged() ? item.getContentSpacing() : 0.0;
+        double totalHeight = indicatorHeight + spacing + labelHeight;
+        double indicatorX = snapPositionX((width - indicatorWidth) / 2.0);
+        double indicatorY = snapPositionY((height - totalHeight) / 2.0);
 
-        content.setSpacing(item.getContentSpacing());
-        iconContainer.setMinSize(indicatorWidth, indicatorHeight);
-        iconContainer.setPrefSize(indicatorWidth, indicatorHeight);
-        iconContainer.setMaxSize(indicatorWidth, indicatorHeight);
-        indicator.resizeRelocate(0.0, 0.0, indicatorWidth, indicatorHeight);
-        badgeContainer.resizeRelocate(0.0, 0.0, indicatorWidth, indicatorHeight);
+        layoutIndicator(indicatorX, indicatorY, indicatorWidth, indicatorHeight);
+        graphicContainer.setTranslateX(0.0);
+        layoutBadgeOverGraphic(indicatorWidth / 2.0, indicatorHeight / 2.0);
+        if (label.isManaged()) {
+            label.resizeRelocate(
+                    snapPositionX((width - labelWidth) / 2.0),
+                    snapPositionY(indicatorY + indicatorHeight + spacing),
+                    snapSizeX(labelWidth),
+                    snapSizeY(labelHeight)
+            );
+        }
+    }
+
+    /// Lays out a medium-window item with the icon and label inside one active indicator.
+    private void layoutHorizontalContent(double width, double height) {
+        M3NavigationItem item = getSkinnable();
+        double labelWidth = label.isManaged() ? label.prefWidth(-1.0) : 0.0;
+        double labelHeight = label.isManaged() ? label.prefHeight(labelWidth) : 0.0;
+        double graphicWidth = Math.max(24.0, graphicContainer.prefWidth(-1.0));
+        double spacing = label.isManaged() ? item.getContentSpacing() : 0.0;
+        double combinedWidth = graphicWidth + spacing + labelWidth;
+        double indicatorWidth = Math.max(item.getIndicatorWidth(), combinedWidth + 32.0);
+        double indicatorHeight = item.getIndicatorHeight();
+        double indicatorX = snapPositionX((width - indicatorWidth) / 2.0);
+        double indicatorY = snapPositionY((height - indicatorHeight) / 2.0);
+        double contentStart = (indicatorWidth - combinedWidth) / 2.0;
+        boolean rightToLeft = M3NodeLayout.isRightToLeft(item);
+        double graphicCenterX = rightToLeft
+                ? contentStart + labelWidth + spacing + graphicWidth / 2.0
+                : contentStart + graphicWidth / 2.0;
+        double labelX = rightToLeft
+                ? contentStart
+                : contentStart + graphicWidth + spacing;
+
+        layoutIndicator(indicatorX, indicatorY, indicatorWidth, indicatorHeight);
+        graphicContainer.setTranslateX(graphicCenterX - indicatorWidth / 2.0);
+        layoutBadgeOverGraphic(graphicCenterX, indicatorHeight / 2.0);
+        if (label.isManaged()) {
+            label.resizeRelocate(
+                    snapPositionX(indicatorX + labelX),
+                    snapPositionY(indicatorY + (indicatorHeight - labelHeight) / 2.0),
+                    snapSizeX(labelWidth),
+                    snapSizeY(labelHeight)
+            );
+        }
+    }
+
+    /// Lays out the active indicator, feedback layer, and icon container.
+    private void layoutIndicator(double x, double y, double width, double height) {
+        laidOutIndicatorWidth = width;
+        laidOutIndicatorHeight = height;
+        iconContainer.resizeRelocate(x, y, width, height);
+        indicator.resizeRelocate(0.0, 0.0, width, height);
         layoutStateLayer();
+    }
+
+    /// Positions the badge around the logical trailing top edge of the icon graphic.
+    private void layoutBadgeOverGraphic(double graphicCenterX, double graphicCenterY) {
+        double badgeAnchorSize = 24.0;
+        badgeContainer.resizeRelocate(
+                snapPositionX(graphicCenterX - badgeAnchorSize / 2.0),
+                snapPositionY(graphicCenterY - badgeAnchorSize / 2.0),
+                badgeAnchorSize,
+                badgeAnchorSize
+        );
+    }
+
+    /// Applies the active indicator radius only when its token changes.
+    private void applyIndicatorShape(double indicatorShape) {
         if (Double.compare(appliedIndicatorShape, indicatorShape) != 0) {
             appliedIndicatorShape = indicatorShape;
             indicator.setStyle("-fx-background-radius: " + indicatorShape + "px;");
         }
-        content.resizeRelocate(x, y, width, height);
     }
 
     /// Installs mouse and keyboard behavior handlers.
@@ -364,7 +455,7 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
     private void updateNodeOrientationLayout() {
         badgeContainer.setAlignment(badgeAlignment());
         StackPane.setAlignment(badgeSlot, badgeAlignment());
-        badgeSlot.setTranslateX(M3NodeLayout.isRightToLeft(getSkinnable()) ? 4.0 : -4.0);
+        badgeSlot.setTranslateX(M3NodeLayout.isRightToLeft(getSkinnable()) ? -4.0 : 4.0);
         badgeSlot.setTranslateY(-2.0);
     }
 
@@ -408,12 +499,8 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
     /// Lays out the state layer within the active-indicator container.
     private void layoutStateLayer() {
         M3NavigationItem item = getSkinnable();
-        stateLayer.layoutLayer(
-                0.0,
-                0.0,
-                item.getIndicatorWidth(),
-                item.getIndicatorHeight(),
-                item.getIndicatorShape()
-        );
+        double width = laidOutIndicatorWidth > 0.0 ? laidOutIndicatorWidth : item.getIndicatorWidth();
+        double height = laidOutIndicatorHeight > 0.0 ? laidOutIndicatorHeight : item.getIndicatorHeight();
+        stateLayer.layoutLayer(0.0, 0.0, width, height, item.getIndicatorShape());
     }
 }

@@ -13,6 +13,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
+import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
@@ -55,8 +56,17 @@ public class M3NavigationRail extends Control {
     /// The base style class for M3FX navigation rails.
     public static final String STYLE_CLASS = "m3-navigation-rail";
 
+    /// The expanded pseudo-class used by navigation rail styling.
+    private static final PseudoClass EXPANDED_PSEUDO_CLASS = PseudoClass.getPseudoClass("expanded");
+
     /// The default spacing between navigation rail items.
     private static final double DEFAULT_ITEM_SPACING = 8.0;
+
+    /// The default collapsed navigation rail width.
+    private static final double DEFAULT_COLLAPSED_CONTAINER_WIDTH = 96.0;
+
+    /// The default expanded navigation rail width.
+    private static final double DEFAULT_EXPANDED_CONTAINER_WIDTH = 280.0;
 
     /// The mutable navigation rail content.
     private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
@@ -84,6 +94,24 @@ public class M3NavigationRail extends Control {
 
     // The styleable spacing between navigation item rows.
     private @Nullable StyleableDoubleProperty itemSpacing;
+
+    /// The styleable collapsed navigation rail width.
+    private @Nullable StyleableDoubleProperty collapsedContainerWidth;
+
+    /// The styleable expanded navigation rail width.
+    private @Nullable StyleableDoubleProperty expandedContainerWidth;
+
+    /// Whether the rail presents expanded horizontal destination rows.
+    private final BooleanProperty expanded = new SimpleBooleanProperty(this, "expanded") {
+        /// Updates the visual state and child item layouts.
+        @Override
+        protected void invalidated() {
+            pseudoClassStateChanged(EXPANDED_PSEUDO_CLASS, get());
+            updateItemLayouts();
+            notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
+            requestLayout();
+        }
+    };
 
     // Whether the rail allows all navigation items to be unselected.
     private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection") {
@@ -152,9 +180,26 @@ public class M3NavigationRail extends Control {
         return items;
     }
 
+    /// Returns whether this navigation rail is expanded.
+    ///
+    /// @return true when destination labels are arranged horizontally in an expanded rail
+    public final boolean isExpanded() {
+        return expanded.get();
+    }
 
+    /// Expands or collapses this navigation rail.
+    ///
+    /// @param expanded true to expand the rail, or false to collapse it
+    public final void setExpanded(boolean expanded) {
+        this.expanded.set(expanded);
+    }
 
-
+    /// Returns the expanded state property.
+    ///
+    /// @return the writable expanded state property
+    public final BooleanProperty expandedProperty() {
+        return expanded;
+    }
 
     /// Returns the selected navigation items in child order.
     ///
@@ -309,6 +354,74 @@ public class M3NavigationRail extends Control {
         return itemSpacing;
     }
 
+    /// Returns the collapsed navigation rail width.
+    ///
+    /// @return the collapsed container width in pixels
+    public final double getCollapsedContainerWidth() {
+        return collapsedContainerWidth == null
+                ? DEFAULT_COLLAPSED_CONTAINER_WIDTH
+                : collapsedContainerWidth.get();
+    }
+
+    /// Sets the collapsed navigation rail width.
+    ///
+    /// @param collapsedContainerWidth the collapsed container width in pixels
+    public final void setCollapsedContainerWidth(double collapsedContainerWidth) {
+        collapsedContainerWidthProperty().set(
+                M3Css.nonNegative(collapsedContainerWidth, "collapsedContainerWidth")
+        );
+    }
+
+    /// Returns the collapsed navigation rail width property.
+    ///
+    /// @return the styleable collapsed container width property
+    public final StyleableDoubleProperty collapsedContainerWidthProperty() {
+        if (collapsedContainerWidth == null) {
+            collapsedContainerWidth = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_COLLAPSED_CONTAINER_WIDTH,
+                    this,
+                    "collapsedContainerWidth",
+                    StyleableProperties.COLLAPSED_CONTAINER_WIDTH,
+                    this::requestLayout
+            );
+        }
+        return collapsedContainerWidth;
+    }
+
+    /// Returns the expanded navigation rail width.
+    ///
+    /// @return the expanded container width in pixels
+    public final double getExpandedContainerWidth() {
+        return expandedContainerWidth == null
+                ? DEFAULT_EXPANDED_CONTAINER_WIDTH
+                : expandedContainerWidth.get();
+    }
+
+    /// Sets the expanded navigation rail width.
+    ///
+    /// @param expandedContainerWidth the expanded container width in pixels
+    public final void setExpandedContainerWidth(double expandedContainerWidth) {
+        expandedContainerWidthProperty().set(
+                M3Css.nonNegative(expandedContainerWidth, "expandedContainerWidth")
+        );
+    }
+
+    /// Returns the expanded navigation rail width property.
+    ///
+    /// @return the styleable expanded container width property
+    public final StyleableDoubleProperty expandedContainerWidthProperty() {
+        if (expandedContainerWidth == null) {
+            expandedContainerWidth = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_EXPANDED_CONTAINER_WIDTH,
+                    this,
+                    "expandedContainerWidth",
+                    StyleableProperties.EXPANDED_CONTAINER_WIDTH,
+                    this::requestLayout
+            );
+        }
+        return expandedContainerWidth;
+    }
+
     /// Clears the current selection when empty selection is allowed.
     public final void clearSelection() {
         if (!isAllowEmptySelection()) {
@@ -348,6 +461,7 @@ public class M3NavigationRail extends Control {
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
         return switch (attribute) {
+            case EXPANDED -> isExpanded();
             case ITEM_COUNT -> getItems().size();
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getItems(), parameters);
             case FOCUS_NODE -> M3Accessible.currentOrSelectionFocusTarget(
@@ -459,6 +573,9 @@ public class M3NavigationRail extends Control {
 
     /// Installs a selected-state listener on a navigation item.
     private void installItem(M3NavigationItem item) {
+        item.setItemLayout(isExpanded()
+                ? M3NavigationItemLayout.HORIZONTAL
+                : M3NavigationItemLayout.VERTICAL);
         item.selectedProperty().addListener(selectedInvalidation);
         item.disabledProperty().addListener(reachabilityInvalidation);
         item.visibleProperty().addListener(reachabilityInvalidation);
@@ -469,6 +586,18 @@ public class M3NavigationRail extends Control {
         item.selectedProperty().removeListener(selectedInvalidation);
         item.disabledProperty().removeListener(reachabilityInvalidation);
         item.visibleProperty().removeListener(reachabilityInvalidation);
+    }
+
+    /// Applies the current collapsed or expanded layout to every navigation item child.
+    private void updateItemLayouts() {
+        M3NavigationItemLayout layout = isExpanded()
+                ? M3NavigationItemLayout.HORIZONTAL
+                : M3NavigationItemLayout.VERTICAL;
+        for (Node child : getItems()) {
+            if (child instanceof M3NavigationItem item) {
+                item.setItemLayout(layout);
+            }
+        }
     }
 
     /// Keeps externally changed item selected states mutually exclusive.
@@ -636,12 +765,54 @@ public class M3NavigationRail extends Control {
                     }
                 };
 
+        /// CSS metadata for the collapsed container width token.
+        private static final CssMetaData<M3NavigationRail, Number> COLLAPSED_CONTAINER_WIDTH =
+                new CssMetaData<>(
+                        "-m3-collapsed-container-width",
+                        SizeConverter.getInstance(),
+                        DEFAULT_COLLAPSED_CONTAINER_WIDTH
+                ) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3NavigationRail control) {
+                        return M3Css.isSettable(control.collapsedContainerWidthProperty());
+                    }
+
+                    /// Returns the corresponding styleable property.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3NavigationRail control) {
+                        return control.collapsedContainerWidthProperty();
+                    }
+                };
+
+        /// CSS metadata for the expanded container width token.
+        private static final CssMetaData<M3NavigationRail, Number> EXPANDED_CONTAINER_WIDTH =
+                new CssMetaData<>(
+                        "-m3-expanded-container-width",
+                        SizeConverter.getInstance(),
+                        DEFAULT_EXPANDED_CONTAINER_WIDTH
+                ) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3NavigationRail control) {
+                        return M3Css.isSettable(control.expandedContainerWidthProperty());
+                    }
+
+                    /// Returns the corresponding styleable property.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3NavigationRail control) {
+                        return control.expandedContainerWidthProperty();
+                    }
+                };
+
         /// The complete immutable CSS metadata list.
         private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Control.getClassCssMetaData());
             styleables.add(ITEM_SPACING);
+            styleables.add(COLLAPSED_CONTAINER_WIDTH);
+            styleables.add(EXPANDED_CONTAINER_WIDTH);
             STYLEABLES = Collections.unmodifiableList(styleables);
         }
 
