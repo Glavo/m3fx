@@ -20765,10 +20765,12 @@ final class M3ControlStyleTest {
             assertEquals(determinateBounds.getMaxX(), determinateIndicatorBounds.getMaxX(), 0.0001);
 
             Rectangle indeterminateIndicator = (Rectangle) lookupShape(indeterminateBar, ".bar");
-            double indeterminateWidth = Math.max(24.0, 200.0 * 0.32);
-            double leftToRightX = -indeterminateWidth + (200.0 + indeterminateWidth) * 0.18;
-            assertEquals(indeterminateWidth, indeterminateIndicator.getWidth(), 0.0001);
-            assertEquals(leftToRightX, indeterminateIndicator.getX(), 0.0001);
+            double indeterminateWidth = indeterminateIndicator.getWidth();
+            double leftToRightX = indeterminateIndicator.getX();
+            assertTrue(indeterminateWidth > 0.0);
+            assertTrue(indeterminateWidth <= 200.0);
+            assertTrue(leftToRightX >= 0.0);
+            assertTrue(leftToRightX + indeterminateWidth <= 200.0);
             Bounds indeterminateBounds = indeterminateBar.localToScene(indeterminateBar.getBoundsInLocal());
             Bounds indeterminateIndicatorBounds = indeterminateIndicator.localToScene(indeterminateIndicator.getBoundsInLocal());
             assertEquals(
@@ -20947,6 +20949,7 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable Pane> rootReference = new AtomicReference<>();
         AtomicReference<@Nullable M3ProgressBar> progressBarReference = new AtomicReference<>();
         AtomicReference<@Nullable Rectangle> barReference = new AtomicReference<>();
+        AtomicReference<@Nullable Rectangle> secondaryBarReference = new AtomicReference<>();
         AtomicReference<@Nullable Double> initialX = new AtomicReference<>();
 
         try {
@@ -20954,13 +20957,17 @@ final class M3ControlStyleTest {
                     () -> {
                         @Nullable M3ProgressBar progressBar = progressBarReference.get();
                         @Nullable Rectangle bar = barReference.get();
+                        @Nullable Rectangle secondaryBar = secondaryBarReference.get();
                         @Nullable Double x = initialX.get();
-                        if (progressBar == null || bar == null || x == null) {
+                        if (progressBar == null || bar == null || secondaryBar == null || x == null) {
                             return false;
                         }
 
                         progressBar.layout();
-                        return Math.abs(bar.getX() - x) > 0.1;
+                        return Math.abs(bar.getX() - x) > 0.1
+                                && bar.isVisible()
+                                && secondaryBar.isVisible()
+                                && secondaryBar.getWidth() > 0.0;
                     },
                     () -> {
                         M3ProgressBar progressBar = new M3ProgressBar();
@@ -20981,16 +20988,27 @@ final class M3ControlStyleTest {
                         Rectangle bar = (Rectangle) lookupShape(progressBar, ".bar");
                         progressBarReference.set(progressBar);
                         barReference.set(bar);
+                        secondaryBarReference.set((Rectangle) lookupShape(
+                                progressBar,
+                                ".m3-progress-bar-secondary-bar"
+                        ));
                         initialX.set(bar.getX());
                     },
                     () -> {
                         M3ProgressBar progressBar =
                                 Objects.requireNonNull(progressBarReference.get(), "progressBar");
                         Rectangle bar = Objects.requireNonNull(barReference.get(), "bar");
+                        Rectangle secondaryBar = Objects.requireNonNull(
+                                secondaryBarReference.get(),
+                                "secondaryBar"
+                        );
                         double x = Objects.requireNonNull(initialX.get(), "initialX");
                         progressBar.layout();
 
                         assertTrue(Math.abs(bar.getX() - x) > 0.1);
+                        assertTrue(bar.isVisible());
+                        assertTrue(secondaryBar.isVisible());
+                        assertTrue(secondaryBar.getWidth() > 0.0);
                     }
             );
         } finally {
@@ -21449,8 +21467,8 @@ final class M3ControlStyleTest {
                         progressIndicator.layout();
 
                         assertTrue(Math.abs(indicator.getStartAngle() - startAngle) > 0.1);
-                        assertTrue(indicator.getLength() <= -42.0);
-                        assertTrue(indicator.getLength() >= -96.0);
+                        assertTrue(indicator.getLength() <= -36.0);
+                        assertTrue(indicator.getLength() >= -313.2);
                     }
             );
         } finally {

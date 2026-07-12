@@ -96,7 +96,8 @@ final class M3MotionTest {
         assertEquals(Duration.seconds(5.0), standard.tooltipShowDuration());
         assertEquals(Duration.seconds(10.0), standard.richTooltipShowDuration());
         assertEquals(Duration.millis(200.0), standard.subMenuHoverOpenDelay());
-        assertEquals(Duration.millis(1400.0), standard.linearProgressIndeterminateCycleDuration());
+        assertEquals(Duration.millis(1750.0), standard.linearProgressIndeterminateCycleDuration());
+        assertEquals(Duration.millis(6000.0), standard.circularProgressIndeterminateCycleDuration());
 
         assertEquals(Duration.millis(150.0), expressive.subMenuHoverOpenDelay());
         assertEquals(Duration.millis(150.0), expressive.subMenuHoverCloseDelay());

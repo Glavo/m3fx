@@ -32,11 +32,29 @@ import org.jetbrains.annotations.Nullable;
 /// The default skin for [M3ProgressBar].
 @NotNullByDefault
 public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
-    /// The minimum width used by an indeterminate segment.
-    private static final double MIN_INDETERMINATE_SEGMENT_WIDTH = 24.0;
+    /// The AndroidX Material 3 linear indeterminate cycle duration used to normalize keyframe timings.
+    private static final double LINEAR_INDETERMINATE_REFERENCE_DURATION_MILLIS = 1750.0;
 
-    /// The first visible phase used when indeterminate progress starts.
-    private static final double INDETERMINATE_START_POSITION = 0.18;
+    /// The first active segment head duration.
+    private static final double FIRST_HEAD_DURATION_MILLIS = 1000.0;
+
+    /// The first active segment tail delay.
+    private static final double FIRST_TAIL_DELAY_MILLIS = 250.0;
+
+    /// The first active segment tail duration.
+    private static final double FIRST_TAIL_DURATION_MILLIS = 1000.0;
+
+    /// The second active segment head delay.
+    private static final double SECOND_HEAD_DELAY_MILLIS = 650.0;
+
+    /// The second active segment head duration.
+    private static final double SECOND_HEAD_DURATION_MILLIS = 850.0;
+
+    /// The second active segment tail delay.
+    private static final double SECOND_TAIL_DELAY_MILLIS = 900.0;
+
+    /// The second active segment tail duration.
+    private static final double SECOND_TAIL_DURATION_MILLIS = 850.0;
 
     /// The preferred distance between sampled points in a linear expressive wave.
     private static final double LINEAR_WAVE_SAMPLE_LENGTH = 4.0;
@@ -53,11 +71,20 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     /// The second track rectangle used when a moving wavy segment splits the track.
     private final Rectangle secondaryTrack = new Rectangle();
 
+    /// The third track rectangle needed while both indeterminate segments are visible.
+    private final Rectangle tertiaryTrack = new Rectangle();
+
     /// The progress bar rectangle.
     private final Rectangle bar = new Rectangle();
 
+    /// The second progress rectangle used by indeterminate linear progress.
+    private final Rectangle secondaryBar = new Rectangle();
+
     /// The wavy active progress path used by expressive progress bars.
     private final Path waveBar = new Path();
+
+    /// The second wavy active path used by expressive indeterminate progress.
+    private final Path secondaryWaveBar = new Path();
 
     /// The stop indicator rendered at the end of an expressive progress bar track.
     private final Circle stop = new Circle();
@@ -86,8 +113,20 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     /// The determinate progress transition.
     private final M3DoubleTransition determinateAnimation = new M3DoubleTransition(displayedProgress);
 
-    /// The animated position of the indeterminate segment.
-    private double indeterminatePosition = INDETERMINATE_START_POSITION;
+    /// The first indeterminate segment start fraction.
+    private double firstIndeterminateStart;
+
+    /// The first indeterminate segment end fraction.
+    private double firstIndeterminateEnd;
+
+    /// The second indeterminate segment start fraction.
+    private double secondIndeterminateStart;
+
+    /// The second indeterminate segment end fraction.
+    private double secondIndeterminateEnd;
+
+    /// The current normalized indeterminate cycle fraction used as the expressive wave phase.
+    private double indeterminateCycleFraction;
 
     /// The reusable indeterminate segment transition.
     private final IndeterminateTransition indeterminateAnimation = new IndeterminateTransition();
@@ -118,18 +157,35 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         container.setManaged(false);
         container.setClip(clip);
         track.getStyleClass().add("track");
-        secondaryTrack.getStyleClass().addAll("track", "m3-progress-bar-secondary-track");
+        secondaryTrack.getStyleClass().add("m3-progress-bar-secondary-track");
+        tertiaryTrack.getStyleClass().add("m3-progress-bar-tertiary-track");
         bar.getStyleClass().add("bar");
+        secondaryBar.getStyleClass().add("m3-progress-bar-secondary-bar");
         waveBar.getStyleClass().add("m3-progress-bar-wave");
+        secondaryWaveBar.getStyleClass().add("m3-progress-bar-secondary-wave");
         stop.getStyleClass().add("m3-progress-stop");
         track.setManaged(false);
         secondaryTrack.setManaged(false);
+        tertiaryTrack.setManaged(false);
         bar.setManaged(false);
+        secondaryBar.setManaged(false);
         waveBar.setManaged(false);
+        secondaryWaveBar.setManaged(false);
         stop.setManaged(false);
         waveBar.setFill(null);
+        secondaryWaveBar.setFill(null);
         waveBar.setStrokeLineCap(StrokeLineCap.ROUND);
-        container.getChildren().addAll(track, secondaryTrack, bar, waveBar, stop);
+        secondaryWaveBar.setStrokeLineCap(StrokeLineCap.ROUND);
+        container.getChildren().addAll(
+                track,
+                secondaryTrack,
+                tertiaryTrack,
+                bar,
+                secondaryBar,
+                waveBar,
+                secondaryWaveBar,
+                stop
+        );
         getChildren().setAll(container);
 
         displayedProgress.set(initialDisplayedProgress(control.getProgress()));
@@ -206,23 +262,36 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         }
 
         waveBar.setVisible(false);
+        secondaryWaveBar.setVisible(false);
         double centerY = height / 2.0;
         double effectiveGap = Math.max(0.0, getSkinnable().getTrackGap()) + Math.max(0.0, thickness) / 2.0;
         if (progress == M3ProgressBar.INDETERMINATE_PROGRESS) {
             stop.setVisible(false);
-            double segmentWidth = Math.max(MIN_INDETERMINATE_SEGMENT_WIDTH, width * 0.32);
-            double segmentX = indeterminateSegmentX(width, segmentWidth);
-            double segmentEnd = segmentX + segmentWidth;
-            layoutTrackSegment(track, 0.0, Math.min(width, segmentX - effectiveGap),
-                    centerY, thickness, radius);
-            layoutTrackSegment(secondaryTrack, Math.max(0.0, segmentEnd + effectiveGap),
-                    width - Math.max(0.0, segmentEnd + effectiveGap), centerY, thickness, radius);
-            bar.setVisible(true);
-            layoutRectangle(bar, segmentX, centerY - thickness / 2.0, segmentWidth, thickness, radius);
+            layoutIndeterminateTracks(width, centerY, thickness, radius, effectiveGap);
+            layoutIndeterminateRectangle(
+                    bar,
+                    width,
+                    centerY,
+                    thickness,
+                    radius,
+                    firstIndeterminateStart,
+                    firstIndeterminateEnd
+            );
+            layoutIndeterminateRectangle(
+                    secondaryBar,
+                    width,
+                    centerY,
+                    thickness,
+                    radius,
+                    secondIndeterminateStart,
+                    secondIndeterminateEnd
+            );
             return;
         }
 
         secondaryTrack.setVisible(false);
+        tertiaryTrack.setVisible(false);
+        secondaryBar.setVisible(false);
         double progressWidth = width * displayedProgress.get();
         bar.setVisible(progressWidth > 0.0);
         layoutRectangle(bar, 0.0, centerY - thickness / 2.0, progressWidth, thickness,
@@ -245,25 +314,37 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     ) {
         double centerY = height / 2.0;
         bar.setVisible(false);
+        secondaryBar.setVisible(false);
         waveBar.setVisible(true);
         waveBar.setStrokeWidth(thickness);
+        secondaryWaveBar.setStrokeWidth(thickness);
         double effectiveGap = Math.max(0.0, getSkinnable().getTrackGap()) + Math.max(0.0, thickness) / 2.0;
 
         if (progress == M3ProgressBar.INDETERMINATE_PROGRESS) {
             stop.setVisible(false);
-            double segmentWidth = Math.max(MIN_INDETERMINATE_SEGMENT_WIDTH, width * 0.32);
-            double segmentX = indeterminateSegmentX(width, segmentWidth);
-            double segmentEnd = segmentX + segmentWidth;
-            layoutTrackSegment(track, 0.0, Math.min(width, segmentX - effectiveGap),
-                    centerY, thickness, radius);
-            layoutTrackSegment(secondaryTrack, Math.max(0.0, segmentEnd + effectiveGap),
-                    width - Math.max(0.0, segmentEnd + effectiveGap), centerY, thickness, radius);
-            layoutWavePath(waveBar, segmentX, segmentEnd, centerY, amplitude,
-                    getSkinnable().getWavelength(), indeterminatePosition);
+            layoutIndeterminateTracks(width, centerY, thickness, radius, effectiveGap);
+            layoutIndeterminateWave(
+                    waveBar,
+                    width,
+                    centerY,
+                    amplitude,
+                    firstIndeterminateStart,
+                    firstIndeterminateEnd
+            );
+            layoutIndeterminateWave(
+                    secondaryWaveBar,
+                    width,
+                    centerY,
+                    amplitude,
+                    secondIndeterminateStart,
+                    secondIndeterminateEnd
+            );
             return;
         }
 
         secondaryTrack.setVisible(false);
+        tertiaryTrack.setVisible(false);
+        secondaryWaveBar.setVisible(false);
         double displayed = displayedProgress.get();
         double progressWidth = width * displayed;
         double activeAmplitude = amplitudeForProgress(displayed) * amplitude;
@@ -316,16 +397,35 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
             double wavelength,
             double phase
     ) {
+        layoutWavePath(path, startX, endX, centerY, amplitude, wavelength, phase, 0);
+    }
+
+    /// Lays out a sampled sine-wave path with an optional stable sample count.
+    private static void layoutWavePath(
+            Path path,
+            double startX,
+            double endX,
+            double centerY,
+            double amplitude,
+            double wavelength,
+            double phase,
+            int fixedSteps
+    ) {
+        int steps = fixedSteps > 0
+                ? fixedSteps
+                : Math.max(2, (int) Math.ceil((endX - startX) / LINEAR_WAVE_SAMPLE_LENGTH));
+        ObservableList<PathElement> elements = path.getElements();
+        ensureSampledPathElements(elements, steps + 1);
         if (endX <= startX) {
             path.setVisible(false);
+            for (int i = 0; i <= steps; i++) {
+                setSampledPathPoint(elements.get(i), startX, centerY);
+            }
             return;
         }
 
         path.setVisible(true);
         double safeWavelength = Math.max(1.0, wavelength);
-        int steps = Math.max(2, (int) Math.ceil((endX - startX) / LINEAR_WAVE_SAMPLE_LENGTH));
-        ObservableList<PathElement> elements = path.getElements();
-        ensureSampledPathElements(elements, steps + 1);
         for (int i = 0; i <= steps; i++) {
             double fraction = (double) i / (double) steps;
             double x = startX + (endX - startX) * fraction;
@@ -391,9 +491,179 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
                 Math.min(radius, visibleWidth / 2.0));
     }
 
-    /// Returns the logical x coordinate of the indeterminate segment.
-    private double indeterminateSegmentX(double width, double segmentWidth) {
-        return -segmentWidth + (width + segmentWidth) * indeterminatePosition;
+    /// Lays out the inactive track around up to two visible indeterminate active segments.
+    private void layoutIndeterminateTracks(
+            double width,
+            double centerY,
+            double thickness,
+            double radius,
+            double gap
+    ) {
+        double firstStart = clamp(firstIndeterminateStart) * width;
+        double firstEnd = clamp(firstIndeterminateEnd) * width;
+        double secondStart = clamp(secondIndeterminateStart) * width;
+        double secondEnd = clamp(secondIndeterminateEnd) * width;
+        boolean firstVisible = firstEnd > firstStart;
+        boolean secondVisible = secondEnd > secondStart;
+
+        if (!firstVisible && !secondVisible) {
+            layoutTrackSegment(track, 0.0, width, centerY, thickness, radius);
+            secondaryTrack.setVisible(false);
+            tertiaryTrack.setVisible(false);
+            return;
+        }
+        if (!firstVisible) {
+            firstStart = secondStart;
+            firstEnd = secondEnd;
+            secondVisible = false;
+        } else if (secondVisible && secondStart < firstStart) {
+            double swappedStart = firstStart;
+            double swappedEnd = firstEnd;
+            firstStart = secondStart;
+            firstEnd = secondEnd;
+            secondStart = swappedStart;
+            secondEnd = swappedEnd;
+        }
+
+        if (secondVisible && secondStart <= firstEnd + gap * 2.0) {
+            firstEnd = Math.max(firstEnd, secondEnd);
+            secondVisible = false;
+        }
+
+        layoutTrackSegment(
+                track,
+                0.0,
+                Math.max(0.0, firstStart - gap),
+                centerY,
+                thickness,
+                radius
+        );
+        if (!secondVisible) {
+            double trailingStart = Math.min(width, firstEnd + gap);
+            layoutTrackSegment(
+                    secondaryTrack,
+                    trailingStart,
+                    width - trailingStart,
+                    centerY,
+                    thickness,
+                    radius
+            );
+            tertiaryTrack.setVisible(false);
+            return;
+        }
+
+        double middleStart = Math.min(width, firstEnd + gap);
+        double middleEnd = Math.max(middleStart, secondStart - gap);
+        layoutTrackSegment(
+                secondaryTrack,
+                middleStart,
+                middleEnd - middleStart,
+                centerY,
+                thickness,
+                radius
+        );
+        double trailingStart = Math.min(width, secondEnd + gap);
+        layoutTrackSegment(
+                tertiaryTrack,
+                trailingStart,
+                width - trailingStart,
+                centerY,
+                thickness,
+                radius
+        );
+    }
+
+    /// Lays out one indeterminate active rectangle from normalized endpoints.
+    private static void layoutIndeterminateRectangle(
+            Rectangle rectangle,
+            double width,
+            double centerY,
+            double thickness,
+            double radius,
+            double start,
+            double end
+    ) {
+        double startX = clamp(start) * width;
+        double endX = clamp(end) * width;
+        double segmentWidth = Math.max(0.0, endX - startX);
+        rectangle.setVisible(segmentWidth > 0.0);
+        layoutRectangle(
+                rectangle,
+                startX,
+                centerY - thickness / 2.0,
+                segmentWidth,
+                thickness,
+                Math.min(radius, segmentWidth / 2.0)
+        );
+    }
+
+    /// Lays out one expressive indeterminate active wave from normalized endpoints.
+    private void layoutIndeterminateWave(
+            Path path,
+            double width,
+            double centerY,
+            double amplitude,
+            double start,
+            double end
+    ) {
+        layoutWavePath(
+                path,
+                clamp(start) * width,
+                clamp(end) * width,
+                centerY,
+                amplitude,
+                getSkinnable().getWavelength(),
+                indeterminateCycleFraction,
+                Math.max(2, (int) Math.ceil(width / LINEAR_WAVE_SAMPLE_LENGTH))
+        );
+    }
+
+    /// Resolves one delayed AndroidX keyframe interval using the Material emphasized accelerate easing.
+    private static double timedProgress(double cycleFraction, double delayMillis, double durationMillis) {
+        double elapsedMillis = clamp(cycleFraction) * LINEAR_INDETERMINATE_REFERENCE_DURATION_MILLIS;
+        double intervalFraction = clamp((elapsedMillis - delayMillis) / durationMillis);
+        return M3Motion.EMPHASIZED_ACCELERATE.interpolate(0.0, 1.0, intervalFraction);
+    }
+
+    /// Updates both indeterminate segments for one normalized AndroidX cycle fraction.
+    private void updateIndeterminateSegments(double fraction) {
+        indeterminateCycleFraction = fraction;
+        if (reducedMotion) {
+            firstIndeterminateStart = Math.max(0.0, fraction * 1.32 - 0.32);
+            firstIndeterminateEnd = Math.min(1.0, firstIndeterminateStart + 0.32);
+            secondIndeterminateStart = 0.0;
+            secondIndeterminateEnd = 0.0;
+            return;
+        }
+
+        firstIndeterminateStart = timedProgress(
+                fraction,
+                FIRST_TAIL_DELAY_MILLIS,
+                FIRST_TAIL_DURATION_MILLIS
+        );
+        firstIndeterminateEnd = timedProgress(fraction, 0.0, FIRST_HEAD_DURATION_MILLIS);
+        secondIndeterminateStart = timedProgress(
+                fraction,
+                SECOND_TAIL_DELAY_MILLIS,
+                SECOND_TAIL_DURATION_MILLIS
+        );
+        secondIndeterminateEnd = timedProgress(
+                fraction,
+                SECOND_HEAD_DELAY_MILLIS,
+                SECOND_HEAD_DURATION_MILLIS
+        );
+        if (firstIndeterminateEnd <= firstIndeterminateStart
+                && secondIndeterminateEnd > secondIndeterminateStart) {
+            firstIndeterminateStart = secondIndeterminateStart;
+            firstIndeterminateEnd = secondIndeterminateEnd;
+            secondIndeterminateStart = 0.0;
+            secondIndeterminateEnd = 0.0;
+        }
+    }
+
+    /// Resets both indeterminate segments to a stable visible phase while animation is paused.
+    private void resetIndeterminateSegments() {
+        updateIndeterminateSegments(reducedMotion ? 0.0 : 0.40);
     }
 
     /// Updates determinate or indeterminate animation state for the current progress value.
@@ -405,14 +675,14 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
             determinateAnimation.stop();
             if (shouldPauseActivityAnimations()) {
                 indeterminateAnimation.stop();
-                indeterminatePosition = INDETERMINATE_START_POSITION;
+                resetIndeterminateSegments();
             } else {
                 startIndeterminateAnimation();
             }
             updateAnimatedVisuals();
         } else {
             indeterminateAnimation.stop();
-            indeterminatePosition = INDETERMINATE_START_POSITION;
+            resetIndeterminateSegments();
             animateDisplayedProgress(
                     clamp(progress),
                     animateDeterminateProgress && !shouldPauseActivityAnimations()
@@ -496,12 +766,12 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         /// Updates the primitive segment position and active geometry for one animation pulse.
         @Override
         protected void interpolate(double fraction) {
-            double newPosition = INDETERMINATE_START_POSITION
-                    + (1.0 - INDETERMINATE_START_POSITION) * fraction;
-            if (Double.compare(indeterminatePosition, newPosition) != 0) {
-                indeterminatePosition = newPosition;
-                updateAnimatedVisuals();
+            double shiftedFraction = fraction + 0.40;
+            if (shiftedFraction >= 1.0) {
+                shiftedFraction -= 1.0;
             }
+            updateIndeterminateSegments(shiftedFraction);
+            updateAnimatedVisuals();
         }
     }
 }

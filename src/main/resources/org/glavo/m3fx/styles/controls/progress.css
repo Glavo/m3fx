@@ -9,8 +9,14 @@
 }
 
 .m3-progress-bar.m3-progress-bar .track,
+.m3-progress-bar.m3-progress-bar .m3-progress-bar-secondary-track,
+.m3-progress-bar.m3-progress-bar .m3-progress-bar-tertiary-track,
 .m3-progress-bar.m3-progress-bar:focused .track,
-.m3-progress-bar.m3-progress-bar:indeterminate .track {
+.m3-progress-bar.m3-progress-bar:focused .m3-progress-bar-secondary-track,
+.m3-progress-bar.m3-progress-bar:focused .m3-progress-bar-tertiary-track,
+.m3-progress-bar.m3-progress-bar:indeterminate .track,
+.m3-progress-bar.m3-progress-bar:indeterminate .m3-progress-bar-secondary-track,
+.m3-progress-bar.m3-progress-bar:indeterminate .m3-progress-bar-tertiary-track {
     -fx-fill: -m3-color-secondary-container;
     -fx-arc-width: 4px;
     -fx-arc-height: 4px;
@@ -19,8 +25,11 @@
 }
 
 .m3-progress-bar.m3-progress-bar .bar,
+.m3-progress-bar.m3-progress-bar .m3-progress-bar-secondary-bar,
 .m3-progress-bar.m3-progress-bar:focused .bar,
-.m3-progress-bar.m3-progress-bar:indeterminate .bar {
+.m3-progress-bar.m3-progress-bar:focused .m3-progress-bar-secondary-bar,
+.m3-progress-bar.m3-progress-bar:indeterminate .bar,
+.m3-progress-bar.m3-progress-bar:indeterminate .m3-progress-bar-secondary-bar {
     -fx-fill: -m3-color-primary;
     -fx-arc-width: 4px;
     -fx-arc-height: 4px;
@@ -29,8 +38,11 @@
 }
 
 .m3-progress-bar.m3-progress-bar .m3-progress-bar-wave,
+.m3-progress-bar.m3-progress-bar .m3-progress-bar-secondary-wave,
 .m3-progress-bar.m3-progress-bar:focused .m3-progress-bar-wave,
-.m3-progress-bar.m3-progress-bar:indeterminate .m3-progress-bar-wave {
+.m3-progress-bar.m3-progress-bar:focused .m3-progress-bar-secondary-wave,
+.m3-progress-bar.m3-progress-bar:indeterminate .m3-progress-bar-wave,
+.m3-progress-bar.m3-progress-bar:indeterminate .m3-progress-bar-secondary-wave {
     -fx-fill: transparent;
     -fx-stroke: -m3-color-primary;
     -fx-stroke-width: 4px;

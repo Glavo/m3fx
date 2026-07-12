@@ -4,9 +4,7 @@
 package org.glavo.m3fx.demo;
 
 import javafx.animation.Animation;
-import javafx.animation.Interpolator;
 import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -3826,28 +3824,27 @@ public final class M3FXDemoApp extends Application {
     /// Plays the determinate progress showcase animation.
     private void playProgressShowcaseAnimation(M3ProgressBar progressBar, M3ProgressIndicator progressIndicator) {
         Timeline animation = new Timeline(
-                new KeyFrame(
-                        Duration.ZERO,
-                        new KeyValue(progressBar.progressProperty(), 0.08, Interpolator.EASE_BOTH),
-                        new KeyValue(progressIndicator.progressProperty(), 0.08, Interpolator.EASE_BOTH)
-                ),
-                new KeyFrame(
-                        Duration.seconds(1.8),
-                        new KeyValue(progressBar.progressProperty(), 0.86, Interpolator.EASE_BOTH),
-                        new KeyValue(progressIndicator.progressProperty(), 0.86, Interpolator.EASE_BOTH)
-                ),
-                new KeyFrame(
-                        Duration.seconds(3.2),
-                        new KeyValue(progressBar.progressProperty(), 0.24, Interpolator.EASE_BOTH),
-                        new KeyValue(progressIndicator.progressProperty(), 0.24, Interpolator.EASE_BOTH)
-                ),
-                new KeyFrame(
-                        Duration.seconds(4.6),
-                        new KeyValue(progressBar.progressProperty(), 0.68, Interpolator.EASE_BOTH),
-                        new KeyValue(progressIndicator.progressProperty(), 0.68, Interpolator.EASE_BOTH)
-                )
+                new KeyFrame(Duration.ZERO, event -> {
+                    progressBar.setProgress(0.08);
+                    progressIndicator.setProgress(0.08);
+                }),
+                new KeyFrame(Duration.seconds(1.4), event -> {
+                    progressBar.setProgress(0.86);
+                    progressIndicator.setProgress(0.86);
+                }),
+                new KeyFrame(Duration.seconds(2.8), event -> {
+                    progressBar.setProgress(0.24);
+                    progressIndicator.setProgress(0.24);
+                }),
+                new KeyFrame(Duration.seconds(4.2), event -> {
+                    progressBar.setProgress(0.68);
+                    progressIndicator.setProgress(0.68);
+                }),
+                new KeyFrame(Duration.seconds(5.6), event -> {
+                    progressBar.setProgress(0.08);
+                    progressIndicator.setProgress(0.08);
+                })
         );
-        animation.setAutoReverse(true);
         animation.setCycleCount(Animation.INDEFINITE);
         animations.add(animation);
         if (animationsEnabled) {

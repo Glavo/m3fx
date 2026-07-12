@@ -32,17 +32,29 @@ import org.jetbrains.annotations.Nullable;
 /// The default skin for [M3ProgressIndicator].
 @NotNullByDefault
 public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
-    /// The shortest visible sweep used by indeterminate progress.
-    private static final double INDETERMINATE_MIN_SWEEP = 42.0;
+    /// The AndroidX Material 3 circular indeterminate cycle duration used to normalize keyframe timings.
+    private static final double CIRCULAR_INDETERMINATE_REFERENCE_DURATION_MILLIS = 6000.0;
 
-    /// The longest visible sweep used by indeterminate progress.
-    private static final double INDETERMINATE_MAX_SWEEP = 96.0;
+    /// The global rotation completed during one AndroidX circular indeterminate cycle.
+    private static final double CIRCULAR_GLOBAL_ROTATION_DEGREES = 1080.0;
 
-    /// The fixed sweep used by reduced indeterminate progress.
-    private static final double BASIC_INDETERMINATE_SWEEP = 72.0;
+    /// The delay between additional quarter-turn pulses.
+    private static final double CIRCULAR_ADDITIONAL_ROTATION_DELAY_MILLIS = 1500.0;
 
-    /// The phase used at both ends of an indeterminate progress cycle.
-    private static final double INDETERMINATE_START_PHASE = 0.0;
+    /// The duration of each additional quarter-turn pulse.
+    private static final double CIRCULAR_ADDITIONAL_ROTATION_DURATION_MILLIS = 300.0;
+
+    /// The additional rotation contributed by each pulse.
+    private static final double CIRCULAR_ADDITIONAL_ROTATION_DEGREES = 90.0;
+
+    /// The shortest active sweep fraction used by full circular motion.
+    private static final double INDETERMINATE_MIN_SWEEP_FRACTION = 0.10;
+
+    /// The longest active sweep fraction used by full circular motion.
+    private static final double INDETERMINATE_MAX_SWEEP_FRACTION = 0.87;
+
+    /// The fixed sweep fraction used by reduced indeterminate progress.
+    private static final double BASIC_INDETERMINATE_SWEEP_FRACTION = 0.20;
 
     /// The fixed sample count for circular inactive track paths.
     private static final int CIRCULAR_TRACK_SAMPLE_STEPS = 72;
@@ -86,8 +98,14 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
     /// The determinate progress transition.
     private final M3DoubleTransition determinateAnimation = new M3DoubleTransition(displayedProgress);
 
-    /// The animated phase used by indeterminate progress.
-    private double indeterminatePhase = INDETERMINATE_START_PHASE;
+    /// The animated active arc start fraction.
+    private double indeterminateStartFraction;
+
+    /// The animated active arc sweep fraction.
+    private double indeterminateSweepFraction = INDETERMINATE_MIN_SWEEP_FRACTION;
+
+    /// The current normalized indeterminate cycle fraction used as the expressive wave phase.
+    private double indeterminateCycleFraction;
 
     /// The reusable indeterminate phase transition.
     private final IndeterminateTransition indeterminateAnimation = new IndeterminateTransition();
@@ -224,11 +242,8 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
 
         double progress = progressIndicator.getProgress();
         if (progress == M3ProgressIndicator.INDETERMINATE_PROGRESS) {
-            double sweepFraction = indeterminateSweep(
-                    indeterminatePhase,
-                    !reducedMotion
-            ) / 360.0;
-            double start = indeterminatePhase;
+            double sweepFraction = indeterminateSweepFraction;
+            double start = indeterminateStartFraction;
             layoutCircularTrackPath(waveTrack, centerX, centerY, radius, strokeWidth, start, start + sweepFraction);
             layoutCircularWavePath(
                     waveIndicator,
@@ -239,7 +254,7 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
                     progressIndicator.getWavelength(),
                     start,
                     start + sweepFraction,
-                    indeterminatePhase
+                    indeterminateCycleFraction
             );
             return;
         }
@@ -263,14 +278,10 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
     private void updateIndicatorArc() {
         double progress = getSkinnable().getProgress();
         if (progress == M3ProgressIndicator.INDETERMINATE_PROGRESS) {
-            double phase = indeterminatePhase;
-            double sweep = indeterminateSweep(
-                    phase,
-                    !reducedMotion
-            );
-            indicator.setStartAngle(90.0 - 360.0 * phase);
-            indicator.setLength(-sweep);
-            updateTrackArc(phase, phase + sweep / 360.0);
+            double start = indeterminateStartFraction;
+            indicator.setStartAngle(90.0 - 360.0 * start);
+            indicator.setLength(-360.0 * indeterminateSweepFraction);
+            updateTrackArc(start, start + indeterminateSweepFraction);
             return;
         }
 
@@ -306,14 +317,14 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
             determinateAnimation.stop();
             if (shouldPauseActivityAnimations()) {
                 indeterminateAnimation.stop();
-                indeterminatePhase = INDETERMINATE_START_PHASE;
+                resetIndeterminateGeometry();
             } else {
                 startIndeterminateAnimation();
             }
             updateAnimatedVisuals();
         } else {
             indeterminateAnimation.stop();
-            indeterminatePhase = INDETERMINATE_START_PHASE;
+            resetIndeterminateGeometry();
             animateDisplayedProgress(
                     clamp(progress),
                     animateDeterminateProgress && !shouldPauseActivityAnimations()
@@ -355,15 +366,58 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         return progress == M3ProgressIndicator.INDETERMINATE_PROGRESS ? 0.0 : clamp(progress);
     }
 
-    /// Returns the animated sweep for an indeterminate progress phase.
-    private static double indeterminateSweep(double phase, boolean fullMotion) {
-        if (!fullMotion) {
-            return BASIC_INDETERMINATE_SWEEP;
+    /// Updates circular indeterminate geometry from the AndroidX global, additional, and sweep animations.
+    private void updateIndeterminateGeometry(double cycleFraction) {
+        indeterminateCycleFraction = cycleFraction;
+        if (reducedMotion) {
+            indeterminateStartFraction = cycleFraction;
+            indeterminateSweepFraction = BASIC_INDETERMINATE_SWEEP_FRACTION;
+            return;
         }
 
-        double wave = 0.5 - Math.cos(phase * Math.PI * 2.0) / 2.0;
-        return INDETERMINATE_MIN_SWEEP
-                + (INDETERMINATE_MAX_SWEEP - INDETERMINATE_MIN_SWEEP) * wave;
+        double globalRotation = CIRCULAR_GLOBAL_ROTATION_DEGREES * cycleFraction;
+        double additionalRotation = additionalRotationDegrees(cycleFraction);
+        indeterminateStartFraction = (globalRotation + additionalRotation) / 360.0;
+
+        if (cycleFraction < 0.5) {
+            double localFraction = cycleFraction * 2.0;
+            indeterminateSweepFraction = M3Motion.STANDARD.interpolate(
+                    INDETERMINATE_MIN_SWEEP_FRACTION,
+                    INDETERMINATE_MAX_SWEEP_FRACTION,
+                    localFraction
+            );
+        } else {
+            double localFraction = (cycleFraction - 0.5) * 2.0;
+            indeterminateSweepFraction = M3Motion.STANDARD.interpolate(
+                    INDETERMINATE_MAX_SWEEP_FRACTION,
+                    INDETERMINATE_MIN_SWEEP_FRACTION,
+                    localFraction
+            );
+        }
+    }
+
+    /// Returns the stepped additional rotation used by AndroidX circular indeterminate progress.
+    private static double additionalRotationDegrees(double cycleFraction) {
+        double elapsedMillis = clamp(cycleFraction) * CIRCULAR_INDETERMINATE_REFERENCE_DURATION_MILLIS;
+        int pulseIndex = Math.min(
+                3,
+                (int) (elapsedMillis / CIRCULAR_ADDITIONAL_ROTATION_DELAY_MILLIS)
+        );
+        double pulseStartMillis = pulseIndex * CIRCULAR_ADDITIONAL_ROTATION_DELAY_MILLIS;
+        double localFraction = clamp(
+                (elapsedMillis - pulseStartMillis) / CIRCULAR_ADDITIONAL_ROTATION_DURATION_MILLIS
+        );
+        double easedPulse = M3Motion.EMPHASIZED_DECELERATE.interpolate(0.0, 1.0, localFraction);
+        return (pulseIndex + easedPulse) * CIRCULAR_ADDITIONAL_ROTATION_DEGREES;
+    }
+
+    /// Resets circular indeterminate geometry to the seamless cycle origin.
+    private void resetIndeterminateGeometry() {
+        indeterminateStartFraction = 0.0;
+        indeterminateSweepFraction = reducedMotion
+                ? BASIC_INDETERMINATE_SWEEP_FRACTION
+                : INDETERMINATE_MIN_SWEEP_FRACTION;
+        indeterminateCycleFraction = 0.0;
     }
 
     /// Returns the resolved active wave amplitude for a determinate progress value.
@@ -540,10 +594,8 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         /// Updates the primitive phase and active geometry for one animation pulse.
         @Override
         protected void interpolate(double fraction) {
-            if (Double.compare(indeterminatePhase, fraction) != 0) {
-                indeterminatePhase = fraction;
-                updateAnimatedVisuals();
-            }
+            updateIndeterminateGeometry(fraction);
+            updateAnimatedVisuals();
         }
     }
 }

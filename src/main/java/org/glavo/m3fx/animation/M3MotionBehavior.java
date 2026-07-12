@@ -149,8 +149,8 @@ public sealed interface M3MotionBehavior permits M3MotionBehaviorImpl {
                 M3Motion.SHORT4,
                 Duration.millis(1000.0),
                 M3Motion.SHORT4,
-                Duration.millis(1400.0),
-                Duration.millis(1332.0),
+                Duration.millis(1750.0),
+                Duration.millis(6000.0),
                 Duration.millis(650.0),
                 Duration.millis(4666.0)
         );
@@ -169,8 +169,8 @@ public sealed interface M3MotionBehavior permits M3MotionBehaviorImpl {
                 M3Motion.SHORT3,
                 Duration.millis(900.0),
                 M3Motion.SHORT3,
-                Duration.millis(1400.0),
-                Duration.millis(1332.0),
+                Duration.millis(1750.0),
+                Duration.millis(6000.0),
                 Duration.millis(650.0),
                 Duration.millis(4666.0)
         );
