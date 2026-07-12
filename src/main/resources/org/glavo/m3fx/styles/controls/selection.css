@@ -87,7 +87,7 @@
 
 .m3-checkbox .box,
 .m3-checkbox:hover .box,
-.m3-checkbox:focused .box,
+.m3-checkbox:focus-visible .box,
 .m3-checkbox:armed .box,
 .m3-checkbox:pressed .box {
     -fx-background-color: transparent;
@@ -100,7 +100,7 @@
 }
 
 .m3-checkbox:hover .box,
-.m3-checkbox:focused .box,
+.m3-checkbox:focus-visible .box,
 .m3-checkbox:armed .box,
 .m3-checkbox:pressed .box {
     -fx-border-color: -m3-color-on-surface;
@@ -108,12 +108,12 @@
 
 .m3-checkbox:selected .box,
 .m3-checkbox:selected:hover .box,
-.m3-checkbox:selected:focused .box,
+.m3-checkbox:selected:focus-visible .box,
 .m3-checkbox:selected:armed .box,
 .m3-checkbox:selected:pressed .box,
 .m3-checkbox:indeterminate .box,
 .m3-checkbox:indeterminate:hover .box,
-.m3-checkbox:indeterminate:focused .box,
+.m3-checkbox:indeterminate:focus-visible .box,
 .m3-checkbox:indeterminate:armed .box,
 .m3-checkbox:indeterminate:pressed .box {
     -fx-background-color: -m3-color-primary;
@@ -122,7 +122,7 @@
 
 .m3-checkbox .mark,
 .m3-checkbox:hover .mark,
-.m3-checkbox:focused .mark,
+.m3-checkbox:focus-visible .mark,
 .m3-checkbox:armed .mark,
 .m3-checkbox:pressed .mark {
     -fx-background-color: transparent;
@@ -132,12 +132,12 @@
 
 .m3-checkbox:selected .mark,
 .m3-checkbox:selected:hover .mark,
-.m3-checkbox:selected:focused .mark,
+.m3-checkbox:selected:focus-visible .mark,
 .m3-checkbox:selected:armed .mark,
 .m3-checkbox:selected:pressed .mark,
 .m3-checkbox:indeterminate .mark,
 .m3-checkbox:indeterminate:hover .mark,
-.m3-checkbox:indeterminate:focused .mark,
+.m3-checkbox:indeterminate:focus-visible .mark,
 .m3-checkbox:indeterminate:armed .mark,
 .m3-checkbox:indeterminate:pressed .mark {
     -fx-background-color: -m3-color-on-primary;
@@ -145,7 +145,7 @@
 
 .m3-checkbox:indeterminate .mark,
 .m3-checkbox:indeterminate:hover .mark,
-.m3-checkbox:indeterminate:focused .mark,
+.m3-checkbox:indeterminate:focus-visible .mark,
 .m3-checkbox:indeterminate:armed .mark,
 .m3-checkbox:indeterminate:pressed .mark {
     -fx-shape: "M 3 8 L 15 8 L 15 10 L 3 10 Z";
@@ -153,7 +153,7 @@
 
 .m3-radio-button .radio,
 .m3-radio-button:hover .radio,
-.m3-radio-button:focused .radio,
+.m3-radio-button:focus-visible .radio,
 .m3-radio-button:armed .radio,
 .m3-radio-button:pressed .radio {
     -fx-background-color: transparent;
@@ -163,7 +163,7 @@
 
 .m3-radio-button .radio .ring,
 .m3-radio-button:hover .radio .ring,
-.m3-radio-button:focused .radio .ring,
+.m3-radio-button:focus-visible .radio .ring,
 .m3-radio-button:armed .radio .ring,
 .m3-radio-button:pressed .radio .ring {
     -fx-fill: transparent;
@@ -172,7 +172,7 @@
 }
 
 .m3-radio-button:hover .radio .ring,
-.m3-radio-button:focused .radio .ring,
+.m3-radio-button:focus-visible .radio .ring,
 .m3-radio-button:armed .radio .ring,
 .m3-radio-button:pressed .radio .ring {
     -fx-stroke: -m3-color-on-surface;
@@ -180,7 +180,7 @@
 
 .m3-radio-button:selected .radio .ring,
 .m3-radio-button:selected:hover .radio .ring,
-.m3-radio-button:selected:focused .radio .ring,
+.m3-radio-button:selected:focus-visible .radio .ring,
 .m3-radio-button:selected:armed .radio .ring,
 .m3-radio-button:selected:pressed .radio .ring {
     -fx-stroke: -m3-color-primary;
@@ -188,7 +188,7 @@
 
 .m3-radio-button .radio .dot,
 .m3-radio-button:hover .radio .dot,
-.m3-radio-button:focused .radio .dot,
+.m3-radio-button:focus-visible .radio .dot,
 .m3-radio-button:armed .radio .dot,
 .m3-radio-button:pressed .radio .dot {
     -fx-fill: transparent;
@@ -198,7 +198,7 @@
 
 .m3-radio-button:selected .radio .dot,
 .m3-radio-button:selected:hover .radio .dot,
-.m3-radio-button:selected:focused .radio .dot,
+.m3-radio-button:selected:focus-visible .radio .dot,
 .m3-radio-button:selected:armed .radio .dot,
 .m3-radio-button:selected:pressed .radio .dot {
     -fx-fill: -m3-color-primary;
@@ -206,7 +206,7 @@
 
 .m3-switch .box,
 .m3-switch:hover .box,
-.m3-switch:focused .box,
+.m3-switch:focus-visible .box,
 .m3-switch:armed .box,
 .m3-switch:pressed .box {
     -fx-background-color: -m3-color-surface-container-highest;
@@ -220,7 +220,7 @@
 
 .m3-switch:selected .box,
 .m3-switch:selected:hover .box,
-.m3-switch:selected:focused .box,
+.m3-switch:selected:focus-visible .box,
 .m3-switch:selected:armed .box,
 .m3-switch:selected:pressed .box {
     -fx-background-color: -m3-color-primary;
@@ -229,7 +229,7 @@
 
 .m3-switch .thumb,
 .m3-switch:hover .thumb,
-.m3-switch:focused .thumb,
+.m3-switch:focus-visible .thumb,
 .m3-switch:armed .thumb,
 .m3-switch:pressed .thumb {
     -fx-background-color: -m3-color-outline;
@@ -238,7 +238,7 @@
 }
 
 .m3-switch:hover .thumb,
-.m3-switch:focused .thumb,
+.m3-switch:focus-visible .thumb,
 .m3-switch:armed .thumb,
 .m3-switch:pressed .thumb {
     -fx-background-color: -m3-color-on-surface-variant;
@@ -249,7 +249,7 @@
 }
 
 .m3-switch:selected:hover .thumb,
-.m3-switch:selected:focused .thumb,
+.m3-switch:selected:focus-visible .thumb,
 .m3-switch:selected:armed .thumb,
 .m3-switch:selected:pressed .thumb {
     -fx-background-color: -m3-color-primary-container;
@@ -279,7 +279,7 @@
 
 .m3-checkbox:disabled .box,
 .m3-checkbox:disabled:hover .box,
-.m3-checkbox:disabled:focused .box,
+.m3-checkbox:disabled:focus-visible .box,
 .m3-checkbox:disabled:armed .box,
 .m3-checkbox:disabled:pressed .box {
     -fx-border-color: -m3-color-on-surface;
@@ -288,12 +288,12 @@
 
 .m3-checkbox:selected:disabled .box,
 .m3-checkbox:selected:disabled:hover .box,
-.m3-checkbox:selected:disabled:focused .box,
+.m3-checkbox:selected:disabled:focus-visible .box,
 .m3-checkbox:selected:disabled:armed .box,
 .m3-checkbox:selected:disabled:pressed .box,
 .m3-checkbox:indeterminate:disabled .box,
 .m3-checkbox:indeterminate:disabled:hover .box,
-.m3-checkbox:indeterminate:disabled:focused .box,
+.m3-checkbox:indeterminate:disabled:focus-visible .box,
 .m3-checkbox:indeterminate:disabled:armed .box,
 .m3-checkbox:indeterminate:disabled:pressed .box {
     -fx-background-color: -m3-color-on-surface;
@@ -303,12 +303,12 @@
 
 .m3-checkbox:selected:disabled .mark,
 .m3-checkbox:selected:disabled:hover .mark,
-.m3-checkbox:selected:disabled:focused .mark,
+.m3-checkbox:selected:disabled:focus-visible .mark,
 .m3-checkbox:selected:disabled:armed .mark,
 .m3-checkbox:selected:disabled:pressed .mark,
 .m3-checkbox:indeterminate:disabled .mark,
 .m3-checkbox:indeterminate:disabled:hover .mark,
-.m3-checkbox:indeterminate:disabled:focused .mark,
+.m3-checkbox:indeterminate:disabled:focus-visible .mark,
 .m3-checkbox:indeterminate:disabled:armed .mark,
 .m3-checkbox:indeterminate:disabled:pressed .mark {
     -fx-background-color: -m3-color-surface;
@@ -316,7 +316,7 @@
 
 .m3-radio-button:disabled .radio .ring,
 .m3-radio-button:disabled:hover .radio .ring,
-.m3-radio-button:disabled:focused .radio .ring,
+.m3-radio-button:disabled:focus-visible .radio .ring,
 .m3-radio-button:disabled:armed .radio .ring,
 .m3-radio-button:disabled:pressed .radio .ring {
     -fx-stroke: -m3-color-on-surface;
@@ -325,7 +325,7 @@
 
 .m3-radio-button:selected:disabled .radio .dot,
 .m3-radio-button:selected:disabled:hover .radio .dot,
-.m3-radio-button:selected:disabled:focused .radio .dot,
+.m3-radio-button:selected:disabled:focus-visible .radio .dot,
 .m3-radio-button:selected:disabled:armed .radio .dot,
 .m3-radio-button:selected:disabled:pressed .radio .dot {
     -fx-fill: -m3-color-on-surface;
@@ -334,7 +334,7 @@
 
 .m3-switch:disabled .box,
 .m3-switch:disabled:hover .box,
-.m3-switch:disabled:focused .box,
+.m3-switch:disabled:focus-visible .box,
 .m3-switch:disabled:armed .box,
 .m3-switch:disabled:pressed .box {
     -fx-background-color: -m3-color-surface-container-highest;
@@ -344,7 +344,7 @@
 
 .m3-switch:selected:disabled .box,
 .m3-switch:selected:disabled:hover .box,
-.m3-switch:selected:disabled:focused .box,
+.m3-switch:selected:disabled:focus-visible .box,
 .m3-switch:selected:disabled:armed .box,
 .m3-switch:selected:disabled:pressed .box {
     -fx-background-color: -m3-color-on-surface;
@@ -353,7 +353,7 @@
 
 .m3-switch:disabled .thumb,
 .m3-switch:disabled:hover .thumb,
-.m3-switch:disabled:focused .thumb,
+.m3-switch:disabled:focus-visible .thumb,
 .m3-switch:disabled:armed .thumb,
 .m3-switch:disabled:pressed .thumb {
     -fx-background-color: -m3-color-on-surface;
@@ -362,7 +362,7 @@
 
 .m3-switch:selected:disabled .thumb,
 .m3-switch:selected:disabled:hover .thumb,
-.m3-switch:selected:disabled:focused .thumb,
+.m3-switch:selected:disabled:focus-visible .thumb,
 .m3-switch:selected:disabled:armed .thumb,
 .m3-switch:selected:disabled:pressed .thumb {
     -fx-background-color: -m3-color-surface;

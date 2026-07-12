@@ -19016,7 +19016,7 @@ final class M3ControlStyleTest {
         assertEquals(Color.rgb(7, 8, 9), radioRing.getStroke());
 
         checkBox.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
-        radioButton.pseudoClassStateChanged(PseudoClass.getPseudoClass("focused"), true);
+        radioButton.pseudoClassStateChanged(PseudoClass.getPseudoClass("focus-visible"), true);
         root.applyCss();
         assertBorderColor(checkBoxContainer, Color.rgb(4, 5, 6));
         assertEquals(Color.rgb(4, 5, 6), radioRing.getStroke());
@@ -19561,6 +19561,35 @@ final class M3ControlStyleTest {
 
         assertEquals(16.0, offThumb.getWidth(), 0.0001);
         assertEquals(24.0, onThumb.getWidth(), 0.0001);
+    }
+
+    /// Verifies that ordinary pointer focus does not retain the switch focus-state handle color.
+    @Test
+    void switchSelectedHandleUsesFocusVisibleInsteadOfOrdinaryFocus() {
+        M3Switch switchControl = createSwitch("On", true);
+        Pane root = new Pane(switchControl);
+        root.setStyle(buttonStateTestColors());
+        Scene scene = new Scene(root, 180.0, 80.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        switchControl.resize(120.0, 48.0);
+        switchControl.layout();
+
+        Region thumb = lookupRegion(switchControl, ".thumb");
+        Paint selectedHandleColor = thumb.getBackground().getFills().get(0).getFill();
+
+        switchControl.pseudoClassStateChanged(PseudoClass.getPseudoClass("focused"), true);
+        root.applyCss();
+
+        assertEquals(selectedHandleColor, thumb.getBackground().getFills().get(0).getFill(),
+                "ordinary focus retained after a pointer click must keep the selected handle color");
+
+        switchControl.pseudoClassStateChanged(PseudoClass.getPseudoClass("focus-visible"), true);
+        root.applyCss();
+
+        assertFalse(selectedHandleColor.equals(thumb.getBackground().getFills().get(0).getFill()),
+                "keyboard-visible focus must use the selected focus-state handle color");
     }
 
     /// Verifies that the switch hover state renders circular thumb feedback in snapshots.
