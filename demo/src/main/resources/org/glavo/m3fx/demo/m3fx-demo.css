@@ -276,6 +276,34 @@
     -fx-fill: -m3-color-inverse-on-surface;
 }
 
+.m3-icon-toggle-button .demo-vector-icon {
+    -fx-fill: -m3-color-on-surface-variant;
+}
+
+.m3-icon-toggle-button:selected .demo-vector-icon {
+    -fx-fill: -m3-color-primary;
+}
+
+.m3-icon-toggle-button.m3-filled-icon-toggle-button:selected .demo-vector-icon {
+    -fx-fill: -m3-color-on-primary;
+}
+
+.m3-icon-toggle-button.m3-tonal-icon-toggle-button .demo-vector-icon {
+    -fx-fill: -m3-color-on-secondary-container;
+}
+
+.m3-icon-toggle-button.m3-tonal-icon-toggle-button:selected .demo-vector-icon {
+    -fx-fill: -m3-color-on-secondary;
+}
+
+.m3-icon-toggle-button.m3-outlined-icon-toggle-button:selected .demo-vector-icon {
+    -fx-fill: -m3-color-inverse-on-surface;
+}
+
+.m3-icon-toggle-button:disabled .demo-vector-icon {
+    -fx-fill: -m3-color-on-surface;
+}
+
 .demo-vector-icon-viewport {
     -fx-min-width: 24px;
     -fx-min-height: 24px;

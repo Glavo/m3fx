@@ -1763,6 +1763,11 @@ final class M3FXDemoVisualSmokeTest {
                                 "icon-buttons-toggle-states.png"
                         ));
                         assertSnapshotHasVisibleContent(sectionImage, "Icon Buttons toggle section");
+                        assertDemoIconToggleColors(
+                                toggles,
+                                Objects.requireNonNull(M3ThemeManager.getTheme(scene), "Icon Buttons page theme"),
+                                "Icon Buttons"
+                        );
 
                         for (int index = 0; index < toggles.size(); index++) {
                             M3IconToggleButton toggle = toggles.get(index);
@@ -10753,13 +10758,7 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies that a demo icon viewport renders visible pixels around the viewport center.
     private static void assertVectorIconPixelsCenteredInViewport(Node viewport, String description) {
         WritableImage image = snapshotNode(viewport);
-        Color background = image.getPixelReader().getColor(0, 0);
-        Rectangle2D pixels = contrastingPixelBounds(
-                image,
-                background,
-                0.02,
-                description + " rendered icon"
-        );
+        Rectangle2D pixels = opaquePixelBounds(image, description + " rendered icon");
         double centerX = pixels.getMinX() + pixels.getWidth() / 2.0;
         double centerY = pixels.getMinY() + pixels.getHeight() / 2.0;
         double expectedCenterX = image.getWidth() / 2.0;
@@ -13174,7 +13173,44 @@ final class M3FXDemoVisualSmokeTest {
         assertIconToggleButtonSizeCount(toggles, M3ButtonSize.EXTRA_LARGE, 1, "Icon Buttons");
         assertIconToggleButtonWidthCount(toggles, M3IconButtonWidth.WIDE, 2, "Icon Buttons");
         assertIconToggleButtonShapeCount(toggles, M3ButtonShape.SQUARE, 2, "Icon Buttons");
+        M3Theme pageTheme = Objects.requireNonNull(
+                M3ThemeManager.getTheme(scene),
+                "Icon Buttons page theme"
+        );
+        assertDemoIconToggleColors(toggles, pageTheme, "Icon Buttons");
         assertDemoVectorIcons(page, "Icon Buttons", 30);
+    }
+
+    /// Verifies that demo SVG toggle icons resolve the component's variant and selection color token.
+    private static void assertDemoIconToggleColors(
+            List<M3IconToggleButton> toggles,
+            M3Theme theme,
+            String description
+    ) {
+        for (M3IconToggleButton toggle : toggles) {
+            SVGPath icon = assertInstanceOf(
+                    SVGPath.class,
+                    firstVisibleDemoVectorIcon(toggle),
+                    "toggle icon button SVG"
+            );
+            Color expectedColor = theme.colorScheme().getColor(switch (toggle.getVariant()) {
+                case STANDARD -> toggle.isSelected()
+                        ? org.glavo.monetfx.ColorRole.PRIMARY
+                        : org.glavo.monetfx.ColorRole.ON_SURFACE_VARIANT;
+                case FILLED -> toggle.isSelected()
+                        ? org.glavo.monetfx.ColorRole.ON_PRIMARY
+                        : org.glavo.monetfx.ColorRole.ON_SURFACE_VARIANT;
+                case TONAL -> toggle.isSelected()
+                        ? org.glavo.monetfx.ColorRole.ON_SECONDARY
+                        : org.glavo.monetfx.ColorRole.ON_SECONDARY_CONTAINER;
+                case OUTLINED -> toggle.isSelected()
+                        ? org.glavo.monetfx.ColorRole.INVERSE_ON_SURFACE
+                        : org.glavo.monetfx.ColorRole.ON_SURFACE_VARIANT;
+            });
+            assertEquals(expectedColor, icon.getFill(),
+                    () -> description + " toggle icon color mismatch for variant=" + toggle.getVariant()
+                            + ", selected=" + toggle.isSelected());
+        }
     }
 
     /// Verifies one toggle icon button's rendered content and selected fill geometry.
