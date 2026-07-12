@@ -22,10 +22,12 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.stage.Popup;
+import javafx.util.Duration;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
+import org.glavo.m3fx.animation.M3MotionBehavior;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3InternalIcon;
@@ -68,6 +70,15 @@ public class M3SubMenuItem extends M3MenuItem {
     /// The initial horizontal popup menu offset used for enter and exit motion.
     private static final double SUB_MENU_TRANSITION_OFFSET_X = -6.0;
 
+    /// Indicates that the reusable hover timer has no pending action.
+    private static final int NO_HOVER_ACTION = 0;
+
+    /// Indicates that the reusable hover timer will open the submenu.
+    private static final int OPEN_HOVER_ACTION = 1;
+
+    /// Indicates that the reusable hover timer will close the submenu.
+    private static final int CLOSE_HOVER_ACTION = 2;
+
     /// The submenu displayed by this item.
     private final M3Menu subMenu = new M3Menu();
 
@@ -108,11 +119,11 @@ public class M3SubMenuItem extends M3MenuItem {
     private final M3ReachabilityObserver reachabilityObserver =
             new M3ReachabilityObserver(this, this::hidePopupIfOwnerUnreachable);
 
-    /// The pointer-hover open delay.
-    private final PauseTransition hoverOpenDelay = new PauseTransition();
+    /// The reusable pointer-hover open and close delay.
+    private final PauseTransition hoverDelay = new PauseTransition();
 
-    /// The pointer-exit close delay.
-    private final PauseTransition hoverCloseDelay = new PauseTransition();
+    /// The action executed when [hoverDelay] finishes.
+    private int hoverDelayAction;
 
     /// Updates the indicator glyph when node orientation changes.
     private final InvalidationListener nodeOrientationInvalidation = observable -> updateDefaultIndicatorDirection();
@@ -199,8 +210,7 @@ public class M3SubMenuItem extends M3MenuItem {
         if (!M3Accessible.canReach(this) || !M3PopupWindows.canShow(this)) {
             return;
         }
-        hoverOpenDelay.stop();
-        hoverCloseDelay.stop();
+        stopHoverDelay();
         if (popup.isShowing()) {
             subMenuShowing.set(true);
             playShowAnimation();
@@ -218,11 +228,8 @@ public class M3SubMenuItem extends M3MenuItem {
             if (anchorBounds == null) {
                 return;
             }
-            @Nullable M3PopupPositioning.Placement placement =
+            M3PopupPositioning.Placement placement =
                     M3PopupPositioning.subMenuBeside(anchorBounds, subMenu, SUB_MENU_OFFSET_X, isRightToLeft());
-            if (placement == null) {
-                return;
-            }
             currentTransitionOffsetX = placement.opensToLeft()
                     ? -SUB_MENU_TRANSITION_OFFSET_X
                     : SUB_MENU_TRANSITION_OFFSET_X;
@@ -276,8 +283,7 @@ public class M3SubMenuItem extends M3MenuItem {
 
     /// Hides the submenu popup and optionally returns focus to this item.
     private void hideSubMenu(boolean focusOwner) {
-        hoverOpenDelay.stop();
-        hoverCloseDelay.stop();
+        stopHoverDelay();
         subMenu.hideSubMenusExcept(null);
         focusOwnerOnHidden |= focusOwner;
         if (!popup.isShowing()) {
@@ -360,16 +366,7 @@ public class M3SubMenuItem extends M3MenuItem {
                 setSelected(false);
             }
         });
-        hoverOpenDelay.setOnFinished(event -> {
-            if (pointerInsideOwner) {
-                showSubMenu();
-            }
-        });
-        hoverCloseDelay.setOnFinished(event -> {
-            if (!pointerInsideOwner && !pointerInsideSubMenu) {
-                hideSubMenu();
-            }
-        });
+        hoverDelay.setOnFinished(event -> handleHoverDelayFinished());
         popup.setAutoHide(true);
         popup.getContent().add(subMenu);
         popupAnimation.setOnFinished(event -> {
@@ -404,9 +401,13 @@ public class M3SubMenuItem extends M3MenuItem {
         subMenu.addEventHandler(MouseEvent.MOUSE_EXITED, this::handleSubMenuMouseExited);
     }
 
-    /// Hides the popup if its owner item can no longer be reached from its scene.
+    /// Cancels pending hover work and hides the popup when this item becomes unreachable.
     private void hidePopupIfOwnerUnreachable() {
-        if (popup.isShowing() && !M3Accessible.canReach(this)) {
+        if (M3Accessible.canReach(this)) {
+            return;
+        }
+        stopHoverDelay();
+        if (popup.isShowing()) {
             hideSubMenu(false);
         }
     }
@@ -486,24 +487,23 @@ public class M3SubMenuItem extends M3MenuItem {
             return;
         }
         pointerInsideOwner = true;
-        hoverCloseDelay.stop();
+        stopHoverDelay();
         if (!popup.isShowing()) {
-            hoverOpenDelay.setDuration(M3Animation.motionBehavior(this).subMenuHoverOpenDelay());
-            hoverOpenDelay.playFromStart();
+            startHoverDelay(OPEN_HOVER_ACTION, M3Animation.motionBehavior(this).subMenuHoverOpenDelay());
         }
     }
 
     /// Schedules submenu closing when the pointer exits this item.
     private void handleMouseExited(MouseEvent event) {
         pointerInsideOwner = false;
-        hoverOpenDelay.stop();
+        stopHoverDelay();
         scheduleHoverClose();
     }
 
     /// Cancels submenu closing while the pointer is inside the submenu popup.
     private void handleSubMenuMouseEntered(MouseEvent event) {
         pointerInsideSubMenu = true;
-        hoverCloseDelay.stop();
+        stopHoverDelay();
     }
 
     /// Schedules submenu closing when the pointer exits the submenu popup.
@@ -626,16 +626,23 @@ public class M3SubMenuItem extends M3MenuItem {
 
     /// Applies changed runtime motion settings to pointer-hover submenu delays.
     private void refreshHoverDelays() {
-        M3Animation.updatePauseDuration(
-                hoverOpenDelay,
-                M3Animation.motionBehavior(this).subMenuHoverOpenDelay(),
-                pointerInsideOwner && !popup.isShowing()
-        );
-        M3Animation.updatePauseDuration(
-                hoverCloseDelay,
-                M3Animation.motionBehavior(this).subMenuHoverCloseDelay(),
-                popup.isShowing() && !pointerInsideOwner && !pointerInsideSubMenu
-        );
+        int action = hoverDelayAction;
+        if (action == NO_HOVER_ACTION) {
+            return;
+        }
+
+        M3MotionBehavior behavior = M3Animation.motionBehavior(this);
+        boolean shouldRestart;
+        if (action == OPEN_HOVER_ACTION) {
+            shouldRestart = pointerInsideOwner && !popup.isShowing();
+            M3Animation.updatePauseDuration(hoverDelay, behavior.subMenuHoverOpenDelay(), shouldRestart);
+        } else {
+            shouldRestart = popup.isShowing() && !pointerInsideOwner && !pointerInsideSubMenu;
+            M3Animation.updatePauseDuration(hoverDelay, behavior.subMenuHoverCloseDelay(), shouldRestart);
+        }
+        if (!shouldRestart) {
+            hoverDelayAction = NO_HOVER_ACTION;
+        }
     }
 
     /// Returns whether a key opens the submenu for the current node orientation.
@@ -663,8 +670,47 @@ public class M3SubMenuItem extends M3MenuItem {
     /// Starts the pointer-exit close delay when the submenu is open.
     private void scheduleHoverClose() {
         if (popup.isShowing()) {
-            hoverCloseDelay.setDuration(M3Animation.motionBehavior(this).subMenuHoverCloseDelay());
-            hoverCloseDelay.playFromStart();
+            startHoverDelay(CLOSE_HOVER_ACTION, M3Animation.motionBehavior(this).subMenuHoverCloseDelay());
+        }
+    }
+
+    /// Starts the reusable hover timer with one pending action.
+    private void startHoverDelay(int action, Duration duration) {
+        hoverDelay.stop();
+        if (!M3Accessible.canReach(this)) {
+            hoverDelayAction = NO_HOVER_ACTION;
+            return;
+        }
+        hoverDelayAction = action;
+        hoverDelay.setDuration(duration);
+        reachabilityObserver.install();
+        hoverDelay.playFromStart();
+    }
+
+    /// Stops the reusable hover timer and clears its pending action.
+    private void stopHoverDelay() {
+        hoverDelay.stop();
+        hoverDelayAction = NO_HOVER_ACTION;
+        if (!popup.isShowing()) {
+            reachabilityObserver.uninstall();
+        }
+    }
+
+    /// Executes and clears the action owned by the reusable hover timer.
+    private void handleHoverDelayFinished() {
+        int action = hoverDelayAction;
+        hoverDelayAction = NO_HOVER_ACTION;
+        if (action == OPEN_HOVER_ACTION) {
+            if (pointerInsideOwner) {
+                showSubMenu();
+            }
+        } else if (action == CLOSE_HOVER_ACTION
+                && !pointerInsideOwner
+                && !pointerInsideSubMenu) {
+            hideSubMenu();
+        }
+        if (!popup.isShowing()) {
+            reachabilityObserver.uninstall();
         }
     }
 

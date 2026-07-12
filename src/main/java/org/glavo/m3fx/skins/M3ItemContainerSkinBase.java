@@ -21,7 +21,7 @@ abstract class M3ItemContainerSkinBase<C extends Control, P extends Pane> extend
     private final P container;
 
     /// Mirrors public item changes into the skin container.
-    private final ListChangeListener<Node> itemsListener = change -> updateItems();
+    private final ListChangeListener<Node> itemsListener = this::updateItems;
 
     /// Creates an item-container skin.
     M3ItemContainerSkinBase(C control, ObservableList<Node> items, P container) {
@@ -32,7 +32,7 @@ abstract class M3ItemContainerSkinBase<C extends Control, P extends Pane> extend
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         getChildren().setAll(container);
         items.addListener(itemsListener);
-        updateItems();
+        container.getChildren().setAll(items);
     }
 
     /// Removes listeners and child references before disposal.
@@ -130,9 +130,37 @@ abstract class M3ItemContainerSkinBase<C extends Control, P extends Pane> extend
         container.resizeRelocate(x, y, width, height);
     }
 
-    /// Mirrors the public item list into the internal container.
-    private void updateItems() {
-        container.getChildren().setAll(items);
-        getSkinnable().requestLayout();
+    /// Applies one public item-list change to the internal container.
+    private void updateItems(ListChangeListener.Change<? extends Node> change) {
+        ObservableList<Node> children = container.getChildren();
+        boolean rebuild = false;
+        boolean membershipChanged = false;
+        while (change.next()) {
+            if (change.wasPermutated()) {
+                rebuild = true;
+                membershipChanged = true;
+                continue;
+            }
+            if (rebuild || change.wasUpdated()) {
+                continue;
+            }
+
+            int from = change.getFrom();
+            int removedSize = change.getRemovedSize();
+            if (removedSize != 0) {
+                children.remove(from, from + removedSize);
+                membershipChanged = true;
+            }
+            if (change.wasAdded()) {
+                children.addAll(from, change.getAddedSubList());
+                membershipChanged = true;
+            }
+        }
+        if (rebuild) {
+            children.setAll(items);
+        }
+        if (membershipChanged) {
+            getSkinnable().requestLayout();
+        }
     }
 }

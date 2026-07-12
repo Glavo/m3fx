@@ -23,6 +23,7 @@ import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.Region;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.animation.M3MotionSpec;
+import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -185,6 +186,12 @@ public final class M3ScrollPanes {
         /// The accumulated vertical target value.
         private double targetVValue;
 
+        /// The resolved animation setting cached for [motionSettingsRevision].
+        private boolean cachedAnimationsEnabled;
+
+        /// The motion-settings revision represented by [cachedAnimationsEnabled].
+        private long motionSettingsRevision = Long.MIN_VALUE;
+
         /// The scrollable horizontal pixel span used by the current target value.
         private double targetHScrollablePixels;
 
@@ -310,7 +317,7 @@ public final class M3ScrollPanes {
                 return;
             }
 
-            if (!M3Animation.areAnimationsEnabled(scrollPane)) {
+            if (animationsDisabled()) {
                 animation.finish();
             } else {
                 animateToTarget();
@@ -319,6 +326,13 @@ public final class M3ScrollPanes {
 
         /// Starts an animation toward the accumulated target values.
         private void animateToTarget() {
+            if (animationsDisabled()) {
+                animation.stop();
+                scrollPane.setHvalue(targetHValue);
+                scrollPane.setVvalue(targetVValue);
+                return;
+            }
+
             M3MotionSpec spec = M3Animation.defaultSpatial(scrollPane);
             animation.configure(
                     spec,
@@ -327,11 +341,17 @@ public final class M3ScrollPanes {
                     scrollPane.getVvalue(),
                     targetVValue
             );
-            if (M3Animation.areAnimationsEnabled(scrollPane)) {
-                animation.playFromStart();
-            } else {
-                animation.finish();
+            animation.playFromStart();
+        }
+
+        /// Returns whether inherited animations are disabled, refreshing the cache after any settings change.
+        private boolean animationsDisabled() {
+            long revision = M3MotionSettings.revisionProperty().get();
+            if (motionSettingsRevision != revision) {
+                cachedAnimationsEnabled = M3Animation.areAnimationsEnabled(scrollPane);
+                motionSettingsRevision = revision;
             }
+            return !cachedAnimationsEnabled;
         }
 
         /// Stops the current scroll animation.

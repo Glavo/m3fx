@@ -111,6 +111,8 @@ public sealed interface M3ElevationTokens permits M3ElevationTokensImpl {
         appendShadowRule(builder, ".m3-surface-elevation-level3", level3(), Math.max(level1(), level3() - level2()));
         appendShadowRule(builder, ".m3-surface-elevation-level4", level4(), Math.max(level1(), level4() - level3()));
         appendShadowRule(builder, ".m3-surface-elevation-level5", level5(), Math.max(level1(), level5() - level4()));
+        appendShadowRule(builder, ".m3-menu, .m3-rich-tooltip-container", level2(), Math.max(level1(), level2() - level1()));
+        appendShadowRule(builder, ".m3-dialog-pane, .m3-snackbar-container", level3(), Math.max(level1(), level3() - level2()));
         return builder.toString().stripTrailing();
     }
 

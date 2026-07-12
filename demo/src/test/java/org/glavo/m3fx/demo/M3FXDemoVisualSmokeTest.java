@@ -17485,7 +17485,7 @@ final class M3FXDemoVisualSmokeTest {
 
     /// Verifies that a dialog pane respects Material width limits and remains inside its owner viewport.
     private static void assertDialogPaneFitsOwner(Scene ownerScene, Node dialogPane) {
-        Bounds bounds = dialogPane.getBoundsInLocal();
+        Bounds bounds = dialogPane.getLayoutBounds();
         double maxWidth = Math.min(560.0, ownerScene.getWidth() - 48.0);
         double maxHeight = ownerScene.getHeight() - 48.0;
         assertTrue(bounds.getWidth() >= 280.0 && bounds.getWidth() <= maxWidth,

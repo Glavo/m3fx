@@ -108,6 +108,8 @@ final class M3TokenFactoryTest {
         assertTrue(elevation.toControlStyleRules().contains(".m3-elevated-button:hover"));
         assertTrue(elevation.toControlStyleRules().contains(".m3-fab:hover"));
         assertTrue(elevation.toControlStyleRules().contains(".m3-surface-elevation-level3"));
+        assertTrue(elevation.toControlStyleRules().contains(".m3-menu, .m3-rich-tooltip-container"));
+        assertTrue(elevation.toControlStyleRules().contains(".m3-dialog-pane, .m3-snackbar-container"));
     }
 
     /// Verifies that component and token set factories preserve explicit token groups.

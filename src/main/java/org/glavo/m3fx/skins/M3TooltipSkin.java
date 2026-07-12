@@ -21,6 +21,9 @@ import org.jetbrains.annotations.Nullable;
 /// The default skin for [M3Tooltip].
 @NotNullByDefault
 public final class M3TooltipSkin extends M3PopupSkinBase<M3Tooltip> {
+    /// The minimum plain tooltip container height from the Material specification.
+    private static final double MIN_CONTAINER_HEIGHT = 24.0;
+
     /// The root label that renders tooltip text and graphic content.
     private final Label root = new Label();
 
@@ -76,7 +79,8 @@ public final class M3TooltipSkin extends M3PopupSkinBase<M3Tooltip> {
         double contentWidth = width == -1.0
                 ? preferredContentWidth()
                 : Math.max(0.0, width - horizontalInsets);
-        return snappedTopInset() + root.prefHeight(contentWidth) + snappedBottomInset();
+        double contentHeight = snappedTopInset() + root.prefHeight(contentWidth) + snappedBottomInset();
+        return Math.max(MIN_CONTAINER_HEIGHT, contentHeight);
     }
 
     /// Lays out the rendered tooltip content.

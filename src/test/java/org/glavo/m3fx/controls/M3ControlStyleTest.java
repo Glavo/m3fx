@@ -5408,7 +5408,7 @@ final class M3ControlStyleTest {
             assertEquals(344.0, shortSnackbar.getContainerMinWidth(), 0.0001);
             assertEquals(672.0, shortSnackbar.getContainerMaxWidth(), 0.0001);
             assertEquals(344.0, shortSnackbar.getWidth(), 1.0);
-            assertEquals(344.0, shortContainer.getBoundsInParent().getWidth(), 1.0);
+            assertEquals(344.0, shortContainer.getWidth(), 1.0);
 
             host.show(defaultSnackbar);
             root.applyCss();
@@ -5421,7 +5421,7 @@ final class M3ControlStyleTest {
             assertEquals(344.0, defaultSnackbar.getContainerMinWidth(), 0.0001);
             assertEquals(672.0, defaultSnackbar.getContainerMaxWidth(), 0.0001);
             assertEquals(672.0, defaultSnackbar.getWidth(), 1.0);
-            assertEquals(672.0, defaultContainer.getBoundsInParent().getWidth(), 1.0);
+            assertEquals(672.0, defaultContainer.getWidth(), 1.0);
 
             host.show(customSnackbar);
             root.applyCss();
@@ -5434,7 +5434,7 @@ final class M3ControlStyleTest {
             assertEquals(240.0, customSnackbar.getContainerMinWidth(), 0.0001);
             assertEquals(420.0, customSnackbar.getContainerMaxWidth(), 0.0001);
             assertEquals(420.0, customSnackbar.getWidth(), 1.0);
-            assertEquals(420.0, customContainer.getBoundsInParent().getWidth(), 1.0);
+            assertEquals(420.0, customContainer.getWidth(), 1.0);
         });
     }
 
@@ -6368,12 +6368,10 @@ final class M3ControlStyleTest {
             root.layout();
 
             M3Snackbar snackbar = assertInstanceOf(M3Snackbar.class, host.getSnackbar());
-            var bounds = snackbar.getBoundsInParent();
-
             assertTrue(host.getWidth() >= 790.0);
             assertTrue(snackbar.getWidth() < host.getWidth() / 2.0);
             assertTrue(snackbar.getHeight() < host.getHeight() / 3.0);
-            assertEquals((host.getWidth() - snackbar.getWidth()) / 2.0, bounds.getMinX(), 1.0);
+            assertEquals((host.getWidth() - snackbar.getWidth()) / 2.0, snackbar.getLayoutX(), 1.0);
             assertTrue(snackbar.getLayoutY() > host.getHeight() - 120.0);
             assertTrue(snackbar.getLayoutY() + snackbar.getHeight()
                     <= host.getHeight() - host.getPadding().getBottom() + 0.0001);
@@ -11093,7 +11091,7 @@ final class M3ControlStyleTest {
                 tooltip.getScene().getRoot().applyCss();
 
                 assertEquals("-m3-horizontal-padding: 20px;", action.getStyle());
-                assertEquals(36.0, action.getContainerHeight(), 0.0001);
+                assertEquals(32.0, action.getContainerHeight(), 0.0001);
                 assertEquals(20.0, action.getHorizontalPadding(), 0.0001);
 
                 tooltip.setTheme(null);
@@ -11109,9 +11107,9 @@ final class M3ControlStyleTest {
         });
     }
 
-    /// Verifies that tooltip component tokens apply profile-specific popup metrics.
+    /// Verifies that tooltip component tokens retain the Material metrics in an Expressive theme.
     @Test
-    void tooltipAppliesProfileMetrics() {
+    void tooltipRetainsMaterialMetricsInExpressiveTheme() {
         FxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
             M3Tooltip plainTooltip = new M3Tooltip("Details");
@@ -11137,10 +11135,11 @@ final class M3ControlStyleTest {
                         Region.class,
                         plainSkinRoot.lookup("." + M3Tooltip.STYLE_CLASS)
                 );
-                assertEquals(8.0, plainRoot.getPadding().getTop(), 0.0001);
-                assertEquals(12.0, plainRoot.getPadding().getLeft(), 0.0001);
+                assertEquals(4.0, plainRoot.getPadding().getTop(), 0.0001);
+                assertEquals(8.0, plainRoot.getPadding().getLeft(), 0.0001);
+                assertTrue(plainTooltip.getHeight() >= 24.0);
                 assertEquals(
-                        10.0,
+                        6.0,
                         plainRoot.getBackground().getFills().get(0).getRadii().getTopLeftHorizontalRadius(),
                         0.0001
                 );
@@ -11153,10 +11152,10 @@ final class M3ControlStyleTest {
                         VBox.class,
                         richRoot.lookup("." + M3RichTooltip.CONTAINER_STYLE_CLASS)
                 );
-                assertEquals(16.0, richContainer.getPadding().getTop(), 0.0001);
-                assertEquals(20.0, richContainer.getPadding().getLeft(), 0.0001);
-                assertEquals(12.0, richContainer.getSpacing(), 0.0001);
-                assertEquals(360.0, richContainer.getPrefWidth(), 0.0001);
+                assertEquals(12.0, richContainer.getPadding().getTop(), 0.0001);
+                assertEquals(16.0, richContainer.getPadding().getLeft(), 0.0001);
+                assertEquals(8.0, richContainer.getSpacing(), 0.0001);
+                assertEquals(320.0, richContainer.getPrefWidth(), 0.0001);
                 assertEquals(
                         16.0,
                         richContainer.getBackground().getFills().get(0).getRadii().getTopLeftHorizontalRadius(),
@@ -11164,9 +11163,9 @@ final class M3ControlStyleTest {
                 );
                 HBox actions = assertInstanceOf(HBox.class, richContainer.lookup("." + M3RichTooltip.ACTIONS_STYLE_CLASS));
                 M3Button actionButton = assertInstanceOf(M3Button.class, richTooltip.getActions().get(0));
-                assertEquals(12.0, actions.getSpacing(), 0.0001);
-                assertEquals(36.0, actionButton.getContainerHeight(), 0.0001);
-                assertEquals(16.0, actionButton.getHorizontalPadding(), 0.0001);
+                assertEquals(8.0, actions.getSpacing(), 0.0001);
+                assertEquals(32.0, actionButton.getContainerHeight(), 0.0001);
+                assertEquals(12.0, actionButton.getHorizontalPadding(), 0.0001);
             } finally {
                 plainTooltip.hide();
                 richTooltip.hide();
@@ -12583,7 +12582,7 @@ final class M3ControlStyleTest {
         menu.clearSelection();
         root.applyCss();
 
-        assertEquals(10.0, menu.getPadding().getTop(), 0.0001);
+        assertEquals(2.0, menu.getPadding().getTop(), 0.0001);
         assertEquals(2.0, container.getSpacing(), 0.0001);
         assertEquals(44.0, open.getOneLineHeight(), 0.0001);
         assertEquals(16.0, open.getContainerShape(), 0.0001);
@@ -32929,7 +32928,7 @@ final class M3ControlStyleTest {
             assertEquals(44.0, slider.getThumbSize(), 0.0001);
             assertEquals(4.0, slider.getThumbWidth(), 0.0001);
             assertEquals(48.0, slider.getTouchTargetSize(), 0.0001);
-            assertEquals(10.0, menu.getPadding().getTop(), 0.0001);
+            assertEquals(2.0, menu.getPadding().getTop(), 0.0001);
             assertEquals(44.0, menuOpen.getOneLineHeight(), 0.0001);
             assertEquals(16.0, menuOpen.getContainerShape(), 0.0001);
             assertEquals(16.0, menuSave.getContainerShape(), 0.0001);
@@ -32947,8 +32946,8 @@ final class M3ControlStyleTest {
             assertEquals(44.0, avatar.getContainerSize(), 0.0001);
             assertEquals(24.0, card.getContainerShape(), 0.0001);
             assertEquals(20.0, card.getContentPadding(), 0.0001);
-            assertEquals(16.0, snackbar.getContainerShape(), 0.0001);
-            assertEquals(18.0, snackbar.getContentPadding(), 0.0001);
+            assertEquals(6.0, snackbar.getContainerShape(), 0.0001);
+            assertEquals(16.0, snackbar.getContentPadding(), 0.0001);
             assertEquals(384.0, sideSheet.getPrefWidth(), 0.0001);
             assertEquals(360.0, bottomSheet.getPrefHeight(), 0.0001);
             assertEquals(

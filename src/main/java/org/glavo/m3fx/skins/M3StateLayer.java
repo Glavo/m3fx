@@ -24,6 +24,7 @@ import javafx.scene.shape.Path;
 import javafx.scene.shape.PathElement;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3MotionSpec;
+import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3ThemeResolver;
@@ -178,6 +179,12 @@ final class M3StateLayer extends Pane {
     /// Observes runtime motion settings while the owner is attached to a scene.
     private @Nullable M3MotionSettingsObserver motionSettingsObserver;
 
+    /// The resolved animation setting cached for [motionSettingsRevision].
+    private boolean cachedAnimationsEnabled;
+
+    /// The motion-settings revision represented by [cachedAnimationsEnabled].
+    private long motionSettingsRevision = Long.MIN_VALUE;
+
     /// The radius currently applied to the overlay background.
     private double overlayTopLeftRadius = Double.NaN;
 
@@ -321,6 +328,8 @@ final class M3StateLayer extends Pane {
             focusVisibleTracker = null;
         }
         stateOwner = null;
+        cachedAnimationsEnabled = false;
+        motionSettingsRevision = Long.MIN_VALUE;
         stateOpacityAnimation.stop();
         setFocusIndicatorOpacity(focusIndicator, 0.0);
         rippleAnimation.stop();
@@ -357,7 +366,7 @@ final class M3StateLayer extends Pane {
     /// Plays a bounded ripple from a point in this state layer's coordinate space.
     void playRipple(double x, double y) {
         Node owner = animationOwner();
-        if (!M3Animation.areAnimationsEnabled(owner)) {
+        if (animationsDisabled(owner)) {
             rippleAnimation.stop();
             clearRipple();
             return;
@@ -388,7 +397,7 @@ final class M3StateLayer extends Pane {
     /// Releases the active ripple and fades it out.
     void releaseRipple() {
         Node owner = animationOwner();
-        if (!M3Animation.areAnimationsEnabled(owner)) {
+        if (animationsDisabled(owner)) {
             rippleAnimation.stop();
             clearRipple();
             return;
@@ -487,7 +496,7 @@ final class M3StateLayer extends Pane {
             return;
         }
 
-        if (!M3Animation.areAnimationsEnabled(owner)) {
+        if (animationsDisabled(owner)) {
             if (stateOpacityAnimation.getStatus() == Animation.Status.RUNNING) {
                 stateOpacityAnimation.stop();
                 overlay.setOpacity(resolvedOverlayOpacity(owner));
@@ -527,7 +536,7 @@ final class M3StateLayer extends Pane {
             return;
         }
 
-        if (!M3Animation.areAnimationsEnabled(owner)) {
+        if (animationsDisabled(owner)) {
             overlay.setOpacity(targetOverlayOpacity);
             setFocusIndicatorOpacity(focusIndicator, targetFocusIndicatorOpacity);
             return;
@@ -542,6 +551,16 @@ final class M3StateLayer extends Pane {
                 targetFocusIndicatorOpacity
         );
         stateOpacityAnimation.playFromStart();
+    }
+
+    /// Returns whether inherited animations are disabled, refreshing the cache after any settings change.
+    private boolean animationsDisabled(Node owner) {
+        long revision = M3MotionSettings.revisionProperty().get();
+        if (motionSettingsRevision != revision) {
+            cachedAnimationsEnabled = M3Animation.areAnimationsEnabled(owner);
+            motionSettingsRevision = revision;
+        }
+        return !cachedAnimationsEnabled;
     }
 
     /// Returns the target overlay opacity for the owner interaction state.

@@ -22,6 +22,7 @@ import javafx.scene.control.skin.VirtualFlow;
 import javafx.scene.input.ScrollEvent;
 import javafx.stage.Window;
 import org.glavo.m3fx.animation.M3MotionSpec;
+import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListView;
 import org.glavo.m3fx.internal.M3ListViewCell;
@@ -105,6 +106,12 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
 
     /// The accumulated target virtual flow position.
     private double smoothScrollTargetPosition;
+
+    /// The resolved animation setting cached for [motionSettingsRevision].
+    private boolean cachedAnimationsEnabled;
+
+    /// The motion-settings revision represented by [cachedAnimationsEnabled].
+    private long motionSettingsRevision = Long.MIN_VALUE;
 
     /// Whether a focused cell should refresh logical row focus after the next layout pass.
     private boolean focusRequestPending;
@@ -535,7 +542,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         }
 
         smoothScrollTargetPosition = nextPosition;
-        if (M3Animation.areAnimationsEnabled(getSkinnable())) {
+        if (animationsEnabled()) {
             animateSmoothScroll(null);
         } else {
             stopSmoothScrollAnimation();
@@ -551,7 +558,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
             return;
         }
 
-        if (!M3Animation.areAnimationsEnabled(getSkinnable())) {
+        if (!animationsEnabled()) {
             smoothScrollAnimation.stop();
             finishSmoothScrollAnimation();
         } else {
@@ -589,7 +596,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         double targetPosition = scrollPositionForIndex(index);
         if (!animated
                 || getSkinnable().getScene() == null
-                || !M3Animation.areAnimationsEnabled(getSkinnable())) {
+                || !animationsEnabled()) {
             stopSmoothScrollAnimation();
             if (Double.isNaN(targetPosition)) {
                 flow.scrollTo(index);
@@ -678,12 +685,17 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         M3MotionSpec spec = M3Animation.defaultSpatial(getSkinnable());
         smoothScrollAnimation.configure(spec, flow.getPosition(), smoothScrollTargetPosition);
         smoothScrollOnFinished = onFinished;
-        if (M3Animation.areAnimationsEnabled(getSkinnable())) {
-            smoothScrollAnimation.playFromStart();
-        } else {
-            smoothScrollAnimation.stop();
-            finishSmoothScrollAnimation();
+        smoothScrollAnimation.playFromStart();
+    }
+
+    /// Returns the current inherited animation setting, refreshing the cache after any settings change.
+    private boolean animationsEnabled() {
+        long revision = M3MotionSettings.revisionProperty().get();
+        if (motionSettingsRevision != revision) {
+            cachedAnimationsEnabled = M3Animation.areAnimationsEnabled(getSkinnable());
+            motionSettingsRevision = revision;
         }
+        return cachedAnimationsEnabled;
     }
 
     /// Runs the current smooth-scroll completion callback after the reusable transition finishes.

@@ -15,6 +15,7 @@ import javafx.scene.effect.DropShadow;
 import javafx.scene.effect.Effect;
 import javafx.scene.paint.Color;
 import org.glavo.m3fx.animation.M3MotionSpec;
+import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3FiniteTransition;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
@@ -53,6 +54,12 @@ final class M3CssEffectTransition {
 
     /// Observes runtime motion settings while the owner is attached to a scene.
     private final M3MotionSettingsObserver motionSettingsObserver;
+
+    /// The resolved animation setting cached for [motionSettingsRevision].
+    private boolean cachedAnimationsEnabled;
+
+    /// The motion-settings revision represented by [cachedAnimationsEnabled].
+    private long motionSettingsRevision = Long.MIN_VALUE;
 
     /// Creates an effect transition.
     M3CssEffectTransition(Node owner, Node target) {
@@ -124,7 +131,7 @@ final class M3CssEffectTransition {
         if (!supportedStart
                 || !supportedEnd
                 || animation.matchesTarget(end)
-                || !M3Animation.areAnimationsEnabled(owner)) {
+                || !animationsEnabled()) {
             return;
         }
 
@@ -132,7 +139,17 @@ final class M3CssEffectTransition {
         animationStyleOrigin = targetOrigin;
         animation.configure(M3Animation.fastEffects(owner), animated, end);
         effectProperty.applyStyle(targetOrigin, animated);
-        M3Animation.playFromStart(owner, animation);
+        animation.playFromStart();
+    }
+
+    /// Returns the current inherited animation setting, refreshing the cache after any settings change.
+    private boolean animationsEnabled() {
+        long revision = M3MotionSettings.revisionProperty().get();
+        if (motionSettingsRevision != revision) {
+            cachedAnimationsEnabled = M3Animation.areAnimationsEnabled(owner);
+            motionSettingsRevision = revision;
+        }
+        return cachedAnimationsEnabled;
     }
 
     /// Returns the single mutable shadow used after this transition first needs animation.
