@@ -473,17 +473,6 @@
     -fx-border-radius: 16px;
 }
 
-.m3-button.m3-split-button-action:left-edge,
-.m3-button.m3-split-button-menu:left-edge {
-    -fx-background-radius: 999px 0 0 999px;
-    -fx-border-radius: 999px 0 0 999px;
-}
-
-.m3-button.m3-split-button-action:right-edge,
-.m3-button.m3-split-button-menu:right-edge {
-    -fx-background-radius: 0 999px 999px 0;
-    -fx-border-radius: 0 999px 999px 0;
-}
 
 .m3-button:disabled,
 .m3-icon-button:disabled {
@@ -544,12 +533,12 @@
     -fx-opacity: 1;
 }
 
-.m3-button.m3-button:left-edge:left-edge {
+.m3-button.m3-grouped-button:left-edge:left-edge {
     -fx-background-radius: 999px 0 0 999px;
     -fx-border-radius: 999px 0 0 999px;
 }
 
-.m3-button.m3-button:right-edge:right-edge {
+.m3-button.m3-grouped-button:right-edge:right-edge {
     -fx-background-radius: 0 999px 999px 0;
     -fx-border-radius: 0 999px 999px 0;
 }

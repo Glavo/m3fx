@@ -7,9 +7,15 @@
     -m3-split-button-menu-icon-size: 22px;
     -m3-split-button-menu-icon-offset: 1px;
     -m3-split-button-menu-icon-right-offset: -1px;
+    -m3-split-button-inner-corner: 4px;
+    -m3-split-button-interactive-inner-corner: 12px;
+    -m3-split-button-selected-inner-corner: 20px;
 }
 
 .m3-split-button.m3-split-button-extra-small {
+    -m3-split-button-inner-corner: 4px;
+    -m3-split-button-interactive-inner-corner: 8px;
+    -m3-split-button-selected-inner-corner: 16px;
     -m3-split-button-container-height: 32px;
     -m3-split-button-action-leading-space: 12px;
     -m3-split-button-action-trailing-space: 10px;
@@ -27,9 +33,15 @@
     -m3-split-button-menu-icon-size: 22px;
     -m3-split-button-menu-icon-offset: 1px;
     -m3-split-button-menu-icon-right-offset: -1px;
+    -m3-split-button-inner-corner: 4px;
+    -m3-split-button-interactive-inner-corner: 12px;
+    -m3-split-button-selected-inner-corner: 20px;
 }
 
 .m3-split-button.m3-split-button-medium {
+    -m3-split-button-inner-corner: 4px;
+    -m3-split-button-interactive-inner-corner: 12px;
+    -m3-split-button-selected-inner-corner: 28px;
     -m3-split-button-container-height: 56px;
     -m3-split-button-action-leading-space: 24px;
     -m3-split-button-action-trailing-space: 24px;
@@ -40,6 +52,9 @@
 }
 
 .m3-split-button.m3-split-button-large {
+    -m3-split-button-inner-corner: 8px;
+    -m3-split-button-interactive-inner-corner: 20px;
+    -m3-split-button-selected-inner-corner: 48px;
     -m3-split-button-container-height: 96px;
     -m3-split-button-action-leading-space: 48px;
     -m3-split-button-action-trailing-space: 48px;
@@ -50,6 +65,9 @@
 }
 
 .m3-split-button.m3-split-button-extra-large {
+    -m3-split-button-inner-corner: 12px;
+    -m3-split-button-interactive-inner-corner: 20px;
+    -m3-split-button-selected-inner-corner: 68px;
     -m3-split-button-container-height: 136px;
     -m3-split-button-action-leading-space: 64px;
     -m3-split-button-action-trailing-space: 64px;
@@ -96,42 +114,50 @@
 
 .m3-split-button .m3-button.m3-split-button-action:left-edge,
 .m3-split-button .m3-button.m3-split-button-menu:left-edge {
-    -fx-background-radius: 999px 4px 4px 999px;
-    -fx-border-radius: 999px 4px 4px 999px;
+    -fx-background-radius: 999px -m3-split-button-inner-corner -m3-split-button-inner-corner 999px;
+    -fx-border-radius: 999px -m3-split-button-inner-corner -m3-split-button-inner-corner 999px;
 }
 
 .m3-split-button .m3-button.m3-split-button-action:right-edge,
 .m3-split-button .m3-button.m3-split-button-menu:right-edge {
-    -fx-background-radius: 4px 999px 999px 4px;
-    -fx-border-radius: 4px 999px 999px 4px;
+    -fx-background-radius: -m3-split-button-inner-corner 999px 999px -m3-split-button-inner-corner;
+    -fx-border-radius: -m3-split-button-inner-corner 999px 999px -m3-split-button-inner-corner;
 }
 
-.m3-split-button.m3-split-button-large .m3-button.m3-split-button-action:left-edge,
-.m3-split-button.m3-split-button-large .m3-button.m3-split-button-menu:left-edge {
-    -fx-background-radius: 999px 8px 8px 999px;
-    -fx-border-radius: 999px 8px 8px 999px;
+.m3-split-button .m3-button.m3-split-button-action:left-edge:hover,
+.m3-split-button .m3-button.m3-split-button-action:left-edge:focused,
+.m3-split-button .m3-button.m3-split-button-action:left-edge:focus-visible,
+.m3-split-button .m3-button.m3-split-button-action:left-edge:armed,
+.m3-split-button .m3-button.m3-split-button-action:left-edge:pressed,
+.m3-split-button .m3-button.m3-split-button-menu:left-edge:hover,
+.m3-split-button .m3-button.m3-split-button-menu:left-edge:focused,
+.m3-split-button .m3-button.m3-split-button-menu:left-edge:focus-visible,
+.m3-split-button .m3-button.m3-split-button-menu:left-edge:armed,
+.m3-split-button .m3-button.m3-split-button-menu:left-edge:pressed {
+    -fx-background-radius: 999px -m3-split-button-interactive-inner-corner -m3-split-button-interactive-inner-corner 999px;
+    -fx-border-radius: 999px -m3-split-button-interactive-inner-corner -m3-split-button-interactive-inner-corner 999px;
 }
 
-.m3-split-button.m3-split-button-large .m3-button.m3-split-button-action:right-edge,
-.m3-split-button.m3-split-button-large .m3-button.m3-split-button-menu:right-edge {
-    -fx-background-radius: 8px 999px 999px 8px;
-    -fx-border-radius: 8px 999px 999px 8px;
+.m3-split-button .m3-button.m3-split-button-action:right-edge:hover,
+.m3-split-button .m3-button.m3-split-button-action:right-edge:focused,
+.m3-split-button .m3-button.m3-split-button-action:right-edge:focus-visible,
+.m3-split-button .m3-button.m3-split-button-action:right-edge:armed,
+.m3-split-button .m3-button.m3-split-button-action:right-edge:pressed,
+.m3-split-button .m3-button.m3-split-button-menu:right-edge:hover,
+.m3-split-button .m3-button.m3-split-button-menu:right-edge:focused,
+.m3-split-button .m3-button.m3-split-button-menu:right-edge:focus-visible,
+.m3-split-button .m3-button.m3-split-button-menu:right-edge:armed,
+.m3-split-button .m3-button.m3-split-button-menu:right-edge:pressed {
+    -fx-background-radius: -m3-split-button-interactive-inner-corner 999px 999px -m3-split-button-interactive-inner-corner;
+    -fx-border-radius: -m3-split-button-interactive-inner-corner 999px 999px -m3-split-button-interactive-inner-corner;
 }
 
-.m3-split-button.m3-split-button-extra-large .m3-button.m3-split-button-action:left-edge,
-.m3-split-button.m3-split-button-extra-large .m3-button.m3-split-button-menu:left-edge {
-    -fx-background-radius: 999px 12px 12px 999px;
-    -fx-border-radius: 999px 12px 12px 999px;
+.m3-split-button .m3-button.m3-split-button-menu:left-edge:showing {
+    -fx-background-radius: 999px -m3-split-button-selected-inner-corner -m3-split-button-selected-inner-corner 999px;
+    -fx-border-radius: 999px -m3-split-button-selected-inner-corner -m3-split-button-selected-inner-corner 999px;
 }
 
-.m3-split-button.m3-split-button-extra-large .m3-button.m3-split-button-action:right-edge,
-.m3-split-button.m3-split-button-extra-large .m3-button.m3-split-button-menu:right-edge {
-    -fx-background-radius: 12px 999px 999px 12px;
-    -fx-border-radius: 12px 999px 999px 12px;
-}
-
-.m3-split-button .m3-button.m3-split-button-menu:left-edge:showing,
 .m3-split-button .m3-button.m3-split-button-menu:right-edge:showing {
-    -fx-background-radius: 999px;
-    -fx-border-radius: 999px;
+    -fx-background-radius: -m3-split-button-selected-inner-corner 999px 999px -m3-split-button-selected-inner-corner;
+    -fx-border-radius: -m3-split-button-selected-inner-corner 999px 999px -m3-split-button-selected-inner-corner;
 }

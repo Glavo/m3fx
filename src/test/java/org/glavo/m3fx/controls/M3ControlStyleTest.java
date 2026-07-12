@@ -3884,6 +3884,54 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that split-button surfaces and feedback clips use the resting and interactive inner-corner tokens.
+    @Test
+    void splitButtonInnerCornersAndFeedbackFollowInteractionTokens() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3SplitButton splitButton = createSplitButton(
+                    "Export",
+                    M3ButtonVariant.TONAL,
+                    new M3MenuItem("PDF")
+            );
+            Pane root = new Pane(splitButton);
+            Scene scene = new Scene(root, 240.0, 80.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            splitButton.resize(splitButton.prefWidth(-1.0), splitButton.prefHeight(-1.0));
+            splitButton.layout();
+
+            M3Button actionButton = splitButtonActionButton(splitButton);
+            M3Button menuButton = splitButtonMenuButton(splitButton);
+            actionButton.layout();
+            menuButton.layout();
+            root.applyCss();
+            assertRegionRadii(actionButton, 999.0, 4.0, 4.0, 999.0);
+            assertRegionRadii(menuButton, 4.0, 999.0, 999.0, 4.0);
+            assertStateLayerRadii(actionButton, 20.0, 4.0, 4.0, 20.0);
+            assertStateLayerRadii(menuButton, 4.0, 20.0, 20.0, 4.0);
+
+            PseudoClass hover = PseudoClass.getPseudoClass("hover");
+            menuButton.pseudoClassStateChanged(hover, true);
+            root.applyCss();
+            menuButton.layout();
+            assertRegionRadii(menuButton, 12.0, 999.0, 999.0, 12.0);
+            assertStateLayerRadii(menuButton, 12.0, 20.0, 20.0, 12.0);
+
+            menuButton.pseudoClassStateChanged(hover, false);
+            menuButton.arm();
+            root.applyCss();
+            menuButton.layout();
+            assertRegionRadii(menuButton, 12.0, 999.0, 999.0, 12.0);
+            assertStateLayerRadii(menuButton, 12.0, 20.0, 20.0, 12.0);
+            menuButton.disarm();
+
+            menuButton.pseudoClassStateChanged(PseudoClass.getPseudoClass("showing"), true);
+            root.applyCss();
+            menuButton.layout();
+            assertRegionRadii(menuButton, 20.0, 999.0, 999.0, 20.0);
+            assertStateLayerRadii(menuButton, 20.0, 20.0, 20.0, 20.0);
+        });
+    }
     /// Verifies that split buttons keep logical part shapes for right-to-left painting.
     @Test
     void splitButtonKeepsLogicalPartShapesForRightToLeft() {
