@@ -1834,6 +1834,7 @@ public final class M3FXDemoApp extends Application {
         M3SplitButton tonal = createSplitButton("Create", M3ButtonVariant.TONAL);
         M3SplitButton outlined = createSplitButton("Export", M3ButtonVariant.OUTLINED);
         M3SplitButton filled = createSplitButton("Publish", M3ButtonVariant.FILLED);
+        M3SplitButton elevated = createSplitButton("Save", M3ButtonVariant.ELEVATED);
         M3SplitButton disabled = createSplitButton("Disabled", M3ButtonVariant.TONAL);
         disabled.setDisable(true);
 
@@ -1849,7 +1850,8 @@ public final class M3FXDemoApp extends Application {
         extraLarge.setSize(M3ButtonSize.EXTRA_LARGE);
 
         return createGallery(
-                createShowcaseGroup("Variants", tonal, outlined, filled, disabled),
+                createShowcaseGroup("Variants", tonal, outlined, filled, elevated),
+                createShowcaseGroup("States", disabled),
                 createShowcaseGroup("Sizes", extraSmall, small, medium, large, extraLarge)
         );
     }

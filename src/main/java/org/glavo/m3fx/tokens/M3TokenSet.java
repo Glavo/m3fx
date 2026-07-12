@@ -130,11 +130,13 @@ public sealed interface M3TokenSet permits M3TokenSetImpl {
             M3StateLayerTokens stateLayerTokens
     ) {
         Color onSurface = colorTokens.get(ColorRole.ON_SURFACE);
+        Color onSurfaceVariant = colorTokens.get(ColorRole.ON_SURFACE_VARIANT);
         Color surface = colorTokens.get(ColorRole.SURFACE);
         Color surfaceContainerHighest = colorTokens.get(ColorRole.SURFACE_CONTAINER_HIGHEST);
         Color outline = colorTokens.get(ColorRole.OUTLINE);
         return "-m3-state-disabled-container-color: "
                 + toRgba(onSurface, stateLayerTokens.disabledContainerOpacity()) + "; "
+                + "-m3-disclosure-icon-color: " + toRgba(onSurfaceVariant, 1.0) + "; "
                 + "-m3-state-disabled-content-color: "
                 + toRgba(onSurface, stateLayerTokens.disabledContentOpacity()) + "; "
                 + "-m3-button-disabled-container-color: " + toRgba(onSurface, 0.10) + "; "

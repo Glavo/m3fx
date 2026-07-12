@@ -3808,6 +3808,30 @@ final class M3ControlStyleTest {
         assertEquals(0.0, splitButtonMenuButton(splitButton).getHorizontalPadding(), 0.0001);
     }
 
+    /// Verifies that the menu indicator uses the same foreground token as its split-button part.
+    @Test
+    void splitButtonMenuIndicatorFollowsVariantForegroundColor() {
+        M3SplitButton filled = createSplitButton("Filled", M3ButtonVariant.FILLED, new M3MenuItem("Item"));
+        M3SplitButton tonal = createSplitButton("Tonal", M3ButtonVariant.TONAL, new M3MenuItem("Item"));
+        M3SplitButton outlined = createSplitButton("Outlined", M3ButtonVariant.OUTLINED, new M3MenuItem("Item"));
+        M3SplitButton elevated = createSplitButton("Elevated", M3ButtonVariant.ELEVATED, new M3MenuItem("Item"));
+        M3SplitButton disabled = createSplitButton("Disabled", M3ButtonVariant.TONAL, new M3MenuItem("Item"));
+        disabled.setDisable(true);
+        VBox root = new VBox(filled, tonal, outlined, elevated, disabled);
+        Scene scene = new Scene(root, 480.0, 320.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+
+        for (M3SplitButton splitButton : List.of(filled, tonal, outlined, elevated, disabled)) {
+            M3MenuButton menuButton = splitButtonMenuButton(splitButton);
+            Shape indicator = lookupShape(splitButton, ".m3-disclosure-icon-shape");
+            assertEquals(menuButton.getTextFill(), indicator.getFill(),
+                    () -> "split menu indicator should match its foreground for " + splitButton.getVariant()
+                            + ", disabled=" + splitButton.isDisabled());
+        }
+    }
+
     /// Verifies that split button sizes resolve Material Expressive metrics from CSS.
     @Test
     void splitButtonSizesResolveMaterialExpressiveMetrics() {

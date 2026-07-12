@@ -54,6 +54,7 @@
     -m3-color-surface-variant: rgb(231,224,235);
     -monet-on-surface-variant: rgb(73,69,78);
     -m3-color-on-surface-variant: rgb(73,69,78);
+    -m3-disclosure-icon-color: -m3-color-on-surface-variant;
     -monet-background: rgb(253,247,255);
     -m3-color-background: rgb(253,247,255);
     -monet-on-background: rgb(29,27,32);

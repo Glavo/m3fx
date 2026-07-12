@@ -1,4 +1,5 @@
 .m3-button {
+    -m3-disclosure-icon-color: -m3-color-primary;
     -m3-container-height: 40px;
     -m3-container-shape: 999px;
     -m3-horizontal-padding: 24px;
@@ -22,6 +23,7 @@
 .m3-button.m3-filled-button:focused,
 .m3-button.m3-filled-button:armed,
 .m3-button.m3-filled-button:pressed {
+    -m3-disclosure-icon-color: -m3-color-on-primary;
     -fx-background-color: -m3-color-primary;
     -fx-background-insets: 0;
     -fx-border-color: transparent;
@@ -39,6 +41,7 @@
 .m3-button.m3-tonal-button:focused,
 .m3-button.m3-tonal-button:armed,
 .m3-button.m3-tonal-button:pressed {
+    -m3-disclosure-icon-color: -m3-color-on-secondary-container;
     -fx-background-color: -m3-color-secondary-container;
     -fx-background-insets: 0;
     -fx-border-color: transparent;
@@ -56,6 +59,7 @@
 .m3-button.m3-outlined-button:focused,
 .m3-button.m3-outlined-button:armed,
 .m3-button.m3-outlined-button:pressed {
+    -m3-disclosure-icon-color: -m3-color-primary;
     -fx-background-color: transparent;
     -fx-background-insets: 0;
     -fx-border-color: -m3-color-outline;
@@ -74,6 +78,7 @@
 .m3-button.m3-text-button:focused,
 .m3-button.m3-text-button:armed,
 .m3-button.m3-text-button:pressed {
+    -m3-disclosure-icon-color: -m3-color-primary;
     -m3-horizontal-padding: 12px;
     -fx-background-color: transparent;
     -fx-background-insets: 0;
@@ -108,6 +113,7 @@
 .m3-button.m3-elevated-button:focused,
 .m3-button.m3-elevated-button:armed,
 .m3-button.m3-elevated-button:pressed {
+    -m3-disclosure-icon-color: -m3-color-primary;
     -fx-background-color: -m3-color-surface-container-low;
     -fx-background-insets: 0;
     -fx-border-color: transparent;
@@ -481,6 +487,7 @@
 
 .m3-button:disabled,
 .m3-icon-button:disabled {
+    -m3-disclosure-icon-color: -m3-color-on-surface;
     -fx-cursor: default;
     -fx-effect: null;
     -fx-opacity: 1;
@@ -496,6 +503,7 @@
 .m3-button.m3-tonal-button:disabled,
 .m3-button.m3-text-button:disabled,
 .m3-button.m3-elevated-button:disabled {
+    -m3-disclosure-icon-color: -m3-color-on-surface;
     -fx-background-color: -m3-button-disabled-container-color;
     -fx-border-color: transparent;
     -fx-effect: null;
@@ -503,6 +511,7 @@
 }
 
 .m3-button.m3-outlined-button:disabled {
+    -m3-disclosure-icon-color: -m3-color-on-surface;
     -fx-background-color: transparent;
     -fx-border-color: -m3-color-outline-variant;
     -fx-effect: null;

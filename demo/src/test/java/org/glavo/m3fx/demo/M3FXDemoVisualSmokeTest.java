@@ -13386,6 +13386,7 @@ final class M3FXDemoVisualSmokeTest {
         assertVisibleText(root, "Create", "Split Buttons");
         assertVisibleText(root, "Export", "Split Buttons");
         assertVisibleText(root, "Publish", "Split Buttons");
+        assertVisibleText(root, "Save", "Split Buttons");
         assertVisibleText(root, "Disabled", "Split Buttons");
         assertVisibleText(root, "Sizes", "Split Buttons");
         assertVisibleText(root, "XS", "Split Buttons");
@@ -13395,11 +13396,12 @@ final class M3FXDemoVisualSmokeTest {
         assertVisibleText(root, "XL", "Split Buttons");
 
         List<M3SplitButton> splitButtons = visibleNodesOfType(page, M3SplitButton.class);
-        assertEquals(9, splitButtons.size(),
+        assertEquals(10, splitButtons.size(),
                 () -> "Split Buttons page should render variants plus the five Material sizes: " + splitButtons);
         assertSplitButtonVariantCount(splitButtons, M3ButtonVariant.TONAL, 7, "Split Buttons");
         assertSplitButtonVariantCount(splitButtons, M3ButtonVariant.OUTLINED, 1, "Split Buttons");
         assertSplitButtonVariantCount(splitButtons, M3ButtonVariant.FILLED, 1, "Split Buttons");
+        assertSplitButtonVariantCount(splitButtons, M3ButtonVariant.ELEVATED, 1, "Split Buttons");
         assertSplitButtonSizePresent(splitButtons, M3ButtonSize.EXTRA_SMALL, "Split Buttons");
         assertSplitButtonSizePresent(splitButtons, M3ButtonSize.SMALL, "Split Buttons");
         assertSplitButtonSizePresent(splitButtons, M3ButtonSize.MEDIUM, "Split Buttons");
@@ -13414,6 +13416,14 @@ final class M3FXDemoVisualSmokeTest {
                     "split action button variant should follow the owner");
             assertEquals(splitButton.getVariant(), splitButtonMenuButton(splitButton).getVariant(),
                     "split menu button variant should follow the owner");
+            M3MenuButton menuButton = splitButtonMenuButton(splitButton);
+            SVGPath indicator = assertInstanceOf(
+                    SVGPath.class,
+                    splitButton.lookup(".m3-disclosure-icon-shape"),
+                    "split menu disclosure icon"
+            );
+            assertEquals(menuButton.getTextFill(), indicator.getFill(),
+                    () -> "split menu icon should match the menu foreground for " + splitButton.getText());
             assertSplitButtonPartsInsideOwner(splitButton);
         }
     }

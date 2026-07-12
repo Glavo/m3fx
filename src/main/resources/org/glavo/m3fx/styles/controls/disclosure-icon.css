@@ -3,7 +3,7 @@
 }
 
 .m3-disclosure-icon-shape {
-    -fx-fill: -m3-color-on-surface-variant;
+    -fx-fill: -m3-disclosure-icon-color;
 }
 
 .m3-disclosure-icon:disabled .m3-disclosure-icon-shape {
