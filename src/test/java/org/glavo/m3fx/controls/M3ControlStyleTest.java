@@ -3894,6 +3894,7 @@ final class M3ControlStyleTest {
                     new M3MenuItem("PDF")
             );
             Pane root = new Pane(splitButton);
+            root.setStyle("-fx-background-color: white;");
             Scene scene = new Scene(root, 240.0, 80.0);
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
             root.applyCss();
@@ -3905,30 +3906,32 @@ final class M3ControlStyleTest {
             actionButton.layout();
             menuButton.layout();
             root.applyCss();
-            assertRegionRadii(actionButton, 999.0, 4.0, 4.0, 999.0);
-            assertRegionRadii(menuButton, 4.0, 999.0, 999.0, 4.0);
+            assertRegionRadii(actionButton, 20.0, 4.0, 4.0, 20.0);
+            assertRegionRadii(menuButton, 4.0, 20.0, 20.0, 4.0);
             assertStateLayerRadii(actionButton, 20.0, 4.0, 4.0, 20.0);
             assertStateLayerRadii(menuButton, 4.0, 20.0, 20.0, 4.0);
+            assertRenderedTopLeftCorner(menuButton, snapshotImageOnFxThread(root), false, Color.WHITE);
 
             PseudoClass hover = PseudoClass.getPseudoClass("hover");
             menuButton.pseudoClassStateChanged(hover, true);
             root.applyCss();
             menuButton.layout();
-            assertRegionRadii(menuButton, 12.0, 999.0, 999.0, 12.0);
+            assertRegionRadii(menuButton, 12.0, 20.0, 20.0, 12.0);
             assertStateLayerRadii(menuButton, 12.0, 20.0, 20.0, 12.0);
+            assertRenderedTopLeftCorner(menuButton, snapshotImageOnFxThread(root), true, Color.WHITE);
 
             menuButton.pseudoClassStateChanged(hover, false);
             menuButton.arm();
             root.applyCss();
             menuButton.layout();
-            assertRegionRadii(menuButton, 12.0, 999.0, 999.0, 12.0);
+            assertRegionRadii(menuButton, 12.0, 20.0, 20.0, 12.0);
             assertStateLayerRadii(menuButton, 12.0, 20.0, 20.0, 12.0);
             menuButton.disarm();
 
             menuButton.pseudoClassStateChanged(PseudoClass.getPseudoClass("showing"), true);
             root.applyCss();
             menuButton.layout();
-            assertRegionRadii(menuButton, 20.0, 999.0, 999.0, 20.0);
+            assertRegionRadii(menuButton, 20.0, 20.0, 20.0, 20.0);
             assertStateLayerRadii(menuButton, 20.0, 20.0, 20.0, 20.0);
         });
     }
@@ -38503,9 +38506,13 @@ final class M3ControlStyleTest {
     ) {
         javafx.scene.layout.CornerRadii radii = region.getBackground().getFills().get(0).getRadii();
         assertEquals(topLeft, radii.getTopLeftHorizontalRadius(), 0.0001);
+        assertEquals(topLeft, radii.getTopLeftVerticalRadius(), 0.0001);
         assertEquals(topRight, radii.getTopRightHorizontalRadius(), 0.0001);
+        assertEquals(topRight, radii.getTopRightVerticalRadius(), 0.0001);
         assertEquals(bottomRight, radii.getBottomRightHorizontalRadius(), 0.0001);
+        assertEquals(bottomRight, radii.getBottomRightVerticalRadius(), 0.0001);
         assertEquals(bottomLeft, radii.getBottomLeftHorizontalRadius(), 0.0001);
+        assertEquals(bottomLeft, radii.getBottomLeftVerticalRadius(), 0.0001);
     }
 
     /// Returns a shape looked up below a node.
@@ -40248,6 +40255,23 @@ final class M3ControlStyleTest {
                 () -> "left corner distance=" + leftDistance + ", region=" + region);
         assertEquals(roundedRight, rightDistance < 0.04,
                 () -> "right corner distance=" + rightDistance + ", region=" + region);
+    }
+
+    /// Verifies whether a region's top-left surface corner excludes its two-pixel inset sample.
+    private static void assertRenderedTopLeftCorner(
+            Region region,
+            WritableImage image,
+            boolean excludesInset,
+            Color background
+    ) {
+        Bounds bounds = region.localToScene(region.getLayoutBounds());
+        Color sample = snapshotScenePixel(image, bounds.getMinX() + 2.0, bounds.getMinY() + 2.0);
+        double distance = colorDistance(sample, background);
+        if (excludesInset) {
+            assertTrue(distance < 0.04, () -> "expected rounded-away corner sample: distance=" + distance);
+        } else {
+            assertTrue(distance > 0.04, () -> "expected filled corner sample: distance=" + distance);
+        }
     }
 
     /// Returns a rendered pixel from a scene coordinate in a root snapshot.

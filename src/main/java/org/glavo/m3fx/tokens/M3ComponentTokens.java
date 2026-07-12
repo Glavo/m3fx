@@ -1311,7 +1311,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendIconButtonRules(builder, iconButton());
         appendIconRules(builder, icon());
         appendConnectedButtonRules(builder, filledButton(), buttonGroup());
-        appendSplitButtonRules(builder, filledButton(), splitButton());
+        appendSplitButtonRules(builder, splitButton());
         appendGroupSpacingRule(
                 builder,
                 ".m3-segmented-button-group",
@@ -2583,41 +2583,33 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Appends split-button size, logical spacing, icon, and state-shape rules.
     private static void appendSplitButtonRules(
             StringBuilder builder,
-            ButtonTokens buttonTokens,
             SplitButtonTokens splitButtonTokens
     ) {
-        String outerRadius = M3TokenCss.pixels(buttonTokens.containerShape());
-
-        appendSplitButtonSizeRule(builder, ".m3-split-button", splitButtonTokens.small(), outerRadius);
+        appendSplitButtonSizeRule(builder, ".m3-split-button", splitButtonTokens.small());
         appendSplitButtonSizeRule(
                 builder,
                 ".m3-split-button.m3-split-button-extra-small",
-                splitButtonTokens.extraSmall(),
-                outerRadius
+                splitButtonTokens.extraSmall()
         );
         appendSplitButtonSizeRule(
                 builder,
                 ".m3-split-button.m3-split-button-small",
-                splitButtonTokens.small(),
-                outerRadius
+                splitButtonTokens.small()
         );
         appendSplitButtonSizeRule(
                 builder,
                 ".m3-split-button.m3-split-button-medium",
-                splitButtonTokens.medium(),
-                outerRadius
+                splitButtonTokens.medium()
         );
         appendSplitButtonSizeRule(
                 builder,
                 ".m3-split-button.m3-split-button-large",
-                splitButtonTokens.large(),
-                outerRadius
+                splitButtonTokens.large()
         );
         appendSplitButtonSizeRule(
                 builder,
                 ".m3-split-button.m3-split-button-extra-large",
-                splitButtonTokens.extraLarge(),
-                outerRadius
+                splitButtonTokens.extraLarge()
         );
     }
 
@@ -2626,14 +2618,13 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param builder the target generated stylesheet
     /// @param ownerSelector the split-button owner selector
     /// @param tokens the metrics for the size role
-    /// @param outerRadius the rounded outer-corner radius
     private static void appendSplitButtonSizeRule(
             StringBuilder builder,
             String ownerSelector,
-            SplitButtonSizeTokens tokens,
-            String outerRadius
+            SplitButtonSizeTokens tokens
     ) {
         double menuWidth = tokens.menuLeadingSpace() + tokens.menuIconSize() + tokens.menuTrailingSpace();
+        String outerRadius = M3TokenCss.pixels(tokens.containerHeight() / 2.0);
         beginRule(builder, ownerSelector);
         appendDeclaration(builder, "-m3-split-button-container-height", M3TokenCss.pixels(tokens.containerHeight()));
         appendDeclaration(builder, "-m3-split-button-spacing", M3TokenCss.pixels(tokens.spacing()));
