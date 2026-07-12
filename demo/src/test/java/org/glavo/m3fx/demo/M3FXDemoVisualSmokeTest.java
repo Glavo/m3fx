@@ -13644,7 +13644,29 @@ final class M3FXDemoVisualSmokeTest {
         assertSnackbarStaysCompact(scene, snackbar);
         assertNodeSnapshotHasOpaquePixels(snackbar, "snackbar " + message);
         assertSnackbarContentGeometry(scene, snackbar, "snackbar " + message);
+        assertSnackbarCenteredOverPage(scene, snackbar, "snackbar " + message);
         return snackbar;
+    }
+
+    /// Verifies that a demo snackbar is centered over the content page rather than the full shell including its sidebar.
+    private static void assertSnackbarCenteredOverPage(
+            Scene scene,
+            M3Snackbar snackbar,
+            String description
+    ) {
+        Node pageScrollPane = Objects.requireNonNull(
+                scene.lookup(".demo-scroll-pane"),
+                "demo page scroll pane"
+        );
+        Bounds pageBounds = pageScrollPane.localToScene(pageScrollPane.getBoundsInLocal());
+        Bounds snackbarBounds = snackbar.localToScene(snackbar.getBoundsInLocal());
+        assertEquals(
+                pageBounds.getCenterX(),
+                snackbarBounds.getCenterX(),
+                CONTROL_EDGE_TOLERANCE,
+                () -> description + " should be centered over the content page: page="
+                        + pageBounds + ", snackbar=" + snackbarBounds
+        );
     }
 
     /// Verifies that a snackbar's rendered message and action fit the compact Material container.

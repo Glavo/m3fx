@@ -289,11 +289,9 @@ public final class M3FXDemoApp extends Application {
 
         List<DemoPage> createdPages = createPages();
         pages = createdPages;
-        StackPane centerStack = new StackPane(createContent(createdPages), snackbarHost);
-        StackPane.setAlignment(snackbarHost, Pos.BOTTOM_CENTER);
 
         root.setTop(createHeader());
-        root.setCenter(centerStack);
+        root.setCenter(createContent(createdPages, snackbarHost));
 
         Scene scene = new Scene(root, 1180.0, 820.0);
         scene.getStylesheets().add(demoStylesheetUrl());
@@ -468,12 +466,19 @@ public final class M3FXDemoApp extends Application {
         );
     }
 
-    /// Creates the main content shell with sidebar and page host.
-    private Node createContent(List<DemoPage> pages) {
+    /// Creates the main content shell with sidebar, page host, and page-local snackbar overlay.
+    ///
+    /// @param pages the pages shown by the sidebar and content host
+    /// @param snackbarHost the snackbar overlay positioned over the content page
+    /// @return the assembled demo content shell
+    private Node createContent(List<DemoPage> pages, M3SnackbarHost snackbarHost) {
         BorderPane shell = new BorderPane();
         shell.getStyleClass().add("demo-shell");
         shell.setLeft(createSidebar(pages));
-        shell.setCenter(createPageScrollPane());
+
+        StackPane pageOverlay = new StackPane(createPageScrollPane(), snackbarHost);
+        StackPane.setAlignment(snackbarHost, Pos.BOTTOM_CENTER);
+        shell.setCenter(pageOverlay);
         return shell;
     }
 
