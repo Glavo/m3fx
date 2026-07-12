@@ -407,6 +407,20 @@
     -fx-min-height: 96px;
 }
 
+.demo-carousel-card .m3-card-container,
+.demo-carousel-card .m3-state-layer,
+.demo-carousel-card .m3-ripple {
+    -fx-background-radius: 28px;
+}
+
+.demo-carousel-card .m3-card-container {
+    -fx-border-radius: 28px;
+}
+
+.demo-carousel-navigation {
+    -fx-alignment: center-left;
+}
+
 .demo-card-title {
     -fx-font-size: 16px;
     -fx-font-weight: 600;

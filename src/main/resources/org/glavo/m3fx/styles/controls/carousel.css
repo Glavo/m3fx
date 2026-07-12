@@ -18,19 +18,6 @@
 
 .m3-carousel-track {
     -fx-alignment: center-left;
-    -fx-padding: 4px;
-    -fx-spacing: 12px;
-}
-
-.m3-carousel-item {
-    -fx-opacity: 0.92;
-}
-
-.m3-carousel-item:hover,
-.m3-carousel-selected-item {
-    -fx-opacity: 1.0;
-}
-
-.m3-carousel-selected-item {
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.14), 10, 0.12, 0, 3);
+    -fx-padding: 8px 16px 8px 16px;
+    -fx-spacing: 8px;
 }

@@ -2015,8 +2015,8 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
-        AtomicReference<@Nullable M3Carousel> multiBrowseReference = new AtomicReference<>();
-        AtomicReference<@Nullable M3Carousel> compactReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Carousel> multiAspectRatioReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Carousel> uncontainedReference = new AtomicReference<>();
 
         DemoFxTestUtils.runOnFxThread(() -> {
             Stage stage = new Stage();
@@ -2037,8 +2037,8 @@ final class M3FXDemoVisualSmokeTest {
                 Parent root = scene.getRoot();
                 Node page = currentDemoPage(scene, "Carousel");
                 assertCurrentPageTitle(scene, "Carousel");
-                assertVisibleText(root, "Multi-browse", "Carousel");
-                assertVisibleText(root, "Compact", "Carousel");
+                assertVisibleText(root, "Uncontained multi-aspect ratio", "Carousel");
+                assertVisibleText(root, "Uncontained", "Carousel");
                 assertVisibleText(root, "Previous", "Carousel");
                 assertVisibleText(root, "Next", "Carousel");
 
@@ -2046,21 +2046,23 @@ final class M3FXDemoVisualSmokeTest {
                 assertEquals(2, carousels.size(),
                         () -> "Carousel page should render two carousel variants, found " + carousels.size());
 
-                M3Carousel multiBrowse = carousels.stream()
-                        .filter(carousel -> carousel.getItems().size() == 5)
+                M3Carousel multiAspectRatio = carousels.stream()
+                        .filter(carousel -> carousel.getItems().size() == 7)
                         .findFirst()
-                        .orElseThrow(() -> new AssertionError("missing multi-browse carousel"));
-                M3Carousel compact = carousels.stream()
-                        .filter(carousel -> carousel.getItems().size() == 4)
+                        .orElseThrow(() -> new AssertionError("missing multi-aspect-ratio carousel"));
+                M3Carousel uncontained = carousels.stream()
+                        .filter(carousel -> carousel.getItems().size() == 8)
                         .findFirst()
-                        .orElseThrow(() -> new AssertionError("missing compact carousel"));
-                assertEquals(1, multiBrowse.getSelectedIndex(), "multi-browse carousel should select Design review");
-                assertEquals(0, compact.getSelectedIndex(), "compact carousel should select Inbox");
-                assertCarouselDemoGeometry(multiBrowse, "multi-browse carousel");
-                assertCarouselDemoGeometry(compact, "compact carousel");
+                        .orElseThrow(() -> new AssertionError("missing uncontained carousel"));
+                assertEquals(1, multiAspectRatio.getSelectedIndex(), "multi-aspect-ratio carousel should select Design review");
+                assertEquals(0, uncontained.getSelectedIndex(), "uncontained carousel should select Inbox");
+                assertCarouselDemoGeometry(multiAspectRatio, "multi-aspect-ratio carousel");
+                assertCarouselTrackFillsViewport(multiAspectRatio, "multi-aspect-ratio carousel");
+                assertCarouselDemoGeometry(uncontained, "uncontained carousel");
+                assertCarouselTrackFillsViewport(uncontained, "uncontained carousel");
 
-                multiBrowseReference.set(multiBrowse);
-                compactReference.set(compact);
+                multiAspectRatioReference.set(multiAspectRatio);
+                uncontainedReference.set(uncontained);
 
                 WritableImage image = snapshot(scene);
                 writeVisualSnapshot(image, Path.of(
@@ -2074,22 +2076,22 @@ final class M3FXDemoVisualSmokeTest {
 
             DemoFxTestUtils.runOnFxThreadWhenStable(() -> {
                 @Nullable Scene scene = sceneReference.get();
-                @Nullable M3Carousel multiBrowse = multiBrowseReference.get();
-                @Nullable M3Carousel compact = compactReference.get();
-                if (scene == null || multiBrowse == null || compact == null) {
+                @Nullable M3Carousel multiAspectRatio = multiAspectRatioReference.get();
+                @Nullable M3Carousel uncontained = uncontainedReference.get();
+                if (scene == null || multiAspectRatio == null || uncontained == null) {
                     return false;
                 }
                 scene.getRoot().applyCss();
                 scene.getRoot().layout();
-                return multiBrowse.getSelectedIndex() == 2
-                        && compact.getSelectedIndex() == 0
-                        && hasRenderableBounds(multiBrowse)
-                        && hasRenderableBounds(compact);
+                return multiAspectRatio.getSelectedIndex() == 2
+                        && uncontained.getSelectedIndex() == 0
+                        && hasRenderableBounds(multiAspectRatio)
+                        && hasRenderableBounds(uncontained);
             }, SETTLED_STATE_PULSES, () -> {
                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-                M3Carousel multiBrowse = Objects.requireNonNull(multiBrowseReference.get(), "multi-browse carousel");
-                M3MotionSettings.setAnimationsEnabled(multiBrowse, false);
-                multiBrowse.setAnimatedScroll(false);
+                M3Carousel multiAspectRatio = Objects.requireNonNull(multiAspectRatioReference.get(), "multi-aspect-ratio carousel");
+                M3MotionSettings.setAnimationsEnabled(multiAspectRatio, false);
+                multiAspectRatio.setAnimatedScroll(false);
                 Node page = currentDemoPage(scene, "Carousel");
                 M3Button next = Objects.requireNonNull(
                         firstVisibleButtonWithText(page, "Next"),
@@ -2098,15 +2100,17 @@ final class M3FXDemoVisualSmokeTest {
                 next.fire();
                 scene.getRoot().applyCss();
                 scene.getRoot().layout();
-                multiBrowse.scrollSelectedItemIntoView(false);
+                multiAspectRatio.scrollSelectedItemIntoView(false);
             }, () -> {
                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-                M3Carousel multiBrowse = Objects.requireNonNull(multiBrowseReference.get(), "multi-browse carousel");
-                M3Carousel compact = Objects.requireNonNull(compactReference.get(), "compact carousel");
-                assertEquals(2, multiBrowse.getSelectedIndex(), "Next action should select Release notes");
-                assertEquals(0, compact.getSelectedIndex(), "compact carousel should remain unchanged");
-                assertCarouselDemoGeometry(multiBrowse, "multi-browse carousel after Next");
-                assertCarouselDemoGeometry(compact, "compact carousel after Next");
+                M3Carousel multiAspectRatio = Objects.requireNonNull(multiAspectRatioReference.get(), "multi-aspect-ratio carousel");
+                M3Carousel uncontained = Objects.requireNonNull(uncontainedReference.get(), "uncontained carousel");
+                assertEquals(2, multiAspectRatio.getSelectedIndex(), "Next action should select Release notes");
+                assertEquals(0, uncontained.getSelectedIndex(), "uncontained carousel should remain unchanged");
+                assertCarouselDemoGeometry(multiAspectRatio, "multi-aspect-ratio carousel after Next");
+                assertCarouselTrackFillsViewport(multiAspectRatio, "multi-aspect-ratio carousel after Next");
+                assertCarouselDemoGeometry(uncontained, "uncontained carousel after Next");
+                assertCarouselTrackFillsViewport(uncontained, "uncontained carousel after Next");
 
                 WritableImage image = snapshot(scene);
                 writeVisualSnapshot(image, Path.of(
@@ -2119,10 +2123,10 @@ final class M3FXDemoVisualSmokeTest {
             });
         } finally {
             DemoFxTestUtils.runOnFxThread(() -> {
-                @Nullable M3Carousel multiBrowse = multiBrowseReference.get();
-                if (multiBrowse != null) {
-                    multiBrowse.setAnimatedScroll(true);
-                    M3MotionSettings.clearAnimationsEnabled(multiBrowse);
+                @Nullable M3Carousel multiAspectRatio = multiAspectRatioReference.get();
+                if (multiAspectRatio != null) {
+                    multiAspectRatio.setAnimatedScroll(true);
+                    M3MotionSettings.clearAnimationsEnabled(multiAspectRatio);
                 }
                 Stage stage = stageReference.get();
                 if (stage != null) {
@@ -11556,25 +11560,27 @@ final class M3FXDemoVisualSmokeTest {
         Parent root = scene.getRoot();
         Node page = currentDemoPage(scene, "Carousel");
         assertCurrentPageTitle(scene, "Carousel");
-        assertVisibleText(root, "Multi-browse", "Carousel");
-        assertVisibleText(root, "Compact", "Carousel");
+        assertVisibleText(root, "Uncontained multi-aspect ratio", "Carousel");
+        assertVisibleText(root, "Uncontained", "Carousel");
         assertVisibleText(root, "Previous", "Carousel");
         assertVisibleText(root, "Next", "Carousel");
 
         List<M3Carousel> carousels = visibleNodesOfType(page, M3Carousel.class);
         assertEquals(2, carousels.size(), () -> "Carousel page should render two carousel variants: " + carousels);
-        M3Carousel multiBrowse = carousels.stream()
-                .filter(carousel -> carousel.getItems().size() == 5)
+        M3Carousel multiAspectRatio = carousels.stream()
+                .filter(carousel -> carousel.getItems().size() == 7)
                 .findFirst()
-                .orElseThrow(() -> new AssertionError("missing multi-browse carousel"));
-        M3Carousel compact = carousels.stream()
-                .filter(carousel -> carousel.getItems().size() == 4)
+                .orElseThrow(() -> new AssertionError("missing multi-aspect-ratio carousel"));
+        M3Carousel uncontained = carousels.stream()
+                .filter(carousel -> carousel.getItems().size() == 8)
                 .findFirst()
-                .orElseThrow(() -> new AssertionError("missing compact carousel"));
-        assertEquals(1, multiBrowse.getSelectedIndex(), "multi-browse carousel selected index");
-        assertEquals(0, compact.getSelectedIndex(), "compact carousel selected index");
-        assertCarouselDemoGeometry(multiBrowse, "multi-browse carousel");
-        assertCarouselDemoGeometry(compact, "compact carousel");
+                .orElseThrow(() -> new AssertionError("missing uncontained carousel"));
+        assertEquals(1, multiAspectRatio.getSelectedIndex(), "multi-aspect-ratio carousel selected index");
+        assertEquals(0, uncontained.getSelectedIndex(), "uncontained carousel selected index");
+        assertCarouselDemoGeometry(multiAspectRatio, "multi-aspect-ratio carousel");
+        assertCarouselTrackFillsViewport(multiAspectRatio, "multi-aspect-ratio carousel");
+        assertCarouselDemoGeometry(uncontained, "uncontained carousel");
+        assertCarouselTrackFillsViewport(uncontained, "uncontained carousel");
     }
 
     /// Verifies the real Chips demo page variants, groups, and selected states.
@@ -16129,6 +16135,52 @@ final class M3FXDemoVisualSmokeTest {
         assertTrue(containsBoundsWithTolerance(viewportBounds, selectedTextBounds, TEXT_EDGE_TOLERANCE),
                 () -> description + " selected item text leaves viewport: text="
                         + selectedTextBounds + ", viewport=" + viewportBounds);
+    }
+
+    /// Verifies that carousel content overflows and visually occupies the complete horizontal viewport.
+    private static void assertCarouselTrackFillsViewport(M3Carousel carousel, String description) {
+        ScrollPane viewport = assertInstanceOf(
+                ScrollPane.class,
+                requireVisibleStyledDescendant(
+                        carousel,
+                        M3Carousel.VIEWPORT_STYLE_CLASS,
+                        description + " viewport"
+                )
+        );
+        Node track = requireVisibleStyledDescendant(carousel, M3Carousel.TRACK_STYLE_CLASS, description + " track");
+        Node viewportNode = Objects.requireNonNull(viewport.lookup(".viewport"), description + " viewport node");
+        Bounds viewportBounds = viewportNode.localToScene(viewportNode.getLayoutBounds());
+        Bounds trackBounds = track.localToScene(track.getLayoutBounds());
+
+        assertTrue(trackBounds.getWidth() > viewportBounds.getWidth() + 32.0,
+                () -> description + " should contain horizontally scrollable content: track="
+                        + trackBounds + ", viewport=" + viewportBounds);
+
+        double firstVisibleX = Double.POSITIVE_INFINITY;
+        double lastVisibleX = Double.NEGATIVE_INFINITY;
+        boolean clippedItemVisible = false;
+        for (Node item : carousel.getItems()) {
+            Bounds itemBounds = item.localToScene(item.getLayoutBounds());
+            if (!viewportBounds.intersects(itemBounds)) {
+                continue;
+            }
+            firstVisibleX = Math.min(firstVisibleX, itemBounds.getMinX());
+            lastVisibleX = Math.max(lastVisibleX, itemBounds.getMaxX());
+            clippedItemVisible |= !containsBoundsWithTolerance(
+                    viewportBounds,
+                    itemBounds,
+                    CONTROL_EDGE_TOLERANCE
+            );
+        }
+
+        double leadingGap = Math.max(0.0, firstVisibleX - viewportBounds.getMinX());
+        double trailingGap = Math.max(0.0, viewportBounds.getMaxX() - lastVisibleX);
+        assertTrue(leadingGap <= 20.0,
+                () -> description + " leaves an excessive leading gap: " + leadingGap);
+        assertTrue(trailingGap <= 20.0,
+                () -> description + " leaves an excessive trailing gap: " + trailingGap);
+        assertTrue(clippedItemVisible,
+                () -> description + " should expose a clipped edge item as an overflow affordance");
     }
 
     /// Verifies that a demo card uses a visible Material surface, variant treatment, and stable content bounds.

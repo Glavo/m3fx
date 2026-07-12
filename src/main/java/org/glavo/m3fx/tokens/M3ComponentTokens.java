@@ -628,12 +628,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double sliderTouchTargetSize = density.apply(48.0);
         double surfaceContainerShape = expressive ? shapeTokens.large() : shapeTokens.medium();
         double surfaceContentPadding = density.apply(expressive ? 20.0 : 16.0);
-        double carouselTrackPadding = density.apply(expressive ? 8.0 : 4.0);
-        double carouselItemSpacing = density.apply(expressive ? 16.0 : 12.0);
-        double carouselItemOpacity = expressive ? 0.94 : 0.92;
-        double carouselSelectedShadowRadius = density.apply(expressive ? 12.0 : 10.0);
-        double carouselSelectedShadowSpread = expressive ? 0.14 : 0.12;
-        double carouselSelectedShadowOffsetY = density.apply(expressive ? 4.0 : 3.0);
+        double carouselTrackHorizontalPadding = density.apply(16.0);
+        double carouselTrackVerticalPadding = density.apply(8.0);
+        double carouselItemSpacing = density.apply(8.0);
 
         return create(
                 new ButtonTokens(buttonHeight, shapeTokens.full(), buttonHorizontalPadding),
@@ -955,12 +952,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 ),
                 new SurfaceTokens(surfaceContainerShape, surfaceContentPadding),
                 new CarouselTokens(
-                        carouselTrackPadding,
-                        carouselItemSpacing,
-                        carouselItemOpacity,
-                        carouselSelectedShadowRadius,
-                        carouselSelectedShadowSpread,
-                        carouselSelectedShadowOffsetY
+                        carouselTrackHorizontalPadding,
+                        carouselTrackVerticalPadding,
+                        carouselItemSpacing
                 ),
                 new CardTokens(cardContainerShape, cardContentPadding, 1.0),
                 new DialogTokens(
@@ -1432,8 +1426,6 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendLoadingIndicatorRule(builder, loadingIndicator());
         appendSurfaceRule(builder, surface());
         appendCarouselTrackRule(builder, carousel());
-        appendCarouselItemRule(builder, carousel());
-        appendCarouselSelectedItemRule(builder, carousel());
         appendCardRule(builder, card());
         appendDialogRule(builder, dialog());
         appendSnackbarRule(builder, snackbar());
@@ -1977,24 +1969,17 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Appends carousel token declarations.
     private static void append(StringBuilder builder, CarouselTokens tokens) {
-        M3TokenCss.append(builder, "-m3-carousel-track-padding", M3TokenCss.pixels(tokens.trackPadding()));
+        M3TokenCss.append(
+                builder,
+                "-m3-carousel-track-horizontal-padding",
+                M3TokenCss.pixels(tokens.trackHorizontalPadding())
+        );
+        M3TokenCss.append(
+                builder,
+                "-m3-carousel-track-vertical-padding",
+                M3TokenCss.pixels(tokens.trackVerticalPadding())
+        );
         M3TokenCss.append(builder, "-m3-carousel-item-spacing", M3TokenCss.pixels(tokens.itemSpacing()));
-        M3TokenCss.append(builder, "-m3-carousel-item-opacity", Double.toString(tokens.itemOpacity()));
-        M3TokenCss.append(
-                builder,
-                "-m3-carousel-selected-shadow-radius",
-                M3TokenCss.pixels(tokens.selectedShadowRadius())
-        );
-        M3TokenCss.append(
-                builder,
-                "-m3-carousel-selected-shadow-spread",
-                Double.toString(tokens.selectedShadowSpread())
-        );
-        M3TokenCss.append(
-                builder,
-                "-m3-carousel-selected-shadow-offset-y",
-                M3TokenCss.pixels(tokens.selectedShadowOffsetY())
-        );
     }
 
     /// Appends card token declarations.
@@ -3606,34 +3591,15 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Appends a carousel track token CSS rule.
     private static void appendCarouselTrackRule(StringBuilder builder, CarouselTokens tokens) {
+        String verticalPadding = M3TokenCss.pixels(tokens.trackVerticalPadding());
+        String horizontalPadding = M3TokenCss.pixels(tokens.trackHorizontalPadding());
         beginRule(builder, ".m3-carousel-track");
-        appendDeclaration(builder, "-fx-padding", M3TokenCss.pixels(tokens.trackPadding()));
-        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.itemSpacing()));
-        endRule(builder);
-    }
-
-    /// Appends a carousel item token CSS rule.
-    private static void appendCarouselItemRule(StringBuilder builder, CarouselTokens tokens) {
-        beginRule(builder, ".m3-carousel-item");
-        appendDeclaration(builder, "-fx-opacity", Double.toString(tokens.itemOpacity()));
-        endRule(builder);
-    }
-
-    /// Appends a selected carousel item token CSS rule.
-    private static void appendCarouselSelectedItemRule(StringBuilder builder, CarouselTokens tokens) {
-        beginRule(builder, ".m3-carousel-selected-item");
-        appendDeclaration(builder, "-fx-opacity", "1.0");
         appendDeclaration(
                 builder,
-                "-fx-effect",
-                "dropshadow(gaussian, rgba(0,0,0,0.14), "
-                        + M3TokenCss.pixels(tokens.selectedShadowRadius())
-                        + ", "
-                        + tokens.selectedShadowSpread()
-                        + ", 0, "
-                        + M3TokenCss.pixels(tokens.selectedShadowOffsetY())
-                        + ")"
+                "-fx-padding",
+                verticalPadding + " " + horizontalPadding + " " + verticalPadding + " " + horizontalPadding
         );
+        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.itemSpacing()));
         endRule(builder);
     }
 
@@ -4945,29 +4911,20 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Tokens used by carousels.
     ///
-    /// @param trackPadding the padding around the carousel item track
+    /// @param trackHorizontalPadding the leading and trailing track padding
+    /// @param trackVerticalPadding the top and bottom track padding
     /// @param itemSpacing the spacing between carousel items
-    /// @param itemOpacity the default opacity for unselected carousel items
-    /// @param selectedShadowRadius the selected item shadow radius
-    /// @param selectedShadowSpread the selected item shadow spread
-    /// @param selectedShadowOffsetY the selected item shadow vertical offset
     @NotNullByDefault
     record CarouselTokens(
-            double trackPadding,
-            double itemSpacing,
-            double itemOpacity,
-            double selectedShadowRadius,
-            double selectedShadowSpread,
-            double selectedShadowOffsetY
+            double trackHorizontalPadding,
+            double trackVerticalPadding,
+            double itemSpacing
     ) {
         /// Creates carousel tokens.
         public CarouselTokens {
-            validateNonNegative(trackPadding, "trackPadding");
+            validateNonNegative(trackHorizontalPadding, "trackHorizontalPadding");
+            validateNonNegative(trackVerticalPadding, "trackVerticalPadding");
             validateNonNegative(itemSpacing, "itemSpacing");
-            validateOpacity(itemOpacity);
-            validateNonNegative(selectedShadowRadius, "selectedShadowRadius");
-            validateNonNegative(selectedShadowSpread, "selectedShadowSpread");
-            validateNonNegative(selectedShadowOffsetY, "selectedShadowOffsetY");
         }
     }
 

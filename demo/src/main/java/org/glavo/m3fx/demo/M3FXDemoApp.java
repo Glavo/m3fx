@@ -2271,33 +2271,46 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the carousel component page.
     private Node createCarouselPage() {
-        M3Carousel multiBrowse = createCarousel(
-                createCarouselCard("Morning focus", "Deep work block", M3CardVariant.FILLED, 220.0, 140.0),
-                createCarouselCard("Design review", "Component polish", M3CardVariant.ELEVATED, 240.0, 140.0),
-                createCarouselCard("Release notes", "Packaging updates", M3CardVariant.OUTLINED, 220.0, 140.0),
-                createCarouselCard("Mood board", "Inspiration", M3CardVariant.FILLED, 220.0, 140.0),
-                createCarouselCard("Accessibility", "Keyboard checks", M3CardVariant.OUTLINED, 220.0, 140.0)
+        M3Carousel multiAspectRatio = createCarousel(
+                createCarouselCard("Morning focus", "Deep work block", M3CardVariant.FILLED, 232.0, 140.0),
+                createCarouselCard("Design review", "Component polish", M3CardVariant.FILLED, 280.0, 140.0),
+                createCarouselCard("Release notes", "Packaging updates", M3CardVariant.FILLED, 196.0, 140.0),
+                createCarouselCard("Mood board", "Inspiration", M3CardVariant.FILLED, 252.0, 140.0),
+                createCarouselCard("Accessibility", "Keyboard checks", M3CardVariant.FILLED, 180.0, 140.0),
+                createCarouselCard("Motion study", "Expressive rhythm", M3CardVariant.FILLED, 264.0, 140.0),
+                createCarouselCard("Color system", "Dynamic palettes", M3CardVariant.FILLED, 216.0, 140.0)
         );
-        multiBrowse.setPrefWidth(760.0);
-        multiBrowse.selectIndex(1);
+        multiAspectRatio.setMaxWidth(Double.MAX_VALUE);
+        multiAspectRatio.selectIndex(1);
 
         M3Button previous = new M3Button("Previous", M3ButtonVariant.OUTLINED);
-        previous.setOnAction(event -> multiBrowse.selectPrevious());
+        previous.setOnAction(event -> multiAspectRatio.selectPrevious());
         M3Button next = new M3Button("Next", M3ButtonVariant.FILLED);
-        next.setOnAction(event -> multiBrowse.selectNext());
+        next.setOnAction(event -> multiAspectRatio.selectNext());
 
-        M3Carousel compact = createCarousel(
-                createCarouselCard("Inbox", "24 unread", M3CardVariant.FILLED, 160.0, 112.0),
-                createCarouselCard("Tasks", "6 due", M3CardVariant.ELEVATED, 160.0, 112.0),
-                createCarouselCard("Files", "Recent docs", M3CardVariant.OUTLINED, 160.0, 112.0),
-                createCarouselCard("People", "Team updates", M3CardVariant.FILLED, 160.0, 112.0)
+        HBox navigation = new HBox(12.0, previous, next);
+        navigation.getStyleClass().add("demo-carousel-navigation");
+
+        VBox multiAspectRatioSample = new VBox(12.0, multiAspectRatio, navigation);
+        multiAspectRatioSample.setFillWidth(true);
+        multiAspectRatioSample.setMaxWidth(Double.MAX_VALUE);
+
+        M3Carousel uncontained = createCarousel(
+                createCarouselCard("Inbox", "24 unread", M3CardVariant.OUTLINED, 176.0, 112.0),
+                createCarouselCard("Tasks", "6 due", M3CardVariant.OUTLINED, 176.0, 112.0),
+                createCarouselCard("Files", "Recent docs", M3CardVariant.OUTLINED, 176.0, 112.0),
+                createCarouselCard("People", "Team updates", M3CardVariant.OUTLINED, 176.0, 112.0),
+                createCarouselCard("Calendar", "3 events", M3CardVariant.OUTLINED, 176.0, 112.0),
+                createCarouselCard("Messages", "8 new", M3CardVariant.OUTLINED, 176.0, 112.0),
+                createCarouselCard("Projects", "4 active", M3CardVariant.OUTLINED, 176.0, 112.0),
+                createCarouselCard("Archive", "12 folders", M3CardVariant.OUTLINED, 176.0, 112.0)
         );
-        compact.setPrefWidth(460.0);
-        compact.selectFirst();
+        uncontained.setMaxWidth(Double.MAX_VALUE);
+        uncontained.selectFirst();
 
         return createGallery(
-                createShowcaseGroup("Multi-browse", multiBrowse, previous, next),
-                createShowcaseGroup("Compact", compact)
+                createFullWidthShowcaseGroup("Uncontained multi-aspect ratio", multiAspectRatioSample),
+                createFullWidthShowcaseGroup("Uncontained", uncontained)
         );
     }
 
@@ -3769,6 +3782,7 @@ public final class M3FXDemoApp extends Application {
 
         content.getChildren().addAll(titleLabel, bodyLabel);
         M3Card card = new M3Card(content, variant);
+        card.getStyleClass().add("demo-carousel-card");
         card.setOnAction(event -> showSnackbar("Theme-aware snackbar"));
         card.setPrefSize(width, height);
         return card;

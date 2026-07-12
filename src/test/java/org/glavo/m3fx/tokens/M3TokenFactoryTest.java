@@ -168,7 +168,9 @@ final class M3TokenFactoryTest {
         assertEquals(71.0, tokenSet.componentTokens().form().rowMinHeight(), 0.0001);
         assertEquals(14.0, tokenSet.componentTokens().validationSummary().contentPadding(), 0.0001);
         assertEquals(22.0, tokenSet.componentTokens().surface().containerShape(), 0.0001);
-        assertEquals(0.91, tokenSet.componentTokens().carousel().itemOpacity(), 0.0001);
+        assertEquals(16.0, tokenSet.componentTokens().carousel().trackHorizontalPadding(), 0.0001);
+        assertEquals(8.0, tokenSet.componentTokens().carousel().trackVerticalPadding(), 0.0001);
+        assertEquals(8.0, tokenSet.componentTokens().carousel().itemSpacing(), 0.0001);
         assertEquals(42.0, tokenSet.componentTokens().selection().touchTargetSize(), 0.0001);
         assertEquals(41.0, tokenSet.componentTokens().selection().stateLayerSize(), 0.0001);
         assertEquals(18.0, tokenSet.componentTokens().selection().checkboxContainerSize(), 0.0001);
@@ -318,7 +320,8 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-validation-summary-item:hover .m3-state-layer"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-validation-summary-item:focus-visible .m3-state-layer"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-validation-summary-item:pressed .m3-state-layer"));
-        assertTrue(tokenSet.toControlStyleRules().contains(".m3-carousel-selected-item"));
+        assertTrue(tokenSet.toControlStyleRules().contains(".m3-carousel-track"));
+        assertFalse(tokenSet.toControlStyleRules().contains(".m3-carousel-selected-item"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-surface"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-bottom-sheet .m3-bottom-sheet-drag-handle"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-scrim.m3-scrim"));
@@ -482,7 +485,7 @@ final class M3TokenFactoryTest {
                 new M3ComponentTokens.ProgressTokens(5.0, 18.0, 52.0, 3.0, 41.0, 6.0, 7.0, 2.0, 16.0, 5.0),
                 new M3ComponentTokens.LoadingIndicatorTokens(63.0, 22.0),
                 new M3ComponentTokens.SurfaceTokens(22.0, 19.0),
-                new M3ComponentTokens.CarouselTokens(5.0, 13.0, 0.91, 11.0, 0.13, 4.0),
+                new M3ComponentTokens.CarouselTokens(16.0, 8.0, 8.0),
                 new M3ComponentTokens.CardTokens(13.0, 18.0, 2.0),
                 new M3ComponentTokens.DialogTokens(30.0, 26.0, 300.0, 540.0, 12.0, 28.0),
                 new M3ComponentTokens.SnackbarTokens(9.0, 18.0, 344.0, 672.0, 48.0, 68.0, 32.0),
