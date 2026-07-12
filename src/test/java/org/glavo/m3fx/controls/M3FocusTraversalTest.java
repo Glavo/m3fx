@@ -295,7 +295,7 @@ final class M3FocusTraversalTest {
             presetList.setFocusTraversable(true);
             Pane owner = new Pane(presetList);
             boolean[] focusAccepted = {false};
-            M3PresetNavigation.install(presetList, owner, () -> focusAccepted[0]);
+            M3PresetNavigation.installColumn(presetList, owner, () -> focusAccepted[0]);
             show(owner, 160.0, 80.0);
             presetList.requestFocus();
 
@@ -320,7 +320,7 @@ final class M3FocusTraversalTest {
             presetList.setFocusTraversable(true);
             Pane owner = new Pane(presetList);
             boolean[] focusAccepted = {false};
-            M3PresetNavigation.install(presetList, owner, () -> {
+            M3PresetNavigation.installColumn(presetList, owner, () -> {
                 focusAccepted[0] = true;
                 return true;
             });
@@ -355,7 +355,7 @@ final class M3FocusTraversalTest {
             Pane owner = new Pane(presetList);
             owner.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
             boolean[] focusAccepted = {true};
-            M3PresetNavigation.install(presetList, owner, () -> focusAccepted[0]);
+            M3PresetNavigation.installColumn(presetList, owner, () -> focusAccepted[0]);
             show(owner, 160.0, 80.0);
             presetList.requestFocus();
 

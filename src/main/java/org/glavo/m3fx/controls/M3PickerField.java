@@ -782,6 +782,10 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
         }
 
         focusEditorOnHidden |= focusEditor;
+        if (getScene() == null) {
+            popup.hide();
+            return;
+        }
         if (hidingPopup && popupAnimation.getStatus() == Animation.Status.RUNNING) {
             return;
         }

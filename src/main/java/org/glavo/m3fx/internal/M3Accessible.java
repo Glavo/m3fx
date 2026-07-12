@@ -45,31 +45,16 @@ public final class M3Accessible {
     }
 
     /// Stores direct accessibility action handlers for a node.
+    ///
+    /// @param focusHandler the optional focus handler
+    /// @param showHandler the optional reveal handler
+    /// @param showTargetMatcher the optional reveal target matcher
     @NotNullByDefault
-    private static final class AccessibleActionRoute {
-        /// The optional focus handler.
-        private final @Nullable BooleanSupplier focusHandler;
-
-        /// The optional reveal handler.
-        private final @Nullable AccessibleActionHandler showHandler;
-
-        /// The optional reveal target matcher.
-        private final @Nullable Predicate<@Nullable Object> showTargetMatcher;
-
-        /// Creates an accessibility action route.
-        ///
-        /// @param focusHandler the optional focus handler
-        /// @param showHandler the optional reveal handler
-        /// @param showTargetMatcher the optional reveal target matcher
-        private AccessibleActionRoute(
-                @Nullable BooleanSupplier focusHandler,
-                @Nullable AccessibleActionHandler showHandler,
-                @Nullable Predicate<@Nullable Object> showTargetMatcher
-        ) {
-            this.focusHandler = focusHandler;
-            this.showHandler = showHandler;
-            this.showTargetMatcher = showTargetMatcher;
-        }
+    private record AccessibleActionRoute(
+            @Nullable BooleanSupplier focusHandler,
+            @Nullable AccessibleActionHandler showHandler,
+            @Nullable Predicate<@Nullable Object> showTargetMatcher
+    ) {
     }
 
     /// Installs direct accessibility action handlers on a node.
@@ -387,20 +372,20 @@ public final class M3Accessible {
     }
 
     /// Returns whether an item exposes the supplied target through its accessibility item tree.
-    public static boolean containsAccessibleActionTarget(@Nullable Node item, Object... parameters) {
+    public static boolean containsAccessibleActionTarget(@Nullable Node item, @Nullable Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
         if (item == null || parameters.length == 0) {
             return false;
         }
 
-        for (Object parameter : parameters) {
+        for (@Nullable Object parameter : parameters) {
             if (parameter instanceof Node node && containsDirectAccessibleNode(item, node)) {
                 return true;
             }
         }
 
         Set<Node> visited = Collections.newSetFromMap(new IdentityHashMap<>());
-        for (Object parameter : parameters) {
+        for (@Nullable Object parameter : parameters) {
             visited.clear();
             if (containsAccessibleActionTarget(item, parameter, visited, true)) {
                 return true;
@@ -531,23 +516,23 @@ public final class M3Accessible {
         if (!containsNode(item, target)) {
             return false;
         }
-        return !canRevealActionNode(item, target);
+        return cannotRevealActionNode(item, target);
     }
 
-    /// Returns whether a node under an action item can become reachable when the owner reveals the item.
-    private static boolean canRevealActionNode(Node item, Node target) {
+    /// Returns whether a node under an action item cannot become reachable when the owner reveals the item.
+    private static boolean cannotRevealActionNode(Node item, Node target) {
         if (item.isDisabled() || !target.isVisible() || target.isDisabled()) {
-            return false;
+            return true;
         }
 
         @Nullable Parent parent = target.getParent();
         while (parent != null && parent != item) {
             if (parent.isDisabled()) {
-                return false;
+                return true;
             }
             parent = parent.getParent();
         }
-        return parent == item || containsNode(item, target);
+        return parent != item && !containsNode(item, target);
     }
 
     /// Returns whether a leading item or indexed items can handle explicit accessibility item parameters.
@@ -692,20 +677,6 @@ public final class M3Accessible {
         );
     }
 
-    /// Requests focus for the default item when no parameter is supplied, or for the requested indexed item.
-    public static boolean showItemOrDefault(
-            @Nullable Node defaultItem,
-            ObservableList<? extends Node> items,
-            Object... parameters
-    ) {
-        Objects.requireNonNull(items, "items");
-        Objects.requireNonNull(parameters, "parameters");
-        @Nullable Node item = parameters.length == 0
-                ? (focusTarget(defaultItem) == null ? firstFocusableItem(items) : defaultItem)
-                : actionItem(items, parameters);
-        return showItemOrAccessibleActionTarget(item, items, parameters);
-    }
-
     /// Requests focus for the default item or indexed item and reveals it through the owner.
     public static boolean showItemOrDefault(
             Node owner,
@@ -842,14 +813,14 @@ public final class M3Accessible {
     /// Requests focus for the exact item node and reveals it through the owner when the item can be reached.
     public static boolean showDirectItem(Node owner, @Nullable Node item) {
         Objects.requireNonNull(owner, "owner");
-        if (item == null || !canReach(item) || !item.isFocusTraversable()) {
+        if (!canReach(item) || !item.isFocusTraversable()) {
             return false;
         }
 
         if (containsNode(owner, item)) {
             return M3ScrollReveal.requestFocusAndReveal(owner, item);
         }
-        return requestKeyboardFocus(item);
+        return M3FocusRequests.requestFocus(item);
     }
 
     /// Requests focus through a node's accessibility focus action.
@@ -910,16 +881,10 @@ public final class M3Accessible {
         if (focusTarget == null) {
             focusTarget = accessibleFocusTarget(item);
         }
-        if (focusTarget != null && requestKeyboardFocus(focusTarget)) {
+        if (focusTarget != null && M3FocusRequests.requestFocus(focusTarget)) {
             return focusTarget;
         }
         return null;
-    }
-
-    /// Requests keyboard focus and returns whether the target became the scene focus owner.
-    private static boolean requestKeyboardFocus(Node target) {
-        Objects.requireNonNull(target, "target");
-        return M3FocusRequests.requestFocus(target);
     }
 
     /// Focuses a direct action target or delegates explicit reveal to nested accessible popup owners.
@@ -1180,7 +1145,7 @@ public final class M3Accessible {
     /// Delegates an explicit reveal request to the first child that exposes the requested accessibility target.
     public static boolean showAccessibleActionTarget(@Nullable Node item, Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
-        if (!canReachOrReveal(item) || parameters.length == 0) {
+        if (item == null || cannotReachOrReveal(item) || parameters.length == 0) {
             return false;
         }
         Set<Node> visited = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -1193,7 +1158,7 @@ public final class M3Accessible {
             Set<Node> visited,
             Object... parameters
     ) {
-        if (!canReachOrReveal(item) || parameters.length == 0 || !visited.add(item)) {
+        if (item == null || cannotReachOrReveal(item) || parameters.length == 0 || !visited.add(item)) {
             return false;
         }
         if (containsUnrevealableActionNodeTarget(item, parameters)) {
@@ -1323,12 +1288,12 @@ public final class M3Accessible {
         return currentContainedFocusTarget(item) != null || activeExternalFocusTarget(item, item) != null;
     }
 
-    /// Returns whether a node can either receive focus now or reveal itself from a collapsed self-hidden state.
-    private static boolean canReachOrReveal(@Nullable Node item) {
+    /// Returns whether a node can neither receive focus now nor reveal itself from a collapsed self-hidden state.
+    private static boolean cannotReachOrReveal(Node item) {
         if (canReach(item)) {
-            return true;
+            return false;
         }
-        return item != null && item.getScene() != null && canReveal(item);
+        return item.getScene() == null || !canReveal(item);
     }
 
     /// Delegates an explicit reveal request to an indexed child and reveals it through the owner when reached.
@@ -1910,7 +1875,7 @@ public final class M3Accessible {
         }
         @Nullable Scene scene = item.getScene();
         @Nullable Node focusOwner = scene == null ? null : scene.getFocusOwner();
-        if (focusOwner == null || !canReach(focusOwner) || !containsNode(item, focusOwner)) {
+        if (!canReach(focusOwner) || !containsNode(item, focusOwner)) {
             return null;
         }
         return focusOwner;
@@ -2042,22 +2007,6 @@ public final class M3Accessible {
             return true;
         }
         return possibleAncestor != owner && containsNode(possibleAncestor, possibleDescendant, visited);
-    }
-
-    /// Returns the first child item referenced by accessibility selection parameters.
-    public static <T extends Node> @Nullable T firstSelectionTarget(
-            ObservableList<? extends Node> items,
-            Class<T> itemType,
-            Object... parameters
-    ) {
-        Objects.requireNonNull(items, "items");
-        Objects.requireNonNull(itemType, "itemType");
-        for (Node item : items) {
-            if (itemType.isInstance(item) && containsSelectionTarget(item, parameters)) {
-                return itemType.cast(item);
-            }
-        }
-        return null;
     }
 
     /// Returns the indexed item or the item exposing the target referenced by accessibility parameters.
@@ -2449,11 +2398,7 @@ public final class M3Accessible {
                     return target;
                 }
             }
-            @Nullable Node trailingTarget = containedActionTarget(trailing, node);
-            if (trailingTarget != null) {
-                return trailingTarget;
-            }
-            return null;
+            return containedActionTarget(trailing, node);
         }
         if (parameter instanceof Iterable<?> values) {
             for (Object value : values) {
@@ -2506,11 +2451,7 @@ public final class M3Accessible {
             if (firstTarget != null) {
                 return firstTarget;
             }
-            @Nullable Node secondTarget = containedActionTarget(second, node);
-            if (secondTarget != null) {
-                return secondTarget;
-            }
-            return null;
+            return containedActionTarget(second, node);
         }
         if (parameter instanceof Iterable<?> values) {
             for (Object value : values) {
@@ -2580,11 +2521,7 @@ public final class M3Accessible {
             if (secondTarget != null) {
                 return secondTarget;
             }
-            @Nullable Node thirdTarget = containedActionTarget(third, node);
-            if (thirdTarget != null) {
-                return thirdTarget;
-            }
-            return null;
+            return containedActionTarget(third, node);
         }
         if (parameter instanceof Iterable<?> values) {
             for (Object value : values) {
@@ -2745,7 +2682,7 @@ public final class M3Accessible {
         if (item == requestedNode) {
             return isEffectivelyReachable(item) ? item : null;
         }
-        if (!canRevealActionNode(item, requestedNode)) {
+        if (cannotRevealActionNode(item, requestedNode)) {
             return null;
         }
         return accessibleFocusTarget(requestedNode) == null ? item : requestedNode;

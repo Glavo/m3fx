@@ -1506,6 +1506,158 @@ final class M3ControlStyleTest {
         assertNull(dynamicallyDisabledElevated.getEffect(), "dynamically disabled elevated button elevation");
     }
 
+    /// Verifies that disabled chips, segmented buttons, and list items render independent Material layers.
+    @Test
+    void disabledSelectionControlsRenderIndependentMaterialLayers() {
+        M3Theme theme = M3Theme.defaultTheme();
+        Color onSurface = theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SURFACE);
+        Color disabledContainer = withOpacity(onSurface, 0.12);
+        Color disabledContent = withOpacity(onSurface, 0.38);
+        Color disabledListStateLayer = withOpacity(onSurface, 0.10);
+
+        Region flatChipGraphic = new Region();
+        flatChipGraphic.setPrefSize(12.0, 12.0);
+        M3Chip flatChip = new M3Chip("Flat", flatChipGraphic);
+        flatChip.setDisable(true);
+
+        Region elevatedChipGraphic = new Region();
+        elevatedChipGraphic.setPrefSize(12.0, 12.0);
+        M3Chip elevatedChip = new M3Chip("Elevated", elevatedChipGraphic);
+        elevatedChip.setChipStyle(M3ChipStyle.ELEVATED);
+
+        Region selectedChipGraphic = new Region();
+        selectedChipGraphic.setPrefSize(12.0, 12.0);
+        M3Chip selectedChip = new M3Chip("Selected", selectedChipGraphic);
+        selectedChip.setVariant(M3ChipVariant.FILTER);
+        selectedChip.setSelected(true);
+        selectedChip.setDisable(true);
+
+        Region segmentGraphic = new Region();
+        segmentGraphic.setPrefSize(12.0, 12.0);
+        M3SegmentedButton segment = new M3SegmentedButton("Day", segmentGraphic);
+        segment.setDisable(true);
+
+        Region selectedSegmentGraphic = new Region();
+        selectedSegmentGraphic.setPrefSize(12.0, 12.0);
+        M3SegmentedButton selectedSegment = new M3SegmentedButton("Week", selectedSegmentGraphic);
+        selectedSegment.setSelected(true);
+        selectedSegment.setDisable(true);
+
+        Region listLeading = new Region();
+        listLeading.setPrefSize(24.0, 24.0);
+        M3ListItem listItem = new M3ListItem("Disabled row");
+        listItem.setSupportingText("Supporting text");
+        listItem.setLeading(listLeading);
+        listItem.setDisable(true);
+
+        Region selectedListLeading = new Region();
+        selectedListLeading.setPrefSize(24.0, 24.0);
+        M3ListItem selectedListItem = new M3ListItem("Selected disabled row");
+        selectedListItem.setSupportingText("Supporting text");
+        selectedListItem.setLeading(selectedListLeading);
+        selectedListItem.setSelected(true);
+        selectedListItem.setDisable(true);
+
+        VBox root = new VBox(
+                new HBox(flatChip, elevatedChip, selectedChip),
+                new HBox(segment, selectedSegment),
+                listItem,
+                selectedListItem
+        );
+        Scene scene = new Scene(root, 720.0, 360.0);
+        M3ThemeManager.install(scene, theme);
+        root.applyCss();
+        root.layout();
+
+        assertEquals(1.0, flatChip.getOpacity(), 0.0001);
+        assertRegionFill(flatChip, Color.TRANSPARENT);
+        assertBorderColor(flatChip, disabledContainer);
+        assertEquals(onSurface, flatChip.getTextFill());
+        assertEquals(0.38, flatChipGraphic.getOpacity(), 0.0001);
+        assertEquals(0.38, assertInstanceOf(Text.class, flatChip.lookup(".text")).getOpacity(), 0.0001);
+
+        assertInstanceOf(DropShadow.class, elevatedChip.getEffect(), "enabled elevated chip elevation");
+        elevatedChip.setDisable(true);
+        root.applyCss();
+        assertEquals(1.0, elevatedChip.getOpacity(), 0.0001);
+        assertRegionFill(elevatedChip, disabledContainer);
+        assertBorderColor(elevatedChip, Color.TRANSPARENT);
+        assertEquals(onSurface, elevatedChip.getTextFill());
+        assertEquals(0.38, elevatedChipGraphic.getOpacity(), 0.0001);
+        assertNull(elevatedChip.getEffect(), "dynamically disabled elevated chip elevation");
+
+        assertEquals(1.0, selectedChip.getOpacity(), 0.0001);
+        assertRegionFill(selectedChip, disabledContainer);
+        assertBorderColor(selectedChip, Color.TRANSPARENT);
+        assertEquals(onSurface, selectedChip.getTextFill());
+        assertEquals(0.38, selectedChipGraphic.getOpacity(), 0.0001);
+
+        assertEquals(1.0, segment.getOpacity(), 0.0001);
+        assertRegionFill(segment, Color.TRANSPARENT);
+        assertBorderColor(segment, disabledContainer);
+        assertEquals(onSurface, segment.getTextFill());
+        assertEquals(0.38, segmentGraphic.getOpacity(), 0.0001);
+        assertEquals(0.38, assertInstanceOf(Text.class, segment.lookup(".text")).getOpacity(), 0.0001);
+
+        assertEquals(1.0, selectedSegment.getOpacity(), 0.0001);
+        assertRegionFill(selectedSegment, Color.TRANSPARENT);
+        assertBorderColor(selectedSegment, disabledContainer);
+        assertEquals(onSurface, selectedSegment.getTextFill());
+        assertEquals(0.38, selectedSegmentGraphic.getOpacity(), 0.0001);
+        assertRegionFill(segmentedButtonSelectionContainer(selectedSegment), disabledContainer);
+        assertEquals(1.0, segmentedButtonSelectionContainer(selectedSegment).getOpacity(), 0.0001);
+
+        assertEquals(1.0, listItem.getOpacity(), 0.0001);
+        assertRegionFill(listItemContainer(listItem), disabledListStateLayer);
+        assertEquals(disabledContent, listItemHeadlineLabel(listItem).getTextFill());
+        Region listLeadingSlot = lookupRegion(listItem, ".m3-list-item-leading");
+        assertEquals(0.38, listLeadingSlot.getOpacity(), 0.0001);
+        assertEquals(1.0, listLeading.getOpacity(), 0.0001);
+
+        assertEquals(1.0, selectedListItem.getOpacity(), 0.0001);
+        assertRegionFill(listItemContainer(selectedListItem), disabledListStateLayer);
+        assertRegionFill(listItemSelectionContainer(selectedListItem), disabledContent);
+        assertEquals(1.0, listItemSelectionContainer(selectedListItem).getOpacity(), 0.0001);
+        assertEquals(disabledContent, listItemHeadlineLabel(selectedListItem).getTextFill());
+        Region selectedListLeadingSlot = lookupRegion(selectedListItem, ".m3-list-item-leading");
+        assertEquals(0.38, selectedListLeadingSlot.getOpacity(), 0.0001);
+        assertEquals(1.0, selectedListLeading.getOpacity(), 0.0001);
+    }
+
+    /// Verifies that flat chip focus outlines use each variant's Material content color role.
+    @Test
+    void flatChipFocusOutlinesUseVariantSpecificColorRoles() {
+        M3Theme theme = M3Theme.defaultTheme();
+        Color onSurface = theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SURFACE);
+        Color onSurfaceVariant = theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SURFACE_VARIANT);
+
+        M3Chip assist = new M3Chip("Assist");
+        assist.setVariant(M3ChipVariant.ASSIST);
+        M3Chip suggestion = new M3Chip("Suggestion");
+        suggestion.setVariant(M3ChipVariant.SUGGESTION);
+        M3Chip filter = new M3Chip("Filter");
+        filter.setVariant(M3ChipVariant.FILTER);
+        M3Chip input = new M3Chip("Input");
+        input.setVariant(M3ChipVariant.INPUT);
+        M3Chip selectedFilter = new M3Chip("Selected");
+        selectedFilter.setVariant(M3ChipVariant.FILTER);
+        selectedFilter.setSelected(true);
+
+        HBox root = new HBox(assist, suggestion, filter, input, selectedFilter);
+        Scene scene = new Scene(root, 720.0, 120.0);
+        M3ThemeManager.install(scene, theme);
+        for (M3Chip chip : List.of(assist, suggestion, filter, input, selectedFilter)) {
+            chip.pseudoClassStateChanged(PseudoClass.getPseudoClass("focus-visible"), true);
+        }
+        root.applyCss();
+
+        assertBorderColor(assist, onSurface);
+        assertBorderColor(suggestion, onSurfaceVariant);
+        assertBorderColor(filter, onSurfaceVariant);
+        assertBorderColor(input, onSurfaceVariant);
+        assertBorderColor(selectedFilter, Color.TRANSPARENT);
+    }
+
     /// Verifies that only the elevated button variant owns button elevation.
     @Test
     void buttonElevationDoesNotLeakIntoNonElevatedVariants() {
@@ -1540,6 +1692,66 @@ final class M3ControlStyleTest {
             root.applyCss();
 
             assertNull(button.getEffect(), "snackbar action button should not keep elevation");
+        });
+    }
+
+    /// Verifies that elevated Material surfaces rise only on hover and retain enabled elevation for focus and press.
+    @Test
+    void elevatedSurfacesUseStateSpecificMaterialElevation() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Button button = new M3Button("Elevated", M3ButtonVariant.ELEVATED);
+            M3Chip chip = new M3Chip("Elevated chip");
+            chip.setChipStyle(M3ChipStyle.ELEVATED);
+            M3FloatingActionButton fab = new M3FloatingActionButton("Create");
+            M3Card card = new M3Card(new Label("Elevated card"), M3CardVariant.ELEVATED);
+            HBox root = new HBox(16.0, button, chip, fab, card);
+            Scene scene = new Scene(root, 720.0, 180.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            M3MotionSettings.setAnimationsEnabled(root, false);
+            root.applyCss();
+            root.layout();
+
+            Region cardContainer = lookupRegion(card, ".m3-card-container");
+            List<Node> effectTargets = List.of(button, chip, fab, cardContainer);
+            List<DropShadow> enabledShadows = effectTargets.stream()
+                    .map(M3ControlStyleTest::assertDropShadow)
+                    .toList();
+            List<Node> owners = List.of(button, chip, fab, card);
+            PseudoClass focusVisible = PseudoClass.getPseudoClass("focus-visible");
+            PseudoClass pressed = PseudoClass.getPseudoClass("pressed");
+            PseudoClass hover = PseudoClass.getPseudoClass("hover");
+
+            for (Node owner : owners) {
+                owner.pseudoClassStateChanged(focusVisible, true);
+            }
+            root.applyCss();
+            for (int index = 0; index < effectTargets.size(); index++) {
+                DropShadow focused = assertDropShadow(effectTargets.get(index));
+                assertEquals(enabledShadows.get(index).getRadius(), focused.getRadius(), 0.0001);
+                assertEquals(enabledShadows.get(index).getOffsetY(), focused.getOffsetY(), 0.0001);
+            }
+
+            for (Node owner : owners) {
+                owner.pseudoClassStateChanged(focusVisible, false);
+                owner.pseudoClassStateChanged(pressed, true);
+            }
+            root.applyCss();
+            for (int index = 0; index < effectTargets.size(); index++) {
+                DropShadow pressedShadow = assertDropShadow(effectTargets.get(index));
+                assertEquals(enabledShadows.get(index).getRadius(), pressedShadow.getRadius(), 0.0001);
+                assertEquals(enabledShadows.get(index).getOffsetY(), pressedShadow.getOffsetY(), 0.0001);
+            }
+
+            for (Node owner : owners) {
+                owner.pseudoClassStateChanged(pressed, false);
+                owner.pseudoClassStateChanged(hover, true);
+            }
+            root.applyCss();
+            for (int index = 0; index < effectTargets.size(); index++) {
+                DropShadow hovered = assertDropShadow(effectTargets.get(index));
+                assertTrue(hovered.getRadius() > enabledShadows.get(index).getRadius());
+                assertTrue(hovered.getOffsetY() > enabledShadows.get(index).getOffsetY());
+            }
         });
     }
 
@@ -2008,6 +2220,7 @@ final class M3ControlStyleTest {
         assertEquals(112.0, toolbar.getPrefHeight(), 0.0001);
         assertEquals(new Insets(10.0, 11.0, 12.0, 13.0), toolbar.getPadding());
     }
+
     /// Verifies that explicit component token API values survive later stylesheet passes.
     @Test
     void coreComponentTokenApiValuesSurviveStylesheetPasses() {
@@ -2621,6 +2834,7 @@ final class M3ControlStyleTest {
         assertIconToggleButtonMetrics(largeSquare, largeIcon, 128.0, 96.0, 32.0, 999.0);
         assertEquals(8.0, pressedSmall.getContainerShape(), 0.0001);
     }
+
     /// Verifies that button groups assign connected position style classes.
     @Test
     void buttonGroupAssignsPositionStyleClasses() {
@@ -2680,6 +2894,7 @@ final class M3ControlStyleTest {
 
         assertEquals(-2.0, group.getSpacing(), 0.0001);
     }
+
     /// Verifies that button group variant and size properties maintain matching style classes.
     @Test
     void buttonGroupVariantAndSizePropertiesMaintainStyleClasses() {
@@ -3400,6 +3615,7 @@ final class M3ControlStyleTest {
         assertThrows(NullPointerException.class, () -> new M3FormValidator(input, null));
         assertThrows(IllegalArgumentException.class, () -> new M3FormValidator(input, input));
     }
+
     /// Verifies one mutable public list rejects null insertion paths before mutating content.
     @SuppressWarnings({"DataFlowIssue", "unchecked"})
     private static <T> void assertMutableListRejectsNull(ObservableList<T> list, T existing, T replacement) {
@@ -4397,6 +4613,74 @@ final class M3ControlStyleTest {
             assertEquals(elevatedDefault.getOffsetY(), elevatedPressed.getOffsetY(), 0.0001,
                     "pressed elevated cards should return to the enabled shadow offset");
         });
+    }
+
+    /// Verifies that disabled card variants style their containers without compounding content opacity.
+    @Test
+    void disabledCardsRenderVariantSpecificContainersWithoutCompoundingContentOpacity() {
+        M3Theme theme = M3Theme.defaultTheme();
+        Color filledDisabledContainer = withOpacity(
+                theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.SURFACE_CONTAINER_HIGHEST),
+                0.38
+        );
+        Color elevatedDisabledContainer = withOpacity(
+                theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.SURFACE),
+                0.38
+        );
+        Color outlinedDisabledOutline = withOpacity(
+                theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.OUTLINE),
+                0.12
+        );
+
+        Label filledContent = new Label("Filled content");
+        Label elevatedContent = new Label("Elevated content");
+        Label outlinedContent = new Label("Outlined content");
+        M3Card filled = new M3Card(filledContent, M3CardVariant.FILLED);
+        M3Card elevated = new M3Card(elevatedContent, M3CardVariant.ELEVATED);
+        M3Card outlined = new M3Card(outlinedContent, M3CardVariant.OUTLINED);
+        HBox root = new HBox(filled, elevated, outlined);
+        Scene scene = new Scene(root, 720.0, 180.0);
+        M3ThemeManager.install(scene, theme);
+        root.applyCss();
+        root.layout();
+
+        Region filledContainer = lookupRegion(filled, ".m3-card-container");
+        Region elevatedContainer = lookupRegion(elevated, ".m3-card-container");
+        Region outlinedContainer = lookupRegion(outlined, ".m3-card-container");
+        DropShadow elevatedDefault = assertDropShadow(elevatedContainer);
+
+        PseudoClass hover = PseudoClass.getPseudoClass("hover");
+        filled.pseudoClassStateChanged(hover, true);
+        elevated.pseudoClassStateChanged(hover, true);
+        outlined.pseudoClassStateChanged(hover, true);
+        root.applyCss();
+        assertDropShadow(filledContainer);
+        assertTrue(assertDropShadow(elevatedContainer).getRadius() > elevatedDefault.getRadius());
+        assertDropShadow(outlinedContainer);
+
+        filled.setDisable(true);
+        elevated.setDisable(true);
+        outlined.setDisable(true);
+        root.applyCss();
+
+        assertEquals(1.0, filled.getOpacity(), 0.0001);
+        assertEquals(1.0, elevated.getOpacity(), 0.0001);
+        assertEquals(1.0, outlined.getOpacity(), 0.0001);
+        assertEquals(0.4, filledContent.getOpacity(), 0.0001);
+        assertEquals(0.4, elevatedContent.getOpacity(), 0.0001);
+        assertEquals(0.4, outlinedContent.getOpacity(), 0.0001);
+
+        assertRegionFill(filledContainer, filledDisabledContainer);
+        assertNull(filledContainer.getEffect(), "disabled filled card elevation");
+        assertRegionFill(elevatedContainer, elevatedDisabledContainer);
+        DropShadow elevatedDisabled = assertDropShadow(elevatedContainer);
+        assertEquals(elevatedDefault.getRadius(), elevatedDisabled.getRadius(), 0.0001,
+                "disabled elevated card radius");
+        assertEquals(elevatedDefault.getOffsetY(), elevatedDisabled.getOffsetY(), 0.0001,
+                "disabled elevated card offset");
+        assertRegionFill(outlinedContainer, theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.SURFACE));
+        assertBorderColor(outlinedContainer, outlinedDisabledOutline);
+        assertNull(outlinedContainer.getEffect(), "disabled outlined card elevation");
     }
 
     /// Verifies that carousels manage items, selected state, and item click selection.
@@ -5618,6 +5902,7 @@ final class M3ControlStyleTest {
             }
         });
     }
+
     /// Verifies that snackbar action indexes reveal menu targets owned by rich tooltip action nodes.
     @Test
     void snackbarActionIndexRevealsMenuItemInsideRichTooltipAction() {
@@ -5732,6 +6017,7 @@ final class M3ControlStyleTest {
             }
         });
     }
+
     /// Verifies that snackbar action indexes reveal time picker targets owned by rich tooltip action nodes.
     @Test
     void snackbarActionIndexRevealsTimePickerValueInsideRichTooltipAction() {
@@ -5956,6 +6242,7 @@ final class M3ControlStyleTest {
             }
         });
     }
+
     /// Verifies that snackbar internal padding follows the logical action edge.
     @Test
     void snackbarSkinUsesLogicalActionPadding() {
@@ -7741,6 +8028,7 @@ final class M3ControlStyleTest {
             }
         });
     }
+
     /// Verifies that explicitly themed dialogs still mirror owner scene stylesheets.
     @Test
     void dialogExplicitThemeMirrorsRuntimeOwnerSceneStylesheets() {
@@ -7794,6 +8082,7 @@ final class M3ControlStyleTest {
             }
         });
     }
+
     /// Verifies that shown dialogs follow owner-scene root replacement.
     @Test
     void dialogFollowsRuntimeOwnerSceneRootReplacement() {
@@ -10819,6 +11108,7 @@ final class M3ControlStyleTest {
             }
         });
     }
+
     /// Verifies that tooltip component tokens apply profile-specific popup metrics.
     @Test
     void tooltipAppliesProfileMetrics() {
@@ -12277,6 +12567,8 @@ final class M3ControlStyleTest {
         assertEquals(4.0, close.getContainerShape(), 0.0001);
         assertEquals(12.0, open.getHorizontalPadding(), 0.0001);
         assertEquals(12.0, open.getContentSpacing(), 0.0001);
+        assertEquals(Region.USE_COMPUTED_SIZE, open.getMinWidth(), 0.0001);
+        assertEquals(Region.USE_COMPUTED_SIZE, open.getMaxWidth(), 0.0001);
 
         menu.setSelectionMode(M3MenuSelectionMode.SINGLE);
         menu.select(save);
@@ -12312,6 +12604,66 @@ final class M3ControlStyleTest {
         assertFalse(save.getPseudoClassStates().contains(lastItem));
         assertFalse(close.getPseudoClassStates().contains(firstItem));
         assertTrue(close.getPseudoClassStates().contains(lastItem));
+    }
+
+    /// Verifies that menu layout fills default Material rows without rewriting application-owned constraints.
+    @Test
+    void menuSkinPreservesApplicationOwnedChildWidthConstraints() {
+        M3MenuItem defaultItem = new M3MenuItem("Default");
+        M3Divider defaultDivider = new M3Divider();
+        M3MenuItem constrainedItem = new M3MenuItem("Constrained");
+        constrainedItem.setMinWidth(40.0);
+        constrainedItem.setMaxWidth(144.0);
+        Region customRegion = new Region();
+        customRegion.setMinWidth(36.0);
+        customRegion.setMaxWidth(132.0);
+        M3Menu menu = new M3Menu(defaultItem, defaultDivider, constrainedItem, customRegion);
+        Pane root = new Pane(menu);
+        Scene scene = new Scene(root, 320.0, 260.0);
+
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        menu.resize(280.0, menu.prefHeight(280.0));
+        menu.layout();
+
+        VBox container = assertInstanceOf(VBox.class, menu.lookup("." + M3Menu.CONTAINER_STYLE_CLASS));
+        assertEquals(container.getWidth(), defaultItem.getWidth(), 0.0001);
+        assertEquals(container.getWidth(), defaultDivider.getWidth(), 0.0001);
+        assertEquals(Region.USE_COMPUTED_SIZE, defaultItem.getMinWidth(), 0.0001);
+        assertEquals(Region.USE_COMPUTED_SIZE, defaultItem.getMaxWidth(), 0.0001);
+        assertEquals(Region.USE_COMPUTED_SIZE, defaultDivider.getMinWidth(), 0.0001);
+        assertEquals(Region.USE_COMPUTED_SIZE, defaultDivider.getMaxWidth(), 0.0001);
+        assertEquals(40.0, constrainedItem.getMinWidth(), 0.0001);
+        assertEquals(144.0, constrainedItem.getMaxWidth(), 0.0001);
+        assertEquals(36.0, customRegion.getMinWidth(), 0.0001);
+        assertEquals(132.0, customRegion.getMaxWidth(), 0.0001);
+
+        menu.getItems().remove(customRegion);
+        assertNull(customRegion.getParent());
+        assertEquals(36.0, customRegion.getMinWidth(), 0.0001);
+        assertEquals(132.0, customRegion.getMaxWidth(), 0.0001);
+
+        PseudoClass firstItem = PseudoClass.getPseudoClass("first-menu-item");
+        PseudoClass lastItem = PseudoClass.getPseudoClass("last-menu-item");
+        assertTrue(defaultItem.getPseudoClassStates().contains(firstItem));
+        assertTrue(constrainedItem.getPseudoClassStates().contains(lastItem));
+
+        menu.setSkin(new M3MenuSkin(menu));
+        root.applyCss();
+        menu.layout();
+        assertEquals(40.0, constrainedItem.getMinWidth(), 0.0001);
+        assertEquals(144.0, constrainedItem.getMaxWidth(), 0.0001);
+        assertTrue(defaultItem.getPseudoClassStates().contains(firstItem));
+        assertTrue(constrainedItem.getPseudoClassStates().contains(lastItem));
+
+        menu.getSkin().dispose();
+        assertNull(defaultItem.getParent());
+        assertNull(defaultDivider.getParent());
+        assertNull(constrainedItem.getParent());
+        assertFalse(defaultItem.getPseudoClassStates().contains(firstItem));
+        assertFalse(constrainedItem.getPseudoClassStates().contains(lastItem));
+        assertEquals(40.0, constrainedItem.getMinWidth(), 0.0001);
+        assertEquals(144.0, constrainedItem.getMaxWidth(), 0.0001);
     }
 
     /// Verifies that menu color styles follow baseline and Expressive color mappings.
@@ -16566,6 +16918,7 @@ final class M3ControlStyleTest {
             });
         }
     }
+
     /// Verifies that search bars traverse focus between slots without stealing editor navigation keys.
     @Test
     void searchBarKeyboardTraversalFollowsDirectionWithoutStealingEditorKeys() {
@@ -19210,6 +19563,7 @@ final class M3ControlStyleTest {
         assertEquals(16.0, offThumb.getWidth(), 0.0001);
         assertEquals(24.0, onThumb.getWidth(), 0.0001);
     }
+
     /// Verifies that the switch hover state renders circular thumb feedback in snapshots.
     @Test
     void switchHoverStateLayerRendersCircularThumbFeedback() {
@@ -20459,6 +20813,7 @@ final class M3ControlStyleTest {
             assertEquals(controlBounds.getMaxX(), barBounds.getMaxX(), 0.0001);
         });
     }
+
     /// Verifies that the progress bar skin clips indeterminate progress inside the track.
     @Test
     void progressBarSkinClipsIndeterminateSegment() {
@@ -20855,6 +21210,7 @@ final class M3ControlStyleTest {
             closeExpressiveProgressBarIndeterminateWaveScene(stageReference, rootReference);
         }
     }
+
     /// Verifies that progress bar subnodes keep Material colors.
     @Test
     void progressBarStateStylesPreserveMaterialColors() {
@@ -21158,6 +21514,30 @@ final class M3ControlStyleTest {
         assertEquals(12.0, divider.getInsetStart(), 0.0001);
         assertEquals(8.0, divider.getInsetEnd(), 0.0001);
         assertInstanceOf(M3DividerSkin.class, divider.getSkin());
+    }
+
+    /// Verifies that default divider constraints fill only the axis selected by the current orientation.
+    @Test
+    void dividerDefaultConstraintsFollowOrientationWithoutMutatingRawProperties() {
+        M3Divider divider = new M3Divider();
+
+        applyCss(divider);
+
+        assertEquals(Region.USE_COMPUTED_SIZE, divider.getMinWidth(), 0.0001);
+        assertEquals(Region.USE_COMPUTED_SIZE, divider.getMaxWidth(), 0.0001);
+        assertEquals(Region.USE_COMPUTED_SIZE, divider.getMinHeight(), 0.0001);
+        assertEquals(Region.USE_COMPUTED_SIZE, divider.getMaxHeight(), 0.0001);
+        assertEquals(Double.MAX_VALUE, divider.maxWidth(-1.0), 0.0);
+        assertTrue(divider.maxHeight(-1.0) < Double.MAX_VALUE);
+
+        divider.setOrientation(Orientation.VERTICAL);
+
+        assertEquals(Double.MAX_VALUE, divider.maxHeight(-1.0), 0.0);
+        assertTrue(divider.maxWidth(-1.0) < Double.MAX_VALUE);
+        assertEquals(Region.USE_COMPUTED_SIZE, divider.getMinWidth(), 0.0001);
+        assertEquals(Region.USE_COMPUTED_SIZE, divider.getMaxWidth(), 0.0001);
+        assertEquals(Region.USE_COMPUTED_SIZE, divider.getMinHeight(), 0.0001);
+        assertEquals(Region.USE_COMPUTED_SIZE, divider.getMaxHeight(), 0.0001);
     }
 
     /// Verifies that horizontal divider insets follow logical start and end orientation.
@@ -22169,6 +22549,7 @@ final class M3ControlStyleTest {
             }
         });
     }
+
     /// Verifies that virtualized list views animate wheel scrolling through Material motion.
     @Test
     void listViewSmoothScrollingAnimatesWheelScroll() {
@@ -22479,6 +22860,7 @@ final class M3ControlStyleTest {
             }
         });
     }
+
     /// Verifies that disabled animation settings make virtualized list wheel scrolling finish synchronously.
     @Test
     void listViewSmoothScrollingHonorsDisabledAnimations() {
@@ -23597,6 +23979,7 @@ final class M3ControlStyleTest {
             }
         });
     }
+
     /// Verifies that virtualized list view accessibility actions accept data item descendants.
     @Test
     void listViewAccessibilityActionsAcceptDataItemDescendants() {
@@ -23863,9 +24246,13 @@ final class M3ControlStyleTest {
         SimpleDoubleProperty rowMinWidth = new SimpleDoubleProperty(40.0);
         SimpleDoubleProperty rowPrefWidth = new SimpleDoubleProperty(144.0);
         SimpleDoubleProperty rowMaxWidth = new SimpleDoubleProperty(220.0);
+        SimpleBooleanProperty rowFocusTraversable = new SimpleBooleanProperty(true);
+        SimpleBooleanProperty rowSelected = new SimpleBooleanProperty(true);
         row.minWidthProperty().bind(rowMinWidth);
         row.prefWidthProperty().bind(rowPrefWidth);
         row.maxWidthProperty().bind(rowMaxWidth);
+        row.focusTraversableProperty().bind(rowFocusTraversable);
+        row.selectedProperty().bind(rowSelected);
         listView.setCellFactory(value -> row);
 
         try {
@@ -23884,26 +24271,34 @@ final class M3ControlStyleTest {
             assertEquals(40.0, row.getMinWidth(), 0.0001);
             assertEquals(144.0, row.getPrefWidth(), 0.0001);
             assertEquals(220.0, row.getMaxWidth(), 0.0001);
+            assertTrue(row.isFocusTraversable());
+            assertTrue(row.isSelected());
 
             rowMinWidth.set(44.0);
             rowPrefWidth.set(168.0);
             rowMaxWidth.set(240.0);
+            rowFocusTraversable.set(false);
+            rowSelected.set(false);
             cell.resize(300.0, 56.0);
             cell.layout();
 
             assertEquals(44.0, row.getMinWidth(), 0.0001);
             assertEquals(168.0, row.getPrefWidth(), 0.0001);
             assertEquals(240.0, row.getMaxWidth(), 0.0001);
+            assertFalse(row.isFocusTraversable());
+            assertFalse(row.isSelected());
         } finally {
             row.minWidthProperty().unbind();
             row.prefWidthProperty().unbind();
             row.maxWidthProperty().unbind();
+            row.focusTraversableProperty().unbind();
+            row.selectedProperty().unbind();
         }
     }
 
     /// Verifies that cell recycling restores all application-owned state on factory-provided rows.
     @Test
-    void listViewCellRestoresFactoryRowThemeStateWhenRecycled() {
+    void listViewCellRestoresFactoryRowStateWhenRecycled() {
         FxTestUtils.runOnFxThread(() -> {
             M3Theme rowTheme = M3Theme.fromSeed(
                     Color.web("#006a6a"),
@@ -23918,8 +24313,19 @@ final class M3ControlStyleTest {
             );
             M3ListItem firstRow = new M3ListItem("First");
             M3ListItem secondRow = new M3ListItem("Second");
+            PseudoClass focusVisible = PseudoClass.getPseudoClass("focus-visible");
             firstRow.setStyle("-fx-opacity: 0.91;");
             secondRow.setStyle("-fx-opacity: 0.87;");
+            firstRow.setFocusTraversable(true);
+            firstRow.setSelected(true);
+            firstRow.pseudoClassStateChanged(focusVisible, true);
+            firstRow.setMinWidth(44.0);
+            firstRow.setMaxWidth(196.0);
+            secondRow.setFocusTraversable(true);
+            secondRow.setSelected(true);
+            secondRow.pseudoClassStateChanged(focusVisible, true);
+            secondRow.setMinWidth(48.0);
+            secondRow.setMaxWidth(204.0);
             M3ThemeManager.install(firstRow, rowTheme);
             M3ThemeManager.install(secondRow, rowTheme);
 
@@ -23944,6 +24350,11 @@ final class M3ControlStyleTest {
             assertSame(sceneTheme, M3ThemeManager.getTheme(firstRow));
             assertTrue(firstRow.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
             assertTrue(firstRow.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
+            assertFalse(firstRow.isFocusTraversable());
+            assertFalse(firstRow.isSelected());
+            assertFalse(firstRow.getPseudoClassStates().contains(focusVisible));
+            assertEquals(44.0, firstRow.getMinWidth(), 0.0001);
+            assertEquals(196.0, firstRow.getMaxWidth(), 0.0001);
 
             M3ThemeManager.install(root, refreshedSceneTheme);
             cell.refreshThemeContext();
@@ -23963,6 +24374,11 @@ final class M3ControlStyleTest {
             assertEquals(firstStyle, firstRow.getStyle());
             assertEquals(firstStyleClasses, firstRow.getStyleClass());
             assertEquals(firstPropertyCount, firstRow.getProperties().size());
+            assertTrue(firstRow.isFocusTraversable());
+            assertTrue(firstRow.isSelected());
+            assertTrue(firstRow.getPseudoClassStates().contains(focusVisible));
+            assertEquals(44.0, firstRow.getMinWidth(), 0.0001);
+            assertEquals(196.0, firstRow.getMaxWidth(), 0.0001);
             firstRow.fire();
             assertEquals(-1, listView.getSelectedIndex());
 
@@ -23973,6 +24389,11 @@ final class M3ControlStyleTest {
             assertEquals(secondStyle, secondRow.getStyle());
             assertEquals(secondStyleClasses, secondRow.getStyleClass());
             assertEquals(secondPropertyCount, secondRow.getProperties().size());
+            assertTrue(secondRow.isFocusTraversable());
+            assertTrue(secondRow.isSelected());
+            assertTrue(secondRow.getPseudoClassStates().contains(focusVisible));
+            assertEquals(48.0, secondRow.getMinWidth(), 0.0001);
+            assertEquals(204.0, secondRow.getMaxWidth(), 0.0001);
             secondRow.fire();
             assertEquals(-1, listView.getSelectedIndex());
         });
@@ -24035,6 +24456,30 @@ final class M3ControlStyleTest {
                 assertSame(firstRow, listView.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
                 assertTrue(firstRow.getParent() != null);
                 assertSame(sceneTheme, M3ThemeManager.getTheme(firstRow));
+
+                listView.setCellFactory(value -> new M3ListItem("Replacement " + value));
+                root.layout();
+                listView.layout();
+
+                assertNull(firstRow.getParent());
+                assertSame(rowTheme, M3ThemeManager.getTheme(firstRow));
+                assertEquals(firstRowStyle, firstRow.getStyle());
+                assertEquals(firstRowStyleClasses, firstRow.getStyleClass());
+
+                listView.setCellFactory(value -> value == 0 ? firstRow : new M3ListItem("Row " + value));
+                root.layout();
+                listView.layout();
+
+                assertSame(firstRow, listView.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+                assertTrue(firstRow.getParent() != null);
+
+                Skin<?> skin = Objects.requireNonNull(listView.getSkin(), "list view skin");
+                skin.dispose();
+
+                assertNull(firstRow.getParent());
+                assertSame(rowTheme, M3ThemeManager.getTheme(firstRow));
+                assertEquals(firstRowStyle, firstRow.getStyle());
+                assertEquals(firstRowStyleClasses, firstRow.getStyleClass());
             } finally {
                 stage.close();
             }
@@ -24545,24 +24990,47 @@ final class M3ControlStyleTest {
     @Test
     void navigationItemShowsBadge() {
         M3Badge badge = new M3Badge("3");
-        M3NavigationItem item = createNavigationItem("Inbox", new M3Icon("I"), badge, true);
+        badge.maxWidthProperty().bind(badge.prefWidthProperty());
+        badge.maxHeightProperty().bind(badge.prefHeightProperty());
+        M3Icon graphic = new M3Icon("I");
+        M3NavigationItem item = createNavigationItem("Inbox", graphic, badge, true);
 
         applyCss(item);
 
         assertTrue(item.isSelected());
         assertEquals(badge, item.getBadge());
-        assertEquals(badge, item.lookup(".m3-navigation-item-badge"));
+        StackPane badgeSlot = assertInstanceOf(StackPane.class, item.lookup(".m3-navigation-item-badge"));
+        assertEquals(List.of(badge), badgeSlot.getChildren());
+        assertTrue(badge.maxWidthProperty().isBound());
+        assertTrue(badge.maxHeightProperty().isBound());
+        assertFalse(badge.getStyleClass().contains("m3-navigation-item-badge"));
 
         M3Badge replacement = new M3Badge();
         item.setBadge(replacement);
 
         assertEquals(replacement, item.getBadge());
-        assertEquals(replacement, item.lookup(".m3-navigation-item-badge"));
+        assertSame(badgeSlot, item.lookup(".m3-navigation-item-badge"));
+        assertEquals(List.of(replacement), badgeSlot.getChildren());
 
         item.setBadge(null);
 
         assertNull(item.getBadge());
-        assertNull(item.lookup(".m3-navigation-item-badge"));
+        assertTrue(badgeSlot.getChildren().isEmpty());
+        assertFalse(replacement.getStyleClass().contains("m3-navigation-item-badge"));
+
+        M3Icon replacementGraphic = new M3Icon("R");
+        item.setGraphic(replacementGraphic);
+        assertFalse(graphic.getStyleClass().contains("m3-navigation-item-graphic-node"));
+        item.setGraphic(null);
+        assertFalse(replacementGraphic.getStyleClass().contains("m3-navigation-item-graphic-node"));
+
+        M3Icon disposedGraphic = new M3Icon("D");
+        M3Badge disposedBadge = new M3Badge("4");
+        M3NavigationItem disposedItem = createNavigationItem("Disposed", disposedGraphic, disposedBadge, false);
+        applyCss(disposedItem);
+        disposedItem.getSkin().dispose();
+        assertNull(disposedGraphic.getParent());
+        assertNull(disposedBadge.getParent());
     }
 
     /// Verifies that navigation item badges stay anchored to logical end in right-to-left layouts.
@@ -24584,7 +25052,12 @@ final class M3ControlStyleTest {
                 item.lookup(".m3-navigation-item-badge-container")
         );
         assertEquals(Pos.TOP_LEFT, badgeContainer.getAlignment());
-        assertEquals(Pos.TOP_LEFT, StackPane.getAlignment(badge));
+        Bounds badgeBounds = badge.localToScene(badge.getBoundsInLocal());
+        Node indicator = Objects.requireNonNull(item.lookup(".m3-navigation-item-indicator"), "indicator");
+        Bounds indicatorBounds = indicator.localToScene(indicator.getBoundsInLocal());
+        assertTrue(badgeBounds.getCenterX() < indicatorBounds.getCenterX(),
+                () -> "badge=" + badgeBounds + ", indicator=" + indicatorBounds);
+        assertEquals(0.0, badge.getTranslateX(), 0.0001);
     }
 
     /// Verifies that navigation bars group items and keep a selected item.
@@ -27728,6 +28201,7 @@ final class M3ControlStyleTest {
             }
         });
     }
+
     /// Verifies that structural indexed containers focus or reveal requested accessibility items.
     @Test
     void structuralIndexedContainersSupportAccessibleShowItemActions() {
@@ -28521,7 +28995,7 @@ final class M3ControlStyleTest {
             dateRangePicker.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
             M3TimePicker timePicker = new M3TimePicker(LocalTime.of(10, 30));
             timePicker.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
-            timePicker.setPrefWidth(360.0);
+            timePicker.setPrefSize(608.0, 304.0);
 
             M3DatePickerField dateField = new M3DatePickerField(LocalDate.of(2026, 5, 18));
             dateField.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
@@ -28537,16 +29011,16 @@ final class M3ControlStyleTest {
             timeField.getPresets().setAll(M3TimePresets.common(LocalTime.of(10, 30)));
 
             Pane root = new Pane(datePicker, dateRangePicker, timePicker, dateField, rangeField, timeField);
-            Scene scene = new Scene(root, 1100.0, 720.0);
+            Scene scene = new Scene(root, 1320.0, 760.0);
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
             root.applyCss();
-            root.resize(1100.0, 720.0);
+            root.resize(1320.0, 760.0);
             datePicker.resizeRelocate(20.0, 20.0, 340.0, 320.0);
             dateRangePicker.resizeRelocate(390.0, 20.0, 340.0, 320.0);
-            timePicker.resizeRelocate(20.0, 360.0, 440.0, 220.0);
-            dateField.resizeRelocate(580.0, 360.0, 420.0, 96.0);
-            rangeField.resizeRelocate(580.0, 460.0, 480.0, 96.0);
-            timeField.resizeRelocate(580.0, 560.0, 420.0, 96.0);
+            timePicker.resizeRelocate(20.0, 360.0, 608.0, 304.0);
+            dateField.resizeRelocate(760.0, 360.0, 420.0, 96.0);
+            rangeField.resizeRelocate(760.0, 460.0, 540.0, 96.0);
+            timeField.resizeRelocate(760.0, 560.0, 420.0, 96.0);
             root.layout();
             datePicker.layout();
             dateRangePicker.layout();
@@ -28572,11 +29046,11 @@ final class M3ControlStyleTest {
             assertEquals(NodeOrientation.RIGHT_TO_LEFT, dateHeader.getEffectiveNodeOrientation());
             assertEquals(NodeOrientation.RIGHT_TO_LEFT, dateWeekdays.getEffectiveNodeOrientation());
             assertEquals(NodeOrientation.RIGHT_TO_LEFT, rangeHeader.getEffectiveNodeOrientation());
-            assertEquals(NodeOrientation.RIGHT_TO_LEFT, timeDisplay.getEffectiveNodeOrientation());
+            assertEquals(NodeOrientation.LEFT_TO_RIGHT, timeDisplay.getEffectiveNodeOrientation());
             assertEquals(Pos.CENTER_RIGHT, dateHeader.getAlignment());
             assertEquals(Pos.CENTER_RIGHT, dateWeekdays.getAlignment());
             assertEquals(Pos.CENTER_RIGHT, rangeHeader.getAlignment());
-            assertEquals(Pos.CENTER_RIGHT, timeDisplay.getAlignment());
+            assertEquals(Pos.CENTER_LEFT, timeDisplay.getAlignment());
             assertEquals(M3InternalIcon.Glyph.CHEVRON_RIGHT, pickerHeaderNavigationIcon(dateHeader, 2));
             assertEquals(M3InternalIcon.Glyph.CHEVRON_LEFT, pickerHeaderNavigationIcon(dateHeader, 3));
             assertEquals(NodeOrientation.RIGHT_TO_LEFT, dateField.getPicker().getEffectiveNodeOrientation());
@@ -28821,6 +29295,8 @@ final class M3ControlStyleTest {
         assertEquals(296.0, home.getWidth(), 0.0001);
         assertEquals(296.0, listItemContainer(home).getWidth(), 0.0001);
         assertEquals(296.0, listItemSelectionContainer(home).getWidth(), 0.0001);
+        assertEquals(Region.USE_COMPUTED_SIZE, home.getMinWidth(), 0.0001);
+        assertEquals(Region.USE_COMPUTED_SIZE, home.getMaxWidth(), 0.0001);
 
         Color selectedPixel = snapshotPixel(navigationDrawer, 30, 40);
         Color rightPaddingPixel = snapshotPixel(navigationDrawer, 318, 40);
@@ -28830,14 +29306,18 @@ final class M3ControlStyleTest {
         assertTrue(colorDistance(selectedPixel, roundedCornerPixel) > 0.01);
     }
 
-    /// Verifies that navigation drawer skins preserve application-bound child width constraints.
+    /// Verifies that navigation drawer skins preserve application-owned child width constraints.
     @Test
-    void navigationDrawerSkinsPreserveBoundChildWidths() {
+    void navigationDrawerSkinsPreserveApplicationOwnedChildWidths() {
         M3ListItem topLevel = new M3ListItem("Home");
         SimpleDoubleProperty topMinWidth = new SimpleDoubleProperty(32.0);
         SimpleDoubleProperty topMaxWidth = new SimpleDoubleProperty(220.0);
         topLevel.minWidthProperty().bind(topMinWidth);
         topLevel.maxWidthProperty().bind(topMaxWidth);
+
+        M3ListItem unboundTopLevel = new M3ListItem("Archive");
+        unboundTopLevel.setMinWidth(34.0);
+        unboundTopLevel.setMaxWidth(218.0);
 
         M3ListItem child = new M3ListItem("Bottom sheets");
         SimpleDoubleProperty childMinWidth = new SimpleDoubleProperty(28.0);
@@ -28849,7 +29329,7 @@ final class M3ControlStyleTest {
         group.setExpanded(true);
         group.getItems().add(child);
 
-        M3NavigationDrawer navigationDrawer = navigationDrawer(topLevel, group);
+        M3NavigationDrawer navigationDrawer = navigationDrawer(topLevel, unboundTopLevel, group);
         Pane root = new Pane(navigationDrawer);
         Scene scene = new Scene(root, 360.0, 240.0);
 
@@ -28861,6 +29341,8 @@ final class M3ControlStyleTest {
 
         assertEquals(32.0, topLevel.getMinWidth(), 0.0001);
         assertEquals(220.0, topLevel.getMaxWidth(), 0.0001);
+        assertEquals(34.0, unboundTopLevel.getMinWidth(), 0.0001);
+        assertEquals(218.0, unboundTopLevel.getMaxWidth(), 0.0001);
         assertEquals(28.0, child.getMinWidth(), 0.0001);
         assertEquals(180.0, child.getMaxWidth(), 0.0001);
 
@@ -28873,8 +29355,27 @@ final class M3ControlStyleTest {
 
         assertEquals(36.0, topLevel.getMinWidth(), 0.0001);
         assertEquals(224.0, topLevel.getMaxWidth(), 0.0001);
+        assertEquals(34.0, unboundTopLevel.getMinWidth(), 0.0001);
+        assertEquals(218.0, unboundTopLevel.getMaxWidth(), 0.0001);
         assertEquals(30.0, child.getMinWidth(), 0.0001);
         assertEquals(184.0, child.getMaxWidth(), 0.0001);
+
+        navigationDrawer.setSkin(new M3NavigationDrawerSkin(navigationDrawer));
+        root.applyCss();
+        navigationDrawer.layout();
+        assertEquals(36.0, topLevel.getMinWidth(), 0.0001);
+        assertEquals(224.0, topLevel.getMaxWidth(), 0.0001);
+        assertEquals(34.0, unboundTopLevel.getMinWidth(), 0.0001);
+        assertEquals(218.0, unboundTopLevel.getMaxWidth(), 0.0001);
+
+        navigationDrawer.getItems().remove(unboundTopLevel);
+        assertNull(unboundTopLevel.getParent());
+        assertEquals(34.0, unboundTopLevel.getMinWidth(), 0.0001);
+        assertEquals(218.0, unboundTopLevel.getMaxWidth(), 0.0001);
+
+        navigationDrawer.getSkin().dispose();
+        assertNull(topLevel.getParent());
+        assertNull(group.getParent());
     }
 
     /// Verifies that navigation item skins expose the selected indicator and ripple feedback.
@@ -28891,9 +29392,22 @@ final class M3ControlStyleTest {
         item.layout();
 
         Region indicator = lookupRegion(item, ".m3-navigation-item-indicator");
+        Region stateLayer = lookupRegion(item, ".m3-state-layer-container");
         assertEquals(64.0, indicator.getWidth(), 0.0001);
         assertEquals(32.0, indicator.getHeight(), 0.0001);
         assertEquals(1.0, indicator.getOpacity(), 0.0001);
+        assertEquals(indicator.getWidth(), stateLayer.getWidth(), 0.0001);
+        assertEquals(indicator.getHeight(), stateLayer.getHeight(), 0.0001);
+        assertEquals(
+                indicator.localToScene(indicator.getBoundsInLocal()).getCenterX(),
+                stateLayer.localToScene(stateLayer.getBoundsInLocal()).getCenterX(),
+                0.0001
+        );
+        assertEquals(
+                indicator.localToScene(indicator.getBoundsInLocal()).getCenterY(),
+                stateLayer.localToScene(stateLayer.getBoundsInLocal()).getCenterY(),
+                0.0001
+        );
 
         item.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 40.0, 40.0, true));
         assertTrue(item.isArmed());
@@ -29088,7 +29602,6 @@ final class M3ControlStyleTest {
         M3IconToggleButton iconToggleButton = new M3IconToggleButton("T");
         M3ListItem listItem = new M3ListItem("Headline");
         M3Card card = new M3Card();
-        M3Card disabledCard = new M3Card();
         Pane root = new Pane(
                 checkBox,
                 slider,
@@ -29096,8 +29609,7 @@ final class M3ControlStyleTest {
                 navigationItem,
                 iconToggleButton,
                 listItem,
-                card,
-                disabledCard
+                card
         );
         Scene scene = new Scene(root);
 
@@ -29110,7 +29622,6 @@ final class M3ControlStyleTest {
         iconToggleButton.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
         listItem.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
         card.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
-        disabledCard.setDisable(true);
         root.applyCss();
 
         assertEquals(1.0, checkBox.getOpacity(), 0.0001);
@@ -29127,7 +29638,6 @@ final class M3ControlStyleTest {
         assertEquals(0.1, lookupRegion(listItem, ".m3-state-layer").getOpacity(), 0.0001);
         assertEquals(1.0, card.getOpacity(), 0.0001);
         assertEquals(0.08, lookupRegion(card, ".m3-state-layer").getOpacity(), 0.0001);
-        assertEquals(0.38, disabledCard.getOpacity(), 0.0001);
     }
 
     /// Verifies that finite skin-owned state transitions settle when runtime motion is disabled.
@@ -31093,9 +31603,9 @@ final class M3ControlStyleTest {
         });
     }
 
-    /// Verifies that time dialog presets render beside the picker.
+    /// Verifies that time dialog presets render in a wrapping row above the picker.
     @Test
-    void timePresetDialogSnapshotRendersPresetColumn() {
+    void timePresetDialogSnapshotRendersPresetRow() {
         FxTestUtils.runOnFxThread(() -> {
             M3TimePickerDialog dialog = new M3TimePickerDialog(LocalTime.of(10, 30));
             dialog.getPicker().setUse24HourClock(true);
@@ -31116,6 +31626,7 @@ final class M3ControlStyleTest {
             WritableImage image = snapshotImageOnFxThread(root);
             assertSnapshotNodeContainsContrast(image, pane, Color.WHITE, 0.04);
             assertEquals(5, pane.lookupAll("." + M3TimePickerDialog.PRESET_BUTTON_STYLE_CLASS).size());
+            assertTimePickerDialogActionRow(pane, NodeOrientation.LEFT_TO_RIGHT);
             assertSnapshotNodeContainsContrast(
                     image,
                     assertInstanceOf(Node.class, pane.lookup("." + M3TimePickerDialog.PRESET_LIST_STYLE_CLASS)),
@@ -31131,7 +31642,7 @@ final class M3ControlStyleTest {
         });
     }
 
-    /// Verifies that picker dialog preset columns follow right-to-left layout direction.
+    /// Verifies that picker dialog preset containers follow right-to-left layout direction.
     @Test
     void pickerPresetDialogsPropagateRightToLeftOrientation() {
         FxTestUtils.runOnFxThread(() -> {
@@ -31182,12 +31693,28 @@ final class M3ControlStyleTest {
                     M3DateRangePickerDialog.PRESET_LIST_STYLE_CLASS,
                     rangeDialog.getPicker()
             );
-            assertPickerPresetMirrorsRightToLeft(
-                    timePane,
-                    M3TimePickerDialog.PRESET_CONTENT_STYLE_CLASS,
-                    M3TimePickerDialog.PRESET_LIST_STYLE_CLASS,
-                    timeDialog.getPicker()
+            HBox timePresetContent = assertInstanceOf(
+                    HBox.class,
+                    timePane.lookup("." + M3TimePickerDialog.PRESET_CONTENT_STYLE_CLASS)
             );
+            VBox timePresetList = assertInstanceOf(
+                    VBox.class,
+                    timePane.lookup("." + M3TimePickerDialog.PRESET_LIST_STYLE_CLASS)
+            );
+            assertEquals(NodeOrientation.RIGHT_TO_LEFT, timePresetContent.getEffectiveNodeOrientation());
+            assertEquals(NodeOrientation.RIGHT_TO_LEFT, timePresetList.getEffectiveNodeOrientation());
+            assertEquals(NodeOrientation.RIGHT_TO_LEFT, timeDialog.getPicker().getEffectiveNodeOrientation());
+            assertEquals(Pos.TOP_RIGHT, timePresetContent.getAlignment());
+            assertEquals(Pos.TOP_RIGHT, timePresetList.getAlignment());
+            Bounds timePresetBounds = timePresetList.localToScene(timePresetList.getBoundsInLocal());
+            Bounds timePickerBounds = timeDialog.getPicker().localToScene(
+                    timeDialog.getPicker().getBoundsInLocal()
+            );
+            assertTrue(
+                    timePickerBounds.getMaxX() < timePresetBounds.getMinX(),
+                    () -> "timePresetBounds=" + timePresetBounds + ", timePickerBounds=" + timePickerBounds
+            );
+            assertTimePickerDialogActionRow(timePane, NodeOrientation.RIGHT_TO_LEFT);
 
             WritableImage image = snapshotImageOnFxThread(root);
             assertSnapshotNodeContainsContrast(image, datePane, Color.WHITE, 0.04);
@@ -31697,7 +32224,27 @@ final class M3ControlStyleTest {
             for (LocalTime time : java.util.List.of(
                     LocalTime.of(0, 30),
                     LocalTime.of(9, 30),
-                    LocalTime.of(9, 15)
+                    LocalTime.of(21, 30)
+            )) {
+                ButtonBase timeCell = timeCellForTime(timePicker, time);
+                Node textNode = Objects.requireNonNull(timeCell.lookup(".text"));
+
+                assertEquals(Pos.CENTER, timeCell.getAlignment());
+                assertNodeCentersAligned(timeCell, textNode, 0.75);
+            }
+
+            assertInstanceOf(
+                    ButtonBase.class,
+                    timePicker.lookup("." + M3TimePicker.MINUTE_DISPLAY_STYLE_CLASS)
+            ).fire();
+            root.layout();
+            timePicker.layout();
+
+            for (LocalTime time : java.util.List.of(
+                    LocalTime.of(9, 0),
+                    LocalTime.of(9, 15),
+                    LocalTime.of(9, 30),
+                    LocalTime.of(9, 45)
             )) {
                 ButtonBase timeCell = timeCellForTime(timePicker, time);
                 Node textNode = Objects.requireNonNull(timeCell.lookup(".text"));
@@ -31741,11 +32288,11 @@ final class M3ControlStyleTest {
                 root.applyCss();
                 root.layout();
 
-                assertEquals(28, timePicker.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+                assertEquals(24, timePicker.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
                 Node firstHour = assertInstanceOf(Node.class,
                         timePicker.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
                 assertEquals(LocalTime.of(0, 30), firstHour.getUserData());
-                assertNull(timePicker.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 28));
+                assertNull(timePicker.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 24));
 
                 Node selectedTime = assertInstanceOf(Node.class,
                         timePicker.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
@@ -31756,11 +32303,11 @@ final class M3ControlStyleTest {
                 timePicker.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
                 assertTrue(selectedTime.isFocused());
 
-                timePicker.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 25);
-                Node shownMinute = assertInstanceOf(Node.class,
-                        timePicker.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 25));
-                assertEquals(LocalTime.of(9, 15), shownMinute.getUserData());
-                assertTrue(shownMinute.isFocused());
+                timePicker.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 21);
+                Node shownHour = assertInstanceOf(Node.class,
+                        timePicker.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 21));
+                assertEquals(LocalTime.of(21, 30), shownHour.getUserData());
+                assertTrue(shownHour.isFocused());
 
                 timePicker.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, LocalTime.of(14, 45, 12));
 
@@ -32522,6 +33069,7 @@ final class M3ControlStyleTest {
             assertDarkThemeLabelFill(dialogContent, "embedded dialog content label");
         });
     }
+
     /// Verifies that actual dark expressive theme tokens render the main control families visibly.
     @Test
     void darkExpressiveVisualSnapshotRendersTokenDrivenControls() {
@@ -33164,6 +33712,7 @@ final class M3ControlStyleTest {
                     0.0001);
         });
     }
+
     /// Verifies that the slider skin updates values from pointer and keyboard input.
     @Test
     void sliderSkinHandlesPointerAndKeyboardInput() {
@@ -37466,6 +38015,7 @@ final class M3ControlStyleTest {
         assertEquals(startAlignment, contentSlot.getAlignment());
         assertEquals(endAlignment, trailingSlot.getAlignment());
     }
+
     /// Verifies the resolved logical text alignment of a form section.
     private static void assertFormSectionTextAlignment(
             M3FormSection section,
@@ -37493,6 +38043,7 @@ final class M3ControlStyleTest {
         assertEquals(textAlignment, title.getTextAlignment());
         assertEquals(textAlignment, supporting.getTextAlignment());
     }
+
     /// Verifies the resolved logical slot geometry of a search bar.
     private static void assertSearchBarUsesLogicalGeometry(M3SearchBar searchBar, boolean rightToLeft) {
         searchBar.applyCss();
@@ -38029,7 +38580,6 @@ final class M3ControlStyleTest {
         Bounds headerBounds = group.getHeaderItem().localToScene(group.getHeaderItem().getBoundsInLocal());
         Bounds childBounds = child.localToScene(child.getBoundsInLocal());
         Region childSelection = listItemSelectionContainer(child);
-        assertDrawerGroupChildContainerPadding(child, false);
 
         assertEquals(headerBounds.getMaxX(), childBounds.getMaxX(), 0.0001,
                 () -> describeDrawerGroupChildGeometry(headerBounds, childBounds, childSelection));
@@ -38051,7 +38601,6 @@ final class M3ControlStyleTest {
         Bounds headerBounds = group.getHeaderItem().localToScene(group.getHeaderItem().getBoundsInLocal());
         Bounds childBounds = child.localToScene(child.getBoundsInLocal());
         Region childSelection = listItemSelectionContainer(child);
-        assertDrawerGroupChildContainerPadding(child, true);
 
         assertEquals(headerBounds.getMinX(), childBounds.getMinX(), 0.0001,
                 () -> describeDrawerGroupChildGeometry(headerBounds, childBounds, childSelection));
@@ -38063,19 +38612,6 @@ final class M3ControlStyleTest {
                 () -> describeDrawerGroupChildGeometry(headerBounds, childBounds, childSelection));
         assertEquals(56.0, child.getOneLineHeight(), 0.0001);
         assertRegionRadii(childSelection, 28.0, 28.0, 28.0, 28.0);
-    }
-
-    /// Verifies that the child-row container stores indentation on the visual leading edge.
-    private static void assertDrawerGroupChildContainerPadding(M3ListItem child, boolean rightToLeft) {
-        Region container = assertInstanceOf(Region.class, child.getParent());
-        Insets padding = container.getPadding();
-        if (rightToLeft) {
-            assertEquals(0.0, padding.getLeft(), 0.0001);
-            assertTrue(padding.getRight() > 0.0, () -> "RTL child container padding=" + padding);
-        } else {
-            assertTrue(padding.getLeft() > 0.0, () -> "LTR child container padding=" + padding);
-            assertEquals(0.0, padding.getRight(), 0.0001);
-        }
     }
 
     /// Describes drawer group child indentation geometry for assertion failures.
@@ -38157,6 +38693,27 @@ final class M3ControlStyleTest {
     /// Returns whether two one-dimensional intervals overlap.
     private static boolean rangesOverlap(double firstMin, double firstMax, double secondMin, double secondMax) {
         return firstMax > secondMin && firstMin < secondMax;
+    }
+
+    /// Verifies mode-switch and text-action placement in a time picker dialog action row.
+    private static void assertTimePickerDialogActionRow(M3DialogPane pane, NodeOrientation orientation) {
+        Node modeButton = assertInstanceOf(
+                Node.class,
+                pane.lookup("." + M3TimePicker.MODE_BUTTON_STYLE_CLASS)
+        );
+        Node cancelButton = assertInstanceOf(Node.class, pane.lookupButton(ButtonType.CANCEL));
+        Node okButton = assertInstanceOf(Node.class, pane.lookupButton(ButtonType.OK));
+        Bounds modeBounds = modeButton.localToScene(modeButton.getBoundsInLocal());
+        Bounds cancelBounds = cancelButton.localToScene(cancelButton.getBoundsInLocal());
+        Bounds okBounds = okButton.localToScene(okButton.getBoundsInLocal());
+
+        assertEquals(cancelBounds.getCenterY(), modeBounds.getCenterY(), 1.0);
+        assertEquals(okBounds.getCenterY(), modeBounds.getCenterY(), 1.0);
+        if (orientation == NodeOrientation.RIGHT_TO_LEFT) {
+            assertTrue(Math.max(cancelBounds.getMaxX(), okBounds.getMaxX()) < modeBounds.getMinX());
+        } else {
+            assertTrue(modeBounds.getMaxX() < Math.min(cancelBounds.getMinX(), okBounds.getMinX()));
+        }
     }
 
     /// Verifies that a picker preset column is on the right-to-left logical start side.
@@ -40622,28 +41179,40 @@ final class M3ControlStyleTest {
         return switch (Objects.requireNonNull(name, "name")) {
             case "add" -> "M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z";
             case "back" -> "M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20z";
-            case "bold" -> "M15.6 10.8c1-.7 1.7-1.8 1.7-2.8 0-2.3-1.8-4-4-4H7v14h7c2.1 0 3.8-1.7 3.8-3.8 0-1.5-.9-2.8-2.2-3.4zM10 6.5h3c.8 0 1.5.7 1.5 1.5S13.8 9.5 13 9.5h-3zm3.5 9H10v-3h3.5c.8 0 1.5.7 1.5 1.5s-.7 1.5-1.5 1.5z";
+            case "bold" ->
+                    "M15.6 10.8c1-.7 1.7-1.8 1.7-2.8 0-2.3-1.8-4-4-4H7v14h7c2.1 0 3.8-1.7 3.8-3.8 0-1.5-.9-2.8-2.2-3.4zM10 6.5h3c.8 0 1.5.7 1.5 1.5S13.8 9.5 13 9.5h-3zm3.5 9H10v-3h3.5c.8 0 1.5.7 1.5 1.5s-.7 1.5-1.5 1.5z";
             case "bookmark" -> "M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z";
-            case "close" -> "M18.3 5.7 12 12l6.3 6.3-1.4 1.4-6.3-6.3-6.3 6.3-1.4-1.4L9.2 12 2.9 5.7l1.4-1.4 6.3 6.3 6.3-6.3z";
+            case "close" ->
+                    "M18.3 5.7 12 12l6.3 6.3-1.4 1.4-6.3-6.3-6.3 6.3-1.4-1.4L9.2 12 2.9 5.7l1.4-1.4 6.3 6.3 6.3-6.3z";
             case "done" -> "M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z";
-            case "edit" -> "M3 17.3V21h3.8L17.9 9.9l-3.8-3.8zM20.7 7c.4-.4.4-1 0-1.4l-2.3-2.3c-.4-.4-1-.4-1.4 0l-1.8 1.8 3.8 3.8z";
+            case "edit" ->
+                    "M3 17.3V21h3.8L17.9 9.9l-3.8-3.8zM20.7 7c.4-.4.4-1 0-1.4l-2.3-2.3c-.4-.4-1-.4-1.4 0l-1.8 1.8 3.8 3.8z";
             case "folder" -> "M10 4l2 2h8c1.1 0 2 .9 2 2v10c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z";
             case "home" -> "M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z";
-            case "inbox" -> "M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 14h-4c0 1.7-1.3 3-3 3s-3-1.3-3-3H5V5h14z";
+            case "inbox" ->
+                    "M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 14h-4c0 1.7-1.3 3-3 3s-3-1.3-3-3H5V5h14z";
             case "info" -> "M11 17h2v-6h-2zm1-14a9 9 0 1 0 0 18 9 9 0 0 0 0-18zm-1 6h2V7h-2z";
             case "italic" -> "M10 4v3h2.2l-3.4 8H6v3h8v-3h-2.2l3.4-8H18V4z";
-            case "mail" -> "M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5z";
+            case "mail" ->
+                    "M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5z";
             case "menu" -> "M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z";
-            case "more" -> "M12 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm0 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z";
-            case "person" -> "M12 12c2.2 0 4-1.8 4-4s-1.8-4-4-4-4 1.8-4 4 1.8 4 4 4zm0 2c-2.7 0-8 1.3-8 4v2h16v-2c0-2.7-5.3-4-8-4z";
-            case "save" -> "M17 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V7zm-5 16a3 3 0 1 1 0-6 3 3 0 0 1 0 6zM6 8V5h9v3z";
-            case "search" -> "M9.5 3a6.5 6.5 0 0 1 5.1 10.5l4.4 4.4-1.4 1.4-4.4-4.4A6.5 6.5 0 1 1 9.5 3zm0 2a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9z";
-            case "share" -> "M18 16.1c-.8 0-1.5.3-2 .9L8.9 12.9c.1-.3.1-.6.1-.9s0-.6-.1-.9L16 7c.5.5 1.2.9 2 .9a3 3 0 1 0-3-3c0 .3 0 .6.1.9L8 9.9A3 3 0 1 0 8 14l7.1 4.2c-.1.3-.1.5-.1.8a3 3 0 1 0 3-2.9z";
+            case "more" ->
+                    "M12 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm0 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4z";
+            case "person" ->
+                    "M12 12c2.2 0 4-1.8 4-4s-1.8-4-4-4-4 1.8-4 4 1.8 4 4 4zm0 2c-2.7 0-8 1.3-8 4v2h16v-2c0-2.7-5.3-4-8-4z";
+            case "save" ->
+                    "M17 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V7zm-5 16a3 3 0 1 1 0-6 3 3 0 0 1 0 6zM6 8V5h9v3z";
+            case "search" ->
+                    "M9.5 3a6.5 6.5 0 0 1 5.1 10.5l4.4 4.4-1.4 1.4-4.4-4.4A6.5 6.5 0 1 1 9.5 3zm0 2a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9z";
+            case "share" ->
+                    "M18 16.1c-.8 0-1.5.3-2 .9L8.9 12.9c.1-.3.1-.6.1-.9s0-.6-.1-.9L16 7c.5.5 1.2.9 2 .9a3 3 0 1 0-3-3c0 .3 0 .6.1.9L8 9.9A3 3 0 1 0 8 14l7.1 4.2c-.1.3-.1.5-.1.8a3 3 0 1 0 3-2.9z";
             case "star" -> "M12 17.3 18.2 21l-1.6-7L22 9.2l-7.2-.6L12 2 9.2 8.6 2 9.2 7.5 14 5.8 21z";
             case "text" -> "M5 4v3h5v13h4V7h5V4z";
-            case "underline" -> "M12 17c3.3 0 6-2.7 6-6V3h-2.5v8c0 1.9-1.6 3.5-3.5 3.5S8.5 12.9 8.5 11V3H6v8c0 3.3 2.7 6 6 6zM5 19v2h14v-2z";
+            case "underline" ->
+                    "M12 17c3.3 0 6-2.7 6-6V3h-2.5v8c0 1.9-1.6 3.5-3.5 3.5S8.5 12.9 8.5 11V3H6v8c0 3.3 2.7 6 6 6zM5 19v2h14v-2z";
             case "warning" -> "M12 2 1 21h22zM13 18h-2v-2h2zm0-4h-2v-4h2z";
-            case "work" -> "M20 6h-4V4c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-6 0h-4V4h4z";
+            case "work" ->
+                    "M20 6h-4V4c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-6 0h-4V4h4z";
             default -> throw new IllegalArgumentException("Unknown visual icon: " + name);
         };
     }

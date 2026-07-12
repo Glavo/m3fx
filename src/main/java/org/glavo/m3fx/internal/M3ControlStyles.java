@@ -19,7 +19,7 @@ public final class M3ControlStyles {
     /// The standard JavaFX scene root style class used by fallback token declarations.
     private static final String ROOT_STYLE_CLASS = "root";
 
-    /// The node property key used to mark fallback stylesheet listener installation.
+    /// The node property key used to mark repeatable fallback stylesheet listener installation.
     private static final Object FALLBACK_STYLESHEET_LISTENER_KEY = new Object();
 
     /// The scene property key used to retain the single fallback stylesheet installation for that scene.
@@ -41,7 +41,21 @@ public final class M3ControlStyles {
     public static void initialize(Styleable node, String styleClass) {
         add(node, styleClass);
         if (node instanceof Node sceneNode) {
-            installFallbackStylesheet(sceneNode);
+            observeFallbackStylesheet(sceneNode);
+        }
+    }
+
+    /// Initializes an externally owned component idempotently with fallback styling.
+    ///
+    /// Unlike [#initialize(Styleable, String)], this method may be called repeatedly for the same node. The
+    /// installation marker uses the node properties map, so M3FX controls should use the property-map-allocation-free
+    /// constructor path instead.
+    public static void initializeOnce(Styleable node, String styleClass) {
+        add(node, styleClass);
+        if (node instanceof Node sceneNode
+                && !sceneNode.getProperties().containsKey(FALLBACK_STYLESHEET_LISTENER_KEY)) {
+            sceneNode.getProperties().put(FALLBACK_STYLESHEET_LISTENER_KEY, Boolean.TRUE);
+            observeFallbackStylesheet(sceneNode);
         }
     }
 
@@ -64,13 +78,8 @@ public final class M3ControlStyles {
         }
     }
 
-    /// Installs fallback token stylesheets for controls used without an application theme.
-    private static void installFallbackStylesheet(Node node) {
-        if (node.getProperties().containsKey(FALLBACK_STYLESHEET_LISTENER_KEY)) {
-            return;
-        }
-
-        node.getProperties().put(FALLBACK_STYLESHEET_LISTENER_KEY, Boolean.TRUE);
+    /// Observes scene changes and installs fallback token stylesheets for controls used without an application theme.
+    private static void observeFallbackStylesheet(Node node) {
         node.sceneProperty().addListener(FALLBACK_SCENE_LISTENER);
         @Nullable Scene scene = node.getScene();
         if (scene != null) {

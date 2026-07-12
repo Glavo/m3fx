@@ -441,7 +441,7 @@ public final class M3FXDemoApp extends Application {
                 new DemoPage("Time Pickers", "Time pickers", DATE_TIME_PICKERS_GROUP, "12-hour, 24-hour, and bounded time selection", DemoMaterialDocs.TIME_PICKERS, this::createTimePickersPage),
                 new DemoPage("Dialogs", "Dialogs", "Dialogs", "Dialog pane with themed actions", DemoMaterialDocs.DIALOGS, this::createDialogsPage),
                 new DemoPage("Dividers", "Divider", "Divider", "Full-width, inset, middle inset, and vertical dividers", DemoMaterialDocs.DIVIDER, this::createDividersPage),
-                new DemoPage("Lists", "Lists", "Lists", "One-line, two-line, three-line, and selected rows", DemoMaterialDocs.LISTS, this::createListPage),
+                new DemoPage("Lists", "Lists", "Lists", "One-line, two-line, three-line, selected, and disabled rows", DemoMaterialDocs.LISTS, this::createListPage),
                 new DemoPage("Loading Indicator", "Loading indicator", LOADING_PROGRESS_GROUP, "Indeterminate loading indicators", DemoMaterialDocs.LOADING_INDICATOR, this::createLoadingIndicatorPage),
                 new DemoPage("Progress", "Progress indicators", LOADING_PROGRESS_GROUP, "Linear and circular progress indicators", DemoMaterialDocs.PROGRESS_INDICATORS, this::createProgressPage),
                 new DemoPage("Menus", "Menus", "Menus", "Menu surfaces, actions, and menu buttons", DemoMaterialDocs.MENUS, this::createMenusPage),
@@ -2092,12 +2092,19 @@ public final class M3FXDemoApp extends Application {
         selected.setLeading(createSurfaceVariantIcon("done"));
         selected.setTrailingSupportingText("Now");
 
+        M3ListItem disabled = new M3ListItem("Disabled item");
+        disabled.setSupportingText("Unavailable destination");
+        disabled.setLeading(createSurfaceVariantIcon("lock"));
+        disabled.setDisable(true);
+
         M3ListPane listPane = new M3ListPane();
         listPane.getStyleClass().add("demo-list");
         listPane.setSelectionMode(M3ListSelectionMode.SINGLE);
         listPane.getItems().addAll(
                 new M3ListSectionHeader("Recent"),
                 oneLine,
+                new M3Divider(),
+                disabled,
                 new M3Divider(),
                 twoLine,
                 new M3Divider(),
@@ -3894,7 +3901,9 @@ public final class M3FXDemoApp extends Application {
         initDialogOwner(dialog);
         dialog.setOnHidden(event -> {
             LocalDate result = dialog.getResult();
-            showSnackbar("Selected date " + result);
+            if (result != null) {
+                showSnackbar("Selected date " + result);
+            }
         });
         dialog.show();
     }
@@ -3905,7 +3914,9 @@ public final class M3FXDemoApp extends Application {
         initDialogOwner(dialog);
         dialog.setOnHidden(event -> {
             M3DateRange result = dialog.getResult();
-            showSnackbar("Selected range " + result.startDate() + " to " + result.endDate());
+            if (result != null) {
+                showSnackbar("Selected range " + result.startDate() + " to " + result.endDate());
+            }
         });
         dialog.show();
     }
@@ -3919,7 +3930,9 @@ public final class M3FXDemoApp extends Application {
         initDialogOwner(dialog);
         dialog.setOnHidden(event -> {
             M3DateRange result = dialog.getResult();
-            showSnackbar("Selected preset range " + result.startDate() + " to " + result.endDate());
+            if (result != null) {
+                showSnackbar("Selected preset range " + result.startDate() + " to " + result.endDate());
+            }
         });
         dialog.show();
     }
@@ -3933,7 +3946,9 @@ public final class M3FXDemoApp extends Application {
         initDialogOwner(dialog);
         dialog.setOnHidden(event -> {
             LocalTime result = dialog.getResult();
-            showSnackbar("Selected time " + result);
+            if (result != null) {
+                showSnackbar("Selected time " + result);
+            }
         });
         dialog.show();
     }

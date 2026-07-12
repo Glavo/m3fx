@@ -71,5 +71,26 @@
 }
 
 .m3-segmented-button:disabled {
-    -fx-opacity: 0.38;
+    -fx-background-color: transparent;
+    -fx-border-color: -m3-state-disabled-container-color;
+    -fx-cursor: default;
+    -fx-opacity: 1;
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-segmented-button:disabled > * {
+    -fx-opacity: -m3-state-disabled-content-opacity;
+}
+
+.m3-segmented-button:selected:disabled .m3-segmented-button-selection-container {
+    -fx-background-color: -m3-state-disabled-container-color;
+    -fx-opacity: 1;
+}
+
+.m3-segmented-button:selected:disabled {
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-segmented-button:disabled .m3-icon {
+    -fx-text-fill: -m3-color-on-surface;
 }

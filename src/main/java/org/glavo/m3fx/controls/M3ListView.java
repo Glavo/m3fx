@@ -36,12 +36,12 @@ import javafx.scene.input.KeyEvent;
 import javafx.util.Callback;
 import org.glavo.m3fx.internal.M3SelectionNavigation;
 import org.glavo.m3fx.internal.M3FocusTraversal;
+import org.glavo.m3fx.internal.M3FocusGuards;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3ListViewCell;
-import org.glavo.m3fx.internal.M3ListViewSkinAccess;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3TypeAheadState;
 import org.glavo.m3fx.skins.M3ListViewSkin;
@@ -83,13 +83,7 @@ public class M3ListView<T> extends Control {
 
     // The list item factory used by virtualized cells.
     private final ObjectProperty<@Nullable Callback<? super T, ? extends M3ListItem>> cellFactory =
-            new SimpleObjectProperty<>(this, "cellFactory") {
-                /// Rebuilds visible cells when the factory changes.
-                @Override
-                protected void invalidated() {
-                    M3ListViewSkinAccess.rebuildCells(M3ListView.this);
-                }
-            };
+            new SimpleObjectProperty<>(this, "cellFactory");
 
     // The selection mode used by this virtualized list.
     private final ObjectProperty<@Nullable M3ListSelectionMode> selectionMode =
@@ -582,7 +576,10 @@ public class M3ListView<T> extends Control {
     /// @param animated whether the scroll should animate when animations are enabled
     public final void scrollTo(int index, boolean animated) {
         checkItemIndex(index);
-        M3ListViewSkinAccess.scrollTo(this, index, animated);
+        @Nullable M3ListViewSkin<?> skin = currentSkin();
+        if (skin != null) {
+            skin.scrollTo(index, animated);
+        }
     }
 
     /// Returns the user-agent stylesheet for M3FX virtualized list views.
@@ -780,7 +777,6 @@ public class M3ListView<T> extends Control {
         refreshDataItemReachabilityState();
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
-        M3ListViewSkinAccess.refreshItemCount(this);
     }
 
     /// Remaps selected and focused indices across all subchanges in one backing-list notification.
@@ -899,7 +895,7 @@ public class M3ListView<T> extends Control {
     /// Moves focus to the next data item whose text matches the printable-key search prefix.
     private void handleTypeAheadKeyTyped(KeyEvent event) {
         Objects.requireNonNull(event, "event");
-        if (M3FocusTraversal.focusOwnerInsideTextInput(this)) {
+        if (M3FocusGuards.focusOwnerInsideTextInput(this)) {
             return;
         }
 
@@ -984,7 +980,8 @@ public class M3ListView<T> extends Control {
             return null;
         }
 
-        @Nullable Node visibleItem = M3ListViewSkinAccess.visibleItem(this, index);
+        @Nullable M3ListViewSkin<?> skin = currentSkin();
+        @Nullable Node visibleItem = skin == null ? null : skin.visibleItem(index);
         if (visibleItem != null) {
             return visibleItem;
         }
@@ -1013,7 +1010,8 @@ public class M3ListView<T> extends Control {
             index = firstIndex();
         }
         if (index >= 0) {
-            @Nullable Node visibleItem = M3ListViewSkinAccess.attachedVisibleItem(this, index);
+            @Nullable M3ListViewSkin<?> skin = currentSkin();
+            @Nullable Node visibleItem = skin == null ? null : skin.attachedVisibleItem(index);
             if (visibleItem != null) {
                 @Nullable Node focusOwner = sceneFocusOwner();
                 if (focusOwner != null
@@ -1024,7 +1022,7 @@ public class M3ListView<T> extends Control {
                 }
                 return visibleItem;
             }
-            visibleItem = M3ListViewSkinAccess.visibleItem(this, index);
+            visibleItem = skin == null ? null : skin.visibleItem(index);
             if (visibleItem != null) {
                 return visibleItem;
             }
@@ -1062,10 +1060,10 @@ public class M3ListView<T> extends Control {
 
     /// Returns an active external popup focus node exposed by an attached visible row.
     private @Nullable Node currentVisibleExternalFocusNode() {
-        @Nullable Node visibleItem = M3ListViewSkinAccess.findAttachedVisibleItem(
-                this,
-                item -> M3Accessible.activeExternalFocusTarget(this, item) != null
-        );
+        @Nullable M3ListViewSkin<?> skin = currentSkin();
+        @Nullable Node visibleItem = skin == null
+                ? null
+                : skin.findAttachedVisibleItem(item -> M3Accessible.activeExternalFocusTarget(this, item) != null);
         return visibleItem == null ? null : M3Accessible.activeExternalFocusTarget(this, visibleItem);
     }
 
@@ -1157,10 +1155,12 @@ public class M3ListView<T> extends Control {
 
     /// Delegates an explicit reveal request to an attached visible row that exposes the target.
     private boolean showVisibleAccessibleActionTarget(Object... parameters) {
-        @Nullable Node visibleItem = M3ListViewSkinAccess.findAttachedVisibleItem(
-                this,
-                item -> M3Accessible.containsAccessibleActionTarget(item, parameters)
-        );
+        @Nullable M3ListViewSkin<?> skin = currentSkin();
+        @Nullable Node visibleItem = skin == null
+                ? null
+                : skin.findAttachedVisibleItem(
+                        item -> M3Accessible.containsAccessibleActionTarget(item, parameters)
+                );
         if (visibleItem == null || !M3Accessible.showAccessibleActionTarget(this, visibleItem, parameters)) {
             return false;
         }
@@ -1185,13 +1185,16 @@ public class M3ListView<T> extends Control {
             return true;
         }
 
-        M3ListViewSkinAccess.scrollTo(this, index, false);
+        @Nullable M3ListViewSkin<?> skin = currentSkin();
+        if (skin != null) {
+            skin.scrollTo(index, false);
+        }
         applyCss();
         layout();
         if (showMaterializedAccessibleActionTarget(index, targetParameters)) {
             return true;
         }
-        if (M3ListViewSkinAccess.attachedVisibleItem(this, index) != null) {
+        if (skin != null && skin.attachedVisibleItem(index) != null) {
             return false;
         }
 
@@ -1223,7 +1226,8 @@ public class M3ListView<T> extends Control {
             return true;
         }
         if (parameter instanceof Node node) {
-            return M3ListViewSkinAccess.attachedVisibleItem(this, index) == node;
+            @Nullable M3ListViewSkin<?> skin = currentSkin();
+            return skin != null && skin.attachedVisibleItem(index) == node;
         }
         return false;
     }
@@ -1234,7 +1238,8 @@ public class M3ListView<T> extends Control {
             return false;
         }
 
-        @Nullable Node visibleItem = M3ListViewSkinAccess.attachedVisibleItem(this, index);
+        @Nullable M3ListViewSkin<?> skin = currentSkin();
+        @Nullable Node visibleItem = skin == null ? null : skin.attachedVisibleItem(index);
         if (visibleItem == null || !M3Accessible.showAccessibleActionTarget(this, visibleItem, parameters)) {
             return false;
         }
@@ -1276,7 +1281,10 @@ public class M3ListView<T> extends Control {
         }
 
         pendingAccessibleRevealRetries--;
-        M3ListViewSkinAccess.scrollTo(this, index, false);
+        @Nullable M3ListViewSkin<?> skin = currentSkin();
+        if (skin != null) {
+            skin.scrollTo(index, false);
+        }
         applyCss();
         layout();
         if (showMaterializedAccessibleActionTarget(index, parameters)) {
@@ -1408,7 +1416,8 @@ public class M3ListView<T> extends Control {
 
     /// Returns the data index for an attached visible row node or descendant.
     private int visibleNodeIndex(Node node) {
-        int index = M3ListViewSkinAccess.attachedVisibleItemIndex(this, node);
+        @Nullable M3ListViewSkin<?> skin = currentSkin();
+        int index = skin == null ? -1 : skin.attachedVisibleItemIndex(node);
         return isIndexNavigable(index) ? index : -1;
     }
 
@@ -1610,7 +1619,10 @@ public class M3ListView<T> extends Control {
         if (requestNodeFocus) {
             M3Accessible.showDirectItem(this, this);
         }
-        M3ListViewSkinAccess.refreshFocus(this, requestNodeFocus, animated);
+        @Nullable M3ListViewSkin<?> skin = currentSkin();
+        if (skin != null) {
+            skin.refreshFocus(requestNodeFocus, animated);
+        }
     }
 
     /// Updates logical list focus for an already attached row without scrolling or stealing child focus.
@@ -1754,7 +1766,17 @@ public class M3ListView<T> extends Control {
 
     /// Requests visible cell state updates from the installed skin.
     private void requestVisibleCellRefresh() {
-        M3ListViewSkinAccess.refreshCells(this);
+        @Nullable M3ListViewSkin<?> skin = currentSkin();
+        if (skin != null) {
+            skin.refreshCells();
+        }
+    }
+
+    /// Returns the currently installed M3FX virtualized list skin.
+    ///
+    /// @return the installed M3FX skin, or `null` before CSS installs it or when an application supplies another skin
+    private @Nullable M3ListViewSkin<?> currentSkin() {
+        return getSkin() instanceof M3ListViewSkin<?> skin ? skin : null;
     }
 
 

@@ -307,15 +307,22 @@ final class M3PopupReachabilityTest {
             String popupName,
             String reason
     ) {
-        showPopup.run();
-        root.applyCss();
-        root.layout();
-        assertTrue(popupShowing.getAsBoolean(), popupName + " should show before " + reason);
+        var warnings = FxTestUtils.captureCssWarnings(() -> {
+            showPopup.run();
+            root.applyCss();
+            root.layout();
+            assertTrue(popupShowing.getAsBoolean(), popupName + " should show before " + reason);
 
-        reachabilityChange.run();
-        root.applyCss();
-        root.layout();
-        assertFalse(popupShowing.getAsBoolean(), popupName + " should hide when " + reason);
-        assertEquals(false, owner.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
+            reachabilityChange.run();
+            root.applyCss();
+            root.layout();
+            assertFalse(popupShowing.getAsBoolean(), popupName + " should hide when " + reason);
+            assertEquals(false, owner.queryAccessibleAttribute(AccessibleAttribute.EXPANDED));
+        });
+        assertTrue(
+                warnings.stream().noneMatch(FxTestUtils::isM3CssTokenWarning),
+                () -> popupName + " emitted CSS token warnings when " + reason + ": "
+                        + warnings.stream().map(record -> record.getMessage()).toList()
+        );
     }
 }

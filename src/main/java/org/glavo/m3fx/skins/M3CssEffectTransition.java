@@ -80,6 +80,7 @@ final class M3CssEffectTransition {
         motionSettingsObserver.dispose();
         animation.stop();
         settleAnimation();
+        animation.setOnFinished(null);
     }
 
     /// Returns whether the effect transition is currently running.

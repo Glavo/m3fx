@@ -4,7 +4,7 @@
 package org.glavo.m3fx.controls;
 
 import javafx.beans.property.ObjectProperty;
-import javafx.collections.ListChangeListener;
+import javafx.beans.InvalidationListener;
 import javafx.collections.ObservableList;
 import javafx.scene.Node;
 import javafx.scene.control.ButtonType;
@@ -12,9 +12,9 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.internal.M3PresetNavigation;
 import org.glavo.m3fx.internal.M3Accessible;
-import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3ObservableLists;
+import org.glavo.m3fx.internal.M3PickerPresetController;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -46,14 +46,37 @@ public class M3DatePickerDialog extends M3Dialog<LocalDate> {
     /// The mutable date preset list rendered before the picker.
     private final ObservableList<M3DatePreset> presets = M3ObservableLists.nonNullElementList("preset");
 
-    /// The wrapper used when the dialog renders preset actions next to the picker.
-    private final HBox presetContent = new HBox(16.0);
-
     /// The vertical preset action container.
     private final VBox presetList = new VBox(6.0);
 
-    /// Rebuilds preset action buttons when the public preset list changes.
-    private final ListChangeListener<M3DatePreset> presetsListener = change -> updatePresetContent();
+    /// The stable wrapper that keeps the preset list and picker parented for the dialog lifetime.
+    private final HBox presetContent = new HBox(16.0, presetList, picker);
+
+    /// Incrementally maintains preset actions without rebuilding unaffected buttons.
+    private final M3PickerPresetController<M3DatePreset> presetController =
+            new M3PickerPresetController<>(presets, presetList, PRESET_BUTTON_STYLE_CLASS) {
+                /// Returns one date preset label.
+                @Override
+                protected String presetText(M3DatePreset preset) {
+                    return preset.text();
+                }
+
+                /// Applies one selected date preset.
+                @Override
+                protected void applyPreset(M3DatePreset preset) {
+                    picker.applyPreset(preset);
+                }
+
+                /// Returns whether one date preset is outside the selectable bounds.
+                @Override
+                protected boolean isPresetDisabled(M3DatePreset preset) {
+                    return picker.isDateDisabled(preset.date());
+                }
+            };
+
+    /// Refreshes existing button disabled states after picker bounds change.
+    private final InvalidationListener presetBoundsInvalidation =
+            observable -> presetController.refreshDisabledStates();
 
     /// Creates an empty date picker dialog.
     public M3DatePickerDialog() {
@@ -109,7 +132,7 @@ public class M3DatePickerDialog extends M3Dialog<LocalDate> {
         setTitle(DEFAULT_TITLE);
         M3DialogPane pane = getM3DialogPane();
         pane.setHeaderText(DEFAULT_TITLE);
-        pane.setContent(picker);
+        pane.setContent(presetContent);
         picker.nodeOrientationProperty().bind(pane.effectiveNodeOrientationProperty());
         presetContent.getStyleClass().add(PRESET_CONTENT_STYLE_CLASS);
         presetContent.nodeOrientationProperty().bind(pane.effectiveNodeOrientationProperty());
@@ -117,43 +140,14 @@ public class M3DatePickerDialog extends M3Dialog<LocalDate> {
         presetList.getStyleClass().add(PRESET_LIST_STYLE_CLASS);
         presetList.nodeOrientationProperty().bind(pane.effectiveNodeOrientationProperty());
         presetList.alignmentProperty().bind(M3NodeLayout.createLogicalStartTopAlignmentBinding(pane));
-        M3PresetNavigation.install(presetList, pane, () -> M3Accessible.requestAccessibleFocus(pane, picker));
+        M3PresetNavigation.installColumn(presetList, pane, () -> M3Accessible.requestAccessibleFocus(pane, picker));
         pane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
         setResultConverter(buttonType -> buttonType == ButtonType.OK ? getValue() : null);
         picker.valueProperty().addListener((observable, oldValue, newValue) -> updateOkButtonState());
-        picker.minDateProperty().addListener((observable, oldValue, newValue) -> updatePresetContent());
-        picker.maxDateProperty().addListener((observable, oldValue, newValue) -> updatePresetContent());
-        presets.addListener(presetsListener);
+        picker.minDateProperty().addListener(presetBoundsInvalidation);
+        picker.maxDateProperty().addListener(presetBoundsInvalidation);
+        presetController.install();
         updateOkButtonState();
-    }
-
-    /// Rebuilds dialog content from the current preset list.
-    private void updatePresetContent() {
-        M3DialogPane pane = getM3DialogPane();
-        presetContent.getChildren().clear();
-        presetList.getChildren().clear();
-        pane.setContent(null);
-
-        if (presets.isEmpty()) {
-            pane.setContent(picker);
-            return;
-        }
-
-        for (M3DatePreset preset : presets) {
-            presetList.getChildren().add(createPresetButton(preset));
-        }
-        presetContent.getChildren().setAll(presetList, picker);
-        pane.setContent(presetContent);
-    }
-
-    /// Creates one preset action button.
-    private M3Button createPresetButton(M3DatePreset preset) {
-        M3Button button = new M3Button(preset.text(), M3ButtonVariant.TEXT);
-        button.getStyleClass().add(PRESET_BUTTON_STYLE_CLASS);
-        M3Css.setMaxWidthIfUnbound(button, Double.MAX_VALUE);
-        button.setDisable(picker.isDateDisabled(preset.date()));
-        button.setOnAction(event -> picker.applyPreset(preset));
-        return button;
     }
 
     /// Enables the OK button only when a selected date exists.

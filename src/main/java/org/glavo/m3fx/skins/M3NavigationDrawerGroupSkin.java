@@ -23,7 +23,6 @@ import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3NavigationDrawerGroup;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
-import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -48,7 +47,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
     /// The clip that reveals child rows as the group expands.
     private final Rectangle childrenClip = new Rectangle();
 
-    // The current child row reveal progress from collapsed `0` to expanded `1`.
+    /// The current child row reveal progress from collapsed `0` to expanded `1`.
     private final DoubleProperty expansionProgress = new SimpleDoubleProperty(this, "expansionProgress") {
         /// Updates child row visibility and layout after reveal progress changes.
         @Override
@@ -59,6 +58,9 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
 
     /// The expansion and collapse animation for child rows.
     private final M3DoubleTransition expansionAnimation = new M3DoubleTransition(expansionProgress);
+
+    /// Whether the currently configured expansion animation targets the expanded state.
+    private boolean expansionAnimationTargetExpanded;
 
     /// Settles running child-row expansion transitions when runtime motion settings change.
     private final M3MotionSettingsObserver motionSettingsObserver =
@@ -76,7 +78,7 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
 
     /// Invalidates logical child padding when the effective node orientation changes at runtime.
     private final InvalidationListener orientationInvalidation = observable -> {
-        appliedChildEdgeInset = Double.NaN;
+        updateInternalNodeOrientation();
         getSkinnable().requestLayout();
     };
 
@@ -93,10 +95,10 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
         super(control);
         childViewport.setManaged(false);
         childViewport.setClip(childrenClip);
-        childViewport.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
         childrenContainer.setManaged(false);
         childrenContainer.setSpacing(ITEM_SPACING);
-        childrenContainer.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+        updateInternalNodeOrientation();
+        expansionAnimation.setOnFinished(event -> finishExpansionAnimation());
         childViewport.getChildren().add(childrenContainer);
         getChildren().setAll(control.getHeaderItem(), childViewport);
         control.getItems().addListener(itemsListener);
@@ -110,12 +112,11 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
     public void dispose() {
         M3NavigationDrawerGroup control = getSkinnable();
         expansionAnimation.stop();
+        expansionAnimation.setOnFinished(null);
         control.getItems().removeListener(itemsListener);
         motionSettingsObserver.dispose();
         control.expandedProperty().removeListener(expandedListener);
         control.effectiveNodeOrientationProperty().removeListener(orientationInvalidation);
-        childViewport.nodeOrientationProperty().unbind();
-        childrenContainer.nodeOrientationProperty().unbind();
         childrenContainer.getChildren().clear();
         childViewport.getChildren().clear();
         if (control.getSkin() == null || control.getSkin() == this) {
@@ -200,7 +201,6 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
         M3ListItem headerItem = getSkinnable().getHeaderItem();
-        updateListItemWidth(headerItem, width);
         double headerHeight = headerItem.prefHeight(width);
         headerItem.resizeRelocate(x, y, width, headerHeight);
 
@@ -211,7 +211,6 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
 
         double childEdgeInset = childEdgeInset();
         updateChildrenContainerPadding(childEdgeInset);
-        updateChildItemWidths(width, childEdgeInset);
         double childrenHeight = childrenContainer.prefHeight(width);
         double viewportHeight = childrenHeight * expansionProgress.get();
         if (viewportHeight <= 0.0) {
@@ -262,7 +261,6 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
     /// Applies the expanded state, using animation when the group is attached to a scene.
     private void setExpandedState(boolean expanded, boolean animate) {
         expansionAnimation.stop();
-        expansionAnimation.setOnFinished(null);
         if (expanded) {
             mountChildItems();
         }
@@ -279,14 +277,16 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
         M3MotionSpec spec = expanded
                 ? M3Animation.defaultSpatial(getSkinnable())
                 : M3Animation.fastSpatial(getSkinnable());
+        expansionAnimationTargetExpanded = expanded;
         expansionAnimation.configure(spec, targetProgress);
-        expansionAnimation.setOnFinished(event -> {
-            if (!expanded) {
-                unmountChildItems();
-            }
-            expansionAnimation.setOnFinished(null);
-        });
         M3Animation.playFromStart(getSkinnable(), expansionAnimation);
+    }
+
+    /// Unmounts collapsed child rows after the reusable expansion animation completes.
+    private void finishExpansionAnimation() {
+        if (!expansionAnimationTargetExpanded && !getSkinnable().isExpanded()) {
+            unmountChildItems();
+        }
     }
 
     /// Returns whether child rows should be kept mounted in the viewport.
@@ -333,19 +333,14 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
         }
     }
 
-    /// Keeps child list item containers inside the group content area.
-    private void updateChildItemWidths(double width, double childEdgeInset) {
-        double itemWidth = Math.max(0.0, width - childEdgeInset);
-        for (M3ListItem item : getSkinnable().getItems()) {
-            updateChildItemOrientation(item);
-            updateListItemWidth(item, itemWidth);
+    /// Keeps internal layout containers in the group's direction without mutating application-owned child rows.
+    private void updateInternalNodeOrientation() {
+        NodeOrientation orientation = getSkinnable().getEffectiveNodeOrientation();
+        if (childViewport.getNodeOrientation() != orientation) {
+            childViewport.setNodeOrientation(orientation);
         }
-    }
-
-    /// Keeps child rows in the group direction while their physical container reserves indentation.
-    private void updateChildItemOrientation(M3ListItem item) {
-        if (!item.nodeOrientationProperty().isBound()) {
-            item.setNodeOrientation(getSkinnable().getEffectiveNodeOrientation());
+        if (childrenContainer.getNodeOrientation() != orientation) {
+            childrenContainer.setNodeOrientation(orientation);
         }
     }
 
@@ -367,18 +362,8 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
         appliedChildEdgeInset = childEdgeInset;
         Insets padding = childEdgeInset == 0.0
                 ? EMPTY_CHILD_PADDING
-                : M3NodeLayout.logicalInsets(getSkinnable(), 0.0, childEdgeInset, 0.0, 0.0);
+                : new Insets(0.0, 0.0, 0.0, childEdgeInset);
         childrenContainer.setPadding(padding);
-    }
-
-    /// Keeps one list item container inside the group content area.
-    private static void updateListItemWidth(M3ListItem item, double itemWidth) {
-        if (!item.minWidthProperty().isBound() && Double.compare(item.getMinWidth(), 0.0) != 0) {
-            item.setMinWidth(0.0);
-        }
-        if (!item.maxWidthProperty().isBound() && Double.compare(item.getMaxWidth(), itemWidth) != 0) {
-            item.setMaxWidth(itemWidth);
-        }
     }
 
     /// Computes one dimension for a region.

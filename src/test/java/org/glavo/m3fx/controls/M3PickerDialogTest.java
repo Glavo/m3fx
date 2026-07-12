@@ -13,6 +13,8 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.FxTestUtils;
@@ -55,10 +57,12 @@ final class M3PickerDialogTest {
             M3DialogPane pane = dialog.getM3DialogPane();
 
             applyCss(pane);
-            assertSame(dialog.getPicker(), pane.getContent());
+            HBox content = assertInstanceOf(HBox.class, pane.getContent());
+            assertSame(dialog.getPicker(), content.getChildren().get(1));
+            assertSame(content, dialog.getPicker().getParent());
+            assertFalse(content.getChildren().get(0).isManaged());
             assertEquals(M3DatePickerDialog.DEFAULT_TITLE, dialog.getTitle());
             assertEquals(M3DatePickerDialog.DEFAULT_TITLE, pane.getHeaderText());
-            assertInstanceOf(M3DatePicker.class, pane.getContent());
             assertTrue(pane.lookupButton(ButtonType.OK).isDisabled());
 
             dialog.setValue(value);
@@ -138,7 +142,9 @@ final class M3PickerDialogTest {
             M3DialogPane pane = dialog.getM3DialogPane();
 
             applyCss(pane);
-            assertSame(dialog.getPicker(), pane.getContent());
+            HBox content = assertInstanceOf(HBox.class, pane.getContent());
+            Node pickerParent = dialog.getPicker().getParent();
+            assertFalse(content.getChildren().get(0).isManaged());
 
             dialog.getPresets().add(M3DatePresets.today(anchor));
             dialog.getPresets().addAll(
@@ -149,7 +155,8 @@ final class M3PickerDialogTest {
             );
             applyCss(pane);
 
-            assertInstanceOf(HBox.class, pane.getContent());
+            assertSame(content, pane.getContent());
+            assertSame(pickerParent, dialog.getPicker().getParent());
             assertEquals(5, dialog.getPresets().size());
             assertEquals(5, pane.lookupAll("." + M3DatePickerDialog.PRESET_BUTTON_STYLE_CLASS).size());
 
@@ -167,7 +174,10 @@ final class M3PickerDialogTest {
 
             dialog.getPresets().clear();
 
-            assertSame(dialog.getPicker(), pane.getContent());
+            assertSame(content, pane.getContent());
+            assertSame(pickerParent, dialog.getPicker().getParent());
+            assertFalse(content.getChildren().get(0).isManaged());
+            assertTrue(pane.lookupAll("." + M3DatePickerDialog.PRESET_BUTTON_STYLE_CLASS).isEmpty());
         });
     }
 
@@ -244,10 +254,12 @@ final class M3PickerDialogTest {
             M3DialogPane pane = dialog.getM3DialogPane();
 
             applyCss(pane);
-            assertSame(dialog.getPicker(), pane.getContent());
+            HBox content = assertInstanceOf(HBox.class, pane.getContent());
+            assertSame(dialog.getPicker(), content.getChildren().get(1));
+            assertSame(content, dialog.getPicker().getParent());
+            assertFalse(content.getChildren().get(0).isManaged());
             assertEquals(M3DateRangePickerDialog.DEFAULT_TITLE, dialog.getTitle());
             assertEquals(M3DateRangePickerDialog.DEFAULT_TITLE, pane.getHeaderText());
-            assertInstanceOf(M3DateRangePicker.class, pane.getContent());
             assertTrue(pane.lookupButton(ButtonType.OK).isDisabled());
 
             dialog.getPicker().setStartDate(start);
@@ -299,7 +311,9 @@ final class M3PickerDialogTest {
             M3DialogPane pane = dialog.getM3DialogPane();
 
             applyCss(pane);
-            assertSame(dialog.getPicker(), pane.getContent());
+            HBox content = assertInstanceOf(HBox.class, pane.getContent());
+            Node pickerParent = dialog.getPicker().getParent();
+            assertFalse(content.getChildren().get(0).isManaged());
 
             dialog.getPresets().add(M3DateRangePresets.today(anchor));
             dialog.getPresets().addAll(
@@ -311,7 +325,8 @@ final class M3PickerDialogTest {
             );
             applyCss(pane);
 
-            assertInstanceOf(HBox.class, pane.getContent());
+            assertSame(content, pane.getContent());
+            assertSame(pickerParent, dialog.getPicker().getParent());
             assertEquals(6, dialog.getPresets().size());
             assertEquals(6, pane.lookupAll("." + M3DateRangePickerDialog.PRESET_BUTTON_STYLE_CLASS).size());
 
@@ -333,7 +348,10 @@ final class M3PickerDialogTest {
 
             dialog.getPresets().clear();
 
-            assertSame(dialog.getPicker(), pane.getContent());
+            assertSame(content, pane.getContent());
+            assertSame(pickerParent, dialog.getPicker().getParent());
+            assertFalse(content.getChildren().get(0).isManaged());
+            assertTrue(pane.lookupAll("." + M3DateRangePickerDialog.PRESET_BUTTON_STYLE_CLASS).isEmpty());
         });
     }
 
@@ -370,6 +388,164 @@ final class M3PickerDialogTest {
         });
     }
 
+    /// Verifies that picker bounds and incremental preset changes preserve unaffected controls, skins, and focus.
+    @Test
+    void pickerDialogPresetUpdatesPreserveNodesAndFocus() {
+        FxTestUtils.runOnFxThread(() -> {
+            LocalDate dateAnchor = LocalDate.of(2026, 5, 19);
+            LocalTime timeAnchor = LocalTime.of(10, 30);
+            M3DatePickerDialog dateDialog = new M3DatePickerDialog(dateAnchor);
+            M3DateRangePickerDialog rangeDialog = new M3DateRangePickerDialog(
+                    dateAnchor,
+                    dateAnchor.plusDays(1)
+            );
+            M3TimePickerDialog timeDialog = new M3TimePickerDialog(timeAnchor);
+
+            M3DatePreset dateTodayPreset = M3DatePresets.today(dateAnchor);
+            M3DatePreset dateTomorrowPreset = M3DatePresets.tomorrow(dateAnchor);
+            dateDialog.getPresets().setAll(
+                    dateTodayPreset,
+                    dateTomorrowPreset,
+                    M3DatePresets.daysFrom(dateAnchor, 7)
+            );
+            rangeDialog.getPresets().setAll(
+                    M3DateRangePresets.today(dateAnchor),
+                    M3DateRangePresets.nextDays(dateAnchor, 7)
+            );
+            timeDialog.getPresets().setAll(
+                    M3TimePresets.now(timeAnchor),
+                    M3TimePresets.evening()
+            );
+
+            M3DialogPane datePane = dateDialog.getM3DialogPane();
+            M3DialogPane rangePane = rangeDialog.getM3DialogPane();
+            M3DialogPane timePane = timeDialog.getM3DialogPane();
+            Pane root = new Pane(datePane, rangePane, timePane);
+            Scene scene = new Scene(root, 960.0, 920.0);
+            Stage stage = new Stage();
+
+            try {
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                datePane.resizeRelocate(24.0, 24.0, 700.0, 260.0);
+                rangePane.resizeRelocate(24.0, 316.0, 780.0, 260.0);
+                timePane.resizeRelocate(24.0, 608.0, 700.0, 260.0);
+                root.applyCss();
+                root.layout();
+
+                Node dateContent = datePane.getContent();
+                Node datePickerParent = dateDialog.getPicker().getParent();
+                M3Button dateToday = presetButton(
+                        datePane,
+                        M3DatePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "Today"
+                );
+                M3Button dateTomorrow = presetButton(
+                        datePane,
+                        M3DatePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "Tomorrow"
+                );
+                Object dateTodaySkin = dateToday.getSkin();
+                dateToday.requestFocus();
+                assertTrue(dateToday.isFocused());
+
+                dateDialog.getPicker().setMaxDate(dateAnchor.plusDays(2));
+
+                assertSame(dateContent, datePane.getContent());
+                assertSame(datePickerParent, dateDialog.getPicker().getParent());
+                assertSame(dateToday, presetButton(
+                        datePane,
+                        M3DatePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "Today"
+                ));
+                assertSame(dateTodaySkin, dateToday.getSkin());
+                assertTrue(dateToday.isFocused());
+                assertTrue(presetButton(
+                        datePane,
+                        M3DatePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "In 7 days"
+                ).isDisabled());
+
+                M3DatePreset releasePreset = new M3DatePreset("Release", dateAnchor.plusDays(2));
+                dateDialog.getPresets().add(releasePreset);
+
+                assertSame(dateToday, presetButton(
+                        datePane,
+                        M3DatePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "Today"
+                ));
+                assertSame(dateTomorrow, presetButton(
+                        datePane,
+                        M3DatePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "Tomorrow"
+                ));
+                dateDialog.getPresets().remove(dateTomorrowPreset);
+                assertNull(dateTomorrow.getParent());
+                assertNull(dateTomorrow.getOnAction());
+                assertSame(dateToday, presetButton(
+                        datePane,
+                        M3DatePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "Today"
+                ));
+                presetButton(datePane, M3DatePickerDialog.PRESET_BUTTON_STYLE_CLASS, "Release").fire();
+                assertEquals(releasePreset.date(), dateDialog.getValue());
+
+                Node rangeContent = rangePane.getContent();
+                Node rangePickerParent = rangeDialog.getPicker().getParent();
+                M3Button rangeToday = presetButton(
+                        rangePane,
+                        M3DateRangePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "Today"
+                );
+                Object rangeTodaySkin = rangeToday.getSkin();
+
+                rangeDialog.getPicker().setMaxDate(dateAnchor.plusDays(2));
+
+                assertSame(rangeContent, rangePane.getContent());
+                assertSame(rangePickerParent, rangeDialog.getPicker().getParent());
+                assertSame(rangeToday, presetButton(
+                        rangePane,
+                        M3DateRangePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "Today"
+                ));
+                assertSame(rangeTodaySkin, rangeToday.getSkin());
+                assertTrue(presetButton(
+                        rangePane,
+                        M3DateRangePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "Next 7 days"
+                ).isDisabled());
+
+                Node timeContent = timePane.getContent();
+                Node timePickerParent = timeDialog.getPicker().getParent();
+                M3Button now = presetButton(
+                        timePane,
+                        M3TimePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "Now"
+                );
+                Object nowSkin = now.getSkin();
+
+                timeDialog.getPicker().setMaxTime(LocalTime.NOON);
+
+                assertSame(timeContent, timePane.getContent());
+                assertSame(timePickerParent, timeDialog.getPicker().getParent());
+                assertSame(now, presetButton(
+                        timePane,
+                        M3TimePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "Now"
+                ));
+                assertSame(nowSkin, now.getSkin());
+                assertTrue(presetButton(
+                        timePane,
+                        M3TimePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "Evening"
+                ).isDisabled());
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies time dialog content, OK state, and result conversion.
     @Test
     void timePickerDialogConvertsAcceptedTime() {
@@ -379,11 +555,27 @@ final class M3PickerDialogTest {
             M3DialogPane pane = dialog.getM3DialogPane();
 
             applyCss(pane);
-            assertSame(dialog.getPicker(), pane.getContent());
+            HBox content = assertInstanceOf(HBox.class, pane.getContent());
+            assertSame(dialog.getPicker(), content.getChildren().get(1));
+            assertSame(content, dialog.getPicker().getParent());
+            assertFalse(content.getChildren().get(0).isManaged());
+            Region pickerContainer = assertInstanceOf(
+                    Region.class,
+                    dialog.getPicker().lookup("." + M3TimePicker.CONTAINER_STYLE_CLASS)
+            );
+            assertEquals(0.0, pickerContainer.getPadding().getTop(), 0.0001);
             assertEquals(M3TimePickerDialog.DEFAULT_TITLE, dialog.getTitle());
             assertEquals(M3TimePickerDialog.DEFAULT_TITLE, pane.getHeaderText());
-            assertInstanceOf(M3TimePicker.class, pane.getContent());
             assertTrue(pane.lookupButton(ButtonType.OK).isDisabled());
+            assertEquals(1, pane.lookupAll("." + M3TimePicker.MODE_BUTTON_STYLE_CLASS).size());
+            M3IconButton modeButton = assertInstanceOf(
+                    M3IconButton.class,
+                    pane.lookup("." + M3TimePicker.MODE_BUTTON_STYLE_CLASS)
+            );
+            assertFalse(dialog.getPicker().isInputMode());
+            modeButton.fire();
+            assertTrue(dialog.getPicker().isInputMode());
+            assertEquals("Use clock dial", modeButton.getAccessibleText());
 
             dialog.setValue(value);
 
@@ -459,7 +651,9 @@ final class M3PickerDialogTest {
             M3DialogPane pane = dialog.getM3DialogPane();
 
             applyCss(pane);
-            assertSame(dialog.getPicker(), pane.getContent());
+            HBox content = assertInstanceOf(HBox.class, pane.getContent());
+            Node pickerParent = dialog.getPicker().getParent();
+            assertFalse(content.getChildren().get(0).isManaged());
 
             dialog.getPresets().add(M3TimePresets.now(anchor));
             dialog.getPresets().addAll(
@@ -470,7 +664,8 @@ final class M3PickerDialogTest {
             );
             applyCss(pane);
 
-            assertInstanceOf(HBox.class, pane.getContent());
+            assertSame(content, pane.getContent());
+            assertSame(pickerParent, dialog.getPicker().getParent());
             assertEquals(5, dialog.getPresets().size());
             assertEquals(5, pane.lookupAll("." + M3TimePickerDialog.PRESET_BUTTON_STYLE_CLASS).size());
 
@@ -486,7 +681,10 @@ final class M3PickerDialogTest {
 
             dialog.getPresets().clear();
 
-            assertSame(dialog.getPicker(), pane.getContent());
+            assertSame(content, pane.getContent());
+            assertSame(pickerParent, dialog.getPicker().getParent());
+            assertFalse(content.getChildren().get(0).isManaged());
+            assertTrue(pane.lookupAll("." + M3TimePickerDialog.PRESET_BUTTON_STYLE_CLASS).isEmpty());
         });
     }
 
@@ -520,9 +718,9 @@ final class M3PickerDialogTest {
         });
     }
 
-    /// Verifies that dialog preset action columns support keyboard traversal and picker handoff.
+    /// Verifies that dialog preset grids and the vertical time column support keyboard traversal.
     @Test
-    void pickerDialogPresetKeyboardNavigationMovesWithinColumnAndToPicker() {
+    void pickerDialogPresetKeyboardNavigationMovesWithinListsAndGrid() {
         FxTestUtils.runOnFxThread(() -> {
             LocalDate dateAnchor = LocalDate.of(2026, 5, 19);
             LocalTime timeAnchor = LocalTime.of(10, 30);
@@ -622,6 +820,11 @@ final class M3PickerDialogTest {
                         M3TimePickerDialog.PRESET_BUTTON_STYLE_CLASS,
                         "In 15 min"
                 );
+                M3Button morning = presetButton(
+                        timePane,
+                        M3TimePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                        "Morning"
+                );
                 M3Button evening = presetButton(timePane, M3TimePickerDialog.PRESET_BUTTON_STYLE_CLASS, "Evening");
 
                 now.requestFocus();
@@ -637,7 +840,8 @@ final class M3PickerDialogTest {
 
                 assertTrue(now.isFocused());
 
-                now.fireEvent(keyPressed(KeyCode.RIGHT));
+                morning.requestFocus();
+                morning.fireEvent(keyPressed(KeyCode.RIGHT));
 
                 assertFocusInsidePicker(scene, timeDialog.getPicker());
             } finally {

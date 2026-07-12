@@ -150,6 +150,18 @@ final class M3ThemeTest {
                 "-m3-button-disabled-container-color: rgba(29,27,32,0.1)"
         ));
         assertTrue(theme.toRootStyleDeclarations().contains(
+                "-m3-list-item-disabled-state-layer-color: rgba(29,27,32,0.1)"
+        ));
+        assertTrue(theme.toRootStyleDeclarations().contains(
+                "-m3-filled-card-disabled-container-color: rgba(230,224,233,0.38)"
+        ));
+        assertTrue(theme.toRootStyleDeclarations().contains(
+                "-m3-elevated-card-disabled-container-color: rgba(253,247,255,0.38)"
+        ));
+        assertTrue(theme.toRootStyleDeclarations().contains(
+                "-m3-outlined-card-disabled-outline-color: rgba(122,117,127,0.12)"
+        ));
+        assertTrue(theme.toRootStyleDeclarations().contains(
                 "-m3-text-field-disabled-container-color: rgba(29,27,32,0.04)"
         ));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-button-filled-container-height"));
@@ -196,7 +208,7 @@ final class M3ThemeTest {
         assertTrue(theme.toControlStyleRules().contains(".m3-checkbox:hover"));
         assertTrue(theme.toControlStyleRules().contains(".m3-slider:pressed"));
         assertTrue(theme.toControlStyleRules().contains(".m3-loading-indicator"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-list-item:disabled"));
+        assertFalse(theme.toControlStyleRules().contains(".m3-list-item:disabled"));
         assertTrue(theme.toControlStyleRules().contains(".m3-slider:focus-visible .m3-state-layer"));
         assertTrue(theme.toControlStyleRules().contains(".m3-card:focus-visible .m3-state-layer"));
         assertTrue(theme.toControlStyleRules().contains(".m3-dialog-pane"));
@@ -215,7 +227,6 @@ final class M3ThemeTest {
         assertTrue(theme.toControlStyleRules().contains(".m3-surface"));
         assertTrue(theme.toControlStyleRules().contains("-fx-opacity: 0.08"));
         assertTrue(theme.toControlStyleRules().contains("-fx-opacity: 0.1"));
-        assertTrue(theme.toControlStyleRules().contains("-fx-opacity: 0.38"));
         assertTrue(theme.toControlStyleRules().contains(".m3-elevated-card .m3-card-container"));
         assertTrue(theme.toControlStyleRules().contains(".m3-elevated-card:hover .m3-card-container"));
         assertTrue(theme.toControlStyleRules().contains(".m3-filled-card:hover .m3-card-container"));
@@ -355,7 +366,9 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-tooltip-rich-pref-width: 360px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-picker-field-popup-padding: 20px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-date-picker-day-cell-size: 44px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-time-picker-cell-height: 44px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-time-picker-dial-size: 256px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-time-picker-dial-handle-size: 48px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-time-picker-input-field-height: 72px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-badge-small-size: 8px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-top-app-bar-container-height: 72px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-top-app-bar-medium-container-height: 120px"));
@@ -1071,6 +1084,8 @@ final class M3ThemeTest {
         );
         M3ThemeManager.install(scene, expressiveTheme);
         root.applyCss();
+        root.layout();
+        root.applyCss();
 
         assertEquals(40.0, button.getContainerHeight(), 0.0001);
         assertEquals(16.0, button.getHorizontalPadding(), 0.0001);
@@ -1140,13 +1155,13 @@ final class M3ThemeTest {
         assertEquals(48.0, datePicker.lookup("." + M3DatePicker.NAVIGATION_BUTTON_STYLE_CLASS).prefWidth(-1.0), 0.0001);
         assertEquals(44.0, datePicker.lookup("." + M3DatePicker.DAY_CELL_STYLE_CLASS).prefWidth(-1.0), 0.0001);
         assertEquals(44.0, datePicker.lookup("." + M3DatePicker.DAY_CELL_STYLE_CLASS).prefHeight(-1.0), 0.0001);
-        assertEquals(22.0, ((Region) timePicker.lookup("." + M3TimePicker.CONTAINER_STYLE_CLASS)).getPadding().getTop(), 0.0001);
-        assertEquals(80.0, timePicker.lookup("." + M3TimePicker.HOUR_DISPLAY_STYLE_CLASS).prefWidth(-1.0), 0.0001);
-        assertEquals(72.0, timePicker.lookup("." + M3TimePicker.MINUTE_DISPLAY_STYLE_CLASS).prefHeight(-1.0), 0.0001);
-        assertEquals(48.0, timePicker.lookup("." + M3TimePicker.CELL_STYLE_CLASS).prefWidth(-1.0), 0.0001);
-        assertEquals(44.0, timePicker.lookup("." + M3TimePicker.CELL_STYLE_CLASS).prefHeight(-1.0), 0.0001);
-        assertEquals(100.0, timePicker.lookup("." + M3TimePicker.PERIOD_CELL_STYLE_CLASS).prefWidth(-1.0), 0.0001);
-        assertEquals(44.0, timePicker.lookup("." + M3TimePicker.PERIOD_CELL_STYLE_CLASS).prefHeight(-1.0), 0.0001);
+        assertEquals(24.0, ((Region) timePicker.lookup("." + M3TimePicker.CONTAINER_STYLE_CLASS)).getPadding().getTop(), 0.0001);
+        assertEquals(96.0, timePicker.lookup("." + M3TimePicker.HOUR_DISPLAY_STYLE_CLASS).prefWidth(-1.0), 0.0001);
+        assertEquals(80.0, timePicker.lookup("." + M3TimePicker.MINUTE_DISPLAY_STYLE_CLASS).prefHeight(-1.0), 0.0001);
+        assertEquals(256.0, timePicker.lookup("." + M3TimePicker.DIAL_STYLE_CLASS).prefWidth(-1.0), 0.0001);
+        assertEquals(256.0, timePicker.lookup("." + M3TimePicker.DIAL_STYLE_CLASS).prefHeight(-1.0), 0.0001);
+        assertEquals(52.0, timePicker.lookup("." + M3TimePicker.PERIOD_ROW_STYLE_CLASS).prefWidth(-1.0), 0.0001);
+        assertEquals(80.0, timePicker.lookup("." + M3TimePicker.PERIOD_ROW_STYLE_CLASS).prefHeight(-1.0), 0.0001);
         assertEquals(48.0, datePickerField.lookup(".m3-picker-field-open-button").prefWidth(-1.0), 0.0001);
         assertEquals(48.0, datePickerField.lookup(".m3-picker-field-open-button").prefHeight(-1.0), 0.0001);
         assertEquals(20.0, formPane.getRowSpacing(), 0.0001);
@@ -1313,13 +1328,13 @@ final class M3ThemeTest {
         assertEquals(40.0, datePicker.lookup("." + M3DatePicker.NAVIGATION_BUTTON_STYLE_CLASS).prefWidth(-1.0), 0.0001);
         assertEquals(40.0, datePicker.lookup("." + M3DatePicker.DAY_CELL_STYLE_CLASS).prefWidth(-1.0), 0.0001);
         assertEquals(40.0, datePicker.lookup("." + M3DatePicker.DAY_CELL_STYLE_CLASS).prefHeight(-1.0), 0.0001);
-        assertEquals(18.0, ((Region) timePicker.lookup("." + M3TimePicker.CONTAINER_STYLE_CLASS)).getPadding().getTop(), 0.0001);
-        assertEquals(72.0, timePicker.lookup("." + M3TimePicker.HOUR_DISPLAY_STYLE_CLASS).prefWidth(-1.0), 0.0001);
-        assertEquals(64.0, timePicker.lookup("." + M3TimePicker.MINUTE_DISPLAY_STYLE_CLASS).prefHeight(-1.0), 0.0001);
-        assertEquals(44.0, timePicker.lookup("." + M3TimePicker.CELL_STYLE_CLASS).prefWidth(-1.0), 0.0001);
-        assertEquals(40.0, timePicker.lookup("." + M3TimePicker.CELL_STYLE_CLASS).prefHeight(-1.0), 0.0001);
-        assertEquals(92.0, timePicker.lookup("." + M3TimePicker.PERIOD_CELL_STYLE_CLASS).prefWidth(-1.0), 0.0001);
-        assertEquals(40.0, timePicker.lookup("." + M3TimePicker.PERIOD_CELL_STYLE_CLASS).prefHeight(-1.0), 0.0001);
+        assertEquals(24.0, ((Region) timePicker.lookup("." + M3TimePicker.CONTAINER_STYLE_CLASS)).getPadding().getTop(), 0.0001);
+        assertEquals(96.0, timePicker.lookup("." + M3TimePicker.HOUR_DISPLAY_STYLE_CLASS).prefWidth(-1.0), 0.0001);
+        assertEquals(80.0, timePicker.lookup("." + M3TimePicker.MINUTE_DISPLAY_STYLE_CLASS).prefHeight(-1.0), 0.0001);
+        assertEquals(256.0, timePicker.lookup("." + M3TimePicker.DIAL_STYLE_CLASS).prefWidth(-1.0), 0.0001);
+        assertEquals(256.0, timePicker.lookup("." + M3TimePicker.DIAL_STYLE_CLASS).prefHeight(-1.0), 0.0001);
+        assertEquals(52.0, timePicker.lookup("." + M3TimePicker.PERIOD_ROW_STYLE_CLASS).prefWidth(-1.0), 0.0001);
+        assertEquals(80.0, timePicker.lookup("." + M3TimePicker.PERIOD_ROW_STYLE_CLASS).prefHeight(-1.0), 0.0001);
         assertEquals(40.0, datePickerField.lookup(".m3-picker-field-open-button").prefWidth(-1.0), 0.0001);
         assertEquals(40.0, datePickerField.lookup(".m3-picker-field-open-button").prefHeight(-1.0), 0.0001);
         assertEquals(16.0, formPane.getRowSpacing(), 0.0001);

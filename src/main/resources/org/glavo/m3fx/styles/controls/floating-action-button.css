@@ -15,11 +15,11 @@
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.20), 8, 0.18, 0, 2);
 }
 
-.m3-fab:hover,
-.m3-fab:focus-visible {
+.m3-fab:hover {
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.20), 12, 0.18, 0, 4);
 }
 
+.m3-fab:focus-visible,
 .m3-fab:armed,
 .m3-fab:pressed {
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.20), 8, 0.18, 0, 2);

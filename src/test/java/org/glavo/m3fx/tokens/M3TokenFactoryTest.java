@@ -23,6 +23,7 @@ import java.util.Locale;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -103,6 +104,7 @@ final class M3TokenFactoryTest {
         assertTrue(stateLayer.toControlStyleRules().contains(".m3-icon-toggle-button:focus-visible .m3-state-layer"));
         assertTrue(stateLayer.toControlStyleRules().contains(".m3-button:pressed .m3-state-layer"));
         assertTrue(stateLayer.toControlStyleRules().contains("-fx-opacity: 0.13"));
+        assertFalse(stateLayer.toControlStyleRules().contains(":disabled"));
         assertTrue(elevation.toControlStyleRules().contains(".m3-elevated-button:hover"));
         assertTrue(elevation.toControlStyleRules().contains(".m3-fab:hover"));
         assertTrue(elevation.toControlStyleRules().contains(".m3-surface-elevation-level3"));
@@ -309,7 +311,6 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-search-view .m3-list-item"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-container-shape: 18px"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-date-picker-container"));
-        assertTrue(tokenSet.toControlStyleRules().contains(".m3-time-picker-container"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-picker-field-popup"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-form-row-text-column"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-validation-summary-item:hover .m3-state-layer"));
@@ -438,13 +439,18 @@ final class M3TokenFactoryTest {
                         6.0,
                         19.0,
                         73.0,
+                        74.0,
                         54.0,
-                        9.0,
-                        7.0,
-                        45.0,
-                        42.0,
-                        94.0,
-                        21.0
+                        52.0,
+                        72.0,
+                        216.0,
+                        38.0,
+                        256.0,
+                        48.0,
+                        8.0,
+                        2.0,
+                        96.0,
+                        72.0
                 ),
                 new M3ComponentTokens.SheetTokens(46.0, 23.0, 47.0, 24.0, 25.0, 26.0, 27.0, 5.0),
                 new M3ComponentTokens.ScrimTokens(0.31),

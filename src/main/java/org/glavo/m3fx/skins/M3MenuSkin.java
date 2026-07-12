@@ -6,7 +6,6 @@ package org.glavo.m3fx.skins;
 import javafx.collections.ListChangeListener;
 import javafx.css.PseudoClass;
 import javafx.scene.Node;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3Menu;
 import org.glavo.m3fx.controls.M3MenuItem;
@@ -66,19 +65,9 @@ public final class M3MenuSkin extends M3ItemContainerSkinBase<M3Menu, VBox> {
         }
 
         for (Node child : getContainer().getChildren()) {
-            allowChildToFillMenuWidth(child);
             if (child instanceof M3MenuItem item) {
                 setItemStructurePseudoClasses(item, item == firstItem, item == lastItem);
             }
-        }
-    }
-
-    /// Allows direct menu rows and separators to fill the menu surface width.
-    private static void allowChildToFillMenuWidth(Node child) {
-        if (child instanceof Region region
-                && !region.maxWidthProperty().isBound()
-                && Double.compare(region.getMaxWidth(), Double.MAX_VALUE) != 0) {
-            region.setMaxWidth(Double.MAX_VALUE);
         }
     }
 

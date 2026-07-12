@@ -16,12 +16,20 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// @param <P> the popup picker control type
 @NotNullByDefault
 public final class M3PickerFieldSkin<T, P extends Control> extends SkinBase<M3PickerField<T, P>> {
+    /// The retained input layout measured and positioned by this skin.
+    private final M3TextInputLayout inputLayout;
+
     /// Creates a picker field skin.
     ///
     /// @param control the skinned picker field
     public M3PickerFieldSkin(M3PickerField<T, P> control) {
         super(control);
-        getChildren().setAll(inputLayout());
+        Object item = control.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0);
+        if (!(item instanceof M3TextInputLayout layout)) {
+            throw new IllegalStateException("picker field input layout is unavailable");
+        }
+        inputLayout = layout;
+        getChildren().setAll(inputLayout);
     }
 
     /// Removes child references before disposal.
@@ -43,7 +51,6 @@ public final class M3PickerFieldSkin<T, P extends Control> extends SkinBase<M3Pi
             double bottomInset,
             double leftInset
     ) {
-        M3TextInputLayout inputLayout = inputLayout();
         return leftInset + inputLayout.minWidth(height) + rightInset;
     }
 
@@ -56,7 +63,6 @@ public final class M3PickerFieldSkin<T, P extends Control> extends SkinBase<M3Pi
             double bottomInset,
             double leftInset
     ) {
-        M3TextInputLayout inputLayout = inputLayout();
         return topInset + inputLayout.minHeight(width) + bottomInset;
     }
 
@@ -69,7 +75,6 @@ public final class M3PickerFieldSkin<T, P extends Control> extends SkinBase<M3Pi
             double bottomInset,
             double leftInset
     ) {
-        M3TextInputLayout inputLayout = inputLayout();
         return leftInset + inputLayout.prefWidth(height) + rightInset;
     }
 
@@ -82,7 +87,6 @@ public final class M3PickerFieldSkin<T, P extends Control> extends SkinBase<M3Pi
             double bottomInset,
             double leftInset
     ) {
-        M3TextInputLayout inputLayout = inputLayout();
         return topInset + inputLayout.prefHeight(width) + bottomInset;
     }
 
@@ -95,7 +99,6 @@ public final class M3PickerFieldSkin<T, P extends Control> extends SkinBase<M3Pi
             double bottomInset,
             double leftInset
     ) {
-        M3TextInputLayout inputLayout = inputLayout();
         return leftInset + inputLayout.maxWidth(height) + rightInset;
     }
 
@@ -108,24 +111,12 @@ public final class M3PickerFieldSkin<T, P extends Control> extends SkinBase<M3Pi
             double bottomInset,
             double leftInset
     ) {
-        M3TextInputLayout inputLayout = inputLayout();
         return topInset + inputLayout.maxHeight(width) + bottomInset;
     }
 
     /// Lays out the wrapped input layout in the full skin bounds.
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
-        inputLayout().resizeRelocate(x, y, width, height);
-    }
-
-    /// Returns the wrapped input layout exposed by the skinnable accessibility tree.
-    ///
-    /// @return the wrapped input layout
-    private M3TextInputLayout inputLayout() {
-        Object item = getSkinnable().queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0);
-        if (item instanceof M3TextInputLayout inputLayout) {
-            return inputLayout;
-        }
-        throw new IllegalStateException("picker field input layout is unavailable");
+        inputLayout.resizeRelocate(x, y, width, height);
     }
 }

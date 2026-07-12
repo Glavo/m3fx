@@ -939,18 +939,24 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3TextInputLayout#TRAILING_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3TimePicker#CELL_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3TimePicker#CONTAINER_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePicker#CONTENT_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePicker#DIAL_BACKGROUND_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePicker#DIAL_CENTER_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePicker#DIAL_HANDLE_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePicker#DIAL_LABEL_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePicker#DIAL_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePicker#DIAL_TRACK_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3TimePicker#DISPLAY_SEPARATOR_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3TimePicker#DISPLAY_STYLE_CLASS:java.lang.String
-            org.glavo.m3fx.controls.M3TimePicker#GRID_STYLE_CLASS:java.lang.String
-            org.glavo.m3fx.controls.M3TimePicker#HOUR_CELL_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3TimePicker#HOUR_DISPLAY_STYLE_CLASS:java.lang.String
-            org.glavo.m3fx.controls.M3TimePicker#MINUTE_CELL_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePicker#INPUT_CONTENT_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePicker#INPUT_FIELD_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePicker#INPUT_GROUP_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePicker#INPUT_LABEL_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3TimePicker#MINUTE_DISPLAY_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TimePicker#MODE_BUTTON_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3TimePicker#PERIOD_CELL_STYLE_CLASS:java.lang.String
-            org.glavo.m3fx.controls.M3TimePicker#PERIOD_DISPLAY_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3TimePicker#PERIOD_ROW_STYLE_CLASS:java.lang.String
-            org.glavo.m3fx.controls.M3TimePicker#SECTION_STYLE_CLASS:java.lang.String
-            org.glavo.m3fx.controls.M3TimePicker#SECTION_TITLE_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3TimePicker#SELECTED_CELL_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3TimePicker#STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3TimePickerDialog#DEFAULT_TITLE:java.lang.String

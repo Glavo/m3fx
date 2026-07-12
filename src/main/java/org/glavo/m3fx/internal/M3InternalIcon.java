@@ -161,6 +161,9 @@ public final class M3InternalIcon extends StackPane {
         /// A clock icon used by time picker fields.
         SCHEDULE("M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 11h5v-2h-4V6h-2v7z"),
 
+        /// A keyboard icon used to switch time pickers into numeric input mode.
+        KEYBOARD("M20 5H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 12H4V7h16v10zM6 10h2V8H6v2zm0 3h2v-2H6v2zm3-3h2V8H9v2zm0 3h2v-2H9v2zm3-3h2V8h-2v2zm0 3h2v-2h-2v2zm3-3h2V8h-2v2zm0 3h2v-2h-2v2zM6 16h12v-2H6v2z"),
+
         /// A search icon used by search bars and search views.
         SEARCH("M9.5 3a6.5 6.5 0 0 1 5.1 10.5l4.4 4.4-1.4 1.4-4.4-4.4A6.5 6.5 0 1 1 9.5 3zm0 2a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9z");
 

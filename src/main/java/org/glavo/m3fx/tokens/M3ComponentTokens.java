@@ -424,8 +424,6 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double searchViewResultHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
         double pickerNavigationButtonSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 48.0 : 40.0);
         double datePickerDayCellSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 44.0 : 40.0);
-        double timePickerCellHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 44.0 : 40.0);
-        double timePickerCellWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 48.0 : 44.0);
         double sideSheetWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 384.0 : 360.0);
         double bottomSheetHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 360.0 : 320.0);
         double chipHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 36.0 : 32.0);
@@ -503,16 +501,24 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double datePickerContainerSpacing = density.apply(expressive ? 16.0 : 12.0);
         double datePickerHeaderSpacing = density.apply(expressive ? 8.0 : 4.0);
         double datePickerGridGap = density.apply(expressive ? 6.0 : 4.0);
-        double timePickerContainerShape = expressive ? shapeTokens.extraLarge() : 28.0;
-        double timePickerContainerPadding = density.apply(expressive ? 22.0 : 18.0);
-        double timePickerContainerSpacing = density.apply(expressive ? 20.0 : 16.0);
-        double timePickerDisplaySpacing = density.apply(expressive ? 6.0 : 4.0);
-        double timePickerDisplayCellShape = expressive ? shapeTokens.large() : shapeTokens.medium();
-        double timePickerDisplayCellWidth = density.apply(expressive ? 80.0 : 72.0);
-        double timePickerDisplayCellHeight = density.apply(expressive ? 72.0 : 64.0);
-        double timePickerSectionSpacing = density.apply(expressive ? 10.0 : 8.0);
-        double timePickerGridGap = density.apply(expressive ? 8.0 : 6.0);
-        double timePickerPeriodCellWidth = density.apply(expressive ? 100.0 : 92.0);
+        double timePickerContainerShape = shapeTokens.extraLarge();
+        double timePickerContainerPadding = 24.0;
+        double timePickerContainerSpacing = 24.0;
+        double timePickerDisplaySpacing = 4.0;
+        double timePickerDisplayCellShape = shapeTokens.small();
+        double timePickerDisplayCellWidth = 96.0;
+        double timePickerDisplay24HourCellWidth = 114.0;
+        double timePickerDisplayCellHeight = 80.0;
+        double timePickerPeriodVerticalWidth = 52.0;
+        double timePickerPeriodVerticalHeight = 80.0;
+        double timePickerPeriodHorizontalWidth = 216.0;
+        double timePickerPeriodHorizontalHeight = 38.0;
+        double timePickerDialSize = 256.0;
+        double timePickerDialHandleSize = 48.0;
+        double timePickerDialCenterSize = 8.0;
+        double timePickerDialTrackWidth = 2.0;
+        double timePickerInputFieldWidth = 96.0;
+        double timePickerInputFieldHeight = 72.0;
         double sheetContentPadding = density.apply(expressive ? 28.0 : 24.0);
         double sheetHeaderPadding = density.apply(expressive ? 28.0 : 24.0);
         double sheetDragHandleWidth = density.apply(expressive ? 36.0 : 32.0);
@@ -864,13 +870,18 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         timePickerDisplaySpacing,
                         timePickerDisplayCellShape,
                         timePickerDisplayCellWidth,
+                        timePickerDisplay24HourCellWidth,
                         timePickerDisplayCellHeight,
-                        timePickerSectionSpacing,
-                        timePickerGridGap,
-                        timePickerCellWidth,
-                        timePickerCellHeight,
-                        timePickerPeriodCellWidth,
-                        shapeTokens.full()
+                        timePickerPeriodVerticalWidth,
+                        timePickerPeriodVerticalHeight,
+                        timePickerPeriodHorizontalWidth,
+                        timePickerPeriodHorizontalHeight,
+                        timePickerDialSize,
+                        timePickerDialHandleSize,
+                        timePickerDialCenterSize,
+                        timePickerDialTrackWidth,
+                        timePickerInputFieldWidth,
+                        timePickerInputFieldHeight
                 ),
                 new SheetTokens(
                         sideSheetWidth,
@@ -1390,14 +1401,16 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendDatePickerGridRule(builder, datePicker());
         appendDatePickerCellRule(builder, datePicker());
         appendDatePickerCellShapeRules(builder, datePicker());
-        appendTimePickerRule(builder, timePicker());
+        appendTimePickerControlRule(builder, timePicker());
+        appendTimePickerContainerRule(builder, timePicker());
         appendTimePickerDisplayRule(builder, timePicker());
         appendTimePickerDisplayCellRule(builder, timePicker());
-        appendTimePickerSectionRule(builder, timePicker());
-        appendTimePickerGridRule(builder, timePicker());
-        appendTimePickerCellRule(builder, timePicker());
-        appendTimePickerPeriodCellRule(builder, timePicker());
-        appendTimePickerPeriodCellShapeRules(builder, timePicker());
+        appendTimePicker24HourDisplayCellRule(builder, timePicker());
+        appendTimePickerPeriodRule(builder, timePicker());
+        appendTimePickerDialRule(builder, timePicker());
+        appendTimePickerDialTrackRule(builder, timePicker());
+        appendTimePickerInputFieldRule(builder, timePicker());
+
         appendSideSheetRule(builder, sheet());
         appendBottomSheetRule(builder, sheet());
         appendSheetHeaderRule(builder, sheet());
@@ -1852,13 +1865,18 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-time-picker-display-spacing", M3TokenCss.pixels(tokens.displaySpacing()));
         M3TokenCss.append(builder, "-m3-time-picker-display-cell-shape", M3TokenCss.pixels(tokens.displayCellShape()));
         M3TokenCss.append(builder, "-m3-time-picker-display-cell-width", M3TokenCss.pixels(tokens.displayCellWidth()));
+        M3TokenCss.append(builder, "-m3-time-picker-display-24-hour-cell-width", M3TokenCss.pixels(tokens.display24HourCellWidth()));
         M3TokenCss.append(builder, "-m3-time-picker-display-cell-height", M3TokenCss.pixels(tokens.displayCellHeight()));
-        M3TokenCss.append(builder, "-m3-time-picker-section-spacing", M3TokenCss.pixels(tokens.sectionSpacing()));
-        M3TokenCss.append(builder, "-m3-time-picker-grid-gap", M3TokenCss.pixels(tokens.gridGap()));
-        M3TokenCss.append(builder, "-m3-time-picker-cell-width", M3TokenCss.pixels(tokens.cellWidth()));
-        M3TokenCss.append(builder, "-m3-time-picker-cell-height", M3TokenCss.pixels(tokens.cellHeight()));
-        M3TokenCss.append(builder, "-m3-time-picker-period-cell-width", M3TokenCss.pixels(tokens.periodCellWidth()));
-        M3TokenCss.append(builder, "-m3-time-picker-cell-shape", M3TokenCss.pixels(tokens.cellShape()));
+        M3TokenCss.append(builder, "-m3-time-picker-period-vertical-width", M3TokenCss.pixels(tokens.periodVerticalWidth()));
+        M3TokenCss.append(builder, "-m3-time-picker-period-vertical-height", M3TokenCss.pixels(tokens.periodVerticalHeight()));
+        M3TokenCss.append(builder, "-m3-time-picker-period-horizontal-width", M3TokenCss.pixels(tokens.periodHorizontalWidth()));
+        M3TokenCss.append(builder, "-m3-time-picker-period-horizontal-height", M3TokenCss.pixels(tokens.periodHorizontalHeight()));
+        M3TokenCss.append(builder, "-m3-time-picker-dial-size", M3TokenCss.pixels(tokens.dialSize()));
+        M3TokenCss.append(builder, "-m3-time-picker-dial-handle-size", M3TokenCss.pixels(tokens.dialHandleSize()));
+        M3TokenCss.append(builder, "-m3-time-picker-dial-center-size", M3TokenCss.pixels(tokens.dialCenterSize()));
+        M3TokenCss.append(builder, "-m3-time-picker-dial-track-width", M3TokenCss.pixels(tokens.dialTrackWidth()));
+        M3TokenCss.append(builder, "-m3-time-picker-input-field-width", M3TokenCss.pixels(tokens.inputFieldWidth()));
+        M3TokenCss.append(builder, "-m3-time-picker-input-field-height", M3TokenCss.pixels(tokens.inputFieldHeight()));
     }
 
     /// Appends sheet token declarations.
@@ -3262,86 +3280,116 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         endRule(builder);
     }
 
-    /// Appends a time picker container token CSS rule.
-    private static void appendTimePickerRule(StringBuilder builder, TimePickerTokens tokens) {
-        beginRule(builder, ".m3-time-picker-container");
-        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.containerShape()));
-        appendDeclaration(builder, "-fx-padding", M3TokenCss.pixels(tokens.containerPadding()));
-        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.containerSpacing()));
+    /// Appends typed Time Picker metrics consumed directly by the custom skin.
+    private static void appendTimePickerControlRule(StringBuilder builder, TimePickerTokens tokens) {
+        beginRule(builder, ".m3-time-picker");
+        appendDeclaration(builder, "-m3-container-spacing", M3TokenCss.pixels(tokens.containerSpacing()));
+        appendDeclaration(builder, "-m3-dial-handle-size", M3TokenCss.pixels(tokens.dialHandleSize()));
+        appendDeclaration(builder, "-m3-dial-center-size", M3TokenCss.pixels(tokens.dialCenterSize()));
         endRule(builder);
     }
 
-    /// Appends a time picker display token CSS rule.
+    /// Appends Time Picker container shape and padding, excluding padding already owned by dialogs.
+    private static void appendTimePickerContainerRule(StringBuilder builder, TimePickerTokens tokens) {
+        beginRule(builder, ".m3-time-picker-container");
+        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.containerShape()));
+        appendDeclaration(builder, "-fx-padding", M3TokenCss.pixels(tokens.containerPadding()));
+        endRule(builder);
+
+        beginRule(builder, ".m3-time-picker-dialog-content .m3-time-picker-container");
+        appendDeclaration(builder, "-fx-padding", M3TokenCss.pixels(0.0));
+        endRule(builder);
+    }
+
+    /// Appends spacing for Time Picker display and keyboard-input rows.
     private static void appendTimePickerDisplayRule(StringBuilder builder, TimePickerTokens tokens) {
-        beginRule(builder, ".m3-time-picker-display");
+        beginRule(builder, ".m3-time-picker-display, .m3-time-picker-input-content");
         appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.displaySpacing()));
         endRule(builder);
     }
 
-    /// Appends a time picker selected display cell token CSS rule.
+    /// Appends shape and dimensions for 12-hour Time Picker display cells.
     private static void appendTimePickerDisplayCellRule(StringBuilder builder, TimePickerTokens tokens) {
         beginRule(builder, ".m3-time-picker-hour-display, .m3-time-picker-minute-display");
-        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.displayCellShape()));
-        appendDeclaration(builder, "-fx-min-width", M3TokenCss.pixels(tokens.displayCellWidth()));
-        appendDeclaration(builder, "-fx-pref-width", M3TokenCss.pixels(tokens.displayCellWidth()));
-        appendDeclaration(builder, "-fx-min-height", M3TokenCss.pixels(tokens.displayCellHeight()));
-        appendDeclaration(builder, "-fx-pref-height", M3TokenCss.pixels(tokens.displayCellHeight()));
+        String shape = M3TokenCss.pixels(tokens.displayCellShape());
+        appendDeclaration(builder, "-fx-background-radius", shape);
+        appendDeclaration(builder, "-fx-border-radius", shape);
+        appendTimePickerSize(builder, tokens.displayCellWidth(), tokens.displayCellHeight());
         endRule(builder);
     }
 
-    /// Appends a time picker section token CSS rule.
-    private static void appendTimePickerSectionRule(StringBuilder builder, TimePickerTokens tokens) {
-        beginRule(builder, ".m3-time-picker-section");
-        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.sectionSpacing()));
+    /// Appends the wider display-cell dimensions used by 24-hour Time Pickers.
+    private static void appendTimePicker24HourDisplayCellRule(StringBuilder builder, TimePickerTokens tokens) {
+        beginRule(
+                builder,
+                ".m3-time-picker:twenty-four-hour .m3-time-picker-hour-display, "
+                        + ".m3-time-picker:twenty-four-hour .m3-time-picker-minute-display"
+        );
+        appendTimePickerWidth(builder, tokens.display24HourCellWidth());
         endRule(builder);
     }
 
-    /// Appends a time picker grid token CSS rule.
-    private static void appendTimePickerGridRule(StringBuilder builder, TimePickerTokens tokens) {
-        beginRule(builder, ".m3-time-picker-grid");
-        appendDeclaration(builder, "-fx-hgap", M3TokenCss.pixels(tokens.gridGap()));
-        appendDeclaration(builder, "-fx-vgap", M3TokenCss.pixels(tokens.gridGap()));
+    /// Appends vertical, horizontal, and input-mode period selector dimensions.
+    private static void appendTimePickerPeriodRule(StringBuilder builder, TimePickerTokens tokens) {
+        beginRule(builder, ".m3-time-picker-period-row:vertical");
+        appendTimePickerSize(builder, tokens.periodVerticalWidth(), tokens.periodVerticalHeight());
+        endRule(builder);
+
+        beginRule(builder, ".m3-time-picker-period-row:vertical:input");
+        appendTimePickerHeight(builder, tokens.inputFieldHeight());
+        endRule(builder);
+
+        beginRule(builder, ".m3-time-picker-period-row:horizontal");
+        appendTimePickerSize(builder, tokens.periodHorizontalWidth(), tokens.periodHorizontalHeight());
         endRule(builder);
     }
 
-    /// Appends a time picker selectable cell token CSS rule.
-    private static void appendTimePickerCellRule(StringBuilder builder, TimePickerTokens tokens) {
-        beginRule(builder, ".m3-time-picker-cell");
-        appendTimePickerCellSize(builder, tokens.cellWidth(), tokens.cellHeight());
-        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.cellShape()));
-        appendDeclaration(builder, "-fx-border-radius", M3TokenCss.pixels(tokens.cellShape()));
+    /// Appends the clock dial diameter.
+    private static void appendTimePickerDialRule(StringBuilder builder, TimePickerTokens tokens) {
+        beginRule(builder, ".m3-time-picker-dial");
+        appendTimePickerSize(builder, tokens.dialSize(), tokens.dialSize());
         endRule(builder);
     }
 
-    /// Appends a time picker period cell token CSS rule.
-    private static void appendTimePickerPeriodCellRule(StringBuilder builder, TimePickerTokens tokens) {
-        beginRule(builder, ".m3-time-picker-period-cell");
-        appendTimePickerCellSize(builder, tokens.periodCellWidth(), tokens.cellHeight());
+    /// Appends the clock dial selector track width.
+    private static void appendTimePickerDialTrackRule(StringBuilder builder, TimePickerTokens tokens) {
+        beginRule(builder, ".m3-time-picker-dial-track");
+        appendDeclaration(builder, "-fx-stroke-width", M3TokenCss.pixels(tokens.dialTrackWidth()));
         endRule(builder);
     }
 
-    /// Appends tokenized time cell size declarations.
-    private static void appendTimePickerCellSize(StringBuilder builder, double width, double height) {
-        appendDeclaration(builder, "-fx-min-width", M3TokenCss.pixels(width));
-        appendDeclaration(builder, "-fx-pref-width", M3TokenCss.pixels(width));
-        appendDeclaration(builder, "-fx-max-width", M3TokenCss.pixels(width));
-        appendDeclaration(builder, "-fx-min-height", M3TokenCss.pixels(height));
-        appendDeclaration(builder, "-fx-pref-height", M3TokenCss.pixels(height));
-        appendDeclaration(builder, "-fx-max-height", M3TokenCss.pixels(height));
+    /// Appends shape and dimensions for keyboard-input fields.
+    private static void appendTimePickerInputFieldRule(StringBuilder builder, TimePickerTokens tokens) {
+        beginRule(builder, ".m3-time-picker-input-field");
+        String shape = M3TokenCss.pixels(tokens.displayCellShape());
+        appendDeclaration(builder, "-fx-background-radius", shape);
+        appendDeclaration(builder, "-fx-border-radius", shape);
+        appendTimePickerSize(builder, tokens.inputFieldWidth(), tokens.inputFieldHeight());
+        endRule(builder);
     }
 
-    /// Appends time picker period segmented shape token CSS rules.
-    private static void appendTimePickerPeriodCellShapeRules(StringBuilder builder, TimePickerTokens tokens) {
-        String shape = M3TokenCss.pixels(tokens.cellShape());
-        beginRule(builder, ".m3-time-picker-period-start");
-        appendDeclaration(builder, "-fx-background-radius", shape + " 0 0 " + shape);
-        appendDeclaration(builder, "-fx-border-radius", shape + " 0 0 " + shape);
-        endRule(builder);
-        beginRule(builder, ".m3-time-picker-period-end");
-        appendDeclaration(builder, "-fx-background-radius", "0 " + shape + " " + shape + " 0");
-        appendDeclaration(builder, "-fx-border-radius", "0 " + shape + " " + shape + " 0");
-        endRule(builder);
+    /// Appends fixed width and height declarations for one Time Picker role.
+    private static void appendTimePickerSize(StringBuilder builder, double width, double height) {
+        appendTimePickerWidth(builder, width);
+        appendTimePickerHeight(builder, height);
     }
+
+    /// Appends fixed width declarations for one Time Picker role.
+    private static void appendTimePickerWidth(StringBuilder builder, double width) {
+        String value = M3TokenCss.pixels(width);
+        appendDeclaration(builder, "-fx-min-width", value);
+        appendDeclaration(builder, "-fx-pref-width", value);
+        appendDeclaration(builder, "-fx-max-width", value);
+    }
+
+    /// Appends fixed height declarations for one Time Picker role.
+    private static void appendTimePickerHeight(StringBuilder builder, double height) {
+        String value = M3TokenCss.pixels(height);
+        appendDeclaration(builder, "-fx-min-height", value);
+        appendDeclaration(builder, "-fx-pref-height", value);
+        appendDeclaration(builder, "-fx-max-height", value);
+    }
+
 
     /// Appends a side sheet token CSS rule.
     private static void appendSideSheetRule(StringBuilder builder, SheetTokens tokens) {
@@ -4581,13 +4629,18 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param displaySpacing the spacing between selected time display fields
     /// @param displayCellShape the selected time display field radius
     /// @param displayCellWidth the selected hour or minute display width
+    /// @param display24HourCellWidth the selected hour display width in 24-hour mode
     /// @param displayCellHeight the selected hour or minute display height
-    /// @param sectionSpacing the spacing inside hour and minute sections
-    /// @param gridGap the selectable time grid gap
-    /// @param cellWidth the hour and minute selectable cell width
-    /// @param cellHeight the selectable cell height
-    /// @param periodCellWidth the AM and PM selectable cell width
-    /// @param cellShape the selectable cell radius
+    /// @param periodVerticalWidth the vertical period selector width
+    /// @param periodVerticalHeight the vertical period selector height
+    /// @param periodHorizontalWidth the horizontal period selector width
+    /// @param periodHorizontalHeight the horizontal period selector height
+    /// @param dialSize the clock dial diameter
+    /// @param dialHandleSize the clock dial selector handle diameter
+    /// @param dialCenterSize the clock dial center dot diameter
+    /// @param dialTrackWidth the clock dial selector track width
+    /// @param inputFieldWidth the keyboard input field width
+    /// @param inputFieldHeight the keyboard input field height
     @NotNullByDefault
     record TimePickerTokens(
             double containerShape,
@@ -4596,13 +4649,18 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double displaySpacing,
             double displayCellShape,
             double displayCellWidth,
+            double display24HourCellWidth,
             double displayCellHeight,
-            double sectionSpacing,
-            double gridGap,
-            double cellWidth,
-            double cellHeight,
-            double periodCellWidth,
-            double cellShape
+            double periodVerticalWidth,
+            double periodVerticalHeight,
+            double periodHorizontalWidth,
+            double periodHorizontalHeight,
+            double dialSize,
+            double dialHandleSize,
+            double dialCenterSize,
+            double dialTrackWidth,
+            double inputFieldWidth,
+            double inputFieldHeight
     ) {
         /// Validates time picker tokens.
         public TimePickerTokens {
@@ -4612,13 +4670,18 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(displaySpacing, "displaySpacing");
             validateNonNegative(displayCellShape, "displayCellShape");
             validateNonNegative(displayCellWidth, "displayCellWidth");
+            validateNonNegative(display24HourCellWidth, "display24HourCellWidth");
             validateNonNegative(displayCellHeight, "displayCellHeight");
-            validateNonNegative(sectionSpacing, "sectionSpacing");
-            validateNonNegative(gridGap, "gridGap");
-            validateNonNegative(cellWidth, "cellWidth");
-            validateNonNegative(cellHeight, "cellHeight");
-            validateNonNegative(periodCellWidth, "periodCellWidth");
-            validateNonNegative(cellShape, "cellShape");
+            validateNonNegative(periodVerticalWidth, "periodVerticalWidth");
+            validateNonNegative(periodVerticalHeight, "periodVerticalHeight");
+            validateNonNegative(periodHorizontalWidth, "periodHorizontalWidth");
+            validateNonNegative(periodHorizontalHeight, "periodHorizontalHeight");
+            validateNonNegative(dialSize, "dialSize");
+            validateNonNegative(dialHandleSize, "dialHandleSize");
+            validateNonNegative(dialCenterSize, "dialCenterSize");
+            validateNonNegative(dialTrackWidth, "dialTrackWidth");
+            validateNonNegative(inputFieldWidth, "inputFieldWidth");
+            validateNonNegative(inputFieldHeight, "inputFieldHeight");
         }
     }
 

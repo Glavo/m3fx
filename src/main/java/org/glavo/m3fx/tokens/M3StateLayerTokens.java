@@ -151,13 +151,12 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
 
     /// Converts state layer tokens into JavaFX CSS rules for M3FX controls.
     ///
-    /// @return JavaFX CSS rules for controls that render state layers or disabled opacity
+    /// @return JavaFX CSS rules for controls that render interaction state layers
     default String toControlStyleRules() {
         StringBuilder builder = new StringBuilder();
         appendOpacityRule(builder, hoverStateSelectors(), hoverOpacity());
         appendOpacityRule(builder, focusStateSelectors(), focusOpacity());
         appendOpacityRule(builder, pressedStateSelectors(), pressedOpacity());
-        appendOpacityRule(builder, disabledStateSelectors(), disabledContentOpacity());
         return builder.toString().stripTrailing();
     }
 
@@ -201,15 +200,6 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
                 + ".m3-list-item:pressed .m3-state-layer, "
                 + ".m3-validation-summary-item:pressed .m3-state-layer, "
                 + ".m3-card:pressed .m3-state-layer";
-    }
-
-    /// Returns selectors for controls that expose disabled content opacity.
-    private static String disabledStateSelectors() {
-        return ".m3-chip:disabled, .m3-segmented-button:disabled, "
-                + ".m3-tab:disabled, .m3-progress-bar:disabled, .m3-progress-indicator:disabled, "
-                + ".m3-navigation-item:disabled, .m3-list-item:disabled, .m3-card:disabled, "
-                + ".m3-dialog-pane:disabled, .m3-snackbar:disabled, "
-                + ".m3-divider:disabled, .m3-badge:disabled";
     }
 
     /// Appends an opacity CSS rule.

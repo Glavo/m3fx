@@ -329,11 +329,6 @@ public final class M3FocusTraversal {
         return focusOwner != null && M3Accessible.containsNode(container, focusOwner);
     }
 
-    /// Returns whether the current scene focus owner is inside this owner and an editable text input.
-    public static boolean focusOwnerInsideTextInput(Node owner) {
-        return M3FocusGuards.focusOwnerInsideTextInput(owner);
-    }
-
     /// Consumes owner-level navigation keys when a descendant text input owns focus.
     public static boolean consumeNavigationKeyIfFocusOwnerInsideTextInput(
             Node owner,
@@ -344,7 +339,7 @@ public final class M3FocusTraversal {
         Objects.requireNonNull(owner, "owner");
         Objects.requireNonNull(event, "event");
 
-        if (focusOwnerInsideTextInput(owner)
+        if (M3FocusGuards.focusOwnerInsideTextInput(owner)
                 && isNavigationKeyForEnabledAxis(event.getCode(), horizontalEnabled, verticalEnabled)) {
             if (!eventTargetsFocusedTextInput(owner, event)) {
                 event.consume();
@@ -368,6 +363,7 @@ public final class M3FocusTraversal {
         return eventEndpoint instanceof Node node
                 && (node == focusOwner || M3Accessible.containsNode(focusOwner, node));
     }
+
     /// Adds one accessible focus target when the item can expose focus.
     private static void addFocusTarget(List<Node> targets, @Nullable Node item) {
         @Nullable Node focusTarget = M3Accessible.accessibleFocusTarget(item);
@@ -543,8 +539,10 @@ public final class M3FocusTraversal {
         return switch (keyCode) {
             case HOME -> focusableItems.get(0);
             case END -> focusableItems.get(focusableItems.size() - 1);
-            case LEFT -> horizontalEnabled ? horizontalArrowTarget(owner, focusableItems, focusedIndex, false, wrap) : null;
-            case RIGHT -> horizontalEnabled ? horizontalArrowTarget(owner, focusableItems, focusedIndex, true, wrap) : null;
+            case LEFT ->
+                    horizontalEnabled ? horizontalArrowTarget(owner, focusableItems, focusedIndex, false, wrap) : null;
+            case RIGHT ->
+                    horizontalEnabled ? horizontalArrowTarget(owner, focusableItems, focusedIndex, true, wrap) : null;
             case UP -> verticalEnabled ? verticalArrowTarget(focusableItems, focusedIndex, false, wrap) : null;
             case DOWN -> verticalEnabled ? verticalArrowTarget(focusableItems, focusedIndex, true, wrap) : null;
             case PAGE_UP -> verticalEnabled ? pageTarget(owner, focusableItems, focusedIndex, false) : null;

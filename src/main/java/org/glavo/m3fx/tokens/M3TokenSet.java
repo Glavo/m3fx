@@ -130,11 +130,21 @@ public sealed interface M3TokenSet permits M3TokenSetImpl {
             M3StateLayerTokens stateLayerTokens
     ) {
         Color onSurface = colorTokens.get(ColorRole.ON_SURFACE);
+        Color surface = colorTokens.get(ColorRole.SURFACE);
+        Color surfaceContainerHighest = colorTokens.get(ColorRole.SURFACE_CONTAINER_HIGHEST);
+        Color outline = colorTokens.get(ColorRole.OUTLINE);
         return "-m3-state-disabled-container-color: "
                 + toRgba(onSurface, stateLayerTokens.disabledContainerOpacity()) + "; "
                 + "-m3-state-disabled-content-color: "
                 + toRgba(onSurface, stateLayerTokens.disabledContentOpacity()) + "; "
                 + "-m3-button-disabled-container-color: " + toRgba(onSurface, 0.10) + "; "
+                + "-m3-list-item-disabled-state-layer-color: " + toRgba(onSurface, 0.10) + "; "
+                + "-m3-filled-card-disabled-container-color: "
+                + toRgba(surfaceContainerHighest, stateLayerTokens.disabledContentOpacity()) + "; "
+                + "-m3-elevated-card-disabled-container-color: "
+                + toRgba(surface, stateLayerTokens.disabledContentOpacity()) + "; "
+                + "-m3-outlined-card-disabled-outline-color: "
+                + toRgba(outline, stateLayerTokens.disabledContainerOpacity()) + "; "
                 + "-m3-text-field-disabled-container-color: " + toRgba(onSurface, 0.04) + ";";
     }
 

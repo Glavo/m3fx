@@ -15,6 +15,7 @@ import javafx.scene.control.ButtonBase;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
 import javafx.scene.shape.ArcTo;
 import javafx.scene.shape.ClosePath;
 import javafx.scene.shape.LineTo;
@@ -28,6 +29,7 @@ import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3ThemeResolver;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.tokens.M3StateLayerTokens;
+import org.glavo.monetfx.ColorRole;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -48,6 +50,9 @@ final class M3StateLayer extends Pane {
 
     /// The fallback state layer tokens used when no theme is installed.
     private static final M3StateLayerTokens FALLBACK_TOKENS = M3StateLayerTokens.baseline();
+
+    /// The baseline secondary color used by focus indicators when no theme is installed.
+    private static final Color FALLBACK_FOCUS_INDICATOR_COLOR = Color.rgb(98, 91, 113);
 
     /// The class applied to state layer containers.
     static final String STYLE_CLASS = "m3-state-layer-container";
@@ -84,6 +89,12 @@ final class M3StateLayer extends Pane {
 
     /// The independent keyboard focus indicator ring.
     private final Region focusIndicator = new Region();
+
+    /// The explicitly resolved content paint used by controls that cannot retain CSS lookups while detached.
+    private @Nullable Paint contentPaint;
+
+    /// The color currently applied to the keyboard focus indicator.
+    private @Nullable Color focusIndicatorColor;
 
 
     /// The clip that bounds overlay and ripple visuals to the component shape.
@@ -416,6 +427,20 @@ final class M3StateLayer extends Pane {
     void setContentPseudoClass(PseudoClass pseudoClass, boolean active) {
         overlay.pseudoClassStateChanged(pseudoClass, active);
         ripple.pseudoClassStateChanged(pseudoClass, active);
+    }
+
+    /// Applies a concrete content paint to the persistent overlay and ripple.
+    ///
+    /// This is intended for popup-owned controls whose token lookup ancestry can disappear before JavaFX completes
+    /// a CSS pulse. The concrete paint preserves the last resolved theme color without retaining the popup owner.
+    void setContentPaint(Paint paint) {
+        Paint currentPaint = contentPaint;
+        if (paint.equals(currentPaint)) {
+            return;
+        }
+        contentPaint = paint;
+        overlay.setStyle("");
+        updateContentBackgrounds();
     }
 
     /// Stops ripple animation and clears transient ripple state.
@@ -791,11 +816,31 @@ final class M3StateLayer extends Pane {
         overlayTopRightRadius = topRight;
         overlayBottomRightRadius = bottomRight;
         overlayBottomLeftRadius = bottomLeft;
-        overlay.setStyle("-fx-background-radius: "
-                + formatPixels(topLeft) + " "
-                + formatPixels(topRight) + " "
-                + formatPixels(bottomRight) + " "
-                + formatPixels(bottomLeft) + ";");
+        if (contentPaint == null) {
+            overlay.setStyle("-fx-background-radius: "
+                    + formatPixels(topLeft) + " "
+                    + formatPixels(topRight) + " "
+                    + formatPixels(bottomRight) + " "
+                    + formatPixels(bottomLeft) + ";");
+        } else {
+            updateContentBackgrounds();
+        }
+    }
+
+    /// Updates concrete overlay and ripple backgrounds after their paint or resolved shape changes.
+    private void updateContentBackgrounds() {
+        Paint paint = contentPaint;
+        if (paint == null) {
+            return;
+        }
+        String cssPaint = formatPaint(paint);
+        overlay.setStyle("-fx-background-color: " + cssPaint + "; "
+                + "-fx-background-radius: "
+                + formatPixels(resolvedCachedRadius(overlayTopLeftRadius)) + " "
+                + formatPixels(resolvedCachedRadius(overlayTopRightRadius)) + " "
+                + formatPixels(resolvedCachedRadius(overlayBottomRightRadius)) + " "
+                + formatPixels(resolvedCachedRadius(overlayBottomLeftRadius)) + ";");
+        ripple.setStyle("-fx-background-color: " + cssPaint + "; -fx-background-radius: 999px;");
     }
 
     /// Updates the keyboard focus indicator ring to follow the component shape and focus offset token.
@@ -808,7 +853,11 @@ final class M3StateLayer extends Pane {
             double bottomLeft
     ) {
         Node owner = stateOwner;
-        M3StateLayerTokens tokens = owner == null ? FALLBACK_TOKENS : stateLayerTokens(owner);
+        @Nullable M3Theme theme = owner == null ? null : M3ThemeResolver.findTheme(owner);
+        M3StateLayerTokens tokens = theme == null ? FALLBACK_TOKENS : theme.tokens().stateLayerTokens();
+        Color indicatorColor = theme == null
+                ? FALLBACK_FOCUS_INDICATOR_COLOR
+                : theme.tokens().colorTokens().get(ColorRole.SECONDARY);
         double offset = owner != null && usesInnerFocusIndicatorOffset(owner)
                 ? tokens.focusIndicatorInnerOffset()
                 : tokens.focusIndicatorOuterOffset();
@@ -834,7 +883,8 @@ final class M3StateLayer extends Pane {
                 && Double.compare(focusIndicatorBottomRightRadius, adjustedBottomRight) == 0
                 && Double.compare(focusIndicatorBottomLeftRadius, adjustedBottomLeft) == 0
                 && Double.compare(focusIndicatorInset, inwardOffset) == 0
-                && Double.compare(focusIndicatorThickness, thickness) == 0) {
+                && Double.compare(focusIndicatorThickness, thickness) == 0
+                && indicatorColor.equals(focusIndicatorColor)) {
             return;
         }
 
@@ -846,6 +896,7 @@ final class M3StateLayer extends Pane {
         focusIndicatorBottomLeftRadius = adjustedBottomLeft;
         focusIndicatorInset = inwardOffset;
         focusIndicatorThickness = thickness;
+        focusIndicatorColor = indicatorColor;
         focusIndicator.setStyle("-fx-background-radius: "
                 + formatPixels(adjustedTopLeft) + " "
                 + formatPixels(adjustedTopRight) + " "
@@ -853,11 +904,17 @@ final class M3StateLayer extends Pane {
                 + formatPixels(adjustedBottomLeft) + "; "
                 + "-fx-border-insets: " + formatPixels(inwardOffset) + "; "
                 + "-fx-border-width: " + formatPixels(thickness) + "; "
+                + "-fx-border-color: " + formatColor(indicatorColor) + "; "
                 + "-fx-border-radius: "
                 + formatPixels(adjustedTopLeft) + " "
                 + formatPixels(adjustedTopRight) + " "
                 + formatPixels(adjustedBottomRight) + " "
                 + formatPixels(adjustedBottomLeft) + ";");
+    }
+
+    /// Converts an uninitialized cached radius into a valid square-corner radius.
+    private static double resolvedCachedRadius(double radius) {
+        return Double.isNaN(radius) ? 0.0 : radius;
     }
 
     /// Returns whether the owner uses an inner focus indicator offset in Material component tokens.
@@ -949,6 +1006,18 @@ final class M3StateLayer extends Pane {
         }
     }
 
+    /// Formats a JavaFX paint for use in a concrete inline CSS declaration.
+    private static String formatPaint(Paint paint) {
+        return paint instanceof Color color ? formatColor(color) : paint.toString();
+    }
+
+    /// Formats a JavaFX color as an inline CSS rgba value.
+    private static String formatColor(Color color) {
+        int red = (int) Math.round(color.getRed() * 255.0);
+        int green = (int) Math.round(color.getGreen() * 255.0);
+        int blue = (int) Math.round(color.getBlue() * 255.0);
+        return "rgba(" + red + "," + green + "," + blue + "," + color.getOpacity() + ")";
+    }
     /// Formats a CSS pixel value.
     private static String formatPixels(double value) {
         return value + "px";

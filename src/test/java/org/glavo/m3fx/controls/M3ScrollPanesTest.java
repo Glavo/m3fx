@@ -25,6 +25,7 @@ import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.internal.M3ListViewCell;
+import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -53,7 +54,6 @@ final class M3ScrollPanesTest {
     }
 
 
-
     /// Verifies uninstalled smooth-scroll queries and cleanup do not allocate a node properties map.
     @Test
     void uninstalledSmoothScrollStateDoesNotAllocateProperties() {
@@ -64,6 +64,55 @@ final class M3ScrollPanesTest {
         M3ScrollPanes.disableSmoothScrolling(scrollPane);
         assertFalse(scrollPane.hasProperties());
     }
+
+    /// Verifies that repeated external scroll styling remains idempotent and follows later scene attachment.
+    @Test
+    void repeatedScrollPaneStylingInstallsStandaloneFallbackAfterSceneAttachment() {
+        ScrollPane scrollPane = new ScrollPane();
+
+        M3ScrollPanes.style(scrollPane);
+        M3ScrollPanes.style(scrollPane);
+
+        assertEquals(1, scrollPane.getStyleClass().stream()
+                .filter(M3ScrollPanes.STYLE_CLASS::equals)
+                .count());
+
+        StackPane firstRoot = new StackPane(scrollPane);
+        Scene scene = new Scene(firstRoot);
+
+        assertTrue(firstRoot.getStyleClass().contains("root"));
+        assertEquals(1, scene.getStylesheets().stream()
+                .filter(M3Stylesheets.fallbackStylesheet()::equals)
+                .count());
+
+        StackPane replacementRoot = new StackPane();
+        scene.setRoot(replacementRoot);
+
+        assertTrue(replacementRoot.getStyleClass().contains("root"));
+        assertEquals(1, scene.getStylesheets().stream()
+                .filter(M3Stylesheets.fallbackStylesheet()::equals)
+                .count());
+    }
+
+    /// Verifies that repeated external scroll-bar styling remains idempotent after scene attachment.
+    @Test
+    void repeatedScrollBarStylingInstallsStandaloneFallback() {
+        ScrollBar scrollBar = new ScrollBar();
+        StackPane root = new StackPane(scrollBar);
+        Scene scene = new Scene(root);
+
+        M3ScrollPanes.style(scrollBar);
+        M3ScrollPanes.style(scrollBar);
+
+        assertEquals(1, scrollBar.getStyleClass().stream()
+                .filter(M3ScrollPanes.SCROLL_BAR_STYLE_CLASS::equals)
+                .count());
+        assertTrue(root.getStyleClass().contains("root"));
+        assertEquals(1, scene.getStylesheets().stream()
+                .filter(M3Stylesheets.fallbackStylesheet()::equals)
+                .count());
+    }
+
     /// Verifies that Material scroll styling can be applied to JavaFX scroll panes.
     @Test
     void scrollPaneMaterialStyleAppliesScrollbarColors() {

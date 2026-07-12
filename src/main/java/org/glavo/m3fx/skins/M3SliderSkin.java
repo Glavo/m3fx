@@ -954,16 +954,19 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
 
     /// Updates the displayed position with animation when the value is not being dragged.
     private void updateDisplayedPosition() {
-        double targetPosition = valueToPosition(getSkinnable().getValue());
-        if (getSkinnable().isValueChanging() || getSkinnable().getScene() == null) {
+        M3Slider slider = getSkinnable();
+        double targetPosition = valueToPosition(slider.getValue());
+        if (slider.isValueChanging()
+                || slider.getScene() == null
+                || !M3Animation.areAnimationsEnabled(slider)) {
             setDisplayedPositionImmediately(targetPosition);
             return;
         }
 
         valueAnimation.stop();
-        M3MotionSpec spec = M3Animation.fastSpatial(getSkinnable());
+        M3MotionSpec spec = M3Animation.fastSpatial(slider);
         valueAnimation.configure(spec, targetPosition);
-        M3Animation.playFromStart(getSkinnable(), valueAnimation);
+        valueAnimation.playFromStart();
     }
 
     /// Sets the displayed position immediately and clears pending transitions.

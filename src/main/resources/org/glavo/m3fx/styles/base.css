@@ -14,7 +14,6 @@
 
 .m3-state-layer {
     -fx-background-insets: 0;
-    -fx-opacity: 0;
 }
 
 .m3-ripple {
@@ -25,8 +24,6 @@
 .m3-focus-indicator {
     -fx-background-color: transparent;
     -fx-background-insets: 0;
-    -fx-border-color: -m3-state-focus-indicator-color;
-    -fx-opacity: 0;
 }
 
 .m3-button:hover .m3-state-layer,

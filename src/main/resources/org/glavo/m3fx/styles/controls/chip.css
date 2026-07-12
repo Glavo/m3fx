@@ -58,14 +58,24 @@
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 3, 0.18, 0, 1);
 }
 
-.m3-chip.m3-elevated-chip:hover,
-.m3-chip.m3-elevated-chip:focus-visible {
+.m3-chip.m3-elevated-chip:hover {
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 6, 0.18, 0, 3);
 }
 
+.m3-chip.m3-elevated-chip:focus-visible,
 .m3-chip.m3-elevated-chip:armed,
 .m3-chip.m3-elevated-chip:pressed {
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 3, 0.18, 0, 1);
+}
+
+.m3-chip.m3-flat-chip.m3-assist-chip:focus-visible {
+    -fx-border-color: -m3-color-on-surface;
+}
+
+.m3-chip.m3-flat-chip.m3-suggestion-chip:focus-visible,
+.m3-chip.m3-flat-chip.m3-filter-chip:focus-visible,
+.m3-chip.m3-flat-chip.m3-input-chip:focus-visible {
+    -fx-border-color: -m3-color-on-surface-variant;
 }
 
 .m3-chip.m3-assist-chip,
@@ -141,6 +151,11 @@
     -fx-text-fill: -m3-color-on-secondary-container;
 }
 
+.m3-chip.m3-flat-chip.m3-filter-chip:selected:focus-visible,
+.m3-chip.m3-flat-chip.m3-input-chip:selected:focus-visible {
+    -fx-border-color: transparent;
+}
+
 .m3-chip.m3-filter-chip:selected .m3-state-layer,
 .m3-chip.m3-filter-chip:selected .m3-ripple,
 .m3-chip.m3-input-chip:selected .m3-state-layer,
@@ -149,5 +164,30 @@
 }
 
 .m3-chip:disabled {
-    -fx-opacity: 0.38;
+    -fx-cursor: default;
+    -fx-opacity: 1;
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-chip:disabled > * {
+    -fx-opacity: -m3-state-disabled-content-opacity;
+}
+
+.m3-chip.m3-flat-chip:disabled {
+    -fx-background-color: transparent;
+    -fx-border-color: -m3-state-disabled-container-color;
+    -fx-effect: null;
+}
+
+.m3-chip.m3-elevated-chip:disabled,
+.m3-chip.m3-filter-chip:selected:disabled,
+.m3-chip.m3-input-chip:selected:disabled {
+    -fx-background-color: -m3-state-disabled-container-color;
+    -fx-border-color: transparent;
+    -fx-effect: null;
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-chip:disabled .m3-icon {
+    -fx-text-fill: -m3-color-on-surface;
 }

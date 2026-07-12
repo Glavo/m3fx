@@ -19,15 +19,29 @@ public final class M3DateRangePickerFieldSkin extends SkinBase<M3DateRangePicker
     /// The internal two-field container.
     private final HBox container = new HBox(FIELD_SPACING);
 
+    /// The retained start-date input layout.
+    private final M3TextInputLayout startInputLayout;
+
+    /// The retained end-date input layout.
+    private final M3TextInputLayout endInputLayout;
+
     /// Creates a date range picker field skin.
     ///
     /// @param control the date range picker field controlled by this skin
     public M3DateRangePickerFieldSkin(M3DateRangePickerField control) {
         super(control);
+        Object startItem = control.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0);
+        Object endItem = control.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1);
+        if (!(startItem instanceof M3TextInputLayout startLayout)
+                || !(endItem instanceof M3TextInputLayout endLayout)) {
+            throw new IllegalStateException("date range picker field input layouts are unavailable");
+        }
+        startInputLayout = startLayout;
+        endInputLayout = endLayout;
         container.setManaged(false);
         container.getStyleClass().add(M3DateRangePickerField.CONTAINER_STYLE_CLASS);
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
-        container.getChildren().setAll(inputLayout(0), inputLayout(1));
+        container.getChildren().setAll(startInputLayout, endInputLayout);
         getChildren().setAll(container);
     }
 
@@ -115,8 +129,6 @@ public final class M3DateRangePickerFieldSkin extends SkinBase<M3DateRangePicker
     /// Lays out the internal two-field container.
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
-        M3TextInputLayout startInputLayout = inputLayout(0);
-        M3TextInputLayout endInputLayout = inputLayout(1);
         double spacing = container.getSpacing();
         double fieldWidth = Math.max(0.0, (width - spacing) / 2.0);
         startInputLayout.setPrefWidth(fieldWidth);
@@ -124,15 +136,4 @@ public final class M3DateRangePickerFieldSkin extends SkinBase<M3DateRangePicker
         container.resizeRelocate(x, y, width, height);
     }
 
-    /// Returns one wrapped input layout exposed by the skinnable accessibility tree.
-    ///
-    /// @param index the indexed input layout to return
-    /// @return the indexed input layout
-    private M3TextInputLayout inputLayout(int index) {
-        Object item = getSkinnable().queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, index);
-        if (item instanceof M3TextInputLayout inputLayout) {
-            return inputLayout;
-        }
-        throw new IllegalStateException("date range picker field input layout is unavailable");
-    }
 }

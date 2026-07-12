@@ -96,6 +96,9 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     /// The selected container appearance animation.
     private final M3NodeTransition selectionAnimation = new M3NodeTransition(selectionContainer);
 
+    /// The selected state targeted by the currently configured selection animation.
+    private boolean selectionAnimationTargetSelected;
+
     /// The background radius currently applied to the state container.
     private double containerRadius = Double.NaN;
 
@@ -177,6 +180,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
 
         selectionContainer.setManaged(false);
         selectionContainer.setMouseTransparent(true);
+        selectionAnimation.setOnFinished(event -> finishSelectionAnimation());
         textBox.getChildren().addAll(overlineLabel, headlineLabel, supportingLabel);
         HBox.setHgrow(textBox, Priority.ALWAYS);
         trailingBox.getChildren().addAll(trailingSupportingLabel, trailingSlot);
@@ -224,6 +228,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     public void dispose() {
         M3ListItem item = getSkinnable();
         selectionAnimation.stop();
+        selectionAnimation.setOnFinished(null);
         resetInteractionState();
         stateLayer.uninstallStateTransitions();
         item.overlineTextProperty().removeListener(textInvalidation);
@@ -258,6 +263,30 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         trailingBox.alignmentProperty().unbind();
         getChildren().removeAll(selectionContainer, container, stateLayer);
         super.dispose();
+    }
+
+    /// Computes a flexible minimum width so list rows can shrink inside their owning container.
+    @Override
+    protected double computeMinWidth(
+            double height,
+            double topInset,
+            double rightInset,
+            double bottomInset,
+            double leftInset
+    ) {
+        return leftInset + rightInset;
+    }
+
+    /// Allows list rows with default constraints to fill the available container width.
+    @Override
+    protected double computeMaxWidth(
+            double height,
+            double topInset,
+            double rightInset,
+            double bottomInset,
+            double leftInset
+    ) {
+        return Double.MAX_VALUE;
     }
 
     /// Lays out the container and bounded state layer.
@@ -455,10 +484,10 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         double targetOpacity = selected ? 1.0 : 0.0;
         double targetScale = selected ? 1.0 : HIDDEN_SELECTION_SCALE;
         selectionAnimation.stop();
-        selectionAnimation.setOnFinished(null);
         if (!selected) {
             updateSelectedChildPseudoClasses(false);
         }
+        selectionAnimationTargetSelected = selected;
         M3MotionSpec spec = M3Animation.defaultEffects(getSkinnable());
         selectionAnimation.configure(
                 spec,
@@ -468,12 +497,15 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
                 selectionContainer.getTranslateX(),
                 selectionContainer.getTranslateY()
         );
-        selectionAnimation.setOnFinished(event -> {
-            if (getSkinnable().isSelected() == selected) {
-                updateSelectedChildPseudoClasses(selected);
-            }
-        });
         M3Animation.playFromStart(getSkinnable(), selectionAnimation);
+    }
+
+    /// Mirrors the settled selected state after the reusable selection animation completes.
+    private void finishSelectionAnimation() {
+        boolean selected = selectionAnimationTargetSelected;
+        if (getSkinnable().isSelected() == selected) {
+            updateSelectedChildPseudoClasses(selected);
+        }
     }
 
     /// Updates the selected container without animation.

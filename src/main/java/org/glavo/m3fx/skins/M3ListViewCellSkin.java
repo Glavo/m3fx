@@ -8,6 +8,7 @@ import javafx.beans.value.ChangeListener;
 import javafx.geometry.HPos;
 import javafx.scene.Node;
 import javafx.scene.control.SkinBase;
+import javafx.scene.layout.Region;
 import org.glavo.m3fx.internal.M3ListViewCell;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -171,9 +172,9 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListViewCell<T>> {
         }
 
         double rowWidth = snapSizeX(boundedSize(
-                row.minWidth(height),
+                rowMinimumWidth(row, height),
                 width,
-                row.maxWidth(height),
+                rowMaximumWidth(row, height),
                 width
         ));
         double rowHeight = snapSizeY(boundedSize(
@@ -190,6 +191,20 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListViewCell<T>> {
         );
         double rowY = y + (height - rowHeight) / 2.0;
         row.resizeRelocate(snapPositionX(rowX), snapPositionY(rowY), rowWidth, rowHeight);
+    }
+
+    /// Returns the row minimum width while allowing default computed constraints to shrink inside the viewport.
+    private static double rowMinimumWidth(Node row, double height) {
+        return row instanceof Region region && region.getMinWidth() == Region.USE_COMPUTED_SIZE
+                ? 0.0
+                : row.minWidth(height);
+    }
+
+    /// Returns the row maximum width while allowing default computed constraints to fill the viewport.
+    private static double rowMaximumWidth(Node row, double height) {
+        return row instanceof Region region && region.getMaxWidth() == Region.USE_COMPUTED_SIZE
+                ? Double.MAX_VALUE
+                : row.maxWidth(height);
     }
 
     /// Returns a child size bounded by its constraints and available size.

@@ -4,7 +4,6 @@
 package org.glavo.m3fx.internal;
 
 import javafx.geometry.Bounds;
-import javafx.geometry.Point2D;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;
 import javafx.scene.layout.Region;
@@ -96,7 +95,7 @@ public final class M3PopupPositioning {
     }
 
     /// Returns a submenu popup position for known owner screen bounds and preferred side.
-    public static @Nullable Placement subMenuBeside(
+    public static Placement subMenuBeside(
             Bounds ownerBounds,
             Region content,
             double offsetX,
@@ -190,43 +189,13 @@ public final class M3PopupPositioning {
         return Math.max(min, Math.min(value, upper));
     }
 
-    /// Describes a computed popup placement.
+    /// A computed popup position and its resolved opening directions.
+    ///
+    /// @param x the popup x-coordinate in screen coordinates
+    /// @param y the popup y-coordinate in screen coordinates
+    /// @param opensToLeft whether a side popup opens to the left of its owner
+    /// @param opensAbove whether a vertical popup opens above its owner
     @NotNullByDefault
-    public static final class Placement {
-        /// The popup anchor position.
-        private final Point2D point;
-
-        /// Whether a side popup opens to the left of its owner.
-        private final boolean opensToLeft;
-
-        /// Whether a vertical popup opens above its owner.
-        private final boolean opensAbove;
-
-        /// Creates a computed popup placement.
-        private Placement(double x, double y, boolean opensToLeft, boolean opensAbove) {
-            this.point = new Point2D(x, y);
-            this.opensToLeft = opensToLeft;
-            this.opensAbove = opensAbove;
-        }
-
-        /// Returns the popup x coordinate.
-        public double x() {
-            return point.getX();
-        }
-
-        /// Returns the popup y coordinate.
-        public double y() {
-            return point.getY();
-        }
-
-        /// Returns whether a side popup opens to the left of its owner.
-        public boolean opensToLeft() {
-            return opensToLeft;
-        }
-
-        /// Returns whether a vertical popup opens above its owner.
-        public boolean opensAbove() {
-            return opensAbove;
-        }
+    public record Placement(double x, double y, boolean opensToLeft, boolean opensAbove) {
     }
 }

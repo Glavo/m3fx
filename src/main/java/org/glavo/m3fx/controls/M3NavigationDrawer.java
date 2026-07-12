@@ -29,6 +29,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import org.glavo.m3fx.internal.M3SelectionNavigation;
 import org.glavo.m3fx.internal.M3FocusTraversal;
+import org.glavo.m3fx.internal.M3FocusGuards;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
@@ -453,7 +454,7 @@ public class M3NavigationDrawer extends Control {
     /// Moves focus to the next drawer item whose text matches the printable-key search prefix.
     private void handleTypeAheadKeyTyped(KeyEvent event) {
         Objects.requireNonNull(event, "event");
-        if (M3FocusTraversal.focusOwnerInsideTextInput(this)) {
+        if (M3FocusGuards.focusOwnerInsideTextInput(this)) {
             return;
         }
 

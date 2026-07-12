@@ -3,10 +3,11 @@
 
 package org.glavo.m3fx.internal;
 
+import javafx.beans.InvalidationListener;
+import javafx.beans.Observable;
 import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
-import javafx.event.WeakEventHandler;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Parent;
@@ -31,7 +32,7 @@ import java.util.Objects;
 ///
 /// @param <T> the item type rendered by this cell
 @NotNullByDefault
-public final class M3ListViewCell<T> extends IndexedCell<T> {
+public final class M3ListViewCell<T> extends IndexedCell<T> implements InvalidationListener {
     /// The base style class for M3FX list view cells.
     public static final String STYLE_CLASS = "m3-list-view-cell";
 
@@ -45,8 +46,6 @@ public final class M3ListViewCell<T> extends IndexedCell<T> {
     /// Routes list item actions back into the list view selection policy.
     private final EventHandler<ActionEvent> itemActionHandler = this::handleItemAction;
 
-    /// Breaks the reference from an application-owned row back to this reusable cell.
-    private final WeakEventHandler<ActionEvent> weakItemActionHandler = new WeakEventHandler<>(itemActionHandler);
 
     /// The rendered list item currently owned by this cell.
     private @Nullable M3ListItem listItem;
@@ -78,6 +77,24 @@ public final class M3ListViewCell<T> extends IndexedCell<T> {
     /// Whether the row originally had the managed dark brightness style class.
     private boolean capturedDarkBrightnessStyleClass;
 
+    /// Whether application-owned interaction state has been captured for the current row.
+    private boolean interactionStateCaptured;
+
+    /// Whether the current row's focus-traversable property can be restored after temporary use.
+    private boolean restoreFocusTraversable;
+
+    /// The current row's focus-traversable value before temporary use by this cell.
+    private boolean capturedFocusTraversable;
+
+    /// Whether the current row's selected property can be restored after temporary use.
+    private boolean restoreSelected;
+
+    /// The current row's selected value before temporary use by this cell.
+    private boolean capturedSelected;
+
+    /// Whether the current row had keyboard-visible focus before temporary use by this cell.
+    private boolean capturedFocusVisible;
+
 
     /// Creates a reusable list view cell.
     ///
@@ -91,20 +108,28 @@ public final class M3ListViewCell<T> extends IndexedCell<T> {
         setAccessibleRole(AccessibleRole.LIST_ITEM);
         setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
         setText(null);
-        visibleProperty().addListener(observable -> releaseInvisibleFactoryRow());
+        visibleProperty().addListener(this);
+    }
+
+    /// Releases an application-provided row when this cell becomes invisible in the virtual-flow pile.
+    ///
+    /// @param observable the invalidated visibility property
+    @Override
+    public void invalidated(Observable observable) {
+        releaseInvisibleFactoryRow();
     }
 
     /// Returns the owning virtualized list view.
     ///
     /// @return the owning virtualized list view
-    public final M3ListView<T> getListView() {
+    public M3ListView<T> getListView() {
         return listView;
     }
 
     /// Returns the rendered list item currently owned by this cell.
     ///
     /// @return the rendered list item, or `null` when this cell is empty
-    public final @Nullable M3ListItem getListItem() {
+    public @Nullable M3ListItem getListItem() {
         return listItem;
     }
 
@@ -119,7 +144,7 @@ public final class M3ListViewCell<T> extends IndexedCell<T> {
         } else {
             updateItem(getListView().getItems().get(index), false);
         }
-        refreshSelection();
+        refreshFocus();
     }
 
     /// Updates the rendered list item for the current virtualized item.
@@ -127,6 +152,7 @@ public final class M3ListViewCell<T> extends IndexedCell<T> {
     /// @param item the data item assigned to this cell, or `null` for an empty cell
     /// @param empty whether this cell is empty
     @Override
+    @SuppressWarnings("DataFlowIssue")
     protected void updateItem(@Nullable T item, boolean empty) {
         super.updateItem(item, empty);
         if (empty) {
@@ -134,18 +160,19 @@ public final class M3ListViewCell<T> extends IndexedCell<T> {
             return;
         }
 
+        T value = Objects.requireNonNull(item, "non-empty item");
         @Nullable Callback<? super T, ? extends M3ListItem> factory = getListView().getCellFactory();
         M3ListItem itemNode;
-        if (canReuseListItem(item, factory)) {
+        if (canReuseListItem(value, factory)) {
             itemNode = Objects.requireNonNull(listItem, "listItem");
             if (factory == null) {
-                updateDefaultListItem(itemNode, item);
+                updateDefaultListItem(itemNode, value);
             }
         } else {
-            itemNode = createListItem(item, factory);
+            itemNode = createListItem(value, factory);
             setListItem(itemNode);
             copyThemeContext(itemNode);
-            renderedItem = item;
+            renderedItem = value;
             renderedCellFactory = factory;
         }
         setGraphic(itemNode);
@@ -178,7 +205,7 @@ public final class M3ListViewCell<T> extends IndexedCell<T> {
 
     /// Returns whether the current rendered node can be reused for one virtual-flow update.
     private boolean canReuseListItem(
-            @Nullable T item,
+            T item,
             @Nullable Callback<? super T, ? extends M3ListItem> factory
     ) {
         if (listItem == null || factory != renderedCellFactory) {
@@ -188,7 +215,7 @@ public final class M3ListViewCell<T> extends IndexedCell<T> {
     }
 
     /// Updates the built-in row renderer for a new data item without replacing its node or skin.
-    private static <T> void updateDefaultListItem(M3ListItem itemNode, @Nullable T item) {
+    private static <T> void updateDefaultListItem(M3ListItem itemNode, T item) {
         String headline = String.valueOf(item);
         if (!itemNode.getHeadlineText().equals(headline)) {
             itemNode.setHeadlineText(headline);
@@ -197,21 +224,12 @@ public final class M3ListViewCell<T> extends IndexedCell<T> {
 
     /// Creates or delegates creation of the visual list item for one data item.
     private M3ListItem createListItem(
-            @Nullable T item,
+            T item,
             @Nullable Callback<? super T, ? extends M3ListItem> factory
     ) {
-        M3ListItem itemNode = factory == null
+        return factory == null
                 ? new M3ListItem(String.valueOf(item))
                 : Objects.requireNonNull(factory.call(item), "cellFactory result");
-        itemNode.setFocusTraversable(false);
-        if (!itemNode.minWidthProperty().isBound() && Double.compare(itemNode.getMinWidth(), 0.0) != 0) {
-            itemNode.setMinWidth(0.0);
-        }
-        if (!itemNode.maxWidthProperty().isBound()
-                && Double.compare(itemNode.getMaxWidth(), Double.MAX_VALUE) != 0) {
-            itemNode.setMaxWidth(Double.MAX_VALUE);
-        }
-        return itemNode;
     }
 
     /// Copies the current list view theme context into a virtualized row for early CSS passes.
@@ -299,16 +317,51 @@ public final class M3ListViewCell<T> extends IndexedCell<T> {
             return;
         }
         if (this.listItem != null) {
-            this.listItem.removeEventHandler(ActionEvent.ACTION, weakItemActionHandler);
+            this.listItem.removeEventHandler(ActionEvent.ACTION, itemActionHandler);
         }
         restoreThemeContext();
+        restoreInteractionState();
         this.listItem = listItem;
         if (listItem == null) {
             renderedItem = null;
             renderedCellFactory = null;
         } else {
-            listItem.addEventHandler(ActionEvent.ACTION, weakItemActionHandler);
+            captureInteractionState(listItem);
+            listItem.addEventHandler(ActionEvent.ACTION, itemActionHandler);
         }
+    }
+
+    /// Captures and applies interaction state that belongs to this virtualized cell while a row is mounted.
+    private void captureInteractionState(M3ListItem itemNode) {
+        interactionStateCaptured = true;
+        restoreFocusTraversable = !itemNode.focusTraversableProperty().isBound();
+        if (restoreFocusTraversable) {
+            capturedFocusTraversable = itemNode.isFocusTraversable();
+            itemNode.setFocusTraversable(false);
+        }
+        restoreSelected = !itemNode.selectedProperty().isBound();
+        if (restoreSelected) {
+            capturedSelected = itemNode.isSelected();
+        }
+        capturedFocusVisible = itemNode.getPseudoClassStates().contains(FOCUS_VISIBLE_PSEUDO_CLASS);
+    }
+
+    /// Restores application-owned interaction state before the current row leaves this cell.
+    private void restoreInteractionState() {
+        @Nullable M3ListItem itemNode = listItem;
+        if (itemNode == null || !interactionStateCaptured) {
+            return;
+        }
+        if (restoreFocusTraversable && !itemNode.focusTraversableProperty().isBound()) {
+            itemNode.setFocusTraversable(capturedFocusTraversable);
+        }
+        if (restoreSelected && !itemNode.selectedProperty().isBound()) {
+            itemNode.setSelected(capturedSelected);
+        }
+        itemNode.pseudoClassStateChanged(FOCUS_VISIBLE_PSEUDO_CLASS, capturedFocusVisible);
+        interactionStateCaptured = false;
+        restoreFocusTraversable = false;
+        restoreSelected = false;
     }
 
     /// Clears rendered content while the cell is empty or detached from the scene.
@@ -328,16 +381,16 @@ public final class M3ListViewCell<T> extends IndexedCell<T> {
     }
 
     /// Updates the list item's selected state from the owning view.
-    public final void refreshSelection() {
+    public void refreshSelection() {
         boolean selected = !isEmpty() && getListView().isIndexSelected(getIndex());
         updateSelected(selected);
-        if (listItem != null) {
+        if (listItem != null && !listItem.selectedProperty().isBound()) {
             listItem.setSelected(selected);
         }
     }
 
     /// Reapplies the current list view theme context to the rendered row item.
-    public final void refreshThemeContext() {
+    public void refreshThemeContext() {
         if (listItem != null) {
             copyThemeContext(listItem);
             listItem.applyCss();
@@ -348,7 +401,7 @@ public final class M3ListViewCell<T> extends IndexedCell<T> {
     /// Requests list focus when this cell owns logical row focus.
     ///
     /// @return `true` when the owning list view accepted focus
-    public final boolean focusCell() {
+    public boolean focusCell() {
         if (listItem == null || isEmpty() || !getListView().isIndexFocused(getIndex())) {
             return false;
         }
@@ -359,7 +412,7 @@ public final class M3ListViewCell<T> extends IndexedCell<T> {
     }
 
     /// Updates logical focus pseudo-class state for this virtualized row.
-    public final void refreshFocus() {
+    public void refreshFocus() {
         boolean focusVisible = !isEmpty()
                 && getListView().isIndexFocused(getIndex())
                 && getListView().getPseudoClassStates().contains(FOCUS_VISIBLE_PSEUDO_CLASS);

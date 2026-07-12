@@ -56,6 +56,9 @@ public final class M3PopupContextSynchronizer {
     /// Whether a synchronization pass is already in progress.
     private boolean syncing;
 
+    /// Whether the current observation run has copied context from an attached owner scene.
+    private boolean hasSyncedAttachedOwnerContext;
+
     /// Whether [syncedAnimationsEnabled], [syncedMotionScheme], and [syncedMotionBehavior] contain a snapshot.
     private boolean hasSyncedMotionContext;
 
@@ -146,6 +149,7 @@ public final class M3PopupContextSynchronizer {
         }
 
         running = true;
+        hasSyncedAttachedOwnerContext = false;
         Observation currentObservation = observation;
         if (currentObservation == null) {
             currentObservation = new Observation();
@@ -173,12 +177,16 @@ public final class M3PopupContextSynchronizer {
         if (currentObservation != null) {
             currentObservation.stop();
         }
+        hasSyncedAttachedOwnerContext = false;
         clearSyncedMotionContext();
     }
 
     /// Copies the latest owner stylesheet, theme, orientation, and motion context into the popup root.
     public void sync() {
         if (syncing) {
+            return;
+        }
+        if (running && owner.getScene() == null && hasSyncedAttachedOwnerContext) {
             return;
         }
 
@@ -203,6 +211,9 @@ public final class M3PopupContextSynchronizer {
             );
             popupRoot.applyCss();
             popupRoot.layout();
+            if (owner.getScene() != null) {
+                hasSyncedAttachedOwnerContext = true;
+            }
         } finally {
             syncing = false;
         }

@@ -9,6 +9,12 @@ import javafx.beans.property.IntegerPropertyBase;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.css.CssMetaData;
+import javafx.css.PseudoClass;
+import javafx.css.Styleable;
+import javafx.css.StyleableDoubleProperty;
+import javafx.css.StyleableProperty;
+import javafx.css.converter.SizeConverter;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -19,6 +25,7 @@ import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3TimePickerSkin;
@@ -28,13 +35,14 @@ import org.jetbrains.annotations.Nullable;
 
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
 /// A Material Design 3 time picker control.
 ///
-/// `M3TimePicker` displays hour and minute selection grids, optional 12-hour period selection, disabled-time
-/// predicates, and a nullable selected [LocalTime] value. The control is the picker body used by
+/// `M3TimePicker` provides the Material dial and keyboard-input variants, optional 12-hour period selection,
+/// selectable-time bounds, and a nullable selected [LocalTime] value. The control is the picker body used by
 /// [M3TimePickerDialog] and [M3TimePickerField].
 ///
 /// See [Material Design time pickers](https://m3.material.io/components/time-pickers/overview).
@@ -58,26 +66,44 @@ public class M3TimePicker extends Control {
     /// The style class applied to the minute display label.
     public static final String MINUTE_DISPLAY_STYLE_CLASS = "m3-time-picker-minute-display";
 
-    /// The style class applied to the period display label in 12-hour mode.
-    public static final String PERIOD_DISPLAY_STYLE_CLASS = "m3-time-picker-period-display";
+    /// The style class applied to the stable internal content pane.
+    public static final String CONTENT_STYLE_CLASS = "m3-time-picker-content";
 
-    /// The style class applied to an hour or minute section.
-    public static final String SECTION_STYLE_CLASS = "m3-time-picker-section";
+    /// The style class applied to the 256 dp clock dial.
+    public static final String DIAL_STYLE_CLASS = "m3-time-picker-dial";
 
-    /// The style class applied to section title labels.
-    public static final String SECTION_TITLE_STYLE_CLASS = "m3-time-picker-section-title";
+    /// The style class applied to the clock dial background.
+    public static final String DIAL_BACKGROUND_STYLE_CLASS = "m3-time-picker-dial-background";
 
-    /// The style class applied to hour and minute grids.
-    public static final String GRID_STYLE_CLASS = "m3-time-picker-grid";
+    /// The style class applied to the dial selector track.
+    public static final String DIAL_TRACK_STYLE_CLASS = "m3-time-picker-dial-track";
+
+    /// The style class applied to the 48 dp dial selector handle.
+    public static final String DIAL_HANDLE_STYLE_CLASS = "m3-time-picker-dial-handle";
+
+    /// The style class applied to the dial selector center.
+    public static final String DIAL_CENTER_STYLE_CLASS = "m3-time-picker-dial-center";
+
+    /// The style class applied to the Dial/Input mode toggle.
+    public static final String MODE_BUTTON_STYLE_CLASS = "m3-time-picker-mode-button";
+
+    /// The style class applied to the keyboard input row.
+    public static final String INPUT_CONTENT_STYLE_CLASS = "m3-time-picker-input-content";
+
+    /// The style class applied to hour and minute keyboard inputs.
+    public static final String INPUT_FIELD_STYLE_CLASS = "m3-time-picker-input-field";
+
+    /// The style class applied to one keyboard input and its supporting label.
+    public static final String INPUT_GROUP_STYLE_CLASS = "m3-time-picker-input-group";
+
+    /// The style class applied to Hour and Minute labels below keyboard inputs.
+    public static final String INPUT_LABEL_STYLE_CLASS = "m3-time-picker-input-label";
 
     /// The style class applied to every selectable time cell.
     public static final String CELL_STYLE_CLASS = "m3-time-picker-cell";
 
-    /// The style class applied to selectable hour cells.
-    public static final String HOUR_CELL_STYLE_CLASS = "m3-time-picker-hour-cell";
-
-    /// The style class applied to selectable minute cells.
-    public static final String MINUTE_CELL_STYLE_CLASS = "m3-time-picker-minute-cell";
+    /// The style class applied to lightweight labels around the clock dial.
+    public static final String DIAL_LABEL_STYLE_CLASS = "m3-time-picker-dial-label";
 
     /// The style class applied to the AM/PM row in 12-hour mode.
     public static final String PERIOD_ROW_STYLE_CLASS = "m3-time-picker-period-row";
@@ -88,8 +114,35 @@ public class M3TimePicker extends Control {
     /// The style class applied to a selected cell.
     public static final String SELECTED_CELL_STYLE_CLASS = "m3-time-picker-selected-cell";
 
-    /// The default minute interval shown in the minute grid.
+    /// The package-private style class used when a dialog supplies the outer Material container.
+    static final String DIALOG_CONTENT_STYLE_CLASS = "m3-time-picker-dialog-content";
+
+    /// The pseudo-class applied while the keyboard input variant is active.
+    private static final PseudoClass INPUT_MODE_PSEUDO_CLASS = PseudoClass.getPseudoClass("input-mode");
+
+    /// The pseudo-class applied while the clock dial variant is active.
+    private static final PseudoClass DIAL_MODE_PSEUDO_CLASS = PseudoClass.getPseudoClass("dial-mode");
+
+    /// The default minute interval used by dial and keyboard adjustments.
     private static final int DEFAULT_MINUTE_STEP = 5;
+
+    /// The default spacing between major Time Picker regions.
+    private static final double DEFAULT_CONTAINER_SPACING = 24.0;
+
+    /// The default diameter of the clock dial selector handle.
+    private static final double DEFAULT_DIAL_HANDLE_SIZE = 48.0;
+
+    /// The default diameter of the clock dial center dot.
+    private static final double DEFAULT_DIAL_CENTER_SIZE = 8.0;
+
+    /// The styleable spacing between major Time Picker regions.
+    private @Nullable StyleableDoubleProperty containerSpacingStyleable;
+
+    /// The styleable clock dial selector handle diameter.
+    private @Nullable StyleableDoubleProperty dialHandleSizeStyleable;
+
+    /// The styleable clock dial center dot diameter.
+    private @Nullable StyleableDoubleProperty dialCenterSizeStyleable;
 
     // The selected time, or `null` when no time is selected.
     private final ObjectProperty<@Nullable LocalTime> value =
@@ -122,7 +175,18 @@ public class M3TimePicker extends Control {
                 }
             };
 
-    // The minute interval used by the minute selection grid.
+    // Whether the keyboard input variant is active.
+    private final BooleanProperty inputMode =
+            new SimpleBooleanProperty(this, "inputMode", false) {
+                /// Updates variant pseudo-classes and accessibility when the mode changes.
+                @Override
+                protected void invalidated() {
+                    updateInputModePseudoClasses();
+                    notifyAccessibleItemsChanged();
+                }
+            };
+
+    // The minute interval used by dial and keyboard adjustments.
     private final IntegerProperty minuteStep = new IntegerPropertyBase(DEFAULT_MINUTE_STEP) {
         /// Validates the minute step whenever it changes.
         @Override
@@ -210,12 +274,27 @@ public class M3TimePicker extends Control {
         return use24HourClock;
     }
 
-    /// Returns the minute interval used by the minute grid.
+    /// Returns whether the keyboard input variant is active.
+    public final boolean isInputMode() {
+        return inputMode.get();
+    }
+
+    /// Sets whether the keyboard input variant is active.
+    public final void setInputMode(boolean inputMode) {
+        this.inputMode.set(inputMode);
+    }
+
+    /// Returns the keyboard input variant property.
+    public final BooleanProperty inputModeProperty() {
+        return inputMode;
+    }
+
+    /// Returns the minute interval used by dial and keyboard adjustments.
     public final int getMinuteStep() {
         return minuteStep.get();
     }
 
-    /// Sets the minute interval used by the minute grid.
+    /// Sets the minute interval used by dial and keyboard adjustments.
     public final void setMinuteStep(int minuteStep) {
         validateMinuteStep(minuteStep);
         this.minuteStep.set(minuteStep);
@@ -224,6 +303,96 @@ public class M3TimePicker extends Control {
     /// Returns the minute step property.
     public final IntegerProperty minuteStepProperty() {
         return minuteStep;
+    }
+
+    /// Returns the spacing between major Time Picker regions.
+    ///
+    /// @return the region spacing in pixels
+    public final double getContainerSpacing() {
+        return containerSpacingStyleable == null ? DEFAULT_CONTAINER_SPACING : containerSpacingStyleable.get();
+    }
+
+    /// Sets the spacing between major Time Picker regions.
+    ///
+    /// @param spacing the non-negative region spacing in pixels
+    public final void setContainerSpacing(double spacing) {
+        containerSpacingProperty().set(M3Css.nonNegative(spacing, "containerSpacing"));
+    }
+
+    /// Returns the styleable spacing property for major Time Picker regions.
+    ///
+    /// @return the region spacing property
+    public final StyleableDoubleProperty containerSpacingProperty() {
+        if (containerSpacingStyleable == null) {
+            containerSpacingStyleable = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_CONTAINER_SPACING,
+                    this,
+                    "containerSpacing",
+                    StyleableProperties.CONTAINER_SPACING,
+                    this::requestLayout
+            );
+        }
+        return containerSpacingStyleable;
+    }
+
+    /// Returns the clock dial selector handle diameter.
+    ///
+    /// @return the handle diameter in pixels
+    public final double getDialHandleSize() {
+        return dialHandleSizeStyleable == null ? DEFAULT_DIAL_HANDLE_SIZE : dialHandleSizeStyleable.get();
+    }
+
+    /// Sets the clock dial selector handle diameter.
+    ///
+    /// @param size the non-negative handle diameter in pixels
+    public final void setDialHandleSize(double size) {
+        dialHandleSizeProperty().set(M3Css.nonNegative(size, "dialHandleSize"));
+    }
+
+    /// Returns the styleable clock dial selector handle diameter property.
+    ///
+    /// @return the handle diameter property
+    public final StyleableDoubleProperty dialHandleSizeProperty() {
+        if (dialHandleSizeStyleable == null) {
+            dialHandleSizeStyleable = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_DIAL_HANDLE_SIZE,
+                    this,
+                    "dialHandleSize",
+                    StyleableProperties.DIAL_HANDLE_SIZE,
+                    this::requestLayout
+            );
+        }
+        return dialHandleSizeStyleable;
+    }
+
+    /// Returns the clock dial center dot diameter.
+    ///
+    /// @return the center dot diameter in pixels
+    public final double getDialCenterSize() {
+        return dialCenterSizeStyleable == null ? DEFAULT_DIAL_CENTER_SIZE : dialCenterSizeStyleable.get();
+    }
+
+    /// Sets the clock dial center dot diameter.
+    ///
+    /// @param size the non-negative center dot diameter in pixels
+    public final void setDialCenterSize(double size) {
+        dialCenterSizeProperty().set(M3Css.nonNegative(size, "dialCenterSize"));
+    }
+
+    /// Returns the styleable clock dial center dot diameter property.
+    ///
+    /// @return the center dot diameter property
+    public final StyleableDoubleProperty dialCenterSizeProperty() {
+        if (dialCenterSizeStyleable == null) {
+            dialCenterSizeStyleable = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_DIAL_CENTER_SIZE,
+                    this,
+                    "dialCenterSize",
+                    StyleableProperties.DIAL_CENTER_SIZE,
+                    this::requestLayout
+            );
+        }
+        return dialCenterSizeStyleable;
     }
 
     /// Returns the earliest selectable time, or `null` when there is no lower bound.
@@ -286,6 +455,21 @@ public class M3TimePicker extends Control {
         return min != null && normalizedTime.isBefore(min) || max != null && normalizedTime.isAfter(max);
     }
 
+    /// Returns the CSS metadata for this control class.
+    ///
+    /// @return the CSS metadata for `M3TimePicker`
+    public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+        return StyleableProperties.STYLEABLES;
+    }
+
+    /// Returns the CSS metadata for this control.
+    ///
+    /// @return the CSS metadata for this control
+    @Override
+    public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+        return getClassCssMetaData();
+    }
+
     /// Returns the user-agent stylesheet for M3FX time pickers.
     @Override
     public String getUserAgentStylesheet() {
@@ -339,8 +523,16 @@ public class M3TimePicker extends Control {
         setAccessibleRole(AccessibleRole.PARENT);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleTime,
                 this::handlesAccessibleShowTarget);
+        updateInputModePseudoClasses();
         setFocusTraversable(true);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
+    }
+
+    /// Synchronizes the mutually exclusive Dial/Input mode pseudo-classes.
+    private void updateInputModePseudoClasses() {
+        boolean input = isInputMode();
+        pseudoClassStateChanged(INPUT_MODE_PSEUDO_CLASS, input);
+        pseudoClassStateChanged(DIAL_MODE_PSEUDO_CLASS, !input);
     }
 
     /// Handles keyboard time navigation.
@@ -643,8 +835,20 @@ public class M3TimePicker extends Control {
     private static boolean isAccessibleTimeCell(Node node) {
         return node.getStyleClass().contains(CELL_STYLE_CLASS)
                 && timeFromNode(node) != null
-                && M3Accessible.isEffectivelyReachable(node)
+                && isEffectivelyVisible(node)
                 && !node.isMouseTransparent();
+    }
+
+    /// Returns whether a rendered cell and its ancestor chain are visible.
+    private static boolean isEffectivelyVisible(Node node) {
+        @Nullable Node current = node;
+        while (current != null) {
+            if (!current.isVisible()) {
+                return false;
+            }
+            current = current.getParent();
+        }
+        return true;
     }
 
     /// Returns the current logical selectable cell count before the skin is installed.
@@ -699,6 +903,82 @@ public class M3TimePicker extends Control {
     private static void validateMinuteStep(int minuteStep) {
         if (minuteStep <= 0 || minuteStep > 30 || 60 % minuteStep != 0) {
             throw new IllegalArgumentException("minuteStep must evenly divide 60 and be between 1 and 30");
+        }
+    }
+
+    /// CSS metadata for Time Picker metrics consumed by the custom skin.
+    @NotNullByDefault
+    private static final class StyleableProperties {
+        /// CSS metadata for spacing between major picker regions.
+        private static final CssMetaData<M3TimePicker, Number> CONTAINER_SPACING =
+                new CssMetaData<>(
+                        "-m3-container-spacing",
+                        SizeConverter.getInstance(),
+                        DEFAULT_CONTAINER_SPACING
+                ) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3TimePicker control) {
+                        return M3Css.isSettable(control.containerSpacingProperty());
+                    }
+
+                    /// Returns the styleable property for a Time Picker.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3TimePicker control) {
+                        return control.containerSpacingProperty();
+                    }
+                };
+
+        /// CSS metadata for the dial selector handle diameter.
+        private static final CssMetaData<M3TimePicker, Number> DIAL_HANDLE_SIZE =
+                new CssMetaData<>(
+                        "-m3-dial-handle-size",
+                        SizeConverter.getInstance(),
+                        DEFAULT_DIAL_HANDLE_SIZE
+                ) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3TimePicker control) {
+                        return M3Css.isSettable(control.dialHandleSizeProperty());
+                    }
+
+                    /// Returns the styleable property for a Time Picker.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3TimePicker control) {
+                        return control.dialHandleSizeProperty();
+                    }
+                };
+
+        /// CSS metadata for the dial center dot diameter.
+        private static final CssMetaData<M3TimePicker, Number> DIAL_CENTER_SIZE =
+                new CssMetaData<>(
+                        "-m3-dial-center-size",
+                        SizeConverter.getInstance(),
+                        DEFAULT_DIAL_CENTER_SIZE
+                ) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3TimePicker control) {
+                        return M3Css.isSettable(control.dialCenterSizeProperty());
+                    }
+
+                    /// Returns the styleable property for a Time Picker.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3TimePicker control) {
+                        return control.dialCenterSizeProperty();
+                    }
+                };
+
+        /// The complete immutable CSS metadata list.
+        private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+
+        static {
+            List<CssMetaData<? extends Styleable, ?>> styleables =
+                    new ArrayList<>(Control.getClassCssMetaData());
+            styleables.add(CONTAINER_SPACING);
+            styleables.add(DIAL_HANDLE_SIZE);
+            styleables.add(DIAL_CENTER_SIZE);
+            STYLEABLES = Collections.unmodifiableList(styleables);
         }
     }
 }

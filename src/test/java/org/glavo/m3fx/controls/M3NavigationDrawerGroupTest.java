@@ -4,6 +4,8 @@
 package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.geometry.NodeOrientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
@@ -214,6 +216,70 @@ final class M3NavigationDrawerGroupTest {
                 assertSame(scene, group.getHeaderItem().getScene());
                 assertEquals(2, group.lookupAll("." + M3NavigationDrawerGroup.CHILD_STYLE_CLASS).size());
             } finally {
+                M3MotionSettings.clearAnimationsEnabled(group);
+            }
+        });
+    }
+
+    /// Verifies that the skin inherits layout direction without rewriting application-owned row properties.
+    @Test
+    void skinPreservesApplicationOwnedRowProperties() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3ListItem inheritedChild = new M3ListItem("Inherited");
+            inheritedChild.setMinWidth(40.0);
+            inheritedChild.setMaxWidth(180.0);
+
+            SimpleObjectProperty<NodeOrientation> boundOrientation =
+                    new SimpleObjectProperty<>(NodeOrientation.RIGHT_TO_LEFT);
+            M3ListItem boundChild = new M3ListItem("Bound");
+            boundChild.nodeOrientationProperty().bind(boundOrientation);
+
+            M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Group");
+            group.getHeaderItem().setMinWidth(48.0);
+            group.getHeaderItem().setMaxWidth(240.0);
+            group.getItems().addAll(inheritedChild, boundChild);
+            group.setExpanded(true);
+            group.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            M3MotionSettings.setAnimationsEnabled(group, false);
+
+            StackPane root = new StackPane(group);
+            Scene scene = new Scene(root, GROUP_WIDTH, 240.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            try {
+                root.applyCss();
+                root.layout();
+
+                assertSame(NodeOrientation.INHERIT, inheritedChild.getNodeOrientation());
+                assertSame(NodeOrientation.RIGHT_TO_LEFT, inheritedChild.getEffectiveNodeOrientation());
+                assertSame(NodeOrientation.RIGHT_TO_LEFT, boundChild.getNodeOrientation());
+                assertTrue(boundChild.nodeOrientationProperty().isBound());
+                assertEquals(40.0, inheritedChild.getMinWidth(), 0.0001);
+                assertEquals(180.0, inheritedChild.getMaxWidth(), 0.0001);
+                assertEquals(48.0, group.getHeaderItem().getMinWidth(), 0.0001);
+                assertEquals(240.0, group.getHeaderItem().getMaxWidth(), 0.0001);
+
+                group.getItems().remove(inheritedChild);
+                assertSame(NodeOrientation.INHERIT, inheritedChild.getNodeOrientation());
+                assertNull(inheritedChild.getParent());
+                assertEquals(40.0, inheritedChild.getMinWidth(), 0.0001);
+                assertEquals(180.0, inheritedChild.getMaxWidth(), 0.0001);
+
+                group.getItems().add(inheritedChild);
+                group.setSkin(new M3NavigationDrawerGroupSkin(group));
+                root.applyCss();
+                root.layout();
+
+                assertSame(NodeOrientation.INHERIT, inheritedChild.getNodeOrientation());
+                assertSame(NodeOrientation.RIGHT_TO_LEFT, inheritedChild.getEffectiveNodeOrientation());
+                assertEquals(40.0, inheritedChild.getMinWidth(), 0.0001);
+                assertEquals(180.0, inheritedChild.getMaxWidth(), 0.0001);
+
+                boundOrientation.set(NodeOrientation.LEFT_TO_RIGHT);
+                root.layout();
+                assertSame(NodeOrientation.LEFT_TO_RIGHT, boundChild.getNodeOrientation());
+                assertTrue(boundChild.nodeOrientationProperty().isBound());
+            } finally {
+                boundChild.nodeOrientationProperty().unbind();
                 M3MotionSettings.clearAnimationsEnabled(group);
             }
         });

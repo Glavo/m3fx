@@ -21,6 +21,7 @@ import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.Border;
 import javafx.scene.layout.BorderStroke;
 import javafx.scene.layout.CornerRadii;
+import javafx.scene.paint.Paint;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextBoundsType;
 import org.glavo.m3fx.animation.M3MotionSpec;
@@ -119,6 +120,11 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         control.armedProperty().addListener(armedListener);
         control.disabledProperty().addListener(disabledListener);
         layoutStateLayer();
+    }
+
+    /// Applies a concrete content paint to this skin's state layer and ripple.
+    protected final void setStateLayerPaint(Paint paint) {
+        stateLayer.setContentPaint(paint);
     }
 
     /// Stops the animation before the skin is disposed.

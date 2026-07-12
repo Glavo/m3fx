@@ -44,6 +44,7 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.SVGPath;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3MotionEasing;
 import org.glavo.m3fx.animation.M3MotionScheme;
@@ -73,8 +74,10 @@ import org.glavo.m3fx.controls.M3ChipSelectionMode;
 import org.glavo.m3fx.controls.M3ChipStyle;
 import org.glavo.m3fx.controls.M3ChipVariant;
 import org.glavo.m3fx.controls.M3DatePicker;
+import org.glavo.m3fx.controls.M3DatePickerDialog;
 import org.glavo.m3fx.controls.M3DatePickerField;
 import org.glavo.m3fx.controls.M3DateRangePicker;
+import org.glavo.m3fx.controls.M3DateRangePickerDialog;
 import org.glavo.m3fx.controls.M3DateRangePickerField;
 import org.glavo.m3fx.controls.M3Dialog;
 import org.glavo.m3fx.controls.M3DialogPane;
@@ -142,6 +145,7 @@ import org.glavo.m3fx.controls.M3TextInputLayout;
 import org.glavo.m3fx.controls.M3TextInputVariant;
 import org.glavo.m3fx.controls.M3TextRole;
 import org.glavo.m3fx.controls.M3TimePicker;
+import org.glavo.m3fx.controls.M3TimePickerDialog;
 import org.glavo.m3fx.controls.M3TimePickerField;
 import org.glavo.m3fx.controls.M3Tooltip;
 import org.glavo.m3fx.controls.M3Toolbar;
@@ -1581,6 +1585,24 @@ final class M3FXDemoVisualSmokeTest {
                 ));
                 assertSnapshotHasVisibleContent(image, "Date Pickers fields and cells");
             });
+            verifyPickerDialogPresetSurface(
+                    sceneReference,
+                    "Open date dialog",
+                    M3DatePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                    M3DatePicker.class,
+                    5,
+                    1,
+                    "date-picker-dialog-presets"
+            );
+            verifyPickerDialogPresetSurface(
+                    sceneReference,
+                    "Open preset range dialog",
+                    M3DateRangePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                    M3DateRangePicker.class,
+                    6,
+                    1,
+                    "date-range-picker-dialog-presets"
+            );
 
             showPageWhenSidebarSelectionSettled(appReference, sceneReference, "Time Pickers", scene -> {
             }, () -> {
@@ -1596,6 +1618,15 @@ final class M3FXDemoVisualSmokeTest {
                 ));
                 assertSnapshotHasVisibleContent(image, "Time Pickers fields and cells");
             });
+            verifyPickerDialogPresetSurface(
+                    sceneReference,
+                    "Open time dialog",
+                    M3TimePickerDialog.PRESET_BUTTON_STYLE_CLASS,
+                    M3TimePicker.class,
+                    5,
+                    1,
+                    "time-picker-dialog-presets"
+            );
         } finally {
             DemoFxTestUtils.runOnFxThread(() -> {
                 Stage stage = stageReference.get();
@@ -4015,6 +4046,7 @@ final class M3FXDemoVisualSmokeTest {
             });
         }
     }
+
     /// Verifies that interactive demo icon slots use SVG graphics instead of text placeholder icons.
     @Test
     void interactiveDemoIconSlotsUseVectorGraphics() {
@@ -6934,7 +6966,7 @@ final class M3FXDemoVisualSmokeTest {
             Parent dialogPane = dialog.getDialogPane();
             dialogPane.applyCss();
             dialogPane.layout();
-            assertDialogPaneStaysCompact(ownerScene, dialogPane);
+            assertDialogPaneFitsOwner(ownerScene, dialogPane);
             WritableImage dialogImage = Objects.requireNonNull(
                     dialogSnapshotReference.get(),
                     "dialog popup snapshot"
@@ -6951,6 +6983,134 @@ final class M3FXDemoVisualSmokeTest {
             );
             dialog.close();
         });
+    }
+
+    /// Opens one real demo picker dialog and verifies its settled preset composition.
+    private static void verifyPickerDialogPresetSurface(
+            AtomicReference<@Nullable Scene> sceneReference,
+            String openButtonText,
+            String presetButtonStyleClass,
+            Class<? extends Node> pickerType,
+            int expectedPresetCount,
+            int expectedPresetColumns,
+            String snapshotName
+    ) throws InterruptedException {
+        AtomicReference<@Nullable Window> dialogWindowReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> dialogSnapshotReference = new AtomicReference<>();
+
+        runOnFxThreadWhenNodeSnapshotStable(() -> {
+            Scene ownerScene = Objects.requireNonNull(sceneReference.get(), "scene");
+            @Nullable Window dialogWindow = findShowingDialogWindow(ownerScene);
+            dialogWindowReference.set(dialogWindow);
+            return dialogWindow == null || dialogWindow.getScene() == null
+                    ? null
+                    : dialogWindow.getScene().getRoot();
+        }, dialogSnapshotReference, () -> {
+            @Nullable Window dialogWindow = dialogWindowReference.get();
+            return dialogWindow != null && dialogWindow.isShowing();
+        }, snapshotName + " settled frame", () -> {
+            Scene ownerScene = Objects.requireNonNull(sceneReference.get(), "scene");
+            M3Button openButton = Objects.requireNonNull(
+                    firstVisibleButtonWithText(ownerScene.getRoot(), openButtonText),
+                    openButtonText
+            );
+            openButton.fire();
+        }, () -> {
+            Scene ownerScene = Objects.requireNonNull(sceneReference.get(), "scene");
+            Window dialogWindow = Objects.requireNonNull(dialogWindowReference.get(), "dialog window");
+            Scene dialogScene = Objects.requireNonNull(dialogWindow.getScene(), "dialog scene");
+            M3DialogPane dialogPane = assertInstanceOf(M3DialogPane.class, dialogScene.getRoot());
+
+            List<M3Button> presetButtons = visibleNodesOfType(dialogPane, M3Button.class).stream()
+                    .filter(button -> button.getStyleClass().contains(presetButtonStyleClass))
+                    .toList();
+            assertEquals(expectedPresetCount, presetButtons.size(), snapshotName + " preset button count");
+            List<? extends Node> pickers = visibleNodesOfType(dialogPane, pickerType);
+            assertFalse(pickers.isEmpty(), snapshotName + " should render its picker");
+            Node picker = pickers.get(0);
+            assertDialogPaneFitsOwner(ownerScene, dialogPane);
+            assertVisibleTextInsideScene(dialogScene, snapshotName);
+            Bounds dialogBounds = dialogPane.localToScene(dialogPane.getBoundsInLocal());
+            Bounds pickerBounds = picker.localToScene(picker.getBoundsInLocal());
+            double firstPresetRowY = presetButtons.get(0).localToScene(
+                    presetButtons.get(0).getBoundsInLocal()
+            ).getMinY();
+            int firstPresetRowCount = 0;
+            for (M3Button presetButton : presetButtons) {
+                Bounds buttonBounds = presetButton.localToScene(presetButton.getBoundsInLocal());
+                if (Math.abs(buttonBounds.getMinY() - firstPresetRowY) < CONTROL_EDGE_TOLERANCE) {
+                    firstPresetRowCount++;
+                }
+            }
+            assertEquals(
+                    expectedPresetColumns,
+                    firstPresetRowCount,
+                    snapshotName + " preset column count"
+            );
+            assertTrue(
+                    containsBoundsWithTolerance(dialogBounds, pickerBounds, CONTROL_EDGE_TOLERANCE),
+                    () -> snapshotName + " picker leaves the dialog: picker="
+                            + pickerBounds + ", dialog=" + dialogBounds
+            );
+            for (ButtonBase pickerButton : visibleNodesOfType(picker, ButtonBase.class)) {
+                Bounds buttonBounds = pickerButton.localToScene(pickerButton.getBoundsInLocal());
+                assertTrue(
+                        containsBoundsWithTolerance(dialogBounds, buttonBounds, CONTROL_EDGE_TOLERANCE),
+                        () -> snapshotName + " picker action leaves the dialog: button="
+                                + buttonBounds + ", dialog=" + dialogBounds
+                );
+            }
+            for (M3Button presetButton : presetButtons) {
+                Bounds buttonBounds = presetButton.localToScene(presetButton.getBoundsInLocal());
+                Text renderedText = Objects.requireNonNull(
+                        firstVisibleText(presetButton),
+                        snapshotName + " preset rendered text"
+                );
+                assertEquals(
+                        presetButton.getText(),
+                        renderedText.getText(),
+                        snapshotName + " preset text must not be ellipsized"
+                );
+                assertTrue(hasRenderableBounds(presetButton), snapshotName + " preset button should be visible");
+                assertTrue(
+                        containsBoundsWithTolerance(dialogBounds, buttonBounds, CONTROL_EDGE_TOLERANCE),
+                        () -> snapshotName + " preset button leaves the dialog: button="
+                                + buttonBounds + ", dialog=" + dialogBounds
+                );
+                assertFalse(
+                        buttonBounds.intersects(pickerBounds),
+                        () -> snapshotName + " preset button overlaps the picker: button="
+                                + buttonBounds + ", picker=" + pickerBounds
+                );
+            }
+
+            WritableImage dialogImage = Objects.requireNonNull(
+                    dialogSnapshotReference.get(),
+                    snapshotName + " snapshot"
+            );
+            writeVisualSnapshot(dialogImage, Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-demo-visual",
+                    snapshotName + ".png"
+            ));
+            assertSnapshotHasVisibleContent(dialogImage, snapshotName);
+            dialogWindow.hide();
+        });
+    }
+
+    /// Returns the visible dialog window owned by the current demo scene.
+    private static @Nullable Window findShowingDialogWindow(Scene ownerScene) {
+        Window ownerWindow = ownerScene.getWindow();
+        for (Window window : Window.getWindows()) {
+            if (window != ownerWindow
+                    && window.isShowing()
+                    && window.getScene() != null
+                    && window.getScene().getRoot() instanceof M3DialogPane) {
+                return window;
+            }
+        }
+        return null;
     }
 
     /// Returns an overlay-specific motion scheme that makes popup and surface transitions observable.
@@ -8154,6 +8314,7 @@ final class M3FXDemoVisualSmokeTest {
         @Nullable M3SearchView owner = nearestAncestorOfType(searchBar, M3SearchView.class);
         return owner != null && owner.getNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
     }
+
     /// Verifies that an active search view shows its default demo result rows as reachable Material list items.
     private static void assertSearchViewResultsVisible(M3SearchView searchView) {
         assertSearchViewResultsVisible(searchView, 3);
@@ -8734,6 +8895,7 @@ final class M3FXDemoVisualSmokeTest {
         return relativeLuminance(sample) > relativeLuminance(reference) + 0.025
                 && colorDistance(sample, Color.WHITE) <= 0.20;
     }
+
     /// Returns a compact diagnostic string for focused text area internal panes.
     private static String textAreaInternalPaneDebug(Node scrollPane, Node viewport, Node content) {
         return "scrollPane=" + nodeStyleDebug(scrollPane)
@@ -8778,6 +8940,7 @@ final class M3FXDemoVisualSmokeTest {
         double maxY = Math.min(first.getMaxY(), second.getMaxY());
         return new BoundingBox(minX, minY, Math.max(0.0, maxX - minX), Math.max(0.0, maxY - minY));
     }
+
     /// Verifies that one focused text area internal pane resolves to the Material container background.
     private static void assertTextAreaInternalPaneBackgroundMatchesContainer(
             WritableImage image,
@@ -8941,6 +9104,7 @@ final class M3FXDemoVisualSmokeTest {
         }
         collectRenderedTextInkBounds(image, input, inkBounds);
     }
+
     /// Collects rendered ink bounds from a JavaFX text area content pane.
     private static void collectTextAreaRenderedInkBounds(WritableImage image, Node content, List<Rectangle2D> inkBounds) {
         collectRenderedTextInkBounds(image, content, inkBounds);
@@ -9017,6 +9181,7 @@ final class M3FXDemoVisualSmokeTest {
             }
         }
     }
+
     /// Collects rendered text ink bounds for all visible text descendants of a node.
     private static void collectRenderedTextInkBounds(
             WritableImage image,
@@ -11080,6 +11245,31 @@ final class M3FXDemoVisualSmokeTest {
                 "Segmented Buttons page should render four selected segments");
         assertEquals(1, buttons.stream().filter(Node::isDisabled).count(),
                 "Segmented Buttons page should render one disabled segment");
+        M3SegmentedButton disabledButton = buttons.stream()
+                .filter(Node::isDisabled)
+                .findFirst()
+                .orElseThrow();
+        M3Theme segmentedTheme = Objects.requireNonNull(
+                M3ThemeManager.getTheme(scene),
+                "Segmented Buttons page theme"
+        );
+        Color segmentedOnSurface = segmentedTheme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SURFACE);
+        Color segmentedDisabledOutline = new Color(
+                segmentedOnSurface.getRed(),
+                segmentedOnSurface.getGreen(),
+                segmentedOnSurface.getBlue(),
+                0.12
+        );
+        assertEquals(1.0, disabledButton.getOpacity(), 0.0001, "disabled segment root opacity");
+        assertEquals(segmentedOnSurface, disabledButton.getTextFill(), "disabled segment content color");
+        assertEquals(1, disabledButton.getBorder().getStrokes().size(), "disabled segment outline count");
+        assertEquals(segmentedDisabledOutline,
+                disabledButton.getBorder().getStrokes().get(0).getTopStroke(),
+                "disabled segment outline color");
+        assertEquals(0.38,
+                Objects.requireNonNull(firstVisibleText(disabledButton), "disabled segment text").getOpacity(),
+                0.0001,
+                "disabled segment text opacity");
         for (M3SegmentedButton button : buttons) {
             @Nullable WritableImage buttonImage = snapshotIfNodeFullyVisible(scene, button);
             if (buttonImage != null) {
@@ -11319,6 +11509,36 @@ final class M3FXDemoVisualSmokeTest {
         assertEquals(1, cards.stream().filter(Node::isDisabled).count(), "Cards page disabled card count");
         assertTrue(cards.stream().allMatch(card -> card.getOnAction() != null),
                 "demo cards should exercise actionable surface semantics");
+        M3Card disabledCard = cards.stream().filter(Node::isDisabled).findFirst().orElseThrow();
+        assertEquals(M3CardVariant.OUTLINED, disabledCard.getVariant(), "demo disabled card variant");
+        M3Theme cardTheme = Objects.requireNonNull(M3ThemeManager.getTheme(scene), "Cards page theme");
+        Color cardOutline = cardTheme.colorScheme().getColor(org.glavo.monetfx.ColorRole.OUTLINE);
+        Color disabledCardOutline = new Color(
+                cardOutline.getRed(),
+                cardOutline.getGreen(),
+                cardOutline.getBlue(),
+                0.12
+        );
+        Region disabledCardContainer = assertInstanceOf(
+                Region.class,
+                firstVisibleStyledDescendant(disabledCard, "m3-card-container"),
+                "disabled card container"
+        );
+        Label disabledCardTitle = assertInstanceOf(
+                Label.class,
+                firstVisibleStyledDescendant(disabledCard, "demo-card-title"),
+                "disabled card title"
+        );
+        assertEquals(1.0, disabledCard.getOpacity(), 0.0001,
+                "disabled card should not compound child disabled opacity");
+        assertEquals(0.4, disabledCardTitle.getOpacity(), 0.0001,
+                "disabled card content should receive one JavaFX disabled opacity layer");
+        assertEquals(1, disabledCardContainer.getBorder().getStrokes().size(),
+                "disabled outlined card border count");
+        assertEquals(disabledCardOutline,
+                disabledCardContainer.getBorder().getStrokes().get(0).getTopStroke(),
+                "disabled outlined card border color");
+        assertNull(disabledCardContainer.getEffect(), "disabled outlined card elevation");
         assertEquals(3, visibleNodesWithStyle(page, "demo-card-media").size(),
                 "Cards page should render three media rows");
         assertEquals(3, visibleNodesWithStyle(page, "demo-card-actions").size(),
@@ -11380,6 +11600,29 @@ final class M3FXDemoVisualSmokeTest {
                 "Chips elevated count");
         assertEquals(5, chips.stream().filter(M3Chip::isSelected).count(), "Chips selected count");
         assertEquals(1, chips.stream().filter(Node::isDisabled).count(), "Chips disabled count");
+        M3Chip disabledChip = chips.stream()
+                .filter(Node::isDisabled)
+                .findFirst()
+                .orElseThrow();
+        M3Theme chipTheme = Objects.requireNonNull(M3ThemeManager.getTheme(scene), "Chips page theme");
+        Color chipOnSurface = chipTheme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SURFACE);
+        Color chipDisabledOutline = new Color(
+                chipOnSurface.getRed(),
+                chipOnSurface.getGreen(),
+                chipOnSurface.getBlue(),
+                0.12
+        );
+        assertEquals(1.0, disabledChip.getOpacity(), 0.0001, "disabled chip root opacity");
+        assertEquals(chipOnSurface, disabledChip.getTextFill(), "disabled chip content color");
+        assertEquals(1, disabledChip.getBorder().getStrokes().size(), "disabled chip outline count");
+        assertEquals(chipDisabledOutline,
+                disabledChip.getBorder().getStrokes().get(0).getTopStroke(),
+                "disabled chip outline color");
+        assertEquals(0.38,
+                Objects.requireNonNull(firstVisibleText(disabledChip, disabledChip.getText()),
+                        "disabled chip text").getOpacity(),
+                0.0001,
+                "disabled chip text opacity");
 
         int geometryChecks = 0;
         for (M3Chip chip : chips) {
@@ -11446,6 +11689,7 @@ final class M3FXDemoVisualSmokeTest {
         assertVisibleText(root, "Static Pane", "Lists");
         assertVisibleText(root, "Virtualized View", "Lists");
         assertVisibleText(root, "Selected item", "Lists");
+        assertVisibleText(root, "Disabled item", "Lists");
 
         List<M3ListPane> listPanes = visibleNodesOfType(page, M3ListPane.class);
         assertEquals(1, listPanes.size(), () -> "Lists page should render one static list pane: " + listPanes);
@@ -11459,6 +11703,46 @@ final class M3FXDemoVisualSmokeTest {
         assertTrue(visibleNodesOfType(page, M3ListItem.class).stream()
                         .anyMatch(item -> item.isSelected() && "Selected item".equals(item.getHeadlineText())),
                 "static list should render a selected Material list item");
+        M3ListItem disabledItem = visibleNodesOfType(page, M3ListItem.class).stream()
+                .filter(item -> item.isDisabled() && "Disabled item".equals(item.getHeadlineText()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("static list should render a disabled Material list item"));
+        M3Theme listTheme = Objects.requireNonNull(M3ThemeManager.getTheme(scene), "Lists page theme");
+        Color listOnSurface = listTheme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SURFACE);
+        Color disabledStateLayer = new Color(
+                listOnSurface.getRed(),
+                listOnSurface.getGreen(),
+                listOnSurface.getBlue(),
+                0.10
+        );
+        Color disabledContent = new Color(
+                listOnSurface.getRed(),
+                listOnSurface.getGreen(),
+                listOnSurface.getBlue(),
+                0.38
+        );
+        Region disabledContainer = assertInstanceOf(
+                Region.class,
+                firstVisibleStyledDescendant(disabledItem, "m3-list-item-container"),
+                "disabled list item container"
+        );
+        Label disabledHeadline = assertInstanceOf(
+                Label.class,
+                firstVisibleStyledDescendant(disabledItem, "m3-list-item-headline"),
+                "disabled list item headline"
+        );
+        Region disabledLeading = assertInstanceOf(
+                Region.class,
+                firstVisibleStyledDescendant(disabledItem, "m3-list-item-leading"),
+                "disabled list item leading slot"
+        );
+        assertEquals(1.0, disabledItem.getOpacity(), 0.0001, "disabled list item root opacity");
+        assertEquals(1, disabledContainer.getBackground().getFills().size(),
+                "disabled list item container fill count");
+        assertEquals(disabledStateLayer, disabledContainer.getBackground().getFills().get(0).getFill(),
+                "disabled list item state layer color");
+        assertEquals(disabledContent, disabledHeadline.getTextFill(), "disabled list item headline color");
+        assertEquals(0.38, disabledLeading.getOpacity(), 0.0001, "disabled list item leading opacity");
     }
 
     /// Verifies the real Loading Indicator demo page default and contained variants.
@@ -11947,6 +12231,25 @@ final class M3FXDemoVisualSmokeTest {
         assertEquals(itemBounds.getCenterX(), indicatorBounds.getCenterX(), DEMO_ICON_CENTER_TOLERANCE,
                 () -> description + " selected indicator is horizontally off-center: item="
                         + itemBounds + ", indicator=" + indicatorBounds);
+
+        Node stateLayer = requireVisibleStyledDescendant(
+                item,
+                "m3-state-layer-container",
+                description + " bounded state layer"
+        );
+        Bounds stateLayerBounds = stateLayer.localToScene(stateLayer.getBoundsInLocal());
+        assertEquals(item.getIndicatorWidth(), stateLayer.getBoundsInLocal().getWidth(), CONTROL_EDGE_TOLERANCE,
+                () -> description + " state-layer width should match the active indicator: stateLayer="
+                        + stateLayerBounds + ", token=" + item.getIndicatorWidth());
+        assertEquals(item.getIndicatorHeight(), stateLayer.getBoundsInLocal().getHeight(), CONTROL_EDGE_TOLERANCE,
+                () -> description + " state-layer height should match the active indicator: stateLayer="
+                        + stateLayerBounds + ", token=" + item.getIndicatorHeight());
+        assertEquals(indicatorBounds.getCenterX(), stateLayerBounds.getCenterX(), DEMO_ICON_CENTER_TOLERANCE,
+                () -> description + " state layer and active indicator should share a horizontal center: indicator="
+                        + indicatorBounds + ", stateLayer=" + stateLayerBounds);
+        assertEquals(indicatorBounds.getCenterY(), stateLayerBounds.getCenterY(), DEMO_ICON_CENTER_TOLERANCE,
+                () -> description + " state layer and active indicator should share a vertical center: indicator="
+                        + indicatorBounds + ", stateLayer=" + stateLayerBounds);
 
         if (item.isSelected()) {
             assertTrue(indicator.getOpacity() >= 0.95 && indicator.getScaleX() >= 0.98,
@@ -12945,6 +13248,7 @@ final class M3FXDemoVisualSmokeTest {
 
         throw new AssertionError(description + " should render icon or text content: " + button);
     }
+
     /// Verifies the real Floating Action Buttons demo page size and color-role matrix.
     private static void assertFloatingActionButtonsPageVisualState(Scene scene) {
         Parent root = scene.getRoot();
@@ -14361,7 +14665,7 @@ final class M3FXDemoVisualSmokeTest {
                 return;
             }
 
-            @Nullable Node badge = item.lookup(".m3-navigation-item-badge");
+            @Nullable Node badge = item.getBadge();
             @Nullable Node indicator = item.lookup(".m3-navigation-item-indicator");
             if (badge == null || indicator == null || !hasRenderableBounds(badge) || !hasRenderableBounds(indicator)) {
                 return;
@@ -14379,6 +14683,15 @@ final class M3FXDemoVisualSmokeTest {
             assertTrue(badgeBounds.getWidth() <= maximumBadgeWidth && centerOffset >= minimumCenterOffset,
                     () -> pageTitle + " navigation badge has unsafe indicator geometry: badgeBounds="
                             + badgeBounds + ", indicatorBounds=" + indicatorBounds + ", centerOffset=" + centerOffset);
+            if (item.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT) {
+                assertTrue(badgeBounds.getCenterX() < indicatorBounds.getCenterX(),
+                        () -> pageTitle + " RTL navigation badge should stay on the logical end side: badgeBounds="
+                                + badgeBounds + ", indicatorBounds=" + indicatorBounds);
+            } else {
+                assertTrue(badgeBounds.getCenterX() > indicatorBounds.getCenterX(),
+                        () -> pageTitle + " navigation badge should stay on the logical end side: badgeBounds="
+                                + badgeBounds + ", indicatorBounds=" + indicatorBounds);
+            }
         });
     }
 
@@ -15808,7 +16121,7 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies that a demo dialog pane resolves Material surface, action, and content geometry.
     private static void assertDialogPaneDemoGeometry(Scene scene, M3DialogPane pane) {
         assertEquals(AccessibleRole.DIALOG, pane.getAccessibleRole());
-        assertDialogPaneStaysCompact(scene, pane);
+        assertDialogPaneFitsOwner(scene, pane);
         assertNotNull(pane.getBackground(), "dialog pane should resolve a Material background");
         assertFalse(pane.getBackground().getFills().isEmpty(),
                 "dialog pane should resolve a visible Material background fill");
@@ -16162,6 +16475,7 @@ final class M3FXDemoVisualSmokeTest {
         assertNotNull(node, description);
         return Objects.requireNonNull(node, description);
     }
+
     /// Returns a descendant with the requested style class or fails the test.
     private static Node requireStyledDescendant(Node root, String styleClass, String description) {
         @Nullable Node node = firstStyledDescendant(root, styleClass);
@@ -16201,6 +16515,7 @@ final class M3FXDemoVisualSmokeTest {
     private static TextField searchViewEditor(M3SearchView searchView) {
         return searchBarEditor(searchViewSearchBar(searchView));
     }
+
     /// Returns the internal search result container by its stable style class.
     private static VBox searchResultsContainer(M3SearchView searchView) {
         return assertInstanceOf(VBox.class, requireStyledDescendant(
@@ -17168,14 +17483,16 @@ final class M3FXDemoVisualSmokeTest {
         return action;
     }
 
-    /// Verifies that a dialog pane remains a compact dialog surface.
-    private static void assertDialogPaneStaysCompact(Scene ownerScene, Node dialogPane) {
+    /// Verifies that a dialog pane respects Material width limits and remains inside its owner viewport.
+    private static void assertDialogPaneFitsOwner(Scene ownerScene, Node dialogPane) {
         Bounds bounds = dialogPane.getBoundsInLocal();
-        assertTrue(bounds.getWidth() >= 280.0 && bounds.getWidth() <= ownerScene.getWidth() * 0.70,
-                () -> "Dialog pane width is not compact: bounds=" + bounds
+        double maxWidth = Math.min(560.0, ownerScene.getWidth() - 48.0);
+        double maxHeight = ownerScene.getHeight() - 48.0;
+        assertTrue(bounds.getWidth() >= 280.0 && bounds.getWidth() <= maxWidth,
+                () -> "Dialog pane width exceeds Material or viewport limits: bounds=" + bounds
                         + ", ownerWidth=" + ownerScene.getWidth());
-        assertTrue(bounds.getHeight() >= 120.0 && bounds.getHeight() <= ownerScene.getHeight() * 0.70,
-                () -> "Dialog pane height is not compact: bounds=" + bounds
+        assertTrue(bounds.getHeight() >= 120.0 && bounds.getHeight() <= maxHeight,
+                () -> "Dialog pane height does not fit the owner viewport: bounds=" + bounds
                         + ", ownerHeight=" + ownerScene.getHeight());
     }
 

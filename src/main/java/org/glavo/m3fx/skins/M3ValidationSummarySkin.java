@@ -10,6 +10,8 @@ import javafx.beans.property.ReadOnlyProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.event.Event;
+import javafx.event.EventHandler;
 import javafx.collections.WeakListChangeListener;
 import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
@@ -96,7 +98,7 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
     private final Map<M3TextInputLayout, TextInputControl> observedInvalidInputControls = new IdentityHashMap<>();
 
     /// Cached rendered item rows keyed by invalid input layout identity.
-    private final Map<M3TextInputLayout, Node> itemRows = new IdentityHashMap<>();
+    private final Map<M3TextInputLayout, ValidationItemRow> itemRows = new IdentityHashMap<>();
 
     /// Reusable invalid input list populated during one content update.
     private final ArrayList<M3TextInputLayout> invalidInputsScratch = new ArrayList<>();
@@ -347,7 +349,7 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
             updateObservedInvalidInputControl(input);
         }
 
-        @Nullable Node row = itemRows.get(input);
+        @Nullable ValidationItemRow row = itemRows.get(input);
         if (row != null) {
             updateItem(row, input);
             getSkinnable().requestLayout();
@@ -387,9 +389,11 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
     private void updateInvalidItemRows(List<M3TextInputLayout> invalidInputs) {
         invalidInputSetScratch.clear();
         invalidInputSetScratch.addAll(invalidInputs);
-        Iterator<M3TextInputLayout> iterator = itemRows.keySet().iterator();
+        Iterator<Map.Entry<M3TextInputLayout, ValidationItemRow>> iterator = itemRows.entrySet().iterator();
         while (iterator.hasNext()) {
-            if (!invalidInputSetScratch.contains(iterator.next())) {
+            Map.Entry<M3TextInputLayout, ValidationItemRow> entry = iterator.next();
+            if (!invalidInputSetScratch.contains(entry.getKey())) {
+                entry.getValue().dispose();
                 iterator.remove();
             }
         }
@@ -397,7 +401,7 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
         itemRowsScratch.clear();
         itemRowsScratch.ensureCapacity(invalidInputs.size());
         for (M3TextInputLayout input : invalidInputs) {
-            Node row = itemRows.get(input);
+            ValidationItemRow row = itemRows.get(input);
             if (row == null) {
                 row = createItem(input);
                 itemRows.put(input, row);
@@ -418,6 +422,9 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
     /// Removes rendered invalid item rows and cached row references.
     private void clearInvalidItemRows() {
         items.getChildren().clear();
+        for (ValidationItemRow row : itemRows.values()) {
+            row.dispose();
+        }
         itemRows.clear();
     }
 
@@ -435,106 +442,44 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
     }
 
     /// Updates text and orientation-sensitive alignment for one cached invalid item row.
-    private void updateItem(Node item, M3TextInputLayout input) {
+    private void updateItem(ValidationItemRow item, M3TextInputLayout input) {
         String labelText = itemLabel(input);
         String errorText = itemError(input);
         String accessibleText = labelText + ": " + errorText;
         if (!Objects.equals(item.getAccessibleText(), accessibleText)) {
             item.setAccessibleText(accessibleText);
         }
-        if (!(item instanceof StackPane stackPane)) {
-            return;
+        Pos alignment = textAlignment();
+        if (item.text.getAlignment() != alignment) {
+            item.text.setAlignment(alignment);
         }
-
-        for (Node child : stackPane.getChildren()) {
-            if (child instanceof VBox text) {
-                Pos alignment = textAlignment();
-                if (text.getAlignment() != alignment) {
-                    text.setAlignment(alignment);
-                }
-                if (StackPane.getAlignment(text) != alignment) {
-                    StackPane.setAlignment(text, alignment);
-                }
-                updateItemTextLabels(text, labelText, errorText, alignment, textTextAlignment());
-                return;
-            }
+        if (StackPane.getAlignment(item.text) != alignment) {
+            StackPane.setAlignment(item.text, alignment);
         }
-    }
-
-    /// Updates labels hosted by one cached invalid item row text container.
-    private void updateItemTextLabels(
-            VBox text,
-            String labelText,
-            String errorText,
-            Pos alignment,
-            TextAlignment textAlignment
-    ) {
-        for (Node child : text.getChildren()) {
-            if (child instanceof Label label) {
-                if (label.getAlignment() != alignment) {
-                    label.setAlignment(alignment);
-                }
-                if (label.getTextAlignment() != textAlignment) {
-                    label.setTextAlignment(textAlignment);
-                }
-                if (label.getStyleClass().contains(M3ValidationSummary.ITEM_LABEL_STYLE_CLASS)) {
-                    if (!labelText.equals(label.getText())) {
-                        label.setText(labelText);
-                    }
-                } else if (label.getStyleClass().contains(M3ValidationSummary.ITEM_ERROR_STYLE_CLASS)) {
-                    if (!errorText.equals(label.getText())) {
-                        label.setText(errorText);
-                    }
-                }
-            }
+        TextAlignment textAlignment = textTextAlignment();
+        if (item.label.getAlignment() != alignment) {
+            item.label.setAlignment(alignment);
+        }
+        if (item.label.getTextAlignment() != textAlignment) {
+            item.label.setTextAlignment(textAlignment);
+        }
+        if (!labelText.equals(item.label.getText())) {
+            item.label.setText(labelText);
+        }
+        if (item.error.getAlignment() != alignment) {
+            item.error.setAlignment(alignment);
+        }
+        if (item.error.getTextAlignment() != textAlignment) {
+            item.error.setTextAlignment(textAlignment);
+        }
+        if (!errorText.equals(item.error.getText())) {
+            item.error.setText(errorText);
         }
     }
 
     /// Creates one clickable invalid input item row.
-    private Node createItem(M3TextInputLayout input) {
-        M3StateLayer stateLayer = new M3StateLayer();
-        StackPane item = new StackPane() {
-            /// Lays out the state layer after ordinary stack-pane content has been positioned.
-            @Override
-            protected void layoutChildren() {
-                super.layoutChildren();
-                stateLayer.layoutLayer(0.0, 0.0, getWidth(), getHeight(), 8.0);
-            }
-        };
-        item.getStyleClass().add(M3ValidationSummary.ITEM_STYLE_CLASS);
-        item.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
-        item.setMaxWidth(Double.MAX_VALUE);
-        item.setAccessibleRole(AccessibleRole.BUTTON);
-        item.setAccessibleText(itemLabel(input) + ": " + itemError(input));
-        item.setFocusTraversable(true);
-        item.setPickOnBounds(true);
-        stateLayer.installStateTransitions(item);
-
-        Label label = new Label(itemLabel(input));
-        label.getStyleClass().add(M3ValidationSummary.ITEM_LABEL_STYLE_CLASS);
-        label.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
-        label.setAlignment(textAlignment());
-        label.setTextAlignment(textTextAlignment());
-        label.setMaxWidth(Double.MAX_VALUE);
-        Label error = new Label(itemError(input));
-        error.getStyleClass().add(M3ValidationSummary.ITEM_ERROR_STYLE_CLASS);
-        error.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
-        error.setAlignment(textAlignment());
-        error.setTextAlignment(textTextAlignment());
-        error.setWrapText(true);
-        error.setMaxWidth(Double.MAX_VALUE);
-
-        VBox text = new VBox(ITEM_TEXT_SPACING, label, error);
-        text.setMaxWidth(Double.MAX_VALUE);
-        text.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
-        text.setAlignment(textAlignment());
-        StackPane.setAlignment(text, textAlignment());
-        item.getChildren().addAll(stateLayer, text);
-
-        item.setOnMousePressed(event -> handleItemMousePressed(stateLayer, event));
-        item.setOnMouseReleased(event -> handleItemMouseReleased(item, stateLayer, input, event));
-        item.setOnKeyPressed(event -> handleItemKeyPressed(item, input, event));
-        return item;
+    private ValidationItemRow createItem(M3TextInputLayout input) {
+        return new ValidationItemRow(input);
     }
 
     /// Plays pointer feedback for an invalid item press.
@@ -556,26 +501,12 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
         }
     }
 
-    /// Returns the state layer hosted by one invalid item row.
-    private static @Nullable M3StateLayer itemStateLayer(Node item) {
-        if (item instanceof StackPane stackPane && !stackPane.getChildren().isEmpty()) {
-            Node firstChild = stackPane.getChildren().get(0);
-            if (firstChild instanceof M3StateLayer stateLayer) {
-                return stateLayer;
-            }
-        }
-        return null;
-    }
-
     /// Handles activation and in-summary keyboard traversal for one invalid item row.
-    private void handleItemKeyPressed(Node item, M3TextInputLayout input, KeyEvent event) {
+    private void handleItemKeyPressed(ValidationItemRow item, M3TextInputLayout input, KeyEvent event) {
         switch (event.getCode()) {
             case ENTER, SPACE -> {
-                @Nullable M3StateLayer stateLayer = itemStateLayer(item);
-                if (stateLayer != null) {
-                    stateLayer.playCenteredRipple();
-                    stateLayer.releaseRipple();
-                }
+                item.stateLayer.playCenteredRipple();
+                item.stateLayer.releaseRipple();
                 getSkinnable().focusInput(input);
                 event.consume();
             }
@@ -658,6 +589,87 @@ public final class M3ValidationSummarySkin extends SkinBase<M3ValidationSummary>
     private static String itemError(M3TextInputLayout input) {
         String errorText = input.getValidationErrorText();
         return errorText.isBlank() ? "Invalid value" : errorText;
+    }
+
+    /// A cached validation row that owns its content nodes, event routing, and state-layer lifecycle.
+    @NotNullByDefault
+    private final class ValidationItemRow extends StackPane implements EventHandler<Event> {
+        /// The invalid input represented by this row.
+        private final M3TextInputLayout input;
+
+        /// The bounded interaction state layer.
+        private final M3StateLayer stateLayer = new M3StateLayer();
+
+        /// The field label rendered by this row.
+        private final Label label = new Label();
+
+        /// The validation error rendered by this row.
+        private final Label error = new Label();
+
+        /// The text column shared by the field label and validation error.
+        private final VBox text = new VBox(ITEM_TEXT_SPACING, label, error);
+
+        /// Creates one reusable validation row for an invalid input.
+        ///
+        /// @param input the invalid input represented by this row
+        private ValidationItemRow(M3TextInputLayout input) {
+            this.input = input;
+            getStyleClass().add(M3ValidationSummary.ITEM_STYLE_CLASS);
+            setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+            setMaxWidth(Double.MAX_VALUE);
+            setAccessibleRole(AccessibleRole.BUTTON);
+            setAccessibleText(itemLabel(input) + ": " + itemError(input));
+            setFocusTraversable(true);
+            setPickOnBounds(true);
+            stateLayer.installStateTransitions(this);
+
+            label.getStyleClass().add(M3ValidationSummary.ITEM_LABEL_STYLE_CLASS);
+            label.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+            label.setMaxWidth(Double.MAX_VALUE);
+            error.getStyleClass().add(M3ValidationSummary.ITEM_ERROR_STYLE_CLASS);
+            error.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+            error.setWrapText(true);
+            error.setMaxWidth(Double.MAX_VALUE);
+
+            text.setMaxWidth(Double.MAX_VALUE);
+            text.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+            getChildren().addAll(stateLayer, text);
+            updateItem(this, input);
+
+            addEventHandler(MouseEvent.MOUSE_PRESSED, this);
+            addEventHandler(MouseEvent.MOUSE_RELEASED, this);
+            addEventHandler(KeyEvent.KEY_PRESSED, this);
+        }
+
+        /// Lays out the bounded state layer after ordinary row content.
+        @Override
+        protected void layoutChildren() {
+            super.layoutChildren();
+            stateLayer.layoutLayer(0.0, 0.0, getWidth(), getHeight(), 8.0);
+        }
+
+        /// Routes pointer and keyboard events without allocating per-row handler closures.
+        ///
+        /// @param event the row event to route
+        @Override
+        public void handle(Event event) {
+            if (event.getEventType() == MouseEvent.MOUSE_PRESSED) {
+                handleItemMousePressed(stateLayer, (MouseEvent) event);
+            } else if (event.getEventType() == MouseEvent.MOUSE_RELEASED) {
+                handleItemMouseReleased(this, stateLayer, input, (MouseEvent) event);
+            } else if (event.getEventType() == KeyEvent.KEY_PRESSED) {
+                handleItemKeyPressed(this, input, (KeyEvent) event);
+            }
+        }
+
+        /// Releases handlers, state transitions, and child references before this row leaves the cache.
+        private void dispose() {
+            removeEventHandler(MouseEvent.MOUSE_PRESSED, this);
+            removeEventHandler(MouseEvent.MOUSE_RELEASED, this);
+            removeEventHandler(KeyEvent.KEY_PRESSED, this);
+            stateLayer.uninstallStateTransitions();
+            getChildren().clear();
+        }
     }
 
 }

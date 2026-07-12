@@ -57,6 +57,62 @@ public class M3DividerSkin extends SkinBase<M3Divider> {
         super.dispose();
     }
 
+    /// Computes the minimum width while allowing horizontal dividers to shrink with their container.
+    @Override
+    protected double computeMinWidth(
+            double height,
+            double topInset,
+            double rightInset,
+            double bottomInset,
+            double leftInset
+    ) {
+        return getSkinnable().getOrientation() == Orientation.HORIZONTAL
+                ? leftInset + rightInset
+                : super.computeMinWidth(height, topInset, rightInset, bottomInset, leftInset);
+    }
+
+    /// Allows horizontal dividers with default constraints to fill their container width.
+    @Override
+    protected double computeMaxWidth(
+            double height,
+            double topInset,
+            double rightInset,
+            double bottomInset,
+            double leftInset
+    ) {
+        return getSkinnable().getOrientation() == Orientation.HORIZONTAL
+                ? Double.MAX_VALUE
+                : super.computePrefWidth(height, topInset, rightInset, bottomInset, leftInset);
+    }
+
+    /// Computes the minimum height while allowing vertical dividers to shrink with their container.
+    @Override
+    protected double computeMinHeight(
+            double width,
+            double topInset,
+            double rightInset,
+            double bottomInset,
+            double leftInset
+    ) {
+        return getSkinnable().getOrientation() == Orientation.VERTICAL
+                ? topInset + bottomInset
+                : super.computeMinHeight(width, topInset, rightInset, bottomInset, leftInset);
+    }
+
+    /// Allows vertical dividers with default constraints to fill their container height.
+    @Override
+    protected double computeMaxHeight(
+            double width,
+            double topInset,
+            double rightInset,
+            double bottomInset,
+            double leftInset
+    ) {
+        return getSkinnable().getOrientation() == Orientation.VERTICAL
+                ? Double.MAX_VALUE
+                : super.computePrefHeight(width, topInset, rightInset, bottomInset, leftInset);
+    }
+
     /// Applies divider tokens to the skin layout.
     private void updateMetrics() {
         M3Divider divider = getSkinnable();

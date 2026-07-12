@@ -130,9 +130,16 @@ public class M3Dialog<R> extends Dialog<R> {
 
     /// Creates a Material Design 3 dialog.
     public M3Dialog() {
-        M3DialogPane pane = new M3DialogPane();
-        installStylesheet(pane);
-        setDialogPane(pane);
+        this(new M3DialogPane());
+    }
+
+    /// Creates a Material dialog with a specialized package-owned pane.
+    ///
+    /// @param pane the Material dialog pane installed before lifecycle handlers are registered
+    M3Dialog(M3DialogPane pane) {
+        M3DialogPane materialPane = Objects.requireNonNull(pane, "pane");
+        installStylesheet(materialPane);
+        setDialogPane(materialPane);
         addEventFilter(DialogEvent.DIALOG_SHOWING, event -> {
             refreshOwnerWindowFromNode();
             startInheritedThemeContextObservation();

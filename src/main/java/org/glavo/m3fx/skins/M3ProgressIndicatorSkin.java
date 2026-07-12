@@ -92,6 +92,9 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
     /// The reusable indeterminate phase transition.
     private final IndeterminateTransition indeterminateAnimation = new IndeterminateTransition();
 
+    /// Whether the current inherited motion settings require reduced-motion rendering.
+    private boolean reducedMotion;
+
     /// Updates internal progress geometry after animation ticks without invalidating parent layout.
     private final InvalidationListener animationInvalidation =
             observable -> updateAnimatedVisuals();
@@ -223,7 +226,7 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         if (progress == M3ProgressIndicator.INDETERMINATE_PROGRESS) {
             double sweepFraction = indeterminateSweep(
                     indeterminatePhase,
-                    !M3Animation.shouldReduceMotion(progressIndicator)
+                    !reducedMotion
             ) / 360.0;
             double start = indeterminatePhase;
             layoutCircularTrackPath(waveTrack, centerX, centerY, radius, strokeWidth, start, start + sweepFraction);
@@ -263,7 +266,7 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
             double phase = indeterminatePhase;
             double sweep = indeterminateSweep(
                     phase,
-                    !M3Animation.shouldReduceMotion(getSkinnable())
+                    !reducedMotion
             );
             indicator.setStartAngle(90.0 - 360.0 * phase);
             indicator.setLength(-sweep);
@@ -296,7 +299,9 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
 
     /// Updates determinate or indeterminate animation state for the current progress value.
     private void updateProgressAnimation(boolean animateDeterminateProgress) {
-        double progress = getSkinnable().getProgress();
+        M3ProgressIndicator progressIndicator = getSkinnable();
+        reducedMotion = M3Animation.shouldReduceMotion(progressIndicator);
+        double progress = progressIndicator.getProgress();
         if (progress == M3ProgressIndicator.INDETERMINATE_PROGRESS) {
             determinateAnimation.stop();
             if (shouldPauseActivityAnimations()) {
@@ -335,14 +340,14 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
     /// Animates the displayed determinate progress value.
     private void animateDisplayedProgress(double targetProgress, boolean animate) {
         determinateAnimation.stop();
-        if (!animate || M3Animation.shouldReduceMotion(getSkinnable())) {
+        if (!animate || reducedMotion) {
             displayedProgress.set(targetProgress);
             return;
         }
 
         M3MotionSpec spec = M3Animation.fastSpatial(getSkinnable());
         determinateAnimation.configure(spec, targetProgress);
-        M3Animation.playFromStart(getSkinnable(), determinateAnimation);
+        determinateAnimation.playFromStart();
     }
 
     /// Returns the initial displayed progress value for a public progress value.

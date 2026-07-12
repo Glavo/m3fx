@@ -1,99 +1,92 @@
 .m3-time-picker {
+    -m3-container-spacing: 24px;
+    -m3-dial-center-size: 8px;
+    -m3-dial-handle-size: 48px;
     -fx-background-color: transparent;
+    -fx-padding: 0;
 }
 
 .m3-time-picker-container {
-    -fx-background-color: -m3-color-surface-container-low;
-    -m3-container-shape: 28px;
-    -m3-container-padding: 18px;
-    -m3-container-spacing: 16px;
-    -m3-display-spacing: 4px;
-    -m3-display-cell-shape: 16px;
-    -m3-display-cell-width: 72px;
-    -m3-display-cell-height: 64px;
-    -m3-section-spacing: 8px;
-    -m3-grid-gap: 6px;
-    -m3-cell-width: 44px;
-    -m3-cell-height: 40px;
-    -m3-period-cell-width: 92px;
-    -m3-cell-shape: 999px;
+    -fx-background-color: -m3-color-surface-container-high;
     -fx-background-radius: 28px;
-    -fx-padding: 18px;
-    -fx-spacing: 16px;
+    -fx-padding: 24px;
 }
 
-.m3-time-picker-display {
-    -fx-alignment: center-left;
+.m3-time-picker-dialog-content .m3-time-picker-container {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.m3-time-picker-content {
+    -fx-background-color: transparent;
+}
+
+.m3-time-picker-display,
+.m3-time-picker-input-content {
+    -fx-alignment: top-left;
     -fx-spacing: 4px;
 }
 
 .m3-time-picker-hour-display,
-.m3-time-picker-minute-display {
-    -fx-background-color: -m3-color-primary-container;
-    -fx-background-radius: 16px;
-    -fx-min-width: 72px;
-    -fx-pref-width: 72px;
-    -fx-min-height: 64px;
-    -fx-pref-height: 64px;
+.m3-time-picker-minute-display,
+.m3-time-picker-hour-display:hover,
+.m3-time-picker-minute-display:hover,
+.m3-time-picker-hour-display:focused,
+.m3-time-picker-minute-display:focused,
+.m3-time-picker-hour-display:armed,
+.m3-time-picker-minute-display:armed,
+.m3-time-picker-hour-display:pressed,
+.m3-time-picker-minute-display:pressed {
+    -fx-background-color: -m3-color-surface-container-highest;
+    -fx-background-radius: 4px;
+    -fx-border-color: transparent;
+    -fx-border-radius: 4px;
+    -fx-border-width: 0;
+    -fx-min-width: 96px;
+    -fx-pref-width: 96px;
+    -fx-max-width: 96px;
+    -fx-min-height: 80px;
+    -fx-pref-height: 80px;
+    -fx-max-height: 80px;
     -fx-alignment: center;
-    -fx-font-size: 28px;
-    -fx-font-weight: 600;
+    -fx-cursor: hand;
+    -fx-font-size: 45px;
+    -fx-font-weight: 400;
+    -fx-padding: 0;
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-time-picker:twenty-four-hour .m3-time-picker-hour-display,
+.m3-time-picker:twenty-four-hour .m3-time-picker-minute-display {
+    -fx-min-width: 114px;
+    -fx-pref-width: 114px;
+    -fx-max-width: 114px;
+}
+
+.m3-time-picker-hour-display:selected,
+.m3-time-picker-minute-display:selected,
+.m3-time-picker-hour-display.m3-time-picker-selected-cell,
+.m3-time-picker-minute-display.m3-time-picker-selected-cell {
+    -fx-background-color: -m3-color-primary-container;
     -fx-text-fill: -m3-color-on-primary-container;
 }
 
 .m3-time-picker-display-separator {
-    -fx-font-size: 28px;
-    -fx-font-weight: 600;
+    -fx-min-width: 16px;
+    -fx-pref-width: 16px;
+    -fx-max-width: 16px;
+    -fx-min-height: 80px;
+    -fx-pref-height: 80px;
+    -fx-alignment: center;
+    -fx-font-size: 57px;
+    -fx-font-weight: 400;
+    -fx-padding: 0;
     -fx-text-fill: -m3-color-on-surface;
 }
 
-.m3-time-picker-period-display {
-    -fx-padding: 0 0 0 8px;
-    -fx-font-size: 14px;
-    -fx-font-weight: 700;
-    -fx-text-fill: -m3-color-on-surface-variant;
-}
-
-.m3-time-picker-section {
-    -fx-spacing: 8px;
-}
-
-.m3-time-picker-section-title {
-    -fx-font-size: 12px;
-    -fx-font-weight: 700;
-    -fx-text-fill: -m3-color-on-surface-variant;
-}
-
-.m3-time-picker-grid {
-    -fx-hgap: 6px;
-    -fx-vgap: 6px;
-}
-
-.m3-time-picker-cell,
-.m3-time-picker-cell:hover,
-.m3-time-picker-cell:focused,
-.m3-time-picker-cell:armed,
-.m3-time-picker-cell:pressed {
-    -fx-background-color: -m3-color-surface-container-high;
-    -fx-background-radius: 999px;
-    -fx-border-color: transparent;
-    -fx-border-radius: 999px;
-    -fx-min-width: 44px;
-    -fx-pref-width: 44px;
-    -fx-max-width: 44px;
-    -fx-min-height: 40px;
-    -fx-pref-height: 40px;
-    -fx-max-height: 40px;
-    -fx-cursor: hand;
-    -fx-font-size: 14px;
-    -fx-font-weight: 500;
-    -fx-padding: 0px;
-    -fx-text-fill: -m3-color-on-surface;
-}
-
-.m3-time-picker-cell .m3-state-layer,
-.m3-time-picker-cell .m3-ripple {
-    -fx-background-color: -m3-color-primary;
+.m3-time-picker-cell {
+    -fx-effect: null;
+    -fx-padding: 0;
 }
 
 .m3-time-picker-cell:hover .m3-state-layer {
@@ -109,22 +102,101 @@
     -fx-opacity: 0.10;
 }
 
-.m3-time-picker-cell.m3-time-picker-selected-cell,
-.m3-time-picker-cell.m3-time-picker-selected-cell:hover,
-.m3-time-picker-cell.m3-time-picker-selected-cell:focused,
-.m3-time-picker-cell.m3-time-picker-selected-cell:armed,
-.m3-time-picker-cell.m3-time-picker-selected-cell:pressed {
-    -fx-background-color: -m3-color-primary;
+.m3-time-picker-dial {
+    -fx-min-width: 256px;
+    -fx-pref-width: 256px;
+    -fx-max-width: 256px;
+    -fx-min-height: 256px;
+    -fx-pref-height: 256px;
+    -fx-max-height: 256px;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-border-radius: 999px;
+    -fx-border-width: 0;
+    -fx-cursor: hand;
+}
+
+.m3-time-picker-dial:focused {
+    -fx-border-color: -m3-state-focus-indicator-color;
+    -fx-border-width: -m3-state-focus-indicator-thickness;
+}
+
+.m3-time-picker-dial-background {
+    -fx-fill: -m3-color-surface-container-highest;
+    -fx-stroke: transparent;
+    -fx-stroke-width: 0;
+}
+
+.m3-time-picker-dial-track {
+    -fx-stroke: -m3-color-primary;
+    -fx-stroke-line-cap: round;
+    -fx-stroke-width: 2px;
+}
+
+.m3-time-picker-dial-handle {
+    -fx-fill: -m3-color-primary;
+    -fx-stroke: transparent;
+    -fx-stroke-width: 0;
+}
+
+.m3-time-picker-dial-center {
+    -fx-fill: -m3-color-primary;
+    -fx-stroke: transparent;
+    -fx-stroke-width: 0;
+}
+
+.m3-time-picker-dial-label,
+.m3-time-picker-dial-label:hover,
+.m3-time-picker-dial-label:focused,
+.m3-time-picker-dial-label:armed,
+.m3-time-picker-dial-label:pressed {
+    -fx-background-color: transparent;
+    -fx-background-radius: 999px;
+    -fx-border-color: transparent;
+    -fx-border-radius: 999px;
+    -fx-border-width: 2px;
+    -fx-alignment: center;
+    -fx-font-size: 14px;
+    -fx-font-weight: 400;
+    -fx-padding: 0;
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-time-picker-dial-label:focused {
+    -fx-border-color: -m3-state-focus-indicator-color;
+}
+
+.m3-time-picker-dial-label:selected,
+.m3-time-picker-dial-label.m3-time-picker-selected-cell {
     -fx-text-fill: -m3-color-on-primary;
 }
 
-.m3-time-picker-cell.m3-time-picker-selected-cell .m3-state-layer,
-.m3-time-picker-cell.m3-time-picker-selected-cell .m3-ripple {
-    -fx-background-color: -m3-color-on-primary;
+.m3-time-picker-dial-label:disabled {
+    -fx-opacity: -m3-state-disabled-content-opacity;
 }
 
-.m3-time-picker-period-row {
-    -fx-spacing: 0;
+.m3-time-picker-period-row:vertical {
+    -fx-min-width: 52px;
+    -fx-pref-width: 52px;
+    -fx-max-width: 52px;
+    -fx-min-height: 80px;
+    -fx-pref-height: 80px;
+    -fx-max-height: 80px;
+}
+
+.m3-time-picker-period-row:vertical:input {
+    -fx-min-height: 72px;
+    -fx-pref-height: 72px;
+    -fx-max-height: 72px;
+}
+
+.m3-time-picker-period-row:horizontal {
+    -fx-min-width: 216px;
+    -fx-pref-width: 216px;
+    -fx-max-width: 216px;
+    -fx-min-height: 38px;
+    -fx-pref-height: 38px;
+    -fx-max-height: 38px;
 }
 
 .m3-time-picker-period-cell,
@@ -135,29 +207,98 @@
     -fx-background-color: transparent;
     -fx-border-color: -m3-color-outline;
     -fx-border-width: 1px;
-    -fx-min-width: 92px;
-    -fx-pref-width: 92px;
-    -fx-max-width: 92px;
+    -fx-alignment: center;
+    -fx-cursor: hand;
+    -fx-font-size: 16px;
+    -fx-font-weight: 500;
+    -fx-padding: 0;
+    -fx-text-fill: -m3-color-on-surface-variant;
 }
 
-.m3-time-picker-period-start,
-.m3-time-picker-period-start:hover,
-.m3-time-picker-period-start:focused,
-.m3-time-picker-period-start:armed,
-.m3-time-picker-period-start:pressed {
-    -fx-background-radius: 999px 0 0 999px;
-    -fx-border-radius: 999px 0 0 999px;
+.m3-time-picker-period-cell:selected,
+.m3-time-picker-period-cell.m3-time-picker-selected-cell {
+    -fx-background-color: -m3-color-tertiary-container;
+    -fx-text-fill: -m3-color-on-tertiary-container;
 }
 
-.m3-time-picker-period-end,
-.m3-time-picker-period-end:hover,
-.m3-time-picker-period-end:focused,
-.m3-time-picker-period-end:armed,
-.m3-time-picker-period-end:pressed {
-    -fx-background-radius: 0 999px 999px 0;
-    -fx-border-radius: 0 999px 999px 0;
+.m3-time-picker-period-row:vertical .m3-time-picker-period-start {
+    -fx-background-radius: 4px 4px 0 0;
+    -fx-border-radius: 4px 4px 0 0;
+    -fx-border-width: 1px 1px 0 1px;
 }
 
-.m3-time-picker-cell:disabled {
-    -fx-opacity: 0.38;
+.m3-time-picker-period-row:vertical .m3-time-picker-period-end {
+    -fx-background-radius: 0 0 4px 4px;
+    -fx-border-radius: 0 0 4px 4px;
+}
+
+.m3-time-picker-period-row:horizontal .m3-time-picker-period-start {
+    -fx-background-radius: 4px 0 0 4px;
+    -fx-border-radius: 4px 0 0 4px;
+    -fx-border-width: 1px 0 1px 1px;
+}
+
+.m3-time-picker-period-row:horizontal .m3-time-picker-period-end {
+    -fx-background-radius: 0 4px 4px 0;
+    -fx-border-radius: 0 4px 4px 0;
+}
+
+.m3-time-picker-input-group {
+    -fx-spacing: 4px;
+}
+
+.m3-time-picker-input-field {
+    -fx-background-color: -m3-color-surface-container-highest;
+    -fx-background-insets: 0;
+    -fx-background-radius: 4px;
+    -fx-border-color: transparent;
+    -fx-border-insets: 0;
+    -fx-border-radius: 4px;
+    -fx-border-width: 2px;
+    -fx-min-width: 96px;
+    -fx-pref-width: 96px;
+    -fx-max-width: 96px;
+    -fx-min-height: 72px;
+    -fx-pref-height: 72px;
+    -fx-max-height: 72px;
+    -fx-alignment: center;
+    -fx-font-size: 45px;
+    -fx-font-weight: 400;
+    -fx-highlight-fill: -m3-color-primary;
+    -fx-highlight-text-fill: -m3-color-on-primary;
+    -fx-padding: 0;
+    -fx-prompt-text-fill: -m3-color-on-surface-variant;
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-time-picker-input-field:selected,
+.m3-time-picker-input-field:focused {
+    -fx-background-color: -m3-color-primary-container;
+    -fx-border-color: -m3-color-primary;
+    -fx-text-fill: -m3-color-on-primary-container;
+}
+
+.m3-time-picker-input-field:invalid {
+    -fx-border-color: -m3-color-error;
+}
+
+.m3-time-picker-input-label {
+    -fx-font-size: 12px;
+    -fx-font-weight: 400;
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-time-picker-mode-button {
+    -m3-container-height: 40px;
+    -m3-container-width: 40px;
+    -fx-effect: null;
+}
+
+.m3-time-picker-mode-button .m3-state-layer,
+.m3-time-picker-mode-button .m3-ripple {
+    -fx-background-color: -m3-color-on-surface-variant;
+}
+
+.m3-time-picker:disabled {
+    -fx-opacity: -m3-state-disabled-content-opacity;
 }

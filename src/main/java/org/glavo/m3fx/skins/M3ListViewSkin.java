@@ -25,7 +25,6 @@ import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListView;
 import org.glavo.m3fx.internal.M3ListViewCell;
-import org.glavo.m3fx.internal.M3ListViewSkinAccess;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3ScrollReveal;
@@ -65,9 +64,6 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     /// Rebuilds visible cells when the cell factory changes.
     private final InvalidationListener cellFactoryInvalidation = observable -> rebuildCells();
 
-    /// Updates visible cells when selection changes.
-    private final ListChangeListener<Integer> selectedIndicesListener = change -> refreshCells();
-
     /// Updates logical focused-row visuals when the list view focus owner state changes.
     private final InvalidationListener focusedInvalidation = observable -> refreshCells();
 
@@ -103,63 +99,6 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     /// Updates running smooth scroll when global or node-local motion settings change.
     private final M3MotionSettingsObserver motionSettingsObserver =
             new M3MotionSettingsObserver(getSkinnable(), this::refreshMotionSettings);
-
-    /// Internal bridge used by the owning list view to reach virtualized skin operations.
-    private final M3ListViewSkinAccess.Access access = new M3ListViewSkinAccess.Access() {
-        /// Refreshes the virtualized item count.
-        @Override
-        public void refreshItemCount() {
-            M3ListViewSkin.this.refreshItemCount();
-        }
-
-        /// Refreshes attached row state.
-        @Override
-        public void refreshCells() {
-            M3ListViewSkin.this.refreshCells();
-        }
-
-        /// Rebuilds attached rows after the cell factory changes.
-        @Override
-        public void rebuildCells() {
-            M3ListViewSkin.this.rebuildCells();
-        }
-
-        /// Refreshes focused-row state.
-        @Override
-        public void refreshFocus(boolean requestNodeFocus, boolean animated) {
-            M3ListViewSkin.this.refreshFocus(requestNodeFocus, animated);
-        }
-
-        /// Scrolls to a data item index.
-        @Override
-        public void scrollTo(int index, boolean animated) {
-            M3ListViewSkin.this.scrollTo(index, animated);
-        }
-
-        /// Returns the visible or reusable row node for an item index.
-        @Override
-        public @Nullable Node visibleItem(int index) {
-            return M3ListViewSkin.this.getVisibleItem(index);
-        }
-
-        /// Returns the currently attached row node for an item index.
-        @Override
-        public @Nullable Node attachedVisibleItem(int index) {
-            return M3ListViewSkin.this.getAttachedVisibleItem(index);
-        }
-
-        /// Returns the data index of the attached row containing a node.
-        @Override
-        public int attachedVisibleItemIndex(Node node) {
-            return M3ListViewSkin.this.getAttachedVisibleItemIndex(node);
-        }
-
-        /// Returns the first attached row accepted by a predicate.
-        @Override
-        public @Nullable Node findAttachedVisibleItem(Predicate<? super Node> predicate) {
-            return M3ListViewSkin.this.findAttachedVisibleItem(predicate);
-        }
-    };
 
     /// The completion callback attached to the currently running smooth scroll animation.
     private @Nullable Runnable smoothScrollOnFinished;
@@ -198,14 +137,12 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         flow.setPannable(true);
         flow.setCellFactory(flow -> new M3ListViewCell<>(control));
         smoothScrollAnimation.setOnFinished(event -> finishSmoothScrollAnimation());
-        M3ListViewSkinAccess.register(control, access);
         flow.fixedCellSizeProperty().bind(control.fixedCellSizeProperty());
         control.addEventFilter(ScrollEvent.SCROLL, smoothScrollHandler);
         getChildren().setAll(flow);
 
         control.getItems().addListener(itemsListener);
         control.cellFactoryProperty().addListener(cellFactoryInvalidation);
-        control.getSelectedIndices().addListener(selectedIndicesListener);
         control.focusedProperty().addListener(focusedInvalidation);
         focusVisibleTracker.install();
         control.sceneProperty().addListener(sceneListener);
@@ -218,13 +155,12 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     @Override
     public void dispose() {
         M3ListView<T> listView = getSkinnable();
-        M3ListViewSkinAccess.unregister(listView, access);
         motionSettingsObserver.dispose();
         stopSmoothScrollAnimation();
+        smoothScrollAnimation.setOnFinished(null);
         listView.removeEventFilter(ScrollEvent.SCROLL, smoothScrollHandler);
         listView.getItems().removeListener(itemsListener);
         listView.cellFactoryProperty().removeListener(cellFactoryInvalidation);
-        listView.getSelectedIndices().removeListener(selectedIndicesListener);
         listView.focusedProperty().removeListener(focusedInvalidation);
         focusVisibleTracker.uninstall();
         listView.sceneProperty().removeListener(sceneListener);
@@ -233,6 +169,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         updateObservedSceneRoot(null);
         clearObservedThemeAncestors();
         flow.fixedCellSizeProperty().unbind();
+        flow.releaseCells();
         flow.setCellFactory(null);
         getChildren().remove(flow);
         super.dispose();
@@ -310,7 +247,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     }
 
     /// Requests visible cell state and layout updates.
-    private void refreshCells() {
+    public void refreshCells() {
         if (!isSceneRefreshable()) {
             return;
         }
@@ -321,7 +258,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     ///
     /// @param requestNodeFocus whether the focused cell should request keyboard focus
     /// @param animated whether scrolling the focused cell into view should animate
-    private void refreshFocus(boolean requestNodeFocus, boolean animated) {
+    public void refreshFocus(boolean requestNodeFocus, boolean animated) {
         focusRequestPending |= requestNodeFocus;
         if (!isSceneRefreshable()) {
             return;
@@ -479,7 +416,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     ///
     /// @param index the data item index to reveal
     /// @param animated whether the scroll should animate when animations are enabled
-    private void scrollTo(int index, boolean animated) {
+    public void scrollTo(int index, boolean animated) {
         scrollToIndex(index, animated);
     }
 
@@ -487,7 +424,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     ///
     /// @param index the data item index to query
     /// @return the rendered list item node, or `null` when the index is outside the data list
-    private @Nullable Node getVisibleItem(int index) {
+    public @Nullable Node visibleItem(int index) {
         if (index < 0 || index >= getSkinnable().getItems().size()) {
             return null;
         }
@@ -500,7 +437,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     ///
     /// @param index the data item index to query
     /// @return the rendered list item node, or `null` when the row is not currently materialized
-    private @Nullable Node getAttachedVisibleItem(int index) {
+    public @Nullable Node attachedVisibleItem(int index) {
         if (index < 0 || index >= getSkinnable().getItems().size()) {
             return null;
         }
@@ -513,7 +450,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     ///
     /// @param node the node to find in the attached visible rows
     /// @return the containing row index, or `-1` when the node is not in an attached row
-    private int getAttachedVisibleItemIndex(Node node) {
+    public int attachedVisibleItemIndex(Node node) {
         return flow.attachedVisibleItemIndex(node);
     }
 
@@ -521,7 +458,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     ///
     /// @param predicate the predicate used to select one attached visible list item
     /// @return the matching attached visible list item, or `null` when none matches
-    private @Nullable Node findAttachedVisibleItem(Predicate<? super Node> predicate) {
+    public @Nullable Node findAttachedVisibleItem(Predicate<? super Node> predicate) {
         return flow.findAttachedVisibleItem(predicate);
     }
 
@@ -711,7 +648,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
             return;
         }
 
-        if (getAttachedVisibleItem(focusedIndex) == null) {
+        if (attachedVisibleItem(focusedIndex) == null) {
             materializedAccessibleFocusIndex = NO_MATERIALIZED_ACCESSIBLE_FOCUS;
             return;
         }
@@ -942,8 +879,16 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
 
         /// Rebuilds the virtual flow cell pile from the current cell factory.
         private void rebuildAllCells() {
+            releaseCells();
             recreateCells();
             requestLayout();
+        }
+
+        /// Releases application-owned row nodes before cells are rebuilt or the skin is disposed.
+        private void releaseCells() {
+            for (M3ListViewCell<T> cell : getCells()) {
+                cell.updateIndex(-1);
+            }
         }
 
         /// Returns the average height of attached data cells, or zero before cells are measured.

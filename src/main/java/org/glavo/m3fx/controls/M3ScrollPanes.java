@@ -62,7 +62,7 @@ public final class M3ScrollPanes {
     ///
     /// @param scrollPane the scroll pane to style
     public static void style(ScrollPane scrollPane) {
-        M3ControlStyles.initialize(Objects.requireNonNull(scrollPane, "scrollPane"), STYLE_CLASS);
+        M3ControlStyles.initializeOnce(Objects.requireNonNull(scrollPane, "scrollPane"), STYLE_CLASS);
     }
 
     /// Enables Material smooth wheel scrolling for a JavaFX scroll pane.
@@ -103,7 +103,7 @@ public final class M3ScrollPanes {
     ///
     /// @param scrollBar the scroll bar to style
     public static void style(ScrollBar scrollBar) {
-        M3ControlStyles.initialize(Objects.requireNonNull(scrollBar, "scrollBar"), SCROLL_BAR_STYLE_CLASS);
+        M3ControlStyles.initializeOnce(Objects.requireNonNull(scrollBar, "scrollBar"), SCROLL_BAR_STYLE_CLASS);
     }
 
     /// Returns whether a scroll event target belongs directly to the supplied scroll pane.
@@ -112,7 +112,7 @@ public final class M3ScrollPanes {
     /// independently inside a styled outer [ScrollPane].
     ///
     /// @param scrollPane the scroll pane that owns the installed smooth scroll behavior
-    /// @param target the original scroll event target
+    /// @param target     the original scroll event target
     /// @return `true` if the target belongs to `scrollPane` rather than to a nested scroll owner
     static boolean isEventTargetForScrollPane(ScrollPane scrollPane, EventTarget target) {
         Objects.requireNonNull(scrollPane, "scrollPane");

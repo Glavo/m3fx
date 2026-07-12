@@ -886,7 +886,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         presetList.getStyleClass().add(PRESET_LIST_STYLE_CLASS);
         presetList.nodeOrientationProperty().bind(effectiveNodeOrientationProperty());
         presetList.alignmentProperty().bind(M3NodeLayout.createLogicalStartTopAlignmentBinding(this));
-        M3PresetNavigation.install(presetList, this, this::focusPickerContent);
+        M3PresetNavigation.installColumn(presetList, this, this::focusPickerContent);
         popup.setAutoHide(true);
         popup.getContent().add(popupContent);
         popupAnimation.setOnFinished(event -> {

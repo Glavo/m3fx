@@ -28,9 +28,10 @@ public final class M3FocusRequests {
     /// Requests keyboard focus only when the target participates in focus traversal.
     ///
     /// @param target the node that should receive focus
-    /// @return `true` when the target is focus traversable and became the scene focus owner
-    public static boolean requestFocusIfTraversable(Node target) {
+    public static void requestFocusIfTraversable(Node target) {
         Objects.requireNonNull(target, "target");
-        return target.isFocusTraversable() && requestFocus(target);
+        if (target.isFocusTraversable()) {
+            target.requestFocus();
+        }
     }
 }

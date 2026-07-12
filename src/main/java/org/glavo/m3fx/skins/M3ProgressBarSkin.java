@@ -92,6 +92,9 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     /// The reusable indeterminate segment transition.
     private final IndeterminateTransition indeterminateAnimation = new IndeterminateTransition();
 
+    /// Whether the current inherited motion settings require reduced-motion rendering.
+    private boolean reducedMotion;
+
     /// Updates internal progress geometry after animation ticks without invalidating parent layout.
     private final InvalidationListener animationInvalidation =
             observable -> updateAnimatedVisuals();
@@ -395,7 +398,9 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
 
     /// Updates determinate or indeterminate animation state for the current progress value.
     private void updateProgressAnimation(boolean animateDeterminateProgress) {
-        double progress = getSkinnable().getProgress();
+        M3ProgressBar progressBar = getSkinnable();
+        reducedMotion = M3Animation.shouldReduceMotion(progressBar);
+        double progress = progressBar.getProgress();
         if (progress == M3ProgressBar.INDETERMINATE_PROGRESS) {
             determinateAnimation.stop();
             if (shouldPauseActivityAnimations()) {
@@ -434,14 +439,14 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     /// Animates the displayed determinate progress value.
     private void animateDisplayedProgress(double targetProgress, boolean animate) {
         determinateAnimation.stop();
-        if (!animate || M3Animation.shouldReduceMotion(getSkinnable())) {
+        if (!animate || reducedMotion) {
             displayedProgress.set(targetProgress);
             return;
         }
 
         M3MotionSpec spec = M3Animation.fastSpatial(getSkinnable());
         determinateAnimation.configure(spec, targetProgress);
-        M3Animation.playFromStart(getSkinnable(), determinateAnimation);
+        determinateAnimation.playFromStart();
     }
 
     /// Returns the initial displayed progress value for a public progress value.
