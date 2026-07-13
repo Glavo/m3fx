@@ -171,6 +171,7 @@ final class M3TokenFactoryTest {
         assertEquals(16.0, tokenSet.componentTokens().carousel().trackHorizontalPadding(), 0.0001);
         assertEquals(8.0, tokenSet.componentTokens().carousel().trackVerticalPadding(), 0.0001);
         assertEquals(8.0, tokenSet.componentTokens().carousel().itemSpacing(), 0.0001);
+        assertEquals(28.0, tokenSet.componentTokens().carousel().itemShape(), 0.0001);
         assertEquals(40.0, tokenSet.componentTokens().carousel().smallItemMinWidth(), 0.0001);
         assertEquals(56.0, tokenSet.componentTokens().carousel().smallItemMaxWidth(), 0.0001);
         assertEquals(320.0, tokenSet.componentTokens().carousel().largeItemMaxWidth(), 0.0001);
@@ -494,7 +495,7 @@ final class M3TokenFactoryTest {
                 new M3ComponentTokens.ProgressTokens(5.0, 18.0, 52.0, 3.0, 41.0, 6.0, 7.0, 2.0, 16.0, 5.0),
                 new M3ComponentTokens.LoadingIndicatorTokens(63.0, 22.0),
                 new M3ComponentTokens.SurfaceTokens(22.0, 19.0),
-                new M3ComponentTokens.CarouselTokens(16.0, 8.0, 8.0, 40.0, 56.0, 320.0),
+                new M3ComponentTokens.CarouselTokens(16.0, 8.0, 8.0, 28.0, 40.0, 56.0, 320.0),
                 new M3ComponentTokens.CardTokens(13.0, 18.0, 2.0),
                 new M3ComponentTokens.DialogTokens(30.0, 26.0, 300.0, 540.0, 12.0, 28.0),
                 new M3ComponentTokens.SnackbarTokens(9.0, 18.0, 344.0, 672.0, 48.0, 68.0, 32.0),

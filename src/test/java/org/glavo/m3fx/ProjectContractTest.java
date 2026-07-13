@@ -807,7 +807,9 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3Carousel#TRACK_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3Carousel#VIEWPORT_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3CheckBox#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3Chip#LEADING_GRAPHIC_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3Chip#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3Chip#TRAILING_GRAPHIC_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3ChipGroup#STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3DatePicker#CONTAINER_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3DatePicker#DAY_CELL_STYLE_CLASS:java.lang.String
@@ -1409,6 +1411,7 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3Carousel#getItems()
             org.glavo.m3fx.controls.M3Carousel#getSelectedItem()
             org.glavo.m3fx.controls.M3Carousel#getSelectedItems()
+            org.glavo.m3fx.controls.M3Chip#getTrailingGraphic()
             org.glavo.m3fx.controls.M3ChipGroup#getItems()
             org.glavo.m3fx.controls.M3ChipGroup#getSelectedChip()
             org.glavo.m3fx.controls.M3ChipGroup#getSelectedChips()
@@ -1494,6 +1497,7 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3BottomSheet#contentProperty()
             org.glavo.m3fx.controls.M3Card#contentProperty()
             org.glavo.m3fx.controls.M3Carousel#selectedItemProperty()
+            org.glavo.m3fx.controls.M3Chip#trailingGraphicProperty()
             org.glavo.m3fx.controls.M3ChipGroup#selectedChipProperty()
             org.glavo.m3fx.controls.M3FormRow#contentProperty()
             org.glavo.m3fx.controls.M3FormRow#trailingProperty()

@@ -477,6 +477,12 @@ final class M3FXDemoVisualSmokeTest {
                     root -> firstVisibleChipWithText(root, "Nearby")
             ),
             new InteractionTargetCase(
+                    "Chips",
+                    "chip-trailing-action",
+                    "chip trailing action",
+                    root -> firstVisibleChipTrailingAction(root, "Design team")
+            ),
+            new InteractionTargetCase(
                     "Segmented Buttons",
                     "segmented-button",
                     "segmented button",
@@ -626,6 +632,12 @@ final class M3FXDemoVisualSmokeTest {
                     "chip",
                     "chip",
                     root -> firstVisibleChipWithText(root, "Nearby")
+            ),
+            new InteractionTargetCase(
+                    "Chips",
+                    "chip-trailing-action",
+                    "chip trailing action",
+                    root -> firstVisibleChipTrailingAction(root, "Design team")
             ),
             new InteractionTargetCase(
                     "Segmented Buttons",
@@ -2127,6 +2139,42 @@ final class M3FXDemoVisualSmokeTest {
                     M3Carousel carousel = carouselWithLayout(carousels, layout);
                     assertCarouselDemoGeometry(carousel, layout + " carousel");
                 }
+                assertCarouselRoleGeometry(
+                        carouselWithLayout(carousels, M3CarouselLayout.MULTI_BROWSE),
+                        3,
+                        true,
+                        "multi-browse carousel"
+                );
+                assertCarouselRoleGeometry(
+                        carouselWithLayout(carousels, M3CarouselLayout.HERO),
+                        2,
+                        true,
+                        "hero carousel"
+                );
+                assertCarouselRoleGeometry(
+                        carouselWithLayout(carousels, M3CarouselLayout.CENTER_ALIGNED_HERO),
+                        2,
+                        true,
+                        "center-aligned hero carousel"
+                );
+                assertCarouselRoleGeometry(
+                        carouselWithLayout(carousels, M3CarouselLayout.UNCONTAINED),
+                        1,
+                        false,
+                        "uncontained carousel"
+                );
+                assertCarouselRoleGeometry(
+                        carouselWithLayout(carousels, M3CarouselLayout.UNCONTAINED_MULTI_ASPECT_RATIO),
+                        3,
+                        false,
+                        "multi-aspect-ratio carousel"
+                );
+                assertCarouselRoleGeometry(
+                        carouselWithLayout(carousels, M3CarouselLayout.FULL_SCREEN),
+                        1,
+                        false,
+                        "full-screen carousel"
+                );
 
                 M3Carousel multiBrowse = carouselWithLayout(carousels, M3CarouselLayout.MULTI_BROWSE);
                 M3Carousel uncontained = carouselWithLayout(carousels, M3CarouselLayout.UNCONTAINED);
@@ -2154,6 +2202,15 @@ final class M3FXDemoVisualSmokeTest {
                         "carousel-layouts.png"
                 ));
                 assertSnapshotHasVisibleContent(image, "Carousel layouts");
+
+                WritableImage fullPageImage = snapshotNode(page);
+                writeVisualSnapshot(fullPageImage, Path.of(
+                        "build",
+                        "reports",
+                        "m3fx-demo-visual",
+                        "carousel-full-page.png"
+                ));
+                assertSnapshotHasVisibleContent(fullPageImage, "Carousel full page");
             });
 
             DemoFxTestUtils.runOnFxThreadWhenStable(() -> {
@@ -5744,7 +5801,7 @@ final class M3FXDemoVisualSmokeTest {
         );
     }
 
-    /// Verifies popup enter and exit motion on the demo split button menu.
+    /// Verifies popup motion together with the split button selected-state shape morph.
     private static void verifySplitButtonPopupAnimation(
             AtomicReference<@Nullable M3FXDemoApp> appReference,
             AtomicReference<@Nullable Scene> sceneReference
@@ -5755,6 +5812,11 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable WritableImage> openingReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> settledReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> hidingReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> closedButtonReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> openingButtonReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> settledButtonReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> hidingButtonReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> closedAgainButtonReference = new AtomicReference<>();
 
         runOnFxThreadWhenNodeSnapshotChanged(
                 popupRootReference::get,
@@ -5772,7 +5834,18 @@ final class M3FXDemoVisualSmokeTest {
                     scene.getRoot(),
                     "Create"
             ), "split button");
-            M3MotionSettings.setMotionScheme(target, visualPopupMotionScheme());
+            M3MotionScheme standard = M3MotionScheme.standard();
+            M3MotionSpec observableSpec =
+                    M3MotionSpec.create(OBSERVABLE_MOTION_DURATION, M3MotionEasing.LINEAR);
+            M3MotionSettings.setMotionScheme(target, M3MotionScheme.create(
+                    standard.fastEffects(),
+                    observableSpec,
+                    standard.slowEffects(),
+                    standard.fastSpatial(),
+                    observableSpec,
+                    standard.slowSpatial()
+            ));
+            closedButtonReference.set(snapshotNode(target));
             target.showMenu();
             assertTrue(target.isShowing());
 
@@ -5788,6 +5861,18 @@ final class M3FXDemoVisualSmokeTest {
                     "opening"
             );
         });
+
+        runOnFxThreadWhenNodeSnapshotChanged(
+                targetReference::get,
+                closedButtonReference,
+                openingButtonReference,
+                "split button opening shape frame",
+                () -> {
+        }, () -> writeAnimationSnapshot(
+                Objects.requireNonNull(openingButtonReference.get(), "opening split button snapshot"),
+                "split-button-shape",
+                "opening"
+        ));
 
         runOnFxThreadWhenNodeSnapshotStable(
                 popupRootReference::get,
@@ -5809,6 +5894,9 @@ final class M3FXDemoVisualSmokeTest {
                     Objects.requireNonNull(settledReference.get(), "settled split button popup snapshot"),
                     "split button popup"
             );
+            WritableImage buttonSnapshot = snapshotNode(target);
+            settledButtonReference.set(buttonSnapshot);
+            writeAnimationSnapshot(buttonSnapshot, "split-button-shape", "selected");
             target.hideMenu();
         });
 
@@ -5818,13 +5906,23 @@ final class M3FXDemoVisualSmokeTest {
                 hidingReference,
                 "split button popup hiding frame",
                 () -> {
-        }, () -> {
-            writeAnimationSnapshot(
-                    Objects.requireNonNull(hidingReference.get(), "hiding split button popup snapshot"),
-                    "split-button-popup",
-                    "hiding"
-            );
-        });
+        }, () -> writeAnimationSnapshot(
+                Objects.requireNonNull(hidingReference.get(), "hiding split button popup snapshot"),
+                "split-button-popup",
+                "hiding"
+        ));
+
+        runOnFxThreadWhenNodeSnapshotChanged(
+                targetReference::get,
+                settledButtonReference,
+                hidingButtonReference,
+                "split button closing shape frame",
+                () -> {
+        }, () -> writeAnimationSnapshot(
+                Objects.requireNonNull(hidingButtonReference.get(), "hiding split button snapshot"),
+                "split-button-shape",
+                "hiding"
+        ));
 
         DemoFxTestUtils.runOnFxThreadWhenStable(() -> {
             @Nullable M3SplitButton target = targetReference.get();
@@ -5833,9 +5931,32 @@ final class M3FXDemoVisualSmokeTest {
         }, () -> {
             M3SplitButton target = Objects.requireNonNull(targetReference.get(), "split button");
             assertFalse(target.isShowing());
+            WritableImage buttonSnapshot = snapshotNode(target);
+            closedAgainButtonReference.set(buttonSnapshot);
+            writeAnimationSnapshot(buttonSnapshot, "split-button-shape", "closed");
             M3MotionSettings.clearMotionScheme(target);
         });
 
+        assertSnapshotChanged(
+                Objects.requireNonNull(closedButtonReference.get(), "closed split button snapshot"),
+                Objects.requireNonNull(openingButtonReference.get(), "opening split button snapshot"),
+                "split button opening shape morph"
+        );
+        assertSnapshotChanged(
+                Objects.requireNonNull(openingButtonReference.get(), "opening split button snapshot"),
+                Objects.requireNonNull(settledButtonReference.get(), "selected split button snapshot"),
+                "split button selected shape settle"
+        );
+        assertSnapshotChanged(
+                Objects.requireNonNull(settledButtonReference.get(), "selected split button snapshot"),
+                Objects.requireNonNull(hidingButtonReference.get(), "hiding split button snapshot"),
+                "split button closing shape morph"
+        );
+        assertSnapshotChanged(
+                Objects.requireNonNull(hidingButtonReference.get(), "hiding split button snapshot"),
+                Objects.requireNonNull(closedAgainButtonReference.get(), "closed-again split button snapshot"),
+                "split button closed shape settle"
+        );
         assertSnapshotChanged(
                 Objects.requireNonNull(openingReference.get(), "opening split button popup snapshot"),
                 Objects.requireNonNull(settledReference.get(), "settled split button popup snapshot"),
@@ -7860,6 +7981,8 @@ final class M3FXDemoVisualSmokeTest {
             scrollPane.setHvalue(0.0);
             scrollPane.setVvalue(scrollPosition);
             applySceneCssAndLayout(scene);
+            assertEquals(scrollPosition, scrollPane.getVvalue(), 0.0001,
+                    () -> pageTitle + " visual capture did not reach requested scroll position");
             String scrollName = scrollPositionName(scrollPosition);
             writePageSnapshot(
                     scene,
@@ -11703,6 +11826,35 @@ final class M3FXDemoVisualSmokeTest {
         assertEquals(2, chips.stream().filter(Node::isDisabled).count(), "Chips disabled count");
         assertTrue(chips.stream().filter(chip -> chip.getGraphic() != null).count() >= 5,
                 "Chip responsibilities should include meaningful leading icons");
+        assertEquals(3, chips.stream().filter(chip -> chip.getTrailingGraphic() != null).count(),
+                "Input chip trailing action count");
+        for (M3Chip chip : chips) {
+            AccessibleRole expectedRole = chip.isSelectionSupported()
+                    ? AccessibleRole.TOGGLE_BUTTON
+                    : AccessibleRole.BUTTON;
+            assertEquals(expectedRole, chip.getAccessibleRole(), () -> chip.getText() + " accessible role");
+            if (chip.getTrailingGraphic() instanceof M3IconButton trailingAction) {
+                assertEquals(24.0, trailingAction.getContainerWidth(), 0.0001);
+                assertEquals(24.0, trailingAction.getContainerHeight(), 0.0001);
+                assertTrue(trailingAction.getStyleClass().contains(M3Chip.TRAILING_GRAPHIC_STYLE_CLASS));
+            }
+        }
+        for (M3Chip chip : chips) {
+            Node leading = chip.getGraphic();
+            Node trailing = chip.getTrailingGraphic();
+            if (leading == null || trailing == null || !chip.isVisible()) {
+                continue;
+            }
+            Bounds leadingBounds = leading.localToScene(leading.getBoundsInLocal());
+            Bounds trailingBounds = trailing.localToScene(trailing.getBoundsInLocal());
+            if (chip.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT) {
+                assertTrue(trailingBounds.getMaxX() <= leadingBounds.getMinX(),
+                        () -> chip.getText() + " RTL trailing slot should remain at logical end");
+            } else {
+                assertTrue(trailingBounds.getMinX() >= leadingBounds.getMaxX(),
+                        () -> chip.getText() + " trailing slot should remain at logical end");
+            }
+        }
 
         List<M3ChipGroup> groups = visibleNodesOfType(page, M3ChipGroup.class);
         assertEquals(1, groups.size(), () -> "Chips page should use one filter selection group: " + groups);
@@ -13328,20 +13480,21 @@ final class M3FXDemoVisualSmokeTest {
         Parent root = scene.getRoot();
         Node page = currentDemoPage(scene, "Button Groups");
         assertCurrentPageTitle(scene, "Button Groups");
-        assertVisibleText(root, "Standard", "Button Groups");
+        assertVisibleText(root, "Standard Actions", "Button Groups");
+        assertVisibleText(root, "Standard Toggle Selection", "Button Groups");
         assertVisibleText(root, "Connected Single Select", "Button Groups");
         assertVisibleText(root, "Connected Multi Select", "Button Groups");
         assertVisibleText(root, "Size Scale", "Button Groups");
 
         List<M3ButtonGroup> groups = visibleNodesOfType(page, M3ButtonGroup.class);
-        assertEquals(5, groups.size(), () -> "Button Groups page should render five focused groups: " + groups);
-        assertEquals(3, groups.stream().filter(group -> group.getVariant() == M3ButtonGroupVariant.STANDARD).count(),
+        assertEquals(6, groups.size(), () -> "Button Groups page should render six focused groups: " + groups);
+        assertEquals(4, groups.stream().filter(group -> group.getVariant() == M3ButtonGroupVariant.STANDARD).count(),
                 "Button Groups standard group count");
         assertEquals(2, groups.stream().filter(group -> group.getVariant() == M3ButtonGroupVariant.CONNECTED).count(),
                 "Button Groups connected group count");
         assertEquals(1, groups.stream().filter(group -> group.getSize() == M3ButtonSize.SMALL).count(),
                 "Button Groups small group count");
-        assertEquals(3, groups.stream().filter(group -> group.getSize() == M3ButtonSize.MEDIUM).count(),
+        assertEquals(4, groups.stream().filter(group -> group.getSize() == M3ButtonSize.MEDIUM).count(),
                 "Button Groups medium group count");
         assertEquals(1, groups.stream().filter(group -> group.getSize() == M3ButtonSize.LARGE).count(),
                 "Button Groups large group count");
@@ -13351,12 +13504,48 @@ final class M3FXDemoVisualSmokeTest {
                 .toList();
         List<M3IconToggleButton> toggleButtons = visibleNodesOfType(page, M3IconToggleButton.class);
         assertEquals(7, actionButtons.size(), "Button Groups grouped action count");
-        assertEquals(6, toggleButtons.size(), "Button Groups connected toggle count");
-        assertEquals(3, toggleButtons.stream().filter(M3IconToggleButton::isSelected).count(),
-                "Connected groups should expose one single-select and two multi-select choices");
+        assertEquals(9, toggleButtons.size(), "Button Groups toggle count");
+        assertEquals(4, toggleButtons.stream().filter(M3IconToggleButton::isSelected).count(),
+                "Button groups should expose standard, connected single-select, and connected multi-select choices");
         assertTrue(toggleButtons.stream().allMatch(button ->
                         button.getStyleClass().contains(M3ButtonGroup.GROUPED_BUTTON_STYLE_CLASS)),
-                "Connected toggle buttons should receive grouped shape classes");
+                "Toggle buttons should receive grouped shape classes");
+
+        M3ButtonGroup standardToggleGroup = groups.stream()
+                .filter(group -> group.getVariant() == M3ButtonGroupVariant.STANDARD)
+                .filter(group -> group.getItems().stream().allMatch(M3IconToggleButton.class::isInstance))
+                .findFirst()
+                .orElseThrow();
+        M3IconToggleButton standardSelected = standardToggleGroup.getItems().stream()
+                .map(M3IconToggleButton.class::cast)
+                .filter(M3IconToggleButton::isSelected)
+                .findFirst()
+                .orElseThrow();
+        double widestStandardUnselected = standardToggleGroup.getItems().stream()
+                .map(M3IconToggleButton.class::cast)
+                .filter(button -> !button.isSelected())
+                .mapToDouble(Region::getWidth)
+                .max()
+                .orElseThrow();
+        assertTrue(standardSelected.getWidth() > widestStandardUnselected + 0.5,
+                "Standard selected item should retain the Expressive width interaction");
+
+        for (M3ButtonGroup connectedGroup : groups.stream()
+                .filter(group -> group.getVariant() == M3ButtonGroupVariant.CONNECTED)
+                .toList()) {
+            double minimumWidth = connectedGroup.getItems().stream()
+                    .map(M3IconToggleButton.class::cast)
+                    .mapToDouble(Region::getWidth)
+                    .min()
+                    .orElseThrow();
+            double maximumWidth = connectedGroup.getItems().stream()
+                    .map(M3IconToggleButton.class::cast)
+                    .mapToDouble(Region::getWidth)
+                    .max()
+                    .orElseThrow();
+            assertEquals(minimumWidth, maximumWidth, 0.5,
+                    "Connected selection should not redistribute adjacent widths");
+        }
 
         M3Theme pageTheme = Objects.requireNonNull(M3ThemeManager.getTheme(scene), "Button Groups page theme");
         for (int index = 0; index < groups.size(); index++) {
@@ -16423,6 +16612,19 @@ final class M3FXDemoVisualSmokeTest {
                 )
         );
         Node track = requireVisibleStyledDescendant(carousel, M3Carousel.TRACK_STYLE_CLASS, description + " track");
+        List<Node> itemMasks = track.lookupAll(".m3-carousel-item-container").stream().toList();
+        assertEquals(carousel.getItems().size(), itemMasks.size(),
+                () -> description + " should expose one reusable mask per item");
+        for (Node itemMask : itemMasks) {
+            Rectangle clip = assertInstanceOf(Rectangle.class, itemMask.getClip(),
+                    () -> description + " item mask should use a rounded rectangle clip");
+            assertEquals(itemMask.getLayoutBounds().getWidth(), clip.getWidth(), CONTROL_EDGE_TOLERANCE,
+                    () -> description + " clip width should follow its keyline mask");
+            assertEquals(itemMask.getLayoutBounds().getHeight(), clip.getHeight(), CONTROL_EDGE_TOLERANCE,
+                    () -> description + " clip height should follow its keyline mask");
+            assertTrue(clip.getArcWidth() >= Math.min(clip.getWidth(), 56.0) - CONTROL_EDGE_TOLERANCE,
+                    () -> description + " item mask should apply the Material extra-large shape");
+        }
         Node selectedItem = Objects.requireNonNull(carousel.getSelectedItem(), description + " selected item");
         @Nullable Node viewportNode = viewport.lookup(".viewport");
         assertNotNull(viewportNode, () -> description + " missing ScrollPane viewport node");
@@ -16468,6 +16670,33 @@ final class M3FXDemoVisualSmokeTest {
                         + selectedTextBounds + ", viewport=" + viewportBounds);
     }
 
+    /// Verifies keyline role diversity and focal-width content masking for one carousel layout.
+    private static void assertCarouselRoleGeometry(
+            M3Carousel carousel,
+            int minimumDistinctWidths,
+            boolean expectsMaskedContent,
+            String description
+    ) {
+        Node track = requireVisibleStyledDescendant(carousel, M3Carousel.TRACK_STYLE_CLASS, description + " track");
+        List<Double> distinctWidths = new ArrayList<>();
+        boolean maskedContent = false;
+        for (Node mask : track.lookupAll(".m3-carousel-item-container")) {
+            double width = mask.getLayoutBounds().getWidth();
+            boolean knownWidth = distinctWidths.stream().anyMatch(value -> Math.abs(value - width) <= 1.0);
+            if (!knownWidth) {
+                distinctWidths.add(width);
+            }
+            Parent slot = assertInstanceOf(Parent.class, mask);
+            assertEquals(1, slot.getChildrenUnmodifiable().size(),
+                    () -> description + " mask should retain one application-owned item");
+            Node content = slot.getChildrenUnmodifiable().get(0);
+            maskedContent |= content.getLayoutBounds().getWidth() > width + 1.0;
+        }
+        assertTrue(distinctWidths.size() >= minimumDistinctWidths,
+                () -> description + " has too few rendered keyline widths: " + distinctWidths);
+        assertEquals(expectsMaskedContent, maskedContent,
+                () -> description + " focal-width masking mismatch");
+    }
     /// Verifies that carousel content overflows and visually occupies the complete horizontal viewport.
     private static void assertCarouselTrackFillsViewport(M3Carousel carousel, String description) {
         ScrollPane viewport = assertInstanceOf(
@@ -17059,6 +17288,17 @@ final class M3FXDemoVisualSmokeTest {
             }
         }
         return null;
+    }
+
+    /// Returns the visible trailing action owned by the requested input chip.
+    private static @Nullable M3IconButton firstVisibleChipTrailingAction(Node root, String chipText) {
+        @Nullable M3Chip chip = firstVisibleChipWithText(root, chipText);
+        return chip != null && chip.getTrailingGraphic() instanceof M3IconButton button
+                && button.isVisible()
+                && !button.isDisabled()
+                && hasRenderableBounds(button)
+                ? button
+                : null;
     }
 
     /// Returns the first visible M3 segmented button with the requested text.

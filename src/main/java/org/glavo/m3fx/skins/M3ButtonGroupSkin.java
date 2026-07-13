@@ -3,24 +3,27 @@
 
 package org.glavo.m3fx.skins;
 
-import javafx.animation.Animation;
 import javafx.beans.InvalidationListener;
-import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.collections.SetChangeListener;
+import javafx.css.PseudoClass;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.Node;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3ButtonGroup;
 import org.glavo.m3fx.controls.M3ButtonGroupVariant;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3FiniteTransition;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Arrays;
 
 /// The default Material Design 3 skin for [M3ButtonGroup].
 @NotNullByDefault
@@ -49,39 +52,56 @@ public final class M3ButtonGroupSkin extends M3ItemContainerSkinBase<
         /// The smallest width retained for a neighboring button during width redistribution.
         private static final double MINIMUM_INTERACTION_WIDTH = 24.0;
 
+        /// Identifies selectable grouped buttons without depending on one concrete toggle-button implementation.
+        private static final PseudoClass SELECTED_PSEUDO_CLASS = PseudoClass.getPseudoClass("selected");
+
+        /// Shared empty node storage used before startup and after disposal.
+        private static final Node[] EMPTY_ITEMS = new Node[0];
+
+        /// Shared empty numeric storage used before startup and after disposal.
+        private static final double[] EMPTY_VALUES = new double[0];
+
         /// The button group whose items are laid out by this pane.
         private final M3ButtonGroup control;
 
-        /// The current activated-item expansion progress from resting 0 to pressed 1.
-        private final DoubleProperty pressProgress = new SimpleDoubleProperty(this, "pressProgress") {
-            /// Requests a child layout pulse when the animated expansion changes.
-            @Override
-            protected void invalidated() {
-                requestLayout();
+        /// The reusable transition that animates every selected or activated item without per-item timelines.
+        private final ButtonInteractionTransition interactionTransition = new ButtonInteractionTransition();
+
+        /// Re-evaluates interaction targets when a child armed state changes.
+        private final InvalidationListener armedListener = observable -> updateInteractionTargets();
+
+        /// Re-evaluates interaction targets only when a child's selected pseudo-class changes.
+        private final SetChangeListener<PseudoClass> pseudoClassListener = change -> {
+            if (SELECTED_PSEUDO_CLASS.equals(change.getElementAdded())
+                    || SELECTED_PSEUDO_CLASS.equals(change.getElementRemoved())) {
+                updateInteractionTargets();
             }
         };
 
-        /// The reusable transition that animates the activated-item width multiplier.
-        private final M3DoubleTransition pressTransition = new M3DoubleTransition(pressProgress);
-
-        /// Re-evaluates the activated item when a child armed state changes.
-        private final InvalidationListener armedListener = observable -> updateArmedButton();
-
-        /// Attaches and detaches the shared armed-state listener as group items change.
+        /// Attaches and detaches shared interaction listeners as group items change.
         private final ListChangeListener<Node> itemsListener = this::itemsChanged;
 
-        /// Settles width motion when the group leaves the standard variant.
+        /// Retargets width motion when the group changes visual variant.
         private final ChangeListener<M3ButtonGroupVariant> variantListener =
-                (observable, oldValue, newValue) -> updateArmedButton();
+                (observable, oldValue, newValue) -> updateInteractionTargets();
 
         /// Settles a running width transition when motion is disabled at runtime.
         private final M3MotionSettingsObserver motionSettingsObserver;
 
-        /// The button whose width currently owns the expansion progress.
-        private @Nullable ButtonBase activeButton;
+        /// Item identities aligned with the interaction arrays.
+        private Node[] interactionItems = EMPTY_ITEMS;
 
-        /// The target value of the current width transition.
-        private double targetProgress;
+        /// Current expansion progress for every group item.
+        private double[] interactionProgress = EMPTY_VALUES;
+
+        /// Expansion progress captured when the current transition starts.
+        private double[] interactionStart = EMPTY_VALUES;
+
+        /// Expansion targets for selected or activated items.
+        private double[] interactionTarget = EMPTY_VALUES;
+
+        /// Reusable width deltas accumulated during one layout pass.
+        private double[] widthAdjustments = EMPTY_VALUES;
 
         /// Whether listeners have been installed.
         private boolean started;
@@ -91,10 +111,9 @@ public final class M3ButtonGroupSkin extends M3ItemContainerSkinBase<
         /// @param control the button group whose items are laid out
         ButtonGroupPane(M3ButtonGroup control) {
             this.control = control;
-            pressTransition.setOnFinished(event -> finishPressTransition());
             motionSettingsObserver = new M3MotionSettingsObserver(
                     control,
-                    () -> M3Animation.finishRunningAnimationsIfDisabled(control, pressTransition)
+                    () -> M3Animation.finishRunningAnimationsIfDisabled(control, interactionTransition)
             );
         }
 
@@ -105,19 +124,19 @@ public final class M3ButtonGroupSkin extends M3ItemContainerSkinBase<
             }
             started = true;
             for (Node item : control.getItems()) {
-                attachArmedListener(item);
+                attachInteractionListeners(item);
             }
             control.getItems().addListener(itemsListener);
             control.variantProperty().addListener(variantListener);
-            updateArmedButton();
+            rebuildInteractionState();
+            initializeInteractionTargets();
         }
 
         /// Removes all listeners and stops the reusable transition.
         void dispose() {
             if (!started) {
                 motionSettingsObserver.dispose();
-                pressTransition.stop();
-                pressTransition.setOnFinished(null);
+                interactionTransition.stop();
                 return;
             }
 
@@ -125,13 +144,15 @@ public final class M3ButtonGroupSkin extends M3ItemContainerSkinBase<
             control.getItems().removeListener(itemsListener);
             control.variantProperty().removeListener(variantListener);
             for (Node item : control.getItems()) {
-                detachArmedListener(item);
+                detachInteractionListeners(item);
             }
             motionSettingsObserver.dispose();
-            pressTransition.stop();
-            pressTransition.setOnFinished(null);
-            activeButton = null;
-            pressProgress.set(0.0);
+            interactionTransition.stop();
+            interactionItems = EMPTY_ITEMS;
+            interactionProgress = EMPTY_VALUES;
+            interactionStart = EMPTY_VALUES;
+            interactionTarget = EMPTY_VALUES;
+            widthAdjustments = EMPTY_VALUES;
         }
 
         /// Returns the minimum width needed by managed children and spacing.
@@ -197,30 +218,7 @@ public final class M3ButtonGroupSkin extends M3ItemContainerSkinBase<
                     shrinkRatio
             ) + totalSpacing;
 
-            int activeIndex = activeChildIndex(children);
-            int previousIndex = previousManagedIndex(children, activeIndex);
-            int nextIndex = nextManagedIndex(children, activeIndex);
-            double previousReduction = 0.0;
-            double nextReduction = 0.0;
-            double activeGrowth = 0.0;
-            if (activeIndex >= 0 && pressProgress.get() > 0.0) {
-                double activeWidth = fittedWidth(children.get(activeIndex), height, shrinkRatio);
-                double requestedGrowth = activeWidth
-                        * control.getStandardPressedWidthMultiplier()
-                        * pressProgress.get();
-                double previousCapacity = reductionCapacity(children, previousIndex, height, shrinkRatio);
-                double nextCapacity = reductionCapacity(children, nextIndex, height, shrinkRatio);
-                previousReduction = Math.min(requestedGrowth / 2.0, previousCapacity);
-                nextReduction = Math.min(requestedGrowth / 2.0, nextCapacity);
-                double remainder = requestedGrowth - previousReduction - nextReduction;
-                if (remainder > 0.0) {
-                    double additionalPrevious = Math.min(remainder, previousCapacity - previousReduction);
-                    previousReduction += additionalPrevious;
-                    remainder -= additionalPrevious;
-                    nextReduction += Math.min(remainder, nextCapacity - nextReduction);
-                }
-                activeGrowth = previousReduction + nextReduction;
-            }
+            double adjustmentScale = prepareWidthAdjustments(children, height, shrinkRatio);
 
             boolean rightToLeft = getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
             double x = rightToLeft ? Math.max(0.0, width - contentWidth) : 0.0;
@@ -235,12 +233,8 @@ public final class M3ButtonGroupSkin extends M3ItemContainerSkinBase<
                 }
 
                 double childWidth = fittedWidth(child, height, shrinkRatio);
-                if (index == activeIndex) {
-                    childWidth += activeGrowth;
-                } else if (index == previousIndex) {
-                    childWidth -= previousReduction;
-                } else if (index == nextIndex) {
-                    childWidth -= nextReduction;
+                if (index < widthAdjustments.length) {
+                    childWidth += widthAdjustments[index] * adjustmentScale;
                 }
 
                 double childHeight = fittedHeight(child, childWidth, height);
@@ -261,65 +255,118 @@ public final class M3ButtonGroupSkin extends M3ItemContainerSkinBase<
             }
         }
 
-        /// Updates armed-state listeners after the public item list changes.
+        /// Updates interaction listeners and state storage after the public item list changes.
         private void itemsChanged(ListChangeListener.Change<? extends Node> change) {
-            boolean activeRemoved = false;
             while (change.next()) {
                 for (Node removed : change.getRemoved()) {
-                    detachArmedListener(removed);
-                    activeRemoved |= removed == activeButton;
+                    detachInteractionListeners(removed);
                 }
                 for (Node added : change.getAddedSubList()) {
-                    attachArmedListener(added);
+                    attachInteractionListeners(added);
                 }
             }
 
-            if (activeRemoved) {
-                settlePressInteraction();
-            } else {
-                updateArmedButton();
+            rebuildInteractionState();
+            updateInteractionTargets();
+            requestLayout();
+        }
+
+        /// Attaches shared armed and selected-state listeners to a supported button child.
+        private void attachInteractionListeners(Node item) {
+            if (item instanceof ButtonBase button) {
+                button.armedProperty().addListener(armedListener);
+                button.getPseudoClassStates().addListener(pseudoClassListener);
+            }
+        }
+
+        /// Detaches shared armed and selected-state listeners from a supported button child.
+        private void detachInteractionListeners(Node item) {
+            if (item instanceof ButtonBase button) {
+                button.armedProperty().removeListener(armedListener);
+                button.getPseudoClassStates().removeListener(pseudoClassListener);
+            }
+        }
+
+        /// Preserves current interaction values while realigning storage with the public item list.
+        private void rebuildInteractionState() {
+            interactionTransition.stop();
+            ObservableList<Node> items = control.getItems();
+            int itemCount = items.size();
+            Node[] oldItems = interactionItems;
+            double[] oldProgress = interactionProgress;
+            Node[] newItems = new Node[itemCount];
+            double[] newProgress = new double[itemCount];
+
+            for (int index = 0; index < itemCount; index++) {
+                Node item = items.get(index);
+                newItems[index] = item;
+                for (int oldIndex = 0; oldIndex < oldItems.length; oldIndex++) {
+                    if (oldItems[oldIndex] == item) {
+                        newProgress[index] = oldProgress[oldIndex];
+                        break;
+                    }
+                }
+            }
+
+            interactionItems = newItems;
+            interactionProgress = newProgress;
+            interactionStart = new double[itemCount];
+            interactionTarget = new double[itemCount];
+            widthAdjustments = new double[itemCount];
+        }
+
+        /// Applies initial selection and activation targets without playing an entrance animation.
+        private void initializeInteractionTargets() {
+            boolean standard = control.getVariant() == M3ButtonGroupVariant.STANDARD;
+            @Nullable ButtonBase armedButton = standard ? findArmedButton() : null;
+            for (int index = 0; index < interactionItems.length; index++) {
+                Node item = interactionItems[index];
+                double target = standard && (isSelected(item) || item == armedButton) ? 1.0 : 0.0;
+                interactionProgress[index] = target;
+                interactionStart[index] = target;
+                interactionTarget[index] = target;
             }
             requestLayout();
         }
 
-        /// Attaches the shared armed-state listener to a supported button child.
-        private void attachArmedListener(Node item) {
-            if (item instanceof ButtonBase button) {
-                button.armedProperty().addListener(armedListener);
+        /// Retargets the shared transition for every selected or activated standard-group item.
+        private void updateInteractionTargets() {
+            if (!started) {
+                return;
             }
+            if (interactionItems.length != control.getItems().size()) {
+                rebuildInteractionState();
+            }
+
+            boolean standard = control.getVariant() == M3ButtonGroupVariant.STANDARD;
+            @Nullable ButtonBase armedButton = standard ? findArmedButton() : null;
+            boolean changed = false;
+            for (int index = 0; index < interactionItems.length; index++) {
+                Node item = interactionItems[index];
+                double target = standard && (isSelected(item) || item == armedButton) ? 1.0 : 0.0;
+                interactionStart[index] = interactionProgress[index];
+                changed |= Double.compare(interactionTarget[index], target) != 0;
+                interactionTarget[index] = target;
+            }
+
+            if (!changed) {
+                requestLayout();
+                return;
+            }
+
+            interactionTransition.configure(M3Animation.fastSpatial(control));
+            M3Animation.playFromStart(control, interactionTransition);
         }
 
-        /// Detaches the shared armed-state listener from a supported button child.
-        private void detachArmedListener(Node item) {
-            if (item instanceof ButtonBase button) {
-                button.armedProperty().removeListener(armedListener);
-            }
+        /// Returns whether an item exposes the standard selected pseudo-class.
+        private static boolean isSelected(Node item) {
+            return item instanceof ButtonBase button
+                    && button.getPseudoClassStates().contains(SELECTED_PSEUDO_CLASS);
         }
 
-        /// Starts expansion for the currently armed standard-group child or releases the previous child.
-        private void updateArmedButton() {
-            @Nullable ButtonBase armedButton = control.getVariant() == M3ButtonGroupVariant.STANDARD
-                    ? findArmedButton()
-                    : null;
-            if (armedButton != null && armedButton != activeButton) {
-                pressTransition.stop();
-                pressProgress.set(0.0);
-                activeButton = armedButton;
-                targetProgress = 0.0;
-            }
-
-            if (armedButton != null) {
-                animatePressProgress(1.0);
-            } else if (activeButton != null) {
-                animatePressProgress(0.0);
-            } else {
-                settlePressInteraction();
-            }
-        }
-
-        /// Returns the first armed, enabled button child.
+        /// Returns the first enabled armed button in logical item order.
         private @Nullable ButtonBase findArmedButton() {
-            for (Node item : control.getItems()) {
+            for (Node item : interactionItems) {
                 if (item instanceof ButtonBase button && button.isArmed() && !button.isDisabled()) {
                     return button;
                 }
@@ -327,48 +374,60 @@ public final class M3ButtonGroupSkin extends M3ItemContainerSkinBase<
             return null;
         }
 
-        /// Animates the shared width progress toward the requested interaction state.
-        private void animatePressProgress(double target) {
-            if (Double.compare(targetProgress, target) == 0
-                    && pressTransition.getStatus() == Animation.Status.RUNNING) {
-                return;
+        /// Accumulates symmetric width transfers and returns a scale that preserves every child minimum width.
+        private double prepareWidthAdjustments(
+                ObservableList<Node> children,
+                double height,
+                double shrinkRatio
+        ) {
+            if (widthAdjustments.length != children.size()) {
+                rebuildInteractionState();
             }
-            if (Double.compare(pressProgress.get(), target) == 0) {
-                targetProgress = target;
-                finishPressTransition();
-                return;
+            Arrays.fill(widthAdjustments, 0.0);
+            if (control.getVariant() != M3ButtonGroupVariant.STANDARD) {
+                return 0.0;
             }
 
-            targetProgress = target;
-            pressTransition.configure(M3Animation.fastSpatial(control), target);
-            M3Animation.playFromStart(control, pressTransition);
-        }
+            double multiplier = control.getStandardPressedWidthMultiplier();
+            for (int index = 0; index < children.size(); index++) {
+                Node child = children.get(index);
+                double progress = index < interactionProgress.length ? interactionProgress[index] : 0.0;
+                if (!child.isManaged() || progress <= 0.0) {
+                    continue;
+                }
 
-        /// Clears the active child after the release transition reaches rest.
-        private void finishPressTransition() {
-            if (Double.compare(targetProgress, 0.0) == 0
-                    && Double.compare(pressProgress.get(), 0.0) == 0) {
-                activeButton = null;
+                int previousIndex = previousManagedIndex(children, index);
+                int nextIndex = nextManagedIndex(children, index);
+                if (previousIndex < 0 && nextIndex < 0) {
+                    continue;
+                }
+
+                double requestedGrowth = fittedWidth(child, height, shrinkRatio) * multiplier * progress;
+                widthAdjustments[index] += requestedGrowth;
+                if (previousIndex >= 0 && nextIndex >= 0) {
+                    widthAdjustments[previousIndex] -= requestedGrowth / 2.0;
+                    widthAdjustments[nextIndex] -= requestedGrowth / 2.0;
+                } else if (previousIndex >= 0) {
+                    widthAdjustments[previousIndex] -= requestedGrowth;
+                } else {
+                    widthAdjustments[nextIndex] -= requestedGrowth;
+                }
             }
-            requestLayout();
-        }
 
-        /// Stops width motion and restores every child to its resting width.
-        private void settlePressInteraction() {
-            pressTransition.stop();
-            targetProgress = 0.0;
-            pressProgress.set(0.0);
-            activeButton = null;
-        }
-
-        /// Returns the active child index when it still belongs to this pane.
-        private int activeChildIndex(ObservableList<Node> children) {
-            ButtonBase current = activeButton;
-            if (current == null || control.getVariant() != M3ButtonGroupVariant.STANDARD) {
-                return -1;
+            double scale = 1.0;
+            for (int index = 0; index < children.size(); index++) {
+                double adjustment = widthAdjustments[index];
+                if (adjustment >= 0.0) {
+                    continue;
+                }
+                Node child = children.get(index);
+                double fittedWidth = fittedWidth(child, height, shrinkRatio);
+                scale = Math.min(
+                        scale,
+                        Math.max(0.0, (fittedWidth - MINIMUM_INTERACTION_WIDTH) / -adjustment)
+                );
             }
-            int index = children.indexOf(current);
-            return index >= 0 && current.isManaged() ? index : -1;
+            return scale;
         }
 
         /// Returns the previous managed child index.
@@ -389,20 +448,6 @@ public final class M3ButtonGroupSkin extends M3ItemContainerSkinBase<
                 }
             }
             return -1;
-        }
-
-        /// Returns how much width a neighboring child can yield without becoming unusably narrow.
-        private static double reductionCapacity(
-                ObservableList<Node> children,
-                int index,
-                double height,
-                double shrinkRatio
-        ) {
-            if (index < 0) {
-                return 0.0;
-            }
-            double width = fittedWidth(children.get(index), height, shrinkRatio);
-            return Math.max(0.0, width - MINIMUM_INTERACTION_WIDTH);
         }
 
         /// Returns the number of managed children.
@@ -488,6 +533,32 @@ public final class M3ButtonGroupSkin extends M3ItemContainerSkinBase<
                 return Math.max(minimum, Math.min(Math.min(preferred, maximum), availableHeight));
             }
             return Math.min(child.getLayoutBounds().getHeight(), availableHeight);
+        }
+
+        /// Animates all interaction progress values with one reusable pulse source.
+        @NotNullByDefault
+        private final class ButtonInteractionTransition extends M3FiniteTransition {
+            /// Creates the shared button interaction transition.
+            private ButtonInteractionTransition() {
+            }
+
+            /// Reconfigures motion from the current progress values to the latest targets.
+            private void configure(M3MotionSpec spec) {
+                stop();
+                setCycleDuration(spec.duration());
+                setInterpolator(spec.interpolator());
+                System.arraycopy(interactionProgress, 0, interactionStart, 0, interactionProgress.length);
+            }
+
+            /// Applies one eased interaction frame without allocating per-item animation objects.
+            @Override
+            protected void interpolate(double fraction) {
+                for (int index = 0; index < interactionProgress.length; index++) {
+                    double start = interactionStart[index];
+                    interactionProgress[index] = start + (interactionTarget[index] - start) * fraction;
+                }
+                requestLayout();
+            }
         }
 
         /// Supplies one child width metric without allocation during layout.

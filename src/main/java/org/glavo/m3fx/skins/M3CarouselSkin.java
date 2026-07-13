@@ -4,13 +4,17 @@
 package org.glavo.m3fx.skins;
 
 import javafx.animation.Animation;
+import javafx.animation.AnimationTimer;
 import javafx.animation.PauseTransition;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
+import javafx.event.EventHandler;
 import javafx.geometry.Bounds;
 import javafx.scene.Node;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.SkinBase;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.input.ScrollEvent;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Carousel;
@@ -41,13 +45,52 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
     /// Whether the skin is directly assigning the viewport scroll value.
     private boolean settingScrollValue;
 
+    /// Whether viewport movement currently originates from direct pointer or wheel interaction.
+    private boolean viewportInteractionActive;
+
+    /// Whether the latest viewport value still needs to be reflected in the keyline arrangement.
+    private boolean viewportTrackingDirty;
+
+    /// Latest normalized viewport value received during direct interaction.
+    private double pendingViewportHValue;
+
+    /// Coalesces high-frequency viewport changes to one keyline update per JavaFX pulse.
+    private final AnimationTimer viewportTrackingTimer = new AnimationTimer() {
+        /// Applies the latest interaction position outside the ScrollPane value-listener call stack.
+        @Override
+        public void handle(long now) {
+            applyPendingViewportPosition();
+        }
+    };
+
+    /// Marks wheel and trackpad gestures as direct viewport interaction before smooth scrolling consumes them.
+    private final EventHandler<ScrollEvent> viewportScrollInteractionHandler = event -> {
+        beginViewportInteraction();
+        if (viewportInteractionActive) {
+            scrollSettleDelay.playFromStart();
+        }
+    };
+
+    /// Marks a panning drag as direct viewport interaction before the ScrollPane skin updates its value.
+    private final EventHandler<MouseEvent> viewportDragInteractionHandler = event -> beginViewportInteraction();
+
+    /// Starts settling after a panning gesture releases the pointer.
+    private final EventHandler<MouseEvent> viewportReleaseInteractionHandler = event -> {
+        if (viewportInteractionActive) {
+            scrollSettleDelay.playFromStart();
+        }
+    };
+
     /// Observes viewport movement and schedules snap settling for contained layouts.
     private final ChangeListener<Number> viewportHValueListener = (observable, oldValue, newValue) -> {
         if (settingScrollValue
+                || !viewportInteractionActive
                 || scrollAnimation.getStatus() == Animation.Status.RUNNING
                 || !getSkinnable().getCarouselLayout().usesSnapScrolling()) {
             return;
         }
+        pendingViewportHValue = newValue.doubleValue();
+        viewportTrackingDirty = true;
         scrollSettleDelay.playFromStart();
     };
 
@@ -66,6 +109,7 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
     /// Refreshes geometry when the public layout strategy changes.
     private final ChangeListener<M3CarouselLayout> carouselLayoutListener =
             (observable, oldValue, newValue) -> {
+                cancelViewportInteraction();
                 track.refreshLayoutStrategy();
                 requestSelectedScroll(false);
             };
@@ -118,6 +162,7 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
     @Override
     public void dispose() {
         motionSettingsObserver.dispose();
+        cancelViewportInteraction();
         scrollSettleDelay.stop();
         scrollSettleDelay.setOnFinished(null);
         stopScrollAnimation();
@@ -129,7 +174,9 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
         getSkinnable().effectiveNodeOrientationProperty().removeListener(orientationListener);
         viewport.viewportBoundsProperty().removeListener(viewportBoundsListener);
         viewport.hvalueProperty().removeListener(viewportHValueListener);
-        track.getChildren().clear();
+        viewport.removeEventFilter(ScrollEvent.SCROLL, viewportScrollInteractionHandler);
+        viewport.removeEventFilter(MouseEvent.MOUSE_DRAGGED, viewportDragInteractionHandler);
+        viewport.removeEventFilter(MouseEvent.MOUSE_RELEASED, viewportReleaseInteractionHandler);
         viewport.setContent(null);
         getChildren().remove(viewport);
         super.dispose();
@@ -212,6 +259,9 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
     private void installViewport() {
         viewport.getStyleClass().add(M3Carousel.VIEWPORT_STYLE_CLASS);
         M3ScrollPanes.style(viewport);
+        viewport.addEventFilter(ScrollEvent.SCROLL, viewportScrollInteractionHandler);
+        viewport.addEventFilter(MouseEvent.MOUSE_DRAGGED, viewportDragInteractionHandler);
+        viewport.addEventFilter(MouseEvent.MOUSE_RELEASED, viewportReleaseInteractionHandler);
         M3ScrollPanes.enableSmoothScrolling(viewport);
         track.getStyleClass().add(M3Carousel.TRACK_STYLE_CLASS);
         viewport.setManaged(false);
@@ -223,8 +273,8 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
 
     /// Mirrors the public item list into the internal track.
     private void updateItems() {
-        track.getChildren().setAll(getSkinnable().getItems());
-        track.refreshItems();
+        cancelViewportInteraction();
+        track.setItems(getSkinnable().getItems());
         getSkinnable().requestLayout();
     }
 
@@ -238,7 +288,7 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
     /// Scrolls the selected item immediately and returns whether geometry requires deferring.
     private boolean deferSelectedItemScrollIfNeeded(boolean animated) {
         int selectedIndex = getSkinnable().getSelectedIndex();
-        if (selectedIndex < 0 || selectedIndex >= track.getChildren().size()) {
+        if (selectedIndex < 0 || selectedIndex >= getSkinnable().getItems().size()) {
             return false;
         }
 
@@ -269,8 +319,43 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
         M3Animation.playFromStart(getSkinnable(), scrollAnimation);
     }
 
+    /// Marks subsequent viewport value changes as direct interaction-driven movement.
+    private void beginViewportInteraction() {
+        if (!getSkinnable().getCarouselLayout().usesSnapScrolling()) {
+            return;
+        }
+        stopScrollAnimation();
+        scrollSettleDelay.stop();
+        if (!viewportInteractionActive) {
+            viewportInteractionActive = true;
+            pendingViewportHValue = viewport.getHvalue();
+            viewportTrackingDirty = false;
+            viewportTrackingTimer.start();
+        }
+    }
+
+    /// Applies the latest direct viewport position at most once during the current JavaFX pulse.
+    private void applyPendingViewportPosition() {
+        if (!viewportInteractionActive || !viewportTrackingDirty) {
+            return;
+        }
+        viewportTrackingDirty = false;
+        track.followViewportPosition(pendingViewportHValue, viewport.getViewportBounds().getWidth());
+    }
+
+    /// Stops interaction tracking without selecting or scrolling an item.
+    private void cancelViewportInteraction() {
+        viewportInteractionActive = false;
+        viewportTrackingDirty = false;
+        viewportTrackingTimer.stop();
+        scrollSettleDelay.stop();
+    }
+
     /// Selects and aligns the item nearest the current snapping keyline.
     private void settleToNearestItem() {
+        applyPendingViewportPosition();
+        viewportInteractionActive = false;
+        viewportTrackingTimer.stop();
         M3Carousel carousel = getSkinnable();
         if (!carousel.getCarouselLayout().usesSnapScrolling()) {
             return;

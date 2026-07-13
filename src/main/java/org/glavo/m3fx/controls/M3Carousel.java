@@ -4,6 +4,7 @@
 package org.glavo.m3fx.controls;
 
 import javafx.beans.InvalidationListener;
+import javafx.beans.WeakInvalidationListener;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ObjectProperty;
@@ -16,6 +17,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.css.PseudoClass;
+import javafx.event.WeakEventHandler;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -123,6 +125,10 @@ public class M3Carousel extends Control {
     /// Refreshes selection when a carousel item becomes visible, hidden, enabled, or disabled.
     private final InvalidationListener itemReachabilityListener = observable -> applySelectedIndex(getSelectedIndex(), false);
 
+    /// Weak wrapper installed on application-owned item reachability properties.
+    private final WeakInvalidationListener weakItemReachabilityListener =
+            new WeakInvalidationListener(itemReachabilityListener);
+
     /// Updates item installation, selection invariants, and accessibility metadata when items change.
     private final ListChangeListener<Node> itemsListener = change -> {
         while (change.next()) {
@@ -142,6 +148,9 @@ public class M3Carousel extends Control {
 
     /// Selects clicked items.
     private final javafx.event.EventHandler<MouseEvent> itemMouseHandler = this::handleItemMouseClicked;
+
+    /// Weak wrapper installed on application-owned item nodes.
+    private final WeakEventHandler<MouseEvent> weakItemMouseHandler = new WeakEventHandler<>(itemMouseHandler);
 
     /// Whether the selection property is being updated from normalization logic.
     private boolean updatingSelection;
@@ -641,16 +650,18 @@ public class M3Carousel extends Control {
     /// Installs carousel behavior and styles on one item.
     private void installItem(Node item) {
         M3ControlStyles.add(item, ITEM_STYLE_CLASS);
-        item.addEventHandler(MouseEvent.MOUSE_CLICKED, itemMouseHandler);
-        item.visibleProperty().addListener(itemReachabilityListener);
-        item.disabledProperty().addListener(itemReachabilityListener);
+        item.addEventHandler(MouseEvent.MOUSE_CLICKED, weakItemMouseHandler);
+        item.visibleProperty().addListener(weakItemReachabilityListener);
+        item.managedProperty().addListener(weakItemReachabilityListener);
+        item.disabledProperty().addListener(weakItemReachabilityListener);
     }
 
     /// Removes carousel behavior and transient styles from one item.
     private void uninstallItem(Node item) {
-        item.visibleProperty().removeListener(itemReachabilityListener);
-        item.disabledProperty().removeListener(itemReachabilityListener);
-        item.removeEventHandler(MouseEvent.MOUSE_CLICKED, itemMouseHandler);
+        item.visibleProperty().removeListener(weakItemReachabilityListener);
+        item.managedProperty().removeListener(weakItemReachabilityListener);
+        item.disabledProperty().removeListener(weakItemReachabilityListener);
+        item.removeEventHandler(MouseEvent.MOUSE_CLICKED, weakItemMouseHandler);
         item.getStyleClass().remove(ITEM_STYLE_CLASS);
         item.getStyleClass().remove(SELECTED_ITEM_STYLE_CLASS);
         item.pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, false);
@@ -672,7 +683,13 @@ public class M3Carousel extends Control {
         @Nullable Node nextItem = normalizedIndex < 0 ? null : getItems().get(normalizedIndex);
         updateItemSelectionStyles(normalizedIndex);
         selectedItem.set(nextItem);
-        selectedItems.setAll(nextItem == null ? java.util.List.of() : java.util.List.of(nextItem));
+        if (nextItem == null) {
+            selectedItems.clear();
+        } else if (selectedItems.isEmpty()) {
+            selectedItems.add(nextItem);
+        } else if (selectedItems.get(0) != nextItem) {
+            selectedItems.set(0, nextItem);
+        }
         if (previousItem != nextItem) {
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED_ITEMS);
             notifyAccessibleFocusChanged();
@@ -784,7 +801,7 @@ public class M3Carousel extends Control {
 
     /// Returns whether an item node itself can participate in selection.
     private static boolean isSelectableItem(Node item) {
-        return item.isVisible() && !item.isDisabled();
+        return item.isVisible() && item.isManaged() && !item.isDisabled();
     }
 
 }

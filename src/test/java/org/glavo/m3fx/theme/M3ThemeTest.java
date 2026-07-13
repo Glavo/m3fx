@@ -191,6 +191,7 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-carousel-track-horizontal-padding"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-carousel-track-vertical-padding"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-carousel-item-spacing"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-carousel-item-shape"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-carousel-small-item-min-width"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-carousel-small-item-max-width"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-carousel-large-item-max-width"));
@@ -406,6 +407,7 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-loading-indicator-indicator-size: 38px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-surface-content-padding: 20px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-carousel-item-spacing: 8px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-carousel-item-shape: 32px"));
         assertTrue(theme.toControlStyleRules().contains("-m3-container-height: 48px"));
         assertTrue(theme.toControlStyleRules().contains("-m3-content-spacing: 4px"));
         assertTrue(theme.toControlStyleRules().contains("-m3-horizontal-padding: 32px"));
@@ -529,6 +531,7 @@ final class M3ThemeTest {
         assertEquals(20.0, theme.tokens().componentTokens().validationSummary().contentPadding(), 0.0001);
         assertEquals(24.0, theme.tokens().componentTokens().surface().containerShape(), 0.0001);
         assertEquals(8.0, theme.tokens().componentTokens().carousel().itemSpacing(), 0.0001);
+        assertEquals(32.0, theme.tokens().componentTokens().carousel().itemShape(), 0.0001);
         assertEquals(40.0, theme.tokens().componentTokens().carousel().smallItemMinWidth(), 0.0001);
         assertEquals(56.0, theme.tokens().componentTokens().carousel().smallItemMaxWidth(), 0.0001);
         assertEquals(320.0, theme.tokens().componentTokens().carousel().largeItemMaxWidth(), 0.0001);

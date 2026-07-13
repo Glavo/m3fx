@@ -116,7 +116,10 @@ final class M3ControlAccessibilityTest {
         assertEquals(AccessibleRole.LIST_ITEM, new M3ListItem().getAccessibleRole());
         assertEquals(AccessibleRole.TEXT, new M3ListSectionHeader().getAccessibleRole());
         assertEquals(AccessibleRole.LIST_VIEW, new M3ChipGroup().getAccessibleRole());
-        assertEquals(AccessibleRole.TOGGLE_BUTTON, new M3Chip().getAccessibleRole());
+        M3Chip assistChip = new M3Chip();
+        assertEquals(AccessibleRole.BUTTON, assistChip.getAccessibleRole());
+        assistChip.setVariant(M3ChipVariant.FILTER);
+        assertEquals(AccessibleRole.TOGGLE_BUTTON, assistChip.getAccessibleRole());
         assertEquals(AccessibleRole.TOOL_BAR, new M3IconToggleButtonGroup().getAccessibleRole());
         assertEquals(AccessibleRole.TOGGLE_BUTTON, new M3IconToggleButton().getAccessibleRole());
         assertEquals(AccessibleRole.TOOL_BAR, new M3SegmentedButtonGroup().getAccessibleRole());
@@ -265,6 +268,7 @@ final class M3ControlAccessibilityTest {
         assertAccessibleFireToggles(iconToggleButton, iconToggleButton::isSelected);
 
         M3Chip chip = new M3Chip("Chip");
+        chip.setVariant(M3ChipVariant.FILTER);
         assertAccessibleFireToggles(chip, chip::isSelected);
 
         M3SegmentedButton segmentedButton = new M3SegmentedButton("Segment");
@@ -336,6 +340,7 @@ final class M3ControlAccessibilityTest {
         assertDisabledAccessibleFireDoesNotToggle(iconToggleButton, iconToggleButton::isSelected);
 
         M3Chip chip = new M3Chip("Chip");
+        chip.setVariant(M3ChipVariant.FILTER);
         assertDisabledAccessibleFireDoesNotToggle(chip, chip::isSelected);
 
         M3SegmentedButton segmentedButton = new M3SegmentedButton("Segment");

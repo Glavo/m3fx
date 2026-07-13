@@ -2999,9 +2999,9 @@ final class M3ControlStyleTest {
         assertRegionRadii(second, 16.0, 48.0, 48.0, 16.0);
     }
 
-    /// Verifies that a standard group redistributes armed-item width without changing its total footprint.
+    /// Verifies standard-group activated and selected width transfer, including multi-selection.
     @Test
-    void standardButtonGroupRedistributesArmedItemWidth() {
+    void standardButtonGroupRedistributesActivatedAndSelectedItemWidth() {
         FxTestUtils.runOnFxThread(() -> {
             M3Button first = new M3Button("Action");
             M3Button middle = new M3Button("Action");
@@ -3054,6 +3054,63 @@ final class M3ControlStyleTest {
             assertEquals(restingMiddleWidth - edgeGrowth, middle.getWidth(), 0.0001);
             assertEquals(restingLastWidth, last.getWidth(), 0.0001);
             first.disarm();
+
+            M3IconToggleButton selectedFirst = new M3IconToggleButton("A");
+            M3IconToggleButton selectedMiddle = new M3IconToggleButton("B");
+            M3IconToggleButton selectedLast = new M3IconToggleButton("C");
+            M3ButtonGroup selectionGroup = new M3ButtonGroup();
+            selectionGroup.setVariant(M3ButtonGroupVariant.STANDARD);
+            selectionGroup.getItems().addAll(selectedFirst, selectedMiddle, selectedLast);
+            Pane selectionRoot = new Pane(selectionGroup);
+            Scene selectionScene = new Scene(selectionRoot, 320.0, 100.0);
+
+            M3ThemeManager.install(selectionScene, M3Theme.defaultTheme());
+            M3MotionSettings.setAnimationsEnabled(selectionRoot, false);
+            selectionRoot.applyCss();
+            resizeButtonGroupToPreferredSize(selectionGroup);
+
+            double selectionRestingWidth = selectedMiddle.getWidth();
+            double selectionChildrenWidth =
+                    selectedFirst.getWidth() + selectionRestingWidth + selectedLast.getWidth();
+            double selectionGrowth =
+                    selectionRestingWidth * selectionGroup.getStandardPressedWidthMultiplier();
+
+            selectedMiddle.setSelected(true);
+            selectionGroup.layout();
+
+            assertEquals(
+                    selectionChildrenWidth,
+                    selectedFirst.getWidth() + selectedMiddle.getWidth() + selectedLast.getWidth(),
+                    0.0001
+            );
+            assertEquals(selectionRestingWidth + selectionGrowth, selectedMiddle.getWidth(), 0.0001);
+            assertEquals(selectionRestingWidth - selectionGrowth / 2.0, selectedFirst.getWidth(), 0.0001);
+            assertEquals(selectionRestingWidth - selectionGrowth / 2.0, selectedLast.getWidth(), 0.0001);
+
+            selectedMiddle.setSelected(false);
+            selectionGroup.layout();
+            assertEquals(selectionRestingWidth, selectedFirst.getWidth(), 0.0001);
+            assertEquals(selectionRestingWidth, selectedMiddle.getWidth(), 0.0001);
+            assertEquals(selectionRestingWidth, selectedLast.getWidth(), 0.0001);
+
+            selectedFirst.setSelected(true);
+            selectedMiddle.setSelected(true);
+            selectionGroup.layout();
+            assertEquals(
+                    selectionChildrenWidth,
+                    selectedFirst.getWidth() + selectedMiddle.getWidth() + selectedLast.getWidth(),
+                    0.0001
+            );
+            assertEquals(selectionRestingWidth + selectionGrowth / 2.0, selectedFirst.getWidth(), 0.0001);
+            assertEquals(selectionRestingWidth, selectedMiddle.getWidth(), 0.0001);
+            assertEquals(selectionRestingWidth - selectionGrowth / 2.0, selectedLast.getWidth(), 0.0001);
+
+            selectionGroup.setVariant(M3ButtonGroupVariant.CONNECTED);
+            selectionRoot.applyCss();
+            selectionGroup.layout();
+            assertEquals(selectionRestingWidth, selectedFirst.getWidth(), 0.0001);
+            assertEquals(selectionRestingWidth, selectedMiddle.getWidth(), 0.0001);
+            assertEquals(selectionRestingWidth, selectedLast.getWidth(), 0.0001);
         });
     }
 
@@ -4361,6 +4418,7 @@ final class M3ControlStyleTest {
             root.setStyle("-fx-background-color: white;");
             Scene scene = new Scene(root, 240.0, 80.0);
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            M3MotionSettings.setAnimationsEnabled(root, false);
             root.applyCss();
             splitButton.resize(splitButton.prefWidth(-1.0), splitButton.prefHeight(-1.0));
             splitButton.layout();
@@ -4370,6 +4428,14 @@ final class M3ControlStyleTest {
             actionButton.layout();
             menuButton.layout();
             root.applyCss();
+            Path menuSurfaceShape = assertInstanceOf(Path.class, menuButton.getShape());
+            List<PathElement> menuSurfaceElements = List.copyOf(menuSurfaceShape.getElements());
+            Region menuOverlay = lookupRegion(menuButton, ".m3-state-layer");
+            Path menuStateClip = assertInstanceOf(
+                    Path.class,
+                    Objects.requireNonNull(menuOverlay.getParent(), "clipped state content").getClip()
+            );
+            List<PathElement> menuStateClipElements = List.copyOf(menuStateClip.getElements());
             assertRegionRadii(actionButton, 20.0, 4.0, 4.0, 20.0);
             assertRegionRadii(menuButton, 4.0, 20.0, 20.0, 4.0);
             assertStateLayerRadii(actionButton, 20.0, 4.0, 4.0, 20.0);
@@ -4382,8 +4448,8 @@ final class M3ControlStyleTest {
             menuButton.pseudoClassStateChanged(focusVisible, true);
             root.applyCss();
             menuButton.layout();
-            assertRegionRadii(menuButton, 4.0, 20.0, 20.0, 4.0);
-            assertStateLayerRadii(menuButton, 4.0, 20.0, 20.0, 4.0);
+            assertRegionRadii(menuButton, 12.0, 20.0, 20.0, 12.0);
+            assertStateLayerRadii(menuButton, 12.0, 20.0, 20.0, 12.0);
             menuButton.pseudoClassStateChanged(focused, false);
             menuButton.pseudoClassStateChanged(focusVisible, false);
 
@@ -4403,11 +4469,31 @@ final class M3ControlStyleTest {
             assertStateLayerRadii(menuButton, 12.0, 20.0, 20.0, 12.0);
             menuButton.disarm();
 
-            menuButton.pseudoClassStateChanged(PseudoClass.getPseudoClass("showing"), true);
+            PseudoClass showing = PseudoClass.getPseudoClass("showing");
+            menuButton.pseudoClassStateChanged(showing, true);
             root.applyCss();
             menuButton.layout();
             assertRegionRadii(menuButton, 20.0, 20.0, 20.0, 20.0);
             assertStateLayerRadii(menuButton, 20.0, 20.0, 20.0, 20.0);
+            assertEquals(0.10, lookupRegion(menuButton, ".m3-state-layer").getOpacity(), 0.0001);
+
+            menuButton.arm();
+            root.applyCss();
+            menuButton.layout();
+            assertRegionRadii(menuButton, 12.0, 20.0, 20.0, 12.0);
+            assertStateLayerRadii(menuButton, 12.0, 20.0, 20.0, 12.0);
+            assertEquals(0.19, lookupRegion(menuButton, ".m3-state-layer").getOpacity(), 0.0001);
+
+            menuButton.disarm();
+            menuButton.pseudoClassStateChanged(showing, false);
+            root.applyCss();
+            menuButton.layout();
+            assertRegionRadii(menuButton, 4.0, 20.0, 20.0, 4.0);
+            assertStateLayerRadii(menuButton, 4.0, 20.0, 20.0, 4.0);
+            assertEquals(0.0, lookupRegion(menuButton, ".m3-state-layer").getOpacity(), 0.0001);
+            assertSame(menuSurfaceShape, menuButton.getShape());
+            assertSamePathElements(menuSurfaceShape, menuSurfaceElements, "split button surface");
+            assertSamePathElements(menuStateClip, menuStateClipElements, "split button state clip");
         });
     }
     /// Verifies that owner-level shape tokens drive both split-button surfaces and feedback clips.
@@ -4429,6 +4515,7 @@ final class M3ControlStyleTest {
             Pane root = new Pane(splitButton);
             Scene scene = new Scene(root, 260.0, 100.0);
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            M3MotionSettings.setAnimationsEnabled(root, false);
             root.applyCss();
             splitButton.resize(splitButton.prefWidth(-1.0), splitButton.prefHeight(-1.0));
             splitButton.layout();
@@ -4515,6 +4602,24 @@ final class M3ControlStyleTest {
                             actionBounds.getMinY() + actionBounds.getHeight() / 2.0
                     );
                     assertTrue(colorDistance(gapPixel, Color.web("#00ff00")) < 0.04);
+                }
+                if (splitButton.getVariant() == M3ButtonVariant.TONAL
+                        || splitButton.getVariant() == M3ButtonVariant.FILLED) {
+                    WritableImage actionImage = snapshotImageOnFxThread(actionButton);
+                    WritableImage menuImage = snapshotImageOnFxThread(menuButton);
+                    Color actionInnerCorner = actionImage.getPixelReader().getColor(
+                            (int) actionImage.getWidth() - 1,
+                            0
+                    );
+                    Color menuInnerCorner = menuImage.getPixelReader().getColor(0, 0);
+                    assertTrue(
+                            colorDistance(actionInnerCorner, Color.WHITE) < 0.04,
+                            () -> "Action inner corner color=" + actionInnerCorner + " for " + splitButton.getVariant()
+                    );
+                    assertTrue(
+                            colorDistance(menuInnerCorner, Color.WHITE) < 0.04,
+                            () -> "Menu inner corner color=" + menuInnerCorner + " for " + splitButton.getVariant()
+                    );
                 }
             }
         });
@@ -5820,9 +5925,14 @@ final class M3ControlStyleTest {
                 M3MotionSettings.setAnimationsEnabled(viewport, false);
                 ScrollEvent event = scrollEvent(viewport, 0.0, -80.0);
                 viewport.fireEvent(event);
+                root.layout();
 
                 assertTrue(event.isConsumed());
-                assertTrue(viewport.getHvalue() > 0.0, () -> "hvalue=" + viewport.getHvalue());
+                assertTrue(viewport.getHvalue() > 0.0, () -> "hvalue=" + viewport.getHvalue()
+                        + ", contentBounds=" + viewport.getContent().getLayoutBounds()
+                        + ", contentPrefWidth=" + assertInstanceOf(Region.class, viewport.getContent()).prefWidth(-1.0)
+                        + ", viewport=" + viewport.getViewportBounds());
+
 
                 M3MotionSettings.clearAnimationsEnabled(viewport);
             } finally {
@@ -18862,7 +18972,7 @@ final class M3ControlStyleTest {
         assertEquals(6.0, chip.getIconHorizontalPadding(), 0.0001);
         assertEquals(36.0, chip.getPrefHeight(), 0.0001);
         assertEquals(6.0, chip.getPadding().getLeft(), 0.0001);
-        assertEquals(6.0, chip.getPadding().getRight(), 0.0001);
+        assertEquals(14.0, chip.getPadding().getRight(), 0.0001);
         assertEquals(22.0, icon.getIconSize(), 0.0001);
 
         chip.setGraphic(null);
@@ -18892,6 +19002,62 @@ final class M3ControlStyleTest {
         assertEquals(icon, chip.getGraphic());
         assertEquals(M3ChipVariant.INPUT, chip.getVariant());
         assertTrue(chip.isSelected());
+    }
+
+    /// Verifies command and selectable chip semantics together with logical leading and trailing slots.
+    @Test
+    void chipVariantsExposeSemanticSelectionAndLogicalGraphicSlots() {
+        AtomicInteger actions = new AtomicInteger();
+        M3Chip assist = new M3Chip("Assist");
+        assist.setOnAction(event -> actions.incrementAndGet());
+
+        assist.fire();
+
+        assertFalse(assist.isSelected());
+        assertEquals(1, actions.get());
+        assertEquals(AccessibleRole.BUTTON, assist.getAccessibleRole());
+
+        assist.setSelected(true);
+
+        assertFalse(assist.isSelected(), "command chip variants should reject persistent selection");
+
+        M3Chip filter = createChip("Filter", M3ChipVariant.FILTER);
+        filter.fire();
+
+        assertTrue(filter.isSelected());
+        assertEquals(AccessibleRole.TOGGLE_BUTTON, filter.getAccessibleRole());
+
+        filter.setVariant(M3ChipVariant.SUGGESTION);
+
+        assertFalse(filter.isSelected());
+        assertEquals(AccessibleRole.BUTTON, filter.getAccessibleRole());
+
+        M3Icon leading = new M3Icon("P");
+        M3Icon trailing = new M3Icon("X");
+        M3Chip input = createChip("Alex Morgan", leading, M3ChipVariant.INPUT);
+        input.setTrailingGraphic(trailing);
+        HBox root = new HBox(input);
+        Scene scene = new Scene(root, 240.0, 80.0);
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        root.layout();
+
+        assertSame(trailing, input.getTrailingGraphic());
+        assertTrue(leading.getStyleClass().contains(M3Chip.LEADING_GRAPHIC_STYLE_CLASS));
+        assertTrue(trailing.getStyleClass().contains(M3Chip.TRAILING_GRAPHIC_STYLE_CLASS));
+        assertEquals(input.getIconHorizontalPadding(), input.getPadding().getLeft(), 0.0001);
+        assertEquals(input.getIconHorizontalPadding(), input.getPadding().getRight(), 0.0001);
+        Bounds leadingBounds = leading.localToScene(leading.getBoundsInLocal());
+        Bounds trailingBounds = trailing.localToScene(trailing.getBoundsInLocal());
+        assertTrue(leadingBounds.getMaxX() <= trailingBounds.getMinX());
+
+        input.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+        root.applyCss();
+        root.layout();
+
+        leadingBounds = leading.localToScene(leading.getBoundsInLocal());
+        trailingBounds = trailing.localToScene(trailing.getBoundsInLocal());
+        assertTrue(trailingBounds.getMaxX() <= leadingBounds.getMinX());
     }
 
     /// Verifies that chips expose flat and elevated container style classes.
@@ -18935,9 +19101,9 @@ final class M3ControlStyleTest {
     /// Verifies that chip groups track multiple selected chips in child order.
     @Test
     void chipGroupTracksMultipleSelections() {
-        M3Chip first = new M3Chip("First");
-        M3Chip second = new M3Chip("Second");
-        M3Chip third = new M3Chip("Third");
+        M3Chip first = createChip("First", M3ChipVariant.FILTER);
+        M3Chip second = createChip("Second", M3ChipVariant.FILTER);
+        M3Chip third = createChip("Third", M3ChipVariant.FILTER);
         M3ChipGroup group = chipGroup(first, second, third);
 
         third.setSelected(true);
@@ -18969,8 +19135,8 @@ final class M3ControlStyleTest {
     /// Verifies that chip groups can enforce single selection.
     @Test
     void chipGroupCanUseSingleSelection() {
-        M3Chip first = new M3Chip("First");
-        M3Chip second = new M3Chip("Second");
+        M3Chip first = createChip("First", M3ChipVariant.FILTER);
+        M3Chip second = createChip("Second", M3ChipVariant.FILTER);
         M3ChipGroup group = chipGroup(first, second);
 
         group.setSelectionMode(M3ChipSelectionMode.SINGLE);
@@ -19004,8 +19170,8 @@ final class M3ControlStyleTest {
     /// Verifies that chip groups can require a selected chip.
     @Test
     void chipGroupCanRequireSelection() {
-        M3Chip first = new M3Chip("First");
-        M3Chip second = new M3Chip("Second");
+        M3Chip first = createChip("First", M3ChipVariant.FILTER);
+        M3Chip second = createChip("Second", M3ChipVariant.FILTER);
         M3ChipGroup group = chipGroup(first, second);
 
         group.setSelectionMode(M3ChipSelectionMode.SINGLE);
@@ -19029,8 +19195,8 @@ final class M3ControlStyleTest {
     /// Verifies that chip groups update selection when chips are removed.
     @Test
     void chipGroupUpdatesSelectionWhenChildrenChange() {
-        M3Chip first = new M3Chip("First");
-        M3Chip second = new M3Chip("Second");
+        M3Chip first = createChip("First", M3ChipVariant.FILTER);
+        M3Chip second = createChip("Second", M3ChipVariant.FILTER);
         M3ChipGroup group = chipGroup(first, second);
 
         second.setSelected(true);
@@ -28263,9 +28429,9 @@ final class M3ControlStyleTest {
         segmentedGroup.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.HOME));
         assertEquals(segmentFirst, segmentedGroup.getSelectedButton());
 
-        M3Chip chipFirst = new M3Chip("Input");
-        M3Chip chipSecond = new M3Chip("Filter");
-        M3Chip chipThird = new M3Chip("Assist");
+        M3Chip chipFirst = createChip("Input", M3ChipVariant.INPUT);
+        M3Chip chipSecond = createChip("Filter", M3ChipVariant.FILTER);
+        M3Chip chipThird = createChip("Assist", M3ChipVariant.FILTER);
         chipSecond.setDisable(true);
         M3ChipGroup chipGroup = chipGroup(chipFirst, chipSecond, chipThird);
         chipGroup.setSelectionMode(M3ChipSelectionMode.SINGLE);
@@ -28410,10 +28576,10 @@ final class M3ControlStyleTest {
         assertFalse(segmentFirst.isSelected());
         assertEquals(segmentSecond, segmentedGroup.getSelectedButton());
 
-        M3Chip chipDisabled = new M3Chip("Disabled");
-        M3Chip chipHidden = new M3Chip("Hidden");
-        M3Chip chipFirst = new M3Chip("First");
-        M3Chip chipSecond = new M3Chip("Second");
+        M3Chip chipDisabled = createChip("Disabled", M3ChipVariant.FILTER);
+        M3Chip chipHidden = createChip("Hidden", M3ChipVariant.FILTER);
+        M3Chip chipFirst = createChip("First", M3ChipVariant.FILTER);
+        M3Chip chipSecond = createChip("Second", M3ChipVariant.FILTER);
         chipDisabled.setDisable(true);
         chipHidden.setVisible(false);
         M3ChipGroup chipGroup = chipGroup(chipDisabled, chipHidden, chipFirst, chipSecond);
@@ -28519,8 +28685,8 @@ final class M3ControlStyleTest {
         segmentedGroup.setSelectionMode(M3SegmentedButtonSelectionMode.SINGLE);
         segmentedGroup.setAllowEmptySelection(false);
 
-        M3Chip chipFirst = new M3Chip("First");
-        M3Chip chipSecond = new M3Chip("Second");
+        M3Chip chipFirst = createChip("First", M3ChipVariant.FILTER);
+        M3Chip chipSecond = createChip("Second", M3ChipVariant.FILTER);
         M3ChipGroup chipGroup = chipGroup(chipFirst, chipSecond);
         chipGroup.setSelectionMode(M3ChipSelectionMode.SINGLE);
         chipGroup.setAllowEmptySelection(false);
@@ -28688,10 +28854,11 @@ final class M3ControlStyleTest {
     @Test
     void horizontalKeyboardNavigationMirrorsForRightToLeftLayouts() {
         FxTestUtils.runOnFxThread(() -> {
-            M3Button groupFirst = new M3Button("First");
-            M3Button groupSecond = new M3Button("Second");
-            M3Button groupThird = new M3Button("Third");
-            M3ButtonGroup buttonGroup = buttonGroup(groupFirst, groupSecond, groupThird);
+            M3IconToggleButton groupFirst = new M3IconToggleButton("First");
+            M3IconToggleButton groupSecond = new M3IconToggleButton("Second");
+            M3IconToggleButton groupThird = new M3IconToggleButton("Third");
+            M3ButtonGroup buttonGroup = new M3ButtonGroup();
+            buttonGroup.getItems().addAll(groupFirst, groupSecond, groupThird);
             buttonGroup.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
 
             M3IconToggleButton iconFirst = new M3IconToggleButton("A");
@@ -28710,9 +28877,9 @@ final class M3ControlStyleTest {
             segmentedGroup.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
             segmentedGroup.select(segmentSecond);
 
-            M3Chip chipFirst = new M3Chip("Input");
-            M3Chip chipSecond = new M3Chip("Filter");
-            M3Chip chipThird = new M3Chip("Assist");
+            M3Chip chipFirst = createChip("Input", M3ChipVariant.INPUT);
+            M3Chip chipSecond = createChip("Filter", M3ChipVariant.FILTER);
+            M3Chip chipThird = createChip("Assist", M3ChipVariant.FILTER);
             M3ChipGroup chipGroup = chipGroup(chipFirst, chipSecond, chipThird);
             chipGroup.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
             chipGroup.setSelectionMode(M3ChipSelectionMode.SINGLE);
@@ -28845,9 +29012,9 @@ final class M3ControlStyleTest {
                     segmentedButtonGroup(segmentFirst, segmentSecond, segmentThird);
             segmentedGroup.select(segmentFirst);
 
-            M3Chip chipFirst = new M3Chip("Input");
-            M3Chip chipSecond = new M3Chip("Filter");
-            M3Chip chipThird = new M3Chip("Assist");
+            M3Chip chipFirst = createChip("Input", M3ChipVariant.INPUT);
+            M3Chip chipSecond = createChip("Filter", M3ChipVariant.FILTER);
+            M3Chip chipThird = createChip("Assist", M3ChipVariant.FILTER);
             M3ChipGroup chipGroup = chipGroup(chipFirst, chipSecond, chipThird);
             chipGroup.setSelectionMode(M3ChipSelectionMode.SINGLE);
             chipGroup.select(chipFirst);
@@ -28970,8 +29137,8 @@ final class M3ControlStyleTest {
             M3SegmentedButtonGroup segmentedGroup = segmentedButtonGroup(segmentFirst, segmentSecond);
             segmentedGroup.select(segmentSecond);
 
-            M3Chip chipFirst = new M3Chip("Input");
-            M3Chip chipSecond = new M3Chip("Filter");
+            M3Chip chipFirst = createChip("Input", M3ChipVariant.INPUT);
+            M3Chip chipSecond = createChip("Filter", M3ChipVariant.FILTER);
             M3ChipGroup chipGroup = chipGroup(chipFirst, chipSecond);
             chipGroup.setSelectionMode(M3ChipSelectionMode.SINGLE);
             chipGroup.select(chipSecond);
@@ -32607,7 +32774,9 @@ final class M3ControlStyleTest {
             root.resize(420.0, 160.0);
             root.layout();
 
+
             WritableImage image = snapshotImageOnFxThread(root);
+
             assertSnapshotNodeContainsContrast(image, carousel, Color.WHITE, 0.04);
             assertSnapshotNodeContainsContrast(image, second, Color.WHITE, 0.04);
             assertTrue(second.getStyleClass().contains(M3Carousel.SELECTED_ITEM_STYLE_CLASS));
@@ -35269,8 +35438,8 @@ final class M3ControlStyleTest {
         assertFalse(menuFirst.isSelected());
         assertTrue(menuSecond.isSelected());
 
-        M3Chip chipFirst = new M3Chip("Input");
-        M3Chip chipSecond = new M3Chip("Filter");
+        M3Chip chipFirst = createChip("Input", M3ChipVariant.INPUT);
+        M3Chip chipSecond = createChip("Filter", M3ChipVariant.FILTER);
         M3ChipGroup chipGroup = chipGroup(chipFirst, chipSecond);
 
         chipGroup.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, chipFirst, chipSecond);
@@ -39378,7 +39547,9 @@ final class M3ControlStyleTest {
             double bottomLeft
     ) {
         Region overlay = lookupRegion(node, ".m3-state-layer");
-        assertRegionRadii(overlay, topLeft, topRight, bottomRight, bottomLeft);
+        Node clippedContent = Objects.requireNonNull(overlay.getParent(), "clipped state content");
+        Path clip = assertInstanceOf(Path.class, clippedContent.getClip());
+        assertPathRadii(clip, topLeft, topRight, bottomRight, bottomLeft);
     }
 
     /// Verifies which corners are rounded on a region's background.
@@ -39404,6 +39575,11 @@ final class M3ControlStyleTest {
             double bottomRight,
             double bottomLeft
     ) {
+        if (region.getShape() instanceof Path path && path.getElements().size() >= 9) {
+            assertPathRadii(path, topLeft, topRight, bottomRight, bottomLeft);
+            return;
+        }
+
         javafx.scene.layout.CornerRadii radii = region.getBackground().getFills().get(0).getRadii();
         assertEquals(topLeft, radii.getTopLeftHorizontalRadius(), 0.0001);
         assertEquals(topLeft, radii.getTopLeftVerticalRadius(), 0.0001);
@@ -39413,6 +39589,26 @@ final class M3ControlStyleTest {
         assertEquals(bottomRight, radii.getBottomRightVerticalRadius(), 0.0001);
         assertEquals(bottomLeft, radii.getBottomLeftHorizontalRadius(), 0.0001);
         assertEquals(bottomLeft, radii.getBottomLeftVerticalRadius(), 0.0001);
+    }
+
+    /// Verifies the four corners represented by a reusable rounded-rectangle path.
+    private static void assertPathRadii(
+            Path path,
+            double topLeft,
+            double topRight,
+            double bottomRight,
+            double bottomLeft
+    ) {
+        assertEquals(topLeft, pathCornerRadius(path, 8), 0.0001);
+        assertEquals(topRight, pathCornerRadius(path, 2), 0.0001);
+        assertEquals(bottomRight, pathCornerRadius(path, 4), 0.0001);
+        assertEquals(bottomLeft, pathCornerRadius(path, 6), 0.0001);
+    }
+
+    /// Returns one corner radius from a reusable rounded-rectangle path.
+    private static double pathCornerRadius(Path path, int index) {
+        PathElement element = path.getElements().get(index);
+        return element instanceof javafx.scene.shape.ArcTo arc ? arc.getRadiusX() : 0.0;
     }
 
     /// Returns a shape looked up below a node.

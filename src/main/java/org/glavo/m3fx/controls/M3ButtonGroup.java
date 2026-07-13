@@ -45,9 +45,10 @@ import java.util.Objects;
 /// `M3ButtonGroup` lays out Material [ButtonBase] children as a standard separated group or as a connected group with
 /// coordinated outer and inner corners. The [variant][M3ButtonGroupVariant] controls whether grouped buttons keep
 /// their own rounded containers or join into a single visual set, and the [size][M3ButtonSize] controls
-/// container height and group spacing through CSS tokens. In a standard group, an armed button expands by the
-/// configured [width multiplier][standardPressedWidthMultiplierProperty] while its immediate neighbors yield the
-/// same total width. Connected groups retain fixed widths and express activation through their coordinated shapes.
+/// container height and group spacing through CSS tokens. In a standard group, a selected or armed button expands
+/// by the configured [width multiplier][standardPressedWidthMultiplierProperty] while its immediate neighbors yield
+/// the same total width. Connected groups retain fixed widths and express selection or activation through their
+/// coordinated shapes.
 ///
 /// See [Material Design button groups](https://m3.material.io/components/button-groups/overview).
 @NotNullByDefault
@@ -367,8 +368,8 @@ public class M3ButtonGroup extends Control {
                 event,
                 this,
                 getItems(),
-                M3SelectionNavigation.focused(getItems(), M3Button.class),
-                M3Button.class,
+                M3SelectionNavigation.focused(getItems(), ButtonBase.class),
+                ButtonBase.class,
                 true,
                 false,
                 M3NodeLayout.isRightToLeft(this)

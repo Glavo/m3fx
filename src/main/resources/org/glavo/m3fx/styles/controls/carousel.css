@@ -20,7 +20,12 @@
     -fx-alignment: center-left;
     -fx-padding: 8px 16px 8px 16px;
     -fx-spacing: 8px;
+    -m3-carousel-item-mask-shape: 28px;
     -m3-carousel-small-item-min-width: 40px;
     -m3-carousel-small-item-max-width: 56px;
     -m3-carousel-large-item-max-width: 320px;
+}
+
+.m3-carousel .m3-card {
+    -m3-container-shape: 28px;
 }

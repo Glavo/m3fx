@@ -47,6 +47,12 @@ public class M3Chip extends ButtonBase {
     /// The selected pseudo-class used by chips.
     private static final PseudoClass SELECTED_PSEUDO_CLASS = PseudoClass.getPseudoClass("selected");
 
+    /// The style class applied to the logical leading graphic.
+    public static final String LEADING_GRAPHIC_STYLE_CLASS = "m3-chip-leading-graphic";
+
+    /// The style class applied to the logical trailing graphic.
+    public static final String TRAILING_GRAPHIC_STYLE_CLASS = "m3-chip-trailing-graphic";
+
     /// The default chip container height.
     private static final double DEFAULT_CONTAINER_HEIGHT = 32.0;
 
@@ -109,11 +115,26 @@ public class M3Chip extends ButtonBase {
         /// Updates selected pseudo-class state.
         @Override
         protected void invalidated() {
-            pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, get());
+            if (get() && !isSelectionSupported() && !isBound()) {
+                set(false);
+                return;
+            }
+            updateSelectedState();
             notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED);
             notifyAccessibleAttributeChanged(AccessibleAttribute.TOGGLE_STATE);
         }
     };
+
+    // The optional logical trailing graphic property.
+    private final ObjectProperty<@Nullable Node> trailingGraphic =
+            new SimpleObjectProperty<>(this, "trailingGraphic") {
+                /// Recomputes content padding and layout when the trailing slot changes.
+                @Override
+                protected void invalidated() {
+                    updateMetrics();
+                    requestLayout();
+                }
+            };
 
     /// Creates an empty assist chip.
     public M3Chip() {
@@ -155,6 +176,40 @@ public class M3Chip extends ButtonBase {
     /// @return the selected state property
     public final BooleanProperty selectedProperty() {
         return selected;
+    }
+
+    /// Returns whether the current chip variant supports persistent selection.
+    ///
+    /// Filter and input chips expose selected state. Assist and suggestion chips are command surfaces and fire
+    /// actions without changing selected state.
+    ///
+    /// @return true for filter and input chip variants
+    public final boolean isSelectionSupported() {
+        return getVariant() == M3ChipVariant.FILTER || getVariant() == M3ChipVariant.INPUT;
+    }
+
+    /// Returns the optional graphic shown at the logical trailing edge of this chip.
+    ///
+    /// The inherited [ButtonBase#graphicProperty()] is the logical leading slot. The trailing slot accepts any
+    /// node, including an [M3IconButton] when an input chip needs a separately actionable remove affordance.
+    ///
+    /// @return the trailing graphic, or null when the trailing slot is empty
+    public final @Nullable Node getTrailingGraphic() {
+        return trailingGraphic.get();
+    }
+
+    /// Sets the optional graphic shown at the logical trailing edge of this chip.
+    ///
+    /// @param trailingGraphic the trailing graphic, or null to clear the slot
+    public final void setTrailingGraphic(@Nullable Node trailingGraphic) {
+        this.trailingGraphic.set(trailingGraphic);
+    }
+
+    /// Returns the logical trailing graphic property.
+    ///
+    /// @return the trailing graphic property
+    public final ObjectProperty<@Nullable Node> trailingGraphicProperty() {
+        return trailingGraphic;
     }
 
     /// Returns the chip variant.
@@ -367,8 +422,8 @@ public class M3Chip extends ButtonBase {
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
         return switch (attribute) {
-            case SELECTED -> isSelected();
-            case TOGGLE_STATE -> isSelected()
+            case SELECTED -> isSelectionSupported() && isSelected();
+            case TOGGLE_STATE -> isSelectionSupported() && isSelected()
                     ? AccessibleAttribute.ToggleState.CHECKED
                     : AccessibleAttribute.ToggleState.UNCHECKED;
             default -> super.queryAccessibleAttribute(attribute, parameters);
@@ -379,7 +434,9 @@ public class M3Chip extends ButtonBase {
     @Override
     public void fire() {
         if (!isDisabled()) {
-            setSelected(!isSelected());
+            if (isSelectionSupported()) {
+                setSelected(!isSelected());
+            }
             fireEvent(new ActionEvent(this, this));
         }
     }
@@ -399,7 +456,6 @@ public class M3Chip extends ButtonBase {
     /// Adds base style classes and applies the default variant.
     private void initialize() {
         M3ControlStyles.initialize(this, STYLE_CLASS);
-        setAccessibleRole(AccessibleRole.TOGGLE_BUTTON);
         setFocusTraversable(true);
         setPickOnBounds(true);
         graphicProperty().addListener(observable -> updateMetrics());
@@ -418,6 +474,7 @@ public class M3Chip extends ButtonBase {
                 M3ChipVariant.INPUT.styleClass(),
                 M3ChipVariant.SUGGESTION.styleClass()
         );
+        updateSemanticState();
     }
 
     /// Applies the current chip style class.
@@ -433,10 +490,12 @@ public class M3Chip extends ButtonBase {
     /// Applies size-related component tokens to JavaFX layout properties.
     private void updateMetrics() {
         double height = getContainerHeight();
-        double padding = getGraphic() == null ? getHorizontalPadding() : getIconHorizontalPadding();
+        double leadingPadding = getGraphic() == null ? getHorizontalPadding() : getIconHorizontalPadding();
+        double trailingPadding = getTrailingGraphic() == null ? getHorizontalPadding() : getIconHorizontalPadding();
+        Insets padding = new Insets(0.0, trailingPadding, 0.0, leadingPadding);
         M3Css.setMinHeightIfUnbound(this, height);
         M3Css.setPrefHeightIfUnbound(this, height);
-        M3Css.setPaddingIfUnbound(this, new Insets(0.0, padding, 0.0, padding));
+        M3Css.setPaddingIfUnbound(this, padding);
         updateGraphicMetrics();
     }
 
@@ -445,6 +504,26 @@ public class M3Chip extends ButtonBase {
         if (getGraphic() instanceof M3Icon icon) {
             icon.setIconSize(getIconSize());
         }
+        if (getTrailingGraphic() instanceof M3Icon icon) {
+            icon.setIconSize(getIconSize());
+        }
+    }
+
+    /// Updates the accessible role and effective selected pseudo-class for the active variant.
+    private void updateSemanticState() {
+        if (!isSelectionSupported() && selected.get() && !selected.isBound()) {
+            selected.set(false);
+        }
+        setAccessibleRole(isSelectionSupported() ? AccessibleRole.TOGGLE_BUTTON : AccessibleRole.BUTTON);
+        updateSelectedState();
+        notifyAccessibleAttributeChanged(AccessibleAttribute.ROLE);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.TOGGLE_STATE);
+    }
+
+    /// Applies selected styling only to chip variants that define selected state.
+    private void updateSelectedState() {
+        pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, isSelectionSupported() && selected.get());
     }
 
     /// CSS metadata for M3FX chip component tokens.

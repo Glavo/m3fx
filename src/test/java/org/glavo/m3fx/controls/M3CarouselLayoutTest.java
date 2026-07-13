@@ -7,6 +7,9 @@ import javafx.application.Platform;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.Scene;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.input.PickResult;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
@@ -118,9 +121,9 @@ final class M3CarouselLayoutTest {
                 carousel.setCarouselLayout(M3CarouselLayout.HERO);
                 layout(stage, carousel, 520.0, 140.0);
                 firstWidth = renderedWidth(carousel.getItems().get(0));
-                secondWidth = renderedWidth(carousel.getItems().get(1));
+                double previewWidth = renderedWidth(carousel.getItems().get(2));
 
-                assertTrue(firstWidth > secondWidth * 4.0, "hero focal item must dominate its preview");
+                assertTrue(firstWidth > previewWidth * 4.0, "hero focal items must dominate the small preview");
 
                 carousel.selectIndex(2);
                 carousel.setCarouselLayout(M3CarouselLayout.CENTER_ALIGNED_HERO);
@@ -219,6 +222,26 @@ final class M3CarouselLayoutTest {
                         stageReference.set(stage);
                         carouselReference.set(carousel);
                         viewportReference.set(viewport);
+                        viewport.fireEvent(new MouseEvent(
+                                MouseEvent.MOUSE_DRAGGED,
+                                8.0,
+                                8.0,
+                                8.0,
+                                8.0,
+                                MouseButton.PRIMARY,
+                                1,
+                                false,
+                                false,
+                                false,
+                                false,
+                                true,
+                                false,
+                                false,
+                                false,
+                                false,
+                                false,
+                                new PickResult(viewport, 8.0, 8.0)
+                        ));
                         viewport.setHvalue(0.68);
                     },
                     () -> {
@@ -238,7 +261,7 @@ final class M3CarouselLayoutTest {
         }
     }
 
-    /// Verifies reduced motion uses stable equal widths instead of focal expansion.
+    /// Verifies reduced motion removes focal expansion and keeps contained item widths stable.
     @Test
     void reducedMotionUsesStableEqualContainedWidths() {
         FxTestUtils.runOnFxThread(() -> {
@@ -344,8 +367,12 @@ final class M3CarouselLayoutTest {
         root.layout();
     }
 
-    /// Returns the rendered width of one carousel item.
+    /// Returns the visible keyline width of one carousel item.
     private static double renderedWidth(javafx.scene.Node item) {
+        javafx.scene.Node parent = item.getParent();
+        if (parent != null && parent.getStyleClass().contains("m3-carousel-item-container")) {
+            return parent.getBoundsInParent().getWidth();
+        }
         return item.getBoundsInParent().getWidth();
     }
 

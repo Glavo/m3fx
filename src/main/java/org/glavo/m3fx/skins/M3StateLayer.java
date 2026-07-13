@@ -150,6 +150,9 @@ final class M3StateLayer extends Pane {
     /// The control whose interaction states drive this layer.
     private @Nullable Node stateOwner;
 
+    /// The resting overlay opacity contributed by a persistent semantic state.
+    private double restingOverlayOpacity;
+
     /// Handles disabled-state changes that should animate owner-state opacity.
     private final ChangeListener<Boolean> disabledStateListener =
             (observable, oldValue, newValue) -> animateOverlayOpacityFromOwnerState();
@@ -184,18 +187,6 @@ final class M3StateLayer extends Pane {
 
     /// The motion-settings revision represented by [cachedAnimationsEnabled].
     private long motionSettingsRevision = Long.MIN_VALUE;
-
-    /// The radius currently applied to the overlay background.
-    private double overlayTopLeftRadius = Double.NaN;
-
-    /// The top-right radius currently applied to the overlay background.
-    private double overlayTopRightRadius = Double.NaN;
-
-    /// The bottom-right radius currently applied to the overlay background.
-    private double overlayBottomRightRadius = Double.NaN;
-
-    /// The bottom-left radius currently applied to the overlay background.
-    private double overlayBottomLeftRadius = Double.NaN;
 
     /// The width currently applied to the focus indicator.
     private double focusIndicatorWidth = Double.NaN;
@@ -328,6 +319,7 @@ final class M3StateLayer extends Pane {
             focusVisibleTracker = null;
         }
         stateOwner = null;
+        restingOverlayOpacity = 0.0;
         cachedAnimationsEnabled = false;
         motionSettingsRevision = Long.MIN_VALUE;
         stateOpacityAnimation.stop();
@@ -358,7 +350,6 @@ final class M3StateLayer extends Pane {
         double bottomLeft = resolvedShapeRadius(width, height, bottomLeftRadius);
         resizeRelocate(x, y, width, height);
         overlay.resizeRelocate(0.0, 0.0, width, height);
-        updateOverlayShape(topLeft, topRight, bottomRight, bottomLeft);
         updateFocusIndicatorShape(width, height, topLeft, topRight, bottomRight, bottomLeft);
         updateClip(width, height, topLeft, topRight, bottomRight, bottomLeft);
     }
@@ -452,9 +443,22 @@ final class M3StateLayer extends Pane {
         updateContentBackgrounds();
     }
 
+    /// Sets the resting overlay opacity contributed by a persistent semantic state.
+    ///
+    /// Interaction opacity is composited over this value so hover, focus, and press feedback remain visible.
+    void setRestingOverlayOpacity(double opacity) {
+        double resolvedOpacity = Math.max(0.0, Math.min(1.0, opacity));
+        if (Double.compare(restingOverlayOpacity, resolvedOpacity) == 0) {
+            return;
+        }
+        restingOverlayOpacity = resolvedOpacity;
+        animateOverlayOpacityFromOwnerState();
+    }
+
     /// Stops ripple animation and clears transient ripple state.
     void reset() {
         stateOpacityAnimation.stop();
+        restingOverlayOpacity = 0.0;
         overlay.setOpacity(0.0);
         setFocusIndicatorOpacity(focusIndicator, 0.0);
         rippleAnimation.stop();
@@ -569,16 +573,22 @@ final class M3StateLayer extends Pane {
             return 0.0;
         }
         M3StateLayerTokens tokens = stateLayerTokens(owner);
+        double interactionOpacity;
         if (isPressedLike(owner)) {
-            return tokens.pressedOpacity();
+            interactionOpacity = tokens.pressedOpacity();
+        } else if (owner.getPseudoClassStates().contains(FOCUS_VISIBLE_PSEUDO_CLASS)) {
+            interactionOpacity = tokens.focusOpacity();
+        } else if (owner.isHover() || owner.getPseudoClassStates().contains(HOVER_PSEUDO_CLASS)) {
+            interactionOpacity = tokens.hoverOpacity();
+        } else {
+            interactionOpacity = 0.0;
         }
-        if (owner.getPseudoClassStates().contains(FOCUS_VISIBLE_PSEUDO_CLASS)) {
-            return tokens.focusOpacity();
-        }
-        if (owner.isHover() || owner.getPseudoClassStates().contains(HOVER_PSEUDO_CLASS)) {
-            return tokens.hoverOpacity();
-        }
-        return 0.0;
+        return compositeOpacity(restingOverlayOpacity, interactionOpacity);
+    }
+
+    /// Alpha-composites an interaction state layer over a persistent state layer of the same color.
+    private static double compositeOpacity(double backgroundOpacity, double foregroundOpacity) {
+        return 1.0 - (1.0 - backgroundOpacity) * (1.0 - foregroundOpacity);
     }
 
     /// Returns the target focus indicator opacity for the owner interaction state.
@@ -822,43 +832,14 @@ final class M3StateLayer extends Pane {
         return Math.min(Math.max(0.0, shapeRadius), maximumRadius);
     }
 
-    /// Updates the overlay background radius when the resolved shape changes.
-    private void updateOverlayShape(double topLeft, double topRight, double bottomRight, double bottomLeft) {
-        if (Double.compare(overlayTopLeftRadius, topLeft) == 0
-                && Double.compare(overlayTopRightRadius, topRight) == 0
-                && Double.compare(overlayBottomRightRadius, bottomRight) == 0
-                && Double.compare(overlayBottomLeftRadius, bottomLeft) == 0) {
-            return;
-        }
-
-        overlayTopLeftRadius = topLeft;
-        overlayTopRightRadius = topRight;
-        overlayBottomRightRadius = bottomRight;
-        overlayBottomLeftRadius = bottomLeft;
-        if (contentPaint == null) {
-            overlay.setStyle("-fx-background-radius: "
-                    + formatPixels(topLeft) + " "
-                    + formatPixels(topRight) + " "
-                    + formatPixels(bottomRight) + " "
-                    + formatPixels(bottomLeft) + ";");
-        } else {
-            updateContentBackgrounds();
-        }
-    }
-
-    /// Updates concrete overlay and ripple backgrounds after their paint or resolved shape changes.
+    /// Updates concrete overlay and ripple backgrounds after their paint changes.
     private void updateContentBackgrounds() {
         Paint paint = contentPaint;
         if (paint == null) {
             return;
         }
         String cssPaint = formatPaint(paint);
-        overlay.setStyle("-fx-background-color: " + cssPaint + "; "
-                + "-fx-background-radius: "
-                + formatPixels(resolvedCachedRadius(overlayTopLeftRadius)) + " "
-                + formatPixels(resolvedCachedRadius(overlayTopRightRadius)) + " "
-                + formatPixels(resolvedCachedRadius(overlayBottomRightRadius)) + " "
-                + formatPixels(resolvedCachedRadius(overlayBottomLeftRadius)) + ";");
+        overlay.setStyle("-fx-background-color: " + cssPaint + ";");
         ripple.setStyle("-fx-background-color: " + cssPaint + "; -fx-background-radius: 999px;");
     }
 
@@ -929,11 +910,6 @@ final class M3StateLayer extends Pane {
                 + formatPixels(adjustedTopRight) + " "
                 + formatPixels(adjustedBottomRight) + " "
                 + formatPixels(adjustedBottomLeft) + ";");
-    }
-
-    /// Converts an uninitialized cached radius into a valid square-corner radius.
-    private static double resolvedCachedRadius(double radius) {
-        return Double.isNaN(radius) ? 0.0 : radius;
     }
 
     /// Returns whether the owner uses an inner focus indicator offset in Material component tokens.

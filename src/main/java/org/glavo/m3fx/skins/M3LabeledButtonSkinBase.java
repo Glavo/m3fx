@@ -5,7 +5,6 @@ package org.glavo.m3fx.skins;
 
 import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
-import javafx.css.PseudoClass;
 import javafx.event.EventHandler;
 import javafx.geometry.Bounds;
 import javafx.scene.Node;
@@ -48,12 +47,6 @@ import org.jetbrains.annotations.Nullable;
 abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkinBase<C> {
     /// The scale applied by controls that opt into depth-style pressed motion.
     private static final double PRESSED_SCALE = 0.98;
-
-    /// The pointer-hover pseudo-class used by split-button parts.
-    private static final PseudoClass HOVER_PSEUDO_CLASS = PseudoClass.getPseudoClass("hover");
-
-    /// The popup-visible pseudo-class used by split-button trailing parts.
-    private static final PseudoClass SHOWING_PSEUDO_CLASS = PseudoClass.getPseudoClass("showing");
 
     /// The press animation timeline.
     private final M3NodeTransition animation = new M3NodeTransition(getSkinnable());
@@ -465,7 +458,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
 
         @Nullable M3SplitButton splitButton = splitButtonOwner(button);
         if (splitButton != null) {
-            layoutSplitButtonStateLayer(splitButton, button, width, height);
+            M3SplitButtonSkin.layoutPartStateLayer(splitButton, button, stateLayer, width, height);
             return true;
         }
 
@@ -496,53 +489,6 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
             stateLayer.layoutLayer(0.0, 0.0, width, height, 0.0, radius, radius, 0.0);
         }
         return true;
-    }
-
-    /// Lays out split-button feedback from the owner-controlled stateful shape tokens.
-    private void layoutSplitButtonStateLayer(
-            M3SplitButton splitButton,
-            ButtonBase button,
-            double width,
-            double height
-    ) {
-        boolean menuPart = button.getStyleClass().contains(M3SplitButton.MENU_BUTTON_STYLE_CLASS);
-        boolean selected = menuPart
-                && (splitButton.isShowing() || button.getPseudoClassStates().contains(SHOWING_PSEUDO_CLASS));
-        double innerCorner;
-        if (selected) {
-            innerCorner = splitButton.getSelectedInnerCorner();
-        } else if (button.isArmed() || button.isPressed()) {
-            innerCorner = splitButton.getPressedInnerCorner();
-        } else if (button.isHover() || button.getPseudoClassStates().contains(HOVER_PSEUDO_CLASS)) {
-            innerCorner = splitButton.getHoveredInnerCorner();
-        } else {
-            innerCorner = splitButton.getInnerCorner();
-        }
-
-        double outerCorner = splitButton.getOuterCorner();
-        if (menuPart) {
-            stateLayer.layoutLayer(
-                    0.0,
-                    0.0,
-                    width,
-                    height,
-                    innerCorner,
-                    outerCorner,
-                    outerCorner,
-                    innerCorner
-            );
-        } else {
-            stateLayer.layoutLayer(
-                    0.0,
-                    0.0,
-                    width,
-                    height,
-                    outerCorner,
-                    innerCorner,
-                    innerCorner,
-                    outerCorner
-            );
-        }
     }
 
     /// Returns the split button that owns one internal button part.

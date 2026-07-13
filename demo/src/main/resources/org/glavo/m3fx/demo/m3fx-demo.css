@@ -413,17 +413,18 @@
 
 .demo-carousel-card-content {
     -fx-min-height: 96px;
+    -fx-padding: 16px;
 }
 
-.demo-carousel-card .m3-card-container,
-.demo-carousel-card .m3-state-layer,
-.demo-carousel-card .m3-ripple {
-    -fx-background-radius: 28px;
+
+.demo-carousel-card-copy {
+    -fx-alignment: center;
 }
 
-.demo-carousel-card .m3-card-container {
-    -fx-border-radius: 28px;
+.m3-carousel-item-container:small-item .demo-carousel-card-copy {
+    -fx-opacity: 0;
 }
+
 
 .demo-carousel-navigation {
     -fx-alignment: center-left;

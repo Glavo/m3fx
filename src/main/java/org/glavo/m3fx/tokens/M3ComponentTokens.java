@@ -631,6 +631,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double carouselTrackHorizontalPadding = density.apply(16.0);
         double carouselTrackVerticalPadding = density.apply(8.0);
         double carouselItemSpacing = density.apply(8.0);
+        double carouselItemShape = shapeTokens.extraLarge();
         double carouselSmallItemMinWidth = density.apply(40.0);
         double carouselSmallItemMaxWidth = density.apply(56.0);
         double carouselLargeItemMaxWidth = density.apply(320.0);
@@ -958,6 +959,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         carouselTrackHorizontalPadding,
                         carouselTrackVerticalPadding,
                         carouselItemSpacing,
+                        carouselItemShape,
                         carouselSmallItemMinWidth,
                         carouselSmallItemMaxWidth,
                         carouselLargeItemMaxWidth
@@ -1994,6 +1996,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 M3TokenCss.pixels(tokens.trackVerticalPadding())
         );
         M3TokenCss.append(builder, "-m3-carousel-item-spacing", M3TokenCss.pixels(tokens.itemSpacing()));
+        M3TokenCss.append(builder, "-m3-carousel-item-shape", M3TokenCss.pixels(tokens.itemShape()));
         M3TokenCss.append(
                 builder,
                 "-m3-carousel-small-item-min-width",
@@ -3544,6 +3547,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 verticalPadding + " " + horizontalPadding + " " + verticalPadding + " " + horizontalPadding
         );
         appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.itemSpacing()));
+        appendDeclaration(builder, "-m3-carousel-item-mask-shape", M3TokenCss.pixels(tokens.itemShape()));
         appendDeclaration(
                 builder,
                 "-m3-carousel-small-item-min-width",
@@ -3559,6 +3563,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 "-m3-carousel-large-item-max-width",
                 M3TokenCss.pixels(tokens.largeItemMaxWidth())
         );
+        endRule(builder);
+
+        beginRule(builder, ".m3-carousel .m3-card");
+        appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.itemShape()));
         endRule(builder);
     }
 
@@ -4936,6 +4944,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param trackHorizontalPadding the leading and trailing track padding
     /// @param trackVerticalPadding the top and bottom track padding
     /// @param itemSpacing the spacing between carousel items
+    /// @param itemShape the corner radius of a carousel item mask
     /// @param smallItemMinWidth the minimum width of a contained small item
     /// @param smallItemMaxWidth the maximum width of a contained small item
     /// @param largeItemMaxWidth the preferred maximum width of a contained large item
@@ -4944,6 +4953,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double trackHorizontalPadding,
             double trackVerticalPadding,
             double itemSpacing,
+            double itemShape,
             double smallItemMinWidth,
             double smallItemMaxWidth,
             double largeItemMaxWidth
@@ -4953,6 +4963,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(trackHorizontalPadding, "trackHorizontalPadding");
             validateNonNegative(trackVerticalPadding, "trackVerticalPadding");
             validateNonNegative(itemSpacing, "itemSpacing");
+            validateNonNegative(itemShape, "itemShape");
             validateNonNegative(smallItemMinWidth, "smallItemMinWidth");
             validateNonNegative(smallItemMaxWidth, "smallItemMaxWidth");
             validateNonNegative(largeItemMaxWidth, "largeItemMaxWidth");
