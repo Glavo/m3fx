@@ -183,6 +183,23 @@ final class M3NavigationDrawerGroupTest {
         assertTrue(group.getItems().isEmpty());
     }
 
+    /// Verifies that the decorative disclosure icon leaves the complete header row as the pointer target.
+    @Test
+    void disclosureIconDelegatesPointerPickingToHeader() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Buttons");
+            StackPane root = new StackPane(group);
+            Scene scene = new Scene(root, GROUP_WIDTH, 120.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.layout();
+
+            Node disclosureIcon = group.lookup(".m3-disclosure-icon");
+            assertTrue(disclosureIcon != null && disclosureIcon.isMouseTransparent());
+        });
+    }
+
     /// Verifies expanded child rows contribute to preferred height for scroll pane content sizing.
     @Test
     void expandedChildRowsContributeToPreferredHeight() {

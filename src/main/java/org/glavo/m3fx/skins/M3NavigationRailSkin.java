@@ -8,6 +8,7 @@ import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
+import javafx.css.PseudoClass;
 import javafx.geometry.HPos;
 import javafx.geometry.VPos;
 import javafx.scene.Node;
@@ -25,8 +26,17 @@ import org.jetbrains.annotations.Nullable;
 /// The default Material Design 3 skin for [M3NavigationRail].
 @NotNullByDefault
 public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
+    /// The visual expanded pseudo-class switched at the fade-through midpoint.
+    private static final PseudoClass EXPANDED_PSEUDO_CLASS = PseudoClass.getPseudoClass("expanded");
+
     /// The leading inset used by header content in an expanded rail.
     private static final double EXPANDED_HEADER_INSET = 16.0;
+
+    /// The progress below which collapsed destination content is visible.
+    private static final double COLLAPSED_FADE_END = 0.42;
+
+    /// The progress above which expanded destination content is visible.
+    private static final double EXPANDED_FADE_START = 0.58;
 
     /// The internal vertical item container.
     private final NavigationContainer container = new NavigationContainer();
@@ -39,12 +49,31 @@ public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
         /// Requests a new rail layout for the animated width.
         @Override
         protected void invalidated() {
+            updateTransitionVisuals();
             getSkinnable().requestLayout();
         }
     };
 
     /// The finite expanded-width transition.
     private final M3DoubleTransition expansionAnimation = new M3DoubleTransition(expansionProgress);
+
+    /// Whether destination content is currently using the rail fade-through transition.
+    private boolean transitionActive;
+
+    /// The item layout currently applied during a fade-through transition.
+    private @Nullable M3NavigationItemLayout transitionItemLayout;
+
+    /// The expansion progress captured when the current transition started.
+    private double transitionStartProgress;
+
+    /// The expansion target of the current transition.
+    private double transitionTargetProgress;
+
+    /// The top padding captured before the expanded pseudo-class changed its CSS tokens.
+    private double transitionStartTopPadding;
+
+    /// The bottom padding captured before the expanded pseudo-class changed its CSS tokens.
+    private double transitionStartBottomPadding;
 
     /// Settles the width transition when runtime motion is disabled.
     private final M3MotionSettingsObserver motionSettingsObserver =
@@ -68,7 +97,7 @@ public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
 
     /// Animates between collapsed and expanded rail widths.
     private final ChangeListener<Boolean> expandedListener =
-            (observable, oldValue, newValue) -> updateExpandedState(newValue, getSkinnable().getScene() != null);
+            (observable, oldValue, newValue) -> updateExpandedState(newValue, isVisibleInWindow());
 
     /// Creates a navigation rail skin.
     ///
@@ -95,6 +124,7 @@ public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
         M3NavigationRail control = getSkinnable();
         expansionAnimation.stop();
         expansionAnimation.setOnFinished(null);
+        clearTransitionVisuals();
         motionSettingsObserver.dispose();
         control.getItems().removeListener(itemsListener);
         control.itemSpacingProperty().removeListener(itemSpacingListener);
@@ -183,6 +213,17 @@ public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
     /// Lays out the item container across the animated rail width.
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
+        if (transitionActive) {
+            M3NavigationRail control = getSkinnable();
+            double fraction = transitionFraction();
+            double targetTopPadding = control.getPadding().getTop();
+            double targetBottomPadding = control.getPadding().getBottom();
+            double visualTopPadding = interpolate(transitionStartTopPadding, targetTopPadding, fraction);
+            double visualBottomPadding = interpolate(transitionStartBottomPadding, targetBottomPadding, fraction);
+            y += visualTopPadding - targetTopPadding;
+            height += targetTopPadding + targetBottomPadding - visualTopPadding - visualBottomPadding;
+        }
+
         @Nullable Node currentHeader = header;
         if (currentHeader == null || !currentHeader.isVisible()) {
             container.resizeRelocate(x, y, width, height);
@@ -240,18 +281,24 @@ public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
         return collapsed + (expanded - collapsed) * expansionProgress.get();
     }
 
+    /// Returns whether the rail is attached to a currently visible window that can render animation pulses.
+    private boolean isVisibleInWindow() {
+        @Nullable javafx.scene.Scene scene = getSkinnable().getScene();
+        return scene != null && scene.getWindow() != null && scene.getWindow().isShowing();
+    }
+
     /// Applies an expanded-state target, optionally using Material spatial motion.
     private void updateExpandedState(boolean expanded, boolean animate) {
         expansionAnimation.stop();
         double target = expanded ? 1.0 : 0.0;
         if (!animate || Double.compare(expansionProgress.get(), target) == 0) {
+            clearTransitionVisuals();
             expansionProgress.set(target);
             applyItemLayout(expanded ? M3NavigationItemLayout.HORIZONTAL : M3NavigationItemLayout.VERTICAL);
             return;
         }
 
-        // Keep horizontal rows during both directions so labels do not jump before the width transition settles.
-        applyItemLayout(M3NavigationItemLayout.HORIZONTAL);
+        beginTransition(target);
 
         M3MotionSpec spec = expanded
                 ? M3Animation.defaultSpatial(getSkinnable())
@@ -262,9 +309,88 @@ public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
 
     /// Applies the final item arrangement after an expansion transition settles.
     private void finishExpansionAnimation() {
+        clearTransitionVisuals();
         applyItemLayout(getSkinnable().isExpanded()
                 ? M3NavigationItemLayout.HORIZONTAL
                 : M3NavigationItemLayout.VERTICAL);
+    }
+
+    /// Captures transition geometry and enables fade-through item layout switching.
+    private void beginTransition(double target) {
+        M3NavigationRail control = getSkinnable();
+        transitionActive = true;
+        transitionItemLayout = null;
+        transitionStartProgress = expansionProgress.get();
+        transitionTargetProgress = target;
+        transitionStartTopPadding = control.getPadding().getTop();
+        transitionStartBottomPadding = control.getPadding().getBottom();
+        control.pseudoClassStateChanged(EXPANDED_PSEUDO_CLASS, transitionStartProgress >= 0.5);
+        updateTransitionVisuals();
+    }
+
+    /// Updates destination layout and opacity for the current fade-through frame.
+    private void updateTransitionVisuals() {
+        if (!transitionActive) {
+            return;
+        }
+
+        double progress = expansionProgress.get();
+        M3NavigationItemLayout layout = progress >= 0.5
+                ? M3NavigationItemLayout.HORIZONTAL
+                : M3NavigationItemLayout.VERTICAL;
+        if (transitionItemLayout != layout) {
+            transitionItemLayout = layout;
+            getSkinnable().pseudoClassStateChanged(
+                    EXPANDED_PSEUDO_CLASS,
+                    layout == M3NavigationItemLayout.HORIZONTAL
+            );
+            applyItemLayout(layout);
+        }
+
+        double opacity;
+        if (progress <= COLLAPSED_FADE_END) {
+            opacity = 1.0 - progress / COLLAPSED_FADE_END;
+        } else if (progress >= EXPANDED_FADE_START) {
+            opacity = (progress - EXPANDED_FADE_START) / (1.0 - EXPANDED_FADE_START);
+        } else {
+            opacity = 0.0;
+        }
+        applyItemTransitionOpacity(opacity);
+    }
+
+    /// Restores settled item opacity and clears transient collapse styling.
+    private void clearTransitionVisuals() {
+        boolean restoreOpacity = transitionActive;
+        transitionActive = false;
+        transitionItemLayout = null;
+        getSkinnable().pseudoClassStateChanged(EXPANDED_PSEUDO_CLASS, getSkinnable().isExpanded());
+        if (restoreOpacity) {
+            applyItemTransitionOpacity(1.0);
+        }
+    }
+
+    /// Applies one opacity to navigation item skin content without changing control opacity.
+    private void applyItemTransitionOpacity(double opacity) {
+        for (Node child : getSkinnable().getItems()) {
+            if (child instanceof M3NavigationItem item
+                    && item.getSkin() instanceof M3NavigationItemSkin itemSkin) {
+                itemSkin.setRailTransitionOpacity(opacity);
+            }
+        }
+    }
+
+    /// Returns normalized elapsed progress for the current expansion or collapse transition.
+    private double transitionFraction() {
+        double distance = transitionTargetProgress - transitionStartProgress;
+        if (Math.abs(distance) < 0.000001) {
+            return 1.0;
+        }
+        return Math.max(0.0, Math.min(1.0, (expansionProgress.get() - transitionStartProgress) / distance));
+    }
+
+    /// Interpolates between two scalar layout values.
+    private static double interpolate(double start, double end, double fraction) {
+        return start + (end - start) * fraction;
     }
 
     /// Applies one item layout to every navigation destination without allocating intermediate collections.
@@ -294,6 +420,9 @@ public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
     /// Mirrors the public item list into the internal container.
     private void updateItems() {
         container.getChildren().setAll(getSkinnable().getItems());
+        if (transitionActive) {
+            updateTransitionVisuals();
+        }
         container.requestLayout();
         getSkinnable().requestLayout();
     }

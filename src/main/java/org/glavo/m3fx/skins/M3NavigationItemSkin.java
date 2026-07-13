@@ -78,6 +78,9 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
     /// The height currently used by the active indicator and state layer.
     private double laidOutIndicatorHeight;
 
+    /// The fade-through opacity supplied by an animating navigation rail.
+    private double railTransitionOpacity = 1.0;
+
     /// Handles primary mouse presses.
     private final EventHandler<MouseEvent> mousePressedHandler = this::handleMousePressed;
 
@@ -255,7 +258,7 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
         double graphicWidth = Math.max(24.0, graphicContainer.prefWidth(-1.0));
         double spacing = label.isManaged() ? item.getContentSpacing() : 0.0;
         @Nullable M3NavigationRail rail = navigationRail(item);
-        boolean expandedRailItem = rail != null && rail.isExpanded();
+        boolean expandedRailItem = rail != null && item.getItemLayout() == M3NavigationItemLayout.HORIZONTAL;
         @Nullable M3Badge badge = item.getBadge();
         boolean inlineBadge = expandedRailItem && badge != null;
         double badgeWidth = inlineBadge ? Math.max(6.0, badge.prefWidth(-1.0)) : 0.0;
@@ -566,5 +569,17 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
         double width = laidOutIndicatorWidth > 0.0 ? laidOutIndicatorWidth : item.getIndicatorWidth();
         double height = laidOutIndicatorHeight > 0.0 ? laidOutIndicatorHeight : item.getIndicatorHeight();
         stateLayer.layoutLayer(0.0, 0.0, width, height, item.getIndicatorShape());
+    }
+
+    /// Applies fade-through opacity while an owning navigation rail changes item layout.
+    ///
+    /// @param opacity the content opacity from zero through one
+    final void setRailTransitionOpacity(double opacity) {
+        double boundedOpacity = Math.max(0.0, Math.min(1.0, opacity));
+        if (Double.compare(railTransitionOpacity, boundedOpacity) == 0) {
+            return;
+        }
+        railTransitionOpacity = boundedOpacity;
+        content.setOpacity(boundedOpacity);
     }
 }

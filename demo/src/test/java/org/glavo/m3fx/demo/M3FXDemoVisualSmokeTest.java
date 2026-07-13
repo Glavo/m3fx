@@ -6374,9 +6374,8 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable WritableImage> collapsingReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> settledReference = new AtomicReference<>();
 
-        runOnFxThreadWhenNodeSnapshotChanged(
-                targetReference::get,
-                collapsedReference,
+        runOnFxThreadWhenNavigationRailTransitionFrame(
+                targetReference,
                 expandingReference,
                 "navigation rail expanding width",
                 () -> {
@@ -6407,11 +6406,18 @@ final class M3FXDemoVisualSmokeTest {
                     );
                     target.setExpanded(true);
                 },
-                () -> writeAnimationSnapshot(
-                        Objects.requireNonNull(expandingReference.get(), "expanding rail snapshot"),
-                        "navigation-rail-width",
-                        "expanding"
-                )
+                () -> {
+                    M3NavigationRail target = Objects.requireNonNull(
+                            targetReference.get(),
+                            "expanding navigation rail"
+                    );
+                    assertNavigationRailTransitionFrame(target, "expanding navigation rail");
+                    writeAnimationSnapshot(
+                            Objects.requireNonNull(expandingReference.get(), "expanding rail snapshot"),
+                            "navigation-rail-width",
+                            "expanding"
+                    );
+                }
         );
 
         runOnFxThreadWhenNodeSnapshotStable(targetReference::get, expandedReference, () -> {
@@ -6431,18 +6437,24 @@ final class M3FXDemoVisualSmokeTest {
             target.setExpanded(false);
         });
 
-        runOnFxThreadWhenNodeSnapshotChanged(
-                targetReference::get,
-                expandedReference,
+        runOnFxThreadWhenNavigationRailTransitionFrame(
+                targetReference,
                 collapsingReference,
                 "navigation rail collapsing width",
                 () -> {
                 },
-                () -> writeAnimationSnapshot(
-                        Objects.requireNonNull(collapsingReference.get(), "collapsing rail snapshot"),
-                        "navigation-rail-width",
-                        "collapsing"
-                )
+                () -> {
+                    M3NavigationRail target = Objects.requireNonNull(
+                            targetReference.get(),
+                            "collapsing navigation rail"
+                    );
+                    assertNavigationRailTransitionFrame(target, "collapsing navigation rail");
+                    writeAnimationSnapshot(
+                            Objects.requireNonNull(collapsingReference.get(), "collapsing rail snapshot"),
+                            "navigation-rail-width",
+                            "collapsing"
+                    );
+                }
         );
 
         runOnFxThreadWhenNodeSnapshotStable(targetReference::get, settledReference, () -> {
@@ -6492,6 +6504,74 @@ final class M3FXDemoVisualSmokeTest {
             }
         }
         return null;
+    }
+
+    /// Verifies that one animated rail frame uses coherent destination geometry and fade-through opacity.
+    private static void assertNavigationRailTransitionFrame(M3NavigationRail rail, String description) {
+        assertTrue(rail.getWidth() > rail.getCollapsedContainerWidth() + CONTROL_EDGE_TOLERANCE,
+                () -> description + " should be wider than the collapsed endpoint: " + rail.getWidth());
+        assertTrue(rail.getWidth() < rail.getExpandedContainerWidth() - CONTROL_EDGE_TOLERANCE,
+                () -> description + " should be narrower than the expanded endpoint: " + rail.getWidth());
+
+        List<M3NavigationItem> items = rail.getItems().stream()
+                .filter(M3NavigationItem.class::isInstance)
+                .map(M3NavigationItem.class::cast)
+                .toList();
+        assertFalse(items.isEmpty(), () -> description + " should contain navigation destinations");
+        assertTrue(items.stream().allMatch(item -> {
+                    Node content = item.lookup(".m3-navigation-item-content");
+                    return content != null && content.getOpacity() < 0.9;
+                }),
+                () -> description + " destinations should fade while their layout changes");
+
+        for (M3NavigationItem item : items) {
+            Region indicator = assertInstanceOf(
+                    Region.class,
+                    item.lookup(".m3-navigation-item-indicator"),
+                    description + " indicator"
+            );
+            double expectedHeight = item.getItemLayout() == M3NavigationItemLayout.HORIZONTAL ? 56.0 : 32.0;
+            assertEquals(expectedHeight, indicator.getHeight(), CONTROL_EDGE_TOLERANCE,
+                    () -> description + " should not mix " + item.getItemLayout()
+                            + " layout with another state's indicator tokens: token="
+                            + item.getIndicatorHeight() + ", railPseudoClasses=" + rail.getPseudoClassStates());
+        }
+    }
+
+    /// Runs setup and verifies after a navigation rail reaches a real fade-through transition frame.
+    private static void runOnFxThreadWhenNavigationRailTransitionFrame(
+            AtomicReference<@Nullable M3NavigationRail> railReference,
+            AtomicReference<@Nullable WritableImage> frameReference,
+            String description,
+            Runnable setup,
+            Runnable verification
+    ) throws InterruptedException {
+        AtomicReference<String> diagnostics = new AtomicReference<>("navigation rail transition wait has not run yet");
+        DemoFxTestUtils.runOnFxThreadWhen(() -> {
+            @Nullable M3NavigationRail rail = railReference.get();
+            if (rail == null || rail.getScene() == null) {
+                diagnostics.set(description + " rail is not attached");
+                return false;
+            }
+
+            rail.getScene().getRoot().applyCss();
+            rail.getScene().getRoot().layout();
+            double width = rail.getWidth();
+            boolean intermediateWidth = width > rail.getCollapsedContainerWidth() + CONTROL_EDGE_TOLERANCE
+                    && width < rail.getExpandedContainerWidth() - CONTROL_EDGE_TOLERANCE;
+            boolean fading = rail.getItems().stream()
+                    .filter(M3NavigationItem.class::isInstance)
+                    .map(M3NavigationItem.class::cast)
+                    .map(item -> item.lookup(".m3-navigation-item-content"))
+                    .allMatch(content -> content != null && content.getOpacity() < 0.9);
+            if (!intermediateWidth || !fading) {
+                diagnostics.set(description + " width=" + width + ", fading=" + fading);
+                return false;
+            }
+
+            frameReference.set(snapshotNode(rail));
+            return true;
+        }, () -> "Timed out waiting for " + diagnostics.get(), setup, verification);
     }
 
     /// Verifies expand and collapse motion on the demo sidebar's visible drawer group.

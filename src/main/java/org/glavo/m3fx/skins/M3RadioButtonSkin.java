@@ -5,6 +5,7 @@ package org.glavo.m3fx.skins;
 
 import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
+import javafx.scene.Group;
 import javafx.scene.layout.Pane;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.StrokeType;
@@ -31,8 +32,11 @@ public class M3RadioButtonSkin extends M3SelectionControlSkinBase<M3RadioButton>
     /// The selected radio dot.
     private final Circle dot = new Circle();
 
+    /// The transform layer used to animate the selected dot without overriding its CSS opacity.
+    private final Group dotLayer = new Group(dot);
+
     /// The selected dot appearance animation.
-    private final M3NodeTransition selectionAnimation = new M3NodeTransition(dot);
+    private final M3NodeTransition selectionAnimation = new M3NodeTransition(dotLayer);
 
     /// Applies radio geometry token changes to skin nodes.
     private final InvalidationListener metricsInvalidation = observable -> updateMetrics();
@@ -58,8 +62,10 @@ public class M3RadioButtonSkin extends M3SelectionControlSkinBase<M3RadioButton>
         dot.getStyleClass().addAll("dot", "m3-radio-dot");
         configureCircle(ring);
         configureCircle(dot);
+        dotLayer.setManaged(false);
+        dotLayer.setMouseTransparent(true);
         ring.setStrokeType(StrokeType.INSIDE);
-        radio.getChildren().addAll(ring, dot);
+        radio.getChildren().addAll(ring, dotLayer);
         indicatorSlot().getChildren().add(radio);
 
         applySelectedState(control.isSelected());
@@ -103,9 +109,9 @@ public class M3RadioButtonSkin extends M3SelectionControlSkinBase<M3RadioButton>
 
     /// Applies the selected dot state without animation.
     private void applySelectedState(boolean selected) {
-        dot.setOpacity(selected ? 1.0 : 0.0);
-        dot.setScaleX(selected ? 1.0 : HIDDEN_DOT_SCALE);
-        dot.setScaleY(selected ? 1.0 : HIDDEN_DOT_SCALE);
+        dotLayer.setOpacity(selected ? 1.0 : 0.0);
+        dotLayer.setScaleX(selected ? 1.0 : HIDDEN_DOT_SCALE);
+        dotLayer.setScaleY(selected ? 1.0 : HIDDEN_DOT_SCALE);
     }
 
     /// Animates the selected dot state.
@@ -118,8 +124,8 @@ public class M3RadioButtonSkin extends M3SelectionControlSkinBase<M3RadioButton>
                 selected ? 1.0 : 0.0,
                 targetScale,
                 targetScale,
-                dot.getTranslateX(),
-                dot.getTranslateY()
+                dotLayer.getTranslateX(),
+                dotLayer.getTranslateY()
         );
         M3Animation.playFromStart(getSkinnable(), selectionAnimation);
     }

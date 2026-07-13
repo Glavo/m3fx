@@ -7057,7 +7057,10 @@ final class M3ControlStyleTest {
 
         applyCss(snackbar);
 
-        Region container = lookupRegion(snackbar, ".m3-snackbar-container");
+        HBox container = assertInstanceOf(HBox.class, snackbar.lookup(".m3-snackbar-container"));
+        Label message = assertInstanceOf(Label.class, snackbar.lookup(".m3-snackbar-text"));
+        assertEquals(Pos.CENTER, container.getAlignment());
+        assertEquals(Pos.CENTER, message.getAlignment());
         assertEquals(16.0, container.getPadding().getLeft(), 0.0001);
         assertEquals(16.0, container.getPadding().getRight(), 0.0001);
         assertEquals(8.0, container.getPadding().getTop(), 0.0001);
@@ -7065,6 +7068,8 @@ final class M3ControlStyleTest {
 
         snackbar.setActionText("Undo");
 
+        assertEquals(Pos.CENTER_LEFT, container.getAlignment());
+        assertEquals(Pos.CENTER_LEFT, message.getAlignment());
         assertEquals(16.0, container.getPadding().getLeft(), 0.0001);
         assertEquals(8.0, container.getPadding().getRight(), 0.0001);
         assertEquals(8.0, container.getPadding().getTop(), 0.0001);
@@ -7073,6 +7078,8 @@ final class M3ControlStyleTest {
 
         snackbar.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
 
+        assertEquals(Pos.CENTER_RIGHT, container.getAlignment());
+        assertEquals(Pos.CENTER_RIGHT, message.getAlignment());
         assertEquals(8.0, container.getPadding().getLeft(), 0.0001);
         assertEquals(16.0, container.getPadding().getRight(), 0.0001);
         assertEquals(8.0, container.getPadding().getTop(), 0.0001);
@@ -19976,16 +19983,16 @@ final class M3ControlStyleTest {
 
         Region uncheckedMark = lookupRegion(uncheckedCheckBox, ".mark");
         Region checkedMark = lookupRegion(checkedCheckBox, ".mark");
-        Shape uncheckedDot = lookupShape(uncheckedRadioButton, ".dot");
-        Shape checkedDot = lookupShape(checkedRadioButton, ".dot");
+        Node uncheckedDotLayer = radioDotAnimationLayer(uncheckedRadioButton);
+        Node checkedDotLayer = radioDotAnimationLayer(checkedRadioButton);
         assertEquals(0.0, uncheckedMark.getOpacity(), 0.0001);
         assertTrue(uncheckedMark.getScaleX() < 1.0);
         assertEquals(1.0, checkedMark.getOpacity(), 0.0001);
         assertEquals(1.0, checkedMark.getScaleX(), 0.0001);
-        assertEquals(0.0, uncheckedDot.getOpacity(), 0.0001);
-        assertTrue(uncheckedDot.getScaleX() < 1.0);
-        assertEquals(1.0, checkedDot.getOpacity(), 0.0001);
-        assertEquals(1.0, checkedDot.getScaleX(), 0.0001);
+        assertEquals(0.0, uncheckedDotLayer.getOpacity(), 0.0001);
+        assertTrue(uncheckedDotLayer.getScaleX() < 1.0);
+        assertEquals(1.0, checkedDotLayer.getOpacity(), 0.0001);
+        assertEquals(1.0, checkedDotLayer.getScaleX(), 0.0001);
     }
 
     /// Verifies that checkbox and radio skins consume component geometry tokens.
@@ -32690,10 +32697,30 @@ final class M3ControlStyleTest {
                     0.1
             );
             assertSnapshotNodeContainsContrast(image, lookupShape(uncheckedRadioButton, ".ring"), Color.WHITE, 0.08);
-            assertSnapshotNodeContainsContrast(image, lookupShape(selectedRadioButton, ".dot"), Color.WHITE, 0.1);
+            Shape selectedRadioDot = lookupShape(selectedRadioButton, ".dot");
+            Shape disabledSelectedRadioDot = lookupShape(disabledSelectedRadioButton, ".dot");
+            assertSnapshotNodeContainsContrast(image, selectedRadioDot, Color.WHITE, 0.1);
             assertRadioButtonIndicatorRenderedCentersAligned(image, selectedRadioButton, "selected radio button");
             assertSnapshotNodeContainsContrast(image, lookupShape(disabledUncheckedRadioButton, ".ring"), Color.WHITE, 0.03);
-            assertSnapshotNodeContainsContrast(image, lookupShape(disabledSelectedRadioButton, ".dot"), Color.WHITE, 0.03);
+            assertSnapshotNodeContainsContrast(image, disabledSelectedRadioDot, Color.WHITE, 0.03);
+            Color selectedRadioDotPixel = snapshotNodePixel(
+                    image,
+                    selectedRadioDot,
+                    selectedRadioDot.getBoundsInLocal().getCenterX(),
+                    selectedRadioDot.getBoundsInLocal().getCenterY()
+            );
+            Color disabledSelectedRadioDotPixel = snapshotNodePixel(
+                    image,
+                    disabledSelectedRadioDot,
+                    disabledSelectedRadioDot.getBoundsInLocal().getCenterX(),
+                    disabledSelectedRadioDot.getBoundsInLocal().getCenterY()
+            );
+            assertTrue(
+                    colorDistance(disabledSelectedRadioDotPixel, Color.WHITE)
+                            < colorDistance(selectedRadioDotPixel, Color.WHITE) * 0.8,
+                    () -> "disabled selected radio dot should composite toward the surface: enabled="
+                            + selectedRadioDotPixel + ", disabled=" + disabledSelectedRadioDotPixel
+            );
             assertSnapshotNodeBorderContainsContrast(image, lookupRegion(offSwitch, ".box"), Color.WHITE, 0.08);
             assertSnapshotNodeContainsContrast(image, lookupRegion(onSwitch, ".box"), Color.WHITE, 0.1);
             assertSnapshotNodeContainsContrast(image, lookupRegion(onSwitch, ".thumb"), Color.rgb(84, 50, 185), 0.1);
@@ -37542,7 +37569,7 @@ final class M3ControlStyleTest {
         scene.root.applyCss();
         scene.root.layout();
         Region checkMark = lookupRegion(scene.checkBox, ".m3-checkbox-mark");
-        Shape radioDot = lookupShape(scene.radioButton, ".m3-radio-dot");
+        Node radioDot = radioDotAnimationLayer(scene.radioButton);
         Region switchThumb = lookupRegion(scene.switchControl, ".thumb");
         Region segmentSelection = segmentedButtonSelectionContainer(scene.segmentedButton);
         Region tabIndicator = lookupRegion(scene.tab, "." + M3TabSkin.ACTIVE_INDICATOR_STYLE_CLASS);
@@ -37575,7 +37602,7 @@ final class M3ControlStyleTest {
         Region checkMark = lookupRegion(scene.checkBox, ".m3-checkbox-mark");
         assertEquals(1.0, checkMark.getOpacity(), 0.0001);
         assertEquals(1.0, checkMark.getScaleX(), 0.0001);
-        Shape radioDot = assertInstanceOf(Shape.class, scene.radioButton.lookup(".m3-radio-dot"));
+        Node radioDot = radioDotAnimationLayer(scene.radioButton);
         assertEquals(1.0, radioDot.getOpacity(), 0.0001);
         assertEquals(1.0, radioDot.getScaleX(), 0.0001);
         Region switchThumb = lookupRegion(scene.switchControl, ".thumb");
@@ -38416,7 +38443,7 @@ final class M3ControlStyleTest {
 
         layoutSelectionIndicatorOwner(checkBox);
         Region mark = lookupRegion(checkBox, ".mark");
-        Shape dot = lookupShape(radioButton, ".dot");
+        Node dot = radioDotAnimationLayer(radioButton);
         Region thumb = lookupRegion(switchControl, ".thumb");
         return isBetweenExclusive(mark.getOpacity(), 0.25, 1.0)
                 && isBetweenExclusive(mark.getScaleX(), 0.72, 1.0)
@@ -38441,7 +38468,7 @@ final class M3ControlStyleTest {
 
         layoutSelectionIndicatorOwner(checkBox);
         Region mark = lookupRegion(checkBox, ".mark");
-        Shape dot = lookupShape(radioButton, ".dot");
+        Node dot = radioDotAnimationLayer(radioButton);
         Region thumb = lookupRegion(switchControl, ".thumb");
         return Math.abs(mark.getOpacity() - 1.0) < 0.0001
                 && Math.abs(mark.getScaleX() - 1.0) < 0.0001
@@ -38466,7 +38493,7 @@ final class M3ControlStyleTest {
 
         layoutSelectionIndicatorOwner(checkBox);
         Region mark = lookupRegion(checkBox, ".mark");
-        Shape dot = lookupShape(radioButton, ".dot");
+        Node dot = radioDotAnimationLayer(radioButton);
         Region thumb = lookupRegion(switchControl, ".thumb");
         return isBetweenExclusive(mark.getOpacity(), 0.25, 1.0)
                 && isBetweenExclusive(mark.getScaleX(), 0.72, 1.0)
@@ -38491,7 +38518,7 @@ final class M3ControlStyleTest {
 
         layoutSelectionIndicatorOwner(checkBox);
         Region mark = lookupRegion(checkBox, ".mark");
-        Shape dot = lookupShape(radioButton, ".dot");
+        Node dot = radioDotAnimationLayer(radioButton);
         Region thumb = lookupRegion(switchControl, ".thumb");
         return Math.abs(mark.getOpacity()) < 0.0001
                 && Math.abs(mark.getScaleX() - 0.72) < 0.0001
@@ -38509,7 +38536,7 @@ final class M3ControlStyleTest {
     ) {
         layoutSelectionIndicatorOwner(checkBox);
         Region mark = lookupRegion(checkBox, ".mark");
-        Shape dot = lookupShape(radioButton, ".dot");
+        Node dot = radioDotAnimationLayer(radioButton);
         Region thumb = lookupRegion(switchControl, ".thumb");
 
         assertBetween(mark.getOpacity(), 0.25, 1.0, "checkbox mark opacity");
@@ -38528,7 +38555,7 @@ final class M3ControlStyleTest {
     ) {
         layoutSelectionIndicatorOwner(checkBox);
         Region mark = lookupRegion(checkBox, ".mark");
-        Shape dot = lookupShape(radioButton, ".dot");
+        Node dot = radioDotAnimationLayer(radioButton);
         Region thumb = lookupRegion(switchControl, ".thumb");
 
         assertEquals(1.0, mark.getOpacity(), 0.0001);
@@ -38547,7 +38574,7 @@ final class M3ControlStyleTest {
     ) {
         layoutSelectionIndicatorOwner(checkBox);
         Region mark = lookupRegion(checkBox, ".mark");
-        Shape dot = lookupShape(radioButton, ".dot");
+        Node dot = radioDotAnimationLayer(radioButton);
         Region thumb = lookupRegion(switchControl, ".thumb");
 
         assertBetween(mark.getOpacity(), 0.25, 1.0, "checkbox mark reverse opacity");
@@ -38566,7 +38593,7 @@ final class M3ControlStyleTest {
     ) {
         layoutSelectionIndicatorOwner(checkBox);
         Region mark = lookupRegion(checkBox, ".mark");
-        Shape dot = lookupShape(radioButton, ".dot");
+        Node dot = radioDotAnimationLayer(radioButton);
         Region thumb = lookupRegion(switchControl, ".thumb");
 
         assertEquals(0.0, mark.getOpacity(), 0.0001);
@@ -39839,6 +39866,11 @@ final class M3ControlStyleTest {
     /// Returns the radio indicator dot shape.
     private static Shape radioDot(M3RadioButton radioButton) {
         return lookupShape(radioButton, ".dot");
+    }
+
+    /// Returns the transform layer that animates a radio dot independently from its CSS opacity.
+    private static Node radioDotAnimationLayer(M3RadioButton radioButton) {
+        return Objects.requireNonNull(radioDot(radioButton).getParent(), "radio dot animation layer");
     }
 
     /// Verifies the first background fill for a region.

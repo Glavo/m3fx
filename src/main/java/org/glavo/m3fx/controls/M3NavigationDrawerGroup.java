@@ -171,7 +171,7 @@ public final class M3NavigationDrawerGroup extends Control {
 
     /// Returns accessibility attributes for the disclosure state and visible child rows.
     ///
-    /// @param attribute the requested accessibility attribute
+    /// @param attribute  the requested accessibility attribute
     /// @param parameters optional attribute-specific parameters
     /// @return the requested accessibility value, or `null` when no value is available
     @Override
@@ -190,7 +190,7 @@ public final class M3NavigationDrawerGroup extends Control {
 
     /// Executes accessibility actions for toggling and focusing the disclosure group.
     ///
-    /// @param action the accessibility action to execute
+    /// @param action     the accessibility action to execute
     /// @param parameters optional action-specific parameters
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
@@ -241,6 +241,7 @@ public final class M3NavigationDrawerGroup extends Control {
         M3ControlStyles.initialize(this, STYLE_CLASS);
         M3ControlStyles.add(headerItem, HEADER_STYLE_CLASS);
         headerItem.headlineTextProperty().bind(title);
+        disclosureIcon.setMouseTransparent(true);
         headerItem.setTrailingMedia(disclosureIcon, M3ListItemSlotSize.ICON);
         headerItem.setOnAction(event -> {
             if (M3Accessible.isEffectivelyReachable(this)) {

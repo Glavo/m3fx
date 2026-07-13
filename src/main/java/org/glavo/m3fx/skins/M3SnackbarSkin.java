@@ -6,6 +6,7 @@ package org.glavo.m3fx.skins;
 import javafx.beans.InvalidationListener;
 import javafx.css.StyleOrigin;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.HBox;
@@ -109,17 +110,19 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
     /// Applies styleable component tokens to the snackbar container.
     private void updateTokenStyles() {
         M3Snackbar snackbar = getSkinnable();
-        container.setAlignment(M3NodeLayout.logicalStartCenterAlignment(snackbar));
-        textLabel.setAlignment(M3NodeLayout.logicalStartCenterAlignment(snackbar));
+        Pos contentAlignment = actionButton.isManaged()
+                ? M3NodeLayout.logicalStartCenterAlignment(snackbar)
+                : Pos.CENTER;
+        container.setAlignment(contentAlignment);
+        textLabel.setAlignment(contentAlignment);
 
         double padding = snackbar.getContentPadding();
         double verticalPadding = padding / 2.0;
-        double leadingPadding = padding;
         double trailingPadding = actionButton.isManaged() ? padding / 2.0 : padding;
         container.setPadding(M3NodeLayout.logicalInsets(
                 snackbar,
                 verticalPadding,
-                leadingPadding,
+                padding,
                 verticalPadding,
                 trailingPadding
         ));
@@ -236,8 +239,8 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
     /// Formats a CSS pixel value.
     private static String formatPixels(double value) {
         if (Math.rint(value) == value) {
-            return Long.toString((long) value) + "px";
+            return (long) value + "px";
         }
-        return Double.toString(value) + "px";
+        return value + "px";
     }
 }
