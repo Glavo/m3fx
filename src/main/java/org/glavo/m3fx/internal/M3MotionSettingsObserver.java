@@ -9,12 +9,13 @@ import javafx.beans.value.ChangeListener;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.stage.Window;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
 
 /// Observes runtime M3FX motion settings and window activity while an owner node is attached to a scene.
 ///
@@ -30,6 +31,10 @@ public final class M3MotionSettingsObserver {
 
     /// Opaque scene property key for the shared motion-settings dispatcher.
     private static final Object SCENE_OBSERVER_KEY = new Object();
+
+    /// Internal listeners notified when global settings or one local settings subtree changes.
+    private static final CopyOnWriteArrayList<Consumer<@Nullable Node>> SETTINGS_CHANGE_LISTENERS =
+            new CopyOnWriteArrayList<>();
 
     /// Empty nullable observer storage reused before the first owner subscription.
     private static final @Nullable M3MotionSettingsObserver[] EMPTY_OBSERVERS =
@@ -49,7 +54,7 @@ public final class M3MotionSettingsObserver {
 
     /// Creates an observer for one owner node.
     ///
-    /// @param owner the node whose scene attachment controls listener lifetime
+    /// @param owner         the node whose scene attachment controls listener lifetime
     /// @param refreshAction the action invoked when motion settings may affect the owner
     public M3MotionSettingsObserver(Node owner, Runnable refreshAction) {
         Objects.requireNonNull(owner, "owner");
@@ -111,14 +116,39 @@ public final class M3MotionSettingsObserver {
         return observer;
     }
 
+    /// Notifies internal motion observers after the public settings revision has advanced.
+    ///
+    /// @param source the root of the affected subtree, or `null` for a global change
+    public static void settingsChanged(@Nullable Node source) {
+        for (Consumer<@Nullable Node> listener : SETTINGS_CHANGE_LISTENERS) {
+            listener.accept(source);
+        }
+    }
+
+    /// Registers one internal settings listener.
+    static void addSettingsChangeListener(Consumer<@Nullable Node> listener) {
+        SETTINGS_CHANGE_LISTENERS.add(Objects.requireNonNull(listener, "listener"));
+    }
+
+    /// Removes one internal settings listener.
+    static void removeSettingsChangeListener(Consumer<@Nullable Node> listener) {
+        SETTINGS_CHANGE_LISTENERS.remove(Objects.requireNonNull(listener, "listener"));
+    }
+
     /// Shares owner lifecycle observation across all subscriptions attached to one node.
     @NotNullByDefault
     private static final class OwnerObserver {
         /// The node whose scene attachment controls this coordinator.
         private final Node owner;
 
+        /// The scene dispatcher currently responsible for this owner.
+        private @Nullable SceneObserver registeredSceneObserver;
+
         /// Re-registers this coordinator when the owner moves between scenes.
         private final InvalidationListener sceneListener = observable -> updateRegistration();
+
+        /// Refreshes inherited settings when the owner moves between parents without leaving its scene.
+        private final InvalidationListener parentListener = observable -> refreshAfterParentChange();
 
         /// Nullable observer slots; removals during dispatch leave temporary tombstones.
         private @Nullable M3MotionSettingsObserver[] observers = EMPTY_OBSERVERS;
@@ -128,9 +158,6 @@ public final class M3MotionSettingsObserver {
 
         /// The number of live observers.
         private int observerCount;
-
-        /// The scene dispatcher currently responsible for this owner.
-        private @Nullable SceneObserver registeredSceneObserver;
 
         /// The number of active callback dispatches.
         private int dispatchDepth;
@@ -156,6 +183,7 @@ public final class M3MotionSettingsObserver {
             append(observer);
             if (wasEmpty) {
                 owner.sceneProperty().addListener(sceneListener);
+                owner.parentProperty().addListener(parentListener);
                 updateRegistration();
                 return;
             }
@@ -190,6 +218,7 @@ public final class M3MotionSettingsObserver {
                 refreshRequested = false;
                 unregisterSceneObserver();
                 owner.sceneProperty().removeListener(sceneListener);
+                owner.parentProperty().removeListener(parentListener);
                 if (owner.getProperties().get(OWNER_OBSERVER_KEY) == this) {
                     owner.getProperties().remove(OWNER_OBSERVER_KEY);
                 }
@@ -240,6 +269,16 @@ public final class M3MotionSettingsObserver {
                 registeredSceneObserver = nextObserver;
             }
             requestRefresh();
+        }
+
+        /// Refreshes inherited settings only when a parent change leaves the owner in its registered scene.
+        private void refreshAfterParentChange() {
+            SceneObserver sceneObserver = registeredSceneObserver;
+            if (owner.getParent() != null
+                    && sceneObserver != null
+                    && owner.getScene() == sceneObserver.scene) {
+                requestRefresh();
+            }
         }
 
         /// Removes this owner from its current scene and releases an empty scene dispatcher.
@@ -339,14 +378,14 @@ public final class M3MotionSettingsObserver {
         private int ownerCount;
 
         /// Receives global and node-local motion-settings revisions.
-        private final InvalidationListener settingsListener = observable -> requestRefresh();
+        private final Consumer<@Nullable Node> settingsListener = this::requestRefresh;
 
         /// Receives changes to the window that presents the scene.
         private final ChangeListener<@Nullable Window> windowListener =
                 (observable, oldWindow, newWindow) -> updateWindow(newWindow, true);
 
         /// Receives showing-state changes from the current scene window.
-        private final InvalidationListener windowShowingListener = observable -> requestRefresh();
+        private final InvalidationListener windowShowingListener = observable -> requestRefresh(null);
 
         /// The window whose showing state is currently observed.
         private @Nullable Window observedWindow;
@@ -356,6 +395,12 @@ public final class M3MotionSettingsObserver {
 
         /// Whether an off-thread settings notification already scheduled one FX-thread refresh.
         private volatile boolean refreshPending;
+
+        /// The common local source retained while one off-thread refresh is pending.
+        private @Nullable Node pendingSource;
+
+        /// Whether pending changes require refreshing every owner in this scene.
+        private boolean refreshAllPending;
 
         /// Creates a dispatcher owned by one scene.
         ///
@@ -375,7 +420,7 @@ public final class M3MotionSettingsObserver {
             }
             owners[ownerSlots++] = ownerObserver;
             if (ownerCount++ == 0) {
-                M3MotionSettings.addSettingsChangeListener(settingsListener);
+                addSettingsChangeListener(settingsListener);
                 scene.windowProperty().addListener(windowListener);
                 updateWindow(scene.getWindow(), false);
             }
@@ -408,7 +453,7 @@ public final class M3MotionSettingsObserver {
                 return false;
             }
 
-            M3MotionSettings.removeSettingsChangeListener(settingsListener);
+            removeSettingsChangeListener(settingsListener);
             scene.windowProperty().removeListener(windowListener);
             updateWindow(null, false);
             return true;
@@ -429,12 +474,12 @@ public final class M3MotionSettingsObserver {
 
         /// Reattaches the shared showing-state listener to the scene's current window.
         ///
-        /// @param window the new window, or null when detached
+        /// @param window  the new window, or null when detached
         /// @param refresh whether subscribers should be refreshed
         private void updateWindow(@Nullable Window window, boolean refresh) {
             if (observedWindow == window) {
                 if (refresh) {
-                    requestRefresh();
+                    requestRefresh(null);
                 }
                 return;
             }
@@ -448,37 +493,52 @@ public final class M3MotionSettingsObserver {
                 window.showingProperty().addListener(windowShowingListener);
             }
             if (refresh) {
-                requestRefresh();
+                requestRefresh(null);
             }
         }
 
         /// Coalesces off-thread notifications into one JavaFX application-thread dispatch per scene.
-        private void requestRefresh() {
+        private void requestRefresh(@Nullable Node source) {
             if (Platform.isFxApplicationThread()) {
-                refreshOwners();
+                refreshOwners(source);
                 return;
             }
 
             synchronized (this) {
                 if (refreshPending) {
+                    if (!refreshAllPending && pendingSource != source) {
+                        pendingSource = null;
+                        refreshAllPending = true;
+                    }
                     return;
                 }
                 refreshPending = true;
+                pendingSource = source;
+                refreshAllPending = source == null;
             }
             Platform.runLater(() -> {
-                refreshPending = false;
-                refreshOwners();
+                @Nullable Node sourceToRefresh;
+                synchronized (this) {
+                    refreshPending = false;
+                    sourceToRefresh = refreshAllPending ? null : pendingSource;
+                    pendingSource = null;
+                    refreshAllPending = false;
+                }
+                refreshOwners(sourceToRefresh);
             });
         }
 
-        /// Refreshes owner coordinators without allocating a per-notification snapshot.
-        private void refreshOwners() {
+        /// Refreshes affected owner coordinators without allocating a per-notification snapshot.
+        private void refreshOwners(@Nullable Node source) {
+            if (source != null && source.getScene() != scene) {
+                return;
+            }
             int dispatchLimit = ownerSlots;
             dispatchDepth++;
             try {
                 for (int index = 0; index < dispatchLimit; index++) {
                     @Nullable OwnerObserver ownerObserver = owners[index];
-                    if (ownerObserver != null) {
+                    if (ownerObserver != null && (source == null || contains(source, ownerObserver.owner))) {
                         ownerObserver.refreshFrom(this);
                     }
                 }
@@ -486,6 +546,18 @@ public final class M3MotionSettingsObserver {
                 dispatchDepth--;
                 compactOwners();
             }
+        }
+
+        /// Returns whether one owner belongs to the subtree rooted at the changed settings node.
+        private static boolean contains(Node source, Node owner) {
+            @Nullable Node current = owner;
+            while (current != null) {
+                if (current == source) {
+                    return true;
+                }
+                current = current.getParent();
+            }
+            return false;
         }
 
         /// Compacts owner tombstones after the outermost dispatch.

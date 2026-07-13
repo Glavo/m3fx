@@ -35,7 +35,7 @@ control subclasses where M3FX owns the behavior surface.
 - MonetFX-backed light and dark color schemes.
 - Baseline and Expressive profiles for system and component tokens.
 - Token-driven typography, shape, elevation, density, state layers, and component metrics.
-- Global and node-local animation settings, motion schemes, and behavior timings.
+- Global animation settings, subtree reduced-motion requests, and inheritable motion schemes and behavior timings.
 - Reduced-motion behavior for transitions, overlays, scrolling, progress indicators, and loading indicators.
 - Theme and direction propagation into popup roots.
 

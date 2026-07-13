@@ -315,7 +315,11 @@ public final class M3NavigationDrawerGroup extends Control {
             }
             layout();
         } finally {
-            M3MotionSettings.setAnimationsEnabled(this, previousAnimationsEnabled);
+            if (Boolean.FALSE.equals(previousAnimationsEnabled)) {
+                M3MotionSettings.setAnimationsEnabled(this, false);
+            } else {
+                M3MotionSettings.clearAnimationsEnabled(this);
+            }
         }
     }
 

@@ -180,6 +180,49 @@ final class M3MotionSettingsObserverTest {
         });
     }
 
+    /// Verifies that local changes refresh only affected descendants and that same-scene reparenting is observed.
+    @Test
+    void targetsLocalChangesAndTracksSameSceneReparenting() {
+        FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
+            Pane firstOwner = new Pane();
+            Pane secondOwner = new Pane();
+            Pane firstScope = new Pane(firstOwner);
+            Pane secondScope = new Pane(secondOwner);
+            new Scene(new Pane(firstScope, secondScope));
+            AtomicInteger firstRefreshes = new AtomicInteger();
+            AtomicInteger secondRefreshes = new AtomicInteger();
+            M3MotionSettingsObserver first =
+                    new M3MotionSettingsObserver(firstOwner, firstRefreshes::incrementAndGet);
+            M3MotionSettingsObserver second =
+                    new M3MotionSettingsObserver(secondOwner, secondRefreshes::incrementAndGet);
+
+            try {
+                assertEquals(1, firstRefreshes.get());
+                assertEquals(1, secondRefreshes.get());
+
+                M3MotionSettings.setAnimationsEnabled(firstScope, false);
+                assertEquals(2, firstRefreshes.get());
+                assertEquals(1, secondRefreshes.get());
+
+                M3MotionSettings.clearAnimationsEnabled(firstScope);
+                int beforeReparent = firstRefreshes.get();
+                firstScope.getChildren().clear();
+                secondScope.getChildren().add(firstOwner);
+                assertTrue(firstRefreshes.get() > beforeReparent);
+
+                int firstBeforeSecondScopeChange = firstRefreshes.get();
+                M3MotionSettings.setAnimationsEnabled(secondScope, false);
+                assertEquals(firstBeforeSecondScopeChange + 1, firstRefreshes.get());
+                assertEquals(2, secondRefreshes.get());
+            } finally {
+                first.dispose();
+                second.dispose();
+                M3MotionSettings.clearAnimationsEnabled(firstScope);
+                M3MotionSettings.clearAnimationsEnabled(secondScope);
+            }
+        }));
+    }
+
 
     /// Verifies multiple subscriptions on one owner share lifecycle state until the last subscription is disposed.
     @Test
@@ -386,4 +429,5 @@ final class M3MotionSettingsObserverTest {
             assertEquals(firstInitialPropertyCount, firstScene.getProperties().size());
             assertEquals(secondInitialPropertyCount, secondScene.getProperties().size());
         }));
-    }}
+    }
+}

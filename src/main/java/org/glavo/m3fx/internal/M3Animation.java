@@ -131,14 +131,18 @@ public final class M3Animation {
     public static void copyResolvedMotionSettings(Node source, Node target) {
         Objects.requireNonNull(source, "source");
         Objects.requireNonNull(target, "target");
-        M3MotionSettings.setAnimationsEnabled(target, M3MotionSettings.areAnimationsEnabled(source));
+        if (M3MotionSettings.areAnimationsEnabled(source)) {
+            M3MotionSettings.clearAnimationsEnabled(target);
+        } else {
+            M3MotionSettings.setAnimationsEnabled(target, false);
+        }
         M3MotionSettings.setMotionScheme(target, motionScheme(source));
         M3MotionSettings.setMotionBehavior(target, motionBehavior(source));
     }
 
     /// Plays a finite transition from the beginning or finishes it immediately when animations are disabled.
     ///
-    /// @param owner the node whose animation settings should be honored
+    /// @param owner      the node whose animation settings should be honored
     /// @param transition the transition to play or finish
     public static void playFromStart(Node owner, M3FiniteTransition transition) {
         Objects.requireNonNull(transition, "transition");
@@ -174,7 +178,7 @@ public final class M3Animation {
     /// This is used by component-state transitions that already honor disabled motion when starting,
     /// but also need to settle when an application disables motion while the transition is in flight.
     ///
-    /// @param owner the node whose inherited animation switch should be resolved
+    /// @param owner       the node whose inherited animation switch should be resolved
     /// @param transitions the transitions to settle when disabled
     public static void finishRunningAnimationsIfDisabled(Node owner, M3FiniteTransition... transitions) {
         Objects.requireNonNull(transitions, "transitions");
@@ -193,8 +197,8 @@ public final class M3Animation {
     /// stopped before its duration is replaced. Running transitions are restarted only when the caller still has
     /// an active interaction that should keep the timer alive.
     ///
-    /// @param transition the pause transition to update
-    /// @param duration the new transition duration
+    /// @param transition       the pause transition to update
+    /// @param duration         the new transition duration
     /// @param restartIfRunning whether a running transition should restart after the duration changes
     public static void updatePauseDuration(
             PauseTransition transition,

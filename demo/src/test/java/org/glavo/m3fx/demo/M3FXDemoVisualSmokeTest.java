@@ -3629,7 +3629,11 @@ final class M3FXDemoVisualSmokeTest {
                 focusedLayouts++;
             }
         } finally {
-            M3MotionSettings.setAnimationsEnabled(root, previousAnimationsEnabled);
+            if (Boolean.FALSE.equals(previousAnimationsEnabled)) {
+                M3MotionSettings.setAnimationsEnabled(root, false);
+            } else {
+                M3MotionSettings.clearAnimationsEnabled(root);
+            }
         }
 
         int checkedLayouts = focusedLayouts;

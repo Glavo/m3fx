@@ -3,13 +3,10 @@
 
 package org.glavo.m3fx.animation;
 
-import javafx.beans.InvalidationListener;
 import javafx.scene.layout.Pane;
 import org.glavo.m3fx.FxTestUtils;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -49,7 +46,8 @@ final class M3MotionSettingsTest {
             assertFalse(M3MotionSettings.areAnimationsEnabled(nested));
 
             M3MotionSettings.setAnimationsEnabled(child, true);
-            assertTrue(M3MotionSettings.areAnimationsEnabled(nested));
+            assertFalse(M3MotionSettings.areAnimationsEnabled(nested));
+            assertNull(M3MotionSettings.getAnimationsEnabled(child));
 
             M3MotionSettings.clearAnimationsEnabled(child);
             assertFalse(M3MotionSettings.areAnimationsEnabled(nested));
@@ -86,33 +84,6 @@ final class M3MotionSettingsTest {
             M3MotionSettings.setAnimationsEnabled(node, false);
 
             assertEquals(afterNodeAnimations, M3MotionSettings.revisionProperty().get());
-        });
-    }
-
-    /// Verifies that explicit listeners receive consecutive global and node-local settings changes.
-    @Test
-    void settingsChangeListenerReportsEachSettingsChange() {
-        FxTestUtils.runWithMotionSettingsPreserved(() -> {
-            boolean animationsEnabled = M3MotionSettings.areAnimationsEnabled();
-            Pane node = new Pane();
-            AtomicInteger changes = new AtomicInteger();
-            InvalidationListener listener = observable -> changes.incrementAndGet();
-            M3MotionSettings.addSettingsChangeListener(listener);
-            try {
-                M3MotionSettings.setAnimationsEnabled(!animationsEnabled);
-                M3MotionSettings.setAnimationsEnabled(animationsEnabled);
-                M3MotionSettings.setAnimationsEnabled(node, false);
-                M3MotionSettings.setAnimationsEnabled(node, false);
-                M3MotionSettings.clearAnimationsEnabled(node);
-
-                assertEquals(4, changes.get());
-            } finally {
-                M3MotionSettings.removeSettingsChangeListener(listener);
-            }
-
-            M3MotionSettings.setAnimationsEnabled(node, true);
-
-            assertEquals(4, changes.get());
         });
     }
 
@@ -222,4 +193,5 @@ final class M3MotionSettingsTest {
             assertFalse(child.hasProperties());
             assertFalse(nested.hasProperties());
         });
-    }}
+    }
+}

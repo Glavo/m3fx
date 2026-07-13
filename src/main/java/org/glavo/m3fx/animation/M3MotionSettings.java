@@ -3,7 +3,6 @@
 
 package org.glavo.m3fx.animation;
 
-import javafx.beans.InvalidationListener;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyLongProperty;
@@ -11,17 +10,18 @@ import javafx.beans.property.ReadOnlyLongWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.Node;
+import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /// Runtime settings for Material Design 3 motion in M3FX controls.
 ///
-/// The global settings are used when no node-specific override is present. Node overrides inherit through the
-/// JavaFX parent chain, so an application can disable motion for a whole subtree, re-enable it for one control,
-/// or replace the motion scheme used by one feature area without rewriting control skins.
+/// Global settings provide the fallback values for the scene graph. A node may request reduced motion for its
+/// complete subtree; full motion resumes only after that request is cleared and no ancestor or global setting still
+/// requests reduced motion. Motion-scheme and behavior overrides use the nearest value in the parent chain because
+/// they select tokens rather than weaken an accessibility preference.
 ///
 /// Controls use these settings for state-layer fades, ripple release, popup entrance and exit, smooth scrolling,
 /// and progress motion. Disabling animations requests reduced motion: finite transitions settle immediately,
@@ -31,7 +31,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 /// [Material Design](https://m3.material.io/).
 @NotNullByDefault
 public final class M3MotionSettings {
-    /// The key used to store nullable node-local animation overrides.
+    /// The key used to store node-local reduced-motion requests.
     private static final Object ANIMATIONS_ENABLED_KEY = new Object();
 
     /// The key used to store nullable node-local motion scheme overrides.
@@ -40,7 +40,7 @@ public final class M3MotionSettings {
     /// The key used to store nullable node-local motion behavior overrides.
     private static final Object MOTION_BEHAVIOR_KEY = new Object();
 
-    /// The global animation switch used when a node has no inherited override.
+    /// The global full-motion switch.
     private static final BooleanProperty globalAnimationsEnabled =
             new SimpleBooleanProperty(M3MotionSettings.class, "animationsEnabled", true);
 
@@ -59,14 +59,10 @@ public final class M3MotionSettings {
     /// The read-only view of [settingsRevision].
     private static final ReadOnlyLongProperty readOnlySettingsRevision = settingsRevision.getReadOnlyProperty();
 
-    /// Listeners notified whenever global or node-local motion settings change.
-    private static final CopyOnWriteArrayList<InvalidationListener> settingsChangeListeners =
-            new CopyOnWriteArrayList<>();
-
     static {
-        globalAnimationsEnabled.addListener((observable, oldValue, newValue) -> markSettingsChanged());
-        globalMotionScheme.addListener((observable, oldValue, newValue) -> markSettingsChanged());
-        globalMotionBehavior.addListener((observable, oldValue, newValue) -> markSettingsChanged());
+        globalAnimationsEnabled.addListener((observable, oldValue, newValue) -> markSettingsChanged(null));
+        globalMotionScheme.addListener((observable, oldValue, newValue) -> markSettingsChanged(null));
+        globalMotionBehavior.addListener((observable, oldValue, newValue) -> markSettingsChanged(null));
     }
 
     /// Prevents instantiation.
@@ -143,38 +139,30 @@ public final class M3MotionSettings {
         return readOnlySettingsRevision;
     }
 
-    /// Adds a listener that is called whenever global or node-local motion settings change.
-    ///
-    /// The listener is notified synchronously after [revisionProperty] increments. Unlike a JavaFX
-    /// invalidation listener attached directly to the property, this listener is called for every settings change
-    /// even when the property value has not been read between changes.
-    ///
-    /// @param listener the listener to add
-    public static void addSettingsChangeListener(InvalidationListener listener) {
-        settingsChangeListeners.add(Objects.requireNonNull(listener, "listener"));
-    }
-
-    /// Removes a listener previously added with [addSettingsChangeListener].
-    ///
-    /// @param listener the listener to remove
-    public static void removeSettingsChangeListener(InvalidationListener listener) {
-        settingsChangeListeners.remove(Objects.requireNonNull(listener, "listener"));
-    }
-
     /// Returns whether full Material motion is enabled for a node after resolving inherited overrides.
     ///
     /// @param node the node used to resolve inherited motion settings
     /// @return `true` when full-motion animations are enabled for the node
     public static boolean areAnimationsEnabled(Node node) {
         Objects.requireNonNull(node, "node");
-        @Nullable Boolean override = findInheritedAnimationsEnabled(node);
-        return override == null ? areAnimationsEnabled() : override;
+        if (!areAnimationsEnabled()) {
+            return false;
+        }
+
+        @Nullable Node current = node;
+        while (current != null) {
+            if (Boolean.FALSE.equals(getAnimationsEnabled(current))) {
+                return false;
+            }
+            current = current.getParent();
+        }
+        return true;
     }
 
-    /// Returns the node-local full-motion animation override, or `null` when the node inherits its setting.
+    /// Returns `false` when this node requests reduced motion, or `null` when it inherits its setting.
     ///
     /// @param node the node to query
-    /// @return the node-local full-motion animation override, or `null` when the node inherits its setting
+    /// @return `false` when this node requests reduced motion, or `null` when it inherits its setting
     public static @Nullable Boolean getAnimationsEnabled(Node node) {
         Objects.requireNonNull(node, "node");
         if (!node.hasProperties()) {
@@ -184,29 +172,33 @@ public final class M3MotionSettings {
         return value instanceof Boolean booleanValue ? booleanValue : null;
     }
 
-    /// Sets the node-local full-motion animation override, or clears it when `null` is supplied.
+    /// Sets or clears the node-local reduced-motion request.
     ///
-    /// @param node the node to update
-    /// @param enabled the node-local full-motion animation override, or `null` to inherit
-    public static void setAnimationsEnabled(Node node, @Nullable Boolean enabled) {
+    /// Supplying `false` disables full Material motion for this node and its descendants. Supplying `true` clears
+    /// the local request so the node inherits the global and ancestor settings. Consequently a descendant cannot
+    /// restore full motion while an ancestor requests reduced motion.
+    ///
+    /// @param node    the node to update
+    /// @param enabled `false` to request reduced motion, or `true` to inherit
+    public static void setAnimationsEnabled(Node node, boolean enabled) {
         Objects.requireNonNull(node, "node");
-        @Nullable Boolean previous = getAnimationsEnabled(node);
-        if (Objects.equals(previous, enabled)) {
+        boolean reducedMotionRequested = Boolean.FALSE.equals(getAnimationsEnabled(node));
+        if (reducedMotionRequested == !enabled) {
             return;
         }
-        if (enabled == null) {
+        if (enabled) {
             node.getProperties().remove(ANIMATIONS_ENABLED_KEY);
         } else {
-            node.getProperties().put(ANIMATIONS_ENABLED_KEY, enabled);
+            node.getProperties().put(ANIMATIONS_ENABLED_KEY, Boolean.FALSE);
         }
-        markSettingsChanged();
+        markSettingsChanged(node);
     }
 
-    /// Clears the node-local full-motion animation override so the node inherits its setting.
+    /// Clears the node-local reduced-motion request so the node inherits its setting.
     ///
-    /// @param node the node whose local full-motion animation override should be cleared
+    /// @param node the node whose local reduced-motion request should be cleared
     public static void clearAnimationsEnabled(Node node) {
-        setAnimationsEnabled(node, null);
+        setAnimationsEnabled(node, true);
     }
 
     /// Returns the node-local motion scheme override, or `null` when the node inherits its setting.
@@ -224,7 +216,7 @@ public final class M3MotionSettings {
 
     /// Sets the node-local motion scheme override, or clears it when `null` is supplied.
     ///
-    /// @param node the node to update
+    /// @param node   the node to update
     /// @param scheme the node-local motion scheme override, or `null` to inherit
     public static void setMotionScheme(Node node, @Nullable M3MotionScheme scheme) {
         Objects.requireNonNull(node, "node");
@@ -237,7 +229,7 @@ public final class M3MotionSettings {
         } else {
             node.getProperties().put(MOTION_SCHEME_KEY, scheme);
         }
-        markSettingsChanged();
+        markSettingsChanged(node);
     }
 
     /// Clears the node-local motion scheme override so the node inherits its setting.
@@ -262,7 +254,7 @@ public final class M3MotionSettings {
 
     /// Sets the node-local motion behavior override, or clears it when `null` is supplied.
     ///
-    /// @param node the node to update
+    /// @param node     the node to update
     /// @param behavior the node-local motion behavior override, or `null` to inherit
     public static void setMotionBehavior(Node node, @Nullable M3MotionBehavior behavior) {
         Objects.requireNonNull(node, "node");
@@ -275,7 +267,7 @@ public final class M3MotionSettings {
         } else {
             node.getProperties().put(MOTION_BEHAVIOR_KEY, behavior);
         }
-        markSettingsChanged();
+        markSettingsChanged(node);
     }
 
     /// Clears the node-local motion behavior override so the node inherits its setting.
@@ -285,24 +277,9 @@ public final class M3MotionSettings {
         setMotionBehavior(node, null);
     }
 
-    /// Finds the nearest inherited node animation override.
-    private static @Nullable Boolean findInheritedAnimationsEnabled(Node node) {
-        @Nullable Node current = node;
-        while (current != null) {
-            @Nullable Boolean value = getAnimationsEnabled(current);
-            if (value != null) {
-                return value;
-            }
-            current = current.getParent();
-        }
-        return null;
-    }
-
-    /// Increments the global settings revision.
-    private static void markSettingsChanged() {
+    /// Increments the settings revision and identifies the affected subtree when one exists.
+    private static void markSettingsChanged(@Nullable Node source) {
         settingsRevision.set(settingsRevision.get() + 1L);
-        for (InvalidationListener listener : settingsChangeListeners) {
-            listener.invalidated(readOnlySettingsRevision);
-        }
+        M3MotionSettingsObserver.settingsChanged(source);
     }
 }

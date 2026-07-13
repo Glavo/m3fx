@@ -1137,7 +1137,10 @@ final class M3ControlStyleTest {
             root.applyCss();
             root.layout();
 
-            assertTrue(buttonGroup.getItems().get(0).getLayoutX() < buttonGroup.getItems().get(1).getLayoutX());
+            assertTrue(buttonGroup.getItems().get(0)
+                    .localToScene(buttonGroup.getItems().get(0).getBoundsInLocal()).getMinX()
+                    < buttonGroup.getItems().get(1)
+                    .localToScene(buttonGroup.getItems().get(1).getBoundsInLocal()).getMinX());
             assertEquals(Pos.CENTER_LEFT, firstDescendantOfType(iconGroup, HBox.class).getAlignment());
             assertEquals(Pos.CENTER_LEFT, firstDescendantOfType(segmentedGroup, HBox.class).getAlignment());
             assertEquals(Pos.CENTER_LEFT, firstDescendantOfType(chipGroup, FlowPane.class).getAlignment());
@@ -1151,7 +1154,10 @@ final class M3ControlStyleTest {
             root.applyCss();
             root.layout();
 
-            assertTrue(buttonGroup.getItems().get(0).getLayoutX() > buttonGroup.getItems().get(1).getLayoutX());
+            assertTrue(buttonGroup.getItems().get(0)
+                    .localToScene(buttonGroup.getItems().get(0).getBoundsInLocal()).getMinX()
+                    > buttonGroup.getItems().get(1)
+                    .localToScene(buttonGroup.getItems().get(1).getBoundsInLocal()).getMinX());
             assertEquals(Pos.CENTER_RIGHT, firstDescendantOfType(iconGroup, HBox.class).getAlignment());
             assertEquals(Pos.CENTER_RIGHT, firstDescendantOfType(segmentedGroup, HBox.class).getAlignment());
             assertEquals(Pos.CENTER_RIGHT, firstDescendantOfType(chipGroup, FlowPane.class).getAlignment());
@@ -1165,7 +1171,10 @@ final class M3ControlStyleTest {
             root.applyCss();
             root.layout();
 
-            assertTrue(buttonGroup.getItems().get(0).getLayoutX() < buttonGroup.getItems().get(1).getLayoutX());
+            assertTrue(buttonGroup.getItems().get(0)
+                    .localToScene(buttonGroup.getItems().get(0).getBoundsInLocal()).getMinX()
+                    < buttonGroup.getItems().get(1)
+                    .localToScene(buttonGroup.getItems().get(1).getBoundsInLocal()).getMinX());
             assertEquals(Pos.CENTER_LEFT, firstDescendantOfType(iconGroup, HBox.class).getAlignment());
             assertEquals(Pos.CENTER_LEFT, firstDescendantOfType(segmentedGroup, HBox.class).getAlignment());
             assertEquals(Pos.CENTER_LEFT, firstDescendantOfType(chipGroup, FlowPane.class).getAlignment());
@@ -3108,10 +3117,11 @@ final class M3ControlStyleTest {
 
             selectionGroup.setVariant(M3ButtonGroupVariant.CONNECTED);
             selectionRoot.applyCss();
-            selectionGroup.layout();
-            assertEquals(selectionRestingWidth, selectedFirst.getWidth(), 0.0001);
-            assertEquals(selectionRestingWidth, selectedMiddle.getWidth(), 0.0001);
-            assertEquals(selectionRestingWidth, selectedLast.getWidth(), 0.0001);
+            resizeButtonGroupToPreferredSize(selectionGroup);
+            double compactConnectedWidth = Math.max(48.0, selectionRestingWidth);
+            assertEquals(compactConnectedWidth, selectedFirst.getWidth(), 0.0001);
+            assertEquals(compactConnectedWidth, selectedMiddle.getWidth(), 0.0001);
+            assertEquals(compactConnectedWidth, selectedLast.getWidth(), 0.0001);
         });
     }
 
@@ -3245,8 +3255,10 @@ final class M3ControlStyleTest {
             double connectedFirstWidth = first.getWidth();
             double connectedMiddleWidth = middle.getWidth();
             double connectedLastWidth = last.getWidth();
-            assertTrue(first.getLayoutX() > middle.getLayoutX());
-            assertTrue(middle.getLayoutX() > last.getLayoutX());
+            assertTrue(first.localToScene(first.getBoundsInLocal()).getMinX()
+                    > middle.localToScene(middle.getBoundsInLocal()).getMinX());
+            assertTrue(middle.localToScene(middle.getBoundsInLocal()).getMinX()
+                    > last.localToScene(last.getBoundsInLocal()).getMinX());
 
             middle.arm();
             group.layout();
@@ -3267,8 +3279,10 @@ final class M3ControlStyleTest {
 
             assertTrue(middle.getWidth() > restingMiddleWidth);
             assertEquals(restingChildrenWidth, first.getWidth() + middle.getWidth() + last.getWidth(), 0.0001);
-            assertTrue(first.getLayoutX() > middle.getLayoutX());
-            assertTrue(middle.getLayoutX() > last.getLayoutX());
+            assertTrue(first.localToScene(first.getBoundsInLocal()).getMinX()
+                    > middle.localToScene(middle.getBoundsInLocal()).getMinX());
+            assertTrue(middle.localToScene(middle.getBoundsInLocal()).getMinX()
+                    > last.localToScene(last.getBoundsInLocal()).getMinX());
             middle.disarm();
         });
     }
@@ -14792,14 +14806,14 @@ final class M3ControlStyleTest {
 
                 M3MotionSettings.setAnimationsEnabled(owner, true);
 
-                assertEquals(Boolean.TRUE, M3MotionSettings.getAnimationsEnabled(popupRoot));
-                assertTrue(M3MotionSettings.areAnimationsEnabled(popupRoot));
+                assertEquals(Boolean.FALSE, M3MotionSettings.getAnimationsEnabled(popupRoot));
+                assertFalse(M3MotionSettings.areAnimationsEnabled(popupRoot));
 
                 synchronizer.stop();
                 M3MotionSettings.setAnimationsEnabled(owner, false);
 
-                assertEquals(Boolean.TRUE, M3MotionSettings.getAnimationsEnabled(popupRoot));
-                assertTrue(M3MotionSettings.areAnimationsEnabled(popupRoot));
+                assertEquals(Boolean.FALSE, M3MotionSettings.getAnimationsEnabled(popupRoot));
+                assertFalse(M3MotionSettings.areAnimationsEnabled(popupRoot));
             } finally {
                 synchronizer.stop();
                 M3MotionSettings.clearAnimationsEnabled(owner);
@@ -14831,7 +14845,7 @@ final class M3ControlStyleTest {
                 M3MotionSettings.setMotionBehavior(standardBehavior);
                 synchronizer.start();
 
-                assertEquals(Boolean.TRUE, M3MotionSettings.getAnimationsEnabled(popupRoot));
+                assertNull(M3MotionSettings.getAnimationsEnabled(popupRoot));
                 assertSame(standardScheme, M3MotionSettings.getMotionScheme(popupRoot));
                 assertSame(standardBehavior, M3MotionSettings.getMotionBehavior(popupRoot));
                 assertSame(standardScheme, M3Animation.motionScheme(popupRoot));
