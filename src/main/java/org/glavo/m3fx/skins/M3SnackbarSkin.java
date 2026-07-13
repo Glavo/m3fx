@@ -6,7 +6,6 @@ package org.glavo.m3fx.skins;
 import javafx.beans.InvalidationListener;
 import javafx.css.StyleOrigin;
 import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.HBox;
@@ -110,11 +109,8 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
     /// Applies styleable component tokens to the snackbar container.
     private void updateTokenStyles() {
         M3Snackbar snackbar = getSkinnable();
-        Pos contentAlignment = actionButton.isManaged()
-                ? M3NodeLayout.logicalStartCenterAlignment(snackbar)
-                : Pos.CENTER;
-        container.setAlignment(contentAlignment);
-        textLabel.setAlignment(contentAlignment);
+        container.setAlignment(M3NodeLayout.logicalStartCenterAlignment(snackbar));
+        textLabel.setAlignment(M3NodeLayout.logicalStartCenterAlignment(snackbar));
 
         double padding = snackbar.getContentPadding();
         double verticalPadding = padding / 2.0;

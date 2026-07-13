@@ -7059,8 +7059,8 @@ final class M3ControlStyleTest {
 
         HBox container = assertInstanceOf(HBox.class, snackbar.lookup(".m3-snackbar-container"));
         Label message = assertInstanceOf(Label.class, snackbar.lookup(".m3-snackbar-text"));
-        assertEquals(Pos.CENTER, container.getAlignment());
-        assertEquals(Pos.CENTER, message.getAlignment());
+        assertEquals(Pos.CENTER_LEFT, container.getAlignment());
+        assertEquals(Pos.CENTER_LEFT, message.getAlignment());
         assertEquals(16.0, container.getPadding().getLeft(), 0.0001);
         assertEquals(16.0, container.getPadding().getRight(), 0.0001);
         assertEquals(8.0, container.getPadding().getTop(), 0.0001);
