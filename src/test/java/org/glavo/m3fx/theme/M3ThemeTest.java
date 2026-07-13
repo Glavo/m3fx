@@ -181,7 +181,7 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-badge-small-size"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-top-app-bar-container-height"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-bottom-app-bar-container-height"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-rail-container-width"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-rail-collapsed-container-width"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-drawer-container-width"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-item-one-line-height"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-section-header-height"));
@@ -386,7 +386,18 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-bottom-app-bar-container-height: 88px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-bottom-app-bar-horizontal-padding: 24px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-bottom-app-bar-action-spacing: 0px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-rail-container-width: 96px"));
+        assertTrue(theme.toRootStyleDeclarations().contains(
+                "-m3-navigation-rail-collapsed-container-width: 96px"
+        ));
+        assertTrue(theme.toRootStyleDeclarations().contains(
+                "-m3-navigation-rail-narrow-collapsed-container-width: 80px"
+        ));
+        assertTrue(theme.toRootStyleDeclarations().contains(
+                "-m3-navigation-rail-expanded-minimum-container-width: 220px"
+        ));
+        assertTrue(theme.toRootStyleDeclarations().contains(
+                "-m3-navigation-rail-expanded-maximum-container-width: 360px"
+        ));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-drawer-container-width: 360px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-bar-horizontal-padding: 8px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-bar-item-spacing: 6px"));
@@ -500,8 +511,13 @@ final class M3ThemeTest {
         assertEquals(6.0, theme.tokens().componentTokens().slider().thumbTrackGap(), 0.0001);
         assertEquals(48.0, theme.tokens().componentTokens().slider().touchTargetSize(), 0.0001);
         assertEquals(8.0, theme.tokens().componentTokens().navigationBar().horizontalPadding(), 0.0001);
-        assertEquals(44.0, theme.tokens().componentTokens().navigationRail().verticalPadding(), 0.0001);
+        assertEquals(96.0, theme.tokens().componentTokens().navigationRail().collapsedContainerWidth(), 0.0001);
+        assertEquals(80.0, theme.tokens().componentTokens().navigationRail().narrowCollapsedContainerWidth(), 0.0001);
+        assertEquals(44.0, theme.tokens().componentTokens().navigationRail().collapsedTopPadding(), 0.0001);
+        assertEquals(0.0, theme.tokens().componentTokens().navigationRail().collapsedBottomPadding(), 0.0001);
+        assertEquals(220.0, theme.tokens().componentTokens().navigationRail().expandedMinimumContainerWidth(), 0.0001);
         assertEquals(280.0, theme.tokens().componentTokens().navigationRail().expandedContainerWidth(), 0.0001);
+        assertEquals(360.0, theme.tokens().componentTokens().navigationRail().expandedMaximumContainerWidth(), 0.0001);
         assertEquals(44.0, theme.tokens().componentTokens().navigationRail().expandedTopPadding(), 0.0001);
         assertEquals(20.0, theme.tokens().componentTokens().navigationRail().expandedBottomPadding(), 0.0001);
         assertEquals(40.0, theme.tokens().componentTokens().navigationRail().headerSpacing(), 0.0001);

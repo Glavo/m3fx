@@ -193,7 +193,7 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
 
     /// Starts one reusable part-shape transition when its target has changed.
     private void animatePartShape(PartShapeTransition transition, double targetInnerCorner) {
-        if (!transition.configure(M3Animation.defaultEffects(getSkinnable()), targetInnerCorner)) {
+        if (!transition.configure(M3Animation.fastSpatial(getSkinnable()), targetInnerCorner)) {
             return;
         }
         M3Animation.playFromStart(getSkinnable(), transition);

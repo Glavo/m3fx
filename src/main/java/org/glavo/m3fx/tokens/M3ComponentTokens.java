@@ -459,7 +459,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double navigationContentSpacing = density.apply(4.0);
         double navigationHorizontalPadding = density.apply(8.0);
         double navigationBarItemSpacing = density.apply(expressive ? 6.0 : 0.0);
-        double navigationRailVerticalPadding = density.apply(expressive ? 44.0 : 16.0);
+        double navigationRailCollapsedTopPadding = density.apply(expressive ? 44.0 : 16.0);
+        double navigationRailCollapsedBottomPadding = density.apply(expressive ? 0.0 : 16.0);
         double navigationRailHorizontalPadding = density.apply(0.0);
         double navigationRailItemSpacing = density.apply(expressive ? 4.0 : 8.0);
         double navigationRailHeaderSpacing = density.apply(40.0);
@@ -1044,14 +1045,18 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 ),
                 new NavigationRailTokens(
                         navigationRailWidth,
+                        density.apply(80.0),
+                        density.apply(220.0),
                         density.apply(280.0),
+                        density.apply(360.0),
                         navigationBarHeight,
                         navigationRailItemWidth,
                         navigationRailIndicatorWidth,
                         navigationIndicatorHeight,
                         shapeTokens.full(),
                         navigationContentSpacing,
-                        navigationRailVerticalPadding,
+                        navigationRailCollapsedTopPadding,
+                        navigationRailCollapsedBottomPadding,
                         navigationRailHorizontalPadding,
                         navigationRailItemSpacing,
                         density.apply(44.0),
@@ -2159,11 +2164,30 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Appends navigation rail token declarations.
     private static void append(StringBuilder builder, NavigationRailTokens tokens) {
-        M3TokenCss.append(builder, "-m3-navigation-rail-container-width", M3TokenCss.pixels(tokens.containerWidth()));
+        M3TokenCss.append(
+                builder,
+                "-m3-navigation-rail-collapsed-container-width",
+                M3TokenCss.pixels(tokens.collapsedContainerWidth())
+        );
+        M3TokenCss.append(
+                builder,
+                "-m3-navigation-rail-narrow-collapsed-container-width",
+                M3TokenCss.pixels(tokens.narrowCollapsedContainerWidth())
+        );
+        M3TokenCss.append(
+                builder,
+                "-m3-navigation-rail-expanded-minimum-container-width",
+                M3TokenCss.pixels(tokens.expandedMinimumContainerWidth())
+        );
         M3TokenCss.append(
                 builder,
                 "-m3-navigation-rail-expanded-container-width",
                 M3TokenCss.pixels(tokens.expandedContainerWidth())
+        );
+        M3TokenCss.append(
+                builder,
+                "-m3-navigation-rail-expanded-maximum-container-width",
+                M3TokenCss.pixels(tokens.expandedMaximumContainerWidth())
         );
         M3TokenCss.append(builder, "-m3-navigation-rail-item-height", M3TokenCss.pixels(tokens.itemHeight()));
         M3TokenCss.append(builder, "-m3-navigation-rail-item-width", M3TokenCss.pixels(tokens.itemWidth()));
@@ -2171,7 +2195,16 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-navigation-rail-indicator-height", M3TokenCss.pixels(tokens.indicatorHeight()));
         M3TokenCss.append(builder, "-m3-navigation-rail-indicator-shape", M3TokenCss.pixels(tokens.indicatorShape()));
         M3TokenCss.append(builder, "-m3-navigation-rail-content-spacing", M3TokenCss.pixels(tokens.contentSpacing()));
-        M3TokenCss.append(builder, "-m3-navigation-rail-vertical-padding", M3TokenCss.pixels(tokens.verticalPadding()));
+        M3TokenCss.append(
+                builder,
+                "-m3-navigation-rail-collapsed-top-padding",
+                M3TokenCss.pixels(tokens.collapsedTopPadding())
+        );
+        M3TokenCss.append(
+                builder,
+                "-m3-navigation-rail-collapsed-bottom-padding",
+                M3TokenCss.pixels(tokens.collapsedBottomPadding())
+        );
         M3TokenCss.append(builder, "-m3-navigation-rail-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
         M3TokenCss.append(builder, "-m3-navigation-rail-item-spacing", M3TokenCss.pixels(tokens.itemSpacing()));
         M3TokenCss.append(
@@ -3835,17 +3868,47 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Appends a navigation rail token CSS rule.
     private static void appendNavigationRailRule(StringBuilder builder, NavigationRailTokens tokens) {
         beginRule(builder, ".m3-navigation-rail");
-        appendDeclaration(builder, "-m3-collapsed-container-width", M3TokenCss.pixels(tokens.containerWidth()));
+        appendDeclaration(
+                builder,
+                "-m3-collapsed-container-width",
+                M3TokenCss.pixels(tokens.collapsedContainerWidth())
+        );
+        appendDeclaration(
+                builder,
+                "-m3-expanded-minimum-container-width",
+                M3TokenCss.pixels(tokens.expandedMinimumContainerWidth())
+        );
         appendDeclaration(
                 builder,
                 "-m3-expanded-container-width",
                 M3TokenCss.pixels(tokens.expandedContainerWidth())
         );
-        appendDeclaration(builder, "-fx-padding", M3TokenCss.pixels(tokens.verticalPadding())
-                + " "
-                + M3TokenCss.pixels(tokens.horizontalPadding()));
+        appendDeclaration(
+                builder,
+                "-m3-expanded-maximum-container-width",
+                M3TokenCss.pixels(tokens.expandedMaximumContainerWidth())
+        );
+        appendDeclaration(
+                builder,
+                "-fx-padding",
+                M3TokenCss.pixels(tokens.collapsedTopPadding())
+                        + " "
+                        + M3TokenCss.pixels(tokens.horizontalPadding())
+                        + " "
+                        + M3TokenCss.pixels(tokens.collapsedBottomPadding())
+                        + " "
+                        + M3TokenCss.pixels(tokens.horizontalPadding())
+        );
         appendDeclaration(builder, "-m3-item-spacing", M3TokenCss.pixels(tokens.itemSpacing()));
         appendDeclaration(builder, "-m3-header-spacing", M3TokenCss.pixels(tokens.headerSpacing()));
+        endRule(builder);
+
+        beginRule(builder, ".m3-navigation-rail:narrow");
+        appendDeclaration(
+                builder,
+                "-m3-collapsed-container-width",
+                M3TokenCss.pixels(tokens.narrowCollapsedContainerWidth())
+        );
         endRule(builder);
 
         beginRule(builder, ".m3-navigation-rail:expanded");
@@ -5327,32 +5390,40 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Tokens used by navigation rails.
     ///
-    /// @param containerWidth         the navigation rail container width
-    /// @param expandedContainerWidth the preferred expanded navigation rail width
-    /// @param itemHeight             the preferred navigation item height
-    /// @param itemWidth              the preferred navigation item width
-    /// @param indicatorWidth         the selected indicator width
-    /// @param indicatorHeight        the selected indicator height
-    /// @param indicatorShape         the selected indicator radius
-    /// @param contentSpacing         the spacing between item icon and label
-    /// @param verticalPadding        the vertical padding around items
-    /// @param horizontalPadding      the horizontal padding around items
-    /// @param itemSpacing            the spacing between items
-    /// @param expandedTopPadding     the top padding of an expanded rail
-    /// @param expandedBottomPadding  the bottom padding of an expanded rail
-    /// @param headerSpacing          the minimum spacing between header content and destination items
-    /// @param modalContainerShape    the corner radius of a modal expanded rail
+    /// @param collapsedContainerWidth       the regular collapsed navigation rail width
+    /// @param narrowCollapsedContainerWidth the narrow collapsed navigation rail width
+    /// @param expandedMinimumContainerWidth the minimum expanded navigation rail width
+    /// @param expandedContainerWidth        the preferred expanded navigation rail width
+    /// @param expandedMaximumContainerWidth the maximum expanded navigation rail width
+    /// @param itemHeight                    the preferred navigation item height
+    /// @param itemWidth                     the preferred navigation item width
+    /// @param indicatorWidth                the selected indicator width
+    /// @param indicatorHeight               the selected indicator height
+    /// @param indicatorShape                the selected indicator radius
+    /// @param contentSpacing                the spacing between item icon and label
+    /// @param collapsedTopPadding           the top space of a collapsed rail
+    /// @param collapsedBottomPadding        the bottom space of a collapsed rail
+    /// @param horizontalPadding             the horizontal padding around items
+    /// @param itemSpacing                   the spacing between items
+    /// @param expandedTopPadding            the top padding of an expanded rail
+    /// @param expandedBottomPadding         the bottom padding of an expanded rail
+    /// @param headerSpacing                 the minimum spacing between header content and destination items
+    /// @param modalContainerShape           the corner radius of a modal expanded rail
     @NotNullByDefault
     record NavigationRailTokens(
-            double containerWidth,
+            double collapsedContainerWidth,
+            double narrowCollapsedContainerWidth,
+            double expandedMinimumContainerWidth,
             double expandedContainerWidth,
+            double expandedMaximumContainerWidth,
             double itemHeight,
             double itemWidth,
             double indicatorWidth,
             double indicatorHeight,
             double indicatorShape,
             double contentSpacing,
-            double verticalPadding,
+            double collapsedTopPadding,
+            double collapsedBottomPadding,
             double horizontalPadding,
             double itemSpacing,
             double expandedTopPadding,
@@ -5362,15 +5433,25 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         /// Creates navigation rail tokens.
         public NavigationRailTokens {
-            validateNonNegative(containerWidth, "containerWidth");
+            validateNonNegative(collapsedContainerWidth, "collapsedContainerWidth");
+            validateNonNegative(narrowCollapsedContainerWidth, "narrowCollapsedContainerWidth");
+            validateNonNegative(expandedMinimumContainerWidth, "expandedMinimumContainerWidth");
             validateNonNegative(expandedContainerWidth, "expandedContainerWidth");
+            validateNonNegative(expandedMaximumContainerWidth, "expandedMaximumContainerWidth");
+            if (expandedMinimumContainerWidth > expandedContainerWidth
+                    || expandedContainerWidth > expandedMaximumContainerWidth) {
+                throw new IllegalArgumentException(
+                        "expanded navigation rail widths must satisfy minimum <= preferred <= maximum"
+                );
+            }
             validateNonNegative(itemHeight, "itemHeight");
             validateNonNegative(itemWidth, "itemWidth");
             validateNonNegative(indicatorWidth, "indicatorWidth");
             validateNonNegative(indicatorHeight, "indicatorHeight");
             validateNonNegative(indicatorShape, "indicatorShape");
             validateNonNegative(contentSpacing, "contentSpacing");
-            validateNonNegative(verticalPadding, "verticalPadding");
+            validateNonNegative(collapsedTopPadding, "collapsedTopPadding");
+            validateNonNegative(collapsedBottomPadding, "collapsedBottomPadding");
             validateNonNegative(horizontalPadding, "horizontalPadding");
             validateNonNegative(itemSpacing, "itemSpacing");
             validateNonNegative(expandedTopPadding, "expandedTopPadding");

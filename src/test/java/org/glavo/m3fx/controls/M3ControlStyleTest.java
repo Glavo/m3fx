@@ -3420,6 +3420,65 @@ final class M3ControlStyleTest {
         pressed.disarm();
     }
 
+    /// Verifies the official flexible connected layout and compact accessible target minimum.
+    @Test
+    void connectedButtonGroupsFillAvailableWidthAndKeepCompactTargets() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3IconToggleButton first = new M3IconToggleButton("First");
+            M3IconToggleButton middle = new M3IconToggleButton("Middle");
+            M3IconToggleButton last = new M3IconToggleButton("Last");
+            M3ButtonGroup connected = new M3ButtonGroup();
+            connected.getItems().addAll(first, middle, last);
+            connected.setVariant(M3ButtonGroupVariant.CONNECTED);
+            connected.setSize(M3ButtonSize.EXTRA_SMALL);
+
+            M3ButtonGroup standard = buttonGroup(
+                    new M3Button("Archive", M3ButtonVariant.TONAL),
+                    new M3Button("Share", M3ButtonVariant.TONAL)
+            );
+            standard.setVariant(M3ButtonGroupVariant.STANDARD);
+            standard.setSize(M3ButtonSize.SMALL);
+
+            VBox root = new VBox(16.0, connected, standard);
+            root.setPadding(new Insets(20.0));
+            root.setFillWidth(true);
+            Scene scene = new Scene(root, 520.0, 180.0);
+            M3ThemeManager.install(scene, M3Theme.fromSeed(
+                    Color.web("#6750a4"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.LIGHT
+            ));
+            root.applyCss();
+            root.resize(520.0, 180.0);
+            root.layout();
+            connected.layout();
+            standard.layout();
+
+            assertEquals(480.0, connected.getWidth(), 0.01);
+            assertEquals(
+                    connected.getWidth(),
+                    first.getWidth() + middle.getWidth() + last.getWidth() + 2.0 * connected.getSpacing(),
+                    0.01
+            );
+            assertTrue(first.getWidth() >= 48.0);
+            assertTrue(middle.getWidth() >= 48.0);
+            assertTrue(last.getWidth() >= 48.0);
+            assertTrue(standard.getWidth() <= standard.prefWidth(-1.0) + 0.5);
+            assertTrue(standard.getWidth() < connected.getWidth());
+
+            connected.setSize(M3ButtonSize.SMALL);
+            connected.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            root.applyCss();
+            root.layout();
+            connected.layout();
+
+            assertEquals(480.0, connected.getWidth(), 0.01);
+            assertTrue(first.getWidth() >= 48.0);
+            assertTrue(first.localToScene(first.getBoundsInLocal()).getMinX()
+                    > last.localToScene(last.getBoundsInLocal()).getMinX());
+        });
+    }
+
     /// Verifies rendered connected-group surfaces and state layers for action and toggle-icon children.
     @Test
     void connectedButtonGroupsRenderStateSpecificInnerCorners() {
@@ -26107,17 +26166,26 @@ final class M3ControlStyleTest {
         assertFalse(rail.isExpanded());
         assertNull(rail.getHeader());
         assertFalse(rail.isFullWidthIndicator());
+        assertFalse(rail.isNarrow());
+        assertFalse(rail.isHideWhenCollapsed());
+        assertFalse(rail.isItemsCentered());
         assertEquals(M3NavigationItemLayout.VERTICAL, first.getItemLayout());
 
         rail.setHeader(header);
         rail.setHeaderSpacing(48.0);
         rail.setFullWidthIndicator(true);
+        rail.setNarrow(true);
+        rail.setItemsCentered(true);
 
         assertSame(header, rail.getHeader());
         assertSame(header, rail.headerProperty().get());
         assertEquals(48.0, rail.getHeaderSpacing(), 0.0001);
         assertTrue(rail.isFullWidthIndicator());
+        assertTrue(rail.isNarrow());
+        assertTrue(rail.isItemsCentered());
         assertTrue(rail.getPseudoClassStates().contains(PseudoClass.getPseudoClass("full-width-indicator")));
+        assertTrue(rail.getPseudoClassStates().contains(PseudoClass.getPseudoClass("narrow")));
+        assertTrue(rail.getPseudoClassStates().contains(PseudoClass.getPseudoClass("items-centered")));
 
         rail.setExpanded(true);
         rail.getItems().add(second);
@@ -26203,6 +26271,101 @@ final class M3ControlStyleTest {
         assertEquals(12.0, navigationRail.getItemSpacing(), 0.0001);
         assertEquals(80.0, home.getItemWidth(), 0.0001);
         assertEquals(56.0, home.getIndicatorWidth(), 0.0001);
+    }
+
+    /// Verifies official expressive collapsed widths, expanded bounds, destination alignment, and immersive hiding.
+    @Test
+    void navigationRailSupportsExpressiveConfigurations() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3NavigationItem home = new M3NavigationItem("Home");
+            M3NavigationItem search = new M3NavigationItem("Search");
+            M3NavigationItem settings = new M3NavigationItem("Settings");
+            M3NavigationRail rail = navigationRail(home, search, settings);
+            Region header = new Region();
+            header.setMinSize(40.0, 40.0);
+            header.setPrefSize(40.0, 40.0);
+            header.setMaxSize(40.0, 40.0);
+            rail.setHeader(header);
+            rail.setManaged(false);
+
+            Pane root = new Pane(rail);
+            Scene scene = new Scene(root, 480.0, 620.0);
+            M3ThemeManager.install(scene, M3Theme.fromSeed(
+                    Color.web("#6750a4"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.LIGHT
+            ));
+            root.applyCss();
+            M3MotionSettings.setAnimationsEnabled(rail, false);
+
+            assertEquals(96.0, rail.getCollapsedContainerWidth(), 0.01);
+            assertEquals(220.0, rail.getExpandedMinimumContainerWidth(), 0.01);
+            assertEquals(280.0, rail.getExpandedContainerWidth(), 0.01);
+            assertEquals(360.0, rail.getExpandedMaximumContainerWidth(), 0.01);
+            assertEquals(44.0, rail.getPadding().getTop(), 0.01);
+            assertEquals(0.0, rail.getPadding().getBottom(), 0.01);
+            assertEquals(96.0, rail.prefWidth(-1.0), 0.01);
+
+            rail.setNarrow(true);
+            root.applyCss();
+            assertEquals(80.0, rail.getCollapsedContainerWidth(), 0.01);
+            assertEquals(80.0, rail.prefWidth(-1.0), 0.01);
+
+            rail.setItemsCentered(true);
+            rail.resizeRelocate(20.0, 20.0, 80.0, 520.0);
+            root.layout();
+            rail.layout();
+            home.layout();
+            search.layout();
+            settings.layout();
+            Bounds headerBounds = rail.sceneToLocal(header.localToScene(header.getLayoutBounds()));
+            Bounds firstBounds = rail.sceneToLocal(home.localToScene(home.getLayoutBounds()));
+            Bounds lastBounds = rail.sceneToLocal(settings.localToScene(settings.getLayoutBounds()));
+            double destinationAreaStart = headerBounds.getMaxY() + rail.getHeaderSpacing();
+            double destinationAreaEnd = rail.getHeight() - rail.getInsets().getBottom();
+            assertEquals(
+                    (destinationAreaStart + destinationAreaEnd) / 2.0,
+                    (firstBounds.getMinY() + lastBounds.getMaxY()) / 2.0,
+                    0.51
+            );
+
+            rail.setExpanded(true);
+            root.applyCss();
+            assertEquals(220.0, rail.minWidth(-1.0), 0.01);
+            assertEquals(280.0, rail.prefWidth(-1.0), 0.01);
+            assertEquals(360.0, rail.maxWidth(-1.0), 0.01);
+            assertEquals(44.0, rail.getPadding().getTop(), 0.01);
+            assertEquals(20.0, rail.getPadding().getBottom(), 0.01);
+
+            rail.setExpandedContainerWidth(100.0);
+            assertEquals(220.0, rail.prefWidth(-1.0), 0.01,
+                    "preferred expanded width should be clamped to the official minimum");
+            rail.setExpandedContainerWidth(500.0);
+            assertEquals(360.0, rail.prefWidth(-1.0), 0.01,
+                    "preferred expanded width should be clamped to the official maximum");
+            rail.setExpandedContainerWidth(280.0);
+            rail.setHideWhenCollapsed(true);
+            rail.setExpanded(false);
+            root.applyCss();
+            root.layout();
+            rail.layout();
+
+            assertTrue(rail.getPseudoClassStates().contains(PseudoClass.getPseudoClass("hide-when-collapsed")));
+            assertEquals(0.0, rail.minWidth(-1.0), 0.01);
+            assertEquals(0.0, rail.prefWidth(-1.0), 0.01);
+            assertEquals(0.0, rail.maxWidth(-1.0), 0.01);
+            Parent contentLayer = Objects.requireNonNull(
+                    Objects.requireNonNull(home.getParent(), "navigation container").getParent(),
+                    "rail content layer"
+            );
+            assertFalse(contentLayer.isVisible(), "hidden rail content must leave traversal and rendering");
+
+            rail.setExpanded(true);
+            root.applyCss();
+            assertEquals(280.0, rail.prefWidth(-1.0), 0.01);
+            assertTrue(contentLayer.isVisible());
+            M3MotionSettings.clearAnimationsEnabled(rail);
+        });
     }
 
     /// Verifies standard and modal expanded navigation rail surface treatments.
@@ -30626,6 +30789,141 @@ final class M3ControlStyleTest {
 
         Color roundedCornerPixel = snapshotPixel(navigationDrawer, 306, 14);
         assertTrue(colorDistance(selectedPixel, roundedCornerPixel) > 0.01);
+    }
+
+    /// Verifies that a constrained drawer owns vertical scrolling and reveals requested destinations.
+    @Test
+    void navigationDrawerScrollsContentAndRevealsRequestedDestinations() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3ListItem archive = new M3ListItem("Archive");
+            M3ListItem drafts = new M3ListItem("Drafts");
+            M3ListItem inbox = new M3ListItem("Inbox");
+            M3ListItem labels = new M3ListItem("Labels");
+            M3ListItem sent = new M3ListItem("Sent");
+            M3ListItem settings = new M3ListItem("Settings");
+            M3ListItem spam = new M3ListItem("Spam");
+            M3ListItem trash = new M3ListItem("Trash");
+            M3NavigationDrawer drawer = navigationDrawer(
+                    archive,
+                    drafts,
+                    inbox,
+                    labels,
+                    sent,
+                    settings,
+                    spam,
+                    trash
+            );
+            drawer.setMinHeight(180.0);
+            drawer.setPrefHeight(180.0);
+            drawer.setMaxHeight(180.0);
+            Pane root = new Pane(drawer);
+            Scene scene = new Scene(root, 360.0, 180.0);
+            Stage stage = new Stage();
+
+            try {
+                M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                drawer.resizeRelocate(0.0, 0.0, 360.0, 180.0);
+                root.layout();
+
+                ScrollPane viewport = assertInstanceOf(
+                        ScrollPane.class,
+                        drawer.lookup(".m3-navigation-drawer-viewport")
+                );
+                viewport.applyCss();
+                viewport.layout();
+                assertInstanceOf(Parent.class, viewport.getContent()).layout();
+                viewport.layout();
+                assertSame(viewport.getContent(), archive.getParent());
+                assertEquals(ScrollPane.ScrollBarPolicy.NEVER, viewport.getHbarPolicy());
+                assertEquals(ScrollPane.ScrollBarPolicy.NEVER, viewport.getVbarPolicy());
+                assertTrue(viewport.isFitToWidth());
+                assertTrue(viewport.isPannable());
+                assertTrue(viewport.getContent().getLayoutBounds().getHeight()
+                                > viewport.getViewportBounds().getHeight(),
+                        () -> "content=" + viewport.getContent().getLayoutBounds()
+                                + ", viewport=" + viewport.getViewportBounds());
+                assertTrue(M3ScrollPanes.isSmoothScrollingEnabled(viewport));
+
+                M3MotionSettings.setAnimationsEnabled(viewport, false);
+                ScrollEvent event = scrollEvent(viewport, 0.0, -80.0);
+                viewport.fireEvent(event);
+                root.layout();
+                assertTrue(event.isConsumed());
+                assertTrue(viewport.getVvalue() > 0.0, () -> "vvalue=" + viewport.getVvalue());
+                assertEquals(0.0, viewport.getHvalue(), 0.0001);
+
+                viewport.setVvalue(0.0);
+                drawer.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 7);
+                root.layout();
+                assertTrue(trash.isFocused());
+                assertTrue(viewport.getVvalue() > 0.5, () -> "vvalue=" + viewport.getVvalue());
+                M3MotionSettings.clearAnimationsEnabled(viewport);
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies navigation drawer typography and interaction colors against the baseline component tokens.
+    @Test
+    void navigationDrawerResolvesDestinationTypographyAndStateColors() {
+        M3ListItem home = new M3ListItem("Home");
+        M3ListItem archive = new M3ListItem("Archive");
+        M3NavigationDrawer drawer = navigationDrawer(home, archive);
+        Pane root = new Pane(drawer);
+        Scene scene = new Scene(root, 360.0, 160.0);
+        M3Theme theme = M3Theme.fromSeed(Color.web("#6750a4"));
+
+        M3ThemeManager.install(scene, theme);
+        M3MotionSettings.setAnimationsEnabled(drawer, false);
+        root.applyCss();
+        drawer.resize(360.0, 160.0);
+        drawer.layout();
+
+        Label archiveLabel = listItemHeadlineLabel(archive);
+        Region archiveStateLayer = lookupRegion(archive, ".m3-state-layer");
+        Region archiveRipple = lookupRegion(archive, ".m3-ripple");
+        assertEquals(14.0, archiveLabel.getFont().getSize(), 0.0001);
+        assertEquals(
+                theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SURFACE_VARIANT),
+                archiveLabel.getTextFill()
+        );
+
+        archive.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
+        root.applyCss();
+        assertEquals(
+                theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SURFACE),
+                archiveLabel.getTextFill()
+        );
+        archive.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), false);
+        archive.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
+        root.applyCss();
+        assertEquals(
+                theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SURFACE),
+                archiveLabel.getTextFill()
+        );
+        assertRegionFill(
+                archiveStateLayer,
+                theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SECONDARY_CONTAINER)
+        );
+        assertRegionFill(
+                archiveRipple,
+                theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SECONDARY_CONTAINER)
+        );
+
+        archive.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), false);
+        drawer.select(archive);
+        root.applyCss();
+        assertEquals(
+                theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SECONDARY_CONTAINER),
+                archiveLabel.getTextFill()
+        );
+        assertTrue(archiveLabel.getFont().getStyle().contains("Bold"),
+                () -> "selected drawer label style=" + archiveLabel.getFont().getStyle());
+        M3MotionSettings.clearAnimationsEnabled(drawer);
     }
 
     /// Verifies that navigation drawer skins preserve application-owned child width constraints.

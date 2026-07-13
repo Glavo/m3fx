@@ -97,6 +97,13 @@
     -fx-fill: -m3-color-on-surface-variant;
 }
 
+.m3-navigation-drawer .m3-list-item:hover .demo-navigation-icon .demo-vector-icon,
+.m3-navigation-drawer .m3-list-item:focus-visible .demo-navigation-icon .demo-vector-icon,
+.m3-navigation-drawer .m3-list-item:pressed .demo-navigation-icon .demo-vector-icon,
+.m3-navigation-drawer .m3-list-item:armed .demo-navigation-icon .demo-vector-icon {
+    -fx-fill: -m3-color-on-surface;
+}
+
 .demo-scroll-pane {
     -fx-background-color: transparent;
     -fx-background: transparent;

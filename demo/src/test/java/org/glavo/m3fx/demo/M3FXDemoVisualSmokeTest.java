@@ -124,6 +124,7 @@ import org.glavo.m3fx.controls.M3ProgressIndicator;
 import org.glavo.m3fx.controls.M3RadioButton;
 import org.glavo.m3fx.controls.M3RichTooltip;
 import org.glavo.m3fx.controls.M3Scrim;
+import org.glavo.m3fx.controls.M3ScrollPanes;
 import org.glavo.m3fx.controls.M3SearchBar;
 import org.glavo.m3fx.controls.M3SearchView;
 import org.glavo.m3fx.controls.M3SegmentedButton;
@@ -1794,6 +1795,20 @@ final class M3FXDemoVisualSmokeTest {
                         "Navigation Rail",
                         M3FXDemoVisualSmokeTest::assertNavigationRailPageVisualState
                 );
+                DemoFxTestUtils.runOnFxThread(() -> {
+                    Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                    ScrollPane pageScrollPane = demoPageScrollPane(scene);
+                    pageScrollPane.setVvalue(1.0);
+                    applySceneCssAndLayout(scene);
+                    assertDemoPageScrolledSectionVisualGeometry(scene, "Navigation Rail");
+                    writePageSnapshot(
+                            scene,
+                            "component-navigation-rail-expanded.png",
+                            "Navigation Rail expanded configurations"
+                    );
+                    pageScrollPane.setVvalue(0.0);
+                    applySceneCssAndLayout(scene);
+                });
                 assertNavigationRailToggleInteraction(
                         Objects.requireNonNull(sceneReference.get(), "scene")
                 );
@@ -12448,6 +12463,21 @@ final class M3FXDemoVisualSmokeTest {
                 nearestAncestorOfType(group, M3NavigationDrawer.class),
                 "grouped navigation drawer"
         );
+        M3NavigationDrawer scrollableDrawer = drawers.stream()
+                .filter(drawer -> drawer.getItems().size() > 6)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Navigation Drawer page should render long standard content"));
+        ScrollPane drawerViewport = assertInstanceOf(
+                ScrollPane.class,
+                scrollableDrawer.lookup(".m3-navigation-drawer-viewport")
+        );
+        assertTrue(drawerViewport.getContent().getLayoutBounds().getHeight()
+                        > drawerViewport.getViewportBounds().getHeight(),
+                "long standard drawer content should exceed its independent viewport");
+        assertEquals(ScrollPane.ScrollBarPolicy.NEVER, drawerViewport.getHbarPolicy(),
+                "navigation drawer should not reduce the active-indicator width with a horizontal bar");
+        assertTrue(M3ScrollPanes.isSmoothScrollingEnabled(drawerViewport),
+                "navigation drawer viewport should use Material wheel motion");
         scrollDemoPageNodeIntoView(scene, groupedDrawer);
         WritableImage groupedImage = requireSnapshotWithNodeFullyVisible(
                 scene,
@@ -12497,9 +12527,6 @@ final class M3FXDemoVisualSmokeTest {
 
         for (M3ListItem item : visibleNodesOfType(drawer, M3ListItem.class)) {
             Bounds itemBounds = item.localToScene(item.getBoundsInLocal());
-            assertTrue(containsBoundsWithTolerance(drawerBounds, itemBounds, CONTROL_EDGE_TOLERANCE),
-                    () -> "navigation drawer item escapes drawer bounds: drawer="
-                            + drawerBounds + ", item=" + itemBounds + ", text=" + item.getHeadlineText());
             assertEquals(item.getOneLineHeight(), itemBounds.getHeight(), CONTROL_EDGE_TOLERANCE,
                     () -> "navigation drawer item height should match its resolved one-line token: item="
                             + itemBounds + ", token=" + item.getOneLineHeight());
@@ -12630,12 +12657,21 @@ final class M3FXDemoVisualSmokeTest {
         Node page = currentDemoPage(scene, "Navigation Rail");
         assertCurrentPageTitle(scene, "Navigation Rail");
         assertVisibleText(root, "Collapsed with action", "Navigation Rail");
+        assertVisibleText(root, "Narrow, centered destinations", "Navigation Rail");
         assertVisibleText(root, "Expanded standard", "Navigation Rail");
         assertVisibleText(root, "Expanded modal, full-width indicator", "Navigation Rail");
+        assertVisibleText(root, "Immersive, hide when collapsed", "Navigation Rail");
 
         List<M3NavigationRail> rails = visibleNodesOfType(page, M3NavigationRail.class);
-        assertEquals(3, rails.size(), () -> "Navigation Rail page should render three rails: " + rails);
-        M3NavigationRail collapsed = rails.stream().filter(rail -> !rail.isExpanded()).findFirst().orElseThrow();
+        assertEquals(5, rails.size(), () -> "Navigation Rail page should render five rails: " + rails);
+        M3NavigationRail collapsed = rails.stream()
+                .filter(rail -> !rail.isExpanded() && !rail.isNarrow())
+                .findFirst()
+                .orElseThrow();
+        M3NavigationRail narrow = rails.stream()
+                .filter(rail -> !rail.isExpanded() && rail.isNarrow())
+                .findFirst()
+                .orElseThrow();
         M3NavigationRail expanded = rails.stream()
                 .filter(M3NavigationRail::isExpanded)
                 .filter(rail -> rail.getVariant() == M3NavigationRailVariant.STANDARD)
@@ -12644,8 +12680,17 @@ final class M3FXDemoVisualSmokeTest {
         M3NavigationRail modal = rails.stream()
                 .filter(M3NavigationRail::isExpanded)
                 .filter(rail -> rail.getVariant() == M3NavigationRailVariant.MODAL)
+                .filter(rail -> !rail.isHideWhenCollapsed())
                 .findFirst()
                 .orElseThrow();
+        M3NavigationRail immersive = rails.stream()
+                .filter(M3NavigationRail::isExpanded)
+                .filter(M3NavigationRail::isHideWhenCollapsed)
+                .findFirst()
+                .orElseThrow();
+        assertTrue(narrow.isItemsCentered(), "narrow preview should demonstrate centered destinations");
+        assertTrue(narrow.getCollapsedContainerWidth() <= collapsed.getCollapsedContainerWidth(),
+                "narrow rail must not be wider than the regular collapsed rail");
         assertFalse(expanded.isFullWidthIndicator(),
                 "standard expanded rail should use the expressive content-hugging indicator");
         assertTrue(modal.isFullWidthIndicator(),
@@ -12667,22 +12712,29 @@ final class M3FXDemoVisualSmokeTest {
                 "collapsed rail should match its resolved width token"
         );
         assertNavigationRailDemoGeometry(collapsed, "collapsed navigation rail");
+        assertNavigationRailDemoGeometry(narrow, "narrow centered navigation rail");
         assertNavigationRailDemoGeometry(expanded, "expanded standard navigation rail");
         assertNavigationRailDemoGeometry(modal, "expanded modal navigation rail");
+        assertNavigationRailDemoGeometry(immersive, "immersive expanded navigation rail");
         assertNull(expanded.getEffect(), "standard expanded rail should stay at elevation level 0");
         assertInstanceOf(
                 javafx.scene.effect.DropShadow.class,
                 modal.getEffect(),
                 "modal expanded rail should use elevation level 2"
         );
-        assertEquals(3, visibleNodesOfType(page, M3IconButton.class).size(),
+        assertInstanceOf(
+                javafx.scene.effect.DropShadow.class,
+                immersive.getEffect(),
+                "immersive modal rail should use elevation level 2 while expanded"
+        );
+        assertEquals(5, visibleNodesOfType(page, M3IconButton.class).size(),
                 "each rail preview should expose a menu toggle");
         assertEquals(1, visibleNodesOfType(page, M3FloatingActionButton.class).size(),
                 "the collapsed rail should expose one primary action");
         for (M3NavigationRail rail : rails) {
             assertNotNull(rail.getHeader(), "each rail preview should install its menu inside the rail header");
         }
-        assertDemoVectorIcons(page, "Navigation Rail", 16);
+        assertDemoVectorIcons(page, "Navigation Rail", 26);
         assertNavigationBadgesStayCompact(scene, "Navigation Rail");
     }
 
@@ -12714,6 +12766,25 @@ final class M3FXDemoVisualSmokeTest {
                     M3NavigationItemLayout.HORIZONTAL,
                     ((M3NavigationItem) rail.getItems().get(0)).getItemLayout()
             );
+
+            M3NavigationRail immersive = visibleNodesOfType(page, M3NavigationRail.class).stream()
+                    .filter(M3NavigationRail::isHideWhenCollapsed)
+                    .findFirst()
+                    .orElseThrow();
+            M3IconButton hideButton = visibleNodesOfType(immersive, M3IconButton.class).stream()
+                    .findFirst()
+                    .orElseThrow();
+            hideButton.fire();
+            assertFalse(immersive.isExpanded(), "immersive rail menu should hide the rail");
+            M3IconButton revealButton = immersive.getParent().getChildrenUnmodifiable().stream()
+                    .filter(M3IconButton.class::isInstance)
+                    .map(M3IconButton.class::cast)
+                    .findFirst()
+                    .orElseThrow();
+            assertTrue(revealButton.isVisible(), "immersive preview should retain an external reveal action");
+            revealButton.fire();
+            assertTrue(immersive.isExpanded(), "external menu should restore the immersive rail");
+            assertFalse(revealButton.isVisible(), "external reveal action should leave the expanded presentation");
         });
     }
 
@@ -12880,6 +12951,15 @@ final class M3FXDemoVisualSmokeTest {
                 expectedFirstItemY = headerBounds.getMaxY() + rail.getHeaderSpacing();
             }
             double expectedY = expectedFirstItemY;
+            if (rail.isItemsCentered()) {
+                double itemStackHeight = items.stream()
+                        .mapToDouble(item -> item.getLayoutBounds().getHeight())
+                        .sum() + rail.getItemSpacing() * Math.max(0, items.size() - 1);
+                expectedY += Math.max(
+                        0.0,
+                        (rail.getHeight() - rail.getInsets().getBottom() - expectedFirstItemY - itemStackHeight) / 2.0
+                );
+            }
             assertEquals(expectedY, firstBounds.getMinY(), CONTROL_EDGE_TOLERANCE,
                     () -> description + " first item should honor header and top spacing");
         }
@@ -13872,6 +13952,8 @@ final class M3FXDemoVisualSmokeTest {
         for (M3ButtonGroup connectedGroup : groups.stream()
                 .filter(group -> group.getVariant() == M3ButtonGroupVariant.CONNECTED)
                 .toList()) {
+            assertTrue(connectedGroup.getWidth() > 600.0,
+                    "Connected groups should expand across the demo content surface");
             double minimumWidth = connectedGroup.getItems().stream()
                     .map(M3IconToggleButton.class::cast)
                     .mapToDouble(Region::getWidth)

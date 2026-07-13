@@ -104,6 +104,63 @@
     -m3-disclosure-icon-color: -m3-list-item-selected-content-color;
 }
 
+.m3-list-item:navigation-drawer {
+    -m3-list-item-headline-color: -m3-color-on-surface-variant;
+    -m3-list-item-selected-content-color: -m3-color-on-secondary-container;
+    -m3-list-item-state-layer-color: -m3-color-on-surface;
+}
+
+.m3-list-item:navigation-drawer:hover,
+.m3-list-item:navigation-drawer:focus-visible,
+.m3-list-item:navigation-drawer:pressed,
+.m3-list-item:navigation-drawer:armed {
+    -m3-list-item-headline-color: -m3-color-on-surface;
+}
+
+.m3-list-item:navigation-drawer:selected,
+.m3-list-item:navigation-drawer:selected:hover,
+.m3-list-item:navigation-drawer:selected:focus-visible,
+.m3-list-item:navigation-drawer:selected:pressed,
+.m3-list-item:navigation-drawer:selected:armed {
+    -m3-list-item-state-layer-color: -m3-color-on-secondary-container;
+}
+
+.m3-list-item:navigation-drawer .m3-list-item-headline {
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+}
+
+.m3-list-item:navigation-drawer .m3-ripple,
+.m3-list-item:navigation-drawer:pressed .m3-state-layer,
+.m3-list-item:navigation-drawer:armed .m3-state-layer {
+    -fx-background-color: -m3-color-on-secondary-container;
+}
+
+.m3-list-item:navigation-drawer .m3-list-item-headline:selected {
+    -fx-font-weight: 700;
+}
+
+.m3-list-item:navigation-drawer .m3-list-item-leading .m3-icon,
+.m3-list-item:navigation-drawer .m3-list-item-trailing .m3-icon {
+    -fx-text-fill: -m3-color-on-surface-variant;
+}
+
+.m3-list-item:navigation-drawer:hover .m3-list-item-leading .m3-icon,
+.m3-list-item:navigation-drawer:hover .m3-list-item-trailing .m3-icon,
+.m3-list-item:navigation-drawer:focus-visible .m3-list-item-leading .m3-icon,
+.m3-list-item:navigation-drawer:focus-visible .m3-list-item-trailing .m3-icon,
+.m3-list-item:navigation-drawer:pressed .m3-list-item-leading .m3-icon,
+.m3-list-item:navigation-drawer:pressed .m3-list-item-trailing .m3-icon,
+.m3-list-item:navigation-drawer:armed .m3-list-item-leading .m3-icon,
+.m3-list-item:navigation-drawer:armed .m3-list-item-trailing .m3-icon {
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-list-item:navigation-drawer:selected .m3-list-item-leading .m3-icon,
+.m3-list-item:navigation-drawer:selected .m3-list-item-trailing .m3-icon {
+    -fx-text-fill: -m3-color-on-secondary-container;
+}
+
 .m3-list-item-trailing-box {
     -fx-alignment: center-right;
     -fx-spacing: 16px;

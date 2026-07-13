@@ -14,6 +14,7 @@ import javafx.geometry.VPos;
 import javafx.scene.Node;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.Pane;
+import javafx.scene.shape.Rectangle;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3NavigationItem;
 import org.glavo.m3fx.controls.M3NavigationItemLayout;
@@ -41,6 +42,12 @@ public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
     /// The internal vertical item container.
     private final NavigationContainer container = new NavigationContainer();
 
+    /// The clipped rail content layer used by immersive hide transitions.
+    private final Pane contentLayer = new Pane();
+
+    /// The reusable clip that prevents animated content from painting outside the rail width.
+    private final Rectangle contentClip = new Rectangle();
+
     /// The currently installed optional header node.
     private @Nullable Node header;
 
@@ -50,6 +57,7 @@ public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
         @Override
         protected void invalidated() {
             updateTransitionVisuals();
+            updateHiddenPresentation();
             getSkinnable().requestLayout();
         }
     };
@@ -99,20 +107,36 @@ public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
     private final ChangeListener<Boolean> expandedListener =
             (observable, oldValue, newValue) -> updateExpandedState(newValue, isVisibleInWindow());
 
+    /// Recomputes the collapsed target when immersive hiding is enabled or disabled.
+    private final ChangeListener<Boolean> hideWhenCollapsedListener =
+            (observable, oldValue, newValue) -> updateExpandedState(
+                    getSkinnable().isExpanded(),
+                    isVisibleInWindow()
+            );
+
+    /// Requests a destination relayout when top or center alignment changes.
+    private final ChangeListener<Boolean> itemsCenteredListener =
+            (observable, oldValue, newValue) -> container.requestLayout();
+
     /// Creates a navigation rail skin.
     ///
     /// @param control the skinned navigation rail
     public M3NavigationRailSkin(M3NavigationRail control) {
         super(control);
         expansionAnimation.setOnFinished(event -> finishExpansionAnimation());
+        contentLayer.setManaged(false);
+        contentLayer.setClip(contentClip);
+        contentLayer.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         container.setManaged(false);
-        container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
-        getChildren().setAll(container);
+        contentLayer.getChildren().add(container);
+        getChildren().setAll(contentLayer);
         control.getItems().addListener(itemsListener);
         control.itemSpacingProperty().addListener(itemSpacingListener);
         control.headerSpacingProperty().addListener(headerSpacingListener);
         control.headerProperty().addListener(headerListener);
         control.expandedProperty().addListener(expandedListener);
+        control.hideWhenCollapsedProperty().addListener(hideWhenCollapsedListener);
+        control.itemsCenteredProperty().addListener(itemsCenteredListener);
         updateHeader(control.getHeader());
         updateItems();
         updateExpandedState(control.isExpanded(), false);
@@ -131,8 +155,12 @@ public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
         control.headerSpacingProperty().removeListener(headerSpacingListener);
         control.headerProperty().removeListener(headerListener);
         control.expandedProperty().removeListener(expandedListener);
-        container.nodeOrientationProperty().unbind();
+        control.hideWhenCollapsedProperty().removeListener(hideWhenCollapsedListener);
+        control.itemsCenteredProperty().removeListener(itemsCenteredListener);
+        contentLayer.nodeOrientationProperty().unbind();
         container.getChildren().clear();
+        contentLayer.getChildren().clear();
+        contentLayer.setClip(null);
         header = null;
         getChildren().clear();
         super.dispose();
@@ -147,7 +175,11 @@ public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
             double bottomInset,
             double leftInset
     ) {
-        return leftInset + animatedContentWidth(leftInset, rightInset) + rightInset;
+        return leftInset + animatedContentWidth(
+                leftInset,
+                rightInset,
+                getSkinnable().getExpandedMinimumContainerWidth()
+        ) + rightInset;
     }
 
     /// Computes the minimum height from the internal item container.
@@ -171,7 +203,11 @@ public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
             double bottomInset,
             double leftInset
     ) {
-        return leftInset + animatedContentWidth(leftInset, rightInset) + rightInset;
+        M3NavigationRail control = getSkinnable();
+        double minimum = control.getExpandedMinimumContainerWidth();
+        double maximum = Math.max(minimum, control.getExpandedMaximumContainerWidth());
+        double preferred = Math.max(minimum, Math.min(maximum, control.getExpandedContainerWidth()));
+        return leftInset + animatedContentWidth(leftInset, rightInset, preferred) + rightInset;
     }
 
     /// Computes the preferred height from the internal item container.
@@ -195,7 +231,15 @@ public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
             double bottomInset,
             double leftInset
     ) {
-        return leftInset + animatedContentWidth(leftInset, rightInset) + rightInset;
+        M3NavigationRail control = getSkinnable();
+        return leftInset + animatedContentWidth(
+                leftInset,
+                rightInset,
+                Math.max(
+                        control.getExpandedMinimumContainerWidth(),
+                        control.getExpandedMaximumContainerWidth()
+                )
+        ) + rightInset;
     }
 
     /// Computes the maximum height from the internal item container.
@@ -224,36 +268,47 @@ public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
             height += targetTopPadding + targetBottomPadding - visualTopPadding - visualBottomPadding;
         }
 
+        double layerWidth = Math.max(0.0, width);
+        double layerHeight = Math.max(0.0, height);
+        contentLayer.resizeRelocate(x, y, layerWidth, layerHeight);
+        contentClip.setWidth(layerWidth);
+        contentClip.setHeight(layerHeight);
+
         @Nullable Node currentHeader = header;
         if (currentHeader == null || !currentHeader.isVisible()) {
-            container.resizeRelocate(x, y, width, height);
+            container.resizeRelocate(0.0, 0.0, layerWidth, layerHeight);
             return;
         }
 
-        double headerWidth = Math.min(width, currentHeader.prefWidth(-1.0));
+        double headerWidth = Math.min(layerWidth, currentHeader.prefWidth(-1.0));
         double headerHeight = currentHeader.prefHeight(headerWidth);
-        double collapsedX = (width - headerWidth) / 2.0;
+        double collapsedX = (layerWidth - headerWidth) / 2.0;
         double expandedX = getSkinnable().getEffectiveNodeOrientation() == javafx.geometry.NodeOrientation.RIGHT_TO_LEFT
-                ? width - headerWidth - EXPANDED_HEADER_INSET
+                ? layerWidth - headerWidth - EXPANDED_HEADER_INSET
                 : EXPANDED_HEADER_INSET;
         double headerX = collapsedX + (expandedX - collapsedX) * expansionProgress.get();
         if (currentHeader.isResizable()) {
             currentHeader.resizeRelocate(
-                    snapPositionX(x + headerX),
-                    snapPositionY(y),
+                    snapPositionX(headerX),
+                    0.0,
                     snapSizeX(headerWidth),
                     snapSizeY(headerHeight)
             );
         } else {
             javafx.geometry.Bounds bounds = currentHeader.getLayoutBounds();
             currentHeader.relocate(
-                    snapPositionX(x + headerX + (headerWidth - bounds.getWidth()) / 2.0 - bounds.getMinX()),
-                    snapPositionY(y + (headerHeight - bounds.getHeight()) / 2.0 - bounds.getMinY())
+                    snapPositionX(headerX + (headerWidth - bounds.getWidth()) / 2.0 - bounds.getMinX()),
+                    snapPositionY((headerHeight - bounds.getHeight()) / 2.0 - bounds.getMinY())
             );
         }
 
-        double itemY = y + headerHeight + getSkinnable().getHeaderSpacing();
-        container.resizeRelocate(x, snapPositionY(itemY), width, Math.max(0.0, y + height - itemY));
+        double itemY = headerHeight + getSkinnable().getHeaderSpacing();
+        container.resizeRelocate(
+                0.0,
+                snapPositionY(itemY),
+                layerWidth,
+                Math.max(0.0, layerHeight - itemY)
+        );
     }
 
     /// Returns the preferred or minimum height of the header and destination stack.
@@ -271,12 +326,14 @@ public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
     }
 
     /// Returns the animated content width after accounting for control insets.
-    private double animatedContentWidth(double leftInset, double rightInset) {
+    private double animatedContentWidth(double leftInset, double rightInset, double expandedContainerWidth) {
         M3NavigationRail control = getSkinnable();
-        double collapsed = Math.max(0.0, control.getCollapsedContainerWidth() - leftInset - rightInset);
+        double collapsed = control.isHideWhenCollapsed()
+                ? 0.0
+                : Math.max(0.0, control.getCollapsedContainerWidth() - leftInset - rightInset);
         double expanded = Math.max(
                 collapsed,
-                control.getExpandedContainerWidth() - leftInset - rightInset
+                expandedContainerWidth - leftInset - rightInset
         );
         return collapsed + (expanded - collapsed) * expansionProgress.get();
     }
@@ -319,6 +376,7 @@ public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
     private void beginTransition(double target) {
         M3NavigationRail control = getSkinnable();
         transitionActive = true;
+        updateHiddenPresentation();
         transitionItemLayout = null;
         transitionStartProgress = expansionProgress.get();
         transitionTargetProgress = target;
@@ -367,6 +425,17 @@ public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
         if (restoreOpacity) {
             applyItemTransitionOpacity(1.0);
         }
+        updateHiddenPresentation();
+    }
+
+    /// Keeps immersive rail content clipped, non-interactive, and absent from traversal at its hidden endpoint.
+    private void updateHiddenPresentation() {
+        boolean hideWhenCollapsed = getSkinnable().isHideWhenCollapsed();
+        double progress = expansionProgress.get();
+        boolean hidden = hideWhenCollapsed && progress <= 0.000001 && !transitionActive;
+        contentLayer.setVisible(!hidden);
+        contentLayer.setMouseTransparent(hidden);
+        contentLayer.setOpacity(hideWhenCollapsed ? Math.max(0.0, Math.min(1.0, progress)) : 1.0);
     }
 
     /// Applies one opacity to navigation item skin content without changing control opacity.
@@ -408,11 +477,11 @@ public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
             return;
         }
         if (header != null) {
-            getChildren().remove(header);
+            contentLayer.getChildren().remove(header);
         }
         header = newHeader;
         if (newHeader != null) {
-            getChildren().add(newHeader);
+            contentLayer.getChildren().add(newHeader);
         }
         getSkinnable().requestLayout();
     }
@@ -446,8 +515,10 @@ public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
 
     /// Lays out every managed rail item at the current available row width.
     private void layoutItems(double width) {
-        double currentY = 0.0;
         double spacing = getSkinnable().getItemSpacing();
+        double currentY = getSkinnable().isItemsCentered()
+                ? Math.max(0.0, (container.getHeight() - itemHeightSum(width, false)) / 2.0)
+                : 0.0;
         for (Node child : container.getChildren()) {
             if (!child.isManaged()) {
                 continue;

@@ -197,7 +197,11 @@ final class M3TokenFactoryTest {
         assertEquals(7.0, tokenSet.componentTokens().bottomAppBar().actionSpacing(), 0.0001);
         assertEquals(63.0, tokenSet.componentTokens().toolbar().containerHeight(), 0.0001);
         assertEquals(25.0, tokenSet.componentTokens().toolbar().containerShape(), 0.0001);
-        assertEquals(72.0, tokenSet.componentTokens().navigationRail().containerWidth(), 0.0001);
+        assertEquals(72.0, tokenSet.componentTokens().navigationRail().collapsedContainerWidth(), 0.0001);
+        assertEquals(64.0, tokenSet.componentTokens().navigationRail().narrowCollapsedContainerWidth(), 0.0001);
+        assertEquals(220.0, tokenSet.componentTokens().navigationRail().expandedMinimumContainerWidth(), 0.0001);
+        assertEquals(280.0, tokenSet.componentTokens().navigationRail().expandedContainerWidth(), 0.0001);
+        assertEquals(360.0, tokenSet.componentTokens().navigationRail().expandedMaximumContainerWidth(), 0.0001);
         assertEquals(63.0, tokenSet.componentTokens().loadingIndicator().containerSize(), 0.0001);
         assertEquals(22.0, tokenSet.componentTokens().loadingIndicator().indicatorSize(), 0.0001);
         assertTrue(tokenSet.toRootStyleDeclarations().contains(
@@ -227,7 +231,12 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-toolbar-container-height: 63px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-toolbar-container-shape: 25px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-navigation-bar-item-spacing: 10px"));
-        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-navigation-rail-container-width: 72px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains(
+                "-m3-navigation-rail-collapsed-container-width: 72px"
+        ));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains(
+                "-m3-navigation-rail-narrow-collapsed-container-width: 64px"
+        ));
         assertTrue(tokenSet.toRootStyleDeclarations().contains(
                 "-m3-navigation-rail-expanded-container-width: 280px"
         ));
@@ -522,7 +531,7 @@ final class M3TokenFactoryTest {
                 new M3ComponentTokens.BottomAppBarTokens(62.0, 12.0, 14.0, 7.0),
                 new M3ComponentTokens.ToolbarTokens(63.0, 64.0, 25.0, 49.0, 8.0, 3.0),
                 new M3ComponentTokens.NavigationBarTokens(67.0, 68.0, 69.0, 30.0, 15.0, 4.0, 9.0, 10.0),
-                new M3ComponentTokens.NavigationRailTokens(72.0, 280.0, 73.0, 74.0, 75.0, 31.0, 16.0, 5.0, 17.0, 10.0, 11.0, 44.0, 20.0, 19.0, 18.0),
+                new M3ComponentTokens.NavigationRailTokens(72.0, 64.0, 220.0, 280.0, 360.0, 73.0, 74.0, 75.0, 31.0, 16.0, 5.0, 17.0, 9.0, 10.0, 11.0, 44.0, 20.0, 19.0, 18.0),
                 new M3ComponentTokens.NavigationDrawerTokens(
                         78.0,
                         79.0,

@@ -9,7 +9,6 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.collections.SetChangeListener;
 import javafx.css.PseudoClass;
-import javafx.geometry.NodeOrientation;
 import javafx.scene.Node;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.layout.Pane;
@@ -17,6 +16,7 @@ import javafx.scene.layout.Region;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3ButtonGroup;
 import org.glavo.m3fx.controls.M3ButtonGroupVariant;
+import org.glavo.m3fx.controls.M3ButtonSize;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3FiniteTransition;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
@@ -30,7 +30,7 @@ import java.util.Arrays;
 public final class M3ButtonGroupSkin extends M3ItemContainerSkinBase<
         M3ButtonGroup,
         M3ButtonGroupSkin.ButtonGroupPane
-> {
+        > {
     /// Creates a button group skin.
     ///
     /// @param control the button group controlled by this skin
@@ -51,6 +51,9 @@ public final class M3ButtonGroupSkin extends M3ItemContainerSkinBase<
     static final class ButtonGroupPane extends Pane {
         /// The smallest width retained for a neighboring button during width redistribution.
         private static final double MINIMUM_INTERACTION_WIDTH = 24.0;
+
+        /// The minimum accessible item width for extra-small and small connected groups.
+        private static final double COMPACT_CONNECTED_ITEM_WIDTH = 48.0;
 
         /// Identifies selectable grouped buttons without depending on one concrete toggle-button implementation.
         private static final PseudoClass SELECTED_PSEUDO_CLASS = PseudoClass.getPseudoClass("selected");
@@ -167,10 +170,12 @@ public final class M3ButtonGroupSkin extends M3ItemContainerSkinBase<
             return summedChildWidth(height, WidthMetric.PREFERRED);
         }
 
-        /// Returns the preferred content width as the default maximum width.
+        /// Returns an unbounded width for connected groups and a content-hugging width for standard groups.
         @Override
         protected double computeMaxWidth(double height) {
-            return computePrefWidth(height);
+            return control.getVariant() == M3ButtonGroupVariant.CONNECTED
+                    ? Double.MAX_VALUE
+                    : computePrefWidth(height);
         }
 
         /// Returns the largest minimum child height.
@@ -212,27 +217,21 @@ public final class M3ButtonGroupSkin extends M3ItemContainerSkinBase<
                     minimumChildrenWidth,
                     availableChildrenWidth
             );
-            double contentWidth = fittedChildrenWidth(
-                    preferredChildrenWidth,
-                    minimumChildrenWidth,
-                    shrinkRatio
-            ) + totalSpacing;
-
+            double connectedGrowth = control.getVariant() == M3ButtonGroupVariant.CONNECTED
+                    ? Math.max(0.0, availableChildrenWidth - preferredChildrenWidth) / managedCount
+                    : 0.0;
             double adjustmentScale = prepareWidthAdjustments(children, height, shrinkRatio);
 
-            boolean rightToLeft = getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
-            double x = rightToLeft ? Math.max(0.0, width - contentWidth) : 0.0;
-            int start = rightToLeft ? children.size() - 1 : 0;
-            int end = rightToLeft ? -1 : children.size();
-            int step = rightToLeft ? -1 : 1;
+            // The pane inherits the control's orientation, so JavaFX mirrors these logical coordinates for RTL.
+            double x = 0.0;
             int laidOutCount = 0;
-            for (int index = start; index != end; index += step) {
+            for (int index = 0; index < children.size(); index++) {
                 Node child = children.get(index);
                 if (!child.isManaged()) {
                     continue;
                 }
 
-                double childWidth = fittedWidth(child, height, shrinkRatio);
+                double childWidth = fittedWidth(child, height, shrinkRatio) + connectedGrowth;
                 if (index < widthAdjustments.length) {
                     childWidth += widthAdjustments[index] * adjustmentScale;
                 }
@@ -470,7 +469,7 @@ public final class M3ButtonGroupSkin extends M3ItemContainerSkinBase<
         }
 
         /// Returns the sum of one width metric across managed children.
-        private static double summedManagedWidths(
+        private double summedManagedWidths(
                 ObservableList<Node> children,
                 double height,
                 WidthMetric metric
@@ -478,7 +477,7 @@ public final class M3ButtonGroupSkin extends M3ItemContainerSkinBase<
             double width = 0.0;
             for (Node child : children) {
                 if (child.isManaged()) {
-                    width += metric.width(child, height);
+                    width += resolvedWidth(child, height, metric);
                 }
             }
             return width;
@@ -518,10 +517,21 @@ public final class M3ButtonGroupSkin extends M3ItemContainerSkinBase<
         }
 
         /// Returns one child's width after proportional compression.
-        private static double fittedWidth(Node child, double height, double shrinkRatio) {
-            double preferred = WidthMetric.PREFERRED.width(child, height);
-            double minimum = WidthMetric.MINIMUM.width(child, height);
+        private double fittedWidth(Node child, double height, double shrinkRatio) {
+            double preferred = resolvedWidth(child, height, WidthMetric.PREFERRED);
+            double minimum = resolvedWidth(child, height, WidthMetric.MINIMUM);
             return preferred - (preferred - minimum) * shrinkRatio;
+        }
+
+        /// Returns one width metric after applying the compact connected-group target minimum.
+        private double resolvedWidth(Node child, double height, WidthMetric metric) {
+            double width = metric.width(child, height);
+            if (control.getVariant() == M3ButtonGroupVariant.CONNECTED
+                    && (control.getSize() == M3ButtonSize.EXTRA_SMALL
+                    || control.getSize() == M3ButtonSize.SMALL)) {
+                return Math.max(COMPACT_CONNECTED_ITEM_WIDTH, width);
+            }
+            return width;
         }
 
         /// Returns one child height bounded by its sizing contract and available height.

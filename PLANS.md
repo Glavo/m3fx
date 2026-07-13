@@ -71,10 +71,17 @@ control subclasses where M3FX owns the behavior surface.
 ### 1. Complete MD3 Expressive Component Parity
 
 Token-profile support is present, but every component must also match the Expressive specification in rendered
-geometry, adaptive layout, state color, shape, and motion. The current priority is the navigation family, including
-flexible vertical and horizontal navigation bars and collapsed, narrow, expanded, and modal navigation rails.
-Remaining component families will be audited against the local Material reference snapshot rather than inferred
-from baseline behavior.
+geometry, adaptive layout, state color, shape, and motion. The navigation family now includes flexible vertical and
+horizontal navigation bars, regular and narrow collapsed rails, standard and modal expanded rails, top- and
+center-aligned destination groups, content-hugging and full-width active indicators, and immersive hiding behavior.
+Baseline navigation drawers now preserve the specified 360-pixel container and 336-pixel indicator geometry while
+providing independent vertical scrolling, focus reveal, logical corners, modal surfaces, and complete destination
+state colors. Material Design 3 Expressive does not define a replacement drawer token set; expanded navigation rails
+are used instead. Button groups now distinguish content-hugging standard layout from full-width connected layout,
+including even flexible growth and the 48-pixel compact connected-item target minimum. Split-button state shape
+changes use spatial motion while their disclosure icon retains the standard motion scheme required by the
+specification. Remaining component families will be audited against the local Material reference snapshot rather
+than inferred from baseline behavior.
 
 ### 2. Finish The Component-State Visual Audit
 

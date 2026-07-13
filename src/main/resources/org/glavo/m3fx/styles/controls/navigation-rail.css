@@ -2,11 +2,17 @@
     -fx-background-color: -m3-color-surface;
     -fx-padding: 16px 0px 16px 0px;
     -m3-collapsed-container-width: 80px;
+    -m3-expanded-minimum-container-width: 220px;
     -m3-expanded-container-width: 280px;
+    -m3-expanded-maximum-container-width: 360px;
     -m3-item-spacing: 8px;
     -m3-header-spacing: 40px;
     -fx-background-radius: 0px;
     -fx-effect: null;
+}
+
+.m3-navigation-rail:narrow {
+    -m3-collapsed-container-width: 80px;
 }
 
 .m3-navigation-rail .m3-navigation-item.m3-navigation-item,

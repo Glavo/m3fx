@@ -72,6 +72,16 @@ public class M3NavigationRail extends Control {
     private static final PseudoClass FULL_WIDTH_INDICATOR_PSEUDO_CLASS =
             PseudoClass.getPseudoClass("full-width-indicator");
 
+    /// The narrow collapsed-rail pseudo-class.
+    private static final PseudoClass NARROW_PSEUDO_CLASS = PseudoClass.getPseudoClass("narrow");
+
+    /// The immersive hide-on-collapse pseudo-class.
+    private static final PseudoClass HIDE_WHEN_COLLAPSED_PSEUDO_CLASS =
+            PseudoClass.getPseudoClass("hide-when-collapsed");
+
+    /// The centered destination-group pseudo-class.
+    private static final PseudoClass ITEMS_CENTERED_PSEUDO_CLASS = PseudoClass.getPseudoClass("items-centered");
+
     /// The right-to-left layout pseudo-class.
     private static final PseudoClass RTL_PSEUDO_CLASS = PseudoClass.getPseudoClass("rtl");
 
@@ -83,6 +93,12 @@ public class M3NavigationRail extends Control {
 
     /// The default expanded navigation rail width.
     private static final double DEFAULT_EXPANDED_CONTAINER_WIDTH = 280.0;
+
+    /// The default minimum expanded navigation rail width.
+    private static final double DEFAULT_EXPANDED_MINIMUM_CONTAINER_WIDTH = 220.0;
+
+    /// The default maximum expanded navigation rail width.
+    private static final double DEFAULT_EXPANDED_MAXIMUM_CONTAINER_WIDTH = 360.0;
 
     /// The default minimum distance between the rail header and destination items.
     private static final double DEFAULT_HEADER_SPACING = 40.0;
@@ -120,6 +136,12 @@ public class M3NavigationRail extends Control {
     /// The styleable expanded navigation rail width.
     private @Nullable StyleableDoubleProperty expandedContainerWidthStyleable;
 
+    /// The styleable minimum expanded navigation rail width.
+    private @Nullable StyleableDoubleProperty expandedMinimumContainerWidthStyleable;
+
+    /// The styleable maximum expanded navigation rail width.
+    private @Nullable StyleableDoubleProperty expandedMaximumContainerWidthStyleable;
+
     /// The styleable spacing between the optional header and destination items.
     private @Nullable StyleableDoubleProperty headerSpacingStyleable;
 
@@ -140,6 +162,36 @@ public class M3NavigationRail extends Control {
         protected void invalidated() {
             pseudoClassStateChanged(FULL_WIDTH_INDICATOR_PSEUDO_CLASS, get());
             requestNavigationItemLayouts();
+        }
+    };
+
+    /// Whether the collapsed rail uses the 80-pixel narrow configuration.
+    private final BooleanProperty narrowState = new SimpleBooleanProperty(this, "narrow") {
+        /// Updates the width token selector when the collapsed configuration changes.
+        @Override
+        protected void invalidated() {
+            pseudoClassStateChanged(NARROW_PSEUDO_CLASS, get());
+            requestLayout();
+        }
+    };
+
+    /// Whether an immersive expanded rail disappears instead of becoming a collapsed rail.
+    private final BooleanProperty hideWhenCollapsedState = new SimpleBooleanProperty(this, "hideWhenCollapsed") {
+        /// Updates the collapse target and CSS state.
+        @Override
+        protected void invalidated() {
+            pseudoClassStateChanged(HIDE_WHEN_COLLAPSED_PSEUDO_CLASS, get());
+            requestLayout();
+        }
+    };
+
+    /// Whether destination rows are centered in the space below the header.
+    private final BooleanProperty itemsCenteredState = new SimpleBooleanProperty(this, "itemsCentered") {
+        /// Updates destination-group alignment.
+        @Override
+        protected void invalidated() {
+            pseudoClassStateChanged(ITEMS_CENTERED_PSEUDO_CLASS, get());
+            requestLayout();
         }
     };
 
@@ -283,6 +335,82 @@ public class M3NavigationRail extends Control {
     /// @return the writable full-width indicator property
     public final BooleanProperty fullWidthIndicatorProperty() {
         return fullWidthIndicatorState;
+    }
+
+    /// Returns whether this rail uses the narrow collapsed configuration.
+    ///
+    /// A regular Material Design 3 Expressive collapsed rail is 96 pixels wide. The narrow configuration is
+    /// 80 pixels wide and preserves the same destination indicator and target geometry. This property has no
+    /// effect on the width of an expanded rail.
+    ///
+    /// @return `true` when the collapsed rail uses its narrow width token
+    public final boolean isNarrow() {
+        return narrowState.get();
+    }
+
+    /// Selects the regular or narrow collapsed configuration.
+    ///
+    /// @param narrow `true` for the narrow collapsed rail, or `false` for the regular collapsed rail
+    public final void setNarrow(boolean narrow) {
+        narrowState.set(narrow);
+    }
+
+    /// Returns the narrow collapsed-rail property.
+    ///
+    /// @return the writable narrow property
+    public final BooleanProperty narrowProperty() {
+        return narrowState;
+    }
+
+    /// Returns whether this rail disappears when its expanded state is cleared.
+    ///
+    /// The default value is `false`, so an expanded rail transitions into the persistent collapsed rail. Set this
+    /// property only for the immersive configuration documented by Material Design 3 Expressive, where the rail
+    /// is summoned by a menu action and must leave no collapsed rail behind. A regular collapsed rail should not
+    /// be hidden.
+    ///
+    /// @return `true` when the collapsed target has zero width
+    public final boolean isHideWhenCollapsed() {
+        return hideWhenCollapsedState.get();
+    }
+
+    /// Selects whether clearing the expanded state collapses or hides the rail.
+    ///
+    /// @param hideWhenCollapsed `true` to hide an immersive expanded rail, or `false` to retain a collapsed rail
+    public final void setHideWhenCollapsed(boolean hideWhenCollapsed) {
+        hideWhenCollapsedState.set(hideWhenCollapsed);
+    }
+
+    /// Returns the immersive hide-on-collapse property.
+    ///
+    /// @return the writable hide-on-collapse property
+    public final BooleanProperty hideWhenCollapsedProperty() {
+        return hideWhenCollapsedState;
+    }
+
+    /// Returns whether destination items are centered vertically below the rail header.
+    ///
+    /// Header content, including menu buttons and floating action buttons, always remains top-aligned. When this
+    /// property is `true`, only the destination group is centered in the remaining height. The default is
+    /// `false`, which places destinations immediately after the header and its configured spacing.
+    ///
+    /// @return `true` when the destination group is centered
+    public final boolean isItemsCentered() {
+        return itemsCenteredState.get();
+    }
+
+    /// Selects top or center alignment for the destination group.
+    ///
+    /// @param itemsCentered `true` to center destinations, or `false` to top-align them
+    public final void setItemsCentered(boolean itemsCentered) {
+        itemsCenteredState.set(itemsCentered);
+    }
+
+    /// Returns the destination-group alignment property.
+    ///
+    /// @return the writable centered-items property
+    public final BooleanProperty itemsCenteredProperty() {
+        return itemsCenteredState;
     }
 
     /// Returns whether this navigation rail is expanded.
@@ -517,9 +645,50 @@ public class M3NavigationRail extends Control {
         return collapsedContainerWidthStyleable;
     }
 
+    /// Returns the minimum width accepted by the expanded rail.
+    ///
+    /// The Material Design 3 Expressive default is 220 pixels. Layout containers may resize an expanded rail
+    /// between this value and [#getExpandedMaximumContainerWidth()]. If the configured minimum exceeds the
+    /// maximum, the minimum takes precedence until the properties become consistent again.
+    ///
+    /// @return the expanded minimum container width in pixels
+    public final double getExpandedMinimumContainerWidth() {
+        return expandedMinimumContainerWidthStyleable == null
+                ? DEFAULT_EXPANDED_MINIMUM_CONTAINER_WIDTH
+                : expandedMinimumContainerWidthStyleable.get();
+    }
+
+    /// Sets the minimum width accepted by the expanded rail.
+    ///
+    /// @param expandedMinimumContainerWidth the non-negative expanded minimum width in pixels
+    public final void setExpandedMinimumContainerWidth(double expandedMinimumContainerWidth) {
+        expandedMinimumContainerWidthProperty().set(
+                M3Css.nonNegative(expandedMinimumContainerWidth, "expandedMinimumContainerWidth")
+        );
+    }
+
+    /// Returns the styleable expanded minimum-width property.
+    ///
+    /// @return the expanded minimum-width property
+    public final StyleableDoubleProperty expandedMinimumContainerWidthProperty() {
+        if (expandedMinimumContainerWidthStyleable == null) {
+            expandedMinimumContainerWidthStyleable = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_EXPANDED_MINIMUM_CONTAINER_WIDTH,
+                    this,
+                    "expandedMinimumContainerWidth",
+                    StyleableProperties.EXPANDED_MINIMUM_CONTAINER_WIDTH,
+                    this::requestLayout
+            );
+        }
+        return expandedMinimumContainerWidthStyleable;
+    }
+
     /// Returns the expanded navigation rail width.
     ///
-    /// @return the expanded container width in pixels
+    /// This is the preferred expanded width. The skin clamps it to the resolved minimum and maximum widths when
+    /// computing layout bounds.
+    ///
+    /// @return the preferred expanded container width in pixels
     public final double getExpandedContainerWidth() {
         return expandedContainerWidthStyleable == null
                 ? DEFAULT_EXPANDED_CONTAINER_WIDTH
@@ -549,6 +718,43 @@ public class M3NavigationRail extends Control {
             );
         }
         return expandedContainerWidthStyleable;
+    }
+
+    /// Returns the maximum width accepted by the expanded rail.
+    ///
+    /// The Material Design 3 Expressive default is 360 pixels. When this value is less than the resolved minimum,
+    /// the minimum width takes precedence.
+    ///
+    /// @return the expanded maximum container width in pixels
+    public final double getExpandedMaximumContainerWidth() {
+        return expandedMaximumContainerWidthStyleable == null
+                ? DEFAULT_EXPANDED_MAXIMUM_CONTAINER_WIDTH
+                : expandedMaximumContainerWidthStyleable.get();
+    }
+
+    /// Sets the maximum width accepted by the expanded rail.
+    ///
+    /// @param expandedMaximumContainerWidth the non-negative expanded maximum width in pixels
+    public final void setExpandedMaximumContainerWidth(double expandedMaximumContainerWidth) {
+        expandedMaximumContainerWidthProperty().set(
+                M3Css.nonNegative(expandedMaximumContainerWidth, "expandedMaximumContainerWidth")
+        );
+    }
+
+    /// Returns the styleable expanded maximum-width property.
+    ///
+    /// @return the expanded maximum-width property
+    public final StyleableDoubleProperty expandedMaximumContainerWidthProperty() {
+        if (expandedMaximumContainerWidthStyleable == null) {
+            expandedMaximumContainerWidthStyleable = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_EXPANDED_MAXIMUM_CONTAINER_WIDTH,
+                    this,
+                    "expandedMaximumContainerWidth",
+                    StyleableProperties.EXPANDED_MAXIMUM_CONTAINER_WIDTH,
+                    this::requestLayout
+            );
+        }
+        return expandedMaximumContainerWidthStyleable;
     }
 
     /// Returns the minimum spacing between the optional header and destination items.
@@ -698,6 +904,9 @@ public class M3NavigationRail extends Control {
     private void initialize() {
         M3ControlStyles.initialize(this, STYLE_CLASS);
         pseudoClassStateChanged(FULL_WIDTH_INDICATOR_PSEUDO_CLASS, false);
+        pseudoClassStateChanged(NARROW_PSEUDO_CLASS, false);
+        pseudoClassStateChanged(HIDE_WHEN_COLLAPSED_PSEUDO_CLASS, false);
+        pseudoClassStateChanged(ITEMS_CENTERED_PSEUDO_CLASS, false);
         updateVariantPseudoClasses();
         updateOrientationPseudoClass();
         setAccessibleRole(AccessibleRole.TOOL_BAR);
@@ -970,6 +1179,26 @@ public class M3NavigationRail extends Control {
                     }
                 };
 
+        /// CSS metadata for the minimum expanded container width token.
+        private static final CssMetaData<M3NavigationRail, Number> EXPANDED_MINIMUM_CONTAINER_WIDTH =
+                new CssMetaData<>(
+                        "-m3-expanded-minimum-container-width",
+                        SizeConverter.getInstance(),
+                        DEFAULT_EXPANDED_MINIMUM_CONTAINER_WIDTH
+                ) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3NavigationRail control) {
+                        return M3Css.isSettable(control.expandedMinimumContainerWidthProperty());
+                    }
+
+                    /// Returns the corresponding styleable property.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3NavigationRail control) {
+                        return control.expandedMinimumContainerWidthProperty();
+                    }
+                };
+
         /// CSS metadata for the expanded container width token.
         private static final CssMetaData<M3NavigationRail, Number> EXPANDED_CONTAINER_WIDTH =
                 new CssMetaData<>(
@@ -987,6 +1216,26 @@ public class M3NavigationRail extends Control {
                     @Override
                     public StyleableProperty<Number> getStyleableProperty(M3NavigationRail control) {
                         return control.expandedContainerWidthProperty();
+                    }
+                };
+
+        /// CSS metadata for the maximum expanded container width token.
+        private static final CssMetaData<M3NavigationRail, Number> EXPANDED_MAXIMUM_CONTAINER_WIDTH =
+                new CssMetaData<>(
+                        "-m3-expanded-maximum-container-width",
+                        SizeConverter.getInstance(),
+                        DEFAULT_EXPANDED_MAXIMUM_CONTAINER_WIDTH
+                ) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3NavigationRail control) {
+                        return M3Css.isSettable(control.expandedMaximumContainerWidthProperty());
+                    }
+
+                    /// Returns the corresponding styleable property.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3NavigationRail control) {
+                        return control.expandedMaximumContainerWidthProperty();
                     }
                 };
 
@@ -1013,7 +1262,9 @@ public class M3NavigationRail extends Control {
             List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Control.getClassCssMetaData());
             styleables.add(ITEM_SPACING);
             styleables.add(COLLAPSED_CONTAINER_WIDTH);
+            styleables.add(EXPANDED_MINIMUM_CONTAINER_WIDTH);
             styleables.add(EXPANDED_CONTAINER_WIDTH);
+            styleables.add(EXPANDED_MAXIMUM_CONTAINER_WIDTH);
             styleables.add(HEADER_SPACING);
             STYLEABLES = Collections.unmodifiableList(styleables);
         }

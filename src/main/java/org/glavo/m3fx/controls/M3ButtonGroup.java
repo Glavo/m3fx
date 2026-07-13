@@ -47,8 +47,9 @@ import java.util.Objects;
 /// their own rounded containers or join into a single visual set, and the [size][M3ButtonSize] controls
 /// container height and group spacing through CSS tokens. In a standard group, a selected or armed button expands
 /// by the configured [width multiplier][standardPressedWidthMultiplierProperty] while its immediate neighbors yield
-/// the same total width. Connected groups retain fixed widths and express selection or activation through their
-/// coordinated shapes.
+/// the same total width. Standard groups hug their content. Connected groups may expand to the width offered by
+/// their parent and distribute the additional space evenly among managed buttons; extra-small and small connected
+/// items retain a minimum 48-pixel target width.
 ///
 /// See [Material Design button groups](https://m3.material.io/components/button-groups/overview).
 @NotNullByDefault
@@ -425,6 +426,7 @@ public class M3ButtonGroup extends Control {
             toggleButton.setSize(getSize());
         }
     }
+
     /// Returns the position style class for a grouped button index.
     private static String buttonStyleClass(int index, int count) {
         if (count == 1) {

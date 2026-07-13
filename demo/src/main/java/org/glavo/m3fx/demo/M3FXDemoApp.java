@@ -424,7 +424,7 @@ public final class M3FXDemoApp extends Application {
                 new DemoPage("App Bars", "App bars", APP_BARS_GROUP, "Top app bars with navigation and actions", DemoMaterialDocs.APP_BARS, this::createAppBarsPage),
                 new DemoPage("Badges", "Badges", "Badges", "Dot, count, overflow, and attached badges", DemoMaterialDocs.BADGES, this::createBadgesPage),
                 new DemoPage("All Buttons", "All buttons", BUTTONS_GROUP, "Overview of button families and action patterns", DemoMaterialDocs.ALL_BUTTONS, this::createAllButtonsPage),
-                new DemoPage("Button Groups", "Button groups", BUTTONS_GROUP, "Connected groups for related actions", DemoMaterialDocs.BUTTON_GROUPS, this::createButtonGroupsPage),
+                new DemoPage("Button Groups", "Button groups", BUTTONS_GROUP, "Standard and connected groups for related actions", DemoMaterialDocs.BUTTON_GROUPS, this::createButtonGroupsPage),
                 new DemoPage("Buttons", "Buttons", BUTTONS_GROUP, "Common button variants", DemoMaterialDocs.BUTTONS, this::createButtonsPage),
                 new DemoPage("Extended FABs", "Extended FABs", BUTTONS_GROUP, "Extended floating action button examples", DemoMaterialDocs.EXTENDED_FAB, this::createExtendedFabsPage),
                 new DemoPage("FAB Menu", "FAB menu", BUTTONS_GROUP, "Expandable floating action shortcuts", DemoMaterialDocs.FAB_MENU, this::createFabMenuPage),
@@ -994,8 +994,8 @@ public final class M3FXDemoApp extends Application {
         return createGallery(
                 createShowcaseGroup("Standard Actions", standardGroup),
                 createShowcaseGroup("Standard Toggle Selection", standardSingleSelect),
-                createShowcaseGroup("Connected Single Select", connectedSingleSelect),
-                createShowcaseGroup("Connected Multi Select", connectedMultiSelect),
+                createFullWidthShowcaseGroup("Connected Single Select", connectedSingleSelect),
+                createFullWidthShowcaseGroup("Connected Multi Select", connectedMultiSelect),
                 createShowcaseGroup("Size Scale", small, large)
         );
     }
@@ -2003,21 +2003,40 @@ public final class M3FXDemoApp extends Application {
     /// Creates the navigation rail component page.
     private Node createNavigationRailPage() {
         M3NavigationRail collapsed = createFourItemNavigationRail();
+        collapsed.setPrefHeight(520.0);
+
+        M3NavigationRail narrow = createFourItemNavigationRail();
+        narrow.setNarrow(true);
+        narrow.setItemsCentered(true);
+        narrow.setPrefHeight(520.0);
 
         M3NavigationRail standard = createFourItemNavigationRail();
         standard.setExpanded(true);
+        standard.setPrefHeight(520.0);
 
         M3NavigationRail modal = createFourItemNavigationRail();
         modal.setVariant(M3NavigationRailVariant.MODAL);
         modal.setFullWidthIndicator(true);
         modal.setExpanded(true);
+        modal.setPrefHeight(520.0);
+
+        M3NavigationRail immersive = createFourItemNavigationRail();
+        immersive.setVariant(M3NavigationRailVariant.MODAL);
+        immersive.setHideWhenCollapsed(true);
+        immersive.setExpanded(true);
+        immersive.setPrefHeight(520.0);
 
         return createGallery(
                 createShowcaseGroup(
-                        "Variants",
+                        "Collapsed",
                         createNavigationRailPreview("Collapsed with action", collapsed, true),
+                        createNavigationRailPreview("Narrow, centered destinations", narrow, false)
+                ),
+                createShowcaseGroup(
+                        "Expanded",
                         createNavigationRailPreview("Expanded standard", standard, false),
-                        createNavigationRailPreview("Expanded modal, full-width indicator", modal, false)
+                        createNavigationRailPreview("Expanded modal, full-width indicator", modal, false),
+                        createNavigationRailPreview("Immersive, hide when collapsed", immersive, false)
                 )
         );
     }
@@ -2025,7 +2044,14 @@ public final class M3FXDemoApp extends Application {
     /// Creates the navigation drawer component page.
     private Node createNavigationDrawerPage() {
         M3NavigationDrawer standard = createFourItemNavigationDrawer();
-        standard.setPrefHeight(360.0);
+        standard.getItems().addAll(
+                new M3Divider(),
+                createDrawerItem("Drafts", "edit"),
+                createDrawerItem("Spam", "warning"),
+                createDrawerItem("Trash", "delete"),
+                createDrawerItem("Settings", "settings")
+        );
+        standard.setPrefHeight(280.0);
         M3NavigationDrawer modal = createFourItemNavigationDrawer();
         modal.setVariant(M3NavigationDrawerVariant.MODAL);
         M3NavigationDrawer grouped = createSectionNavigationDrawer();
@@ -3719,7 +3745,35 @@ public final class M3FXDemoApp extends Application {
         }
         navigationRail.setHeader(header);
 
-        VBox preview = new VBox(12.0, titleLabel, navigationRail);
+        Node railPresentation = navigationRail;
+        if (navigationRail.isHideWhenCollapsed()) {
+            M3IconButton revealButton = createIconButton("menu");
+            revealButton.setAccessibleText("Show navigation rail");
+            revealButton.setVisible(!navigationRail.isExpanded());
+            revealButton.setManaged(!navigationRail.isExpanded());
+            revealButton.setOnAction(event -> {
+                navigationRail.setExpanded(true);
+                revealButton.setVisible(false);
+                revealButton.setManaged(false);
+                menuButton.setGraphic(createIconViewport(DemoIcons.primary("close")));
+                menuButton.setAccessibleText("Hide navigation rail");
+            });
+            menuButton.setOnAction(event -> {
+                navigationRail.setExpanded(false);
+                revealButton.setVisible(true);
+                revealButton.setManaged(true);
+                menuButton.setGraphic(createIconViewport(DemoIcons.primary("menu")));
+                menuButton.setAccessibleText("Show navigation rail");
+            });
+
+            StackPane immersivePresentation = new StackPane(navigationRail, revealButton);
+            immersivePresentation.setAlignment(Pos.TOP_LEFT);
+            StackPane.setAlignment(navigationRail, Pos.TOP_LEFT);
+            StackPane.setAlignment(revealButton, Pos.TOP_LEFT);
+            railPresentation = immersivePresentation;
+        }
+
+        VBox preview = new VBox(12.0, titleLabel, railPresentation);
         preview.setAlignment(Pos.TOP_LEFT);
         return preview;
     }

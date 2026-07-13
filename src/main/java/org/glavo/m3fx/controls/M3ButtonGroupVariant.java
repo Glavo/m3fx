@@ -7,9 +7,9 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 /// Defines the visual grouping model used by [M3ButtonGroup].
 ///
-/// Standard groups keep each button's own rounded container and only apply Material group spacing and sizing.
-/// Connected groups render adjacent buttons as one connected control with shared outer corners and smaller inner
-/// corners.
+/// Standard groups keep each button's own rounded container, hug their content, and apply Material group spacing
+/// and sizing. Connected groups render adjacent buttons as one connected control with shared outer corners and
+/// smaller inner corners, and expand when their parent offers additional width.
 ///
 /// See [Material Design button groups](https://m3.material.io/components/button-groups/overview).
 @NotNullByDefault

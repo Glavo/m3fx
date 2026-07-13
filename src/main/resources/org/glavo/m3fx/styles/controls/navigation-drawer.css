@@ -17,6 +17,17 @@
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 1, 0.18, 0, 1);
 }
 
+.m3-navigation-drawer > .m3-navigation-drawer-viewport,
+.m3-navigation-drawer > .m3-navigation-drawer-viewport:focused {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-padding: 0;
+}
+
+.m3-navigation-drawer > .m3-navigation-drawer-viewport > .viewport {
+    -fx-background-color: transparent;
+}
+
 .m3-navigation-drawer .m3-list-item {
     -m3-one-line-height: 56px;
     -m3-two-line-height: 72px;
@@ -25,14 +36,4 @@
     -m3-horizontal-padding: 16px;
     -m3-vertical-padding: 0px;
     -m3-content-spacing: 12px;
-}
-
-.m3-navigation-drawer .m3-list-item:selected .m3-list-item-headline {
-    -fx-font-weight: 600;
-    -fx-text-fill: -m3-color-on-secondary-container;
-}
-
-.m3-navigation-drawer .m3-list-item:selected .m3-state-layer,
-.m3-navigation-drawer .m3-list-item:selected .m3-ripple {
-    -fx-background-color: -m3-color-on-secondary-container;
 }

@@ -57,8 +57,13 @@ import java.util.Objects;
 ///
 /// `M3NavigationDrawer` hosts [M3ListItem] entries and [M3NavigationDrawerGroup] sections, tracks selected
 /// items, and applies a drawer-specific selection policy across nested groups. It supports keyboard traversal,
-/// empty-selection control, and JavaFX accessibility selection attributes while leaving application layout to the
-/// surrounding container.
+/// empty-selection control, and JavaFX accessibility selection attributes. When its allocated height is smaller
+/// than its content, the drawer scrolls its destinations vertically without moving adjacent application content.
+/// The surrounding application remains responsible for positioning permanent drawers and for presenting modal
+/// drawers with a scrim and enter or exit transition.
+///
+/// Material Design 3 Expressive no longer recommends navigation drawers. Applications using the Expressive profile
+/// should normally use an expanded [M3NavigationRail] for the same destination hierarchy.
 ///
 /// Use a drawer for larger destination sets or grouped navigation. See
 /// [Material Design navigation drawer](https://m3.material.io/components/navigation-drawer/overview).
@@ -75,6 +80,10 @@ public class M3NavigationDrawer extends Control {
 
     /// The right-to-left layout pseudo-class.
     private static final PseudoClass RTL_PSEUDO_CLASS = PseudoClass.getPseudoClass("rtl");
+
+    /// The pseudo-class applied to list items while they belong to a navigation drawer.
+    private static final PseudoClass NAVIGATION_DRAWER_ITEM_PSEUDO_CLASS =
+            PseudoClass.getPseudoClass("navigation-drawer");
 
     /// The default spacing between top-level drawer items.
     private static final double DEFAULT_ITEM_SPACING = 0.0;
@@ -402,7 +411,7 @@ public class M3NavigationDrawer extends Control {
 
     /// Returns accessibility attributes for navigation drawer content and selection state.
     ///
-    /// @param attribute the requested accessibility attribute
+    /// @param attribute  the requested accessibility attribute
     /// @param parameters optional attribute-specific parameters
     /// @return the requested accessibility value, or `null` when no value is available
     @Override
@@ -421,7 +430,7 @@ public class M3NavigationDrawer extends Control {
 
     /// Executes accessibility selection actions for drawer list items.
     ///
-    /// @param action the accessibility action to execute
+    /// @param action     the accessibility action to execute
     /// @param parameters optional action-specific parameters
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
@@ -852,6 +861,7 @@ public class M3NavigationDrawer extends Control {
 
     /// Installs action and selected-state listeners on a drawer item.
     private void installItem(M3ListItem item) {
+        item.pseudoClassStateChanged(NAVIGATION_DRAWER_ITEM_PSEUDO_CLASS, true);
         item.addEventHandler(ActionEvent.ACTION, itemActionHandler);
         item.selectedProperty().addListener(selectedInvalidation);
         item.disabledProperty().addListener(reachabilityInvalidation);
@@ -871,6 +881,7 @@ public class M3NavigationDrawer extends Control {
 
     /// Removes action and selected-state listeners from a drawer item.
     private void uninstallItem(M3ListItem item) {
+        item.pseudoClassStateChanged(NAVIGATION_DRAWER_ITEM_PSEUDO_CLASS, false);
         item.removeEventHandler(ActionEvent.ACTION, itemActionHandler);
         item.selectedProperty().removeListener(selectedInvalidation);
         item.disabledProperty().removeListener(reachabilityInvalidation);
