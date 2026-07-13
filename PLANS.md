@@ -1,110 +1,115 @@
 # M3FX Project Plan
 
-## Purpose
+## Product Scope
 
-M3FX is a modular Material Design 3 component library for JavaFX. The project is still in active development, with remaining release work centered on final visual review and release-candidate verification after source or build changes.
+M3FX is a modular Material Design 3 component library for JavaFX. The release target includes baseline Material
+Design 3 and complete Material Design 3 Expressive support where the published specification defines stable
+component tokens, layouts, states, and motion behavior.
 
-## Current Baseline
-
-- Java source and bytecode target: Java 17.
-- Default JavaFX dependency for local builds and the demo app: JavaFX 21.
-- Public implementation should stay compatible with JavaFX 14 APIs unless newer APIs are guarded by runtime checks or reflection.
-- JavaFX is owned by applications and is not published as an API or runtime dependency of the library artifact.
-- The JPMS module descriptor keeps transitive JavaFX readability because public APIs expose JavaFX types.
-- Material colors are generated through `org.glavo:MonetFX:0.4.0`.
-- The demo app is a separate Gradle subproject.
-- Baseline Material Design 3 is the primary compatibility target.
-- M3 Expressive is represented through profile-aware colors, typography, shape, component metrics, motion schemes, and motion behavior timings. Full exact visual parity for every M3 Expressive component is deferred beyond the 1.0 baseline unless the component already has stable tokens and rendered-state coverage.
+The library uses MonetFX for dynamic Material color generation. Applications own the JavaFX runtime; M3FX does
+not bundle or publish JavaFX as a runtime dependency. The default development baseline is JavaFX 21 with Java 17
+source and bytecode, while public implementation code remains compatible with JavaFX 14 APIs unless a newer API
+is guarded at runtime.
 
 ## Architecture
 
-- `org.glavo.m3fx.theme` owns theme creation, scene and root installation helpers, stylesheet installation, and token stylesheet generation.
-- `org.glavo.m3fx.tokens` owns color, typography, shape, elevation, motion, state-layer, density, profile, and component token groups.
-- Public theme and token abstractions use sealed interfaces; implementations live in internal packages.
-- `org.glavo.m3fx.animation` owns reusable Material motion durations, easing curves, semantic motion specs, runtime animation settings, motion schemes, and behavior timings.
-- `org.glavo.m3fx.internal` owns shared runtime infrastructure such as theme resolution, generated stylesheet caching, popup context propagation, focus guards, scroll reveal, animation helpers, and logical layout helpers.
-- `org.glavo.m3fx.controls` owns public controls, foundation primitives, composition containers, and utility APIs.
-- `org.glavo.m3fx.skins` owns non-exported custom skins for layout, drawing, interaction, state layers, ripple, animation behavior, and popup content.
-- Custom skins inherit JavaFX base skin classes such as `SkinBase`, `LabeledSkinBase`, or project skin bases. Popup skins use a project popup skin base because JavaFX `SkinBase` only accepts `Control` skinnables.
-- Foundation primitives such as `M3Icon` and `M3Text` support components but are not standalone Material component pages.
-- Public control APIs prefer constructors and explicit mutable properties over static convenience factories. Public batch constructors are limited to the reviewed menu, dialog, form section, and form validator entry points covered by project contract tests.
-- Text input controls intentionally retain JavaFX text input base classes to preserve editing, selection, clipboard, IME, undo/redo, and multiline behavior. Other M3FX controls avoid inheriting from concrete JavaFX controls where M3FX owns the behavior surface.
-- Controls use per-control user-agent stylesheets where JavaFX supports them. Popup-only styling remains in dedicated control CSS files loaded through the base stylesheet.
-- Popup context propagation mirrors owner stylesheets, local theme declarations, profile and brightness classes, node orientation, animation settings, motion schemes, and behavior timings into popup roots.
-- `M3ThemeManager` is a convenience installer, not a required runtime dependency for applications.
+- `org.glavo.m3fx.theme` installs themes and generates root token stylesheets.
+- `org.glavo.m3fx.tokens` defines color, typography, shape, elevation, motion, state, density, profile, and
+  component tokens. Public token abstractions are sealed interfaces with implementations in internal packages.
+- `org.glavo.m3fx.animation` provides Material motion schemes, durations, easing curves, behavior timings, and
+  runtime animation settings.
+- `org.glavo.m3fx.controls` contains the public component APIs and composition primitives.
+- `org.glavo.m3fx.skins` owns rendering, layout, interaction, state layers, ripples, and component animation.
+- `org.glavo.m3fx.internal` contains shared runtime infrastructure, generated stylesheet caching, popup context
+  propagation, focus handling, logical layout, and low-level animation support.
+- The demo is an independent Gradle subproject and serves as the component catalog and visual review surface.
 
-## Implemented Areas
+M3FX controls use custom skins based on JavaFX skin base classes. Text inputs retain JavaFX text-input base
+classes for editing, selection, clipboard, IME, and undo/redo behavior; other components avoid concrete JavaFX
+control subclasses where M3FX owns the behavior surface.
 
-### Build And Distribution
+## Implemented Foundation
 
-- Multi-project Gradle build for the library and demo app.
-- Java module descriptors for the library and demo app.
-- Demo run, shadow jar, and jlink runtime-image tasks.
-- Demo shadow jar excludes JavaFX artifacts and verifies executable packaging, demo resources, M3FX classes, and MonetFX runtime classes.
-- Host and cross-platform jlink support uses BellSoft LibericaJDK Full target jmods.
-- Platform and architecture jlink tasks cover Windows, Linux, and macOS on x64 and AArch64 and have been verified through the aggregate all-platform task.
-- `releaseCheck` validates the default release path: `check`, `:demo:test`, demo shadow jar verification, and the default host-platform demo jlink runtime image.
-- Publication verification covers Maven metadata, main, sources, and Javadoc artifact structure, Maven artifact layout, and consumer resolution without publishing OpenJFX artifacts.
-- GitHub Actions runs release validation under Xvfb and uploads visual reports, test reports, and the verified demo shadow jar as unarchived artifacts.
-- Packaging guidance is documented in `docs/PACKAGING.md`.
-- The root README documents status, dependency ownership, JPMS usage, theme installation, component status, demo execution, packaging tasks, validation entry points, and licensing.
+### Theme And Motion
 
-### Theme, Tokens, And Motion
-
-- MonetFX-backed Material color mapping.
-- Generated root CSS token stylesheets for color, typography, shape, elevation, motion, state layers, density, and component defaults.
-- Baseline and M3 Expressive token profiles.
-- Profile-aware component tokens for action controls, inputs, selection controls, sliders, navigation, lists, menus, search, pickers, sheets, forms, surfaces, cards, dialogs, snackbars, app bars, toolbars, progress indicators, and loading indicators.
-- Runtime motion settings for global and node-local animation enablement, motion schemes, and behavior timings.
-- State layers, ripples, elevation transitions, overlay transitions, popup transitions, smooth scrolling, progress loops, and loading indicator loops observe runtime motion settings.
-- Reduced-motion behavior keeps indeterminate loading and progress controls visibly active while disabling full morph and transition motion.
-- Generated component stylesheets install stable profile-specific metrics and preserve application-owned bound layout properties.
+- MonetFX-backed light and dark color schemes.
+- Baseline and Expressive profiles for system and component tokens.
+- Token-driven typography, shape, elevation, density, state layers, and component metrics.
+- Global and node-local animation settings, motion schemes, and behavior timings.
+- Reduced-motion behavior for transitions, overlays, scrolling, progress indicators, and loading indicators.
+- Theme and direction propagation into popup roots.
 
 ### Components
 
-- Action controls: buttons, icon buttons, floating action buttons, FAB menus, split buttons, button groups, segmented buttons, tabs, chips, and icon toggle groups.
-- Selection controls: checkboxes, radio buttons, switches, standard and centered sliders with continuous or discrete stops, progress bars, progress indicators, and loading indicators.
-- Text input and forms: text fields, password fields, text areas, text input layouts, validators, form rows, form sections, form panes, and validation summaries.
-- Navigation and content: navigation bars, navigation rails, navigation drawers, lists, virtualized list views, list items, carousels, dividers, badges, avatars, surfaces, and cards.
-- Feedback and overlays: banners, dialogs, snackbars, tooltips, rich tooltips, scrims, bottom sheets, side sheets, top app bars, bottom app bars, and toolbars.
-- Pickers and menus: menus, submenus, menu buttons, search bars, search views, date pickers, date-range pickers, time pickers, and picker fields.
+- Buttons, icon buttons, FABs, FAB menus, button groups, split buttons, segmented buttons, tabs, and chips.
+- Checkboxes, radio buttons, switches, sliders, progress indicators, and loading indicators.
+- Text fields, password fields, text areas, validation, and form composition.
+- Navigation bars, navigation rails, navigation drawers, lists, virtualized list views, and carousels.
+- Menus, search, date pickers, date-range pickers, time pickers, and picker fields.
+- App bars, toolbars, cards, surfaces, badges, avatars, and dividers.
+- Dialogs, sheets, banners, snackbars, scrims, and tooltips.
 
-### Demo And Visual Validation
+### Build And Distribution
 
-- The demo app is organized as Material component pages with documentation links to `https://m3.material.io/`.
-- The release visual matrix renders every registered page in baseline light, expressive light, baseline dark, expressive dark, baseline RTL, expressive dark RTL, and reduced-motion modes.
-- Visual smoke tests capture reviewable screenshots, check theme context and CSS warnings, inspect layout bounds, sample pixels for important states, and exercise interaction frames. The root test task also rejects unresolved M3FX token lookups and CSS conversion warnings recorded in JUnit output.
-- Core control tests cover tokens, CSS metadata, fallback stylesheets, accessibility, focus traversal, mixed popup focus routing, RTL behavior, animation enablement, reduced motion, and styleable metrics.
-- Mixed popup focus integration uses representative semantic scenarios across nested menus, pickers, rich tooltips, dialogs, sheets, snackbars, search, virtualized lists, navigation drawers, and toolbars. Per-control suites validate the underlying focus and accessibility contracts without duplicating every container and popup permutation.
+- Modular library and demo builds.
+- Demo shadow JAR without bundled JavaFX.
+- Host and cross-platform jlink runtime images for Windows, Linux, and macOS on x64 and AArch64.
+- Maven publication metadata and artifact verification.
+- GitHub Actions release validation and visual-report artifacts.
 
-## Release Readiness
+### Verification
 
-- The library is a release candidate for baseline Material Design 3 plus documented M3 Expressive token, profile, motion, and component support.
-- The 1.0 public API review is complete across `org.glavo.m3fx.animation`, `org.glavo.m3fx.controls`, `org.glavo.m3fx.theme`, and `org.glavo.m3fx.tokens`. The reviewed surface includes exported packages, public top-level and nested types, constructors, enum constants, public field constants, static utility methods, style class names, duplicate wrapper methods, batch constructors, JavaFX superclass exceptions, and internal-type exposure.
-- Full M3 Expressive visual parity for every component is explicitly deferred beyond the 1.0 baseline; 1.0 documents the supported Expressive token/profile behavior and keeps component parity work incremental.
-- The component-by-component release visual matrix covers all 46 registered demo pages across seven theme, direction, and motion combinations.
-- Any source, stylesheet, token, demo, or build-logic change must be followed by final `releaseCheck` validation before publication.
-- Before publishing runtime images, rerun all-platform and all-architecture jlink validation after any jlink, packaging, module, or dependency change.
+- Unit and behavior coverage for tokens, CSS metadata, accessibility, keyboard traversal, RTL layout, popup focus,
+  animation settings, reduced motion, and disposal behavior.
+- Rendered control-state checks for normal, selected, focused, hovered, pressed, disabled, RTL, and animated states.
+- A demo visual matrix covering every registered component page across Standard and Expressive profiles, light and
+  dark themes, RTL, and reduced-motion configurations.
+- Packaging checks for publication artifacts, the demo shadow JAR, and jlink runtime images.
 
-## Post-1.0 Goals
+## Remaining Release Work
 
-- Continue improving M3 Expressive parity for components whose official target values are stable and whose visual states can be covered by rendered tests.
-- Continue extending visual and animation validation through semantic states, stable animation pulses, rendered-pixel changes, and real focus or pointer interactions.
-- Demo page validation targets normal, selected, focused, pressed, disabled, RTL, and reduced-motion states for each implemented component where those states apply.
+### 1. Complete MD3 Expressive Component Parity
+
+Token-profile support is present, but every component must also match the Expressive specification in rendered
+geometry, adaptive layout, state color, shape, and motion. The current priority is the navigation family, including
+flexible vertical and horizontal navigation bars and collapsed, narrow, expanded, and modal navigation rails.
+Remaining component families will be audited against the local Material reference snapshot rather than inferred
+from baseline behavior.
+
+### 2. Finish The Component-State Visual Audit
+
+Review every public component in Standard and Expressive profiles across all applicable interaction states. Visual
+checks must validate geometry and representative pixels, not only confirm that a screenshot was produced. Animated
+components require stable start, intermediate, release, and settled frames so malformed transitional geometry is
+detectable.
+
+### 3. Complete Performance And Lifetime Review
+
+Audit skins, popup owners, animation loops, virtualized cells, and shared observers for retained listeners, stale
+scene references, unnecessary per-pulse allocation, and avoidable layout or CSS invalidation. Prefer reusable
+animation state and direct layout calculations on hot paths, while keeping public APIs and ownership boundaries
+clear.
+
+### 4. Release-Candidate Verification
+
+After the visual, motion, performance, and lifetime audits are complete, run the complete library and demo test
+suites, publication checks, demo shadow-JAR verification, and host runtime-image validation. Cross-platform runtime
+images must be revalidated when build logic, modules, JavaFX resolution, or packaging changes.
 
 ## Validation Entry Points
 
 - `compileJava` validates main source compilation.
 - `compileTestJava` validates test source compilation.
-- `test` validates unit, behavior, visual, accessibility, and snapshot tests.
-- `check` validates compilation, tests, publication metadata, main, sources, and Javadoc artifact structure, and build-local publication consumption.
-- `releaseCheck` validates the library publication path, demo visual and behavior tests, executable demo shadow jar, and default demo jlink runtime image structure.
-- `shadowDemoJar` validates executable demo jar packaging without bundled JavaFX.
+- `test` validates library behavior, accessibility, interaction, and rendered states.
+- `:demo:test` validates demo pages and real-window visual behavior.
+- `check` validates tests and publication artifacts.
+- `releaseCheck` validates the release path, demo packaging, and the default runtime image.
+- `shadowDemoJar` validates the executable demo JAR without bundled JavaFX.
 - `jlinkDemoRuntime` validates the default demo runtime image.
-- `jlinkDemoAllPlatformArchitectureRuntimes` validates Windows, Linux, and macOS runtime images on x64 and AArch64.
+- `jlinkDemoAllPlatformArchitectureRuntimes` validates all supported operating-system and architecture pairs.
 
-## Out Of Scope For Now
+## Out Of Scope
 
-- Web deployment for the JavaFX demo.
-- SASS or another CSS preprocessor layer.
+- Web deployment of the JavaFX demo.
+- A CSS preprocessor layer.
 - High-complexity data components such as data tables.
