@@ -81,7 +81,7 @@ public class M3NavigationBar extends Control {
             FXCollections.unmodifiableObservableList(selectedItems);
 
     /// The icon and label arrangement applied to navigation items.
-    private final ObjectProperty<M3NavigationItemLayout> itemLayout =
+    private final ObjectProperty<M3NavigationItemLayout> itemLayoutState =
             new SimpleObjectProperty<>(this, "itemLayout", M3NavigationItemLayout.VERTICAL) {
                 /// Propagates layout changes to the installed navigation items.
                 @Override
@@ -171,7 +171,7 @@ public class M3NavigationBar extends Control {
     ///
     /// @return the navigation item layout
     public final M3NavigationItemLayout getItemLayout() {
-        return itemLayout.get();
+        return itemLayoutState.get();
     }
 
     /// Sets how child navigation items arrange their icon and label.
@@ -181,14 +181,14 @@ public class M3NavigationBar extends Control {
     ///
     /// @param itemLayout the navigation item layout
     public final void setItemLayout(M3NavigationItemLayout itemLayout) {
-        this.itemLayout.set(Objects.requireNonNull(itemLayout, "itemLayout"));
+        this.itemLayoutState.set(Objects.requireNonNull(itemLayout, "itemLayout"));
     }
 
     /// Returns the child navigation item layout property.
     ///
     /// @return the writable navigation item layout property
     public final ObjectProperty<M3NavigationItemLayout> itemLayoutProperty() {
-        return itemLayout;
+        return itemLayoutState;
     }
     /// Returns the selected navigation items in child order.
     ///

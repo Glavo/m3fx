@@ -67,6 +67,7 @@ import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Card;
 import org.glavo.m3fx.controls.M3CardVariant;
 import org.glavo.m3fx.controls.M3Carousel;
+import org.glavo.m3fx.controls.M3CarouselLayout;
 import org.glavo.m3fx.controls.M3CheckBox;
 import org.glavo.m3fx.controls.M3Chip;
 import org.glavo.m3fx.controls.M3ChipGroup;
@@ -110,9 +111,11 @@ import org.glavo.m3fx.controls.M3MenuSectionHeader;
 import org.glavo.m3fx.controls.M3NavigationBar;
 import org.glavo.m3fx.controls.M3NavigationDrawer;
 import org.glavo.m3fx.controls.M3NavigationDrawerGroup;
+import org.glavo.m3fx.controls.M3NavigationDrawerVariant;
 import org.glavo.m3fx.controls.M3NavigationItem;
 import org.glavo.m3fx.controls.M3NavigationItemLayout;
 import org.glavo.m3fx.controls.M3NavigationRail;
+import org.glavo.m3fx.controls.M3NavigationRailVariant;
 import org.glavo.m3fx.controls.M3PasswordField;
 import org.glavo.m3fx.controls.M3PickerField;
 import org.glavo.m3fx.controls.M3ProgressBar;
@@ -356,7 +359,7 @@ final class M3FXDemoVisualSmokeTest {
             Map.entry("Lists", 8),
             Map.entry("Menus", 10),
             Map.entry("Navigation", 8),
-            Map.entry("Navigation Drawer", 7),
+            Map.entry("Navigation Drawer", 12),
             Map.entry("Navigation Rail", 10),
             Map.entry("Search", 5),
             Map.entry("Side Sheets", 3),
@@ -372,6 +375,12 @@ final class M3FXDemoVisualSmokeTest {
                     "button",
                     "button",
                     root -> firstVisibleButtonWithText(root, "Filled")
+            ),
+            new InteractionTargetCase(
+                    "Button Groups",
+                    "standard-button-group",
+                    "standard button group action",
+                    root -> firstVisibleButtonWithText(root, "Share")
             ),
             new InteractionTargetCase(
                     "Floating Action Buttons",
@@ -518,6 +527,12 @@ final class M3FXDemoVisualSmokeTest {
                     "button",
                     "button",
                     root -> firstVisibleButtonWithText(root, "Filled")
+            ),
+            new InteractionTargetCase(
+                    "Button Groups",
+                    "standard-button-group",
+                    "standard button group action",
+                    root -> firstVisibleButtonWithText(root, "Share")
             ),
             new InteractionTargetCase(
                     "Floating Action Buttons",
@@ -1754,6 +1769,12 @@ final class M3FXDemoVisualSmokeTest {
                 assertComponentDemoPage(
                         appReference,
                         sceneReference,
+                        "Navigation Drawer",
+                        M3FXDemoVisualSmokeTest::assertNavigationDrawerPageVisualState
+                );
+                assertComponentDemoPage(
+                        appReference,
+                        sceneReference,
                         "Navigation Rail",
                         M3FXDemoVisualSmokeTest::assertNavigationRailPageVisualState
                 );
@@ -2062,13 +2083,13 @@ final class M3FXDemoVisualSmokeTest {
         }
     }
 
-    /// Verifies that the Carousel demo renders scrollable viewports, selected items, and action-driven selection.
+    /// Verifies that the Carousel demo renders all Material layouts and action-driven focal selection.
     @Test
     void carouselPageRendersViewportSelectionAndActionNavigation() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
-        AtomicReference<@Nullable M3Carousel> multiAspectRatioReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Carousel> multiBrowseReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Carousel> uncontainedReference = new AtomicReference<>();
 
         DemoFxTestUtils.runOnFxThread(() -> {
@@ -2090,31 +2111,39 @@ final class M3FXDemoVisualSmokeTest {
                 Parent root = scene.getRoot();
                 Node page = currentDemoPage(scene, "Carousel");
                 assertCurrentPageTitle(scene, "Carousel");
-                assertVisibleText(root, "Uncontained multi-aspect ratio", "Carousel");
+                assertVisibleText(root, "Multi-browse", "Carousel");
+                assertVisibleText(root, "Hero", "Carousel");
+                assertVisibleText(root, "Center-aligned hero", "Carousel");
                 assertVisibleText(root, "Uncontained", "Carousel");
+                assertVisibleText(root, "Uncontained multi-aspect ratio", "Carousel");
+                assertVisibleText(root, "Full-screen", "Carousel");
                 assertVisibleText(root, "Previous", "Carousel");
                 assertVisibleText(root, "Next", "Carousel");
 
                 List<M3Carousel> carousels = visibleNodesOfType(page, M3Carousel.class);
-                assertEquals(2, carousels.size(),
-                        () -> "Carousel page should render two carousel variants, found " + carousels.size());
+                assertEquals(6, carousels.size(),
+                        () -> "Carousel page should render six Material layouts, found " + carousels.size());
+                for (M3CarouselLayout layout : M3CarouselLayout.values()) {
+                    M3Carousel carousel = carouselWithLayout(carousels, layout);
+                    assertCarouselDemoGeometry(carousel, layout + " carousel");
+                }
 
-                M3Carousel multiAspectRatio = carousels.stream()
-                        .filter(carousel -> carousel.getItems().size() == 7)
-                        .findFirst()
-                        .orElseThrow(() -> new AssertionError("missing multi-aspect-ratio carousel"));
-                M3Carousel uncontained = carousels.stream()
-                        .filter(carousel -> carousel.getItems().size() == 8)
-                        .findFirst()
-                        .orElseThrow(() -> new AssertionError("missing uncontained carousel"));
-                assertEquals(1, multiAspectRatio.getSelectedIndex(), "multi-aspect-ratio carousel should select Design review");
-                assertEquals(0, uncontained.getSelectedIndex(), "uncontained carousel should select Inbox");
-                assertCarouselDemoGeometry(multiAspectRatio, "multi-aspect-ratio carousel");
-                assertCarouselTrackFillsViewport(multiAspectRatio, "multi-aspect-ratio carousel");
-                assertCarouselDemoGeometry(uncontained, "uncontained carousel");
+                M3Carousel multiBrowse = carouselWithLayout(carousels, M3CarouselLayout.MULTI_BROWSE);
+                M3Carousel uncontained = carouselWithLayout(carousels, M3CarouselLayout.UNCONTAINED);
+                assertEquals(0, multiBrowse.getSelectedIndex(), "multi-browse carousel selected index");
+                assertEquals(0, uncontained.getSelectedIndex(), "uncontained carousel selected index");
+                assertEquals(
+                        2,
+                        carouselWithLayout(carousels, M3CarouselLayout.CENTER_ALIGNED_HERO).getSelectedIndex(),
+                        "center-aligned hero selected index"
+                );
                 assertCarouselTrackFillsViewport(uncontained, "uncontained carousel");
+                assertCarouselTrackFillsViewport(
+                        carouselWithLayout(carousels, M3CarouselLayout.UNCONTAINED_MULTI_ASPECT_RATIO),
+                        "multi-aspect-ratio carousel"
+                );
 
-                multiAspectRatioReference.set(multiAspectRatio);
+                multiBrowseReference.set(multiBrowse);
                 uncontainedReference.set(uncontained);
 
                 WritableImage image = snapshot(scene);
@@ -2122,29 +2151,29 @@ final class M3FXDemoVisualSmokeTest {
                         "build",
                         "reports",
                         "m3fx-demo-visual",
-                        "carousel-viewport-selection.png"
+                        "carousel-layouts.png"
                 ));
-                assertSnapshotHasVisibleContent(image, "Carousel viewport selection");
+                assertSnapshotHasVisibleContent(image, "Carousel layouts");
             });
 
             DemoFxTestUtils.runOnFxThreadWhenStable(() -> {
                 @Nullable Scene scene = sceneReference.get();
-                @Nullable M3Carousel multiAspectRatio = multiAspectRatioReference.get();
+                @Nullable M3Carousel multiBrowse = multiBrowseReference.get();
                 @Nullable M3Carousel uncontained = uncontainedReference.get();
-                if (scene == null || multiAspectRatio == null || uncontained == null) {
+                if (scene == null || multiBrowse == null || uncontained == null) {
                     return false;
                 }
                 scene.getRoot().applyCss();
                 scene.getRoot().layout();
-                return multiAspectRatio.getSelectedIndex() == 2
+                return multiBrowse.getSelectedIndex() == 1
                         && uncontained.getSelectedIndex() == 0
-                        && hasRenderableBounds(multiAspectRatio)
+                        && hasRenderableBounds(multiBrowse)
                         && hasRenderableBounds(uncontained);
             }, SETTLED_STATE_PULSES, () -> {
                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-                M3Carousel multiAspectRatio = Objects.requireNonNull(multiAspectRatioReference.get(), "multi-aspect-ratio carousel");
-                M3MotionSettings.setAnimationsEnabled(multiAspectRatio, false);
-                multiAspectRatio.setAnimatedScroll(false);
+                M3Carousel multiBrowse = Objects.requireNonNull(multiBrowseReference.get(), "multi-browse carousel");
+                M3MotionSettings.setAnimationsEnabled(multiBrowse, false);
+                multiBrowse.setAnimatedScroll(false);
                 Node page = currentDemoPage(scene, "Carousel");
                 M3Button next = Objects.requireNonNull(
                         firstVisibleButtonWithText(page, "Next"),
@@ -2153,17 +2182,15 @@ final class M3FXDemoVisualSmokeTest {
                 next.fire();
                 scene.getRoot().applyCss();
                 scene.getRoot().layout();
-                multiAspectRatio.scrollSelectedItemIntoView(false);
+                multiBrowse.scrollSelectedItemIntoView(false);
             }, () -> {
                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-                M3Carousel multiAspectRatio = Objects.requireNonNull(multiAspectRatioReference.get(), "multi-aspect-ratio carousel");
+                M3Carousel multiBrowse = Objects.requireNonNull(multiBrowseReference.get(), "multi-browse carousel");
                 M3Carousel uncontained = Objects.requireNonNull(uncontainedReference.get(), "uncontained carousel");
-                assertEquals(2, multiAspectRatio.getSelectedIndex(), "Next action should select Release notes");
+                assertEquals(1, multiBrowse.getSelectedIndex(), "Next action should select Design review");
                 assertEquals(0, uncontained.getSelectedIndex(), "uncontained carousel should remain unchanged");
-                assertCarouselDemoGeometry(multiAspectRatio, "multi-aspect-ratio carousel after Next");
-                assertCarouselTrackFillsViewport(multiAspectRatio, "multi-aspect-ratio carousel after Next");
+                assertCarouselDemoGeometry(multiBrowse, "multi-browse carousel after Next");
                 assertCarouselDemoGeometry(uncontained, "uncontained carousel after Next");
-                assertCarouselTrackFillsViewport(uncontained, "uncontained carousel after Next");
 
                 WritableImage image = snapshot(scene);
                 writeVisualSnapshot(image, Path.of(
@@ -2176,10 +2203,10 @@ final class M3FXDemoVisualSmokeTest {
             });
         } finally {
             DemoFxTestUtils.runOnFxThread(() -> {
-                @Nullable M3Carousel multiAspectRatio = multiAspectRatioReference.get();
-                if (multiAspectRatio != null) {
-                    multiAspectRatio.setAnimatedScroll(true);
-                    M3MotionSettings.clearAnimationsEnabled(multiAspectRatio);
+                @Nullable M3Carousel multiBrowse = multiBrowseReference.get();
+                if (multiBrowse != null) {
+                    multiBrowse.setAnimatedScroll(true);
+                    M3MotionSettings.clearAnimationsEnabled(multiBrowse);
                 }
                 Stage stage = stageReference.get();
                 if (stage != null) {
@@ -11619,32 +11646,39 @@ final class M3FXDemoVisualSmokeTest {
         }
     }
 
-    /// Verifies the real Carousel demo page item counts, selection, and viewport geometry.
+    /// Verifies the real Carousel demo page exposes all six Material layout strategies.
     private static void assertCarouselPageVisualState(Scene scene) {
         Parent root = scene.getRoot();
         Node page = currentDemoPage(scene, "Carousel");
         assertCurrentPageTitle(scene, "Carousel");
-        assertVisibleText(root, "Uncontained multi-aspect ratio", "Carousel");
+        assertVisibleText(root, "Multi-browse", "Carousel");
+        assertVisibleText(root, "Hero", "Carousel");
+        assertVisibleText(root, "Center-aligned hero", "Carousel");
         assertVisibleText(root, "Uncontained", "Carousel");
+        assertVisibleText(root, "Uncontained multi-aspect ratio", "Carousel");
+        assertVisibleText(root, "Full-screen", "Carousel");
         assertVisibleText(root, "Previous", "Carousel");
         assertVisibleText(root, "Next", "Carousel");
 
         List<M3Carousel> carousels = visibleNodesOfType(page, M3Carousel.class);
-        assertEquals(2, carousels.size(), () -> "Carousel page should render two carousel variants: " + carousels);
-        M3Carousel multiAspectRatio = carousels.stream()
-                .filter(carousel -> carousel.getItems().size() == 7)
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("missing multi-aspect-ratio carousel"));
-        M3Carousel uncontained = carousels.stream()
-                .filter(carousel -> carousel.getItems().size() == 8)
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("missing uncontained carousel"));
-        assertEquals(1, multiAspectRatio.getSelectedIndex(), "multi-aspect-ratio carousel selected index");
-        assertEquals(0, uncontained.getSelectedIndex(), "uncontained carousel selected index");
-        assertCarouselDemoGeometry(multiAspectRatio, "multi-aspect-ratio carousel");
-        assertCarouselTrackFillsViewport(multiAspectRatio, "multi-aspect-ratio carousel");
-        assertCarouselDemoGeometry(uncontained, "uncontained carousel");
-        assertCarouselTrackFillsViewport(uncontained, "uncontained carousel");
+        assertEquals(6, carousels.size(),
+                () -> "Carousel page should render six Material layouts: " + carousels);
+        for (M3CarouselLayout layout : M3CarouselLayout.values()) {
+            assertCarouselDemoGeometry(carouselWithLayout(carousels, layout), layout + " carousel");
+        }
+        assertEquals(
+                2,
+                carouselWithLayout(carousels, M3CarouselLayout.CENTER_ALIGNED_HERO).getSelectedIndex(),
+                "center-aligned hero selected index"
+        );
+        assertCarouselTrackFillsViewport(
+                carouselWithLayout(carousels, M3CarouselLayout.UNCONTAINED),
+                "uncontained carousel"
+        );
+        assertCarouselTrackFillsViewport(
+                carouselWithLayout(carousels, M3CarouselLayout.UNCONTAINED_MULTI_ASPECT_RATIO),
+                "multi-aspect-ratio carousel"
+        );
     }
 
     /// Verifies the real Chips demo page exposes each Material chip responsibility without redundant state rows.
@@ -11927,41 +11961,108 @@ final class M3FXDemoVisualSmokeTest {
         Parent root = scene.getRoot();
         Node page = currentDemoPage(scene, "Navigation Drawer");
         assertCurrentPageTitle(scene, "Navigation Drawer");
-        assertVisibleText(root, "Destinations", "Navigation Drawer");
-        assertVisibleText(root, "Section", "Navigation Drawer");
+        assertVisibleText(root, "Standard", "Navigation Drawer");
+        assertVisibleText(root, "Modal", "Navigation Drawer");
+        assertVisibleText(root, "Grouped destinations", "Navigation Drawer");
         assertVisibleText(root, "Workspace", "Navigation Drawer");
 
         List<M3NavigationDrawer> drawers = visibleNodesOfType(page, M3NavigationDrawer.class);
-        assertEquals(2, drawers.size(), () -> "Navigation Drawer page should render two drawers: " + drawers);
+        assertEquals(3, drawers.size(), () -> "Navigation Drawer page should render three drawers: " + drawers);
         for (M3NavigationDrawer drawer : drawers) {
             assertNotNull(drawer.getSelectedItem(), "drawer selected item");
         }
-        assertTrue(drawers.stream().anyMatch(drawer -> drawer.getSelectedIndex() == 0),
-                "Navigation Drawer page should render one plain drawer selected at index 0");
+        assertEquals(2, drawers.stream()
+                        .filter(drawer -> drawer.getVariant() == M3NavigationDrawerVariant.STANDARD)
+                        .count(),
+                "Navigation Drawer page should render standard and grouped standard drawers");
+        M3NavigationDrawer modal = drawers.stream()
+                .filter(drawer -> drawer.getVariant() == M3NavigationDrawerVariant.MODAL)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Navigation Drawer page should render a modal drawer"));
+        assertNotNull(modal.getEffect(), "modal drawer should resolve level-one elevation");
+        assertTrue(drawers.stream()
+                        .filter(drawer -> drawer.getVariant() == M3NavigationDrawerVariant.STANDARD)
+                        .allMatch(drawer -> drawer.getEffect() == null),
+                "standard drawers should remain at level-zero elevation");
+        assertEquals(2, drawers.stream().filter(drawer -> drawer.getSelectedIndex() == 0).count(),
+                "standard and modal drawers should select their first destination");
         assertTrue(drawers.stream().anyMatch(drawer -> drawer.getSelectedIndex() == 1),
-                "Navigation Drawer page should render one sectioned drawer selected after its section label");
-        assertTrue(visibleNodesOfType(page, M3ListItem.class).stream().filter(M3ListItem::isSelected).count() >= 2,
+                "Navigation Drawer page should render one grouped drawer selected after its group header");
+        List<M3NavigationDrawerGroup> groups = visibleNodesOfType(page, M3NavigationDrawerGroup.class);
+        assertEquals(1, groups.size(), "Navigation Drawer page should render one destination group");
+        M3NavigationDrawerGroup group = groups.get(0);
+        assertEquals("Workspace", group.getTitle(), "navigation drawer group title");
+        assertTrue(group.isExpanded(), "navigation drawer group should expose its child destinations");
+        assertEquals(2, group.getItems().size(), "navigation drawer group child count");
+        Bounds groupHeaderBounds = group.getHeaderItem().localToScene(group.getHeaderItem().getBoundsInLocal());
+        Bounds firstGroupChildBounds = group.getItems().get(0).localToScene(group.getItems().get(0).getBoundsInLocal());
+        assertEquals(groupHeaderBounds.getMaxY(), firstGroupChildBounds.getMinY(), CONTROL_EDGE_TOLERANCE,
+                "navigation drawer group destinations should use the zero-spacing baseline layout");
+        M3ListItem selectedGroupChild = group.getItems().stream()
+                .filter(M3ListItem::isSelected)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("navigation drawer group should select one child"));
+        assertDrawerGroupChildSelectionGeometry(group, selectedGroupChild, "component drawer selected child");
+        assertEquals(3, visibleNodesOfType(page, M3ListItem.class).stream().filter(M3ListItem::isSelected).count(),
                 "Navigation Drawer page should render selected drawer rows");
         for (M3NavigationDrawer drawer : drawers) {
             assertNavigationDrawerDemoGeometry(scene, drawer);
         }
-        assertDemoVectorIcons(page, "Navigation Drawer", 7);
+        List<M3Scrim> scrims = visibleNodesOfType(page, M3Scrim.class);
+        assertEquals(1, scrims.size(), "Navigation Drawer page should render one modal scrim");
+        M3Scrim scrim = scrims.get(0);
+        assertTrue(scrim.isShown(), "modal navigation drawer scrim should be shown");
+        Bounds scrimBounds = scrim.localToScene(scrim.getLayoutBounds());
+        Bounds modalParentBounds = modal.getParent().localToScene(modal.getParent().getLayoutBounds());
+        assertEquals(modalParentBounds.getWidth(), scrimBounds.getWidth(), CONTROL_EDGE_TOLERANCE,
+                "modal scrim should fill its preview width");
+        assertEquals(modalParentBounds.getHeight(), scrimBounds.getHeight(), CONTROL_EDGE_TOLERANCE,
+                "modal scrim should fill its preview height");
+
+        M3NavigationDrawer groupedDrawer = Objects.requireNonNull(
+                nearestAncestorOfType(group, M3NavigationDrawer.class),
+                "grouped navigation drawer"
+        );
+        scrollDemoPageNodeIntoView(scene, groupedDrawer);
+        WritableImage groupedImage = requireSnapshotWithNodeFullyVisible(
+                scene,
+                groupedDrawer,
+                "grouped navigation drawer"
+        );
+        assertListItemSelectedContainerPixels(
+                groupedImage,
+                listItemSelectionContainer(selectedGroupChild),
+                "component drawer selected child"
+        );
+        assertDemoVectorIcons(page, "Navigation Drawer", 12);
     }
 
     /// Verifies one demo navigation drawer's selected row geometry.
     private static void assertNavigationDrawerDemoGeometry(Scene scene, M3NavigationDrawer drawer) {
         Bounds drawerBounds = drawer.localToScene(drawer.getBoundsInLocal());
-        assertTrue(drawerBounds.getWidth() >= 320.0,
-                () -> "demo navigation drawer should be wide enough for Material drawer rows: " + drawerBounds);
+        assertEquals(360.0, drawerBounds.getWidth(), CONTROL_EDGE_TOLERANCE,
+                () -> "demo navigation drawer should use the baseline 360px width: " + drawerBounds);
+        assertEquals(12.0, drawer.getPadding().getLeft(), CONTROL_EDGE_TOLERANCE,
+                "navigation drawer outer item padding");
+        assertEquals(0.0, drawer.getItemSpacing(), CONTROL_EDGE_TOLERANCE,
+                "navigation drawer rows should be contiguous");
+        assertNotNull(drawer.getBackground(), "navigation drawer background");
+        assertFalse(drawer.getBackground().getFills().isEmpty(), "navigation drawer background fills");
+        javafx.scene.layout.CornerRadii drawerRadii = drawer.getBackground().getFills().get(0).getRadii();
+        boolean rightToLeft = drawer.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+        assertEquals(rightToLeft ? 16.0 : 0.0, drawerRadii.getTopLeftHorizontalRadius(),
+                CONTROL_EDGE_TOLERANCE, "navigation drawer top-left radius");
+        assertEquals(rightToLeft ? 0.0 : 16.0, drawerRadii.getTopRightHorizontalRadius(),
+                CONTROL_EDGE_TOLERANCE, "navigation drawer top-right radius");
         M3ListItem selected = Objects.requireNonNull(drawer.getSelectedItem(), "navigation drawer selected item");
         assertTrue(selected.isSelected(), () -> "drawer selected item should expose selected state: " + selected);
-        WritableImage selectedImage = requireSnapshotWithNodeFullyVisible(
-                scene,
-                selected,
-                "navigation drawer selected `" + selected.getHeadlineText() + "`"
-        );
-        assertListItemSelectedContainerGeometry(selectedImage, selected,
-                "navigation drawer selected `" + selected.getHeadlineText() + "`");
+        String selectedDescription = "navigation drawer selected `" + selected.getHeadlineText() + "`";
+        Node selectedContainer = listItemSelectionContainer(selected);
+        assertListItemSelectedContainerLayout(selected, selectedContainer, selectedDescription);
+        @Nullable WritableImage selectedImage = snapshotIfNodeFullyVisible(scene, selected);
+        if (selectedImage != null) {
+            assertListItemSelectedContainerPixels(selectedImage, selectedContainer, selectedDescription);
+        }
 
         List<M3ListItem> selectedRows = visibleNodesOfType(drawer, M3ListItem.class).stream()
                 .filter(M3ListItem::isSelected)
@@ -11977,6 +12078,16 @@ final class M3FXDemoVisualSmokeTest {
             assertEquals(item.getOneLineHeight(), itemBounds.getHeight(), CONTROL_EDGE_TOLERANCE,
                     () -> "navigation drawer item height should match its resolved one-line token: item="
                             + itemBounds + ", token=" + item.getOneLineHeight());
+            assertEquals(56.0, itemBounds.getHeight(), CONTROL_EDGE_TOLERANCE,
+                    "navigation drawer rows should use the baseline 56px height");
+            boolean groupedChild = item.getStyleClass().contains(M3NavigationDrawerGroup.CHILD_STYLE_CLASS);
+            if (groupedChild) {
+                assertTrue(itemBounds.getWidth() < 336.0,
+                        "grouped navigation drawer children should be indented from the logical start edge");
+            } else {
+                assertEquals(336.0, itemBounds.getWidth(), CONTROL_EDGE_TOLERANCE,
+                        "navigation drawer rows should fill the 336px indicator area");
+            }
             if (!item.isSelected()) {
                 Node selectionContainer = listItemSelectionContainer(item);
                 assertTrue(selectionContainer.getOpacity() <= 0.05,
@@ -12094,12 +12205,22 @@ final class M3FXDemoVisualSmokeTest {
         Node page = currentDemoPage(scene, "Navigation Rail");
         assertCurrentPageTitle(scene, "Navigation Rail");
         assertVisibleText(root, "Collapsed", "Navigation Rail");
-        assertVisibleText(root, "Expandable", "Navigation Rail");
+        assertVisibleText(root, "Expanded standard", "Navigation Rail");
+        assertVisibleText(root, "Expanded modal", "Navigation Rail");
 
         List<M3NavigationRail> rails = visibleNodesOfType(page, M3NavigationRail.class);
-        assertEquals(2, rails.size(), () -> "Navigation Rail page should render two rails: " + rails);
+        assertEquals(3, rails.size(), () -> "Navigation Rail page should render three rails: " + rails);
         M3NavigationRail collapsed = rails.stream().filter(rail -> !rail.isExpanded()).findFirst().orElseThrow();
-        M3NavigationRail expanded = rails.stream().filter(M3NavigationRail::isExpanded).findFirst().orElseThrow();
+        M3NavigationRail expanded = rails.stream()
+                .filter(M3NavigationRail::isExpanded)
+                .filter(rail -> rail.getVariant() == M3NavigationRailVariant.STANDARD)
+                .findFirst()
+                .orElseThrow();
+        M3NavigationRail modal = rails.stream()
+                .filter(M3NavigationRail::isExpanded)
+                .filter(rail -> rail.getVariant() == M3NavigationRailVariant.MODAL)
+                .findFirst()
+                .orElseThrow();
         assertEquals(M3NavigationItemLayout.VERTICAL,
                 ((M3NavigationItem) collapsed.getItems().get(0)).getItemLayout());
         assertEquals(M3NavigationItemLayout.HORIZONTAL,
@@ -12117,10 +12238,17 @@ final class M3FXDemoVisualSmokeTest {
                 "collapsed rail should match its resolved width token"
         );
         assertNavigationRailDemoGeometry(collapsed, "collapsed navigation rail");
-        assertNavigationRailDemoGeometry(expanded, "expanded navigation rail");
-        assertEquals(2, visibleNodesOfType(page, M3IconButton.class).size(),
+        assertNavigationRailDemoGeometry(expanded, "expanded standard navigation rail");
+        assertNavigationRailDemoGeometry(modal, "expanded modal navigation rail");
+        assertNull(expanded.getEffect(), "standard expanded rail should stay at elevation level 0");
+        assertInstanceOf(
+                javafx.scene.effect.DropShadow.class,
+                modal.getEffect(),
+                "modal expanded rail should use elevation level 2"
+        );
+        assertEquals(3, visibleNodesOfType(page, M3IconButton.class).size(),
                 "each rail preview should expose a menu toggle");
-        assertDemoVectorIcons(page, "Navigation Rail", 10);
+        assertDemoVectorIcons(page, "Navigation Rail", 15);
         assertNavigationBadgesStayCompact(scene, "Navigation Rail");
     }
     /// Verifies that the expandable rail preview menu toggles layout and item orientation in both directions.
@@ -12129,6 +12257,7 @@ final class M3FXDemoVisualSmokeTest {
             Node page = currentDemoPage(scene, "Navigation Rail");
             M3NavigationRail rail = visibleNodesOfType(page, M3NavigationRail.class).stream()
                     .filter(M3NavigationRail::isExpanded)
+                    .filter(candidate -> candidate.getVariant() == M3NavigationRailVariant.STANDARD)
                     .findFirst()
                     .orElseThrow();
             Parent preview = Objects.requireNonNull(rail.getParent(), "rail preview");
@@ -12229,6 +12358,8 @@ final class M3FXDemoVisualSmokeTest {
                 () -> description + " rendered item count should match the public item list");
         assertEquals(bar.getSelectedItems().size(), items.stream().filter(M3NavigationItem::isSelected).count(),
                 () -> description + " selected child count should match rendered child state");
+        double contentWidth = bar.getWidth() - bar.getInsets().getLeft() - bar.getInsets().getRight();
+        double compactItemWidth = contentWidth / Math.max(1, items.size());
         for (M3NavigationItem item : items) {
             Bounds itemBounds = item.localToScene(item.getBoundsInLocal());
             assertTrue(containsBoundsWithTolerance(barBounds, itemBounds, CONTROL_EDGE_TOLERANCE),
@@ -12238,13 +12369,13 @@ final class M3FXDemoVisualSmokeTest {
                     () -> description + " item height should match its resolved container token: item="
                             + itemBounds + ", token=" + item.getContainerHeight());
             if (item.getItemLayout() == M3NavigationItemLayout.HORIZONTAL) {
-                assertTrue(itemBounds.getWidth() >= item.getItemWidth() - CONTROL_EDGE_TOLERANCE,
-                        () -> description + " expanded item should fill available width above its minimum token: item="
+                assertEquals(item.getItemWidth(), item.getWidth(), CONTROL_EDGE_TOLERANCE,
+                        () -> description + " medium-window item should keep its fixed width token: item="
                                 + itemBounds + ", token=" + item.getItemWidth());
             } else {
-                assertEquals(item.getItemWidth(), itemBounds.getWidth(), CONTROL_EDGE_TOLERANCE,
-                        () -> description + " item width should match its resolved width token: item="
-                                + itemBounds + ", token=" + item.getItemWidth());
+                assertEquals(compactItemWidth, item.getWidth(), CONTROL_EDGE_TOLERANCE,
+                        () -> description + " compact item should equally divide available bar width: item="
+                                + itemBounds + ", availableWidth=" + contentWidth);
             }
             assertEquals(barBounds.getCenterY(), itemBounds.getCenterY(), CONTROL_EDGE_TOLERANCE,
                     () -> description + " item should be vertically centered in the bar: bar="
@@ -12261,26 +12392,82 @@ final class M3FXDemoVisualSmokeTest {
                 () -> description + " rendered item count should match the public item list");
         assertEquals(rail.getSelectedItems().size(), items.stream().filter(M3NavigationItem::isSelected).count(),
                 () -> description + " selected child count should match rendered child state");
+        double contentWidth = rail.getWidth() - rail.getInsets().getLeft() - rail.getInsets().getRight();
         for (M3NavigationItem item : items) {
             Bounds itemBounds = item.localToScene(item.getBoundsInLocal());
+            Bounds itemBoundsInRail = rail.sceneToLocal(item.localToScene(item.getLayoutBounds()));
             assertTrue(containsBoundsWithTolerance(railBounds, itemBounds, CONTROL_EDGE_TOLERANCE),
                     () -> description + " item escapes navigation rail bounds: rail="
                             + railBounds + ", item=" + itemBounds + ", text=" + item.getText());
-            assertEquals(item.getContainerHeight(), itemBounds.getHeight(), CONTROL_EDGE_TOLERANCE,
+            assertEquals(item.getContainerHeight(), item.getHeight(), CONTROL_EDGE_TOLERANCE,
                     () -> description + " item height should match its resolved container token: item="
-                            + itemBounds + ", token=" + item.getContainerHeight());
-            if (item.getItemLayout() == M3NavigationItemLayout.HORIZONTAL) {
-                assertTrue(itemBounds.getWidth() >= item.getItemWidth() - CONTROL_EDGE_TOLERANCE,
-                        () -> description + " expanded item should fill available width above its minimum token: item="
-                                + itemBounds + ", token=" + item.getItemWidth());
+                            + itemBoundsInRail + ", token=" + item.getContainerHeight());
+            assertEquals(contentWidth, itemBoundsInRail.getWidth(), CONTROL_EDGE_TOLERANCE,
+                    () -> description + " item should fill the rail content width: item="
+                            + itemBoundsInRail + ", contentWidth=" + contentWidth);
+            assertEquals(rail.getWidth() / 2.0, itemBoundsInRail.getCenterX(), CONTROL_EDGE_TOLERANCE,
+                    () -> description + " item should be horizontally centered in the rail: railWidth="
+                            + rail.getWidth() + ", item=" + itemBoundsInRail);
+        }
+        if (!items.isEmpty()) {
+            Bounds firstBounds = rail.sceneToLocal(items.get(0).localToScene(items.get(0).getLayoutBounds()));
+            assertEquals(rail.getInsets().getTop(), firstBounds.getMinY(), CONTROL_EDGE_TOLERANCE,
+                    () -> description + " first item should honor the resolved top space");
+        }
+        for (int index = 1; index < items.size(); index++) {
+            Bounds previous = rail.sceneToLocal(
+                    items.get(index - 1).localToScene(items.get(index - 1).getLayoutBounds())
+            );
+            Bounds current = rail.sceneToLocal(items.get(index).localToScene(items.get(index).getLayoutBounds()));
+            assertEquals(rail.getItemSpacing(), current.getMinY() - previous.getMaxY(), CONTROL_EDGE_TOLERANCE,
+                    () -> description + " items should honor the resolved row spacing");
+        }
+        if (rail.isExpanded()) {
+            assertEquals(44.0, rail.getInsets().getTop(), CONTROL_EDGE_TOLERANCE,
+                    description + " expanded top space");
+            assertEquals(20.0, rail.getInsets().getBottom(), CONTROL_EDGE_TOLERANCE,
+                    description + " expanded trailing space");
+            assertEquals(0.0, rail.getItemSpacing(), CONTROL_EDGE_TOLERANCE,
+                    description + " expanded item spacing");
+            M3NavigationItem selected = items.stream().filter(M3NavigationItem::isSelected).findFirst().orElseThrow();
+            Node indicator = requireVisibleStyledDescendant(
+                    selected,
+                    "m3-navigation-item-indicator",
+                    description + " selected indicator"
+            );
+            assertEquals(
+                    selected.getWidth() - 32.0,
+                    indicator.getBoundsInLocal().getWidth(),
+                    CONTROL_EDGE_TOLERANCE,
+                    description + " expanded selected indicator should keep 16px side spaces"
+            );
+            assertEquals(56.0, indicator.getBoundsInLocal().getHeight(), CONTROL_EDGE_TOLERANCE,
+                    description + " expanded selected indicator height");
+
+            Node graphic = Objects.requireNonNull(selected.getGraphic(), "expanded selected graphic");
+            Node selectedLabel = requireVisibleStyledDescendant(
+                    selected,
+                    "m3-navigation-item-label",
+                    description + " selected label"
+            );
+            Bounds selectedBounds = selected.localToScene(selected.getLayoutBounds());
+            Bounds graphicBounds = graphic.localToScene(graphic.getLayoutBounds());
+            Bounds labelBounds = selectedLabel.localToScene(selectedLabel.getLayoutBounds());
+            if (selected.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT) {
+                assertEquals(44.0, selectedBounds.getMaxX() - graphicBounds.getCenterX(),
+                        DEMO_ICON_CENTER_TOLERANCE,
+                        description + " RTL selected graphic trailing position");
+                assertEquals(64.0, selectedBounds.getMaxX() - labelBounds.getMaxX(),
+                        DEMO_ICON_CENTER_TOLERANCE,
+                        description + " RTL selected label trailing position");
             } else {
-                assertEquals(item.getItemWidth(), itemBounds.getWidth(), CONTROL_EDGE_TOLERANCE,
-                        () -> description + " item width should match its resolved width token: item="
-                                + itemBounds + ", token=" + item.getItemWidth());
+                assertEquals(44.0, graphicBounds.getCenterX() - selectedBounds.getMinX(),
+                        DEMO_ICON_CENTER_TOLERANCE,
+                        description + " selected graphic leading position");
+                assertEquals(64.0, labelBounds.getMinX() - selectedBounds.getMinX(),
+                        DEMO_ICON_CENTER_TOLERANCE,
+                        description + " selected label leading position");
             }
-            assertEquals(railBounds.getCenterX(), itemBounds.getCenterX(), CONTROL_EDGE_TOLERANCE,
-                    () -> description + " item should be horizontally centered in the rail: rail="
-                            + railBounds + ", item=" + itemBounds);
         }
         assertVerticalNavigationItemOrder(rail.getItems(), items, description);
     }
@@ -12297,9 +12484,6 @@ final class M3FXDemoVisualSmokeTest {
         assertEquals(item.getContainerHeight(), itemBounds.getHeight(), CONTROL_EDGE_TOLERANCE,
                 () -> description + " height should match its resolved container token: bounds="
                         + itemBounds + ", token=" + item.getContainerHeight());
-        assertEquals(item.getItemWidth(), itemBounds.getWidth(), CONTROL_EDGE_TOLERANCE,
-                () -> description + " width should match its resolved width token: bounds="
-                        + itemBounds + ", token=" + item.getItemWidth());
 
         Node indicator = requireVisibleStyledDescendant(
                 item,
@@ -12434,15 +12618,15 @@ final class M3FXDemoVisualSmokeTest {
                 .toList();
         List<M3NavigationItem> physicalOrder = renderedItems.stream()
                 .sorted(java.util.Comparator.comparingDouble(item ->
-                        item.localToScene(item.getBoundsInLocal()).getMinY()))
+                        item.localToScene(item.getLayoutBounds()).getMinY()))
                 .toList();
         assertEquals(logicalNavigationItems, physicalOrder,
                 () -> description + " vertical physical order should follow the logical item list");
         for (int index = 1; index < physicalOrder.size(); index++) {
             Bounds previousBounds = physicalOrder.get(index - 1).localToScene(
-                    physicalOrder.get(index - 1).getBoundsInLocal());
-            Bounds currentBounds = physicalOrder.get(index).localToScene(physicalOrder.get(index).getBoundsInLocal());
-            assertTrue(currentBounds.getMinY() > previousBounds.getMaxY(),
+                    physicalOrder.get(index - 1).getLayoutBounds());
+            Bounds currentBounds = physicalOrder.get(index).localToScene(physicalOrder.get(index).getLayoutBounds());
+            assertTrue(currentBounds.getMinY() >= previousBounds.getMaxY() - CONTROL_EDGE_TOLERANCE,
                     () -> description + " vertical navigation items should not overlap: previous="
                             + previousBounds + ", current=" + currentBounds);
             assertEquals(previousBounds.getCenterX(), currentBounds.getCenterX(), CONTROL_EDGE_TOLERANCE,
@@ -13178,9 +13362,7 @@ final class M3FXDemoVisualSmokeTest {
         for (int index = 0; index < groups.size(); index++) {
             M3ButtonGroup group = groups.get(index);
             assertButtonGroupItemsInsideGroup(group, "Button Groups group " + index);
-            if (group.getItems().stream().allMatch(M3Button.class::isInstance)) {
-                assertButtonGroupTokenMetrics(group, pageTheme, "Button Groups group " + index);
-            }
+            assertButtonGroupTokenMetrics(group, pageTheme, "Button Groups group " + index);
         }
     }
     /// Verifies the real Icon Buttons demo page icon, toggle, and selection-state matrix.
@@ -13469,15 +13651,19 @@ final class M3FXDemoVisualSmokeTest {
         assertVisibleText(root, "Size Scale", "Split Buttons");
 
         List<M3SplitButton> splitButtons = visibleNodesOfType(page, M3SplitButton.class);
-        assertEquals(8, splitButtons.size(),
-                () -> "Split Buttons page should render roles, disabled state, and three sizes: " + splitButtons);
-        assertSplitButtonVariantCount(splitButtons, M3ButtonVariant.TONAL, 5, "Split Buttons");
+        assertEquals(10, splitButtons.size(),
+                () -> "Split Buttons page should render roles, disabled state, and five sizes: " + splitButtons);
+        assertSplitButtonVariantCount(splitButtons, M3ButtonVariant.TONAL, 7, "Split Buttons");
         assertSplitButtonVariantCount(splitButtons, M3ButtonVariant.OUTLINED, 1, "Split Buttons");
         assertSplitButtonVariantCount(splitButtons, M3ButtonVariant.FILLED, 1, "Split Buttons");
         assertSplitButtonVariantCount(splitButtons, M3ButtonVariant.ELEVATED, 1, "Split Buttons");
+        assertSplitButtonSizePresent(splitButtons, M3ButtonSize.EXTRA_SMALL, "Split Buttons");
         assertSplitButtonSizePresent(splitButtons, M3ButtonSize.SMALL, "Split Buttons");
         assertSplitButtonSizePresent(splitButtons, M3ButtonSize.MEDIUM, "Split Buttons");
         assertSplitButtonSizePresent(splitButtons, M3ButtonSize.LARGE, "Split Buttons");
+        assertSplitButtonSizePresent(splitButtons, M3ButtonSize.EXTRA_LARGE, "Split Buttons");
+        assertEquals(9, splitButtons.stream().filter(button -> button.getGraphic() != null).count(),
+                "split button roles and size scale should render leading icons");
         assertEquals(1, splitButtons.stream().filter(Node::isDisabled).count(),
                 "Split Buttons page should render one disabled split button");
         for (M3SplitButton splitButton : splitButtons) {
@@ -13497,6 +13683,9 @@ final class M3FXDemoVisualSmokeTest {
             );
             assertEquals(menuButton.getTextFill(), indicator.getFill(),
                     () -> "split menu icon should match the menu foreground for " + splitButton.getText());
+            assertEquals(0.0, indicator.getRotate(), 0.0001,
+                    () -> "closed split menu indicator should point down for " + splitButton.getText());
+
             assertSplitButtonPartsInsideOwner(splitButton);
         }
     }
@@ -14002,55 +14191,79 @@ final class M3FXDemoVisualSmokeTest {
                 ? groupTokens.standardSpacing()
                 : groupTokens.connectedSpacing();
         assertEquals(expectedSpacing, group.getSpacing(), 0.0001, description + " spacing");
+        assertEquals(
+                groupTokens.standardPressedWidthMultiplier(),
+                group.getStandardPressedWidthMultiplier(),
+                0.0001,
+                description + " standard pressed width multiplier"
+        );
 
         for (Node item : group.getItems()) {
-            M3Button button = assertInstanceOf(M3Button.class, item, description + " item");
-            assertEquals(
-                    buttonTokens.containerHeight(),
-                    button.getContainerHeight(),
-                    0.0001,
-                    description + " child height"
-            );
-            assertEquals(
-                    buttonTokens.horizontalPadding(),
-                    button.getHorizontalPadding(),
-                    0.0001,
-                    description + " child horizontal padding"
-            );
-            assertEquals(
-                    buttonTokens.iconSize(),
-                    button.getIconSize(),
-                    0.0001,
-                    description + " child icon size"
-            );
+            ButtonBase button = assertInstanceOf(ButtonBase.class, item, description + " item");
+            if (button instanceof M3Button actionButton) {
+                assertEquals(
+                        buttonTokens.containerHeight(),
+                        actionButton.getContainerHeight(),
+                        0.0001,
+                        description + " child height"
+                );
+                assertEquals(
+                        buttonTokens.horizontalPadding(),
+                        actionButton.getHorizontalPadding(),
+                        0.0001,
+                        description + " child horizontal padding"
+                );
+                assertEquals(
+                        buttonTokens.iconSize(),
+                        actionButton.getIconSize(),
+                        0.0001,
+                        description + " child icon size"
+                );
+            } else {
+                M3IconToggleButton toggleButton =
+                        assertInstanceOf(M3IconToggleButton.class, button, description + " toggle item");
+                assertEquals(
+                        groupTokens.containerHeight(),
+                        toggleButton.getContainerHeight(),
+                        0.0001,
+                        description + " toggle height"
+                );
+            }
         }
 
-        if (group.getVariant() != M3ButtonGroupVariant.CONNECTED || group.getItems().size() < 2) {
+        if (group.getVariant() != M3ButtonGroupVariant.CONNECTED || group.getItems().isEmpty()) {
             return;
         }
-        M3Button first = (M3Button) group.getItems().get(0);
-        M3Button last = (M3Button) group.getItems().get(group.getItems().size() - 1);
-        assertButtonCornerRadii(
-                first,
-                buttonTokens.roundContainerShape(),
-                groupTokens.connectedInnerCorner(),
-                groupTokens.connectedInnerCorner(),
-                buttonTokens.roundContainerShape(),
-                description + " first child"
-        );
-        assertButtonCornerRadii(
-                last,
-                groupTokens.connectedInnerCorner(),
-                buttonTokens.roundContainerShape(),
-                buttonTokens.roundContainerShape(),
-                groupTokens.connectedInnerCorner(),
-                description + " last child"
-        );
+
+        double outerCorner = groupTokens.containerHeight() / 2.0;
+        int itemCount = group.getItems().size();
+        for (int index = 0; index < itemCount; index++) {
+            ButtonBase button = assertInstanceOf(
+                    ButtonBase.class,
+                    group.getItems().get(index),
+                    description + " child " + index
+            );
+            double innerCorner = button instanceof M3IconToggleButton toggleButton && toggleButton.isSelected()
+                    ? groupTokens.connectedSelectedInnerCorner()
+                    : groupTokens.connectedInnerCorner();
+            double topLeft = index == 0 ? outerCorner : innerCorner;
+            double topRight = index == itemCount - 1 ? outerCorner : innerCorner;
+            double bottomRight = topRight;
+            double bottomLeft = topLeft;
+            assertButtonCornerRadii(
+                    button,
+                    topLeft,
+                    topRight,
+                    bottomRight,
+                    bottomLeft,
+                    description + " child " + index
+            );
+        }
     }
 
     /// Verifies the four CSS-resolved background radii of one grouped button.
     private static void assertButtonCornerRadii(
-            M3Button button,
+            ButtonBase button,
             double topLeft,
             double topRight,
             double bottomRight,
@@ -14061,9 +14274,15 @@ final class M3FXDemoVisualSmokeTest {
         assertFalse(button.getBackground().getFills().isEmpty(), description + " background fills");
         javafx.scene.layout.CornerRadii radii = button.getBackground().getFills().get(0).getRadii();
         assertEquals(topLeft, radii.getTopLeftHorizontalRadius(), 0.0001, description + " top-left radius");
+        assertEquals(topLeft, radii.getTopLeftVerticalRadius(), 0.0001, description + " top-left vertical radius");
         assertEquals(topRight, radii.getTopRightHorizontalRadius(), 0.0001, description + " top-right radius");
+        assertEquals(topRight, radii.getTopRightVerticalRadius(), 0.0001, description + " top-right vertical radius");
         assertEquals(bottomRight, radii.getBottomRightHorizontalRadius(), 0.0001, description + " bottom-right radius");
+        assertEquals(bottomRight, radii.getBottomRightVerticalRadius(), 0.0001,
+                description + " bottom-right vertical radius");
         assertEquals(bottomLeft, radii.getBottomLeftHorizontalRadius(), 0.0001, description + " bottom-left radius");
+        assertEquals(bottomLeft, radii.getBottomLeftVerticalRadius(), 0.0001,
+                description + " bottom-left vertical radius");
     }
 
     /// Verifies that the primary and menu halves of a split button remain inside the owner control.
@@ -16180,6 +16399,17 @@ final class M3FXDemoVisualSmokeTest {
             return 1.0;
         }
         return position;
+    }
+
+    /// Returns the carousel configured with one required layout.
+    private static M3Carousel carouselWithLayout(
+            List<M3Carousel> carousels,
+            M3CarouselLayout layout
+    ) {
+        return carousels.stream()
+                .filter(carousel -> carousel.getCarouselLayout() == layout)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("missing " + layout + " carousel"));
     }
 
     /// Verifies that a carousel demo instance has a viewport, track, and visible selected item.

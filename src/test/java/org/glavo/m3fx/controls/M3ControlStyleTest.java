@@ -184,6 +184,7 @@ import static org.glavo.m3fx.M3TestControls.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -249,8 +250,8 @@ final class M3ControlStyleTest {
     /// The duration used to keep real-pulse animation states observable in tests.
     private static final Duration OBSERVABLE_TEST_MOTION_DURATION = Duration.millis(600.0);
 
-    /// The largest accepted visible circular progress angle step between consecutive rendered pulses.
-    private static final double MAXIMUM_PROGRESS_INDICATOR_CYCLE_STEP_DEGREES = 150.0;
+    /// The largest accepted visible circular progress angle delta across the cycle seam.
+    private static final double MAXIMUM_PROGRESS_INDICATOR_CYCLE_SEAM_DELTA_DEGREES = 150.0;
 
     /// The square snapshot size used by loading indicator morph geometry tests.
     private static final double LOADING_INDICATOR_TEST_FRAME_SIZE = 140.0;
@@ -1136,7 +1137,7 @@ final class M3ControlStyleTest {
             root.applyCss();
             root.layout();
 
-            assertEquals(Pos.CENTER_LEFT, firstDescendantOfType(buttonGroup, HBox.class).getAlignment());
+            assertTrue(buttonGroup.getItems().get(0).getLayoutX() < buttonGroup.getItems().get(1).getLayoutX());
             assertEquals(Pos.CENTER_LEFT, firstDescendantOfType(iconGroup, HBox.class).getAlignment());
             assertEquals(Pos.CENTER_LEFT, firstDescendantOfType(segmentedGroup, HBox.class).getAlignment());
             assertEquals(Pos.CENTER_LEFT, firstDescendantOfType(chipGroup, FlowPane.class).getAlignment());
@@ -1150,7 +1151,7 @@ final class M3ControlStyleTest {
             root.applyCss();
             root.layout();
 
-            assertEquals(Pos.CENTER_RIGHT, firstDescendantOfType(buttonGroup, HBox.class).getAlignment());
+            assertTrue(buttonGroup.getItems().get(0).getLayoutX() > buttonGroup.getItems().get(1).getLayoutX());
             assertEquals(Pos.CENTER_RIGHT, firstDescendantOfType(iconGroup, HBox.class).getAlignment());
             assertEquals(Pos.CENTER_RIGHT, firstDescendantOfType(segmentedGroup, HBox.class).getAlignment());
             assertEquals(Pos.CENTER_RIGHT, firstDescendantOfType(chipGroup, FlowPane.class).getAlignment());
@@ -1164,7 +1165,7 @@ final class M3ControlStyleTest {
             root.applyCss();
             root.layout();
 
-            assertEquals(Pos.CENTER_LEFT, firstDescendantOfType(buttonGroup, HBox.class).getAlignment());
+            assertTrue(buttonGroup.getItems().get(0).getLayoutX() < buttonGroup.getItems().get(1).getLayoutX());
             assertEquals(Pos.CENTER_LEFT, firstDescendantOfType(iconGroup, HBox.class).getAlignment());
             assertEquals(Pos.CENTER_LEFT, firstDescendantOfType(segmentedGroup, HBox.class).getAlignment());
             assertEquals(Pos.CENTER_LEFT, firstDescendantOfType(chipGroup, FlowPane.class).getAlignment());
@@ -2919,6 +2920,23 @@ final class M3ControlStyleTest {
         assertEquals(-2.0, group.getSpacing(), 0.0001);
     }
 
+    /// Verifies that the standard-group activated width multiplier is styleable and rejects invalid values.
+    @Test
+    void buttonGroupStandardPressedWidthMultiplierIsStyleableAndValidated() {
+        M3ButtonGroup group = buttonGroup(new M3Button("A"), new M3Button("B"));
+        group.setStyle("-m3-button-group-standard-pressed-width-multiplier: 0.25;");
+
+        applyCss(group);
+
+        assertEquals(0.25, group.getStandardPressedWidthMultiplier(), 0.0001);
+        assertThrows(IllegalArgumentException.class, () -> group.setStandardPressedWidthMultiplier(-0.01));
+        assertThrows(IllegalArgumentException.class, () -> group.setStandardPressedWidthMultiplier(Double.NaN));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> group.setStandardPressedWidthMultiplier(Double.POSITIVE_INFINITY)
+        );
+    }
+
     /// Verifies that button group variant and size properties maintain matching style classes.
     @Test
     void buttonGroupVariantAndSizePropertiesMaintainStyleClasses() {
@@ -2974,13 +2992,267 @@ final class M3ControlStyleTest {
         group.setSize(M3ButtonSize.LARGE);
         applyCss(group);
 
-        assertEquals(-1.0, group.getSpacing(), 0.0001);
+        assertEquals(2.0, group.getSpacing(), 0.0001);
         assertEquals(96.0, first.getContainerHeight(), 0.0001);
         assertEquals(48.0, first.getHorizontalPadding(), 0.0001);
-        assertRegionRadii(first, 999.0, 0.0, 0.0, 999.0);
-        assertRegionRadii(second, 0.0, 999.0, 999.0, 0.0);
+        assertRegionRadii(first, 48.0, 16.0, 16.0, 48.0);
+        assertRegionRadii(second, 16.0, 48.0, 48.0, 16.0);
     }
 
+    /// Verifies that a standard group redistributes armed-item width without changing its total footprint.
+    @Test
+    void standardButtonGroupRedistributesArmedItemWidth() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Button first = new M3Button("Action");
+            M3Button middle = new M3Button("Action");
+            M3Button last = new M3Button("Action");
+            M3ButtonGroup group = buttonGroup(first, middle, last);
+            group.setVariant(M3ButtonGroupVariant.STANDARD);
+            Pane root = new Pane(group);
+            Scene scene = new Scene(root, 420.0, 100.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            M3MotionSettings.setAnimationsEnabled(root, false);
+            root.applyCss();
+            resizeButtonGroupToPreferredSize(group);
+
+            double restingFirstWidth = first.getWidth();
+            double restingMiddleWidth = middle.getWidth();
+            double restingLastWidth = last.getWidth();
+            double restingChildrenWidth = restingFirstWidth + restingMiddleWidth + restingLastWidth;
+            double expectedGrowth = restingMiddleWidth * group.getStandardPressedWidthMultiplier();
+
+            middle.arm();
+            group.layout();
+
+            assertEquals(restingChildrenWidth, first.getWidth() + middle.getWidth() + last.getWidth(), 0.0001);
+            assertEquals(restingMiddleWidth + expectedGrowth, middle.getWidth(), 0.0001);
+            assertEquals(restingFirstWidth - expectedGrowth / 2.0, first.getWidth(), 0.0001);
+            assertEquals(restingLastWidth - expectedGrowth / 2.0, last.getWidth(), 0.0001);
+
+            middle.disarm();
+            group.layout();
+
+            assertEquals(restingFirstWidth, first.getWidth(), 0.0001);
+            assertEquals(restingMiddleWidth, middle.getWidth(), 0.0001);
+            assertEquals(restingLastWidth, last.getWidth(), 0.0001);
+
+            middle.setDisable(true);
+            middle.arm();
+            group.layout();
+            assertEquals(restingFirstWidth, first.getWidth(), 0.0001);
+            assertEquals(restingMiddleWidth, middle.getWidth(), 0.0001);
+            assertEquals(restingLastWidth, last.getWidth(), 0.0001);
+            middle.setDisable(false);
+
+            first.arm();
+            group.layout();
+
+            double edgeGrowth = restingFirstWidth * group.getStandardPressedWidthMultiplier();
+            assertEquals(restingChildrenWidth, first.getWidth() + middle.getWidth() + last.getWidth(), 0.0001);
+            assertEquals(restingFirstWidth + edgeGrowth, first.getWidth(), 0.0001);
+            assertEquals(restingMiddleWidth - edgeGrowth, middle.getWidth(), 0.0001);
+            assertEquals(restingLastWidth, last.getWidth(), 0.0001);
+            first.disarm();
+        });
+    }
+
+    /// Verifies that standard-group expansion and release expose real intermediate animation frames.
+    @Test
+    void standardButtonGroupAnimatesArmedWidthAndRelease() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3ButtonGroup> groupReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Button> middleReference = new AtomicReference<>();
+        AtomicReference<Double> restingWidthReference = new AtomicReference<>(0.0);
+        AtomicReference<Double> targetWidthReference = new AtomicReference<>(0.0);
+        AtomicReference<Double> restingChildrenWidthReference = new AtomicReference<>(0.0);
+        AtomicBoolean expansionIntermediateObserved = new AtomicBoolean();
+        AtomicBoolean releaseIntermediateObserved = new AtomicBoolean();
+
+        try {
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> {
+                        M3ButtonGroup group = groupReference.get();
+                        M3Button middle = middleReference.get();
+                        if (group == null || middle == null) {
+                            return false;
+                        }
+                        group.layout();
+                        double width = middle.getWidth();
+                        double restingWidth = restingWidthReference.get();
+                        double targetWidth = targetWidthReference.get();
+                        if (width > restingWidth + 0.5 && width < targetWidth - 0.5) {
+                            expansionIntermediateObserved.set(true);
+                        }
+                        return width >= targetWidth - 0.25;
+                    },
+                    () -> "Standard button group did not finish its armed-item expansion",
+                    () -> {
+                        M3Button first = new M3Button("Action");
+                        M3Button middle = new M3Button("Action");
+                        M3Button last = new M3Button("Action");
+                        M3ButtonGroup group = buttonGroup(first, middle, last);
+                        group.setVariant(M3ButtonGroupVariant.STANDARD);
+                        Pane root = new Pane(group);
+                        Scene scene = new Scene(root, 420.0, 100.0);
+                        Stage stage = new Stage();
+
+                        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                        M3MotionSettings.setAnimationsEnabled(root, true);
+                        M3MotionSettings.setMotionScheme(root, observableTestMotionScheme());
+                        stage.setScene(scene);
+                        stage.show();
+                        root.applyCss();
+                        resizeButtonGroupToPreferredSize(group);
+
+                        double restingWidth = middle.getWidth();
+                        stageReference.set(stage);
+                        groupReference.set(group);
+                        middleReference.set(middle);
+                        restingWidthReference.set(restingWidth);
+                        targetWidthReference.set(
+                                restingWidth * (1.0 + group.getStandardPressedWidthMultiplier())
+                        );
+                        restingChildrenWidthReference.set(first.getWidth() + middle.getWidth() + last.getWidth());
+                        middle.arm();
+                    },
+                    () -> {
+                        M3ButtonGroup group = Objects.requireNonNull(groupReference.get(), "group");
+                        M3Button middle = Objects.requireNonNull(middleReference.get(), "middle");
+                        double restingChildrenWidth = restingChildrenWidthReference.get();
+
+                        assertTrue(expansionIntermediateObserved.get());
+                        assertEquals(targetWidthReference.get(), middle.getWidth(), 0.25);
+                        assertEquals(
+                                restingChildrenWidth,
+                                group.getItems().stream().mapToDouble(node -> node.getLayoutBounds().getWidth()).sum(),
+                                0.25
+                        );
+                        middle.disarm();
+                    }
+            );
+
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> {
+                        M3ButtonGroup group = groupReference.get();
+                        M3Button middle = middleReference.get();
+                        if (group == null || middle == null) {
+                            return false;
+                        }
+                        group.layout();
+                        double width = middle.getWidth();
+                        double restingWidth = restingWidthReference.get();
+                        double targetWidth = targetWidthReference.get();
+                        if (width > restingWidth + 0.5 && width < targetWidth - 0.5) {
+                            releaseIntermediateObserved.set(true);
+                        }
+                        return width <= restingWidth + 0.25;
+                    },
+                    () -> "Standard button group did not finish its release transition",
+                    () -> {
+                    },
+                    () -> {
+                        M3Button middle = Objects.requireNonNull(middleReference.get(), "middle");
+                        assertTrue(releaseIntermediateObserved.get());
+                        assertEquals(restingWidthReference.get(), middle.getWidth(), 0.25);
+                    }
+            );
+        } finally {
+            FxTestUtils.runOnFxThread(() -> {
+                Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
+    }
+
+    /// Verifies that connected groups keep fixed widths and standard groups preserve logical order in RTL.
+    @Test
+    void buttonGroupWidthInteractionHonorsVariantAndRightToLeftLayout() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Button first = new M3Button("Action");
+            M3Button middle = new M3Button("Action");
+            M3Button last = new M3Button("Action");
+            M3ButtonGroup group = buttonGroup(first, middle, last);
+            group.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            Pane root = new Pane(group);
+            Scene scene = new Scene(root, 420.0, 100.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            M3MotionSettings.setAnimationsEnabled(root, false);
+            root.applyCss();
+            resizeButtonGroupToPreferredSize(group);
+
+            double connectedFirstWidth = first.getWidth();
+            double connectedMiddleWidth = middle.getWidth();
+            double connectedLastWidth = last.getWidth();
+            assertTrue(first.getLayoutX() > middle.getLayoutX());
+            assertTrue(middle.getLayoutX() > last.getLayoutX());
+
+            middle.arm();
+            group.layout();
+
+            assertEquals(connectedFirstWidth, first.getWidth(), 0.0001);
+            assertEquals(connectedMiddleWidth, middle.getWidth(), 0.0001);
+            assertEquals(connectedLastWidth, last.getWidth(), 0.0001);
+            middle.disarm();
+
+            group.setVariant(M3ButtonGroupVariant.STANDARD);
+            root.applyCss();
+            resizeButtonGroupToPreferredSize(group);
+            double restingChildrenWidth = first.getWidth() + middle.getWidth() + last.getWidth();
+            double restingMiddleWidth = middle.getWidth();
+
+            middle.arm();
+            group.layout();
+
+            assertTrue(middle.getWidth() > restingMiddleWidth);
+            assertEquals(restingChildrenWidth, first.getWidth() + middle.getWidth() + last.getWidth(), 0.0001);
+            assertTrue(first.getLayoutX() > middle.getLayoutX());
+            assertTrue(middle.getLayoutX() > last.getLayoutX());
+            middle.disarm();
+        });
+    }
+
+    /// Verifies that item changes clear stale button-group interaction state and attach new children.
+    @Test
+    void buttonGroupWidthInteractionTracksItemChanges() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Button first = new M3Button("Action");
+            M3Button middle = new M3Button("Action");
+            M3Button last = new M3Button("Action");
+            M3ButtonGroup group = buttonGroup(first, middle, last);
+            group.setVariant(M3ButtonGroupVariant.STANDARD);
+            Pane root = new Pane(group);
+            Scene scene = new Scene(root, 420.0, 100.0);
+
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            M3MotionSettings.setAnimationsEnabled(root, false);
+            root.applyCss();
+            resizeButtonGroupToPreferredSize(group);
+
+            middle.arm();
+            group.layout();
+            assertTrue(middle.getWidth() > first.getWidth());
+
+            group.getItems().remove(middle);
+            root.applyCss();
+            resizeButtonGroupToPreferredSize(group);
+            assertEquals(first.getWidth(), last.getWidth(), 0.0001);
+
+            middle.disarm();
+            group.getItems().add(1, middle);
+            root.applyCss();
+            resizeButtonGroupToPreferredSize(group);
+            double restingMiddleWidth = middle.getWidth();
+
+            middle.arm();
+            group.layout();
+            assertTrue(middle.getWidth() > restingMiddleWidth);
+            middle.disarm();
+        });
+    }
     /// Verifies Expressive connected button-group geometry for every shared button size.
     @Test
     void expressiveButtonGroupSizeTokensResolveConnectedShapesAndFeedback() {
@@ -2990,6 +3262,7 @@ final class M3ControlStyleTest {
                 Brightness.LIGHT
         );
         VBox root = new VBox(8.0);
+        root.setStyle("-fx-background-color: white;");
         List<M3ButtonGroup> groups = new ArrayList<>();
         for (M3ButtonSize size : M3ButtonSize.values()) {
             M3ButtonGroup group = buttonGroup(new M3Button(size.name()), new M3Button("Action"));
@@ -3039,21 +3312,21 @@ final class M3ControlStyleTest {
             assertEquals(expectedGroup.connectedSpacing(), group.getSpacing(), 0.0001);
             assertEquals(expectedButton.containerHeight(), first.getContainerHeight(), 0.0001);
             assertEquals(expectedButton.horizontalPadding(), first.getHorizontalPadding(), 0.0001);
+            double outerFeedbackRadius = expectedGroup.containerHeight() / 2.0;
             assertRegionRadii(
                     first,
-                    expectedButton.roundContainerShape(),
+                    outerFeedbackRadius,
                     expectedGroup.connectedInnerCorner(),
                     expectedGroup.connectedInnerCorner(),
-                    expectedButton.roundContainerShape()
+                    outerFeedbackRadius
             );
             assertRegionRadii(
                     last,
                     expectedGroup.connectedInnerCorner(),
-                    expectedButton.roundContainerShape(),
-                    expectedButton.roundContainerShape(),
+                    outerFeedbackRadius,
+                    outerFeedbackRadius,
                     expectedGroup.connectedInnerCorner()
             );
-            double outerFeedbackRadius = expectedButton.containerHeight() / 2.0;
             assertStateLayerRadii(
                     first,
                     outerFeedbackRadius,
@@ -3073,10 +3346,10 @@ final class M3ControlStyleTest {
 
         assertRegionRadii(
                 pressed,
-                999.0,
+                pressed.getContainerHeight() / 2.0,
                 mediumTokens.connectedPressedInnerCorner(),
                 mediumTokens.connectedPressedInnerCorner(),
-                999.0
+                pressed.getContainerHeight() / 2.0
         );
         assertStateLayerRadii(
                 pressed,
@@ -3086,6 +3359,180 @@ final class M3ControlStyleTest {
                 pressed.getContainerHeight() / 2.0
         );
         pressed.disarm();
+    }
+
+    /// Verifies rendered connected-group surfaces and state layers for action and toggle-icon children.
+    @Test
+    void connectedButtonGroupsRenderStateSpecificInnerCorners() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Button actionFirst = new M3Button("Archive", M3ButtonVariant.TONAL);
+            M3Button actionLast = new M3Button("Share", M3ButtonVariant.TONAL);
+            M3ButtonGroup actionGroup = buttonGroup(actionFirst, actionLast);
+            actionGroup.setSize(M3ButtonSize.MEDIUM);
+
+            M3IconToggleButton toggleFirst = new M3IconToggleButton("A");
+            M3IconToggleButton toggleLast = new M3IconToggleButton("B");
+            toggleFirst.setVariant(M3IconToggleButtonVariant.TONAL);
+            toggleLast.setVariant(M3IconToggleButtonVariant.TONAL);
+            toggleFirst.setSelected(true);
+            M3ButtonGroup toggleGroup = new M3ButtonGroup();
+            toggleGroup.getItems().addAll(toggleFirst, toggleLast);
+            toggleGroup.setSize(M3ButtonSize.MEDIUM);
+
+            VBox root = new VBox(12.0, actionGroup, toggleGroup);
+            root.setStyle("-fx-background-color: white; -fx-padding: 16px;");
+            Scene scene = new Scene(root, 360.0, 180.0);
+            M3Theme theme = M3Theme.fromSeed(
+                    Color.web("#6750a4"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.LIGHT
+            );
+            M3ThemeManager.install(scene, theme);
+            root.applyCss();
+            root.resize(360.0, 180.0);
+            root.layout();
+            actionGroup.layout();
+            toggleGroup.layout();
+            actionFirst.layout();
+            actionLast.layout();
+            toggleFirst.layout();
+            toggleLast.layout();
+            root.applyCss();
+
+            M3ComponentTokens.ButtonGroupSizeTokens tokens =
+                    theme.tokens().componentTokens().buttonGroup().medium();
+            double outerCorner = tokens.containerHeight() / 2.0;
+            double restingInnerCorner = tokens.connectedInnerCorner();
+            double selectedInnerCorner = tokens.connectedSelectedInnerCorner();
+            assertRegionRadii(
+                    actionFirst,
+                    outerCorner,
+                    restingInnerCorner,
+                    restingInnerCorner,
+                    outerCorner
+            );
+            assertRegionRadii(
+                    actionLast,
+                    restingInnerCorner,
+                    outerCorner,
+                    outerCorner,
+                    restingInnerCorner
+            );
+            assertStateLayerRadii(
+                    actionFirst,
+                    outerCorner,
+                    restingInnerCorner,
+                    restingInnerCorner,
+                    outerCorner
+            );
+            assertStateLayerRadii(
+                    actionLast,
+                    restingInnerCorner,
+                    outerCorner,
+                    outerCorner,
+                    restingInnerCorner
+            );
+            assertRegionRadii(
+                    toggleFirst,
+                    outerCorner,
+                    selectedInnerCorner,
+                    selectedInnerCorner,
+                    outerCorner
+            );
+            assertRegionRadii(
+                    toggleLast,
+                    restingInnerCorner,
+                    outerCorner,
+                    outerCorner,
+                    restingInnerCorner
+            );
+            assertStateLayerRadii(
+                    toggleFirst,
+                    outerCorner,
+                    selectedInnerCorner,
+                    selectedInnerCorner,
+                    outerCorner
+            );
+            assertStateLayerRadii(
+                    toggleLast,
+                    restingInnerCorner,
+                    outerCorner,
+                    outerCorner,
+                    restingInnerCorner
+            );
+
+            WritableImage resting = snapshotImageOnFxThread(root);
+            assertRenderedTopRightCorner(actionFirst, resting, true, Color.WHITE);
+            assertRenderedTopLeftCorner(actionLast, resting, true, Color.WHITE);
+            assertRenderedTopRightCorner(toggleFirst, resting, true, Color.WHITE);
+            assertRenderedTopLeftCorner(toggleLast, resting, true, Color.WHITE);
+
+            PseudoClass pressed = PseudoClass.getPseudoClass("pressed");
+            toggleLast.pseudoClassStateChanged(pressed, true);
+            root.applyCss();
+            root.layout();
+            toggleLast.layout();
+
+            double pressedInnerCorner = tokens.connectedPressedInnerCorner();
+            assertRegionRadii(
+                    toggleLast,
+                    pressedInnerCorner,
+                    outerCorner,
+                    outerCorner,
+                    pressedInnerCorner
+            );
+            assertStateLayerRadii(
+                    toggleLast,
+                    pressedInnerCorner,
+                    outerCorner,
+                    outerCorner,
+                    pressedInnerCorner
+            );
+            assertRenderedTopLeftCorner(
+                    toggleLast,
+                    snapshotImageOnFxThread(root),
+                    false,
+                    Color.WHITE
+            );
+            toggleLast.pseudoClassStateChanged(pressed, false);
+
+            M3IconToggleButton standaloneFirst = new M3IconToggleButton("A");
+            M3IconToggleButton standaloneLast = new M3IconToggleButton("B");
+            standaloneFirst.setVariant(M3IconToggleButtonVariant.TONAL);
+            standaloneLast.setVariant(M3IconToggleButtonVariant.TONAL);
+            standaloneFirst.setSelected(true);
+            M3ButtonGroup standaloneGroup = new M3ButtonGroup();
+            standaloneGroup.getItems().addAll(standaloneFirst, standaloneLast);
+            standaloneGroup.setSize(M3ButtonSize.MEDIUM);
+            Pane standaloneRoot = new Pane(standaloneGroup);
+            standaloneRoot.setStyle("-fx-background-color: white;");
+            new Scene(standaloneRoot, 240.0, 80.0);
+            standaloneRoot.applyCss();
+            standaloneGroup.resize(
+                    standaloneGroup.prefWidth(-1.0),
+                    standaloneGroup.prefHeight(-1.0)
+            );
+            standaloneGroup.layout();
+            standaloneFirst.layout();
+            standaloneLast.layout();
+            standaloneRoot.applyCss();
+            standaloneFirst.requestLayout();
+            standaloneLast.requestLayout();
+            standaloneRoot.layout();
+            standaloneGroup.layout();
+            standaloneFirst.layout();
+            standaloneLast.layout();
+
+            assertTrue(standaloneFirst.getPseudoClassStates().stream()
+                    .anyMatch(state -> state.getPseudoClassName().equals("connected-group")));
+            assertRegionRadii(standaloneFirst, 28.0, 28.0, 28.0, 28.0);
+            assertRegionRadii(standaloneLast, 8.0, 28.0, 28.0, 8.0);
+            WritableImage standalone = snapshotImageOnFxThread(standaloneRoot);
+            assertStateLayerRadii(standaloneFirst, 28.0, 28.0, 28.0, 28.0);
+            assertStateLayerRadii(standaloneLast, 8.0, 28.0, 28.0, 8.0);
+            assertRenderedTopRightCorner(standaloneFirst, standalone, true, Color.WHITE);
+            assertRenderedTopLeftCorner(standaloneLast, standalone, false, Color.WHITE);
+        });
     }
 
     /// Verifies that toolbar component token properties are styleable from CSS.
@@ -3676,12 +4123,12 @@ final class M3ControlStyleTest {
             third.layout();
             root.applyCss();
 
-            assertRegionRoundedCorners(first, true, false, false, true);
-            assertRegionRoundedCorners(second, false, false, false, false);
-            assertRegionRoundedCorners(third, false, true, true, false);
-            assertStateLayerRadii(first, 20.0, 0.0, 0.0, 20.0);
-            assertStateLayerRadii(second, 0.0, 0.0, 0.0, 0.0);
-            assertStateLayerRadii(third, 0.0, 20.0, 20.0, 0.0);
+            assertRegionRadii(first, 20.0, 8.0, 8.0, 20.0);
+            assertRegionRadii(second, 8.0, 8.0, 8.0, 8.0);
+            assertRegionRadii(third, 8.0, 20.0, 20.0, 8.0);
+            assertStateLayerRadii(first, 20.0, 8.0, 8.0, 20.0);
+            assertStateLayerRadii(second, 8.0, 8.0, 8.0, 8.0);
+            assertStateLayerRadii(third, 8.0, 20.0, 20.0, 8.0);
         });
     }
 
@@ -3755,9 +4202,16 @@ final class M3ControlStyleTest {
                 root.applyCss();
                 root.layout();
 
+                SVGPath menuIndicator = assertInstanceOf(
+                        SVGPath.class,
+                        splitButton.lookup(".m3-disclosure-icon-shape")
+                );
+                assertEquals(0.0, menuIndicator.getRotate(), 0.0001);
+
                 splitButton.executeAccessibleAction(AccessibleAction.SHOW_ITEM, publish);
 
                 assertTrue(splitButton.isShowing());
+                assertEquals(180.0, menuIndicator.getRotate(), 0.0001);
                 assertTrue(publish.isFocused());
                 assertSame(publish, splitButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
@@ -3769,6 +4223,7 @@ final class M3ControlStyleTest {
                 splitButton.executeAccessibleAction(AccessibleAction.COLLAPSE);
 
                 assertFalse(splitButton.isShowing());
+                assertEquals(0.0, menuIndicator.getRotate(), 0.0001);
                 assertTrue(splitButtonMenuButton(splitButton).isFocused());
                 assertSame(
                         splitButtonMenuButton(splitButton),
@@ -3827,7 +4282,11 @@ final class M3ControlStyleTest {
         applyCss(splitButton);
 
         assertInstanceOf(M3SplitButtonSkin.class, splitButton.getSkin());
-        assertInstanceOf(M3DisclosureIcon.class, splitButtonMenuButton(splitButton).getGraphic());
+        M3DisclosureIcon menuIndicator = assertInstanceOf(
+                M3DisclosureIcon.class,
+                splitButtonMenuButton(splitButton).getGraphic()
+        );
+        assertTrue(menuIndicator.isVertical());
         assertEquals(48.0, splitButtonMenuButton(splitButton).getPrefWidth(), 0.0001);
         assertEquals(0.0, splitButtonMenuButton(splitButton).getHorizontalPadding(), 0.0001);
     }
@@ -3877,10 +4336,15 @@ final class M3ControlStyleTest {
             root.applyCss();
 
             assertSplitButtonMetrics(extraSmall, M3ButtonSize.EXTRA_SMALL, 32.0, 12.0, 10.0, 48.0, 22.0, 2.0);
+            assertSplitButtonShapeMetrics(extraSmall, 16.0, 4.0, 8.0, 8.0, 16.0);
             assertSplitButtonMetrics(small, M3ButtonSize.SMALL, 40.0, 16.0, 12.0, 48.0, 22.0, 2.0);
+            assertSplitButtonShapeMetrics(small, 20.0, 4.0, 12.0, 12.0, 20.0);
             assertSplitButtonMetrics(medium, M3ButtonSize.MEDIUM, 56.0, 24.0, 24.0, 56.0, 26.0, 2.0);
+            assertSplitButtonShapeMetrics(medium, 28.0, 4.0, 12.0, 12.0, 28.0);
             assertSplitButtonMetrics(large, M3ButtonSize.LARGE, 96.0, 48.0, 48.0, 96.0, 38.0, 2.0);
+            assertSplitButtonShapeMetrics(large, 48.0, 8.0, 20.0, 20.0, 48.0);
             assertSplitButtonMetrics(extraLarge, M3ButtonSize.EXTRA_LARGE, 136.0, 64.0, 64.0, 136.0, 50.0, 2.0);
+            assertSplitButtonShapeMetrics(extraLarge, 68.0, 12.0, 20.0, 20.0, 68.0);
         });
     }
 
@@ -3912,6 +4376,17 @@ final class M3ControlStyleTest {
             assertStateLayerRadii(menuButton, 4.0, 20.0, 20.0, 4.0);
             assertRenderedTopLeftCorner(menuButton, snapshotImageOnFxThread(root), false, Color.WHITE);
 
+            PseudoClass focused = PseudoClass.getPseudoClass("focused");
+            PseudoClass focusVisible = PseudoClass.getPseudoClass("focus-visible");
+            menuButton.pseudoClassStateChanged(focused, true);
+            menuButton.pseudoClassStateChanged(focusVisible, true);
+            root.applyCss();
+            menuButton.layout();
+            assertRegionRadii(menuButton, 4.0, 20.0, 20.0, 4.0);
+            assertStateLayerRadii(menuButton, 4.0, 20.0, 20.0, 4.0);
+            menuButton.pseudoClassStateChanged(focused, false);
+            menuButton.pseudoClassStateChanged(focusVisible, false);
+
             PseudoClass hover = PseudoClass.getPseudoClass("hover");
             menuButton.pseudoClassStateChanged(hover, true);
             root.applyCss();
@@ -3933,6 +4408,112 @@ final class M3ControlStyleTest {
             menuButton.layout();
             assertRegionRadii(menuButton, 20.0, 20.0, 20.0, 20.0);
             assertStateLayerRadii(menuButton, 20.0, 20.0, 20.0, 20.0);
+        });
+    }
+    /// Verifies that owner-level shape tokens drive both split-button surfaces and feedback clips.
+    @Test
+    void splitButtonOwnerTokensControlEveryPartShapeLayer() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3SplitButton splitButton = createSplitButton(
+                    "Export",
+                    M3ButtonVariant.TONAL,
+                    new M3MenuItem("PDF")
+            );
+            splitButton.setStyle(
+                    "-m3-split-button-outer-corner: 18px;"
+                            + " -m3-split-button-inner-corner: 6px;"
+                            + " -m3-split-button-hovered-inner-corner: 10px;"
+                            + " -m3-split-button-pressed-inner-corner: 14px;"
+                            + " -m3-split-button-selected-inner-corner: 18px;"
+            );
+            Pane root = new Pane(splitButton);
+            Scene scene = new Scene(root, 260.0, 100.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            splitButton.resize(splitButton.prefWidth(-1.0), splitButton.prefHeight(-1.0));
+            splitButton.layout();
+
+            M3Button actionButton = splitButtonActionButton(splitButton);
+            M3MenuButton menuButton = splitButtonMenuButton(splitButton);
+            actionButton.layout();
+            menuButton.layout();
+            root.applyCss();
+            actionButton.layout();
+            menuButton.layout();
+            assertSplitButtonShapeMetrics(splitButton, 18.0, 6.0, 10.0, 14.0, 18.0);
+            assertRegionRadii(actionButton, 18.0, 6.0, 6.0, 18.0);
+            assertRegionRadii(menuButton, 6.0, 18.0, 18.0, 6.0);
+            assertStateLayerRadii(actionButton, 18.0, 6.0, 6.0, 18.0);
+            assertStateLayerRadii(menuButton, 6.0, 18.0, 18.0, 6.0);
+
+            PseudoClass hover = PseudoClass.getPseudoClass("hover");
+            actionButton.pseudoClassStateChanged(hover, true);
+            root.applyCss();
+            actionButton.layout();
+            assertRegionRadii(actionButton, 18.0, 10.0, 10.0, 18.0);
+            assertStateLayerRadii(actionButton, 18.0, 10.0, 10.0, 18.0);
+
+            actionButton.pseudoClassStateChanged(hover, false);
+            actionButton.arm();
+            root.applyCss();
+            actionButton.layout();
+            assertRegionRadii(actionButton, 18.0, 14.0, 14.0, 18.0);
+            assertStateLayerRadii(actionButton, 18.0, 14.0, 14.0, 18.0);
+            actionButton.disarm();
+
+            menuButton.pseudoClassStateChanged(PseudoClass.getPseudoClass("showing"), true);
+            root.applyCss();
+            menuButton.layout();
+            assertRegionRadii(menuButton, 18.0, 18.0, 18.0, 18.0);
+            assertStateLayerRadii(menuButton, 18.0, 18.0, 18.0, 18.0);
+        });
+    }
+
+    /// Verifies equal part heights, exact between-space, and uncovered gap pixels for every color role.
+    @Test
+    void splitButtonLayoutPreservesTwoIndependentSurfaces() {
+        FxTestUtils.runOnFxThread(() -> {
+            List<M3SplitButton> splitButtons = new ArrayList<>();
+            for (M3ButtonVariant variant : List.of(
+                    M3ButtonVariant.TONAL,
+                    M3ButtonVariant.OUTLINED,
+                    M3ButtonVariant.FILLED,
+                    M3ButtonVariant.ELEVATED
+            )) {
+                splitButtons.add(createSplitButton(variant.name(), variant, new M3MenuItem("Item")));
+            }
+            HBox root = new HBox(20.0);
+            root.setPadding(new Insets(20.0));
+            root.setStyle("-fx-background-color: #00ff00;");
+            root.getChildren().addAll(splitButtons);
+            Scene scene = new Scene(root, 720.0, 100.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(720.0, 100.0);
+            root.layout();
+            WritableImage image = snapshotImageOnFxThread(root);
+
+            for (M3SplitButton splitButton : splitButtons) {
+                M3Button actionButton = splitButtonActionButton(splitButton);
+                M3MenuButton menuButton = splitButtonMenuButton(splitButton);
+                Bounds actionBounds = actionButton.localToScene(actionButton.getLayoutBounds());
+                Bounds menuBounds = menuButton.localToScene(menuButton.getLayoutBounds());
+                assertEquals(actionBounds.getMinY(), menuBounds.getMinY(), 0.01);
+                assertEquals(actionBounds.getHeight(), menuBounds.getHeight(), 0.01);
+                assertEquals(
+                        splitButton.getSpacing(),
+                        menuButton.getLayoutX() - actionButton.getLayoutX() - actionButton.getWidth(),
+                        0.25
+                );
+                if (splitButton.getVariant() != M3ButtonVariant.ELEVATED) {
+                    Color gapPixel = snapshotScenePixel(
+                            image,
+                            (actionBounds.getMaxX() + menuBounds.getMinX()) / 2.0,
+                            actionBounds.getMinY() + actionBounds.getHeight() / 2.0
+                    );
+                    assertTrue(colorDistance(gapPixel, Color.web("#00ff00")) < 0.04);
+                }
+            }
         });
     }
     /// Verifies that split buttons keep logical part shapes for right-to-left painting.
@@ -4796,6 +5377,7 @@ final class M3ControlStyleTest {
         assertNull(carousel.getSelectedItem());
 
         carousel.selectIndex(1);
+        carousel.setWrapAround(true);
 
         assertSame(second, carousel.getSelectedItem());
         assertEquals(1, carousel.getSelectedIndex());
@@ -12193,6 +12775,50 @@ final class M3ControlStyleTest {
                 },
                 () -> assertEquals(0.0, shape.get().getRotate(), 0.01)
         );
+    }
+
+    /// Verifies that vertical disclosure icons rotate inward from down to up in both layout directions.
+    @Test
+    void verticalDisclosureIconRotatesDownToUp() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3DisclosureIcon leftToRightIcon = new M3DisclosureIcon();
+            M3DisclosureIcon rightToLeftIcon = new M3DisclosureIcon();
+            leftToRightIcon.setVertical(true);
+            rightToLeftIcon.setVertical(true);
+            rightToLeftIcon.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            HBox root = new HBox(leftToRightIcon, rightToLeftIcon);
+            Scene scene = new Scene(root, 80.0, 40.0);
+
+            M3MotionSettings.setAnimationsEnabled(root, false);
+            M3ThemeManager.install(scene, M3Theme.fromSeed(
+                    Color.web("#6750a4"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.LIGHT
+            ));
+            root.applyCss();
+            root.layout();
+
+            SVGPath leftToRightArrow = assertInstanceOf(
+                    SVGPath.class,
+                    leftToRightIcon.lookup(".m3-disclosure-icon-shape")
+            );
+            SVGPath rightToLeftArrow = assertInstanceOf(
+                    SVGPath.class,
+                    rightToLeftIcon.lookup(".m3-disclosure-icon-shape")
+            );
+            assertEquals(0.0, leftToRightArrow.getRotate(), 0.0001);
+            assertEquals(0.0, rightToLeftArrow.getRotate(), 0.0001);
+
+            leftToRightIcon.setExpanded(true);
+            rightToLeftIcon.setExpanded(true);
+            assertEquals(180.0, leftToRightArrow.getRotate(), 0.0001);
+            assertEquals(-180.0, rightToLeftArrow.getRotate(), 0.0001);
+
+            leftToRightIcon.setExpanded(false);
+            rightToLeftIcon.setExpanded(false);
+            assertEquals(0.0, leftToRightArrow.getRotate(), 0.0001);
+            assertEquals(0.0, rightToLeftArrow.getRotate(), 0.0001);
+        });
     }
 
     /// Verifies that collapsed disclosure icons point toward logical child content in right-to-left layouts.
@@ -25371,10 +25997,237 @@ final class M3ControlStyleTest {
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         root.applyCss();
 
-        assertEquals(96.0, navigationRail.getCollapsedContainerWidth(), 0.0001);
+        assertEquals(80.0, navigationRail.getCollapsedContainerWidth(), 0.0001);
         assertEquals(12.0, navigationRail.getItemSpacing(), 0.0001);
         assertEquals(80.0, home.getItemWidth(), 0.0001);
         assertEquals(56.0, home.getIndicatorWidth(), 0.0001);
+    }
+
+    /// Verifies standard and modal expanded navigation rail surface treatments.
+    @Test
+    void navigationRailResolvesExpandedVariantSurface() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3NavigationRail navigationRail = navigationRail(new M3NavigationItem("Home"));
+            Pane root = new Pane(navigationRail);
+            Scene scene = new Scene(root, 420.0, 360.0);
+            M3Theme theme = M3Theme.fromSeed(Color.web("#6750a4"), M3Profile.EXPRESSIVE_2025, Brightness.LIGHT);
+            double modalShape = theme.tokens().shapeTokens().large();
+
+            M3ThemeManager.install(scene, theme);
+            root.applyCss();
+
+            PseudoClass standard = PseudoClass.getPseudoClass("standard");
+            PseudoClass modal = PseudoClass.getPseudoClass("modal");
+            assertEquals(M3NavigationRailVariant.STANDARD, navigationRail.getVariant());
+            assertTrue(navigationRail.getPseudoClassStates().contains(standard));
+            assertFalse(navigationRail.getPseudoClassStates().contains(modal));
+            assertRegionFill(
+                    navigationRail,
+                    theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.SURFACE)
+            );
+            assertNull(navigationRail.getEffect());
+            assertRegionRadii(navigationRail, 0.0, 0.0, 0.0, 0.0);
+
+            navigationRail.setVariant(M3NavigationRailVariant.MODAL);
+            root.applyCss();
+            assertFalse(navigationRail.getPseudoClassStates().contains(standard));
+            assertTrue(navigationRail.getPseudoClassStates().contains(modal));
+            assertRegionFill(
+                    navigationRail,
+                    theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.SURFACE)
+            );
+            assertNull(navigationRail.getEffect());
+            assertRegionRadii(navigationRail, 0.0, 0.0, 0.0, 0.0);
+
+            navigationRail.setExpanded(true);
+            root.applyCss();
+            assertRegionFill(
+                    navigationRail,
+                    theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.SURFACE_CONTAINER)
+            );
+            DropShadow shadow = assertDropShadow(navigationRail);
+            assertEquals(3.0, shadow.getRadius(), 0.01);
+            assertEquals(2.0, shadow.getOffsetY(), 0.01);
+            assertRegionRadii(navigationRail, modalShape, modalShape, modalShape, modalShape);
+
+            navigationRail.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            root.applyCss();
+            assertTrue(navigationRail.getPseudoClassStates().contains(PseudoClass.getPseudoClass("rtl")));
+            assertRegionRadii(navigationRail, modalShape, modalShape, modalShape, modalShape);
+
+            navigationRail.variantProperty().set(null);
+            assertEquals(M3NavigationRailVariant.STANDARD, navigationRail.getVariant());
+        });
+    }
+
+    /// Verifies compact equal distribution, medium fixed widths, and right-to-left ordering.
+    @Test
+    void navigationBarAppliesAdaptiveWidthDistribution() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3NavigationItem home = new M3NavigationItem("Home");
+            M3NavigationItem search = new M3NavigationItem("Search");
+            M3NavigationItem profile = new M3NavigationItem("Profile");
+            M3NavigationItem settings = new M3NavigationItem("Settings");
+            M3NavigationBar navigationBar = navigationBar(home, search, profile, settings);
+            navigationBar.setManaged(false);
+            Pane root = new Pane(navigationBar);
+            Scene scene = new Scene(root, 840.0, 120.0);
+
+            M3ThemeManager.install(scene, M3Theme.fromSeed(
+                    Color.web("#6750a4"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.LIGHT
+            ));
+            root.applyCss();
+            navigationBar.resizeRelocate(20.0, 20.0, 640.0, 64.0);
+            root.layout();
+
+            Bounds navigationBounds = navigationBar.localToScene(navigationBar.getBoundsInLocal());
+            Bounds homeBounds = home.localToScene(home.getBoundsInLocal());
+            Bounds searchBounds = search.localToScene(search.getBoundsInLocal());
+            Bounds profileBounds = profile.localToScene(profile.getBoundsInLocal());
+            Bounds settingsBounds = settings.localToScene(settings.getBoundsInLocal());
+            double compactItemWidth = (640.0 - 16.0) / 4.0;
+            assertEquals(compactItemWidth, homeBounds.getWidth(), 0.01);
+            assertEquals(compactItemWidth, searchBounds.getWidth(), 0.01);
+            assertEquals(compactItemWidth, profileBounds.getWidth(), 0.01);
+            assertEquals(compactItemWidth, settingsBounds.getWidth(), 0.01);
+            assertEquals(8.0, homeBounds.getMinX() - navigationBounds.getMinX(), 0.01);
+            assertEquals(8.0, navigationBounds.getMaxX() - settingsBounds.getMaxX(), 0.01);
+
+            navigationBar.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            root.applyCss();
+            root.layout();
+            homeBounds = home.localToScene(home.getBoundsInLocal());
+            settingsBounds = settings.localToScene(settings.getBoundsInLocal());
+            assertTrue(homeBounds.getCenterX() > settingsBounds.getCenterX());
+
+            navigationBar.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+            navigationBar.setItemLayout(M3NavigationItemLayout.HORIZONTAL);
+            navigationBar.resize(800.0, 64.0);
+            root.applyCss();
+            root.layout();
+            navigationBounds = navigationBar.localToScene(navigationBar.getBoundsInLocal());
+            homeBounds = home.localToScene(home.getBoundsInLocal());
+            searchBounds = search.localToScene(search.getBoundsInLocal());
+            profileBounds = profile.localToScene(profile.getBoundsInLocal());
+            settingsBounds = settings.localToScene(settings.getBoundsInLocal());
+            assertEquals(160.0, homeBounds.getWidth(), 0.01);
+            assertEquals(160.0, searchBounds.getWidth(), 0.01);
+            assertEquals(160.0, profileBounds.getWidth(), 0.01);
+            assertEquals(160.0, settingsBounds.getWidth(), 0.01);
+            assertEquals(80.0, homeBounds.getMinX() - navigationBounds.getMinX(), 0.01);
+            assertEquals(80.0, navigationBounds.getMaxX() - settingsBounds.getMaxX(), 0.01);
+        });
+    }
+
+    /// Verifies that an expanded rail indicator tracks the available row width at both specification limits.
+    @Test
+    void expandedNavigationRailUsesFullWidthIndicators() {
+        FxTestUtils.runOnFxThread(() -> {
+            Region homeGraphic = new Region();
+            homeGraphic.setMinSize(24.0, 24.0);
+            homeGraphic.setPrefSize(24.0, 24.0);
+            homeGraphic.setMaxSize(24.0, 24.0);
+            Region searchGraphic = new Region();
+            searchGraphic.setMinSize(24.0, 24.0);
+            searchGraphic.setPrefSize(24.0, 24.0);
+            searchGraphic.setMaxSize(24.0, 24.0);
+            M3NavigationItem home = new M3NavigationItem("Home", homeGraphic);
+            M3NavigationItem search = new M3NavigationItem("Search", searchGraphic);
+            M3NavigationRail navigationRail = navigationRail(home, search);
+            navigationRail.setExpandedContainerWidth(220.0);
+            navigationRail.setExpanded(true);
+            navigationRail.setManaged(false);
+            Pane root = new Pane(navigationRail);
+            Scene scene = new Scene(root, 420.0, 360.0);
+
+            M3ThemeManager.install(scene, M3Theme.fromSeed(
+                    Color.web("#6750a4"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.LIGHT
+            ));
+            root.applyCss();
+            navigationRail.resizeRelocate(20.0, 20.0, 220.0, 320.0);
+            root.layout();
+            navigationRail.layout();
+            home.layout();
+
+            assertEquals(220.0, navigationRail.getExpandedContainerWidth(), 0.01);
+            assertEquals(220.0, navigationRail.getWidth(), 0.01);
+            Region indicator = lookupRegion(home, ".m3-navigation-item-indicator");
+            Region stateLayer = lookupRegion(home, ".m3-state-layer");
+            assertEquals(188.0, indicator.getWidth(), 0.01);
+            assertEquals(188.0, stateLayer.getWidth(), 0.01);
+            assertEquals(56.0, indicator.getHeight(), 0.01);
+
+            Region label = lookupRegion(home, ".m3-navigation-item-label");
+            Bounds labelBounds = home.sceneToLocal(label.localToScene(label.getLayoutBounds()));
+            assertEquals(64.0, labelBounds.getMinX(), 0.01);
+
+            navigationRail.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            root.applyCss();
+            root.layout();
+            navigationRail.layout();
+            home.layout();
+            Bounds homeSceneBounds = home.localToScene(home.getLayoutBounds());
+            Bounds labelSceneBounds = label.localToScene(label.getLayoutBounds());
+            assertEquals(64.0, homeSceneBounds.getMaxX() - labelSceneBounds.getMaxX(), 0.01);
+
+            navigationRail.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+            navigationRail.setExpandedContainerWidth(360.0);
+            navigationRail.resize(360.0, 320.0);
+            navigationRail.requestLayout();
+            root.layout();
+            navigationRail.layout();
+            home.layout();
+            assertEquals(328.0, indicator.getWidth(), 0.01);
+            assertEquals(328.0, stateLayer.getWidth(), 0.01);
+            assertEquals(64.0, home.getContainerHeight(), 0.01);
+            assertEquals(44.0, navigationRail.getPadding().getTop(), 0.01);
+        });
+    }
+
+    /// Verifies profile-specific selected label and interaction-layer color roles.
+    @Test
+    void navigationItemsResolveBaselineAndExpressiveActiveColors() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3NavigationItem item = new M3NavigationItem("Home");
+            item.setSelected(true);
+            Pane root = new Pane(item);
+            Scene scene = new Scene(root, 160.0, 100.0);
+
+            M3ThemeManager.install(scene, M3Theme.fromSeed(
+                    Color.web("#6750a4"),
+                    M3Profile.BASELINE_2021,
+                    Brightness.LIGHT
+            ));
+            root.setStyle(root.getStyle()
+                    + " -m3-color-on-surface: #010203;"
+                    + " -m3-color-secondary: #040506;"
+                    + " -m3-color-on-secondary-container: #070809;");
+            root.applyCss();
+            item.resize(120.0, 80.0);
+            root.layout();
+            Label label = assertInstanceOf(Label.class, item.lookup(".m3-navigation-item-label"));
+            Region stateLayer = lookupRegion(item, ".m3-state-layer");
+            assertEquals(Color.web("#010203"), label.getTextFill());
+            assertEquals(Color.web("#010203"), stateLayer.getBackground().getFills().get(0).getFill());
+
+            M3ThemeManager.install(scene, M3Theme.fromSeed(
+                    Color.web("#6750a4"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.LIGHT
+            ));
+            root.setStyle(root.getStyle()
+                    + " -m3-color-on-surface: #010203;"
+                    + " -m3-color-secondary: #040506;"
+                    + " -m3-color-on-secondary-container: #070809;");
+            root.applyCss();
+            root.layout();
+            assertEquals(Color.web("#040506"), label.getTextFill());
+            assertEquals(Color.web("#070809"), stateLayer.getBackground().getFills().get(0).getFill());
+        });
     }
 
     /// Verifies that top app bars expose navigation, title, and action slots.
@@ -27287,11 +28140,15 @@ final class M3ControlStyleTest {
                     root.layout();
 
                     double collapsedHeight = group.prefHeight(240.0);
-                    double expandedHeight = group.getHeaderItem().prefHeight(240.0)
-                            + 4.0
-                            + buttons.prefHeight(240.0)
-                            + 4.0
-                            + iconButtons.prefHeight(240.0);
+                    M3MotionSettings.setAnimationsEnabled(group, false);
+                    group.setExpanded(true);
+                    root.applyCss();
+                    root.layout();
+                    double expandedHeight = group.prefHeight(240.0);
+                    group.setExpanded(false);
+                    root.applyCss();
+                    root.layout();
+                    M3MotionSettings.clearAnimationsEnabled(group);
                     groupReference.set(group);
                     collapsedHeightReference.set(collapsedHeight);
                     expandedHeightReference.set(expandedHeight);
@@ -29461,6 +30318,47 @@ final class M3ControlStyleTest {
         assertEquals(56.0, home.getOneLineHeight(), 0.0001);
         assertEquals(999.0, home.getContainerShape(), 0.0001);
         assertEquals(12.0, home.getContentSpacing(), 0.0001);
+    }
+
+    /// Verifies standard, modal, and right-to-left navigation drawer surface treatments.
+    @Test
+    void navigationDrawerResolvesVariantSurfaceAndLogicalCorners() {
+        M3ListItem home = new M3ListItem("Home");
+        M3NavigationDrawer navigationDrawer = navigationDrawer(home);
+        Pane root = new Pane(navigationDrawer);
+        Scene scene = new Scene(root, 420.0, 240.0);
+        M3Theme theme = M3Theme.fromSeed(Color.web("#6750a4"));
+
+        M3ThemeManager.install(scene, theme);
+        root.applyCss();
+
+        assertEquals(M3NavigationDrawerVariant.STANDARD, navigationDrawer.getVariant());
+        assertTrue(navigationDrawer.getPseudoClassStates().contains(PseudoClass.getPseudoClass("standard")));
+        assertFalse(navigationDrawer.getPseudoClassStates().contains(PseudoClass.getPseudoClass("modal")));
+        assertRegionFill(
+                navigationDrawer,
+                theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.SURFACE)
+        );
+        assertNull(navigationDrawer.getEffect());
+        assertRegionRadii(navigationDrawer, 0.0, 16.0, 16.0, 0.0);
+
+        navigationDrawer.setVariant(M3NavigationDrawerVariant.MODAL);
+        root.applyCss();
+        assertFalse(navigationDrawer.getPseudoClassStates().contains(PseudoClass.getPseudoClass("standard")));
+        assertTrue(navigationDrawer.getPseudoClassStates().contains(PseudoClass.getPseudoClass("modal")));
+        assertRegionFill(
+                navigationDrawer,
+                theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.SURFACE_CONTAINER_LOW)
+        );
+        assertNotNull(navigationDrawer.getEffect());
+
+        navigationDrawer.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+        root.applyCss();
+        assertTrue(navigationDrawer.getPseudoClassStates().contains(PseudoClass.getPseudoClass("rtl")));
+        assertRegionRadii(navigationDrawer, 16.0, 0.0, 0.0, 16.0);
+
+        navigationDrawer.variantProperty().set(null);
+        assertEquals(M3NavigationDrawerVariant.STANDARD, navigationDrawer.getVariant());
     }
 
     /// Verifies that navigation drawer list items stay within the drawer padding.
@@ -33152,18 +34050,18 @@ final class M3ControlStyleTest {
                     lookupRegion(bottomSheet, "." + M3BottomSheet.DRAG_HANDLE_STYLE_CLASS).getPrefWidth(),
                     0.0001
             );
-            assertEquals(88.0, navigationBar.getPrefHeight(), 0.0001);
-            assertEquals(96.0, navigationBarItem.getItemWidth(), 0.0001);
-            assertEquals(72.0, navigationBarItem.getIndicatorWidth(), 0.0001);
-            assertEquals(6.0, navigationBarItem.getContentSpacing(), 0.0001);
-            assertEquals(112.0, navigationRail.getCollapsedContainerWidth(), 0.0001);
-            assertEquals(96.0, navigationRailItem.getItemWidth(), 0.0001);
-            assertEquals(6.0, navigationRailItem.getContentSpacing(), 0.0001);
-            assertEquals(384.0, navigationDrawer.getPrefWidth(), 0.0001);
-            assertEquals(64.0, drawerItem.getOneLineHeight(), 0.0001);
-            assertEquals(24.0, drawerItem.getContainerShape(), 0.0001);
-            assertEquals(20.0, drawerItem.getHorizontalPadding(), 0.0001);
-            assertEquals(16.0, drawerItem.getContentSpacing(), 0.0001);
+            assertEquals(64.0, navigationBar.getPrefHeight(), 0.0001);
+            assertEquals(80.0, navigationBarItem.getItemWidth(), 0.0001);
+            assertEquals(56.0, navigationBarItem.getIndicatorWidth(), 0.0001);
+            assertEquals(4.0, navigationBarItem.getContentSpacing(), 0.0001);
+            assertEquals(96.0, navigationRail.getCollapsedContainerWidth(), 0.0001);
+            assertEquals(80.0, navigationRailItem.getItemWidth(), 0.0001);
+            assertEquals(4.0, navigationRailItem.getContentSpacing(), 0.0001);
+            assertEquals(360.0, navigationDrawer.getPrefWidth(), 0.0001);
+            assertEquals(56.0, drawerItem.getOneLineHeight(), 0.0001);
+            assertEquals(999.0, drawerItem.getContainerShape(), 0.0001);
+            assertEquals(16.0, drawerItem.getHorizontalPadding(), 0.0001);
+            assertEquals(12.0, drawerItem.getContentSpacing(), 0.0001);
             assertEquals(72.0, topAppBar.getPrefHeight(), 0.0001);
             assertEquals(120.0, mediumTopAppBar.getPrefHeight(), 0.0001);
             assertEquals(24.0, mediumTopAppBar.getPadding().getBottom(), 0.0001);
@@ -35744,8 +36642,8 @@ final class M3ControlStyleTest {
         /// The number of raw animation phase wraps observed across the cycle seam.
         private int wrapCount;
 
-        /// The largest normalized visual angle delta seen between consecutive samples.
-        private double maximumVisualDelta;
+        /// The largest normalized visual angle delta observed across a raw cycle wrap.
+        private double maximumSeamVisualDelta;
 
         /// The raw start angle from the previous rendered sample.
         private double lastRawStartAngle;
@@ -35771,12 +36669,12 @@ final class M3ControlStyleTest {
                 double rawDelta = rawStartAngle - lastRawStartAngle;
                 if (rawDelta > 180.0) {
                     wrapCount++;
+                    double angleDifference = Math.abs(normalizedStartAngle - lastNormalizedStartAngle);
+                    maximumSeamVisualDelta = Math.max(
+                            maximumSeamVisualDelta,
+                            Math.min(angleDifference, 360.0 - angleDifference)
+                    );
                 }
-                double angleDifference = Math.abs(normalizedStartAngle - lastNormalizedStartAngle);
-                maximumVisualDelta = Math.max(
-                        maximumVisualDelta,
-                        Math.min(angleDifference, 360.0 - angleDifference)
-                );
             }
 
             lastRawStartAngle = rawStartAngle;
@@ -35891,8 +36789,7 @@ final class M3ControlStyleTest {
         observation.observe(scene.progressIndicatorArc.getStartAngle());
         return observation.wrapCount >= 1
                 && observation.sampleCount >= 8
-                && observation.angleBuckets.size() >= 6
-                && observation.maximumVisualDelta <= MAXIMUM_PROGRESS_INDICATOR_CYCLE_STEP_DEGREES;
+                && observation.angleBuckets.size() >= 6;
     }
 
     /// Verifies the captured circular progress cycle samples.
@@ -35901,9 +36798,9 @@ final class M3ControlStyleTest {
         assertTrue(observation.sampleCount >= 8, () -> "sampleCount=" + observation.sampleCount);
         assertTrue(observation.angleBuckets.size() >= 6, () -> "angleBuckets=" + observation.angleBuckets);
         assertTrue(
-                observation.maximumVisualDelta <= MAXIMUM_PROGRESS_INDICATOR_CYCLE_STEP_DEGREES,
-                () -> "maximumVisualDelta=" + observation.maximumVisualDelta
-                        + ", limit=" + MAXIMUM_PROGRESS_INDICATOR_CYCLE_STEP_DEGREES
+                observation.maximumSeamVisualDelta <= MAXIMUM_PROGRESS_INDICATOR_CYCLE_SEAM_DELTA_DEGREES,
+                () -> "maximumSeamVisualDelta=" + observation.maximumSeamVisualDelta
+                        + ", limit=" + MAXIMUM_PROGRESS_INDICATOR_CYCLE_SEAM_DELTA_DEGREES
         );
     }
 
@@ -40257,6 +41154,23 @@ final class M3ControlStyleTest {
                 () -> "right corner distance=" + rightDistance + ", region=" + region);
     }
 
+    /// Verifies whether a region's top-right surface corner excludes its two-pixel inset sample.
+    private static void assertRenderedTopRightCorner(
+            Region region,
+            WritableImage image,
+            boolean excludesInset,
+            Color background
+    ) {
+        Bounds bounds = region.localToScene(region.getLayoutBounds());
+        Color sample = snapshotScenePixel(image, bounds.getMaxX() - 2.0, bounds.getMinY() + 2.0);
+        double distance = colorDistance(sample, background);
+        if (excludesInset) {
+            assertTrue(distance < 0.04, () -> "expected rounded-away corner sample: distance=" + distance);
+        } else {
+            assertTrue(distance > 0.04, () -> "expected filled corner sample: distance=" + distance);
+        }
+    }
+
     /// Verifies whether a region's top-left surface corner excludes its two-pixel inset sample.
     private static void assertRenderedTopLeftCorner(
             Region region,
@@ -41250,6 +42164,21 @@ final class M3ControlStyleTest {
         assertEquals(spacing, splitButton.getSpacing(), 0.0001);
     }
 
+    /// Asserts split-button stateful shape tokens resolved through CSS.
+    private static void assertSplitButtonShapeMetrics(
+            M3SplitButton splitButton,
+            double outerCorner,
+            double innerCorner,
+            double hoveredInnerCorner,
+            double pressedInnerCorner,
+            double selectedInnerCorner
+    ) {
+        assertEquals(outerCorner, splitButton.getOuterCorner(), 0.0001);
+        assertEquals(innerCorner, splitButton.getInnerCorner(), 0.0001);
+        assertEquals(hoveredInnerCorner, splitButton.getHoveredInnerCorner(), 0.0001);
+        assertEquals(pressedInnerCorner, splitButton.getPressedInnerCorner(), 0.0001);
+        assertEquals(selectedInnerCorner, splitButton.getSelectedInnerCorner(), 0.0001);
+    }
     /// Creates a split button with the requested variant and menu items.
     private static M3SplitButton createSplitButton(String text, M3ButtonVariant variant, Node... items) {
         M3SplitButton button = new M3SplitButton(text);
@@ -41667,6 +42596,11 @@ final class M3ControlStyleTest {
         assertEquals(1, fireCount.get(), "M3ListItem should fire from a full-bounds pointer click");
     }
 
+    /// Resizes a button group to its preferred dimensions and lays out its skin container and children.
+    private static void resizeButtonGroupToPreferredSize(M3ButtonGroup group) {
+        group.resize(group.prefWidth(-1.0), group.prefHeight(-1.0));
+        group.layout();
+    }
     /// Creates a primary mouse event for control behavior tests.
     private static MouseEvent primaryMouseEvent(
             EventType<MouseEvent> eventType,

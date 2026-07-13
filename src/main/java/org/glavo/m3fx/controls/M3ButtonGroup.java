@@ -9,6 +9,7 @@ import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
+import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
@@ -44,7 +45,9 @@ import java.util.Objects;
 /// `M3ButtonGroup` lays out Material [ButtonBase] children as a standard separated group or as a connected group with
 /// coordinated outer and inner corners. The [variant][M3ButtonGroupVariant] controls whether grouped buttons keep
 /// their own rounded containers or join into a single visual set, and the [size][M3ButtonSize] controls
-/// container height and group spacing through CSS tokens.
+/// container height and group spacing through CSS tokens. In a standard group, an armed button expands by the
+/// configured [width multiplier][standardPressedWidthMultiplierProperty] while its immediate neighbors yield the
+/// same total width. Connected groups retain fixed widths and express activation through their coordinated shapes.
 ///
 /// See [Material Design button groups](https://m3.material.io/components/button-groups/overview).
 @NotNullByDefault
@@ -75,6 +78,13 @@ public class M3ButtonGroup extends Control {
 
     /// The default spacing that lets adjacent grouped button borders overlap.
     private static final double DEFAULT_SPACING = -1.0;
+
+    /// The default proportional width increase for an activated standard-group button.
+    private static final double DEFAULT_STANDARD_PRESSED_WIDTH_MULTIPLIER = 0.15;
+
+    /// Marks grouped buttons whose container shape is controlled by a connected button group.
+    private static final PseudoClass CONNECTED_GROUP_PSEUDO_CLASS =
+            PseudoClass.getPseudoClass("connected-group");
 
     /// The mutable button group content.
     private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
@@ -117,6 +127,9 @@ public class M3ButtonGroup extends Control {
 
     // The styleable spacing between grouped buttons.
     private @Nullable StyleableDoubleProperty spacing;
+
+    /// The styleable standard-group pressed width multiplier.
+    private @Nullable StyleableDoubleProperty standardPressedWidthMultiplierStyleable;
 
     /// Updates grouped button position style classes when children change.
     private final ListChangeListener<Node> childrenListener = change -> {
@@ -221,6 +234,40 @@ public class M3ButtonGroup extends Control {
             );
         }
         return spacing;
+    }
+
+    /// Returns the proportional width increase applied to an activated button in a standard group.
+    ///
+    /// @return the pressed width multiplier
+    public final double getStandardPressedWidthMultiplier() {
+        return standardPressedWidthMultiplierStyleable == null
+                ? DEFAULT_STANDARD_PRESSED_WIDTH_MULTIPLIER
+                : standardPressedWidthMultiplierStyleable.get();
+    }
+
+    /// Sets the proportional width increase applied to an activated button in a standard group.
+    ///
+    /// @param multiplier the non-negative pressed width multiplier
+    public final void setStandardPressedWidthMultiplier(double multiplier) {
+        standardPressedWidthMultiplierProperty().set(
+                M3Css.nonNegative(multiplier, "standardPressedWidthMultiplier")
+        );
+    }
+
+    /// Returns the standard-group pressed width multiplier property.
+    ///
+    /// @return the styleable pressed width multiplier property
+    public final StyleableDoubleProperty standardPressedWidthMultiplierProperty() {
+        if (standardPressedWidthMultiplierStyleable == null) {
+            standardPressedWidthMultiplierStyleable = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_STANDARD_PRESSED_WIDTH_MULTIPLIER,
+                    this,
+                    "standardPressedWidthMultiplier",
+                    StyleableProperties.STANDARD_PRESSED_WIDTH_MULTIPLIER,
+                    this::requestLayout
+            );
+        }
+        return standardPressedWidthMultiplierStyleable;
     }
 
     /// Returns the user-agent stylesheet for M3FX button groups.
@@ -344,6 +391,19 @@ public class M3ButtonGroup extends Control {
                 M3ControlStyles.add(button, GROUPED_BUTTON_STYLE_CLASS);
                 M3ControlStyles.replaceVariant(
                         button,
+                        sizeStyleClass(getSize()),
+                        sizeStyleClass(M3ButtonSize.EXTRA_SMALL),
+                        sizeStyleClass(M3ButtonSize.SMALL),
+                        sizeStyleClass(M3ButtonSize.MEDIUM),
+                        sizeStyleClass(M3ButtonSize.LARGE),
+                        sizeStyleClass(M3ButtonSize.EXTRA_LARGE)
+                );
+                button.pseudoClassStateChanged(
+                        CONNECTED_GROUP_PSEUDO_CLASS,
+                        getVariant() == M3ButtonGroupVariant.CONNECTED
+                );
+                M3ControlStyles.replaceVariant(
+                        button,
                         buttonStyleClass(buttonIndex, buttonCount),
                         SINGLE_BUTTON_STYLE_CLASS,
                         FIRST_BUTTON_STYLE_CLASS,
@@ -411,11 +471,17 @@ public class M3ButtonGroup extends Control {
 
     /// Removes all button group style classes from a button.
     private static void clearButtonStyle(ButtonBase button) {
+        button.pseudoClassStateChanged(CONNECTED_GROUP_PSEUDO_CLASS, false);
         button.getStyleClass().remove(GROUPED_BUTTON_STYLE_CLASS);
         button.getStyleClass().remove(SINGLE_BUTTON_STYLE_CLASS);
         button.getStyleClass().remove(FIRST_BUTTON_STYLE_CLASS);
         button.getStyleClass().remove(MIDDLE_BUTTON_STYLE_CLASS);
         button.getStyleClass().remove(LAST_BUTTON_STYLE_CLASS);
+        button.getStyleClass().remove(sizeStyleClass(M3ButtonSize.EXTRA_SMALL));
+        button.getStyleClass().remove(sizeStyleClass(M3ButtonSize.SMALL));
+        button.getStyleClass().remove(sizeStyleClass(M3ButtonSize.MEDIUM));
+        button.getStyleClass().remove(sizeStyleClass(M3ButtonSize.LARGE));
+        button.getStyleClass().remove(sizeStyleClass(M3ButtonSize.EXTRA_LARGE));
         button.requestLayout();
     }
 
@@ -444,12 +510,33 @@ public class M3ButtonGroup extends Control {
                     }
                 };
 
+        /// CSS metadata for the standard-group pressed width multiplier.
+        private static final CssMetaData<M3ButtonGroup, Number> STANDARD_PRESSED_WIDTH_MULTIPLIER =
+                new CssMetaData<>(
+                        "-m3-button-group-standard-pressed-width-multiplier",
+                        SizeConverter.getInstance(),
+                        DEFAULT_STANDARD_PRESSED_WIDTH_MULTIPLIER
+                ) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3ButtonGroup control) {
+                        return M3Css.isSettable(control.standardPressedWidthMultiplierProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3ButtonGroup control) {
+                        return control.standardPressedWidthMultiplierProperty();
+                    }
+                };
+
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Control.getClassCssMetaData());
             styleables.add(SPACING);
+            styleables.add(STANDARD_PRESSED_WIDTH_MULTIPLIER);
             STYLEABLES = Collections.unmodifiableList(styleables);
         }
     }

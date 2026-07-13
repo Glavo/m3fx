@@ -191,13 +191,16 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-carousel-track-horizontal-padding"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-carousel-track-vertical-padding"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-carousel-item-spacing"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-carousel-small-item-min-width"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-carousel-small-item-max-width"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-carousel-large-item-max-width"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-container-color: -m3-color-surface-container"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-selected-item-container-color: -m3-color-secondary-container"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-selected-item-content-color: -m3-color-on-secondary-container"));
         assertTrue(theme.toControlStyleRules().contains(".m3-filled-button"));
         assertTrue(theme.toControlStyleRules().contains(
                 ".m3-button-group.m3-button-group-small.m3-connected-button-group "
-                        + ".m3-button.m3-button-group-first"
+                        + ".m3-grouped-button.m3-button-group-first"
         ));
         assertTrue(theme.toControlStyleRules().contains(".m3-button.m3-split-button-menu"));
         assertTrue(theme.toControlStyleRules().contains(".m3-large-icon"));
@@ -382,12 +385,12 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-bottom-app-bar-container-height: 88px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-bottom-app-bar-horizontal-padding: 24px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-bottom-app-bar-action-spacing: 0px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-rail-container-width: 112px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-drawer-container-width: 384px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-bar-horizontal-padding: 12px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-rail-item-spacing: 12px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-drawer-container-padding: 16px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-drawer-group-child-item-horizontal-padding: 40px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-rail-container-width: 96px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-drawer-container-width: 360px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-bar-horizontal-padding: 8px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-rail-item-spacing: 4px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-drawer-container-padding: 12px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-drawer-group-child-item-horizontal-padding: 32px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-item-one-line-height: 64px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-item-horizontal-padding: 20px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-item-content-spacing: 20px"));
@@ -404,8 +407,8 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-surface-content-padding: 20px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-carousel-item-spacing: 8px"));
         assertTrue(theme.toControlStyleRules().contains("-m3-container-height: 48px"));
-        assertTrue(theme.toControlStyleRules().contains("-m3-content-spacing: 6px"));
-        assertTrue(theme.toControlStyleRules().contains("-m3-horizontal-padding: 40px"));
+        assertTrue(theme.toControlStyleRules().contains("-m3-content-spacing: 4px"));
+        assertTrue(theme.toControlStyleRules().contains("-m3-horizontal-padding: 32px"));
         assertTrue(theme.toControlStyleRules().contains("-fx-padding: 10px"));
         assertTrue(theme.toControlStyleRules().contains(".m3-menu .m3-menu-item.m3-menu-item:first-menu-item"));
         assertTrue(theme.toControlStyleRules().contains(".m3-menu .m3-menu-item.m3-menu-item:last-menu-item"));
@@ -452,6 +455,7 @@ final class M3ThemeTest {
                 theme.tokens().componentTokens().buttonGroup().small();
         assertEquals(2.0, smallButtonGroup.connectedSpacing(), 0.0001);
         assertEquals(12.0, smallButtonGroup.standardSpacing(), 0.0001);
+        assertEquals(0.15, smallButtonGroup.standardPressedWidthMultiplier(), 0.0001);
         assertEquals(10.0, smallButtonGroup.connectedInnerCorner(), 0.0001);
         assertEquals(-1.0, theme.tokens().componentTokens().buttonGroup().segmentedGroupSpacing(), 0.0001);
         assertEquals(10.0, theme.tokens().componentTokens().buttonGroup().iconToggleGroupSpacing(), 0.0001);
@@ -492,9 +496,17 @@ final class M3ThemeTest {
         assertEquals(4.0, theme.tokens().componentTokens().slider().thumbWidth(), 0.0001);
         assertEquals(6.0, theme.tokens().componentTokens().slider().thumbTrackGap(), 0.0001);
         assertEquals(48.0, theme.tokens().componentTokens().slider().touchTargetSize(), 0.0001);
-        assertEquals(12.0, theme.tokens().componentTokens().navigationBar().horizontalPadding(), 0.0001);
-        assertEquals(20.0, theme.tokens().componentTokens().navigationRail().verticalPadding(), 0.0001);
-        assertEquals(40.0, theme.tokens().componentTokens().navigationDrawer().groupChildItemHorizontalPadding(), 0.0001);
+        assertEquals(8.0, theme.tokens().componentTokens().navigationBar().horizontalPadding(), 0.0001);
+        assertEquals(44.0, theme.tokens().componentTokens().navigationRail().verticalPadding(), 0.0001);
+        assertEquals(280.0, theme.tokens().componentTokens().navigationRail().expandedContainerWidth(), 0.0001);
+        assertEquals(44.0, theme.tokens().componentTokens().navigationRail().expandedTopPadding(), 0.0001);
+        assertEquals(20.0, theme.tokens().componentTokens().navigationRail().expandedBottomPadding(), 0.0001);
+        assertEquals(
+                theme.tokens().shapeTokens().large(),
+                theme.tokens().componentTokens().navigationRail().modalContainerShape(),
+                0.0001
+        );
+        assertEquals(32.0, theme.tokens().componentTokens().navigationDrawer().groupChildItemHorizontalPadding(), 0.0001);
         assertEquals(20.0, theme.tokens().componentTokens().listItem().horizontalPadding(), 0.0001);
         assertEquals(24.0, theme.tokens().componentTokens().menu().containerShape(), 0.0001);
         assertEquals(2.0, theme.tokens().componentTokens().menu().containerPadding(), 0.0001);
@@ -517,6 +529,9 @@ final class M3ThemeTest {
         assertEquals(20.0, theme.tokens().componentTokens().validationSummary().contentPadding(), 0.0001);
         assertEquals(24.0, theme.tokens().componentTokens().surface().containerShape(), 0.0001);
         assertEquals(8.0, theme.tokens().componentTokens().carousel().itemSpacing(), 0.0001);
+        assertEquals(40.0, theme.tokens().componentTokens().carousel().smallItemMinWidth(), 0.0001);
+        assertEquals(56.0, theme.tokens().componentTokens().carousel().smallItemMaxWidth(), 0.0001);
+        assertEquals(320.0, theme.tokens().componentTokens().carousel().largeItemMaxWidth(), 0.0001);
         assertEquals(28.0, theme.tokens().componentTokens().sheet().contentPadding(), 0.0001);
         assertEquals(36.0, theme.tokens().componentTokens().sheet().dragHandleWidth(), 0.0001);
         assertEquals(24.0, theme.tokens().componentTokens().card().containerShape(), 0.0001);
@@ -1284,7 +1299,7 @@ final class M3ThemeTest {
 
         assertEquals(40.0, button.getContainerHeight(), 0.0001);
         assertEquals(24.0, button.getHorizontalPadding(), 0.0001);
-        assertEquals(-1.0, buttonGroup.getSpacing(), 0.0001);
+        assertEquals(2.0, buttonGroup.getSpacing(), 0.0001);
         assertEquals(8.0, iconToggleButtonGroup.getSpacing(), 0.0001);
         assertEquals(-1.0, segmentedButtonGroup.getSpacing(), 0.0001);
         assertEquals(12.0, fabMenu.getActionSpacing(), 0.0001);
@@ -1538,31 +1553,44 @@ final class M3ThemeTest {
         assertEquals(8.0, ((HBox) richTooltipContainer.lookup("." + M3RichTooltip.ACTIONS_STYLE_CLASS)).getSpacing(), 0.0001);
         assertEquals(32.0, tooltipAction.getContainerHeight(), 0.0001);
         assertEquals(12.0, tooltipAction.getHorizontalPadding(), 0.0001);
-        assertEquals(88.0, navigationBar.getPrefHeight(), 0.0001);
-        assertEquals(12.0, navigationBar.getPadding().getLeft(), 0.0001);
-        assertEquals(88.0, barHome.getContainerHeight(), 0.0001);
-        assertEquals(96.0, barHome.getItemWidth(), 0.0001);
-        assertEquals(72.0, barHome.getIndicatorWidth(), 0.0001);
-        assertEquals(36.0, barHome.getIndicatorHeight(), 0.0001);
-        assertEquals(6.0, barHome.getContentSpacing(), 0.0001);
-        assertEquals(112.0, navigationRail.getCollapsedContainerWidth(), 0.0001);
-        assertEquals(20.0, navigationRail.getPadding().getTop(), 0.0001);
-        assertEquals(12.0, navigationRail.getPadding().getLeft(), 0.0001);
-        assertEquals(12.0, navigationRail.getItemSpacing(), 0.0001);
-        assertEquals(88.0, railHome.getContainerHeight(), 0.0001);
-        assertEquals(96.0, railHome.getItemWidth(), 0.0001);
-        assertEquals(64.0, railHome.getIndicatorWidth(), 0.0001);
-        assertEquals(36.0, railHome.getIndicatorHeight(), 0.0001);
-        assertEquals(6.0, railHome.getContentSpacing(), 0.0001);
-        assertEquals(384.0, navigationDrawer.getPrefWidth(), 0.0001);
-        assertEquals(16.0, navigationDrawer.getPadding().getTop(), 0.0001);
-        assertEquals(6.0, navigationDrawer.getItemSpacing(), 0.0001);
-        assertEquals(64.0, drawerHome.getOneLineHeight(), 0.0001);
-        assertEquals(20.0, drawerHome.getHorizontalPadding(), 0.0001);
-        assertEquals(16.0, drawerHome.getContentSpacing(), 0.0001);
-        assertEquals(64.0, drawerChild.getOneLineHeight(), 0.0001);
-        assertEquals(40.0, drawerChild.getHorizontalPadding(), 0.0001);
-        assertEquals(16.0, drawerChild.getContentSpacing(), 0.0001);
+        assertEquals(64.0, navigationBar.getPrefHeight(), 0.0001);
+        assertEquals(8.0, navigationBar.getPadding().getLeft(), 0.0001);
+        assertEquals(64.0, barHome.getContainerHeight(), 0.0001);
+        assertEquals(80.0, barHome.getItemWidth(), 0.0001);
+        assertEquals(56.0, barHome.getIndicatorWidth(), 0.0001);
+        assertEquals(32.0, barHome.getIndicatorHeight(), 0.0001);
+        assertEquals(4.0, barHome.getContentSpacing(), 0.0001);
+        assertEquals(96.0, navigationRail.getCollapsedContainerWidth(), 0.0001);
+        assertEquals(44.0, navigationRail.getPadding().getTop(), 0.0001);
+        assertEquals(0.0, navigationRail.getPadding().getLeft(), 0.0001);
+        assertEquals(4.0, navigationRail.getItemSpacing(), 0.0001);
+        assertEquals(64.0, railHome.getContainerHeight(), 0.0001);
+        assertEquals(80.0, railHome.getItemWidth(), 0.0001);
+        assertEquals(56.0, railHome.getIndicatorWidth(), 0.0001);
+        assertEquals(32.0, railHome.getIndicatorHeight(), 0.0001);
+        assertEquals(4.0, railHome.getContentSpacing(), 0.0001);
+
+        navigationRail.setExpanded(true);
+        root.applyCss();
+        assertEquals(44.0, navigationRail.getPadding().getTop(), 0.0001);
+        assertEquals(20.0, navigationRail.getPadding().getBottom(), 0.0001);
+        assertEquals(0.0, navigationRail.getPadding().getLeft(), 0.0001);
+        assertEquals(0.0, navigationRail.getItemSpacing(), 0.0001);
+        assertEquals(64.0, railHome.getContainerHeight(), 0.0001);
+        assertEquals(56.0, railHome.getIndicatorHeight(), 0.0001);
+        assertEquals(8.0, railHome.getContentSpacing(), 0.0001);
+
+        navigationRail.setExpanded(false);
+        root.applyCss();
+        assertEquals(360.0, navigationDrawer.getPrefWidth(), 0.0001);
+        assertEquals(12.0, navigationDrawer.getPadding().getTop(), 0.0001);
+        assertEquals(0.0, navigationDrawer.getItemSpacing(), 0.0001);
+        assertEquals(56.0, drawerHome.getOneLineHeight(), 0.0001);
+        assertEquals(16.0, drawerHome.getHorizontalPadding(), 0.0001);
+        assertEquals(12.0, drawerHome.getContentSpacing(), 0.0001);
+        assertEquals(56.0, drawerChild.getOneLineHeight(), 0.0001);
+        assertEquals(32.0, drawerChild.getHorizontalPadding(), 0.0001);
+        assertEquals(12.0, drawerChild.getContentSpacing(), 0.0001);
         assertEquals(72.0, toolbar.getContainerHeight(), 0.0001);
         assertEquals(72.0, toolbar.getContainerWidth(), 0.0001);
         assertEquals(56.0, toolbar.getItemSlotSize(), 0.0001);
@@ -1592,9 +1620,9 @@ final class M3ThemeTest {
         assertEquals(64.0, barHome.getIndicatorWidth(), 0.0001);
         assertEquals(32.0, barHome.getIndicatorHeight(), 0.0001);
         assertEquals(4.0, barHome.getContentSpacing(), 0.0001);
-        assertEquals(96.0, navigationRail.getCollapsedContainerWidth(), 0.0001);
+        assertEquals(80.0, navigationRail.getCollapsedContainerWidth(), 0.0001);
         assertEquals(16.0, navigationRail.getPadding().getTop(), 0.0001);
-        assertEquals(8.0, navigationRail.getPadding().getLeft(), 0.0001);
+        assertEquals(0.0, navigationRail.getPadding().getLeft(), 0.0001);
         assertEquals(8.0, navigationRail.getItemSpacing(), 0.0001);
         assertEquals(80.0, railHome.getContainerHeight(), 0.0001);
         assertEquals(80.0, railHome.getItemWidth(), 0.0001);
@@ -1603,7 +1631,7 @@ final class M3ThemeTest {
         assertEquals(4.0, railHome.getContentSpacing(), 0.0001);
         assertEquals(360.0, navigationDrawer.getPrefWidth(), 0.0001);
         assertEquals(12.0, navigationDrawer.getPadding().getTop(), 0.0001);
-        assertEquals(4.0, navigationDrawer.getItemSpacing(), 0.0001);
+        assertEquals(0.0, navigationDrawer.getItemSpacing(), 0.0001);
         assertEquals(56.0, drawerHome.getOneLineHeight(), 0.0001);
         assertEquals(16.0, drawerHome.getHorizontalPadding(), 0.0001);
         assertEquals(12.0, drawerHome.getContentSpacing(), 0.0001);

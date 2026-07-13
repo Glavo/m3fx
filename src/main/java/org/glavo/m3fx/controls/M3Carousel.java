@@ -6,10 +6,12 @@ package org.glavo.m3fx.controls;
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -39,13 +41,16 @@ import java.util.Objects;
 
 /// A Material Design 3 carousel for horizontally browsing arbitrary item nodes.
 ///
-/// `M3Carousel` manages an ordered item list, selected index, keyboard navigation, wrap-around behavior, pointer
-/// selection, and animated movement through the visible item track. It can host any JavaFX node, allowing cards,
-/// media previews, or custom content to use Material carousel selection behavior.
+/// `M3Carousel` manages an ordered item list, one of the six Material carousel layouts, selected index, keyboard
+/// navigation, pointer selection, and animated movement through the visible item track. It can host any JavaFX node,
+/// allowing cards, media previews, or custom content to use Material carousel selection behavior.
 ///
 /// See [Material Design carousel](https://m3.material.io/components/carousel/overview).
 @NotNullByDefault
 public class M3Carousel extends Control {
+    /// The default carousel layout.
+    private static final M3CarouselLayout DEFAULT_CAROUSEL_LAYOUT = M3CarouselLayout.UNCONTAINED;
+
     /// The base style class for M3FX carousels.
     public static final String STYLE_CLASS = "m3-carousel";
 
@@ -67,6 +72,21 @@ public class M3Carousel extends Control {
     /// The mutable carousel item list.
     private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
 
+    // The Material layout strategy used to size and position carousel items.
+    private final ObjectProperty<M3CarouselLayout> carouselLayout =
+            new SimpleObjectProperty<>(this, "carouselLayout", DEFAULT_CAROUSEL_LAYOUT) {
+                /// Normalizes null assignments and refreshes layout-specific styles.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(DEFAULT_CAROUSEL_LAYOUT);
+                        return;
+                    }
+                    updateCarouselLayoutStyle();
+                    requestLayout();
+                }
+            };
+
     // The selected item index, or `-1` when no item is selected.
     private final IntegerProperty selectedIndex = new SimpleIntegerProperty(this, "selectedIndex", -1) {
         /// Applies selection changes and keeps the index inside the current item range.
@@ -80,7 +100,7 @@ public class M3Carousel extends Control {
     };
 
     // Whether keyboard previous and next navigation wraps around list edges.
-    private final BooleanProperty wrapAround = new SimpleBooleanProperty(this, "wrapAround", true);
+    private final BooleanProperty wrapAround = new SimpleBooleanProperty(this, "wrapAround", false);
 
     // Whether programmatic selection changes animate viewport scrolling.
     private final BooleanProperty animatedScroll = new SimpleBooleanProperty(this, "animatedScroll", true);
@@ -138,9 +158,28 @@ public class M3Carousel extends Control {
         return items;
     }
 
+    /// Returns the Material layout strategy used by this carousel.
+    ///
+    /// @return the current carousel layout
+    public final M3CarouselLayout getCarouselLayout() {
+        return carouselLayout.get();
+    }
 
+    /// Sets the Material layout strategy used by this carousel.
+    ///
+    /// A `null` assignment restores [M3CarouselLayout#UNCONTAINED].
+    ///
+    /// @param carouselLayout the carousel layout, or `null` to restore the default
+    public final void setCarouselLayout(@Nullable M3CarouselLayout carouselLayout) {
+        this.carouselLayout.set(carouselLayout);
+    }
 
-
+    /// Returns the Material carousel layout property.
+    ///
+    /// @return the carousel layout property
+    public final ObjectProperty<M3CarouselLayout> carouselLayoutProperty() {
+        return carouselLayout;
+    }
 
     /// Returns the selected item index, or `-1` when no item is selected.
     ///
@@ -348,12 +387,27 @@ public class M3Carousel extends Control {
     /// Adds base styles, accessibility role, and input behavior.
     private void initialize() {
         M3ControlStyles.initialize(this, STYLE_CLASS);
+        updateCarouselLayoutStyle();
         setAccessibleRole(AccessibleRole.LIST_VIEW);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
         setFocusTraversable(true);
         focusNotifier.start();
         getItems().addListener(itemsListener);
         addEventFilter(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
+    }
+
+    /// Applies the style class associated with the current Material carousel layout.
+    private void updateCarouselLayoutStyle() {
+        M3ControlStyles.replaceVariant(
+                this,
+                getCarouselLayout().styleClass(),
+                M3CarouselLayout.MULTI_BROWSE.styleClass(),
+                M3CarouselLayout.UNCONTAINED.styleClass(),
+                M3CarouselLayout.UNCONTAINED_MULTI_ASPECT_RATIO.styleClass(),
+                M3CarouselLayout.HERO.styleClass(),
+                M3CarouselLayout.CENTER_ALIGNED_HERO.styleClass(),
+                M3CarouselLayout.FULL_SCREEN.styleClass()
+        );
     }
 
     /// Handles keyboard selection and scrolling.

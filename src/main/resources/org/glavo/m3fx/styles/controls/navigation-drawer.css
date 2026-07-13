@@ -1,9 +1,20 @@
 .m3-navigation-drawer {
-    -fx-background-color: -m3-color-surface-container-low;
+    -fx-background-color: -m3-color-surface;
+    -fx-background-radius: 0px 16px 16px 0px;
     -fx-padding: 12px;
     -fx-min-width: 360px;
     -fx-pref-width: 360px;
-    -m3-item-spacing: 4px;
+    -m3-item-spacing: 0px;
+    -fx-effect: null;
+}
+
+.m3-navigation-drawer:rtl {
+    -fx-background-radius: 16px 0px 0px 16px;
+}
+
+.m3-navigation-drawer:modal {
+    -fx-background-color: -m3-color-surface-container-low;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 1, 0.18, 0, 1);
 }
 
 .m3-navigation-drawer .m3-list-item {

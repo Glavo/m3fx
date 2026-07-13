@@ -53,6 +53,7 @@ import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.glavo.m3fx.controls.M3Card;
 import org.glavo.m3fx.controls.M3CardVariant;
 import org.glavo.m3fx.controls.M3Carousel;
+import org.glavo.m3fx.controls.M3CarouselLayout;
 import org.glavo.m3fx.controls.M3CheckBox;
 import org.glavo.m3fx.controls.M3Chip;
 import org.glavo.m3fx.controls.M3ChipGroup;
@@ -104,9 +105,11 @@ import org.glavo.m3fx.controls.M3MenuSelectionMode;
 import org.glavo.m3fx.controls.M3NavigationBar;
 import org.glavo.m3fx.controls.M3NavigationDrawer;
 import org.glavo.m3fx.controls.M3NavigationDrawerGroup;
+import org.glavo.m3fx.controls.M3NavigationDrawerVariant;
 import org.glavo.m3fx.controls.M3NavigationItem;
 import org.glavo.m3fx.controls.M3NavigationItemLayout;
 import org.glavo.m3fx.controls.M3NavigationRail;
+import org.glavo.m3fx.controls.M3NavigationRailVariant;
 import org.glavo.m3fx.controls.M3PasswordField;
 import org.glavo.m3fx.controls.M3ProgressBar;
 import org.glavo.m3fx.controls.M3ProgressIndicator;
@@ -469,7 +472,7 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the main content shell with sidebar, page host, and page-local snackbar overlay.
     ///
-    /// @param pages the pages shown by the sidebar and content host
+    /// @param pages        the pages shown by the sidebar and content host
     /// @param snackbarHost the snackbar overlay positioned over the content page
     /// @return the assembled demo content shell
     private Node createContent(List<DemoPage> pages, M3SnackbarHost snackbarHost) {
@@ -658,7 +661,8 @@ public final class M3FXDemoApp extends Application {
     }
 
     /// Returns the demo page titles created for this application instance.
-    @Unmodifiable List<String> demoPageTitles() {
+    @Unmodifiable
+    List<String> demoPageTitles() {
         return pages.stream().map(DemoPage::title).toList();
     }
 
@@ -701,8 +705,8 @@ public final class M3FXDemoApp extends Application {
 
     /// Applies a presentation mode directly for rendered demo validation.
     ///
-    /// @param profile the Material profile to install
-    /// @param brightness the theme brightness to install
+    /// @param profile           the Material profile to install
+    /// @param brightness        the theme brightness to install
     /// @param animationsEnabled whether full component motion is enabled
     void configurePresentation(M3Profile profile, Brightness brightness, boolean animationsEnabled) {
         this.profile = Objects.requireNonNull(profile, "profile");
@@ -1810,20 +1814,34 @@ public final class M3FXDemoApp extends Application {
         M3SplitButton outlined = createSplitButton("Export", M3ButtonVariant.OUTLINED);
         M3SplitButton filled = createSplitButton("Publish", M3ButtonVariant.FILLED);
         M3SplitButton elevated = createSplitButton("Save", M3ButtonVariant.ELEVATED);
+        tonal.setGraphic(createSplitButtonGraphic("create", M3ButtonVariant.TONAL, M3IconSize.SMALL));
+        outlined.setGraphic(createSplitButtonGraphic("share", M3ButtonVariant.OUTLINED, M3IconSize.SMALL));
+        filled.setGraphic(createSplitButtonGraphic("send", M3ButtonVariant.FILLED, M3IconSize.SMALL));
+        elevated.setGraphic(createSplitButtonGraphic("save", M3ButtonVariant.ELEVATED, M3IconSize.SMALL));
+
         M3SplitButton disabled = createSplitButton("Disabled", M3ButtonVariant.TONAL);
         disabled.setDisable(true);
 
+        M3SplitButton extraSmall = createSplitButton("XS", M3ButtonVariant.TONAL);
         M3SplitButton small = createSplitButton("Small", M3ButtonVariant.TONAL);
         M3SplitButton medium = createSplitButton("Medium", M3ButtonVariant.TONAL);
         M3SplitButton large = createSplitButton("Large", M3ButtonVariant.TONAL);
+        M3SplitButton extraLarge = createSplitButton("XL", M3ButtonVariant.TONAL);
+        extraSmall.setSize(M3ButtonSize.EXTRA_SMALL);
         small.setSize(M3ButtonSize.SMALL);
         medium.setSize(M3ButtonSize.MEDIUM);
         large.setSize(M3ButtonSize.LARGE);
+        extraLarge.setSize(M3ButtonSize.EXTRA_LARGE);
+        extraSmall.setGraphic(createSplitButtonGraphic("edit", M3ButtonVariant.TONAL, M3IconSize.SMALL));
+        small.setGraphic(createSplitButtonGraphic("edit", M3ButtonVariant.TONAL, M3IconSize.SMALL));
+        medium.setGraphic(createSplitButtonGraphic("edit", M3ButtonVariant.TONAL, M3IconSize.MEDIUM));
+        large.setGraphic(createSplitButtonGraphic("edit", M3ButtonVariant.TONAL, M3IconSize.LARGE));
+        extraLarge.setGraphic(createSplitButtonGraphic("edit", M3ButtonVariant.TONAL, M3IconSize.EXTRA_LARGE));
 
         return createGallery(
                 createShowcaseGroup("Color Roles", tonal, outlined, filled, elevated),
                 createShowcaseGroup("Disabled", disabled),
-                createShowcaseGroup("Size Scale", small, medium, large)
+                createShowcaseGroup("Size Scale", extraSmall, small, medium, large, extraLarge)
         );
     }
 
@@ -1947,27 +1965,58 @@ public final class M3FXDemoApp extends Application {
     /// Creates the navigation rail component page.
     private Node createNavigationRailPage() {
         M3NavigationRail collapsed = createFourItemNavigationRail();
-        M3NavigationRail expandable = createFourItemNavigationRail();
-        expandable.setExpanded(true);
+
+        M3NavigationRail standard = createFourItemNavigationRail();
+        standard.setExpanded(true);
+
+        M3NavigationRail modal = createFourItemNavigationRail();
+        modal.setVariant(M3NavigationRailVariant.MODAL);
+        modal.setExpanded(true);
 
         return createGallery(
-                createShowcaseGroup("Collapsed", createNavigationRailPreview(collapsed)),
-                createShowcaseGroup("Expandable", createNavigationRailPreview(expandable))
+                createShowcaseGroup(
+                        "Variants",
+                        createNavigationRailPreview("Collapsed", collapsed),
+                        createNavigationRailPreview("Expanded standard", standard),
+                        createNavigationRailPreview("Expanded modal", modal)
+                )
         );
     }
 
     /// Creates the navigation drawer component page.
     private Node createNavigationDrawerPage() {
-        M3NavigationDrawer primary = createFourItemNavigationDrawer();
-        M3NavigationDrawer labeled = createSectionNavigationDrawer();
-        Label section = new Label("Workspace");
-        section.getStyleClass().add("demo-drawer-section");
-        labeled.getItems().add(0, section);
+        M3NavigationDrawer standard = createFourItemNavigationDrawer();
+        standard.setPrefHeight(360.0);
+        M3NavigationDrawer modal = createFourItemNavigationDrawer();
+        modal.setVariant(M3NavigationDrawerVariant.MODAL);
+        M3NavigationDrawer grouped = createSectionNavigationDrawer();
+        grouped.setPrefHeight(360.0);
 
         return createGallery(
-                createShowcaseGroup("Destinations", primary),
-                createShowcaseGroup("Section", labeled)
+                createShowcaseGroup("Standard", standard),
+                createFullWidthShowcaseGroup("Modal", createModalNavigationDrawerPreview(modal)),
+                createShowcaseGroup("Grouped destinations", grouped)
         );
+    }
+
+    /// Creates a modal navigation drawer preview above application content and a scrim.
+    ///
+    /// @param drawer the modal drawer
+    /// @return the modal drawer preview
+    private static StackPane createModalNavigationDrawerPreview(M3NavigationDrawer drawer) {
+        Label contentLabel = new Label("Application content");
+        contentLabel.getStyleClass().add("demo-modal-drawer-content-label");
+        StackPane applicationContent = new StackPane(contentLabel);
+        applicationContent.getStyleClass().add("demo-modal-drawer-content");
+
+        M3Scrim scrim = new M3Scrim();
+        scrim.setFocusTraversable(false);
+
+        drawer.setMaxWidth(Region.USE_PREF_SIZE);
+        StackPane preview = new StackPane(applicationContent, scrim, drawer);
+        preview.getStyleClass().add("demo-modal-drawer-preview");
+        StackPane.setAlignment(drawer, Pos.TOP_LEFT);
+        return preview;
     }
 
     /// Creates the loading indicator component page.
@@ -2244,29 +2293,49 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the carousel component page.
     private Node createCarouselPage() {
-        M3Carousel multiAspectRatio = createCarousel(
-                createCarouselCard("Morning focus", "Deep work block", M3CardVariant.FILLED, 232.0, 140.0),
+        M3Carousel multiBrowse = createCarousel(
+                createCarouselCard("Morning focus", "Deep work block", M3CardVariant.FILLED, 280.0, 140.0),
                 createCarouselCard("Design review", "Component polish", M3CardVariant.FILLED, 280.0, 140.0),
-                createCarouselCard("Release notes", "Packaging updates", M3CardVariant.FILLED, 196.0, 140.0),
-                createCarouselCard("Mood board", "Inspiration", M3CardVariant.FILLED, 252.0, 140.0),
-                createCarouselCard("Accessibility", "Keyboard checks", M3CardVariant.FILLED, 180.0, 140.0),
-                createCarouselCard("Motion study", "Expressive rhythm", M3CardVariant.FILLED, 264.0, 140.0),
-                createCarouselCard("Color system", "Dynamic palettes", M3CardVariant.FILLED, 216.0, 140.0)
+                createCarouselCard("Release notes", "Packaging updates", M3CardVariant.FILLED, 280.0, 140.0),
+                createCarouselCard("Accessibility", "Keyboard checks", M3CardVariant.FILLED, 280.0, 140.0),
+                createCarouselCard("Motion study", "Expressive rhythm", M3CardVariant.FILLED, 280.0, 140.0),
+                createCarouselCard("Color system", "Dynamic palettes", M3CardVariant.FILLED, 280.0, 140.0)
         );
-        multiAspectRatio.setMaxWidth(Double.MAX_VALUE);
-        multiAspectRatio.selectIndex(1);
+        multiBrowse.setCarouselLayout(M3CarouselLayout.MULTI_BROWSE);
+        multiBrowse.setMaxWidth(Double.MAX_VALUE);
+        multiBrowse.selectFirst();
 
         M3Button previous = new M3Button("Previous", M3ButtonVariant.OUTLINED);
-        previous.setOnAction(event -> multiAspectRatio.selectPrevious());
+        previous.setOnAction(event -> multiBrowse.selectPrevious());
         M3Button next = new M3Button("Next", M3ButtonVariant.FILLED);
-        next.setOnAction(event -> multiAspectRatio.selectNext());
-
+        next.setOnAction(event -> multiBrowse.selectNext());
         HBox navigation = new HBox(12.0, previous, next);
         navigation.getStyleClass().add("demo-carousel-navigation");
 
-        VBox multiAspectRatioSample = new VBox(12.0, multiAspectRatio, navigation);
-        multiAspectRatioSample.setFillWidth(true);
-        multiAspectRatioSample.setMaxWidth(Double.MAX_VALUE);
+        VBox multiBrowseSample = new VBox(12.0, multiBrowse, navigation);
+        multiBrowseSample.setFillWidth(true);
+        multiBrowseSample.setMaxWidth(Double.MAX_VALUE);
+
+        M3Carousel hero = createCarousel(
+                createCarouselCard("City guide", "Featured destination", M3CardVariant.ELEVATED, 320.0, 168.0),
+                createCarouselCard("Architecture", "Editorial collection", M3CardVariant.FILLED, 320.0, 168.0),
+                createCarouselCard("Landscape", "Weekend inspiration", M3CardVariant.FILLED, 320.0, 168.0),
+                createCarouselCard("Portraits", "People and stories", M3CardVariant.FILLED, 320.0, 168.0)
+        );
+        hero.setCarouselLayout(M3CarouselLayout.HERO);
+        hero.setMaxWidth(Double.MAX_VALUE);
+        hero.selectFirst();
+
+        M3Carousel centerAlignedHero = createCarousel(
+                createCarouselCard("Previous", "Preview", M3CardVariant.FILLED, 320.0, 168.0),
+                createCarouselCard("Research", "Background material", M3CardVariant.FILLED, 320.0, 168.0),
+                createCarouselCard("Featured story", "Centered focal content", M3CardVariant.ELEVATED, 320.0, 168.0),
+                createCarouselCard("Gallery", "Related material", M3CardVariant.FILLED, 320.0, 168.0),
+                createCarouselCard("Next", "Preview", M3CardVariant.FILLED, 320.0, 168.0)
+        );
+        centerAlignedHero.setCarouselLayout(M3CarouselLayout.CENTER_ALIGNED_HERO);
+        centerAlignedHero.setMaxWidth(Double.MAX_VALUE);
+        centerAlignedHero.selectIndex(2);
 
         M3Carousel uncontained = createCarousel(
                 createCarouselCard("Inbox", "24 unread", M3CardVariant.OUTLINED, 176.0, 112.0),
@@ -2274,16 +2343,40 @@ public final class M3FXDemoApp extends Application {
                 createCarouselCard("Files", "Recent docs", M3CardVariant.OUTLINED, 176.0, 112.0),
                 createCarouselCard("People", "Team updates", M3CardVariant.OUTLINED, 176.0, 112.0),
                 createCarouselCard("Calendar", "3 events", M3CardVariant.OUTLINED, 176.0, 112.0),
-                createCarouselCard("Messages", "8 new", M3CardVariant.OUTLINED, 176.0, 112.0),
-                createCarouselCard("Projects", "4 active", M3CardVariant.OUTLINED, 176.0, 112.0),
-                createCarouselCard("Archive", "12 folders", M3CardVariant.OUTLINED, 176.0, 112.0)
+                createCarouselCard("Messages", "8 new", M3CardVariant.OUTLINED, 176.0, 112.0)
         );
+        uncontained.setCarouselLayout(M3CarouselLayout.UNCONTAINED);
         uncontained.setMaxWidth(Double.MAX_VALUE);
         uncontained.selectFirst();
 
+        M3Carousel multiAspectRatio = createCarousel(
+                createCarouselCard("Morning focus", "Deep work block", M3CardVariant.FILLED, 232.0, 140.0),
+                createCarouselCard("Design review", "Component polish", M3CardVariant.FILLED, 280.0, 140.0),
+                createCarouselCard("Release notes", "Packaging updates", M3CardVariant.FILLED, 196.0, 140.0),
+                createCarouselCard("Mood board", "Inspiration", M3CardVariant.FILLED, 252.0, 140.0),
+                createCarouselCard("Accessibility", "Keyboard checks", M3CardVariant.FILLED, 180.0, 140.0),
+                createCarouselCard("Motion study", "Expressive rhythm", M3CardVariant.FILLED, 264.0, 140.0)
+        );
+        multiAspectRatio.setCarouselLayout(M3CarouselLayout.UNCONTAINED_MULTI_ASPECT_RATIO);
+        multiAspectRatio.setMaxWidth(Double.MAX_VALUE);
+        multiAspectRatio.selectFirst();
+
+        M3Carousel fullScreen = createCarousel(
+                createCarouselCard("Workspace", "One edge-to-edge destination", M3CardVariant.FILLED, 640.0, 168.0),
+                createCarouselCard("Timeline", "Focused project activity", M3CardVariant.FILLED, 640.0, 168.0),
+                createCarouselCard("Insights", "Current reporting overview", M3CardVariant.FILLED, 640.0, 168.0)
+        );
+        fullScreen.setCarouselLayout(M3CarouselLayout.FULL_SCREEN);
+        fullScreen.setMaxWidth(Double.MAX_VALUE);
+        fullScreen.selectFirst();
+
         return createGallery(
-                createFullWidthShowcaseGroup("Uncontained multi-aspect ratio", multiAspectRatioSample),
-                createFullWidthShowcaseGroup("Uncontained", uncontained)
+                createFullWidthShowcaseGroup("Multi-browse", multiBrowseSample),
+                createFullWidthShowcaseGroup("Hero", hero),
+                createFullWidthShowcaseGroup("Center-aligned hero", centerAlignedHero),
+                createFullWidthShowcaseGroup("Uncontained", uncontained),
+                createFullWidthShowcaseGroup("Uncontained multi-aspect ratio", multiAspectRatio),
+                createFullWidthShowcaseGroup("Full-screen", fullScreen)
         );
     }
 
@@ -2476,6 +2569,7 @@ public final class M3FXDemoApp extends Application {
                 createShowcaseGroup("Responsive And RTL", narrow, rightToLeft)
         );
     }
+
     /// Creates a sample banner for the page gallery.
     private M3Banner createBanner(String text, @Nullable Node icon, String... actionTexts) {
         M3Banner banner = new M3Banner(text);
@@ -2825,6 +2919,24 @@ public final class M3FXDemoApp extends Application {
         splitButton.setVariant(variant);
         splitButton.setOnAction(event -> showSnackbar("Theme-aware snackbar"));
         return splitButton;
+    }
+
+    /// Creates a split-button leading icon whose color follows the button variant.
+    private static StackPane createSplitButtonGraphic(
+            String iconName,
+            M3ButtonVariant variant,
+            M3IconSize size
+    ) {
+        SVGPath icon = switch (variant) {
+            case FILLED -> DemoIcons.onPrimary(iconName);
+            case TONAL -> DemoIcons.onSecondaryContainer(iconName);
+            case OUTLINED, TEXT, ELEVATED -> DemoIcons.primary(iconName);
+        };
+        return createIconViewport(
+                icon,
+                defaultIconGlyphSize(size),
+                "demo-split-button-leading-icon"
+        );
     }
 
     /// Creates a text field for the page gallery.
@@ -3318,12 +3430,20 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the sectioned navigation drawer sample.
     private static M3NavigationDrawer createSectionNavigationDrawer() {
+        M3NavigationDrawerGroup workspace = new M3NavigationDrawerGroup("Workspace");
+        workspace.getHeaderItem().setLeading(createNavigationIcon("dashboard"));
+        M3ListItem dashboard = createDrawerItem("Dashboard", "home");
+        workspace.getItems().addAll(
+                dashboard,
+                createDrawerItem("Reports", "reports")
+        );
+        workspace.setExpanded(true);
+
         M3NavigationDrawer navigationDrawer = createNavigationDrawer(
-                createDrawerItem("Dashboard", "dashboard"),
-                createDrawerItem("Reports", "reports"),
+                workspace,
                 createDrawerItem("Settings", "settings")
         );
-        navigationDrawer.selectIndex(0);
+        navigationDrawer.select(dashboard);
         return navigationDrawer;
     }
 
@@ -3341,10 +3461,10 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates a sample button with explicit Material size and shape roles.
     ///
-    /// @param text the button label
+    /// @param text    the button label
     /// @param variant the button color and elevation variant
-    /// @param size the Material button size
-    /// @param shape the resting Material button shape
+    /// @param size    the Material button size
+    /// @param shape   the resting Material button shape
     /// @return the configured sample button
     private static M3Button createSizedButton(
             String text,
@@ -3546,11 +3666,19 @@ public final class M3FXDemoApp extends Application {
         return group;
     }
 
-    /// Creates an interactive collapsed or expanded navigation rail preview.
-    private static VBox createNavigationRailPreview(M3NavigationRail navigationRail) {
+    /// Creates a labeled interactive collapsed or expanded navigation rail preview.
+    ///
+    /// @param title the variant title displayed above the preview
+    /// @param navigationRail the navigation rail to preview
+    /// @return the labeled interactive preview
+    private static VBox createNavigationRailPreview(String title, M3NavigationRail navigationRail) {
+        Label titleLabel = new Label(title);
+        titleLabel.getStyleClass().add("demo-group-title");
+
         M3IconButton menuButton = createIconButton("menu");
         menuButton.setOnAction(event -> navigationRail.setExpanded(!navigationRail.isExpanded()));
-        VBox preview = new VBox(12.0, menuButton, navigationRail);
+
+        VBox preview = new VBox(12.0, titleLabel, menuButton, navigationRail);
         preview.setAlignment(Pos.TOP_LEFT);
         return preview;
     }
@@ -4188,12 +4316,12 @@ public final class M3FXDemoApp extends Application {
 
     /// Describes one demo component page.
     ///
-    /// @param title the page title
+    /// @param title           the page title
     /// @param navigationTitle the page title displayed in the sidebar
-    /// @param sidebarSection the sidebar section containing this page
-    /// @param subtitle the page subtitle
-    /// @param materialUrl the Material Design documentation URL for the page or its closest related guidance
-    /// @param contentFactory the factory used to create page content on demand
+    /// @param sidebarSection  the sidebar section containing this page
+    /// @param subtitle        the page subtitle
+    /// @param materialUrl     the Material Design documentation URL for the page or its closest related guidance
+    /// @param contentFactory  the factory used to create page content on demand
     @NotNullByDefault
     private record DemoPage(
             String title,

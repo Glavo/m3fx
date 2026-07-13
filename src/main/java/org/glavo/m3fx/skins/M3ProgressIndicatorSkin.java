@@ -379,25 +379,29 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         double additionalRotation = additionalRotationDegrees(cycleFraction);
         indeterminateStartFraction = (globalRotation + additionalRotation) / 360.0;
 
-        if (cycleFraction < 0.5) {
-            double localFraction = cycleFraction * 2.0;
-            indeterminateSweepFraction = M3Motion.STANDARD.interpolate(
-                    INDETERMINATE_MIN_SWEEP_FRACTION,
-                    INDETERMINATE_MAX_SWEEP_FRACTION,
-                    localFraction
-            );
-        } else {
-            double localFraction = (cycleFraction - 0.5) * 2.0;
-            indeterminateSweepFraction = M3Motion.STANDARD.interpolate(
-                    INDETERMINATE_MAX_SWEEP_FRACTION,
-                    INDETERMINATE_MIN_SWEEP_FRACTION,
-                    localFraction
-            );
-        }
+        indeterminateSweepFraction = indeterminateSweepFraction(cycleFraction);
     }
 
-    /// Returns the stepped additional rotation used by AndroidX circular indeterminate progress.
-    private static double additionalRotationDegrees(double cycleFraction) {
+    /// Returns the AndroidX circular sweep for one normalized indeterminate cycle fraction.
+    static double indeterminateSweepFraction(double cycleFraction) {
+        double normalizedFraction = clamp(cycleFraction);
+        if (normalizedFraction < 0.5) {
+            double localFraction = normalizedFraction * 2.0;
+            return INDETERMINATE_MIN_SWEEP_FRACTION
+                    + (INDETERMINATE_MAX_SWEEP_FRACTION - INDETERMINATE_MIN_SWEEP_FRACTION)
+                    * localFraction;
+        }
+
+        double localFraction = (normalizedFraction - 0.5) * 2.0;
+        return M3Motion.STANDARD.interpolate(
+                INDETERMINATE_MAX_SWEEP_FRACTION,
+                INDETERMINATE_MIN_SWEEP_FRACTION,
+                localFraction
+        );
+    }
+
+    /// Returns the four linear quarter-turn pulses used by AndroidX circular indeterminate progress.
+    static double additionalRotationDegrees(double cycleFraction) {
         double elapsedMillis = clamp(cycleFraction) * CIRCULAR_INDETERMINATE_REFERENCE_DURATION_MILLIS;
         int pulseIndex = Math.min(
                 3,
@@ -407,8 +411,7 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         double localFraction = clamp(
                 (elapsedMillis - pulseStartMillis) / CIRCULAR_ADDITIONAL_ROTATION_DURATION_MILLIS
         );
-        double easedPulse = M3Motion.EMPHASIZED_DECELERATE.interpolate(0.0, 1.0, localFraction);
-        return (pulseIndex + easedPulse) * CIRCULAR_ADDITIONAL_ROTATION_DEGREES;
+        return (pulseIndex + localFraction) * CIRCULAR_ADDITIONAL_ROTATION_DEGREES;
     }
 
     /// Resets circular indeterminate geometry to the seamless cycle origin.

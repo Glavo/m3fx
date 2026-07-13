@@ -1,3 +1,5 @@
+@import "button-group.css";
+
 .m3-icon-toggle-button-group {
     -m3-icon-toggle-button-group-spacing: 8px;
 }

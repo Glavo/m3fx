@@ -5,10 +5,12 @@ package org.glavo.m3fx.controls;
 
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -17,6 +19,7 @@ import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
+import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.AccessibleAction;
@@ -64,8 +67,17 @@ public class M3NavigationDrawer extends Control {
     /// The base style class for M3FX navigation drawers.
     public static final String STYLE_CLASS = "m3-navigation-drawer";
 
+    /// The standard drawer pseudo-class.
+    private static final PseudoClass STANDARD_PSEUDO_CLASS = PseudoClass.getPseudoClass("standard");
+
+    /// The modal drawer pseudo-class.
+    private static final PseudoClass MODAL_PSEUDO_CLASS = PseudoClass.getPseudoClass("modal");
+
+    /// The right-to-left layout pseudo-class.
+    private static final PseudoClass RTL_PSEUDO_CLASS = PseudoClass.getPseudoClass("rtl");
+
     /// The default spacing between top-level drawer items.
-    private static final double DEFAULT_ITEM_SPACING = 4.0;
+    private static final double DEFAULT_ITEM_SPACING = 0.0;
 
     /// The mutable navigation drawer content.
     private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
@@ -87,6 +99,20 @@ public class M3NavigationDrawer extends Control {
 
     // The styleable spacing between top-level drawer items.
     private @Nullable StyleableDoubleProperty itemSpacing;
+
+    /// Backing property for the public drawer variant API.
+    private final ObjectProperty<M3NavigationDrawerVariant> drawerVariant =
+            new SimpleObjectProperty<>(this, "variant", M3NavigationDrawerVariant.STANDARD) {
+                /// Updates variant pseudo-classes when the variant changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(M3NavigationDrawerVariant.STANDARD);
+                        return;
+                    }
+                    updateVariantPseudoClasses();
+                }
+            };
 
     // Whether the drawer allows all list items to be unselected.
     private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection") {
@@ -170,8 +196,26 @@ public class M3NavigationDrawer extends Control {
         return items;
     }
 
+    /// Returns the navigation drawer presentation variant.
+    ///
+    /// @return the current drawer variant
+    public final M3NavigationDrawerVariant getVariant() {
+        return drawerVariant.get();
+    }
 
+    /// Sets the navigation drawer presentation variant.
+    ///
+    /// @param variant the drawer variant
+    public final void setVariant(M3NavigationDrawerVariant variant) {
+        drawerVariant.set(Objects.requireNonNull(variant, "variant"));
+    }
 
+    /// Returns the navigation drawer variant property.
+    ///
+    /// @return the drawer variant property
+    public final ObjectProperty<M3NavigationDrawerVariant> variantProperty() {
+        return drawerVariant;
+    }
 
 
     /// Returns the selected drawer list items in child order.
@@ -398,6 +442,8 @@ public class M3NavigationDrawer extends Control {
     /// Adds base style classes and installs content listeners.
     private void initialize() {
         M3ControlStyles.initialize(this, STYLE_CLASS);
+        updateVariantPseudoClasses();
+        updateOrientationPseudoClass();
         setAccessibleRole(AccessibleRole.LIST_VIEW);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(
@@ -409,12 +455,25 @@ public class M3NavigationDrawer extends Control {
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         addEventHandler(KeyEvent.KEY_TYPED, this::handleTypeAheadKeyTyped);
         getItems().addListener(childrenListener);
+        effectiveNodeOrientationProperty().addListener(observable -> updateOrientationPseudoClass());
         focusNotifier.start();
         sceneProperty().addListener((observable, oldScene, newScene) -> {
             if (newScene == null) {
                 typeAheadState.clear();
             }
         });
+    }
+
+    /// Updates pseudo-classes representing the current drawer variant.
+    private void updateVariantPseudoClasses() {
+        M3NavigationDrawerVariant currentVariant = getVariant();
+        pseudoClassStateChanged(STANDARD_PSEUDO_CLASS, currentVariant == M3NavigationDrawerVariant.STANDARD);
+        pseudoClassStateChanged(MODAL_PSEUDO_CLASS, currentVariant == M3NavigationDrawerVariant.MODAL);
+    }
+
+    /// Updates the pseudo-class used for logical trailing-edge container corners.
+    private void updateOrientationPseudoClass() {
+        pseudoClassStateChanged(RTL_PSEUDO_CLASS, M3NodeLayout.isRightToLeft(this));
     }
 
     /// Applies keyboard navigation across enabled drawer items.

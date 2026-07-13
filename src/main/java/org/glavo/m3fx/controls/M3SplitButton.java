@@ -71,6 +71,21 @@ public class M3SplitButton extends Control {
     /// The default spacing between the action and menu parts.
     private static final double DEFAULT_SPACING = 2.0;
 
+    /// The default outer-corner radius for the small split button size.
+    private static final double DEFAULT_OUTER_CORNER = 20.0;
+
+    /// The default resting inner-corner radius for the small split button size.
+    private static final double DEFAULT_INNER_CORNER = 4.0;
+
+    /// The default hovered inner-corner radius for the small split button size.
+    private static final double DEFAULT_HOVERED_INNER_CORNER = 12.0;
+
+    /// The default pressed inner-corner radius for the small split button size.
+    private static final double DEFAULT_PRESSED_INNER_CORNER = 12.0;
+
+    /// The default selected trailing-button inner-corner radius for the small split button size.
+    private static final double DEFAULT_SELECTED_INNER_CORNER = 20.0;
+
     /// The primary action button.
     private final M3Button actionButton = new M3Button();
 
@@ -122,6 +137,21 @@ public class M3SplitButton extends Control {
 
     // The styleable spacing between the action and menu parts.
     private @Nullable StyleableDoubleProperty spacing;
+
+    // The styleable outer-corner radius shared by both button parts.
+    private @Nullable StyleableDoubleProperty outerCorner;
+
+    // The styleable resting inner-corner radius shared by both button parts.
+    private @Nullable StyleableDoubleProperty innerCorner;
+
+    // The styleable hovered inner-corner radius shared by both button parts.
+    private @Nullable StyleableDoubleProperty hoveredInnerCorner;
+
+    // The styleable pressed inner-corner radius shared by both button parts.
+    private @Nullable StyleableDoubleProperty pressedInnerCorner;
+
+    // The styleable selected trailing-button inner-corner radius.
+    private @Nullable StyleableDoubleProperty selectedInnerCorner;
 
     /// Creates an empty split button.
     public M3SplitButton() {
@@ -276,6 +306,161 @@ public class M3SplitButton extends Control {
         return spacing;
     }
 
+    /// Returns the outer-corner radius shared by both button parts.
+    ///
+    /// @return the outer-corner radius in pixels
+    public final double getOuterCorner() {
+        return outerCorner == null ? DEFAULT_OUTER_CORNER : outerCorner.get();
+    }
+
+    /// Sets the outer-corner radius shared by both button parts.
+    ///
+    /// @param outerCorner the non-negative outer-corner radius in pixels
+    public final void setOuterCorner(double outerCorner) {
+        outerCornerProperty().set(M3Css.nonNegative(outerCorner, "outerCorner"));
+    }
+
+    /// Returns the styleable outer-corner radius property.
+    ///
+    /// @return the outer-corner radius property
+    public final StyleableDoubleProperty outerCornerProperty() {
+        if (outerCorner == null) {
+            outerCorner = shapeProperty(
+                    DEFAULT_OUTER_CORNER,
+                    "outerCorner",
+                    StyleableProperties.OUTER_CORNER
+            );
+        }
+        return outerCorner;
+    }
+
+    /// Returns the resting inner-corner radius shared by both button parts.
+    ///
+    /// @return the resting inner-corner radius in pixels
+    public final double getInnerCorner() {
+        return innerCorner == null ? DEFAULT_INNER_CORNER : innerCorner.get();
+    }
+
+    /// Sets the resting inner-corner radius shared by both button parts.
+    ///
+    /// @param innerCorner the non-negative resting inner-corner radius in pixels
+    public final void setInnerCorner(double innerCorner) {
+        innerCornerProperty().set(M3Css.nonNegative(innerCorner, "innerCorner"));
+    }
+
+    /// Returns the styleable resting inner-corner radius property.
+    ///
+    /// @return the resting inner-corner radius property
+    public final StyleableDoubleProperty innerCornerProperty() {
+        if (innerCorner == null) {
+            innerCorner = shapeProperty(
+                    DEFAULT_INNER_CORNER,
+                    "innerCorner",
+                    StyleableProperties.INNER_CORNER
+            );
+        }
+        return innerCorner;
+    }
+
+    /// Returns the hovered inner-corner radius shared by both button parts.
+    ///
+    /// @return the hovered inner-corner radius in pixels
+    public final double getHoveredInnerCorner() {
+        return hoveredInnerCorner == null ? DEFAULT_HOVERED_INNER_CORNER : hoveredInnerCorner.get();
+    }
+
+    /// Sets the hovered inner-corner radius shared by both button parts.
+    ///
+    /// @param hoveredInnerCorner the non-negative hovered inner-corner radius in pixels
+    public final void setHoveredInnerCorner(double hoveredInnerCorner) {
+        hoveredInnerCornerProperty().set(M3Css.nonNegative(hoveredInnerCorner, "hoveredInnerCorner"));
+    }
+
+    /// Returns the styleable hovered inner-corner radius property.
+    ///
+    /// @return the hovered inner-corner radius property
+    public final StyleableDoubleProperty hoveredInnerCornerProperty() {
+        if (hoveredInnerCorner == null) {
+            hoveredInnerCorner = shapeProperty(
+                    DEFAULT_HOVERED_INNER_CORNER,
+                    "hoveredInnerCorner",
+                    StyleableProperties.HOVERED_INNER_CORNER
+            );
+        }
+        return hoveredInnerCorner;
+    }
+
+    /// Returns the pressed inner-corner radius shared by both button parts.
+    ///
+    /// @return the pressed inner-corner radius in pixels
+    public final double getPressedInnerCorner() {
+        return pressedInnerCorner == null ? DEFAULT_PRESSED_INNER_CORNER : pressedInnerCorner.get();
+    }
+
+    /// Sets the pressed inner-corner radius shared by both button parts.
+    ///
+    /// @param pressedInnerCorner the non-negative pressed inner-corner radius in pixels
+    public final void setPressedInnerCorner(double pressedInnerCorner) {
+        pressedInnerCornerProperty().set(M3Css.nonNegative(pressedInnerCorner, "pressedInnerCorner"));
+    }
+
+    /// Returns the styleable pressed inner-corner radius property.
+    ///
+    /// @return the pressed inner-corner radius property
+    public final StyleableDoubleProperty pressedInnerCornerProperty() {
+        if (pressedInnerCorner == null) {
+            pressedInnerCorner = shapeProperty(
+                    DEFAULT_PRESSED_INNER_CORNER,
+                    "pressedInnerCorner",
+                    StyleableProperties.PRESSED_INNER_CORNER
+            );
+        }
+        return pressedInnerCorner;
+    }
+
+    /// Returns the selected trailing-button inner-corner radius.
+    ///
+    /// @return the selected inner-corner radius in pixels
+    public final double getSelectedInnerCorner() {
+        return selectedInnerCorner == null ? DEFAULT_SELECTED_INNER_CORNER : selectedInnerCorner.get();
+    }
+
+    /// Sets the selected trailing-button inner-corner radius.
+    ///
+    /// @param selectedInnerCorner the non-negative selected inner-corner radius in pixels
+    public final void setSelectedInnerCorner(double selectedInnerCorner) {
+        selectedInnerCornerProperty().set(M3Css.nonNegative(selectedInnerCorner, "selectedInnerCorner"));
+    }
+
+    /// Returns the styleable selected trailing-button inner-corner radius property.
+    ///
+    /// @return the selected inner-corner radius property
+    public final StyleableDoubleProperty selectedInnerCornerProperty() {
+        if (selectedInnerCorner == null) {
+            selectedInnerCorner = shapeProperty(
+                    DEFAULT_SELECTED_INNER_CORNER,
+                    "selectedInnerCorner",
+                    StyleableProperties.SELECTED_INNER_CORNER
+            );
+        }
+        return selectedInnerCorner;
+    }
+
+    /// Creates one non-negative styleable split-button shape token property.
+    private StyleableDoubleProperty shapeProperty(
+            double initialValue,
+            String name,
+            CssMetaData<M3SplitButton, Number> cssMetaData
+    ) {
+        return M3Css.nonNegativeStyleableDoubleProperty(
+                initialValue,
+                this,
+                name,
+                cssMetaData,
+                this::requestLayout
+        );
+    }
+
     /// Returns the menu displayed by the menu side.
     ///
     /// @return the menu displayed by the menu side
@@ -387,6 +572,7 @@ public class M3SplitButton extends Control {
         M3ControlStyles.add(actionButton, ACTION_BUTTON_STYLE_CLASS);
         M3ControlStyles.add(menuButton, MENU_BUTTON_STYLE_CLASS);
         menuIndicator.setMouseTransparent(true);
+        menuIndicator.setVertical(true);
         menuIndicator.expandedProperty().bind(menuButton.showingProperty());
         menuButton.setGraphic(menuIndicator);
         setAccessibleRole(AccessibleRole.TOOL_BAR);
@@ -588,13 +774,74 @@ public class M3SplitButton extends Control {
                     }
                 };
 
+        /// CSS metadata for the outer-corner radius.
+        private static final CssMetaData<M3SplitButton, Number> OUTER_CORNER = shapeCssMetaData(
+                "-m3-split-button-outer-corner",
+                DEFAULT_OUTER_CORNER,
+                M3SplitButton::outerCornerProperty
+        );
+
+        /// CSS metadata for the resting inner-corner radius.
+        private static final CssMetaData<M3SplitButton, Number> INNER_CORNER = shapeCssMetaData(
+                "-m3-split-button-inner-corner",
+                DEFAULT_INNER_CORNER,
+                M3SplitButton::innerCornerProperty
+        );
+
+        /// CSS metadata for the hovered inner-corner radius.
+        private static final CssMetaData<M3SplitButton, Number> HOVERED_INNER_CORNER = shapeCssMetaData(
+                "-m3-split-button-hovered-inner-corner",
+                DEFAULT_HOVERED_INNER_CORNER,
+                M3SplitButton::hoveredInnerCornerProperty
+        );
+
+        /// CSS metadata for the pressed inner-corner radius.
+        private static final CssMetaData<M3SplitButton, Number> PRESSED_INNER_CORNER = shapeCssMetaData(
+                "-m3-split-button-pressed-inner-corner",
+                DEFAULT_PRESSED_INNER_CORNER,
+                M3SplitButton::pressedInnerCornerProperty
+        );
+
+        /// CSS metadata for the selected trailing-button inner-corner radius.
+        private static final CssMetaData<M3SplitButton, Number> SELECTED_INNER_CORNER = shapeCssMetaData(
+                "-m3-split-button-selected-inner-corner",
+                DEFAULT_SELECTED_INNER_CORNER,
+                M3SplitButton::selectedInnerCornerProperty
+        );
+
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Control.getClassCssMetaData());
             styleables.add(SPACING);
+            styleables.add(OUTER_CORNER);
+            styleables.add(INNER_CORNER);
+            styleables.add(HOVERED_INNER_CORNER);
+            styleables.add(PRESSED_INNER_CORNER);
+            styleables.add(SELECTED_INNER_CORNER);
             STYLEABLES = Collections.unmodifiableList(styleables);
+        }
+
+        /// Creates CSS metadata for one non-negative split-button shape token.
+        private static CssMetaData<M3SplitButton, Number> shapeCssMetaData(
+                String property,
+                double initialValue,
+                java.util.function.Function<M3SplitButton, StyleableDoubleProperty> accessor
+        ) {
+            return new CssMetaData<>(property, SizeConverter.getInstance(), initialValue, true) {
+                /// Returns whether this property can be set by CSS.
+                @Override
+                public boolean isSettable(M3SplitButton control) {
+                    return M3Css.isSettable(accessor.apply(control));
+                }
+
+                /// Returns the styleable property for a control.
+                @Override
+                public StyleableProperty<Number> getStyleableProperty(M3SplitButton control) {
+                    return accessor.apply(control);
+                }
+            };
         }
     }
 }

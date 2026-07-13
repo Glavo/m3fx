@@ -9,14 +9,16 @@
     -m3-split-button-menu-icon-offset: 1px;
     -m3-split-button-menu-icon-right-offset: -1px;
     -m3-split-button-inner-corner: 4px;
-    -m3-split-button-interactive-inner-corner: 12px;
+    -m3-split-button-hovered-inner-corner: 12px;
+    -m3-split-button-pressed-inner-corner: 12px;
     -m3-split-button-selected-inner-corner: 20px;
 }
 
 .m3-split-button.m3-split-button-extra-small {
     -m3-split-button-outer-corner: 16px;
     -m3-split-button-inner-corner: 4px;
-    -m3-split-button-interactive-inner-corner: 8px;
+    -m3-split-button-hovered-inner-corner: 8px;
+    -m3-split-button-pressed-inner-corner: 8px;
     -m3-split-button-selected-inner-corner: 16px;
     -m3-split-button-container-height: 32px;
     -m3-split-button-action-leading-space: 12px;
@@ -37,14 +39,16 @@
     -m3-split-button-menu-icon-offset: 1px;
     -m3-split-button-menu-icon-right-offset: -1px;
     -m3-split-button-inner-corner: 4px;
-    -m3-split-button-interactive-inner-corner: 12px;
+    -m3-split-button-hovered-inner-corner: 12px;
+    -m3-split-button-pressed-inner-corner: 12px;
     -m3-split-button-selected-inner-corner: 20px;
 }
 
 .m3-split-button.m3-split-button-medium {
     -m3-split-button-outer-corner: 28px;
     -m3-split-button-inner-corner: 4px;
-    -m3-split-button-interactive-inner-corner: 12px;
+    -m3-split-button-hovered-inner-corner: 12px;
+    -m3-split-button-pressed-inner-corner: 12px;
     -m3-split-button-selected-inner-corner: 28px;
     -m3-split-button-container-height: 56px;
     -m3-split-button-action-leading-space: 24px;
@@ -58,7 +62,8 @@
 .m3-split-button.m3-split-button-large {
     -m3-split-button-outer-corner: 48px;
     -m3-split-button-inner-corner: 8px;
-    -m3-split-button-interactive-inner-corner: 20px;
+    -m3-split-button-hovered-inner-corner: 20px;
+    -m3-split-button-pressed-inner-corner: 20px;
     -m3-split-button-selected-inner-corner: 48px;
     -m3-split-button-container-height: 96px;
     -m3-split-button-action-leading-space: 48px;
@@ -72,7 +77,8 @@
 .m3-split-button.m3-split-button-extra-large {
     -m3-split-button-outer-corner: 68px;
     -m3-split-button-inner-corner: 12px;
-    -m3-split-button-interactive-inner-corner: 20px;
+    -m3-split-button-hovered-inner-corner: 20px;
+    -m3-split-button-pressed-inner-corner: 20px;
     -m3-split-button-selected-inner-corner: 68px;
     -m3-split-button-container-height: 136px;
     -m3-split-button-action-leading-space: 64px;
@@ -116,54 +122,4 @@
 
 .m3-split-button .m3-button.m3-split-button-menu:showing .m3-disclosure-icon {
     -fx-translate-x: 0;
-}
-
-.m3-split-button .m3-button.m3-split-button-action:left-edge,
-.m3-split-button .m3-button.m3-split-button-menu:left-edge {
-    -fx-background-radius: -m3-split-button-outer-corner -m3-split-button-inner-corner -m3-split-button-inner-corner -m3-split-button-outer-corner;
-    -fx-border-radius: -m3-split-button-outer-corner -m3-split-button-inner-corner -m3-split-button-inner-corner -m3-split-button-outer-corner;
-}
-
-.m3-split-button .m3-button.m3-split-button-action:right-edge,
-.m3-split-button .m3-button.m3-split-button-menu:right-edge {
-    -fx-background-radius: -m3-split-button-inner-corner -m3-split-button-outer-corner -m3-split-button-outer-corner -m3-split-button-inner-corner;
-    -fx-border-radius: -m3-split-button-inner-corner -m3-split-button-outer-corner -m3-split-button-outer-corner -m3-split-button-inner-corner;
-}
-
-.m3-split-button .m3-button.m3-split-button-action:left-edge:hover,
-.m3-split-button .m3-button.m3-split-button-action:left-edge:focused,
-.m3-split-button .m3-button.m3-split-button-action:left-edge:focus-visible,
-.m3-split-button .m3-button.m3-split-button-action:left-edge:armed,
-.m3-split-button .m3-button.m3-split-button-action:left-edge:pressed,
-.m3-split-button .m3-button.m3-split-button-menu:left-edge:hover,
-.m3-split-button .m3-button.m3-split-button-menu:left-edge:focused,
-.m3-split-button .m3-button.m3-split-button-menu:left-edge:focus-visible,
-.m3-split-button .m3-button.m3-split-button-menu:left-edge:armed,
-.m3-split-button .m3-button.m3-split-button-menu:left-edge:pressed {
-    -fx-background-radius: -m3-split-button-outer-corner -m3-split-button-interactive-inner-corner -m3-split-button-interactive-inner-corner -m3-split-button-outer-corner;
-    -fx-border-radius: -m3-split-button-outer-corner -m3-split-button-interactive-inner-corner -m3-split-button-interactive-inner-corner -m3-split-button-outer-corner;
-}
-
-.m3-split-button .m3-button.m3-split-button-action:right-edge:hover,
-.m3-split-button .m3-button.m3-split-button-action:right-edge:focused,
-.m3-split-button .m3-button.m3-split-button-action:right-edge:focus-visible,
-.m3-split-button .m3-button.m3-split-button-action:right-edge:armed,
-.m3-split-button .m3-button.m3-split-button-action:right-edge:pressed,
-.m3-split-button .m3-button.m3-split-button-menu:right-edge:hover,
-.m3-split-button .m3-button.m3-split-button-menu:right-edge:focused,
-.m3-split-button .m3-button.m3-split-button-menu:right-edge:focus-visible,
-.m3-split-button .m3-button.m3-split-button-menu:right-edge:armed,
-.m3-split-button .m3-button.m3-split-button-menu:right-edge:pressed {
-    -fx-background-radius: -m3-split-button-interactive-inner-corner -m3-split-button-outer-corner -m3-split-button-outer-corner -m3-split-button-interactive-inner-corner;
-    -fx-border-radius: -m3-split-button-interactive-inner-corner -m3-split-button-outer-corner -m3-split-button-outer-corner -m3-split-button-interactive-inner-corner;
-}
-
-.m3-split-button .m3-button.m3-split-button-menu:left-edge:showing {
-    -fx-background-radius: -m3-split-button-outer-corner -m3-split-button-selected-inner-corner -m3-split-button-selected-inner-corner -m3-split-button-outer-corner;
-    -fx-border-radius: -m3-split-button-outer-corner -m3-split-button-selected-inner-corner -m3-split-button-selected-inner-corner -m3-split-button-outer-corner;
-}
-
-.m3-split-button .m3-button.m3-split-button-menu:right-edge:showing {
-    -fx-background-radius: -m3-split-button-selected-inner-corner -m3-split-button-outer-corner -m3-split-button-outer-corner -m3-split-button-selected-inner-corner;
-    -fx-border-radius: -m3-split-button-selected-inner-corner -m3-split-button-outer-corner -m3-split-button-outer-corner -m3-split-button-selected-inner-corner;
 }

@@ -3,14 +3,16 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.beans.InvalidationListener;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
-import javafx.geometry.Pos;
+import javafx.geometry.HPos;
+import javafx.geometry.VPos;
 import javafx.scene.Node;
 import javafx.scene.control.SkinBase;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.Pane;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3NavigationRail;
 import org.glavo.m3fx.internal.M3Animation;
@@ -21,7 +23,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 @NotNullByDefault
 public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
     /// The internal vertical item container.
-    private final VBox container = new VBox();
+    private final NavigationContainer container = new NavigationContainer();
 
     /// The current width transition progress from collapsed zero to expanded one.
     private final DoubleProperty expansionProgress = new SimpleDoubleProperty(this, "expansionProgress") {
@@ -45,6 +47,9 @@ public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
     /// Mirrors public item changes into the skin container.
     private final ListChangeListener<Node> itemsListener = change -> updateItems();
 
+    /// Requests item relayout when the row spacing token changes.
+    private final InvalidationListener itemSpacingListener = observable -> container.requestLayout();
+
     /// Animates between collapsed and expanded rail widths.
     private final ChangeListener<Boolean> expandedListener =
             (observable, oldValue, newValue) -> updateExpandedState(newValue, getSkinnable().getScene() != null);
@@ -55,11 +60,10 @@ public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
     public M3NavigationRailSkin(M3NavigationRail control) {
         super(control);
         container.setManaged(false);
-        container.setAlignment(Pos.TOP_CENTER);
-        container.spacingProperty().bind(control.itemSpacingProperty());
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         getChildren().setAll(container);
         control.getItems().addListener(itemsListener);
+        control.itemSpacingProperty().addListener(itemSpacingListener);
         control.expandedProperty().addListener(expandedListener);
         updateItems();
         updateExpandedState(control.isExpanded(), false);
@@ -72,8 +76,8 @@ public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
         expansionAnimation.stop();
         motionSettingsObserver.dispose();
         control.getItems().removeListener(itemsListener);
+        control.itemSpacingProperty().removeListener(itemSpacingListener);
         control.expandedProperty().removeListener(expandedListener);
-        container.spacingProperty().unbind();
         container.nodeOrientationProperty().unbind();
         container.getChildren().clear();
         getChildren().remove(container);
@@ -188,6 +192,75 @@ public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
     /// Mirrors the public item list into the internal container.
     private void updateItems() {
         container.getChildren().setAll(getSkinnable().getItems());
+        container.requestLayout();
         getSkinnable().requestLayout();
+    }
+
+    /// Returns the total minimum or preferred height of managed rail items and their spacing.
+    private double itemHeightSum(double width, boolean minimum) {
+        double height = 0.0;
+        int itemCount = 0;
+        for (Node child : container.getChildren()) {
+            if (!child.isManaged()) {
+                continue;
+            }
+            height += minimum ? child.minHeight(width) : child.prefHeight(width);
+            itemCount++;
+        }
+        if (itemCount > 1) {
+            height += getSkinnable().getItemSpacing() * (itemCount - 1);
+        }
+        return height;
+    }
+
+    /// Lays out every managed rail item at the current available row width.
+    private void layoutItems(double width) {
+        double currentY = 0.0;
+        double spacing = getSkinnable().getItemSpacing();
+        for (Node child : container.getChildren()) {
+            if (!child.isManaged()) {
+                continue;
+            }
+            double childHeight = child.prefHeight(width);
+            if (child.isResizable()) {
+                child.resizeRelocate(0.0, currentY, width, childHeight);
+            } else {
+                container.layoutChildInArea(child, currentY, width, childHeight);
+            }
+            currentY += childHeight + spacing;
+        }
+    }
+
+    /// Pane that applies full-row sizing without retaining fixed child minimum widths.
+    @NotNullByDefault
+    private final class NavigationContainer extends Pane {
+        /// Computes the minimum row-stack height.
+        @Override
+        protected double computeMinHeight(double width) {
+            return itemHeightSum(width, true);
+        }
+
+        /// Computes the preferred row-stack height.
+        @Override
+        protected double computePrefHeight(double width) {
+            return itemHeightSum(width, false);
+        }
+
+        /// Computes the maximum row-stack height.
+        @Override
+        protected double computeMaxHeight(double width) {
+            return itemHeightSum(width, false);
+        }
+
+        /// Lays out a non-resizable child in one full-width row.
+        private void layoutChildInArea(Node child, double y, double width, double height) {
+            layoutInArea(child, 0.0, y, width, height, 0.0, HPos.CENTER, VPos.CENTER);
+        }
+
+        /// Applies current full-width row geometry.
+        @Override
+        protected void layoutChildren() {
+            layoutItems(getWidth());
+        }
     }
 }

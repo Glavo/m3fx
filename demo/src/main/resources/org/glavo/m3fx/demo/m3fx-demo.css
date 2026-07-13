@@ -369,10 +369,18 @@
     -fx-text-fill: -m3-color-on-surface-variant;
 }
 
-.demo-drawer-section {
-    -fx-padding: 12px 16px 4px 16px;
-    -fx-font-size: 12px;
-    -fx-font-weight: 700;
+.demo-modal-drawer-preview {
+    -fx-min-height: 360px;
+    -fx-pref-height: 360px;
+    -fx-max-width: 760px;
+}
+
+.demo-modal-drawer-content {
+    -fx-background-color: -m3-color-surface;
+    -fx-alignment: center;
+}
+
+.demo-modal-drawer-content-label {
     -fx-text-fill: -m3-color-on-surface-variant;
 }
 

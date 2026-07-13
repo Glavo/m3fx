@@ -5,10 +5,12 @@ package org.glavo.m3fx.controls;
 
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -30,6 +32,7 @@ import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.skins.M3NavigationRailSkin;
@@ -59,11 +62,20 @@ public class M3NavigationRail extends Control {
     /// The expanded pseudo-class used by navigation rail styling.
     private static final PseudoClass EXPANDED_PSEUDO_CLASS = PseudoClass.getPseudoClass("expanded");
 
+    /// The standard expanded-rail pseudo-class.
+    private static final PseudoClass STANDARD_PSEUDO_CLASS = PseudoClass.getPseudoClass("standard");
+
+    /// The modal expanded-rail pseudo-class.
+    private static final PseudoClass MODAL_PSEUDO_CLASS = PseudoClass.getPseudoClass("modal");
+
+    /// The right-to-left layout pseudo-class.
+    private static final PseudoClass RTL_PSEUDO_CLASS = PseudoClass.getPseudoClass("rtl");
+
     /// The default spacing between navigation rail items.
     private static final double DEFAULT_ITEM_SPACING = 8.0;
 
     /// The default collapsed navigation rail width.
-    private static final double DEFAULT_COLLAPSED_CONTAINER_WIDTH = 96.0;
+    private static final double DEFAULT_COLLAPSED_CONTAINER_WIDTH = 80.0;
 
     /// The default expanded navigation rail width.
     private static final double DEFAULT_EXPANDED_CONTAINER_WIDTH = 280.0;
@@ -96,13 +108,13 @@ public class M3NavigationRail extends Control {
     private @Nullable StyleableDoubleProperty itemSpacing;
 
     /// The styleable collapsed navigation rail width.
-    private @Nullable StyleableDoubleProperty collapsedContainerWidth;
+    private @Nullable StyleableDoubleProperty collapsedContainerWidthStyleable;
 
     /// The styleable expanded navigation rail width.
-    private @Nullable StyleableDoubleProperty expandedContainerWidth;
+    private @Nullable StyleableDoubleProperty expandedContainerWidthStyleable;
 
     /// Whether the rail presents expanded horizontal destination rows.
-    private final BooleanProperty expanded = new SimpleBooleanProperty(this, "expanded") {
+    private final BooleanProperty expandedState = new SimpleBooleanProperty(this, "expanded") {
         /// Updates the visual state and child item layouts.
         @Override
         protected void invalidated() {
@@ -112,6 +124,20 @@ public class M3NavigationRail extends Control {
             requestLayout();
         }
     };
+
+    /// Backing property for the expanded rail presentation variant.
+    private final ObjectProperty<M3NavigationRailVariant> railVariant =
+            new SimpleObjectProperty<>(this, "variant", M3NavigationRailVariant.STANDARD) {
+                /// Updates variant pseudo-classes when the variant changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(M3NavigationRailVariant.STANDARD);
+                        return;
+                    }
+                    updateVariantPseudoClasses();
+                }
+            };
 
     // Whether the rail allows all navigation items to be unselected.
     private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection") {
@@ -184,21 +210,45 @@ public class M3NavigationRail extends Control {
     ///
     /// @return true when destination labels are arranged horizontally in an expanded rail
     public final boolean isExpanded() {
-        return expanded.get();
+        return expandedState.get();
     }
 
     /// Expands or collapses this navigation rail.
     ///
     /// @param expanded true to expand the rail, or false to collapse it
     public final void setExpanded(boolean expanded) {
-        this.expanded.set(expanded);
+        this.expandedState.set(expanded);
     }
 
     /// Returns the expanded state property.
     ///
     /// @return the writable expanded state property
     public final BooleanProperty expandedProperty() {
-        return expanded;
+        return expandedState;
+    }
+
+    /// Returns the expanded rail presentation variant.
+    ///
+    /// @return the current rail variant
+    public final M3NavigationRailVariant getVariant() {
+        return railVariant.get();
+    }
+
+    /// Sets the expanded rail presentation variant.
+    ///
+    /// The variant affects surface treatment when the rail is expanded. Collapsed rails retain the collapsed
+    /// navigation rail surface.
+    ///
+    /// @param variant the expanded rail variant
+    public final void setVariant(M3NavigationRailVariant variant) {
+        railVariant.set(Objects.requireNonNull(variant, "variant"));
+    }
+
+    /// Returns the expanded rail variant property.
+    ///
+    /// @return the writable rail variant property
+    public final ObjectProperty<M3NavigationRailVariant> variantProperty() {
+        return railVariant;
     }
 
     /// Returns the selected navigation items in child order.
@@ -358,9 +408,9 @@ public class M3NavigationRail extends Control {
     ///
     /// @return the collapsed container width in pixels
     public final double getCollapsedContainerWidth() {
-        return collapsedContainerWidth == null
+        return collapsedContainerWidthStyleable == null
                 ? DEFAULT_COLLAPSED_CONTAINER_WIDTH
-                : collapsedContainerWidth.get();
+                : collapsedContainerWidthStyleable.get();
     }
 
     /// Sets the collapsed navigation rail width.
@@ -376,8 +426,8 @@ public class M3NavigationRail extends Control {
     ///
     /// @return the styleable collapsed container width property
     public final StyleableDoubleProperty collapsedContainerWidthProperty() {
-        if (collapsedContainerWidth == null) {
-            collapsedContainerWidth = M3Css.nonNegativeStyleableDoubleProperty(
+        if (collapsedContainerWidthStyleable == null) {
+            collapsedContainerWidthStyleable = M3Css.nonNegativeStyleableDoubleProperty(
                     DEFAULT_COLLAPSED_CONTAINER_WIDTH,
                     this,
                     "collapsedContainerWidth",
@@ -385,16 +435,16 @@ public class M3NavigationRail extends Control {
                     this::requestLayout
             );
         }
-        return collapsedContainerWidth;
+        return collapsedContainerWidthStyleable;
     }
 
     /// Returns the expanded navigation rail width.
     ///
     /// @return the expanded container width in pixels
     public final double getExpandedContainerWidth() {
-        return expandedContainerWidth == null
+        return expandedContainerWidthStyleable == null
                 ? DEFAULT_EXPANDED_CONTAINER_WIDTH
-                : expandedContainerWidth.get();
+                : expandedContainerWidthStyleable.get();
     }
 
     /// Sets the expanded navigation rail width.
@@ -410,8 +460,8 @@ public class M3NavigationRail extends Control {
     ///
     /// @return the styleable expanded container width property
     public final StyleableDoubleProperty expandedContainerWidthProperty() {
-        if (expandedContainerWidth == null) {
-            expandedContainerWidth = M3Css.nonNegativeStyleableDoubleProperty(
+        if (expandedContainerWidthStyleable == null) {
+            expandedContainerWidthStyleable = M3Css.nonNegativeStyleableDoubleProperty(
                     DEFAULT_EXPANDED_CONTAINER_WIDTH,
                     this,
                     "expandedContainerWidth",
@@ -419,7 +469,7 @@ public class M3NavigationRail extends Control {
                     this::requestLayout
             );
         }
-        return expandedContainerWidth;
+        return expandedContainerWidthStyleable;
     }
 
     /// Clears the current selection when empty selection is allowed.
@@ -538,12 +588,27 @@ public class M3NavigationRail extends Control {
     /// Adds base style classes and installs selection listeners.
     private void initialize() {
         M3ControlStyles.initialize(this, STYLE_CLASS);
+        updateVariantPseudoClasses();
+        updateOrientationPseudoClass();
         setAccessibleRole(AccessibleRole.TOOL_BAR);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleSelectionTarget, this::showAccessibleItem);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         getItems().addListener(childrenListener);
+        effectiveNodeOrientationProperty().addListener(observable -> updateOrientationPseudoClass());
         focusNotifier.start();
+    }
+
+    /// Updates pseudo-classes representing the expanded rail presentation variant.
+    private void updateVariantPseudoClasses() {
+        M3NavigationRailVariant currentVariant = getVariant();
+        pseudoClassStateChanged(STANDARD_PSEUDO_CLASS, currentVariant == M3NavigationRailVariant.STANDARD);
+        pseudoClassStateChanged(MODAL_PSEUDO_CLASS, currentVariant == M3NavigationRailVariant.MODAL);
+    }
+
+    /// Updates the pseudo-class representing effective right-to-left orientation.
+    private void updateOrientationPseudoClass() {
+        pseudoClassStateChanged(RTL_PSEUDO_CLASS, M3NodeLayout.isRightToLeft(this));
     }
 
     /// Applies keyboard navigation across enabled navigation items.

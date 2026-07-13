@@ -5,6 +5,7 @@ package org.glavo.m3fx.skins;
 
 import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
+import javafx.css.PseudoClass;
 import javafx.event.EventHandler;
 import javafx.geometry.Bounds;
 import javafx.scene.Node;
@@ -47,6 +48,12 @@ import org.jetbrains.annotations.Nullable;
 abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkinBase<C> {
     /// The scale applied by controls that opt into depth-style pressed motion.
     private static final double PRESSED_SCALE = 0.98;
+
+    /// The pointer-hover pseudo-class used by split-button parts.
+    private static final PseudoClass HOVER_PSEUDO_CLASS = PseudoClass.getPseudoClass("hover");
+
+    /// The popup-visible pseudo-class used by split-button trailing parts.
+    private static final PseudoClass SHOWING_PSEUDO_CLASS = PseudoClass.getPseudoClass("showing");
 
     /// The press animation timeline.
     private final M3NodeTransition animation = new M3NodeTransition(getSkinnable());
@@ -420,7 +427,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
             stateLayer.animateOverlayOpacityFromOwnerState();
             return;
         }
-        if (control instanceof M3Button button && layoutGroupedButtonStateLayer(button, width, height)) {
+        if (layoutGroupedButtonStateLayer(control, width, height)) {
             stateLayer.animateOverlayOpacityFromOwnerState();
             return;
         }
@@ -445,7 +452,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
     }
 
     /// Lays out button feedback with button-group or split-button corner radii.
-    private boolean layoutGroupedButtonStateLayer(M3Button button, double width, double height) {
+    private boolean layoutGroupedButtonStateLayer(ButtonBase button, double width, double height) {
         boolean groupedShape = button.getStyleClass().contains(M3ButtonGroup.SINGLE_BUTTON_STYLE_CLASS)
                 || button.getStyleClass().contains(M3ButtonGroup.FIRST_BUTTON_STYLE_CLASS)
                 || button.getStyleClass().contains(M3ButtonGroup.MIDDLE_BUTTON_STYLE_CLASS)
@@ -454,6 +461,12 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
                 || button.getStyleClass().contains(M3SplitButton.MENU_BUTTON_STYLE_CLASS);
         if (!groupedShape) {
             return false;
+        }
+
+        @Nullable M3SplitButton splitButton = splitButtonOwner(button);
+        if (splitButton != null) {
+            layoutSplitButtonStateLayer(splitButton, button, width, height);
+            return true;
         }
 
         @Nullable CornerRadii resolvedRadii = resolvedCornerRadii(button);
@@ -471,7 +484,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
             return true;
         }
 
-        double radius = button.getContainerShape();
+        double radius = stateLayerShapeRadius();
         if (button.getStyleClass().contains(M3ButtonGroup.SINGLE_BUTTON_STYLE_CLASS)) {
             stateLayer.layoutLayer(0.0, 0.0, width, height, radius);
         } else if (button.getStyleClass().contains(M3ButtonGroup.FIRST_BUTTON_STYLE_CLASS)
@@ -485,11 +498,69 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         return true;
     }
 
+    /// Lays out split-button feedback from the owner-controlled stateful shape tokens.
+    private void layoutSplitButtonStateLayer(
+            M3SplitButton splitButton,
+            ButtonBase button,
+            double width,
+            double height
+    ) {
+        boolean menuPart = button.getStyleClass().contains(M3SplitButton.MENU_BUTTON_STYLE_CLASS);
+        boolean selected = menuPart
+                && (splitButton.isShowing() || button.getPseudoClassStates().contains(SHOWING_PSEUDO_CLASS));
+        double innerCorner;
+        if (selected) {
+            innerCorner = splitButton.getSelectedInnerCorner();
+        } else if (button.isArmed() || button.isPressed()) {
+            innerCorner = splitButton.getPressedInnerCorner();
+        } else if (button.isHover() || button.getPseudoClassStates().contains(HOVER_PSEUDO_CLASS)) {
+            innerCorner = splitButton.getHoveredInnerCorner();
+        } else {
+            innerCorner = splitButton.getInnerCorner();
+        }
+
+        double outerCorner = splitButton.getOuterCorner();
+        if (menuPart) {
+            stateLayer.layoutLayer(
+                    0.0,
+                    0.0,
+                    width,
+                    height,
+                    innerCorner,
+                    outerCorner,
+                    outerCorner,
+                    innerCorner
+            );
+        } else {
+            stateLayer.layoutLayer(
+                    0.0,
+                    0.0,
+                    width,
+                    height,
+                    outerCorner,
+                    innerCorner,
+                    innerCorner,
+                    outerCorner
+            );
+        }
+    }
+
+    /// Returns the split button that owns one internal button part.
+    private static @Nullable M3SplitButton splitButtonOwner(ButtonBase button) {
+        @Nullable Parent parent = button.getParent();
+        while (parent != null) {
+            if (parent instanceof M3SplitButton splitButton) {
+                return splitButton;
+            }
+            parent = parent.getParent();
+        }
+        return null;
+    }
     /// Returns the CSS-resolved corner radii used by a grouped button surface.
     ///
     /// Transparent outlined backgrounds still expose their CSS radii. The border is used as a fallback for
     /// application styles that remove all background fills.
-    private static @Nullable CornerRadii resolvedCornerRadii(M3Button button) {
+    private static @Nullable CornerRadii resolvedCornerRadii(ButtonBase button) {
         Background background = button.getBackground();
         if (background != null && !background.getFills().isEmpty()) {
             BackgroundFill fill = background.getFills().get(0);

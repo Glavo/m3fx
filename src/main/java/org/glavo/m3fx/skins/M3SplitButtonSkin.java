@@ -3,6 +3,9 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.beans.InvalidationListener;
+import javafx.collections.SetChangeListener;
+import javafx.css.PseudoClass;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.Pane;
@@ -15,6 +18,18 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// The default Material Design 3 skin for [M3SplitButton].
 @NotNullByDefault
 public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
+    /// The armed interaction pseudo-class used by both button parts.
+    private static final PseudoClass ARMED_PSEUDO_CLASS = PseudoClass.getPseudoClass("armed");
+
+    /// The pointer-hover pseudo-class used by both button parts.
+    private static final PseudoClass HOVER_PSEUDO_CLASS = PseudoClass.getPseudoClass("hover");
+
+    /// The pointer-pressed pseudo-class used by both button parts.
+    private static final PseudoClass PRESSED_PSEUDO_CLASS = PseudoClass.getPseudoClass("pressed");
+
+    /// The popup-visible pseudo-class used by the trailing button part.
+    private static final PseudoClass SHOWING_PSEUDO_CLASS = PseudoClass.getPseudoClass("showing");
+
     /// The non-shrinking internal button container.
     private final Pane container = new Pane();
 
@@ -23,6 +38,12 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
 
     /// The trailing menu part.
     private final M3MenuButton menuButton;
+
+    /// Refreshes both part shapes when one owner token changes.
+    private final InvalidationListener shapeTokenInvalidation = observable -> updatePartShapeStyles();
+
+    /// Refreshes one part shape when an interaction pseudo-class changes.
+    private final SetChangeListener<PseudoClass> partStateListener = change -> updatePartShapeStyles();
 
     /// Creates a split button skin.
     ///
@@ -41,6 +62,8 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
         }
         actionButton = resolvedActionButton;
         menuButton = resolvedMenuButton;
+        installShapeListeners(control);
+        updatePartShapeStyles();
         container.getChildren().setAll(actionButton, menuButton);
         getChildren().setAll(container);
     }
@@ -48,12 +71,98 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
     /// Removes child references before disposal.
     @Override
     public void dispose() {
+        uninstallShapeListeners(getSkinnable());
         container.nodeOrientationProperty().unbind();
         container.getChildren().clear();
         getChildren().remove(container);
         super.dispose();
     }
 
+    /// Installs listeners for owner shape tokens and part interaction states.
+    private void installShapeListeners(M3SplitButton control) {
+        control.outerCornerProperty().addListener(shapeTokenInvalidation);
+        control.innerCornerProperty().addListener(shapeTokenInvalidation);
+        control.hoveredInnerCornerProperty().addListener(shapeTokenInvalidation);
+        control.pressedInnerCornerProperty().addListener(shapeTokenInvalidation);
+        control.selectedInnerCornerProperty().addListener(shapeTokenInvalidation);
+        actionButton.getPseudoClassStates().addListener(partStateListener);
+        menuButton.getPseudoClassStates().addListener(partStateListener);
+    }
+
+    /// Removes listeners installed for owner shape tokens and part interaction states.
+    private void uninstallShapeListeners(M3SplitButton control) {
+        control.outerCornerProperty().removeListener(shapeTokenInvalidation);
+        control.innerCornerProperty().removeListener(shapeTokenInvalidation);
+        control.hoveredInnerCornerProperty().removeListener(shapeTokenInvalidation);
+        control.pressedInnerCornerProperty().removeListener(shapeTokenInvalidation);
+        control.selectedInnerCornerProperty().removeListener(shapeTokenInvalidation);
+        actionButton.getPseudoClassStates().removeListener(partStateListener);
+        menuButton.getPseudoClassStates().removeListener(partStateListener);
+    }
+
+    /// Applies owner-controlled stateful corner radii to both internal button surfaces.
+    private void updatePartShapeStyles() {
+        M3SplitButton splitButton = getSkinnable();
+        double outerCorner = splitButton.getOuterCorner();
+        setPartShapeStyle(
+                actionButton,
+                outerCorner,
+                resolvedInnerCorner(splitButton, actionButton, false),
+                false
+        );
+        setPartShapeStyle(
+                menuButton,
+                outerCorner,
+                resolvedInnerCorner(splitButton, menuButton, true),
+                true
+        );
+    }
+
+    /// Resolves the active inner-corner radius for one button part.
+    private static double resolvedInnerCorner(
+            M3SplitButton splitButton,
+            M3Button button,
+            boolean menuPart
+    ) {
+        if (menuPart
+                && (splitButton.isShowing()
+                || button.getPseudoClassStates().contains(SHOWING_PSEUDO_CLASS))) {
+            return splitButton.getSelectedInnerCorner();
+        }
+        if (button.isArmed()
+                || button.isPressed()
+                || button.getPseudoClassStates().contains(ARMED_PSEUDO_CLASS)
+                || button.getPseudoClassStates().contains(PRESSED_PSEUDO_CLASS)) {
+            return splitButton.getPressedInnerCorner();
+        }
+        if (button.isHover() || button.getPseudoClassStates().contains(HOVER_PSEUDO_CLASS)) {
+            return splitButton.getHoveredInnerCorner();
+        }
+        return splitButton.getInnerCorner();
+    }
+
+    /// Writes asymmetric surface and outline radii for one internal button part.
+    private static void setPartShapeStyle(
+            M3Button button,
+            double outerCorner,
+            double innerCorner,
+            boolean menuPart
+    ) {
+        String outer = formatPixels(outerCorner);
+        String inner = formatPixels(innerCorner);
+        String radii = menuPart
+                ? inner + " " + outer + " " + outer + " " + inner
+                : outer + " " + inner + " " + inner + " " + outer;
+        String style = "-fx-background-radius: " + radii + "; -fx-border-radius: " + radii + ";";
+        if (!style.equals(button.getStyle())) {
+            button.setStyle(style);
+        }
+    }
+
+    /// Formats one finite CSS pixel value.
+    private static String formatPixels(double value) {
+        return Double.toString(value) + "px";
+    }
     /// Computes the fixed minimum width required by both button parts and their between-space.
     @Override
     protected double computeMinWidth(
@@ -136,22 +245,25 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
         container.resizeRelocate(x, y, width, height);
-        double actionWidth = snapSizeX(actionButton.prefWidth(height));
-        double menuWidth = snapSizeX(menuButton.prefWidth(height));
+        double availableHeight = snapSizeY(height);
+        double preferredHeight = snapSizeY(Math.max(
+                actionButton.prefHeight(-1.0),
+                menuButton.prefHeight(-1.0)
+        ));
+        double partHeight = Math.min(availableHeight, preferredHeight);
+        double actionWidth = snapSizeX(actionButton.prefWidth(partHeight));
+        double menuWidth = snapSizeX(menuButton.prefWidth(partHeight));
         double spacing = getSkinnable().getSpacing();
         double contentWidth = actionWidth + spacing + menuWidth;
         double startX = snapPositionX(Math.max(0.0, (width - contentWidth) / 2.0));
-        double actionHeight = snapSizeY(actionButton.prefHeight(actionWidth));
-        double menuHeight = snapSizeY(menuButton.prefHeight(menuWidth));
-        double actionY = snapPositionY((height - actionHeight) / 2.0);
-        double menuY = snapPositionY((height - menuHeight) / 2.0);
+        double partY = snapPositionY((height - partHeight) / 2.0);
 
-        actionButton.resizeRelocate(startX, actionY, actionWidth, actionHeight);
+        actionButton.resizeRelocate(startX, partY, actionWidth, partHeight);
         menuButton.resizeRelocate(
-                snapPositionX(startX + actionWidth + spacing),
-                menuY,
+                startX + actionWidth + spacing,
+                partY,
                 menuWidth,
-                menuHeight
+                partHeight
         );
     }
 }

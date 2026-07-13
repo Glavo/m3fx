@@ -21,9 +21,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/// A compact Material Design disclosure indicator for expandable rows and destinations.
+/// A compact Material Design disclosure indicator for expandable rows, destinations, and split-button menus.
 ///
-/// See [Material Design navigation drawer](https://m3.material.io/components/navigation-drawer/overview).
+/// Directional indicators point toward nested content before expanding downward. Vertical indicators point down
+/// before expanding upward, matching the split-button menu icon behavior.
+///
+/// See [Material Design navigation drawer](https://m3.material.io/components/navigation-drawer/overview) and
+/// [Material Design split buttons](https://m3.material.io/components/split-button/overview).
 @NotNullByDefault
 public final class M3DisclosureIcon extends Control {
     /// The base style class for M3FX disclosure icons.
@@ -43,6 +47,9 @@ public final class M3DisclosureIcon extends Control {
             pseudoClassStateChanged(EXPANDED_PSEUDO_CLASS, get());
         }
     };
+
+    /// Whether the icon uses down/up expand-collapse directions instead of logical horizontal disclosure.
+    private final BooleanProperty vertical = new SimpleBooleanProperty(this, "vertical");
 
     // The styleable disclosure icon viewport size.
     private @Nullable StyleableDoubleProperty iconSize;
@@ -80,6 +87,27 @@ public final class M3DisclosureIcon extends Control {
     /// @return the expanded state property
     public final BooleanProperty expandedProperty() {
         return expanded;
+    }
+
+    /// Returns whether this icon points down when collapsed and up when expanded.
+    ///
+    /// @return `true` for vertical expand-collapse direction
+    public final boolean isVertical() {
+        return vertical.get();
+    }
+
+    /// Sets whether this icon uses vertical expand-collapse direction.
+    ///
+    /// @param vertical whether the collapsed and expanded directions are down and up
+    public final void setVertical(boolean vertical) {
+        this.vertical.set(vertical);
+    }
+
+    /// Returns the vertical expand-collapse direction property.
+    ///
+    /// @return the vertical direction property
+    public final BooleanProperty verticalProperty() {
+        return vertical;
     }
 
     /// Returns the disclosure icon viewport size.

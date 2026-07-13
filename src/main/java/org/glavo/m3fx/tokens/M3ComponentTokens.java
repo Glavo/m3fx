@@ -435,17 +435,17 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double topAppBarMediumHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 120.0 : 112.0);
         double topAppBarLargeHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 160.0 : 152.0);
         double bottomAppBarHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 88.0 : 80.0);
-        double navigationBarHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 88.0 : 80.0);
-        double navigationItemWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 96.0 : 80.0);
-        double navigationIndicatorWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 72.0 : 64.0);
-        double navigationIndicatorHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 36.0 : 32.0);
-        double navigationRailWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 112.0 : 96.0);
-        double navigationRailItemWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 96.0 : 80.0);
-        double navigationRailIndicatorWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
-        double navigationDrawerWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 384.0 : 360.0);
-        double navigationDrawerOneLineItemHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
-        double navigationDrawerTwoLineItemHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 80.0 : 72.0);
-        double navigationDrawerThreeLineItemHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 96.0 : 88.0);
+        double navigationBarHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 80.0);
+        double navigationItemWidth = density.apply(80.0);
+        double navigationIndicatorWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 56.0 : 64.0);
+        double navigationIndicatorHeight = density.apply(32.0);
+        double navigationRailWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 96.0 : 80.0);
+        double navigationRailItemWidth = density.apply(80.0);
+        double navigationRailIndicatorWidth = density.apply(56.0);
+        double navigationDrawerWidth = density.apply(360.0);
+        double navigationDrawerOneLineItemHeight = density.apply(56.0);
+        double navigationDrawerTwoLineItemHeight = density.apply(72.0);
+        double navigationDrawerThreeLineItemHeight = density.apply(88.0);
         double listItemOneLineHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
         double listItemTwoLineHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 80.0 : 72.0);
         double listItemThreeLineHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 96.0 : 88.0);
@@ -456,16 +456,16 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double loadingIndicatorIndicatorSize = density.apply(38.0);
         double progressCircularIndicatorSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 48.0 : 40.0);
         boolean expressive = profile == M3Profile.EXPRESSIVE_2025;
-        double navigationContentSpacing = density.apply(expressive ? 6.0 : 4.0);
-        double navigationHorizontalPadding = density.apply(expressive ? 12.0 : 8.0);
-        double navigationRailVerticalPadding = density.apply(expressive ? 20.0 : 16.0);
-        double navigationRailHorizontalPadding = density.apply(expressive ? 12.0 : 8.0);
-        double navigationRailItemSpacing = density.apply(expressive ? 12.0 : 8.0);
-        double navigationDrawerContainerPadding = density.apply(expressive ? 16.0 : 12.0);
-        double navigationDrawerItemHorizontalPadding = density.apply(expressive ? 20.0 : 16.0);
-        double navigationDrawerItemContentSpacing = density.apply(expressive ? 16.0 : 12.0);
-        double navigationDrawerItemSpacing = density.apply(expressive ? 6.0 : 4.0);
-        double navigationDrawerGroupChildPadding = density.apply(expressive ? 40.0 : 32.0);
+        double navigationContentSpacing = density.apply(4.0);
+        double navigationHorizontalPadding = density.apply(8.0);
+        double navigationRailVerticalPadding = density.apply(expressive ? 44.0 : 16.0);
+        double navigationRailHorizontalPadding = density.apply(0.0);
+        double navigationRailItemSpacing = density.apply(expressive ? 4.0 : 8.0);
+        double navigationDrawerContainerPadding = density.apply(12.0);
+        double navigationDrawerItemHorizontalPadding = density.apply(16.0);
+        double navigationDrawerItemContentSpacing = density.apply(12.0);
+        double navigationDrawerItemSpacing = density.apply(0.0);
+        double navigationDrawerGroupChildPadding = density.apply(32.0);
         double listItemHorizontalPadding = density.apply(expressive ? 20.0 : 16.0);
         double listItemVerticalPadding = density.apply(expressive ? 10.0 : 8.0);
         double listItemContentSpacing = density.apply(expressive ? 20.0 : 16.0);
@@ -631,6 +631,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double carouselTrackHorizontalPadding = density.apply(16.0);
         double carouselTrackVerticalPadding = density.apply(8.0);
         double carouselItemSpacing = density.apply(8.0);
+        double carouselSmallItemMinWidth = density.apply(40.0);
+        double carouselSmallItemMaxWidth = density.apply(56.0);
+        double carouselLargeItemMaxWidth = density.apply(320.0);
 
         return create(
                 new ButtonTokens(buttonHeight, shapeTokens.full(), buttonHorizontalPadding),
@@ -775,7 +778,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         density.apply(expressive ? 14.0 : 12.0)
                 ),
                 new IconTokens(iconSmallSize, iconMediumSize, iconLargeSize, iconExtraLargeSize),
-                createButtonGroupTokens(expressive, density, shapeTokens),
+                createButtonGroupTokens(density, shapeTokens, density.apply(expressive ? 10.0 : 8.0)),
                 createSplitButtonTokens(density),
                 new ButtonTokens(segmentedButtonHeight, shapeTokens.full(), segmentedButtonHorizontalPadding),
                 new TabTokens(
@@ -954,7 +957,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 new CarouselTokens(
                         carouselTrackHorizontalPadding,
                         carouselTrackVerticalPadding,
-                        carouselItemSpacing
+                        carouselItemSpacing,
+                        carouselSmallItemMinWidth,
+                        carouselSmallItemMaxWidth,
+                        carouselLargeItemMaxWidth
                 ),
                 new CardTokens(cardContainerShape, cardContentPadding, 1.0),
                 new DialogTokens(
@@ -1033,6 +1039,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 ),
                 new NavigationRailTokens(
                         navigationRailWidth,
+                        density.apply(280.0),
                         navigationBarHeight,
                         navigationRailItemWidth,
                         navigationRailIndicatorWidth,
@@ -1041,14 +1048,17 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         navigationContentSpacing,
                         navigationRailVerticalPadding,
                         navigationRailHorizontalPadding,
-                        navigationRailItemSpacing
+                        navigationRailItemSpacing,
+                        density.apply(44.0),
+                        density.apply(20.0),
+                        shapeTokens.large()
                 ),
                 new NavigationDrawerTokens(
                         navigationDrawerWidth,
                         navigationDrawerOneLineItemHeight,
                         navigationDrawerTwoLineItemHeight,
                         navigationDrawerThreeLineItemHeight,
-                        expressive ? shapeTokens.large() : shapeTokens.full(),
+                        shapeTokens.full(),
                         navigationDrawerContainerPadding,
                         navigationDrawerItemHorizontalPadding,
                         0.0,
@@ -1077,59 +1087,59 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Button groups own spacing and connected inner-corner behavior. Their child buttons retain the shared
     /// [ButtonSizingTokens] metrics for height, content padding, typography, icon size, and outline width.
     ///
-    /// @param expressive whether the Expressive component profile is active
     /// @param density the density transform applied to layout lengths
     /// @param shapeTokens the shape system used by connected inner-corner aliases
+    /// @param iconToggleGroupSpacing the resolved spacing between icon toggle group children
     /// @return the button-group size token scale
     private static ButtonGroupTokens createButtonGroupTokens(
-            boolean expressive,
             M3Density density,
-            M3ShapeTokens shapeTokens
+            M3ShapeTokens shapeTokens,
+            double iconToggleGroupSpacing
     ) {
-        double connectedSpacing = expressive ? density.apply(2.0) : -1.0;
+        double connectedSpacing = density.apply(2.0);
         return new ButtonGroupTokens(
                 createButtonGroupSizeTokens(
                         density,
                         32.0,
                         18.0,
                         connectedSpacing,
-                        expressive ? shapeTokens.small() : 0.0,
-                        expressive ? shapeTokens.extraSmall() : 0.0
+                        shapeTokens.small(),
+                        shapeTokens.extraSmall()
                 ),
                 createButtonGroupSizeTokens(
                         density,
                         40.0,
                         12.0,
                         connectedSpacing,
-                        expressive ? shapeTokens.small() : 0.0,
-                        expressive ? shapeTokens.extraSmall() : 0.0
+                        shapeTokens.small(),
+                        shapeTokens.extraSmall()
                 ),
                 createButtonGroupSizeTokens(
                         density,
                         56.0,
                         8.0,
                         connectedSpacing,
-                        expressive ? shapeTokens.small() : 0.0,
-                        expressive ? shapeTokens.extraSmall() : 0.0
+                        shapeTokens.small(),
+                        shapeTokens.extraSmall()
                 ),
                 createButtonGroupSizeTokens(
                         density,
                         96.0,
                         8.0,
                         connectedSpacing,
-                        expressive ? shapeTokens.large() : 0.0,
-                        expressive ? shapeTokens.medium() : 0.0
+                        shapeTokens.large(),
+                        shapeTokens.medium()
                 ),
                 createButtonGroupSizeTokens(
                         density,
                         136.0,
                         8.0,
                         connectedSpacing,
-                        expressive ? shapeTokens.largeIncreased() : 0.0,
-                        expressive ? shapeTokens.large() : 0.0
+                        shapeTokens.largeIncreased(),
+                        shapeTokens.large()
                 ),
                 -1.0,
-                density.apply(expressive ? 10.0 : 8.0)
+                iconToggleGroupSpacing
         );
     }
 
@@ -1154,6 +1164,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         return new ButtonGroupSizeTokens(
                 resolvedContainerHeight,
                 density.apply(standardSpacing),
+                0.15,
                 connectedSpacing,
                 connectedInnerCorner,
                 connectedPressedInnerCorner,
@@ -1310,7 +1321,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendButtonSizeRules(builder, buttonSizing());
         appendIconButtonRules(builder, iconButton());
         appendIconRules(builder, icon());
-        appendConnectedButtonRules(builder, filledButton(), buttonGroup());
+        appendConnectedButtonRules(builder, buttonGroup());
         appendSplitButtonRules(builder, splitButton());
         appendGroupSpacingRule(
                 builder,
@@ -1618,6 +1629,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         M3TokenCss.append(builder, prefix + "-container-height", M3TokenCss.pixels(tokens.containerHeight()));
         M3TokenCss.append(builder, prefix + "-standard-spacing", M3TokenCss.pixels(tokens.standardSpacing()));
+        M3TokenCss.append(
+                builder,
+                prefix + "-standard-pressed-width-multiplier",
+                Double.toString(tokens.standardPressedWidthMultiplier())
+        );
         M3TokenCss.append(builder, prefix + "-connected-spacing", M3TokenCss.pixels(tokens.connectedSpacing()));
         M3TokenCss.append(
                 builder,
@@ -1978,6 +1994,21 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 M3TokenCss.pixels(tokens.trackVerticalPadding())
         );
         M3TokenCss.append(builder, "-m3-carousel-item-spacing", M3TokenCss.pixels(tokens.itemSpacing()));
+        M3TokenCss.append(
+                builder,
+                "-m3-carousel-small-item-min-width",
+                M3TokenCss.pixels(tokens.smallItemMinWidth())
+        );
+        M3TokenCss.append(
+                builder,
+                "-m3-carousel-small-item-max-width",
+                M3TokenCss.pixels(tokens.smallItemMaxWidth())
+        );
+        M3TokenCss.append(
+                builder,
+                "-m3-carousel-large-item-max-width",
+                M3TokenCss.pixels(tokens.largeItemMaxWidth())
+        );
     }
 
     /// Appends card token declarations.
@@ -2119,6 +2150,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Appends navigation rail token declarations.
     private static void append(StringBuilder builder, NavigationRailTokens tokens) {
         M3TokenCss.append(builder, "-m3-navigation-rail-container-width", M3TokenCss.pixels(tokens.containerWidth()));
+        M3TokenCss.append(
+                builder,
+                "-m3-navigation-rail-expanded-container-width",
+                M3TokenCss.pixels(tokens.expandedContainerWidth())
+        );
         M3TokenCss.append(builder, "-m3-navigation-rail-item-height", M3TokenCss.pixels(tokens.itemHeight()));
         M3TokenCss.append(builder, "-m3-navigation-rail-item-width", M3TokenCss.pixels(tokens.itemWidth()));
         M3TokenCss.append(builder, "-m3-navigation-rail-indicator-width", M3TokenCss.pixels(tokens.indicatorWidth()));
@@ -2128,6 +2164,21 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-navigation-rail-vertical-padding", M3TokenCss.pixels(tokens.verticalPadding()));
         M3TokenCss.append(builder, "-m3-navigation-rail-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
         M3TokenCss.append(builder, "-m3-navigation-rail-item-spacing", M3TokenCss.pixels(tokens.itemSpacing()));
+        M3TokenCss.append(
+                builder,
+                "-m3-navigation-rail-expanded-top-padding",
+                M3TokenCss.pixels(tokens.expandedTopPadding())
+        );
+        M3TokenCss.append(
+                builder,
+                "-m3-navigation-rail-expanded-bottom-padding",
+                M3TokenCss.pixels(tokens.expandedBottomPadding())
+        );
+        M3TokenCss.append(
+                builder,
+                "-m3-navigation-rail-modal-container-shape",
+                M3TokenCss.pixels(tokens.modalContainerShape())
+        );
     }
 
     /// Appends navigation drawer token declarations.
@@ -2426,24 +2477,20 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Appends standard and connected button-group rules for every Material size role.
     private static void appendConnectedButtonRules(
             StringBuilder builder,
-            ButtonTokens tokens,
             ButtonGroupTokens groupTokens
     ) {
-        String outerRadius = M3TokenCss.pixels(tokens.containerShape());
         appendButtonGroupSizeRules(
                 builder,
                 ".m3-button-group-extra-small",
-                groupTokens.extraSmall(),
-                outerRadius
+                groupTokens.extraSmall()
         );
-        appendButtonGroupSizeRules(builder, ".m3-button-group-small", groupTokens.small(), outerRadius);
-        appendButtonGroupSizeRules(builder, ".m3-button-group-medium", groupTokens.medium(), outerRadius);
-        appendButtonGroupSizeRules(builder, ".m3-button-group-large", groupTokens.large(), outerRadius);
+        appendButtonGroupSizeRules(builder, ".m3-button-group-small", groupTokens.small());
+        appendButtonGroupSizeRules(builder, ".m3-button-group-medium", groupTokens.medium());
+        appendButtonGroupSizeRules(builder, ".m3-button-group-large", groupTokens.large());
         appendButtonGroupSizeRules(
                 builder,
                 ".m3-button-group-extra-large",
-                groupTokens.extraLarge(),
-                outerRadius
+                groupTokens.extraLarge()
         );
     }
 
@@ -2452,14 +2499,13 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param builder the target CSS builder
     /// @param sizeSelector the button-group size selector
     /// @param tokens the size-specific button-group tokens
-    /// @param outerRadius the fully rounded outer corner value
     private static void appendButtonGroupSizeRules(
             StringBuilder builder,
             String sizeSelector,
-            ButtonGroupSizeTokens tokens,
-            String outerRadius
+            ButtonGroupSizeTokens tokens
     ) {
         String groupSelector = ".m3-button-group" + sizeSelector;
+        String outerRadius = M3TokenCss.pixels(tokens.containerHeight() / 2.0);
         beginRule(builder, groupSelector);
         appendDeclaration(
                 builder,
@@ -2470,6 +2516,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 builder,
                 "-m3-button-group-standard-spacing",
                 M3TokenCss.pixels(tokens.standardSpacing())
+        );
+        appendDeclaration(
+                builder,
+                "-m3-button-group-standard-pressed-width-multiplier",
+                Double.toString(tokens.standardPressedWidthMultiplier())
         );
         appendDeclaration(
                 builder,
@@ -2548,7 +2599,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ) {
         appendConnectedButtonShapeRule(
                 builder,
-                groupSelector + " .m3-button.m3-button-group-single" + stateSuffix,
+                groupSelector + " .m3-grouped-button.m3-button-group-single" + stateSuffix,
                 outerRadius,
                 outerRadius,
                 outerRadius,
@@ -2556,7 +2607,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         );
         appendConnectedButtonShapeRule(
                 builder,
-                groupSelector + " .m3-button.m3-button-group-first" + stateSuffix,
+                groupSelector + " .m3-grouped-button.m3-button-group-first" + stateSuffix,
                 outerRadius,
                 innerRadius,
                 innerRadius,
@@ -2564,7 +2615,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         );
         appendConnectedButtonShapeRule(
                 builder,
-                groupSelector + " .m3-button.m3-button-group-middle" + stateSuffix,
+                groupSelector + " .m3-grouped-button.m3-button-group-middle" + stateSuffix,
                 innerRadius,
                 innerRadius,
                 innerRadius,
@@ -2572,7 +2623,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         );
         appendConnectedButtonShapeRule(
                 builder,
-                groupSelector + " .m3-button.m3-button-group-last" + stateSuffix,
+                groupSelector + " .m3-grouped-button.m3-button-group-last" + stateSuffix,
                 innerRadius,
                 outerRadius,
                 outerRadius,
@@ -2628,6 +2679,23 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         beginRule(builder, ownerSelector);
         appendDeclaration(builder, "-m3-split-button-container-height", M3TokenCss.pixels(tokens.containerHeight()));
         appendDeclaration(builder, "-m3-split-button-spacing", M3TokenCss.pixels(tokens.spacing()));
+        appendDeclaration(builder, "-m3-split-button-outer-corner", outerRadius);
+        appendDeclaration(builder, "-m3-split-button-inner-corner", M3TokenCss.pixels(tokens.innerCorner()));
+        appendDeclaration(
+                builder,
+                "-m3-split-button-hovered-inner-corner",
+                M3TokenCss.pixels(tokens.hoveredInnerCorner())
+        );
+        appendDeclaration(
+                builder,
+                "-m3-split-button-pressed-inner-corner",
+                M3TokenCss.pixels(tokens.pressedInnerCorner())
+        );
+        appendDeclaration(
+                builder,
+                "-m3-split-button-selected-inner-corner",
+                M3TokenCss.pixels(tokens.selectedInnerCorner())
+        );
         appendDeclaration(builder, "-m3-split-button-menu-width", M3TokenCss.pixels(menuWidth));
         endRule(builder);
 
@@ -2738,7 +2806,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendSplitButtonEdgeShapeRules(
                 builder,
                 ownerSelector,
-                ":hover, :focused, :focus-visible",
+                ":hover",
                 outerRadius,
                 M3TokenCss.pixels(tokens.hoveredInnerCorner())
         );
@@ -3589,6 +3657,21 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 verticalPadding + " " + horizontalPadding + " " + verticalPadding + " " + horizontalPadding
         );
         appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.itemSpacing()));
+        appendDeclaration(
+                builder,
+                "-m3-carousel-small-item-min-width",
+                M3TokenCss.pixels(tokens.smallItemMinWidth())
+        );
+        appendDeclaration(
+                builder,
+                "-m3-carousel-small-item-max-width",
+                M3TokenCss.pixels(tokens.smallItemMaxWidth())
+        );
+        appendDeclaration(
+                builder,
+                "-m3-carousel-large-item-max-width",
+                M3TokenCss.pixels(tokens.largeItemMaxWidth())
+        );
         endRule(builder);
     }
 
@@ -3847,13 +3930,39 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Appends a navigation rail token CSS rule.
     private static void appendNavigationRailRule(StringBuilder builder, NavigationRailTokens tokens) {
         beginRule(builder, ".m3-navigation-rail");
-        double densityScale = tokens.indicatorHeight() / 32.0;
         appendDeclaration(builder, "-m3-collapsed-container-width", M3TokenCss.pixels(tokens.containerWidth()));
-        appendDeclaration(builder, "-m3-expanded-container-width", M3TokenCss.pixels(280.0 * densityScale));
+        appendDeclaration(
+                builder,
+                "-m3-expanded-container-width",
+                M3TokenCss.pixels(tokens.expandedContainerWidth())
+        );
         appendDeclaration(builder, "-fx-padding", M3TokenCss.pixels(tokens.verticalPadding())
                 + " "
                 + M3TokenCss.pixels(tokens.horizontalPadding()));
         appendDeclaration(builder, "-m3-item-spacing", M3TokenCss.pixels(tokens.itemSpacing()));
+        endRule(builder);
+
+        beginRule(builder, ".m3-navigation-rail:expanded");
+        appendDeclaration(
+                builder,
+                "-fx-padding",
+                M3TokenCss.pixels(tokens.expandedTopPadding())
+                        + " "
+                        + M3TokenCss.pixels(tokens.horizontalPadding())
+                        + " "
+                        + M3TokenCss.pixels(tokens.expandedBottomPadding())
+                        + " "
+                        + M3TokenCss.pixels(tokens.horizontalPadding())
+        );
+        appendDeclaration(builder, "-m3-item-spacing", M3TokenCss.pixels(0.0));
+        endRule(builder);
+
+        beginRule(builder, ".m3-navigation-rail:expanded:modal");
+        appendDeclaration(
+                builder,
+                "-fx-background-radius",
+                M3TokenCss.pixels(tokens.modalContainerShape())
+        );
         endRule(builder);
     }
 
@@ -3870,11 +3979,14 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
         double densityScale = tokens.indicatorHeight() / 32.0;
         beginRule(builder, ".m3-navigation-rail:expanded .m3-navigation-item-horizontal");
-        appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(56.0 * densityScale));
+        appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(64.0 * densityScale));
         appendDeclaration(
                 builder,
                 "-m3-item-width",
-                M3TokenCss.pixels(Math.max(0.0, 280.0 * densityScale - 2.0 * tokens.horizontalPadding()))
+                M3TokenCss.pixels(Math.max(
+                        0.0,
+                        tokens.expandedContainerWidth() - 2.0 * tokens.horizontalPadding()
+                ))
         );
         appendDeclaration(builder, "-m3-indicator-width", M3TokenCss.pixels(56.0 * densityScale));
         appendDeclaration(builder, "-m3-indicator-height", M3TokenCss.pixels(56.0 * densityScale));
@@ -4218,6 +4330,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ///
     /// @param containerHeight the group container height
     /// @param standardSpacing the spacing between standard-group children
+    /// @param standardPressedWidthMultiplier the proportional width increase applied to an activated standard item
     /// @param connectedSpacing the spacing between connected-group children
     /// @param connectedInnerCorner the resting connected inner-corner radius
     /// @param connectedPressedInnerCorner the pressed connected inner-corner radius
@@ -4226,6 +4339,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     record ButtonGroupSizeTokens(
             double containerHeight,
             double standardSpacing,
+            double standardPressedWidthMultiplier,
             double connectedSpacing,
             double connectedInnerCorner,
             double connectedPressedInnerCorner,
@@ -4235,6 +4349,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         public ButtonGroupSizeTokens {
             validateNonNegative(containerHeight, "containerHeight");
             validateFinite(standardSpacing, "standardSpacing");
+            validateNonNegative(standardPressedWidthMultiplier, "standardPressedWidthMultiplier");
             validateFinite(connectedSpacing, "connectedSpacing");
             validateNonNegative(connectedInnerCorner, "connectedInnerCorner");
             validateNonNegative(connectedPressedInnerCorner, "connectedPressedInnerCorner");
@@ -4934,17 +5049,32 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param trackHorizontalPadding the leading and trailing track padding
     /// @param trackVerticalPadding the top and bottom track padding
     /// @param itemSpacing the spacing between carousel items
+    /// @param smallItemMinWidth the minimum width of a contained small item
+    /// @param smallItemMaxWidth the maximum width of a contained small item
+    /// @param largeItemMaxWidth the preferred maximum width of a contained large item
     @NotNullByDefault
     record CarouselTokens(
             double trackHorizontalPadding,
             double trackVerticalPadding,
-            double itemSpacing
+            double itemSpacing,
+            double smallItemMinWidth,
+            double smallItemMaxWidth,
+            double largeItemMaxWidth
     ) {
         /// Creates carousel tokens.
         public CarouselTokens {
             validateNonNegative(trackHorizontalPadding, "trackHorizontalPadding");
             validateNonNegative(trackVerticalPadding, "trackVerticalPadding");
             validateNonNegative(itemSpacing, "itemSpacing");
+            validateNonNegative(smallItemMinWidth, "smallItemMinWidth");
+            validateNonNegative(smallItemMaxWidth, "smallItemMaxWidth");
+            validateNonNegative(largeItemMaxWidth, "largeItemMaxWidth");
+            if (smallItemMaxWidth < smallItemMinWidth) {
+                throw new IllegalArgumentException("smallItemMaxWidth must not be less than smallItemMinWidth");
+            }
+            if (largeItemMaxWidth < smallItemMaxWidth) {
+                throw new IllegalArgumentException("largeItemMaxWidth must not be less than smallItemMaxWidth");
+            }
         }
     }
 
@@ -5285,6 +5415,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Tokens used by navigation rails.
     ///
     /// @param containerWidth the navigation rail container width
+    /// @param expandedContainerWidth the preferred expanded navigation rail width
     /// @param itemHeight the preferred navigation item height
     /// @param itemWidth the preferred navigation item width
     /// @param indicatorWidth the selected indicator width
@@ -5294,9 +5425,13 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param verticalPadding the vertical padding around items
     /// @param horizontalPadding the horizontal padding around items
     /// @param itemSpacing the spacing between items
+    /// @param expandedTopPadding the top padding of an expanded rail
+    /// @param expandedBottomPadding the bottom padding of an expanded rail
+    /// @param modalContainerShape the corner radius of a modal expanded rail
     @NotNullByDefault
     record NavigationRailTokens(
             double containerWidth,
+            double expandedContainerWidth,
             double itemHeight,
             double itemWidth,
             double indicatorWidth,
@@ -5305,11 +5440,15 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double contentSpacing,
             double verticalPadding,
             double horizontalPadding,
-            double itemSpacing
+            double itemSpacing,
+            double expandedTopPadding,
+            double expandedBottomPadding,
+            double modalContainerShape
     ) {
         /// Creates navigation rail tokens.
         public NavigationRailTokens {
             validateNonNegative(containerWidth, "containerWidth");
+            validateNonNegative(expandedContainerWidth, "expandedContainerWidth");
             validateNonNegative(itemHeight, "itemHeight");
             validateNonNegative(itemWidth, "itemWidth");
             validateNonNegative(indicatorWidth, "indicatorWidth");
@@ -5319,6 +5458,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(verticalPadding, "verticalPadding");
             validateNonNegative(horizontalPadding, "horizontalPadding");
             validateNonNegative(itemSpacing, "itemSpacing");
+            validateNonNegative(expandedTopPadding, "expandedTopPadding");
+            validateNonNegative(expandedBottomPadding, "expandedBottomPadding");
+            validateNonNegative(modalContainerShape, "modalContainerShape");
         }
     }
 

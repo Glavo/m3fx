@@ -171,6 +171,9 @@ final class M3TokenFactoryTest {
         assertEquals(16.0, tokenSet.componentTokens().carousel().trackHorizontalPadding(), 0.0001);
         assertEquals(8.0, tokenSet.componentTokens().carousel().trackVerticalPadding(), 0.0001);
         assertEquals(8.0, tokenSet.componentTokens().carousel().itemSpacing(), 0.0001);
+        assertEquals(40.0, tokenSet.componentTokens().carousel().smallItemMinWidth(), 0.0001);
+        assertEquals(56.0, tokenSet.componentTokens().carousel().smallItemMaxWidth(), 0.0001);
+        assertEquals(320.0, tokenSet.componentTokens().carousel().largeItemMaxWidth(), 0.0001);
         assertEquals(42.0, tokenSet.componentTokens().selection().touchTargetSize(), 0.0001);
         assertEquals(41.0, tokenSet.componentTokens().selection().stateLayerSize(), 0.0001);
         assertEquals(18.0, tokenSet.componentTokens().selection().checkboxContainerSize(), 0.0001);
@@ -223,6 +226,12 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-toolbar-container-height: 63px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-toolbar-container-shape: 25px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-navigation-rail-container-width: 72px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains(
+                "-m3-navigation-rail-expanded-container-width: 280px"
+        ));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains(
+                "-m3-navigation-rail-modal-container-shape: 18px"
+        ));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-navigation-drawer-container-width: 78px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-text-area-container-height: 67px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-menu-item-height: 43px"));
@@ -294,7 +303,7 @@ final class M3TokenFactoryTest {
                 ".m3-button-group.m3-button-group-extra-large.m3-connected-button-group"
         ));
         assertTrue(tokenSet.toControlStyleRules().contains(
-                ".m3-button.m3-button-group-first:pressed"
+                ".m3-grouped-button.m3-button-group-first:pressed"
         ));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-tab-active-indicator"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-medium-container-height: 60px"));
@@ -485,7 +494,7 @@ final class M3TokenFactoryTest {
                 new M3ComponentTokens.ProgressTokens(5.0, 18.0, 52.0, 3.0, 41.0, 6.0, 7.0, 2.0, 16.0, 5.0),
                 new M3ComponentTokens.LoadingIndicatorTokens(63.0, 22.0),
                 new M3ComponentTokens.SurfaceTokens(22.0, 19.0),
-                new M3ComponentTokens.CarouselTokens(16.0, 8.0, 8.0),
+                new M3ComponentTokens.CarouselTokens(16.0, 8.0, 8.0, 40.0, 56.0, 320.0),
                 new M3ComponentTokens.CardTokens(13.0, 18.0, 2.0),
                 new M3ComponentTokens.DialogTokens(30.0, 26.0, 300.0, 540.0, 12.0, 28.0),
                 new M3ComponentTokens.SnackbarTokens(9.0, 18.0, 344.0, 672.0, 48.0, 68.0, 32.0),
@@ -511,7 +520,7 @@ final class M3TokenFactoryTest {
                 new M3ComponentTokens.BottomAppBarTokens(62.0, 12.0, 14.0, 7.0),
                 new M3ComponentTokens.ToolbarTokens(63.0, 64.0, 25.0, 49.0, 8.0, 3.0),
                 new M3ComponentTokens.NavigationBarTokens(67.0, 68.0, 69.0, 30.0, 15.0, 4.0, 9.0),
-                new M3ComponentTokens.NavigationRailTokens(72.0, 73.0, 74.0, 75.0, 31.0, 16.0, 5.0, 17.0, 10.0, 11.0),
+                new M3ComponentTokens.NavigationRailTokens(72.0, 280.0, 73.0, 74.0, 75.0, 31.0, 16.0, 5.0, 17.0, 10.0, 11.0, 44.0, 20.0, 18.0),
                 new M3ComponentTokens.NavigationDrawerTokens(
                         78.0,
                         79.0,
@@ -545,11 +554,11 @@ final class M3TokenFactoryTest {
     /// Creates button-group tokens with distinctive size values.
     private static M3ComponentTokens.ButtonGroupTokens createButtonGroupTokens() {
         return new M3ComponentTokens.ButtonGroupTokens(
-                new M3ComponentTokens.ButtonGroupSizeTokens(32.0, 18.0, -2.0, 4.0, 3.0, 16.0),
-                new M3ComponentTokens.ButtonGroupSizeTokens(40.0, 11.0, -2.0, 6.0, 4.0, 20.0),
-                new M3ComponentTokens.ButtonGroupSizeTokens(56.0, 9.0, -2.0, 8.0, 5.0, 28.0),
-                new M3ComponentTokens.ButtonGroupSizeTokens(96.0, 8.0, -2.0, 16.0, 12.0, 48.0),
-                new M3ComponentTokens.ButtonGroupSizeTokens(136.0, 7.0, -2.0, 20.0, 16.0, 68.0),
+                new M3ComponentTokens.ButtonGroupSizeTokens(32.0, 18.0, 0.15, -2.0, 4.0, 3.0, 16.0),
+                new M3ComponentTokens.ButtonGroupSizeTokens(40.0, 11.0, 0.15, -2.0, 6.0, 4.0, 20.0),
+                new M3ComponentTokens.ButtonGroupSizeTokens(56.0, 9.0, 0.15, -2.0, 8.0, 5.0, 28.0),
+                new M3ComponentTokens.ButtonGroupSizeTokens(96.0, 8.0, 0.15, -2.0, 16.0, 12.0, 48.0),
+                new M3ComponentTokens.ButtonGroupSizeTokens(136.0, 7.0, 0.15, -2.0, 20.0, 16.0, 68.0),
                 -3.0,
                 10.0
         );

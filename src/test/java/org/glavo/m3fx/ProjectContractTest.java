@@ -101,6 +101,7 @@ final class ProjectContractTest {
                             M3Card
                             M3CardVariant
                             M3Carousel
+                            M3CarouselLayout
                             M3CheckBox
                             M3Chip
                             M3ChipGroup
@@ -156,9 +157,11 @@ final class ProjectContractTest {
                             M3NavigationBar
                             M3NavigationDrawer
                             M3NavigationDrawerGroup
+                            M3NavigationDrawerVariant
                             M3NavigationItem
                             M3NavigationItemLayout
                             M3NavigationRail
+                            M3NavigationRailVariant
                             M3PasswordField
                             M3PickerField
                             M3ProgressBar
@@ -586,7 +589,11 @@ final class ProjectContractTest {
                     org.glavo.m3fx.animation.M3MotionEasing#tokenName()
                     """),
             "org.glavo.m3fx.controls",
-            Set.of(),
+            typeNames("""
+                    org.glavo.m3fx.controls.M3CarouselLayout#centersFocalItem()
+                    org.glavo.m3fx.controls.M3CarouselLayout#preservesAuthoredWidths()
+                    org.glavo.m3fx.controls.M3CarouselLayout#usesSnapScrolling()
+                    """),
             "org.glavo.m3fx.theme",
             Set.of(),
             "org.glavo.m3fx.tokens",
@@ -629,6 +636,12 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3CardVariant#ELEVATED
             org.glavo.m3fx.controls.M3CardVariant#FILLED
             org.glavo.m3fx.controls.M3CardVariant#OUTLINED
+            org.glavo.m3fx.controls.M3CarouselLayout#CENTER_ALIGNED_HERO
+            org.glavo.m3fx.controls.M3CarouselLayout#FULL_SCREEN
+            org.glavo.m3fx.controls.M3CarouselLayout#HERO
+            org.glavo.m3fx.controls.M3CarouselLayout#MULTI_BROWSE
+            org.glavo.m3fx.controls.M3CarouselLayout#UNCONTAINED
+            org.glavo.m3fx.controls.M3CarouselLayout#UNCONTAINED_MULTI_ASPECT_RATIO
             org.glavo.m3fx.controls.M3ChipSelectionMode#MULTIPLE
             org.glavo.m3fx.controls.M3ChipSelectionMode#SINGLE
             org.glavo.m3fx.controls.M3ChipStyle#ELEVATED
@@ -682,6 +695,10 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3MenuSelectionMode#MULTIPLE
             org.glavo.m3fx.controls.M3MenuSelectionMode#NONE
             org.glavo.m3fx.controls.M3MenuSelectionMode#SINGLE
+            org.glavo.m3fx.controls.M3NavigationDrawerVariant#MODAL
+            org.glavo.m3fx.controls.M3NavigationDrawerVariant#STANDARD
+            org.glavo.m3fx.controls.M3NavigationRailVariant#MODAL
+            org.glavo.m3fx.controls.M3NavigationRailVariant#STANDARD
             org.glavo.m3fx.controls.M3NavigationItemLayout#HORIZONTAL
             org.glavo.m3fx.controls.M3NavigationItemLayout#VERTICAL
             org.glavo.m3fx.controls.M3SegmentedButtonSelectionMode#MULTIPLE

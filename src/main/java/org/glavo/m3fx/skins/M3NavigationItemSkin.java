@@ -10,6 +10,7 @@ import javafx.geometry.NodeOrientation;
 import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
 import javafx.scene.input.KeyCode;
@@ -22,6 +23,7 @@ import javafx.scene.layout.Pane;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Badge;
 import org.glavo.m3fx.controls.M3NavigationItem;
+import org.glavo.m3fx.controls.M3NavigationRail;
 import org.glavo.m3fx.controls.M3NavigationItemLayout;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3FocusRequests;
@@ -154,6 +156,7 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
         iconContainer.setManaged(false);
         iconContainer.setAlignment(Pos.CENTER);
         graphicContainer.setAlignment(Pos.CENTER);
+        graphicContainer.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
         // Alignment is already resolved to a physical edge, so the container must not mirror it again.
         badgeContainer.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
         updateNodeOrientationLayout();
@@ -254,18 +257,19 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
         double graphicWidth = Math.max(24.0, graphicContainer.prefWidth(-1.0));
         double spacing = label.isManaged() ? item.getContentSpacing() : 0.0;
         double combinedWidth = graphicWidth + spacing + labelWidth;
-        double indicatorWidth = Math.max(item.getIndicatorWidth(), combinedWidth + 32.0);
+        boolean expandedRailItem = isExpandedRailItem(item);
+        double horizontalInset = item.getIndicatorHeight() * 2.0 / 7.0;
+        double indicatorWidth = expandedRailItem
+                ? Math.max(item.getIndicatorWidth(), width - horizontalInset * 2.0)
+                : Math.max(item.getIndicatorWidth(), combinedWidth + 32.0);
         double indicatorHeight = item.getIndicatorHeight();
         double indicatorX = snapPositionX((width - indicatorWidth) / 2.0);
         double indicatorY = snapPositionY((height - indicatorHeight) / 2.0);
-        double contentStart = (indicatorWidth - combinedWidth) / 2.0;
-        boolean rightToLeft = M3NodeLayout.isRightToLeft(item);
-        double graphicCenterX = rightToLeft
-                ? contentStart + labelWidth + spacing + graphicWidth / 2.0
-                : contentStart + graphicWidth / 2.0;
-        double labelX = rightToLeft
-                ? contentStart
-                : contentStart + graphicWidth + spacing;
+        double contentStart = expandedRailItem
+                ? horizontalInset
+                : (indicatorWidth - combinedWidth) / 2.0;
+        double graphicCenterX = contentStart + graphicWidth / 2.0;
+        double labelX = contentStart + graphicWidth + spacing;
 
         layoutIndicator(indicatorX, indicatorY, indicatorWidth, indicatorHeight);
         graphicContainer.setTranslateX(graphicCenterX - indicatorWidth / 2.0);
@@ -278,6 +282,18 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
                     snapSizeY(labelHeight)
             );
         }
+    }
+
+    /// Returns whether the item belongs to an expanded navigation rail.
+    private static boolean isExpandedRailItem(M3NavigationItem item) {
+        @Nullable Parent ancestor = item.getParent();
+        while (ancestor != null) {
+            if (ancestor instanceof M3NavigationRail rail) {
+                return rail.isExpanded();
+            }
+            ancestor = ancestor.getParent();
+        }
+        return false;
     }
 
     /// Lays out the active indicator, feedback layer, and icon container.

@@ -29,8 +29,8 @@ import org.jetbrains.annotations.Nullable;
 /// The default Material Design 3 skin for [M3NavigationDrawerGroup].
 @NotNullByDefault
 public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDrawerGroup> {
-    /// The spacing between the header row and child row container.
-    private static final double ITEM_SPACING = 4.0;
+    /// The spacing between adjacent navigation drawer destination rows.
+    private static final double ITEM_SPACING = 0.0;
 
     /// The vertical offset applied to child rows while expanding or collapsing.
     private static final double CHILD_TRANSITION_OFFSET = -6.0;

@@ -3,29 +3,31 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.animation.Animation;
+import javafx.animation.PauseTransition;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.Bounds;
 import javafx.scene.Node;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.SkinBase;
-import javafx.scene.layout.HBox;
+import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Carousel;
+import org.glavo.m3fx.controls.M3CarouselLayout;
 import org.glavo.m3fx.controls.M3ScrollPanes;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
-import org.jetbrains.annotations.Nullable;
 
 /// The default skin for [M3Carousel].
 @NotNullByDefault
 public final class M3CarouselSkin extends SkinBase<M3Carousel> {
     /// The default maximum preferred viewport width.
-    private static final double DEFAULT_MAX_PREF_WIDTH = 480.0;
+    private static final double DEFAULT_MAX_PREF_WIDTH = M3CarouselTrack.DEFAULT_MAX_PREF_WIDTH;
 
     /// The internal horizontal item track.
-    private final HBox track = new HBox();
+    private final M3CarouselTrack track = new M3CarouselTrack(getSkinnable());
 
     /// The internal viewport used to scroll the item track.
     private final ScrollPane viewport = new ScrollPane(track);
@@ -33,15 +35,54 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
     /// The reusable selected-item scroll transition.
     private final M3DoubleTransition scrollAnimation = new M3DoubleTransition(viewport.hvalueProperty());
 
+    /// Delay after user scrolling before a snapping layout selects its nearest focal item.
+    private final PauseTransition scrollSettleDelay = new PauseTransition(Duration.millis(120.0));
+
+    /// Whether the skin is directly assigning the viewport scroll value.
+    private boolean settingScrollValue;
+
+    /// Observes viewport movement and schedules snap settling for contained layouts.
+    private final ChangeListener<Number> viewportHValueListener = (observable, oldValue, newValue) -> {
+        if (settingScrollValue
+                || scrollAnimation.getStatus() == Animation.Status.RUNNING
+                || !getSkinnable().getCarouselLayout().usesSnapScrolling()) {
+            return;
+        }
+        scrollSettleDelay.playFromStart();
+    };
+
     /// Mirrors public item changes into the internal track.
     private final ListChangeListener<Node> itemsListener = change -> {
         updateItems();
         requestSelectedScroll(false);
     };
 
-    /// Scrolls the selected item into view after selection changes.
-    private final ChangeListener<Number> selectedIndexListener =
-            (observable, oldValue, newValue) -> requestSelectedScroll(true);
+    /// Animates focal widths and scrolls the selected item into view after selection changes.
+    private final ChangeListener<Number> selectedIndexListener = (observable, oldValue, newValue) -> {
+        track.animateSelection(oldValue.intValue(), newValue.intValue());
+        requestSelectedScroll(true);
+    };
+
+    /// Refreshes geometry when the public layout strategy changes.
+    private final ChangeListener<M3CarouselLayout> carouselLayoutListener =
+            (observable, oldValue, newValue) -> {
+                track.refreshLayoutStrategy();
+                requestSelectedScroll(false);
+            };
+
+    /// Refreshes physical placement when effective node orientation changes.
+    private final ChangeListener<javafx.geometry.NodeOrientation> orientationListener =
+            (observable, oldValue, newValue) -> {
+                track.requestLayout();
+                requestSelectedScroll(false);
+            };
+
+    /// Supplies final viewport width to contained arrangement solving.
+    private final ChangeListener<Bounds> viewportBoundsListener =
+            (observable, oldValue, newValue) -> {
+                track.setViewportWidth(newValue.getWidth());
+                requestSelectedScroll(false);
+            };
 
     /// Settles running selected-item scroll transitions when runtime motion settings change.
     private final M3MotionSettingsObserver motionSettingsObserver =
@@ -65,6 +106,11 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
         getChildren().setAll(viewport);
         control.getItems().addListener(itemsListener);
         control.selectedIndexProperty().addListener(selectedIndexListener);
+        control.carouselLayoutProperty().addListener(carouselLayoutListener);
+        control.effectiveNodeOrientationProperty().addListener(orientationListener);
+        viewport.viewportBoundsProperty().addListener(viewportBoundsListener);
+        viewport.hvalueProperty().addListener(viewportHValueListener);
+        scrollSettleDelay.setOnFinished(event -> settleToNearestItem());
         updateItems();
     }
 
@@ -72,10 +118,17 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
     @Override
     public void dispose() {
         motionSettingsObserver.dispose();
+        scrollSettleDelay.stop();
+        scrollSettleDelay.setOnFinished(null);
         stopScrollAnimation();
+        track.dispose();
         M3ScrollPanes.disableSmoothScrolling(viewport);
         getSkinnable().getItems().removeListener(itemsListener);
         getSkinnable().selectedIndexProperty().removeListener(selectedIndexListener);
+        getSkinnable().carouselLayoutProperty().removeListener(carouselLayoutListener);
+        getSkinnable().effectiveNodeOrientationProperty().removeListener(orientationListener);
+        viewport.viewportBoundsProperty().removeListener(viewportBoundsListener);
+        viewport.hvalueProperty().removeListener(viewportHValueListener);
         track.getChildren().clear();
         viewport.setContent(null);
         getChildren().remove(viewport);
@@ -143,6 +196,7 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
     /// Lays out the viewport in the control bounds and completes any pending selected-item scroll.
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
+        track.setViewportWidth(width);
         viewport.resizeRelocate(x, y, width, height);
         if (pendingSelectedScroll) {
             boolean animated = pendingSelectedScrollAnimated;
@@ -170,6 +224,7 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
     /// Mirrors the public item list into the internal track.
     private void updateItems() {
         track.getChildren().setAll(getSkinnable().getItems());
+        track.refreshItems();
         getSkinnable().requestLayout();
     }
 
@@ -182,26 +237,17 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
 
     /// Scrolls the selected item immediately and returns whether geometry requires deferring.
     private boolean deferSelectedItemScrollIfNeeded(boolean animated) {
-        @Nullable Node item = getSkinnable().getSelectedItem();
-        if (item == null || !track.getChildren().contains(item)) {
+        int selectedIndex = getSkinnable().getSelectedIndex();
+        if (selectedIndex < 0 || selectedIndex >= track.getChildren().size()) {
             return false;
         }
 
         double viewportWidth = viewport.getViewportBounds().getWidth();
-        double contentWidth = track.getBoundsInLocal().getWidth();
         if (viewportWidth <= 0.0) {
             return true;
         }
-        if (contentWidth <= viewportWidth) {
-            animateOrSetHValue(0.0, false);
-            return false;
-        }
 
-        Bounds itemBounds = item.getBoundsInParent();
-        double targetPixel = itemBounds.getMinX() - (viewportWidth - itemBounds.getWidth()) / 2.0;
-        double maxPixel = contentWidth - viewportWidth;
-        double targetHValue = clamp(targetPixel / maxPixel);
-        animateOrSetHValue(targetHValue, animated);
+        animateOrSetHValue(track.targetHValue(selectedIndex, viewportWidth), animated);
         return false;
     }
 
@@ -209,7 +255,12 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
     private void animateOrSetHValue(double targetHValue, boolean animated) {
         stopScrollAnimation();
         if (!animated || getSkinnable().getScene() == null) {
-            viewport.setHvalue(targetHValue);
+            settingScrollValue = true;
+            try {
+                viewport.setHvalue(targetHValue);
+            } finally {
+                settingScrollValue = false;
+            }
             return;
         }
 
@@ -218,9 +269,48 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
         M3Animation.playFromStart(getSkinnable(), scrollAnimation);
     }
 
+    /// Selects and aligns the item nearest the current snapping keyline.
+    private void settleToNearestItem() {
+        M3Carousel carousel = getSkinnable();
+        if (!carousel.getCarouselLayout().usesSnapScrolling()) {
+            return;
+        }
+
+        double viewportWidth = viewport.getViewportBounds().getWidth();
+        if (viewportWidth <= 0.0) {
+            return;
+        }
+
+        int nearestIndex = -1;
+        double nearestDistance = Double.POSITIVE_INFINITY;
+        for (int index = 0; index < carousel.getItems().size(); index++) {
+            Node item = carousel.getItems().get(index);
+            if (!item.isVisible() || item.isDisabled() || !item.isManaged()) {
+                continue;
+            }
+            double target = track.targetHValue(index, viewportWidth);
+            double distance = Math.abs(target - viewport.getHvalue());
+            if (distance < nearestDistance) {
+                nearestDistance = distance;
+                nearestIndex = index;
+            }
+        }
+
+        if (nearestIndex < 0) {
+            return;
+        }
+        if (nearestIndex != carousel.getSelectedIndex()) {
+            carousel.selectIndex(nearestIndex);
+        } else {
+            animateOrSetHValue(track.targetHValue(nearestIndex, viewportWidth), true);
+        }
+    }
+
     /// Settles a running scroll animation if the carousel now resolves reduced motion.
     private void refreshMotionSettings() {
+        track.refreshMotionSettings();
         M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), scrollAnimation);
+        requestSelectedScroll(false);
     }
 
     /// Stops the current scroll animation.
@@ -228,11 +318,5 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
         scrollAnimation.stop();
     }
 
-    /// Clamps a normalized scroll value to the supported range.
-    private static double clamp(double value) {
-        if (value <= 0.0) {
-            return 0.0;
-        }
-        return Math.min(value, 1.0);
-    }
+
 }

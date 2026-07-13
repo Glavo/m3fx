@@ -327,10 +327,10 @@ public final class M3Css {
         return new M3StyleableObjectProperty<>(initialValue, bean, name, cssMetaData, invalidation);
     }
 
-    /// Validates that a CSS size token is not negative.
+    /// Validates that a CSS size token is finite and not negative.
     public static double nonNegative(double value, String name) {
-        if (value < 0.0) {
-            throw new IllegalArgumentException(name + " must not be negative");
+        if (!Double.isFinite(value) || value < 0.0) {
+            throw new IllegalArgumentException(name + " must be finite and not negative");
         }
         return value;
     }

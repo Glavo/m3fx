@@ -7,6 +7,7 @@ import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.scene.control.SkinBase;
 import javafx.scene.shape.SVGPath;
+import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3DisclosureIcon;
 import org.glavo.m3fx.internal.M3Animation;
@@ -28,6 +29,15 @@ public final class M3DisclosureIconSkin extends SkinBase<M3DisclosureIcon> {
 
     /// The collapsed right-to-left arrow rotation in degrees.
     private static final double RIGHT_TO_LEFT_COLLAPSED_ROTATION = 90.0;
+
+    /// The expanded left-to-right vertical arrow rotation in degrees.
+    private static final double LEFT_TO_RIGHT_VERTICAL_EXPANDED_ROTATION = 180.0;
+
+    /// The expanded right-to-left vertical arrow rotation in degrees.
+    private static final double RIGHT_TO_LEFT_VERTICAL_EXPANDED_ROTATION = -180.0;
+
+    /// The standard motion spec required by split-button menu indicator rotation.
+    private static final M3MotionSpec VERTICAL_ROTATION_SPEC = M3MotionScheme.standard().fastSpatial();
 
     /// The disclosure triangle path in a 24 by 24 icon box.
     private static final String TRIANGLE_PATH = "M 7 9 L 17 9 L 12 15 Z";
@@ -53,6 +63,10 @@ public final class M3DisclosureIconSkin extends SkinBase<M3DisclosureIcon> {
     private final InvalidationListener nodeOrientationInvalidation =
             observable -> animateExpandedState(getSkinnable().isExpanded());
 
+    /// Applies disclosure direction changes to the arrow rotation.
+    private final InvalidationListener verticalInvalidation =
+            observable -> animateExpandedState(getSkinnable().isExpanded());
+
     /// Creates a disclosure icon skin.
     ///
     /// @param control the disclosure icon controlled by this skin
@@ -62,10 +76,11 @@ public final class M3DisclosureIconSkin extends SkinBase<M3DisclosureIcon> {
         arrow.getStyleClass().add("m3-disclosure-icon-shape");
         arrow.setManaged(false);
         arrow.setMouseTransparent(true);
-        arrow.setRotate(rotationFor(control.isExpanded(), isRightToLeft()));
+        arrow.setRotate(rotationFor(control.isExpanded(), isRightToLeft(), control.isVertical()));
         getChildren().setAll(arrow);
         control.expandedProperty().addListener(expandedListener);
         control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
+        control.verticalProperty().addListener(verticalInvalidation);
     }
 
     /// Removes listeners and animations before disposal.
@@ -75,6 +90,7 @@ public final class M3DisclosureIconSkin extends SkinBase<M3DisclosureIcon> {
         motionSettingsObserver.dispose();
         getSkinnable().expandedProperty().removeListener(expandedListener);
         getSkinnable().effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
+        getSkinnable().verticalProperty().removeListener(verticalInvalidation);
         getChildren().remove(arrow);
         super.dispose();
     }
@@ -165,13 +181,26 @@ public final class M3DisclosureIconSkin extends SkinBase<M3DisclosureIcon> {
     /// Animates the arrow rotation to match the expanded state.
     private void animateExpandedState(boolean expanded) {
         rotationAnimation.stop();
-        M3MotionSpec spec = M3Animation.fastSpatial(getSkinnable());
-        rotationAnimation.configure(spec, rotationFor(expanded, isRightToLeft()));
+        M3MotionSpec spec = getSkinnable().isVertical()
+                ? VERTICAL_ROTATION_SPEC
+                : M3Animation.fastSpatial(getSkinnable());
+        rotationAnimation.configure(
+                spec,
+                rotationFor(expanded, isRightToLeft(), getSkinnable().isVertical())
+        );
         M3Animation.playFromStart(getSkinnable(), rotationAnimation);
     }
 
     /// Returns the arrow rotation for an expanded state.
-    private static double rotationFor(boolean expanded, boolean rightToLeft) {
+    private static double rotationFor(boolean expanded, boolean rightToLeft, boolean vertical) {
+        if (vertical) {
+            if (!expanded) {
+                return EXPANDED_ROTATION;
+            }
+            return rightToLeft
+                    ? RIGHT_TO_LEFT_VERTICAL_EXPANDED_ROTATION
+                    : LEFT_TO_RIGHT_VERTICAL_EXPANDED_ROTATION;
+        }
         if (expanded) {
             return EXPANDED_ROTATION;
         }

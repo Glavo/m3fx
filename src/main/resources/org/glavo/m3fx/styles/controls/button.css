@@ -1,3 +1,5 @@
+@import "button-group.css";
+
 .m3-button {
     -m3-disclosure-icon-color: -m3-color-primary;
     -m3-container-height: 40px;

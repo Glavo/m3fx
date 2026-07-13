@@ -93,7 +93,7 @@ public class M3NavigationItem extends ButtonBase {
     };
 
     /// The icon and label arrangement selected by the owning navigation container.
-    private final ObjectProperty<M3NavigationItemLayout> itemLayout =
+    private final ObjectProperty<M3NavigationItemLayout> itemLayoutState =
             new SimpleObjectProperty<>(this, "itemLayout", M3NavigationItemLayout.VERTICAL) {
                 /// Maintains the matching layout style class and requests a new skin layout.
                 @Override
@@ -166,7 +166,7 @@ public class M3NavigationItem extends ButtonBase {
     ///
     /// @return the current navigation item layout
     public final M3NavigationItemLayout getItemLayout() {
-        return itemLayout.get();
+        return itemLayoutState.get();
     }
 
     /// Sets the icon and label arrangement.
@@ -175,14 +175,14 @@ public class M3NavigationItem extends ButtonBase {
     ///
     /// @param itemLayout the navigation item layout
     public final void setItemLayout(M3NavigationItemLayout itemLayout) {
-        this.itemLayout.set(Objects.requireNonNull(itemLayout, "itemLayout"));
+        this.itemLayoutState.set(Objects.requireNonNull(itemLayout, "itemLayout"));
     }
 
     /// Returns the icon and label arrangement property.
     ///
     /// @return the writable navigation item layout property
     public final ObjectProperty<M3NavigationItemLayout> itemLayoutProperty() {
-        return itemLayout;
+        return itemLayoutState;
     }
     /// Returns the badge displayed over this item's graphic.
     ///

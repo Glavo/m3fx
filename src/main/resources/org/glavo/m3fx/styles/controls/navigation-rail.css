@@ -1,11 +1,11 @@
 .m3-navigation-rail {
-    -fx-background-color: -m3-color-surface-container;
-    -fx-padding: 16px 8px 16px 8px;
-    -m3-collapsed-container-width: 96px;
+    -fx-background-color: -m3-color-surface;
+    -fx-padding: 16px 0px 16px 0px;
+    -m3-collapsed-container-width: 80px;
     -m3-expanded-container-width: 280px;
     -m3-item-spacing: 8px;
-    -fx-border-color: transparent -m3-color-outline-variant transparent transparent;
-    -fx-border-width: 0 1px 0 0;
+    -fx-background-radius: 0px;
+    -fx-effect: null;
 }
 
 .m3-navigation-rail .m3-navigation-item.m3-navigation-item,
@@ -23,12 +23,18 @@
 
 .m3-navigation-rail:expanded {
     -fx-background-color: -m3-color-surface;
-    -fx-padding: 16px 8px 16px 8px;
+    -fx-padding: 44px 0px 20px 0px;
     -m3-item-spacing: 0px;
 }
 
+.m3-navigation-rail:expanded:modal {
+    -fx-background-color: -m3-color-surface-container;
+    -fx-background-radius: 16px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 3, 0.18, 0, 2);
+}
+
 .m3-navigation-rail:expanded .m3-navigation-item-horizontal.m3-navigation-item {
-    -m3-container-height: 56px;
+    -m3-container-height: 64px;
     -m3-item-width: 264px;
     -m3-indicator-width: 56px;
     -m3-indicator-height: 56px;
