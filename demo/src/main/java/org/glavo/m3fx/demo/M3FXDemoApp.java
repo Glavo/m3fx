@@ -57,7 +57,6 @@ import org.glavo.m3fx.controls.M3CarouselLayout;
 import org.glavo.m3fx.controls.M3CheckBox;
 import org.glavo.m3fx.controls.M3Chip;
 import org.glavo.m3fx.controls.M3ChipGroup;
-import org.glavo.m3fx.controls.M3ChipSelectionMode;
 import org.glavo.m3fx.controls.M3ChipStyle;
 import org.glavo.m3fx.controls.M3ChipVariant;
 import org.glavo.m3fx.controls.M3DateRange;
@@ -2010,14 +2009,15 @@ public final class M3FXDemoApp extends Application {
 
         M3NavigationRail modal = createFourItemNavigationRail();
         modal.setVariant(M3NavigationRailVariant.MODAL);
+        modal.setFullWidthIndicator(true);
         modal.setExpanded(true);
 
         return createGallery(
                 createShowcaseGroup(
                         "Variants",
-                        createNavigationRailPreview("Collapsed", collapsed),
-                        createNavigationRailPreview("Expanded standard", standard),
-                        createNavigationRailPreview("Expanded modal", modal)
+                        createNavigationRailPreview("Collapsed with action", collapsed, true),
+                        createNavigationRailPreview("Expanded standard", standard, false),
+                        createNavigationRailPreview("Expanded modal, full-width indicator", modal, false)
                 )
         );
     }
@@ -3380,22 +3380,6 @@ public final class M3FXDemoApp extends Application {
         return bottomAppBar;
     }
 
-    /// Creates the three-item navigation bar sample.
-    private M3NavigationBar createThreeItemNavigationBar() {
-        M3NavigationItem firstItem = createNavigationItem("Inbox", "inbox");
-        M3NavigationItem secondItem = createNavigationItem("Tasks", "task");
-        M3NavigationItem thirdItem = createNavigationItem("Done", "done");
-        secondItem.setBadge(new M3Badge("3"));
-
-        M3NavigationBar navigationBar = createNavigationBar(
-                firstItem,
-                secondItem,
-                thirdItem
-        );
-        navigationBar.selectIndex(0);
-        return navigationBar;
-    }
-
     /// Creates the four-item navigation bar sample.
     private M3NavigationBar createFourItemNavigationBar() {
         M3NavigationItem firstItem = createNavigationItem("Home", "home");
@@ -3412,22 +3396,6 @@ public final class M3FXDemoApp extends Application {
         );
         navigationBar.selectIndex(0);
         return navigationBar;
-    }
-
-    /// Creates the three-item navigation rail sample.
-    private M3NavigationRail createThreeItemNavigationRail() {
-        M3NavigationItem firstItem = createNavigationItem("Inbox", "inbox");
-        M3NavigationItem secondItem = createNavigationItem("Tasks", "task");
-        M3NavigationItem thirdItem = createNavigationItem("Done", "done");
-        secondItem.setBadge(new M3Badge());
-
-        M3NavigationRail navigationRail = createNavigationRail(
-                firstItem,
-                secondItem,
-                thirdItem
-        );
-        navigationRail.selectIndex(0);
-        return navigationRail;
     }
 
     /// Creates the four-item navigation rail sample.
@@ -3681,8 +3649,8 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates a selectable icon-toggle button group for one Material button-group variant.
     ///
-    /// @param variant the standard or connected group behavior
-    /// @param multiple whether independent multi-selection is allowed
+    /// @param variant   the standard or connected group behavior
+    /// @param multiple  whether independent multi-selection is allowed
     /// @param iconNames the icon names used by the toggle buttons
     /// @return the configured selectable button group
     private static M3ButtonGroup createToggleButtonGroup(
@@ -3716,17 +3684,42 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates a labeled interactive collapsed or expanded navigation rail preview.
     ///
-    /// @param title the variant title displayed above the preview
+    /// @param title          the variant title displayed above the preview
     /// @param navigationRail the navigation rail to preview
+    /// @param showAction     whether the header includes a floating action button
     /// @return the labeled interactive preview
-    private static VBox createNavigationRailPreview(String title, M3NavigationRail navigationRail) {
+    private static VBox createNavigationRailPreview(
+            String title,
+            M3NavigationRail navigationRail,
+            boolean showAction
+    ) {
         Label titleLabel = new Label(title);
         titleLabel.getStyleClass().add("demo-group-title");
 
-        M3IconButton menuButton = createIconButton("menu");
-        menuButton.setOnAction(event -> navigationRail.setExpanded(!navigationRail.isExpanded()));
+        boolean initiallyExpanded = navigationRail.isExpanded();
+        M3IconButton menuButton = createIconButton(initiallyExpanded ? "close" : "menu");
+        menuButton.setAccessibleText(initiallyExpanded ? "Collapse navigation rail" : "Expand navigation rail");
+        menuButton.setOnAction(event -> {
+            boolean expanded = !navigationRail.isExpanded();
+            navigationRail.setExpanded(expanded);
+            menuButton.setGraphic(createIconViewport(DemoIcons.primary(expanded ? "close" : "menu")));
+            menuButton.setAccessibleText(expanded ? "Collapse navigation rail" : "Expand navigation rail");
+        });
 
-        VBox preview = new VBox(12.0, titleLabel, menuButton, navigationRail);
+        VBox header = new VBox(16.0, menuButton);
+        header.setAlignment(Pos.TOP_CENTER);
+        if (showAction) {
+            M3FloatingActionButton action = createFab(
+                    "add",
+                    M3FloatingActionButtonVariant.PRIMARY,
+                    M3FloatingActionButtonSize.REGULAR
+            );
+            action.setAccessibleText("Create");
+            header.getChildren().add(action);
+        }
+        navigationRail.setHeader(header);
+
+        VBox preview = new VBox(12.0, titleLabel, navigationRail);
         preview.setAlignment(Pos.TOP_LEFT);
         return preview;
     }

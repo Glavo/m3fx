@@ -252,18 +252,40 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
     /// Lays out a medium-window item with the icon and label inside one active indicator.
     private void layoutHorizontalContent(double width, double height) {
         M3NavigationItem item = getSkinnable();
-        double labelWidth = label.isManaged() ? label.prefWidth(-1.0) : 0.0;
-        double labelHeight = label.isManaged() ? label.prefHeight(labelWidth) : 0.0;
         double graphicWidth = Math.max(24.0, graphicContainer.prefWidth(-1.0));
         double spacing = label.isManaged() ? item.getContentSpacing() : 0.0;
-        double combinedWidth = graphicWidth + spacing + labelWidth;
-        boolean expandedRailItem = isExpandedRailItem(item);
-        double horizontalInset = item.getIndicatorHeight() * 2.0 / 7.0;
-        double indicatorWidth = expandedRailItem
-                ? Math.max(item.getIndicatorWidth(), width - horizontalInset * 2.0)
-                : Math.max(item.getIndicatorWidth(), combinedWidth + 32.0);
+        @Nullable M3NavigationRail rail = navigationRail(item);
+        boolean expandedRailItem = rail != null && rail.isExpanded();
+        @Nullable M3Badge badge = item.getBadge();
+        boolean inlineBadge = expandedRailItem && badge != null;
+        double badgeWidth = inlineBadge ? Math.max(6.0, badge.prefWidth(-1.0)) : 0.0;
+        double badgeSpacing = inlineBadge ? 8.0 : 0.0;
+        double horizontalInset = 16.0;
+        double maximumIndicatorWidth = expandedRailItem
+                ? Math.max(0.0, width - horizontalInset * 2.0)
+                : width;
+        double maximumLabelWidth = Math.max(
+                0.0,
+                maximumIndicatorWidth - horizontalInset * 2.0
+                        - graphicWidth - spacing - badgeSpacing - badgeWidth
+        );
+        double labelWidth = label.isManaged()
+                ? Math.min(label.prefWidth(-1.0), maximumLabelWidth)
+                : 0.0;
+        double labelHeight = label.isManaged() ? label.prefHeight(labelWidth) : 0.0;
+        double combinedWidth = graphicWidth + spacing + labelWidth + badgeSpacing + badgeWidth;
+        boolean fullWidthIndicator = expandedRailItem && rail.isFullWidthIndicator();
+        double desiredIndicatorWidth = fullWidthIndicator
+                ? maximumIndicatorWidth
+                : combinedWidth + horizontalInset * 2.0;
+        double indicatorWidth = Math.min(
+                maximumIndicatorWidth,
+                Math.max(item.getIndicatorWidth(), desiredIndicatorWidth)
+        );
         double indicatorHeight = item.getIndicatorHeight();
-        double indicatorX = snapPositionX((width - indicatorWidth) / 2.0);
+        double indicatorX = snapPositionX(expandedRailItem
+                ? horizontalInset
+                : (width - indicatorWidth) / 2.0);
         double indicatorY = snapPositionY((height - indicatorHeight) / 2.0);
         double contentStart = expandedRailItem
                 ? horizontalInset
@@ -273,7 +295,12 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
 
         layoutIndicator(indicatorX, indicatorY, indicatorWidth, indicatorHeight);
         graphicContainer.setTranslateX(graphicCenterX - indicatorWidth / 2.0);
-        layoutBadgeOverGraphic(graphicCenterX, indicatorHeight / 2.0);
+        if (inlineBadge) {
+            double badgeCenterX = labelX + labelWidth + badgeSpacing + badgeWidth / 2.0;
+            layoutBadgeInline(badgeCenterX, indicatorHeight / 2.0);
+        } else {
+            layoutBadgeOverGraphic(graphicCenterX, indicatorHeight / 2.0);
+        }
         if (label.isManaged()) {
             label.resizeRelocate(
                     snapPositionX(indicatorX + labelX),
@@ -284,16 +311,16 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
         }
     }
 
-    /// Returns whether the item belongs to an expanded navigation rail.
-    private static boolean isExpandedRailItem(M3NavigationItem item) {
+    /// Returns the containing navigation rail, when the item belongs to one.
+    private static @Nullable M3NavigationRail navigationRail(M3NavigationItem item) {
         @Nullable Parent ancestor = item.getParent();
         while (ancestor != null) {
             if (ancestor instanceof M3NavigationRail rail) {
-                return rail.isExpanded();
+                return rail;
             }
             ancestor = ancestor.getParent();
         }
-        return false;
+        return null;
     }
 
     /// Lays out the active indicator, feedback layer, and icon container.
@@ -307,10 +334,29 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
 
     /// Positions the badge around the logical trailing top edge of the icon graphic.
     private void layoutBadgeOverGraphic(double graphicCenterX, double graphicCenterY) {
+        badgeContainer.setAlignment(badgeAlignment());
+        StackPane.setAlignment(badgeSlot, badgeAlignment());
+        badgeSlot.setTranslateX(M3NodeLayout.isRightToLeft(getSkinnable()) ? -4.0 : 4.0);
+        badgeSlot.setTranslateY(-2.0);
         double badgeAnchorSize = 24.0;
         badgeContainer.resizeRelocate(
                 snapPositionX(graphicCenterX - badgeAnchorSize / 2.0),
                 snapPositionY(graphicCenterY - badgeAnchorSize / 2.0),
+                badgeAnchorSize,
+                badgeAnchorSize
+        );
+    }
+
+    /// Positions an expanded-rail badge directly after the destination label.
+    private void layoutBadgeInline(double badgeCenterX, double badgeCenterY) {
+        badgeContainer.setAlignment(Pos.CENTER);
+        StackPane.setAlignment(badgeSlot, Pos.CENTER);
+        badgeSlot.setTranslateX(0.0);
+        badgeSlot.setTranslateY(0.0);
+        double badgeAnchorSize = 24.0;
+        badgeContainer.resizeRelocate(
+                snapPositionX(badgeCenterX - badgeAnchorSize / 2.0),
+                snapPositionY(badgeCenterY - badgeAnchorSize / 2.0),
                 badgeAnchorSize,
                 badgeAnchorSize
         );
@@ -465,6 +511,7 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
         if (badge != null) {
             badgeSlot.getChildren().add(badge);
         }
+        getSkinnable().requestLayout();
     }
 
     /// Updates alignment for overlay content that is anchored to logical end.
@@ -473,6 +520,7 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
         StackPane.setAlignment(badgeSlot, badgeAlignment());
         badgeSlot.setTranslateX(M3NodeLayout.isRightToLeft(getSkinnable()) ? -4.0 : 4.0);
         badgeSlot.setTranslateY(-2.0);
+        getSkinnable().requestLayout();
     }
 
     /// Returns the badge alignment for the current logical end edge.

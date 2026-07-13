@@ -4,6 +4,7 @@
 package org.glavo.m3fx.skins;
 
 import javafx.collections.ListChangeListener;
+import javafx.beans.InvalidationListener;
 import javafx.geometry.HPos;
 import javafx.geometry.VPos;
 import javafx.scene.Node;
@@ -22,6 +23,12 @@ public final class M3NavigationBarSkin extends SkinBase<M3NavigationBar> {
     /// Mirrors public item changes into the skin container.
     private final ListChangeListener<Node> itemsListener = change -> updateItems();
 
+    /// Requests a new item distribution when the resolved spacing token changes.
+    private final InvalidationListener itemSpacingListener = observable -> {
+        container.requestLayout();
+        getSkinnable().requestLayout();
+    };
+
     /// Creates a navigation bar skin.
     ///
     /// @param control the skinned navigation bar
@@ -31,6 +38,7 @@ public final class M3NavigationBarSkin extends SkinBase<M3NavigationBar> {
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
         getChildren().setAll(container);
         control.getItems().addListener(itemsListener);
+        control.itemSpacingProperty().addListener(itemSpacingListener);
         updateItems();
     }
 
@@ -38,6 +46,7 @@ public final class M3NavigationBarSkin extends SkinBase<M3NavigationBar> {
     @Override
     public void dispose() {
         getSkinnable().getItems().removeListener(itemsListener);
+        getSkinnable().itemSpacingProperty().removeListener(itemSpacingListener);
         container.nodeOrientationProperty().unbind();
         container.getChildren().clear();
         getChildren().remove(container);
@@ -132,10 +141,15 @@ public final class M3NavigationBarSkin extends SkinBase<M3NavigationBar> {
     /// Returns the summed minimum or preferred width of managed navigation items.
     private double itemWidthSum(double height, boolean minimum) {
         double width = 0.0;
+        int itemCount = 0;
         for (Node child : container.getChildren()) {
             if (child.isManaged()) {
                 width += minimum ? child.minWidth(height) : child.prefWidth(height);
+                itemCount++;
             }
+        }
+        if (itemCount > 1 && getSkinnable().getItemLayout() == M3NavigationItemLayout.VERTICAL) {
+            width += getSkinnable().getItemSpacing() * (itemCount - 1);
         }
         return width;
     }
@@ -170,13 +184,19 @@ public final class M3NavigationBarSkin extends SkinBase<M3NavigationBar> {
         }
 
         if (getSkinnable().getItemLayout() == M3NavigationItemLayout.VERTICAL) {
+            double spacing = getSkinnable().getItemSpacing();
+            double availableWidth = Math.max(0.0, width - spacing * (itemCount - 1));
             int itemIndex = 0;
             for (Node child : container.getChildren()) {
                 if (!child.isManaged()) {
                     continue;
                 }
-                double start = container.snapPositionX(width * itemIndex / itemCount);
-                double end = container.snapPositionX(width * (itemIndex + 1) / itemCount);
+                double start = container.snapPositionX(
+                        availableWidth * itemIndex / itemCount + spacing * itemIndex
+                );
+                double end = container.snapPositionX(
+                        availableWidth * (itemIndex + 1) / itemCount + spacing * itemIndex
+                );
                 container.layoutChild(
                         child,
                         start,
@@ -189,13 +209,12 @@ public final class M3NavigationBarSkin extends SkinBase<M3NavigationBar> {
         }
 
         double preferredWidth = itemWidthSum(height, false);
-        double widthScale = preferredWidth > width && preferredWidth > 0.0 ? width / preferredWidth : 1.0;
-        double currentX = Math.max(0.0, (width - preferredWidth * widthScale) / 2.0);
+        double currentX = Math.max(0.0, (width - preferredWidth) / 2.0);
         for (Node child : container.getChildren()) {
             if (!child.isManaged()) {
                 continue;
             }
-            double childWidth = child.prefWidth(height) * widthScale;
+            double childWidth = child.prefWidth(height);
             container.layoutChild(child, currentX, childWidth, height);
             currentX += childWidth;
         }

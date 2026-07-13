@@ -10,8 +10,6 @@ import javafx.css.PseudoClass;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.SkinBase;
-import javafx.scene.effect.DropShadow;
-import javafx.scene.effect.Effect;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.ArcTo;
@@ -28,7 +26,6 @@ import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3FiniteTransition;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
-import org.jetbrains.annotations.Nullable;
 
 /// The default Material Design 3 skin for [M3SplitButton].
 @NotNullByDefault
@@ -60,20 +57,11 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
     /// The trailing menu part.
     private final M3MenuButton menuButton;
 
-    /// Mirrors the strongest current part effect onto the unclipped split-button container.
-    private final InvalidationListener partEffectInvalidation = observable -> refreshContainerEffect();
-
     /// The reusable action-part surface shape.
     private final SplitPartShape actionShape = new SplitPartShape();
 
     /// The reusable menu-part surface shape.
     private final SplitPartShape menuShape = new SplitPartShape();
-
-    /// The reusable action-part rendering clip.
-    private final SplitPartShape actionClip = new SplitPartShape();
-
-    /// The reusable menu-part rendering clip.
-    private final SplitPartShape menuClip = new SplitPartShape();
 
     /// The action-part inner-corner transition.
     private final PartShapeTransition actionShapeTransition;
@@ -109,13 +97,10 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
         menuButton = resolvedMenuButton;
         actionButton.setManaged(false);
         menuButton.setManaged(false);
-        configurePartShape(actionButton, actionShape, actionClip);
-        configurePartShape(menuButton, menuShape, menuClip);
-        actionButton.effectProperty().addListener(partEffectInvalidation);
-        menuButton.effectProperty().addListener(partEffectInvalidation);
-        refreshContainerEffect();
-        actionShapeTransition = new PartShapeTransition(actionButton, actionShape, actionClip, false);
-        menuShapeTransition = new PartShapeTransition(menuButton, menuShape, menuClip, true);
+        configurePartShape(actionButton, actionShape);
+        configurePartShape(menuButton, menuShape);
+        actionShapeTransition = new PartShapeTransition(actionButton, actionShape, false);
+        menuShapeTransition = new PartShapeTransition(menuButton, menuShape, true);
         motionSettingsObserver = new M3MotionSettingsObserver(
                 control,
                 () -> M3Animation.finishRunningAnimationsIfDisabled(
@@ -137,11 +122,8 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
         menuShapeTransition.stop();
         motionSettingsObserver.dispose();
         uninstallShapeListeners(getSkinnable());
-        actionButton.effectProperty().removeListener(partEffectInvalidation);
-        menuButton.effectProperty().removeListener(partEffectInvalidation);
-        container.setEffect(null);
-        resetPartShape(actionButton, actionShape, actionClip);
-        resetPartShape(menuButton, menuShape, menuClip);
+        resetPartShape(actionButton, actionShape);
+        resetPartShape(menuButton, menuShape);
         container.nodeOrientationProperty().unbind();
         container.getChildren().clear();
         getChildren().remove(container);
@@ -149,49 +131,23 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
     }
 
     /// Configures one internal region to render its background and outline through a mutable shape.
-    private static void configurePartShape(
-            M3Button button,
-            SplitPartShape surfaceShape,
-            SplitPartShape renderingClip
-    ) {
+    private static void configurePartShape(M3Button button, SplitPartShape surfaceShape) {
         button.setShape(surfaceShape);
         button.setScaleShape(false);
         button.setCenterShape(false);
         button.setCacheShape(false);
-        button.setClip(renderingClip);
     }
 
-    /// Removes the mutable shape and rendering clip installed by this skin.
-    private static void resetPartShape(
-            M3Button button,
-            SplitPartShape surfaceShape,
-            SplitPartShape renderingClip
-    ) {
+    /// Removes the mutable shape installed by this skin.
+    private static void resetPartShape(M3Button button, SplitPartShape surfaceShape) {
         if (button.getShape() == surfaceShape) {
             button.setShape(null);
             button.setScaleShape(true);
             button.setCenterShape(true);
             button.setCacheShape(true);
         }
-        if (button.getClip() == renderingClip) {
-            button.setClip(null);
-        }
     }
 
-    /// Applies the visually strongest part effect after the clipped parts have been composed.
-    private void refreshContainerEffect() {
-        @Nullable Effect actionEffect = actionButton.getEffect();
-        @Nullable Effect menuEffect = menuButton.getEffect();
-        container.setEffect(effectExtent(menuEffect) > effectExtent(actionEffect) ? menuEffect : actionEffect);
-    }
-
-    /// Returns a comparable visual extent for one CSS-resolved part effect.
-    private static double effectExtent(@Nullable Effect effect) {
-        if (effect instanceof DropShadow shadow) {
-            return shadow.getRadius() + Math.abs(shadow.getOffsetX()) + Math.abs(shadow.getOffsetY());
-        }
-        return effect == null ? 0.0 : 1.0;
-    }
     /// Installs listeners for owner shape tokens and part interaction states.
     private void installShapeListeners(M3SplitButton control) {
         control.outerCornerProperty().addListener(shapeTokenInvalidation);
@@ -453,9 +409,6 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
         /// The mutable shape installed on the button surface.
         private final SplitPartShape shape;
 
-        /// The mutable clip applied to the complete rendered button part.
-        private final SplitPartShape clip;
-
         /// Whether this transition controls the trailing menu part.
         private final boolean menuPart;
 
@@ -472,12 +425,10 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
         private PartShapeTransition(
                 M3Button button,
                 SplitPartShape shape,
-                SplitPartShape clip,
                 boolean menuPart
         ) {
             this.button = button;
             this.shape = shape;
-            this.clip = clip;
             this.menuPart = menuPart;
         }
 
@@ -517,7 +468,6 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
             double height = button.getHeight();
             double outerCorner = getSkinnable().getOuterCorner();
             shape.update(width, height, outerCorner, currentInnerCorner, menuPart);
-            clip.update(width, height, outerCorner, currentInnerCorner, menuPart);
         }
 
         /// Applies the eased inner-corner radius without allocating pulse-local objects.
@@ -633,14 +583,12 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
             double inner = Math.min(maximumRadius, Math.max(0.0, innerCorner));
             double topLeft = menuPart ? inner : outer;
             double topRight = menuPart ? outer : inner;
-            double bottomRight = topRight;
-            double bottomLeft = topLeft;
             if (Double.compare(this.width, width) == 0
                     && Double.compare(this.height, height) == 0
                     && Double.compare(topLeftRadius, topLeft) == 0
                     && Double.compare(topRightRadius, topRight) == 0
-                    && Double.compare(bottomRightRadius, bottomRight) == 0
-                    && Double.compare(bottomLeftRadius, bottomLeft) == 0) {
+                    && Double.compare(bottomRightRadius, topRight) == 0
+                    && Double.compare(bottomLeftRadius, topLeft) == 0) {
                 return;
             }
 
@@ -648,8 +596,8 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
             this.height = height;
             topLeftRadius = topLeft;
             topRightRadius = topRight;
-            bottomRightRadius = bottomRight;
-            bottomLeftRadius = bottomLeft;
+            bottomRightRadius = topRight;
+            bottomLeftRadius = topLeft;
 
             start.setX(topLeft);
             start.setY(0.0);
@@ -657,24 +605,24 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
             topEdge.setY(0.0);
             updateCorner(TOP_RIGHT_CORNER_INDEX, topRightArc, topRightLine, topRight, width, topRight);
             rightEdge.setX(width);
-            rightEdge.setY(height - bottomRight);
+            rightEdge.setY(height - topRight);
             updateCorner(
                     BOTTOM_RIGHT_CORNER_INDEX,
                     bottomRightArc,
                     bottomRightLine,
-                    bottomRight,
-                    width - bottomRight,
+                    topRight,
+                    width - topRight,
                     height
             );
-            bottomEdge.setX(bottomLeft);
+            bottomEdge.setX(topLeft);
             bottomEdge.setY(height);
             updateCorner(
                     BOTTOM_LEFT_CORNER_INDEX,
                     bottomLeftArc,
                     bottomLeftLine,
-                    bottomLeft,
+                    topLeft,
                     0.0,
-                    height - bottomLeft
+                    height - topLeft
             );
             leftEdge.setX(0.0);
             leftEdge.setY(topLeft);

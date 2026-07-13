@@ -250,52 +250,52 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Creates component tokens from explicit component token values.
     ///
-    /// @param filledButton the filled button component tokens
-    /// @param tonalButton the filled tonal button component tokens
-    /// @param outlinedButton the outlined button component tokens
-    /// @param textButton the text button component tokens
-    /// @param elevatedButton the elevated button component tokens
-    /// @param buttonSizing the five-step button size token scale
-    /// @param iconButton the icon button component tokens
+    /// @param filledButton         the filled button component tokens
+    /// @param tonalButton          the filled tonal button component tokens
+    /// @param outlinedButton       the outlined button component tokens
+    /// @param textButton           the text button component tokens
+    /// @param elevatedButton       the elevated button component tokens
+    /// @param buttonSizing         the five-step button size token scale
+    /// @param iconButton           the icon button component tokens
     /// @param floatingActionButton the floating action button component tokens
-    /// @param icon the icon component tokens
-    /// @param buttonGroup the button group component tokens
-    /// @param splitButton the split button component tokens
-    /// @param segmentedButton the segmented button component tokens
-    /// @param tab the tab component tokens
-    /// @param field the text input component tokens
-    /// @param textArea the text area component tokens
-    /// @param form the form component tokens
-    /// @param validationSummary the validation summary component tokens
-    /// @param menu the menu component tokens
-    /// @param search the search component tokens
-    /// @param pickerField the picker field component tokens
-    /// @param datePicker the date picker component tokens
-    /// @param timePicker the time picker component tokens
-    /// @param sheet the sheet component tokens
-    /// @param scrim the scrim component tokens
-    /// @param selection the selection control component tokens
-    /// @param slider the slider component tokens
-    /// @param chip the chip component tokens
-    /// @param progress the progress component tokens
-    /// @param loadingIndicator the loading indicator component tokens
-    /// @param surface the surface component tokens
-    /// @param carousel the carousel component tokens
-    /// @param card the card component tokens
-    /// @param dialog the dialog component tokens
-    /// @param snackbar the snackbar component tokens
-    /// @param banner the banner component tokens
-    /// @param tooltip the tooltip component tokens
-    /// @param divider the divider component tokens
-    /// @param badge the badge component tokens
-    /// @param avatar the avatar component tokens
-    /// @param topAppBar the top app bar component tokens
-    /// @param bottomAppBar the bottom app bar component tokens
-    /// @param toolbar the toolbar component tokens
-    /// @param navigationBar the navigation bar component tokens
-    /// @param navigationRail the navigation rail component tokens
-    /// @param navigationDrawer the navigation drawer component tokens
-    /// @param listItem the list item component tokens
+    /// @param icon                 the icon component tokens
+    /// @param buttonGroup          the button group component tokens
+    /// @param splitButton          the split button component tokens
+    /// @param segmentedButton      the segmented button component tokens
+    /// @param tab                  the tab component tokens
+    /// @param field                the text input component tokens
+    /// @param textArea             the text area component tokens
+    /// @param form                 the form component tokens
+    /// @param validationSummary    the validation summary component tokens
+    /// @param menu                 the menu component tokens
+    /// @param search               the search component tokens
+    /// @param pickerField          the picker field component tokens
+    /// @param datePicker           the date picker component tokens
+    /// @param timePicker           the time picker component tokens
+    /// @param sheet                the sheet component tokens
+    /// @param scrim                the scrim component tokens
+    /// @param selection            the selection control component tokens
+    /// @param slider               the slider component tokens
+    /// @param chip                 the chip component tokens
+    /// @param progress             the progress component tokens
+    /// @param loadingIndicator     the loading indicator component tokens
+    /// @param surface              the surface component tokens
+    /// @param carousel             the carousel component tokens
+    /// @param card                 the card component tokens
+    /// @param dialog               the dialog component tokens
+    /// @param snackbar             the snackbar component tokens
+    /// @param banner               the banner component tokens
+    /// @param tooltip              the tooltip component tokens
+    /// @param divider              the divider component tokens
+    /// @param badge                the badge component tokens
+    /// @param avatar               the avatar component tokens
+    /// @param topAppBar            the top app bar component tokens
+    /// @param bottomAppBar         the bottom app bar component tokens
+    /// @param toolbar              the toolbar component tokens
+    /// @param navigationBar        the navigation bar component tokens
+    /// @param navigationRail       the navigation rail component tokens
+    /// @param navigationDrawer     the navigation drawer component tokens
+    /// @param listItem             the list item component tokens
     /// @return a component token set containing the supplied values
     static M3ComponentTokens create(
             ButtonTokens filledButton,
@@ -397,9 +397,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Creates component tokens for a profile.
     ///
-    /// @param profile the Material profile whose component metrics should be generated
+    /// @param profile     the Material profile whose component metrics should be generated
     /// @param shapeTokens the shape scale used by generated component tokens
-    /// @param density the density adjustment applied to generated component metrics
+    /// @param density     the density adjustment applied to generated component metrics
     /// @return a component token set generated from the supplied profile, shape scale, and density
     static M3ComponentTokens create(M3Profile profile, M3ShapeTokens shapeTokens, M3Density density) {
         Objects.requireNonNull(profile, "profile");
@@ -458,9 +458,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         boolean expressive = profile == M3Profile.EXPRESSIVE_2025;
         double navigationContentSpacing = density.apply(4.0);
         double navigationHorizontalPadding = density.apply(8.0);
+        double navigationBarItemSpacing = density.apply(expressive ? 6.0 : 0.0);
         double navigationRailVerticalPadding = density.apply(expressive ? 44.0 : 16.0);
         double navigationRailHorizontalPadding = density.apply(0.0);
         double navigationRailItemSpacing = density.apply(expressive ? 4.0 : 8.0);
+        double navigationRailHeaderSpacing = density.apply(40.0);
         double navigationDrawerContainerPadding = density.apply(12.0);
         double navigationDrawerItemHorizontalPadding = density.apply(16.0);
         double navigationDrawerItemContentSpacing = density.apply(12.0);
@@ -1037,7 +1039,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         navigationIndicatorHeight,
                         shapeTokens.full(),
                         navigationContentSpacing,
-                        navigationHorizontalPadding
+                        navigationHorizontalPadding,
+                        navigationBarItemSpacing
                 ),
                 new NavigationRailTokens(
                         navigationRailWidth,
@@ -1053,6 +1056,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         navigationRailItemSpacing,
                         density.apply(44.0),
                         density.apply(20.0),
+                        navigationRailHeaderSpacing,
                         shapeTokens.large()
                 ),
                 new NavigationDrawerTokens(
@@ -1089,8 +1093,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Button groups own spacing and connected inner-corner behavior. Their child buttons retain the shared
     /// [ButtonSizingTokens] metrics for height, content padding, typography, icon size, and outline width.
     ///
-    /// @param density the density transform applied to layout lengths
-    /// @param shapeTokens the shape system used by connected inner-corner aliases
+    /// @param density                the density transform applied to layout lengths
+    /// @param shapeTokens            the shape system used by connected inner-corner aliases
     /// @param iconToggleGroupSpacing the resolved spacing between icon toggle group children
     /// @return the button-group size token scale
     private static ButtonGroupTokens createButtonGroupTokens(
@@ -1147,11 +1151,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Creates tokens for one button-group size.
     ///
-    /// @param density the density transform applied to layout lengths
-    /// @param containerHeight the baseline container height
-    /// @param standardSpacing the baseline spacing between standard-group items
-    /// @param connectedSpacing the resolved spacing between connected-group items
-    /// @param connectedInnerCorner the resting connected inner corner
+    /// @param density                     the density transform applied to layout lengths
+    /// @param containerHeight             the baseline container height
+    /// @param standardSpacing             the baseline spacing between standard-group items
+    /// @param connectedSpacing            the resolved spacing between connected-group items
+    /// @param connectedInnerCorner        the resting connected inner corner
     /// @param connectedPressedInnerCorner the pressed connected inner corner
     /// @return the size-specific button-group tokens
     private static ButtonGroupSizeTokens createButtonGroupSizeTokens(
@@ -1256,6 +1260,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 )
         );
     }
+
     /// Converts component tokens into inline JavaFX CSS declarations.
     ///
     /// @return inline JavaFX CSS declarations for all component tokens
@@ -1594,6 +1599,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         );
         M3TokenCss.append(builder, "-m3-" + prefix + "-outline-width", M3TokenCss.pixels(tokens.outlineWidth()));
     }
+
     /// Appends button-group token declarations.
     private static void append(StringBuilder builder, ButtonGroupTokens tokens) {
         appendButtonGroupSizeDeclarations(builder, "-m3-button-group", tokens.small());
@@ -1622,8 +1628,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Appends inline declarations for one button-group size role.
     ///
     /// @param builder the target CSS declaration builder
-    /// @param prefix the property prefix for the size role
-    /// @param tokens the size-specific button-group tokens
+    /// @param prefix  the property prefix for the size role
+    /// @param tokens  the size-specific button-group tokens
     private static void appendButtonGroupSizeDeclarations(
             StringBuilder builder,
             String prefix,
@@ -1667,8 +1673,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Appends inline declarations for one split-button size role.
     ///
     /// @param builder the target CSS declaration builder
-    /// @param prefix the property prefix for the size role
-    /// @param tokens the split-button size tokens
+    /// @param prefix  the property prefix for the size role
+    /// @param tokens  the split-button size tokens
     private static void appendSplitButtonSizeDeclarations(
             StringBuilder builder,
             String prefix,
@@ -2148,6 +2154,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-navigation-bar-indicator-shape", M3TokenCss.pixels(tokens.indicatorShape()));
         M3TokenCss.append(builder, "-m3-navigation-bar-content-spacing", M3TokenCss.pixels(tokens.contentSpacing()));
         M3TokenCss.append(builder, "-m3-navigation-bar-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
+        M3TokenCss.append(builder, "-m3-navigation-bar-item-spacing", M3TokenCss.pixels(tokens.itemSpacing()));
     }
 
     /// Appends navigation rail token declarations.
@@ -2395,6 +2402,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendDeclaration(builder, "-fx-background-radius", radius);
         appendDeclaration(builder, "-fx-border-radius", radius);
     }
+
     /// Appends a generated single spacing rule.
     private static void appendGroupSpacingRule(StringBuilder builder, String selector, String property, double spacing) {
         beginRule(builder, selector);
@@ -2499,9 +2507,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Appends spacing and connected-state shape rules for one button-group size.
     ///
-    /// @param builder the target CSS builder
+    /// @param builder      the target CSS builder
     /// @param sizeSelector the button-group size selector
-    /// @param tokens the size-specific button-group tokens
+    /// @param tokens       the size-specific button-group tokens
     private static void appendButtonGroupSizeRules(
             StringBuilder builder,
             String sizeSelector,
@@ -2588,11 +2596,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Appends position-specific connected-button shapes for one interaction state.
     ///
-    /// @param builder the target CSS builder
+    /// @param builder       the target CSS builder
     /// @param groupSelector the connected button-group selector
-    /// @param stateSuffix the child pseudo-class suffix, or an empty string for the resting state
-    /// @param outerRadius the outer corner radius
-    /// @param innerRadius the inner corner radius for this state
+    /// @param stateSuffix   the child pseudo-class suffix, or an empty string for the resting state
+    /// @param outerRadius   the outer corner radius
+    /// @param innerRadius   the inner corner radius for this state
     private static void appendConnectedButtonStateShapeRules(
             StringBuilder builder,
             String groupSelector,
@@ -2669,9 +2677,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Appends generated split-button rules for one size role.
     ///
-    /// @param builder the target generated stylesheet
+    /// @param builder       the target generated stylesheet
     /// @param ownerSelector the split-button owner selector
-    /// @param tokens the metrics for the size role
+    /// @param tokens        the metrics for the size role
     private static void appendSplitButtonSizeRule(
             StringBuilder builder,
             String ownerSelector,
@@ -3784,12 +3792,14 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendDeclaration(builder, "-fx-min-height", M3TokenCss.pixels(tokens.containerHeight()));
         appendDeclaration(builder, "-fx-pref-height", M3TokenCss.pixels(tokens.containerHeight()));
         appendDeclaration(builder, "-fx-padding", "0 " + M3TokenCss.pixels(tokens.horizontalPadding()));
+        appendDeclaration(builder, "-m3-item-spacing", M3TokenCss.pixels(tokens.itemSpacing()));
         endRule(builder);
 
         double densityScale = tokens.indicatorHeight() / 32.0;
         beginRule(builder, ".m3-navigation-bar.m3-navigation-bar-horizontal");
         appendDeclaration(builder, "-fx-min-height", M3TokenCss.pixels(64.0 * densityScale));
         appendDeclaration(builder, "-fx-pref-height", M3TokenCss.pixels(64.0 * densityScale));
+        appendDeclaration(builder, "-m3-item-spacing", M3TokenCss.pixels(0.0));
         endRule(builder);
     }
 
@@ -3835,6 +3845,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 + " "
                 + M3TokenCss.pixels(tokens.horizontalPadding()));
         appendDeclaration(builder, "-m3-item-spacing", M3TokenCss.pixels(tokens.itemSpacing()));
+        appendDeclaration(builder, "-m3-header-spacing", M3TokenCss.pixels(tokens.headerSpacing()));
         endRule(builder);
 
         beginRule(builder, ".m3-navigation-rail:expanded");
@@ -3982,8 +3993,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Tokens shared by button variants.
     ///
-    /// @param height the preferred button height
-    /// @param containerShape the button container radius
+    /// @param height            the preferred button height
+    /// @param containerShape    the button container radius
     /// @param horizontalPadding the horizontal content padding
     @NotNullByDefault
     record ButtonTokens(
@@ -4002,9 +4013,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Tokens used by the five Material button sizes.
     ///
     /// @param extraSmall the extra-small button size tokens
-    /// @param small the small button size tokens
-    /// @param medium the medium button size tokens
-    /// @param large the large button size tokens
+    /// @param small      the small button size tokens
+    /// @param medium     the medium button size tokens
+    /// @param large      the large button size tokens
     /// @param extraLarge the extra-large button size tokens
     @NotNullByDefault
     record ButtonSizingTokens(
@@ -4026,15 +4037,15 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Tokens used by one Material button size.
     ///
-    /// @param containerHeight the visual container height
-    /// @param iconSize the icon glyph size
-    /// @param roundContainerShape the round resting container shape
-    /// @param squareContainerShape the rounded-square resting container shape
+    /// @param containerHeight       the visual container height
+    /// @param iconSize              the icon glyph size
+    /// @param roundContainerShape   the round resting container shape
+    /// @param squareContainerShape  the rounded-square resting container shape
     /// @param pressedContainerShape the pressed container shape
-    /// @param horizontalPadding the leading and trailing padding for non-text variants
+    /// @param horizontalPadding     the leading and trailing padding for non-text variants
     /// @param textHorizontalPadding the leading and trailing padding for text variants
-    /// @param iconLabelSpace the spacing between an icon and label
-    /// @param outlineWidth the outlined variant stroke width
+    /// @param iconLabelSpace        the spacing between an icon and label
+    /// @param outlineWidth          the outlined variant stroke width
     @NotNullByDefault
     record ButtonSizeTokens(
             double containerHeight,
@@ -4064,9 +4075,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Tokens used by icon button size families.
     ///
     /// @param extraSmall the extra-small icon button size tokens
-    /// @param small the small icon button size tokens
-    /// @param medium the medium icon button size tokens
-    /// @param large the large icon button size tokens
+    /// @param small      the small icon button size tokens
+    /// @param medium     the medium icon button size tokens
+    /// @param large      the large icon button size tokens
     /// @param extraLarge the extra-large icon button size tokens
     @NotNullByDefault
     record IconButtonTokens(
@@ -4088,17 +4099,17 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Tokens used by one icon button size.
     ///
-    /// @param containerHeight the visual container height
-    /// @param iconSize the icon glyph size
-    /// @param narrowWidth the narrow visual container width
-    /// @param defaultWidth the default visual container width
-    /// @param wideWidth the wide visual container width
-    /// @param roundContainerShape the round resting container shape
-    /// @param squareContainerShape the square resting container shape
-    /// @param pressedContainerShape the pressed container shape
-    /// @param selectedRoundContainerShape the selected shape for round toggle icon buttons
+    /// @param containerHeight              the visual container height
+    /// @param iconSize                     the icon glyph size
+    /// @param narrowWidth                  the narrow visual container width
+    /// @param defaultWidth                 the default visual container width
+    /// @param wideWidth                    the wide visual container width
+    /// @param roundContainerShape          the round resting container shape
+    /// @param squareContainerShape         the square resting container shape
+    /// @param pressedContainerShape        the pressed container shape
+    /// @param selectedRoundContainerShape  the selected shape for round toggle icon buttons
     /// @param selectedSquareContainerShape the selected shape for square toggle icon buttons
-    /// @param outlineWidth the outlined variant stroke width
+    /// @param outlineWidth                 the outlined variant stroke width
     @NotNullByDefault
     record IconButtonSizeTokens(
             double containerHeight,
@@ -4128,18 +4139,19 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(outlineWidth, "outlineWidth");
         }
     }
+
     /// Tokens shared by floating action button sizes.
     ///
-    /// @param smallSize the small floating action button square size
-    /// @param regularSize the regular floating action button square size
-    /// @param largeSize the large floating action button square size
-    /// @param smallShape the small floating action button corner radius
-    /// @param regularShape the regular floating action button corner radius
-    /// @param largeShape the large floating action button corner radius
-    /// @param smallHorizontalPadding the horizontal padding for small extended floating action buttons
+    /// @param smallSize                the small floating action button square size
+    /// @param regularSize              the regular floating action button square size
+    /// @param largeSize                the large floating action button square size
+    /// @param smallShape               the small floating action button corner radius
+    /// @param regularShape             the regular floating action button corner radius
+    /// @param largeShape               the large floating action button corner radius
+    /// @param smallHorizontalPadding   the horizontal padding for small extended floating action buttons
     /// @param regularHorizontalPadding the horizontal padding for regular extended floating action buttons
-    /// @param largeHorizontalPadding the horizontal padding for large extended floating action buttons
-    /// @param menuActionSpacing the vertical spacing between expanded FAB menu actions
+    /// @param largeHorizontalPadding   the horizontal padding for large extended floating action buttons
+    /// @param menuActionSpacing        the vertical spacing between expanded FAB menu actions
     @NotNullByDefault
     record FabTokens(
             double smallSize,
@@ -4170,9 +4182,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Tokens shared by icon size roles.
     ///
-    /// @param smallSize the small icon glyph size
-    /// @param mediumSize the medium icon glyph size
-    /// @param largeSize the large icon glyph size
+    /// @param smallSize      the small icon glyph size
+    /// @param mediumSize     the medium icon glyph size
+    /// @param largeSize      the large icon glyph size
     /// @param extraLargeSize the extra-large icon glyph size
     @NotNullByDefault
     record IconTokens(
@@ -4192,12 +4204,12 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// The five-step Material button-group token scale.
     ///
-    /// @param extraSmall tokens for extra-small button groups
-    /// @param small tokens for small button groups
-    /// @param medium tokens for medium button groups
-    /// @param large tokens for large button groups
-    /// @param extraLarge tokens for extra-large button groups
-    /// @param segmentedGroupSpacing the spacing between segmented button group children
+    /// @param extraSmall             tokens for extra-small button groups
+    /// @param small                  tokens for small button groups
+    /// @param medium                 tokens for medium button groups
+    /// @param large                  tokens for large button groups
+    /// @param extraLarge             tokens for extra-large button groups
+    /// @param segmentedGroupSpacing  the spacing between segmented button group children
     /// @param iconToggleGroupSpacing the spacing between icon toggle button group children
     @NotNullByDefault
     record ButtonGroupTokens(
@@ -4223,13 +4235,13 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Material button-group metrics for one size role.
     ///
-    /// @param containerHeight the group container height
-    /// @param standardSpacing the spacing between standard-group children
+    /// @param containerHeight                the group container height
+    /// @param standardSpacing                the spacing between standard-group children
     /// @param standardPressedWidthMultiplier the proportional width increase applied to an activated standard item
-    /// @param connectedSpacing the spacing between connected-group children
-    /// @param connectedInnerCorner the resting connected inner-corner radius
-    /// @param connectedPressedInnerCorner the pressed connected inner-corner radius
-    /// @param connectedSelectedInnerCorner the selected connected inner-corner radius
+    /// @param connectedSpacing               the spacing between connected-group children
+    /// @param connectedInnerCorner           the resting connected inner-corner radius
+    /// @param connectedPressedInnerCorner    the pressed connected inner-corner radius
+    /// @param connectedSelectedInnerCorner   the selected connected inner-corner radius
     @NotNullByDefault
     record ButtonGroupSizeTokens(
             double containerHeight,
@@ -4255,9 +4267,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// The five-step Material split-button size token scale.
     ///
     /// @param extraSmall tokens for extra-small split buttons
-    /// @param small tokens for small split buttons
-    /// @param medium tokens for medium split buttons
-    /// @param large tokens for large split buttons
+    /// @param small      tokens for small split buttons
+    /// @param medium     tokens for medium split buttons
+    /// @param large      tokens for large split buttons
     /// @param extraLarge tokens for extra-large split buttons
     @NotNullByDefault
     record SplitButtonTokens(
@@ -4279,17 +4291,17 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Material split-button metrics for one size role.
     ///
-    /// @param containerHeight the split-button container height
-    /// @param spacing the spacing between the leading and trailing button parts
-    /// @param innerCorner the resting inner-corner radius
-    /// @param hoveredInnerCorner the hovered and focused inner-corner radius
-    /// @param pressedInnerCorner the pressed inner-corner radius
-    /// @param actionLeadingSpace the logical leading padding of the primary action
+    /// @param containerHeight     the split-button container height
+    /// @param spacing             the spacing between the leading and trailing button parts
+    /// @param innerCorner         the resting inner-corner radius
+    /// @param hoveredInnerCorner  the hovered and focused inner-corner radius
+    /// @param pressedInnerCorner  the pressed inner-corner radius
+    /// @param actionLeadingSpace  the logical leading padding of the primary action
     /// @param actionTrailingSpace the logical trailing padding of the primary action
-    /// @param menuIconSize the trailing menu icon viewport size
-    /// @param menuIconOffset the unselected menu icon offset toward the group center
-    /// @param menuLeadingSpace the logical leading space around the trailing icon
-    /// @param menuTrailingSpace the logical trailing space around the trailing icon
+    /// @param menuIconSize        the trailing menu icon viewport size
+    /// @param menuIconOffset      the unselected menu icon offset toward the group center
+    /// @param menuLeadingSpace    the logical leading space around the trailing icon
+    /// @param menuTrailingSpace   the logical trailing space around the trailing icon
     /// @param selectedInnerCorner the inner-corner radius while the menu is showing
     @NotNullByDefault
     record SplitButtonSizeTokens(
@@ -4325,11 +4337,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Tokens used by tabs.
     ///
-    /// @param containerHeight the tab container height
-    /// @param tabMinWidth the tab minimum width
-    /// @param horizontalPadding the horizontal content padding
+    /// @param containerHeight       the tab container height
+    /// @param tabMinWidth           the tab minimum width
+    /// @param horizontalPadding     the horizontal content padding
     /// @param activeIndicatorHeight the active indicator height
-    /// @param activeIndicatorShape the active indicator radius
+    /// @param activeIndicatorShape  the active indicator radius
     @NotNullByDefault
     record TabTokens(
             double containerHeight,
@@ -4350,8 +4362,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Tokens shared by text input controls.
     ///
-    /// @param height the preferred field height
-    /// @param containerShape the field container radius
+    /// @param height            the preferred field height
+    /// @param containerShape    the field container radius
     /// @param horizontalPadding the horizontal content padding
     @NotNullByDefault
     record FieldTokens(
@@ -4369,10 +4381,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Component tokens for text area controls.
     ///
-    /// @param height the preferred text area container height
-    /// @param containerShape the text area container corner radius
+    /// @param height            the preferred text area container height
+    /// @param containerShape    the text area container corner radius
     /// @param horizontalPadding the horizontal content padding
-    /// @param verticalPadding the vertical content padding
+    /// @param verticalPadding   the vertical content padding
     @NotNullByDefault
     record TextAreaTokens(
             double height,
@@ -4391,15 +4403,15 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Component tokens for form containers.
     ///
-    /// @param contentPadding the uniform padding around top-level form content
-    /// @param rowSpacing the vertical spacing between top-level form rows and sections
-    /// @param sectionContentSpacing the vertical spacing between section content nodes
-    /// @param sectionHeaderSpacing the vertical spacing between section title and supporting text
+    /// @param contentPadding             the uniform padding around top-level form content
+    /// @param rowSpacing                 the vertical spacing between top-level form rows and sections
+    /// @param sectionContentSpacing      the vertical spacing between section content nodes
+    /// @param sectionHeaderSpacing       the vertical spacing between section title and supporting text
     /// @param sectionHeaderBottomPadding the bottom padding below a section header
-    /// @param rowLabelWidth the width reserved for form row labels
-    /// @param rowColumnSpacing the horizontal spacing between row label, content, and trailing regions
-    /// @param rowMinHeight the minimum height of each form row
-    /// @param rowTextSpacing the vertical spacing between row label and supporting text
+    /// @param rowLabelWidth              the width reserved for form row labels
+    /// @param rowColumnSpacing           the horizontal spacing between row label, content, and trailing regions
+    /// @param rowMinHeight               the minimum height of each form row
+    /// @param rowTextSpacing             the vertical spacing between row label and supporting text
     @NotNullByDefault
     record FormTokens(
             double contentPadding,
@@ -4428,11 +4440,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Component tokens for validation summaries.
     ///
-    /// @param containerShape the summary container corner radius
-    /// @param contentPadding the uniform summary content padding
-    /// @param itemsSpacing the vertical spacing between invalid item rows
-    /// @param itemShape the invalid item state container corner radius
-    /// @param itemVerticalPadding the vertical padding inside each invalid item
+    /// @param containerShape        the summary container corner radius
+    /// @param contentPadding        the uniform summary content padding
+    /// @param itemsSpacing          the vertical spacing between invalid item rows
+    /// @param itemShape             the invalid item state container corner radius
+    /// @param itemVerticalPadding   the vertical padding inside each invalid item
     /// @param itemHorizontalPadding the horizontal padding inside each invalid item
     @NotNullByDefault
     record ValidationSummaryTokens(
@@ -4456,16 +4468,16 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Component tokens for menus.
     ///
-    /// @param containerShape the menu container corner radius
-    /// @param containerPadding the padding around menu items
-    /// @param itemHeight the one-line menu item height
-    /// @param itemContainerShape the menu item state container corner radius
+    /// @param containerShape             the menu container corner radius
+    /// @param containerPadding           the padding around menu items
+    /// @param itemHeight                 the one-line menu item height
+    /// @param itemContainerShape         the menu item state container corner radius
     /// @param selectedItemContainerShape the selected menu item state container corner radius
-    /// @param firstItemContainerShape the first direct menu item state container corner radius
-    /// @param lastItemContainerShape the last direct menu item state container corner radius
-    /// @param itemHorizontalPadding the horizontal item content padding
-    /// @param itemContentSpacing the spacing between item content regions
-    /// @param itemSpacing the vertical spacing between direct menu items
+    /// @param firstItemContainerShape    the first direct menu item state container corner radius
+    /// @param lastItemContainerShape     the last direct menu item state container corner radius
+    /// @param itemHorizontalPadding      the horizontal item content padding
+    /// @param itemContentSpacing         the spacing between item content regions
+    /// @param itemSpacing                the vertical spacing between direct menu items
     @NotNullByDefault
     record MenuTokens(
             double containerShape,
@@ -4496,20 +4508,20 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Component tokens for search components.
     ///
-    /// @param barHeight the search bar container height
-    /// @param barContainerShape the search bar container corner radius
-    /// @param barHorizontalPadding the search bar horizontal content padding
-    /// @param barContentSpacing the spacing between search bar content regions
-    /// @param barTrailingActionsGap the spacing between trailing search bar actions
-    /// @param viewContainerShape the expanded search view corner radius
-    /// @param viewHorizontalPadding the horizontal padding around contained search view content
-    /// @param viewBarResultsGap the gap between the embedded search bar and results container
-    /// @param viewResultsShape the search results container corner radius
-    /// @param resultContainerShape the search result row state container corner radius
-    /// @param viewResultPadding the padding below search results
-    /// @param resultHeight the one-line search result item height
+    /// @param barHeight               the search bar container height
+    /// @param barContainerShape       the search bar container corner radius
+    /// @param barHorizontalPadding    the search bar horizontal content padding
+    /// @param barContentSpacing       the spacing between search bar content regions
+    /// @param barTrailingActionsGap   the spacing between trailing search bar actions
+    /// @param viewContainerShape      the expanded search view corner radius
+    /// @param viewHorizontalPadding   the horizontal padding around contained search view content
+    /// @param viewBarResultsGap       the gap between the embedded search bar and results container
+    /// @param viewResultsShape        the search results container corner radius
+    /// @param resultContainerShape    the search result row state container corner radius
+    /// @param viewResultPadding       the padding below search results
+    /// @param resultHeight            the one-line search result item height
     /// @param resultHorizontalPadding the horizontal search result row padding
-    /// @param resultContentSpacing the spacing between search result content regions
+    /// @param resultContentSpacing    the spacing between search result content regions
     @NotNullByDefault
     record SearchTokens(
             double barHeight,
@@ -4548,13 +4560,13 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Component tokens for picker fields and their preset popup surfaces.
     ///
-    /// @param openButtonSize the trailing open button size
-    /// @param openButtonShape the trailing open button radius
-    /// @param popupShape the popup surface radius
-    /// @param popupPadding the popup preset content padding
-    /// @param popupSpacing the spacing between popup preset list and picker content
-    /// @param presetListWidth the preset list preferred width
-    /// @param presetListSpacing the spacing between preset buttons
+    /// @param openButtonSize                the trailing open button size
+    /// @param openButtonShape               the trailing open button radius
+    /// @param popupShape                    the popup surface radius
+    /// @param popupPadding                  the popup preset content padding
+    /// @param popupSpacing                  the spacing between popup preset list and picker content
+    /// @param presetListWidth               the preset list preferred width
+    /// @param presetListSpacing             the spacing between preset buttons
     /// @param presetButtonHorizontalPadding the preset button horizontal padding
     @NotNullByDefault
     record PickerFieldTokens(
@@ -4582,15 +4594,15 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Component tokens for date pickers.
     ///
-    /// @param containerShape the picker container radius
-    /// @param containerPadding the picker container padding
-    /// @param containerSpacing the spacing between container rows
-    /// @param headerSpacing the spacing between header controls
-    /// @param navigationButtonSize the previous and next month button size
+    /// @param containerShape        the picker container radius
+    /// @param containerPadding      the picker container padding
+    /// @param containerSpacing      the spacing between container rows
+    /// @param headerSpacing         the spacing between header controls
+    /// @param navigationButtonSize  the previous and next month button size
     /// @param navigationButtonShape the previous and next month button radius
-    /// @param dayCellSize the day and weekday cell size
-    /// @param dayCellShape the selected day and range endpoint radius
-    /// @param gridGap the day grid gap
+    /// @param dayCellSize           the day and weekday cell size
+    /// @param dayCellShape          the selected day and range endpoint radius
+    /// @param gridGap               the day grid gap
     @NotNullByDefault
     record DatePickerTokens(
             double containerShape,
@@ -4619,24 +4631,24 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Component tokens for time pickers.
     ///
-    /// @param containerShape the picker container radius
-    /// @param containerPadding the picker container padding
-    /// @param containerSpacing the spacing between container rows
-    /// @param displaySpacing the spacing between selected time display fields
-    /// @param displayCellShape the selected time display field radius
-    /// @param displayCellWidth the selected hour or minute display width
+    /// @param containerShape         the picker container radius
+    /// @param containerPadding       the picker container padding
+    /// @param containerSpacing       the spacing between container rows
+    /// @param displaySpacing         the spacing between selected time display fields
+    /// @param displayCellShape       the selected time display field radius
+    /// @param displayCellWidth       the selected hour or minute display width
     /// @param display24HourCellWidth the selected hour display width in 24-hour mode
-    /// @param displayCellHeight the selected hour or minute display height
-    /// @param periodVerticalWidth the vertical period selector width
-    /// @param periodVerticalHeight the vertical period selector height
-    /// @param periodHorizontalWidth the horizontal period selector width
+    /// @param displayCellHeight      the selected hour or minute display height
+    /// @param periodVerticalWidth    the vertical period selector width
+    /// @param periodVerticalHeight   the vertical period selector height
+    /// @param periodHorizontalWidth  the horizontal period selector width
     /// @param periodHorizontalHeight the horizontal period selector height
-    /// @param dialSize the clock dial diameter
-    /// @param dialHandleSize the clock dial selector handle diameter
-    /// @param dialCenterSize the clock dial center dot diameter
-    /// @param dialTrackWidth the clock dial selector track width
-    /// @param inputFieldWidth the keyboard input field width
-    /// @param inputFieldHeight the keyboard input field height
+    /// @param dialSize               the clock dial diameter
+    /// @param dialHandleSize         the clock dial selector handle diameter
+    /// @param dialCenterSize         the clock dial center dot diameter
+    /// @param dialTrackWidth         the clock dial selector track width
+    /// @param inputFieldWidth        the keyboard input field width
+    /// @param inputFieldHeight       the keyboard input field height
     @NotNullByDefault
     record TimePickerTokens(
             double containerShape,
@@ -4683,14 +4695,14 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Component tokens for sheet containers.
     ///
-    /// @param sideContainerWidth the side sheet container width
-    /// @param sideContainerShape the side sheet leading corner radius
+    /// @param sideContainerWidth    the side sheet container width
+    /// @param sideContainerShape    the side sheet leading corner radius
     /// @param bottomContainerHeight the bottom sheet container height
-    /// @param bottomContainerShape the bottom sheet top corner radius
-    /// @param contentPadding the sheet content padding
-    /// @param headerPadding the sheet header edge padding
-    /// @param dragHandleWidth the bottom sheet drag handle width
-    /// @param dragHandleHeight the bottom sheet drag handle height
+    /// @param bottomContainerShape  the bottom sheet top corner radius
+    /// @param contentPadding        the sheet content padding
+    /// @param headerPadding         the sheet header edge padding
+    /// @param dragHandleWidth       the bottom sheet drag handle width
+    /// @param dragHandleHeight      the bottom sheet drag handle height
     @NotNullByDefault
     record SheetTokens(
             double sideContainerWidth,
@@ -4728,25 +4740,25 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Tokens shared by selection controls.
     ///
-    /// @param touchTargetSize the preferred checkbox and radio touch target size
-    /// @param stateLayerSize the checkbox and radio indicator state layer size
-    /// @param checkboxContainerSize the checkbox container size
-    /// @param checkboxSelectedMarkWidth the selected checkbox mark width
-    /// @param checkboxSelectedMarkHeight the selected checkbox mark height
-    /// @param checkboxIndeterminateMarkWidth the indeterminate checkbox mark width
+    /// @param touchTargetSize                 the preferred checkbox and radio touch target size
+    /// @param stateLayerSize                  the checkbox and radio indicator state layer size
+    /// @param checkboxContainerSize           the checkbox container size
+    /// @param checkboxSelectedMarkWidth       the selected checkbox mark width
+    /// @param checkboxSelectedMarkHeight      the selected checkbox mark height
+    /// @param checkboxIndeterminateMarkWidth  the indeterminate checkbox mark width
     /// @param checkboxIndeterminateMarkHeight the indeterminate checkbox mark height
-    /// @param radioContainerSize the radio indicator container size
-    /// @param radioSelectedDotSize the selected radio dot size
-    /// @param trackShape the switch track radius
-    /// @param switchTouchTargetSize the preferred switch touch target size
-    /// @param switchTrackWidth the switch track width
-    /// @param switchTrackHeight the switch track height
-    /// @param switchStateLayerSize the switch state layer size
-    /// @param switchUnselectedHandleSize the unselected switch handle size
-    /// @param switchWithIconHandleSize the switch handle size when it contains an icon
-    /// @param switchSelectedHandleSize the selected switch handle size
-    /// @param switchPressedHandleSize the pressed switch handle size
-    /// @param switchIconSize the selected or unselected switch handle icon size
+    /// @param radioContainerSize              the radio indicator container size
+    /// @param radioSelectedDotSize            the selected radio dot size
+    /// @param trackShape                      the switch track radius
+    /// @param switchTouchTargetSize           the preferred switch touch target size
+    /// @param switchTrackWidth                the switch track width
+    /// @param switchTrackHeight               the switch track height
+    /// @param switchStateLayerSize            the switch state layer size
+    /// @param switchUnselectedHandleSize      the unselected switch handle size
+    /// @param switchWithIconHandleSize        the switch handle size when it contains an icon
+    /// @param switchSelectedHandleSize        the selected switch handle size
+    /// @param switchPressedHandleSize         the pressed switch handle size
+    /// @param switchIconSize                  the selected or unselected switch handle icon size
     @NotNullByDefault
     record SelectionTokens(
             double touchTargetSize,
@@ -4795,13 +4807,13 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Tokens shared by sliders.
     ///
-    /// @param trackThickness the slider track thickness
-    /// @param trackShape the slider track radius
+    /// @param trackThickness    the slider track thickness
+    /// @param trackShape        the slider track radius
     /// @param stopIndicatorSize the diameter of the inactive-track stop indicator
-    /// @param thumbSize the slider handle long-side size
-    /// @param thumbWidth the slider handle short-side width
-    /// @param thumbTrackGap the gap between the handle and each adjacent track segment
-    /// @param touchTargetSize the preferred slider touch target size
+    /// @param thumbSize         the slider handle long-side size
+    /// @param thumbWidth        the slider handle short-side width
+    /// @param thumbTrackGap     the gap between the handle and each adjacent track segment
+    /// @param touchTargetSize   the preferred slider touch target size
     @NotNullByDefault
     record SliderTokens(
             double trackThickness,
@@ -4826,17 +4838,17 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Tokens shared by chip variants.
     ///
-    /// @param height the preferred chip height
-    /// @param containerShape the chip container radius
-    /// @param horizontalPadding the horizontal content padding for chips without a leading graphic
+    /// @param height                the preferred chip height
+    /// @param containerShape        the chip container radius
+    /// @param horizontalPadding     the horizontal content padding for chips without a leading graphic
     /// @param iconHorizontalPadding the horizontal content padding for chips with a leading graphic
-    /// @param elementSpacing the spacing between chip content elements
-    /// @param iconSize the size of a leading or trailing icon
-    /// @param avatarSize the size of a leading avatar image
-    /// @param avatarShape the corner radius used for avatar images
-    /// @param outlineWidth the outline stroke width for flat unselected chips
-    /// @param groupHorizontalGap the horizontal gap between chips in a chip group
-    /// @param groupVerticalGap the vertical gap between wrapped rows in a chip group
+    /// @param elementSpacing        the spacing between chip content elements
+    /// @param iconSize              the size of a leading or trailing icon
+    /// @param avatarSize            the size of a leading avatar image
+    /// @param avatarShape           the corner radius used for avatar images
+    /// @param outlineWidth          the outline stroke width for flat unselected chips
+    /// @param groupHorizontalGap    the horizontal gap between chips in a chip group
+    /// @param groupVerticalGap      the vertical gap between wrapped rows in a chip group
     @NotNullByDefault
     record ChipTokens(
             double height,
@@ -4869,16 +4881,16 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Tokens shared by progress indicators.
     ///
-    /// @param thickness the default track thickness
-    /// @param shape the progress indicator radius
-    /// @param indicatorSize the circular indicator size
-    /// @param linearWaveAmplitude the linear wavy indicator amplitude
-    /// @param linearWavelength the linear wavy indicator wavelength
-    /// @param linearTrackGap the gap between the linear active indicator and track
-    /// @param linearStopSize the stop indicator diameter at the end of the linear track
+    /// @param thickness             the default track thickness
+    /// @param shape                 the progress indicator radius
+    /// @param indicatorSize         the circular indicator size
+    /// @param linearWaveAmplitude   the linear wavy indicator amplitude
+    /// @param linearWavelength      the linear wavy indicator wavelength
+    /// @param linearTrackGap        the gap between the linear active indicator and track
+    /// @param linearStopSize        the stop indicator diameter at the end of the linear track
     /// @param circularWaveAmplitude the circular wavy indicator amplitude
-    /// @param circularWavelength the circular wavy indicator wavelength
-    /// @param circularTrackGap the gap between the circular active indicator and track
+    /// @param circularWavelength    the circular wavy indicator wavelength
+    /// @param circularTrackGap      the gap between the circular active indicator and track
     @NotNullByDefault
     record ProgressTokens(
             double thickness,
@@ -4942,12 +4954,12 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Tokens used by carousels.
     ///
     /// @param trackHorizontalPadding the leading and trailing track padding
-    /// @param trackVerticalPadding the top and bottom track padding
-    /// @param itemSpacing the spacing between carousel items
-    /// @param itemShape the corner radius of a carousel item mask
-    /// @param smallItemMinWidth the minimum width of a contained small item
-    /// @param smallItemMaxWidth the maximum width of a contained small item
-    /// @param largeItemMaxWidth the preferred maximum width of a contained large item
+    /// @param trackVerticalPadding   the top and bottom track padding
+    /// @param itemSpacing            the spacing between carousel items
+    /// @param itemShape              the corner radius of a carousel item mask
+    /// @param smallItemMinWidth      the minimum width of a contained small item
+    /// @param smallItemMaxWidth      the maximum width of a contained small item
+    /// @param largeItemMaxWidth      the preferred maximum width of a contained large item
     @NotNullByDefault
     record CarouselTokens(
             double trackHorizontalPadding,
@@ -4980,7 +4992,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ///
     /// @param containerShape the card container radius
     /// @param contentPadding the card content padding
-    /// @param outlineWidth the outlined card border width
+    /// @param outlineWidth   the outlined card border width
     @NotNullByDefault
     record CardTokens(
             double containerShape,
@@ -4997,12 +5009,12 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Tokens used by dialogs.
     ///
-    /// @param containerShape the dialog container radius
-    /// @param contentPadding the dialog content padding
+    /// @param containerShape    the dialog container radius
+    /// @param contentPadding    the dialog content padding
     /// @param containerMinWidth the minimum dialog container width
     /// @param containerMaxWidth the maximum dialog container width
-    /// @param actionSpacing the spacing between dialog action buttons
-    /// @param iconSize the dialog graphic icon size
+    /// @param actionSpacing     the spacing between dialog action buttons
+    /// @param iconSize          the dialog graphic icon size
     @NotNullByDefault
     record DialogTokens(
             double containerShape,
@@ -5030,13 +5042,13 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Tokens used by snackbar controls.
     ///
-    /// @param containerShape the snackbar container radius
-    /// @param contentPadding the snackbar content padding
-    /// @param containerMinWidth the minimum snackbar container width
-    /// @param containerMaxWidth the maximum snackbar container width
+    /// @param containerShape            the snackbar container radius
+    /// @param contentPadding            the snackbar content padding
+    /// @param containerMinWidth         the minimum snackbar container width
+    /// @param containerMaxWidth         the maximum snackbar container width
     /// @param singleLineContainerHeight the single-line snackbar container height
-    /// @param twoLineContainerHeight the two-line snackbar container height
-    /// @param actionContainerHeight the snackbar action button container height
+    /// @param twoLineContainerHeight    the two-line snackbar container height
+    /// @param actionContainerHeight     the snackbar action button container height
     @NotNullByDefault
     record SnackbarTokens(
             double containerShape,
@@ -5067,10 +5079,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Tokens used by banners.
     ///
     /// @param containerMinHeight the minimum banner container height
-    /// @param verticalPadding the vertical banner content padding
-    /// @param horizontalPadding the horizontal banner content padding
-    /// @param contentSpacing the spacing between icon, message, and actions
-    /// @param actionSpacing the spacing between action nodes
+    /// @param verticalPadding    the vertical banner content padding
+    /// @param horizontalPadding  the horizontal banner content padding
+    /// @param contentSpacing     the spacing between icon, message, and actions
+    /// @param actionSpacing      the spacing between action nodes
     @NotNullByDefault
     record BannerTokens(
             double containerMinHeight,
@@ -5091,17 +5103,17 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Tokens used by plain and rich tooltips.
     ///
-    /// @param plainContainerShape the plain tooltip container radius
-    /// @param plainVerticalPadding the plain tooltip vertical content padding
-    /// @param plainHorizontalPadding the plain tooltip horizontal content padding
-    /// @param richContainerShape the rich tooltip container radius
-    /// @param richTopPadding the rich tooltip top content padding
-    /// @param richHorizontalPadding the rich tooltip horizontal content padding
-    /// @param richBottomPadding the rich tooltip bottom content padding
-    /// @param richContentSpacing the spacing between rich tooltip content rows
-    /// @param richPreferredWidth the rich tooltip preferred content width
-    /// @param richActionSpacing the spacing between rich tooltip action nodes
-    /// @param richActionButtonHeight the rich tooltip action button container height
+    /// @param plainContainerShape               the plain tooltip container radius
+    /// @param plainVerticalPadding              the plain tooltip vertical content padding
+    /// @param plainHorizontalPadding            the plain tooltip horizontal content padding
+    /// @param richContainerShape                the rich tooltip container radius
+    /// @param richTopPadding                    the rich tooltip top content padding
+    /// @param richHorizontalPadding             the rich tooltip horizontal content padding
+    /// @param richBottomPadding                 the rich tooltip bottom content padding
+    /// @param richContentSpacing                the spacing between rich tooltip content rows
+    /// @param richPreferredWidth                the rich tooltip preferred content width
+    /// @param richActionSpacing                 the spacing between rich tooltip action nodes
+    /// @param richActionButtonHeight            the rich tooltip action button container height
     /// @param richActionButtonHorizontalPadding the rich tooltip action button horizontal padding
     @NotNullByDefault
     record TooltipTokens(
@@ -5137,9 +5149,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Tokens used by dividers.
     ///
-    /// @param thickness the divider line thickness
+    /// @param thickness  the divider line thickness
     /// @param insetStart the leading inset before the divider line
-    /// @param insetEnd the trailing inset after the divider line
+    /// @param insetEnd   the trailing inset after the divider line
     @NotNullByDefault
     record DividerTokens(
             double thickness,
@@ -5156,10 +5168,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Tokens used by badges.
     ///
-    /// @param smallSize the dot badge size
-    /// @param largeHeight the text badge height
-    /// @param largeMinWidth the text badge minimum width
-    /// @param containerShape the text badge container radius
+    /// @param smallSize         the dot badge size
+    /// @param largeHeight       the text badge height
+    /// @param largeMinWidth     the text badge minimum width
+    /// @param containerShape    the text badge container radius
     /// @param horizontalPadding the text badge horizontal padding
     @NotNullByDefault
     record BadgeTokens(
@@ -5181,7 +5193,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Tokens used by avatars.
     ///
-    /// @param containerSize the avatar container size
+    /// @param containerSize  the avatar container size
     /// @param containerShape the avatar container radius
     @NotNullByDefault
     record AvatarTokens(
@@ -5197,14 +5209,14 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Tokens used by top app bars.
     ///
-    /// @param containerHeight the small top app bar container height
+    /// @param containerHeight       the small top app bar container height
     /// @param mediumContainerHeight the medium top app bar container height
-    /// @param largeContainerHeight the large top app bar container height
-    /// @param horizontalPadding the horizontal content padding
-    /// @param mediumBottomPadding the medium top app bar bottom content padding
-    /// @param largeBottomPadding the large top app bar bottom content padding
-    /// @param contentSpacing the spacing between leading, title, and trailing regions
-    /// @param actionSpacing the spacing between trailing action nodes
+    /// @param largeContainerHeight  the large top app bar container height
+    /// @param horizontalPadding     the horizontal content padding
+    /// @param mediumBottomPadding   the medium top app bar bottom content padding
+    /// @param largeBottomPadding    the large top app bar bottom content padding
+    /// @param contentSpacing        the spacing between leading, title, and trailing regions
+    /// @param actionSpacing         the spacing between trailing action nodes
     @NotNullByDefault
     record TopAppBarTokens(
             double containerHeight,
@@ -5231,10 +5243,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Tokens used by bottom app bars.
     ///
-    /// @param containerHeight the bottom app bar container height
+    /// @param containerHeight   the bottom app bar container height
     /// @param horizontalPadding the horizontal content padding
-    /// @param contentSpacing the spacing between action and floating action regions
-    /// @param actionSpacing the spacing between action nodes
+    /// @param contentSpacing    the spacing between action and floating action regions
+    /// @param actionSpacing     the spacing between action nodes
     @NotNullByDefault
     record BottomAppBarTokens(
             double containerHeight,
@@ -5254,11 +5266,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Tokens used by toolbars.
     ///
     /// @param containerHeight the horizontal toolbar container height
-    /// @param containerWidth the vertical toolbar container width
-    /// @param containerShape the toolbar container radius
-    /// @param itemSlotSize the minimum action slot width and height
-    /// @param contentPadding the padding around the toolbar item flow
-    /// @param itemSpacing the spacing between action slots
+    /// @param containerWidth  the vertical toolbar container width
+    /// @param containerShape  the toolbar container radius
+    /// @param itemSlotSize    the minimum action slot width and height
+    /// @param contentPadding  the padding around the toolbar item flow
+    /// @param itemSpacing     the spacing between action slots
     @NotNullByDefault
     record ToolbarTokens(
             double containerHeight,
@@ -5281,13 +5293,14 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Tokens used by navigation bars.
     ///
-    /// @param containerHeight the navigation bar container height
-    /// @param itemWidth the preferred navigation item width
-    /// @param indicatorWidth the selected indicator width
-    /// @param indicatorHeight the selected indicator height
-    /// @param indicatorShape the selected indicator radius
-    /// @param contentSpacing the spacing between item icon and label
+    /// @param containerHeight   the navigation bar container height
+    /// @param itemWidth         the preferred navigation item width
+    /// @param indicatorWidth    the selected indicator width
+    /// @param indicatorHeight   the selected indicator height
+    /// @param indicatorShape    the selected indicator radius
+    /// @param contentSpacing    the spacing between item icon and label
     /// @param horizontalPadding the horizontal padding around items
+    /// @param itemSpacing       the spacing between adjacent navigation item target areas
     @NotNullByDefault
     record NavigationBarTokens(
             double containerHeight,
@@ -5296,7 +5309,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double indicatorHeight,
             double indicatorShape,
             double contentSpacing,
-            double horizontalPadding
+            double horizontalPadding,
+            double itemSpacing
     ) {
         /// Creates navigation bar tokens.
         public NavigationBarTokens {
@@ -5307,25 +5321,27 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(indicatorShape, "indicatorShape");
             validateNonNegative(contentSpacing, "contentSpacing");
             validateNonNegative(horizontalPadding, "horizontalPadding");
+            validateNonNegative(itemSpacing, "itemSpacing");
         }
     }
 
     /// Tokens used by navigation rails.
     ///
-    /// @param containerWidth the navigation rail container width
+    /// @param containerWidth         the navigation rail container width
     /// @param expandedContainerWidth the preferred expanded navigation rail width
-    /// @param itemHeight the preferred navigation item height
-    /// @param itemWidth the preferred navigation item width
-    /// @param indicatorWidth the selected indicator width
-    /// @param indicatorHeight the selected indicator height
-    /// @param indicatorShape the selected indicator radius
-    /// @param contentSpacing the spacing between item icon and label
-    /// @param verticalPadding the vertical padding around items
-    /// @param horizontalPadding the horizontal padding around items
-    /// @param itemSpacing the spacing between items
-    /// @param expandedTopPadding the top padding of an expanded rail
-    /// @param expandedBottomPadding the bottom padding of an expanded rail
-    /// @param modalContainerShape the corner radius of a modal expanded rail
+    /// @param itemHeight             the preferred navigation item height
+    /// @param itemWidth              the preferred navigation item width
+    /// @param indicatorWidth         the selected indicator width
+    /// @param indicatorHeight        the selected indicator height
+    /// @param indicatorShape         the selected indicator radius
+    /// @param contentSpacing         the spacing between item icon and label
+    /// @param verticalPadding        the vertical padding around items
+    /// @param horizontalPadding      the horizontal padding around items
+    /// @param itemSpacing            the spacing between items
+    /// @param expandedTopPadding     the top padding of an expanded rail
+    /// @param expandedBottomPadding  the bottom padding of an expanded rail
+    /// @param headerSpacing          the minimum spacing between header content and destination items
+    /// @param modalContainerShape    the corner radius of a modal expanded rail
     @NotNullByDefault
     record NavigationRailTokens(
             double containerWidth,
@@ -5341,6 +5357,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double itemSpacing,
             double expandedTopPadding,
             double expandedBottomPadding,
+            double headerSpacing,
             double modalContainerShape
     ) {
         /// Creates navigation rail tokens.
@@ -5358,24 +5375,25 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(itemSpacing, "itemSpacing");
             validateNonNegative(expandedTopPadding, "expandedTopPadding");
             validateNonNegative(expandedBottomPadding, "expandedBottomPadding");
+            validateNonNegative(headerSpacing, "headerSpacing");
             validateNonNegative(modalContainerShape, "modalContainerShape");
         }
     }
 
     /// Tokens used by navigation drawers.
     ///
-    /// @param containerWidth the navigation drawer container width
-    /// @param oneLineItemHeight the preferred one-line drawer item height
-    /// @param twoLineItemHeight the preferred two-line drawer item height
-    /// @param threeLineItemHeight the preferred three-line drawer item height
-    /// @param itemContainerShape the drawer item container radius
-    /// @param containerPadding the padding around drawer items
-    /// @param itemHorizontalPadding the horizontal item content padding
-    /// @param itemVerticalPadding the vertical item content padding
-    /// @param itemContentSpacing the spacing between item content regions
-    /// @param itemSpacing the spacing between drawer items
-    /// @param groupChildItemHeight the preferred one-line child item height inside collapsible groups
-    /// @param groupChildItemContainerShape the child item container radius inside collapsible groups
+    /// @param containerWidth                  the navigation drawer container width
+    /// @param oneLineItemHeight               the preferred one-line drawer item height
+    /// @param twoLineItemHeight               the preferred two-line drawer item height
+    /// @param threeLineItemHeight             the preferred three-line drawer item height
+    /// @param itemContainerShape              the drawer item container radius
+    /// @param containerPadding                the padding around drawer items
+    /// @param itemHorizontalPadding           the horizontal item content padding
+    /// @param itemVerticalPadding             the vertical item content padding
+    /// @param itemContentSpacing              the spacing between item content regions
+    /// @param itemSpacing                     the spacing between drawer items
+    /// @param groupChildItemHeight            the preferred one-line child item height inside collapsible groups
+    /// @param groupChildItemContainerShape    the child item container radius inside collapsible groups
     /// @param groupChildItemHorizontalPadding the child item horizontal content padding inside collapsible groups
     @NotNullByDefault
     record NavigationDrawerTokens(
@@ -5413,14 +5431,14 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Tokens used by list items.
     ///
-    /// @param oneLineHeight the preferred one-line item height
-    /// @param twoLineHeight the preferred two-line item height
-    /// @param threeLineHeight the preferred three-line item height
-    /// @param containerShape the list item container radius
-    /// @param horizontalPadding the horizontal content padding
-    /// @param verticalPadding the vertical content padding
-    /// @param contentSpacing the spacing between content regions
-    /// @param sectionHeaderHeight the preferred list section header height
+    /// @param oneLineHeight                  the preferred one-line item height
+    /// @param twoLineHeight                  the preferred two-line item height
+    /// @param threeLineHeight                the preferred three-line item height
+    /// @param containerShape                 the list item container radius
+    /// @param horizontalPadding              the horizontal content padding
+    /// @param verticalPadding                the vertical content padding
+    /// @param contentSpacing                 the spacing between content regions
+    /// @param sectionHeaderHeight            the preferred list section header height
     /// @param sectionHeaderHorizontalPadding the horizontal list section header padding
     @NotNullByDefault
     record ListItemTokens(

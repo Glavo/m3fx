@@ -892,27 +892,27 @@ final class M3ControlStyleTest {
 
         FxTestUtils.runOnFxThreadWhenStable(() -> standaloneInternalIconReady(stageReference, iconReference),
                 STANDALONE_FALLBACK_STYLE_STABLE_PULSES, () -> {
-            M3SearchBar searchBar = new M3SearchBar("Search");
-            VBox root = new VBox(searchBar);
-            Scene scene = new Scene(root, 360.0, 120.0);
-            Stage stage = new Stage();
+                    M3SearchBar searchBar = new M3SearchBar("Search");
+                    VBox root = new VBox(searchBar);
+                    Scene scene = new Scene(root, 360.0, 120.0);
+                    Stage stage = new Stage();
 
-            stageReference.set(stage);
-            iconReference.set(assertInstanceOf(M3InternalIcon.class, searchBar.getLeading()));
-            stage.setScene(scene);
-            stage.show();
-            root.applyCss();
-            root.layout();
-        }, () -> {
-            M3InternalIcon icon = Objects.requireNonNull(iconReference.get(), "icon");
-            Paint fill = icon.getPath().getFill();
-            assertEquals(Color.rgb(29, 27, 32), fill, "standalone internal icon fallback fill");
+                    stageReference.set(stage);
+                    iconReference.set(assertInstanceOf(M3InternalIcon.class, searchBar.getLeading()));
+                    stage.setScene(scene);
+                    stage.show();
+                    root.applyCss();
+                    root.layout();
+                }, () -> {
+                    M3InternalIcon icon = Objects.requireNonNull(iconReference.get(), "icon");
+                    Paint fill = icon.getPath().getFill();
+                    assertEquals(Color.rgb(29, 27, 32), fill, "standalone internal icon fallback fill");
 
-            Stage stage = stageReference.get();
-            if (stage != null) {
-                stage.close();
-            }
-        });
+                    Stage stage = stageReference.get();
+                    if (stage != null) {
+                        stage.close();
+                    }
+                });
     }
 
     /// Verifies that calendar navigation buttons use vector chevron glyphs.
@@ -2889,6 +2889,7 @@ final class M3ControlStyleTest {
         assertTrue(first.getStyleClass().contains(M3ButtonGroup.FIRST_BUTTON_STYLE_CLASS));
         assertTrue(third.getStyleClass().contains(M3ButtonGroup.LAST_BUTTON_STYLE_CLASS));
     }
+
     /// Verifies that button groups keep logical edge style classes for right-to-left painting.
     @Test
     void buttonGroupKeepsLogicalPositionStyleClassesForRightToLeft() {
@@ -3310,6 +3311,7 @@ final class M3ControlStyleTest {
             middle.disarm();
         });
     }
+
     /// Verifies Expressive connected button-group geometry for every shared button size.
     @Test
     void expressiveButtonGroupSizeTokensResolveConnectedShapesAndFeedback() {
@@ -4405,7 +4407,7 @@ final class M3ControlStyleTest {
         });
     }
 
-    /// Verifies that split-button surfaces and feedback clips use the resting and interactive inner-corner tokens.
+    /// Verifies that split-button surfaces and state layers use the resting and interactive inner-corner tokens.
     @Test
     void splitButtonInnerCornersAndFeedbackFollowInteractionTokens() {
         FxTestUtils.runOnFxThread(() -> {
@@ -4425,6 +4427,8 @@ final class M3ControlStyleTest {
 
             M3Button actionButton = splitButtonActionButton(splitButton);
             M3Button menuButton = splitButtonMenuButton(splitButton);
+            assertNull(actionButton.getClip());
+            assertNull(menuButton.getClip());
             actionButton.layout();
             menuButton.layout();
             root.applyCss();
@@ -4496,6 +4500,7 @@ final class M3ControlStyleTest {
             assertSamePathElements(menuStateClip, menuStateClipElements, "split button state clip");
         });
     }
+
     /// Verifies that owner-level shape tokens drive both split-button surfaces and feedback clips.
     @Test
     void splitButtonOwnerTokensControlEveryPartShapeLayer() {
@@ -4587,6 +4592,8 @@ final class M3ControlStyleTest {
                 Bounds menuBounds = menuButton.localToScene(menuButton.getLayoutBounds());
                 assertEquals(actionBounds.getMinY(), menuBounds.getMinY(), 0.01);
                 assertEquals(actionBounds.getHeight(), menuBounds.getHeight(), 0.01);
+                assertNull(actionButton.getClip());
+                assertNull(menuButton.getClip());
                 assertEquals(
                         splitButton.getSpacing(),
                         menuBounds.getMinX() - actionBounds.getMaxX(),
@@ -4602,6 +4609,10 @@ final class M3ControlStyleTest {
                             actionBounds.getMinY() + actionBounds.getHeight() / 2.0
                     );
                     assertTrue(colorDistance(gapPixel, Color.web("#00ff00")) < 0.04);
+                } else {
+                    assertNotNull(actionButton.getEffect());
+                    assertNotNull(menuButton.getEffect());
+                    assertNull(Objects.requireNonNull(actionButton.getParent(), "split button part parent").getEffect());
                 }
                 if (splitButton.getVariant() == M3ButtonVariant.TONAL
                         || splitButton.getVariant() == M3ButtonVariant.FILLED) {
@@ -4624,6 +4635,7 @@ final class M3ControlStyleTest {
             }
         });
     }
+
     /// Verifies that split buttons keep logical part shapes for right-to-left painting.
     @Test
     void splitButtonKeepsLogicalPartShapesForRightToLeft() {
@@ -18519,28 +18531,28 @@ final class M3ControlStyleTest {
         assertTrue(bottomSheet.isVisible());
 
         FxTestUtils.runOnFxThreadWhen(() -> !sideSheet.isVisible()
-                && !sideSheet.isManaged()
-                && sideSheet.getTranslateX() > 0.0
-                && Math.abs(sideSheet.getOpacity()) < 0.0001
-                && !bottomSheet.isVisible()
-                && !bottomSheet.isManaged()
-                && bottomSheet.getTranslateY() > 0.0
-                && Math.abs(bottomSheet.getOpacity()) < 0.0001,
+                        && !sideSheet.isManaged()
+                        && sideSheet.getTranslateX() > 0.0
+                        && Math.abs(sideSheet.getOpacity()) < 0.0001
+                        && !bottomSheet.isVisible()
+                        && !bottomSheet.isManaged()
+                        && bottomSheet.getTranslateY() > 0.0
+                        && Math.abs(bottomSheet.getOpacity()) < 0.0001,
                 () -> describeSheetPairState(
                         sideSheet,
                         bottomSheet,
                         "Sheets did not settle hidden after hide()"
                 ), () -> {
-        }, () -> {
-            assertFalse(sideSheet.isVisible());
-            assertFalse(sideSheet.isManaged());
-            assertTrue(sideSheet.getTranslateX() > 0.0);
-            assertEquals(0.0, sideSheet.getOpacity(), 0.0001);
-            assertFalse(bottomSheet.isVisible());
-            assertFalse(bottomSheet.isManaged());
-            assertTrue(bottomSheet.getTranslateY() > 0.0);
-            assertEquals(0.0, bottomSheet.getOpacity(), 0.0001);
-        });
+                }, () -> {
+                    assertFalse(sideSheet.isVisible());
+                    assertFalse(sideSheet.isManaged());
+                    assertTrue(sideSheet.getTranslateX() > 0.0);
+                    assertEquals(0.0, sideSheet.getOpacity(), 0.0001);
+                    assertFalse(bottomSheet.isVisible());
+                    assertFalse(bottomSheet.isManaged());
+                    assertTrue(bottomSheet.getTranslateY() > 0.0);
+                    assertEquals(0.0, bottomSheet.getOpacity(), 0.0001);
+                });
 
         sideSheet.show();
         bottomSheet.show();
@@ -18551,24 +18563,24 @@ final class M3ControlStyleTest {
         assertTrue(bottomSheet.isVisible());
 
         FxTestUtils.runOnFxThreadWhen(() -> sideSheet.isManaged()
-                && Math.abs(sideSheet.getTranslateX()) < 0.0001
-                && Math.abs(sideSheet.getOpacity() - 1.0) < 0.0001
-                && bottomSheet.isManaged()
-                && Math.abs(bottomSheet.getTranslateY()) < 0.0001
-                && Math.abs(bottomSheet.getOpacity() - 1.0) < 0.0001,
+                        && Math.abs(sideSheet.getTranslateX()) < 0.0001
+                        && Math.abs(sideSheet.getOpacity() - 1.0) < 0.0001
+                        && bottomSheet.isManaged()
+                        && Math.abs(bottomSheet.getTranslateY()) < 0.0001
+                        && Math.abs(bottomSheet.getOpacity() - 1.0) < 0.0001,
                 () -> describeSheetPairState(
                         sideSheet,
                         bottomSheet,
                         "Sheets did not settle shown after show()"
                 ), () -> {
-        }, () -> {
-            assertTrue(sideSheet.isManaged());
-            assertEquals(0.0, sideSheet.getTranslateX(), 0.0001);
-            assertEquals(1.0, sideSheet.getOpacity(), 0.0001);
-            assertTrue(bottomSheet.isManaged());
-            assertEquals(0.0, bottomSheet.getTranslateY(), 0.0001);
-            assertEquals(1.0, bottomSheet.getOpacity(), 0.0001);
-        });
+                }, () -> {
+                    assertTrue(sideSheet.isManaged());
+                    assertEquals(0.0, sideSheet.getTranslateX(), 0.0001);
+                    assertEquals(1.0, sideSheet.getOpacity(), 0.0001);
+                    assertTrue(bottomSheet.isManaged());
+                    assertEquals(0.0, bottomSheet.getTranslateY(), 0.0001);
+                    assertEquals(1.0, bottomSheet.getOpacity(), 0.0001);
+                });
     }
 
     /// Verifies that sheet component token metrics apply through the active theme.
@@ -26082,10 +26094,23 @@ final class M3ControlStyleTest {
         M3NavigationItem first = new M3NavigationItem("Home");
         M3NavigationItem second = new M3NavigationItem("Search");
         M3NavigationRail rail = new M3NavigationRail();
+        Label header = new Label("Rail actions");
         rail.getItems().add(first);
 
         assertFalse(rail.isExpanded());
+        assertNull(rail.getHeader());
+        assertFalse(rail.isFullWidthIndicator());
         assertEquals(M3NavigationItemLayout.VERTICAL, first.getItemLayout());
+
+        rail.setHeader(header);
+        rail.setHeaderSpacing(48.0);
+        rail.setFullWidthIndicator(true);
+
+        assertSame(header, rail.getHeader());
+        assertSame(header, rail.headerProperty().get());
+        assertEquals(48.0, rail.getHeaderSpacing(), 0.0001);
+        assertTrue(rail.isFullWidthIndicator());
+        assertTrue(rail.getPseudoClassStates().contains(PseudoClass.getPseudoClass("full-width-indicator")));
 
         rail.setExpanded(true);
         rail.getItems().add(second);
@@ -26100,6 +26125,7 @@ final class M3ControlStyleTest {
         assertEquals(M3NavigationItemLayout.VERTICAL, first.getItemLayout());
         assertEquals(M3NavigationItemLayout.VERTICAL, second.getItemLayout());
     }
+
     /// Verifies that navigation rails group items and keep a selected item.
     @Test
     void navigationRailGroupsItemsAndKeepsSelection() {
@@ -26251,18 +26277,23 @@ final class M3ControlStyleTest {
             navigationBar.resizeRelocate(20.0, 20.0, 640.0, 64.0);
             root.layout();
 
-            Bounds navigationBounds = navigationBar.localToScene(navigationBar.getBoundsInLocal());
+            Bounds navigationBounds = navigationBar.localToScene(navigationBar.getLayoutBounds());
             Bounds homeBounds = home.localToScene(home.getBoundsInLocal());
             Bounds searchBounds = search.localToScene(search.getBoundsInLocal());
             Bounds profileBounds = profile.localToScene(profile.getBoundsInLocal());
             Bounds settingsBounds = settings.localToScene(settings.getBoundsInLocal());
-            double compactItemWidth = (640.0 - 16.0) / 4.0;
-            assertEquals(compactItemWidth, homeBounds.getWidth(), 0.01);
-            assertEquals(compactItemWidth, searchBounds.getWidth(), 0.01);
-            assertEquals(compactItemWidth, profileBounds.getWidth(), 0.01);
-            assertEquals(compactItemWidth, settingsBounds.getWidth(), 0.01);
+            assertEquals(6.0, navigationBar.getItemSpacing(), 0.01);
+            double compactContentWidth = 640.0 - 16.0;
+            double compactItemWidth = (compactContentWidth - 3.0 * navigationBar.getItemSpacing()) / 4.0;
+            assertEquals(compactItemWidth, homeBounds.getWidth(), 0.51);
+            assertEquals(compactItemWidth, searchBounds.getWidth(), 0.51);
+            assertEquals(compactItemWidth, profileBounds.getWidth(), 0.51);
+            assertEquals(compactItemWidth, settingsBounds.getWidth(), 0.51);
             assertEquals(8.0, homeBounds.getMinX() - navigationBounds.getMinX(), 0.01);
             assertEquals(8.0, navigationBounds.getMaxX() - settingsBounds.getMaxX(), 0.01);
+            assertEquals(navigationBar.getItemSpacing(), searchBounds.getMinX() - homeBounds.getMaxX(), 0.01);
+            assertEquals(navigationBar.getItemSpacing(), profileBounds.getMinX() - searchBounds.getMaxX(), 0.01);
+            assertEquals(navigationBar.getItemSpacing(), settingsBounds.getMinX() - profileBounds.getMaxX(), 0.01);
 
             navigationBar.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
             root.applyCss();
@@ -26276,7 +26307,9 @@ final class M3ControlStyleTest {
             navigationBar.resize(800.0, 64.0);
             root.applyCss();
             root.layout();
-            navigationBounds = navigationBar.localToScene(navigationBar.getBoundsInLocal());
+            assertEquals(0.0, navigationBar.getItemSpacing(), 0.01,
+                    "horizontal flexible navigation items should not retain compact between-space");
+            navigationBounds = navigationBar.localToScene(navigationBar.getLayoutBounds());
             homeBounds = home.localToScene(home.getBoundsInLocal());
             searchBounds = search.localToScene(search.getBoundsInLocal());
             profileBounds = profile.localToScene(profile.getBoundsInLocal());
@@ -26290,9 +26323,9 @@ final class M3ControlStyleTest {
         });
     }
 
-    /// Verifies that an expanded rail indicator tracks the available row width at both specification limits.
+    /// Verifies content-hugging and optional full-width expanded rail indicators at both specification limits.
     @Test
-    void expandedNavigationRailUsesFullWidthIndicators() {
+    void expandedNavigationRailSupportsContentAndFullWidthIndicators() {
         FxTestUtils.runOnFxThread(() -> {
             Region homeGraphic = new Region();
             homeGraphic.setMinSize(24.0, 24.0);
@@ -26304,6 +26337,7 @@ final class M3ControlStyleTest {
             searchGraphic.setMaxSize(24.0, 24.0);
             M3NavigationItem home = new M3NavigationItem("Home", homeGraphic);
             M3NavigationItem search = new M3NavigationItem("Search", searchGraphic);
+            search.setBadge(new M3Badge("3"));
             M3NavigationRail navigationRail = navigationRail(home, search);
             navigationRail.setExpandedContainerWidth(220.0);
             navigationRail.setExpanded(true);
@@ -26326,13 +26360,35 @@ final class M3ControlStyleTest {
             assertEquals(220.0, navigationRail.getWidth(), 0.01);
             Region indicator = lookupRegion(home, ".m3-navigation-item-indicator");
             Region stateLayer = lookupRegion(home, ".m3-state-layer");
-            assertEquals(188.0, indicator.getWidth(), 0.01);
-            assertEquals(188.0, stateLayer.getWidth(), 0.01);
+            assertFalse(navigationRail.isFullWidthIndicator());
+            assertTrue(indicator.getWidth() < 188.0,
+                    () -> "default expressive indicator should hug content: " + indicator.getWidth());
+            assertEquals(indicator.getWidth(), stateLayer.getWidth(), 0.01);
             assertEquals(56.0, indicator.getHeight(), 0.01);
 
             Region label = lookupRegion(home, ".m3-navigation-item-label");
             Bounds labelBounds = home.sceneToLocal(label.localToScene(label.getLayoutBounds()));
             assertEquals(64.0, labelBounds.getMinX(), 0.01);
+
+            Region searchLabel = lookupRegion(search, ".m3-navigation-item-label");
+            Bounds searchLabelBounds = search.sceneToLocal(searchLabel.localToScene(searchLabel.getLayoutBounds()));
+            Bounds badgeBounds = search.sceneToLocal(
+                    Objects.requireNonNull(search.getBadge(), "search badge")
+                            .localToScene(search.getBadge().getLayoutBounds())
+            );
+            assertTrue(badgeBounds.getMinX() >= searchLabelBounds.getMaxX() - 0.01,
+                    () -> "expanded rail badge should follow the label: label="
+                            + searchLabelBounds + ", badge=" + badgeBounds);
+
+            navigationRail.setFullWidthIndicator(true);
+            root.layout();
+            navigationRail.layout();
+            home.layout();
+            assertTrue(navigationRail.getPseudoClassStates().contains(
+                    PseudoClass.getPseudoClass("full-width-indicator")
+            ));
+            assertEquals(188.0, indicator.getWidth(), 0.01);
+            assertEquals(188.0, stateLayer.getWidth(), 0.01);
 
             navigationRail.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
             root.applyCss();
@@ -40626,7 +40682,7 @@ final class M3ControlStyleTest {
     ///
     /// @param root the root node to search
     /// @param type the descendant type to find
-    /// @param <T> the descendant node type
+    /// @param <T>  the descendant node type
     /// @return the first matching descendant, including the root itself
     private static <T extends Node> T firstDescendantOfType(Node root, Class<T> type) {
         @Nullable T descendant = findFirstDescendantOfType(root, type);
@@ -40640,7 +40696,7 @@ final class M3ControlStyleTest {
     ///
     /// @param root the root node to search
     /// @param type the descendant type to find
-    /// @param <T> the descendant node type
+    /// @param <T>  the descendant node type
     /// @return the first matching descendant, or `null` when none exists
     private static <T extends Node> @Nullable T findFirstDescendantOfType(Node root, Class<T> type) {
         if (type.isInstance(root)) {
@@ -42378,6 +42434,7 @@ final class M3ControlStyleTest {
         assertEquals(pressedInnerCorner, splitButton.getPressedInnerCorner(), 0.0001);
         assertEquals(selectedInnerCorner, splitButton.getSelectedInnerCorner(), 0.0001);
     }
+
     /// Creates a split button with the requested variant and menu items.
     private static M3SplitButton createSplitButton(String text, M3ButtonVariant variant, Node... items) {
         M3SplitButton button = new M3SplitButton(text);
@@ -42800,6 +42857,7 @@ final class M3ControlStyleTest {
         group.resize(group.prefWidth(-1.0), group.prefHeight(-1.0));
         group.layout();
     }
+
     /// Creates a primary mouse event for control behavior tests.
     private static MouseEvent primaryMouseEvent(
             EventType<MouseEvent> eventType,

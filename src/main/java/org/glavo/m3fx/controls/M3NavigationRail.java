@@ -68,6 +68,10 @@ public class M3NavigationRail extends Control {
     /// The modal expanded-rail pseudo-class.
     private static final PseudoClass MODAL_PSEUDO_CLASS = PseudoClass.getPseudoClass("modal");
 
+    /// The optional full-width active-indicator pseudo-class.
+    private static final PseudoClass FULL_WIDTH_INDICATOR_PSEUDO_CLASS =
+            PseudoClass.getPseudoClass("full-width-indicator");
+
     /// The right-to-left layout pseudo-class.
     private static final PseudoClass RTL_PSEUDO_CLASS = PseudoClass.getPseudoClass("rtl");
 
@@ -79,6 +83,9 @@ public class M3NavigationRail extends Control {
 
     /// The default expanded navigation rail width.
     private static final double DEFAULT_EXPANDED_CONTAINER_WIDTH = 280.0;
+
+    /// The default minimum distance between the rail header and destination items.
+    private static final double DEFAULT_HEADER_SPACING = 40.0;
 
     /// The mutable navigation rail content.
     private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
@@ -112,6 +119,29 @@ public class M3NavigationRail extends Control {
 
     /// The styleable expanded navigation rail width.
     private @Nullable StyleableDoubleProperty expandedContainerWidthStyleable;
+
+    /// The styleable spacing between the optional header and destination items.
+    private @Nullable StyleableDoubleProperty headerSpacingStyleable;
+
+    /// The optional menu and action area rendered above destination items.
+    private final ObjectProperty<@Nullable Node> headerState = new SimpleObjectProperty<>(this, "header") {
+        /// Requests a new skin layout when the header changes.
+        @Override
+        protected void invalidated() {
+            requestLayout();
+            notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
+        }
+    };
+
+    /// Whether expanded active indicators fill the available destination row width.
+    private final BooleanProperty fullWidthIndicatorState = new SimpleBooleanProperty(this, "fullWidthIndicator") {
+        /// Updates indicator geometry and the corresponding CSS pseudo-class.
+        @Override
+        protected void invalidated() {
+            pseudoClassStateChanged(FULL_WIDTH_INDICATOR_PSEUDO_CLASS, get());
+            requestNavigationItemLayouts();
+        }
+    };
 
     /// Whether the rail presents expanded horizontal destination rows.
     private final BooleanProperty expandedState = new SimpleBooleanProperty(this, "expanded") {
@@ -204,6 +234,55 @@ public class M3NavigationRail extends Control {
     /// @return the mutable navigation rail content list
     public final ObservableList<Node> getItems() {
         return items;
+    }
+
+    /// Returns the optional rail header rendered before destination items.
+    ///
+    /// The header is intended for a menu button, an optional floating action button, or a small container holding
+    /// both. It is excluded from destination selection and arrow-key navigation.
+    ///
+    /// @return the current header node, or `null` when no header is installed
+    public final @Nullable Node getHeader() {
+        return headerState.get();
+    }
+
+    /// Sets the optional rail header rendered before destination items.
+    ///
+    /// @param header the header node, or `null` to remove it
+    public final void setHeader(@Nullable Node header) {
+        this.headerState.set(header);
+    }
+
+    /// Returns the optional rail header property.
+    ///
+    /// @return the writable header property
+    public final ObjectProperty<@Nullable Node> headerProperty() {
+        return headerState;
+    }
+
+    /// Returns whether expanded active indicators fill the destination row width.
+    ///
+    /// The default value is `false`, which follows the expressive navigation-rail specification by wrapping the
+    /// icon, label, and badge with 16-pixel leading and trailing space. Set this property to `true` for the
+    /// documented full-width customization.
+    ///
+    /// @return `true` when expanded indicators use the full destination row width
+    public final boolean isFullWidthIndicator() {
+        return fullWidthIndicatorState.get();
+    }
+
+    /// Sets whether expanded active indicators fill the destination row width.
+    ///
+    /// @param fullWidthIndicator whether expanded indicators use the full destination row width
+    public final void setFullWidthIndicator(boolean fullWidthIndicator) {
+        this.fullWidthIndicatorState.set(fullWidthIndicator);
+    }
+
+    /// Returns the expanded active-indicator width-mode property.
+    ///
+    /// @return the writable full-width indicator property
+    public final BooleanProperty fullWidthIndicatorProperty() {
+        return fullWidthIndicatorState;
     }
 
     /// Returns whether this navigation rail is expanded.
@@ -472,6 +551,36 @@ public class M3NavigationRail extends Control {
         return expandedContainerWidthStyleable;
     }
 
+    /// Returns the minimum spacing between the optional header and destination items.
+    ///
+    /// @return the header spacing in pixels
+    public final double getHeaderSpacing() {
+        return headerSpacingStyleable == null ? DEFAULT_HEADER_SPACING : headerSpacingStyleable.get();
+    }
+
+    /// Sets the minimum spacing between the optional header and destination items.
+    ///
+    /// @param headerSpacing the non-negative header spacing in pixels
+    public final void setHeaderSpacing(double headerSpacing) {
+        headerSpacingProperty().set(M3Css.nonNegative(headerSpacing, "headerSpacing"));
+    }
+
+    /// Returns the styleable header spacing property.
+    ///
+    /// @return the styleable header spacing property
+    public final StyleableDoubleProperty headerSpacingProperty() {
+        if (headerSpacingStyleable == null) {
+            headerSpacingStyleable = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_HEADER_SPACING,
+                    this,
+                    "headerSpacing",
+                    StyleableProperties.HEADER_SPACING,
+                    this::requestLayout
+            );
+        }
+        return headerSpacingStyleable;
+    }
+
     /// Clears the current selection when empty selection is allowed.
     public final void clearSelection() {
         if (!isAllowEmptySelection()) {
@@ -504,7 +613,7 @@ public class M3NavigationRail extends Control {
 
     /// Returns accessibility attributes for navigation rail content and selection state.
     ///
-    /// @param attribute the requested accessibility attribute
+    /// @param attribute  the requested accessibility attribute
     /// @param parameters optional attribute-specific parameters
     /// @return the requested accessibility value, or `null` when no value is available
     @Override
@@ -528,7 +637,7 @@ public class M3NavigationRail extends Control {
 
     /// Executes accessibility selection actions for navigation items.
     ///
-    /// @param action the accessibility action to execute
+    /// @param action     the accessibility action to execute
     /// @param parameters optional action-specific parameters
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
@@ -588,6 +697,7 @@ public class M3NavigationRail extends Control {
     /// Adds base style classes and installs selection listeners.
     private void initialize() {
         M3ControlStyles.initialize(this, STYLE_CLASS);
+        pseudoClassStateChanged(FULL_WIDTH_INDICATOR_PSEUDO_CLASS, false);
         updateVariantPseudoClasses();
         updateOrientationPseudoClass();
         setAccessibleRole(AccessibleRole.TOOL_BAR);
@@ -663,6 +773,16 @@ public class M3NavigationRail extends Control {
                 item.setItemLayout(layout);
             }
         }
+    }
+
+    /// Requests a new layout from every installed navigation item.
+    private void requestNavigationItemLayouts() {
+        for (Node child : getItems()) {
+            if (child instanceof M3NavigationItem item) {
+                item.requestLayout();
+            }
+        }
+        requestLayout();
     }
 
     /// Keeps externally changed item selected states mutually exclusive.
@@ -870,6 +990,22 @@ public class M3NavigationRail extends Control {
                     }
                 };
 
+        /// CSS metadata for the spacing between the optional header and destination items.
+        private static final CssMetaData<M3NavigationRail, Number> HEADER_SPACING =
+                new CssMetaData<>("-m3-header-spacing", SizeConverter.getInstance(), DEFAULT_HEADER_SPACING) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3NavigationRail control) {
+                        return M3Css.isSettable(control.headerSpacingProperty());
+                    }
+
+                    /// Returns the corresponding styleable property.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3NavigationRail control) {
+                        return control.headerSpacingProperty();
+                    }
+                };
+
         /// The complete immutable CSS metadata list.
         private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
@@ -878,6 +1014,7 @@ public class M3NavigationRail extends Control {
             styleables.add(ITEM_SPACING);
             styleables.add(COLLAPSED_CONTAINER_WIDTH);
             styleables.add(EXPANDED_CONTAINER_WIDTH);
+            styleables.add(HEADER_SPACING);
             STYLEABLES = Collections.unmodifiableList(styleables);
         }
 

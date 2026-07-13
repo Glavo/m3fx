@@ -14,6 +14,11 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.css.CssMetaData;
+import javafx.css.Styleable;
+import javafx.css.StyleableDoubleProperty;
+import javafx.css.StyleableProperty;
+import javafx.css.converter.SizeConverter;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -25,15 +30,18 @@ import org.glavo.m3fx.internal.M3SelectionNavigation;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.skins.M3NavigationBarSkin;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -55,6 +63,9 @@ public class M3NavigationBar extends Control {
 
     /// The style class used by medium-window horizontal-item navigation bars.
     public static final String HORIZONTAL_STYLE_CLASS = "m3-navigation-bar-horizontal";
+
+    /// The default spacing between navigation bar item target areas.
+    private static final double DEFAULT_ITEM_SPACING = 0.0;
 
     /// The mutable navigation bar content.
     private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
@@ -95,6 +106,9 @@ public class M3NavigationBar extends Control {
                     requestLayout();
                 }
             };
+
+    /// The styleable spacing between adjacent vertical navigation item target areas.
+    private @Nullable StyleableDoubleProperty itemSpacingStyleable;
 
     // Whether the bar allows all navigation items to be unselected.
     private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection") {
@@ -164,9 +178,6 @@ public class M3NavigationBar extends Control {
     }
 
 
-
-
-
     /// Returns how child navigation items arrange their icon and label.
     ///
     /// @return the navigation item layout
@@ -190,6 +201,40 @@ public class M3NavigationBar extends Control {
     public final ObjectProperty<M3NavigationItemLayout> itemLayoutProperty() {
         return itemLayoutState;
     }
+
+    /// Returns the spacing between adjacent vertical navigation item target areas.
+    ///
+    /// The baseline navigation bar resolves this value to zero. The flexible M3 Expressive vertical layout uses
+    /// six pixels between target areas. Horizontal items retain fixed widths with no additional spacing.
+    ///
+    /// @return the item spacing in pixels
+    public final double getItemSpacing() {
+        return itemSpacingStyleable == null ? DEFAULT_ITEM_SPACING : itemSpacingStyleable.get();
+    }
+
+    /// Sets the spacing between adjacent vertical navigation item target areas.
+    ///
+    /// @param itemSpacing the non-negative item spacing in pixels
+    public final void setItemSpacing(double itemSpacing) {
+        itemSpacingProperty().set(M3Css.nonNegative(itemSpacing, "itemSpacing"));
+    }
+
+    /// Returns the styleable item-spacing property.
+    ///
+    /// @return the styleable item-spacing property
+    public final StyleableDoubleProperty itemSpacingProperty() {
+        if (itemSpacingStyleable == null) {
+            itemSpacingStyleable = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_ITEM_SPACING,
+                    this,
+                    "itemSpacing",
+                    StyleableProperties.ITEM_SPACING,
+                    this::requestLayout
+            );
+        }
+        return itemSpacingStyleable;
+    }
+
     /// Returns the selected navigation items in child order.
     ///
     /// @return an unmodifiable observable view of selected navigation items
@@ -328,9 +373,24 @@ public class M3NavigationBar extends Control {
         return M3Stylesheets.controlStylesheet("navigation-bar.css");
     }
 
+    /// Returns the CSS metadata for this control class.
+    ///
+    /// @return the immutable CSS metadata list for this class
+    public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+        return StyleableProperties.STYLEABLES;
+    }
+
+    /// Returns the CSS metadata for this control.
+    ///
+    /// @return the immutable CSS metadata list for this control
+    @Override
+    public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+        return getClassCssMetaData();
+    }
+
     /// Returns accessibility attributes for navigation bar content and selection state.
     ///
-    /// @param attribute the requested accessibility attribute
+    /// @param attribute  the requested accessibility attribute
     /// @param parameters optional attribute-specific parameters
     /// @return the requested accessibility value, or `null` when no value is available
     @Override
@@ -353,7 +413,7 @@ public class M3NavigationBar extends Control {
 
     /// Executes accessibility selection actions for navigation items.
     ///
-    /// @param action the accessibility action to execute
+    /// @param action     the accessibility action to execute
     /// @param parameters optional action-specific parameters
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
@@ -474,6 +534,7 @@ public class M3NavigationBar extends Control {
                 HORIZONTAL_STYLE_CLASS
         );
     }
+
     /// Applies the configured layout to every navigation item child.
     private void updateItemLayouts() {
         for (Node child : getItems()) {
@@ -482,6 +543,7 @@ public class M3NavigationBar extends Control {
             }
         }
     }
+
     /// Keeps externally changed item selected states mutually exclusive.
     private void handleItemSelectedChanged(M3NavigationItem item, boolean selected) {
         if (updatingSelection) {
@@ -626,6 +688,39 @@ public class M3NavigationBar extends Control {
     @Override
     protected Skin<?> createDefaultSkin() {
         return new M3NavigationBarSkin(this);
+    }
+
+    /// CSS metadata for navigation bar styleable properties.
+    @NotNullByDefault
+    private static final class StyleableProperties {
+        /// CSS metadata for spacing between adjacent vertical navigation items.
+        private static final CssMetaData<M3NavigationBar, Number> ITEM_SPACING =
+                new CssMetaData<>("-m3-item-spacing", SizeConverter.getInstance(), DEFAULT_ITEM_SPACING) {
+                    /// Returns whether CSS can set the item-spacing property.
+                    @Override
+                    public boolean isSettable(M3NavigationBar control) {
+                        return M3Css.isSettable(control.itemSpacingProperty());
+                    }
+
+                    /// Returns the corresponding styleable property.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3NavigationBar control) {
+                        return control.itemSpacingProperty();
+                    }
+                };
+
+        /// The complete immutable CSS metadata list.
+        private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+
+        static {
+            List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Control.getClassCssMetaData());
+            styleables.add(ITEM_SPACING);
+            STYLEABLES = Collections.unmodifiableList(styleables);
+        }
+
+        /// Prevents instantiation.
+        private StyleableProperties() {
+        }
     }
 
 }
