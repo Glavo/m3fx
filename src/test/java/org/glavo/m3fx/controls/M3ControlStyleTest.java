@@ -4502,8 +4502,11 @@ final class M3ControlStyleTest {
                 assertEquals(actionBounds.getHeight(), menuBounds.getHeight(), 0.01);
                 assertEquals(
                         splitButton.getSpacing(),
-                        menuButton.getLayoutX() - actionButton.getLayoutX() - actionButton.getWidth(),
-                        0.25
+                        menuBounds.getMinX() - actionBounds.getMaxX(),
+                        0.25,
+                        () -> "Unexpected rendered split-button gap for " + splitButton.getVariant()
+                                + ": actionMaxX=" + actionBounds.getMaxX()
+                                + ", menuMinX=" + menuBounds.getMinX()
                 );
                 if (splitButton.getVariant() != M3ButtonVariant.ELEVATED) {
                     Color gapPixel = snapshotScenePixel(

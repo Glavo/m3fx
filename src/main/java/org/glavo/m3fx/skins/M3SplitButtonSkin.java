@@ -12,7 +12,6 @@ import javafx.scene.layout.Pane;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3MenuButton;
 import org.glavo.m3fx.controls.M3SplitButton;
-import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default Material Design 3 skin for [M3SplitButton].
@@ -62,6 +61,8 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
         }
         actionButton = resolvedActionButton;
         menuButton = resolvedMenuButton;
+        actionButton.setManaged(false);
+        menuButton.setManaged(false);
         installShapeListeners(control);
         updatePartShapeStyles();
         container.getChildren().setAll(actionButton, menuButton);
@@ -163,6 +164,7 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
     private static String formatPixels(double value) {
         return Double.toString(value) + "px";
     }
+
     /// Computes the fixed minimum width required by both button parts and their between-space.
     @Override
     protected double computeMinWidth(
@@ -253,17 +255,22 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
         double partHeight = Math.min(availableHeight, preferredHeight);
         double actionWidth = snapSizeX(actionButton.prefWidth(partHeight));
         double menuWidth = snapSizeX(menuButton.prefWidth(partHeight));
+        actionButton.resize(actionWidth, partHeight);
+        menuButton.resize(menuWidth, partHeight);
+
         double spacing = getSkinnable().getSpacing();
-        double contentWidth = actionWidth + spacing + menuWidth;
+        double contentWidth = actionButton.getWidth() + spacing + menuButton.getWidth();
         double startX = snapPositionX(Math.max(0.0, (width - contentWidth) / 2.0));
         double partY = snapPositionY((height - partHeight) / 2.0);
 
-        actionButton.resizeRelocate(startX, partY, actionWidth, partHeight);
-        menuButton.resizeRelocate(
-                startX + actionWidth + spacing,
-                partY,
-                menuWidth,
-                partHeight
+        actionButton.setLayoutX(startX - actionButton.getLayoutBounds().getMinX());
+        actionButton.setLayoutY(partY - actionButton.getLayoutBounds().getMinY());
+        menuButton.setLayoutX(
+                startX
+                        + actionButton.getWidth()
+                        + spacing
+                        - menuButton.getLayoutBounds().getMinX()
         );
+        menuButton.setLayoutY(partY - menuButton.getLayoutBounds().getMinY());
     }
 }
