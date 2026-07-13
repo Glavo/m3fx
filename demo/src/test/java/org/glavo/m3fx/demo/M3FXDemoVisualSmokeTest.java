@@ -16469,13 +16469,13 @@ final class M3FXDemoVisualSmokeTest {
 
     /// Verifies that a radio button dot shares the same rendered center as its ring.
     private static void assertRadioDotCentered(
-            Node root,
+            M3RadioButton radioButton,
             Bounds sceneBounds,
             WritableImage image,
             String pageTitle
     ) {
-        @Nullable Node container = root.lookup(".m3-radio-ring");
-        @Nullable Node indicator = root.lookup(".m3-radio-dot");
+        @Nullable Node container = radioButton.lookup(".m3-radio-ring");
+        @Nullable Node indicator = radioButton.lookup(".m3-radio-dot");
         if (container == null || indicator == null || !hasRenderableBounds(container) || !hasRenderableBounds(indicator)) {
             return;
         }
@@ -16485,25 +16485,23 @@ final class M3FXDemoVisualSmokeTest {
             return;
         }
 
-        if (root instanceof M3RadioButton radioButton) {
-            assertEquals(radioButton.getContainerSize(), containerBounds.getWidth(), 1.0,
-                    () -> pageTitle + " radio container width should match token: " + containerBounds);
-            assertEquals(radioButton.getContainerSize(), containerBounds.getHeight(), 1.0,
-                    () -> pageTitle + " radio container height should match token: " + containerBounds);
-            assertSelectionTargetAndStateLayerGeometry(
-                    radioButton,
-                    containerBounds,
-                    radioButton.getTouchTargetSize(),
-                    radioButton.getStateLayerSize(),
-                    pageTitle,
-                    "radio button"
-            );
-            if (indicator.getOpacity() > 0.2) {
-                assertEquals(radioButton.getSelectedDotSize(), indicatorBounds.getWidth(), 1.0,
-                        () -> pageTitle + " radio dot width should match token: " + indicatorBounds);
-                assertEquals(radioButton.getSelectedDotSize(), indicatorBounds.getHeight(), 1.0,
-                        () -> pageTitle + " radio dot height should match token: " + indicatorBounds);
-            }
+        assertEquals(radioButton.getContainerSize(), containerBounds.getWidth(), 1.0,
+                () -> pageTitle + " radio container width should match token: " + containerBounds);
+        assertEquals(radioButton.getContainerSize(), containerBounds.getHeight(), 1.0,
+                () -> pageTitle + " radio container height should match token: " + containerBounds);
+        assertSelectionTargetAndStateLayerGeometry(
+                radioButton,
+                containerBounds,
+                radioButton.getTouchTargetSize(),
+                radioButton.getStateLayerSize(),
+                pageTitle,
+                "radio button"
+        );
+        if (radioButton.isSelected()) {
+            assertEquals(radioButton.getSelectedDotSize(), indicatorBounds.getWidth(), 1.0,
+                    () -> pageTitle + " radio dot width should match token: " + indicatorBounds);
+            assertEquals(radioButton.getSelectedDotSize(), indicatorBounds.getHeight(), 1.0,
+                    () -> pageTitle + " radio dot height should match token: " + indicatorBounds);
         }
 
         double dx = Math.abs(containerBounds.getCenterX() - indicatorBounds.getCenterX());
@@ -16511,7 +16509,7 @@ final class M3FXDemoVisualSmokeTest {
         assertTrue(dx <= 0.75 && dy <= 0.75,
                 () -> pageTitle + " radio dot is off-center: dx=" + dx + ", dy=" + dy
                         + ", containerBounds=" + containerBounds + ", indicatorBounds=" + indicatorBounds);
-        if (indicator.getOpacity() <= 0.2) {
+        if (!radioButton.isSelected()) {
             return;
         }
 

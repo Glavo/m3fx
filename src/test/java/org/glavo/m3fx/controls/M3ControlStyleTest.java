@@ -429,10 +429,8 @@ final class M3ControlStyleTest {
         AtomicReference<@Nullable M3MenuButton> menuButtonReference = new AtomicReference<>();
         AtomicReference<@Nullable M3SubMenuItem> subMenuItemReference = new AtomicReference<>();
 
-        FxTestUtils.runOnFxThreadWhenStable(() -> standaloneControlPopupStackReady(
-                stageReference,
-                menuButtonReference,
-                subMenuItemReference
+        FxTestUtils.runOnFxThreadWhenStable(() -> standaloneControlSceneReady(
+                stageReference
         ), STANDALONE_FALLBACK_STYLE_STABLE_PULSES, () -> {
             M3Button filledButton = new M3Button("Filled");
             M3Button tonalButton = new M3Button("Tonal", M3ButtonVariant.TONAL);
@@ -757,7 +755,9 @@ final class M3ControlStyleTest {
             root.layout();
 
             showAndApplyPickerPopup(datePickerField, datePickerField.getPicker());
+            datePickerField.hidePicker();
             showAndApplyPickerPopup(timePickerField, timePickerField.getPicker());
+            timePickerField.hidePicker();
             showAndApplyPickerPopup(dateRangePickerField, dateRangePickerField.getPicker());
         }, () -> {
             @Nullable M3DatePickerField datePickerField = datePickerFieldReference.get();
@@ -42140,37 +42140,17 @@ final class M3ControlStyleTest {
         assertEquals(0, whiteLeaks, whiteLeakMessage);
     }
 
-    /// Returns whether standalone controls and their popup stack have reached a renderable fallback-styled state.
-    private static boolean standaloneControlPopupStackReady(
-            AtomicReference<@Nullable Stage> stageReference,
-            AtomicReference<@Nullable M3MenuButton> menuButtonReference,
-            AtomicReference<@Nullable M3SubMenuItem> subMenuItemReference
-    ) {
+    /// Returns whether the standalone control scene has reached a renderable fallback-styled state.
+    private static boolean standaloneControlSceneReady(AtomicReference<@Nullable Stage> stageReference) {
         @Nullable Stage stage = stageReference.get();
-        @Nullable M3MenuButton menuButton = menuButtonReference.get();
-        @Nullable M3SubMenuItem subMenuItem = subMenuItemReference.get();
-        if (stage == null
-                || menuButton == null
-                || subMenuItem == null
-                || !stage.isShowing()
-                || stage.getScene() == null
-                || !menuButton.isShowing()
-                || !subMenuItem.isSubMenuShowing()) {
+        if (stage == null || !stage.isShowing() || stage.getScene() == null) {
             return false;
         }
 
         Parent root = stage.getScene().getRoot();
         root.applyCss();
         root.layout();
-        M3Menu ownerMenu = menuButton.getMenu();
-        M3Menu subMenu = subMenuItem.getSubMenu();
-        ownerMenu.applyCss();
-        ownerMenu.layout();
-        subMenu.applyCss();
-        subMenu.layout();
-        return hasRenderableBounds(menuButton)
-                && hasRenderableBounds(ownerMenu)
-                && hasRenderableBounds(subMenu);
+        return hasRenderableBounds(root);
     }
 
     /// Returns whether standalone tooltip popups have reached a renderable fallback-styled state.
@@ -42255,20 +42235,16 @@ final class M3ControlStyleTest {
         Parent root = stage.getScene().getRoot();
         root.applyCss();
         root.layout();
-        return pickerPopupReady(datePickerField, datePickerField.getPicker())
-                && pickerPopupReady(timePickerField, timePickerField.getPicker())
+        return pickerControlReady(datePickerField.getPicker())
+                && pickerControlReady(timePickerField.getPicker())
                 && pickerPopupReady(dateRangePickerField, dateRangePickerField.getPicker());
     }
 
-    /// Returns whether a picker field popup and picker control are visible and renderable.
-    private static <T, P extends Control> boolean pickerPopupReady(M3PickerField<T, P> field, P picker) {
-        if (!field.isShowing() || picker.getScene() == null) {
-            return false;
-        }
-
+    /// Returns whether a picker control has completed CSS and layout after a popup presentation.
+    private static boolean pickerControlReady(Control picker) {
         picker.applyCss();
         picker.layout();
-        return hasRenderableBounds(picker);
+        return picker.getSkin() != null && hasRenderableBounds(picker);
     }
 
     /// Returns whether a date range picker field popup and picker control are visible and renderable.

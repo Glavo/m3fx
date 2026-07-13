@@ -28,14 +28,42 @@ jobs:
           GRADLE_USER_HOME: .gradle-user-home
         run: xvfb-run -a ./gradlew releaseCheck --no-daemon
 
+      - name: Package reports
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p build/ci-artifacts
+
+          visual_paths=()
+          for path in build/reports/m3fx-visual demo/build/reports/m3fx-demo-visual; do
+            if [[ -e "$path" ]]; then
+              visual_paths+=("$path")
+            fi
+          done
+          if (( ${#visual_paths[@]} > 0 )); then
+            tar -czf build/ci-artifacts/m3fx-visual-reports.tar.gz "${visual_paths[@]}"
+          fi
+
+          test_paths=()
+          for path in \
+            build/reports/tests \
+            demo/build/reports/tests \
+            build/test-results/test \
+            demo/build/test-results/test; do
+            if [[ -e "$path" ]]; then
+              test_paths+=("$path")
+            fi
+          done
+          if (( ${#test_paths[@]} > 0 )); then
+            tar -czf build/ci-artifacts/m3fx-test-reports.tar.gz "${test_paths[@]}"
+          fi
+
       - name: Upload visual reports
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: m3fx-visual-reports
-          path: |
-            build/reports/m3fx-visual/
-            demo/build/reports/m3fx-demo-visual/
+          path: build/ci-artifacts/m3fx-visual-reports.tar.gz
           if-no-files-found: ignore
           archive: false
 
@@ -44,11 +72,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: m3fx-test-reports
-          path: |
-            build/reports/tests/
-            demo/build/reports/tests/
-            build/test-results/test/
-            demo/build/test-results/test/
+          path: build/ci-artifacts/m3fx-test-reports.tar.gz
           if-no-files-found: ignore
           archive: false
 
