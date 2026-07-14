@@ -26,7 +26,6 @@ import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
-import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3SearchViewSkin;
@@ -70,13 +69,6 @@ public class M3SearchView extends Control {
 
     /// The search result visibility animation.
     private final M3NodeTransition resultsVisibilityAnimation = new M3NodeTransition(resultsBox);
-
-    /// Observes runtime motion settings while this search view is attached to a scene.
-    private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(
-                    this,
-                    () -> M3Animation.finishRunningAnimationsIfDisabled(this, resultsVisibilityAnimation)
-            );
 
     /// Notifies accessibility clients when focus moves between the search bar and results.
     private final M3AccessibleFocusNotifier focusNotifier =

@@ -9,7 +9,6 @@ import javafx.scene.layout.Region;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Tab;
 import org.glavo.m3fx.internal.M3Animation;
-import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.jetbrains.annotations.NotNullByDefault;
 
@@ -30,13 +29,6 @@ public class M3TabSkin extends M3LabeledButtonSkinBase<M3Tab> {
 
     /// The last shape radius applied to the active indicator.
     private double appliedIndicatorShape = Double.NaN;
-
-    /// Settles running active-indicator transitions when runtime motion settings change.
-    private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(
-                    getSkinnable(),
-                    () -> M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), indicatorAnimation)
-            );
 
     /// Animates the active indicator when selection changes.
     private final ChangeListener<Boolean> selectedListener =
@@ -64,7 +56,6 @@ public class M3TabSkin extends M3LabeledButtonSkinBase<M3Tab> {
     public void dispose() {
         M3Tab tab = getSkinnable();
         indicatorAnimation.stop();
-        motionSettingsObserver.dispose();
         tab.selectedProperty().removeListener(selectedListener);
         tab.activeIndicatorHeightProperty().removeListener(indicatorMetricsInvalidation);
         tab.activeIndicatorShapeProperty().removeListener(indicatorMetricsInvalidation);

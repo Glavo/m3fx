@@ -19,7 +19,6 @@ import org.glavo.m3fx.controls.M3ButtonGroupVariant;
 import org.glavo.m3fx.controls.M3ButtonSize;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3FiniteTransition;
-import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -88,8 +87,6 @@ public final class M3ButtonGroupSkin extends M3ItemContainerSkinBase<
         private final ChangeListener<M3ButtonGroupVariant> variantListener =
                 (observable, oldValue, newValue) -> updateInteractionTargets();
 
-        /// Settles a running width transition when motion is disabled at runtime.
-        private final M3MotionSettingsObserver motionSettingsObserver;
 
         /// Item identities aligned with the interaction arrays.
         private Node[] interactionItems = EMPTY_ITEMS;
@@ -114,10 +111,6 @@ public final class M3ButtonGroupSkin extends M3ItemContainerSkinBase<
         /// @param control the button group whose items are laid out
         ButtonGroupPane(M3ButtonGroup control) {
             this.control = control;
-            motionSettingsObserver = new M3MotionSettingsObserver(
-                    control,
-                    () -> M3Animation.finishRunningAnimationsIfDisabled(control, interactionTransition)
-            );
         }
 
         /// Starts observing current and future button children.
@@ -138,7 +131,6 @@ public final class M3ButtonGroupSkin extends M3ItemContainerSkinBase<
         /// Removes all listeners and stops the reusable transition.
         void dispose() {
             if (!started) {
-                motionSettingsObserver.dispose();
                 interactionTransition.stop();
                 return;
             }
@@ -149,7 +141,6 @@ public final class M3ButtonGroupSkin extends M3ItemContainerSkinBase<
             for (Node item : control.getItems()) {
                 detachInteractionListeners(item);
             }
-            motionSettingsObserver.dispose();
             interactionTransition.stop();
             interactionItems = EMPTY_ITEMS;
             interactionProgress = EMPTY_VALUES;

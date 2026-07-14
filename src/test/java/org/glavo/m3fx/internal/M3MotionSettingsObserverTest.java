@@ -271,7 +271,6 @@ final class M3MotionSettingsObserverTest {
                     new M3MotionSettingsObserver(firstOwner, firstRefreshes::incrementAndGet);
             M3MotionSettingsObserver second =
                     new M3MotionSettingsObserver(secondOwner, secondRefreshes::incrementAndGet);
-            long settingsRevision = M3MotionSettings.revisionProperty().get();
 
             try {
                 assertEquals(1, firstRefreshes.get());
@@ -281,13 +280,11 @@ final class M3MotionSettingsObserverTest {
 
                 assertEquals(2, firstRefreshes.get());
                 assertEquals(1, secondRefreshes.get());
-                assertEquals(settingsRevision, M3MotionSettings.revisionProperty().get());
 
                 M3ThemeManager.uninstall(firstScope);
 
                 assertEquals(3, firstRefreshes.get());
                 assertEquals(1, secondRefreshes.get());
-                assertEquals(settingsRevision, M3MotionSettings.revisionProperty().get());
             } finally {
                 first.dispose();
                 second.dispose();

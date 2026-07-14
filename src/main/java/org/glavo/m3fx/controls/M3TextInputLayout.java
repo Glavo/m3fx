@@ -55,7 +55,6 @@ import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3FiniteTransition;
 import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3InternalIcon;
-import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3TextInputLayoutSkin;
@@ -480,19 +479,6 @@ public class M3TextInputLayout extends Control {
     /// The reusable animation used when the built-in clear button enters the trailing slot.
     private final NodeVisualTransition trailingAnimation =
             new NodeVisualTransition(clearButton, null);
-
-    /// Observes runtime motion settings while this layout is attached to a scene and is retained for this control lifetime.
-    @SuppressWarnings("unused")
-    private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(
-                    this,
-                    () -> M3Animation.finishRunningAnimationsIfDisabled(
-                            this,
-                            labelAnimation,
-                            trailingAnimation,
-                            supportingRowAnimation
-                    )
-            );
 
     /// The previously installed input node.
     private @Nullable TextInputControl installedInput = null;

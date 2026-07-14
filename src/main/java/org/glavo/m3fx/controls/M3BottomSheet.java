@@ -27,7 +27,6 @@ import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3ModalFocusTrap;
-import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3BottomSheetSkin;
@@ -137,13 +136,6 @@ public class M3BottomSheet extends Control {
 
     /// The sheet show and hide animation.
     private final M3NodeTransition visibilityAnimation = new M3NodeTransition(this);
-
-    /// Observes runtime motion settings while this sheet is attached to a scene.
-    private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(
-                    this,
-                    () -> M3Animation.finishRunningAnimationsIfDisabled(this, visibilityAnimation)
-            );
 
     /// The node focused before this modal sheet was shown.
     private @Nullable Node focusOwnerBeforeShown;

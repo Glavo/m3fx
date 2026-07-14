@@ -22,7 +22,6 @@ import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
-import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -83,13 +82,6 @@ public class M3Scrim extends Region {
 
     /// The scrim show and hide animation.
     private final M3NodeTransition visibilityAnimation = new M3NodeTransition(this);
-
-    /// Observes runtime motion settings while this scrim is attached to a scene.
-    private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(
-                    this,
-                    () -> M3Animation.finishRunningAnimationsIfDisabled(this, visibilityAnimation)
-            );
 
     /// Creates a scrim.
     public M3Scrim() {

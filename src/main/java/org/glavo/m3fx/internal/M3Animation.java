@@ -139,12 +139,7 @@ public final class M3Animation {
     /// @param owner      the node whose animation settings should be honored
     /// @param transition the transition to play or finish
     public static void playFromStart(Node owner, M3FiniteTransition transition) {
-        Objects.requireNonNull(transition, "transition");
-        if (areAnimationsEnabled(owner)) {
-            transition.playFromStart();
-        } else {
-            finish(transition);
-        }
+        Objects.requireNonNull(transition, "transition").playFromStart(owner);
     }
 
     /// Finishes a finite transition synchronously and invokes its completion handler.

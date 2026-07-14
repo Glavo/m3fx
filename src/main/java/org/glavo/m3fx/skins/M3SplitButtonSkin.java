@@ -24,7 +24,6 @@ import org.glavo.m3fx.controls.M3MenuButton;
 import org.glavo.m3fx.controls.M3SplitButton;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3FiniteTransition;
-import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default Material Design 3 skin for [M3SplitButton].
@@ -69,8 +68,6 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
     /// The menu-part inner-corner transition.
     private final PartShapeTransition menuShapeTransition;
 
-    /// Settles running shape transitions when runtime animation settings change.
-    private final M3MotionSettingsObserver motionSettingsObserver;
 
     /// Refreshes both part shapes when one owner token changes.
     private final InvalidationListener shapeTokenInvalidation = observable -> synchronizePartShapes();
@@ -101,14 +98,6 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
         configurePartShape(menuButton, menuShape);
         actionShapeTransition = new PartShapeTransition(actionButton, actionShape, false);
         menuShapeTransition = new PartShapeTransition(menuButton, menuShape, true);
-        motionSettingsObserver = new M3MotionSettingsObserver(
-                control,
-                () -> M3Animation.finishRunningAnimationsIfDisabled(
-                        control,
-                        actionShapeTransition,
-                        menuShapeTransition
-                )
-        );
         installShapeListeners(control);
         synchronizePartShapes();
         container.getChildren().setAll(actionButton, menuButton);
@@ -120,7 +109,6 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
     public void dispose() {
         actionShapeTransition.stop();
         menuShapeTransition.stop();
-        motionSettingsObserver.dispose();
         uninstallShapeListeners(getSkinnable());
         resetPartShape(actionButton, actionShape);
         resetPartShape(menuButton, menuShape);

@@ -21,7 +21,6 @@ import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
-import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -78,10 +77,6 @@ public class M3MenuButton extends M3Button {
 
     /// The reusable menu popup enter and exit animation.
     private final M3NodeTransition popupAnimation = new M3NodeTransition(menu);
-
-    /// Observes runtime motion settings while this button is attached to a scene.
-    private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(this, this::refreshMotionSettings);
 
     /// Reports popup menu focus changes through this button's accessibility node.
     private final M3AccessibleFocusNotifier popupFocusNotifier =
@@ -486,8 +481,4 @@ public class M3MenuButton extends M3Button {
         menu.setTranslateY(0.0);
     }
 
-    /// Applies changed runtime motion settings to active popup menu animations.
-    private void refreshMotionSettings() {
-        M3Animation.finishRunningAnimationsIfDisabled(this, popupAnimation);
-    }
 }

@@ -35,7 +35,6 @@ import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3InternalIcon;
-import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -227,10 +226,6 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
 
     /// The reusable picker popup enter and exit animation.
     private final M3NodeTransition popupAnimation = new M3NodeTransition(popupContent);
-
-    /// Observes runtime motion settings while this field is attached to a scene.
-    private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(this, this::refreshMotionSettings);
 
     /// Reports popup picker focus changes through this field's accessibility node.
     private final M3AccessibleFocusNotifier popupFocusNotifier =
@@ -1479,11 +1474,6 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         popupContent.setScaleX(1.0);
         popupContent.setScaleY(1.0);
         popupContent.setTranslateY(0.0);
-    }
-
-    /// Applies changed runtime motion settings to active picker popup animations.
-    private void refreshMotionSettings() {
-        M3Animation.finishRunningAnimationsIfDisabled(this, popupAnimation);
     }
 
 }

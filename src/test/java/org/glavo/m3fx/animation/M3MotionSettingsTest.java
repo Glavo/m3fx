@@ -8,7 +8,6 @@ import org.glavo.m3fx.FxTestUtils;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -53,28 +52,6 @@ final class M3MotionSettingsTest {
 
             M3MotionSettings.setReducedMotionRequested(root, false);
             assertTrue(M3MotionSettings.areAnimationsEnabled(nested));
-        });
-    }
-
-    /// Verifies that the settings revision changes when global or node-local motion settings change.
-    @Test
-    void settingsRevisionChangesWhenSettingsChange() {
-        FxTestUtils.runWithMotionSettingsPreserved(() -> {
-            boolean previousAnimationsEnabled = M3MotionSettings.areAnimationsEnabled();
-            Pane node = new Pane();
-            long revision = M3MotionSettings.revisionProperty().get();
-
-            M3MotionSettings.setAnimationsEnabled(!previousAnimationsEnabled);
-            long afterGlobalAnimations = M3MotionSettings.revisionProperty().get();
-            assertTrue(afterGlobalAnimations > revision);
-
-            M3MotionSettings.setReducedMotionRequested(node, true);
-            long afterNodeAnimations = M3MotionSettings.revisionProperty().get();
-            assertTrue(afterNodeAnimations > afterGlobalAnimations);
-
-            M3MotionSettings.setReducedMotionRequested(node, true);
-
-            assertEquals(afterNodeAnimations, M3MotionSettings.revisionProperty().get());
         });
     }
 

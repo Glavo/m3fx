@@ -11,7 +11,6 @@ import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3DisclosureIcon;
 import org.glavo.m3fx.internal.M3Animation;
-import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 
@@ -48,13 +47,6 @@ public final class M3DisclosureIconSkin extends SkinBase<M3DisclosureIcon> {
     /// The rotation animation played when expanded state changes.
     private final M3DoubleTransition rotationAnimation = new M3DoubleTransition(arrow.rotateProperty());
 
-    /// Settles running rotation transitions when runtime motion settings change.
-    private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(
-                    getSkinnable(),
-                    () -> M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), rotationAnimation)
-            );
-
     /// Applies expanded-state changes to the arrow rotation.
     private final ChangeListener<Boolean> expandedListener =
             (observable, oldValue, newValue) -> animateExpandedState(newValue);
@@ -87,7 +79,6 @@ public final class M3DisclosureIconSkin extends SkinBase<M3DisclosureIcon> {
     @Override
     public void dispose() {
         rotationAnimation.stop();
-        motionSettingsObserver.dispose();
         getSkinnable().expandedProperty().removeListener(expandedListener);
         getSkinnable().effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
         getSkinnable().verticalProperty().removeListener(verticalInvalidation);

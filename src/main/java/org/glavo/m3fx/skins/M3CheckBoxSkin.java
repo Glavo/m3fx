@@ -10,7 +10,6 @@ import javafx.scene.layout.StackPane;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3CheckBox;
 import org.glavo.m3fx.internal.M3Animation;
-import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.jetbrains.annotations.NotNullByDefault;
 
@@ -35,13 +34,6 @@ public class M3CheckBoxSkin extends M3SelectionControlSkinBase<M3CheckBox> {
 
     /// Applies checkbox geometry token changes to skin nodes.
     private final InvalidationListener metricsInvalidation = observable -> updateMetrics();
-
-    /// Settles running mark transitions when runtime motion settings change.
-    private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(
-                    getSkinnable(),
-                    () -> M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), selectionAnimation)
-            );
 
     /// Animates the mark after selection changes.
     private final ChangeListener<Boolean> selectedListener =
@@ -85,7 +77,6 @@ public class M3CheckBoxSkin extends M3SelectionControlSkinBase<M3CheckBox> {
         getSkinnable().selectedMarkHeightProperty().removeListener(metricsInvalidation);
         getSkinnable().indeterminateMarkWidthProperty().removeListener(metricsInvalidation);
         getSkinnable().indeterminateMarkHeightProperty().removeListener(metricsInvalidation);
-        motionSettingsObserver.dispose();
         getSkinnable().selectedProperty().removeListener(selectedListener);
         getSkinnable().indeterminateProperty().removeListener(indeterminateListener);
         super.dispose();

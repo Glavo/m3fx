@@ -27,7 +27,6 @@ import org.glavo.m3fx.controls.M3NavigationRail;
 import org.glavo.m3fx.controls.M3NavigationItemLayout;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3FocusRequests;
-import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -101,13 +100,6 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
 
     /// Updates logical overlay placement when node orientation changes.
     private final InvalidationListener nodeOrientationInvalidation = observable -> updateNodeOrientationLayout();
-
-    /// Settles running indicator transitions when runtime motion settings change.
-    private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(
-                    getSkinnable(),
-                    () -> M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), indicatorAnimation)
-            );
 
     /// Updates the displayed label text.
     private final ChangeListener<@Nullable String> textListener =
@@ -203,7 +195,6 @@ public class M3NavigationItemSkin extends SkinBase<M3NavigationItem> {
         item.badgeProperty().removeListener(badgeListener);
         item.itemLayoutProperty().removeListener(itemLayoutListener);
         item.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
-        motionSettingsObserver.dispose();
         item.selectedProperty().removeListener(selectedListener);
         item.disabledProperty().removeListener(disabledListener);
         uninstallInteractionHandlers(item);

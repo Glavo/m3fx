@@ -20,7 +20,6 @@ import org.glavo.m3fx.controls.M3NavigationItem;
 import org.glavo.m3fx.controls.M3NavigationItemLayout;
 import org.glavo.m3fx.controls.M3NavigationRail;
 import org.glavo.m3fx.internal.M3Animation;
-import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -83,13 +82,6 @@ public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
     /// The bottom padding captured before the expanded pseudo-class changed its CSS tokens.
     private double transitionStartBottomPadding;
 
-    /// Settles the width transition when runtime motion is disabled.
-    private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(
-                    getSkinnable(),
-                    () -> M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), expansionAnimation)
-            );
-
     /// Mirrors public item changes into the skin container.
     private final ListChangeListener<Node> itemsListener = change -> updateItems();
 
@@ -149,7 +141,6 @@ public final class M3NavigationRailSkin extends SkinBase<M3NavigationRail> {
         expansionAnimation.stop();
         expansionAnimation.setOnFinished(null);
         clearTransitionVisuals();
-        motionSettingsObserver.dispose();
         control.getItems().removeListener(itemsListener);
         control.itemSpacingProperty().removeListener(itemSpacingListener);
         control.headerSpacingProperty().removeListener(headerSpacingListener);

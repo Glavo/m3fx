@@ -44,6 +44,7 @@ import javafx.scene.control.Skin;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputControl;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.skin.VirtualFlow;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.image.WritableImage;
@@ -5622,6 +5623,8 @@ final class M3ControlStyleTest {
         third.setDisable(true);
         M3Carousel carousel = carousel(first, second, third);
 
+        assertFalse(carousel.isFocusTraversable());
+        assertTrue(first.isFocusTraversable());
         assertTrue(first.getStyleClass().contains(M3Carousel.ITEM_STYLE_CLASS));
         assertEquals(-1, carousel.getSelectedIndex());
         assertNull(carousel.getSelectedItem());
@@ -5647,6 +5650,7 @@ final class M3ControlStyleTest {
 
         carousel.getItems().remove(second);
 
+        assertFalse(second.isFocusTraversable());
         assertFalse(second.getStyleClass().contains(M3Carousel.ITEM_STYLE_CLASS));
         assertFalse(second.getStyleClass().contains(M3Carousel.SELECTED_ITEM_STYLE_CLASS));
         assertSame(first, carousel.getSelectedItem());
@@ -6047,6 +6051,22 @@ final class M3ControlStyleTest {
                 root.layout();
 
                 assertInstanceOf(M3CarouselSkin.class, carousel.getSkin());
+                carousel.clearSelection();
+                carousel.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
+
+                assertFalse(carousel.isFocused());
+                assertEquals(0, carousel.getSelectedIndex());
+                assertTrue(carousel.getItems().get(0).isFocused());
+
+                carousel.getItems().get(0).fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.TAB));
+
+                assertEquals(1, carousel.getSelectedIndex());
+                assertTrue(carousel.getItems().get(1).isFocused());
+
+                carousel.getItems().get(1).fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.TAB, true));
+
+                assertEquals(0, carousel.getSelectedIndex());
+                assertTrue(carousel.getItems().get(0).isFocused());
 
                 carousel.selectIndex(4);
                 root.layout();
@@ -6061,7 +6081,8 @@ final class M3ControlStyleTest {
 
                 carousel.executeAccessibleAction(AccessibleAction.SHOW_ITEM);
 
-                assertTrue(carousel.isFocused());
+                assertFalse(carousel.isFocused());
+                assertTrue(Objects.requireNonNull(carousel.getSelectedItem(), "selected carousel item").isFocused());
 
                 viewport.setHvalue(0.0);
                 M3MotionSettings.setReducedMotionRequested(viewport, true);
@@ -20041,6 +20062,9 @@ final class M3ControlStyleTest {
                 -m3-color-on-surface: rgb(4,5,6);
                 -m3-color-on-surface-variant: rgb(7,8,9);
                 -m3-color-surface-container-highest: rgb(10,11,12);
+                -m3-color-error: rgb(13,14,15);
+                -m3-color-on-error: rgb(16,17,18);
+                -m3-color-surface: rgb(19,20,21);
                 """);
         root.applyCss();
 
@@ -20068,7 +20092,39 @@ final class M3ControlStyleTest {
         root.applyCss();
         assertRegionFill(checkBoxStateLayer, Color.rgb(4, 5, 6));
         assertRegionFill(radioStateLayer, Color.rgb(4, 5, 6));
+        assertNoBorder(checkBoxContainer);
 
+        checkBox.disarm();
+        checkBox.setSelected(false);
+        checkBox.setError(true);
+        root.applyCss();
+        assertTrue(checkBox.getPseudoClassStates().contains(PseudoClass.getPseudoClass("error")));
+        assertBorderColor(checkBoxContainer, Color.rgb(13, 14, 15));
+        assertRegionFill(checkBoxStateLayer, Color.rgb(13, 14, 15));
+
+        checkBox.setSelected(true);
+        root.applyCss();
+        assertRegionFill(checkBoxContainer, Color.rgb(13, 14, 15));
+        assertRegionFill(lookupRegion(checkBox, ".mark"), Color.rgb(16, 17, 18));
+        assertNoBorder(checkBoxContainer);
+
+        checkBox.setSelected(false);
+        checkBox.setIndeterminate(true);
+        root.applyCss();
+        assertRegionFill(checkBoxContainer, Color.rgb(13, 14, 15));
+        assertRegionFill(lookupRegion(checkBox, ".mark"), Color.rgb(16, 17, 18));
+        assertNoBorder(checkBoxContainer);
+
+        checkBox.setDisable(true);
+        root.applyCss();
+        assertRegionFill(checkBoxContainer, Color.rgb(4, 5, 6));
+        assertEquals(0.38, checkBoxContainer.getOpacity(), 0.0001);
+        assertRegionFill(lookupRegion(checkBox, ".mark"), Color.rgb(19, 20, 21));
+
+        switchControl.setSelected(true);
+        root.applyCss();
+        assertNoBorder(lookupRegion(switchControl, ".box"));
+        switchControl.setSelected(false);
         switchControl.setDisable(true);
         root.applyCss();
         assertRegionFill(lookupRegion(switchControl, ".box"), Color.rgb(10, 11, 12));
@@ -20195,15 +20251,24 @@ final class M3ControlStyleTest {
     @Test
     void selectionControlSkinsHandleActivationEvents() {
         M3CheckBox checkBox = new M3CheckBox("Check");
-        M3RadioButton radioButton = new M3RadioButton("Radio");
+        M3RadioButton radioButton = new M3RadioButton("Radio A");
+        M3RadioButton nextRadioButton = new M3RadioButton("Radio B");
+        M3RadioButton disabledRadioButton = new M3RadioButton("Radio C");
         M3Switch switchControl = new M3Switch("Switch");
-        Pane root = new Pane(checkBox, radioButton, switchControl);
-        Scene scene = new Scene(root, 320.0, 160.0);
+        ToggleGroup radioGroup = new ToggleGroup();
+        radioButton.setToggleGroup(radioGroup);
+        nextRadioButton.setToggleGroup(radioGroup);
+        disabledRadioButton.setToggleGroup(radioGroup);
+        disabledRadioButton.setDisable(true);
+        Pane root = new Pane(checkBox, radioButton, nextRadioButton, disabledRadioButton, switchControl);
+        Scene scene = new Scene(root, 480.0, 160.0);
 
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         root.applyCss();
         checkBox.resize(120.0, 48.0);
         radioButton.resize(120.0, 48.0);
+        nextRadioButton.resize(120.0, 48.0);
+        disabledRadioButton.resize(120.0, 48.0);
         switchControl.resize(120.0, 48.0);
 
         checkBox.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 10.0, 10.0, true));
@@ -20215,6 +20280,23 @@ final class M3ControlStyleTest {
         assertTrue(radioButton.isArmed());
         radioButton.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 10.0, 10.0, false));
         assertTrue(radioButton.isSelected());
+
+        KeyEvent right = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT);
+        radioButton.fireEvent(right);
+        assertTrue(nextRadioButton.isSelected());
+
+        KeyEvent down = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.DOWN);
+        nextRadioButton.fireEvent(down);
+        assertTrue(radioButton.isSelected(), "directional navigation must skip disabled toggles and wrap");
+
+        radioButton.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+        radioButton.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT));
+        assertTrue(nextRadioButton.isSelected(), "right must move backward in RTL orientation");
+
+        KeyEvent enter = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.ENTER);
+        radioButton.fireEvent(enter);
+        assertFalse(enter.isConsumed());
+        assertFalse(radioButton.isSelected(), "Material radio buttons use Space rather than Enter for activation");
 
         switchControl.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.SPACE));
         assertTrue(switchControl.isArmed());
@@ -20306,6 +20388,81 @@ final class M3ControlStyleTest {
                             Objects.requireNonNull(checkBoxReference.get(), "checkBox"),
                             Objects.requireNonNull(radioButtonReference.get(), "radioButton"),
                             Objects.requireNonNull(switchReference.get(), "switchControl")
+                    )
+            );
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> {
+                        M3Switch switchControl = switchReference.get();
+                        if (switchControl == null) {
+                            return false;
+                        }
+                        double width = lookupRegion(switchControl, ".thumb").getWidth();
+                        return width > 16.0 && width < 28.0;
+                    },
+                    () -> Objects.requireNonNull(switchReference.get(), "switchControl").arm(),
+                    () -> {
+                        FlowPane row = Objects.requireNonNull(rowReference.get(), "row");
+                        M3Switch switchControl = Objects.requireNonNull(switchReference.get(), "switchControl");
+                        double width = lookupRegion(switchControl, ".thumb").getWidth();
+                        assertTrue(width > 16.0 && width < 28.0, () -> "pressed intermediate width=" + width);
+                        writeVisualSnapshot(snapshotImageOnFxThread(row), java.nio.file.Path.of(
+                                "build",
+                                "reports",
+                                "m3fx-visual",
+                                "visual-switch-press-animation-frame.png"
+                        ));
+                    }
+            );
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> {
+                        M3Switch switchControl = switchReference.get();
+                        return switchControl != null
+                                && Math.abs(lookupRegion(switchControl, ".thumb").getWidth() - 28.0) < 0.0001;
+                    },
+                    () -> {
+                    },
+                    () -> assertEquals(
+                            28.0,
+                            lookupRegion(
+                                    Objects.requireNonNull(switchReference.get(), "switchControl"),
+                                    ".thumb"
+                            ).getWidth(),
+                            0.0001
+                    )
+            );
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> {
+                        M3Switch switchControl = switchReference.get();
+                        if (switchControl == null) {
+                            return false;
+                        }
+                        double width = lookupRegion(switchControl, ".thumb").getWidth();
+                        return width > 16.0 && width < 28.0;
+                    },
+                    () -> Objects.requireNonNull(switchReference.get(), "switchControl").disarm(),
+                    () -> {
+                        double width = lookupRegion(
+                                Objects.requireNonNull(switchReference.get(), "switchControl"),
+                                ".thumb"
+                        ).getWidth();
+                        assertTrue(width > 16.0 && width < 28.0, () -> "released intermediate width=" + width);
+                    }
+            );
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> {
+                        M3Switch switchControl = switchReference.get();
+                        return switchControl != null
+                                && Math.abs(lookupRegion(switchControl, ".thumb").getWidth() - 16.0) < 0.0001;
+                    },
+                    () -> {
+                    },
+                    () -> assertEquals(
+                            16.0,
+                            lookupRegion(
+                                    Objects.requireNonNull(switchReference.get(), "switchControl"),
+                                    ".thumb"
+                            ).getWidth(),
+                            0.0001
                     )
             );
         } finally {
@@ -20562,6 +20719,7 @@ final class M3ControlStyleTest {
         M3Switch offSwitch = new M3Switch("Off");
         M3Switch onSwitch = createSwitch("On", true);
         Pane root = new Pane(offSwitch, onSwitch);
+        M3MotionSettings.setReducedMotionRequested(root, true);
         Scene scene = new Scene(root, 260.0, 120.0);
 
         M3ThemeManager.install(scene, M3Theme.defaultTheme());

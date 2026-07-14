@@ -13621,24 +13621,30 @@ final class M3FXDemoVisualSmokeTest {
         Node page = currentDemoPage(scene, "Checkboxes");
         assertCurrentPageTitle(scene, "Checkboxes");
         assertVisibleText(root, "Interactive States", "Checkboxes");
+        assertVisibleText(root, "Error States", "Checkboxes");
         assertVisibleText(root, "Disabled States", "Checkboxes");
         assertVisibleText(root, "Unchecked", "Checkboxes");
         assertVisibleText(root, "Checked", "Checkboxes");
         assertVisibleText(root, "Indeterminate", "Checkboxes");
         assertVisibleText(root, "Three-state cycle", "Checkboxes");
+        assertVisibleText(root, "Error unchecked", "Checkboxes");
+        assertVisibleText(root, "Error checked", "Checkboxes");
+        assertVisibleText(root, "Error indeterminate", "Checkboxes");
         assertVisibleText(root, "Disabled unchecked", "Checkboxes");
         assertVisibleText(root, "Disabled checked", "Checkboxes");
         assertVisibleText(root, "Disabled indeterminate", "Checkboxes");
 
         List<M3CheckBox> checkBoxes = visibleNodesOfType(page, M3CheckBox.class);
-        assertEquals(7, checkBoxes.size(),
-                () -> "Checkboxes page should render seven checkbox states, found " + checkBoxes.size());
-        assertEquals(2, checkBoxes.stream().filter(M3CheckBox::isSelected).count(),
-                "Checkboxes page should render two selected states");
-        assertEquals(2, checkBoxes.stream().filter(M3CheckBox::isIndeterminate).count(),
-                "Checkboxes page should render two indeterminate states");
+        assertEquals(10, checkBoxes.size(),
+                () -> "Checkboxes page should render ten checkbox states, found " + checkBoxes.size());
+        assertEquals(3, checkBoxes.stream().filter(M3CheckBox::isSelected).count(),
+                "Checkboxes page should render selected interactive, error, and disabled states");
+        assertEquals(3, checkBoxes.stream().filter(M3CheckBox::isIndeterminate).count(),
+                "Checkboxes page should render indeterminate interactive, error, and disabled states");
         assertEquals(2, checkBoxes.stream().filter(M3CheckBox::isAllowIndeterminate).count(),
                 "Checkboxes page should render two user-cycle indeterminate controls");
+        assertEquals(3, checkBoxes.stream().filter(M3CheckBox::isError).count(),
+                "Checkboxes page should render three error states");
         assertEquals(3, checkBoxes.stream().filter(Node::isDisabled).count(),
                 "Checkboxes page should render three disabled states");
         assertSelectionIndicatorsCentered(scene, "Checkboxes");

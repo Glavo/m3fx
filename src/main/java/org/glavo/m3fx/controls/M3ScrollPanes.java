@@ -23,7 +23,6 @@ import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.Region;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.animation.M3MotionSpec;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -346,7 +345,7 @@ public final class M3ScrollPanes {
 
         /// Returns whether inherited animations are disabled, refreshing the cache after any settings change.
         private boolean animationsDisabled() {
-            long revision = M3MotionSettings.revisionProperty().get();
+            long revision = M3MotionSettingsObserver.reducedMotionRevision();
             if (motionSettingsRevision != revision) {
                 cachedAnimationsEnabled = M3Animation.areAnimationsEnabled(scrollPane);
                 motionSettingsRevision = revision;

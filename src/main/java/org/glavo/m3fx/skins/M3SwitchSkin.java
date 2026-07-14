@@ -12,7 +12,6 @@ import javafx.scene.layout.StackPane;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Switch;
 import org.glavo.m3fx.internal.M3Animation;
-import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -43,8 +42,17 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
     /// The thumb position animation.
     private final M3DoubleTransition selectionAnimation = new M3DoubleTransition(thumbPosition);
 
+    /// The animated fraction of the pressed handle size.
+    private final DoubleProperty pressedProgress = new SimpleDoubleProperty(this, "pressedProgress");
+
+    /// The pressed handle size animation.
+    private final M3DoubleTransition pressedAnimation = new M3DoubleTransition(pressedProgress);
+
     /// Applies animated thumb position changes directly to the internal nodes.
     private final InvalidationListener thumbPositionListener = observable -> layoutThumb();
+
+    /// Applies animated pressed-size changes directly to the internal nodes.
+    private final InvalidationListener pressedProgressListener = observable -> layoutThumb();
 
     /// Applies size token changes to the switch layout.
     private final InvalidationListener metricsInvalidation = observable -> updateMetrics();
@@ -52,15 +60,14 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
     /// Applies track shape token changes to the switch track.
     private final InvalidationListener trackShapeInvalidation = observable -> updateTrackStyle();
 
-    /// Applies the pressed handle size directly to the internal nodes.
-    private final InvalidationListener armedInvalidation = observable -> layoutThumb();
-
-    /// Settles running thumb transitions when runtime motion settings change.
-    private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(
-                    getSkinnable(),
-                    () -> M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), selectionAnimation)
-            );
+    /// Starts a pressed handle size transition when armed state changes.
+    private final InvalidationListener armedInvalidation = observable -> {
+        pressedAnimation.configure(
+                M3Animation.fastSpatial(getSkinnable()),
+                getSkinnable().isArmed() ? 1.0 : 0.0
+        );
+        M3Animation.playFromStart(getSkinnable(), pressedAnimation);
+    };
 
     /// Animates the thumb after selection changes.
     private final ChangeListener<Boolean> selectedListener = (observable, oldValue, newValue) -> {
@@ -80,6 +87,8 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
         box.toBack();
         thumbPosition.set(control.isSelected() ? 1.0 : 0.0);
         thumbPosition.addListener(thumbPositionListener);
+        pressedProgress.set(control.isArmed() ? 1.0 : 0.0);
+        pressedProgress.addListener(pressedProgressListener);
 
         updateDisplayedIcon();
         updateMetrics();
@@ -102,7 +111,9 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
     public void dispose() {
         M3Switch control = getSkinnable();
         selectionAnimation.stop();
+        pressedAnimation.stop();
         thumbPosition.removeListener(thumbPositionListener);
+        pressedProgress.removeListener(pressedProgressListener);
         control.touchTargetSizeProperty().removeListener(metricsInvalidation);
         control.trackWidthProperty().removeListener(metricsInvalidation);
         control.trackHeightProperty().removeListener(metricsInvalidation);
@@ -114,7 +125,6 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
         control.iconSizeProperty().removeListener(metricsInvalidation);
         control.trackShapeProperty().removeListener(trackShapeInvalidation);
         control.armedProperty().removeListener(armedInvalidation);
-        motionSettingsObserver.dispose();
         control.selectedProperty().removeListener(selectedListener);
         setDisplayedIcon(null);
         thumb.getChildren().clear();
@@ -171,9 +181,9 @@ public class M3SwitchSkin extends M3SelectionControlSkinBase<M3Switch> {
         double selectedThumbSize = control.getSelectedIcon() == null
                 ? control.getSelectedHandleSize()
                 : withIconThumbSize;
-        double thumbSize = control.isArmed()
-                ? control.getPressedHandleSize()
-                : unselectedThumbSize + (selectedThumbSize - unselectedThumbSize) * position;
+        double restingThumbSize = unselectedThumbSize + (selectedThumbSize - unselectedThumbSize) * position;
+        double thumbSize = restingThumbSize
+                + (control.getPressedHandleSize() - restingThumbSize) * pressedProgress.get();
         double offThumbCenterX = trackHeight / 2.0;
         double onThumbCenterX = trackWidth - trackHeight / 2.0;
         double thumbCenterX = offThumbCenterX + (onThumbCenterX - offThumbCenterX) * position;

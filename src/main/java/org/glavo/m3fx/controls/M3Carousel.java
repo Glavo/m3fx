@@ -39,13 +39,17 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
 
+import java.util.IdentityHashMap;
+import java.util.Map;
 import java.util.Objects;
 
 /// A Material Design 3 carousel for horizontally browsing arbitrary item nodes.
 ///
 /// `M3Carousel` manages an ordered item list, one of the six Material carousel layouts, selected index, keyboard
 /// navigation, pointer selection, and animated movement through the visible item track. It can host any JavaFX node,
-/// allowing cards, media previews, or custom content to use Material carousel selection behavior.
+/// allowing cards, media previews, or custom content to use Material carousel selection behavior. Installed items
+/// participate directly in keyboard focus traversal; their previous `focusTraversable` values are restored when they
+/// are removed.
 ///
 /// See [Material Design carousel](https://m3.material.io/components/carousel/overview).
 @NotNullByDefault
@@ -73,6 +77,9 @@ public class M3Carousel extends Control {
 
     /// The mutable carousel item list.
     private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
+
+    /// The focus-traversable value restored when an application-owned item leaves this carousel.
+    private final Map<Node, Boolean> originalItemFocusTraversable = new IdentityHashMap<>();
 
     // The Material layout strategy used to size and position carousel items.
     private final ObjectProperty<M3CarouselLayout> carouselLayout =
@@ -161,6 +168,9 @@ public class M3Carousel extends Control {
     }
 
     /// Returns the mutable carousel item list.
+    ///
+    /// Each installed item becomes focus traversable so Tab and arrow-key navigation operate on items rather than the
+    /// carousel container. Removing an item restores the focus-traversable value it had when installed.
     ///
     /// @return the mutable carousel item list
     public final ObservableList<Node> getItems() {
@@ -399,7 +409,7 @@ public class M3Carousel extends Control {
         updateCarouselLayoutStyle();
         setAccessibleRole(AccessibleRole.LIST_VIEW);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
-        setFocusTraversable(true);
+        setFocusTraversable(false);
         focusNotifier.start();
         getItems().addListener(itemsListener);
         addEventFilter(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
@@ -441,6 +451,28 @@ public class M3Carousel extends Control {
             case END -> {
                 selectLast();
                 yield true;
+            }
+            case TAB -> {
+                @Nullable Node focusOwner = getScene() == null ? null : getScene().getFocusOwner();
+                @Nullable Node focusedItem = focusOwner == null
+                        ? null
+                        : M3Accessible.containingItem(getItems(), focusOwner);
+                int currentIndex = focusedItem == null ? getSelectedIndex() : getItems().indexOf(focusedItem);
+                int direction = event.isShiftDown() ? -1 : 1;
+                int targetIndex = -1;
+                for (int index = currentIndex + direction;
+                     index >= 0 && index < getItems().size();
+                     index += direction) {
+                    if (isSelectable(getItems().get(index))) {
+                        targetIndex = index;
+                        break;
+                    }
+                }
+                if (targetIndex >= 0) {
+                    selectIndex(targetIndex);
+                    yield true;
+                }
+                yield false;
             }
             default -> false;
         };
@@ -524,21 +556,41 @@ public class M3Carousel extends Control {
         return false;
     }
 
-    /// Returns the selected carousel item focus target, or this carousel when no item can receive focus.
+    /// Returns the current carousel item focus target, or the selected or first selectable item when focus is outside
+    /// the carousel.
     private @Nullable Node accessibleFocusNode() {
         @Nullable Node currentFocusTarget = M3Accessible.currentFocusTarget(this, getItems());
         if (currentFocusTarget != null) {
             return currentFocusTarget;
         }
-        @Nullable Node selectedFocusTarget = M3Accessible.focusTarget(getSelectedItem());
-        return selectedFocusTarget != null ? selectedFocusTarget : M3Accessible.focusTarget(this);
+        @Nullable Node item = getSelectedItem();
+        if (item == null) {
+            int firstIndex = firstSelectableIndex();
+            item = firstIndex < 0 ? null : getItems().get(firstIndex);
+        }
+        return M3Accessible.focusTarget(item);
     }
 
     /// Requests focus on the accessible carousel focus target.
     ///
     /// @return `true` when the target accepted focus
     final boolean focusAccessibleNode() {
-        if (M3Accessible.showItem(this, accessibleFocusNode())) {
+        @Nullable Node item = getSelectedItem();
+        if (item == null) {
+            int firstIndex = firstSelectableIndex();
+            if (firstIndex >= 0) {
+                applySelectedIndex(firstIndex, false);
+                item = getSelectedItem();
+            }
+        }
+        @Nullable Node focusTarget = accessibleFocusNode();
+        if (item == null
+                || focusTarget == null
+                || (!M3Accessible.containsNode(item, focusTarget)
+                    && !M3Accessible.containsAccessibleActionTarget(item, focusTarget))) {
+            focusTarget = M3Accessible.focusTarget(item);
+        }
+        if (M3Accessible.showItem(this, focusTarget)) {
             notifyAccessibleFocusChanged();
             return true;
         }
@@ -650,6 +702,8 @@ public class M3Carousel extends Control {
     /// Installs carousel behavior and styles on one item.
     private void installItem(Node item) {
         M3ControlStyles.add(item, ITEM_STYLE_CLASS);
+        originalItemFocusTraversable.put(item, item.isFocusTraversable());
+        item.setFocusTraversable(true);
         item.addEventHandler(MouseEvent.MOUSE_CLICKED, weakItemMouseHandler);
         item.visibleProperty().addListener(weakItemReachabilityListener);
         item.managedProperty().addListener(weakItemReachabilityListener);
@@ -662,6 +716,10 @@ public class M3Carousel extends Control {
         item.managedProperty().removeListener(weakItemReachabilityListener);
         item.disabledProperty().removeListener(weakItemReachabilityListener);
         item.removeEventHandler(MouseEvent.MOUSE_CLICKED, weakItemMouseHandler);
+        @Nullable Boolean focusTraversable = originalItemFocusTraversable.remove(item);
+        if (focusTraversable != null) {
+            item.setFocusTraversable(focusTraversable);
+        }
         item.getStyleClass().remove(ITEM_STYLE_CLASS);
         item.getStyleClass().remove(SELECTED_ITEM_STYLE_CLASS);
         item.pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, false);

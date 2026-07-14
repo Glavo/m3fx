@@ -501,7 +501,6 @@ final class ProjectContractTest {
                     org.glavo.m3fx.animation.M3MotionSettings#areAnimationsEnabled()
                     org.glavo.m3fx.animation.M3MotionSettings#areAnimationsEnabled(javafx.scene.Node)
                     org.glavo.m3fx.animation.M3MotionSettings#isReducedMotionRequested(javafx.scene.Node)
-                    org.glavo.m3fx.animation.M3MotionSettings#revisionProperty()
                     org.glavo.m3fx.animation.M3MotionSettings#setAnimationsEnabled(boolean)
                     org.glavo.m3fx.animation.M3MotionSettings#setReducedMotionRequested(javafx.scene.Node,boolean)
                     org.glavo.m3fx.animation.M3MotionSpec#create(javafx.util.Duration,org.glavo.m3fx.animation.M3MotionEasing)

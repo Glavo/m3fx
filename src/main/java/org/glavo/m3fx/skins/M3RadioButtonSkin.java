@@ -5,14 +5,22 @@ package org.glavo.m3fx.skins;
 
 import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
+import javafx.collections.ObservableList;
+import javafx.event.EventHandler;
+import javafx.geometry.NodeOrientation;
 import javafx.scene.Group;
+import javafx.scene.Node;
+import javafx.scene.control.Toggle;
+import javafx.scene.control.ToggleGroup;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.StrokeType;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3RadioButton;
 import org.glavo.m3fx.internal.M3Animation;
-import org.glavo.m3fx.internal.M3MotionSettingsObserver;
+import org.glavo.m3fx.internal.M3KeyEvents;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.jetbrains.annotations.NotNullByDefault;
 
@@ -41,16 +49,12 @@ public class M3RadioButtonSkin extends M3SelectionControlSkinBase<M3RadioButton>
     /// Applies radio geometry token changes to skin nodes.
     private final InvalidationListener metricsInvalidation = observable -> updateMetrics();
 
-    /// Settles running dot transitions when runtime motion settings change.
-    private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(
-                    getSkinnable(),
-                    () -> M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), selectionAnimation)
-            );
-
     /// Animates the selected dot after selection changes.
     private final ChangeListener<Boolean> selectedListener =
             (observable, oldValue, newValue) -> animateSelectedState(newValue);
+
+    /// Handles cyclic selection and focus movement within a radio-button group.
+    private final EventHandler<KeyEvent> groupNavigationHandler = this::handleGroupNavigation;
 
     /// Creates a radio button skin.
     ///
@@ -75,6 +79,7 @@ public class M3RadioButtonSkin extends M3SelectionControlSkinBase<M3RadioButton>
         control.containerSizeProperty().addListener(metricsInvalidation);
         control.selectedDotSizeProperty().addListener(metricsInvalidation);
         control.selectedProperty().addListener(selectedListener);
+        control.addEventHandler(KeyEvent.KEY_PRESSED, groupNavigationHandler);
     }
 
     /// Removes listeners before the skin is disposed.
@@ -85,9 +90,17 @@ public class M3RadioButtonSkin extends M3SelectionControlSkinBase<M3RadioButton>
         getSkinnable().stateLayerSizeProperty().removeListener(metricsInvalidation);
         getSkinnable().containerSizeProperty().removeListener(metricsInvalidation);
         getSkinnable().selectedDotSizeProperty().removeListener(metricsInvalidation);
-        motionSettingsObserver.dispose();
         getSkinnable().selectedProperty().removeListener(selectedListener);
+        getSkinnable().removeEventHandler(KeyEvent.KEY_PRESSED, groupNavigationHandler);
         super.dispose();
+    }
+
+    /// Returns whether Enter activates a radio button.
+    ///
+    /// Material radio buttons use Space for activation and reserve arrow keys for group selection.
+    @Override
+    protected boolean isEnterActivationEnabled() {
+        return false;
     }
 
     /// Applies size-related control tokens to the skin nodes.
@@ -128,6 +141,53 @@ public class M3RadioButtonSkin extends M3SelectionControlSkinBase<M3RadioButton>
                 dotLayer.getTranslateY()
         );
         M3Animation.playFromStart(getSkinnable(), selectionAnimation);
+    }
+
+    /// Moves selection and focus to an adjacent enabled toggle in the current group.
+    private void handleGroupNavigation(KeyEvent event) {
+        if (event.isConsumed() || M3KeyEvents.hasNavigationModifier(event)) {
+            return;
+        }
+
+        M3RadioButton control = getSkinnable();
+        KeyCode code = event.getCode();
+        boolean forward;
+        if (code == KeyCode.DOWN) {
+            forward = true;
+        } else if (code == KeyCode.UP) {
+            forward = false;
+        } else if (code == KeyCode.RIGHT) {
+            forward = control.getEffectiveNodeOrientation() != NodeOrientation.RIGHT_TO_LEFT;
+        } else if (code == KeyCode.LEFT) {
+            forward = control.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+        } else {
+            return;
+        }
+
+        ToggleGroup group = control.getToggleGroup();
+        if (group == null) {
+            return;
+        }
+        ObservableList<Toggle> toggles = group.getToggles();
+        int itemCount = toggles.size();
+        int currentIndex = toggles.indexOf(control);
+        if (itemCount < 2 || currentIndex < 0) {
+            return;
+        }
+
+        for (int step = 1; step < itemCount; step++) {
+            int targetIndex = Math.floorMod(currentIndex + (forward ? step : -step), itemCount);
+            Toggle candidate = toggles.get(targetIndex);
+            if (candidate instanceof Node target
+                    && !target.isDisabled()
+                    && target.isVisible()
+                    && target.getScene() != null) {
+                group.selectToggle(candidate);
+                target.requestFocus();
+                event.consume();
+                return;
+            }
+        }
     }
 
     /// Configures a circle for unmanaged indicator painting.

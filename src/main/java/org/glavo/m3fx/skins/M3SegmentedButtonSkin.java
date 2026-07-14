@@ -12,7 +12,6 @@ import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
 import org.glavo.m3fx.internal.M3Animation;
-import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -44,13 +43,6 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
     /// The last bottom-left radius applied to the selected container.
     private double selectionBottomLeftRadius = Double.NaN;
 
-    /// Settles running selected-container transitions when runtime motion settings change.
-    private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(
-                    getSkinnable(),
-                    () -> M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), selectionAnimation)
-            );
-
     /// Animates the selected container when selection changes.
     private final ChangeListener<Boolean> selectedListener =
             (observable, oldValue, newValue) -> animateSelectionContainer(newValue);
@@ -78,7 +70,6 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
     public void dispose() {
         M3SegmentedButton button = getSkinnable();
         selectionAnimation.stop();
-        motionSettingsObserver.dispose();
         button.selectedProperty().removeListener(selectedListener);
         button.getStyleClass().removeListener(styleClassListener);
         super.dispose();

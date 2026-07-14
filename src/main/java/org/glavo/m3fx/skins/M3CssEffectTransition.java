@@ -15,7 +15,6 @@ import javafx.scene.effect.DropShadow;
 import javafx.scene.effect.Effect;
 import javafx.scene.paint.Color;
 import org.glavo.m3fx.animation.M3MotionSpec;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3FiniteTransition;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
@@ -144,7 +143,7 @@ final class M3CssEffectTransition {
 
     /// Returns the current inherited animation setting, refreshing the cache after any settings change.
     private boolean animationsEnabled() {
-        long revision = M3MotionSettings.revisionProperty().get();
+        long revision = M3MotionSettingsObserver.reducedMotionRevision();
         if (motionSettingsRevision != revision) {
             cachedAnimationsEnabled = M3Animation.areAnimationsEnabled(owner);
             motionSettingsRevision = revision;

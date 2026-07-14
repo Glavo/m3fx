@@ -41,7 +41,6 @@ import org.glavo.m3fx.internal.M3FiniteTransition;
 import org.glavo.m3fx.internal.M3FocusRequests;
 import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3KeyEvents;
-import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -169,8 +168,6 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
     /// The one reusable transition that moves the dial selector.
     private final DialSelectorTransition selectorTransition;
 
-    /// Observes runtime motion settings so an in-flight selector settles when animation is disabled.
-    private final M3MotionSettingsObserver motionSettingsObserver;
 
     /// Cached hour availability for selectable bounds.
     private final boolean[] selectableHours = new boolean[24];
@@ -249,10 +246,6 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
             getSkinnable().requestLayout();
         };
         orientationInvalidation = observable -> layoutPane.requestLayout();
-        motionSettingsObserver = new M3MotionSettingsObserver(
-                control,
-                () -> M3Animation.finishRunningAnimationsIfDisabled(control, selectorTransition)
-        );
 
         initializeNodes();
         installListeners(control);
@@ -290,7 +283,6 @@ public class M3TimePickerSkin extends SkinBase<M3TimePicker> {
         }
 
         selectorTransition.stop();
-        motionSettingsObserver.dispose();
         getChildren().remove(container);
         super.dispose();
     }

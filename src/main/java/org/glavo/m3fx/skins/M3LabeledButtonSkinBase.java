@@ -37,7 +37,6 @@ import org.glavo.m3fx.controls.M3SplitButton;
 import org.glavo.m3fx.controls.M3TimePicker;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3FocusRequests;
-import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -78,14 +77,6 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
     /// Keeps the state layer sized when controls are resized outside a layout pass.
     private final InvalidationListener stateLayerLayoutInvalidation = observable -> layoutStateLayer();
 
-    /// Settles running pressed-scale transitions when runtime motion settings change.
-    private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(
-                    getSkinnable(),
-                    () -> M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), animation),
-                    false
-            );
-
     /// Whether the current interaction was started by a primary mouse press.
     private boolean mousePressed;
 
@@ -112,7 +103,6 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         effectTransition.install();
         control.setScaleX(1.0);
         control.setScaleY(1.0);
-        animation.setOnFinished(event -> motionSettingsObserver.stop());
         installInteractionHandlers(control);
         control.widthProperty().addListener(stateLayerLayoutInvalidation);
         control.heightProperty().addListener(stateLayerLayoutInvalidation);
@@ -138,7 +128,6 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         getSkinnable().backgroundProperty().removeListener(stateLayerLayoutInvalidation);
         getSkinnable().borderProperty().removeListener(stateLayerLayoutInvalidation);
         getSkinnable().armedProperty().removeListener(armedListener);
-        motionSettingsObserver.dispose();
         getSkinnable().disabledProperty().removeListener(disabledListener);
         resetInteractionState();
         stateLayer.uninstallStateTransitions();
@@ -284,7 +273,6 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
                 button.getTranslateX(),
                 button.getTranslateY()
         );
-        motionSettingsObserver.start();
         M3Animation.playFromStart(button, animation);
     }
 
@@ -401,7 +389,6 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         mousePressed = false;
         spaceKeyPressed = false;
         animation.stop();
-        motionSettingsObserver.stop();
         stateLayer.reset();
         control.disarm();
         control.setScaleX(1.0);

@@ -22,7 +22,6 @@ import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3NavigationDrawerGroup;
 import org.glavo.m3fx.internal.M3Animation;
-import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -61,13 +60,6 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
 
     /// Whether the currently configured expansion animation targets the expanded state.
     private boolean expansionAnimationTargetExpanded;
-
-    /// Settles running child-row expansion transitions when runtime motion settings change.
-    private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(
-                    getSkinnable(),
-                    () -> M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), expansionAnimation)
-            );
 
     /// Mirrors child destination item changes into the skin container.
     private final ListChangeListener<M3ListItem> itemsListener = change -> updateChildItems();
@@ -114,7 +106,6 @@ public final class M3NavigationDrawerGroupSkin extends SkinBase<M3NavigationDraw
         expansionAnimation.stop();
         expansionAnimation.setOnFinished(null);
         control.getItems().removeListener(itemsListener);
-        motionSettingsObserver.dispose();
         control.expandedProperty().removeListener(expandedListener);
         control.effectiveNodeOrientationProperty().removeListener(orientationInvalidation);
         childrenContainer.getChildren().clear();

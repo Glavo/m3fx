@@ -22,7 +22,6 @@ import javafx.scene.control.skin.VirtualFlow;
 import javafx.scene.input.ScrollEvent;
 import javafx.stage.Window;
 import org.glavo.m3fx.animation.M3MotionSpec;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListView;
 import org.glavo.m3fx.internal.M3ListViewCell;
@@ -690,7 +689,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
 
     /// Returns the current inherited animation setting, refreshing the cache after any settings change.
     private boolean animationsEnabled() {
-        long revision = M3MotionSettings.revisionProperty().get();
+        long revision = M3MotionSettingsObserver.reducedMotionRevision();
         if (motionSettingsRevision != revision) {
             cachedAnimationsEnabled = M3Animation.areAnimationsEnabled(getSkinnable());
             motionSettingsRevision = revision;

@@ -181,6 +181,13 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
         return label;
     }
 
+    /// Returns whether the Enter key activates this selection control.
+    ///
+    /// @return `true` when Enter should activate the control
+    protected boolean isEnterActivationEnabled() {
+        return true;
+    }
+
     /// Applies a fixed size to a region.
     ///
     /// @param region the region to size
@@ -325,7 +332,7 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
                 control.arm();
             }
             event.consume();
-        } else if (event.getCode() == KeyCode.ENTER) {
+        } else if (event.getCode() == KeyCode.ENTER && isEnterActivationEnabled()) {
             stateLayer.playCenteredRipple();
             stateLayer.releaseRipple();
             control.fire();

@@ -26,7 +26,6 @@ import javafx.scene.shape.Path;
 import javafx.scene.shape.PathElement;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3MotionSpec;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3ThemeResolver;
@@ -591,7 +590,7 @@ final class M3StateLayer extends Pane {
 
     /// Returns whether inherited animations are disabled, refreshing the cache after any settings change.
     private boolean animationsDisabled(Node owner) {
-        long revision = M3MotionSettings.revisionProperty().get();
+        long revision = M3MotionSettingsObserver.reducedMotionRevision();
         if (motionSettingsRevision != revision) {
             cachedAnimationsEnabled = M3Animation.areAnimationsEnabled(owner);
             motionSettingsRevision = revision;

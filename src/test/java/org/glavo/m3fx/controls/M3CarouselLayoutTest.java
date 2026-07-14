@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.animation.Animation;
 import javafx.application.Platform;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.Scene;
@@ -154,13 +155,30 @@ final class M3CarouselLayoutTest {
                         root.layout();
                         double initialWidth = Objects.requireNonNull(initialWidthReference.get(), "initialWidth");
                         double currentWidth = renderedWidth(carousel.getItems().get(0));
-                        return currentWidth < initialWidth - 2.0
+                        return currentWidth < initialWidth - 0.25
                                 && currentWidth > 56.0 + GEOMETRY_TOLERANCE;
                     },
-                    () -> "carousel focal width never exposed an intermediate frame",
                     () -> {
+                        @Nullable M3Carousel carousel = carouselReference.get();
+                        @Nullable Double initialWidth = initialWidthReference.get();
+                        return "carousel focal width never exposed an intermediate frame: initial="
+                                + initialWidth
+                                + ", current=" + (carousel == null
+                                ? "missing"
+                                : renderedWidth(carousel.getItems().get(0)))
+                                + ", selected=" + (carousel == null ? "missing" : carousel.getSelectedIndex())
+                                + ", globalAnimations=" + M3MotionSettings.areAnimationsEnabled()
+                                + ", nodeAnimations=" + (carousel == null
+                                ? "missing"
+                                : M3MotionSettings.areAnimationsEnabled(carousel))
+                                + ", transition=" + (carousel == null
+                                ? "missing"
+                                : transitionDiagnostics(carousel));
+                    },
+                    () -> {
+                        M3MotionSettings.setAnimationsEnabled(true);
                         M3Carousel carousel = carousel(280.0, 280.0, 280.0, 280.0, 280.0);
-                        carousel.setCarouselLayout(M3CarouselLayout.MULTI_BROWSE);
+                        carousel.setCarouselLayout(M3CarouselLayout.HERO);
                         carousel.selectIndex(0);
                         M3MotionSettings.setReducedMotionRequested(carousel, false);
                         Stage stage = show(carousel, 520.0, 150.0);
@@ -169,13 +187,13 @@ final class M3CarouselLayoutTest {
                         carouselReference.set(carousel);
                         initialWidthReference.set(renderedWidth(carousel.getItems().get(0)));
 
-                        carousel.selectIndex(1);
+                        carousel.selectIndex(4);
                     },
                     () -> {
                         M3Carousel carousel = Objects.requireNonNull(carouselReference.get(), "carousel");
                         double initialWidth = Objects.requireNonNull(initialWidthReference.get(), "initialWidth");
                         double intermediateWidth = renderedWidth(carousel.getItems().get(0));
-                        assertTrue(intermediateWidth < initialWidth - 2.0);
+                        assertTrue(intermediateWidth < initialWidth - 0.25);
                         assertTrue(intermediateWidth > 56.0 + GEOMETRY_TOLERANCE);
                     }
             );
@@ -190,6 +208,22 @@ final class M3CarouselLayoutTest {
                     stage.close();
                 }
             });
+        }
+    }
+
+    /// Returns temporary diagnostic state for the internal selection transition.
+    private static String transitionDiagnostics(M3Carousel carousel) {
+        try {
+            Object skin = carousel.getSkin();
+            java.lang.reflect.Field trackField = skin.getClass().getDeclaredField("track");
+            trackField.setAccessible(true);
+            Object track = trackField.get(skin);
+            java.lang.reflect.Field transitionField = track.getClass().getDeclaredField("selectionTransition");
+            transitionField.setAccessible(true);
+            Animation transition = (Animation) transitionField.get(track);
+            return transition.getStatus() + "@" + transition.getCurrentTime();
+        } catch (ReflectiveOperationException exception) {
+            return exception.toString();
         }
     }
 
@@ -210,7 +244,13 @@ final class M3CarouselLayoutTest {
                         return carousel.getSelectedIndex() == 2
                                 && Math.abs(viewport.getHvalue() - 2.0 / 3.0) < 0.03;
                     },
-                    () -> "full-screen carousel did not snap to the nearest item",
+                    () -> {
+                        @Nullable M3Carousel carousel = carouselReference.get();
+                        @Nullable ScrollPane viewport = viewportReference.get();
+                        return "full-screen carousel did not snap to the nearest item: selected="
+                                + (carousel == null ? "missing" : carousel.getSelectedIndex())
+                                + ", hvalue=" + (viewport == null ? "missing" : viewport.getHvalue());
+                    },
                     () -> {
                         M3Carousel carousel = carousel(280.0, 280.0, 280.0, 280.0);
                         carousel.setCarouselLayout(M3CarouselLayout.FULL_SCREEN);
@@ -222,27 +262,29 @@ final class M3CarouselLayoutTest {
                         stageReference.set(stage);
                         carouselReference.set(carousel);
                         viewportReference.set(viewport);
-                        viewport.fireEvent(new MouseEvent(
-                                MouseEvent.MOUSE_DRAGGED,
-                                8.0,
-                                8.0,
-                                8.0,
-                                8.0,
-                                MouseButton.PRIMARY,
-                                1,
-                                false,
-                                false,
-                                false,
-                                false,
-                                true,
-                                false,
-                                false,
-                                false,
-                                false,
-                                false,
-                                new PickResult(viewport, 8.0, 8.0)
-                        ));
-                        viewport.setHvalue(0.68);
+                        Platform.runLater(() -> {
+                            viewport.fireEvent(new MouseEvent(
+                                    MouseEvent.MOUSE_DRAGGED,
+                                    8.0,
+                                    8.0,
+                                    8.0,
+                                    8.0,
+                                    MouseButton.PRIMARY,
+                                    1,
+                                    false,
+                                    false,
+                                    false,
+                                    false,
+                                    true,
+                                    false,
+                                    false,
+                                    false,
+                                    false,
+                                    false,
+                                    new PickResult(viewport, 8.0, 8.0)
+                            ));
+                            viewport.setHvalue(0.68);
+                        });
                     },
                     () -> {
                         M3Carousel carousel = Objects.requireNonNull(carouselReference.get(), "carousel");

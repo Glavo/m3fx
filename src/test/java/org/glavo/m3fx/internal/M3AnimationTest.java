@@ -7,6 +7,7 @@ import javafx.animation.Animation;
 import javafx.animation.PauseTransition;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
+import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.util.Duration;
@@ -53,6 +54,33 @@ final class M3AnimationTest {
         assertEquals(1.0, value.get(), 0.0001);
         assertTrue(animationFinished.get());
         assertEquals(Animation.Status.STOPPED, transition.getStatus());
+    }
+
+    /// Verifies finite transitions observe motion settings only for the duration of an active run.
+    @Test
+    void finiteTransitionObservesMotionSettingsOnlyWhileRunning() {
+        FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
+            Pane owner = new Pane();
+            Scene scene = new Scene(owner);
+            int ownerPropertyCount = owner.getProperties().size();
+            int scenePropertyCount = scene.getProperties().size();
+            DoubleProperty value = new SimpleDoubleProperty(0.0);
+            TestFiniteTransition transition = new TestFiniteTransition(value);
+
+            M3Animation.playFromStart(owner, transition);
+
+            assertEquals(Animation.Status.RUNNING, transition.getStatus());
+            assertTrue(owner.getProperties().size() > ownerPropertyCount);
+            assertTrue(scene.getProperties().size() > scenePropertyCount);
+
+            M3MotionSettings.setReducedMotionRequested(owner, true);
+
+            assertEquals(Animation.Status.STOPPED, transition.getStatus());
+            assertEquals(1.0, value.get(), 0.0001);
+            M3MotionSettings.setReducedMotionRequested(owner, false);
+            assertEquals(ownerPropertyCount, owner.getProperties().size());
+            assertEquals(scenePropertyCount, scene.getProperties().size());
+        }));
     }
 
     /// Verifies that animation defaults resolve the theme motion scheme through the parent chain.

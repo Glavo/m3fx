@@ -434,7 +434,7 @@ public final class M3FXDemoApp extends Application {
                 new DemoPage("Split Buttons", "Split buttons", BUTTONS_GROUP, "Primary actions with attached menus", DemoMaterialDocs.SPLIT_BUTTON, this::createSplitButtonsPage),
                 new DemoPage("Cards", "Cards", "Cards", "Filled, outlined, elevated, and interactive cards", DemoMaterialDocs.CARDS, this::createCardsPage),
                 new DemoPage("Carousel", "Carousel", "Carousel", "Horizontal content browsing with selected-item snapping", DemoMaterialDocs.CAROUSEL, this::createCarouselPage),
-                new DemoPage("Checkboxes", "Checkbox", "Checkbox", "Checked, unchecked, indeterminate, and disabled states", DemoMaterialDocs.CHECKBOX, this::createCheckboxesPage),
+                new DemoPage("Checkboxes", "Checkbox", "Checkbox", "Checked, unchecked, indeterminate, error, and disabled states", DemoMaterialDocs.CHECKBOX, this::createCheckboxesPage),
                 new DemoPage("Chips", "Chips", "Chips", "Assist, filter, input, suggestion, and disabled chips", DemoMaterialDocs.CHIPS, this::createChipsPage),
                 new DemoPage("Date Pickers", "Date pickers", DATE_TIME_PICKERS_GROUP, "Calendar date selection, ranges, and month visibility", DemoMaterialDocs.DATE_PICKERS, this::createDatePickersPage),
                 new DemoPage("Time Pickers", "Time pickers", DATE_TIME_PICKERS_GROUP, "12-hour, 24-hour, and bounded time selection", DemoMaterialDocs.TIME_PICKERS, this::createTimePickersPage),
@@ -1533,18 +1533,23 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the checkbox component page.
     private Node createCheckboxesPage() {
-        M3CheckBox unchecked = createCheckBox("Unchecked", false, false, false, false);
-        M3CheckBox checked = createCheckBox("Checked", true, false, false, false);
-        M3CheckBox indeterminate = createCheckBox("Indeterminate", false, true, true, false);
-        M3CheckBox threeState = createCheckBox("Three-state cycle", false, false, true, false);
+        M3CheckBox unchecked = createCheckBox("Unchecked", false, false, false, false, false);
+        M3CheckBox checked = createCheckBox("Checked", true, false, false, false, false);
+        M3CheckBox indeterminate = createCheckBox("Indeterminate", false, true, true, false, false);
+        M3CheckBox threeState = createCheckBox("Three-state cycle", false, false, true, false, false);
 
-        M3CheckBox disabledUnchecked = createCheckBox("Disabled unchecked", false, false, false, true);
-        M3CheckBox disabledChecked = createCheckBox("Disabled checked", true, false, false, true);
+        M3CheckBox errorUnchecked = createCheckBox("Error unchecked", false, false, false, true, false);
+        M3CheckBox errorChecked = createCheckBox("Error checked", true, false, false, true, false);
+        M3CheckBox errorIndeterminate = createCheckBox("Error indeterminate", false, true, false, true, false);
+
+        M3CheckBox disabledUnchecked = createCheckBox("Disabled unchecked", false, false, false, false, true);
+        M3CheckBox disabledChecked = createCheckBox("Disabled checked", true, false, false, false, true);
         M3CheckBox disabledIndeterminate =
-                createCheckBox("Disabled indeterminate", false, true, false, true);
+                createCheckBox("Disabled indeterminate", false, true, false, false, true);
 
         return createGallery(
                 createShowcaseGroup("Interactive States", unchecked, checked, indeterminate, threeState),
+                createShowcaseGroup("Error States", errorUnchecked, errorChecked, errorIndeterminate),
                 createShowcaseGroup("Disabled States", disabledUnchecked, disabledChecked, disabledIndeterminate)
         );
     }
@@ -3206,12 +3211,14 @@ public final class M3FXDemoApp extends Application {
             boolean selected,
             boolean indeterminate,
             boolean allowIndeterminate,
+            boolean error,
             boolean disabled
     ) {
         M3CheckBox checkBox = new M3CheckBox(text);
         checkBox.setSelected(selected);
         checkBox.setIndeterminate(indeterminate);
         checkBox.setAllowIndeterminate(allowIndeterminate);
+        checkBox.setError(error);
         checkBox.setDisable(disabled);
         return checkBox;
     }

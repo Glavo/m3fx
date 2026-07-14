@@ -21,7 +21,6 @@ import org.glavo.m3fx.controls.M3Slider;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3FocusRequests;
-import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default skin for [M3Slider].
@@ -121,13 +120,6 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
     /// Clears transient interaction state when the slider becomes disabled.
     private final InvalidationListener disabledInvalidation = observable -> resetDisabledInteractionState();
 
-    /// Settles running value transitions when runtime motion settings change.
-    private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(
-                    getSkinnable(),
-                    () -> M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), valueAnimation)
-            );
-
     /// Creates a slider skin.
     ///
     /// @param control the slider controlled by this skin
@@ -205,7 +197,6 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         control.thumbWidthProperty().removeListener(thumbStyleInvalidation);
         control.thumbTrackGapProperty().removeListener(layoutInvalidation);
         control.touchTargetSizeProperty().removeListener(layoutInvalidation);
-        motionSettingsObserver.dispose();
         control.removeEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
         control.removeEventHandler(MouseEvent.MOUSE_DRAGGED, mouseDraggedHandler);
         control.removeEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
@@ -966,7 +957,7 @@ public class M3SliderSkin extends SkinBase<M3Slider> {
         valueAnimation.stop();
         M3MotionSpec spec = M3Animation.fastSpatial(slider);
         valueAnimation.configure(spec, targetPosition);
-        valueAnimation.playFromStart();
+        M3Animation.playFromStart(slider, valueAnimation);
     }
 
     /// Sets the displayed position immediately and clears pending transitions.

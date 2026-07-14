@@ -35,8 +35,9 @@ import java.util.function.Function;
 ///
 /// `M3CheckBox` is built on JavaFX [ButtonBase] and exposes selected and indeterminate properties instead of
 /// extending the JavaFX concrete `CheckBox` class. It supports two-state and three-state selection depending on
-/// [allowIndeterminateProperty], updates JavaFX accessibility toggle attributes, and renders Material state
-/// layers and ripple feedback around the selection indicator.
+/// [allowIndeterminateProperty], supports the Material error presentation through [errorProperty], updates
+/// JavaFX accessibility toggle attributes, and renders Material state layers and ripple feedback around the
+/// selection indicator.
 ///
 /// Use checkboxes for independent choices or bulk-selection affordances. See
 /// [Material Design checkboxes](https://m3.material.io/components/checkbox/overview).
@@ -53,6 +54,9 @@ public class M3CheckBox extends ButtonBase {
 
     /// The indeterminate pseudo-class used by checkboxes.
     private static final PseudoClass INDETERMINATE_PSEUDO_CLASS = PseudoClass.getPseudoClass("indeterminate");
+
+    /// The error pseudo-class used by checkboxes.
+    private static final PseudoClass ERROR_PSEUDO_CLASS = PseudoClass.getPseudoClass("error");
 
     /// The default checkbox touch target size.
     private static final double DEFAULT_TOUCH_TARGET_SIZE = 48.0;
@@ -104,6 +108,9 @@ public class M3CheckBox extends ButtonBase {
 
     // Whether user activation cycles through the indeterminate state.
     private @Nullable BooleanProperty allowIndeterminate;
+
+    /// Whether the checkbox renders its error state.
+    private @Nullable BooleanProperty error;
 
     /// Creates an empty checkbox.
     public M3CheckBox() {
@@ -230,6 +237,56 @@ public class M3CheckBox extends ButtonBase {
             allowIndeterminate = new SimpleBooleanProperty(this, "allowIndeterminate", false);
         }
         return allowIndeterminate;
+    }
+
+    /// Sets whether this checkbox renders its error state.
+    ///
+    /// The error state changes the indicator and interaction colors but does not alter selection, validation, or
+    /// action-event behavior. Disabled presentation takes precedence over the error presentation.
+    ///
+    /// @param error whether this checkbox should render its error state
+    public final void setError(boolean error) {
+        if (this.error != null || error) {
+            errorProperty().set(error);
+        }
+    }
+
+    /// Returns whether this checkbox renders its error state.
+    ///
+    /// @return `true` when this checkbox renders its error state
+    public final boolean isError() {
+        return error != null && error.get();
+    }
+
+    /// Returns the error state property.
+    ///
+    /// Setting this property activates the `error` CSS pseudo-class. It does not perform validation or provide an
+    /// error message; applications remain responsible for deciding when the checkbox value is invalid.
+    ///
+    /// @return the writable error state property
+    public final BooleanProperty errorProperty() {
+        if (error == null) {
+            error = new BooleanPropertyBase(false) {
+                /// Updates the Material error pseudo-class.
+                @Override
+                protected void invalidated() {
+                    pseudoClassStateChanged(ERROR_PSEUDO_CLASS, get());
+                }
+
+                /// Returns the owning checkbox.
+                @Override
+                public Object getBean() {
+                    return M3CheckBox.this;
+                }
+
+                /// Returns the property name.
+                @Override
+                public String getName() {
+                    return "error";
+                }
+            };
+        }
+        return error;
     }
 
     /// Returns the preferred touch target size token.

@@ -142,6 +142,9 @@ final class M3ControlAccessibilityTest {
         M3Card actionCard = new M3Card(new Label("Action"));
         actionCard.setOnAction(event -> {
         });
+        Label carouselItem = new Label("Carousel item");
+        M3Carousel carousel = new M3Carousel();
+        carousel.getItems().add(carouselItem);
 
         List<Node> focusableControls = List.of(
                 new M3Button(),
@@ -159,7 +162,6 @@ final class M3ControlAccessibilityTest {
                 new M3PasswordField(),
                 new M3TextArea(),
                 new M3Scrim(),
-                new M3Carousel(),
                 new M3SearchBar(),
                 new M3MenuItem(),
                 new M3SubMenuItem(),
@@ -180,6 +182,7 @@ final class M3ControlAccessibilityTest {
         List<Node> structuralControls = List.of(
                 new M3ButtonGroup(),
                 new M3SplitButton(),
+                carousel,
                 new M3FabMenu(),
                 new M3Toolbar(),
                 new M3DatePickerField(),
@@ -227,6 +230,7 @@ final class M3ControlAccessibilityTest {
             assertFalse(control.isFocusTraversable(),
                     () -> control.getClass().getSimpleName() + " should expose child focus instead of root traversal");
         }
+        assertTrue(carouselItem.isFocusTraversable(), "Carousel items should participate in keyboard traversal");
     }
 
     /// Verifies that accessible fire actions invoke public action handlers.

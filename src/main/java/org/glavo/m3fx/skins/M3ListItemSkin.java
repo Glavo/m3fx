@@ -30,7 +30,6 @@ import org.glavo.m3fx.controls.M3MenuItem;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3FocusGuards;
 import org.glavo.m3fx.internal.M3FocusRequests;
-import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -122,13 +121,6 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
 
     /// Updates optional node slot metrics after slot size changes.
     private final InvalidationListener slotMetricsInvalidation = observable -> updateSlotMetrics();
-
-    /// Settles running selected-container transitions when runtime motion settings change.
-    private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(
-                    getSkinnable(),
-                    () -> M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), selectionAnimation)
-            );
 
     /// Applies metric token changes to the list item layout.
     private final InvalidationListener metricsInvalidation = observable -> updateMetrics();
@@ -248,7 +240,6 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         item.verticalPaddingProperty().removeListener(metricsInvalidation);
         item.contentSpacingProperty().removeListener(metricsInvalidation);
         item.getPseudoClassStates().removeListener(skinnablePseudoClassListener);
-        motionSettingsObserver.dispose();
         item.selectedProperty().removeListener(selectedListener);
         item.disabledProperty().removeListener(disabledListener);
         item.removeEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);

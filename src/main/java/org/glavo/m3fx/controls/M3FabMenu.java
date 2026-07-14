@@ -37,7 +37,6 @@ import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3FiniteTransition;
 import org.glavo.m3fx.internal.M3FocusTraversal;
 import org.glavo.m3fx.internal.M3InternalIcon;
-import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3FabMenuSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -115,10 +114,6 @@ public class M3FabMenu extends Control {
 
     /// The reusable expand and collapse animation for every action item.
     private final ActionItemsTransition animation = new ActionItemsTransition();
-
-    /// Observes runtime motion settings only while an expand or collapse transition is active.
-    private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(this, this::refreshMotionSettings, false);
 
     /// Handles detached action item activation before the default skin attaches the item.
     private final EventHandler<ActionEvent> actionItemActionHandler = this::handleActionItemAction;
@@ -627,7 +622,6 @@ public class M3FabMenu extends Control {
 
     /// Starts the configured action transition using the resolved motion setting.
     private void playConfiguredAnimation() {
-        motionSettingsObserver.start();
         M3Animation.playFromStart(this, animation);
     }
 
@@ -635,7 +629,6 @@ public class M3FabMenu extends Control {
     private void stopAnimation() {
         animation.stop();
         animation.clearTargets();
-        motionSettingsObserver.stop();
     }
 
     /// Applies changed runtime motion settings to the active expand or collapse animation.
@@ -760,7 +753,6 @@ public class M3FabMenu extends Control {
     /// Applies the final state after the reusable action animation completes.
     private void handleActionAnimationFinished() {
         animation.clearTargets();
-        motionSettingsObserver.stop();
         if (isExpanded()) {
             applyExpandedState();
         } else {

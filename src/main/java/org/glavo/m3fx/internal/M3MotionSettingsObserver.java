@@ -15,6 +15,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 /// Observes resolved M3FX motion context and window activity while an owner node is attached to a scene.
@@ -35,6 +36,9 @@ public final class M3MotionSettingsObserver {
     /// Internal listeners notified when global settings or one local motion-context subtree changes.
     private static final CopyOnWriteArrayList<Consumer<@Nullable Node>> MOTION_CONTEXT_CHANGE_LISTENERS =
             new CopyOnWriteArrayList<>();
+
+    /// Changes whenever global or node-local reduced-motion settings change.
+    private static final AtomicLong REDUCED_MOTION_REVISION = new AtomicLong();
 
     /// Empty nullable observer storage reused before the first owner subscription.
     private static final @Nullable M3MotionSettingsObserver[] EMPTY_OBSERVERS =
@@ -166,9 +170,24 @@ public final class M3MotionSettingsObserver {
         return observer;
     }
 
+    /// Returns the current internal reduced-motion revision.
+    ///
+    /// @return the revision used to invalidate resolved-setting caches
+    public static long reducedMotionRevision() {
+        return REDUCED_MOTION_REVISION.get();
+    }
+
+    /// Notifies internal observers after a reduced-motion setting changes.
+    ///
+    /// @param source the root of the affected subtree, or null for a global change
+    public static void reducedMotionChanged(@Nullable Node source) {
+        REDUCED_MOTION_REVISION.incrementAndGet();
+        motionContextChanged(source);
+    }
+
     /// Notifies internal motion observers after reduced-motion settings or theme motion tokens change.
     ///
-    /// @param source the root of the affected subtree, or `null` for a global change
+    /// @param source the root of the affected subtree, or null for a global change
     public static void motionContextChanged(@Nullable Node source) {
         for (Consumer<@Nullable Node> listener : MOTION_CONTEXT_CHANGE_LISTENERS) {
             listener.accept(source);

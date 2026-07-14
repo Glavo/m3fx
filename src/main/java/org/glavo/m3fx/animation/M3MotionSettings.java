@@ -4,8 +4,6 @@
 package org.glavo.m3fx.animation;
 
 import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.ReadOnlyLongProperty;
-import javafx.beans.property.ReadOnlyLongWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.scene.Node;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
@@ -36,13 +34,6 @@ public final class M3MotionSettings {
     private static final BooleanProperty globalAnimationsEnabled =
             new SimpleBooleanProperty(M3MotionSettings.class, "animationsEnabled", true);
 
-    /// The revision incremented whenever any global or node-local motion setting changes.
-    private static final ReadOnlyLongWrapper settingsRevision =
-            new ReadOnlyLongWrapper(M3MotionSettings.class, "settingsRevision");
-
-    /// The read-only view of [settingsRevision].
-    private static final ReadOnlyLongProperty readOnlySettingsRevision = settingsRevision.getReadOnlyProperty();
-
     static {
         globalAnimationsEnabled.addListener((observable, oldValue, newValue) -> markSettingsChanged(null));
     }
@@ -70,13 +61,6 @@ public final class M3MotionSettings {
     /// @return the writable global full-motion animation switch property
     public static BooleanProperty animationsEnabledProperty() {
         return globalAnimationsEnabled;
-    }
-
-    /// Returns a read-only revision property that changes when any global or node-local motion setting changes.
-    ///
-    /// @return the read-only settings revision property
-    public static ReadOnlyLongProperty revisionProperty() {
-        return readOnlySettingsRevision;
     }
 
     /// Returns whether full Material motion is enabled for a node after resolving inherited overrides.
@@ -131,9 +115,8 @@ public final class M3MotionSettings {
         markSettingsChanged(node);
     }
 
-    /// Increments the settings revision and identifies the affected subtree when one exists.
+    /// Notifies internal observers of a changed reduced-motion context.
     private static void markSettingsChanged(@Nullable Node source) {
-        settingsRevision.set(settingsRevision.get() + 1L);
-        M3MotionSettingsObserver.motionContextChanged(source);
+        M3MotionSettingsObserver.reducedMotionChanged(source);
     }
 }

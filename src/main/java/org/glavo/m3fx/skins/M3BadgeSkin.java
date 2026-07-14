@@ -10,7 +10,6 @@ import javafx.scene.control.SkinBase;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Badge;
 import org.glavo.m3fx.internal.M3Animation;
-import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.jetbrains.annotations.NotNullByDefault;
 
@@ -31,13 +30,6 @@ public class M3BadgeSkin extends SkinBase<M3Badge> {
 
     /// Applies size token changes to badge geometry.
     private final InvalidationListener metricsInvalidation = observable -> updateMetrics();
-
-    /// Settles running content-change transitions when runtime motion settings change.
-    private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(
-                    getSkinnable(),
-                    () -> M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), contentAnimation)
-            );
 
     /// The currently rendered display text.
     private String currentDisplayText = "";
@@ -71,7 +63,6 @@ public class M3BadgeSkin extends SkinBase<M3Badge> {
         badge.textProperty().removeListener(textInvalidation);
         badge.maxCharacterCountProperty().removeListener(textInvalidation);
         badge.smallSizeProperty().removeListener(metricsInvalidation);
-        motionSettingsObserver.dispose();
         badge.largeHeightProperty().removeListener(metricsInvalidation);
         badge.largeMinWidthProperty().removeListener(metricsInvalidation);
         badge.containerShapeProperty().removeListener(metricsInvalidation);
