@@ -4,6 +4,7 @@
 package org.glavo.m3fx.internal.theme;
 
 import javafx.scene.Parent;
+import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.theme.M3Theme;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -22,7 +23,7 @@ public final class M3ThemeMetadata {
 
     /// Stores installed theme metadata on a root.
     ///
-    /// @param root the root receiving theme metadata
+    /// @param root  the root receiving theme metadata
     /// @param theme the installed theme
     public static void setTheme(Parent root, M3Theme theme) {
         Parent checkedRoot = Objects.requireNonNull(root, "root");
@@ -31,6 +32,7 @@ public final class M3ThemeMetadata {
             return;
         }
         checkedRoot.getProperties().put(THEME_PROPERTY_KEY, checkedTheme);
+        M3MotionSettingsObserver.motionContextChanged(checkedRoot);
     }
 
     /// Returns installed theme metadata from a root.
@@ -62,6 +64,7 @@ public final class M3ThemeMetadata {
         Parent checkedRoot = Objects.requireNonNull(root, "root");
         if (checkedRoot.hasProperties() && checkedRoot.getProperties().containsKey(THEME_PROPERTY_KEY)) {
             checkedRoot.getProperties().remove(THEME_PROPERTY_KEY);
+            M3MotionSettingsObserver.motionContextChanged(checkedRoot);
         }
     }
 

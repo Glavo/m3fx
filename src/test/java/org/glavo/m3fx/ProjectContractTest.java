@@ -251,6 +251,7 @@ final class ProjectContractTest {
                     DatePickerTokens
                     DialogTokens
                     DividerTokens
+                    FabSizeTokens
                     FabTokens
                     FieldTokens
                     FormTokens
@@ -499,23 +500,10 @@ final class ProjectContractTest {
                     org.glavo.m3fx.animation.M3MotionSettings#animationsEnabledProperty()
                     org.glavo.m3fx.animation.M3MotionSettings#areAnimationsEnabled()
                     org.glavo.m3fx.animation.M3MotionSettings#areAnimationsEnabled(javafx.scene.Node)
-                    org.glavo.m3fx.animation.M3MotionSettings#clearAnimationsEnabled(javafx.scene.Node)
-                    org.glavo.m3fx.animation.M3MotionSettings#clearMotionBehavior(javafx.scene.Node)
-                    org.glavo.m3fx.animation.M3MotionSettings#clearMotionScheme(javafx.scene.Node)
-                    org.glavo.m3fx.animation.M3MotionSettings#getAnimationsEnabled(javafx.scene.Node)
-                    org.glavo.m3fx.animation.M3MotionSettings#getMotionBehavior()
-                    org.glavo.m3fx.animation.M3MotionSettings#getMotionBehavior(javafx.scene.Node)
-                    org.glavo.m3fx.animation.M3MotionSettings#getMotionScheme()
-                    org.glavo.m3fx.animation.M3MotionSettings#getMotionScheme(javafx.scene.Node)
-                    org.glavo.m3fx.animation.M3MotionSettings#motionBehaviorProperty()
-                    org.glavo.m3fx.animation.M3MotionSettings#motionSchemeProperty()
+                    org.glavo.m3fx.animation.M3MotionSettings#isReducedMotionRequested(javafx.scene.Node)
                     org.glavo.m3fx.animation.M3MotionSettings#revisionProperty()
                     org.glavo.m3fx.animation.M3MotionSettings#setAnimationsEnabled(boolean)
-                    org.glavo.m3fx.animation.M3MotionSettings#setAnimationsEnabled(javafx.scene.Node,boolean)
-                    org.glavo.m3fx.animation.M3MotionSettings#setMotionBehavior(org.glavo.m3fx.animation.M3MotionBehavior)
-                    org.glavo.m3fx.animation.M3MotionSettings#setMotionBehavior(javafx.scene.Node,org.glavo.m3fx.animation.M3MotionBehavior)
-                    org.glavo.m3fx.animation.M3MotionSettings#setMotionScheme(org.glavo.m3fx.animation.M3MotionScheme)
-                    org.glavo.m3fx.animation.M3MotionSettings#setMotionScheme(javafx.scene.Node,org.glavo.m3fx.animation.M3MotionScheme)
+                    org.glavo.m3fx.animation.M3MotionSettings#setReducedMotionRequested(javafx.scene.Node,boolean)
                     org.glavo.m3fx.animation.M3MotionSpec#create(javafx.util.Duration,org.glavo.m3fx.animation.M3MotionEasing)
                     """),
             "org.glavo.m3fx.theme",
@@ -649,12 +637,16 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3ChipVariant#INPUT
             org.glavo.m3fx.controls.M3ChipVariant#SUGGESTION
             org.glavo.m3fx.controls.M3FloatingActionButtonSize#LARGE
+            org.glavo.m3fx.controls.M3FloatingActionButtonSize#MEDIUM
             org.glavo.m3fx.controls.M3FloatingActionButtonSize#REGULAR
             org.glavo.m3fx.controls.M3FloatingActionButtonSize#SMALL
             org.glavo.m3fx.controls.M3FloatingActionButtonVariant#PRIMARY
+            org.glavo.m3fx.controls.M3FloatingActionButtonVariant#PRIMARY_CONTAINER
             org.glavo.m3fx.controls.M3FloatingActionButtonVariant#SECONDARY
+            org.glavo.m3fx.controls.M3FloatingActionButtonVariant#SECONDARY_CONTAINER
             org.glavo.m3fx.controls.M3FloatingActionButtonVariant#SURFACE
             org.glavo.m3fx.controls.M3FloatingActionButtonVariant#TERTIARY
+            org.glavo.m3fx.controls.M3FloatingActionButtonVariant#TERTIARY_CONTAINER
             org.glavo.m3fx.controls.M3IconButtonWidth#DEFAULT
             org.glavo.m3fx.controls.M3IconButtonWidth#NARROW
             org.glavo.m3fx.controls.M3IconButtonWidth#WIDE
@@ -856,6 +848,7 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3Divider#STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3FabMenu#ACTION_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3FabMenu#ACTIONS_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3FabMenu#CLOSE_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3FabMenu#STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3FabMenu#TOGGLE_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3FloatingActionButton#STYLE_CLASS:java.lang.String

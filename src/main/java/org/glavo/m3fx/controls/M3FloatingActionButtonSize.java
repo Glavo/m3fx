@@ -14,13 +14,21 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// See [Material Design floating action buttons](https://m3.material.io/components/floating-action-button/overview).
 @NotNullByDefault
 public enum M3FloatingActionButtonSize {
-    /// A compact floating action button.
+    /// The deprecated 40-pixel baseline small FAB.
+    ///
+    /// Small FABs remain available for baseline Material 3, but Material 3 Expressive recommends using the
+    /// regular size or larger.
     SMALL("m3-small-fab"),
 
-    /// The default floating action button size.
+    /// The default 56-pixel FAB size.
+    ///
+    /// This size also supplies the metrics for a small extended FAB.
     REGULAR("m3-regular-fab"),
 
-    /// A prominent floating action button.
+    /// The 80-pixel medium FAB size introduced by Material 3 Expressive.
+    MEDIUM("m3-medium-fab"),
+
+    /// The prominent 96-pixel large FAB size.
     LARGE("m3-large-fab");
 
     /// The JavaFX style class used by this size.

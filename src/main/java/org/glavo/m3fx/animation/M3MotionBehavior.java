@@ -13,8 +13,8 @@ import java.util.Objects;
 ///
 /// Behavior timings cover delays and cycle durations that are part of the interaction model but are not direct
 /// property animations, such as tooltip show delays, submenu hover delays, and indeterminate progress cycles.
-/// M3FX resolves these values from [M3MotionSettings] so applications can switch motion behavior globally or for
-/// a scene graph subtree.
+/// M3FX resolves these values from the active theme's motion tokens. Install a local theme on a subtree when one
+/// feature area requires different interaction timings.
 ///
 /// See [Material Design motion](https://m3.material.io/styles/motion/overview).
 @NotNullByDefault

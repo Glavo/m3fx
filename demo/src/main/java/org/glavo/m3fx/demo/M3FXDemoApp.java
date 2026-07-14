@@ -927,8 +927,13 @@ public final class M3FXDemoApp extends Application {
                 ),
                 createShowcaseGroup(
                         "Floating Actions",
-                        createFab("add", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.REGULAR),
-                        createExtendedFab("Create", "add", M3FloatingActionButtonVariant.PRIMARY),
+                        createFab("add", M3FloatingActionButtonVariant.PRIMARY_CONTAINER, M3FloatingActionButtonSize.REGULAR),
+                        createExtendedFab(
+                                "Create",
+                                "add",
+                                M3FloatingActionButtonVariant.PRIMARY_CONTAINER,
+                                M3FloatingActionButtonSize.REGULAR
+                        ),
                         fabMenu
                 ),
                 createShowcaseGroup(
@@ -1064,11 +1069,76 @@ public final class M3FXDemoApp extends Application {
     private Node createExtendedFabsPage() {
         return createGallery(
                 createShowcaseGroup(
-                        "Color Roles",
-                        createExtendedFab("Create", "add", M3FloatingActionButtonVariant.SURFACE),
-                        createExtendedFab("Compose", "edit", M3FloatingActionButtonVariant.PRIMARY),
-                        createExtendedFab("Upload", "upload", M3FloatingActionButtonVariant.SECONDARY),
-                        createExtendedFab("Favorite", "favorite", M3FloatingActionButtonVariant.TERTIARY)
+                        "Expressive Sizes",
+                        createExtendedFab(
+                                "Create",
+                                "add",
+                                M3FloatingActionButtonVariant.PRIMARY_CONTAINER,
+                                M3FloatingActionButtonSize.REGULAR
+                        ),
+                        createExtendedFab(
+                                "Compose",
+                                "edit",
+                                M3FloatingActionButtonVariant.SECONDARY_CONTAINER,
+                                M3FloatingActionButtonSize.MEDIUM
+                        ),
+                        createExtendedFab(
+                                "Favorite",
+                                "favorite",
+                                M3FloatingActionButtonVariant.TERTIARY_CONTAINER,
+                                M3FloatingActionButtonSize.LARGE
+                        )
+                ),
+                createShowcaseGroup(
+                        "Tonal Colors",
+                        createExtendedFab(
+                                "Primary",
+                                "add",
+                                M3FloatingActionButtonVariant.PRIMARY_CONTAINER,
+                                M3FloatingActionButtonSize.REGULAR
+                        ),
+                        createExtendedFab(
+                                "Secondary",
+                                "upload",
+                                M3FloatingActionButtonVariant.SECONDARY_CONTAINER,
+                                M3FloatingActionButtonSize.REGULAR
+                        ),
+                        createExtendedFab(
+                                "Tertiary",
+                                "favorite",
+                                M3FloatingActionButtonVariant.TERTIARY_CONTAINER,
+                                M3FloatingActionButtonSize.REGULAR
+                        )
+                ),
+                createShowcaseGroup(
+                        "Solid Colors",
+                        createExtendedFab(
+                                "Primary",
+                                "add",
+                                M3FloatingActionButtonVariant.PRIMARY,
+                                M3FloatingActionButtonSize.REGULAR
+                        ),
+                        createExtendedFab(
+                                "Secondary",
+                                "upload",
+                                M3FloatingActionButtonVariant.SECONDARY,
+                                M3FloatingActionButtonSize.REGULAR
+                        ),
+                        createExtendedFab(
+                                "Tertiary",
+                                "favorite",
+                                M3FloatingActionButtonVariant.TERTIARY,
+                                M3FloatingActionButtonSize.REGULAR
+                        )
+                ),
+                createShowcaseGroup(
+                        "Baseline Surface",
+                        createExtendedFab(
+                                "Surface",
+                                "edit",
+                                M3FloatingActionButtonVariant.SURFACE,
+                                M3FloatingActionButtonSize.REGULAR
+                        )
                 )
         );
     }
@@ -1080,15 +1150,20 @@ public final class M3FXDemoApp extends Application {
 
         M3FabMenu collapsed = createFabMenu();
         M3FabMenu secondary = createFabMenu(
-                M3FloatingActionButtonVariant.SECONDARY,
-                M3FloatingActionButtonVariant.TERTIARY
+                M3FloatingActionButtonVariant.SECONDARY_CONTAINER,
+                M3FloatingActionButtonVariant.SECONDARY_CONTAINER
         );
         secondary.setExpanded(true);
+        M3FabMenu tertiary = createFabMenu(
+                M3FloatingActionButtonVariant.TERTIARY_CONTAINER,
+                M3FloatingActionButtonVariant.TERTIARY_CONTAINER
+        );
+        tertiary.setExpanded(true);
 
         return createGallery(
                 createShowcaseGroup("Expanded", expanded),
                 createShowcaseGroup("Collapsed", collapsed),
-                createShowcaseGroup("Variants", secondary)
+                createShowcaseGroup("Color Families", secondary, tertiary)
         );
     }
 
@@ -1097,13 +1172,20 @@ public final class M3FXDemoApp extends Application {
         return createGallery(
                 createShowcaseGroup(
                         "Sizes With Icons",
-                        createFab("add", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.SMALL),
-                        createFab("edit", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.REGULAR),
-                        createFab("navigation", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.LARGE)
+                        createFab("add", M3FloatingActionButtonVariant.PRIMARY_CONTAINER, M3FloatingActionButtonSize.SMALL),
+                        createFab("edit", M3FloatingActionButtonVariant.PRIMARY_CONTAINER, M3FloatingActionButtonSize.REGULAR),
+                        createFab("share", M3FloatingActionButtonVariant.PRIMARY_CONTAINER, M3FloatingActionButtonSize.MEDIUM),
+                        createFab("navigation", M3FloatingActionButtonVariant.PRIMARY_CONTAINER, M3FloatingActionButtonSize.LARGE)
                 ),
                 createShowcaseGroup(
-                        "Color Roles",
+                        "Tonal Colors",
                         createFab("add", M3FloatingActionButtonVariant.SURFACE, M3FloatingActionButtonSize.REGULAR),
+                        createFab("edit", M3FloatingActionButtonVariant.PRIMARY_CONTAINER, M3FloatingActionButtonSize.REGULAR),
+                        createFab("share", M3FloatingActionButtonVariant.SECONDARY_CONTAINER, M3FloatingActionButtonSize.REGULAR),
+                        createFab("favorite", M3FloatingActionButtonVariant.TERTIARY_CONTAINER, M3FloatingActionButtonSize.REGULAR)
+                ),
+                createShowcaseGroup(
+                        "Solid Colors",
                         createFab("edit", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.REGULAR),
                         createFab("share", M3FloatingActionButtonVariant.SECONDARY, M3FloatingActionButtonSize.REGULAR),
                         createFab("favorite", M3FloatingActionButtonVariant.TERTIARY, M3FloatingActionButtonSize.REGULAR)
@@ -3784,7 +3866,11 @@ public final class M3FXDemoApp extends Application {
             M3FloatingActionButtonVariant variant,
             M3FloatingActionButtonSize size
     ) {
-        Node icon = createIconViewport(DemoIcons.fab(iconName));
+        Node icon = createIconViewport(DemoIcons.fab(iconName), switch (size) {
+            case SMALL, REGULAR -> 24.0;
+            case MEDIUM -> 28.0;
+            case LARGE -> 36.0;
+        });
         M3FloatingActionButton button = new M3FloatingActionButton(icon);
         button.setVariant(variant);
         button.setSize(size);
@@ -3839,23 +3925,42 @@ public final class M3FXDemoApp extends Application {
     /// Creates a floating action button menu sample.
     private M3FabMenu createFabMenu() {
         return createFabMenu(
-                M3FloatingActionButtonVariant.PRIMARY,
-                M3FloatingActionButtonVariant.SECONDARY
+                M3FloatingActionButtonVariant.PRIMARY_CONTAINER,
+                M3FloatingActionButtonVariant.PRIMARY_CONTAINER
         );
     }
 
-    /// Creates a floating action button menu sample using item variants.
+    /// Creates a floating action button menu sample using one paired color family.
     private M3FabMenu createFabMenu(
-            M3FloatingActionButtonVariant firstVariant,
-            M3FloatingActionButtonVariant secondVariant
+            M3FloatingActionButtonVariant actionVariant,
+            M3FloatingActionButtonVariant toggleVariant
     ) {
-        M3FloatingActionButton create = createFab("create", firstVariant, M3FloatingActionButtonSize.SMALL);
-        M3FloatingActionButton edit = createFab("edit", secondVariant, M3FloatingActionButtonSize.SMALL);
-        M3FloatingActionButton share = createFab("share", M3FloatingActionButtonVariant.SURFACE, M3FloatingActionButtonSize.SMALL);
-        create.setOnAction(event -> showSnackbar("Theme-aware snackbar"));
-        edit.setOnAction(event -> showSnackbar("Theme-aware snackbar"));
-        share.setOnAction(event -> showSnackbar("Theme-aware snackbar"));
-        M3FloatingActionButton toggle = createFab("add", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.REGULAR);
+        M3FloatingActionButton create = createExtendedFab(
+                "Create",
+                "create",
+                actionVariant,
+                M3FloatingActionButtonSize.REGULAR
+        );
+        M3FloatingActionButton edit = createExtendedFab(
+                "Edit",
+                "edit",
+                actionVariant,
+                M3FloatingActionButtonSize.REGULAR
+        );
+        M3FloatingActionButton share = createExtendedFab(
+                "Share",
+                "share",
+                actionVariant,
+                M3FloatingActionButtonSize.REGULAR
+        );
+        create.setOnAction(event -> showSnackbar("Created"));
+        edit.setOnAction(event -> showSnackbar("Edited"));
+        share.setOnAction(event -> showSnackbar("Shared"));
+        M3FloatingActionButton toggle = createFab(
+                "add",
+                toggleVariant,
+                M3FloatingActionButtonSize.REGULAR
+        );
         M3FabMenu menu = new M3FabMenu(toggle);
         menu.getItems().addAll(create, edit, share);
         return menu;
@@ -3923,14 +4028,19 @@ public final class M3FXDemoApp extends Application {
     private static M3FloatingActionButton createExtendedFab(
             String text,
             String iconName,
-            M3FloatingActionButtonVariant variant
+            M3FloatingActionButtonVariant variant,
+            M3FloatingActionButtonSize size
     ) {
         M3FloatingActionButton button = new M3FloatingActionButton(
                 text,
-                createIconViewport(DemoIcons.fab(iconName))
+                createIconViewport(DemoIcons.fab(iconName), switch (size) {
+                    case SMALL, REGULAR -> 24.0;
+                    case MEDIUM -> 28.0;
+                    case LARGE -> 36.0;
+                })
         );
         button.setVariant(variant);
-        button.setSize(M3FloatingActionButtonSize.REGULAR);
+        button.setSize(size);
         return button;
     }
 
@@ -4289,7 +4399,7 @@ public final class M3FXDemoApp extends Application {
             return;
         }
 
-        M3MotionSettings.setAnimationsEnabled(activeScene.getRoot(), animationsEnabled);
+        M3MotionSettings.setReducedMotionRequested(activeScene.getRoot(), !animationsEnabled);
         updatePageAnimations();
     }
 

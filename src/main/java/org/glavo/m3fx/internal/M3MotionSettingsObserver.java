@@ -17,7 +17,7 @@ import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
-/// Observes runtime M3FX motion settings and window activity while an owner node is attached to a scene.
+/// Observes resolved M3FX motion context and window activity while an owner node is attached to a scene.
 ///
 /// Observers that share an owner also share one owner coordinator and one scene-property listener. Scene dispatchers
 /// register coordinators rather than individual callbacks, so controls with several animated features do not multiply
@@ -32,8 +32,8 @@ public final class M3MotionSettingsObserver {
     /// Opaque scene property key for the shared motion-settings dispatcher.
     private static final Object SCENE_OBSERVER_KEY = new Object();
 
-    /// Internal listeners notified when global settings or one local settings subtree changes.
-    private static final CopyOnWriteArrayList<Consumer<@Nullable Node>> SETTINGS_CHANGE_LISTENERS =
+    /// Internal listeners notified when global settings or one local motion-context subtree changes.
+    private static final CopyOnWriteArrayList<Consumer<@Nullable Node>> MOTION_CONTEXT_CHANGE_LISTENERS =
             new CopyOnWriteArrayList<>();
 
     /// Empty nullable observer storage reused before the first owner subscription.
@@ -43,8 +43,11 @@ public final class M3MotionSettingsObserver {
     /// Empty nullable owner storage reused before the first scene registration.
     private static final @Nullable OwnerObserver[] EMPTY_OWNERS = new OwnerObserver[0];
 
-    /// The shared coordinator for this observer's owner.
-    private final OwnerObserver ownerObserver;
+    /// The node whose attachment controls observation lifetime.
+    private final Node owner;
+
+    /// The shared coordinator used while this observer is active.
+    private @Nullable OwnerObserver ownerObserver;
 
     /// The action invoked when motion settings may affect the owner.
     private final Runnable refreshAction;
@@ -52,20 +55,67 @@ public final class M3MotionSettingsObserver {
     /// Whether this observer has been disposed.
     private volatile boolean disposed;
 
+    /// Whether this observer is currently registered with its owner coordinator.
+    private volatile boolean observing;
+
     /// Creates an observer for one owner node.
     ///
     /// @param owner         the node whose scene attachment controls listener lifetime
     /// @param refreshAction the action invoked when motion settings may affect the owner
     public M3MotionSettingsObserver(Node owner, Runnable refreshAction) {
-        Objects.requireNonNull(owner, "owner");
+        this(owner, refreshAction, true);
+    }
+
+    /// Creates an observer for one owner node with explicit initial activation.
+    ///
+    /// An inactive observer does not allocate owner or scene observation state until [start] is called.
+    ///
+    /// @param owner              the node whose scene attachment controls listener lifetime
+    /// @param refreshAction      the action invoked when motion settings may affect the owner
+    /// @param observeImmediately whether observation should start during construction
+    public M3MotionSettingsObserver(Node owner, Runnable refreshAction, boolean observeImmediately) {
+        this.owner = Objects.requireNonNull(owner, "owner");
         this.refreshAction = Objects.requireNonNull(refreshAction, "refreshAction");
-        this.ownerObserver = ownerObserver(owner);
+        if (observeImmediately) {
+            start();
+        }
+    }
+
+    /// Starts observation when it is not already active.
+    ///
+    /// @throws IllegalStateException if this observer has been disposed
+    public void start() {
+        if (disposed) {
+            throw new IllegalStateException("motion settings observer is disposed");
+        }
+        if (observing) {
+            return;
+        }
+
+        OwnerObserver coordinator = ownerObserver(owner);
+        ownerObserver = coordinator;
+        observing = true;
         try {
-            ownerObserver.add(this);
+            coordinator.add(this);
         } catch (RuntimeException | Error exception) {
-            disposed = true;
-            ownerObserver.remove(this);
+            observing = false;
+            coordinator.remove(this);
+            ownerObserver = null;
             throw exception;
+        }
+    }
+
+    /// Pauses observation without disposing this observer.
+    public void stop() {
+        if (!observing) {
+            return;
+        }
+
+        observing = false;
+        OwnerObserver coordinator = ownerObserver;
+        ownerObserver = null;
+        if (coordinator != null) {
+            coordinator.remove(this);
         }
     }
 
@@ -76,12 +126,12 @@ public final class M3MotionSettingsObserver {
         }
 
         disposed = true;
-        ownerObserver.remove(this);
+        stop();
     }
 
     /// Invokes this observer's callback unless it has been disposed.
     private void refresh() {
-        if (!disposed) {
+        if (!disposed && observing) {
             refreshAction.run();
         }
     }
@@ -116,23 +166,23 @@ public final class M3MotionSettingsObserver {
         return observer;
     }
 
-    /// Notifies internal motion observers after the public settings revision has advanced.
+    /// Notifies internal motion observers after reduced-motion settings or theme motion tokens change.
     ///
     /// @param source the root of the affected subtree, or `null` for a global change
-    public static void settingsChanged(@Nullable Node source) {
-        for (Consumer<@Nullable Node> listener : SETTINGS_CHANGE_LISTENERS) {
+    public static void motionContextChanged(@Nullable Node source) {
+        for (Consumer<@Nullable Node> listener : MOTION_CONTEXT_CHANGE_LISTENERS) {
             listener.accept(source);
         }
     }
 
     /// Registers one internal settings listener.
     static void addSettingsChangeListener(Consumer<@Nullable Node> listener) {
-        SETTINGS_CHANGE_LISTENERS.add(Objects.requireNonNull(listener, "listener"));
+        MOTION_CONTEXT_CHANGE_LISTENERS.add(Objects.requireNonNull(listener, "listener"));
     }
 
     /// Removes one internal settings listener.
     static void removeSettingsChangeListener(Consumer<@Nullable Node> listener) {
-        SETTINGS_CHANGE_LISTENERS.remove(Objects.requireNonNull(listener, "listener"));
+        MOTION_CONTEXT_CHANGE_LISTENERS.remove(Objects.requireNonNull(listener, "listener"));
     }
 
     /// Shares owner lifecycle observation across all subscriptions attached to one node.

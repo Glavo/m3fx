@@ -162,7 +162,7 @@ final class M3CarouselLayoutTest {
                         M3Carousel carousel = carousel(280.0, 280.0, 280.0, 280.0, 280.0);
                         carousel.setCarouselLayout(M3CarouselLayout.MULTI_BROWSE);
                         carousel.selectIndex(0);
-                        M3MotionSettings.setAnimationsEnabled(carousel, true);
+                        M3MotionSettings.setReducedMotionRequested(carousel, false);
                         Stage stage = show(carousel, 520.0, 150.0);
                         layout(stage, carousel, 520.0, 120.0);
                         stageReference.set(stage);
@@ -183,7 +183,7 @@ final class M3CarouselLayoutTest {
             FxTestUtils.runOnFxThread(() -> {
                 @Nullable M3Carousel carousel = carouselReference.get();
                 if (carousel != null) {
-                    M3MotionSettings.clearAnimationsEnabled(carousel);
+                    M3MotionSettings.setReducedMotionRequested(carousel, false);
                 }
                 @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
@@ -268,7 +268,7 @@ final class M3CarouselLayoutTest {
             M3Carousel carousel = carousel(260.0, 260.0, 260.0, 260.0);
             carousel.setCarouselLayout(M3CarouselLayout.MULTI_BROWSE);
             carousel.selectIndex(1);
-            M3MotionSettings.setAnimationsEnabled(carousel, false);
+            M3MotionSettings.setReducedMotionRequested(carousel, true);
             Stage stage = show(carousel, 500.0, 150.0);
             try {
                 layout(stage, carousel, 500.0, 120.0);
@@ -283,7 +283,7 @@ final class M3CarouselLayoutTest {
                     assertEquals(expectedWidth, renderedWidth(item), GEOMETRY_TOLERANCE);
                 }
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(carousel);
+                M3MotionSettings.setReducedMotionRequested(carousel, false);
                 stage.close();
             }
         });

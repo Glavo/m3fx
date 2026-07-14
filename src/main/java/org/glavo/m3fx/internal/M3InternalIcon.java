@@ -37,6 +37,15 @@ public final class M3InternalIcon extends StackPane {
     /// The style class applied when the icon uses the on-primary-container color role.
     public static final String ON_PRIMARY_CONTAINER_STYLE_CLASS = "m3-internal-icon-on-primary-container";
 
+    /// The style class applied when the icon uses the on-primary color role.
+    public static final String ON_PRIMARY_STYLE_CLASS = "m3-internal-icon-on-primary";
+
+    /// The style class applied when the icon uses the on-secondary color role.
+    public static final String ON_SECONDARY_STYLE_CLASS = "m3-internal-icon-on-secondary";
+
+    /// The style class applied when the icon uses the on-tertiary color role.
+    public static final String ON_TERTIARY_STYLE_CLASS = "m3-internal-icon-on-tertiary";
+
     /// The default Material icon viewport size in device-independent pixels.
     private static final double DEFAULT_SIZE = 24.0;
 
@@ -134,6 +143,9 @@ public final class M3InternalIcon extends StackPane {
         styleClasses.remove(ON_SURFACE_STYLE_CLASS);
         styleClasses.remove(ON_SURFACE_VARIANT_STYLE_CLASS);
         styleClasses.remove(ON_PRIMARY_CONTAINER_STYLE_CLASS);
+        styleClasses.remove(ON_PRIMARY_STYLE_CLASS);
+        styleClasses.remove(ON_SECONDARY_STYLE_CLASS);
+        styleClasses.remove(ON_TERTIARY_STYLE_CLASS);
         styleClasses.add(colorRole.styleClass);
     }
 
@@ -188,6 +200,15 @@ public final class M3InternalIcon extends StackPane {
 
         /// The on-surface-variant content color.
         ON_SURFACE_VARIANT(ON_SURFACE_VARIANT_STYLE_CLASS),
+
+        /// The content color for primary-colored containers.
+        ON_PRIMARY(ON_PRIMARY_STYLE_CLASS),
+
+        /// The content color for secondary-colored containers.
+        ON_SECONDARY(ON_SECONDARY_STYLE_CLASS),
+
+        /// The content color for tertiary-colored containers.
+        ON_TERTIARY(ON_TERTIARY_STYLE_CLASS),
 
         /// The content color for primary FAB containers.
         ON_PRIMARY_CONTAINER(ON_PRIMARY_CONTAINER_STYLE_CLASS);

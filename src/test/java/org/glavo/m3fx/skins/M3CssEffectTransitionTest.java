@@ -65,7 +65,7 @@ final class M3CssEffectTransitionTest {
             Pane owner = new Pane();
             Region target = new Region();
             owner.getChildren().add(target);
-            M3MotionSettings.setAnimationsEnabled(owner, false);
+            M3MotionSettings.setReducedMotionRequested(owner, true);
             Scene scene = new Scene(owner, 100.0, 40.0);
             M3CssEffectTransition transition = new M3CssEffectTransition(owner, target);
 
@@ -94,7 +94,7 @@ final class M3CssEffectTransitionTest {
 
             owner.applyCss();
             transition.install();
-            M3MotionSettings.setAnimationsEnabled(owner, true);
+            M3MotionSettings.setReducedMotionRequested(owner, false);
             try {
                 target.setStyle("-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 8, 0.18, 0, 3);");
                 transition.animateEffectFromCss();
@@ -103,14 +103,14 @@ final class M3CssEffectTransitionTest {
                 assertEquals(0.0, animated.getRadius(), 0.0001);
                 assertTrue(transition.isRunning());
 
-                M3MotionSettings.setAnimationsEnabled(owner, false);
+                M3MotionSettings.setReducedMotionRequested(owner, true);
 
                 DropShadow settled = assertInstanceOf(DropShadow.class, target.getEffect());
                 assertEquals(8.0, settled.getRadius(), 0.0001);
                 assertEquals(3.0, settled.getOffsetY(), 0.0001);
                 assertFalse(transition.isRunning());
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(owner);
+                M3MotionSettings.setReducedMotionRequested(owner, false);
                 transition.uninstall();
             }
         });
@@ -127,7 +127,7 @@ final class M3CssEffectTransitionTest {
             M3CssEffectTransition transition = new M3CssEffectTransition(owner, target);
 
             transition.install();
-            M3MotionSettings.setAnimationsEnabled(owner, true);
+            M3MotionSettings.setReducedMotionRequested(owner, false);
             try {
                 target.setStyle("-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 8, 0.18, 0, 3);");
                 transition.animateEffectFromCss();
@@ -143,14 +143,14 @@ final class M3CssEffectTransitionTest {
                 assertSame(firstAnimated, target.getEffect());
                 assertEquals(StyleOrigin.INLINE, effectProperty.getStyleOrigin());
 
-                M3MotionSettings.setAnimationsEnabled(owner, false);
+                M3MotionSettings.setReducedMotionRequested(owner, true);
 
                 DropShadow settled = assertInstanceOf(DropShadow.class, target.getEffect());
                 assertEquals(12.0, settled.getRadius(), 0.0001);
                 assertEquals(5.0, settled.getOffsetY(), 0.0001);
                 assertEquals(StyleOrigin.INLINE, effectProperty.getStyleOrigin());
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(owner);
+                M3MotionSettings.setReducedMotionRequested(owner, false);
                 transition.uninstall();
             }
         });

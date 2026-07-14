@@ -12,8 +12,6 @@ import javafx.geometry.NodeOrientation;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import org.glavo.m3fx.animation.M3MotionBehavior;
-import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.internal.theme.M3ThemeMetadata;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -29,7 +27,7 @@ import java.util.function.Supplier;
 ///
 /// JavaFX popup content lives in a separate scene after it is shown, so ordinary scene inheritance is not enough
 /// for Material token lookups. This helper mirrors the owner scene stylesheet list, nearest M3FX theme root,
-/// effective node orientation, and resolved motion settings into a detached popup root, then keeps that copy fresh
+/// effective node orientation, and resolved reduced-motion request into a detached popup root, then keeps that copy fresh
 /// when owner scene, stylesheet, theme, orientation, or motion settings change during the popup lifetime.
 @NotNullByDefault
 public final class M3PopupContextSynchronizer {
@@ -63,17 +61,11 @@ public final class M3PopupContextSynchronizer {
     /// Whether the current observation run has copied context from an attached owner scene.
     private boolean hasSyncedAttachedOwnerContext;
 
-    /// Whether [syncedAnimationsEnabled], [syncedMotionScheme], and [syncedMotionBehavior] contain a snapshot.
+    /// Whether [syncedAnimationsEnabled] contains a snapshot.
     private boolean hasSyncedMotionContext;
 
     /// Last owner-resolved animation switch copied to the popup root.
     private boolean syncedAnimationsEnabled;
-
-    /// Last owner-resolved motion scheme copied to the popup root.
-    private @Nullable M3MotionScheme syncedMotionScheme;
-
-    /// Last owner-resolved motion behavior copied to the popup root.
-    private @Nullable M3MotionBehavior syncedMotionBehavior;
 
     /// Creates a synchronizer that mirrors the owner scene stylesheets and nearest theme root.
     ///
@@ -254,26 +246,17 @@ public final class M3PopupContextSynchronizer {
     /// Copies the owner's resolved motion settings into the popup root and records the copied context.
     private void syncMotionContext() {
         boolean animationsEnabled = M3MotionSettings.areAnimationsEnabled(owner);
-        M3MotionScheme motionScheme = M3Animation.motionScheme(owner);
-        M3MotionBehavior motionBehavior = M3Animation.motionBehavior(owner);
-
-        syncMotionContext(animationsEnabled, motionScheme, motionBehavior);
+        syncMotionContext(animationsEnabled);
     }
 
-    /// Copies already resolved motion settings into the popup root.
-    private void syncMotionContext(
-            boolean animationsEnabled,
-            M3MotionScheme motionScheme,
-            M3MotionBehavior motionBehavior
-    ) {
-        cacheSyncedMotionContext(animationsEnabled, motionScheme, motionBehavior);
+    /// Copies an already resolved reduced-motion setting into the popup root.
+    private void syncMotionContext(boolean animationsEnabled) {
+        cacheSyncedMotionContext(animationsEnabled);
         if (animationsEnabled) {
-            M3MotionSettings.clearAnimationsEnabled(popupRoot);
+            M3MotionSettings.setReducedMotionRequested(popupRoot, false);
         } else {
-            M3MotionSettings.setAnimationsEnabled(popupRoot, false);
+            M3MotionSettings.setReducedMotionRequested(popupRoot, true);
         }
-        M3MotionSettings.setMotionScheme(popupRoot, motionScheme);
-        M3MotionSettings.setMotionBehavior(popupRoot, motionBehavior);
     }
 
     /// Synchronizes only when a settings notification changes this owner's resolved motion context.
@@ -283,18 +266,14 @@ public final class M3PopupContextSynchronizer {
         }
 
         boolean animationsEnabled = M3MotionSettings.areAnimationsEnabled(owner);
-        M3MotionScheme motionScheme = M3Animation.motionScheme(owner);
-        M3MotionBehavior motionBehavior = M3Animation.motionBehavior(owner);
         if (hasSyncedMotionContext
-                && syncedAnimationsEnabled == animationsEnabled
-                && Objects.equals(syncedMotionScheme, motionScheme)
-                && Objects.equals(syncedMotionBehavior, motionBehavior)) {
+                && syncedAnimationsEnabled == animationsEnabled) {
             return;
         }
 
         syncing = true;
         try {
-            syncMotionContext(animationsEnabled, motionScheme, motionBehavior);
+            syncMotionContext(animationsEnabled);
         } finally {
             syncing = false;
         }
@@ -326,22 +305,14 @@ public final class M3PopupContextSynchronizer {
     }
 
     /// Records the owner-resolved motion settings copied during the latest synchronization pass.
-    private void cacheSyncedMotionContext(
-            boolean animationsEnabled,
-            M3MotionScheme motionScheme,
-            M3MotionBehavior motionBehavior
-    ) {
+    private void cacheSyncedMotionContext(boolean animationsEnabled) {
         hasSyncedMotionContext = true;
         syncedAnimationsEnabled = animationsEnabled;
-        syncedMotionScheme = motionScheme;
-        syncedMotionBehavior = motionBehavior;
     }
 
     /// Clears the cached owner-resolved motion context after listener teardown.
     private void clearSyncedMotionContext() {
         hasSyncedMotionContext = false;
-        syncedMotionScheme = null;
-        syncedMotionBehavior = null;
     }
 
     /// Returns whether the owner belongs to a subtree whose local motion setting changed.

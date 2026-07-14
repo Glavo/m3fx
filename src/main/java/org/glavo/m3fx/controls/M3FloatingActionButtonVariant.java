@@ -13,16 +13,27 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// See [Material Design floating action buttons](https://m3.material.io/components/floating-action-button/overview).
 @NotNullByDefault
 public enum M3FloatingActionButtonVariant {
-    /// A floating action button using the surface container color.
+    /// A baseline floating action button using a surface container.
+    ///
+    /// Surface FABs remain available for baseline Material 3 but are not recommended for Expressive layouts.
     SURFACE("m3-surface-fab"),
 
-    /// A floating action button using the primary container color.
+    /// A tonal floating action button using the primary-container color role.
+    PRIMARY_CONTAINER("m3-primary-container-fab"),
+
+    /// A tonal floating action button using the secondary-container color role.
+    SECONDARY_CONTAINER("m3-secondary-container-fab"),
+
+    /// A tonal floating action button using the tertiary-container color role.
+    TERTIARY_CONTAINER("m3-tertiary-container-fab"),
+
+    /// A high-emphasis floating action button using the primary color role.
     PRIMARY("m3-primary-fab"),
 
-    /// A floating action button using the secondary container color.
+    /// A high-emphasis floating action button using the secondary color role.
     SECONDARY("m3-secondary-fab"),
 
-    /// A floating action button using the tertiary container color.
+    /// A high-emphasis floating action button using the tertiary color role.
     TERTIARY("m3-tertiary-fab");
 
     /// The JavaFX style class used by this variant.

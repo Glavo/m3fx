@@ -140,7 +140,7 @@ final class M3TokenFactoryTest {
         assertSame(shapeTokens, tokenSet.shapeTokens());
         assertSame(componentTokens, tokenSet.componentTokens());
         assertEquals(51.0, tokenSet.componentTokens().filledButton().height(), 0.0001);
-        assertEquals(70.0, tokenSet.componentTokens().floatingActionButton().regularSize(), 0.0001);
+        assertEquals(70.0, tokenSet.componentTokens().floatingActionButton().regular().containerSize(), 0.0001);
         assertEquals(33.0, tokenSet.componentTokens().icon().largeSize(), 0.0001);
         M3ComponentTokens.SplitButtonSizeTokens smallSplitButton =
                 tokenSet.componentTokens().splitButton().small();
@@ -152,6 +152,9 @@ final class M3TokenFactoryTest {
                 0.0001
         );
         assertEquals(15.0, tokenSet.componentTokens().floatingActionButton().menuActionSpacing(), 0.0001);
+        assertEquals(32.0, tokenSet.componentTokens().floatingActionButton().menuItem().containerShape(), 0.0001);
+        assertEquals(20.0, tokenSet.componentTokens().floatingActionButton().menuCloseButton().iconSize(), 0.0001);
+        assertEquals(16.0, tokenSet.componentTokens().floatingActionButton().menuCloseSpacing(), 0.0001);
         assertEquals(10.0, tokenSet.componentTokens().buttonGroup().iconToggleGroupSpacing(), 0.0001);
         assertEquals(61.0, tokenSet.componentTokens().tab().containerHeight(), 0.0001);
         assertEquals(59.0, tokenSet.componentTokens().topAppBar().containerHeight(), 0.0001);
@@ -443,7 +446,16 @@ final class M3TokenFactoryTest {
                 new M3ComponentTokens.ButtonTokens(55.0, 25.0, 21.0),
                 createButtonSizingTokens(),
                 createIconButtonTokens(),
-                new M3ComponentTokens.FabTokens(50.0, 70.0, 110.0, 14.0, 22.0, 30.0, 13.0, 17.0, 25.0, 15.0),
+                new M3ComponentTokens.FabTokens(
+                        new M3ComponentTokens.FabSizeTokens(50.0, 14.0, 23.0, 13.0, 7.0, 14.0),
+                        new M3ComponentTokens.FabSizeTokens(70.0, 22.0, 24.0, 17.0, 9.0, 19.0),
+                        new M3ComponentTokens.FabSizeTokens(90.0, 26.0, 28.0, 21.0, 11.0, 23.0),
+                        new M3ComponentTokens.FabSizeTokens(110.0, 30.0, 36.0, 25.0, 13.0, 27.0),
+                        new M3ComponentTokens.FabSizeTokens(120.0, 32.0, 25.0, 26.0, 8.0, 27.0),
+                        new M3ComponentTokens.FabSizeTokens(58.0, 29.0, 20.0, 19.0, 0.0, 19.0),
+                        15.0,
+                        16.0
+                ),
                 new M3ComponentTokens.IconTokens(19.0, 25.0, 33.0, 41.0),
                 createButtonGroupTokens(),
                 createSplitButtonTokens(),

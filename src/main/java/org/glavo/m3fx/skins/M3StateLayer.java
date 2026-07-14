@@ -9,6 +9,8 @@ import javafx.animation.Transition;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.SetChangeListener;
 import javafx.css.PseudoClass;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.control.ButtonBase;
@@ -147,6 +149,9 @@ final class M3StateLayer extends Pane {
     private final StateOpacityTransition stateOpacityAnimation =
             new StateOpacityTransition(overlay, focusIndicator);
 
+    /// Pauses motion-setting observation after the last active state-layer animation finishes.
+    private final EventHandler<ActionEvent> animationFinishedHandler = event -> stopMotionObservationIfIdle();
+
     /// The control whose interaction states drive this layer.
     private @Nullable Node stateOwner;
 
@@ -248,6 +253,8 @@ final class M3StateLayer extends Pane {
         ripple.setOpacity(0.0);
         focusIndicator.setOpacity(0.0);
         focusIndicator.setVisible(false);
+        rippleAnimation.setOnFinished(animationFinishedHandler);
+        stateOpacityAnimation.setOnFinished(animationFinishedHandler);
         Group clippedContent = new Group(overlay, ripple);
         clippedContent.setAutoSizeChildren(false);
         clippedContent.setManaged(false);
@@ -280,7 +287,7 @@ final class M3StateLayer extends Pane {
         focusVisibleTracker.install();
         owner.disabledProperty().addListener(disabledStateListener);
         owner.getPseudoClassStates().addListener(pseudoClassStateListener);
-        motionSettingsObserver = new M3MotionSettingsObserver(owner, this::refreshMotionSettings);
+        motionSettingsObserver = new M3MotionSettingsObserver(owner, this::refreshMotionSettings, false);
         if (owner instanceof ButtonBase button) {
             owner.pseudoClassStateChanged(ARMED_PSEUDO_CLASS, button.isArmed());
             button.armedProperty().addListener(buttonArmedStateListener);
@@ -377,6 +384,7 @@ final class M3StateLayer extends Pane {
         ripple.setOpacity(RIPPLE_START_OPACITY);
         M3MotionSpec rippleSpec = M3Animation.defaultSpatial(owner);
         rippleAnimation.configureExpansion(rippleSpec);
+        startMotionObservation();
         rippleAnimation.playFromStart();
     }
 
@@ -420,6 +428,7 @@ final class M3StateLayer extends Pane {
                 remainingExpansionMillis,
                 fadeSpec
         );
+        startMotionObservation();
         rippleAnimation.playFromStart();
     }
 
@@ -463,6 +472,7 @@ final class M3StateLayer extends Pane {
         setFocusIndicatorOpacity(focusIndicator, 0.0);
         rippleAnimation.stop();
         clearRipple();
+        stopMotionObservationIfIdle();
     }
 
     /// Clears transient ripple visual state.
@@ -510,6 +520,7 @@ final class M3StateLayer extends Pane {
                 rippleAnimation.stop();
                 clearRipple();
             }
+            stopMotionObservationIfIdle();
             return;
         }
 
@@ -554,7 +565,28 @@ final class M3StateLayer extends Pane {
                 startFocusIndicatorOpacity,
                 targetFocusIndicatorOpacity
         );
+        startMotionObservation();
         stateOpacityAnimation.playFromStart();
+    }
+
+    /// Starts observing settings while at least one state-layer animation is active.
+    private void startMotionObservation() {
+        M3MotionSettingsObserver observer = motionSettingsObserver;
+        if (observer != null) {
+            observer.start();
+        }
+    }
+
+    /// Pauses settings observation after both reusable transitions become idle.
+    private void stopMotionObservationIfIdle() {
+        if (rippleAnimation.getStatus() == Animation.Status.RUNNING
+                || stateOpacityAnimation.getStatus() == Animation.Status.RUNNING) {
+            return;
+        }
+        M3MotionSettingsObserver observer = motionSettingsObserver;
+        if (observer != null) {
+            observer.stop();
+        }
     }
 
     /// Returns whether inherited animations are disabled, refreshing the cache after any settings change.
@@ -1013,6 +1045,7 @@ final class M3StateLayer extends Pane {
         int blue = (int) Math.round(color.getBlue() * 255.0);
         return "rgba(" + red + "," + green + "," + blue + "," + color.getOpacity() + ")";
     }
+
     /// Formats a CSS pixel value.
     private static String formatPixels(double value) {
         return value + "px";

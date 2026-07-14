@@ -850,6 +850,7 @@ final class M3ControlStyleTest {
 
         M3FabMenu fabMenu = new M3FabMenu();
         assertInternalIcon(fabMenu.getToggleButton().getGraphic(), M3InternalIcon.Glyph.ADD, "FAB menu toggle");
+        assertInternalIcon(fabMenu.getCloseButton().getGraphic(), M3InternalIcon.Glyph.CLOSE, "FAB menu close");
 
         M3SearchBar searchBar = new M3SearchBar("Search");
         assertInternalIcon(searchBar.getLeading(), M3InternalIcon.Glyph.SEARCH, "search bar leading icon");
@@ -882,6 +883,15 @@ final class M3ControlStyleTest {
 
         icon.setColorRole(M3InternalIcon.ColorRole.ON_PRIMARY_CONTAINER);
         assertInternalIconColorRole(icon, M3InternalIcon.ColorRole.ON_PRIMARY_CONTAINER);
+
+        icon.setColorRole(M3InternalIcon.ColorRole.ON_PRIMARY);
+        assertInternalIconColorRole(icon, M3InternalIcon.ColorRole.ON_PRIMARY);
+
+        icon.setColorRole(M3InternalIcon.ColorRole.ON_SECONDARY);
+        assertInternalIconColorRole(icon, M3InternalIcon.ColorRole.ON_SECONDARY);
+
+        icon.setColorRole(M3InternalIcon.ColorRole.ON_TERTIARY);
+        assertInternalIconColorRole(icon, M3InternalIcon.ColorRole.ON_TERTIARY);
     }
 
     /// Verifies that standalone controls resolve internal icon colors from fallback token CSS.
@@ -1717,7 +1727,7 @@ final class M3ControlStyleTest {
             HBox root = new HBox(16.0, button, chip, fab, card);
             Scene scene = new Scene(root, 720.0, 180.0);
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            M3MotionSettings.setAnimationsEnabled(root, false);
+            M3MotionSettings.setReducedMotionRequested(root, true);
             root.applyCss();
             root.layout();
 
@@ -1912,17 +1922,29 @@ final class M3ControlStyleTest {
         root.applyCss();
         assertLabeledColors(button, Color.rgb(19, 20, 21), Color.rgb(1, 2, 3));
 
-        button.setVariant(M3FloatingActionButtonVariant.PRIMARY);
+        button.setVariant(M3FloatingActionButtonVariant.PRIMARY_CONTAINER);
         root.applyCss();
         assertLabeledColors(button, Color.rgb(22, 23, 24), Color.rgb(25, 26, 27));
 
-        button.setVariant(M3FloatingActionButtonVariant.SECONDARY);
+        button.setVariant(M3FloatingActionButtonVariant.SECONDARY_CONTAINER);
         root.applyCss();
         assertLabeledColors(button, Color.rgb(7, 8, 9), Color.rgb(10, 11, 12));
 
-        button.setVariant(M3FloatingActionButtonVariant.TERTIARY);
+        button.setVariant(M3FloatingActionButtonVariant.TERTIARY_CONTAINER);
         root.applyCss();
         assertLabeledColors(button, Color.rgb(28, 29, 30), Color.rgb(31, 32, 33));
+
+        button.setVariant(M3FloatingActionButtonVariant.PRIMARY);
+        root.applyCss();
+        assertLabeledColors(button, Color.rgb(1, 2, 3), Color.rgb(4, 5, 6));
+
+        button.setVariant(M3FloatingActionButtonVariant.SECONDARY);
+        root.applyCss();
+        assertLabeledColors(button, Color.rgb(46, 47, 48), Color.rgb(49, 50, 51));
+
+        button.setVariant(M3FloatingActionButtonVariant.TERTIARY);
+        root.applyCss();
+        assertLabeledColors(button, Color.rgb(52, 53, 54), Color.rgb(55, 56, 57));
     }
 
     /// Verifies that labeled button size and shape roles resolve to the Material specification metrics.
@@ -3022,7 +3044,7 @@ final class M3ControlStyleTest {
             Scene scene = new Scene(root, 420.0, 100.0);
 
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            M3MotionSettings.setAnimationsEnabled(root, false);
+            M3MotionSettings.setReducedMotionRequested(root, true);
             root.applyCss();
             resizeButtonGroupToPreferredSize(group);
 
@@ -3075,7 +3097,7 @@ final class M3ControlStyleTest {
             Scene selectionScene = new Scene(selectionRoot, 320.0, 100.0);
 
             M3ThemeManager.install(selectionScene, M3Theme.defaultTheme());
-            M3MotionSettings.setAnimationsEnabled(selectionRoot, false);
+            M3MotionSettings.setReducedMotionRequested(selectionRoot, true);
             selectionRoot.applyCss();
             resizeButtonGroupToPreferredSize(selectionGroup);
 
@@ -3166,8 +3188,8 @@ final class M3ControlStyleTest {
                         Stage stage = new Stage();
 
                         M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                        M3MotionSettings.setAnimationsEnabled(root, true);
-                        M3MotionSettings.setMotionScheme(root, observableTestMotionScheme());
+                        M3MotionSettings.setReducedMotionRequested(root, false);
+                        FxTestUtils.setMotionScheme(root, observableTestMotionScheme());
                         stage.setScene(scene);
                         stage.show();
                         root.applyCss();
@@ -3248,7 +3270,7 @@ final class M3ControlStyleTest {
             Scene scene = new Scene(root, 420.0, 100.0);
 
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            M3MotionSettings.setAnimationsEnabled(root, false);
+            M3MotionSettings.setReducedMotionRequested(root, true);
             root.applyCss();
             resizeButtonGroupToPreferredSize(group);
 
@@ -3300,7 +3322,7 @@ final class M3ControlStyleTest {
             Scene scene = new Scene(root, 420.0, 100.0);
 
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            M3MotionSettings.setAnimationsEnabled(root, false);
+            M3MotionSettings.setReducedMotionRequested(root, true);
             root.applyCss();
             resizeButtonGroupToPreferredSize(group);
 
@@ -3861,7 +3883,7 @@ final class M3ControlStyleTest {
             M3Button standalone = new M3Button("Standalone");
             M3Button outside = new M3Button("Outside");
             M3Toolbar toolbar = toolbar(menuButton, standalone);
-            M3MotionSettings.setAnimationsEnabled(menuButton, false);
+            M3MotionSettings.setReducedMotionRequested(menuButton, true);
             VBox root = new VBox(8.0, toolbar, outside);
             Stage stage = new Stage();
             try {
@@ -3898,7 +3920,7 @@ final class M3ControlStyleTest {
                 assertFalse(menuButton.isShowing());
                 assertTrue(outside.isFocused());
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(menuButton);
+                M3MotionSettings.setReducedMotionRequested(menuButton, false);
                 stage.close();
             }
         });
@@ -4327,7 +4349,7 @@ final class M3ControlStyleTest {
             M3SplitButton splitButton = splitButton("Create", draft, publish);
             Stage stage = new Stage();
             try {
-                M3MotionSettings.setAnimationsEnabled(splitButtonMenuButton(splitButton), false);
+                M3MotionSettings.setReducedMotionRequested(splitButtonMenuButton(splitButton), true);
                 Pane root = new Pane(splitButton);
                 stage.setScene(new Scene(root, 320.0, 160.0));
                 stage.show();
@@ -4368,7 +4390,7 @@ final class M3ControlStyleTest {
                 splitButton.executeAccessibleAction(AccessibleAction.SHOW_ITEM, 1);
                 assertTrue(splitButtonMenuButton(splitButton).isFocused());
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(splitButtonMenuButton(splitButton));
+                M3MotionSettings.setReducedMotionRequested(splitButtonMenuButton(splitButton), false);
                 splitButton.hideMenu();
                 stage.close();
             }
@@ -4493,7 +4515,7 @@ final class M3ControlStyleTest {
             root.setStyle("-fx-background-color: white;");
             Scene scene = new Scene(root, 240.0, 80.0);
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            M3MotionSettings.setAnimationsEnabled(root, false);
+            M3MotionSettings.setReducedMotionRequested(root, true);
             root.applyCss();
             splitButton.resize(splitButton.prefWidth(-1.0), splitButton.prefHeight(-1.0));
             splitButton.layout();
@@ -4593,7 +4615,7 @@ final class M3ControlStyleTest {
             Pane root = new Pane(splitButton);
             Scene scene = new Scene(root, 260.0, 100.0);
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            M3MotionSettings.setAnimationsEnabled(root, false);
+            M3MotionSettings.setReducedMotionRequested(root, true);
             root.applyCss();
             splitButton.resize(splitButton.prefWidth(-1.0), splitButton.prefHeight(-1.0));
             splitButton.layout();
@@ -4803,13 +4825,15 @@ final class M3ControlStyleTest {
     @Test
     void floatingActionButtonTokensAreStyleable() {
         M3FloatingActionButton button = new M3FloatingActionButton();
-        button.setStyle("-m3-container-size: 64px; -m3-container-shape: 20px; -m3-horizontal-padding: 22px;");
+        button.setStyle("-m3-container-size: 64px; -m3-container-shape: 20px; "
+                + "-m3-horizontal-padding: 22px; -m3-trailing-padding: 30px;");
 
         applyCss(button);
 
         assertEquals(64.0, button.getContainerSize(), 0.0001);
         assertEquals(20.0, button.getContainerShape(), 0.0001);
         assertEquals(22.0, button.getHorizontalPadding(), 0.0001);
+        assertEquals(30.0, button.getTrailingPadding(), 0.0001);
         assertEquals(64.0, button.getPrefWidth(), 0.0001);
         assertEquals(64.0, button.getPrefHeight(), 0.0001);
         assertEquals(0.0, button.getPadding().getLeft(), 0.0001);
@@ -4820,6 +4844,12 @@ final class M3ControlStyleTest {
         assertEquals(javafx.scene.layout.Region.USE_COMPUTED_SIZE, button.getPrefWidth(), 0.0001);
         assertEquals(64.0, button.getPrefHeight(), 0.0001);
         assertEquals(22.0, button.getPadding().getLeft(), 0.0001);
+        assertEquals(30.0, button.getPadding().getRight(), 0.0001);
+
+        button.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+        applyCss(button);
+
+        assertEquals(30.0, button.getPadding().getLeft(), 0.0001);
         assertEquals(22.0, button.getPadding().getRight(), 0.0001);
     }
 
@@ -4854,6 +4884,28 @@ final class M3ControlStyleTest {
 
         assertTrue(menu.getStyleClass().contains(M3FabMenu.STYLE_CLASS));
         assertTrue(menu.getToggleButton().getStyleClass().contains(M3FabMenu.TOGGLE_STYLE_CLASS));
+        assertTrue(menu.getCloseButton().getStyleClass().contains(M3FabMenu.CLOSE_STYLE_CLASS));
+        M3InternalIcon closeIcon = assertInstanceOf(
+                M3InternalIcon.class,
+                menu.getCloseButton().getGraphic(),
+                "FAB menu close icon"
+        );
+        assertEquals(M3FloatingActionButtonVariant.PRIMARY, menu.getCloseButton().getVariant());
+        assertInternalIconColorRole(closeIcon, M3InternalIcon.ColorRole.ON_PRIMARY);
+
+        menu.getToggleButton().setVariant(M3FloatingActionButtonVariant.SECONDARY_CONTAINER);
+
+        assertEquals(M3FloatingActionButtonVariant.SECONDARY, menu.getCloseButton().getVariant());
+        assertInternalIconColorRole(closeIcon, M3InternalIcon.ColorRole.ON_SECONDARY);
+
+        menu.getToggleButton().setVariant(M3FloatingActionButtonVariant.TERTIARY_CONTAINER);
+
+        assertEquals(M3FloatingActionButtonVariant.TERTIARY, menu.getCloseButton().getVariant());
+        assertInternalIconColorRole(closeIcon, M3InternalIcon.ColorRole.ON_TERTIARY);
+
+        menu.getToggleButton().setVariant(M3FloatingActionButtonVariant.PRIMARY_CONTAINER);
+        assertTrue(menu.getToggleButton().isVisible());
+        assertFalse(menu.getCloseButton().isVisible());
         assertTrue(first.getStyleClass().contains(M3FabMenu.ACTION_STYLE_CLASS));
         assertFalse(menu.isExpanded());
         assertFalse(first.isVisible());
@@ -4867,11 +4919,15 @@ final class M3ControlStyleTest {
         assertTrue(first.isVisible());
         assertTrue(first.isManaged());
         assertEquals(1.0, first.getOpacity(), 0.0001);
+        assertFalse(menu.getToggleButton().isVisible());
+        assertTrue(menu.getCloseButton().isVisible());
 
         first.fire();
 
         assertFalse(menu.isExpanded());
 
+        assertTrue(menu.getToggleButton().isVisible());
+        assertFalse(menu.getCloseButton().isVisible());
         menu.show();
 
         menu.hide();
@@ -4934,7 +4990,7 @@ final class M3ControlStyleTest {
             Stage stage = new Stage();
 
             try {
-                M3MotionSettings.setAnimationsEnabled(menu, false);
+                M3MotionSettings.setReducedMotionRequested(menu, true);
                 Scene scene = new Scene(root, 220.0, 220.0);
                 M3ThemeManager.install(scene, M3Theme.defaultTheme());
                 stage.setScene(scene);
@@ -4960,9 +5016,9 @@ final class M3ControlStyleTest {
                 assertFalse(disabledAction.isFocused());
                 assertSame(secondAction, menu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
                 secondAction.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.END));
-                assertTrue(menu.getToggleButton().isFocused());
-                assertSame(menu.getToggleButton(), menu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
-                menu.getToggleButton().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.UP));
+                assertTrue(menu.getCloseButton().isFocused());
+                assertSame(menu.getCloseButton(), menu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+                menu.getCloseButton().fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.UP));
                 assertTrue(secondAction.isFocused());
                 assertSame(secondAction, menu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
@@ -4983,7 +5039,7 @@ final class M3ControlStyleTest {
                 assertTrue(menu.getToggleButton().isFocused());
                 assertSame(menu.getToggleButton(), menu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(menu);
+                M3MotionSettings.setReducedMotionRequested(menu, false);
                 stage.close();
             }
         });
@@ -5001,7 +5057,7 @@ final class M3ControlStyleTest {
             Stage stage = new Stage();
 
             try {
-                M3MotionSettings.setAnimationsEnabled(menu, false);
+                M3MotionSettings.setReducedMotionRequested(menu, true);
                 Scene scene = new Scene(root, 220.0, 220.0);
                 M3ThemeManager.install(scene, M3Theme.defaultTheme());
                 stage.setScene(scene);
@@ -5040,7 +5096,7 @@ final class M3ControlStyleTest {
                 assertTrue(menu.getToggleButton().isFocused());
                 assertSame(menu.getToggleButton(), menu.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(menu);
+                M3MotionSettings.setReducedMotionRequested(menu, false);
                 stage.close();
             }
         });
@@ -5075,7 +5131,7 @@ final class M3ControlStyleTest {
             Stage stage = new Stage();
 
             try {
-                M3MotionSettings.setAnimationsEnabled(menu, false);
+                M3MotionSettings.setReducedMotionRequested(menu, true);
                 Scene scene = new Scene(root, 280.0, 240.0);
                 M3ThemeManager.install(scene, M3Theme.defaultTheme());
                 stage.setScene(scene);
@@ -5114,7 +5170,7 @@ final class M3ControlStyleTest {
             } finally {
                 tooltip.hide();
                 M3Tooltip.uninstall(tooltipOwnerAction, tooltip);
-                M3MotionSettings.clearAnimationsEnabled(menu);
+                M3MotionSettings.setReducedMotionRequested(menu, false);
                 stage.close();
             }
         });
@@ -5124,11 +5180,12 @@ final class M3ControlStyleTest {
     @Test
     void fabMenuActionSpacingTokenIsStyleable() {
         M3FabMenu menu = new M3FabMenu(new M3FloatingActionButton());
-        menu.setStyle("-m3-fab-menu-action-spacing: 18px;");
+        menu.setStyle("-m3-fab-menu-action-spacing: 18px; -m3-fab-menu-close-spacing: 20px;");
 
         applyCss(menu);
 
         assertEquals(18.0, menu.getActionSpacing(), 0.0001);
+        assertEquals(20.0, menu.getCloseSpacing(), 0.0001);
     }
 
     /// Verifies that FAB menu expand and collapse animations reach observable public states.
@@ -5151,8 +5208,8 @@ final class M3ControlStyleTest {
                         Scene scene = new Scene(root, 220.0, 220.0);
                         Stage stage = new Stage();
 
-                        M3MotionSettings.setAnimationsEnabled(root, true);
-                        M3MotionSettings.setMotionScheme(root, observableTestMotionScheme());
+                        M3MotionSettings.setReducedMotionRequested(root, false);
+                        FxTestUtils.setMotionScheme(root, observableTestMotionScheme());
                         M3ThemeManager.install(scene, M3Theme.defaultTheme());
                         stage.setScene(scene);
                         stage.show();
@@ -5219,8 +5276,8 @@ final class M3ControlStyleTest {
             FxTestUtils.runOnFxThread(() -> {
                 @Nullable Pane root = rootReference.get();
                 if (root != null) {
-                    M3MotionSettings.clearAnimationsEnabled(root);
-                    M3MotionSettings.clearMotionScheme(root);
+                    M3MotionSettings.setReducedMotionRequested(root, false);
+                    FxTestUtils.clearMotionScheme(root);
                 }
                 @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
@@ -5837,8 +5894,8 @@ final class M3ControlStyleTest {
             Pane root = new Pane(carousel);
             Stage stage = new Stage();
             try {
-                M3MotionSettings.setAnimationsEnabled(menuButton, false);
-                M3MotionSettings.setAnimationsEnabled(subMenuItem, false);
+                M3MotionSettings.setReducedMotionRequested(menuButton, true);
+                M3MotionSettings.setReducedMotionRequested(subMenuItem, true);
 
                 stage.setScene(new Scene(root, 520.0, 180.0));
                 M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
@@ -5866,8 +5923,8 @@ final class M3ControlStyleTest {
             } finally {
                 subMenuItem.hideSubMenu();
                 menuButton.hideMenu();
-                M3MotionSettings.clearAnimationsEnabled(menuButton);
-                M3MotionSettings.clearAnimationsEnabled(subMenuItem);
+                M3MotionSettings.setReducedMotionRequested(menuButton, false);
+                M3MotionSettings.setReducedMotionRequested(subMenuItem, false);
                 stage.close();
             }
         });
@@ -6007,7 +6064,7 @@ final class M3ControlStyleTest {
                 assertTrue(carousel.isFocused());
 
                 viewport.setHvalue(0.0);
-                M3MotionSettings.setAnimationsEnabled(viewport, false);
+                M3MotionSettings.setReducedMotionRequested(viewport, true);
                 ScrollEvent event = scrollEvent(viewport, 0.0, -80.0);
                 viewport.fireEvent(event);
                 root.layout();
@@ -6019,7 +6076,7 @@ final class M3ControlStyleTest {
                         + ", viewport=" + viewport.getViewportBounds());
 
 
-                M3MotionSettings.clearAnimationsEnabled(viewport);
+                M3MotionSettings.setReducedMotionRequested(viewport, false);
             } finally {
                 stage.close();
             }
@@ -6074,8 +6131,8 @@ final class M3ControlStyleTest {
                 ScrollPane currentViewport = viewport;
                 assertTrue(currentViewport.getHvalue() > 0.5, () -> "hvalue=" + currentViewport.getHvalue());
                 M3ScrollPanes.enableSmoothScrolling(outerScrollPane);
-                M3MotionSettings.setAnimationsEnabled(outerScrollPane, false);
-                M3MotionSettings.setAnimationsEnabled(viewport, false);
+                M3MotionSettings.setReducedMotionRequested(outerScrollPane, true);
+                M3MotionSettings.setReducedMotionRequested(viewport, true);
                 viewport.setHvalue(0.0);
 
                 ScrollEvent event = scrollEvent(viewport, 0.0, -80.0);
@@ -6085,10 +6142,10 @@ final class M3ControlStyleTest {
                 assertEquals(0.0, outerScrollPane.getVvalue(), 0.0001);
             } finally {
                 if (viewport != null) {
-                    M3MotionSettings.clearAnimationsEnabled(viewport);
+                    M3MotionSettings.setReducedMotionRequested(viewport, false);
                 }
                 M3ScrollPanes.disableSmoothScrolling(outerScrollPane);
-                M3MotionSettings.clearAnimationsEnabled(outerScrollPane);
+                M3MotionSettings.setReducedMotionRequested(outerScrollPane, false);
                 stage.close();
             }
         }));
@@ -6122,8 +6179,8 @@ final class M3ControlStyleTest {
                         Scene scene = new Scene(root, 280.0, 120.0);
                         Stage stage = new Stage();
 
-                        M3MotionSettings.setAnimationsEnabled(carousel, true);
-                        M3MotionSettings.setMotionScheme(carousel, observableTestMotionScheme());
+                        M3MotionSettings.setReducedMotionRequested(carousel, false);
+                        FxTestUtils.setMotionScheme(carousel, observableTestMotionScheme());
                         stageReference.set(stage);
                         carouselReference.set(carousel);
 
@@ -6149,7 +6206,7 @@ final class M3ControlStyleTest {
                         ScrollPane viewport = Objects.requireNonNull(viewportReference.get(), "viewport");
 
                         assertBetween(viewport.getHvalue(), 0.0, 1.0, "carousel animated hvalue");
-                        M3MotionSettings.setAnimationsEnabled(carousel, false);
+                        M3MotionSettings.setReducedMotionRequested(carousel, true);
                         assertEquals(1.0, viewport.getHvalue(), 0.0001);
                     }
             );
@@ -7807,7 +7864,7 @@ final class M3ControlStyleTest {
                     VBox root = new VBox(12.0, outside, host);
                     Stage stage = new Stage();
 
-                    M3MotionSettings.setAnimationsEnabled(root, false);
+                    M3MotionSettings.setReducedMotionRequested(root, true);
                     Scene scene = new Scene(root, 420.0, 180.0);
                     M3ThemeManager.install(scene, M3Theme.defaultTheme());
                     stage.setScene(scene);
@@ -7852,7 +7909,7 @@ final class M3ControlStyleTest {
                     assertFalse(firstAction.isFocused());
                     assertTrue(secondAction.isFocused());
 
-                    M3MotionSettings.clearAnimationsEnabled(Objects.requireNonNull(rootReference.get(), "root"));
+                    M3MotionSettings.setReducedMotionRequested(Objects.requireNonNull(rootReference.get(), "root"), false);
                     Objects.requireNonNull(stageReference.get(), "stage").close();
                 }
         );
@@ -7885,7 +7942,7 @@ final class M3ControlStyleTest {
                     VBox root = new VBox(12.0, outside, host);
                     Stage stage = new Stage();
 
-                    M3MotionSettings.setAnimationsEnabled(root, false);
+                    M3MotionSettings.setReducedMotionRequested(root, true);
                     Scene scene = new Scene(root, 420.0, 180.0);
                     M3ThemeManager.install(scene, M3Theme.defaultTheme());
                     stage.setScene(scene);
@@ -7920,7 +7977,7 @@ final class M3ControlStyleTest {
                     assertTrue(outside.isFocused());
                     assertFalse(snackbarFocusNodeFocused(second));
 
-                    M3MotionSettings.clearAnimationsEnabled(Objects.requireNonNull(rootReference.get(), "root"));
+                    M3MotionSettings.setReducedMotionRequested(Objects.requireNonNull(rootReference.get(), "root"), false);
                     Objects.requireNonNull(stageReference.get(), "stage").close();
                 }
         );
@@ -7932,7 +7989,7 @@ final class M3ControlStyleTest {
         M3SnackbarHost host = new M3SnackbarHost();
         M3MotionBehavior behavior = snackbarBehavior(Duration.millis(1234.0));
 
-        M3MotionSettings.setMotionBehavior(host, behavior);
+        FxTestUtils.setMotionBehavior(host, behavior);
 
         assertEquals(Duration.millis(1234.0), host.getDisplayDuration());
 
@@ -7962,7 +8019,7 @@ final class M3ControlStyleTest {
                     VBox root = new VBox(host);
                     Stage stage = new Stage();
 
-                    M3MotionSettings.setAnimationsEnabled(root, false);
+                    M3MotionSettings.setReducedMotionRequested(root, true);
                     Scene scene = new Scene(root, 360.0, 140.0);
                     M3ThemeManager.install(scene, M3Theme.defaultTheme());
                     stage.setScene(scene);
@@ -7997,7 +8054,7 @@ final class M3ControlStyleTest {
                     assertTrue(second.getParent() != null);
                     assertFalse(first.isVisible());
 
-                    M3MotionSettings.clearAnimationsEnabled(Objects.requireNonNull(rootReference.get(), "root"));
+                    M3MotionSettings.setReducedMotionRequested(Objects.requireNonNull(rootReference.get(), "root"), false);
                     Objects.requireNonNull(stageReference.get(), "stage").close();
                 }
         );
@@ -8019,8 +8076,8 @@ final class M3ControlStyleTest {
                     VBox root = new VBox(host);
                     Stage stage = new Stage();
 
-                    M3MotionSettings.setAnimationsEnabled(root, false);
-                    M3MotionSettings.setMotionBehavior(root, M3MotionBehavior.standard());
+                    M3MotionSettings.setReducedMotionRequested(root, true);
+                    FxTestUtils.setMotionBehavior(root, M3MotionBehavior.standard());
                     Scene scene = new Scene(root, 360.0, 140.0);
                     M3ThemeManager.install(scene, M3Theme.defaultTheme());
                     stage.setScene(scene);
@@ -8042,7 +8099,7 @@ final class M3ControlStyleTest {
                     hostReference.set(host);
                     firstReference.set(first);
                     secondReference.set(second);
-                    M3MotionSettings.setMotionBehavior(root, snackbarBehavior(Duration.millis(250.0)));
+                    FxTestUtils.setMotionBehavior(root, snackbarBehavior(Duration.millis(250.0)));
                 },
                 () -> {
                     M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "host");
@@ -8057,8 +8114,8 @@ final class M3ControlStyleTest {
                     assertFalse(first.isVisible());
 
                     VBox root = Objects.requireNonNull(rootReference.get(), "root");
-                    M3MotionSettings.clearAnimationsEnabled(root);
-                    M3MotionSettings.clearMotionBehavior(root);
+                    M3MotionSettings.setReducedMotionRequested(root, false);
+                    FxTestUtils.clearMotionBehavior(root);
                     Objects.requireNonNull(stageReference.get(), "stage").close();
                 }
         );
@@ -8082,7 +8139,7 @@ final class M3ControlStyleTest {
                     VBox root = new VBox(host);
                     Stage stage = new Stage();
 
-                    M3MotionSettings.setAnimationsEnabled(root, false);
+                    M3MotionSettings.setReducedMotionRequested(root, true);
                     Scene scene = new Scene(root, 360.0, 140.0);
                     M3ThemeManager.install(scene, M3Theme.defaultTheme());
                     stage.setScene(scene);
@@ -8110,7 +8167,7 @@ final class M3ControlStyleTest {
                     assertTrue(host.isShowing());
                     assertEquals(List.of(second), host.getQueue());
 
-                    M3MotionSettings.clearAnimationsEnabled(Objects.requireNonNull(rootReference.get(), "root"));
+                    M3MotionSettings.setReducedMotionRequested(Objects.requireNonNull(rootReference.get(), "root"), false);
                     Objects.requireNonNull(stageReference.get(), "stage").close();
                 }
         );
@@ -8522,9 +8579,9 @@ final class M3ControlStyleTest {
             Pane root = new Pane(dialogPane);
             Stage stage = new Stage();
             try {
-                M3MotionSettings.setAnimationsEnabled(menuButton, false);
-                M3MotionSettings.setAnimationsEnabled(export, false);
-                M3MotionSettings.setAnimationsEnabled(recent, false);
+                M3MotionSettings.setReducedMotionRequested(menuButton, true);
+                M3MotionSettings.setReducedMotionRequested(export, true);
+                M3MotionSettings.setReducedMotionRequested(recent, true);
 
                 stage.setScene(new Scene(root, 480.0, 260.0));
                 M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
@@ -8576,9 +8633,9 @@ final class M3ControlStyleTest {
                 recent.hideSubMenu();
                 export.hideSubMenu();
                 menuButton.hideMenu();
-                M3MotionSettings.clearAnimationsEnabled(menuButton);
-                M3MotionSettings.clearAnimationsEnabled(export);
-                M3MotionSettings.clearAnimationsEnabled(recent);
+                M3MotionSettings.setReducedMotionRequested(menuButton, false);
+                M3MotionSettings.setReducedMotionRequested(export, false);
+                M3MotionSettings.setReducedMotionRequested(recent, false);
                 stage.close();
             }
         });
@@ -9533,7 +9590,7 @@ final class M3ControlStyleTest {
             try {
                 stage.setScene(scene);
                 M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                M3MotionSettings.setAnimationsEnabled(root, false);
+                M3MotionSettings.setReducedMotionRequested(root, true);
                 stage.show();
                 root.applyCss();
                 root.resize(430.0, 150.0);
@@ -9594,7 +9651,7 @@ final class M3ControlStyleTest {
                 assertEquals(textField, layout.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
                 assertEquals(16.0, textField.getPadding().getRight(), 0.0001);
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(root);
+                M3MotionSettings.setReducedMotionRequested(root, false);
                 stage.close();
             }
         });
@@ -9626,7 +9683,7 @@ final class M3ControlStyleTest {
             try {
                 stage.setScene(scene);
                 M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                M3MotionSettings.setAnimationsEnabled(root, false);
+                M3MotionSettings.setReducedMotionRequested(root, true);
                 stage.show();
                 textArea.requestFocus();
                 root.applyCss();
@@ -9658,7 +9715,7 @@ final class M3ControlStyleTest {
                         "visual-text-area-focused-outlined-background.png"
                 ));
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(root);
+                M3MotionSettings.setReducedMotionRequested(root, false);
                 stage.close();
             }
         });
@@ -9689,7 +9746,7 @@ final class M3ControlStyleTest {
             try {
                 stage.setScene(scene);
                 M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                M3MotionSettings.setAnimationsEnabled(root, false);
+                M3MotionSettings.setReducedMotionRequested(root, true);
                 stage.show();
                 textArea.requestFocus();
                 root.applyCss();
@@ -9733,7 +9790,7 @@ final class M3ControlStyleTest {
                 assertEquals(12.0, textArea.getPadding().getTop(), 0.0001);
                 assertEquals(18.0, textArea.getPadding().getBottom(), 0.0001);
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(root);
+                M3MotionSettings.setReducedMotionRequested(root, false);
                 stage.close();
             }
         });
@@ -9764,7 +9821,7 @@ final class M3ControlStyleTest {
             try {
                 stage.setScene(scene);
                 M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                M3MotionSettings.setAnimationsEnabled(root, false);
+                M3MotionSettings.setReducedMotionRequested(root, true);
                 stage.show();
                 textField.requestFocus();
                 textField.positionCaret(textField.getText().length());
@@ -9826,7 +9883,7 @@ final class M3ControlStyleTest {
                         "visual-text-field-rtl-outlined-action-separation.png"
                 ));
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(root);
+                M3MotionSettings.setReducedMotionRequested(root, false);
                 stage.close();
             }
         });
@@ -9856,7 +9913,7 @@ final class M3ControlStyleTest {
             try {
                 stage.setScene(scene);
                 M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                M3MotionSettings.setAnimationsEnabled(root, false);
+                M3MotionSettings.setReducedMotionRequested(root, true);
                 stage.show();
                 textField.requestFocus();
                 root.applyCss();
@@ -9905,7 +9962,7 @@ final class M3ControlStyleTest {
                         "visual-text-field-rtl-leading-only-separation.png"
                 ));
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(root);
+                M3MotionSettings.setReducedMotionRequested(root, false);
                 stage.close();
             }
         });
@@ -9937,7 +9994,7 @@ final class M3ControlStyleTest {
             try {
                 stage.setScene(scene);
                 M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                M3MotionSettings.setAnimationsEnabled(root, false);
+                M3MotionSettings.setReducedMotionRequested(root, true);
                 stage.show();
                 textField.requestFocus();
                 root.applyCss();
@@ -9967,7 +10024,7 @@ final class M3ControlStyleTest {
 
                 assertEquals(13.0, textField.getTranslateX(), 0.0001);
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(root);
+                M3MotionSettings.setReducedMotionRequested(root, false);
                 textField.translateXProperty().unbind();
                 stage.close();
             }
@@ -10002,7 +10059,7 @@ final class M3ControlStyleTest {
             try {
                 stage.setScene(scene);
                 M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                M3MotionSettings.setAnimationsEnabled(root, false);
+                M3MotionSettings.setReducedMotionRequested(root, true);
                 stage.show();
                 textField.requestFocus();
                 root.applyCss();
@@ -10038,7 +10095,7 @@ final class M3ControlStyleTest {
                 assertEquals(32.0, textField.getPadding().getLeft(), 0.0001);
                 assertEquals(80.0, textField.getPadding().getRight(), 0.0001);
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(root);
+                M3MotionSettings.setReducedMotionRequested(root, false);
                 textField.paddingProperty().unbind();
                 stage.close();
             }
@@ -10069,7 +10126,7 @@ final class M3ControlStyleTest {
             try {
                 stage.setScene(scene);
                 M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                M3MotionSettings.setAnimationsEnabled(root, false);
+                M3MotionSettings.setReducedMotionRequested(root, true);
                 stage.show();
                 textField.requestFocus();
                 root.applyCss();
@@ -10241,7 +10298,7 @@ final class M3ControlStyleTest {
 
                 assertEquals(7.0, replacement.getTranslateX(), 0.0001);
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(root);
+                M3MotionSettings.setReducedMotionRequested(root, false);
                 stage.close();
             }
         });
@@ -10269,7 +10326,7 @@ final class M3ControlStyleTest {
             try {
                 stage.setScene(scene);
                 M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                M3MotionSettings.setAnimationsEnabled(root, false);
+                M3MotionSettings.setReducedMotionRequested(root, true);
                 stage.show();
                 field.getEditor().requestFocus();
                 field.getEditor().positionCaret(field.getEditor().getText().length());
@@ -10316,7 +10373,7 @@ final class M3ControlStyleTest {
                         "visual-picker-field-rtl-open-button-separation.png"
                 ));
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(root);
+                M3MotionSettings.setReducedMotionRequested(root, false);
                 stage.close();
             }
         });
@@ -10363,8 +10420,8 @@ final class M3ControlStyleTest {
             FxTestUtils.runOnFxThread(() -> {
                 @Nullable Pane root = rootReference.get();
                 if (root != null) {
-                    M3MotionSettings.clearAnimationsEnabled(root);
-                    M3MotionSettings.clearMotionScheme(root);
+                    M3MotionSettings.setReducedMotionRequested(root, false);
+                    FxTestUtils.clearMotionScheme(root);
                 }
                 @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
@@ -10392,7 +10449,7 @@ final class M3ControlStyleTest {
                         assertTextInputLayoutFloatingPresentationIntermediate(layout);
                         assertTextInputLayoutSupportingRowPresentationIntermediate(layout);
 
-                        M3MotionSettings.setAnimationsEnabled(root, false);
+                        M3MotionSettings.setReducedMotionRequested(root, true);
                         root.applyCss();
                         root.layout();
                         layout.layout();
@@ -10404,8 +10461,8 @@ final class M3ControlStyleTest {
             FxTestUtils.runOnFxThread(() -> {
                 @Nullable Pane root = rootReference.get();
                 if (root != null) {
-                    M3MotionSettings.clearAnimationsEnabled(root);
-                    M3MotionSettings.clearMotionScheme(root);
+                    M3MotionSettings.setReducedMotionRequested(root, false);
+                    FxTestUtils.clearMotionScheme(root);
                 }
                 @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
@@ -10724,10 +10781,10 @@ final class M3ControlStyleTest {
             M3TextInputLayout layout = new M3TextInputLayout(textField, "Helper text");
             layout.setLeading(leadingMenuButton);
             layout.setTrailing(trailingMenuButton);
-            M3MotionSettings.setAnimationsEnabled(leadingMenuButton, false);
-            M3MotionSettings.setAnimationsEnabled(leadingSubMenu, false);
-            M3MotionSettings.setAnimationsEnabled(trailingMenuButton, false);
-            M3MotionSettings.setAnimationsEnabled(trailingSubMenu, false);
+            M3MotionSettings.setReducedMotionRequested(leadingMenuButton, true);
+            M3MotionSettings.setReducedMotionRequested(leadingSubMenu, true);
+            M3MotionSettings.setReducedMotionRequested(trailingMenuButton, true);
+            M3MotionSettings.setReducedMotionRequested(trailingSubMenu, true);
 
             Pane root = new Pane(layout);
             Stage stage = new Stage();
@@ -10754,10 +10811,10 @@ final class M3ControlStyleTest {
                 trailingMenuButton.hideMenu();
                 leadingSubMenu.hideSubMenu();
                 leadingMenuButton.hideMenu();
-                M3MotionSettings.clearAnimationsEnabled(trailingSubMenu);
-                M3MotionSettings.clearAnimationsEnabled(trailingMenuButton);
-                M3MotionSettings.clearAnimationsEnabled(leadingSubMenu);
-                M3MotionSettings.clearAnimationsEnabled(leadingMenuButton);
+                M3MotionSettings.setReducedMotionRequested(trailingSubMenu, false);
+                M3MotionSettings.setReducedMotionRequested(trailingMenuButton, false);
+                M3MotionSettings.setReducedMotionRequested(leadingSubMenu, false);
+                M3MotionSettings.setReducedMotionRequested(leadingMenuButton, false);
                 stage.close();
             }
         });
@@ -10916,8 +10973,8 @@ final class M3ControlStyleTest {
                         Stage stage = new Stage();
 
                         M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                        M3MotionSettings.setAnimationsEnabled(root, true);
-                        M3MotionSettings.setMotionScheme(root, observableTestMotionScheme());
+                        M3MotionSettings.setReducedMotionRequested(root, false);
+                        FxTestUtils.setMotionScheme(root, observableTestMotionScheme());
                         stage.setScene(scene);
                         stage.show();
                         root.applyCss();
@@ -10962,8 +11019,8 @@ final class M3ControlStyleTest {
                 }
                 @Nullable StackPane root = rootReference.get();
                 if (root != null) {
-                    M3MotionSettings.clearAnimationsEnabled(root);
-                    M3MotionSettings.clearMotionScheme(root);
+                    M3MotionSettings.setReducedMotionRequested(root, false);
+                    FxTestUtils.clearMotionScheme(root);
                 }
                 @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
@@ -11667,9 +11724,9 @@ final class M3ControlStyleTest {
                     tooltip.setShowDuration(Duration.INDEFINITE);
 
                     Pane root = new Pane(target);
-                    M3MotionSettings.setAnimationsEnabled(root, false);
-                    M3MotionSettings.setMotionScheme(root, M3MotionScheme.expressive());
-                    M3MotionSettings.setMotionBehavior(root, M3MotionBehavior.expressive());
+                    M3MotionSettings.setReducedMotionRequested(root, true);
+                    FxTestUtils.setMotionScheme(root, M3MotionScheme.expressive());
+                    FxTestUtils.setMotionBehavior(root, M3MotionBehavior.expressive());
                     stage.setScene(new Scene(root, 240.0, 120.0));
                     stage.show();
                     root.applyCss();
@@ -11752,7 +11809,7 @@ final class M3ControlStyleTest {
 
     /// Verifies that installed tooltip show delays refresh while a pointer-triggered open is pending.
     @Test
-    void tooltipShowDelayRefreshUsesPublicBehavior() throws InterruptedException {
+    void tooltipShowDelayRefreshUsesThemeBehavior() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable VBox> rootReference = new AtomicReference<>();
         AtomicReference<@Nullable Label> targetReference = new AtomicReference<>();
@@ -11766,14 +11823,14 @@ final class M3ControlStyleTest {
                         target.setMinSize(80.0, 32.0);
                         M3Tooltip tooltip = installTooltip(target, "Installed");
                         VBox root = new VBox(target);
-                        M3MotionSettings.setMotionBehavior(root, tooltipBehavior(
+                        Stage stage = new Stage();
+                        Scene scene = new Scene(root, 240.0, 120.0);
+                        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                        FxTestUtils.setMotionBehavior(root, tooltipBehavior(
                                 Duration.seconds(30.0),
                                 Duration.ZERO,
                                 Duration.seconds(30.0)
                         ));
-                        Stage stage = new Stage();
-                        Scene scene = new Scene(root, 240.0, 120.0);
-                        M3ThemeManager.install(scene, M3Theme.defaultTheme());
                         stage.setScene(scene);
                         stage.show();
                         root.applyCss();
@@ -11786,7 +11843,7 @@ final class M3ControlStyleTest {
                         rootReference.set(root);
                         targetReference.set(target);
                         tooltipReference.set(tooltip);
-                        M3MotionSettings.setMotionBehavior(root, tooltipBehavior(
+                        FxTestUtils.setMotionBehavior(root, tooltipBehavior(
                                 Duration.millis(40.0),
                                 Duration.ZERO,
                                 Duration.seconds(30.0)
@@ -11801,7 +11858,7 @@ final class M3ControlStyleTest {
 
     /// Verifies that installed tooltip visible durations refresh while a pointer-triggered tooltip is showing.
     @Test
-    void tooltipShowDurationRefreshUsesPublicBehavior() throws InterruptedException {
+    void tooltipShowDurationRefreshUsesThemeBehavior() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable VBox> rootReference = new AtomicReference<>();
         AtomicReference<@Nullable Label> targetReference = new AtomicReference<>();
@@ -11815,14 +11872,14 @@ final class M3ControlStyleTest {
                         target.setMinSize(80.0, 32.0);
                         M3Tooltip tooltip = installTooltip(target, "Installed");
                         VBox root = new VBox(target);
-                        M3MotionSettings.setMotionBehavior(root, tooltipBehavior(
+                        Stage stage = new Stage();
+                        Scene scene = new Scene(root, 240.0, 120.0);
+                        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                        FxTestUtils.setMotionBehavior(root, tooltipBehavior(
                                 Duration.ZERO,
                                 Duration.ZERO,
                                 Duration.seconds(30.0)
                         ));
-                        Stage stage = new Stage();
-                        Scene scene = new Scene(root, 240.0, 120.0);
-                        M3ThemeManager.install(scene, M3Theme.defaultTheme());
                         stage.setScene(scene);
                         stage.show();
                         root.applyCss();
@@ -11838,7 +11895,7 @@ final class M3ControlStyleTest {
                         VBox root = Objects.requireNonNull(rootReference.get(), "root");
                         M3Tooltip tooltip = Objects.requireNonNull(tooltipReference.get(), "tooltip");
                         assertTrue(tooltip.isShowing());
-                        M3MotionSettings.setMotionBehavior(root, tooltipBehavior(
+                        FxTestUtils.setMotionBehavior(root, tooltipBehavior(
                                 Duration.ZERO,
                                 Duration.ZERO,
                                 Duration.millis(40.0)
@@ -11859,7 +11916,7 @@ final class M3ControlStyleTest {
 
     /// Verifies that installed tooltip hide delays refresh while a pointer-triggered close is pending.
     @Test
-    void tooltipHideDelayRefreshUsesPublicBehavior() throws InterruptedException {
+    void tooltipHideDelayRefreshUsesThemeBehavior() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable VBox> rootReference = new AtomicReference<>();
         AtomicReference<@Nullable Label> targetReference = new AtomicReference<>();
@@ -11873,14 +11930,14 @@ final class M3ControlStyleTest {
                         target.setMinSize(80.0, 32.0);
                         M3Tooltip tooltip = installTooltip(target, "Installed");
                         VBox root = new VBox(target);
-                        M3MotionSettings.setMotionBehavior(root, tooltipBehavior(
+                        Stage stage = new Stage();
+                        Scene scene = new Scene(root, 240.0, 120.0);
+                        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                        FxTestUtils.setMotionBehavior(root, tooltipBehavior(
                                 Duration.ZERO,
                                 Duration.seconds(30.0),
                                 Duration.seconds(30.0)
                         ));
-                        Stage stage = new Stage();
-                        Scene scene = new Scene(root, 240.0, 120.0);
-                        M3ThemeManager.install(scene, M3Theme.defaultTheme());
                         stage.setScene(scene);
                         stage.show();
                         root.applyCss();
@@ -11900,7 +11957,7 @@ final class M3ControlStyleTest {
 
                         target.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_EXITED, 4.0, 4.0, false));
                         assertTrue(tooltip.isShowing());
-                        M3MotionSettings.setMotionBehavior(root, tooltipBehavior(
+                        FxTestUtils.setMotionBehavior(root, tooltipBehavior(
                                 Duration.ZERO,
                                 Duration.millis(40.0),
                                 Duration.seconds(30.0)
@@ -12994,7 +13051,7 @@ final class M3ControlStyleTest {
             HBox root = new HBox(leftToRightIcon, rightToLeftIcon);
             Scene scene = new Scene(root, 80.0, 40.0);
 
-            M3MotionSettings.setAnimationsEnabled(root, false);
+            M3MotionSettings.setReducedMotionRequested(root, true);
             M3ThemeManager.install(scene, M3Theme.fromSeed(
                     Color.web("#6750a4"),
                     M3Profile.EXPRESSIVE_2025,
@@ -14705,22 +14762,22 @@ final class M3ControlStyleTest {
 
                 root.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
                 scene.getStylesheets().add(stylesheet);
-                M3MotionSettings.setAnimationsEnabled(root, false);
+                M3MotionSettings.setReducedMotionRequested(root, true);
 
                 assertEquals(failedStartReads, stylesheetReads.get());
                 assertEquals(NodeOrientation.LEFT_TO_RIGHT, popupRoot.getEffectiveNodeOrientation());
-                assertNull(M3MotionSettings.getAnimationsEnabled(popupRoot));
+                assertFalse(M3MotionSettings.isReducedMotionRequested(popupRoot));
                 assertFalse(popupRoot.getStylesheets().contains(stylesheet));
 
                 failSynchronization.set(false);
                 synchronizer.start();
 
                 assertEquals(NodeOrientation.RIGHT_TO_LEFT, popupRoot.getEffectiveNodeOrientation());
-                assertEquals(Boolean.FALSE, M3MotionSettings.getAnimationsEnabled(popupRoot));
+                assertTrue(M3MotionSettings.isReducedMotionRequested(popupRoot));
                 assertTrue(popupRoot.getStylesheets().contains(stylesheet));
             } finally {
                 synchronizer.stop();
-                M3MotionSettings.clearAnimationsEnabled(root);
+                M3MotionSettings.setReducedMotionRequested(root, false);
             }
         });
     }
@@ -14798,82 +14855,75 @@ final class M3ControlStyleTest {
             new Scene(root, 420.0, 220.0);
 
             try {
-                M3MotionSettings.setAnimationsEnabled(root, false);
+                M3MotionSettings.setReducedMotionRequested(root, true);
                 synchronizer.start();
 
-                assertEquals(Boolean.FALSE, M3MotionSettings.getAnimationsEnabled(popupRoot));
+                assertTrue(M3MotionSettings.isReducedMotionRequested(popupRoot));
                 assertFalse(M3MotionSettings.areAnimationsEnabled(popupRoot));
 
-                M3MotionSettings.setAnimationsEnabled(owner, true);
+                M3MotionSettings.setReducedMotionRequested(owner, false);
 
-                assertEquals(Boolean.FALSE, M3MotionSettings.getAnimationsEnabled(popupRoot));
+                assertTrue(M3MotionSettings.isReducedMotionRequested(popupRoot));
                 assertFalse(M3MotionSettings.areAnimationsEnabled(popupRoot));
 
                 synchronizer.stop();
-                M3MotionSettings.setAnimationsEnabled(owner, false);
+                M3MotionSettings.setReducedMotionRequested(owner, true);
 
-                assertEquals(Boolean.FALSE, M3MotionSettings.getAnimationsEnabled(popupRoot));
+                assertTrue(M3MotionSettings.isReducedMotionRequested(popupRoot));
                 assertFalse(M3MotionSettings.areAnimationsEnabled(popupRoot));
             } finally {
                 synchronizer.stop();
-                M3MotionSettings.clearAnimationsEnabled(owner);
-                M3MotionSettings.clearAnimationsEnabled(root);
+                M3MotionSettings.setReducedMotionRequested(owner, false);
+                M3MotionSettings.setReducedMotionRequested(root, false);
             }
         });
     }
 
-    /// Verifies that popup context synchronizers mirror global motion scheme and behavior changes.
+    /// Verifies that popup context synchronizers mirror reduced motion and theme motion tokens.
     @Test
-    void popupContextSynchronizerTracksRuntimeGlobalMotionSettings() {
+    void popupContextSynchronizerTracksReducedMotionAndThemeMotion() {
         FxTestUtils.runOnFxThread(() -> {
             boolean previousAnimationsEnabled = M3MotionSettings.areAnimationsEnabled();
-            M3MotionScheme previousScheme = M3MotionSettings.getMotionScheme();
-            M3MotionBehavior previousBehavior = M3MotionSettings.getMotionBehavior();
             Label owner = new Label("Owner");
             Pane root = new Pane(owner);
             Pane popupRoot = new Pane();
             M3PopupContextSynchronizer synchronizer = new M3PopupContextSynchronizer(owner, popupRoot);
-            M3MotionScheme standardScheme = M3MotionScheme.standard();
-            M3MotionBehavior standardBehavior = M3MotionBehavior.standard();
-            M3MotionScheme expressiveScheme = M3MotionScheme.expressive();
-            M3MotionBehavior expressiveBehavior = M3MotionBehavior.expressive();
+            M3Theme standardTheme = M3Theme.defaultTheme();
+            M3Theme expressiveTheme = M3Theme.fromSeed(
+                    M3Theme.DEFAULT_SEED_COLOR,
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.LIGHT
+            );
             new Scene(root, 420.0, 220.0);
 
             try {
                 M3MotionSettings.setAnimationsEnabled(true);
-                M3MotionSettings.setMotionScheme(standardScheme);
-                M3MotionSettings.setMotionBehavior(standardBehavior);
+                M3ThemeManager.install(root, standardTheme);
                 synchronizer.start();
 
-                assertNull(M3MotionSettings.getAnimationsEnabled(popupRoot));
-                assertSame(standardScheme, M3MotionSettings.getMotionScheme(popupRoot));
-                assertSame(standardBehavior, M3MotionSettings.getMotionBehavior(popupRoot));
-                assertSame(standardScheme, M3Animation.motionScheme(popupRoot));
-                assertSame(standardBehavior, M3Animation.motionBehavior(popupRoot));
+                assertFalse(M3MotionSettings.isReducedMotionRequested(popupRoot));
+                assertSame(standardTheme, M3ThemeManager.getTheme(popupRoot));
+                assertSame(standardTheme.tokens().motionTokens().scheme(), M3Animation.motionScheme(popupRoot));
+                assertSame(standardTheme.tokens().motionTokens().behavior(), M3Animation.motionBehavior(popupRoot));
 
                 M3MotionSettings.setAnimationsEnabled(false);
-                M3MotionSettings.setMotionScheme(expressiveScheme);
-                M3MotionSettings.setMotionBehavior(expressiveBehavior);
+                M3ThemeManager.install(root, expressiveTheme);
 
-                assertEquals(Boolean.FALSE, M3MotionSettings.getAnimationsEnabled(popupRoot));
-                assertSame(expressiveScheme, M3MotionSettings.getMotionScheme(popupRoot));
-                assertSame(expressiveBehavior, M3MotionSettings.getMotionBehavior(popupRoot));
-                assertSame(expressiveScheme, M3Animation.motionScheme(popupRoot));
-                assertSame(expressiveBehavior, M3Animation.motionBehavior(popupRoot));
+                assertTrue(M3MotionSettings.isReducedMotionRequested(popupRoot));
+                assertSame(expressiveTheme, M3ThemeManager.getTheme(popupRoot));
+                assertSame(expressiveTheme.tokens().motionTokens().scheme(), M3Animation.motionScheme(popupRoot));
+                assertSame(expressiveTheme.tokens().motionTokens().behavior(), M3Animation.motionBehavior(popupRoot));
 
                 synchronizer.stop();
                 M3MotionSettings.setAnimationsEnabled(true);
-                M3MotionSettings.setMotionScheme(standardScheme);
-                M3MotionSettings.setMotionBehavior(standardBehavior);
+                M3ThemeManager.install(root, standardTheme);
 
-                assertEquals(Boolean.FALSE, M3MotionSettings.getAnimationsEnabled(popupRoot));
-                assertSame(expressiveScheme, M3MotionSettings.getMotionScheme(popupRoot));
-                assertSame(expressiveBehavior, M3MotionSettings.getMotionBehavior(popupRoot));
+                assertTrue(M3MotionSettings.isReducedMotionRequested(popupRoot));
+                assertSame(expressiveTheme, M3ThemeManager.getTheme(popupRoot));
             } finally {
                 synchronizer.stop();
                 M3MotionSettings.setAnimationsEnabled(previousAnimationsEnabled);
-                M3MotionSettings.setMotionScheme(previousScheme);
-                M3MotionSettings.setMotionBehavior(previousBehavior);
+                M3ThemeManager.uninstall(root);
             }
         });
     }
@@ -14904,20 +14954,20 @@ final class M3ControlStyleTest {
                 synchronizer.start();
                 syncCount.set(0);
 
-                M3MotionSettings.setAnimationsEnabled(unrelated, false);
+                M3MotionSettings.setReducedMotionRequested(unrelated, true);
 
                 assertEquals(0, syncCount.get());
                 assertTrue(M3MotionSettings.areAnimationsEnabled(popupRoot));
 
-                M3MotionSettings.setAnimationsEnabled(root, false);
+                M3MotionSettings.setReducedMotionRequested(root, true);
 
                 assertEquals(0, syncCount.get());
-                assertEquals(Boolean.FALSE, M3MotionSettings.getAnimationsEnabled(popupRoot));
+                assertTrue(M3MotionSettings.isReducedMotionRequested(popupRoot));
                 assertFalse(M3MotionSettings.areAnimationsEnabled(popupRoot));
             } finally {
                 synchronizer.stop();
-                M3MotionSettings.clearAnimationsEnabled(unrelated);
-                M3MotionSettings.clearAnimationsEnabled(root);
+                M3MotionSettings.setReducedMotionRequested(unrelated, false);
+                M3MotionSettings.setReducedMotionRequested(root, false);
                 M3MotionSettings.setAnimationsEnabled(previousAnimationsEnabled);
             }
         });
@@ -15445,9 +15495,9 @@ final class M3ControlStyleTest {
             Stage stage = new Stage();
 
             try {
-                M3MotionSettings.setAnimationsEnabled(menuButton, false);
-                M3MotionSettings.setAnimationsEnabled(export, false);
-                M3MotionSettings.setAnimationsEnabled(recent, false);
+                M3MotionSettings.setReducedMotionRequested(menuButton, true);
+                M3MotionSettings.setReducedMotionRequested(export, true);
+                M3MotionSettings.setReducedMotionRequested(recent, true);
 
                 Pane root = new Pane(menuButton);
                 stage.setScene(new Scene(root, 360.0, 220.0));
@@ -15521,9 +15571,9 @@ final class M3ControlStyleTest {
                 assertTrue(export.isFocused());
                 assertTrue(menuButton.isShowing());
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(menuButton);
-                M3MotionSettings.clearAnimationsEnabled(export);
-                M3MotionSettings.clearAnimationsEnabled(recent);
+                M3MotionSettings.setReducedMotionRequested(menuButton, false);
+                M3MotionSettings.setReducedMotionRequested(export, false);
+                M3MotionSettings.setReducedMotionRequested(recent, false);
                 recent.hideSubMenu();
                 export.hideSubMenu();
                 menuButton.hideMenu();
@@ -15545,9 +15595,9 @@ final class M3ControlStyleTest {
             Stage stage = new Stage();
 
             try {
-                M3MotionSettings.setAnimationsEnabled(menuButton, false);
-                M3MotionSettings.setAnimationsEnabled(export, false);
-                M3MotionSettings.setAnimationsEnabled(recent, false);
+                M3MotionSettings.setReducedMotionRequested(menuButton, true);
+                M3MotionSettings.setReducedMotionRequested(export, true);
+                M3MotionSettings.setReducedMotionRequested(recent, true);
 
                 stage.setScene(new Scene(root, 360.0, 220.0));
                 stage.show();
@@ -15597,9 +15647,9 @@ final class M3ControlStyleTest {
                 assertTrue(menuButton.isShowing());
                 assertSame(export, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(menuButton);
-                M3MotionSettings.clearAnimationsEnabled(export);
-                M3MotionSettings.clearAnimationsEnabled(recent);
+                M3MotionSettings.setReducedMotionRequested(menuButton, false);
+                M3MotionSettings.setReducedMotionRequested(export, false);
+                M3MotionSettings.setReducedMotionRequested(recent, false);
                 recent.hideSubMenu();
                 export.hideSubMenu();
                 menuButton.hideMenu();
@@ -15716,7 +15766,7 @@ final class M3ControlStyleTest {
             VBox root = new VBox(8.0, outside, ownerSurface);
             Stage stage = new Stage();
             try {
-                M3MotionSettings.setAnimationsEnabled(root, false);
+                M3MotionSettings.setReducedMotionRequested(root, true);
                 Scene scene = new Scene(root, 620.0, 520.0);
                 M3ThemeManager.install(scene, M3Theme.defaultTheme());
                 stage.setScene(scene);
@@ -15772,7 +15822,7 @@ final class M3ControlStyleTest {
                 assertFalse(snackbarAction.isFocused());
                 assertTrue(outside.isFocused());
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(root);
+                M3MotionSettings.setReducedMotionRequested(root, false);
                 stage.close();
             }
         });
@@ -15795,12 +15845,12 @@ final class M3ControlStyleTest {
             M3SplitButton splitButton = splitButton("Create", splitExport);
             Stage stage = new Stage();
             try {
-                M3MotionSettings.setAnimationsEnabled(menuButton, false);
-                M3MotionSettings.setAnimationsEnabled(export, false);
-                M3MotionSettings.setAnimationsEnabled(recent, false);
-                M3MotionSettings.setAnimationsEnabled(splitButton, false);
-                M3MotionSettings.setAnimationsEnabled(splitExport, false);
-                M3MotionSettings.setAnimationsEnabled(splitRecent, false);
+                M3MotionSettings.setReducedMotionRequested(menuButton, true);
+                M3MotionSettings.setReducedMotionRequested(export, true);
+                M3MotionSettings.setReducedMotionRequested(recent, true);
+                M3MotionSettings.setReducedMotionRequested(splitButton, true);
+                M3MotionSettings.setReducedMotionRequested(splitExport, true);
+                M3MotionSettings.setReducedMotionRequested(splitRecent, true);
 
                 Pane root = new Pane(menuButton, splitButton);
                 stage.setScene(new Scene(root, 360.0, 220.0));
@@ -15855,12 +15905,12 @@ final class M3ControlStyleTest {
                 assertTrue(splitPdf.isFocused());
                 assertSame(splitPdf, splitButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(menuButton);
-                M3MotionSettings.clearAnimationsEnabled(export);
-                M3MotionSettings.clearAnimationsEnabled(recent);
-                M3MotionSettings.clearAnimationsEnabled(splitButton);
-                M3MotionSettings.clearAnimationsEnabled(splitExport);
-                M3MotionSettings.clearAnimationsEnabled(splitRecent);
+                M3MotionSettings.setReducedMotionRequested(menuButton, false);
+                M3MotionSettings.setReducedMotionRequested(export, false);
+                M3MotionSettings.setReducedMotionRequested(recent, false);
+                M3MotionSettings.setReducedMotionRequested(splitButton, false);
+                M3MotionSettings.setReducedMotionRequested(splitExport, false);
+                M3MotionSettings.setReducedMotionRequested(splitRecent, false);
                 menuButton.hideMenu();
                 splitButton.hideMenu();
                 stage.close();
@@ -15907,7 +15957,7 @@ final class M3ControlStyleTest {
             Stage stage = new Stage();
             try {
                 for (Node popupOwner : popupOwners) {
-                    M3MotionSettings.setAnimationsEnabled(popupOwner, false);
+                    M3MotionSettings.setReducedMotionRequested(popupOwner, true);
                 }
 
                 VBox root = new VBox(12.0, formPane, surface, badgedBox, banner);
@@ -15945,7 +15995,7 @@ final class M3ControlStyleTest {
                 formSubMenu.hideSubMenu();
                 formMenuButton.hideMenu();
                 for (Node popupOwner : popupOwners) {
-                    M3MotionSettings.clearAnimationsEnabled(popupOwner);
+                    M3MotionSettings.setReducedMotionRequested(popupOwner, false);
                 }
                 stage.close();
             }
@@ -16349,7 +16399,7 @@ final class M3ControlStyleTest {
 
     /// Verifies that type-ahead reset delays refresh while printable-key prefixes are buffered.
     @Test
-    void typeAheadResetDelayRefreshUsesPublicBehavior() throws InterruptedException {
+    void typeAheadResetDelayRefreshUsesThemeBehavior() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable VBox> rootReference = new AtomicReference<>();
         AtomicReference<@Nullable M3ListPane> listPaneReference = new AtomicReference<>();
@@ -16391,14 +16441,14 @@ final class M3ControlStyleTest {
                         );
 
                         VBox root = new VBox(12.0, listPane, listView, menu, drawer);
-                        M3MotionSettings.setMotionBehavior(root, interactionTimingBehavior(
+                        Stage stage = new Stage();
+                        Scene scene = new Scene(root, 420.0, 520.0);
+                        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                        FxTestUtils.setMotionBehavior(root, interactionTimingBehavior(
                                 Duration.seconds(30.0),
                                 Duration.seconds(30.0),
                                 Duration.seconds(30.0)
                         ));
-                        Stage stage = new Stage();
-                        Scene scene = new Scene(root, 420.0, 520.0);
-                        M3ThemeManager.install(scene, M3Theme.defaultTheme());
                         stage.setScene(scene);
                         stage.show();
                         listView.resize(360.0, 160.0);
@@ -16443,7 +16493,7 @@ final class M3ControlStyleTest {
                         drawerReference.set(drawer);
                         drawerSearchReference.set(drawerSearch);
 
-                        M3MotionSettings.setMotionBehavior(root, interactionTimingBehavior(
+                        FxTestUtils.setMotionBehavior(root, interactionTimingBehavior(
                                 Duration.millis(40.0),
                                 Duration.seconds(30.0),
                                 Duration.seconds(30.0)
@@ -16484,7 +16534,7 @@ final class M3ControlStyleTest {
 
     /// Verifies that submenu hover open and close delays refresh while hover transitions are pending.
     @Test
-    void subMenuHoverDelayRefreshUsesPublicBehavior() throws InterruptedException {
+    void subMenuHoverDelayRefreshUsesThemeBehavior() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable VBox> rootReference = new AtomicReference<>();
         AtomicReference<@Nullable M3SubMenuItem> subMenuItemReference = new AtomicReference<>();
@@ -16499,15 +16549,15 @@ final class M3ControlStyleTest {
                         M3SubMenuItem subMenuItem = new M3SubMenuItem("Move to", new M3MenuItem("Archive"));
                         subMenuItem.setMinSize(160.0, 48.0);
                         VBox root = new VBox(subMenuItem);
-                        M3MotionSettings.setAnimationsEnabled(root, false);
-                        M3MotionSettings.setMotionBehavior(root, interactionTimingBehavior(
+                        M3MotionSettings.setReducedMotionRequested(root, true);
+                        Stage stage = new Stage();
+                        Scene scene = new Scene(root, 320.0, 160.0);
+                        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                        FxTestUtils.setMotionBehavior(root, interactionTimingBehavior(
                                 Duration.seconds(30.0),
                                 Duration.seconds(30.0),
                                 Duration.seconds(30.0)
                         ));
-                        Stage stage = new Stage();
-                        Scene scene = new Scene(root, 320.0, 160.0);
-                        M3ThemeManager.install(scene, M3Theme.defaultTheme());
                         stage.setScene(scene);
                         stage.show();
                         root.applyCss();
@@ -16519,7 +16569,7 @@ final class M3ControlStyleTest {
                         stageReference.set(stage);
                         rootReference.set(root);
                         subMenuItemReference.set(subMenuItem);
-                        M3MotionSettings.setMotionBehavior(root, interactionTimingBehavior(
+                        FxTestUtils.setMotionBehavior(root, interactionTimingBehavior(
                                 Duration.seconds(30.0),
                                 Duration.millis(40.0),
                                 Duration.seconds(30.0)
@@ -16533,7 +16583,7 @@ final class M3ControlStyleTest {
 
                         subMenuItem.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_EXITED, 8.0, 8.0, false));
                         assertTrue(subMenuItem.isSubMenuShowing());
-                        M3MotionSettings.setMotionBehavior(root, interactionTimingBehavior(
+                        FxTestUtils.setMotionBehavior(root, interactionTimingBehavior(
                                 Duration.seconds(30.0),
                                 Duration.millis(40.0),
                                 Duration.millis(40.0)
@@ -16855,8 +16905,8 @@ final class M3ControlStyleTest {
             M3MenuButton menuButton = new M3MenuButton("More", export);
             Stage stage = new Stage();
             try {
-                M3MotionSettings.setAnimationsEnabled(menuButton, false);
-                M3MotionSettings.setAnimationsEnabled(export, false);
+                M3MotionSettings.setReducedMotionRequested(menuButton, true);
+                M3MotionSettings.setReducedMotionRequested(export, true);
                 Pane root = new Pane(menuButton);
                 stage.setScene(new Scene(root, 280.0, 160.0));
                 stage.show();
@@ -16880,8 +16930,8 @@ final class M3ControlStyleTest {
                 assertTrue(menuButton.isFocused());
                 assertEquals(menuButton, menuButton.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(menuButton);
-                M3MotionSettings.clearAnimationsEnabled(export);
+                M3MotionSettings.setReducedMotionRequested(menuButton, false);
+                M3MotionSettings.setReducedMotionRequested(export, false);
                 menuButton.hideMenu();
                 stage.close();
             }
@@ -16907,7 +16957,7 @@ final class M3ControlStyleTest {
                 VBox root = new VBox(12.0, menuButton, dateField, rangeField);
                 Stage stage = new Stage();
 
-                M3MotionSettings.setAnimationsEnabled(root, true);
+                M3MotionSettings.setReducedMotionRequested(root, false);
                 stage.setScene(new Scene(root, 520.0, 360.0));
                 stage.show();
                 root.applyCss();
@@ -17025,7 +17075,7 @@ final class M3ControlStyleTest {
                 }
                 @Nullable VBox root = rootReference.get();
                 if (root != null) {
-                    M3MotionSettings.clearAnimationsEnabled(root);
+                    M3MotionSettings.setReducedMotionRequested(root, false);
                 }
                 @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
@@ -17465,10 +17515,10 @@ final class M3ControlStyleTest {
             M3SearchBar searchBar = new M3SearchBar("Search");
             searchBar.setLeading(leadingMenuButton);
             searchBar.getTrailingActions().setAll(trailingMenuButton);
-            M3MotionSettings.setAnimationsEnabled(leadingMenuButton, false);
-            M3MotionSettings.setAnimationsEnabled(leadingSubMenu, false);
-            M3MotionSettings.setAnimationsEnabled(trailingMenuButton, false);
-            M3MotionSettings.setAnimationsEnabled(trailingSubMenu, false);
+            M3MotionSettings.setReducedMotionRequested(leadingMenuButton, true);
+            M3MotionSettings.setReducedMotionRequested(leadingSubMenu, true);
+            M3MotionSettings.setReducedMotionRequested(trailingMenuButton, true);
+            M3MotionSettings.setReducedMotionRequested(trailingSubMenu, true);
 
             Pane root = new Pane(searchBar);
             Stage stage = new Stage();
@@ -17496,10 +17546,10 @@ final class M3ControlStyleTest {
                 trailingMenuButton.hideMenu();
                 leadingSubMenu.hideSubMenu();
                 leadingMenuButton.hideMenu();
-                M3MotionSettings.clearAnimationsEnabled(trailingSubMenu);
-                M3MotionSettings.clearAnimationsEnabled(trailingMenuButton);
-                M3MotionSettings.clearAnimationsEnabled(leadingSubMenu);
-                M3MotionSettings.clearAnimationsEnabled(leadingMenuButton);
+                M3MotionSettings.setReducedMotionRequested(trailingSubMenu, false);
+                M3MotionSettings.setReducedMotionRequested(trailingMenuButton, false);
+                M3MotionSettings.setReducedMotionRequested(leadingSubMenu, false);
+                M3MotionSettings.setReducedMotionRequested(leadingMenuButton, false);
                 stage.close();
             }
         });
@@ -17782,8 +17832,8 @@ final class M3ControlStyleTest {
 
             StackPane root = new StackPane(searchView);
             root.setPrefSize(420.0, 240.0);
-            M3MotionSettings.setAnimationsEnabled(root, true);
-            M3MotionSettings.setMotionScheme(root, observableTestMotionScheme());
+            M3MotionSettings.setReducedMotionRequested(root, false);
+            FxTestUtils.setMotionScheme(root, observableTestMotionScheme());
 
             Scene scene = new Scene(root, 420.0, 240.0);
             Stage stage = new Stage();
@@ -17820,7 +17870,7 @@ final class M3ControlStyleTest {
                         M3SearchView searchView = Objects.requireNonNull(searchViewReference.get(), "searchView");
                         Region results = Objects.requireNonNull(resultsReference.get(), "results");
 
-                        M3MotionSettings.setAnimationsEnabled(root, false);
+                        M3MotionSettings.setReducedMotionRequested(root, true);
                         root.applyCss();
                         root.layout();
 
@@ -17836,8 +17886,8 @@ final class M3ControlStyleTest {
             FxTestUtils.runOnFxThread(() -> {
                 @Nullable StackPane root = rootReference.get();
                 if (root != null) {
-                    M3MotionSettings.clearMotionScheme(root);
-                    M3MotionSettings.clearAnimationsEnabled(root);
+                    FxTestUtils.clearMotionScheme(root);
+                    M3MotionSettings.setReducedMotionRequested(root, false);
                 }
 
                 @Nullable Stage stage = stageReference.get();
@@ -18461,7 +18511,7 @@ final class M3ControlStyleTest {
                 bottomSheet.setVariant(M3SheetVariant.MODAL);
                 sideSheet.hide();
                 bottomSheet.hide();
-                M3MotionSettings.setAnimationsEnabled(root, false);
+                M3MotionSettings.setReducedMotionRequested(root, true);
                 stage.setScene(new Scene(root, 480.0, 360.0));
                 stage.show();
                 root.applyCss();
@@ -18494,7 +18544,7 @@ final class M3ControlStyleTest {
                 assertTrue(trigger.isFocused());
                 assertNull(bottomSheet.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(root);
+                M3MotionSettings.setReducedMotionRequested(root, false);
                 stage.close();
             }
         });
@@ -19664,8 +19714,8 @@ final class M3ControlStyleTest {
                 Stage stage = new Stage();
 
                 M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                M3MotionSettings.setAnimationsEnabled(root, true);
-                M3MotionSettings.setMotionScheme(root, observableTestMotionScheme());
+                M3MotionSettings.setReducedMotionRequested(root, false);
+                FxTestUtils.setMotionScheme(root, observableTestMotionScheme());
                 stage.setScene(scene);
                 stage.show();
                 root.applyCss();
@@ -19921,7 +19971,7 @@ final class M3ControlStyleTest {
         M3Switch switchControl = new M3Switch("Notifications");
         switchControl.setSelectedIcon(selectedIcon);
         switchControl.setUnselectedIcon(unselectedIcon);
-        M3MotionSettings.setAnimationsEnabled(switchControl, false);
+        M3MotionSettings.setReducedMotionRequested(switchControl, true);
 
         Pane root = new Pane(switchControl);
         Scene scene = new Scene(root, 180.0, 80.0);
@@ -21261,7 +21311,7 @@ final class M3ControlStyleTest {
                         IndeterminateProgressMotionScene scene =
                                 Objects.requireNonNull(sceneReference.get(), "scene");
                         assertIndeterminateProgressMotionAdvanced(scene, sampleReference, "enabled motion");
-                        M3MotionSettings.setAnimationsEnabled(scene.root, false);
+                        M3MotionSettings.setReducedMotionRequested(scene.root, true);
                         sampleReference.set(sampleIndeterminateProgressMotion(scene));
                     }
             );
@@ -21275,7 +21325,7 @@ final class M3ControlStyleTest {
                                 Objects.requireNonNull(sceneReference.get(), "scene");
                         assertFalse(M3MotionSettings.areAnimationsEnabled(scene.progressBar));
                         assertIndeterminateProgressMotionAdvanced(scene, sampleReference, "reduced motion");
-                        M3MotionSettings.setAnimationsEnabled(scene.root, true);
+                        M3MotionSettings.setReducedMotionRequested(scene.root, false);
                         sampleReference.set(sampleIndeterminateProgressMotion(scene));
                     }
             );
@@ -21371,7 +21421,7 @@ final class M3ControlStyleTest {
                         );
                         sceneReference.set(scene);
                         initialAreaReference.set(loadingIndicatorPathBoundsArea(scene.loadingIndicatorPath));
-                        M3MotionSettings.setMotionBehavior(scene.root, observableIndeterminateProgressBehavior());
+                        FxTestUtils.setMotionBehavior(scene.root, observableIndeterminateProgressBehavior());
                     },
                     () -> {
                         IndeterminateProgressMotionScene scene =
@@ -22065,9 +22115,9 @@ final class M3ControlStyleTest {
                         Scene scene = new Scene(root, 280.0, 60.0);
                         Stage stage = new Stage();
 
-                        M3MotionSettings.setAnimationsEnabled(root, true);
-                        M3MotionSettings.setMotionScheme(root, observableTestMotionScheme());
-                        M3MotionSettings.setMotionBehavior(root, observableIndeterminateProgressBehavior());
+                        M3MotionSettings.setReducedMotionRequested(root, false);
+                        FxTestUtils.setMotionScheme(root, observableTestMotionScheme());
+                        FxTestUtils.setMotionBehavior(root, observableIndeterminateProgressBehavior());
                         M3ThemeManager.install(scene, M3Theme.fromSeed(
                                 Color.web("#006a6a"),
                                 M3Profile.EXPRESSIVE_2025,
@@ -22158,9 +22208,9 @@ final class M3ControlStyleTest {
                         Scene scene = new Scene(root, 320.0, 120.0);
                         Stage stage = new Stage();
 
-                        M3MotionSettings.setAnimationsEnabled(root, true);
-                        M3MotionSettings.setMotionScheme(root, observableTestMotionScheme());
-                        M3MotionSettings.setMotionBehavior(root, observableIndeterminateProgressBehavior());
+                        M3MotionSettings.setReducedMotionRequested(root, false);
+                        FxTestUtils.setMotionScheme(root, observableTestMotionScheme());
+                        FxTestUtils.setMotionBehavior(root, observableIndeterminateProgressBehavior());
                         M3ThemeManager.install(scene, M3Theme.fromSeed(
                                 Color.web("#006a6a"),
                                 M3Profile.EXPRESSIVE_2025,
@@ -23569,14 +23619,14 @@ final class M3ControlStyleTest {
 
                 assertTrue(distinctRowHeights > 1L, () -> "measuredCells=" + measuredCells.size());
                 assertTrue(scrollablePixels > 0.0, () -> "scrollablePixels=" + scrollablePixels);
-                M3MotionSettings.setAnimationsEnabled(listView, false);
+                M3MotionSettings.setReducedMotionRequested(listView, true);
                 ScrollEvent event = scrollEvent(listView, 0.0, deltaY);
                 listView.fireEvent(event);
 
                 assertTrue(event.isConsumed());
                 assertEquals(expectedPosition, flow.getPosition(), 0.000001);
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(listView);
+                M3MotionSettings.setReducedMotionRequested(listView, false);
                 stage.close();
             }
         });
@@ -23608,7 +23658,7 @@ final class M3ControlStyleTest {
                         VirtualFlow.class,
                         listView.lookup(".m3-list-view-flow")
                 );
-                M3MotionSettings.setAnimationsEnabled(listView, true);
+                M3MotionSettings.setReducedMotionRequested(listView, false);
 
                 ScrollEvent event = scrollEvent(listView, 0.0, -112.0);
                 listView.fireEvent(event);
@@ -23616,7 +23666,7 @@ final class M3ControlStyleTest {
                 assertTrue(event.isConsumed());
                 assertEquals(0.0, flow.getPosition(), 0.0001);
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(listView);
+                M3MotionSettings.setReducedMotionRequested(listView, false);
                 stage.close();
             }
         });
@@ -23663,7 +23713,7 @@ final class M3ControlStyleTest {
                                 VirtualFlow.class,
                                 listView.lookup(".m3-list-view-flow")
                         );
-                        M3MotionSettings.setAnimationsEnabled(listView, true);
+                        M3MotionSettings.setReducedMotionRequested(listView, false);
 
                         stageReference.set(stage);
                         listViewReference.set(listView);
@@ -23689,7 +23739,7 @@ final class M3ControlStyleTest {
             FxTestUtils.runOnFxThread(() -> {
                 @Nullable M3ListView<Integer> listView = listViewReference.get();
                 if (listView != null) {
-                    M3MotionSettings.clearAnimationsEnabled(listView);
+                    M3MotionSettings.setReducedMotionRequested(listView, false);
                 }
                 @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
@@ -23725,7 +23775,7 @@ final class M3ControlStyleTest {
                         VirtualFlow.class,
                         listView.lookup(".m3-list-view-flow")
                 );
-                M3MotionSettings.setAnimationsEnabled(listView, true);
+                M3MotionSettings.setReducedMotionRequested(listView, false);
 
                 ScrollEvent event = scrollEvent(listView, 0.0, -112.0);
                 listView.fireEvent(event);
@@ -23733,11 +23783,11 @@ final class M3ControlStyleTest {
                 assertTrue(event.isConsumed());
                 assertEquals(0.0, flow.getPosition(), 0.0001);
 
-                M3MotionSettings.setAnimationsEnabled(listView, false);
+                M3MotionSettings.setReducedMotionRequested(listView, true);
 
                 assertTrue(flow.getPosition() > 0.0, () -> "position=" + flow.getPosition());
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(listView);
+                M3MotionSettings.setReducedMotionRequested(listView, false);
                 stage.close();
             }
         });
@@ -23769,7 +23819,7 @@ final class M3ControlStyleTest {
                         VirtualFlow.class,
                         listView.lookup(".m3-list-view-flow")
                 );
-                M3MotionSettings.setAnimationsEnabled(listView, true);
+                M3MotionSettings.setReducedMotionRequested(listView, false);
                 double expectedAccumulatedPosition = expectedListViewWheelTargetPosition(listView, flow, -224.0);
 
                 ScrollEvent firstEvent = scrollEvent(listView, 0.0, -112.0);
@@ -23781,11 +23831,11 @@ final class M3ControlStyleTest {
                 assertTrue(secondEvent.isConsumed());
                 assertEquals(0.0, flow.getPosition(), 0.0001);
 
-                M3MotionSettings.setAnimationsEnabled(listView, false);
+                M3MotionSettings.setReducedMotionRequested(listView, true);
 
                 assertEquals(expectedAccumulatedPosition, flow.getPosition(), 0.0001);
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(listView);
+                M3MotionSettings.setReducedMotionRequested(listView, false);
                 stage.close();
             }
         });
@@ -23817,7 +23867,7 @@ final class M3ControlStyleTest {
                         VirtualFlow.class,
                         listView.lookup(".m3-list-view-flow")
                 );
-                M3MotionSettings.setAnimationsEnabled(listView, false);
+                M3MotionSettings.setReducedMotionRequested(listView, true);
                 double expectedPosition = expectedListViewWheelTargetPosition(listView, flow, -120.0);
 
                 ScrollEvent event = scrollEvent(
@@ -23836,7 +23886,7 @@ final class M3ControlStyleTest {
                 assertTrue(event.isConsumed());
                 assertEquals(expectedPosition, flow.getPosition(), 0.0001);
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(listView);
+                M3MotionSettings.setReducedMotionRequested(listView, false);
                 stage.close();
             }
         });
@@ -23868,7 +23918,7 @@ final class M3ControlStyleTest {
                         VirtualFlow.class,
                         listView.lookup(".m3-list-view-flow")
                 );
-                M3MotionSettings.setAnimationsEnabled(listView, false);
+                M3MotionSettings.setReducedMotionRequested(listView, true);
                 double expectedPosition = expectedListViewWheelTargetPosition(listView, flow, -flow.getHeight());
 
                 ScrollEvent event = scrollEvent(
@@ -23887,7 +23937,7 @@ final class M3ControlStyleTest {
                 assertTrue(event.isConsumed());
                 assertEquals(expectedPosition, flow.getPosition(), 0.0001);
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(listView);
+                M3MotionSettings.setReducedMotionRequested(listView, false);
                 stage.close();
             }
         });
@@ -23919,7 +23969,7 @@ final class M3ControlStyleTest {
                         VirtualFlow.class,
                         listView.lookup(".m3-list-view-flow")
                 );
-                M3MotionSettings.setAnimationsEnabled(listView, false);
+                M3MotionSettings.setReducedMotionRequested(listView, true);
 
                 ScrollEvent event = scrollEvent(listView, 0.0, -112.0);
                 listView.fireEvent(event);
@@ -23927,7 +23977,7 @@ final class M3ControlStyleTest {
                 assertTrue(event.isConsumed());
                 assertTrue(flow.getPosition() > 0.0, () -> "position=" + flow.getPosition());
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(listView);
+                M3MotionSettings.setReducedMotionRequested(listView, false);
                 stage.close();
             }
         });
@@ -23961,7 +24011,7 @@ final class M3ControlStyleTest {
                 );
 
                 assertTrue(listView.isAnimatedScroll());
-                M3MotionSettings.setAnimationsEnabled(listView, true);
+                M3MotionSettings.setReducedMotionRequested(listView, false);
                 listView.scrollTo(80);
 
                 assertEquals(0.0, flow.getPosition(), 0.0001);
@@ -23972,7 +24022,7 @@ final class M3ControlStyleTest {
 
                 assertTrue(flow.getPosition() > 0.0, () -> "position=" + flow.getPosition());
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(listView);
+                M3MotionSettings.setReducedMotionRequested(listView, false);
                 stage.close();
             }
         });
@@ -24004,17 +24054,17 @@ final class M3ControlStyleTest {
                         VirtualFlow.class,
                         listView.lookup(".m3-list-view-flow")
                 );
-                M3MotionSettings.setAnimationsEnabled(listView, true);
+                M3MotionSettings.setReducedMotionRequested(listView, false);
 
                 listView.scrollTo(80);
 
                 assertEquals(0.0, flow.getPosition(), 0.0001);
 
-                M3MotionSettings.setAnimationsEnabled(listView, false);
+                M3MotionSettings.setReducedMotionRequested(listView, true);
 
                 assertTrue(flow.getPosition() > 0.0, () -> "position=" + flow.getPosition());
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(listView);
+                M3MotionSettings.setReducedMotionRequested(listView, false);
                 stage.close();
             }
         });
@@ -24046,13 +24096,13 @@ final class M3ControlStyleTest {
                         VirtualFlow.class,
                         listView.lookup(".m3-list-view-flow")
                 );
-                M3MotionSettings.setAnimationsEnabled(listView, false);
+                M3MotionSettings.setReducedMotionRequested(listView, true);
 
                 listView.scrollTo(80);
 
                 assertTrue(flow.getPosition() > 0.0, () -> "position=" + flow.getPosition());
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(listView);
+                M3MotionSettings.setReducedMotionRequested(listView, false);
                 stage.close();
             }
         });
@@ -24085,7 +24135,7 @@ final class M3ControlStyleTest {
                         VirtualFlow.class,
                         listView.lookup(".m3-list-view-flow")
                 );
-                M3MotionSettings.setAnimationsEnabled(listView, true);
+                M3MotionSettings.setReducedMotionRequested(listView, false);
 
                 listView.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.END));
 
@@ -24106,7 +24156,7 @@ final class M3ControlStyleTest {
                 assertEquals(99, listView.getSelectedIndex());
                 assertTrue(flow.getPosition() > 0.0, () -> "position=" + flow.getPosition());
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(listView);
+                M3MotionSettings.setReducedMotionRequested(listView, false);
                 stage.close();
             }
         });
@@ -25756,8 +25806,8 @@ final class M3ControlStyleTest {
                 Stage stage = new Stage();
 
                 M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                M3MotionSettings.setAnimationsEnabled(root, true);
-                M3MotionSettings.setMotionScheme(root, observableTestMotionScheme());
+                M3MotionSettings.setReducedMotionRequested(root, false);
+                FxTestUtils.setMotionScheme(root, observableTestMotionScheme());
                 stage.setScene(scene);
                 stage.show();
                 root.applyCss();
@@ -25901,8 +25951,8 @@ final class M3ControlStyleTest {
                 Stage stage = new Stage();
 
                 M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                M3MotionSettings.setAnimationsEnabled(root, true);
-                M3MotionSettings.setMotionScheme(root, observableTestMotionScheme());
+                M3MotionSettings.setReducedMotionRequested(root, false);
+                FxTestUtils.setMotionScheme(root, observableTestMotionScheme());
                 stage.setScene(scene);
                 stage.show();
                 root.applyCss();
@@ -26310,7 +26360,7 @@ final class M3ControlStyleTest {
                     Brightness.LIGHT
             ));
             root.applyCss();
-            M3MotionSettings.setAnimationsEnabled(rail, false);
+            M3MotionSettings.setReducedMotionRequested(rail, true);
 
             assertEquals(96.0, rail.getCollapsedContainerWidth(), 0.01);
             assertEquals(220.0, rail.getExpandedMinimumContainerWidth(), 0.01);
@@ -26378,7 +26428,7 @@ final class M3ControlStyleTest {
             root.applyCss();
             assertEquals(280.0, rail.prefWidth(-1.0), 0.01);
             assertTrue(contentLayer.isVisible());
-            M3MotionSettings.clearAnimationsEnabled(rail);
+            M3MotionSettings.setReducedMotionRequested(rail, false);
         });
     }
 
@@ -27005,14 +27055,14 @@ final class M3ControlStyleTest {
             M3MenuItem topOpen = new M3MenuItem("Open");
             M3MenuItem topSave = new M3MenuItem("Save");
             M3MenuButton topMenuButton = new M3MenuButton("Top menu", topOpen, topSave);
-            M3MotionSettings.setAnimationsEnabled(topMenuButton, false);
+            M3MotionSettings.setReducedMotionRequested(topMenuButton, true);
             M3Button topNavigation = new M3Button("Menu");
             M3TopAppBar topAppBar = topAppBar("Inbox", topNavigation, topMenuButton);
 
             M3MenuItem bottomArchive = new M3MenuItem("Archive");
             M3MenuItem bottomDelete = new M3MenuItem("Delete");
             M3MenuButton bottomMenuButton = new M3MenuButton("Bottom menu", bottomArchive, bottomDelete);
-            M3MotionSettings.setAnimationsEnabled(bottomMenuButton, false);
+            M3MotionSettings.setReducedMotionRequested(bottomMenuButton, true);
             M3Button floatingAction = new M3Button("Create");
             M3BottomAppBar bottomAppBar = bottomAppBar(
                     M3BottomAppBarFloatingActionAlignment.END,
@@ -27080,8 +27130,8 @@ final class M3ControlStyleTest {
                 assertFalse(bottomMenuButton.isShowing());
                 assertTrue(outside.isFocused());
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(topMenuButton);
-                M3MotionSettings.clearAnimationsEnabled(bottomMenuButton);
+                M3MotionSettings.setReducedMotionRequested(topMenuButton, false);
+                M3MotionSettings.setReducedMotionRequested(bottomMenuButton, false);
                 stage.close();
             }
         });
@@ -28549,7 +28599,7 @@ final class M3ControlStyleTest {
                     root.layout();
 
                     double collapsedHeight = group.prefHeight(240.0);
-                    M3MotionSettings.setAnimationsEnabled(group, false);
+                    M3MotionSettings.setReducedMotionRequested(group, true);
                     group.setExpanded(true);
                     root.applyCss();
                     root.layout();
@@ -28557,7 +28607,7 @@ final class M3ControlStyleTest {
                     group.setExpanded(false);
                     root.applyCss();
                     root.layout();
-                    M3MotionSettings.clearAnimationsEnabled(group);
+                    M3MotionSettings.setReducedMotionRequested(group, false);
                     groupReference.set(group);
                     collapsedHeightReference.set(collapsedHeight);
                     expandedHeightReference.set(expandedHeight);
@@ -30861,7 +30911,7 @@ final class M3ControlStyleTest {
                                 + ", viewport=" + viewport.getViewportBounds());
                 assertTrue(M3ScrollPanes.isSmoothScrollingEnabled(viewport));
 
-                M3MotionSettings.setAnimationsEnabled(viewport, false);
+                M3MotionSettings.setReducedMotionRequested(viewport, true);
                 ScrollEvent event = scrollEvent(viewport, 0.0, -80.0);
                 viewport.fireEvent(event);
                 root.layout();
@@ -30874,7 +30924,7 @@ final class M3ControlStyleTest {
                 root.layout();
                 assertTrue(trash.isFocused());
                 assertTrue(viewport.getVvalue() > 0.5, () -> "vvalue=" + viewport.getVvalue());
-                M3MotionSettings.clearAnimationsEnabled(viewport);
+                M3MotionSettings.setReducedMotionRequested(viewport, false);
             } finally {
                 stage.close();
             }
@@ -30892,7 +30942,7 @@ final class M3ControlStyleTest {
         M3Theme theme = M3Theme.fromSeed(Color.web("#6750a4"));
 
         M3ThemeManager.install(scene, theme);
-        M3MotionSettings.setAnimationsEnabled(drawer, false);
+        M3MotionSettings.setReducedMotionRequested(drawer, true);
         root.applyCss();
         drawer.resize(360.0, 160.0);
         drawer.layout();
@@ -30937,7 +30987,7 @@ final class M3ControlStyleTest {
         );
         assertTrue(archiveLabel.getFont().getStyle().contains("Bold"),
                 () -> "selected drawer label style=" + archiveLabel.getFont().getStyle());
-        M3MotionSettings.clearAnimationsEnabled(drawer);
+        M3MotionSettings.setReducedMotionRequested(drawer, false);
     }
 
     /// Verifies that navigation drawer skins preserve application-owned child width constraints.
@@ -31082,8 +31132,8 @@ final class M3ControlStyleTest {
                 Stage stage = new Stage();
 
                 M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                M3MotionSettings.setAnimationsEnabled(root, true);
-                M3MotionSettings.setMotionScheme(root, observableTestMotionScheme());
+                M3MotionSettings.setReducedMotionRequested(root, false);
+                FxTestUtils.setMotionScheme(root, observableTestMotionScheme());
                 stage.setScene(scene);
                 stage.show();
                 root.applyCss();
@@ -31248,7 +31298,7 @@ final class M3ControlStyleTest {
         Scene scene = new Scene(root);
 
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
-        M3MotionSettings.setAnimationsEnabled(root, false);
+        M3MotionSettings.setReducedMotionRequested(root, true);
         checkBox.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
         slider.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
         tab.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
@@ -31290,7 +31340,7 @@ final class M3ControlStyleTest {
                     () -> {
                         SkinOwnedStateMotionScene scene = Objects.requireNonNull(sceneReference.get(), "scene");
 
-                        M3MotionSettings.setAnimationsEnabled(scene.root, false);
+                        M3MotionSettings.setReducedMotionRequested(scene.root, true);
                         scene.root.applyCss();
                         scene.root.layout();
                         assertSkinOwnedStateTransitionsSettled(scene);
@@ -31342,7 +31392,7 @@ final class M3ControlStyleTest {
                         assertEquals(actionScaleY, scene.action.getScaleY(), 0.0001);
                         assertEquals(actionTranslateY, scene.action.getTranslateY(), 0.0001);
 
-                        M3MotionSettings.setAnimationsEnabled(scene.root, false);
+                        M3MotionSettings.setReducedMotionRequested(scene.root, true);
                         scene.root.layout();
                         assertOverlayOwnedStateTransitionsSettled(scene);
                     }
@@ -31374,9 +31424,9 @@ final class M3ControlStyleTest {
             FxTestUtils.runOnFxThreadWhen(
                     () -> menuPopupSurfaceIsAnimating(menuButtonReference),
                     () -> {
-                        M3MotionSettings.setAnimationsEnabled(
+                        M3MotionSettings.setReducedMotionRequested(
                                 Objects.requireNonNull(rootReference.get(), "root"),
-                                true
+                                false
                         );
                         Objects.requireNonNull(menuButtonReference.get(), "menuButton").showMenu();
                     },
@@ -31385,7 +31435,7 @@ final class M3ControlStyleTest {
                         M3MenuButton menuButton = Objects.requireNonNull(menuButtonReference.get(), "menuButton");
                         assertPopupSurfaceIntermediate(menuButton.getMenu(), "menu popup");
 
-                        M3MotionSettings.setAnimationsEnabled(root, false);
+                        M3MotionSettings.setReducedMotionRequested(root, true);
 
                         assertPopupSurfaceSettled(menuButton.getMenu(), "menu popup");
                     }
@@ -31393,9 +31443,9 @@ final class M3ControlStyleTest {
             FxTestUtils.runOnFxThreadWhen(
                     () -> subMenuPopupSurfaceIsAnimating(subMenuItemReference),
                     () -> {
-                        M3MotionSettings.setAnimationsEnabled(
+                        M3MotionSettings.setReducedMotionRequested(
                                 Objects.requireNonNull(rootReference.get(), "root"),
-                                true
+                                false
                         );
                         Objects.requireNonNull(subMenuItemReference.get(), "subMenuItem").showSubMenu();
                     },
@@ -31405,7 +31455,7 @@ final class M3ControlStyleTest {
                                 Objects.requireNonNull(subMenuItemReference.get(), "subMenuItem");
                         assertPopupSurfaceIntermediate(subMenuItem.getSubMenu(), "submenu popup");
 
-                        M3MotionSettings.setAnimationsEnabled(root, false);
+                        M3MotionSettings.setReducedMotionRequested(root, true);
 
                         assertPopupSurfaceSettled(subMenuItem.getSubMenu(), "submenu popup");
                         subMenuItem.hideSubMenu();
@@ -31415,9 +31465,9 @@ final class M3ControlStyleTest {
             FxTestUtils.runOnFxThreadWhen(
                     () -> datePickerPopupSurfaceIsAnimating(dateFieldReference),
                     () -> {
-                        M3MotionSettings.setAnimationsEnabled(
+                        M3MotionSettings.setReducedMotionRequested(
                                 Objects.requireNonNull(rootReference.get(), "root"),
-                                true
+                                false
                         );
                         Objects.requireNonNull(dateFieldReference.get(), "dateField").showPicker();
                     },
@@ -31430,7 +31480,7 @@ final class M3ControlStyleTest {
                         );
                         assertPopupSurfaceIntermediate(popupSurface, "date picker popup");
 
-                        M3MotionSettings.setAnimationsEnabled(root, false);
+                        M3MotionSettings.setReducedMotionRequested(root, true);
 
                         assertPopupSurfaceSettled(popupSurface, "date picker popup");
                         dateField.hidePicker();
@@ -31439,9 +31489,9 @@ final class M3ControlStyleTest {
             FxTestUtils.runOnFxThreadWhen(
                     () -> rangePickerPopupSurfaceIsAnimating(rangeFieldReference),
                     () -> {
-                        M3MotionSettings.setAnimationsEnabled(
+                        M3MotionSettings.setReducedMotionRequested(
                                 Objects.requireNonNull(rootReference.get(), "root"),
-                                true
+                                false
                         );
                         Objects.requireNonNull(rangeFieldReference.get(), "rangeField").showPicker();
                     },
@@ -31455,7 +31505,7 @@ final class M3ControlStyleTest {
                         );
                         assertPopupSurfaceIntermediate(popupSurface, "date range picker popup");
 
-                        M3MotionSettings.setAnimationsEnabled(root, false);
+                        M3MotionSettings.setReducedMotionRequested(root, true);
 
                         assertPopupSurfaceSettled(popupSurface, "date range picker popup");
                     }
@@ -31483,7 +31533,7 @@ final class M3ControlStyleTest {
         Scene scene = new Scene(root);
 
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
-        M3MotionSettings.setAnimationsEnabled(root, false);
+        M3MotionSettings.setReducedMotionRequested(root, true);
         M3ThemeManager.uninstallThemeStylesheet(scene);
         button.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
         tab.pseudoClassStateChanged(PseudoClass.getPseudoClass("focus-visible"), true);
@@ -31594,7 +31644,7 @@ final class M3ControlStyleTest {
             Scene scene = new Scene(root, 920.0, 560.0);
 
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            M3MotionSettings.setAnimationsEnabled(root, false);
+            M3MotionSettings.setReducedMotionRequested(root, true);
             root.applyCss();
             applyPseudoState(focusButton, "focus-visible");
             applyPseudoState(focusRadioButton, "focus-visible");
@@ -33400,7 +33450,7 @@ final class M3ControlStyleTest {
                                 LocalDate.of(2026, 5, 19),
                                 LocalDate.of(2026, 5, 25)
                         );
-                        M3MotionSettings.setAnimationsEnabled(field, false);
+                        M3MotionSettings.setReducedMotionRequested(field, true);
                         field.getPresets().setAll(M3DateRangePresets.common(LocalDate.of(2026, 5, 19), field.getPicker().getFirstDayOfWeek()));
                         field.setPrefWidth(680.0);
 
@@ -33451,7 +33501,7 @@ final class M3ControlStyleTest {
                 @Nullable M3DateRangePickerField field = fieldReference.get();
                 if (field != null) {
                     field.hidePicker();
-                    M3MotionSettings.clearAnimationsEnabled(field);
+                    M3MotionSettings.setReducedMotionRequested(field, false);
                 }
                 @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
@@ -33475,7 +33525,7 @@ final class M3ControlStyleTest {
                                 LocalDate.of(2026, 5, 19),
                                 LocalDate.of(2026, 5, 25)
                         );
-                        M3MotionSettings.setAnimationsEnabled(field, false);
+                        M3MotionSettings.setReducedMotionRequested(field, true);
                         field.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
                         field.getPresets().setAll(M3DateRangePresets.common(LocalDate.of(2026, 5, 19), field.getPicker().getFirstDayOfWeek()));
                         field.setPrefWidth(680.0);
@@ -33526,7 +33576,7 @@ final class M3ControlStyleTest {
                 @Nullable M3DateRangePickerField field = fieldReference.get();
                 if (field != null) {
                     field.hidePicker();
-                    M3MotionSettings.clearAnimationsEnabled(field);
+                    M3MotionSettings.setReducedMotionRequested(field, false);
                 }
                 @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
@@ -33548,12 +33598,12 @@ final class M3ControlStyleTest {
         try {
             FxTestUtils.runOnFxThread(() -> {
                 M3DatePickerField dateField = new M3DatePickerField(LocalDate.of(2026, 5, 19));
-                M3MotionSettings.setAnimationsEnabled(dateField, false);
+                M3MotionSettings.setReducedMotionRequested(dateField, true);
                 dateField.getPresets().setAll(M3DatePresets.common(LocalDate.of(2026, 5, 19)));
                 dateField.setPrefWidth(420.0);
 
                 M3TimePickerField timeField = new M3TimePickerField(LocalTime.of(10, 30));
-                M3MotionSettings.setAnimationsEnabled(timeField, false);
+                M3MotionSettings.setReducedMotionRequested(timeField, true);
                 timeField.getPicker().setUse24HourClock(true);
                 timeField.getPicker().setMinuteStep(15);
                 timeField.getPresets().setAll(M3TimePresets.common(LocalTime.of(10, 30)));
@@ -33563,7 +33613,7 @@ final class M3ControlStyleTest {
                         LocalDate.of(2026, 5, 19),
                         LocalDate.of(2026, 5, 25)
                 );
-                M3MotionSettings.setAnimationsEnabled(rangeField, false);
+                M3MotionSettings.setReducedMotionRequested(rangeField, true);
                 rangeField.getPresets().setAll(M3DateRangePresets.common(
                         LocalDate.of(2026, 5, 19),
                         rangeField.getPicker().getFirstDayOfWeek()
@@ -33655,17 +33705,17 @@ final class M3ControlStyleTest {
                 @Nullable M3DatePickerField dateField = dateFieldReference.get();
                 if (dateField != null) {
                     dateField.hidePicker();
-                    M3MotionSettings.clearAnimationsEnabled(dateField);
+                    M3MotionSettings.setReducedMotionRequested(dateField, false);
                 }
                 @Nullable M3TimePickerField timeField = timeFieldReference.get();
                 if (timeField != null) {
                     timeField.hidePicker();
-                    M3MotionSettings.clearAnimationsEnabled(timeField);
+                    M3MotionSettings.setReducedMotionRequested(timeField, false);
                 }
                 @Nullable M3DateRangePickerField rangeField = rangeFieldReference.get();
                 if (rangeField != null) {
                     rangeField.hidePicker();
-                    M3MotionSettings.clearAnimationsEnabled(rangeField);
+                    M3MotionSettings.setReducedMotionRequested(rangeField, false);
                 }
                 @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
@@ -33690,7 +33740,7 @@ final class M3ControlStyleTest {
             Pane root = new Pane(outsideFocus, field);
             Stage stage = new Stage();
             try {
-                M3MotionSettings.setAnimationsEnabled(field, false);
+                M3MotionSettings.setReducedMotionRequested(field, true);
                 Scene scene = new Scene(root, 760.0, 220.0);
                 M3ThemeManager.install(scene, M3Theme.defaultTheme());
                 stage.setScene(scene);
@@ -33748,7 +33798,7 @@ final class M3ControlStyleTest {
                 assertTrue(field.getEndEditor().isFocused());
                 assertSame(field.getEndEditor(), field.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(field);
+                M3MotionSettings.setReducedMotionRequested(field, false);
                 field.hidePicker();
                 stage.close();
             }
@@ -34565,8 +34615,8 @@ final class M3ControlStyleTest {
             assertEquals(16.0, filledButton.getHorizontalPadding(), 0.0001);
             assertEquals(40.0, iconButton.getContainerHeight(), 0.0001);
             assertEquals(40.0, standardToggle.getContainerHeight(), 0.0001);
-            assertEquals(64.0, regularFab.getContainerSize(), 0.0001);
-            assertEquals(18.0, regularFab.getHorizontalPadding(), 0.0001);
+            assertEquals(56.0, regularFab.getContainerSize(), 0.0001);
+            assertEquals(16.0, regularFab.getHorizontalPadding(), 0.0001);
             assertEquals(48.0, day.getContainerHeight(), 0.0001);
             assertEquals(16.0, day.getHorizontalPadding(), 0.0001);
             assertEquals(56.0, selectedTab.getContainerHeight(), 0.0001);
@@ -34577,8 +34627,8 @@ final class M3ControlStyleTest {
             assertEquals(128.0, textArea.getContainerHeight(), 0.0001);
             assertEquals(20.0, textArea.getHorizontalPadding(), 0.0001);
             assertEquals(20.0, textArea.getVerticalPadding(), 0.0001);
-            assertEquals(36.0, filterChip.getContainerHeight(), 0.0001);
-            assertEquals(18.0, filterChip.getHorizontalPadding(), 0.0001);
+            assertEquals(32.0, filterChip.getContainerHeight(), 0.0001);
+            assertEquals(16.0, filterChip.getHorizontalPadding(), 0.0001);
             assertEquals(48.0, checkBox.getTouchTargetSize(), 0.0001);
             assertEquals(16.0, slider.getTrackThickness(), 0.0001);
             assertEquals(4.0, slider.getStopIndicatorSize(), 0.0001);
@@ -34813,7 +34863,7 @@ final class M3ControlStyleTest {
             assertEquals(64.0, textField.getContainerHeight(), 0.0001);
             assertEquals(56.0, searchBar.getHeight(), 0.0001);
             assertEquals(40.0, selectedToggle.getContainerHeight(), 0.0001);
-            assertEquals(64.0, fab.getContainerSize(), 0.0001);
+            assertEquals(56.0, fab.getContainerSize(), 0.0001);
 
             WritableImage image = snapshotImageOnFxThread(root);
             assertSnapshotHasColorVariety(image, 18);
@@ -36731,6 +36781,10 @@ final class M3ControlStyleTest {
     private static String buttonStateTestColors() {
         return "-m3-color-primary: rgb(1,2,3); "
                 + "-m3-color-on-primary: rgb(4,5,6); "
+                + "-m3-color-secondary: rgb(46,47,48); "
+                + "-m3-color-on-secondary: rgb(49,50,51); "
+                + "-m3-color-tertiary: rgb(52,53,54); "
+                + "-m3-color-on-tertiary: rgb(55,56,57); "
                 + "-m3-color-secondary-container: rgb(7,8,9); "
                 + "-m3-color-on-secondary-container: rgb(10,11,12); "
                 + "-m3-color-outline: rgb(13,14,15); "
@@ -36973,8 +37027,8 @@ final class M3ControlStyleTest {
         FxTestUtils.runOnFxThread(() -> {
             @Nullable Node root = rootReference.get();
             if (root != null) {
-                M3MotionSettings.clearMotionBehavior(root);
-                M3MotionSettings.clearAnimationsEnabled(root);
+                FxTestUtils.clearMotionBehavior(root);
+                M3MotionSettings.setReducedMotionRequested(root, false);
             }
 
             @Nullable Stage stage = stageReference.get();
@@ -37002,7 +37056,7 @@ final class M3ControlStyleTest {
 
             @Nullable Node root = rootReference.get();
             if (root != null) {
-                M3MotionSettings.clearMotionBehavior(root);
+                FxTestUtils.clearMotionBehavior(root);
             }
 
             @Nullable Stage stage = stageReference.get();
@@ -37272,9 +37326,9 @@ final class M3ControlStyleTest {
         loadingIndicator.setStyle("-m3-container-size: 112px; -m3-indicator-size: 89px;");
         loadingIndicator.setPrefSize(112.0, 112.0);
         root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
-        M3MotionSettings.setAnimationsEnabled(root, animationsEnabled);
-        M3MotionSettings.setMotionScheme(root, observableTestMotionScheme());
-        M3MotionSettings.setMotionBehavior(root, Objects.requireNonNull(motionBehavior, "motionBehavior"));
+        M3MotionSettings.setReducedMotionRequested(root, !animationsEnabled);
+        FxTestUtils.setMotionScheme(root, observableTestMotionScheme());
+        FxTestUtils.setMotionBehavior(root, Objects.requireNonNull(motionBehavior, "motionBehavior"));
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         stage.setScene(scene);
         stage.show();
@@ -37491,9 +37545,9 @@ final class M3ControlStyleTest {
         FxTestUtils.runOnFxThread(() -> {
             @Nullable Pane root = rootReference.getAndSet(null);
             if (root != null) {
-                M3MotionSettings.clearAnimationsEnabled(root);
-                M3MotionSettings.clearMotionScheme(root);
-                M3MotionSettings.clearMotionBehavior(root);
+                M3MotionSettings.setReducedMotionRequested(root, false);
+                FxTestUtils.clearMotionScheme(root);
+                FxTestUtils.clearMotionBehavior(root);
             }
 
             @Nullable Stage stage = stageReference.getAndSet(null);
@@ -37644,9 +37698,9 @@ final class M3ControlStyleTest {
         }
 
         FxTestUtils.runOnFxThread(() -> {
-            M3MotionSettings.clearAnimationsEnabled(scene.root);
-            M3MotionSettings.clearMotionScheme(scene.root);
-            M3MotionSettings.clearMotionBehavior(scene.root);
+            M3MotionSettings.setReducedMotionRequested(scene.root, false);
+            FxTestUtils.clearMotionScheme(scene.root);
+            FxTestUtils.clearMotionBehavior(scene.root);
             scene.stage.close();
         });
     }
@@ -37831,8 +37885,8 @@ final class M3ControlStyleTest {
         slider.setPrefWidth(240.0);
         root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
-        M3MotionSettings.setAnimationsEnabled(root, true);
-        M3MotionSettings.setMotionScheme(root, observableTestMotionScheme());
+        M3MotionSettings.setReducedMotionRequested(root, false);
+        FxTestUtils.setMotionScheme(root, observableTestMotionScheme());
         stage.setScene(scene);
         stage.show();
         root.applyCss();
@@ -37957,8 +38011,8 @@ final class M3ControlStyleTest {
         }
 
         FxTestUtils.runOnFxThread(() -> {
-            M3MotionSettings.clearAnimationsEnabled(scene.root);
-            M3MotionSettings.clearMotionScheme(scene.root);
+            M3MotionSettings.setReducedMotionRequested(scene.root, false);
+            FxTestUtils.clearMotionScheme(scene.root);
             scene.stage.close();
         });
     }
@@ -38039,8 +38093,8 @@ final class M3ControlStyleTest {
         snackbarHost.setDisplayDuration(Duration.INDEFINITE);
         root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
-        M3MotionSettings.setAnimationsEnabled(root, true);
-        M3MotionSettings.setMotionScheme(root, observableTestMotionScheme());
+        M3MotionSettings.setReducedMotionRequested(root, false);
+        FxTestUtils.setMotionScheme(root, observableTestMotionScheme());
         stage.setScene(scene);
         stage.show();
         root.applyCss();
@@ -38139,8 +38193,8 @@ final class M3ControlStyleTest {
         }
 
         FxTestUtils.runOnFxThread(() -> {
-            M3MotionSettings.clearAnimationsEnabled(scene.root);
-            M3MotionSettings.clearMotionScheme(scene.root);
+            M3MotionSettings.setReducedMotionRequested(scene.root, false);
+            FxTestUtils.clearMotionScheme(scene.root);
             scene.stage.close();
         });
     }
@@ -38423,8 +38477,8 @@ final class M3ControlStyleTest {
         FxTestUtils.runOnFxThread(() -> {
             @Nullable Parent root = rootReference.get();
             if (root != null) {
-                M3MotionSettings.clearAnimationsEnabled(root);
-                M3MotionSettings.clearMotionScheme(root);
+                M3MotionSettings.setReducedMotionRequested(root, false);
+                FxTestUtils.clearMotionScheme(root);
             }
 
             @Nullable Stage stage = stageReference.get();
@@ -38679,8 +38733,8 @@ final class M3ControlStyleTest {
 
         row.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
-        M3MotionSettings.setAnimationsEnabled(row, true);
-        M3MotionSettings.setMotionScheme(row, observableTestMotionScheme());
+        M3MotionSettings.setReducedMotionRequested(row, false);
+        FxTestUtils.setMotionScheme(row, observableTestMotionScheme());
         stage.setScene(scene);
         stage.show();
         row.applyCss();
@@ -38708,8 +38762,8 @@ final class M3ControlStyleTest {
 
         row.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
-        M3MotionSettings.setAnimationsEnabled(row, true);
-        M3MotionSettings.setMotionScheme(row, observableTestMotionScheme());
+        M3MotionSettings.setReducedMotionRequested(row, false);
+        FxTestUtils.setMotionScheme(row, observableTestMotionScheme());
         stage.setScene(scene);
         stage.show();
         row.applyCss();
@@ -38729,8 +38783,8 @@ final class M3ControlStyleTest {
         FxTestUtils.runOnFxThread(() -> {
             @Nullable FlowPane row = rowReference.get();
             if (row != null) {
-                M3MotionSettings.clearAnimationsEnabled(row);
-                M3MotionSettings.clearMotionScheme(row);
+                M3MotionSettings.setReducedMotionRequested(row, false);
+                FxTestUtils.clearMotionScheme(row);
             }
 
             @Nullable Stage stage = stageReference.get();
@@ -39034,8 +39088,8 @@ final class M3ControlStyleTest {
         Scene scene = new Scene(root, 820.0, 620.0);
 
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
-        M3MotionSettings.setAnimationsEnabled(root, true);
-        M3MotionSettings.setMotionScheme(root, observableTestMotionScheme());
+        M3MotionSettings.setReducedMotionRequested(root, false);
+        FxTestUtils.setMotionScheme(root, observableTestMotionScheme());
         stage.setScene(scene);
         stage.show();
         root.applyCss();
@@ -39081,8 +39135,8 @@ final class M3ControlStyleTest {
 
         @Nullable VBox root = rootReference.get();
         if (root != null) {
-            M3MotionSettings.clearAnimationsEnabled(root);
-            M3MotionSettings.clearMotionScheme(root);
+            M3MotionSettings.setReducedMotionRequested(root, false);
+            FxTestUtils.clearMotionScheme(root);
         }
 
         @Nullable Stage stage = stageReference.get();
@@ -39306,8 +39360,8 @@ final class M3ControlStyleTest {
         Stage stage = new Stage();
 
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
-        M3MotionSettings.setAnimationsEnabled(root, true);
-        M3MotionSettings.setMotionScheme(root, observableTestMotionScheme());
+        M3MotionSettings.setReducedMotionRequested(root, false);
+        FxTestUtils.setMotionScheme(root, observableTestMotionScheme());
         stage.setScene(scene);
         stage.show();
         root.applyCss();
@@ -39339,8 +39393,8 @@ final class M3ControlStyleTest {
 
             @Nullable Pane root = rootReference.get();
             if (root != null) {
-                M3MotionSettings.clearAnimationsEnabled(root);
-                M3MotionSettings.clearMotionScheme(root);
+                M3MotionSettings.setReducedMotionRequested(root, false);
+                FxTestUtils.clearMotionScheme(root);
             }
 
             @Nullable Stage stage = stageReference.get();
@@ -39384,8 +39438,8 @@ final class M3ControlStyleTest {
         Stage stage = new Stage();
 
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
-        M3MotionSettings.setAnimationsEnabled(root, true);
-        M3MotionSettings.setMotionScheme(root, observableTestMotionScheme());
+        M3MotionSettings.setReducedMotionRequested(root, false);
+        FxTestUtils.setMotionScheme(root, observableTestMotionScheme());
         stage.setScene(scene);
         stage.show();
         root.applyCss();
@@ -39411,8 +39465,8 @@ final class M3ControlStyleTest {
 
             @Nullable Pane root = rootReference.get();
             if (root != null) {
-                M3MotionSettings.clearAnimationsEnabled(root);
-                M3MotionSettings.clearMotionScheme(root);
+                M3MotionSettings.setReducedMotionRequested(root, false);
+                FxTestUtils.clearMotionScheme(root);
             }
 
             @Nullable Stage stage = stageReference.get();
@@ -39485,8 +39539,8 @@ final class M3ControlStyleTest {
         Stage stage = new Stage();
 
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
-        M3MotionSettings.setAnimationsEnabled(root, true);
-        M3MotionSettings.setMotionScheme(root, observableTestMotionScheme());
+        M3MotionSettings.setReducedMotionRequested(root, false);
+        FxTestUtils.setMotionScheme(root, observableTestMotionScheme());
         stage.setScene(scene);
         stage.show();
         root.applyCss();
@@ -41693,8 +41747,8 @@ final class M3ControlStyleTest {
         FxTestUtils.runOnFxThread(() -> {
             @Nullable M3Carousel carousel = carouselReference.get();
             if (carousel != null) {
-                M3MotionSettings.clearAnimationsEnabled(carousel);
-                M3MotionSettings.clearMotionScheme(carousel);
+                M3MotionSettings.setReducedMotionRequested(carousel, false);
+                FxTestUtils.clearMotionScheme(carousel);
             }
 
             @Nullable Stage stage = stageReference.get();
@@ -42272,6 +42326,9 @@ final class M3ControlStyleTest {
     private static String internalIconColorRoleStyleClass(M3InternalIcon.ColorRole colorRole) {
         return switch (colorRole) {
             case PRIMARY -> M3InternalIcon.PRIMARY_STYLE_CLASS;
+            case ON_PRIMARY -> M3InternalIcon.ON_PRIMARY_STYLE_CLASS;
+            case ON_SECONDARY -> M3InternalIcon.ON_SECONDARY_STYLE_CLASS;
+            case ON_TERTIARY -> M3InternalIcon.ON_TERTIARY_STYLE_CLASS;
             case ON_SURFACE -> M3InternalIcon.ON_SURFACE_STYLE_CLASS;
             case ON_SURFACE_VARIANT -> M3InternalIcon.ON_SURFACE_VARIANT_STYLE_CLASS;
             case ON_PRIMARY_CONTAINER -> M3InternalIcon.ON_PRIMARY_CONTAINER_STYLE_CLASS;

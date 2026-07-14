@@ -73,7 +73,7 @@ final class M3StateLayerTest {
         FxTestUtils.runOnFxThread(() -> {
             Pane owner = new Pane();
             owner.getStyleClass().add("m3-button");
-            M3MotionSettings.setAnimationsEnabled(owner, false);
+            M3MotionSettings.setReducedMotionRequested(owner, true);
             M3StateLayer stateLayer = new M3StateLayer();
             owner.getChildren().add(stateLayer);
             Scene scene = new Scene(owner, 100.0, 40.0);
@@ -104,7 +104,7 @@ final class M3StateLayerTest {
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
             owner.applyCss();
             stateLayer.installStateTransitions(owner);
-            M3MotionSettings.setAnimationsEnabled(owner, true);
+            M3MotionSettings.setReducedMotionRequested(owner, false);
             try {
                 Region overlay = lookupRegion(stateLayer, ".m3-state-layer");
                 owner.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
@@ -113,12 +113,12 @@ final class M3StateLayerTest {
                 assertEquals(0.0, overlay.getOpacity(), 0.0001);
                 assertTrue(stateLayer.isOverlayOpacityAnimationRunning());
 
-                M3MotionSettings.setAnimationsEnabled(owner, false);
+                M3MotionSettings.setReducedMotionRequested(owner, true);
 
                 assertTrue(overlay.getOpacity() > 0.0);
                 assertFalse(stateLayer.isOverlayOpacityAnimationRunning());
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(owner);
+                M3MotionSettings.setReducedMotionRequested(owner, false);
                 stateLayer.uninstallStateTransitions();
             }
         });
@@ -130,7 +130,7 @@ final class M3StateLayerTest {
         FxTestUtils.runOnFxThread(() -> {
             Pane owner = new Pane();
             owner.getStyleClass().add("m3-button");
-            M3MotionSettings.setAnimationsEnabled(owner, false);
+            M3MotionSettings.setReducedMotionRequested(owner, true);
             M3StateLayer stateLayer = new M3StateLayer();
             owner.getChildren().add(stateLayer);
             Scene scene = new Scene(owner, 100.0, 40.0);
@@ -173,7 +173,7 @@ final class M3StateLayerTest {
     void disabledMotionSuppressesRippleAnimation() {
         FxTestUtils.runOnFxThread(() -> {
             Pane owner = new Pane();
-            M3MotionSettings.setAnimationsEnabled(owner, false);
+            M3MotionSettings.setReducedMotionRequested(owner, true);
             M3StateLayer stateLayer = new M3StateLayer();
             owner.getChildren().add(stateLayer);
             stateLayer.installStateTransitions(owner);
@@ -197,7 +197,7 @@ final class M3StateLayerTest {
             Scene scene = new Scene(owner, 100.0, 40.0);
             stateLayer.installStateTransitions(owner);
             stateLayer.layoutLayer(0.0, 0.0, 100.0, 40.0, 20.0);
-            M3MotionSettings.setAnimationsEnabled(owner, true);
+            M3MotionSettings.setReducedMotionRequested(owner, false);
             try {
                 stateLayer.playRipple(20.0, 20.0);
 
@@ -205,14 +205,14 @@ final class M3StateLayerTest {
                 assertTrue(ripple.getOpacity() > 0.0);
                 assertTrue(stateLayer.isRippleAnimationRunning());
 
-                M3MotionSettings.setAnimationsEnabled(owner, false);
+                M3MotionSettings.setReducedMotionRequested(owner, true);
 
                 assertEquals(0.0, ripple.getOpacity(), 0.0001);
                 assertEquals(0.0, ripple.getScaleX(), 0.0001);
                 assertEquals(0.0, ripple.getScaleY(), 0.0001);
                 assertFalse(stateLayer.isRippleAnimationRunning());
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(owner);
+                M3MotionSettings.setReducedMotionRequested(owner, false);
                 stateLayer.uninstallStateTransitions();
             }
         });
@@ -224,7 +224,7 @@ final class M3StateLayerTest {
         FxTestUtils.runOnFxThread(() -> {
             Pane owner = new Pane();
             owner.getStyleClass().add("m3-button");
-            M3MotionSettings.setAnimationsEnabled(owner, false);
+            M3MotionSettings.setReducedMotionRequested(owner, true);
             M3StateLayer stateLayer = new M3StateLayer();
             owner.getChildren().add(stateLayer);
             Scene scene = new Scene(owner, 100.0, 40.0);
@@ -250,7 +250,7 @@ final class M3StateLayerTest {
         FxTestUtils.runOnFxThread(() -> {
             Pane owner = new Pane();
             owner.getStyleClass().add("m3-button");
-            M3MotionSettings.setAnimationsEnabled(owner, false);
+            M3MotionSettings.setReducedMotionRequested(owner, true);
             M3StateLayer stateLayer = new M3StateLayer();
             owner.getChildren().add(stateLayer);
             Scene scene = new Scene(owner, 100.0, 40.0);
@@ -303,7 +303,7 @@ final class M3StateLayerTest {
         FxTestUtils.runOnFxThread(() -> {
             Pane owner = new Pane();
             owner.getStyleClass().add("m3-list-item");
-            M3MotionSettings.setAnimationsEnabled(owner, false);
+            M3MotionSettings.setReducedMotionRequested(owner, true);
             M3StateLayer stateLayer = new M3StateLayer();
             owner.getChildren().add(stateLayer);
             Scene scene = new Scene(owner, 100.0, 40.0);
@@ -349,7 +349,7 @@ final class M3StateLayerTest {
         FxTestUtils.runOnFxThread(() -> {
             Pane owner = new Pane();
             owner.getStyleClass().add("m3-button");
-            M3MotionSettings.setAnimationsEnabled(owner, true);
+            M3MotionSettings.setReducedMotionRequested(owner, false);
             M3StateLayer stateLayer = new M3StateLayer();
             owner.getChildren().add(stateLayer);
             Scene scene = new Scene(owner, 100.0, 40.0);
@@ -367,13 +367,13 @@ final class M3StateLayerTest {
             assertTrue(focusIndicator.isVisible());
             assertTrue(stateLayer.isFocusIndicatorOpacityAnimationRunning());
 
-            M3MotionSettings.setAnimationsEnabled(owner, false);
+            M3MotionSettings.setReducedMotionRequested(owner, true);
             owner.pseudoClassStateChanged(M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS, false);
             stateLayer.animateOverlayOpacityFromOwnerState();
 
             assertEquals(0.0, focusIndicator.getOpacity(), 0.0001);
             assertFalse(focusIndicator.isVisible());
-            M3MotionSettings.clearAnimationsEnabled(owner);
+            M3MotionSettings.setReducedMotionRequested(owner, false);
         });
     }
 
@@ -388,7 +388,7 @@ final class M3StateLayerTest {
             Scene scene = new Scene(root, 420.0, 180.0);
 
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
-            M3MotionSettings.setAnimationsEnabled(root, false);
+            M3MotionSettings.setReducedMotionRequested(root, true);
             button.resizeRelocate(12.0, 12.0, 120.0, 40.0);
             navigationItem.resizeRelocate(144.0, 12.0, 120.0, 64.0);
             checkBox.resizeRelocate(276.0, 12.0, 120.0, 48.0);

@@ -9,6 +9,7 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
+import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
@@ -27,14 +28,14 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
 import javafx.stage.Window;
-import org.glavo.m3fx.internal.M3FocusTraversal;
-import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
+import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
-import org.glavo.m3fx.animation.M3MotionSpec;
-import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3FiniteTransition;
+import org.glavo.m3fx.internal.M3FocusTraversal;
 import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -50,9 +51,10 @@ import java.util.Objects;
 
 /// A Material Design 3 floating action button menu.
 ///
-/// `M3FabMenu` expands a primary [M3FloatingActionButton] into a vertical set of related action nodes. It
-/// manages expanded state, keyboard dismissal, accessible child traversal, and Material expand and collapse
-/// motion for the action items.
+/// `M3FabMenu` transforms an entry [M3FloatingActionButton] into a 56-pixel close button and reveals a vertical
+/// set of labeled floating actions. The menu owns the close affordance, preserves the caller-supplied entry button,
+/// and aligns both controls to the logical trailing edge. It also manages keyboard dismissal, accessible child
+/// traversal, and Material expand and collapse motion.
 ///
 /// See [Material Design FAB menus](https://m3.material.io/components/fab-menu/overview).
 @NotNullByDefault
@@ -68,9 +70,18 @@ public class M3FabMenu extends Control {
 
     /// The style class applied to the menu toggle floating action button.
     public static final String TOGGLE_STYLE_CLASS = "m3-fab-menu-toggle";
+    /// The style class applied to the menu close floating action button.
+    public static final String CLOSE_STYLE_CLASS = "m3-fab-menu-close";
+
+    /// The expanded pseudo-class.
+    private static final PseudoClass EXPANDED_PSEUDO_CLASS = PseudoClass.getPseudoClass("expanded");
+
 
     /// The default spacing between expanded action items.
-    private static final double DEFAULT_ACTION_SPACING = 12.0;
+    private static final double DEFAULT_ACTION_SPACING = 4.0;
+
+    /// The default spacing between the last action and close button.
+    private static final double DEFAULT_CLOSE_SPACING = 8.0;
 
     /// The offset used when action buttons enter or exit.
     private static final double ACTION_TRANSITION_OFFSET_Y = 16.0;
@@ -84,8 +95,14 @@ public class M3FabMenu extends Control {
     // The styleable spacing between expanded action items.
     private @Nullable StyleableDoubleProperty actionSpacing;
 
+    // The styleable spacing between the last action and close button.
+    private @Nullable StyleableDoubleProperty closeSpacing;
+
     /// The toggle floating action button.
     private final M3FloatingActionButton toggleButton;
+
+    /// The close floating action button shown while expanded.
+    private final M3FloatingActionButton closeButton = createCloseButton();
 
     // Whether the action items are currently expanded.
     private final BooleanProperty expanded = new SimpleBooleanProperty(this, "expanded") {
@@ -99,9 +116,9 @@ public class M3FabMenu extends Control {
     /// The reusable expand and collapse animation for every action item.
     private final ActionItemsTransition animation = new ActionItemsTransition();
 
-    /// Observes runtime motion settings while this menu is attached to a scene.
+    /// Observes runtime motion settings only while an expand or collapse transition is active.
     private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(this, this::refreshMotionSettings);
+            new M3MotionSettingsObserver(this, this::refreshMotionSettings, false);
 
     /// Handles detached action item activation before the default skin attaches the item.
     private final EventHandler<ActionEvent> actionItemActionHandler = this::handleActionItemAction;
@@ -155,6 +172,12 @@ public class M3FabMenu extends Control {
         return toggleButton;
     }
 
+    /// Returns the internal close floating action button.
+    ///
+    /// @return the close floating action button
+    final M3FloatingActionButton getCloseButton() {
+        return closeButton;
+    }
 
     /// Returns the spacing between expanded action items.
     ///
@@ -184,6 +207,36 @@ public class M3FabMenu extends Control {
             );
         }
         return actionSpacing;
+    }
+
+    /// Returns the spacing between the last expanded action and close button.
+    ///
+    /// @return the close button spacing in pixels
+    public final double getCloseSpacing() {
+        return closeSpacing == null ? DEFAULT_CLOSE_SPACING : closeSpacing.get();
+    }
+
+    /// Sets the spacing between the last expanded action and close button.
+    ///
+    /// @param closeSpacing the close button spacing in pixels
+    public final void setCloseSpacing(double closeSpacing) {
+        closeSpacingProperty().set(M3Css.nonNegative(closeSpacing, "closeSpacing"));
+    }
+
+    /// Returns the close button spacing property.
+    ///
+    /// @return the styleable close button spacing property
+    public final StyleableDoubleProperty closeSpacingProperty() {
+        if (closeSpacing == null) {
+            closeSpacing = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_CLOSE_SPACING,
+                    this,
+                    "closeSpacing",
+                    StyleableProperties.CLOSE_SPACING,
+                    this::requestLayout
+            );
+        }
+        return closeSpacing;
     }
 
     /// Returns the mutable action item list.
@@ -297,15 +350,38 @@ public class M3FabMenu extends Control {
         M3ControlStyles.initialize(this, STYLE_CLASS);
         M3ControlStyles.add(actions, ACTIONS_STYLE_CLASS);
         M3ControlStyles.add(toggleButton, TOGGLE_STYLE_CLASS);
+        M3ControlStyles.add(closeButton, CLOSE_STYLE_CLASS);
+        updateCloseButtonVariant();
+        toggleButton.variantProperty().addListener(observable -> updateCloseButtonVariant());
         setAccessibleRole(AccessibleRole.TOOL_BAR);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
         actions.getChildren().addListener(actionsListener);
         addEventHandler(ActionEvent.ACTION, this::handleActionItemAction);
-        toggleButton.addEventHandler(ActionEvent.ACTION, event -> toggle());
+        toggleButton.addEventHandler(ActionEvent.ACTION, event -> show());
+        closeButton.addEventHandler(ActionEvent.ACTION, event -> hide());
         addEventHandler(KeyEvent.KEY_PRESSED, navigationKeyHandler);
         applyCollapsedState();
         focusNotifier.start();
+    }
+
+    /// Pairs the close button's solid color role with the entry button family.
+    private void updateCloseButtonVariant() {
+        M3InternalIcon closeIcon = (M3InternalIcon) closeButton.getGraphic();
+        switch (toggleButton.getVariant()) {
+            case SURFACE, PRIMARY_CONTAINER, PRIMARY -> {
+                closeButton.setVariant(M3FloatingActionButtonVariant.PRIMARY);
+                closeIcon.setColorRole(M3InternalIcon.ColorRole.ON_PRIMARY);
+            }
+            case SECONDARY_CONTAINER, SECONDARY -> {
+                closeButton.setVariant(M3FloatingActionButtonVariant.SECONDARY);
+                closeIcon.setColorRole(M3InternalIcon.ColorRole.ON_SECONDARY);
+            }
+            case TERTIARY_CONTAINER, TERTIARY -> {
+                closeButton.setVariant(M3FloatingActionButtonVariant.TERTIARY);
+                closeIcon.setColorRole(M3InternalIcon.ColorRole.ON_TERTIARY);
+            }
+        }
     }
 
     /// Collapses the menu after an action item fires.
@@ -331,26 +407,31 @@ public class M3FabMenu extends Control {
                 targets,
                 false,
                 true,
-                Math.max(targets.indexOf(toggleButton), 0)
+                Math.max(targets.indexOf(isExpanded() ? closeButton : toggleButton), 0)
         )) {
             notifyFocusNodeChanged();
         }
     }
 
-    /// Returns the currently focusable action items followed by the toggle button.
+    /// Returns the currently focusable actions followed by the visible activator button.
     private List<Node> navigationTargets() {
-        return M3FocusTraversal.focusTargets(getItems(), toggleButton);
+        return M3FocusTraversal.focusTargets(getItems(), isExpanded() ? closeButton : toggleButton);
     }
 
     /// Applies expanded state, using animation only after the control is attached to a scene.
     private void setExpandedState(boolean expanded) {
-        boolean restoreToggleFocus = !expanded && isFocusInsideActionItems();
+        boolean restoreToggleFocus = !expanded && (isFocusInsideActionItems() || closeButton.isFocused());
+        boolean transferToggleFocus = expanded && toggleButton.isFocused();
         stopAnimation();
+        pseudoClassStateChanged(EXPANDED_PSEUDO_CLASS, expanded);
         if (getScene() == null) {
             if (expanded) {
                 applyExpandedState();
             } else {
                 applyCollapsedState();
+            }
+            if (transferToggleFocus) {
+                M3Accessible.showDirectItem(this, closeButton);
             }
             restoreToggleFocusAfterCollapse(restoreToggleFocus);
             notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
@@ -362,6 +443,9 @@ public class M3FabMenu extends Control {
             playExpandAnimation();
         } else {
             playCollapseAnimation();
+        }
+        if (transferToggleFocus) {
+            M3Accessible.showDirectItem(this, closeButton);
         }
         restoreToggleFocusAfterCollapse(restoreToggleFocus);
         notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
@@ -382,7 +466,7 @@ public class M3FabMenu extends Control {
 
         int currentIndex = M3FocusTraversal.focusedTargetIndex(this, targets);
         if (currentIndex < 0) {
-            currentIndex = targets.indexOf(toggleButton);
+            currentIndex = targets.indexOf(isExpanded() ? closeButton : toggleButton);
         }
         if (currentIndex < 0) {
             currentIndex = 0;
@@ -543,6 +627,7 @@ public class M3FabMenu extends Control {
 
     /// Starts the configured action transition using the resolved motion setting.
     private void playConfiguredAnimation() {
+        motionSettingsObserver.start();
         M3Animation.playFromStart(this, animation);
     }
 
@@ -550,6 +635,7 @@ public class M3FabMenu extends Control {
     private void stopAnimation() {
         animation.stop();
         animation.clearTargets();
+        motionSettingsObserver.stop();
     }
 
     /// Applies changed runtime motion settings to the active expand or collapse animation.
@@ -594,6 +680,16 @@ public class M3FabMenu extends Control {
             item.setScaleY(1.0);
             item.setTranslateY(0.0);
         }
+        toggleButton.setOpacity(0.0);
+        toggleButton.setScaleX(ACTION_TRANSITION_SCALE);
+        toggleButton.setScaleY(ACTION_TRANSITION_SCALE);
+        toggleButton.setVisible(false);
+        toggleButton.setMouseTransparent(true);
+        closeButton.setVisible(true);
+        closeButton.setOpacity(1.0);
+        closeButton.setScaleX(1.0);
+        closeButton.setScaleY(1.0);
+        closeButton.setMouseTransparent(false);
     }
 
     /// Applies the final collapsed item state.
@@ -605,6 +701,16 @@ public class M3FabMenu extends Control {
         for (Node item : getItems()) {
             prepareCollapsedAction(item, collapsedOffset(itemCount, index++));
         }
+        closeButton.setOpacity(0.0);
+        closeButton.setScaleX(ACTION_TRANSITION_SCALE);
+        closeButton.setScaleY(ACTION_TRANSITION_SCALE);
+        closeButton.setVisible(false);
+        closeButton.setMouseTransparent(true);
+        toggleButton.setVisible(true);
+        toggleButton.setOpacity(1.0);
+        toggleButton.setScaleX(1.0);
+        toggleButton.setScaleY(1.0);
+        toggleButton.setMouseTransparent(false);
         requestMenuLayout();
     }
 
@@ -654,6 +760,7 @@ public class M3FabMenu extends Control {
     /// Applies the final state after the reusable action animation completes.
     private void handleActionAnimationFinished() {
         animation.clearTargets();
+        motionSettingsObserver.stop();
         if (isExpanded()) {
             applyExpandedState();
         } else {
@@ -679,6 +786,24 @@ public class M3FabMenu extends Control {
         /// Starting vertical translations parallel to [targets].
         private double[] startTranslateY = new double[0];
 
+        /// Starting opacity of the entry button.
+        private double startToggleOpacity;
+
+        /// Starting horizontal scale of the entry button.
+        private double startToggleScaleX;
+
+        /// Starting vertical scale of the entry button.
+        private double startToggleScaleY;
+
+        /// Starting opacity of the close button.
+        private double startCloseOpacity;
+
+        /// Starting horizontal scale of the close button.
+        private double startCloseScaleX;
+
+        /// Starting vertical scale of the close button.
+        private double startCloseScaleY;
+
         /// The number of populated target slots.
         private int targetCount;
 
@@ -698,6 +823,16 @@ public class M3FabMenu extends Control {
             ensureCapacity(items.size());
             targetCount = items.size();
             this.expanding = expanding;
+            toggleButton.setVisible(true);
+            closeButton.setVisible(true);
+            toggleButton.setMouseTransparent(true);
+            closeButton.setMouseTransparent(true);
+            startToggleOpacity = toggleButton.getOpacity();
+            startToggleScaleX = toggleButton.getScaleX();
+            startToggleScaleY = toggleButton.getScaleY();
+            startCloseOpacity = closeButton.getOpacity();
+            startCloseScaleX = closeButton.getScaleX();
+            startCloseScaleY = closeButton.getScaleY();
             for (int index = 0; index < targetCount; index++) {
                 Node item = items.get(index);
                 targets[index] = item;
@@ -743,6 +878,16 @@ public class M3FabMenu extends Control {
                 item.setScaleY(interpolate(startScaleY[index], targetScale, fraction));
                 item.setTranslateY(interpolate(startTranslateY[index], targetTranslateY, fraction));
             }
+            double targetToggleOpacity = expanding ? 0.0 : 1.0;
+            double targetToggleScale = expanding ? ACTION_TRANSITION_SCALE : 1.0;
+            double targetCloseOpacity = expanding ? 1.0 : 0.0;
+            double targetCloseScale = expanding ? 1.0 : ACTION_TRANSITION_SCALE;
+            toggleButton.setOpacity(interpolate(startToggleOpacity, targetToggleOpacity, fraction));
+            toggleButton.setScaleX(interpolate(startToggleScaleX, targetToggleScale, fraction));
+            toggleButton.setScaleY(interpolate(startToggleScaleY, targetToggleScale, fraction));
+            closeButton.setOpacity(interpolate(startCloseOpacity, targetCloseOpacity, fraction));
+            closeButton.setScaleX(interpolate(startCloseScaleX, targetCloseScale, fraction));
+            closeButton.setScaleY(interpolate(startCloseScaleY, targetCloseScale, fraction));
         }
 
         /// Interpolates one primitive channel.
@@ -770,6 +915,18 @@ public class M3FabMenu extends Control {
                 M3InternalIcon.Glyph.ADD,
                 M3InternalIcon.ColorRole.ON_PRIMARY_CONTAINER
         ));
+        button.setVariant(M3FloatingActionButtonVariant.PRIMARY_CONTAINER);
+        button.setSize(M3FloatingActionButtonSize.REGULAR);
+        return button;
+    }
+
+    /// Creates the 56-pixel solid close button shown by an expanded menu.
+    private static M3FloatingActionButton createCloseButton() {
+        M3FloatingActionButton button = new M3FloatingActionButton(new M3InternalIcon(
+                M3InternalIcon.Glyph.CLOSE,
+                M3InternalIcon.ColorRole.ON_PRIMARY_CONTAINER,
+                20.0
+        ));
         button.setVariant(M3FloatingActionButtonVariant.PRIMARY);
         button.setSize(M3FloatingActionButtonSize.REGULAR);
         return button;
@@ -778,7 +935,7 @@ public class M3FabMenu extends Control {
     /// Creates the default Material Design 3 floating action button menu skin.
     @Override
     protected Skin<?> createDefaultSkin() {
-        return new M3FabMenuSkin(this, actions, toggleButton);
+        return new M3FabMenuSkin(this, actions, toggleButton, closeButton);
     }
 
 
@@ -801,12 +958,29 @@ public class M3FabMenu extends Control {
                     }
                 };
 
+
+        /// CSS metadata for spacing before the close button.
+        private static final CssMetaData<M3FabMenu, Number> CLOSE_SPACING =
+                new CssMetaData<>("-m3-fab-menu-close-spacing", SizeConverter.getInstance(), DEFAULT_CLOSE_SPACING) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3FabMenu control) {
+                        return M3Css.isSettable(control.closeSpacingProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3FabMenu control) {
+                        return control.closeSpacingProperty();
+                    }
+                };
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Control.getClassCssMetaData());
             styleables.add(ACTION_SPACING);
+            styleables.add(CLOSE_SPACING);
             STYLEABLES = Collections.unmodifiableList(styleables);
         }
     }

@@ -534,7 +534,7 @@ final class M3ControlAccessibilityTest {
             Stage stage = new Stage();
 
             try {
-                M3MotionSettings.setAnimationsEnabled(root, false);
+                M3MotionSettings.setReducedMotionRequested(root, true);
                 stage.setScene(new Scene(root, 520.0, 160.0));
                 stage.show();
                 root.applyCss();
@@ -550,7 +550,7 @@ final class M3ControlAccessibilityTest {
                 subMenuItem.hideSubMenu();
                 splitButton.hideMenu();
                 menuButton.hideMenu();
-                M3MotionSettings.clearAnimationsEnabled(root);
+                M3MotionSettings.setReducedMotionRequested(root, false);
                 stage.close();
             }
         });
@@ -580,7 +580,7 @@ final class M3ControlAccessibilityTest {
             Stage stage = new Stage();
 
             try {
-                M3MotionSettings.setAnimationsEnabled(root, false);
+                M3MotionSettings.setReducedMotionRequested(root, true);
                 stage.setScene(new Scene(root, 560.0, 160.0));
                 stage.show();
                 root.applyCss();
@@ -597,7 +597,7 @@ final class M3ControlAccessibilityTest {
                 subMenuItem.hideSubMenu();
                 splitButton.hideMenu();
                 menuButton.hideMenu();
-                M3MotionSettings.clearAnimationsEnabled(root);
+                M3MotionSettings.setReducedMotionRequested(root, false);
                 stage.close();
             }
         });

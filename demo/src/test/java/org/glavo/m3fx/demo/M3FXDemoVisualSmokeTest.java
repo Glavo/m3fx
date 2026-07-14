@@ -2249,7 +2249,7 @@ final class M3FXDemoVisualSmokeTest {
             }, SETTLED_STATE_PULSES, () -> {
                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                 M3Carousel multiBrowse = Objects.requireNonNull(multiBrowseReference.get(), "multi-browse carousel");
-                M3MotionSettings.setAnimationsEnabled(multiBrowse, false);
+                M3MotionSettings.setReducedMotionRequested(multiBrowse, true);
                 multiBrowse.setAnimatedScroll(false);
                 Node page = currentDemoPage(scene, "Carousel");
                 M3Button next = Objects.requireNonNull(
@@ -2283,7 +2283,7 @@ final class M3FXDemoVisualSmokeTest {
                 @Nullable M3Carousel multiBrowse = multiBrowseReference.get();
                 if (multiBrowse != null) {
                     multiBrowse.setAnimatedScroll(true);
-                    M3MotionSettings.clearAnimationsEnabled(multiBrowse);
+                    M3MotionSettings.setReducedMotionRequested(multiBrowse, false);
                 }
                 Stage stage = stageReference.get();
                 if (stage != null) {
@@ -2902,7 +2902,7 @@ final class M3FXDemoVisualSmokeTest {
                             firstVisibleMenuButtonWithText(page, "Open menu"),
                             "menu button"
                     );
-                    M3MotionSettings.setAnimationsEnabled(menuButton, false);
+                    M3MotionSettings.setReducedMotionRequested(menuButton, true);
                     menuButtonReference.set(menuButton);
                 });
 
@@ -2944,7 +2944,7 @@ final class M3FXDemoVisualSmokeTest {
                             firstVisibleSubMenuItemWithText(ownerMenu, "Move to"),
                             "submenu item"
                     );
-                    M3MotionSettings.setAnimationsEnabled(subMenuItem, false);
+                    M3MotionSettings.setReducedMotionRequested(subMenuItem, true);
                     subMenuItem.showSubMenu();
                     layoutPopupRoot(subMenuItem.getSubMenu());
                     subMenuItemReference.set(subMenuItem);
@@ -2995,12 +2995,12 @@ final class M3FXDemoVisualSmokeTest {
                 @Nullable M3SubMenuItem subMenuItem = subMenuItemReference.get();
                 if (subMenuItem != null) {
                     subMenuItem.hideSubMenu();
-                    M3MotionSettings.clearAnimationsEnabled(subMenuItem);
+                    M3MotionSettings.setReducedMotionRequested(subMenuItem, false);
                 }
                 @Nullable M3MenuButton menuButton = menuButtonReference.get();
                 if (menuButton != null) {
                     menuButton.hideMenu();
-                    M3MotionSettings.clearAnimationsEnabled(menuButton);
+                    M3MotionSettings.setReducedMotionRequested(menuButton, false);
                 }
                 Stage stage = stageReference.get();
                 if (stage != null) {
@@ -3048,7 +3048,7 @@ final class M3FXDemoVisualSmokeTest {
                             firstVisibleMenuButtonWithText(page, "Open menu"),
                             "RTL menu button"
                     );
-                    M3MotionSettings.setAnimationsEnabled(menuButton, false);
+                    M3MotionSettings.setReducedMotionRequested(menuButton, true);
                     menuButtonReference.set(menuButton);
                 });
 
@@ -3073,7 +3073,7 @@ final class M3FXDemoVisualSmokeTest {
                             firstVisibleSubMenuItemWithText(ownerMenu, "Move to"),
                             "RTL submenu item"
                     );
-                    M3MotionSettings.setAnimationsEnabled(subMenuItem, false);
+                    M3MotionSettings.setReducedMotionRequested(subMenuItem, true);
                     subMenuItem.showSubMenu();
                     layoutPopupRoot(subMenuItem.getSubMenu());
                     subMenuItemReference.set(subMenuItem);
@@ -3112,12 +3112,12 @@ final class M3FXDemoVisualSmokeTest {
                 @Nullable M3SubMenuItem subMenuItem = subMenuItemReference.get();
                 if (subMenuItem != null) {
                     subMenuItem.hideSubMenu();
-                    M3MotionSettings.clearAnimationsEnabled(subMenuItem);
+                    M3MotionSettings.setReducedMotionRequested(subMenuItem, false);
                 }
                 @Nullable M3MenuButton menuButton = menuButtonReference.get();
                 if (menuButton != null) {
                     menuButton.hideMenu();
-                    M3MotionSettings.clearAnimationsEnabled(menuButton);
+                    M3MotionSettings.setReducedMotionRequested(menuButton, false);
                 }
                 Stage stage = stageReference.get();
                 if (stage != null) {
@@ -3593,8 +3593,8 @@ final class M3FXDemoVisualSmokeTest {
             String modeName
     ) {
         Node root = scene.getRoot();
-        @Nullable Boolean previousAnimationsEnabled = M3MotionSettings.getAnimationsEnabled(root);
-        M3MotionSettings.setAnimationsEnabled(root, false);
+        boolean previousReducedMotionRequested = M3MotionSettings.isReducedMotionRequested(root);
+        M3MotionSettings.setReducedMotionRequested(root, true);
         int focusedLayouts = 0;
         try {
             for (M3TextInputLayout layout : layouts) {
@@ -3629,11 +3629,7 @@ final class M3FXDemoVisualSmokeTest {
                 focusedLayouts++;
             }
         } finally {
-            if (Boolean.FALSE.equals(previousAnimationsEnabled)) {
-                M3MotionSettings.setAnimationsEnabled(root, false);
-            } else {
-                M3MotionSettings.clearAnimationsEnabled(root);
-            }
+            M3MotionSettings.setReducedMotionRequested(root, previousReducedMotionRequested);
         }
 
         int checkedLayouts = focusedLayouts;
@@ -4142,6 +4138,16 @@ final class M3FXDemoVisualSmokeTest {
                         if (!(node instanceof ScrollPane scrollPane)) {
                             return false;
                         }
+                        if (scrollPane.getVvalue() < 0.98) {
+                            @Nullable M3ListItem eventTarget = firstVisibleUnselectedSidebarItemInSceneViewport(
+                                    scene.getRoot()
+                            );
+                            if (eventTarget != null) {
+                                for (int i = 0; i < 4; i++) {
+                                    fireVerticalWheelScroll(eventTarget, -720.0);
+                                }
+                            }
+                        }
                         M3ListItem lastItem = lastDemoSidebarItem(scene.getRoot());
                         return scrollPane.getVvalue() > 0.95
                                 && "Scrims".equals(lastItem.getHeadlineText())
@@ -4171,13 +4177,6 @@ final class M3FXDemoVisualSmokeTest {
                                 )
                         );
                         sidebarScrollPane.setVvalue(0.0);
-                        M3ListItem eventTarget = Objects.requireNonNull(
-                                firstVisibleUnselectedSidebarItemInSceneViewport(scene.getRoot()),
-                                "demo sidebar wheel target"
-                        );
-                        for (int i = 0; i < 12; i++) {
-                            fireVerticalWheelScroll(eventTarget, -720.0);
-                        }
                     },
                     () -> {
                         Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
@@ -4779,7 +4778,7 @@ final class M3FXDemoVisualSmokeTest {
                         M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
                         Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                         app.showPageByTitle(pageTitle);
-                        M3MotionSettings.setAnimationsEnabled(scene.getRoot(), false);
+                        M3MotionSettings.setReducedMotionRequested(scene.getRoot(), true);
                         scene.getRoot().applyCss();
                         scene.getRoot().layout();
                         Node page = currentDemoPage(scene, pageTitle);
@@ -4831,7 +4830,7 @@ final class M3FXDemoVisualSmokeTest {
             DemoFxTestUtils.runOnFxThread(() -> {
                 Scene scene = sceneReference.get();
                 if (scene != null) {
-                    M3MotionSettings.clearAnimationsEnabled(scene.getRoot());
+                    M3MotionSettings.setReducedMotionRequested(scene.getRoot(), false);
                 }
             });
         }
@@ -4861,7 +4860,7 @@ final class M3FXDemoVisualSmokeTest {
         DemoFxTestUtils.runOnFxThread(() -> {
             M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "snackbar host");
             host.dismissAll();
-            M3MotionSettings.clearMotionScheme(host);
+            DemoFxTestUtils.clearMotionScheme(host);
         });
     }
 
@@ -4883,7 +4882,7 @@ final class M3FXDemoVisualSmokeTest {
         DemoFxTestUtils.runOnFxThread(() -> {
             M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "snackbar host");
             host.dismissAll();
-            M3MotionSettings.clearMotionScheme(host);
+            DemoFxTestUtils.clearMotionScheme(host);
         });
     }
 
@@ -4906,7 +4905,7 @@ final class M3FXDemoVisualSmokeTest {
             scene.getRoot().layout();
 
             M3SnackbarHost host = Objects.requireNonNull(firstVisibleSnackbarHost(scene.getRoot()), "snackbar host");
-            M3MotionSettings.setMotionScheme(host, visualOverlayMotionScheme());
+            DemoFxTestUtils.setMotionScheme(host, visualOverlayMotionScheme());
             host.setDisplayDuration(Duration.INDEFINITE);
             M3Snackbar snackbar = new M3Snackbar("Theme-aware snackbar", "Action");
             snackbar.setOnAction(event -> host.dismiss());
@@ -5466,6 +5465,7 @@ final class M3FXDemoVisualSmokeTest {
         runOnFxThreadWhenNodeAreaChanged(targetReference, normalReference, sceneReference, pressedReference, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            DemoFxTestUtils.setMotionScheme(scene.getRoot(), visualRippleMotionScheme());
             if (pageTitle != null) {
                 app.showPageByTitle(pageTitle);
             }
@@ -5477,7 +5477,6 @@ final class M3FXDemoVisualSmokeTest {
             scrollAncestorScrollPanesNodeIntoView(target);
             scene.getRoot().applyCss();
             scene.getRoot().layout();
-            M3MotionSettings.setMotionScheme(target, visualRippleMotionScheme());
             targetReference.set(target);
             targetBoundsReference.set(nodeAreaBounds(target));
             normalReference.set(snapshot(scene));
@@ -5489,6 +5488,11 @@ final class M3FXDemoVisualSmokeTest {
             firePrimaryMouseEvent(target, MouseEvent.MOUSE_PRESSED, true);
             scene.getRoot().applyCss();
             scene.getRoot().layout();
+            Node ripple = Objects.requireNonNull(
+                    target.lookup("." + RIPPLE_STYLE_CLASS),
+                    targetName + " ripple node after press"
+            );
+            assertTrue(ripple.getOpacity() > 0.0, targetName + " ripple should become visible on press");
         }, () -> {
             writeInteractionSnapshot(
                     Objects.requireNonNull(pressedReference.get(), "pressed ripple target snapshot"),
@@ -5552,7 +5556,6 @@ final class M3FXDemoVisualSmokeTest {
             );
         });
 
-        Node target = Objects.requireNonNull(targetReference.get(), targetName);
         Bounds targetBounds = Objects.requireNonNull(targetBoundsReference.get(), targetName + " bounds");
         assertNodeAreaChanged(
                 targetBounds,
@@ -5571,7 +5574,8 @@ final class M3FXDemoVisualSmokeTest {
                 Objects.requireNonNull(settledOpacityReference.get(), "settled ripple opacity"),
                 targetName + " ripple release fade-out"
         );
-        M3MotionSettings.clearMotionScheme(target);
+        Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+        DemoFxTestUtils.clearMotionScheme(scene.getRoot());
     }
 
     /// Returns the first visible text-input layout whose built-in clear button is active.
@@ -5663,7 +5667,7 @@ final class M3FXDemoVisualSmokeTest {
                     scene.getRoot(),
                     "Off"
             ), "switch");
-            M3MotionSettings.setMotionScheme(target, visualSwitchMotionScheme());
+            DemoFxTestUtils.setMotionScheme(target, visualSwitchMotionScheme());
             targetReference.set(target);
             normalReference.set(snapshot(scene));
             writeInteractionSnapshot(
@@ -5693,7 +5697,7 @@ final class M3FXDemoVisualSmokeTest {
                     "switch-selection",
                     "settled"
             );
-            M3MotionSettings.clearMotionScheme(Objects.requireNonNull(targetReference.get(), "switch"));
+            DemoFxTestUtils.clearMotionScheme(Objects.requireNonNull(targetReference.get(), "switch"));
         });
 
         M3Switch target = Objects.requireNonNull(targetReference.get(), "switch");
@@ -5862,7 +5866,7 @@ final class M3FXDemoVisualSmokeTest {
                     M3MotionScheme standard = M3MotionScheme.standard();
                     M3MotionSpec observableSpec =
                             M3MotionSpec.create(OBSERVABLE_MOTION_DURATION, M3MotionEasing.LINEAR);
-                    M3MotionSettings.setMotionScheme(target, M3MotionScheme.create(
+                    DemoFxTestUtils.setMotionScheme(target, M3MotionScheme.create(
                             standard.fastEffects(),
                             observableSpec,
                             standard.slowEffects(),
@@ -5959,7 +5963,7 @@ final class M3FXDemoVisualSmokeTest {
             WritableImage buttonSnapshot = snapshotNode(target);
             closedAgainButtonReference.set(buttonSnapshot);
             writeAnimationSnapshot(buttonSnapshot, "split-button-shape", "closed");
-            M3MotionSettings.clearMotionScheme(target);
+            DemoFxTestUtils.clearMotionScheme(target);
         });
 
         assertSnapshotChanged(
@@ -6023,7 +6027,7 @@ final class M3FXDemoVisualSmokeTest {
                     scene.getRoot(),
                     "Open menu"
             ), "menu button");
-            M3MotionSettings.setMotionScheme(menuButton, visualPopupMotionScheme());
+            DemoFxTestUtils.setMotionScheme(menuButton, visualPopupMotionScheme());
             menuButton.showMenu();
             assertTrue(menuButton.isShowing());
             menuButtonReference.set(menuButton);
@@ -6053,7 +6057,7 @@ final class M3FXDemoVisualSmokeTest {
                     menuButton.getMenu(),
                     "Move to"
             ), "submenu item");
-            M3MotionSettings.setMotionScheme(subMenuItem, visualPopupMotionScheme());
+            DemoFxTestUtils.setMotionScheme(subMenuItem, visualPopupMotionScheme());
             subMenuItem.showSubMenu();
             assertTrue(subMenuItem.isSubMenuShowing());
             layoutPopupRoot(subMenuItem.getSubMenu());
@@ -6140,8 +6144,8 @@ final class M3FXDemoVisualSmokeTest {
             M3SubMenuItem subMenuItem = Objects.requireNonNull(subMenuItemReference.get(), "submenu item");
             assertFalse(subMenuItem.isSubMenuShowing());
             menuButton.hideMenu();
-            M3MotionSettings.clearMotionScheme(subMenuItem);
-            M3MotionSettings.clearMotionScheme(menuButton);
+            DemoFxTestUtils.clearMotionScheme(subMenuItem);
+            DemoFxTestUtils.clearMotionScheme(menuButton);
         });
 
         assertSnapshotChanged(
@@ -6183,7 +6187,7 @@ final class M3FXDemoVisualSmokeTest {
                     M3DatePickerField target = Objects.requireNonNull(firstVisibleDatePickerField(
                             scene.getRoot()
                     ), "date picker field");
-                    M3MotionSettings.setMotionScheme(target, visualPopupMotionScheme());
+                    DemoFxTestUtils.setMotionScheme(target, visualPopupMotionScheme());
                     target.showPicker();
                     assertTrue(target.isShowing());
 
@@ -6244,7 +6248,7 @@ final class M3FXDemoVisualSmokeTest {
         }, () -> {
             M3DatePickerField target = Objects.requireNonNull(targetReference.get(), "date picker field");
             assertFalse(target.isShowing());
-            M3MotionSettings.clearMotionScheme(target);
+            DemoFxTestUtils.clearMotionScheme(target);
         });
 
         assertSnapshotChanged(
@@ -6311,7 +6315,7 @@ final class M3FXDemoVisualSmokeTest {
                     "Search"
             ), "navigation item");
             assertFalse(target.isSelected());
-            M3MotionSettings.setMotionScheme(target, visualNavigationMotionScheme());
+            DemoFxTestUtils.setMotionScheme(target, visualNavigationMotionScheme());
             targetReference.set(target);
             normalReference.set(snapshot(scene));
             writeAnimationSnapshot(
@@ -6346,7 +6350,7 @@ final class M3FXDemoVisualSmokeTest {
                     snapshotName,
                     "settled"
             );
-            M3MotionSettings.clearMotionScheme(Objects.requireNonNull(targetReference.get(), "navigation item"));
+            DemoFxTestUtils.clearMotionScheme(Objects.requireNonNull(targetReference.get(), "navigation item"));
         });
 
         M3NavigationItem target = Objects.requireNonNull(targetReference.get(), "navigation item");
@@ -6409,12 +6413,12 @@ final class M3FXDemoVisualSmokeTest {
                             .filter(rail -> rail.getVariant() == M3NavigationRailVariant.STANDARD)
                             .findFirst()
                             .orElseThrow();
-                    M3MotionSettings.setAnimationsEnabled(target, false);
+                    M3MotionSettings.setReducedMotionRequested(target, true);
                     target.setExpanded(false);
                     scene.getRoot().applyCss();
                     scene.getRoot().layout();
-                    M3MotionSettings.clearAnimationsEnabled(target);
-                    M3MotionSettings.setMotionScheme(target, visualNavigationMotionScheme());
+                    M3MotionSettings.setReducedMotionRequested(target, false);
+                    DemoFxTestUtils.setMotionScheme(target, visualNavigationMotionScheme());
 
                     targetReference.set(target);
                     collapsedReference.set(snapshotNode(target));
@@ -6490,7 +6494,7 @@ final class M3FXDemoVisualSmokeTest {
                     "navigation-rail-width",
                     "settled"
             );
-            M3MotionSettings.clearMotionScheme(target);
+            DemoFxTestUtils.clearMotionScheme(target);
         });
 
         assertSnapshotChanged(
@@ -6613,10 +6617,10 @@ final class M3FXDemoVisualSmokeTest {
                     scene.getRoot(),
                     "Buttons"
             ), "sidebar drawer group");
-            M3MotionSettings.setAnimationsEnabled(target, false);
+            M3MotionSettings.setReducedMotionRequested(target, true);
             target.setExpanded(false);
-            M3MotionSettings.clearAnimationsEnabled(target);
-            M3MotionSettings.setMotionScheme(target, visualNavigationMotionScheme());
+            M3MotionSettings.setReducedMotionRequested(target, false);
+            DemoFxTestUtils.setMotionScheme(target, visualNavigationMotionScheme());
             scene.getRoot().applyCss();
             scene.getRoot().layout();
             targetReference.set(target);
@@ -6671,7 +6675,7 @@ final class M3FXDemoVisualSmokeTest {
                     "settled"
             );
             assertFalse(target.isExpanded());
-            M3MotionSettings.clearMotionScheme(target);
+            DemoFxTestUtils.clearMotionScheme(target);
         });
 
         assertSnapshotChanged(
@@ -6733,7 +6737,7 @@ final class M3FXDemoVisualSmokeTest {
                     scene.getRoot(),
                     "Now playing"
             ), "bottom sheet");
-            M3MotionSettings.setMotionScheme(target, visualSheetMotionScheme());
+            DemoFxTestUtils.setMotionScheme(target, visualSheetMotionScheme());
             targetReference.set(target);
             shownReference.set(snapshot(scene));
             writeAnimationSnapshot(
@@ -6785,7 +6789,7 @@ final class M3FXDemoVisualSmokeTest {
             );
             assertTrue(target.isShown());
             assertTrue(target.isVisible());
-            M3MotionSettings.clearMotionScheme(target);
+            DemoFxTestUtils.clearMotionScheme(target);
         });
 
         assertSnapshotChanged(
@@ -6833,7 +6837,7 @@ final class M3FXDemoVisualSmokeTest {
                     scene.getRoot(),
                     "Details"
             ), "side sheet");
-            M3MotionSettings.setMotionScheme(target, visualSheetMotionScheme());
+            DemoFxTestUtils.setMotionScheme(target, visualSheetMotionScheme());
             targetReference.set(target);
             shownReference.set(snapshot(scene));
             writeAnimationSnapshot(
@@ -6885,7 +6889,7 @@ final class M3FXDemoVisualSmokeTest {
             );
             assertTrue(target.isShown());
             assertTrue(target.isVisible());
-            M3MotionSettings.clearMotionScheme(target);
+            DemoFxTestUtils.clearMotionScheme(target);
         });
 
         assertSnapshotChanged(
@@ -6944,7 +6948,7 @@ final class M3FXDemoVisualSmokeTest {
             scene.getRoot().layout();
 
             M3SnackbarHost host = Objects.requireNonNull(firstVisibleSnackbarHost(scene.getRoot()), "snackbar host");
-            M3MotionSettings.setMotionScheme(host, visualOverlayMotionScheme());
+            DemoFxTestUtils.setMotionScheme(host, visualOverlayMotionScheme());
             host.setDisplayDuration(Duration.INDEFINITE);
             hostReference.set(host);
             hiddenBaselineReference.set(snapshot(scene));
@@ -7011,7 +7015,7 @@ final class M3FXDemoVisualSmokeTest {
                     "snackbar-host",
                     "hidden"
             );
-            M3MotionSettings.clearMotionScheme(host);
+            DemoFxTestUtils.clearMotionScheme(host);
         });
 
         assertSnapshotChanged(
@@ -7051,7 +7055,7 @@ final class M3FXDemoVisualSmokeTest {
             scene.getRoot().layout();
 
             M3FabMenu target = Objects.requireNonNull(firstVisibleFabMenu(scene.getRoot(), false), "collapsed FAB menu");
-            M3MotionSettings.setMotionScheme(target, visualOverlayMotionScheme());
+            DemoFxTestUtils.setMotionScheme(target, visualOverlayMotionScheme());
             targetReference.set(target);
             collapsedReference.set(snapshot(scene));
             writeAnimationSnapshot(
@@ -7113,7 +7117,7 @@ final class M3FXDemoVisualSmokeTest {
                     "fab-menu",
                     "recollapsed"
             );
-            M3MotionSettings.clearMotionScheme(target);
+            DemoFxTestUtils.clearMotionScheme(target);
         });
 
         assertSnapshotChanged(
@@ -7657,6 +7661,9 @@ final class M3FXDemoVisualSmokeTest {
 
             Node target = Objects.requireNonNull(firstVisibleUnselectedSidebarChildItemInSceneViewport(scene.getRoot()), "sidebar item");
             targetReference.set(target);
+            scrollAncestorScrollPanesNodeIntoView(target);
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
             normalReference.set(snapshot(scene));
             writeInteractionSnapshot(
                     Objects.requireNonNull(normalReference.get(), "normal sidebar snapshot"),
@@ -7789,7 +7796,7 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable WritableImage> hoverReference = new AtomicReference<>();
 
         showPageWhenSidebarSelectionSettled(appReference, sceneReference, "Buttons", scene -> {
-            M3MotionSettings.setAnimationsEnabled(scene.getRoot(), false);
+            M3MotionSettings.setReducedMotionRequested(scene.getRoot(), true);
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             try {
@@ -7804,7 +7811,7 @@ final class M3FXDemoVisualSmokeTest {
                 scene.getRoot().layout();
                 hoverReference.set(snapshot(scene));
             } finally {
-                M3MotionSettings.clearAnimationsEnabled(scene.getRoot());
+                M3MotionSettings.setReducedMotionRequested(scene.getRoot(), false);
                 @Nullable Node target = targetReference.get();
                 if (target != null) {
                     clearHoverPseudoState(target);
@@ -13798,7 +13805,8 @@ final class M3FXDemoVisualSmokeTest {
         List<M3FloatingActionButton> fabs = visibleNodesOfType(page, M3FloatingActionButton.class);
         assertEquals(6, fabs.size(), () -> "All Buttons page should render FAB, extended FAB, and FAB menu actions: "
                 + fabs);
-        assertFloatingActionButtonVariantCount(fabs, M3FloatingActionButtonVariant.PRIMARY, 4, "All Buttons");
+        assertFloatingActionButtonVariantCount(
+                fabs, M3FloatingActionButtonVariant.PRIMARY_CONTAINER, 5, "All Buttons");
         assertTrue(fabs.stream().anyMatch(button -> !Objects.toString(button.getText(), "").isBlank()),
                 "All Buttons page should include an extended FAB label");
 
@@ -14172,17 +14180,25 @@ final class M3FXDemoVisualSmokeTest {
         Node page = currentDemoPage(scene, "Floating Action Buttons");
         assertCurrentPageTitle(scene, "Floating Action Buttons");
         assertVisibleText(root, "Sizes With Icons", "Floating Action Buttons");
-        assertVisibleText(root, "Color Roles", "Floating Action Buttons");
+        assertVisibleText(root, "Tonal Colors", "Floating Action Buttons");
+        assertVisibleText(root, "Solid Colors", "Floating Action Buttons");
 
         List<M3FloatingActionButton> fabs = visibleNodesOfType(page, M3FloatingActionButton.class);
-        assertEquals(7, fabs.size(), () -> "Floating Action Buttons page should render seven FABs: " + fabs);
+        assertEquals(11, fabs.size(), () -> "Floating Action Buttons page should render eleven FABs: " + fabs);
         assertFloatingActionButtonSizeCount(fabs, M3FloatingActionButtonSize.SMALL, 1, "Floating Action Buttons");
-        assertFloatingActionButtonSizeCount(fabs, M3FloatingActionButtonSize.REGULAR, 5, "Floating Action Buttons");
+        assertFloatingActionButtonSizeCount(fabs, M3FloatingActionButtonSize.REGULAR, 8, "Floating Action Buttons");
+        assertFloatingActionButtonSizeCount(fabs, M3FloatingActionButtonSize.MEDIUM, 1, "Floating Action Buttons");
         assertFloatingActionButtonSizeCount(fabs, M3FloatingActionButtonSize.LARGE, 1, "Floating Action Buttons");
         assertFloatingActionButtonVariantCount(
                 fabs, M3FloatingActionButtonVariant.SURFACE, 1, "Floating Action Buttons");
         assertFloatingActionButtonVariantCount(
-                fabs, M3FloatingActionButtonVariant.PRIMARY, 4, "Floating Action Buttons");
+                fabs, M3FloatingActionButtonVariant.PRIMARY_CONTAINER, 5, "Floating Action Buttons");
+        assertFloatingActionButtonVariantCount(
+                fabs, M3FloatingActionButtonVariant.SECONDARY_CONTAINER, 1, "Floating Action Buttons");
+        assertFloatingActionButtonVariantCount(
+                fabs, M3FloatingActionButtonVariant.TERTIARY_CONTAINER, 1, "Floating Action Buttons");
+        assertFloatingActionButtonVariantCount(
+                fabs, M3FloatingActionButtonVariant.PRIMARY, 1, "Floating Action Buttons");
         assertFloatingActionButtonVariantCount(
                 fabs, M3FloatingActionButtonVariant.SECONDARY, 1, "Floating Action Buttons");
         assertFloatingActionButtonVariantCount(
@@ -14190,10 +14206,38 @@ final class M3FXDemoVisualSmokeTest {
         for (M3FloatingActionButton fab : fabs) {
             assertTrue(Objects.toString(fab.getText(), "").isBlank(),
                     () -> "icon-only FAB should not expose label text: " + fab.getText());
-            assertNotNull(firstVisibleDemoVectorIcon(fab), "FAB should use an SVG demo icon");
+            Node icon = Objects.requireNonNull(firstVisibleDemoVectorIcon(fab), "FAB should use an SVG demo icon");
+            double expectedContainerSize = switch (fab.getSize()) {
+                case SMALL -> 40.0;
+                case REGULAR -> 56.0;
+                case MEDIUM -> 80.0;
+                case LARGE -> 96.0;
+            };
+            double expectedIconSize = switch (fab.getSize()) {
+                case SMALL, REGULAR -> 24.0;
+                case MEDIUM -> 28.0;
+                case LARGE -> 36.0;
+            };
+            assertEquals(expectedContainerSize, fab.getLayoutBounds().getWidth(), CONTROL_EDGE_TOLERANCE,
+                    () -> "FAB width mismatch for size=" + fab.getSize());
+            assertEquals(expectedContainerSize, fab.getLayoutBounds().getHeight(), CONTROL_EDGE_TOLERANCE,
+                    () -> "FAB height mismatch for size=" + fab.getSize());
+            Parent viewport = Objects.requireNonNull(
+                    nearestAncestorWithStyle(icon, "demo-vector-icon-viewport"),
+                    "FAB icon viewport"
+            );
+            assertEquals(expectedIconSize, viewport.getLayoutBounds().getWidth(), CONTROL_EDGE_TOLERANCE,
+                    () -> "FAB icon viewport width mismatch for size=" + fab.getSize());
+            assertEquals(expectedIconSize, viewport.getLayoutBounds().getHeight(), CONTROL_EDGE_TOLERANCE,
+                    () -> "FAB icon viewport height mismatch for size=" + fab.getSize());
             assertNodeSnapshotHasOpaquePixels(fab, "floating action button " + fab.getSize());
         }
-        assertDemoVectorIcons(page, "Floating Action Buttons", 7);
+        assertDemoFloatingActionButtonColors(
+                fabs,
+                Objects.requireNonNull(M3ThemeManager.getTheme(scene), "Floating Action Buttons page theme"),
+                "Floating Action Buttons"
+        );
+        assertDemoVectorIcons(page, "Floating Action Buttons", 11);
     }
 
     /// Verifies the real Extended FABs demo page label and variant matrix.
@@ -14204,20 +14248,71 @@ final class M3FXDemoVisualSmokeTest {
         assertVisibleText(root, "Extended FABs", "Extended FABs");
         assertVisibleText(root, "Create", "Extended FABs");
         assertVisibleText(root, "Compose", "Extended FABs");
-        assertVisibleText(root, "Upload", "Extended FABs");
+        assertVisibleText(root, "Favorite", "Extended FABs");
 
         List<M3FloatingActionButton> fabs = visibleNodesOfType(page, M3FloatingActionButton.class);
-        assertEquals(4, fabs.size(), () -> "Extended FABs page should render four labeled FABs: " + fabs);
-        assertFloatingActionButtonSizeCount(fabs, M3FloatingActionButtonSize.REGULAR, 4, "Extended FABs");
+        assertEquals(10, fabs.size(), () -> "Extended FABs page should render ten labeled FABs: " + fabs);
+        assertFloatingActionButtonSizeCount(fabs, M3FloatingActionButtonSize.REGULAR, 8, "Extended FABs");
+        assertFloatingActionButtonSizeCount(fabs, M3FloatingActionButtonSize.MEDIUM, 1, "Extended FABs");
+        assertFloatingActionButtonSizeCount(fabs, M3FloatingActionButtonSize.LARGE, 1, "Extended FABs");
         assertFloatingActionButtonVariantCount(fabs, M3FloatingActionButtonVariant.SURFACE, 1, "Extended FABs");
         assertFloatingActionButtonVariantCount(fabs, M3FloatingActionButtonVariant.PRIMARY, 1, "Extended FABs");
         assertFloatingActionButtonVariantCount(fabs, M3FloatingActionButtonVariant.SECONDARY, 1, "Extended FABs");
         assertFloatingActionButtonVariantCount(fabs, M3FloatingActionButtonVariant.TERTIARY, 1, "Extended FABs");
+        assertFloatingActionButtonVariantCount(
+                fabs, M3FloatingActionButtonVariant.PRIMARY_CONTAINER, 2, "Extended FABs");
+        assertFloatingActionButtonVariantCount(
+                fabs, M3FloatingActionButtonVariant.SECONDARY_CONTAINER, 2, "Extended FABs");
+        assertFloatingActionButtonVariantCount(
+                fabs, M3FloatingActionButtonVariant.TERTIARY_CONTAINER, 2, "Extended FABs");
         for (M3FloatingActionButton fab : fabs) {
             assertFalse(Objects.toString(fab.getText(), "").isBlank(),
                     () -> "extended FAB should render visible label text: " + fab);
             assertNotNull(firstVisibleDemoVectorIcon(fab), "extended FAB should use an SVG demo icon");
+            double expectedHeight = switch (fab.getSize()) {
+                case SMALL -> 40.0;
+                case REGULAR -> 56.0;
+                case MEDIUM -> 80.0;
+                case LARGE -> 96.0;
+            };
+            assertEquals(expectedHeight, fab.getLayoutBounds().getHeight(), CONTROL_EDGE_TOLERANCE,
+                    () -> "extended FAB height mismatch for size=" + fab.getSize());
             assertNodeSnapshotHasOpaquePixels(fab, "extended FAB " + fab.getText());
+        }
+        assertDemoFloatingActionButtonColors(
+                fabs,
+                Objects.requireNonNull(M3ThemeManager.getTheme(scene), "Extended FABs page theme"),
+                "Extended FABs"
+        );
+    }
+
+    /// Verifies that demo FAB icons and labels resolve the foreground role paired with their container variant.
+    private static void assertDemoFloatingActionButtonColors(
+            List<M3FloatingActionButton> buttons,
+            M3Theme theme,
+            String description
+    ) {
+        for (M3FloatingActionButton button : buttons) {
+            Color expectedColor = theme.colorScheme().getColor(switch (button.getVariant()) {
+                case SURFACE -> org.glavo.monetfx.ColorRole.PRIMARY;
+                case PRIMARY_CONTAINER -> org.glavo.monetfx.ColorRole.ON_PRIMARY_CONTAINER;
+                case SECONDARY_CONTAINER -> org.glavo.monetfx.ColorRole.ON_SECONDARY_CONTAINER;
+                case TERTIARY_CONTAINER -> org.glavo.monetfx.ColorRole.ON_TERTIARY_CONTAINER;
+                case PRIMARY -> org.glavo.monetfx.ColorRole.ON_PRIMARY;
+                case SECONDARY -> org.glavo.monetfx.ColorRole.ON_SECONDARY;
+                case TERTIARY -> org.glavo.monetfx.ColorRole.ON_TERTIARY;
+            });
+            SVGPath icon = assertInstanceOf(
+                    SVGPath.class,
+                    firstVisibleMaterialVectorIcon(button),
+                    description + " FAB icon"
+            );
+            assertEquals(expectedColor, icon.getFill(),
+                    () -> description + " FAB icon color mismatch for variant=" + button.getVariant());
+            if (!button.getText().isBlank()) {
+                assertEquals(expectedColor, button.getTextFill(),
+                        () -> description + " FAB text color mismatch for variant=" + button.getVariant());
+            }
         }
     }
 
@@ -14228,33 +14323,75 @@ final class M3FXDemoVisualSmokeTest {
         assertCurrentPageTitle(scene, "FAB Menu");
         assertVisibleText(root, "Expanded", "FAB Menu");
         assertVisibleText(root, "Collapsed", "FAB Menu");
-        assertVisibleText(root, "Variants", "FAB Menu");
+        assertVisibleText(root, "Color Families", "FAB Menu");
 
         List<M3FabMenu> menus = visibleNodesOfType(page, M3FabMenu.class);
-        assertEquals(3, menus.size(), () -> "FAB Menu page should render three FAB menus: " + menus);
-        assertEquals(2, menus.stream().filter(M3FabMenu::isExpanded).count(),
-                "FAB Menu page should render two expanded menu examples");
+        assertEquals(4, menus.size(), () -> "FAB Menu page should render four FAB menus: " + menus);
+        assertEquals(3, menus.stream().filter(M3FabMenu::isExpanded).count(),
+                "FAB Menu page should render three expanded menu examples");
         for (int index = 0; index < menus.size(); index++) {
             int menuIndex = index;
             M3FabMenu menu = menus.get(index);
+            assertEquals(4.0, menu.getActionSpacing(), CONTROL_EDGE_TOLERANCE,
+                    "FAB menu action between-space");
+            assertEquals(8.0, menu.getCloseSpacing(), CONTROL_EDGE_TOLERANCE,
+                    "FAB menu close-button between-space");
             assertEquals(3, menu.getItems().size(), () -> "FAB menu " + menuIndex + " action count");
             for (Node item : menu.getItems()) {
                 M3FloatingActionButton action =
                         assertInstanceOf(M3FloatingActionButton.class, item, "FAB menu action");
-                assertEquals(M3FloatingActionButtonSize.SMALL, action.getSize(),
-                        "FAB menu actions should use compact FAB size");
+                assertEquals(M3FloatingActionButtonSize.REGULAR, action.getSize(),
+                        "FAB menu actions should use the 56-pixel labeled size");
+                assertFalse(action.getText().isBlank(), "FAB menu actions should always expose a label");
+                assertEquals(56.0, action.prefHeight(-1), CONTROL_EDGE_TOLERANCE,
+                        "FAB menu action preferred container height");
+                if (menu.isExpanded()) {
+                    assertEquals(56.0, action.getHeight(), CONTROL_EDGE_TOLERANCE,
+                            "expanded FAB menu action container height");
+                } else {
+                    assertFalse(action.isVisible(), "collapsed FAB menu action should be hidden");
+                    assertFalse(action.isManaged(), "collapsed FAB menu action should not participate in layout");
+                }
+                assertTrue(action.getContainerShape() >= 28.0,
+                        () -> "FAB menu action should use a full shape: shape=" + action.getContainerShape()
+                                + ", styleClasses=" + action.getStyleClass());
+                assertEquals(24.0, action.getPadding().getLeft(), CONTROL_EDGE_TOLERANCE,
+                        "FAB menu action leading padding");
+                assertEquals(24.0, action.getPadding().getRight(), CONTROL_EDGE_TOLERANCE,
+                        "FAB menu action trailing padding");
                 assertNotNull(firstVisibleDemoVectorIcon(action), "FAB menu action should use an SVG demo icon");
             }
             M3FloatingActionButton toggleButton = fabMenuToggleButton(menu);
+            M3FloatingActionButton closeButton = assertInstanceOf(
+                    M3FloatingActionButton.class,
+                    menu.lookup("." + M3FabMenu.CLOSE_STYLE_CLASS),
+                    "FAB menu close button"
+            );
             assertEquals(M3FloatingActionButtonSize.REGULAR, toggleButton.getSize(),
                     "FAB menu toggle should use the regular FAB size");
+            assertEquals(56.0, closeButton.getHeight(), CONTROL_EDGE_TOLERANCE,
+                    "FAB menu close button height");
+            assertEquals(56.0, closeButton.getWidth(), CONTROL_EDGE_TOLERANCE,
+                    "FAB menu close button width");
+            assertTrue(closeButton.getContainerShape() >= 28.0,
+                    "FAB menu close button should use a full shape");
             assertNotNull(firstVisibleDemoVectorIcon(toggleButton),
                     "FAB menu toggle should use an SVG demo icon");
             if (menu.isExpanded()) {
+                assertTrue(closeButton.isVisible(), "expanded FAB menu should show its close button");
+                assertFalse(toggleButton.isVisible(), "expanded FAB menu should hide its entry button");
                 assertFabMenuActionsStayInsideShowcase(menu);
+            } else {
+                assertFalse(closeButton.isVisible(), "collapsed FAB menu should hide its close button");
+                assertTrue(toggleButton.isVisible(), "collapsed FAB menu should show its entry button");
             }
         }
-        assertDemoVectorIcons(page, "FAB Menu", 9);
+        assertDemoFloatingActionButtonColors(
+                visibleNodesOfType(page, M3FloatingActionButton.class),
+                Objects.requireNonNull(M3ThemeManager.getTheme(scene), "FAB Menu page theme"),
+                "FAB Menu"
+        );
+        assertDemoVectorIcons(page, "FAB Menu", 10);
     }
 
     /// Verifies split-button color roles, representative sizes, and the Material between-space.
@@ -14405,7 +14542,7 @@ final class M3FXDemoVisualSmokeTest {
         assertTrue(host.getQueue().isEmpty(), "snackbar host queue should start empty");
 
         @Nullable Duration previousDisplayDuration = host.displayDurationProperty().get();
-        M3MotionSettings.setAnimationsEnabled(host, false);
+        M3MotionSettings.setReducedMotionRequested(host, true);
         host.setDisplayDuration(Duration.INDEFINITE);
         try {
             M3Button messageButton = Objects.requireNonNull(
@@ -14445,7 +14582,7 @@ final class M3FXDemoVisualSmokeTest {
         } finally {
             host.dismissAll();
             host.displayDurationProperty().set(previousDisplayDuration);
-            M3MotionSettings.clearAnimationsEnabled(host);
+            M3MotionSettings.setReducedMotionRequested(host, false);
             applySceneCssAndLayout(scene);
         }
     }
@@ -17446,16 +17583,26 @@ final class M3FXDemoVisualSmokeTest {
 
     /// Verifies that a dark demo sidebar destination remains readable in the rendered image.
     private static void assertDarkSidebarTextReadable(Scene scene, WritableImage image, String modeName) {
-        M3ListItem item = Objects.requireNonNull(
-                firstVisibleUnselectedSidebarItemInSceneViewport(scene.getRoot()),
-                modeName + " demo sidebar should expose a visible unselected item"
-        );
-        String headline = item.getHeadlineText();
-        Text text = Objects.requireNonNull(
-                firstVisibleText(item),
-                modeName + " demo sidebar item should render headline text: " + headline
-        );
-        assertTextReadableAgainstBackground(image, text, modeName + " sidebar item " + headline);
+        Bounds sceneBounds = scene.getRoot().localToScene(scene.getRoot().getBoundsInLocal());
+        for (M3ListItem item : visibleNodesOfType(scene.getRoot(), M3ListItem.class)) {
+            if (!isDemoSidebarItem(item) || item.isSelected() || !item.isVisible() || !hasRenderableBounds(item)) {
+                continue;
+            }
+            Bounds itemBounds = item.localToScene(item.getBoundsInLocal());
+            if (isOutsideSceneViewport(item, itemBounds, sceneBounds)) {
+                continue;
+            }
+            @Nullable Text text = firstVisibleText(item);
+            if (text != null && renderedTextInkBounds(image, text) != null) {
+                assertTextReadableAgainstBackground(
+                        image,
+                        text,
+                        modeName + " sidebar item " + item.getHeadlineText()
+                );
+                return;
+            }
+        }
+        fail(modeName + " demo sidebar should expose a rendered unselected item");
     }
 
     /// Returns the first visible unselected sidebar item inside the scene viewport.
@@ -18334,7 +18481,13 @@ final class M3FXDemoVisualSmokeTest {
                 return false;
             }
         }
-        return true;
+        Node toggle = menu.lookup("." + M3FabMenu.TOGGLE_STYLE_CLASS);
+        Node close = menu.lookup("." + M3FabMenu.CLOSE_STYLE_CLASS);
+        return toggle != null
+                && close != null
+                && !toggle.isVisible()
+                && close.isVisible()
+                && close.getOpacity() >= 0.995;
     }
 
     /// Returns whether a FAB menu has reached its fully collapsed visual state.
@@ -18348,7 +18501,13 @@ final class M3FXDemoVisualSmokeTest {
                 return false;
             }
         }
-        return true;
+        Node toggle = menu.lookup("." + M3FabMenu.TOGGLE_STYLE_CLASS);
+        Node close = menu.lookup("." + M3FabMenu.CLOSE_STYLE_CLASS);
+        return toggle != null
+                && close != null
+                && toggle.isVisible()
+                && toggle.getOpacity() >= 0.995
+                && !close.isVisible();
     }
 
     /// Verifies that an owning popup and nested popup are positioned beside each other on screen.
@@ -18661,6 +18820,12 @@ final class M3FXDemoVisualSmokeTest {
                 "FAB menu showcase flow"
         );
         Bounds showcaseBounds = showcase.localToScene(showcase.getBoundsInLocal());
+        Node closeButton = Objects.requireNonNull(
+                menu.lookup("." + M3FabMenu.CLOSE_STYLE_CLASS),
+                "FAB menu close button"
+        );
+        Bounds closeBounds = closeButton.localToScene(closeButton.getBoundsInLocal());
+        boolean rightToLeft = menu.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
         for (Node item : menu.getItems()) {
             if (!item.isVisible() || !hasRenderableBounds(item)) {
                 continue;
@@ -18669,6 +18834,12 @@ final class M3FXDemoVisualSmokeTest {
             assertTrue(containsBoundsWithTolerance(showcaseBounds, itemBounds, CONTROL_EDGE_TOLERANCE),
                     () -> "FAB menu action item escaped its showcase: showcaseBounds=" + showcaseBounds
                             + ", itemBounds=" + itemBounds);
+            double actionTrailingEdge = rightToLeft ? itemBounds.getMinX() : itemBounds.getMaxX();
+            double closeTrailingEdge = rightToLeft ? closeBounds.getMinX() : closeBounds.getMaxX();
+            assertEquals(closeTrailingEdge, actionTrailingEdge, CONTROL_EDGE_TOLERANCE,
+                    () -> "FAB menu action and close button should share the logical trailing edge: action="
+                            + itemBounds + ", close=" + closeBounds + ", orientation="
+                            + menu.getEffectiveNodeOrientation());
         }
     }
 
@@ -19430,8 +19601,8 @@ final class M3FXDemoVisualSmokeTest {
         double screenY = screenPoint == null ? scenePoint.getY() : screenPoint.getY();
         return new MouseEvent(
                 eventType,
-                scenePoint.getX(),
-                scenePoint.getY(),
+                x,
+                y,
                 screenX,
                 screenY,
                 MouseButton.PRIMARY,

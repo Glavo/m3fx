@@ -1,11 +1,4 @@
 .m3-fab-menu {
-    -m3-fab-menu-action-spacing: 12px;
-}
-
-.m3-fab-menu-action {
-    -fx-cursor: hand;
-}
-
-.m3-fab-menu-toggle {
-    -fx-cursor: hand;
+    -m3-fab-menu-action-spacing: 4px;
+    -m3-fab-menu-close-spacing: 8px;
 }

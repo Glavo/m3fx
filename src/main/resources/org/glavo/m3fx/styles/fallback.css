@@ -141,3 +141,15 @@
 .m3-internal-icon-on-primary-container .m3-internal-icon-path {
     -fx-fill: -m3-color-on-primary-container;
 }
+
+.m3-internal-icon-on-primary .m3-internal-icon-path {
+    -fx-fill: -m3-color-on-primary;
+}
+
+.m3-internal-icon-on-secondary .m3-internal-icon-path {
+    -fx-fill: -m3-color-on-secondary;
+}
+
+.m3-internal-icon-on-tertiary .m3-internal-icon-path {
+    -fx-fill: -m3-color-on-tertiary;
+}

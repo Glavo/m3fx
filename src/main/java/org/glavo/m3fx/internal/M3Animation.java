@@ -22,6 +22,12 @@ import java.util.Objects;
 /// Internal helpers for honoring the M3FX motion settings around JavaFX animations.
 @NotNullByDefault
 public final class M3Animation {
+    /// The fallback motion scheme used when no M3FX theme is installed.
+    private static final M3MotionScheme FALLBACK_MOTION_SCHEME = M3MotionScheme.standard();
+
+    /// The fallback interaction timings used when no M3FX theme is installed.
+    private static final M3MotionBehavior FALLBACK_MOTION_BEHAVIOR = M3MotionBehavior.standard();
+
     /// Prevents instantiation.
     private M3Animation() {
     }
@@ -48,32 +54,22 @@ public final class M3Animation {
 
     /// Returns the semantic motion scheme for an owner node.
     ///
-    /// @param owner the node whose local, theme, or global motion scheme should be resolved
+    /// @param owner the node whose theme motion scheme should be resolved
     /// @return the resolved motion scheme
     public static M3MotionScheme motionScheme(Node owner) {
         Objects.requireNonNull(owner, "owner");
-        @Nullable M3MotionScheme override = findMotionSchemeOverride(owner);
-        if (override != null) {
-            return override;
-        }
-
         @Nullable M3Theme theme = M3ThemeResolver.findTheme(owner);
-        return theme == null ? M3MotionSettings.getMotionScheme() : theme.tokens().motionTokens().scheme();
+        return theme == null ? FALLBACK_MOTION_SCHEME : theme.tokens().motionTokens().scheme();
     }
 
     /// Returns the semantic motion behavior for an owner node.
     ///
-    /// @param owner the node whose local, theme, or global motion behavior should be resolved
+    /// @param owner the node whose theme motion behavior should be resolved
     /// @return the resolved motion behavior
     public static M3MotionBehavior motionBehavior(Node owner) {
         Objects.requireNonNull(owner, "owner");
-        @Nullable M3MotionBehavior override = findMotionBehaviorOverride(owner);
-        if (override != null) {
-            return override;
-        }
-
         @Nullable M3Theme theme = M3ThemeResolver.findTheme(owner);
-        return theme == null ? M3MotionSettings.getMotionBehavior() : theme.tokens().motionTokens().behavior();
+        return theme == null ? FALLBACK_MOTION_BEHAVIOR : theme.tokens().motionTokens().behavior();
     }
 
     /// Returns the fast effects motion spec for an owner node.
@@ -124,20 +120,18 @@ public final class M3Animation {
         return motionScheme(owner).slowSpatial();
     }
 
-    /// Copies the resolved motion settings from a scene control into a detached popup root.
+    /// Copies the resolved reduced-motion request from a scene control into a detached popup root.
     ///
     /// @param source the node whose resolved motion settings should be copied
-    /// @param target the detached node that should receive equivalent local motion settings
+    /// @param target the detached node that should receive the equivalent reduced-motion request
     public static void copyResolvedMotionSettings(Node source, Node target) {
         Objects.requireNonNull(source, "source");
         Objects.requireNonNull(target, "target");
         if (M3MotionSettings.areAnimationsEnabled(source)) {
-            M3MotionSettings.clearAnimationsEnabled(target);
+            M3MotionSettings.setReducedMotionRequested(target, false);
         } else {
-            M3MotionSettings.setAnimationsEnabled(target, false);
+            M3MotionSettings.setReducedMotionRequested(target, true);
         }
-        M3MotionSettings.setMotionScheme(target, motionScheme(source));
-        M3MotionSettings.setMotionBehavior(target, motionBehavior(source));
     }
 
     /// Plays a finite transition from the beginning or finishes it immediately when animations are disabled.
@@ -225,32 +219,6 @@ public final class M3Animation {
         if (handler != null) {
             handler.handle(new ActionEvent());
         }
-    }
-
-    /// Finds the nearest node-local motion scheme override.
-    private static @Nullable M3MotionScheme findMotionSchemeOverride(Node owner) {
-        @Nullable Node current = owner;
-        while (current != null) {
-            @Nullable M3MotionScheme override = M3MotionSettings.getMotionScheme(current);
-            if (override != null) {
-                return override;
-            }
-            current = current.getParent();
-        }
-        return null;
-    }
-
-    /// Finds the nearest node-local motion behavior override.
-    private static @Nullable M3MotionBehavior findMotionBehaviorOverride(Node owner) {
-        @Nullable Node current = owner;
-        while (current != null) {
-            @Nullable M3MotionBehavior override = M3MotionSettings.getMotionBehavior(current);
-            if (override != null) {
-                return override;
-            }
-            current = current.getParent();
-        }
-        return null;
     }
 
 }

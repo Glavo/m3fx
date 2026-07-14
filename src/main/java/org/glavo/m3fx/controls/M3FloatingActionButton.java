@@ -20,6 +20,7 @@ import javafx.scene.control.Skin;
 import javafx.scene.layout.Region;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3FloatingActionButtonSkin;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -52,14 +53,17 @@ public class M3FloatingActionButton extends ButtonBase {
     /// The default horizontal content padding for extended floating action buttons.
     private static final double DEFAULT_HORIZONTAL_PADDING = 16.0;
 
+    /// The default logical trailing content padding for extended floating action buttons.
+    private static final double DEFAULT_TRAILING_PADDING = 20.0;
+
     // The floating action button color variant property.
     private final ObjectProperty<M3FloatingActionButtonVariant> variant =
-            new SimpleObjectProperty<>(this, "variant", M3FloatingActionButtonVariant.PRIMARY) {
+            new SimpleObjectProperty<>(this, "variant", M3FloatingActionButtonVariant.PRIMARY_CONTAINER) {
                 /// Updates variant style classes when the property changes.
                 @Override
                 protected void invalidated() {
                     if (get() == null) {
-                        set(M3FloatingActionButtonVariant.PRIMARY);
+                        set(M3FloatingActionButtonVariant.PRIMARY_CONTAINER);
                         return;
                     }
                     updateVariantStyle();
@@ -89,12 +93,15 @@ public class M3FloatingActionButton extends ButtonBase {
     // The styleable horizontal padding token.
     private @Nullable StyleableDoubleProperty horizontalPadding;
 
-    /// Creates an empty primary floating action button.
+    // The styleable logical trailing padding token.
+    private @Nullable StyleableDoubleProperty trailingPadding;
+
+    /// Creates an empty primary-container floating action button.
     public M3FloatingActionButton() {
         this("");
     }
 
-    /// Creates a primary floating action button with text.
+    /// Creates a primary-container floating action button with text.
     ///
     /// @param text the text displayed by the floating action button
     public M3FloatingActionButton(String text) {
@@ -102,7 +109,7 @@ public class M3FloatingActionButton extends ButtonBase {
         initialize();
     }
 
-    /// Creates a primary floating action button with graphic content.
+    /// Creates a primary-container floating action button with graphic content.
     ///
     /// @param graphic the graphic displayed by the floating action button, or `null`
     public M3FloatingActionButton(@Nullable Node graphic) {
@@ -110,7 +117,7 @@ public class M3FloatingActionButton extends ButtonBase {
         initialize();
     }
 
-    /// Creates a primary floating action button with text and graphic content.
+    /// Creates a primary-container floating action button with text and graphic content.
     ///
     /// @param text the text displayed by the floating action button
     /// @param graphic the graphic displayed by the floating action button, or `null`
@@ -251,6 +258,39 @@ public class M3FloatingActionButton extends ButtonBase {
         return horizontalPadding;
     }
 
+    /// Returns the logical trailing content padding token.
+    ///
+    /// The value is used only when the button has a non-empty label. It follows the effective node orientation,
+    /// so a right-to-left button applies the value to its physical left edge.
+    ///
+    /// @return the logical trailing content padding in pixels
+    public final double getTrailingPadding() {
+        return trailingPadding == null ? DEFAULT_TRAILING_PADDING : trailingPadding.get();
+    }
+
+    /// Sets the logical trailing content padding token.
+    ///
+    /// @param trailingPadding the logical trailing content padding in pixels
+    public final void setTrailingPadding(double trailingPadding) {
+        trailingPaddingProperty().set(M3Css.nonNegative(trailingPadding, "trailingPadding"));
+    }
+
+    /// Returns the logical trailing content padding property.
+    ///
+    /// @return the logical trailing content padding property
+    public final StyleableDoubleProperty trailingPaddingProperty() {
+        if (trailingPadding == null) {
+            trailingPadding = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_TRAILING_PADDING,
+                    this,
+                    "trailingPadding",
+                    StyleableProperties.TRAILING_PADDING,
+                    this::updateMetrics
+            );
+        }
+        return trailingPadding;
+    }
+
     /// Fires this floating action button's action handler.
     @Override
     public void fire() {
@@ -295,6 +335,7 @@ public class M3FloatingActionButton extends ButtonBase {
         updateVariantStyle();
         updateSizeStyle();
         textProperty().addListener(observable -> updateMetrics());
+        effectiveNodeOrientationProperty().addListener(observable -> updateMetrics());
         updateMetrics();
     }
 
@@ -304,6 +345,9 @@ public class M3FloatingActionButton extends ButtonBase {
                 this,
                 getVariant().styleClass(),
                 M3FloatingActionButtonVariant.SURFACE.styleClass(),
+                M3FloatingActionButtonVariant.PRIMARY_CONTAINER.styleClass(),
+                M3FloatingActionButtonVariant.SECONDARY_CONTAINER.styleClass(),
+                M3FloatingActionButtonVariant.TERTIARY_CONTAINER.styleClass(),
                 M3FloatingActionButtonVariant.PRIMARY.styleClass(),
                 M3FloatingActionButtonVariant.SECONDARY.styleClass(),
                 M3FloatingActionButtonVariant.TERTIARY.styleClass()
@@ -317,6 +361,7 @@ public class M3FloatingActionButton extends ButtonBase {
                 getSize().styleClass(),
                 M3FloatingActionButtonSize.SMALL.styleClass(),
                 M3FloatingActionButtonSize.REGULAR.styleClass(),
+                M3FloatingActionButtonSize.MEDIUM.styleClass(),
                 M3FloatingActionButtonSize.LARGE.styleClass()
         );
     }
@@ -331,7 +376,10 @@ public class M3FloatingActionButton extends ButtonBase {
             double padding = getHorizontalPadding();
             M3Css.setMinWidthIfUnbound(this, Region.USE_COMPUTED_SIZE);
             M3Css.setPrefWidthIfUnbound(this, Region.USE_COMPUTED_SIZE);
-            M3Css.setPaddingIfUnbound(this, new Insets(0.0, padding, 0.0, padding));
+            M3Css.setPaddingIfUnbound(
+                    this,
+                    M3NodeLayout.logicalInsets(this, 0.0, padding, 0.0, getTrailingPadding())
+            );
         } else {
             M3Css.setMinWidthIfUnbound(this, size);
             M3Css.setPrefWidthIfUnbound(this, size);
@@ -390,6 +438,22 @@ public class M3FloatingActionButton extends ButtonBase {
                     }
                 };
 
+        /// CSS metadata for the logical trailing padding token.
+        private static final CssMetaData<M3FloatingActionButton, Number> TRAILING_PADDING =
+                new CssMetaData<>("-m3-trailing-padding", SizeConverter.getInstance(), DEFAULT_TRAILING_PADDING) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3FloatingActionButton control) {
+                        return M3Css.isSettable(control.trailingPaddingProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3FloatingActionButton control) {
+                        return control.trailingPaddingProperty();
+                    }
+                };
+
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
@@ -398,6 +462,7 @@ public class M3FloatingActionButton extends ButtonBase {
             styleables.add(CONTAINER_SIZE);
             styleables.add(CONTAINER_SHAPE);
             styleables.add(HORIZONTAL_PADDING);
+            styleables.add(TRAILING_PADDING);
             STYLEABLES = Collections.unmodifiableList(styleables);
         }
     }

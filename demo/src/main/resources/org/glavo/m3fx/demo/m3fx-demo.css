@@ -335,12 +335,28 @@
     -fx-fill: -m3-color-on-primary-container;
 }
 
-.m3-secondary-fab .demo-fab-icon {
+.m3-primary-container-fab .demo-fab-icon {
+    -fx-fill: -m3-color-on-primary-container;
+}
+
+.m3-secondary-container-fab .demo-fab-icon {
     -fx-fill: -m3-color-on-secondary-container;
 }
 
-.m3-tertiary-fab .demo-fab-icon {
+.m3-tertiary-container-fab .demo-fab-icon {
     -fx-fill: -m3-color-on-tertiary-container;
+}
+
+.m3-primary-fab .demo-fab-icon {
+    -fx-fill: -m3-color-on-primary;
+}
+
+.m3-secondary-fab .demo-fab-icon {
+    -fx-fill: -m3-color-on-secondary;
+}
+
+.m3-tertiary-fab .demo-fab-icon {
+    -fx-fill: -m3-color-on-tertiary;
 }
 
 .m3-surface-fab .demo-fab-icon {

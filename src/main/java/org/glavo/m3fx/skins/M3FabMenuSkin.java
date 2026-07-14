@@ -5,6 +5,7 @@ package org.glavo.m3fx.skins;
 
 import javafx.geometry.Pos;
 import javafx.scene.control.SkinBase;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3FabMenu;
 import org.glavo.m3fx.controls.M3FloatingActionButton;
@@ -19,21 +20,43 @@ public final class M3FabMenuSkin extends SkinBase<M3FabMenu> {
     /// The action item container owned by the skinnable control.
     private final VBox actions;
 
+    /// Overlaps the entry and close buttons without stretching either one.
+    private final AnchorPane activatorHolder = new AnchorPane();
+
+    /// The entry button owned by the skinnable control.
+    private final M3FloatingActionButton toggleButton;
+
+    /// The close button owned by the skinnable control.
+    private final M3FloatingActionButton closeButton;
+
     /// Creates a floating action button menu skin.
     ///
-    /// @param control the floating action button menu controlled by this skin
-    /// @param actions the action item container owned by the control
+    /// @param control      the floating action button menu controlled by this skin
+    /// @param actions      the action item container owned by the control
     /// @param toggleButton the toggle button owned by the control
-    public M3FabMenuSkin(M3FabMenu control, VBox actions, M3FloatingActionButton toggleButton) {
+    /// @param closeButton  the close button owned by the control
+    public M3FabMenuSkin(
+            M3FabMenu control,
+            VBox actions,
+            M3FloatingActionButton toggleButton,
+            M3FloatingActionButton closeButton
+    ) {
         super(control);
         this.actions = actions;
+        this.toggleButton = toggleButton;
+        this.closeButton = closeButton;
         container.setManaged(false);
-        container.setAlignment(Pos.BOTTOM_RIGHT);
-        actions.setAlignment(Pos.BOTTOM_RIGHT);
-        container.spacingProperty().bind(control.actionSpacingProperty());
+        container.spacingProperty().bind(control.closeSpacingProperty());
         actions.spacingProperty().bind(control.actionSpacingProperty());
         actions.setFillWidth(false);
-        container.getChildren().setAll(actions, toggleButton);
+        container.setAlignment(Pos.BOTTOM_RIGHT);
+        actions.setAlignment(Pos.BOTTOM_RIGHT);
+        activatorHolder.getChildren().setAll(toggleButton, closeButton);
+        AnchorPane.setTopAnchor(toggleButton, 0.0);
+        AnchorPane.setRightAnchor(toggleButton, 0.0);
+        AnchorPane.setTopAnchor(closeButton, 0.0);
+        AnchorPane.setRightAnchor(closeButton, 0.0);
+        container.getChildren().setAll(actions, activatorHolder);
         getChildren().setAll(container);
     }
 
@@ -43,6 +66,7 @@ public final class M3FabMenuSkin extends SkinBase<M3FabMenu> {
         container.spacingProperty().unbind();
         actions.spacingProperty().unbind();
         container.getChildren().clear();
+        activatorHolder.getChildren().clear();
         getChildren().remove(container);
         super.dispose();
     }

@@ -8,9 +8,9 @@ import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
-import org.glavo.m3fx.animation.M3MotionEasing;
-import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.theme.M3Theme;
+import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
@@ -43,10 +43,7 @@ final class M3MotionSettingsObserverTest {
         CountDownLatch refreshLatch = new CountDownLatch(1);
         AtomicBoolean captureRefresh = new AtomicBoolean(false);
         AtomicBoolean refreshedOnFxThread = new AtomicBoolean(false);
-        M3MotionScheme previousScheme = M3MotionSettings.getMotionScheme();
-        M3MotionScheme replacementScheme = previousScheme.defaultEffects().easing() == M3MotionEasing.STANDARD
-                ? M3MotionScheme.expressive()
-                : M3MotionScheme.standard();
+        boolean previousAnimationsEnabled = M3MotionSettings.areAnimationsEnabled();
 
         M3MotionSettingsObserver observer = FxTestUtils.callOnFxThread(() -> {
             Pane owner = new Pane();
@@ -62,7 +59,7 @@ final class M3MotionSettingsObserverTest {
         try {
             captureRefresh.set(true);
             Thread settingsThread = new Thread(
-                    () -> M3MotionSettings.setMotionScheme(replacementScheme),
+                    () -> M3MotionSettings.setAnimationsEnabled(!previousAnimationsEnabled),
                     "m3fx-motion-settings-test"
             );
             settingsThread.start();
@@ -76,7 +73,7 @@ final class M3MotionSettingsObserverTest {
             assertTrue(refreshedOnFxThread.get());
         } finally {
             FxTestUtils.runOnFxThread(observer::dispose);
-            M3MotionSettings.setMotionScheme(previousScheme);
+            M3MotionSettings.setAnimationsEnabled(previousAnimationsEnabled);
         }
     }
 
@@ -119,6 +116,42 @@ final class M3MotionSettingsObserverTest {
             } finally {
                 observer.dispose();
             }
+        }));
+    }
+
+    /// Verifies that an inactive observer allocates no owner state and can be paused and restarted.
+    @Test
+    void inactiveObserverRegistersOnlyWhileStarted() {
+        FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
+            Pane owner = new Pane();
+            new Scene(owner);
+            AtomicInteger refreshes = new AtomicInteger();
+            M3MotionSettingsObserver observer = new M3MotionSettingsObserver(
+                    owner,
+                    refreshes::incrementAndGet,
+                    false
+            );
+
+            try {
+                assertFalse(owner.hasProperties());
+
+                observer.start();
+
+                assertTrue(owner.hasProperties());
+                assertEquals(1, refreshes.get());
+
+                observer.stop();
+                assertFalse(owner.hasProperties());
+                M3MotionSettings.setAnimationsEnabled(!M3MotionSettings.areAnimationsEnabled());
+                assertEquals(1, refreshes.get());
+
+                observer.start();
+                assertEquals(2, refreshes.get());
+            } finally {
+                observer.dispose();
+            }
+
+            assertFalse(owner.hasProperties());
         }));
     }
 
@@ -200,27 +233,67 @@ final class M3MotionSettingsObserverTest {
                 assertEquals(1, firstRefreshes.get());
                 assertEquals(1, secondRefreshes.get());
 
-                M3MotionSettings.setAnimationsEnabled(firstScope, false);
+                M3MotionSettings.setReducedMotionRequested(firstScope, true);
                 assertEquals(2, firstRefreshes.get());
                 assertEquals(1, secondRefreshes.get());
 
-                M3MotionSettings.clearAnimationsEnabled(firstScope);
+                M3MotionSettings.setReducedMotionRequested(firstScope, false);
                 int beforeReparent = firstRefreshes.get();
                 firstScope.getChildren().clear();
                 secondScope.getChildren().add(firstOwner);
                 assertTrue(firstRefreshes.get() > beforeReparent);
 
                 int firstBeforeSecondScopeChange = firstRefreshes.get();
-                M3MotionSettings.setAnimationsEnabled(secondScope, false);
+                M3MotionSettings.setReducedMotionRequested(secondScope, true);
                 assertEquals(firstBeforeSecondScopeChange + 1, firstRefreshes.get());
                 assertEquals(2, secondRefreshes.get());
             } finally {
                 first.dispose();
                 second.dispose();
-                M3MotionSettings.clearAnimationsEnabled(firstScope);
-                M3MotionSettings.clearAnimationsEnabled(secondScope);
+                M3MotionSettings.setReducedMotionRequested(firstScope, false);
+                M3MotionSettings.setReducedMotionRequested(secondScope, false);
             }
         }));
+    }
+
+    /// Verifies that theme motion-token changes refresh only observers in the affected subtree.
+    @Test
+    void observesLocalThemeMotionContextChanges() {
+        FxTestUtils.runOnFxThread(() -> {
+            Pane firstOwner = new Pane();
+            Pane secondOwner = new Pane();
+            Pane firstScope = new Pane(firstOwner);
+            Pane secondScope = new Pane(secondOwner);
+            new Scene(new Pane(firstScope, secondScope));
+            AtomicInteger firstRefreshes = new AtomicInteger();
+            AtomicInteger secondRefreshes = new AtomicInteger();
+            M3MotionSettingsObserver first =
+                    new M3MotionSettingsObserver(firstOwner, firstRefreshes::incrementAndGet);
+            M3MotionSettingsObserver second =
+                    new M3MotionSettingsObserver(secondOwner, secondRefreshes::incrementAndGet);
+            long settingsRevision = M3MotionSettings.revisionProperty().get();
+
+            try {
+                assertEquals(1, firstRefreshes.get());
+                assertEquals(1, secondRefreshes.get());
+
+                M3ThemeManager.install(firstScope, M3Theme.fromSeed(javafx.scene.paint.Color.CORNFLOWERBLUE));
+
+                assertEquals(2, firstRefreshes.get());
+                assertEquals(1, secondRefreshes.get());
+                assertEquals(settingsRevision, M3MotionSettings.revisionProperty().get());
+
+                M3ThemeManager.uninstall(firstScope);
+
+                assertEquals(3, firstRefreshes.get());
+                assertEquals(1, secondRefreshes.get());
+                assertEquals(settingsRevision, M3MotionSettings.revisionProperty().get());
+            } finally {
+                first.dispose();
+                second.dispose();
+                M3ThemeManager.uninstall(firstScope);
+            }
+        });
     }
 
 

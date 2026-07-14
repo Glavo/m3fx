@@ -141,7 +141,7 @@ final class M3PopupReachabilityTest {
             try {
                 Scene scene = new Scene(root, 820.0, 620.0);
                 M3ThemeManager.install(scene, M3Theme.defaultTheme());
-                M3MotionSettings.setAnimationsEnabled(root, false);
+                M3MotionSettings.setReducedMotionRequested(root, true);
                 stage.setScene(scene);
                 stage.show();
                 root.applyCss();
@@ -205,7 +205,7 @@ final class M3PopupReachabilityTest {
                 dateField.hidePicker();
                 timeField.hidePicker();
                 rangeField.hidePicker();
-                M3MotionSettings.clearAnimationsEnabled(root);
+                M3MotionSettings.setReducedMotionRequested(root, false);
                 stage.close();
             }
         });

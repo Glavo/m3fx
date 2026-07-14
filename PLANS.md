@@ -35,7 +35,8 @@ control subclasses where M3FX owns the behavior surface.
 - MonetFX-backed light and dark color schemes.
 - Baseline and Expressive profiles for system and component tokens.
 - Token-driven typography, shape, elevation, density, state layers, and component metrics.
-- Global animation settings, subtree reduced-motion requests, and inheritable motion schemes and behavior timings.
+- Global animation settings and subtree reduced-motion requests, with Standard and Expressive motion schemes and
+  behavior timings supplied by the active theme tokens.
 - Reduced-motion behavior for transitions, overlays, scrolling, progress indicators, and loading indicators.
 - Theme and direction propagation into popup roots.
 
@@ -80,8 +81,13 @@ state colors. Material Design 3 Expressive does not define a replacement drawer 
 are used instead. Button groups now distinguish content-hugging standard layout from full-width connected layout,
 including even flexible growth and the 48-pixel compact connected-item target minimum. Split-button state shape
 changes use spatial motion while their disclosure icon retains the standard motion scheme required by the
-specification. Remaining component families will be audited against the local Material reference snapshot rather
-than inferred from baseline behavior.
+specification. FABs now expose the published 40-, 56-, 80-, and 96-pixel size scale, tonal and solid color roles,
+size-specific icon and extended-label spacing, and logical RTL padding. FAB menus use 56-pixel labeled actions,
+four-pixel action spacing, an eight-pixel close gap, paired tonal and solid color families, logical trailing
+alignment, and a dedicated close-button transition. Chip metrics remain on the published baseline token set because
+the current Expressive specification does not define a replacement size scale.
+Remaining component families will be audited against the local Material reference snapshot rather than inferred
+from baseline behavior.
 
 ### 2. Finish The Component-State Visual Audit
 

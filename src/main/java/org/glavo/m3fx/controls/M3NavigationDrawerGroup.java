@@ -306,8 +306,8 @@ public final class M3NavigationDrawerGroup extends Control {
 
     /// Expands this group without leaving an in-flight reveal animation before an accessibility focus request.
     void expandForAccessibleReveal() {
-        @Nullable Boolean previousAnimationsEnabled = M3MotionSettings.getAnimationsEnabled(this);
-        M3MotionSettings.setAnimationsEnabled(this, false);
+        boolean previousReducedMotionRequested = M3MotionSettings.isReducedMotionRequested(this);
+        M3MotionSettings.setReducedMotionRequested(this, true);
         try {
             setExpanded(true);
             if (getScene() != null) {
@@ -315,11 +315,7 @@ public final class M3NavigationDrawerGroup extends Control {
             }
             layout();
         } finally {
-            if (Boolean.FALSE.equals(previousAnimationsEnabled)) {
-                M3MotionSettings.setAnimationsEnabled(this, false);
-            } else {
-                M3MotionSettings.clearAnimationsEnabled(this);
-            }
+            M3MotionSettings.setReducedMotionRequested(this, previousReducedMotionRequested);
         }
     }
 

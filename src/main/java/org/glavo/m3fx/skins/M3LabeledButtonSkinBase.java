@@ -82,7 +82,8 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
     private final M3MotionSettingsObserver motionSettingsObserver =
             new M3MotionSettingsObserver(
                     getSkinnable(),
-                    () -> M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), animation)
+                    () -> M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), animation),
+                    false
             );
 
     /// Whether the current interaction was started by a primary mouse press.
@@ -111,6 +112,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         effectTransition.install();
         control.setScaleX(1.0);
         control.setScaleY(1.0);
+        animation.setOnFinished(event -> motionSettingsObserver.stop());
         installInteractionHandlers(control);
         control.widthProperty().addListener(stateLayerLayoutInvalidation);
         control.heightProperty().addListener(stateLayerLayoutInvalidation);
@@ -282,6 +284,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
                 button.getTranslateX(),
                 button.getTranslateY()
         );
+        motionSettingsObserver.start();
         M3Animation.playFromStart(button, animation);
     }
 
@@ -398,6 +401,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         mousePressed = false;
         spaceKeyPressed = false;
         animation.stop();
+        motionSettingsObserver.stop();
         stateLayer.reset();
         control.disarm();
         control.setScaleX(1.0);
@@ -502,6 +506,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         }
         return null;
     }
+
     /// Returns the CSS-resolved corner radii used by a grouped button surface.
     ///
     /// Transparent outlined backgrounds still expose their CSS radii. The border is used as a fallback for

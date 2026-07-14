@@ -5,9 +5,15 @@ package org.glavo.m3fx.demo;
 
 import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
-import org.glavo.m3fx.animation.M3MotionBehavior;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.theme.M3Theme;
+import org.glavo.m3fx.theme.M3ThemeManager;
+import org.glavo.m3fx.tokens.M3MotionTokens;
+import org.glavo.m3fx.tokens.M3TokenSet;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
@@ -15,6 +21,7 @@ import org.jetbrains.annotations.Unmodifiable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -32,6 +39,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /// Provides shared JavaFX toolkit helpers for demo tests.
 @NotNullByDefault
 final class DemoFxTestUtils {
+    /// The property key used to retain a test-local motion theme override.
+    private static final Object MOTION_THEME_STATE_KEY = new Object();
+
     /// The maximum time a demo test waits for JavaFX toolkit work to complete.
     static final long FX_TIMEOUT_SECONDS = 10L;
 
@@ -90,14 +100,198 @@ final class DemoFxTestUtils {
     /// Runs a task with global Material motion settings restored afterward.
     static void runWithMotionSettingsPreserved(CheckedRunnable task) throws InterruptedException {
         boolean previousAnimationsEnabled = M3MotionSettings.areAnimationsEnabled();
-        M3MotionScheme previousScheme = M3MotionSettings.getMotionScheme();
-        M3MotionBehavior previousBehavior = M3MotionSettings.getMotionBehavior();
         try {
             task.run();
         } finally {
             M3MotionSettings.setAnimationsEnabled(previousAnimationsEnabled);
-            M3MotionSettings.setMotionScheme(previousScheme);
-            M3MotionSettings.setMotionBehavior(previousBehavior);
+        }
+    }
+
+    /// Installs a test-local theme that replaces only the semantic motion scheme.
+    static void setMotionScheme(Node node, M3MotionScheme scheme) {
+        if (!Platform.isFxApplicationThread()) {
+            runOnFxThread(() -> setMotionScheme(node, scheme));
+            return;
+        }
+        MotionThemeState state = motionThemeState(node);
+        state.scheme = Objects.requireNonNull(scheme, "scheme");
+        applyMotionTheme(state);
+    }
+
+    /// Clears a test-local motion-scheme override.
+    static void clearMotionScheme(Node node) {
+        if (!Platform.isFxApplicationThread()) {
+            runOnFxThread(() -> clearMotionScheme(node));
+            return;
+        }
+        @Nullable MotionThemeState state = existingMotionThemeState(node);
+        if (state == null) {
+            return;
+        }
+        state.scheme = null;
+        applyMotionTheme(state);
+    }
+
+    /// Returns the mutable test motion-theme state for a node, creating it from the inherited theme when needed.
+    private static MotionThemeState motionThemeState(Node node) {
+        Objects.requireNonNull(node, "node");
+        @Nullable MotionThemeState state = existingMotionThemeState(node);
+        if (state != null) {
+            return state;
+        }
+        Parent root = motionThemeRoot(node);
+        @Nullable M3Theme directTheme = M3ThemeManager.getTheme(root);
+        M3Theme baseTheme = directTheme == null ? inheritedTheme(root) : directTheme;
+        @Nullable Scene scene = root.getScene();
+        @Nullable Scene managedScene = scene != null && scene.getRoot() == root && directTheme != null ? scene : null;
+        state = new MotionThemeState(node, root, managedScene, baseTheme, directTheme != null);
+        node.getProperties().put(MOTION_THEME_STATE_KEY, state);
+        return state;
+    }
+
+    /// Returns the root whose theme controls motion for a test target.
+    private static Parent motionThemeRoot(Node node) {
+        @Nullable Scene scene = node.getScene();
+        if (scene != null && M3ThemeManager.getTheme(scene) != null) {
+            return scene.getRoot();
+        }
+
+        @Nullable Node current = node;
+        while (current != null) {
+            if (current instanceof Parent parent && M3ThemeManager.getTheme(parent) != null) {
+                return parent;
+            }
+            current = current.getParent();
+        }
+        if (node instanceof Parent parent) {
+            return parent;
+        }
+        throw new IllegalArgumentException("motion theme target has no Parent theme root");
+    }
+
+    /// Returns an existing test motion-theme state without allocating a node properties map.
+    private static @Nullable MotionThemeState existingMotionThemeState(Node node) {
+        Objects.requireNonNull(node, "node");
+        if (!node.hasProperties()) {
+            return null;
+        }
+        @Nullable Object value = node.getProperties().get(MOTION_THEME_STATE_KEY);
+        return value instanceof MotionThemeState state ? state : null;
+    }
+
+    /// Resolves the nearest inherited theme for a new local motion override.
+    private static M3Theme inheritedTheme(Parent root) {
+        @Nullable Parent current = root.getParent();
+        while (current != null) {
+            @Nullable M3Theme theme = M3ThemeManager.getTheme(current);
+            if (theme != null) {
+                return theme;
+            }
+            current = current.getParent();
+        }
+        return M3Theme.defaultTheme();
+    }
+
+    /// Applies or removes one test-local theme from the current override state.
+    private static void applyMotionTheme(MotionThemeState state) {
+        Parent root = state.root;
+        if (state.scheme == null) {
+            state.target.getProperties().remove(MOTION_THEME_STATE_KEY);
+            if (state.restoreDirectTheme) {
+                if (state.scene == null) {
+                    M3ThemeManager.install(root, state.baseTheme);
+                } else {
+                    M3ThemeManager.install(state.scene, state.baseTheme);
+                }
+            } else {
+                M3ThemeManager.uninstall(root);
+            }
+            root.applyCss();
+            root.layout();
+            return;
+        }
+
+        M3TokenSet baseTokens = state.baseTheme.tokens();
+        M3MotionTokens baseMotion = baseTokens.motionTokens();
+        M3MotionTokens motion = M3MotionTokens.create(
+                baseMotion.short1(),
+                baseMotion.short2(),
+                baseMotion.short3(),
+                baseMotion.short4(),
+                baseMotion.medium1(),
+                baseMotion.medium2(),
+                baseMotion.medium3(),
+                baseMotion.medium4(),
+                baseMotion.long1(),
+                baseMotion.long2(),
+                baseMotion.long3(),
+                baseMotion.long4(),
+                baseMotion.extraLong1(),
+                baseMotion.extraLong2(),
+                baseMotion.extraLong3(),
+                baseMotion.extraLong4(),
+                state.scheme,
+                baseMotion.behavior()
+        );
+        M3TokenSet tokens = M3TokenSet.create(
+                baseTokens.profile(),
+                baseTokens.colorTokens(),
+                baseTokens.typographyTokens(),
+                baseTokens.shapeTokens(),
+                baseTokens.elevationTokens(),
+                motion,
+                baseTokens.stateLayerTokens(),
+                baseTokens.componentTokens()
+        );
+        M3Theme theme = M3Theme.fromTokenSet(
+                state.baseTheme.profile(),
+                state.baseTheme.colorScheme(),
+                state.baseTheme.density(),
+                tokens
+        );
+        if (state.scene == null) {
+            M3ThemeManager.install(root, theme);
+        } else {
+            M3ThemeManager.install(state.scene, theme);
+        }
+        root.applyCss();
+        root.layout();
+    }
+
+    /// Stores the base theme and nullable motion-scheme override applied to one test root.
+    @NotNullByDefault
+    private static final class MotionThemeState {
+        /// The target that owns this test override state.
+        private final Node target;
+
+        /// The root that receives the temporary motion theme.
+        private final Parent root;
+
+        /// The scene installation that owns the root theme, or `null` for a directly themed root.
+        private final @Nullable Scene scene;
+
+        /// The theme whose non-motion tokens and default motion values are preserved.
+        private final M3Theme baseTheme;
+
+        /// Whether clearing all overrides must restore a theme that was already installed directly.
+        private final boolean restoreDirectTheme;
+
+        /// The semantic motion-scheme override, or `null` to preserve the base value.
+        private @Nullable M3MotionScheme scheme;
+
+        /// Creates state for one test-local theme override.
+        private MotionThemeState(
+                Node target,
+                Parent root,
+                @Nullable Scene scene,
+                M3Theme baseTheme,
+                boolean restoreDirectTheme
+        ) {
+            this.target = target;
+            this.root = root;
+            this.scene = scene;
+            this.baseTheme = baseTheme;
+            this.restoreDirectTheme = restoreDirectTheme;
         }
     }
 

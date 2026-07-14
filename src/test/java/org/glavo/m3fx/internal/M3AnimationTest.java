@@ -42,7 +42,7 @@ final class M3AnimationTest {
     @Test
     void disabledMotionFinishesFiniteTransitionImmediately() {
         Pane owner = new Pane();
-        M3MotionSettings.setAnimationsEnabled(owner, false);
+        M3MotionSettings.setReducedMotionRequested(owner, true);
         DoubleProperty value = new SimpleDoubleProperty(0.0);
         AtomicBoolean animationFinished = new AtomicBoolean(false);
         TestFiniteTransition transition = new TestFiniteTransition(value);
@@ -75,38 +75,31 @@ final class M3AnimationTest {
         assertEquals(650.0, M3Animation.motionBehavior(child).loadingIndicatorMorphInterval().toMillis(), 0.0001);
     }
 
-    /// Verifies that a node-local motion scheme override takes precedence over an installed theme.
+    /// Verifies that a locally installed theme takes precedence over an ancestor theme.
     @Test
-    void nodeMotionSchemeOverrideTakesPrecedenceOverTheme() {
+    void localMotionThemeTakesPrecedenceOverAncestorTheme() {
         Pane root = new Pane();
         Pane child = new Pane();
         root.getChildren().add(child);
         M3Theme theme = M3Theme.fromSeed(Color.web("#6750a4"), M3Profile.EXPRESSIVE_2025, Brightness.LIGHT);
         M3ThemeManager.install(root, theme);
 
-        M3MotionSettings.setMotionScheme(child, M3MotionScheme.standard());
+        FxTestUtils.setMotionScheme(child, M3MotionScheme.standard());
 
         assertEquals(M3MotionEasing.STANDARD, M3Animation.defaultEffects(child).easing());
     }
 
-    /// Verifies that detached popup roots can inherit resolved motion settings from their owner controls.
+    /// Verifies that detached popup roots can inherit reduced motion from their owner controls.
     @Test
     void copiesResolvedMotionSettingsToDetachedTarget() {
         Pane source = new Pane();
         Pane target = new Pane();
 
-        M3MotionSettings.setAnimationsEnabled(source, false);
-        M3MotionSettings.setMotionScheme(source, M3MotionScheme.expressive());
-        M3MotionSettings.setMotionBehavior(source, M3MotionBehavior.expressive());
-
+        M3MotionSettings.setReducedMotionRequested(source, true);
         M3Animation.copyResolvedMotionSettings(source, target);
 
         assertFalse(M3MotionSettings.areAnimationsEnabled(target));
-        assertEquals(M3MotionEasing.EMPHASIZED, M3Animation.defaultEffects(target).easing());
-        assertEquals(4000.0, M3Animation.motionBehavior(target).snackbarDisplayDuration().toMillis(), 0.0001);
-        assertEquals(150.0, M3Animation.motionBehavior(target).subMenuHoverOpenDelay().toMillis(), 0.0001);
-        assertEquals(900.0, M3Animation.motionBehavior(target).typeAheadResetDelay().toMillis(), 0.0001);
-        assertEquals(650.0, M3Animation.motionBehavior(target).loadingIndicatorMorphInterval().toMillis(), 0.0001);
+        assertEquals(M3MotionEasing.STANDARD, M3Animation.defaultEffects(target).easing());
     }
 
     /// Verifies that pause-transition duration changes restart only when the caller keeps the timer active.

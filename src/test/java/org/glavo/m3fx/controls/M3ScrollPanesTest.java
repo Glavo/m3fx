@@ -189,7 +189,7 @@ final class M3ScrollPanesTest {
         root.resize(180.0, 140.0);
         root.layout();
         M3ScrollPanes.enableSmoothScrolling(scrollPane);
-        M3MotionSettings.setAnimationsEnabled(scrollPane, true);
+        M3MotionSettings.setReducedMotionRequested(scrollPane, false);
 
         ScrollEvent event = scrollEvent(scrollPane, 0.0, -80.0);
         scrollPane.fireEvent(event);
@@ -199,7 +199,7 @@ final class M3ScrollPanesTest {
         assertEquals(0.0, scrollPane.getVvalue(), 0.0001);
 
         M3ScrollPanes.disableSmoothScrolling(scrollPane);
-        M3MotionSettings.clearAnimationsEnabled(scrollPane);
+        M3MotionSettings.setReducedMotionRequested(scrollPane, false);
         assertFalse(M3ScrollPanes.isSmoothScrollingEnabled(scrollPane));
     }
 
@@ -236,7 +236,7 @@ final class M3ScrollPanesTest {
                         root.layout();
 
                         M3ScrollPanes.enableSmoothScrolling(scrollPane);
-                        M3MotionSettings.setAnimationsEnabled(scrollPane, true);
+                        M3MotionSettings.setReducedMotionRequested(scrollPane, false);
                         stageReference.set(stage);
                         scrollPaneReference.set(scrollPane);
                         contentReference.set(content);
@@ -263,7 +263,7 @@ final class M3ScrollPanesTest {
                 @Nullable ScrollPane scrollPane = scrollPaneReference.get();
                 if (scrollPane != null) {
                     M3ScrollPanes.disableSmoothScrolling(scrollPane);
-                    M3MotionSettings.clearAnimationsEnabled(scrollPane);
+                    M3MotionSettings.setReducedMotionRequested(scrollPane, false);
                 }
                 @Nullable Stage stage = stageReference.get();
                 if (stage != null) {
@@ -289,7 +289,7 @@ final class M3ScrollPanesTest {
             root.resize(180.0, 140.0);
             root.layout();
             M3ScrollPanes.enableSmoothScrolling(scrollPane);
-            M3MotionSettings.setAnimationsEnabled(scrollPane, true);
+            M3MotionSettings.setReducedMotionRequested(scrollPane, false);
             try {
                 ScrollEvent event = scrollEvent(scrollPane, 0.0, -80.0);
                 scrollPane.fireEvent(event);
@@ -297,12 +297,12 @@ final class M3ScrollPanesTest {
                 assertTrue(event.isConsumed(), () -> scrollPaneDebug(scrollPane, content, event));
                 assertEquals(0.0, scrollPane.getVvalue(), 0.0001);
 
-                M3MotionSettings.setAnimationsEnabled(scrollPane, false);
+                M3MotionSettings.setReducedMotionRequested(scrollPane, true);
 
                 assertTrue(scrollPane.getVvalue() > 0.0, () -> "vvalue=" + scrollPane.getVvalue());
             } finally {
                 M3ScrollPanes.disableSmoothScrolling(scrollPane);
-                M3MotionSettings.clearAnimationsEnabled(scrollPane);
+                M3MotionSettings.setReducedMotionRequested(scrollPane, false);
             }
         });
     }
@@ -322,7 +322,7 @@ final class M3ScrollPanesTest {
         root.resize(180.0, 140.0);
         root.layout();
         M3ScrollPanes.enableSmoothScrolling(scrollPane);
-        M3MotionSettings.setAnimationsEnabled(scrollPane, false);
+        M3MotionSettings.setReducedMotionRequested(scrollPane, true);
 
         ScrollEvent event = scrollEvent(scrollPane, 0.0, -80.0);
         scrollPane.fireEvent(event);
@@ -331,7 +331,7 @@ final class M3ScrollPanesTest {
         assertTrue(scrollPane.getVvalue() > 0.0, () -> "vvalue=" + scrollPane.getVvalue());
 
         M3ScrollPanes.disableSmoothScrolling(scrollPane);
-        M3MotionSettings.clearAnimationsEnabled(scrollPane);
+        M3MotionSettings.setReducedMotionRequested(scrollPane, false);
     }
 
     /// Verifies that vertical wheel input scrolls horizontally when only the horizontal axis can scroll.
@@ -349,7 +349,7 @@ final class M3ScrollPanesTest {
         root.resize(180.0, 140.0);
         root.layout();
         M3ScrollPanes.enableSmoothScrolling(scrollPane);
-        M3MotionSettings.setAnimationsEnabled(scrollPane, false);
+        M3MotionSettings.setReducedMotionRequested(scrollPane, true);
 
         ScrollEvent event = scrollEvent(scrollPane, 0.0, -80.0);
         scrollPane.fireEvent(event);
@@ -359,7 +359,7 @@ final class M3ScrollPanesTest {
         assertEquals(0.0, scrollPane.getVvalue(), 0.0001);
 
         M3ScrollPanes.disableSmoothScrolling(scrollPane);
-        M3MotionSettings.clearAnimationsEnabled(scrollPane);
+        M3MotionSettings.setReducedMotionRequested(scrollPane, false);
     }
 
     /// Verifies that explicit horizontal wheel input moves the horizontal axis without changing vertical position.
@@ -377,7 +377,7 @@ final class M3ScrollPanesTest {
         root.resize(180.0, 140.0);
         root.layout();
         M3ScrollPanes.enableSmoothScrolling(scrollPane);
-        M3MotionSettings.setAnimationsEnabled(scrollPane, false);
+        M3MotionSettings.setReducedMotionRequested(scrollPane, true);
 
         double expectedHValue = expectedScrollPaneHorizontalTargetValue(scrollPane, content, -80.0);
         ScrollEvent event = scrollEvent(scrollPane, -80.0, 0.0);
@@ -392,7 +392,7 @@ final class M3ScrollPanesTest {
         assertEquals(0.0, scrollPane.getVvalue(), 0.0001);
 
         M3ScrollPanes.disableSmoothScrolling(scrollPane);
-        M3MotionSettings.clearAnimationsEnabled(scrollPane);
+        M3MotionSettings.setReducedMotionRequested(scrollPane, false);
     }
 
     /// Verifies that Shift+wheel maps vertical wheel input to the horizontal axis when both axes can scroll.
@@ -410,7 +410,7 @@ final class M3ScrollPanesTest {
         root.resize(180.0, 140.0);
         root.layout();
         M3ScrollPanes.enableSmoothScrolling(scrollPane);
-        M3MotionSettings.setAnimationsEnabled(scrollPane, false);
+        M3MotionSettings.setReducedMotionRequested(scrollPane, true);
 
         double expectedHValue = expectedScrollPaneHorizontalTargetValue(scrollPane, content, -80.0);
         ScrollEvent event = scrollEvent(scrollPane, 0.0, -80.0, false, true);
@@ -425,7 +425,7 @@ final class M3ScrollPanesTest {
         assertEquals(0.0, scrollPane.getVvalue(), 0.0001);
 
         M3ScrollPanes.disableSmoothScrolling(scrollPane);
-        M3MotionSettings.clearAnimationsEnabled(scrollPane);
+        M3MotionSettings.setReducedMotionRequested(scrollPane, false);
     }
 
     /// Verifies that Shift+wheel keeps vertical scrolling when the horizontal axis cannot scroll.
@@ -443,7 +443,7 @@ final class M3ScrollPanesTest {
         root.resize(180.0, 140.0);
         root.layout();
         M3ScrollPanes.enableSmoothScrolling(scrollPane);
-        M3MotionSettings.setAnimationsEnabled(scrollPane, false);
+        M3MotionSettings.setReducedMotionRequested(scrollPane, true);
 
         double expectedVValue = expectedScrollPaneVerticalTargetValue(scrollPane, content, -80.0);
         ScrollEvent event = scrollEvent(scrollPane, 0.0, -80.0, false, true);
@@ -458,7 +458,7 @@ final class M3ScrollPanesTest {
         ));
 
         M3ScrollPanes.disableSmoothScrolling(scrollPane);
-        M3MotionSettings.clearAnimationsEnabled(scrollPane);
+        M3MotionSettings.setReducedMotionRequested(scrollPane, false);
     }
 
     /// Verifies that horizontal character scroll units are converted to Material wheel distances.
@@ -476,7 +476,7 @@ final class M3ScrollPanesTest {
         root.resize(180.0, 140.0);
         root.layout();
         M3ScrollPanes.enableSmoothScrolling(scrollPane);
-        M3MotionSettings.setAnimationsEnabled(scrollPane, false);
+        M3MotionSettings.setReducedMotionRequested(scrollPane, true);
 
         double expectedHValue = expectedScrollPaneHorizontalTargetValue(scrollPane, content, -80.0);
         ScrollEvent event = scrollEvent(
@@ -501,7 +501,7 @@ final class M3ScrollPanesTest {
         assertEquals(0.0, scrollPane.getVvalue(), 0.0001);
 
         M3ScrollPanes.disableSmoothScrolling(scrollPane);
-        M3MotionSettings.clearAnimationsEnabled(scrollPane);
+        M3MotionSettings.setReducedMotionRequested(scrollPane, false);
     }
 
     /// Verifies that wheel events accumulate while a smooth scroll animation is still running.
@@ -523,7 +523,7 @@ final class M3ScrollPanesTest {
                 root.applyCss();
                 root.layout();
                 M3ScrollPanes.enableSmoothScrolling(scrollPane);
-                M3MotionSettings.setAnimationsEnabled(scrollPane, true);
+                M3MotionSettings.setReducedMotionRequested(scrollPane, false);
 
                 double expectedAccumulatedVValue = expectedScrollPaneVerticalTargetValue(scrollPane, content, -160.0);
                 ScrollEvent firstEvent = scrollEvent(scrollPane, 0.0, -80.0);
@@ -535,7 +535,7 @@ final class M3ScrollPanesTest {
                 assertTrue(secondEvent.isConsumed(), () -> scrollPaneDebug(scrollPane, content, secondEvent));
                 assertEquals(0.0, scrollPane.getVvalue(), 0.0001);
 
-                M3MotionSettings.setAnimationsEnabled(scrollPane, false);
+                M3MotionSettings.setReducedMotionRequested(scrollPane, true);
 
                 assertEquals(expectedAccumulatedVValue, scrollPane.getVvalue(), 0.0001, () -> scrollPaneDebug(
                         scrollPane,
@@ -544,7 +544,7 @@ final class M3ScrollPanesTest {
                 ));
             } finally {
                 M3ScrollPanes.disableSmoothScrolling(scrollPane);
-                M3MotionSettings.clearAnimationsEnabled(scrollPane);
+                M3MotionSettings.setReducedMotionRequested(scrollPane, false);
                 stage.close();
             }
         });
@@ -569,7 +569,7 @@ final class M3ScrollPanesTest {
                 root.applyCss();
                 root.layout();
                 M3ScrollPanes.enableSmoothScrolling(scrollPane);
-                M3MotionSettings.setAnimationsEnabled(scrollPane, true);
+                M3MotionSettings.setReducedMotionRequested(scrollPane, false);
 
                 ScrollEvent firstEvent = scrollEvent(scrollPane, 0.0, -80.0);
                 scrollPane.fireEvent(firstEvent);
@@ -593,7 +593,7 @@ final class M3ScrollPanesTest {
                 ScrollEvent secondEvent = scrollEvent(scrollPane, 0.0, -80.0);
                 scrollPane.fireEvent(secondEvent);
                 assertTrue(secondEvent.isConsumed(), () -> scrollPaneDebug(scrollPane, content, secondEvent));
-                M3MotionSettings.setAnimationsEnabled(scrollPane, false);
+                M3MotionSettings.setReducedMotionRequested(scrollPane, true);
 
                 assertEquals(expectedAccumulatedVValue, scrollPane.getVvalue(), 0.0001, () -> scrollPaneDebug(
                         scrollPane,
@@ -602,7 +602,7 @@ final class M3ScrollPanesTest {
                 ));
             } finally {
                 M3ScrollPanes.disableSmoothScrolling(scrollPane);
-                M3MotionSettings.clearAnimationsEnabled(scrollPane);
+                M3MotionSettings.setReducedMotionRequested(scrollPane, false);
                 stage.close();
             }
         });
@@ -623,7 +623,7 @@ final class M3ScrollPanesTest {
             root.resize(180.0, 140.0);
             root.layout();
             M3ScrollPanes.enableSmoothScrolling(scrollPane);
-            M3MotionSettings.setAnimationsEnabled(scrollPane, false);
+            M3MotionSettings.setReducedMotionRequested(scrollPane, true);
 
             try {
                 int initialWidthMeasurements = content.preferredWidthMeasurements;
@@ -645,7 +645,7 @@ final class M3ScrollPanesTest {
                 assertEquals(stableHeightMeasurements, content.preferredHeightMeasurements);
             } finally {
                 M3ScrollPanes.disableSmoothScrolling(scrollPane);
-                M3MotionSettings.clearAnimationsEnabled(scrollPane);
+                M3MotionSettings.setReducedMotionRequested(scrollPane, false);
             }
         });
     }
@@ -665,7 +665,7 @@ final class M3ScrollPanesTest {
         root.resize(180.0, 140.0);
         root.layout();
         M3ScrollPanes.enableSmoothScrolling(scrollPane);
-        M3MotionSettings.setAnimationsEnabled(scrollPane, false);
+        M3MotionSettings.setReducedMotionRequested(scrollPane, true);
 
         double expectedVValue = expectedScrollPaneVerticalTargetValue(scrollPane, content, -120.0);
         ScrollEvent event = scrollEvent(
@@ -689,7 +689,7 @@ final class M3ScrollPanesTest {
         ));
 
         M3ScrollPanes.disableSmoothScrolling(scrollPane);
-        M3MotionSettings.clearAnimationsEnabled(scrollPane);
+        M3MotionSettings.setReducedMotionRequested(scrollPane, false);
     }
 
     /// Verifies that platform page scroll units use the current viewport height.
@@ -707,7 +707,7 @@ final class M3ScrollPanesTest {
         root.resize(180.0, 140.0);
         root.layout();
         M3ScrollPanes.enableSmoothScrolling(scrollPane);
-        M3MotionSettings.setAnimationsEnabled(scrollPane, false);
+        M3MotionSettings.setReducedMotionRequested(scrollPane, true);
 
         double expectedVValue = expectedScrollPaneVerticalTargetValue(
                 scrollPane,
@@ -735,7 +735,7 @@ final class M3ScrollPanesTest {
         ));
 
         M3ScrollPanes.disableSmoothScrolling(scrollPane);
-        M3MotionSettings.clearAnimationsEnabled(scrollPane);
+        M3MotionSettings.setReducedMotionRequested(scrollPane, false);
     }
 
     /// Verifies that outer smooth scroll panes do not consume wheel events owned by nested virtualized lists.
@@ -767,8 +767,8 @@ final class M3ScrollPanesTest {
                 root.applyCss();
                 root.layout();
                 M3ScrollPanes.enableSmoothScrolling(scrollPane);
-                M3MotionSettings.setAnimationsEnabled(scrollPane, false);
-                M3MotionSettings.setAnimationsEnabled(listView, false);
+                M3MotionSettings.setReducedMotionRequested(scrollPane, true);
+                M3MotionSettings.setReducedMotionRequested(listView, true);
 
                 VirtualFlow<?> flow = assertInstanceOf(
                         VirtualFlow.class,
@@ -787,8 +787,8 @@ final class M3ScrollPanesTest {
                 assertEquals(0.0, scrollPane.getVvalue(), 0.0001);
             } finally {
                 M3ScrollPanes.disableSmoothScrolling(scrollPane);
-                M3MotionSettings.clearAnimationsEnabled(scrollPane);
-                M3MotionSettings.clearAnimationsEnabled(listView);
+                M3MotionSettings.setReducedMotionRequested(scrollPane, false);
+                M3MotionSettings.setReducedMotionRequested(listView, false);
                 stage.close();
             }
         }));
@@ -863,8 +863,8 @@ final class M3ScrollPanesTest {
                 root.layout();
                 M3ScrollPanes.enableSmoothScrolling(outerScrollPane);
                 M3ScrollPanes.enableSmoothScrolling(innerScrollPane);
-                M3MotionSettings.setAnimationsEnabled(outerScrollPane, false);
-                M3MotionSettings.setAnimationsEnabled(innerScrollPane, false);
+                M3MotionSettings.setReducedMotionRequested(outerScrollPane, true);
+                M3MotionSettings.setReducedMotionRequested(innerScrollPane, true);
 
                 assertFalse(M3ScrollPanes.isEventTargetForScrollPane(outerScrollPane, innerScrollPane));
                 assertFalse(M3ScrollPanes.isEventTargetForScrollPane(outerScrollPane, innerContent));
@@ -878,8 +878,8 @@ final class M3ScrollPanesTest {
             } finally {
                 M3ScrollPanes.disableSmoothScrolling(innerScrollPane);
                 M3ScrollPanes.disableSmoothScrolling(outerScrollPane);
-                M3MotionSettings.clearAnimationsEnabled(innerScrollPane);
-                M3MotionSettings.clearAnimationsEnabled(outerScrollPane);
+                M3MotionSettings.setReducedMotionRequested(innerScrollPane, false);
+                M3MotionSettings.setReducedMotionRequested(outerScrollPane, false);
                 stage.close();
             }
         }));
@@ -925,7 +925,7 @@ final class M3ScrollPanesTest {
             root.layout();
 
             M3ScrollPanes.enableSmoothScrolling(scrollPane);
-            M3MotionSettings.setAnimationsEnabled(scrollPane, false);
+            M3MotionSettings.setReducedMotionRequested(scrollPane, true);
             try {
                 content.setExpanded(true);
 
@@ -964,7 +964,7 @@ final class M3ScrollPanesTest {
                 assertTrue(scrollPane.getVvalue() > 0.0, () -> "vvalue=" + scrollPane.getVvalue());
             } finally {
                 M3ScrollPanes.disableSmoothScrolling(scrollPane);
-                M3MotionSettings.clearAnimationsEnabled(scrollPane);
+                M3MotionSettings.setReducedMotionRequested(scrollPane, false);
             }
         });
     }
