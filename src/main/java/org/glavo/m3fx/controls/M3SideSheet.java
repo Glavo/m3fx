@@ -107,7 +107,7 @@ public class M3SideSheet extends Control {
             new SimpleBooleanProperty(this, "restoreFocusOnHide", true);
 
     /// Whether the sheet uses the detached container shape.
-    private final BooleanProperty detached = new SimpleBooleanProperty(this, "detached") {
+    private final BooleanProperty detachedState = new SimpleBooleanProperty(this, "detached") {
         /// Synchronizes the detached container pseudo-class.
         @Override
         protected void invalidated() {
@@ -280,21 +280,21 @@ public class M3SideSheet extends Control {
     ///
     /// @return `true` if this sheet uses the detached container shape
     public final boolean isDetached() {
-        return detached.get();
+        return detachedState.get();
     }
 
     /// Sets whether this sheet is visually detached from the adjacent content edge.
     ///
     /// @param detached whether the detached container shape is used
     public final void setDetached(boolean detached) {
-        this.detached.set(detached);
+        detachedState.set(detached);
     }
 
     /// Returns the detached presentation property.
     ///
     /// @return the detached presentation property
     public final BooleanProperty detachedProperty() {
-        return detached;
+        return detachedState;
     }
 
     /// Returns the mutable trailing action node list.

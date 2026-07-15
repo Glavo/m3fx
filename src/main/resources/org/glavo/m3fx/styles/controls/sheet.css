@@ -74,7 +74,7 @@
 
 .m3-bottom-sheet-drag-handle-container:focus-visible .m3-bottom-sheet-drag-handle {
     -fx-border-color: -m3-state-focus-indicator-color;
-    -fx-border-width: -m3-state-focus-indicator-thickness;
+    -fx-border-width: 3px;
     -fx-border-insets: -2px;
     -fx-border-radius: 4px;
 }

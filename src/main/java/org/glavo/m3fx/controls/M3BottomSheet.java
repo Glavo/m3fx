@@ -118,7 +118,7 @@ public class M3BottomSheet extends Control {
             };
 
     /// The action invoked when the user selects the drag handle.
-    private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onDragHandleAction =
+    private final ObjectProperty<@Nullable EventHandler<ActionEvent>> dragHandleActionHandler =
             new SimpleObjectProperty<>(this, "onDragHandleAction");
 
     /// The mutable trailing action node list.
@@ -307,21 +307,21 @@ public class M3BottomSheet extends Control {
     ///
     /// @return the drag-handle action handler, or `null` when the handle is not actionable
     public final @Nullable EventHandler<ActionEvent> getOnDragHandleAction() {
-        return onDragHandleAction.get();
+        return dragHandleActionHandler.get();
     }
 
     /// Sets the action handler invoked when the drag handle is selected.
     ///
     /// @param onDragHandleAction the drag-handle action handler, or `null` to make the handle non-actionable
     public final void setOnDragHandleAction(@Nullable EventHandler<ActionEvent> onDragHandleAction) {
-        this.onDragHandleAction.set(onDragHandleAction);
+        dragHandleActionHandler.set(onDragHandleAction);
     }
 
     /// Returns the drag-handle action property.
     ///
     /// @return the drag-handle action property
     public final ObjectProperty<@Nullable EventHandler<ActionEvent>> onDragHandleActionProperty() {
-        return onDragHandleAction;
+        return dragHandleActionHandler;
     }
 
     /// Invokes the drag-handle action when the sheet and handle are enabled and visible.
@@ -424,6 +424,8 @@ public class M3BottomSheet extends Control {
             notifyFocusNodeChanged();
         });
         actions.addListener((ListChangeListener<Node>) change -> notifyAccessibleItemsChanged());
+        dragHandleVisible.addListener((observable, oldValue, newValue) -> notifyAccessibleItemsChanged());
+        dragHandleActionHandler.addListener((observable, oldValue, newValue) -> notifyAccessibleItemsChanged());
         visibleProperty().addListener((observable, oldValue, newValue) -> focusTrap.update());
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
         visibilityAnimation.setOnFinished(event -> {
@@ -553,7 +555,10 @@ public class M3BottomSheet extends Control {
 
     /// Returns the actionable drag-handle node created by the current skin, if available.
     private @Nullable Node dragHandleFocusTarget() {
-        return lookup("." + DRAG_HANDLE_CONTAINER_STYLE_CLASS);
+        @Nullable Node target = lookup("." + DRAG_HANDLE_CONTAINER_STYLE_CLASS);
+        return target != null && target.isFocusTraversable() && !target.isDisabled() && target.isVisible()
+                ? target
+                : null;
     }
 
     /// Stores the current scene focus owner before a modal sheet takes interaction.

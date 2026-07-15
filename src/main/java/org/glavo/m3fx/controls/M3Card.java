@@ -95,7 +95,7 @@ public class M3Card extends Control {
             };
 
     /// Whether the card is currently represented in the Material dragged state.
-    private final BooleanProperty dragged = new SimpleBooleanProperty(this, "dragged", false) {
+    private final BooleanProperty draggedState = new SimpleBooleanProperty(this, "dragged", false) {
         /// Updates the dragged pseudo-class after the state changes.
         @Override
         protected void invalidated() {
@@ -209,7 +209,7 @@ public class M3Card extends Control {
     ///
     /// @return `true` while the Material dragged state is active
     public final boolean isDragged() {
-        return dragged.get();
+        return draggedState.get();
     }
 
     /// Sets whether this card is currently represented as dragged.
@@ -220,14 +220,14 @@ public class M3Card extends Control {
     ///
     /// @param dragged whether the Material dragged state is active
     public final void setDragged(boolean dragged) {
-        this.dragged.set(dragged);
+        draggedState.set(dragged);
     }
 
     /// Returns the dragged state property.
     ///
     /// @return the writable dragged state property
     public final BooleanProperty draggedProperty() {
-        return dragged;
+        return draggedState;
     }
 
     /// Returns the card variant.

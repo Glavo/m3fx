@@ -130,7 +130,7 @@
 
 .m3-time-picker-dial:focus-visible {
     -fx-border-color: -m3-state-focus-indicator-color;
-    -fx-border-width: -m3-state-focus-indicator-thickness;
+    -fx-border-width: 3px;
 }
 
 .m3-time-picker-dial-background {

@@ -335,6 +335,8 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
         }
         stopScrollAnimation();
         scrollSettleDelay.stop();
+        pendingSelectedScroll = false;
+        pendingSelectedScrollAnimated = false;
         if (!viewportInteractionActive) {
             viewportInteractionActive = true;
             pendingViewportHValue = viewport.getHvalue();

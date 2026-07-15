@@ -36,7 +36,7 @@ public class M3MenuItem extends M3ListItem {
     private static final double DEFAULT_INNER_CORNER_SHAPE = 4.0;
 
     /// The styleable radius used by the inner corners of a first or last grouped-menu item.
-    private @Nullable StyleableDoubleProperty innerCornerShape;
+    private @Nullable StyleableDoubleProperty innerCornerShapeValue;
 
     /// Creates an empty menu item.
     public M3MenuItem() {
@@ -79,7 +79,7 @@ public class M3MenuItem extends M3ListItem {
     ///
     /// @return the non-negative inner-corner radius
     public final double getInnerCornerShape() {
-        return innerCornerShape == null ? DEFAULT_INNER_CORNER_SHAPE : innerCornerShape.get();
+        return innerCornerShapeValue == null ? DEFAULT_INNER_CORNER_SHAPE : innerCornerShapeValue.get();
     }
 
     /// Sets the radius used by the inner corners of a first or last item in a visual menu group.
@@ -93,8 +93,8 @@ public class M3MenuItem extends M3ListItem {
     ///
     /// @return the styleable inner-corner radius property
     public final StyleableDoubleProperty innerCornerShapeProperty() {
-        if (innerCornerShape == null) {
-            innerCornerShape = M3Css.nonNegativeStyleableDoubleProperty(
+        if (innerCornerShapeValue == null) {
+            innerCornerShapeValue = M3Css.nonNegativeStyleableDoubleProperty(
                     DEFAULT_INNER_CORNER_SHAPE,
                     this,
                     "innerCornerShape",
@@ -102,7 +102,7 @@ public class M3MenuItem extends M3ListItem {
                     this::requestLayout
             );
         }
-        return innerCornerShape;
+        return innerCornerShapeValue;
     }
 
     /// Returns the CSS metadata supported by menu items.
