@@ -564,12 +564,22 @@ tasks.named("check") {
 }
 
 
-if (System.getenv("JITPACK").isNullOrBlank() && rootProject.ext.has("signing.key")) {
+val signingKeyId = rootProject.ext.properties["signing.keyId"]
+    ?.toString()
+    ?.takeIf { it.isNotBlank() }
+val signingKey = rootProject.ext.properties["signing.key"]
+    ?.toString()
+    ?.takeIf { it.isNotBlank() }
+val signingPassword = rootProject.ext.properties["signing.password"]
+    ?.toString()
+    ?.takeIf { it.isNotBlank() }
+
+if (System.getenv("JITPACK").isNullOrBlank() && signingKey != null) {
     signing {
         useInMemoryPgpKeys(
-            rootProject.ext["signing.keyId"].toString(),
-            rootProject.ext["signing.key"].toString(),
-            rootProject.ext["signing.password"].toString(),
+            signingKeyId,
+            signingKey,
+            signingPassword,
         )
         sign(publishing.publications["maven"])
     }
