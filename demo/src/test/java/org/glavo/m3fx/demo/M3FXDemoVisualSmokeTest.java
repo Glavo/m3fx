@@ -3193,6 +3193,7 @@ final class M3FXDemoVisualSmokeTest {
                         List<M3TextInputLayout> layouts = assertTextInputDemoPageStructure(scene);
                         assertTextInputDemoVariantAndStateContracts(layouts);
                         assertTextInputDemoGeometryContracts(scene, layouts);
+                        assertTextInputHoverVisualContracts(scene, layouts, modeName);
                         M3TextInputLayout validatedEmailLayout = requireTextInputLayout(layouts, "support", "Validated email");
                         assertDemoValidationFeedbackRemainsStableOnEdits(validatedEmailLayout);
                         assertFocusedMultilineTextInputSurfaceContract(scene, layouts);
@@ -3307,6 +3308,76 @@ final class M3FXDemoVisualSmokeTest {
         assertTextInputClearButtonGeometry(rtlFilledLayout, "mirrored filled text input");
         assertTextInputErrorState(filledErrorLayout, "filled error text input");
         assertTextInputErrorState(outlinedErrorLayout, "outlined error text input");
+    }
+
+    /// Verifies rendered hover feedback for representative filled and outlined-error inputs.
+    private static void assertTextInputHoverVisualContracts(
+            Scene scene,
+            List<M3TextInputLayout> layouts,
+            String modeName
+    ) {
+        M3TextInputLayout filledLayout =
+                requireTextInputLayout(layouts, "support@example.com", "Filled with text");
+        M3TextInputLayout errorLayout = requireTextInputLayout(layouts, "", "Outlined error");
+        TextInputControl filledInput = Objects.requireNonNull(filledLayout.getInput(), "filled hover input");
+        TextInputControl errorInput = Objects.requireNonNull(errorLayout.getInput(), "error hover input");
+        String snapshotMode = modeName.replace(' ', '-');
+
+        Parent root = scene.getRoot();
+        boolean rootFocusTraversable = root.isFocusTraversable();
+        root.setFocusTraversable(true);
+        root.requestFocus();
+        clearHoverPseudoState(filledLayout);
+        clearHoverPseudoState(filledInput);
+        clearHoverPseudoState(errorLayout);
+        clearHoverPseudoState(errorInput);
+        assertFalse(filledLayout.getPseudoClassStates().contains(HOVER_PSEUDO_CLASS),
+                () -> "filled hover baseline states=" + filledLayout.getPseudoClassStates()
+                        + ", hoverProperty=" + filledLayout.isHover());
+
+        scrollDemoPageNodeIntoView(scene, filledLayout);
+        WritableImage normalFilled = snapshotNode(filledLayout);
+        Color normalFilledColor = firstBackgroundColor(filledInput);
+        applyHoverPseudoState(filledLayout);
+        applyHoverPseudoState(filledInput);
+        scene.getRoot().applyCss();
+        scene.getRoot().layout();
+        WritableImage hoveredFilled = snapshotNode(filledLayout);
+        Color hoveredFilledColor = firstBackgroundColor(filledInput);
+        assertFalse(Objects.equals(normalFilledColor, hoveredFilledColor),
+                () -> modeName + " filled hover colors should differ; color=" + normalFilledColor
+                        + ", states=" + filledInput.getPseudoClassStates());
+        writeInteractionSnapshot(normalFilled, "filled-text-input-" + snapshotMode, "normal");
+        writeInteractionSnapshot(hoveredFilled, "filled-text-input-" + snapshotMode, "hover");
+        assertNodeAreaChanged(
+                new BoundingBox(0.0, 0.0, normalFilled.getWidth(), normalFilled.getHeight()),
+                normalFilled,
+                hoveredFilled,
+                modeName + " filled text input hover"
+        );
+        clearHoverPseudoState(filledInput);
+        clearHoverPseudoState(filledLayout);
+
+        scrollDemoPageNodeIntoView(scene, errorLayout);
+        WritableImage normalError = snapshotNode(errorLayout);
+        applyHoverPseudoState(errorLayout);
+        applyHoverPseudoState(errorInput);
+        scene.getRoot().applyCss();
+        scene.getRoot().layout();
+        WritableImage hoveredError = snapshotNode(errorLayout);
+        writeInteractionSnapshot(normalError, "outlined-error-text-input-" + snapshotMode, "normal");
+        writeInteractionSnapshot(hoveredError, "outlined-error-text-input-" + snapshotMode, "hover");
+        assertNodeAreaChanged(
+                new BoundingBox(0.0, 0.0, normalError.getWidth(), normalError.getHeight()),
+                normalError,
+                hoveredError,
+                modeName + " outlined error text input hover"
+        );
+        clearHoverPseudoState(errorInput);
+        clearHoverPseudoState(errorLayout);
+        root.setFocusTraversable(rootFocusTraversable);
+        scene.getRoot().applyCss();
+        scene.getRoot().layout();
     }
 
     /// Verifies the Text Fields page layout, label, and adornment geometry contracts.

@@ -1081,6 +1081,7 @@ public class M3TextInputLayout extends Control {
         }
         if (focusChanged) {
             label.pseudoClassStateChanged(FOCUSED_PSEUDO_CLASS, focused);
+            trailingSlot.pseudoClassStateChanged(FOCUSED_PSEUDO_CLASS, focused);
         }
         if (errorChanged) {
             label.pseudoClassStateChanged(ERROR_PSEUDO_CLASS, error);
@@ -1138,6 +1139,8 @@ public class M3TextInputLayout extends Control {
             trailingSlot.getChildren().add(trailing);
         }
         updateAdornmentSlot(trailingSlot, trailing);
+        trailingSlot.pseudoClassStateChanged(FOCUSED_PSEUDO_CLASS, isInputFocused());
+        trailingSlot.pseudoClassStateChanged(ERROR_PSEUDO_CLASS, hasVisualErrorState());
         updateTrailingMotion(previousTrailing, trailing);
         updateLabelPadding();
         updateInputPadding();
@@ -1546,6 +1549,7 @@ public class M3TextInputLayout extends Control {
             label.pseudoClassStateChanged(ERROR_PSEUDO_CLASS, error);
             labelError = error;
         }
+        trailingSlot.pseudoClassStateChanged(ERROR_PSEUDO_CLASS, error);
     }
 
     /// Updates outline visibility, pseudo-classes, and geometry.

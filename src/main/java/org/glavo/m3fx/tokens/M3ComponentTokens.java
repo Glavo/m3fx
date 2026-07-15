@@ -414,8 +414,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double segmentedButtonHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 48.0 : 40.0);
         double tabHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 56.0 : 48.0);
         double tabMinWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 104.0 : 90.0);
-        double fieldHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
-        double textAreaHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 128.0 : 112.0);
+        double fieldHeight = density.apply(56.0);
+        double textAreaHeight = density.apply(112.0);
         double menuItemHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 44.0 : 48.0);
         double searchBarHeight = density.apply(56.0);
         double searchViewResultHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
@@ -583,9 +583,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double chipOutlineWidth = density.apply(1.0);
         double chipGroupHorizontalGap = density.apply(8.0);
         double chipGroupVerticalGap = density.apply(8.0);
-        double fieldHorizontalPadding = density.apply(expressive ? 20.0 : 16.0);
-        double textAreaHorizontalPadding = density.apply(expressive ? 20.0 : 16.0);
-        double textAreaVerticalPadding = density.apply(expressive ? 20.0 : 16.0);
+        double fieldHorizontalPadding = density.apply(16.0);
+        double textAreaHorizontalPadding = density.apply(16.0);
+        double textAreaVerticalPadding = density.apply(16.0);
         double formRowSpacing = density.apply(expressive ? 20.0 : 16.0);
         double formSectionContentSpacing = density.apply(expressive ? 16.0 : 12.0);
         double formSectionHeaderSpacing = density.apply(expressive ? 6.0 : 4.0);

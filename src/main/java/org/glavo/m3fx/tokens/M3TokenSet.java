@@ -134,6 +134,11 @@ public sealed interface M3TokenSet permits M3TokenSetImpl {
         Color surface = colorTokens.get(ColorRole.SURFACE);
         Color surfaceContainerHighest = colorTokens.get(ColorRole.SURFACE_CONTAINER_HIGHEST);
         Color outline = colorTokens.get(ColorRole.OUTLINE);
+        Color error = colorTokens.get(ColorRole.ERROR);
+        Color textFieldHoverContainer = surfaceContainerHighest.interpolate(
+                onSurface,
+                stateLayerTokens.hoverOpacity()
+        );
         return "-m3-state-disabled-container-color: "
                 + toRgba(onSurface, stateLayerTokens.disabledContainerOpacity()) + "; "
                 + "-m3-disclosure-icon-color: " + toRgba(onSurfaceVariant, 1.0) + "; "
@@ -147,7 +152,9 @@ public sealed interface M3TokenSet permits M3TokenSetImpl {
                 + toRgba(surface, stateLayerTokens.disabledContentOpacity()) + "; "
                 + "-m3-outlined-card-disabled-outline-color: "
                 + toRgba(outline, stateLayerTokens.disabledContainerOpacity()) + "; "
-                + "-m3-text-field-disabled-container-color: " + toRgba(onSurface, 0.04) + ";";
+                + "-m3-text-field-disabled-container-color: " + toRgba(onSurface, 0.04) + "; "
+                + "-m3-text-field-hover-container-color: " + toRgba(textFieldHoverContainer, 1.0) + "; "
+                + "-m3-text-input-trailing-icon-color: " + toRgba(error, 1.0) + ";";
     }
 
     /// Converts a color and component opacity into a JavaFX CSS rgba paint.

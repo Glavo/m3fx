@@ -14,8 +14,12 @@ import javafx.scene.input.PickResult;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 import org.glavo.m3fx.FxTestUtils;
+import org.glavo.m3fx.animation.M3MotionEasing;
+import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -178,6 +182,17 @@ final class M3CarouselLayoutTest {
                     () -> {
                         M3MotionSettings.setAnimationsEnabled(true);
                         M3Carousel carousel = carousel(280.0, 280.0, 280.0, 280.0, 280.0);
+                        M3MotionScheme standardScheme = M3MotionScheme.standard();
+                        M3MotionSpec observableSpatial =
+                                M3MotionSpec.create(Duration.seconds(4.0), M3MotionEasing.LINEAR);
+                        FxTestUtils.setMotionScheme(carousel, M3MotionScheme.create(
+                                standardScheme.fastEffects(),
+                                standardScheme.defaultEffects(),
+                                standardScheme.slowEffects(),
+                                observableSpatial,
+                                observableSpatial,
+                                observableSpatial
+                        ));
                         carousel.setCarouselLayout(M3CarouselLayout.HERO);
                         carousel.selectIndex(0);
                         M3MotionSettings.setReducedMotionRequested(carousel, false);

@@ -19075,10 +19075,23 @@ final class M3ControlStyleTest {
         });
     }
 
-    /// Verifies that focused text input layout labels use Material focused and error colors.
+    /// Verifies Material text-input colors across enabled, hovered, focused, and error states.
     @Test
-    void textInputLayoutLabelUsesFocusedAndErrorColors() {
+    void textInputLayoutUsesMaterialStateColors() {
         FxTestUtils.runOnFxThread(() -> {
+            PseudoClass hover = PseudoClass.getPseudoClass("hover");
+
+            M3TextField directFilled = createTextField("Filled", M3TextInputVariant.FILLED);
+            directFilled.setPrefWidth(260.0);
+            M3TextField directOutlined = createTextField("Outlined", M3TextInputVariant.OUTLINED);
+            directOutlined.setPrefWidth(260.0);
+
+            M3TextField filledField = createTextField("M3FX", M3TextInputVariant.FILLED);
+            filledField.setPrefWidth(260.0);
+            M3TextInputLayout filledLayout = new M3TextInputLayout(filledField, "Supporting text");
+            filledLayout.setLabelText("Filled label");
+            filledLayout.setPrefWidth(260.0);
+
             M3TextField focusedField = createTextField("M3FX", M3TextInputVariant.OUTLINED);
             focusedField.setPrefWidth(260.0);
             M3TextInputLayout focusedLayout = new M3TextInputLayout(focusedField, "Project name");
@@ -19087,24 +19100,93 @@ final class M3ControlStyleTest {
 
             M3TextField errorField = createTextField("Invalid", M3TextInputVariant.OUTLINED);
             errorField.setPrefWidth(260.0);
+            M3Icon errorTrailing = new M3Icon("error");
             M3TextInputLayout errorLayout = new M3TextInputLayout(errorField, "Helper text");
             errorLayout.setLabelText("Error label");
             errorLayout.setErrorText("Use a valid value");
+            errorLayout.setTrailing(errorTrailing);
             errorLayout.setPrefWidth(260.0);
 
-            VBox root = new VBox(16.0, focusedLayout, errorLayout);
+            VBox root = new VBox(16.0, directFilled, directOutlined, filledLayout, focusedLayout, errorLayout);
+            root.setFocusTraversable(true);
             root.setStyle("-fx-background-color: white; -fx-padding: 20px;");
-            Scene scene = new Scene(root, 360.0, 190.0);
+            Scene scene = new Scene(root, 360.0, 430.0);
             Stage stage = new Stage();
             M3Theme theme = M3Theme.defaultTheme();
-            Color focusedColor = theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.PRIMARY);
-            Color errorColor = theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ERROR);
+            Color primary = theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.PRIMARY);
+            Color error = theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ERROR);
+            Color onSurface = theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SURFACE);
+            Color onErrorContainer =
+                    theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_ERROR_CONTAINER);
+            Color unquantizedHoverContainer = theme.colorScheme()
+                    .getColor(org.glavo.monetfx.ColorRole.SURFACE_CONTAINER_HIGHEST)
+                    .interpolate(onSurface, theme.tokens().stateLayerTokens().hoverOpacity());
+            Color hoverContainer = Color.rgb(
+                    (int) Math.round(unquantizedHoverContainer.getRed() * 255.0),
+                    (int) Math.round(unquantizedHoverContainer.getGreen() * 255.0),
+                    (int) Math.round(unquantizedHoverContainer.getBlue() * 255.0)
+            );
             try {
                 M3ThemeManager.install(scene, theme);
                 stage.setScene(scene);
                 stage.show();
+                root.requestFocus();
+
+                directFilled.pseudoClassStateChanged(hover, true);
+                directOutlined.pseudoClassStateChanged(hover, true);
+                filledLayout.pseudoClassStateChanged(hover, true);
+                filledField.pseudoClassStateChanged(hover, true);
+                focusedLayout.pseudoClassStateChanged(hover, true);
+                focusedField.pseudoClassStateChanged(hover, true);
+                errorLayout.pseudoClassStateChanged(hover, true);
+                errorField.pseudoClassStateChanged(hover, true);
                 root.applyCss();
                 root.layout();
+
+                assertRegionFill(directFilled, hoverContainer);
+                assertBorderBottomColor(directFilled, onSurface);
+                assertEquals(onSurface, firstBorderTopPaint(directOutlined));
+                assertRegionFill(
+                        lookupRegion(filledLayout, "." + M3TextInputLayout.INPUT_CONTAINER_STYLE_CLASS),
+                        hoverContainer
+                );
+
+                Path hoveredOutline = assertInstanceOf(
+                        Path.class,
+                        focusedLayout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS)
+                );
+                Label hoveredLabel = assertInstanceOf(
+                        Label.class,
+                        focusedLayout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
+                );
+                assertEquals(onSurface, hoveredOutline.getStroke());
+                assertEquals(onSurface, hoveredLabel.getTextFill());
+
+                Path hoveredErrorOutline = assertInstanceOf(
+                        Path.class,
+                        errorLayout.lookup("." + M3TextInputLayout.OUTLINE_STYLE_CLASS)
+                );
+                Label errorLabel = assertInstanceOf(
+                        Label.class,
+                        errorLayout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
+                );
+                assertEquals(onErrorContainer, hoveredErrorOutline.getStroke());
+                assertEquals(onErrorContainer, errorLabel.getTextFill());
+                Region errorTrailingSlot = lookupRegion(
+                        errorLayout,
+                        "." + M3TextInputLayout.TRAILING_STYLE_CLASS
+                );
+                assertTrue(errorTrailingSlot.getPseudoClassStates().contains(PseudoClass.getPseudoClass("error")));
+                assertEquals(onErrorContainer, errorTrailing.getTextFill());
+
+                directFilled.pseudoClassStateChanged(hover, false);
+                directOutlined.pseudoClassStateChanged(hover, false);
+                filledLayout.pseudoClassStateChanged(hover, false);
+                filledField.pseudoClassStateChanged(hover, false);
+                focusedLayout.pseudoClassStateChanged(hover, false);
+                focusedField.pseudoClassStateChanged(hover, false);
+                errorLayout.pseudoClassStateChanged(hover, false);
+                errorField.pseudoClassStateChanged(hover, false);
 
                 focusedField.requestFocus();
                 root.applyCss();
@@ -19115,13 +19197,10 @@ final class M3ControlStyleTest {
                         Label.class,
                         focusedLayout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
                 );
-                Label errorLabel = assertInstanceOf(
-                        Label.class,
-                        errorLayout.lookup("." + M3TextInputLayout.LABEL_STYLE_CLASS)
-                );
                 assertTrue(focusedLabel.getPseudoClassStates().contains(PseudoClass.getPseudoClass("focused")));
-                assertEquals(focusedColor, focusedLabel.getTextFill());
-                assertEquals(errorColor, errorLabel.getTextFill());
+                assertEquals(primary, focusedLabel.getTextFill());
+                assertEquals(error, errorLabel.getTextFill());
+                assertEquals(error, errorTrailing.getTextFill());
 
                 errorField.requestFocus();
                 root.applyCss();
@@ -19129,7 +19208,8 @@ final class M3ControlStyleTest {
 
                 assertTrue(errorField.isFocused(), "error text field should own focus");
                 assertTrue(errorLabel.getPseudoClassStates().contains(PseudoClass.getPseudoClass("focused")));
-                assertEquals(errorColor, errorLabel.getTextFill());
+                assertEquals(error, errorLabel.getTextFill());
+                assertEquals(error, errorTrailing.getTextFill());
             } finally {
                 stage.close();
             }
@@ -35575,11 +35655,11 @@ final class M3ControlStyleTest {
             assertEquals(56.0, selectedTab.getContainerHeight(), 0.0001);
             assertEquals(20.0, selectedTab.getHorizontalPadding(), 0.0001);
             assertEquals(4.0, selectedTab.getActiveIndicatorHeight(), 0.0001);
-            assertEquals(64.0, textField.getContainerHeight(), 0.0001);
-            assertEquals(20.0, textField.getHorizontalPadding(), 0.0001);
-            assertEquals(128.0, textArea.getContainerHeight(), 0.0001);
-            assertEquals(20.0, textArea.getHorizontalPadding(), 0.0001);
-            assertEquals(20.0, textArea.getVerticalPadding(), 0.0001);
+            assertEquals(56.0, textField.getContainerHeight(), 0.0001);
+            assertEquals(16.0, textField.getHorizontalPadding(), 0.0001);
+            assertEquals(112.0, textArea.getContainerHeight(), 0.0001);
+            assertEquals(16.0, textArea.getHorizontalPadding(), 0.0001);
+            assertEquals(16.0, textArea.getVerticalPadding(), 0.0001);
             assertEquals(32.0, filterChip.getContainerHeight(), 0.0001);
             assertEquals(16.0, filterChip.getHorizontalPadding(), 0.0001);
             assertEquals(48.0, checkBox.getTouchTargetSize(), 0.0001);
@@ -35813,7 +35893,7 @@ final class M3ControlStyleTest {
             assertTrue(root.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
             assertTrue(root.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
             assertEquals(40.0, filledButton.getContainerHeight(), 0.0001);
-            assertEquals(64.0, textField.getContainerHeight(), 0.0001);
+            assertEquals(56.0, textField.getContainerHeight(), 0.0001);
             assertEquals(56.0, searchBar.getHeight(), 0.0001);
             assertEquals(40.0, selectedToggle.getContainerHeight(), 0.0001);
             assertEquals(56.0, fab.getContainerSize(), 0.0001);

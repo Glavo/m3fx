@@ -89,6 +89,8 @@
     -m3-elevated-card-disabled-container-color: rgba(253,247,255,0.38);
     -m3-outlined-card-disabled-outline-color: rgba(122,117,127,0.12);
     -m3-text-field-disabled-container-color: rgba(29,27,32,0.04);
+    -m3-text-field-hover-container-color: rgb(214,208,217);
+    -m3-text-input-trailing-icon-color: -m3-color-error;
     -m3-state-focus-indicator-color: -m3-color-secondary;
     -m3-state-focus-indicator-thickness: 3px;
     -m3-state-focus-indicator-outer-offset: 2px;

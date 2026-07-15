@@ -164,6 +164,8 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains(
                 "-m3-text-field-disabled-container-color: rgba(29,27,32,0.04)"
         ));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-text-field-hover-container-color"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-text-input-trailing-icon-color"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-button-filled-container-height"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-split-button-menu-width"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-fab-regular-container-size"));
@@ -299,8 +301,8 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-tab-container-height: 56px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-tab-horizontal-padding: 20px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-tab-active-indicator-height: 4px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-field-horizontal-padding: 20px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-text-area-vertical-padding: 20px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-field-horizontal-padding: 16px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-text-area-vertical-padding: 16px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-selection-touch-target-size: 48px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-selection-state-layer-size: 40px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-checkbox-container-size: 18px"));
@@ -511,10 +513,11 @@ final class M3ThemeTest {
         assertEquals(15.0, expressiveProgress.circularWavelength(), 0.0001);
         assertTrue(theme.toControlStyleRules().contains("-m3-wave-amplitude: 0px"));
         assertTrue(theme.toControlStyleRules().contains("-m3-wave-indicator-size: 48px"));
-        assertTrue(theme.toControlStyleRules().contains("-m3-indeterminate-wavelength: 20px"));        assertEquals(48.0, theme.tokens().componentTokens().loadingIndicator().containerSize(), 0.0001);
+        assertTrue(theme.toControlStyleRules().contains("-m3-indeterminate-wavelength: 20px"));
+        assertEquals(48.0, theme.tokens().componentTokens().loadingIndicator().containerSize(), 0.0001);
         assertEquals(38.0, theme.tokens().componentTokens().loadingIndicator().indicatorSize(), 0.0001);
-        assertEquals(20.0, theme.tokens().componentTokens().field().horizontalPadding(), 0.0001);
-        assertEquals(20.0, theme.tokens().componentTokens().textArea().verticalPadding(), 0.0001);
+        assertEquals(16.0, theme.tokens().componentTokens().field().horizontalPadding(), 0.0001);
+        assertEquals(16.0, theme.tokens().componentTokens().textArea().verticalPadding(), 0.0001);
         assertEquals(48.0, theme.tokens().componentTokens().selection().touchTargetSize(), 0.0001);
         assertEquals(40.0, theme.tokens().componentTokens().selection().stateLayerSize(), 0.0001);
         assertEquals(18.0, theme.tokens().componentTokens().selection().checkboxContainerSize(), 0.0001);
@@ -1173,11 +1176,11 @@ final class M3ThemeTest {
         assertEquals(16.0, splitButtonActionButton(splitButton).getHorizontalPadding(), 0.0001);
         assertEquals(48.0, splitButtonMenuButton(splitButton).getMinWidth(), 0.0001);
         assertEquals(48.0, splitButtonMenuButton(splitButton).getPrefWidth(), 0.0001);
-        assertEquals(64.0, textField.getContainerHeight(), 0.0001);
-        assertEquals(20.0, textField.getHorizontalPadding(), 0.0001);
-        assertEquals(128.0, textArea.getContainerHeight(), 0.0001);
-        assertEquals(20.0, textArea.getHorizontalPadding(), 0.0001);
-        assertEquals(20.0, textArea.getVerticalPadding(), 0.0001);
+        assertEquals(56.0, textField.getContainerHeight(), 0.0001);
+        assertEquals(16.0, textField.getHorizontalPadding(), 0.0001);
+        assertEquals(112.0, textArea.getContainerHeight(), 0.0001);
+        assertEquals(16.0, textArea.getHorizontalPadding(), 0.0001);
+        assertEquals(16.0, textArea.getVerticalPadding(), 0.0001);
         assertEquals(48.0, checkBox.getTouchTargetSize(), 0.0001);
         assertEquals(40.0, checkBox.getStateLayerSize(), 0.0001);
         assertEquals(18.0, checkBox.getContainerSize(), 0.0001);

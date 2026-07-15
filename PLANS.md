@@ -103,6 +103,10 @@ available through explicit component configuration. Linear and circular indicato
 indeterminate wavelengths, track gaps, stops, inactive tracks, and reduced-motion activity follow the published
 tokens. Loading indicators provide the Expressive Default and Contained variants, retain centered reusable morph
 geometry, and fall back to basic continuous rotation when decorative motion is disabled.
+Text fields, password fields, and text areas retain the published 56-pixel single-line and 112-pixel multiline
+metrics in both profiles because the current Expressive specification does not define a replacement size scale.
+Filled and outlined containers now cover the specified hover and error-hover colors, focused state precedence,
+floating labels, trailing adornments, supporting-row spacing, RTL layout, multiline surfaces, and validation feedback.
 Remaining component families will be audited against the local Material reference snapshot rather than inferred
 from baseline behavior.
 

@@ -57,11 +57,8 @@
 }
 
 .m3-text-field.m3-filled-field,
-.m3-text-field.m3-filled-field:hover,
 .m3-password-field.m3-filled-field,
-.m3-password-field.m3-filled-field:hover,
-.m3-text-area.m3-filled-field,
-.m3-text-area.m3-filled-field:hover {
+.m3-text-area.m3-filled-field {
     -fx-control-inner-background: -m3-color-surface-container-highest;
     -fx-background-color: -m3-color-surface-container-highest;
     -fx-background-insets: 0;
@@ -69,6 +66,14 @@
     -fx-border-color: transparent transparent -m3-color-on-surface-variant transparent;
     -fx-border-insets: 0;
     -fx-border-width: 0 0 1px 0;
+}
+
+.m3-text-field.m3-filled-field:hover,
+.m3-password-field.m3-filled-field:hover,
+.m3-text-area.m3-filled-field:hover {
+    -fx-control-inner-background: -m3-text-field-hover-container-color;
+    -fx-background-color: -m3-text-field-hover-container-color;
+    -fx-border-color: transparent transparent -m3-color-on-surface transparent;
 }
 
 .m3-text-field.m3-filled-field:focused,
@@ -84,13 +89,16 @@
 }
 
 .m3-text-field.m3-filled-field:error,
-.m3-text-field.m3-filled-field:error:hover,
 .m3-password-field.m3-filled-field:error,
-.m3-password-field.m3-filled-field:error:hover,
-.m3-text-area.m3-filled-field:error,
-.m3-text-area.m3-filled-field:error:hover {
+.m3-text-area.m3-filled-field:error {
     -fx-border-color: transparent transparent -m3-color-error transparent;
     -fx-border-width: 0 0 1px 0;
+}
+
+.m3-text-field.m3-filled-field:error:hover,
+.m3-password-field.m3-filled-field:error:hover,
+.m3-text-area.m3-filled-field:error:hover {
+    -fx-border-color: transparent transparent -m3-color-on-error-container transparent;
 }
 
 .m3-text-field.m3-filled-field:error:focused,
@@ -101,11 +109,8 @@
 }
 
 .m3-text-field.m3-outlined-field,
-.m3-text-field.m3-outlined-field:hover,
 .m3-password-field.m3-outlined-field,
-.m3-password-field.m3-outlined-field:hover,
-.m3-text-area.m3-outlined-field,
-.m3-text-area.m3-outlined-field:hover {
+.m3-text-area.m3-outlined-field {
     -fx-background-color: transparent;
     -fx-background-insets: 0;
     -fx-background-radius: 4px;
@@ -113,6 +118,12 @@
     -fx-border-insets: 0;
     -fx-border-radius: 4px;
     -fx-border-width: 1px;
+}
+
+.m3-text-field.m3-outlined-field:hover,
+.m3-password-field.m3-outlined-field:hover,
+.m3-text-area.m3-outlined-field:hover {
+    -fx-border-color: -m3-color-on-surface;
 }
 
 .m3-text-field.m3-outlined-field:focused,
@@ -128,13 +139,16 @@
 }
 
 .m3-text-field.m3-outlined-field:error,
-.m3-text-field.m3-outlined-field:error:hover,
 .m3-password-field.m3-outlined-field:error,
-.m3-password-field.m3-outlined-field:error:hover,
-.m3-text-area.m3-outlined-field:error,
-.m3-text-area.m3-outlined-field:error:hover {
+.m3-text-area.m3-outlined-field:error {
     -fx-border-color: -m3-color-error;
     -fx-border-width: 1px;
+}
+
+.m3-text-field.m3-outlined-field:error:hover,
+.m3-password-field.m3-outlined-field:error:hover,
+.m3-text-area.m3-outlined-field:error:hover {
+    -fx-border-color: -m3-color-on-error-container;
 }
 
 .m3-text-field.m3-outlined-field:error:focused,
@@ -217,6 +231,10 @@
     -fx-background-insets: 0;
     -fx-background-radius: 4px 4px 0 0;
 }
+
+.m3-text-input-layout.m3-filled-field:hover .m3-text-input-container {
+    -fx-background-color: -m3-text-field-hover-container-color;
+}
 .m3-text-input-layout.m3-filled-field:input-disabled .m3-text-input-container,
 .m3-text-input-layout.m3-filled-field:disabled .m3-text-input-container {
     -fx-background-color: transparent;
@@ -241,6 +259,10 @@
     -fx-stroke-width: 1px;
 }
 
+.m3-text-input-layout.m3-outlined-field:hover .m3-text-input-outline {
+    -fx-stroke: -m3-color-on-surface;
+}
+
 .m3-text-input-layout.m3-outlined-field .m3-text-input-outline:focused {
     -fx-stroke: -m3-color-primary;
     -fx-stroke-width: 3px;
@@ -249,6 +271,10 @@
 .m3-text-input-layout.m3-outlined-field .m3-text-input-outline:error {
     -fx-stroke: -m3-color-error;
     -fx-stroke-width: 1px;
+}
+
+.m3-text-input-layout.m3-outlined-field:hover .m3-text-input-outline:error {
+    -fx-stroke: -m3-color-on-error-container;
 }
 
 .m3-text-input-layout.m3-outlined-field .m3-text-input-outline:error:focused {
@@ -270,12 +296,31 @@
     -fx-font-size: 12px;
 }
 
+.m3-text-input-layout.m3-outlined-field:hover .m3-text-input-label {
+    -fx-text-fill: -m3-color-on-surface;
+}
+
 .m3-text-input-label:focused {
     -fx-text-fill: -m3-color-primary;
 }
 
 .m3-text-input-label:error,
 .m3-text-input-label:error:focused {
+    -fx-text-fill: -m3-color-error;
+}
+
+.m3-text-input-layout.m3-filled-field:hover .m3-text-input-label:error,
+.m3-text-input-layout.m3-outlined-field:hover .m3-text-input-label:error {
+    -fx-text-fill: -m3-color-on-error-container;
+}
+
+.m3-text-input-layout.m3-filled-field:hover .m3-text-input-label:focused,
+.m3-text-input-layout.m3-outlined-field:hover .m3-text-input-label:focused {
+    -fx-text-fill: -m3-color-primary;
+}
+
+.m3-text-input-layout.m3-filled-field:hover .m3-text-input-label:error:focused,
+.m3-text-input-layout.m3-outlined-field:hover .m3-text-input-label:error:focused {
     -fx-text-fill: -m3-color-error;
 }
 
@@ -290,6 +335,36 @@
     -fx-text-fill: -m3-color-on-surface-variant;
 }
 
+.m3-text-input-trailing:error,
+.m3-text-input-trailing:error .m3-icon {
+    -m3-text-input-trailing-icon-color: -m3-color-error;
+    -fx-text-fill: -m3-color-error;
+}
+
+.m3-text-input-trailing:error .m3-internal-icon-path {
+    -fx-fill: -m3-color-error;
+}
+
+.m3-text-input-layout:hover .m3-text-input-trailing:error,
+.m3-text-input-layout:hover .m3-text-input-trailing:error .m3-icon {
+    -m3-text-input-trailing-icon-color: -m3-color-on-error-container;
+    -fx-text-fill: -m3-color-on-error-container;
+}
+
+.m3-text-input-layout:hover .m3-text-input-trailing:error .m3-internal-icon-path {
+    -fx-fill: -m3-color-on-error-container;
+}
+
+.m3-text-input-layout:hover .m3-text-input-trailing:error:focused,
+.m3-text-input-layout:hover .m3-text-input-trailing:error:focused .m3-icon {
+    -m3-text-input-trailing-icon-color: -m3-color-error;
+    -fx-text-fill: -m3-color-error;
+}
+
+.m3-text-input-layout:hover .m3-text-input-trailing:error:focused .m3-internal-icon-path {
+    -fx-fill: -m3-color-error;
+}
+
 .m3-text-input-clear-button {
     -m3-container-height: 40px;
 }
@@ -297,7 +372,7 @@
 .m3-text-input-supporting-row {
     -fx-alignment: center-left;
     -fx-padding: 0 16px 0 16px;
-    -fx-spacing: 8px;
+    -fx-spacing: 16px;
 }
 
 .m3-text-input-supporting-text,

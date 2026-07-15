@@ -62,3 +62,7 @@
 .m3-text-input-trailing:disabled .m3-icon:disabled {
     -fx-opacity: 1;
 }
+
+.m3-text-input-trailing:error .m3-icon {
+    -fx-text-fill: -m3-text-input-trailing-icon-color;
+}
