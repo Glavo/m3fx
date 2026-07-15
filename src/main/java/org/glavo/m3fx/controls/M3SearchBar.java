@@ -23,6 +23,8 @@ import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import org.glavo.m3fx.internal.M3FocusTraversal;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
 import org.glavo.m3fx.internal.M3Accessible;
@@ -232,10 +234,6 @@ public class M3SearchBar extends Control {
         return trailingActions;
     }
 
-
-
-
-
     /// Returns the action handler.
     ///
     /// @return the action handler, or `null` if none is set
@@ -295,7 +293,7 @@ public class M3SearchBar extends Control {
 
     /// Returns accessibility attributes for the embedded search editor.
     ///
-    /// @param attribute the requested accessibility attribute
+    /// @param attribute  the requested accessibility attribute
     /// @param parameters the optional attribute parameters
     /// @return the attribute value, or `null` when unavailable
     @Override
@@ -314,7 +312,7 @@ public class M3SearchBar extends Control {
 
     /// Executes accessibility actions supported by the search bar.
     ///
-    /// @param action the requested accessibility action
+    /// @param action     the requested accessibility action
     /// @param parameters the optional action parameters
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
@@ -376,9 +374,31 @@ public class M3SearchBar extends Control {
             }
         });
         editor.setOnAction(event -> fire());
-        setOnMouseClicked(event -> activate());
+        setOnMouseClicked(this::handleMouseClicked);
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
         focusNotifier.start();
+    }
+
+    /// Activates the search container unless an embedded action owns the pointer click.
+    private void handleMouseClicked(MouseEvent event) {
+        if (event.getButton() != MouseButton.PRIMARY) {
+            return;
+        }
+
+        Node target = event.getPickResult().getIntersectedNode();
+        @Nullable Node leading = getLeading();
+        if (leading != null
+                && M3Accessible.structuralFocusTarget(leading) != null
+                && M3Accessible.containsNode(leading, target)) {
+            return;
+        }
+        for (Node action : getTrailingActions()) {
+            if (M3Accessible.structuralFocusTarget(action) != null
+                    && M3Accessible.containsNode(action, target)) {
+                return;
+            }
+        }
+        activate();
     }
 
     /// Handles keyboard shortcuts owned by the search bar container.
@@ -487,10 +507,14 @@ public class M3SearchBar extends Control {
 
     /// Returns the current accessibility focus node.
     ///
-    /// @return the focused indexed item when one owns focus, otherwise the embedded editor
+    /// @return the focused indexed item, first interactive leading item, or embedded editor
     private Node accessibleFocusNode() {
         @Nullable Node focusNode = currentFocusNode();
-        return focusNode == null ? editor : focusNode;
+        if (focusNode != null) {
+            return focusNode;
+        }
+        @Nullable Node leadingFocusTarget = M3Accessible.structuralFocusTarget(getLeading());
+        return leadingFocusTarget == null ? editor : leadingFocusTarget;
     }
 
     /// Returns the current focused slot target, or `null` when focus is outside the search bar.
@@ -521,7 +545,6 @@ public class M3SearchBar extends Control {
         M3Accessible.notifyFocusNodeChanged(this);
         focusNotifier.refresh();
     }
-
 
     /// Creates the default leading search glyph node.
     private static Node defaultLeadingNode() {

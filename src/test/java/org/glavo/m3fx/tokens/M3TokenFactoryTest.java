@@ -250,6 +250,8 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-text-area-container-height: 67px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-menu-item-height: 43px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-menu-selected-item-container-shape: 11px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-menu-active-item-container-shape: 17px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-menu-inner-corner-shape: 18px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-menu-first-item-container-shape: 12px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-menu-last-item-container-shape: 13px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-menu-item-spacing: 16px"));
@@ -257,12 +259,14 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-menu-selected-item-container-color: -m3-color-secondary-container"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-menu-vibrant-container-color: -m3-color-tertiary-container"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-search-bar-container-height: 44px"));
-        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-search-bar-trailing-actions-gap: 5px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-search-bar-trailing-actions-gap: 6px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-search-contained-bar-horizontal-padding: 4px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-search-divided-bar-content-spacing: 17px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-search-view-horizontal-padding: 10px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-search-view-bar-results-gap: 2px"));
-        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-search-view-results-shape: 17px"));
-        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-search-view-result-container-shape: 18px"));
-        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-search-view-result-horizontal-padding: 13px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-search-view-results-shape: 18px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-search-view-docked-bottom-padding: 7px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-search-view-full-screen-divided-header-height: 72px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-selection-touch-target-size: 42px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-selection-state-layer-size: 41px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-checkbox-container-size: 18px"));
@@ -307,6 +311,10 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-list-section-header-height: 32px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-list-section-header-horizontal-padding: 19px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-sheet-side-container-width: 46px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-sheet-side-container-max-width: 83px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-sheet-bottom-container-max-width: 84px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-sheet-header-content-spacing: 13px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-sheet-drag-handle-vertical-padding: 22px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-scrim-container-opacity: 0.31"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-avatar-container-size: 35px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-motion-duration-medium: 220ms"));
@@ -342,11 +350,15 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-menu .m3-menu-item"));
         assertTrue(tokenSet.toControlStyleRules().contains(":first-menu-item"));
         assertTrue(tokenSet.toControlStyleRules().contains(":last-menu-item"));
+        assertTrue(tokenSet.toControlStyleRules().contains(":active"));
+        assertTrue(tokenSet.toControlStyleRules().contains("-m3-menu-inner-corner-shape: 18px"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-container-shape: 12px"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-container-shape: 13px"));
+        assertTrue(tokenSet.toControlStyleRules().contains("-m3-container-shape: 17px"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-search-bar .m3-search-bar-trailing"));
         assertTrue(tokenSet.toControlStyleRules().contains("-fx-spacing: 5px"));
-        assertTrue(tokenSet.toControlStyleRules().contains(".m3-search-view .m3-list-item"));
+        assertTrue(tokenSet.toControlStyleRules().contains(".m3-search-view.m3-search-view:contained:docked"));
+        assertTrue(tokenSet.toControlStyleRules().contains(".m3-search-view.m3-search-view:divided:full-screen"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-container-shape: 18px"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-date-picker-container"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-picker-field-popup"));
@@ -357,6 +369,8 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-carousel-track"));
         assertFalse(tokenSet.toControlStyleRules().contains(".m3-carousel-selected-item"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-surface"));
+        assertTrue(tokenSet.toControlStyleRules().contains(".m3-side-sheet.m3-side-sheet:detached"));
+        assertTrue(tokenSet.toControlStyleRules().contains("-fx-max-width: 84px"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-bottom-sheet .m3-bottom-sheet-drag-handle"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-scrim.m3-scrim"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-wavelength: 41px"));
@@ -380,10 +394,18 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-track-width: 52px"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-pressed-handle-size: 28px"));
         assertFalse(tokenSet.toControlStyleRules().contains(".m3-slider:pressed .m3-state-layer"));
-        assertTrue(tokenSet.toControlStyleRules().contains(".m3-elevated-card:hover .m3-card-container"));
-        assertTrue(tokenSet.toControlStyleRules().contains(".m3-filled-card:hover .m3-card-container"));
-        assertTrue(tokenSet.toControlStyleRules().contains(".m3-outlined-card:hover .m3-card-container"));
-        assertTrue(tokenSet.toControlStyleRules().contains(".m3-outlined-card:focus-visible .m3-card-container"));
+        assertTrue(tokenSet.toControlStyleRules().contains(
+                ".m3-elevated-card:actionable:hover .m3-card-container"
+        ));
+        assertTrue(tokenSet.toControlStyleRules().contains(
+                ".m3-filled-card:actionable:hover .m3-card-container"
+        ));
+        assertTrue(tokenSet.toControlStyleRules().contains(
+                ".m3-outlined-card:actionable:hover .m3-card-container"
+        ));
+        assertTrue(tokenSet.toControlStyleRules().contains(
+                ".m3-outlined-card:actionable:focus-visible .m3-card-container"
+        ));
         assertTrue(tokenSet.toControlStyleRules().contains("-fx-opacity: 0.15"));
     }
 
@@ -477,10 +499,58 @@ final class M3TokenFactoryTest {
                 new M3ComponentTokens.TextAreaTokens(67.0, 9.0, 19.0, 20.0),
                 new M3ComponentTokens.FormTokens(1.0, 12.0, 11.0, 3.0, 4.0, 190.0, 25.0, 71.0, 5.0),
                 new M3ComponentTokens.ValidationSummaryTokens(10.0, 14.0, 4.0, 7.0, 9.0, 13.0),
-                new M3ComponentTokens.MenuTokens(7.0, 8.0, 43.0, 6.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0),
-                new M3ComponentTokens.SearchTokens(44.0, 22.0, 15.0, 11.0, 5.0, 21.0, 10.0, 2.0, 17.0, 18.0, 9.0, 45.0, 13.0, 14.0),
+                new M3ComponentTokens.MenuTokens(
+                        7.0,
+                        8.0,
+                        43.0,
+                        6.0,
+                        11.0,
+                        17.0,
+                        18.0,
+                        12.0,
+                        13.0,
+                        14.0,
+                        15.0,
+                        16.0
+                ),
+                new M3ComponentTokens.SearchTokens(
+                        44.0,
+                        22.0,
+                        15.0,
+                        11.0,
+                        4.0,
+                        5.0,
+                        16.0,
+                        17.0,
+                        6.0,
+                        21.0,
+                        10.0,
+                        2.0,
+                        18.0,
+                        7.0,
+                        8.0,
+                        360.0,
+                        720.0,
+                        240.0,
+                        72.0
+                ),
                 new M3ComponentTokens.PickerFieldTokens(46.0, 28.0, 37.0, 18.0, 19.0, 140.0, 7.0, 16.0),
-                new M3ComponentTokens.DatePickerTokens(29.0, 17.0, 13.0, 5.0, 46.0, 23.0, 47.0, 24.0, 6.0),
+                new M3ComponentTokens.DatePickerTokens(
+                        360.0,
+                        16.0,
+                        28.0,
+                        12.0,
+                        0.0,
+                        64.0,
+                        5.0,
+                        46.0,
+                        23.0,
+                        40.0,
+                        47.0,
+                        24.0,
+                        999.0,
+                        6.0
+                ),
                 new M3ComponentTokens.TimePickerTokens(
                         30.0,
                         18.0,
@@ -501,7 +571,19 @@ final class M3TokenFactoryTest {
                         96.0,
                         72.0
                 ),
-                new M3ComponentTokens.SheetTokens(46.0, 23.0, 47.0, 24.0, 25.0, 26.0, 27.0, 5.0),
+                new M3ComponentTokens.SheetTokens(
+                        46.0,
+                        83.0,
+                        23.0,
+                        84.0,
+                        24.0,
+                        25.0,
+                        26.0,
+                        13.0,
+                        22.0,
+                        27.0,
+                        5.0
+                ),
                 new M3ComponentTokens.ScrimTokens(0.31),
                 new M3ComponentTokens.SelectionTokens(
                         42.0,
@@ -732,7 +814,8 @@ final class M3TokenFactoryTest {
             String value = cssValue(declaration);
             boolean optionalProgressConfiguration = property.equals("-m3-progress-linear-wave-amplitude")
                     || property.equals("-m3-progress-circular-wave-amplitude");
-            if (!optionalProgressConfiguration && !controlStyleRules.contains(value)) {
+            boolean derivedDatePickerGeometry = property.equals("-m3-date-picker-day-state-layer-size");
+            if (!optionalProgressConfiguration && !derivedDatePickerGeometry && !controlStyleRules.contains(value)) {
                 missing.add(property + ": " + value);
             }
         }

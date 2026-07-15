@@ -98,7 +98,7 @@ final class M3ControlAccessibilityTest {
         assertEquals(AccessibleRole.TEXT, snackbar.getAccessibleRole());
         assertEquals("Saved Undo", snackbar.getAccessibleText());
         assertEquals(AccessibleRole.PARENT, new M3SnackbarHost().getAccessibleRole());
-        assertEquals(AccessibleRole.PARENT, new M3SideSheet().getAccessibleRole());
+        assertEquals(AccessibleRole.DIALOG, new M3SideSheet().getAccessibleRole());
         assertEquals(AccessibleRole.PARENT, new M3BottomSheet().getAccessibleRole());
         assertEquals(AccessibleRole.BUTTON, new M3Scrim().getAccessibleRole());
         assertEquals("Dismiss", new M3Scrim().getAccessibleText());

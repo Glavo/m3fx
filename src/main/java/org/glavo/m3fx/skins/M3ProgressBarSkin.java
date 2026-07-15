@@ -681,7 +681,7 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         updatingProgressAnimation = true;
         try {
             M3ProgressBar progressBar = getSkinnable();
-            reducedMotion = M3Animation.shouldReduceMotion(progressBar);
+            reducedMotion = !M3Animation.areAnimationsEnabled(progressBar);
             double progress = progressBar.getProgress();
             if (progress == M3ProgressBar.INDETERMINATE_PROGRESS) {
                 determinateAnimation.stop();

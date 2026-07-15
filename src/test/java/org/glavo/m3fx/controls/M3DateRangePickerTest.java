@@ -5,6 +5,7 @@ package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
 import javafx.css.PseudoClass;
+import javafx.geometry.Bounds;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
@@ -420,6 +421,23 @@ final class M3DateRangePickerTest {
             assertCellTextInkCentered(image, dayCellForDate(selected, LocalDate.of(2026, 5, 22)));
             assertCellTextInkCentered(image, dayCellForDate(bounded, LocalDate.of(2026, 5, 24)));
             assertCellTextInkCentered(image, dayCellForDate(bounded, LocalDate.of(2026, 5, 28)));
+
+            Bounds rangeMiddle = dayCellForDate(selected, LocalDate.of(2026, 5, 20))
+                    .localToScene(dayCellForDate(selected, LocalDate.of(2026, 5, 20)).getBoundsInLocal());
+            Bounds outsideRange = dayCellForDate(selected, LocalDate.of(2026, 5, 24))
+                    .localToScene(dayCellForDate(selected, LocalDate.of(2026, 5, 24)).getBoundsInLocal());
+            int rangeSampleX = (int) Math.round(rangeMiddle.getMaxX() - 1.0);
+            int rangeSampleY = (int) Math.round(rangeMiddle.getMinY() + rangeMiddle.getHeight() / 2.0);
+            int outsideSampleX = (int) Math.round(outsideRange.getMaxX() - 1.0);
+            int outsideSampleY = (int) Math.round(outsideRange.getMinY() + outsideRange.getHeight() / 2.0);
+            Color rangeBoundaryColor = image.getPixelReader().getColor(rangeSampleX, rangeSampleY);
+            Color outsideBoundaryColor = image.getPixelReader().getColor(outsideSampleX, outsideSampleY);
+            double boundaryColorDistance = Math.abs(rangeBoundaryColor.getRed() - outsideBoundaryColor.getRed())
+                    + Math.abs(rangeBoundaryColor.getGreen() - outsideBoundaryColor.getGreen())
+                    + Math.abs(rangeBoundaryColor.getBlue() - outsideBoundaryColor.getBlue());
+            assertTrue(boundaryColorDistance > 0.05,
+                    () -> "date range middle should fill the boundary between adjacent day targets: "
+                            + boundaryColorDistance);
             writeVisualSnapshot(image, java.nio.file.Path.of(
                     "build",
                     "reports",

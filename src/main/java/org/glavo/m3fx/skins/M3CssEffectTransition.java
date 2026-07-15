@@ -23,6 +23,12 @@ import org.jetbrains.annotations.Nullable;
 /// Animates CSS-resolved drop shadow effect changes for an interaction owner.
 @NotNullByDefault
 final class M3CssEffectTransition {
+    /// The pseudo-class used by controls that expose an explicit armed state.
+    private static final PseudoClass ARMED_PSEUDO_CLASS = PseudoClass.getPseudoClass("armed");
+
+    /// The pseudo-class used while a draggable component is represented as dragged.
+    private static final PseudoClass DRAGGED_PSEUDO_CLASS = PseudoClass.getPseudoClass("dragged");
+
     /// Handles owner interaction state changes.
     private final ChangeListener<Boolean> interactionStateListener =
             (observable, oldValue, newValue) -> animateEffectFromCss();
@@ -42,10 +48,16 @@ final class M3CssEffectTransition {
     /// The node that receives the animated effect.
     private final Node target;
 
-    /// Handles focus-visible pseudo-class changes produced by the shared interaction state layer.
+    /// Handles interaction pseudo-classes that do not have a dedicated JavaFX observable property.
     private final SetChangeListener<PseudoClass> pseudoClassStateListener = change -> {
-        if (M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS.equals(change.getElementAdded())
-                || M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS.equals(change.getElementRemoved())) {
+        @Nullable PseudoClass added = change.getElementAdded();
+        @Nullable PseudoClass removed = change.getElementRemoved();
+        if (M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS.equals(added)
+                || M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS.equals(removed)
+                || ARMED_PSEUDO_CLASS.equals(added)
+                || ARMED_PSEUDO_CLASS.equals(removed)
+                || DRAGGED_PSEUDO_CLASS.equals(added)
+                || DRAGGED_PSEUDO_CLASS.equals(removed)) {
             animateEffectFromCss();
         }
     };
@@ -100,8 +112,6 @@ final class M3CssEffectTransition {
         }
 
         if (owner.isDisabled()) {
-            animation.stop();
-            effectProperty.applyStyle(targetOrigin, null);
             return;
         }
 

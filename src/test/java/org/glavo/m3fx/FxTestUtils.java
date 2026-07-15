@@ -90,31 +90,31 @@ public final class FxTestUtils {
         throwIfFailed(failure.get());
     }
 
-    /// Runs a task with global Material animations disabled and restores previous global motion settings.
-    public static void runWithAnimationsDisabled(Runnable task) {
+    /// Runs a task with reduced motion requested globally and restores the previous setting.
+    public static void runWithReducedMotion(Runnable task) {
         runWithMotionSettingsPreserved(() -> {
-            M3MotionSettings.setAnimationsEnabled(false);
+            M3MotionSettings.setGlobalReducedMotionRequested(true);
             task.run();
         });
     }
 
     /// Runs a task with global Material motion settings restored afterward.
     public static void runWithMotionSettingsPreserved(Runnable task) {
-        boolean previousAnimationsEnabled = M3MotionSettings.areAnimationsEnabled();
+        boolean previousReducedMotionRequested = M3MotionSettings.isGlobalReducedMotionRequested();
         try {
             task.run();
         } finally {
-            M3MotionSettings.setAnimationsEnabled(previousAnimationsEnabled);
+            M3MotionSettings.setGlobalReducedMotionRequested(previousReducedMotionRequested);
         }
     }
 
     /// Runs a task with global Material motion settings restored afterward.
     private static void runWithMotionSettingsPreservedChecked(CheckedRunnable task) throws InterruptedException {
-        boolean previousAnimationsEnabled = M3MotionSettings.areAnimationsEnabled();
+        boolean previousReducedMotionRequested = M3MotionSettings.isGlobalReducedMotionRequested();
         try {
             task.run();
         } finally {
-            M3MotionSettings.setAnimationsEnabled(previousAnimationsEnabled);
+            M3MotionSettings.setGlobalReducedMotionRequested(previousReducedMotionRequested);
         }
     }
 
@@ -336,7 +336,7 @@ public final class FxTestUtils {
 
     /// Runs a task on the FX application thread with global Material animations disabled.
     public static void runOnFxThreadWithAnimationsDisabled(Runnable task) {
-        runOnFxThread(() -> runWithAnimationsDisabled(task));
+        runOnFxThread(() -> runWithReducedMotion(task));
     }
 
     /// Runs a task on the FX application thread with global Material motion settings restored afterward.

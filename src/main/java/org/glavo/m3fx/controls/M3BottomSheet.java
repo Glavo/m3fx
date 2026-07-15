@@ -11,6 +11,8 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -34,13 +36,15 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Objects;
 
 /// A Material Design 3 bottom sheet container.
 ///
 /// `M3BottomSheet` presents supporting content from the bottom edge of a view. It supports standard and modal
-/// sheet variants, headline text, action nodes, drag-handle visibility, scrim handling, keyboard dismissal, and
-/// Material entrance and exit motion.
+/// sheet variants, headline text, action nodes, an optional actionable drag handle, scrim handling, keyboard
+/// dismissal, and Material entrance and exit motion. Sheet height remains owned by the surrounding layout; an
+/// application that exposes multiple heights should use the drag-handle action to cycle those positions.
 ///
 /// See [Material Design bottom sheets](https://m3.material.io/components/bottom-sheets/overview).
 @NotNullByDefault
@@ -113,6 +117,10 @@ public class M3BottomSheet extends Control {
                 }
             };
 
+    /// The action invoked when the user selects the drag handle.
+    private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onDragHandleAction =
+            new SimpleObjectProperty<>(this, "onDragHandleAction");
+
     /// The mutable trailing action node list.
     private final ObservableList<Node> actions = M3ObservableLists.nonNullElementList("action");
 
@@ -121,6 +129,7 @@ public class M3BottomSheet extends Control {
             new M3AccessibleFocusNotifier(this, () -> isShown()
                     ? M3Accessible.currentOrFirstFocusTarget(
                             this,
+                            dragHandleFocusTarget(),
                             getContent(),
                             getActions()
                     )
@@ -291,6 +300,38 @@ public class M3BottomSheet extends Control {
         return dragHandleVisible;
     }
 
+    /// Returns the action handler invoked when the drag handle is selected.
+    ///
+    /// A non-null handler makes the visible drag handle focus traversable and exposes it as an accessibility button.
+    /// The handler is responsible for applying the next supported sheet height to this control or its layout owner.
+    ///
+    /// @return the drag-handle action handler, or `null` when the handle is not actionable
+    public final @Nullable EventHandler<ActionEvent> getOnDragHandleAction() {
+        return onDragHandleAction.get();
+    }
+
+    /// Sets the action handler invoked when the drag handle is selected.
+    ///
+    /// @param onDragHandleAction the drag-handle action handler, or `null` to make the handle non-actionable
+    public final void setOnDragHandleAction(@Nullable EventHandler<ActionEvent> onDragHandleAction) {
+        this.onDragHandleAction.set(onDragHandleAction);
+    }
+
+    /// Returns the drag-handle action property.
+    ///
+    /// @return the drag-handle action property
+    public final ObjectProperty<@Nullable EventHandler<ActionEvent>> onDragHandleActionProperty() {
+        return onDragHandleAction;
+    }
+
+    /// Invokes the drag-handle action when the sheet and handle are enabled and visible.
+    public final void fireDragHandleAction() {
+        @Nullable EventHandler<ActionEvent> handler = getOnDragHandleAction();
+        if (!isDisabled() && isDragHandleVisible() && handler != null) {
+            handler.handle(new ActionEvent(this, this));
+        }
+    }
+
     /// Returns the mutable trailing action node list.
     ///
     /// @return the mutable trailing action node list
@@ -322,10 +363,20 @@ public class M3BottomSheet extends Control {
             case CONTENTS -> getContent();
             case EXPANDED -> isShown();
             case FOCUS_NODE -> isShown()
-                    ? M3Accessible.currentOrFirstFocusTarget(this, getContent(), getActions())
+                    ? M3Accessible.currentOrFirstFocusTarget(
+                            this,
+                            dragHandleFocusTarget(),
+                            getContent(),
+                            getActions()
+                    )
                     : null;
-            case ITEM_COUNT -> M3Accessible.itemCount(getContent(), getActions());
-            case ITEM_AT_INDEX -> M3Accessible.itemAt(getContent(), getActions(), parameters);
+            case ITEM_COUNT -> M3Accessible.itemCount(dragHandleFocusTarget(), getContent(), getActions());
+            case ITEM_AT_INDEX -> M3Accessible.itemAt(
+                    dragHandleFocusTarget(),
+                    getContent(),
+                    getActions(),
+                    parameters
+            );
             case TEXT -> getHeadline();
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
@@ -418,7 +469,13 @@ public class M3BottomSheet extends Control {
 
     /// Returns the focus targets contained by this modal sheet in traversal order.
     private List<Node> modalFocusTargets() {
-        return M3FocusTraversal.focusTargetsInReachableTrees(getContent(), getActions());
+        ArrayList<Node> roots = new ArrayList<>(getActions().size() + 1);
+        @Nullable Node contentNode = getContent();
+        if (contentNode != null) {
+            roots.add(contentNode);
+        }
+        roots.addAll(getActions());
+        return M3FocusTraversal.focusTargetsInReachableTrees(dragHandleFocusTarget(), roots);
     }
 
     /// Processes shown state transitions and related focus bookkeeping.
@@ -458,11 +515,13 @@ public class M3BottomSheet extends Control {
         if (!M3Accessible.canReveal(this)) {
             return false;
         }
-        if (!isShown() && parameters.length > 0 && !M3Accessible.canShowItem(getContent(), getActions(), parameters)) {
+        @Nullable Node dragHandleTarget = dragHandleFocusTarget();
+        if (!isShown() && parameters.length > 0
+                && !M3Accessible.canShowItem(dragHandleTarget, getContent(), getActions(), parameters)) {
             return false;
         }
         show();
-        if (M3Accessible.showCurrentOrItem(this, getContent(), getActions(), parameters)) {
+        if (M3Accessible.showCurrentOrItem(this, dragHandleTarget, getContent(), getActions(), parameters)) {
             notifyFocusNodeChanged();
             return true;
         }
@@ -474,7 +533,12 @@ public class M3BottomSheet extends Control {
     /// @return `true` when the current target accepted focus
     final boolean focusAccessibleNode() {
         if (isShown() && M3Accessible.canReach(this)
-                && M3Accessible.showCurrentOrItem(this, getContent(), getActions())) {
+                && M3Accessible.showCurrentOrItem(
+                        this,
+                        dragHandleFocusTarget(),
+                        getContent(),
+                        getActions()
+                )) {
             notifyFocusNodeChanged();
             return true;
         }
@@ -485,6 +549,11 @@ public class M3BottomSheet extends Control {
     private void notifyFocusNodeChanged() {
         M3Accessible.notifyFocusNodeChanged(this);
         focusNotifier.refresh();
+    }
+
+    /// Returns the actionable drag-handle node created by the current skin, if available.
+    private @Nullable Node dragHandleFocusTarget() {
+        return lookup("." + DRAG_HANDLE_CONTAINER_STYLE_CLASS);
     }
 
     /// Stores the current scene focus owner before a modal sheet takes interaction.

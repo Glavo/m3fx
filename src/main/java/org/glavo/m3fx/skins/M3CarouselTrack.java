@@ -265,7 +265,7 @@ final class M3CarouselTrack extends HBox {
         M3CarouselLayout layout = owner.getCarouselLayout();
         boolean animate = !layout.preservesAuthoredWidths()
                 && layout != M3CarouselLayout.FULL_SCREEN
-                && !M3Animation.shouldReduceMotion(owner);
+                && M3Animation.areAnimationsEnabled(owner);
         if (trackingViewport && animate) {
             trackingViewport = false;
             if (normalizedNewSelection == toSelection && fromSelection != toSelection) {
@@ -305,7 +305,7 @@ final class M3CarouselTrack extends HBox {
         M3CarouselLayout layout = owner.getCarouselLayout();
         if (!layout.usesSnapScrolling()
                 || layout == M3CarouselLayout.FULL_SCREEN
-                || M3Animation.shouldReduceMotion(owner)
+                || !M3Animation.areAnimationsEnabled(owner)
                 || visibleWidth <= 0.0) {
             return;
         }
@@ -368,6 +368,47 @@ final class M3CarouselTrack extends HBox {
             }
         }
         return low;
+    }
+
+    /// Returns the selectable item nearest one normalized viewport position.
+    ///
+    /// Target positions are monotonic in layout order, so only the first enabled item on either side of the
+    /// insertion point can be nearest. This avoids recomputing every item's complete target geometry when direct
+    /// scrolling settles.
+    ///
+    /// @param position the normalized viewport position
+    /// @param visibleWidth the visible viewport width
+    /// @return the nearest selectable public item index, or `-1` when none participates
+    int nearestSelectableIndex(double position, double visibleWidth) {
+        prepareArrangement();
+        if (layoutItemCount == 0 || visibleWidth <= 0.0) {
+            return -1;
+        }
+
+        double normalizedPosition = clamp(position);
+        int insertionOrdinal = targetInsertionOrdinal(normalizedPosition, visibleWidth);
+        int leadingOrdinal = insertionOrdinal - 1;
+        while (leadingOrdinal >= 0 && owner.getItems().get(layoutIndices[leadingOrdinal]).isDisabled()) {
+            leadingOrdinal--;
+        }
+        int trailingOrdinal = insertionOrdinal;
+        while (trailingOrdinal < layoutItemCount
+                && owner.getItems().get(layoutIndices[trailingOrdinal]).isDisabled()) {
+            trailingOrdinal++;
+        }
+
+        if (leadingOrdinal < 0) {
+            return trailingOrdinal < layoutItemCount ? layoutIndices[trailingOrdinal] : -1;
+        }
+        if (trailingOrdinal >= layoutItemCount) {
+            return layoutIndices[leadingOrdinal];
+        }
+
+        int leadingIndex = layoutIndices[leadingOrdinal];
+        int trailingIndex = layoutIndices[trailingOrdinal];
+        double leadingDistance = Math.abs(targetHValue(leadingIndex, visibleWidth) - normalizedPosition);
+        double trailingDistance = Math.abs(targetHValue(trailingIndex, visibleWidth) - normalizedPosition);
+        return leadingDistance <= trailingDistance ? leadingIndex : trailingIndex;
     }
 
     /// Updates the viewport width used by arrangement solving.
@@ -623,12 +664,22 @@ final class M3CarouselTrack extends HBox {
             double maximumSmall,
             int itemCount
     ) {
-        int smallCount = available < minimumSmall * 2.0 ? 0 : 1;
+        int smallCount = itemCount >= 2 && available >= minimumSmall * 2.0 + spacing ? 1 : 0;
+        int mediumCount = itemCount >= 3
+                && smallCount > 0
+                && available >= minimumSmall * 3.0 + spacing * 2.0
+                ? 1
+                : 0;
         double targetSmall = clamp(targetLarge / 3.0, minimumSmall, maximumSmall);
         double targetMedium = (targetLarge + targetSmall) / 2.0;
-        double minimumAvailableLargeSpace = available - targetMedium - maximumSmall * smallCount;
+        double minimumAvailableLargeSpace = available
+                - targetMedium * mediumCount
+                - maximumSmall * smallCount;
         int minimumLargeCount = Math.max(1, (int) Math.floor(minimumAvailableLargeSpace / targetLarge));
         int maximumLargeCount = Math.max(minimumLargeCount, (int) Math.ceil(available / targetLarge));
+        int maximumLargeItems = Math.max(1, itemCount - smallCount - mediumCount);
+        maximumLargeCount = Math.min(maximumLargeCount, maximumLargeItems);
+        minimumLargeCount = Math.min(minimumLargeCount, maximumLargeCount);
         Arrangement arrangement = findLowestCostArrangement(
                 available,
                 spacing,
@@ -637,8 +688,8 @@ final class M3CarouselTrack extends HBox {
                 maximumSmall,
                 smallCount,
                 targetMedium,
-                1,
-                0,
+                mediumCount,
+                mediumCount,
                 targetLarge,
                 minimumLargeCount,
                 maximumLargeCount
@@ -654,7 +705,7 @@ final class M3CarouselTrack extends HBox {
         while (surplus-- > 0) {
             if (adjustedSmallCount > 0) {
                 adjustedSmallCount--;
-            } else if (adjustedMediumCount > 1) {
+            } else if (adjustedMediumCount > 0) {
                 adjustedMediumCount--;
             }
         }
@@ -690,9 +741,6 @@ final class M3CarouselTrack extends HBox {
         if (available < fullScreenThreshold) {
             smallCount = 0;
         }
-        double minimumAvailableLargeSpace = available - minimumSmall * smallCount;
-        int minimumLargeCount = Math.max(1, (int) Math.floor(minimumAvailableLargeSpace / targetLarge));
-        int maximumLargeCount = Math.max(minimumLargeCount, (int) Math.ceil(available / targetLarge));
         return findLowestCostArrangement(
                 available,
                 spacing,
@@ -704,8 +752,8 @@ final class M3CarouselTrack extends HBox {
                 0,
                 0,
                 targetLarge,
-                minimumLargeCount,
-                maximumLargeCount
+                1,
+                1
         );
     }
 
@@ -825,7 +873,7 @@ final class M3CarouselTrack extends HBox {
         if (layout == M3CarouselLayout.FULL_SCREEN) {
             return Math.max(MIN_LAYOUT_ITEM_WIDTH, viewportWidth);
         }
-        if (M3Animation.shouldReduceMotion(owner)) {
+        if (!M3Animation.areAnimationsEnabled(owner)) {
             return solvedLargeWidth;
         }
 
@@ -913,7 +961,7 @@ final class M3CarouselTrack extends HBox {
             return 0;
         }
         int ordinal = layoutOrdinals[index];
-        return ordinal >= 0 ? ordinal : 0;
+        return Math.max(ordinal, 0);
     }
     /// Computes total track width for an interpolated arrangement.
     private double totalWidth(
@@ -973,15 +1021,22 @@ final class M3CarouselTrack extends HBox {
 
     /// Returns logical leading padding for the selected layout.
     private double logicalLeadingPadding() {
-        return owner.getCarouselLayout() == M3CarouselLayout.FULL_SCREEN ? 0.0 : getInsets().getLeft();
+        if (owner.getCarouselLayout() == M3CarouselLayout.FULL_SCREEN
+                || !M3Animation.areAnimationsEnabled(owner)) {
+            return 0.0;
+        }
+        return M3NodeLayout.isRightToLeft(owner) ? getInsets().getRight() : getInsets().getLeft();
     }
 
     /// Returns logical trailing padding for the selected layout.
     private double logicalTrailingPadding() {
         M3CarouselLayout layout = owner.getCarouselLayout();
-        return layout == M3CarouselLayout.FULL_SCREEN || layout.preservesAuthoredWidths()
-                ? 0.0
-                : getInsets().getRight();
+        if (layout == M3CarouselLayout.FULL_SCREEN
+                || layout.preservesAuthoredWidths()
+                || !M3Animation.areAnimationsEnabled(owner)) {
+            return 0.0;
+        }
+        return M3NodeLayout.isRightToLeft(owner) ? getInsets().getLeft() : getInsets().getRight();
     }
 
     /// Returns top padding for the selected layout.

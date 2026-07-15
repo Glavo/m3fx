@@ -21,6 +21,7 @@ import org.glavo.m3fx.controls.M3Carousel;
 import org.glavo.m3fx.controls.M3CarouselLayout;
 import org.glavo.m3fx.controls.M3ScrollPanes;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default skin for [M3Carousel].
@@ -37,6 +38,9 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
 
     /// The reusable selected-item scroll transition.
     private final M3DoubleTransition scrollAnimation = new M3DoubleTransition(viewport.hvalueProperty());
+
+    /// Refreshes keyline geometry and active scrolling when inherited reduced-motion settings change.
+    private final M3MotionSettingsObserver motionSettingsObserver;
 
     /// Delay after user scrolling before a snapping layout selects its nearest focal item.
     private final PauseTransition scrollSettleDelay = new PauseTransition(Duration.millis(120.0));
@@ -138,6 +142,7 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
     /// @param control the carousel controlled by this skin
     public M3CarouselSkin(M3Carousel control) {
         super(control);
+        motionSettingsObserver = new M3MotionSettingsObserver(control, this::refreshMotionSettings);
         installViewport();
         getChildren().setAll(viewport);
         control.getItems().addListener(itemsListener);
@@ -157,6 +162,7 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
         scrollSettleDelay.stop();
         scrollSettleDelay.setOnFinished(null);
         stopScrollAnimation();
+        motionSettingsObserver.dispose();
         track.dispose();
         M3ScrollPanes.disableSmoothScrolling(viewport);
         getSkinnable().getItems().removeListener(itemsListener);
@@ -269,6 +275,18 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
         getSkinnable().requestLayout();
     }
 
+    /// Settles animations and recomputes keylines after the effective motion policy changes.
+    private void refreshMotionSettings() {
+        cancelViewportInteraction();
+        stopScrollAnimation();
+        track.refreshLayoutStrategy();
+        pendingSelectedScroll = false;
+        pendingSelectedScrollAnimated = false;
+        if (deferSelectedItemScrollIfNeeded(false)) {
+            requestSelectedScroll(false);
+        }
+    }
+
     /// Schedules selected item scrolling for the next layout pass.
     private void requestSelectedScroll(boolean animated) {
         pendingSelectedScroll = true;
@@ -357,20 +375,7 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
             return;
         }
 
-        int nearestIndex = -1;
-        double nearestDistance = Double.POSITIVE_INFINITY;
-        for (int index = 0; index < carousel.getItems().size(); index++) {
-            Node item = carousel.getItems().get(index);
-            if (!item.isVisible() || item.isDisabled() || !item.isManaged()) {
-                continue;
-            }
-            double target = track.targetHValue(index, viewportWidth);
-            double distance = Math.abs(target - viewport.getHvalue());
-            if (distance < nearestDistance) {
-                nearestDistance = distance;
-                nearestIndex = index;
-            }
-        }
+        int nearestIndex = track.nearestSelectableIndex(viewport.getHvalue(), viewportWidth);
 
         if (nearestIndex < 0) {
             return;

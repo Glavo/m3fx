@@ -5,9 +5,11 @@ package org.glavo.m3fx.controls;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.AccessibleAction;
@@ -26,6 +28,7 @@ import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
+import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3SearchViewSkin;
@@ -52,6 +55,30 @@ public class M3SearchView extends Control {
     /// The style class applied to the result container.
     public static final String RESULTS_STYLE_CLASS = "m3-search-view-results";
 
+    /// The style class applied to the divider used by divided search views.
+    public static final String DIVIDER_STYLE_CLASS = "m3-search-view-divider";
+
+    /// The default visual treatment.
+    private static final M3SearchViewStyle DEFAULT_VIEW_STYLE = M3SearchViewStyle.CONTAINED;
+
+    /// The default window-relative layout.
+    private static final M3SearchViewLayout DEFAULT_VIEW_LAYOUT = M3SearchViewLayout.DOCKED;
+
+    /// The active pseudo-class used while result content is shown.
+    private static final PseudoClass ACTIVE_PSEUDO_CLASS = PseudoClass.getPseudoClass("active");
+
+    /// The contained visual-treatment pseudo-class.
+    private static final PseudoClass CONTAINED_PSEUDO_CLASS = PseudoClass.getPseudoClass("contained");
+
+    /// The divided visual-treatment pseudo-class.
+    private static final PseudoClass DIVIDED_PSEUDO_CLASS = PseudoClass.getPseudoClass("divided");
+
+    /// The docked layout pseudo-class.
+    private static final PseudoClass DOCKED_PSEUDO_CLASS = PseudoClass.getPseudoClass("docked");
+
+    /// The full-screen layout pseudo-class.
+    private static final PseudoClass FULL_SCREEN_PSEUDO_CLASS = PseudoClass.getPseudoClass("full-screen");
+
     /// The vertical offset used while search results are hidden.
     private static final double HIDDEN_RESULTS_TRANSLATE_Y = -8.0;
 
@@ -63,6 +90,36 @@ public class M3SearchView extends Control {
 
     /// The embedded search bar.
     private final M3SearchBar searchBar = new M3SearchBar();
+
+    // Backing property for the public visual-treatment API.
+    private final ObjectProperty<M3SearchViewStyle> viewStyle =
+            new SimpleObjectProperty<>(this, "viewStyle", DEFAULT_VIEW_STYLE) {
+                /// Updates treatment pseudo-classes when the value changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(DEFAULT_VIEW_STYLE);
+                        return;
+                    }
+                    updateViewStylePseudoClasses();
+                    requestLayout();
+                }
+            };
+
+    // Backing property for the public window-relative layout API.
+    private final ObjectProperty<M3SearchViewLayout> viewLayout =
+            new SimpleObjectProperty<>(this, "viewLayout", DEFAULT_VIEW_LAYOUT) {
+                /// Updates layout pseudo-classes when the value changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(DEFAULT_VIEW_LAYOUT);
+                        return;
+                    }
+                    updateViewLayoutPseudoClasses();
+                    requestLayout();
+                }
+            };
 
     /// The search result container.
     private final VBox resultsBox = new VBox();
@@ -87,6 +144,53 @@ public class M3SearchView extends Control {
         setPromptText(promptText);
     }
 
+    /// Returns the visual treatment used by this search view.
+    ///
+    /// @return the current search view style
+    public final M3SearchViewStyle getViewStyle() {
+        return viewStyle.get();
+    }
+
+    /// Sets the visual treatment used by this search view.
+    ///
+    /// Changing the treatment updates the container surfaces, divider, spacing, and shapes without changing the
+    /// active state or search text.
+    ///
+    /// @param viewStyle the search view style
+    public final void setViewStyle(M3SearchViewStyle viewStyle) {
+        this.viewStyle.set(Objects.requireNonNull(viewStyle, "viewStyle"));
+    }
+
+    /// Returns the visual-treatment property.
+    ///
+    /// @return the search view style property
+    public final ObjectProperty<M3SearchViewStyle> viewStyleProperty() {
+        return viewStyle;
+    }
+
+    /// Returns the window-relative layout used by this search view.
+    ///
+    /// @return the current search view layout
+    public final M3SearchViewLayout getViewLayout() {
+        return viewLayout.get();
+    }
+
+    /// Sets the window-relative layout used by this search view.
+    ///
+    /// Full-screen layout removes the outer container shape and allows the control to fill its parent. Docked
+    /// layout restores the bounded Material size and shape constraints.
+    ///
+    /// @param viewLayout the search view layout
+    public final void setViewLayout(M3SearchViewLayout viewLayout) {
+        this.viewLayout.set(Objects.requireNonNull(viewLayout, "viewLayout"));
+    }
+
+    /// Returns the window-relative layout property.
+    ///
+    /// @return the search view layout property
+    public final ObjectProperty<M3SearchViewLayout> viewLayoutProperty() {
+        return viewLayout;
+    }
 
 
     /// Returns the mutable result node list.
@@ -246,7 +350,7 @@ public class M3SearchView extends Control {
 
     /// Returns accessibility attributes for search results and active state.
     ///
-    /// @param attribute the requested accessibility attribute
+    /// @param attribute  the requested accessibility attribute
     /// @param parameters the optional attribute parameters
     /// @return the attribute value, or `null` when unavailable
     @Override
@@ -264,7 +368,7 @@ public class M3SearchView extends Control {
 
     /// Executes search text, focus, and active-state accessibility actions.
     ///
-    /// @param action the requested accessibility action
+    /// @param action     the requested accessibility action
     /// @param parameters the optional action parameters
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
@@ -303,6 +407,9 @@ public class M3SearchView extends Control {
         setAccessibleRole(AccessibleRole.PARENT);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleResult);
+        updateViewStylePseudoClasses();
+        updateViewLayoutPseudoClasses();
+        installDefaultBackAction();
         resultsBox.getStyleClass().add(RESULTS_STYLE_CLASS);
         resultsVisibilityAnimation.setOnFinished(event -> {
             if (!isActive()) {
@@ -311,6 +418,7 @@ public class M3SearchView extends Control {
         });
         searchBar.activeProperty().addListener((observable, oldValue, newValue) -> {
             boolean restoreSearchBarFocus = !newValue && focusedResultIndex() >= 0;
+            pseudoClassStateChanged(ACTIVE_PSEUDO_CLASS, newValue);
             notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
             if (restoreSearchBarFocus) {
                 focusSearchBar();
@@ -327,8 +435,37 @@ public class M3SearchView extends Control {
         });
         addEventFilter(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
         setActive(true);
+        pseudoClassStateChanged(ACTIVE_PSEUDO_CLASS, isActive());
         applyResultsVisibilityImmediately(isActive());
         focusNotifier.start();
+    }
+
+    /// Installs the default back action used by an active search view.
+    private void installDefaultBackAction() {
+        M3InternalIcon icon = new M3InternalIcon(
+                M3InternalIcon.Glyph.ARROW_BACK,
+                M3InternalIcon.ColorRole.ON_SURFACE
+        );
+        M3IconButton backButton = new M3IconButton(icon);
+        backButton.setContainerWidth(48.0);
+        backButton.setContainerHeight(48.0);
+        backButton.setAccessibleText("Back");
+        backButton.setOnAction(event -> deactivate());
+        setLeading(backButton);
+    }
+
+    /// Updates the mutually exclusive treatment pseudo-classes.
+    private void updateViewStylePseudoClasses() {
+        M3SearchViewStyle style = getViewStyle();
+        pseudoClassStateChanged(CONTAINED_PSEUDO_CLASS, style == M3SearchViewStyle.CONTAINED);
+        pseudoClassStateChanged(DIVIDED_PSEUDO_CLASS, style == M3SearchViewStyle.DIVIDED);
+    }
+
+    /// Updates the mutually exclusive window-layout pseudo-classes.
+    private void updateViewLayoutPseudoClasses() {
+        M3SearchViewLayout layout = getViewLayout();
+        pseudoClassStateChanged(DOCKED_PSEUDO_CLASS, layout == M3SearchViewLayout.DOCKED);
+        pseudoClassStateChanged(FULL_SCREEN_PSEUDO_CLASS, layout == M3SearchViewLayout.FULL_SCREEN);
     }
 
     /// Handles keyboard movement between the search editor and result items.
@@ -626,13 +763,13 @@ public class M3SearchView extends Control {
 
     /// Returns the current accessibility focus node.
     ///
-    /// @return the focused result or search bar item when focus is inside this view, otherwise the search editor
+    /// @return the focused result or search bar item, otherwise the search bar's default focus target
     private Node accessibleFocusNode() {
         @Nullable Node focusNode = currentFocusNode();
-        return focusNode == null ? searchBar.editor() : focusNode;
+        return focusNode == null ? defaultSearchBarFocusNode() : focusNode;
     }
 
-    /// Focuses the current accessibility focus node, or the embedded editor when focus is outside this search view.
+    /// Focuses the current accessibility focus node, or the search bar's default target when focus is outside.
     ///
     /// @return `true` when the target accepted focus
     final boolean focusAccessibleNode() {
@@ -641,11 +778,17 @@ public class M3SearchView extends Control {
         }
         @Nullable Node focusNode = currentFocusNode();
         activate();
-        if (M3Accessible.showItem(this, focusNode == null ? searchBar.editor() : focusNode)) {
+        if (M3Accessible.showItem(this, focusNode == null ? defaultSearchBarFocusNode() : focusNode)) {
             notifyFocusNodeChanged();
             return true;
         }
         return false;
+    }
+
+    /// Returns the embedded search bar's first accessible focus target.
+    private Node defaultSearchBarFocusNode() {
+        @Nullable Object focusNode = searchBar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE);
+        return focusNode instanceof Node node ? node : searchBar.editor();
     }
 
     /// Returns the current focused child target, or `null` when focus is outside this search view.

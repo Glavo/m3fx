@@ -418,11 +418,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double textAreaHeight = density.apply(112.0);
         double menuItemHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 44.0 : 48.0);
         double searchBarHeight = density.apply(56.0);
-        double searchViewResultHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 56.0);
         double pickerNavigationButtonSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 48.0 : 40.0);
-        double datePickerDayCellSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 44.0 : 40.0);
-        double sideSheetWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 384.0 : 360.0);
-        double bottomSheetHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 360.0 : 320.0);
+        double sideSheetWidth = density.apply(256.0);
+        double sideSheetMaxWidth = density.apply(400.0);
+        double bottomSheetMaxWidth = density.apply(640.0);
         double chipHeight = density.apply(32.0);
         double badgeSmallSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 8.0 : 6.0);
         double badgeLargeHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 18.0 : 16.0);
@@ -475,33 +474,47 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double menuContainerPadding = density.apply(expressive ? 2.0 : 8.0);
         double menuItemContainerShape = shapeTokens.extraSmall();
         double menuSelectedItemContainerShape = expressive ? shapeTokens.medium() : menuItemContainerShape;
+        double menuActiveItemContainerShape = expressive ? shapeTokens.large() : menuItemContainerShape;
         double menuFirstItemContainerShape = expressive ? shapeTokens.medium() : menuItemContainerShape;
         double menuLastItemContainerShape = expressive ? shapeTokens.medium() : menuItemContainerShape;
         double menuItemHorizontalPadding = density.apply(expressive ? 16.0 : 12.0);
         double menuItemContentSpacing = density.apply(12.0);
         double menuItemSpacing = density.apply(expressive ? 2.0 : 0.0);
-        double searchBarHorizontalPadding = density.apply(expressive ? 24.0 : 16.0);
-        double searchBarContentSpacing = density.apply(expressive ? 4.0 : 16.0);
+        double searchBarHorizontalPadding = density.apply(16.0);
+        double searchBarContentSpacing = density.apply(16.0);
+        double searchContainedBarHorizontalPadding = density.apply(4.0);
+        double searchContainedBarContentSpacing = density.apply(4.0);
+        double searchDividedBarHorizontalPadding = density.apply(16.0);
+        double searchDividedBarContentSpacing = density.apply(16.0);
         double searchBarTrailingActionsGap = density.apply(0.0);
-        double searchViewContainerShape = expressive ? shapeTokens.extraLarge() : 28.0;
-        double searchViewHorizontalPadding = density.apply(expressive ? 12.0 : 0.0);
-        double searchViewBarResultsGap = density.apply(expressive ? 2.0 : 0.0);
-        double searchViewResultsShape = expressive ? shapeTokens.medium() : 0.0;
-        double searchResultContainerShape = expressive ? shapeTokens.medium() : 0.0;
-        double searchViewResultPadding = density.apply(expressive ? 12.0 : 8.0);
-        double searchResultHorizontalPadding = density.apply(expressive ? 20.0 : 16.0);
-        double searchResultContentSpacing = density.apply(expressive ? 16.0 : 12.0);
+        double searchViewContainerShape = shapeTokens.extraLarge();
+        double searchViewHorizontalPadding = density.apply(12.0);
+        double searchViewBarResultsGap = density.apply(2.0);
+        double searchViewResultsShape = shapeTokens.medium();
+        double searchViewDockedBottomPadding = density.apply(4.0);
+        double searchViewFullScreenBottomPadding = density.apply(16.0);
+        double searchViewMinWidth = density.apply(360.0);
+        double searchViewMaxWidth = density.apply(720.0);
+        double searchViewDockedMinHeight = density.apply(240.0);
+        double searchViewFullScreenDividedHeaderHeight = density.apply(72.0);
         double pickerFieldPopupShape = expressive ? shapeTokens.extraLarge() : 28.0;
         double pickerFieldPopupPadding = density.apply(expressive ? 20.0 : 16.0);
         double pickerFieldPopupSpacing = density.apply(expressive ? 20.0 : 16.0);
         double pickerFieldPresetListWidth = density.apply(expressive ? 148.0 : 132.0);
         double pickerFieldPresetListSpacing = density.apply(expressive ? 8.0 : 6.0);
         double pickerFieldPresetButtonHorizontalPadding = density.apply(expressive ? 16.0 : 12.0);
-        double datePickerContainerShape = expressive ? shapeTokens.extraLarge() : 28.0;
-        double datePickerContainerPadding = density.apply(expressive ? 20.0 : 16.0);
-        double datePickerContainerSpacing = density.apply(expressive ? 16.0 : 12.0);
-        double datePickerHeaderSpacing = density.apply(expressive ? 8.0 : 4.0);
-        double datePickerGridGap = density.apply(expressive ? 6.0 : 4.0);
+        double datePickerContainerWidth = density.apply(360.0);
+        double datePickerDockedContainerShape = shapeTokens.large();
+        double datePickerModalContainerShape = shapeTokens.extraLarge();
+        double datePickerHorizontalPadding = density.apply(12.0);
+        double datePickerContainerSpacing = density.apply(0.0);
+        double datePickerHeaderHeight = density.apply(64.0);
+        double datePickerHeaderSpacing = density.apply(0.0);
+        double datePickerNavigationButtonSize = density.apply(40.0);
+        double datePickerMenuButtonHeight = density.apply(40.0);
+        double datePickerDayCellSize = density.apply(48.0);
+        double datePickerDayStateLayerSize = density.apply(40.0);
+        double datePickerGridGap = density.apply(0.0);
         double timePickerContainerShape = shapeTokens.extraLarge();
         double timePickerContainerPadding = 24.0;
         double timePickerContainerSpacing = 24.0;
@@ -520,10 +533,12 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double timePickerDialTrackWidth = 2.0;
         double timePickerInputFieldWidth = 96.0;
         double timePickerInputFieldHeight = 72.0;
-        double sheetContentPadding = density.apply(expressive ? 28.0 : 24.0);
-        double sheetHeaderPadding = density.apply(expressive ? 28.0 : 24.0);
-        double sheetDragHandleWidth = density.apply(expressive ? 36.0 : 32.0);
-        double sheetDragHandleHeight = density.apply(expressive ? 5.0 : 4.0);
+        double sheetContentPadding = density.apply(24.0);
+        double sheetHeaderPadding = density.apply(24.0);
+        double sheetHeaderContentSpacing = density.apply(12.0);
+        double sheetDragHandleVerticalPadding = density.apply(22.0);
+        double sheetDragHandleWidth = density.apply(32.0);
+        double sheetDragHandleHeight = density.apply(4.0);
         double cardContainerShape = expressive ? shapeTokens.large() : shapeTokens.medium();
         double cardContentPadding = density.apply(expressive ? 20.0 : 16.0);
         double dialogContentPadding = density.apply(24.0);
@@ -897,6 +912,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         menuItemHeight,
                         menuItemContainerShape,
                         menuSelectedItemContainerShape,
+                        menuActiveItemContainerShape,
+                        menuItemContainerShape,
                         menuFirstItemContainerShape,
                         menuLastItemContainerShape,
                         menuItemHorizontalPadding,
@@ -908,16 +925,21 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         shapeTokens.full(),
                         searchBarHorizontalPadding,
                         searchBarContentSpacing,
+                        searchContainedBarHorizontalPadding,
+                        searchContainedBarContentSpacing,
+                        searchDividedBarHorizontalPadding,
+                        searchDividedBarContentSpacing,
                         searchBarTrailingActionsGap,
                         searchViewContainerShape,
                         searchViewHorizontalPadding,
                         searchViewBarResultsGap,
                         searchViewResultsShape,
-                        searchResultContainerShape,
-                        searchViewResultPadding,
-                        searchViewResultHeight,
-                        searchResultHorizontalPadding,
-                        searchResultContentSpacing
+                        searchViewDockedBottomPadding,
+                        searchViewFullScreenBottomPadding,
+                        searchViewMinWidth,
+                        searchViewMaxWidth,
+                        searchViewDockedMinHeight,
+                        searchViewFullScreenDividedHeaderHeight
                 ),
                 new PickerFieldTokens(
                         pickerNavigationButtonSize,
@@ -930,13 +952,18 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         pickerFieldPresetButtonHorizontalPadding
                 ),
                 new DatePickerTokens(
-                        datePickerContainerShape,
-                        datePickerContainerPadding,
+                        datePickerContainerWidth,
+                        datePickerDockedContainerShape,
+                        datePickerModalContainerShape,
+                        datePickerHorizontalPadding,
                         datePickerContainerSpacing,
+                        datePickerHeaderHeight,
                         datePickerHeaderSpacing,
-                        pickerNavigationButtonSize,
+                        datePickerNavigationButtonSize,
                         shapeTokens.full(),
+                        datePickerMenuButtonHeight,
                         datePickerDayCellSize,
+                        datePickerDayStateLayerSize,
                         shapeTokens.full(),
                         datePickerGridGap
                 ),
@@ -962,11 +989,14 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                 ),
                 new SheetTokens(
                         sideSheetWidth,
-                        shapeTokens.extraLarge(),
-                        bottomSheetHeight,
-                        shapeTokens.extraLarge(),
+                        sideSheetMaxWidth,
+                        16.0,
+                        bottomSheetMaxWidth,
+                        28.0,
                         sheetContentPadding,
                         sheetHeaderPadding,
+                        sheetHeaderContentSpacing,
+                        sheetDragHandleVerticalPadding,
                         sheetDragHandleWidth,
                         sheetDragHandleHeight
                 ),
@@ -1495,7 +1525,6 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendSearchViewRule(builder, search());
         appendSearchViewContentRule(builder, search());
         appendSearchViewResultsRule(builder, search());
-        appendSearchViewResultRule(builder, search());
         appendPickerFieldRule(builder, pickerField());
         appendPickerFieldOpenButtonRule(builder, pickerField());
         appendPickerFieldPresetContentRule(builder, pickerField());
@@ -1915,6 +1944,16 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         );
         M3TokenCss.append(
                 builder,
+                "-m3-menu-active-item-container-shape",
+                M3TokenCss.pixels(tokens.activeItemContainerShape())
+        );
+        M3TokenCss.append(
+                builder,
+                "-m3-menu-inner-corner-shape",
+                M3TokenCss.pixels(tokens.innerCornerShape())
+        );
+        M3TokenCss.append(
+                builder,
                 "-m3-menu-first-item-container-shape",
                 M3TokenCss.pixels(tokens.firstItemContainerShape())
         );
@@ -1934,16 +1973,21 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-search-bar-container-shape", M3TokenCss.pixels(tokens.barContainerShape()));
         M3TokenCss.append(builder, "-m3-search-bar-horizontal-padding", M3TokenCss.pixels(tokens.barHorizontalPadding()));
         M3TokenCss.append(builder, "-m3-search-bar-content-spacing", M3TokenCss.pixels(tokens.barContentSpacing()));
+        M3TokenCss.append(builder, "-m3-search-contained-bar-horizontal-padding", M3TokenCss.pixels(tokens.containedBarHorizontalPadding()));
+        M3TokenCss.append(builder, "-m3-search-contained-bar-content-spacing", M3TokenCss.pixels(tokens.containedBarContentSpacing()));
+        M3TokenCss.append(builder, "-m3-search-divided-bar-horizontal-padding", M3TokenCss.pixels(tokens.dividedBarHorizontalPadding()));
+        M3TokenCss.append(builder, "-m3-search-divided-bar-content-spacing", M3TokenCss.pixels(tokens.dividedBarContentSpacing()));
         M3TokenCss.append(builder, "-m3-search-bar-trailing-actions-gap", M3TokenCss.pixels(tokens.barTrailingActionsGap()));
         M3TokenCss.append(builder, "-m3-search-view-container-shape", M3TokenCss.pixels(tokens.viewContainerShape()));
         M3TokenCss.append(builder, "-m3-search-view-horizontal-padding", M3TokenCss.pixels(tokens.viewHorizontalPadding()));
         M3TokenCss.append(builder, "-m3-search-view-bar-results-gap", M3TokenCss.pixels(tokens.viewBarResultsGap()));
         M3TokenCss.append(builder, "-m3-search-view-results-shape", M3TokenCss.pixels(tokens.viewResultsShape()));
-        M3TokenCss.append(builder, "-m3-search-view-result-container-shape", M3TokenCss.pixels(tokens.resultContainerShape()));
-        M3TokenCss.append(builder, "-m3-search-view-result-padding", M3TokenCss.pixels(tokens.viewResultPadding()));
-        M3TokenCss.append(builder, "-m3-search-view-result-height", M3TokenCss.pixels(tokens.resultHeight()));
-        M3TokenCss.append(builder, "-m3-search-view-result-horizontal-padding", M3TokenCss.pixels(tokens.resultHorizontalPadding()));
-        M3TokenCss.append(builder, "-m3-search-view-result-content-spacing", M3TokenCss.pixels(tokens.resultContentSpacing()));
+        M3TokenCss.append(builder, "-m3-search-view-docked-bottom-padding", M3TokenCss.pixels(tokens.viewDockedBottomPadding()));
+        M3TokenCss.append(builder, "-m3-search-view-full-screen-bottom-padding", M3TokenCss.pixels(tokens.viewFullScreenBottomPadding()));
+        M3TokenCss.append(builder, "-m3-search-view-min-width", M3TokenCss.pixels(tokens.viewMinWidth()));
+        M3TokenCss.append(builder, "-m3-search-view-max-width", M3TokenCss.pixels(tokens.viewMaxWidth()));
+        M3TokenCss.append(builder, "-m3-search-view-docked-min-height", M3TokenCss.pixels(tokens.viewDockedMinHeight()));
+        M3TokenCss.append(builder, "-m3-search-view-full-screen-divided-header-height", M3TokenCss.pixels(tokens.viewFullScreenDividedHeaderHeight()));
     }
 
     /// Appends picker field token declarations.
@@ -1964,13 +2008,18 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Appends date picker token declarations.
     private static void append(StringBuilder builder, DatePickerTokens tokens) {
-        M3TokenCss.append(builder, "-m3-date-picker-container-shape", M3TokenCss.pixels(tokens.containerShape()));
-        M3TokenCss.append(builder, "-m3-date-picker-container-padding", M3TokenCss.pixels(tokens.containerPadding()));
+        M3TokenCss.append(builder, "-m3-date-picker-container-width", M3TokenCss.pixels(tokens.containerWidth()));
+        M3TokenCss.append(builder, "-m3-date-picker-docked-container-shape", M3TokenCss.pixels(tokens.dockedContainerShape()));
+        M3TokenCss.append(builder, "-m3-date-picker-modal-container-shape", M3TokenCss.pixels(tokens.modalContainerShape()));
+        M3TokenCss.append(builder, "-m3-date-picker-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
         M3TokenCss.append(builder, "-m3-date-picker-container-spacing", M3TokenCss.pixels(tokens.containerSpacing()));
+        M3TokenCss.append(builder, "-m3-date-picker-header-height", M3TokenCss.pixels(tokens.headerHeight()));
         M3TokenCss.append(builder, "-m3-date-picker-header-spacing", M3TokenCss.pixels(tokens.headerSpacing()));
         M3TokenCss.append(builder, "-m3-date-picker-navigation-button-size", M3TokenCss.pixels(tokens.navigationButtonSize()));
         M3TokenCss.append(builder, "-m3-date-picker-navigation-button-shape", M3TokenCss.pixels(tokens.navigationButtonShape()));
+        M3TokenCss.append(builder, "-m3-date-picker-menu-button-height", M3TokenCss.pixels(tokens.menuButtonHeight()));
         M3TokenCss.append(builder, "-m3-date-picker-day-cell-size", M3TokenCss.pixels(tokens.dayCellSize()));
+        M3TokenCss.append(builder, "-m3-date-picker-day-state-layer-size", M3TokenCss.pixels(tokens.dayStateLayerSize()));
         M3TokenCss.append(builder, "-m3-date-picker-day-cell-shape", M3TokenCss.pixels(tokens.dayCellShape()));
         M3TokenCss.append(builder, "-m3-date-picker-grid-gap", M3TokenCss.pixels(tokens.gridGap()));
     }
@@ -2000,11 +2049,14 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Appends sheet token declarations.
     private static void append(StringBuilder builder, SheetTokens tokens) {
         M3TokenCss.append(builder, "-m3-sheet-side-container-width", M3TokenCss.pixels(tokens.sideContainerWidth()));
+        M3TokenCss.append(builder, "-m3-sheet-side-container-max-width", M3TokenCss.pixels(tokens.sideContainerMaxWidth()));
         M3TokenCss.append(builder, "-m3-sheet-side-container-shape", M3TokenCss.pixels(tokens.sideContainerShape()));
-        M3TokenCss.append(builder, "-m3-sheet-bottom-container-height", M3TokenCss.pixels(tokens.bottomContainerHeight()));
+        M3TokenCss.append(builder, "-m3-sheet-bottom-container-max-width", M3TokenCss.pixels(tokens.bottomContainerMaxWidth()));
         M3TokenCss.append(builder, "-m3-sheet-bottom-container-shape", M3TokenCss.pixels(tokens.bottomContainerShape()));
         M3TokenCss.append(builder, "-m3-sheet-content-padding", M3TokenCss.pixels(tokens.contentPadding()));
         M3TokenCss.append(builder, "-m3-sheet-header-padding", M3TokenCss.pixels(tokens.headerPadding()));
+        M3TokenCss.append(builder, "-m3-sheet-header-content-spacing", M3TokenCss.pixels(tokens.headerContentSpacing()));
+        M3TokenCss.append(builder, "-m3-sheet-drag-handle-vertical-padding", M3TokenCss.pixels(tokens.dragHandleVerticalPadding()));
         M3TokenCss.append(builder, "-m3-sheet-drag-handle-width", M3TokenCss.pixels(tokens.dragHandleWidth()));
         M3TokenCss.append(builder, "-m3-sheet-drag-handle-height", M3TokenCss.pixels(tokens.dragHandleHeight()));
     }
@@ -3139,6 +3191,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendDeclaration(builder, "-m3-two-line-height", M3TokenCss.pixels(tokens.itemHeight()));
         appendDeclaration(builder, "-m3-three-line-height", M3TokenCss.pixels(tokens.itemHeight()));
         appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.itemContainerShape()));
+        appendDeclaration(builder, "-m3-menu-inner-corner-shape", M3TokenCss.pixels(tokens.innerCornerShape()));
         appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.itemHorizontalPadding()));
         appendDeclaration(builder, "-m3-vertical-padding", M3TokenCss.pixels(0.0));
         appendDeclaration(builder, "-m3-content-spacing", M3TokenCss.pixels(tokens.itemContentSpacing()));
@@ -3159,6 +3212,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     private static void appendSelectedMenuItemRule(StringBuilder builder, MenuTokens tokens) {
         beginRule(builder, ".m3-menu .m3-menu-item.m3-menu-item:selected");
         appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.selectedItemContainerShape()));
+        endRule(builder);
+
+        beginRule(builder, ".m3-menu .m3-menu-item.m3-menu-item:active");
+        appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.activeItemContainerShape()));
         endRule(builder);
     }
 
@@ -3188,40 +3245,101 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Appends a search view token CSS rule.
     private static void appendSearchViewRule(StringBuilder builder, SearchTokens tokens) {
-        beginRule(builder, ".m3-search-view.m3-search-view");
+        beginRule(builder, ".m3-search-view.m3-search-view:docked");
+        appendDeclaration(builder, "-fx-min-width", M3TokenCss.pixels(tokens.viewMinWidth()));
+        appendDeclaration(builder, "-fx-max-width", M3TokenCss.pixels(tokens.viewMaxWidth()));
+        endRule(builder);
+
+        beginRule(builder, ".m3-search-view.m3-search-view:docked:active");
+        appendDeclaration(builder, "-fx-min-height", M3TokenCss.pixels(tokens.viewDockedMinHeight()));
+        endRule(builder);
+
+        beginRule(builder, ".m3-search-view.m3-search-view:full-screen");
+        appendDeclaration(builder, "-fx-min-width", "-1");
+        appendDeclaration(builder, "-fx-max-width", "-1");
+        appendDeclaration(builder, "-fx-min-height", "-1");
+        endRule(builder);
+
+        beginRule(builder, ".m3-search-view.m3-search-view:contained:docked");
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.viewContainerShape()));
         String horizontalPadding = M3TokenCss.pixels(tokens.viewHorizontalPadding());
         appendDeclaration(
                 builder,
                 "-fx-padding",
-                "0 " + horizontalPadding + " " + M3TokenCss.pixels(tokens.viewResultPadding()) + " " + horizontalPadding
+                "0 " + horizontalPadding + " "
+                        + M3TokenCss.pixels(tokens.viewDockedBottomPadding()) + " " + horizontalPadding
         );
+        endRule(builder);
+
+        beginRule(builder, ".m3-search-view.m3-search-view:contained:full-screen");
+        appendDeclaration(builder, "-fx-background-radius", "0");
+        appendDeclaration(
+                builder,
+                "-fx-padding",
+                "0 " + horizontalPadding + " "
+                        + M3TokenCss.pixels(tokens.viewFullScreenBottomPadding()) + " " + horizontalPadding
+        );
+        endRule(builder);
+
+        beginRule(builder, ".m3-search-view.m3-search-view:divided:docked");
+        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.viewContainerShape()));
+        appendDeclaration(builder, "-fx-padding", "0");
+        endRule(builder);
+
+        beginRule(builder, ".m3-search-view.m3-search-view:divided:full-screen");
+        appendDeclaration(builder, "-fx-background-radius", "0");
+        appendDeclaration(builder, "-fx-padding", "0");
+        endRule(builder);
+
+        beginRule(builder, ".m3-search-view:contained .m3-search-bar.m3-search-bar");
+        appendDeclaration(
+                builder,
+                "-fx-padding",
+                "0 " + M3TokenCss.pixels(tokens.containedBarHorizontalPadding())
+        );
+        endRule(builder);
+
+        beginRule(builder, ".m3-search-view:divided .m3-search-bar.m3-search-bar");
+        appendDeclaration(
+                builder,
+                "-fx-padding",
+                "0 " + M3TokenCss.pixels(tokens.dividedBarHorizontalPadding())
+        );
+        endRule(builder);
+
+        beginRule(builder, ".m3-search-view:divided:full-screen .m3-search-bar.m3-search-bar");
+        appendDeclaration(builder, "-fx-min-height", M3TokenCss.pixels(tokens.viewFullScreenDividedHeaderHeight()));
+        appendDeclaration(builder, "-fx-pref-height", M3TokenCss.pixels(tokens.viewFullScreenDividedHeaderHeight()));
         endRule(builder);
     }
 
     /// Appends a search view content token CSS rule.
     private static void appendSearchViewContentRule(StringBuilder builder, SearchTokens tokens) {
-        beginRule(builder, ".m3-search-view .m3-search-view-content");
+        beginRule(builder, ".m3-search-view:contained .m3-search-view-content");
         appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.viewBarResultsGap()));
+        endRule(builder);
+
+        beginRule(builder, ".m3-search-view:divided .m3-search-view-content");
+        appendDeclaration(builder, "-fx-spacing", "0");
+        endRule(builder);
+
+        beginRule(builder, ".m3-search-view:contained .m3-search-bar-content");
+        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.containedBarContentSpacing()));
+        endRule(builder);
+
+        beginRule(builder, ".m3-search-view:divided .m3-search-bar-content");
+        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.dividedBarContentSpacing()));
         endRule(builder);
     }
 
     /// Appends a search view results container token CSS rule.
     private static void appendSearchViewResultsRule(StringBuilder builder, SearchTokens tokens) {
-        beginRule(builder, ".m3-search-view .m3-search-view-results");
+        beginRule(builder, ".m3-search-view:contained .m3-search-view-results");
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.viewResultsShape()));
         endRule(builder);
-    }
 
-    /// Appends search result item token CSS rules.
-    private static void appendSearchViewResultRule(StringBuilder builder, SearchTokens tokens) {
-        beginRule(builder, ".m3-search-view .m3-list-item.m3-list-item");
-        appendDeclaration(builder, "-m3-one-line-height", M3TokenCss.pixels(tokens.resultHeight()));
-        appendDeclaration(builder, "-m3-two-line-height", M3TokenCss.pixels(tokens.resultHeight() + 16.0));
-        appendDeclaration(builder, "-m3-three-line-height", M3TokenCss.pixels(tokens.resultHeight() + 32.0));
-        appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.resultContainerShape()));
-        appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.resultHorizontalPadding()));
-        appendDeclaration(builder, "-m3-content-spacing", M3TokenCss.pixels(tokens.resultContentSpacing()));
+        beginRule(builder, ".m3-search-view:divided .m3-search-view-results");
+        appendDeclaration(builder, "-fx-background-radius", "0");
         endRule(builder);
     }
 
@@ -3291,16 +3409,52 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Appends a date picker container token CSS rule.
     private static void appendDatePickerRule(StringBuilder builder, DatePickerTokens tokens) {
         beginRule(builder, ".m3-date-picker-container");
-        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.containerShape()));
-        appendDeclaration(builder, "-fx-padding", M3TokenCss.pixels(tokens.containerPadding()));
+        String width = M3TokenCss.pixels(tokens.containerWidth());
+        appendDeclaration(builder, "-fx-min-width", width);
+        appendDeclaration(builder, "-fx-pref-width", width);
+        appendDeclaration(builder, "-fx-max-width", width);
+        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.dockedContainerShape()));
+        appendDeclaration(
+                builder,
+                "-fx-padding",
+                "0 " + M3TokenCss.pixels(tokens.horizontalPadding())
+        );
         appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.containerSpacing()));
+        endRule(builder);
+        beginRule(builder, ".m3-date-picker:modal .m3-date-picker-container");
+        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.modalContainerShape()));
+        endRule(builder);
+        beginRule(builder, ".m3-date-range-picker .m3-date-picker-container");
+        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(0.0));
         endRule(builder);
     }
 
     /// Appends a date picker header token CSS rule.
     private static void appendDatePickerHeaderRule(StringBuilder builder, DatePickerTokens tokens) {
         beginRule(builder, ".m3-date-picker-header");
+        String height = M3TokenCss.pixels(tokens.headerHeight());
+        appendDeclaration(builder, "-fx-min-height", height);
+        appendDeclaration(builder, "-fx-pref-height", height);
+        appendDeclaration(builder, "-fx-max-height", height);
         appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.headerSpacing()));
+        endRule(builder);
+        beginRule(builder, ".m3-date-picker-header-section");
+        appendDeclaration(builder, "-fx-spacing", M3TokenCss.pixels(tokens.headerSpacing()));
+        endRule(builder);
+        beginRule(builder, ".m3-date-picker-menu-button");
+        appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(tokens.menuButtonHeight()));
+        appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.navigationButtonShape()));
+        appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(4.0));
+        endRule(builder);
+        beginRule(builder, ".m3-date-picker-month-menu-button");
+        appendDeclaration(builder, "-fx-min-width", M3TokenCss.pixels(80.0));
+        appendDeclaration(builder, "-fx-pref-width", M3TokenCss.pixels(80.0));
+        appendDeclaration(builder, "-fx-max-width", M3TokenCss.pixels(80.0));
+        endRule(builder);
+        beginRule(builder, ".m3-date-picker-year-menu-button");
+        appendDeclaration(builder, "-fx-min-width", M3TokenCss.pixels(96.0));
+        appendDeclaration(builder, "-fx-pref-width", M3TokenCss.pixels(96.0));
+        appendDeclaration(builder, "-fx-max-width", M3TokenCss.pixels(96.0));
         endRule(builder);
     }
 
@@ -3338,6 +3492,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     private static void appendDatePickerCellRule(StringBuilder builder, DatePickerTokens tokens) {
         String size = M3TokenCss.pixels(tokens.dayCellSize());
         String shape = M3TokenCss.pixels(tokens.dayCellShape());
+        String stateLayerInset = M3TokenCss.pixels(
+                Math.max(0.0, (tokens.dayCellSize() - tokens.dayStateLayerSize()) / 2.0)
+        );
         beginRule(builder, ".m3-date-picker-day-cell, .m3-date-picker-weekday-label");
         appendDeclaration(builder, "-fx-min-width", size);
         appendDeclaration(builder, "-fx-pref-width", size);
@@ -3348,34 +3505,71 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         endRule(builder);
         beginRule(builder, ".m3-date-picker-day-cell");
         appendDeclaration(builder, "-fx-background-radius", shape);
+        appendDeclaration(builder, "-fx-background-insets", stateLayerInset);
         appendDeclaration(builder, "-fx-border-radius", shape);
+        appendDeclaration(builder, "-fx-border-insets", stateLayerInset);
         endRule(builder);
     }
 
     /// Appends date range cell shape token CSS rules.
     private static void appendDatePickerCellShapeRules(StringBuilder builder, DatePickerTokens tokens) {
         String shape = M3TokenCss.pixels(tokens.dayCellShape());
-        appendDatePickerRangeShapeRule(
-                builder,
-                ".m3-date-picker-day-cell.m3-date-range-picker-range-start-day",
-                shape + " 0 0 " + shape
+        String inset = M3TokenCss.pixels(
+                Math.max(0.0, (tokens.dayCellSize() - tokens.dayStateLayerSize()) / 2.0)
         );
-        appendDatePickerRangeShapeRule(
-                builder,
-                ".m3-date-picker-day-cell.m3-date-range-picker-range-end-day",
-                "0 " + shape + " " + shape + " 0"
-        );
-        appendDatePickerRangeShapeRule(
-                builder,
-                ".m3-date-picker-day-cell.m3-date-range-picker-range-single-day",
-                shape
-        );
-    }
+        String halfCell = M3TokenCss.pixels(tokens.dayCellSize() / 2.0);
 
-    /// Appends one date range cell shape token CSS rule.
-    private static void appendDatePickerRangeShapeRule(StringBuilder builder, String selector, String radius) {
-        beginRule(builder, selector);
-        appendDeclaration(builder, "-fx-background-radius", radius);
+        beginRule(builder, ".m3-date-picker-day-cell.m3-date-range-picker-range-middle-day");
+        appendDeclaration(builder, "-fx-background-insets", inset + " 0");
+        appendDeclaration(builder, "-fx-background-radius", "0");
+        endRule(builder);
+        beginRule(
+                builder,
+                ".m3-date-picker-day-cell.m3-date-range-picker-range-middle-day"
+                        + ".m3-date-range-picker-range-row-start-day"
+        );
+        appendDeclaration(builder, "-fx-background-radius", shape + " 0 0 " + shape);
+        endRule(builder);
+        beginRule(
+                builder,
+                ".m3-date-picker-day-cell.m3-date-range-picker-range-middle-day"
+                        + ".m3-date-range-picker-range-row-end-day"
+        );
+        appendDeclaration(builder, "-fx-background-radius", "0 " + shape + " " + shape + " 0");
+        endRule(builder);
+        beginRule(
+                builder,
+                ".m3-date-picker-day-cell:rtl.m3-date-range-picker-range-middle-day"
+                        + ".m3-date-range-picker-range-row-start-day"
+        );
+        appendDeclaration(builder, "-fx-background-radius", "0 " + shape + " " + shape + " 0");
+        endRule(builder);
+        beginRule(
+                builder,
+                ".m3-date-picker-day-cell:rtl.m3-date-range-picker-range-middle-day"
+                        + ".m3-date-range-picker-range-row-end-day"
+        );
+        appendDeclaration(builder, "-fx-background-radius", shape + " 0 0 " + shape);
+        endRule(builder);
+        beginRule(builder, ".m3-date-picker-day-cell.m3-date-range-picker-range-start-day");
+        appendDeclaration(builder, "-fx-background-insets", inset + " 0 " + inset + " " + halfCell + ", " + inset);
+        appendDeclaration(builder, "-fx-background-radius", "0, " + shape);
+        endRule(builder);
+        beginRule(builder, ".m3-date-picker-day-cell.m3-date-range-picker-range-end-day");
+        appendDeclaration(builder, "-fx-background-insets", inset + " " + halfCell + " " + inset + " 0, " + inset);
+        appendDeclaration(builder, "-fx-background-radius", "0, " + shape);
+        endRule(builder);
+        beginRule(builder, ".m3-date-picker-day-cell:rtl.m3-date-range-picker-range-start-day");
+        appendDeclaration(builder, "-fx-background-insets", inset + " " + halfCell + " " + inset + " 0, " + inset);
+        appendDeclaration(builder, "-fx-background-radius", "0, " + shape);
+        endRule(builder);
+        beginRule(builder, ".m3-date-picker-day-cell:rtl.m3-date-range-picker-range-end-day");
+        appendDeclaration(builder, "-fx-background-insets", inset + " 0 " + inset + " " + halfCell + ", " + inset);
+        appendDeclaration(builder, "-fx-background-radius", "0, " + shape);
+        endRule(builder);
+        beginRule(builder, ".m3-date-picker-day-cell.m3-date-range-picker-range-single-day");
+        appendDeclaration(builder, "-fx-background-insets", inset);
+        appendDeclaration(builder, "-fx-background-radius", shape);
         endRule(builder);
     }
 
@@ -3494,8 +3688,22 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     private static void appendSideSheetRule(StringBuilder builder, SheetTokens tokens) {
         String radius = M3TokenCss.pixels(tokens.sideContainerShape());
         beginRule(builder, ".m3-side-sheet.m3-side-sheet");
+        appendDeclaration(builder, "-fx-min-width", M3TokenCss.pixels(tokens.sideContainerWidth()));
         appendDeclaration(builder, "-fx-pref-width", M3TokenCss.pixels(tokens.sideContainerWidth()));
+        appendDeclaration(builder, "-fx-max-width", M3TokenCss.pixels(tokens.sideContainerMaxWidth()));
+        appendDeclaration(builder, "-fx-background-radius", "0");
+        endRule(builder);
+
+        beginRule(builder, ".m3-side-sheet.m3-modal-sheet");
         appendDeclaration(builder, "-fx-background-radius", radius + " 0 0 " + radius);
+        endRule(builder);
+
+        beginRule(builder, ".m3-side-sheet.m3-modal-sheet:rtl");
+        appendDeclaration(builder, "-fx-background-radius", "0 " + radius + " " + radius + " 0");
+        endRule(builder);
+
+        beginRule(builder, ".m3-side-sheet.m3-side-sheet:detached");
+        appendDeclaration(builder, "-fx-background-radius", radius);
         endRule(builder);
     }
 
@@ -3503,7 +3711,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     private static void appendBottomSheetRule(StringBuilder builder, SheetTokens tokens) {
         String radius = M3TokenCss.pixels(tokens.bottomContainerShape());
         beginRule(builder, ".m3-bottom-sheet.m3-bottom-sheet");
-        appendDeclaration(builder, "-fx-pref-height", M3TokenCss.pixels(tokens.bottomContainerHeight()));
+        appendDeclaration(builder, "-fx-max-width", M3TokenCss.pixels(tokens.bottomContainerMaxWidth()));
         appendDeclaration(builder, "-fx-background-radius", radius + " " + radius + " 0 0");
         endRule(builder);
     }
@@ -3511,7 +3719,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// Appends a sheet header token CSS rule.
     private static void appendSheetHeaderRule(StringBuilder builder, SheetTokens tokens) {
         String padding = M3TokenCss.pixels(tokens.headerPadding());
-        String bottomPadding = M3TokenCss.pixels(tokens.headerPadding() / 3.0);
+        String bottomPadding = M3TokenCss.pixels(tokens.headerContentSpacing());
         beginRule(builder, ".m3-side-sheet .m3-sheet-header, .m3-bottom-sheet .m3-sheet-header");
         appendDeclaration(builder, "-fx-padding", padding + " " + padding + " " + bottomPadding + " " + padding);
         endRule(builder);
@@ -3528,6 +3736,14 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     private static void appendBottomSheetDragHandleRule(StringBuilder builder, SheetTokens tokens) {
         String handleWidth = M3TokenCss.pixels(tokens.dragHandleWidth());
         String handleHeight = M3TokenCss.pixels(tokens.dragHandleHeight());
+        beginRule(builder, ".m3-bottom-sheet .m3-bottom-sheet-drag-handle-container");
+        appendDeclaration(
+                builder,
+                "-fx-padding",
+                M3TokenCss.pixels(tokens.dragHandleVerticalPadding()) + " 0"
+        );
+        endRule(builder);
+
         beginRule(builder, ".m3-bottom-sheet .m3-bottom-sheet-drag-handle");
         appendDeclaration(builder, "-fx-min-width", handleWidth);
         appendDeclaration(builder, "-fx-pref-width", handleWidth);
@@ -3724,7 +3940,6 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         beginRule(builder, ".m3-surface");
         appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.containerShape()));
         appendDeclaration(builder, "-m3-content-padding", M3TokenCss.pixels(tokens.contentPadding()));
-        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.containerShape()));
         endRule(builder);
     }
 
@@ -4356,14 +4571,14 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Tokens shared by floating action button sizes.
     ///
-    /// @param small the deprecated baseline small FAB tokens
-    /// @param regular the regular FAB and small extended FAB tokens
-    /// @param medium the medium FAB tokens
-    /// @param large the large FAB tokens
-    /// @param menuItem the 56-pixel labeled FAB menu item tokens
-    /// @param menuCloseButton the 56-pixel FAB menu close button tokens
+    /// @param small             the deprecated baseline small FAB tokens
+    /// @param regular           the regular FAB and small extended FAB tokens
+    /// @param medium            the medium FAB tokens
+    /// @param large             the large FAB tokens
+    /// @param menuItem          the 56-pixel labeled FAB menu item tokens
+    /// @param menuCloseButton   the 56-pixel FAB menu close button tokens
     /// @param menuActionSpacing the vertical spacing between expanded FAB menu actions
-    /// @param menuCloseSpacing the vertical spacing between the last action and close button
+    /// @param menuCloseSpacing  the vertical spacing between the last action and close button
     @NotNullByDefault
     record FabTokens(
             FabSizeTokens small,
@@ -4390,12 +4605,12 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Size-dependent metrics shared by icon-only and extended floating action buttons.
     ///
-    /// @param containerSize the square icon-only container size and extended container height
+    /// @param containerSize  the square icon-only container size and extended container height
     /// @param containerShape the container corner radius
-    /// @param iconSize the icon size
-    /// @param leadingSpace the extended button's logical leading space
+    /// @param iconSize       the icon size
+    /// @param leadingSpace   the extended button's logical leading space
     /// @param iconLabelSpace the space between an icon and label
-    /// @param trailingSpace the extended button's logical trailing space
+    /// @param trailingSpace  the extended button's logical trailing space
     @NotNullByDefault
     record FabSizeTokens(
             double containerSize,
@@ -4709,6 +4924,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param itemHeight                 the one-line menu item height
     /// @param itemContainerShape         the menu item state container corner radius
     /// @param selectedItemContainerShape the selected menu item state container corner radius
+    /// @param activeItemContainerShape   the active submenu-owner container corner radius
+    /// @param innerCornerShape           the inner-corner radius at grouped-menu boundaries
     /// @param firstItemContainerShape    the first direct menu item state container corner radius
     /// @param lastItemContainerShape     the last direct menu item state container corner radius
     /// @param itemHorizontalPadding      the horizontal item content padding
@@ -4721,6 +4938,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double itemHeight,
             double itemContainerShape,
             double selectedItemContainerShape,
+            double activeItemContainerShape,
+            double innerCornerShape,
             double firstItemContainerShape,
             double lastItemContainerShape,
             double itemHorizontalPadding,
@@ -4734,6 +4953,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(itemHeight, "itemHeight");
             validateNonNegative(itemContainerShape, "itemContainerShape");
             validateNonNegative(selectedItemContainerShape, "selectedItemContainerShape");
+            validateNonNegative(activeItemContainerShape, "activeItemContainerShape");
+            validateNonNegative(innerCornerShape, "innerCornerShape");
             validateNonNegative(firstItemContainerShape, "firstItemContainerShape");
             validateNonNegative(lastItemContainerShape, "lastItemContainerShape");
             validateNonNegative(itemHorizontalPadding, "itemHorizontalPadding");
@@ -4744,36 +4965,46 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Component tokens for search components.
     ///
-    /// @param barHeight               the search bar container height
-    /// @param barContainerShape       the search bar container corner radius
-    /// @param barHorizontalPadding    the search bar horizontal content padding
-    /// @param barContentSpacing       the spacing between search bar content regions
-    /// @param barTrailingActionsGap   the spacing between trailing search bar actions
-    /// @param viewContainerShape      the expanded search view corner radius
-    /// @param viewHorizontalPadding   the horizontal padding around contained search view content
-    /// @param viewBarResultsGap       the gap between the embedded search bar and results container
-    /// @param viewResultsShape        the search results container corner radius
-    /// @param resultContainerShape    the search result row state container corner radius
-    /// @param viewResultPadding       the padding below search results
-    /// @param resultHeight            the one-line search result item height
-    /// @param resultHorizontalPadding the horizontal search result row padding
-    /// @param resultContentSpacing    the spacing between search result content regions
+    /// @param barHeight                            the search bar container height
+    /// @param barContainerShape                    the search bar container corner radius
+    /// @param barHorizontalPadding                 the standalone search bar horizontal content padding
+    /// @param barContentSpacing                    the standalone spacing between search bar content regions
+    /// @param containedBarHorizontalPadding        the contained search view bar horizontal padding
+    /// @param containedBarContentSpacing           the contained search view bar content spacing
+    /// @param dividedBarHorizontalPadding          the divided search view header horizontal padding
+    /// @param dividedBarContentSpacing             the divided search view header content spacing
+    /// @param barTrailingActionsGap                the spacing between trailing search bar actions
+    /// @param viewContainerShape                   the docked search view corner radius
+    /// @param viewHorizontalPadding                the horizontal inset around contained search surfaces
+    /// @param viewBarResultsGap                    the gap between contained bar and result surfaces
+    /// @param viewResultsShape                     the contained search results surface corner radius
+    /// @param viewDockedBottomPadding              the bottom inset in a docked contained search view
+    /// @param viewFullScreenBottomPadding          the bottom inset in a full-screen contained search view
+    /// @param viewMinWidth                         the minimum docked search view width
+    /// @param viewMaxWidth                         the maximum docked search view width
+    /// @param viewDockedMinHeight                  the minimum active docked search view height
+    /// @param viewFullScreenDividedHeaderHeight    the divided full-screen search header height
     @NotNullByDefault
     record SearchTokens(
             double barHeight,
             double barContainerShape,
             double barHorizontalPadding,
             double barContentSpacing,
+            double containedBarHorizontalPadding,
+            double containedBarContentSpacing,
+            double dividedBarHorizontalPadding,
+            double dividedBarContentSpacing,
             double barTrailingActionsGap,
             double viewContainerShape,
             double viewHorizontalPadding,
             double viewBarResultsGap,
             double viewResultsShape,
-            double resultContainerShape,
-            double viewResultPadding,
-            double resultHeight,
-            double resultHorizontalPadding,
-            double resultContentSpacing
+            double viewDockedBottomPadding,
+            double viewFullScreenBottomPadding,
+            double viewMinWidth,
+            double viewMaxWidth,
+            double viewDockedMinHeight,
+            double viewFullScreenDividedHeaderHeight
     ) {
         /// Validates search tokens.
         public SearchTokens {
@@ -4781,16 +5012,21 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(barContainerShape, "barContainerShape");
             validateNonNegative(barHorizontalPadding, "barHorizontalPadding");
             validateNonNegative(barContentSpacing, "barContentSpacing");
+            validateNonNegative(containedBarHorizontalPadding, "containedBarHorizontalPadding");
+            validateNonNegative(containedBarContentSpacing, "containedBarContentSpacing");
+            validateNonNegative(dividedBarHorizontalPadding, "dividedBarHorizontalPadding");
+            validateNonNegative(dividedBarContentSpacing, "dividedBarContentSpacing");
             validateNonNegative(barTrailingActionsGap, "barTrailingActionsGap");
             validateNonNegative(viewContainerShape, "viewContainerShape");
             validateNonNegative(viewHorizontalPadding, "viewHorizontalPadding");
             validateNonNegative(viewBarResultsGap, "viewBarResultsGap");
             validateNonNegative(viewResultsShape, "viewResultsShape");
-            validateNonNegative(resultContainerShape, "resultContainerShape");
-            validateNonNegative(viewResultPadding, "viewResultPadding");
-            validateNonNegative(resultHeight, "resultHeight");
-            validateNonNegative(resultHorizontalPadding, "resultHorizontalPadding");
-            validateNonNegative(resultContentSpacing, "resultContentSpacing");
+            validateNonNegative(viewDockedBottomPadding, "viewDockedBottomPadding");
+            validateNonNegative(viewFullScreenBottomPadding, "viewFullScreenBottomPadding");
+            validateNonNegative(viewMinWidth, "viewMinWidth");
+            validateNonNegative(viewMaxWidth, "viewMaxWidth");
+            validateNonNegative(viewDockedMinHeight, "viewDockedMinHeight");
+            validateNonNegative(viewFullScreenDividedHeaderHeight, "viewFullScreenDividedHeaderHeight");
         }
     }
 
@@ -4830,36 +5066,51 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Component tokens for date pickers.
     ///
-    /// @param containerShape        the picker container radius
-    /// @param containerPadding      the picker container padding
+    /// @param containerWidth        the docked and modal calendar width
+    /// @param dockedContainerShape  the docked calendar container radius
+    /// @param modalContainerShape   the modal calendar container radius
+    /// @param horizontalPadding     the horizontal padding around calendar targets
     /// @param containerSpacing      the spacing between container rows
-    /// @param headerSpacing         the spacing between header controls
-    /// @param navigationButtonSize  the previous and next month button size
-    /// @param navigationButtonShape the previous and next month button radius
-    /// @param dayCellSize           the day and weekday cell size
+    /// @param headerHeight          the month and year navigation header height
+    /// @param headerSpacing         the spacing between adjacent header controls
+    /// @param navigationButtonSize  the previous and next navigation button target size
+    /// @param navigationButtonShape the previous and next navigation button radius
+    /// @param menuButtonHeight      the month and year menu button height
+    /// @param dayCellSize           the day and weekday target size
+    /// @param dayStateLayerSize     the selected day and state-layer diameter
     /// @param dayCellShape          the selected day and range endpoint radius
-    /// @param gridGap               the day grid gap
+    /// @param gridGap               the gap between adjacent day targets
     @NotNullByDefault
     record DatePickerTokens(
-            double containerShape,
-            double containerPadding,
+            double containerWidth,
+            double dockedContainerShape,
+            double modalContainerShape,
+            double horizontalPadding,
             double containerSpacing,
+            double headerHeight,
             double headerSpacing,
             double navigationButtonSize,
             double navigationButtonShape,
+            double menuButtonHeight,
             double dayCellSize,
+            double dayStateLayerSize,
             double dayCellShape,
             double gridGap
     ) {
         /// Validates date picker tokens.
         public DatePickerTokens {
-            validateNonNegative(containerShape, "containerShape");
-            validateNonNegative(containerPadding, "containerPadding");
+            validateNonNegative(containerWidth, "containerWidth");
+            validateNonNegative(dockedContainerShape, "dockedContainerShape");
+            validateNonNegative(modalContainerShape, "modalContainerShape");
+            validateNonNegative(horizontalPadding, "horizontalPadding");
             validateNonNegative(containerSpacing, "containerSpacing");
+            validateNonNegative(headerHeight, "headerHeight");
             validateNonNegative(headerSpacing, "headerSpacing");
             validateNonNegative(navigationButtonSize, "navigationButtonSize");
             validateNonNegative(navigationButtonShape, "navigationButtonShape");
+            validateNonNegative(menuButtonHeight, "menuButtonHeight");
             validateNonNegative(dayCellSize, "dayCellSize");
+            validateNonNegative(dayStateLayerSize, "dayStateLayerSize");
             validateNonNegative(dayCellShape, "dayCellShape");
             validateNonNegative(gridGap, "gridGap");
         }
@@ -4931,35 +5182,49 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Component tokens for sheet containers.
     ///
-    /// @param sideContainerWidth    the side sheet container width
-    /// @param sideContainerShape    the side sheet leading corner radius
-    /// @param bottomContainerHeight the bottom sheet container height
-    /// @param bottomContainerShape  the bottom sheet top corner radius
-    /// @param contentPadding        the sheet content padding
-    /// @param headerPadding         the sheet header edge padding
-    /// @param dragHandleWidth       the bottom sheet drag handle width
-    /// @param dragHandleHeight      the bottom sheet drag handle height
+    /// @param sideContainerWidth       the default side sheet container width
+    /// @param sideContainerMaxWidth    the maximum side sheet container width
+    /// @param sideContainerShape       the modal or detached side sheet corner radius
+    /// @param bottomContainerMaxWidth  the maximum bottom sheet container width
+    /// @param bottomContainerShape     the bottom sheet top corner radius
+    /// @param contentPadding           the sheet content padding
+    /// @param headerPadding            the sheet header edge padding
+    /// @param headerContentSpacing     the spacing below the sheet header
+    /// @param dragHandleVerticalPadding the bottom sheet drag handle top and bottom padding
+    /// @param dragHandleWidth          the bottom sheet drag handle width
+    /// @param dragHandleHeight         the bottom sheet drag handle height
     @NotNullByDefault
     record SheetTokens(
             double sideContainerWidth,
+            double sideContainerMaxWidth,
             double sideContainerShape,
-            double bottomContainerHeight,
+            double bottomContainerMaxWidth,
             double bottomContainerShape,
             double contentPadding,
             double headerPadding,
+            double headerContentSpacing,
+            double dragHandleVerticalPadding,
             double dragHandleWidth,
             double dragHandleHeight
     ) {
         /// Validates sheet tokens.
         public SheetTokens {
             validateNonNegative(sideContainerWidth, "sideContainerWidth");
+            validateNonNegative(sideContainerMaxWidth, "sideContainerMaxWidth");
             validateNonNegative(sideContainerShape, "sideContainerShape");
-            validateNonNegative(bottomContainerHeight, "bottomContainerHeight");
+            validateNonNegative(bottomContainerMaxWidth, "bottomContainerMaxWidth");
             validateNonNegative(bottomContainerShape, "bottomContainerShape");
             validateNonNegative(contentPadding, "contentPadding");
             validateNonNegative(headerPadding, "headerPadding");
+            validateNonNegative(headerContentSpacing, "headerContentSpacing");
+            validateNonNegative(dragHandleVerticalPadding, "dragHandleVerticalPadding");
             validateNonNegative(dragHandleWidth, "dragHandleWidth");
             validateNonNegative(dragHandleHeight, "dragHandleHeight");
+            if (sideContainerMaxWidth < sideContainerWidth) {
+                throw new IllegalArgumentException(
+                        "sideContainerMaxWidth must be greater than or equal to sideContainerWidth"
+                );
+            }
         }
     }
 
@@ -5097,10 +5362,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param stopIndicatorSize          the diameter of the inactive-track stop indicator
     /// @param stopIndicatorTrailingSpace the distance from the outer track edge to the nearest stop-indicator edge
     /// @param thumbWidth                 the slider handle short-side width while enabled or hovered
-    /// @param focusedThumbWidth         the slider handle short-side width while keyboard focused
-    /// @param pressedThumbWidth         the slider handle short-side width while pressed
-    /// @param thumbTrackGap             the gap between the handle and each adjacent track segment
-    /// @param touchTargetSize           the preferred slider touch target size
+    /// @param focusedThumbWidth          the slider handle short-side width while keyboard focused
+    /// @param pressedThumbWidth          the slider handle short-side width while pressed
+    /// @param thumbTrackGap              the gap between the handle and each adjacent track segment
+    /// @param touchTargetSize            the preferred slider touch target size
     @NotNullByDefault
     record SliderTokens(
             SliderSizingTokens sizing,
@@ -5170,18 +5435,18 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Tokens shared by progress indicators.
     ///
-    /// @param thickness             the default track thickness
-    /// @param shape                 the progress indicator radius
-    /// @param indicatorSize                the flat circular indicator size
-    /// @param waveIndicatorSize            the wavy circular indicator size
-    /// @param linearWaveAmplitude          the linear wavy indicator amplitude
-    /// @param linearWavelength             the determinate linear wavy indicator wavelength
+    /// @param thickness                     the default track thickness
+    /// @param shape                         the progress indicator radius
+    /// @param indicatorSize                 the flat circular indicator size
+    /// @param waveIndicatorSize             the wavy circular indicator size
+    /// @param linearWaveAmplitude           the linear wavy indicator amplitude
+    /// @param linearWavelength              the determinate linear wavy indicator wavelength
     /// @param linearIndeterminateWavelength the indeterminate linear wavy indicator wavelength
-    /// @param linearTrackGap               the gap between the linear active indicator and track
-    /// @param linearStopSize        the stop indicator diameter at the end of the linear track
-    /// @param circularWaveAmplitude the circular wavy indicator amplitude
-    /// @param circularWavelength    the circular wavy indicator wavelength
-    /// @param circularTrackGap      the gap between the circular active indicator and track
+    /// @param linearTrackGap                the gap between the linear active indicator and track
+    /// @param linearStopSize                the stop indicator diameter at the end of the linear track
+    /// @param circularWaveAmplitude         the circular wavy indicator amplitude
+    /// @param circularWavelength            the circular wavy indicator wavelength
+    /// @param circularTrackGap              the gap between the circular active indicator and track
     @NotNullByDefault
     record ProgressTokens(
             double thickness,

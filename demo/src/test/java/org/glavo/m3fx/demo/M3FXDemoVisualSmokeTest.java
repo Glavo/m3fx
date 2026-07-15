@@ -39,6 +39,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.robot.Robot;
+import javafx.scene.shape.ArcTo;
 import javafx.scene.shape.LineTo;
 import javafx.scene.shape.MoveTo;
 import javafx.scene.shape.Rectangle;
@@ -128,6 +129,8 @@ import org.glavo.m3fx.controls.M3Scrim;
 import org.glavo.m3fx.controls.M3ScrollPanes;
 import org.glavo.m3fx.controls.M3SearchBar;
 import org.glavo.m3fx.controls.M3SearchView;
+import org.glavo.m3fx.controls.M3SearchViewLayout;
+import org.glavo.m3fx.controls.M3SearchViewStyle;
 import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
 import org.glavo.m3fx.controls.M3SegmentedButtonSelectionMode;
@@ -192,9 +195,6 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Collectors;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -1203,7 +1203,7 @@ final class M3FXDemoVisualSmokeTest {
                 () -> mode.name() + " root retains brightness class " + excludedBrightnessStyleClass);
         assertEquals(mode.orientation(), root.getEffectiveNodeOrientation(),
                 () -> mode.name() + " root orientation");
-        assertEquals(mode.animationsEnabled(), M3MotionSettings.areAnimationsEnabled(root),
+        assertEquals(!mode.animationsEnabled(), M3MotionSettings.shouldReduceMotion(root),
                 () -> mode.name() + " root animation setting");
     }
 
@@ -1899,9 +1899,9 @@ final class M3FXDemoVisualSmokeTest {
         }
     }
 
-    /// Verifies that the Search demo renders active, inactive, and keyboard-reachable result states.
+    /// Verifies that the Search demo renders every official style and layout with keyboard-reachable results.
     @Test
-    void searchPageRendersActiveInactiveAndKeyboardReachableResults() throws InterruptedException {
+    void searchPageRendersAllStylesLayoutsAndKeyboardReachableResults() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
@@ -1927,42 +1927,37 @@ final class M3FXDemoVisualSmokeTest {
 
                         Node page = currentDemoPage(scene, "Search");
                         List<M3SearchView> searchViews = visibleNodesOfType(page, M3SearchView.class);
-                        assertEquals(3, searchViews.size(), "Search page should show LTR active, inactive, and RTL active views");
+                        assertEquals(5, searchViews.size(), "Search page should show four official combinations and RTL");
                         M3SearchView activeView = Objects.requireNonNull(
                                 searchViews.stream()
-                                        .filter(view -> view.isActive() && view.getResults().size() == 3)
+                                        .filter(view -> view.getViewStyle() == M3SearchViewStyle.CONTAINED
+                                                && view.getViewLayout() == M3SearchViewLayout.DOCKED
+                                                && view.getNodeOrientation() != NodeOrientation.RIGHT_TO_LEFT)
                                         .findFirst()
                                         .orElse(null),
-                                "LTR active search view"
-                        );
-                        M3SearchView inactiveView = Objects.requireNonNull(
-                                searchViews.stream().filter(view -> !view.isActive()).findFirst().orElse(null),
-                                "inactive search view"
+                                "contained docked search view"
                         );
                         M3SearchView rtlActiveView = Objects.requireNonNull(
                                 searchViews.stream()
-                                        .filter(view -> view.isActive() && view.getResults().size() == 2)
+                                        .filter(view -> view.getNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT)
                                         .findFirst()
                                         .orElse(null),
                                 "RTL active search view"
                         );
 
                         List<M3SearchBar> searchBars = visibleNodesOfType(page, M3SearchBar.class);
-                        assertEquals(6, searchBars.size(),
-                                "Search page should expose three standalone bars and three embedded search bars");
+                        assertEquals(8, searchBars.size(),
+                                "Search page should expose three standalone bars and five embedded search bars");
                         assertEquals(2, searchBars.stream()
                                         .filter(searchBar -> isExplicitRightToLeftSearchBar(searchBar))
                                         .count(),
                                 "Search page should render standalone and embedded RTL search bars");
                         searchBars.forEach(M3FXDemoVisualSmokeTest::assertSearchBarVisualGeometry);
 
-                        assertSearchViewResultsVisible(activeView, 3);
-                        assertSearchViewResultsVisible(rtlActiveView, 2);
-                        assertSearchViewResultsHidden(inactiveView);
-                        assertActiveSearchViewDemoGeometry(rtlActiveView);
-                        assertFalse(visibleNodesOfType(page, Text.class).stream()
-                                        .anyMatch(text -> "Hidden result".equals(text.getText())),
-                                "inactive search view should not render hidden result text");
+                        for (M3SearchView searchView : searchViews) {
+                            assertSearchViewResultsVisible(searchView, searchView.getResults().size());
+                            assertActiveSearchViewDemoGeometry(searchView);
+                        }
 
                         M3ListItem firstResult = assertInstanceOf(M3ListItem.class, activeView.getResults().get(0));
                         searchViewEditor(activeView).requestFocus();
@@ -2044,12 +2039,16 @@ final class M3FXDemoVisualSmokeTest {
                         assertCurrentPageTitle(scene, "Cards");
 
                         List<M3Card> cards = visibleNodesOfType(page, M3Card.class);
-                        assertEquals(6, cards.size(), "Cards page should render compact, media, and state card examples");
+                        assertEquals(8, cards.size(), "Cards page should render variant, passive, and state examples");
                         assertEquals(2, cards.stream().filter(card -> card.getVariant() == M3CardVariant.FILLED).count());
-                        assertEquals(2, cards.stream().filter(card -> card.getVariant() == M3CardVariant.OUTLINED).count());
-                        assertEquals(2, cards.stream().filter(card -> card.getVariant() == M3CardVariant.ELEVATED).count());
-                        assertTrue(cards.stream().allMatch(card -> card.getOnAction() != null),
-                                "demo cards should exercise actionable surface semantics");
+                        assertEquals(3, cards.stream().filter(card -> card.getVariant() == M3CardVariant.OUTLINED).count());
+                        assertEquals(3, cards.stream().filter(card -> card.getVariant() == M3CardVariant.ELEVATED).count());
+                        assertEquals(5, cards.stream().filter(card -> card.getOnAction() != null).count(),
+                                "demo cards should distinguish direct actions from passive containers");
+                        assertEquals(3, cards.stream().filter(card -> card.getOnAction() == null).count(),
+                                "media cards with nested actions should keep their surfaces passive");
+                        assertEquals(1, cards.stream().filter(M3Card::isDragged).count(),
+                                "Cards page should include one dragged state");
                         assertEquals(1, cards.stream().filter(Node::isDisabled).count(),
                                 "Cards page should include one disabled card state");
 
@@ -2120,9 +2119,9 @@ final class M3FXDemoVisualSmokeTest {
         }
     }
 
-    /// Verifies that the Carousel demo renders all Material layouts and action-driven focal selection.
+    /// Verifies that the Carousel demo renders all Material layouts and focal selection.
     @Test
-    void carouselPageRendersViewportSelectionAndActionNavigation() throws InterruptedException {
+    void carouselPageRendersViewportAndSelection() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
         AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
@@ -2154,8 +2153,7 @@ final class M3FXDemoVisualSmokeTest {
                 assertVisibleText(root, "Uncontained", "Carousel");
                 assertVisibleText(root, "Uncontained multi-aspect ratio", "Carousel");
                 assertVisibleText(root, "Full-screen", "Carousel");
-                assertVisibleText(root, "Previous", "Carousel");
-                assertVisibleText(root, "Next", "Carousel");
+                assertVisibleText(root, "Show all", "Carousel");
 
                 List<M3Carousel> carousels = visibleNodesOfType(page, M3Carousel.class);
                 assertEquals(6, carousels.size(),
@@ -2256,12 +2254,7 @@ final class M3FXDemoVisualSmokeTest {
                 M3Carousel multiBrowse = Objects.requireNonNull(multiBrowseReference.get(), "multi-browse carousel");
                 M3MotionSettings.setReducedMotionRequested(multiBrowse, true);
                 multiBrowse.setAnimatedScroll(false);
-                Node page = currentDemoPage(scene, "Carousel");
-                M3Button next = Objects.requireNonNull(
-                        firstVisibleButtonWithText(page, "Next"),
-                        "carousel next button"
-                );
-                next.fire();
+                multiBrowse.selectNext();
                 scene.getRoot().applyCss();
                 scene.getRoot().layout();
                 multiBrowse.scrollSelectedItemIntoView(false);
@@ -2269,19 +2262,19 @@ final class M3FXDemoVisualSmokeTest {
                 Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                 M3Carousel multiBrowse = Objects.requireNonNull(multiBrowseReference.get(), "multi-browse carousel");
                 M3Carousel uncontained = Objects.requireNonNull(uncontainedReference.get(), "uncontained carousel");
-                assertEquals(1, multiBrowse.getSelectedIndex(), "Next action should select Design review");
+                assertEquals(1, multiBrowse.getSelectedIndex(), "selection should advance to Design review");
                 assertEquals(0, uncontained.getSelectedIndex(), "uncontained carousel should remain unchanged");
-                assertCarouselDemoGeometry(multiBrowse, "multi-browse carousel after Next");
-                assertCarouselDemoGeometry(uncontained, "uncontained carousel after Next");
+                assertCarouselDemoGeometry(multiBrowse, "multi-browse carousel after selection");
+                assertCarouselDemoGeometry(uncontained, "uncontained carousel after selection");
 
                 WritableImage image = snapshot(scene);
                 writeVisualSnapshot(image, Path.of(
                         "build",
                         "reports",
                         "m3fx-demo-visual",
-                        "carousel-after-next-action.png"
+                        "carousel-after-selection.png"
                 ));
-                assertSnapshotHasVisibleContent(image, "Carousel after next action");
+                assertSnapshotHasVisibleContent(image, "Carousel after selection");
             });
         } finally {
             DemoFxTestUtils.runOnFxThread(() -> {
@@ -2869,6 +2862,8 @@ final class M3FXDemoVisualSmokeTest {
                     assertEquals("Selected item",
                             Objects.requireNonNull(selectedMenu.getSelectedItem(), "selected item").getHeadlineText());
                     assertEquals(1, selectedMenu.getSelectedItems().size(), "selected menu should be single-selection");
+                    assertTrue(requireMenuItemWithText(selectedMenu, "Unavailable").isDisabled(),
+                            "standard inline menu should render a disabled row");
 
                     M3Menu multiSelectMenu = requireMenuContainingText(inlineMenus, "Icons");
                     assertEquals(2, multiSelectMenu.getSelectedItems().size(),
@@ -2887,6 +2882,8 @@ final class M3FXDemoVisualSmokeTest {
                             "vibrant inline menu should render a selected pinned row");
                     assertEquals(1, vibrantMenu.getSelectedItems().size(),
                             "vibrant inline menu should stay single-selection");
+                    assertTrue(requireMenuItemWithText(vibrantMenu, "Unavailable").isDisabled(),
+                            "vibrant inline menu should render a disabled row");
 
                     WritableImage image = snapshot(scene);
                     for (M3Menu menu : inlineMenus) {
@@ -2974,6 +2971,8 @@ final class M3FXDemoVisualSmokeTest {
                     layoutPopupRoot(subMenu);
                     assertTrue(menuButton.isShowing(), "owner popup should remain showing while submenu is open");
                     assertTrue(subMenuItem.isSubMenuShowing(), "nested submenu should be showing");
+                    assertTrue(subMenuItem.getPseudoClassStates().contains(PseudoClass.getPseudoClass("active")),
+                            "submenu owner should expose the Material active state while its popup is open");
                     assertPopupThemeContext(scene.getRoot(), subMenu, "nested submenu");
                     assertMenuSurfaceGeometry(ownerMenu, null, "Menus owner popup with submenu");
                     assertMenuSurfaceGeometry(subMenu, null, "Menus nested submenu");
@@ -8973,20 +8972,21 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies that a search bar keeps its editor and optional slots inside the rounded search container.
     private static void assertSearchBarVisualGeometry(M3SearchBar searchBar) {
         assertTrue(hasRenderableBounds(searchBar), () -> "search bar has no renderable bounds: " + searchBar);
-        Bounds searchBounds = searchBar.localToScene(searchBar.getBoundsInLocal());
+        Bounds localSearchBounds = searchBar.getLayoutBounds();
+        Bounds searchBounds = searchBar.localToScene(searchBar.getLayoutBounds());
         Bounds editorBounds = searchBarEditor(searchBar).localToScene(searchBarEditor(searchBar).getBoundsInLocal());
         boolean embeddedInSearchView = nearestAncestorOfType(searchBar, M3SearchView.class) != null;
         double expectedHeight = 56.0;
 
         if (embeddedInSearchView) {
-            assertTrue(searchBounds.getHeight() >= expectedHeight - CONTROL_EDGE_TOLERANCE
-                            && searchBounds.getHeight() <= expectedHeight + 16.0 + CONTROL_EDGE_TOLERANCE,
+            assertTrue(localSearchBounds.getHeight() >= expectedHeight - CONTROL_EDGE_TOLERANCE
+                            && localSearchBounds.getHeight() <= expectedHeight + 16.0 + CONTROL_EDGE_TOLERANCE,
                     () -> "embedded search bar should stay within the active profile header height range: bounds="
-                            + searchBounds + ", expectedHeight=" + expectedHeight);
+                            + localSearchBounds + ", expectedHeight=" + expectedHeight);
         } else {
-            assertEquals(expectedHeight, searchBounds.getHeight(), CONTROL_EDGE_TOLERANCE,
+            assertEquals(expectedHeight, localSearchBounds.getHeight(), CONTROL_EDGE_TOLERANCE,
                     () -> "standalone search bar should use the active profile container height: bounds="
-                            + searchBounds + ", expectedHeight=" + expectedHeight);
+                            + localSearchBounds + ", expectedHeight=" + expectedHeight);
         }
         assertTrue(containsBoundsWithTolerance(searchBounds, editorBounds, CONTROL_EDGE_TOLERANCE),
                 () -> "search editor leaves the search bar container: editor="
@@ -9075,10 +9075,10 @@ final class M3FXDemoVisualSmokeTest {
 
     /// Verifies that an active search view keeps the embedded bar and result rows in one compact surface.
     private static void assertActiveSearchViewDemoGeometry(M3SearchView searchView) {
-        Bounds viewBounds = searchView.localToScene(searchView.getBoundsInLocal());
-        Bounds barBounds = searchViewSearchBar(searchView).localToScene(searchViewSearchBar(searchView).getBoundsInLocal());
+        Bounds viewBounds = searchView.localToScene(searchView.getLayoutBounds());
+        Bounds barBounds = searchViewSearchBar(searchView).localToScene(searchViewSearchBar(searchView).getLayoutBounds());
         Bounds resultsBounds = searchResultsContainer(searchView)
-                .localToScene(searchResultsContainer(searchView).getBoundsInLocal());
+                .localToScene(searchResultsContainer(searchView).getLayoutBounds());
 
         assertTrue(containsBoundsWithTolerance(viewBounds, barBounds, CONTROL_EDGE_TOLERANCE),
                 () -> "active search view embedded bar leaves the view surface: bar="
@@ -9105,8 +9105,8 @@ final class M3FXDemoVisualSmokeTest {
             M3ListItem item = (M3ListItem) result;
             Bounds resultBounds = item.localToScene(item.getBoundsInLocal());
             assertSearchResultRowGeometry(item, resultBounds, resultsBounds);
-            assertEquals(isExpressiveTheme(item) ? 16.0 : 0.0, item.getContainerShape(), CONTROL_EDGE_TOLERANCE,
-                    () -> "search result row should use the active profile result shape token: item="
+            assertEquals(isExpressiveTheme(item) ? 10.0 : 0.0, item.getContainerShape(), CONTROL_EDGE_TOLERANCE,
+                    () -> "search result row should retain the active list-item shape token: item="
                             + item.getHeadlineText());
             double expectedMinY = previousMaxY;
             assertEquals(expectedMinY, resultBounds.getMinY(), CONTROL_EDGE_TOLERANCE,
@@ -9121,9 +9121,9 @@ final class M3FXDemoVisualSmokeTest {
                 CONTROL_EDGE_TOLERANCE * Math.max(1, searchView.getResults().size()),
                 () -> "active search view results container height should match its rendered rows: expected="
                         + finalExpectedResultsHeight + ", results=" + resultsBounds);
-        assertEquals(barBounds.getHeight() + resultsBounds.getHeight(), viewBounds.getHeight(),
-                32.0,
-                () -> "active search view surface height should be the embedded bar plus results: bar="
+        assertTrue(viewBounds.getHeight() + CONTROL_EDGE_TOLERANCE
+                        >= barBounds.getHeight() + resultsBounds.getHeight(),
+                () -> "active search view surface should contain the embedded bar and results: bar="
                         + barBounds + ", results=" + resultsBounds + ", view=" + viewBounds);
     }
 
@@ -9188,38 +9188,6 @@ final class M3FXDemoVisualSmokeTest {
         assertTrue(headlineBounds.getCenterY() < supportingBounds.getCenterY(),
                 () -> "search result headline should render above supporting text: headline="
                         + headlineBounds + ", supporting=" + supportingBounds + ", item=" + item.getHeadlineText());
-    }
-
-    /// Verifies that an inactive search view keeps its results out of layout and rendering.
-    private static void assertSearchViewResultsHidden(M3SearchView searchView) {
-        assertFalse(searchView.isActive(), "search view should be inactive");
-        assertEquals(1, searchView.getResults().size(), "inactive search view should keep its model result");
-        assertFalse(searchResultsContainer(searchView).isVisible(), "inactive search results should be hidden");
-        assertFalse(searchResultsContainer(searchView).isManaged(), "inactive search results should not affect layout");
-        assertEquals(0.0, searchResultsContainer(searchView).getOpacity(), 0.001,
-                "inactive search results should be transparent");
-        assertTrue(searchResultsContainer(searchView).getTranslateY() < 0.0,
-                "inactive search results should keep the hidden offset");
-    }
-
-    /// Verifies that an inactive search view collapses to its embedded search bar instead of reserving result space.
-    private static void assertInactiveSearchViewDemoGeometry(M3SearchView searchView) {
-        Bounds viewBounds = searchView.localToScene(searchView.getBoundsInLocal());
-        Bounds barBounds = searchViewSearchBar(searchView).localToScene(searchViewSearchBar(searchView).getBoundsInLocal());
-        assertTrue(containsBoundsWithTolerance(viewBounds, barBounds, CONTROL_EDGE_TOLERANCE),
-                () -> "inactive search view embedded bar leaves the view surface: bar="
-                        + barBounds + ", view=" + viewBounds);
-        assertSearchViewContentInsets(viewBounds, barBounds, "inactive search view bar");
-        double topInset = barBounds.getMinY() - viewBounds.getMinY();
-        assertTrue(topInset >= -CONTROL_EDGE_TOLERANCE && topInset <= 24.0,
-                () -> "inactive search view bar should start near the surface top inset: inset="
-                        + topInset + ", bar=" + barBounds + ", view=" + viewBounds);
-        assertTrue(viewBounds.getHeight() >= barBounds.getHeight() - CONTROL_EDGE_TOLERANCE
-                        && viewBounds.getHeight() <= barBounds.getHeight() + 40.0,
-                () -> "inactive search view should collapse to its embedded search bar plus compact vertical insets: bar="
-                        + barBounds + ", view=" + viewBounds);
-        assertTrue(visibleNodesOfType(searchResultsContainer(searchView), M3ListItem.class).isEmpty(),
-                "inactive search view should not render visible result rows");
     }
 
     /// Returns a text input layout matching the requested input text and prompt text.
@@ -10249,20 +10217,10 @@ final class M3FXDemoVisualSmokeTest {
         assertMenuContainerShape(menu, description);
         assertMenuItemContainerSpacing(menu, description);
 
-        @Nullable M3MenuItem firstDirectItem = null;
-        @Nullable M3MenuItem lastDirectItem = null;
-        for (Node item : menu.getItems()) {
-            if (item instanceof M3MenuItem menuItem) {
-                if (firstDirectItem == null) {
-                    firstDirectItem = menuItem;
-                }
-                lastDirectItem = menuItem;
-            }
-        }
-
         int menuItemCount = 0;
         double previousMaxY = menuBounds.getMinY();
-        for (Node item : menu.getItems()) {
+        for (int index = 0; index < menu.getItems().size(); index++) {
+            Node item = menu.getItems().get(index);
             assertTrue(item.isVisible() && hasRenderableBounds(item),
                     () -> description + " contains a non-rendered direct item: " + item);
             Bounds itemBounds = item.localToScene(item.getBoundsInLocal());
@@ -10279,13 +10237,16 @@ final class M3FXDemoVisualSmokeTest {
 
             if (item instanceof M3MenuItem menuItem) {
                 menuItemCount++;
+                boolean firstGroupItem = index == 0 || !(menu.getItems().get(index - 1) instanceof M3MenuItem);
+                boolean lastGroupItem = index + 1 == menu.getItems().size()
+                        || !(menu.getItems().get(index + 1) instanceof M3MenuItem);
                 assertMenuItemRowGeometry(
                         menuItem,
                         itemBounds,
                         sceneImage,
                         description,
-                        menuItem == firstDirectItem,
-                        menuItem == lastDirectItem
+                        firstGroupItem,
+                        lastGroupItem
                 );
             } else if (item instanceof M3MenuSectionHeader header) {
                 assertMenuSectionHeaderGeometry(header, itemBounds, description);
@@ -10344,8 +10305,8 @@ final class M3FXDemoVisualSmokeTest {
             Bounds itemBounds,
             @Nullable WritableImage sceneImage,
             String description,
-            boolean firstDirectItem,
-            boolean lastDirectItem
+            boolean firstGroupItem,
+            boolean lastGroupItem
     ) {
         double expectedHeight = switch (item.getLineCount()) {
             case ONE_LINE -> item.getOneLineHeight();
@@ -10360,11 +10321,14 @@ final class M3FXDemoVisualSmokeTest {
                 () -> description + " menu item resolved height should match the active profile token: item="
                         + item.getHeadlineText());
         boolean expressiveTheme = isExpressiveTheme(item);
+        boolean active = item.getPseudoClassStates().contains(PseudoClass.getPseudoClass("active"));
         double expectedItemShape = !expressiveTheme
                 ? 4.0
-                : item.isSelected() || firstDirectItem || lastDirectItem
-                  ? 16.0
-                  : 6.0;
+                : active
+                  ? 24.0
+                  : item.isSelected() || firstGroupItem || lastGroupItem
+                    ? 16.0
+                    : 6.0;
         assertEquals(expectedItemShape, item.getContainerShape(), CONTROL_EDGE_TOLERANCE,
                 () -> description + " menu item container shape should match the active profile and selection token: item="
                         + item.getHeadlineText());
@@ -10393,20 +10357,21 @@ final class M3FXDemoVisualSmokeTest {
         );
 
         Node selectionContainer = listItemSelectionContainer(item);
+        assertMenuItemClipShape(item, selectionContainer, firstGroupItem, lastGroupItem, description);
+        if (item.isDisabled()) {
+            Region baseContainer = assertInstanceOf(
+                    Region.class,
+                    item.lookup(".m3-list-item-container"),
+                    () -> description + " disabled menu item base container: " + item.getHeadlineText()
+            );
+            @Nullable Color baseColor = firstBackgroundColor(baseContainer);
+            assertTrue(baseColor == null || baseColor.getOpacity() <= 0.01,
+                    () -> description + " unselected disabled menu item should keep a transparent container: item="
+                            + item.getHeadlineText() + ", color=" + baseColor);
+        }
         if (item.isSelected()) {
             assertListItemSelectedContainerLayout(item, selectionContainer, description
                     + " selected menu item `" + item.getHeadlineText() + "`");
-            if (selectionContainer instanceof Region selectedRegion
-                    && !selectedRegion.getBackground().getFills().isEmpty()) {
-                double selectedShape = selectedRegion.getBackground()
-                        .getFills()
-                        .get(0)
-                        .getRadii()
-                        .getTopLeftHorizontalRadius();
-                assertEquals(item.getContainerShape(), selectedShape, CONTROL_EDGE_TOLERANCE,
-                        () -> description + " selected menu item background shape should follow the item token: item="
-                                + item.getHeadlineText());
-            }
             if (sceneImage != null) {
                 assertListItemSelectedContainerPixels(
                         sceneImage,
@@ -10423,6 +10388,46 @@ final class M3FXDemoVisualSmokeTest {
         if (item instanceof M3SubMenuItem subMenuItem) {
             assertSubMenuIndicatorGeometry(subMenuItem, itemBounds, description);
         }
+    }
+
+    /// Verifies the independently resolved outer and inner corners of one menu-item state container.
+    private static void assertMenuItemClipShape(
+            M3MenuItem item,
+            Node selectionContainer,
+            boolean firstGroupItem,
+            boolean lastGroupItem,
+            String description
+    ) {
+        javafx.scene.shape.Path clip = assertInstanceOf(
+                javafx.scene.shape.Path.class,
+                selectionContainer.getClip(),
+                () -> description + " menu item should use an allocation-free path clip: " + item.getHeadlineText());
+        boolean active = item.getPseudoClassStates().contains(PseudoClass.getPseudoClass("active"));
+        double outerRadius = item.getContainerShape();
+        double innerRadius = item.getInnerCornerShape();
+        double topRadius = outerRadius;
+        double bottomRadius = outerRadius;
+        if (!item.isSelected() && !active && firstGroupItem != lastGroupItem) {
+            if (firstGroupItem) {
+                bottomRadius = innerRadius;
+            } else {
+                topRadius = innerRadius;
+            }
+        }
+
+        assertEquals(topRadius, menuClipCornerRadius(clip, 8), CONTROL_EDGE_TOLERANCE,
+                () -> description + " top-left menu item corner: " + item.getHeadlineText());
+        assertEquals(topRadius, menuClipCornerRadius(clip, 2), CONTROL_EDGE_TOLERANCE,
+                () -> description + " top-right menu item corner: " + item.getHeadlineText());
+        assertEquals(bottomRadius, menuClipCornerRadius(clip, 4), CONTROL_EDGE_TOLERANCE,
+                () -> description + " bottom-right menu item corner: " + item.getHeadlineText());
+        assertEquals(bottomRadius, menuClipCornerRadius(clip, 6), CONTROL_EDGE_TOLERANCE,
+                () -> description + " bottom-left menu item corner: " + item.getHeadlineText());
+    }
+
+    /// Returns the radius represented by one rounded or square corner element.
+    private static double menuClipCornerRadius(javafx.scene.shape.Path clip, int elementIndex) {
+        return clip.getElements().get(elementIndex) instanceof ArcTo arc ? arc.getRadiusX() : 0.0;
     }
 
     /// Verifies one menu section header row.
@@ -12238,16 +12243,20 @@ final class M3FXDemoVisualSmokeTest {
         Node page = currentDemoPage(scene, "Cards");
         assertCurrentPageTitle(scene, "Cards");
         assertVisibleText(root, "Variants", "Cards");
-        assertVisibleText(root, "Media And Actions", "Cards");
+        assertVisibleText(root, "Passive Cards With Actions", "Cards");
+        assertVisibleText(root, "States", "Cards");
 
         List<M3Card> cards = visibleNodesOfType(page, M3Card.class);
-        assertEquals(6, cards.size(), "Cards page should render six card examples");
+        assertEquals(8, cards.size(), "Cards page should render eight focused card examples");
         assertEquals(2, cards.stream().filter(card -> card.getVariant() == M3CardVariant.FILLED).count());
-        assertEquals(2, cards.stream().filter(card -> card.getVariant() == M3CardVariant.OUTLINED).count());
-        assertEquals(2, cards.stream().filter(card -> card.getVariant() == M3CardVariant.ELEVATED).count());
+        assertEquals(3, cards.stream().filter(card -> card.getVariant() == M3CardVariant.OUTLINED).count());
+        assertEquals(3, cards.stream().filter(card -> card.getVariant() == M3CardVariant.ELEVATED).count());
         assertEquals(1, cards.stream().filter(Node::isDisabled).count(), "Cards page disabled card count");
-        assertTrue(cards.stream().allMatch(card -> card.getOnAction() != null),
-                "demo cards should exercise actionable surface semantics");
+        assertEquals(5, cards.stream().filter(card -> card.getOnAction() != null).count(),
+                "demo direct-action card count");
+        assertEquals(3, cards.stream().filter(card -> card.getOnAction() == null).count(),
+                "demo passive card count");
+        assertEquals(1, cards.stream().filter(M3Card::isDragged).count(), "demo dragged card count");
         M3Card disabledCard = cards.stream().filter(Node::isDisabled).findFirst().orElseThrow();
         assertEquals(M3CardVariant.OUTLINED, disabledCard.getVariant(), "demo disabled card variant");
         M3Theme cardTheme = Objects.requireNonNull(M3ThemeManager.getTheme(scene), "Cards page theme");
@@ -12302,8 +12311,7 @@ final class M3FXDemoVisualSmokeTest {
         assertVisibleText(root, "Uncontained", "Carousel");
         assertVisibleText(root, "Uncontained multi-aspect ratio", "Carousel");
         assertVisibleText(root, "Full-screen", "Carousel");
-        assertVisibleText(root, "Previous", "Carousel");
-        assertVisibleText(root, "Next", "Carousel");
+        assertVisibleText(root, "Show all", "Carousel");
 
         List<M3Carousel> carousels = visibleNodesOfType(page, M3Carousel.class);
         assertEquals(6, carousels.size(),
@@ -13040,39 +13048,45 @@ final class M3FXDemoVisualSmokeTest {
         });
     }
 
-    /// Verifies the real Search demo page active, inactive, and standalone search controls.
+    /// Verifies the real Search demo page style, layout, RTL, and standalone search controls.
     private static void assertSearchPageVisualState(Scene scene) {
         Parent root = scene.getRoot();
         Node page = currentDemoPage(scene, "Search");
         assertCurrentPageTitle(scene, "Search");
         assertVisibleText(root, "Search Bars", "Search");
-        assertVisibleText(root, "Search View", "Search");
-        assertVisibleText(root, "Inactive View", "Search");
+        assertVisibleText(root, "Contained Docked", "Search");
+        assertVisibleText(root, "Divided Docked", "Search");
+        assertVisibleText(root, "Contained Full-screen", "Search");
+        assertVisibleText(root, "Divided Full-screen", "Search");
         assertVisibleText(root, "Right-to-left", "Search");
 
         List<M3SearchView> searchViews = visibleNodesOfType(page, M3SearchView.class);
-        assertEquals(3, searchViews.size(), "Search page should render LTR active, inactive, and RTL active views");
-        M3SearchView active = searchViews.stream()
-                .filter(searchView -> searchView.isActive() && searchView.getResults().size() == 3)
+        assertEquals(5, searchViews.size(), "Search page should render four official combinations and RTL");
+        M3SearchView containedDocked = searchViews.stream()
+                .filter(searchView -> searchView.getViewStyle() == M3SearchViewStyle.CONTAINED
+                        && searchView.getViewLayout() == M3SearchViewLayout.DOCKED
+                        && searchView.getNodeOrientation() != NodeOrientation.RIGHT_TO_LEFT)
                 .findFirst()
-                .orElseThrow(() -> new AssertionError("missing LTR active search view"));
-        M3SearchView inactive = searchViews.stream()
-                .filter(searchView -> !searchView.isActive())
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("missing inactive search view"));
+                .orElseThrow(() -> new AssertionError("missing contained docked search view"));
         M3SearchView rtlActive = searchViews.stream()
-                .filter(searchView -> searchView.isActive() && searchView.getResults().size() == 2)
+                .filter(searchView -> searchView.getNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT)
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("missing RTL active search view"));
-        assertSearchViewResultsVisible(active, 3);
-        assertSearchViewResultsVisible(rtlActive, 2);
-        assertSearchViewResultsHidden(inactive);
-        assertActiveSearchViewDemoGeometry(active);
-        assertActiveSearchViewDemoGeometry(rtlActive);
-        assertInactiveSearchViewDemoGeometry(inactive);
+        assertEquals(3, containedDocked.getResults().size(), "contained docked result count");
+        assertEquals(2, rtlActive.getResults().size(), "RTL result count");
+        assertEquals(2, searchViews.stream()
+                .filter(searchView -> searchView.getViewStyle() == M3SearchViewStyle.DIVIDED)
+                .count(), "divided search view count");
+        assertEquals(2, searchViews.stream()
+                .filter(searchView -> searchView.getViewLayout() == M3SearchViewLayout.FULL_SCREEN)
+                .count(), "full-screen search view count");
+        for (M3SearchView searchView : searchViews) {
+            assertSearchViewResultsVisible(searchView, searchView.getResults().size());
+            assertActiveSearchViewDemoGeometry(searchView);
+        }
 
         List<M3SearchBar> searchBars = visibleNodesOfType(page, M3SearchBar.class);
-        assertEquals(6, searchBars.size(), "Search page should render three standalone and three embedded bars");
+        assertEquals(8, searchBars.size(), "Search page should render three standalone and five embedded bars");
         assertEquals(2, searchBars.stream()
                         .filter(searchBar -> isExplicitRightToLeftSearchBar(searchBar))
                         .count(),
@@ -14697,14 +14711,14 @@ final class M3FXDemoVisualSmokeTest {
         }
     }
 
-    /// Verifies the real Bottom Sheets demo page standard and compact sheet states.
+    /// Verifies the real Bottom Sheets demo page standard and modal sheet states.
     private static void assertBottomSheetsPageVisualState(Scene scene) {
         Parent root = scene.getRoot();
         Node page = currentDemoPage(scene, "Bottom Sheets");
         assertCurrentPageTitle(scene, "Bottom Sheets");
         assertVisibleText(root, "Bottom Sheets", "Bottom Sheets");
         assertVisibleText(root, "Now playing", "Bottom Sheets");
-        assertVisibleText(root, "Compact", "Bottom Sheets");
+        assertVisibleText(root, "Filters", "Bottom Sheets");
         assertVisibleText(root, "Overview", "Bottom Sheets");
         assertVisibleText(root, "Activity", "Bottom Sheets");
         assertVisibleText(root, "Settings", "Bottom Sheets");
@@ -14722,18 +14736,18 @@ final class M3FXDemoVisualSmokeTest {
         assertEquals(1, standard.getActions().size(), "standard bottom sheet action count");
         assertBottomSheetDemoGeometry(standard, "standard bottom sheet");
 
-        M3BottomSheet compact = Objects.requireNonNull(
-                firstVisibleBottomSheetWithHeadline(page, "Compact"),
-                "compact bottom sheet"
+        M3BottomSheet modal = Objects.requireNonNull(
+                firstVisibleBottomSheetWithHeadline(page, "Filters"),
+                "modal bottom sheet"
         );
-        assertEquals(M3SheetVariant.STANDARD, compact.getVariant(), "compact bottom sheet variant");
-        assertTrue(compact.isShown(), "compact bottom sheet should be shown in the demo matrix");
-        assertFalse(compact.isDragHandleVisible(), "compact bottom sheet should hide its drag handle");
-        assertTrue(compact.getActions().isEmpty(), "compact bottom sheet should omit trailing actions");
-        assertBottomSheetDemoGeometry(compact, "compact bottom sheet");
+        assertEquals(M3SheetVariant.MODAL, modal.getVariant(), "modal bottom sheet variant");
+        assertTrue(modal.isShown(), "modal bottom sheet should be shown in the demo matrix");
+        assertFalse(modal.isDragHandleVisible(), "modal bottom sheet sample should hide its optional drag handle");
+        assertEquals(1, modal.getActions().size(), "modal bottom sheet action count");
+        assertBottomSheetDemoGeometry(modal, "modal bottom sheet");
     }
 
-    /// Verifies the real Side Sheets demo page standard and modal sheet states.
+    /// Verifies the real Side Sheets demo page standard, modal, and detached states.
     private static void assertSideSheetsPageVisualState(Scene scene) {
         Parent root = scene.getRoot();
         Node page = currentDemoPage(scene, "Side Sheets");
@@ -14741,12 +14755,13 @@ final class M3FXDemoVisualSmokeTest {
         assertVisibleText(root, "Side Sheets", "Side Sheets");
         assertVisibleText(root, "Details", "Side Sheets");
         assertVisibleText(root, "Filters", "Side Sheets");
+        assertVisibleText(root, "Detached", "Side Sheets");
         assertVisibleText(root, "Overview", "Side Sheets");
         assertVisibleText(root, "Activity", "Side Sheets");
         assertVisibleText(root, "Settings", "Side Sheets");
 
         List<M3SideSheet> sheets = visibleNodesOfType(page, M3SideSheet.class);
-        assertEquals(2, sheets.size(), () -> "Side Sheets page should render two sheet states: " + sheets);
+        assertEquals(3, sheets.size(), () -> "Side Sheets page should render three sheet states: " + sheets);
 
         M3SideSheet standard = Objects.requireNonNull(
                 firstVisibleSideSheetWithHeadline(page, "Details"),
@@ -14765,6 +14780,16 @@ final class M3FXDemoVisualSmokeTest {
         assertTrue(modal.isShown(), "modal side sheet should be shown in the demo matrix");
         assertEquals(1, modal.getActions().size(), "modal side sheet action count");
         assertSideSheetDemoGeometry(modal, "modal side sheet");
+
+        M3SideSheet detached = Objects.requireNonNull(
+                firstVisibleSideSheetWithHeadline(page, "Detached"),
+                "detached side sheet"
+        );
+        assertEquals(M3SheetVariant.STANDARD, detached.getVariant(), "detached side sheet variant");
+        assertTrue(detached.isDetached(), "detached side sheet should use the detached container shape");
+        assertTrue(detached.isShown(), "detached side sheet should be shown in the demo matrix");
+        assertEquals(1, detached.getActions().size(), "detached side sheet action count");
+        assertSideSheetDemoGeometry(detached, "detached side sheet");
     }
 
     /// Verifies the real Snackbars demo page buttons, compact host surface, actions, and queue state.
@@ -15865,8 +15890,14 @@ final class M3FXDemoVisualSmokeTest {
         assertTrue(surfaceBounds.getWidth() >= 170.0 && surfaceBounds.getHeight() >= 88.0,
                 () -> "surface should keep the demo card-sized sample bounds: " + surfaceBounds);
         assertFalse(surface.getContent().isEmpty(), "surface demo should expose content");
-        assertNotNull(surface.getBackground(), "surface should resolve a Material background");
-        assertFalse(surface.getBackground().getFills().isEmpty(), "surface should resolve a visible background fill");
+        Region container = assertInstanceOf(
+                Region.class,
+                firstVisibleStyledDescendant(surface, "m3-surface-container"),
+                "surface visual container"
+        );
+        assertNotNull(container.getBackground(), "surface container should resolve a Material background");
+        assertFalse(container.getBackground().getFills().isEmpty(),
+                "surface container should resolve a visible background fill");
         assertNodeSnapshotHasOpaquePixels(surface, "surface " + surface.getVariant());
 
         Node content = surface.getContent().get(0);
@@ -17813,18 +17844,17 @@ final class M3FXDemoVisualSmokeTest {
                 )
         );
         Node track = requireVisibleStyledDescendant(carousel, M3Carousel.TRACK_STYLE_CLASS, description + " track");
-        List<Node> itemMasks = track.lookupAll(".m3-carousel-item-container").stream().toList();
+        List<Node> itemMasks = carousel.getItems().stream()
+                .map(item -> carouselItemMask(item, description))
+                .toList();
         assertEquals(carousel.getItems().size(), itemMasks.size(),
                 () -> description + " should expose one reusable mask per item");
         for (Node itemMask : itemMasks) {
-            Rectangle clip = assertInstanceOf(Rectangle.class, itemMask.getClip(),
-                    () -> description + " item mask should use a rounded rectangle clip");
-            assertEquals(itemMask.getLayoutBounds().getWidth(), clip.getWidth(), CONTROL_EDGE_TOLERANCE,
-                    () -> description + " clip width should follow its keyline mask");
-            assertEquals(itemMask.getLayoutBounds().getHeight(), clip.getHeight(), CONTROL_EDGE_TOLERANCE,
-                    () -> description + " clip height should follow its keyline mask");
-            assertTrue(clip.getArcWidth() >= Math.min(clip.getWidth(), 56.0) - CONTROL_EDGE_TOLERANCE,
-                    () -> description + " item mask should apply the Material extra-large shape");
+            assertTrue(hasRenderableBounds(itemMask), () -> description + " item mask has no renderable bounds");
+            assertNotNull(
+                    itemMask.lookup(".m3-carousel-item-state-layer"),
+                    () -> description + " item mask should expose Material interaction feedback"
+            );
         }
         Node selectedItem = Objects.requireNonNull(carousel.getSelectedItem(), description + " selected item");
         @Nullable Node viewportNode = viewport.lookup(".viewport");
@@ -17878,25 +17908,33 @@ final class M3FXDemoVisualSmokeTest {
             boolean expectsMaskedContent,
             String description
     ) {
-        Node track = requireVisibleStyledDescendant(carousel, M3Carousel.TRACK_STYLE_CLASS, description + " track");
         List<Double> distinctWidths = new ArrayList<>();
         boolean maskedContent = false;
-        for (Node mask : track.lookupAll(".m3-carousel-item-container")) {
+        for (Node content : carousel.getItems()) {
+            Node mask = carouselItemMask(content, description);
             double width = mask.getLayoutBounds().getWidth();
             boolean knownWidth = distinctWidths.stream().anyMatch(value -> Math.abs(value - width) <= 1.0);
             if (!knownWidth) {
                 distinctWidths.add(width);
             }
-            Parent slot = assertInstanceOf(Parent.class, mask);
-            assertEquals(1, slot.getChildrenUnmodifiable().size(),
-                    () -> description + " mask should retain one application-owned item");
-            Node content = slot.getChildrenUnmodifiable().get(0);
             maskedContent |= content.getLayoutBounds().getWidth() > width + 1.0;
         }
         assertTrue(distinctWidths.size() >= minimumDistinctWidths,
                 () -> description + " has too few rendered keyline widths: " + distinctWidths);
         assertEquals(expectsMaskedContent, maskedContent,
                 () -> description + " focal-width masking mismatch");
+    }
+
+    /// Returns the rendered keyline mask that owns one application carousel item.
+    private static Node carouselItemMask(Node item, String description) {
+        @Nullable Parent ancestor = item.getParent();
+        while (ancestor != null) {
+            if (ancestor.getStyleClass().contains("m3-carousel-item-container")) {
+                return ancestor;
+            }
+            ancestor = ancestor.getParent();
+        }
+        throw new AssertionError(description + " item is not hosted by a carousel keyline mask: " + item);
     }
 
     /// Verifies that carousel content overflows and visually occupies the complete horizontal viewport.

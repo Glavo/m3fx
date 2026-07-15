@@ -526,6 +526,7 @@ public class M3DateRangePicker extends Control {
     /// Adds base style classes, accessibility role, and keyboard navigation.
     private void initialize() {
         M3ControlStyles.initialize(this, STYLE_CLASS);
+        pseudoClassStateChanged(M3DatePicker.MODAL_PSEUDO_CLASS, true);
         setAccessibleRole(AccessibleRole.PARENT);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleDay,
                 this::handlesAccessibleShowTarget);
@@ -864,12 +865,11 @@ public class M3DateRangePicker extends Control {
         }
     }
 
-    /// Focuses the rendered day cell for a date when it is visible.
-    private boolean focusAccessibleDate(LocalDate date) {
-        if (isDateDisabled(date)) {
-            return false;
+    /// Focuses the rendered day cell for a selectable date when it is visible.
+    private void focusAccessibleDate(LocalDate date) {
+        if (!isDateDisabled(date)) {
+            focusAccessibleNode(dayCellForDate(date));
         }
-        return focusAccessibleNode(dayCellForDate(date));
     }
 
     /// Returns the day item requested by accessibility parameters.

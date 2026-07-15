@@ -8,8 +8,6 @@ import javafx.collections.MapChangeListener;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.effect.DropShadow;
-import javafx.scene.effect.Effect;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
@@ -153,7 +151,7 @@ final class M3ThemeTest {
                 "-m3-list-item-disabled-state-layer-color: rgba(29,27,32,0.1)"
         ));
         assertTrue(theme.toRootStyleDeclarations().contains(
-                "-m3-filled-card-disabled-container-color: rgba(230,224,233,0.38)"
+                "-m3-filled-card-disabled-container-color: rgba(231,224,235,0.38)"
         ));
         assertTrue(theme.toRootStyleDeclarations().contains(
                 "-m3-elevated-card-disabled-container-color: rgba(253,247,255,0.38)"
@@ -220,7 +218,10 @@ final class M3ThemeTest {
         assertTrue(theme.toControlStyleRules().contains(".m3-loading-indicator"));
         assertFalse(theme.toControlStyleRules().contains(".m3-list-item:disabled"));
         assertFalse(theme.toControlStyleRules().contains(".m3-slider:focus-visible .m3-state-layer"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-card:focus-visible .m3-state-layer"));
+        assertTrue(theme.toControlStyleRules().contains(
+                ".m3-card:actionable:focus-visible .m3-state-layer"
+        ));
+        assertTrue(theme.toControlStyleRules().contains(".m3-card:dragged .m3-state-layer"));
         assertTrue(theme.toControlStyleRules().contains(".m3-dialog-pane"));
         assertTrue(theme.toControlStyleRules().contains(".m3-badge"));
         assertTrue(theme.toControlStyleRules().contains(".m3-top-app-bar"));
@@ -238,10 +239,18 @@ final class M3ThemeTest {
         assertTrue(theme.toControlStyleRules().contains("-fx-opacity: 0.08"));
         assertTrue(theme.toControlStyleRules().contains("-fx-opacity: 0.1"));
         assertTrue(theme.toControlStyleRules().contains(".m3-elevated-card .m3-card-container"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-elevated-card:hover .m3-card-container"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-filled-card:hover .m3-card-container"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-outlined-card:hover .m3-card-container"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-filled-card:focus-visible .m3-card-container"));
+        assertTrue(theme.toControlStyleRules().contains(
+                ".m3-elevated-card:actionable:hover .m3-card-container"
+        ));
+        assertTrue(theme.toControlStyleRules().contains(
+                ".m3-filled-card:actionable:hover .m3-card-container"
+        ));
+        assertTrue(theme.toControlStyleRules().contains(
+                ".m3-outlined-card:actionable:hover .m3-card-container"
+        ));
+        assertTrue(theme.toControlStyleRules().contains(
+                ".m3-filled-card:actionable:focus-visible .m3-card-container"
+        ));
         assertTrue(theme.toControlStyleRules().contains(".m3-fab:hover"));
         assertTrue(theme.toControlStyleRules().contains(".m3-surface-elevation-level5"));
         assertNotNull(theme.tokens().componentTokens().filledButton());
@@ -349,16 +358,26 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-vibrant-container-color: -m3-color-tertiary-container"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-vibrant-selected-item-container-color: -m3-color-tertiary"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-bar-container-height: 56px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-bar-horizontal-padding: 24px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-bar-content-spacing: 4px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-bar-horizontal-padding: 16px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-bar-content-spacing: 16px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-contained-bar-horizontal-padding: 4px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-contained-bar-content-spacing: 4px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-divided-bar-horizontal-padding: 16px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-bar-trailing-actions-gap: 0px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-view-horizontal-padding: 12px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-view-bar-results-gap: 2px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-view-results-shape: 16px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-view-result-container-shape: 16px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-view-result-padding: 12px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-sheet-content-padding: 28px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-sheet-drag-handle-width: 36px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-view-docked-bottom-padding: 4px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-view-full-screen-bottom-padding: 16px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-view-min-width: 360px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-view-max-width: 720px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-view-docked-min-height: 240px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-view-full-screen-divided-header-height: 72px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-sheet-side-container-width: 256px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-sheet-side-container-max-width: 400px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-sheet-bottom-container-max-width: 640px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-sheet-content-padding: 24px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-sheet-drag-handle-width: 32px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-card-container-shape: 24px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-card-content-padding: 20px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-dialog-container-shape: 32px"));
@@ -379,7 +398,7 @@ final class M3ThemeTest {
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-tooltip-plain-container-shape: 6px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-tooltip-rich-pref-width: 320px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-picker-field-popup-padding: 20px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-date-picker-day-cell-size: 44px"));
+        assertTrue(theme.toRootStyleDeclarations().contains("-m3-date-picker-day-cell-size: 48px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-time-picker-dial-size: 256px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-time-picker-dial-handle-size: 48px"));
         assertTrue(theme.toRootStyleDeclarations().contains("-m3-time-picker-input-field-height: 72px"));
@@ -436,7 +455,7 @@ final class M3ThemeTest {
         assertTrue(theme.toControlStyleRules().contains(".m3-menu .m3-menu-item.m3-menu-item:first-menu-item"));
         assertTrue(theme.toControlStyleRules().contains(".m3-menu .m3-menu-item.m3-menu-item:last-menu-item"));
         assertTrue(theme.toControlStyleRules().contains("-fx-padding: 0 24px"));
-        assertTrue(theme.toControlStyleRules().contains("-fx-padding: 28px"));
+        assertTrue(theme.toControlStyleRules().contains("-fx-padding: 24px"));
         assertTrue(theme.toControlStyleRules().contains("-m3-selected-mark-width: 12px"));
         assertTrue(theme.toControlStyleRules().contains("-m3-selected-dot-size: 10px"));
         assertTrue(theme.toControlStyleRules().contains("-fx-background-radius: 999px"));
@@ -574,14 +593,22 @@ final class M3ThemeTest {
         assertEquals(16.0, theme.tokens().componentTokens().menu().lastItemContainerShape(), 0.0001);
         assertEquals(12.0, theme.tokens().componentTokens().menu().itemContentSpacing(), 0.0001);
         assertEquals(56.0, theme.tokens().componentTokens().search().barHeight(), 0.0001);
-        assertEquals(24.0, theme.tokens().componentTokens().search().barHorizontalPadding(), 0.0001);
-        assertEquals(4.0, theme.tokens().componentTokens().search().barContentSpacing(), 0.0001);
+        assertEquals(16.0, theme.tokens().componentTokens().search().barHorizontalPadding(), 0.0001);
+        assertEquals(16.0, theme.tokens().componentTokens().search().barContentSpacing(), 0.0001);
+        assertEquals(4.0, theme.tokens().componentTokens().search().containedBarHorizontalPadding(), 0.0001);
+        assertEquals(4.0, theme.tokens().componentTokens().search().containedBarContentSpacing(), 0.0001);
+        assertEquals(16.0, theme.tokens().componentTokens().search().dividedBarHorizontalPadding(), 0.0001);
+        assertEquals(16.0, theme.tokens().componentTokens().search().dividedBarContentSpacing(), 0.0001);
         assertEquals(0.0, theme.tokens().componentTokens().search().barTrailingActionsGap(), 0.0001);
         assertEquals(12.0, theme.tokens().componentTokens().search().viewHorizontalPadding(), 0.0001);
         assertEquals(2.0, theme.tokens().componentTokens().search().viewBarResultsGap(), 0.0001);
         assertEquals(16.0, theme.tokens().componentTokens().search().viewResultsShape(), 0.0001);
-        assertEquals(16.0, theme.tokens().componentTokens().search().resultContainerShape(), 0.0001);
-        assertEquals(12.0, theme.tokens().componentTokens().search().viewResultPadding(), 0.0001);
+        assertEquals(4.0, theme.tokens().componentTokens().search().viewDockedBottomPadding(), 0.0001);
+        assertEquals(16.0, theme.tokens().componentTokens().search().viewFullScreenBottomPadding(), 0.0001);
+        assertEquals(360.0, theme.tokens().componentTokens().search().viewMinWidth(), 0.0001);
+        assertEquals(720.0, theme.tokens().componentTokens().search().viewMaxWidth(), 0.0001);
+        assertEquals(240.0, theme.tokens().componentTokens().search().viewDockedMinHeight(), 0.0001);
+        assertEquals(72.0, theme.tokens().componentTokens().search().viewFullScreenDividedHeaderHeight(), 0.0001);
         assertEquals(72.0, theme.tokens().componentTokens().form().rowMinHeight(), 0.0001);
         assertEquals(20.0, theme.tokens().componentTokens().validationSummary().contentPadding(), 0.0001);
         assertEquals(24.0, theme.tokens().componentTokens().surface().containerShape(), 0.0001);
@@ -590,8 +617,8 @@ final class M3ThemeTest {
         assertEquals(40.0, theme.tokens().componentTokens().carousel().smallItemMinWidth(), 0.0001);
         assertEquals(56.0, theme.tokens().componentTokens().carousel().smallItemMaxWidth(), 0.0001);
         assertEquals(320.0, theme.tokens().componentTokens().carousel().largeItemMaxWidth(), 0.0001);
-        assertEquals(28.0, theme.tokens().componentTokens().sheet().contentPadding(), 0.0001);
-        assertEquals(36.0, theme.tokens().componentTokens().sheet().dragHandleWidth(), 0.0001);
+        assertEquals(24.0, theme.tokens().componentTokens().sheet().contentPadding(), 0.0001);
+        assertEquals(32.0, theme.tokens().componentTokens().sheet().dragHandleWidth(), 0.0001);
         assertEquals(24.0, theme.tokens().componentTokens().card().containerShape(), 0.0001);
         assertEquals(20.0, theme.tokens().componentTokens().card().contentPadding(), 0.0001);
         assertEquals(24.0, theme.tokens().componentTokens().dialog().contentPadding(), 0.0001);
@@ -1210,8 +1237,11 @@ final class M3ThemeTest {
         assertEquals(44.0, firstMenuItem.getOneLineHeight(), 0.0001);
         assertEquals(2.0, menu.getPadding().getTop(), 0.0001);
         assertEquals(16.0, firstMenuItem.getContainerShape(), 0.0001);
+        assertEquals(6.0, firstMenuItem.getInnerCornerShape(), 0.0001);
         assertEquals(6.0, middleMenuItem.getContainerShape(), 0.0001);
+        assertEquals(6.0, middleMenuItem.getInnerCornerShape(), 0.0001);
         assertEquals(16.0, lastMenuItem.getContainerShape(), 0.0001);
+        assertEquals(6.0, lastMenuItem.getInnerCornerShape(), 0.0001);
         assertEquals(16.0, firstMenuItem.getHorizontalPadding(), 0.0001);
         assertEquals(12.0, firstMenuItem.getContentSpacing(), 0.0001);
         menu.setSelectionMode(M3MenuSelectionMode.SINGLE);
@@ -1219,18 +1249,18 @@ final class M3ThemeTest {
         root.applyCss();
         assertEquals(16.0, middleMenuItem.getContainerShape(), 0.0001);
         assertEquals(56.0, searchBar.getPrefHeight(), 0.0001);
-        assertEquals(24.0, searchBar.getPadding().getLeft(), 0.0001);
+        assertEquals(16.0, searchBar.getPadding().getLeft(), 0.0001);
         assertEquals(0.0, ((HBox) searchBar.lookup("." + M3SearchBar.TRAILING_STYLE_CLASS)).getSpacing(), 0.0001);
         assertEquals(12.0, searchView.getPadding().getLeft(), 0.0001);
         assertEquals(12.0, searchView.getPadding().getRight(), 0.0001);
         M3ListItem themedSearchResult = (M3ListItem) searchView.getResults().get(0);
         assertEquals(64.0, themedSearchResult.getOneLineHeight(), 0.0001);
-        assertEquals(16.0, themedSearchResult.getContainerShape(), 0.0001);
+        assertEquals(10.0, themedSearchResult.getContainerShape(), 0.0001);
         assertEquals(20.0, themedSearchResult.getHorizontalPadding(), 0.0001);
-        assertEquals(20.0, ((Region) datePicker.lookup("." + M3DatePicker.CONTAINER_STYLE_CLASS)).getPadding().getTop(), 0.0001);
-        assertEquals(48.0, datePicker.lookup("." + M3DatePicker.NAVIGATION_BUTTON_STYLE_CLASS).prefWidth(-1.0), 0.0001);
-        assertEquals(44.0, datePicker.lookup("." + M3DatePicker.DAY_CELL_STYLE_CLASS).prefWidth(-1.0), 0.0001);
-        assertEquals(44.0, datePicker.lookup("." + M3DatePicker.DAY_CELL_STYLE_CLASS).prefHeight(-1.0), 0.0001);
+        assertEquals(0.0, ((Region) datePicker.lookup("." + M3DatePicker.CONTAINER_STYLE_CLASS)).getPadding().getTop(), 0.0001);
+        assertEquals(40.0, datePicker.lookup("." + M3DatePicker.NAVIGATION_BUTTON_STYLE_CLASS).prefWidth(-1.0), 0.0001);
+        assertEquals(48.0, datePicker.lookup("." + M3DatePicker.DAY_CELL_STYLE_CLASS).prefWidth(-1.0), 0.0001);
+        assertEquals(48.0, datePicker.lookup("." + M3DatePicker.DAY_CELL_STYLE_CLASS).prefHeight(-1.0), 0.0001);
         assertEquals(24.0, ((Region) timePicker.lookup("." + M3TimePicker.CONTAINER_STYLE_CLASS)).getPadding().getTop(), 0.0001);
         assertEquals(96.0, timePicker.lookup("." + M3TimePicker.HOUR_DISPLAY_STYLE_CLASS).prefWidth(-1.0), 0.0001);
         assertEquals(80.0, timePicker.lookup("." + M3TimePicker.MINUTE_DISPLAY_STYLE_CLASS).prefHeight(-1.0), 0.0001);
@@ -1265,30 +1295,32 @@ final class M3ThemeTest {
         );
         assertEquals(56.0, listSectionHeader.prefHeight(-1.0), 0.0001);
         assertEquals(20.0, listSectionHeader.getPadding().getLeft(), 0.0001);
-        assertEquals(384.0, sideSheet.getPrefWidth(), 0.0001);
-        assertEquals(360.0, bottomSheet.getPrefHeight(), 0.0001);
+        assertEquals(256.0, sideSheet.getPrefWidth(), 0.0001);
+        assertEquals(400.0, sideSheet.getMaxWidth(), 0.0001);
+        assertEquals(Region.USE_COMPUTED_SIZE, bottomSheet.getPrefHeight(), 0.0001);
+        assertEquals(640.0, bottomSheet.getMaxWidth(), 0.0001);
         assertEquals(
-                28.0,
+                24.0,
                 ((Region) sideSheet.lookup("." + M3SideSheet.HEADER_STYLE_CLASS)).getPadding().getLeft(),
                 0.0001
         );
         assertEquals(
-                28.0,
+                24.0,
                 ((Region) sideSheet.lookup("." + M3SideSheet.CONTENT_STYLE_CLASS)).getPadding().getLeft(),
                 0.0001
         );
         assertEquals(
-                28.0,
+                24.0,
                 ((Region) bottomSheet.lookup("." + M3BottomSheet.HEADER_STYLE_CLASS)).getPadding().getLeft(),
                 0.0001
         );
         assertEquals(
-                28.0,
+                24.0,
                 ((Region) bottomSheet.lookup("." + M3BottomSheet.CONTENT_STYLE_CLASS)).getPadding().getLeft(),
                 0.0001
         );
-        assertEquals(36.0, ((Region) bottomSheet.lookup("." + M3BottomSheet.DRAG_HANDLE_STYLE_CLASS)).prefWidth(-1.0), 0.0001);
-        assertEquals(5.0, ((Region) bottomSheet.lookup("." + M3BottomSheet.DRAG_HANDLE_STYLE_CLASS)).prefHeight(-1.0), 0.0001);
+        assertEquals(32.0, ((Region) bottomSheet.lookup("." + M3BottomSheet.DRAG_HANDLE_STYLE_CLASS)).prefWidth(-1.0), 0.0001);
+        assertEquals(4.0, ((Region) bottomSheet.lookup("." + M3BottomSheet.DRAG_HANDLE_STYLE_CLASS)).prefHeight(-1.0), 0.0001);
         assertEquals(24.0, card.getContainerShape(), 0.0001);
         assertEquals(20.0, card.getContentPadding(), 0.0001);
         assertEquals(32.0, dialogPane.getContainerShape(), 0.0001);
@@ -1401,10 +1433,10 @@ final class M3ThemeTest {
         assertEquals(0.0, ((HBox) searchBar.lookup("." + M3SearchBar.TRAILING_STYLE_CLASS)).getSpacing(), 0.0001);
         assertEquals(56.0, ((M3ListItem) searchView.getResults().get(0)).getOneLineHeight(), 0.0001);
         assertEquals(0.0, ((M3ListItem) searchView.getResults().get(0)).getContainerShape(), 0.0001);
-        assertEquals(16.0, ((Region) datePicker.lookup("." + M3DatePicker.CONTAINER_STYLE_CLASS)).getPadding().getTop(), 0.0001);
+        assertEquals(0.0, ((Region) datePicker.lookup("." + M3DatePicker.CONTAINER_STYLE_CLASS)).getPadding().getTop(), 0.0001);
         assertEquals(40.0, datePicker.lookup("." + M3DatePicker.NAVIGATION_BUTTON_STYLE_CLASS).prefWidth(-1.0), 0.0001);
-        assertEquals(40.0, datePicker.lookup("." + M3DatePicker.DAY_CELL_STYLE_CLASS).prefWidth(-1.0), 0.0001);
-        assertEquals(40.0, datePicker.lookup("." + M3DatePicker.DAY_CELL_STYLE_CLASS).prefHeight(-1.0), 0.0001);
+        assertEquals(48.0, datePicker.lookup("." + M3DatePicker.DAY_CELL_STYLE_CLASS).prefWidth(-1.0), 0.0001);
+        assertEquals(48.0, datePicker.lookup("." + M3DatePicker.DAY_CELL_STYLE_CLASS).prefHeight(-1.0), 0.0001);
         assertEquals(24.0, ((Region) timePicker.lookup("." + M3TimePicker.CONTAINER_STYLE_CLASS)).getPadding().getTop(), 0.0001);
         assertEquals(96.0, timePicker.lookup("." + M3TimePicker.HOUR_DISPLAY_STYLE_CLASS).prefWidth(-1.0), 0.0001);
         assertEquals(80.0, timePicker.lookup("." + M3TimePicker.MINUTE_DISPLAY_STYLE_CLASS).prefHeight(-1.0), 0.0001);
@@ -1439,8 +1471,10 @@ final class M3ThemeTest {
         );
         assertEquals(48.0, listSectionHeader.prefHeight(-1.0), 0.0001);
         assertEquals(16.0, listSectionHeader.getPadding().getLeft(), 0.0001);
-        assertEquals(360.0, sideSheet.getPrefWidth(), 0.0001);
-        assertEquals(320.0, bottomSheet.getPrefHeight(), 0.0001);
+        assertEquals(256.0, sideSheet.getPrefWidth(), 0.0001);
+        assertEquals(400.0, sideSheet.getMaxWidth(), 0.0001);
+        assertEquals(Region.USE_COMPUTED_SIZE, bottomSheet.getPrefHeight(), 0.0001);
+        assertEquals(640.0, bottomSheet.getMaxWidth(), 0.0001);
         assertEquals(
                 24.0,
                 ((Region) sideSheet.lookup("." + M3SideSheet.HEADER_STYLE_CLASS)).getPadding().getLeft(),
@@ -1770,20 +1804,6 @@ final class M3ThemeTest {
         Files.writeString(path, content);
         path.toFile().deleteOnExit();
         return path.toUri().toString();
-    }
-
-    /// Verifies that a selected carousel item uses the expected token-driven shadow.
-    private static void assertSelectedCarouselShadow(
-            M3Button item,
-            double radius,
-            double spread,
-            double offsetY
-    ) {
-        Effect effect = item.getEffect();
-        DropShadow shadow = assertInstanceOf(DropShadow.class, effect);
-        assertEquals(radius, shadow.getRadius(), 0.0001);
-        assertEquals(spread, shadow.getSpread(), 0.0001);
-        assertEquals(offsetY, shadow.getOffsetY(), 0.0001);
     }
 
     /// Returns the primary action part exposed by a split button.

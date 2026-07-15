@@ -28,6 +28,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
+import java.util.Objects;
 
 import static org.glavo.m3fx.controls.ControlVisualTestUtils.assertSnapshotAreaChanged;
 import static org.glavo.m3fx.controls.ControlVisualTestUtils.assertSnapshotHasColorVariety;
@@ -108,13 +109,31 @@ final class M3DatePickerTest {
 
             assertInstanceOf(M3DatePickerSkin.class, picker.getSkin());
             assertEquals(42, picker.lookupAll("." + M3DatePicker.DAY_CELL_STYLE_CLASS).size());
-            assertTrue(picker.lookup("." + M3DatePicker.MONTH_LABEL_STYLE_CLASS).toString().contains("2026"));
+            M3MenuButton yearButton = assertInstanceOf(
+                    M3MenuButton.class,
+                    picker.lookup("." + M3DatePicker.YEAR_MENU_BUTTON_STYLE_CLASS)
+            );
+            assertEquals("2026", yearButton.getText());
+            M3MenuButton monthButton = assertInstanceOf(
+                    M3MenuButton.class,
+                    picker.lookup("." + M3DatePicker.MONTH_MENU_BUTTON_STYLE_CLASS)
+            );
+            assertEquals(12, monthButton.getItems().size());
+            assertFalse(monthButton.getText().contains("..."));
 
             ButtonBase targetCell = dayCellForDate(picker, LocalDate.of(2026, 5, 20));
             targetCell.fire();
 
             assertEquals(LocalDate.of(2026, 5, 20), picker.getValue());
             assertTrue(targetCell.getStyleClass().contains(M3DatePicker.SELECTED_DAY_STYLE_CLASS));
+            assertEquals(48.0, targetCell.getWidth(), 0.5);
+            Node stateLayer = Objects.requireNonNull(targetCell.lookup(".m3-state-layer"), "state layer");
+            assertEquals(40.0, stateLayer.getBoundsInParent().getWidth(), 0.5);
+            assertEquals(40.0, stateLayer.getBoundsInParent().getHeight(), 0.5);
+
+            M3MenuItem january = assertInstanceOf(M3MenuItem.class, monthButton.getItems().get(0));
+            january.fire();
+            assertEquals(YearMonth.of(2026, 1), picker.getDisplayedMonth());
         });
     }
 

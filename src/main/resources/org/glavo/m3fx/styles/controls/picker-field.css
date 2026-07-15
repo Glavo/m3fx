@@ -31,7 +31,7 @@
 .m3-date-range-picker-field-preset-content,
 .m3-time-picker-field-preset-content {
     -fx-alignment: top-left;
-    -fx-background-color: -m3-color-surface-container-low;
+    -fx-background-color: -m3-color-surface-container-high;
     -m3-popup-shape: 28px;
     -m3-popup-padding: 16px;
     -m3-popup-spacing: 16px;

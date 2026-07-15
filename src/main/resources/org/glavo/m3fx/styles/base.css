@@ -38,7 +38,8 @@
 .m3-tab:hover .m3-state-layer,
 .m3-navigation-item:hover .m3-state-layer,
 .m3-list-item:hover .m3-state-layer,
-.m3-card:hover .m3-state-layer {
+.m3-search-bar:hover .m3-state-layer,
+.m3-card:actionable:hover .m3-state-layer {
     -fx-opacity: 0.08;
 }
 
@@ -54,7 +55,8 @@
 .m3-tab:focus-visible .m3-state-layer,
 .m3-navigation-item:focus-visible .m3-state-layer,
 .m3-list-item:focus-visible .m3-state-layer,
-.m3-card:focus-visible .m3-state-layer {
+.m3-search-bar:focus-visible .m3-state-layer,
+.m3-card:actionable:focus-visible .m3-state-layer {
     -fx-opacity: 0.10;
 }
 
@@ -70,6 +72,12 @@
 .m3-tab:pressed .m3-state-layer,
 .m3-navigation-item:pressed .m3-state-layer,
 .m3-list-item:pressed .m3-state-layer,
-.m3-card:pressed .m3-state-layer {
+.m3-search-bar:pressed .m3-state-layer,
+.m3-card:actionable:armed .m3-state-layer,
+.m3-card:actionable:pressed .m3-state-layer {
     -fx-opacity: 0.10;
+}
+
+.m3-card:dragged .m3-state-layer {
+    -fx-opacity: 0.16;
 }

@@ -9,7 +9,6 @@ import javafx.collections.SetChangeListener;
 import javafx.css.PseudoClass;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
-
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
@@ -22,22 +21,43 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.ArcTo;
+import javafx.scene.shape.ClosePath;
+import javafx.scene.shape.LineTo;
+import javafx.scene.shape.MoveTo;
+import javafx.scene.shape.Path;
+import javafx.scene.shape.PathElement;
 import javafx.scene.shape.Rectangle;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListItemSlotSize;
 import org.glavo.m3fx.controls.M3MenuItem;
+import org.glavo.m3fx.controls.M3SubMenuItem;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3FocusGuards;
 import org.glavo.m3fx.internal.M3FocusRequests;
+import org.glavo.m3fx.internal.M3FiniteTransition;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.glavo.m3fx.internal.M3NodeTransition;
+import org.glavo.m3fx.internal.M3ThemeResolver;
+import org.glavo.m3fx.theme.M3Theme;
+import org.glavo.m3fx.tokens.M3StateLayerTokens;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 /// The default skin for [M3ListItem].
 @NotNullByDefault
 public class M3ListItemSkin extends SkinBase<M3ListItem> {
+    /// The pseudo-class applied to the first item in a visible menu group.
+    private static final PseudoClass FIRST_MENU_ITEM_PSEUDO_CLASS = PseudoClass.getPseudoClass("first-menu-item");
+
+    /// The pseudo-class applied to the last item in a visible menu group.
+    private static final PseudoClass LAST_MENU_ITEM_PSEUDO_CLASS = PseudoClass.getPseudoClass("last-menu-item");
+
+    /// The pseudo-class applied while a submenu owner keeps its submenu open.
+    private static final PseudoClass ACTIVE_PSEUDO_CLASS = PseudoClass.getPseudoClass("active");
+
     /// The pseudo-class mirrored to internal nodes when a menu item uses the vibrant color style.
     private static final PseudoClass VIBRANT_PSEUDO_CLASS = PseudoClass.getPseudoClass("vibrant");
 
@@ -52,6 +72,9 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
 
     /// The hidden selected container scale.
     private static final double HIDDEN_SELECTION_SCALE = 0.96;
+
+    /// Fallback state opacity tokens used without an installed theme.
+    private static final M3StateLayerTokens FALLBACK_STATE_LAYER_TOKENS = M3StateLayerTokens.baseline();
 
     /// The selected container background layer.
     private final Region selectionContainer = new Region();
@@ -95,11 +118,41 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     /// The selected container appearance animation.
     private final M3NodeTransition selectionAnimation = new M3NodeTransition(selectionContainer);
 
+    /// The reusable clip that shapes the selected container without per-pulse background allocation.
+    private final @Nullable RoundedRectangleClip selectionContainerClip;
+
+    /// The reusable clip that shapes the base container without per-pulse background allocation.
+    private final @Nullable RoundedRectangleClip baseContainerClip;
+
+    /// The reusable transition for expressive menu-item corner morphing.
+    private final @Nullable ContainerShapeTransition containerShapeAnimation;
+
     /// The selected state targeted by the currently configured selection animation.
     private boolean selectionAnimationTargetSelected;
 
-    /// The background radius currently applied to the state container.
-    private double containerRadius = Double.NaN;
+    /// The top-left background radius currently applied to the state container.
+    private double containerTopLeftRadius = Double.NaN;
+
+    /// The top-right background radius currently applied to the state container.
+    private double containerTopRightRadius = Double.NaN;
+
+    /// The bottom-right background radius currently applied to the state container.
+    private double containerBottomRightRadius = Double.NaN;
+
+    /// The bottom-left background radius currently applied to the state container.
+    private double containerBottomLeftRadius = Double.NaN;
+
+    /// The target top-left radius for the current shape transition.
+    private double targetContainerTopLeftRadius = Double.NaN;
+
+    /// The target top-right radius for the current shape transition.
+    private double targetContainerTopRightRadius = Double.NaN;
+
+    /// The target bottom-right radius for the current shape transition.
+    private double targetContainerBottomRightRadius = Double.NaN;
+
+    /// The target bottom-left radius for the current shape transition.
+    private double targetContainerBottomLeftRadius = Double.NaN;
 
     /// Handles primary mouse presses.
     private final EventHandler<MouseEvent> mousePressedHandler = this::handleMousePressed;
@@ -127,8 +180,15 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
 
 
     /// Mirrors menu-owned pseudo-classes to internal skin nodes.
-    private final SetChangeListener<PseudoClass> skinnablePseudoClassListener =
-            change -> updateMenuColorStylePseudoClasses();
+    private final SetChangeListener<PseudoClass> skinnablePseudoClassListener = change -> {
+        updateMenuColorStylePseudoClasses();
+        @Nullable PseudoClass changed = change.wasAdded() ? change.getElementAdded() : change.getElementRemoved();
+        if (changed == FIRST_MENU_ITEM_PSEUDO_CLASS
+                || changed == LAST_MENU_ITEM_PSEUDO_CLASS
+                || changed == ACTIVE_PSEUDO_CLASS) {
+            getSkinnable().requestLayout();
+        }
+    };
 
     /// Animates the selected container and mirrors selected state to internal text nodes.
     private final ChangeListener<Boolean> selectedListener =
@@ -140,6 +200,10 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
             resetInteractionState();
         }
     };
+
+    /// Updates persistent active feedback while a submenu remains open.
+    private final ChangeListener<Boolean> subMenuShowingListener =
+            (observable, oldValue, newValue) -> updateSubMenuActiveState();
 
     /// Whether a primary mouse press currently owns the active ripple.
     private boolean mousePressed;
@@ -163,11 +227,20 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         leadingSlot.getStyleClass().add("m3-list-item-leading");
         trailingSlot.getStyleClass().add("m3-list-item-trailing");
         if (control instanceof M3MenuItem) {
+            selectionContainerClip = new RoundedRectangleClip();
+            baseContainerClip = new RoundedRectangleClip();
+            containerShapeAnimation = new ContainerShapeTransition();
             selectionContainer.getStyleClass().add(MENU_ITEM_SELECTION_CONTAINER_STYLE_CLASS);
             overlineLabel.getStyleClass().add(MENU_ITEM_TEXT_STYLE_CLASS);
             headlineLabel.getStyleClass().add(MENU_ITEM_TEXT_STYLE_CLASS);
             supportingLabel.getStyleClass().add(MENU_ITEM_TEXT_STYLE_CLASS);
             trailingSupportingLabel.getStyleClass().add(MENU_ITEM_TEXT_STYLE_CLASS);
+            selectionContainer.setClip(selectionContainerClip.path());
+            container.setClip(baseContainerClip.path());
+        } else {
+            selectionContainerClip = null;
+            baseContainerClip = null;
+            containerShapeAnimation = null;
         }
 
         selectionContainer.setManaged(false);
@@ -213,6 +286,10 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         control.getPseudoClassStates().addListener(skinnablePseudoClassListener);
         control.selectedProperty().addListener(selectedListener);
         control.disabledProperty().addListener(disabledListener);
+        if (control instanceof M3SubMenuItem subMenuItem) {
+            subMenuItem.subMenuShowingProperty().addListener(subMenuShowingListener);
+            updateSubMenuActiveState();
+        }
     }
 
     /// Removes behavior handlers before the skin is disposed.
@@ -220,6 +297,10 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     public void dispose() {
         M3ListItem item = getSkinnable();
         selectionAnimation.stop();
+        @Nullable ContainerShapeTransition shapeAnimation = containerShapeAnimation;
+        if (shapeAnimation != null) {
+            shapeAnimation.stop();
+        }
         selectionAnimation.setOnFinished(null);
         resetInteractionState();
         stateLayer.uninstallStateTransitions();
@@ -242,6 +323,9 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         item.getPseudoClassStates().removeListener(skinnablePseudoClassListener);
         item.selectedProperty().removeListener(selectedListener);
         item.disabledProperty().removeListener(disabledListener);
+        if (item instanceof M3SubMenuItem subMenuItem) {
+            subMenuItem.subMenuShowingProperty().removeListener(subMenuShowingListener);
+        }
         item.removeEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
         item.removeEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
         item.removeEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
@@ -252,6 +336,8 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         textBox.alignmentProperty().unbind();
         trailingBox.nodeOrientationProperty().unbind();
         trailingBox.alignmentProperty().unbind();
+        selectionContainer.setClip(null);
+        container.setClip(null);
         getChildren().removeAll(selectionContainer, container, stateLayer);
         super.dispose();
     }
@@ -283,11 +369,88 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     /// Lays out the container and bounded state layer.
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
-        double shapeRadius = getSkinnable().getContainerShape();
+        M3ListItem item = getSkinnable();
+        double outerRadius = resolvedShapeRadius(width, height, item.getContainerShape());
         selectionContainer.resizeRelocate(x, y, width, height);
         container.resizeRelocate(x, y, width, height);
-        updateContainerShape(width, height, shapeRadius);
-        stateLayer.layoutLayer(x, y, width, height, shapeRadius);
+        if (!(item instanceof M3MenuItem menuItem)) {
+            updateStandardContainerShape(outerRadius);
+            stateLayer.layoutLayer(x, y, width, height, outerRadius);
+            return;
+        }
+
+        double topLeftRadius = outerRadius;
+        double topRightRadius = outerRadius;
+        double bottomRightRadius = outerRadius;
+        double bottomLeftRadius = outerRadius;
+
+        if (!item.isSelected()
+                && !item.getPseudoClassStates().contains(ACTIVE_PSEUDO_CLASS)) {
+            boolean first = item.getPseudoClassStates().contains(FIRST_MENU_ITEM_PSEUDO_CLASS);
+            boolean last = item.getPseudoClassStates().contains(LAST_MENU_ITEM_PSEUDO_CLASS);
+            if (first != last) {
+                double innerRadius = resolvedShapeRadius(width, height, menuItem.getInnerCornerShape());
+                if (first) {
+                    bottomRightRadius = innerRadius;
+                    bottomLeftRadius = innerRadius;
+                } else {
+                    topLeftRadius = innerRadius;
+                    topRightRadius = innerRadius;
+                }
+            }
+        }
+
+        updateContainerShapeTarget(topLeftRadius, topRightRadius, bottomRightRadius, bottomLeftRadius);
+        @Nullable RoundedRectangleClip selectedClip = selectionContainerClip;
+        @Nullable RoundedRectangleClip baseClip = baseContainerClip;
+        if (selectedClip != null && baseClip != null) {
+            selectedClip.update(
+                    width,
+                    height,
+                    containerTopLeftRadius,
+                    containerTopRightRadius,
+                    containerBottomRightRadius,
+                    containerBottomLeftRadius
+            );
+            baseClip.update(
+                    width,
+                    height,
+                    containerTopLeftRadius,
+                    containerTopRightRadius,
+                    containerBottomRightRadius,
+                    containerBottomLeftRadius
+            );
+        }
+        stateLayer.layoutLayer(
+                x,
+                y,
+                width,
+                height,
+                containerTopLeftRadius,
+                containerTopRightRadius,
+                containerBottomRightRadius,
+                containerBottomLeftRadius
+        );
+    }
+
+    /// Updates the uniform background radius used by non-menu list items.
+    private void updateStandardContainerShape(double radius) {
+        if (Double.compare(containerTopLeftRadius, radius) == 0
+                && Double.compare(containerTopRightRadius, radius) == 0
+                && Double.compare(containerBottomRightRadius, radius) == 0
+                && Double.compare(containerBottomLeftRadius, radius) == 0) {
+            return;
+        }
+
+        setContainerShape(radius, radius, radius, radius);
+        setContainerShapeTarget(radius, radius, radius, radius);
+        String style = "-fx-background-radius: " + formatPixels(radius) + ";";
+        selectionContainer.setStyle(style);
+        container.setStyle(style);
+        if (getSkinnable().getScene() != null) {
+            selectionContainer.applyCss();
+            container.applyCss();
+        }
     }
 
     /// Updates text and layout after text content changes.
@@ -433,21 +596,70 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         };
     }
 
-    /// Updates the selected container shape using a radius that fits the allocated bounds.
-    private void updateContainerShape(double width, double height, double shapeRadius) {
-        double radius = resolvedShapeRadius(width, height, shapeRadius);
-        if (Double.compare(containerRadius, radius) == 0) {
+    /// Updates or animates the independently resolved state-container corner radii.
+    private void updateContainerShapeTarget(
+            double topLeftRadius,
+            double topRightRadius,
+            double bottomRightRadius,
+            double bottomLeftRadius
+    ) {
+        if (Double.isNaN(containerTopLeftRadius)) {
+            setContainerShape(topLeftRadius, topRightRadius, bottomRightRadius, bottomLeftRadius);
+            setContainerShapeTarget(topLeftRadius, topRightRadius, bottomRightRadius, bottomLeftRadius);
             return;
         }
-        containerRadius = radius;
-        String style = "-fx-background-radius: " + formatPixels(radius) + ";";
-        selectionContainer.setStyle(style);
-        container.setStyle(style);
-        if (getSkinnable().getScene() == null) {
+
+        if (Double.compare(targetContainerTopLeftRadius, topLeftRadius) == 0
+                && Double.compare(targetContainerTopRightRadius, topRightRadius) == 0
+                && Double.compare(targetContainerBottomRightRadius, bottomRightRadius) == 0
+                && Double.compare(targetContainerBottomLeftRadius, bottomLeftRadius) == 0) {
             return;
         }
-        selectionContainer.applyCss();
-        container.applyCss();
+
+        setContainerShapeTarget(topLeftRadius, topRightRadius, bottomRightRadius, bottomLeftRadius);
+        @Nullable ContainerShapeTransition shapeAnimation = containerShapeAnimation;
+        if (shapeAnimation == null || getSkinnable().getScene() == null) {
+            if (shapeAnimation != null) {
+                shapeAnimation.stop();
+            }
+            setContainerShape(topLeftRadius, topRightRadius, bottomRightRadius, bottomLeftRadius);
+            return;
+        }
+
+        shapeAnimation.configure(
+                M3Animation.defaultSpatial(getSkinnable()),
+                topLeftRadius,
+                topRightRadius,
+                bottomRightRadius,
+                bottomLeftRadius
+        );
+        M3Animation.playFromStart(getSkinnable(), shapeAnimation);
+    }
+
+    /// Stores the current rendered state-container corner radii.
+    private void setContainerShape(
+            double topLeftRadius,
+            double topRightRadius,
+            double bottomRightRadius,
+            double bottomLeftRadius
+    ) {
+        containerTopLeftRadius = topLeftRadius;
+        containerTopRightRadius = topRightRadius;
+        containerBottomRightRadius = bottomRightRadius;
+        containerBottomLeftRadius = bottomLeftRadius;
+    }
+
+    /// Stores the requested state-container corner radii.
+    private void setContainerShapeTarget(
+            double topLeftRadius,
+            double topRightRadius,
+            double bottomRightRadius,
+            double bottomLeftRadius
+    ) {
+        targetContainerTopLeftRadius = topLeftRadius;
+        targetContainerTopRightRadius = topRightRadius;
+        targetContainerBottomRightRadius = bottomRightRadius;
+        targetContainerBottomLeftRadius = bottomLeftRadius;
     }
 
     /// Mirrors the selected pseudo-class to internal nodes that need direct CSS state selectors.
@@ -468,6 +680,21 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         supportingLabel.pseudoClassStateChanged(VIBRANT_PSEUDO_CLASS, vibrant);
         trailingSupportingLabel.pseudoClassStateChanged(VIBRANT_PSEUDO_CLASS, vibrant);
         stateLayer.setContentPseudoClass(VIBRANT_PSEUDO_CLASS, vibrant);
+    }
+
+    /// Applies the menu active-state opacity while a submenu remains visible.
+    private void updateSubMenuActiveState() {
+        M3ListItem item = getSkinnable();
+        if (!(item instanceof M3SubMenuItem subMenuItem) || !subMenuItem.isSubMenuShowing()) {
+            stateLayer.setRestingOverlayOpacity(0.0);
+            return;
+        }
+
+        @Nullable M3Theme theme = M3ThemeResolver.findTheme(item);
+        M3StateLayerTokens tokens = theme == null
+                ? FALLBACK_STATE_LAYER_TOKENS
+                : theme.tokens().stateLayerTokens();
+        stateLayer.setRestingOverlayOpacity(tokens.hoverOpacity());
     }
 
     /// Animates the selected container to the requested state.
@@ -605,6 +832,254 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
         mousePressed = false;
         spaceKeyPressed = false;
         stateLayer.reset();
+    }
+
+    /// Reuses one transition while independently interpolating all four menu-item corners.
+    @NotNullByDefault
+    private final class ContainerShapeTransition extends M3FiniteTransition {
+        /// The starting top-left radius for the current run.
+        private double startTopLeftRadius;
+
+        /// The starting top-right radius for the current run.
+        private double startTopRightRadius;
+
+        /// The starting bottom-right radius for the current run.
+        private double startBottomRightRadius;
+
+        /// The starting bottom-left radius for the current run.
+        private double startBottomLeftRadius;
+
+        /// The target top-left radius for the current run.
+        private double targetTopLeftRadius;
+
+        /// The target top-right radius for the current run.
+        private double targetTopRightRadius;
+
+        /// The target bottom-right radius for the current run.
+        private double targetBottomRightRadius;
+
+        /// The target bottom-left radius for the current run.
+        private double targetBottomLeftRadius;
+
+        /// Configures a run from the currently rendered shape to the requested shape.
+        private void configure(
+                M3MotionSpec spec,
+                double topLeftRadius,
+                double topRightRadius,
+                double bottomRightRadius,
+                double bottomLeftRadius
+        ) {
+            stop();
+            setCycleDuration(spec.duration());
+            setInterpolator(spec.interpolator());
+            startTopLeftRadius = containerTopLeftRadius;
+            startTopRightRadius = containerTopRightRadius;
+            startBottomRightRadius = containerBottomRightRadius;
+            startBottomLeftRadius = containerBottomLeftRadius;
+            targetTopLeftRadius = topLeftRadius;
+            targetTopRightRadius = topRightRadius;
+            targetBottomRightRadius = bottomRightRadius;
+            targetBottomLeftRadius = bottomLeftRadius;
+        }
+
+        /// Applies the eased corner values without allocating pulse-local geometry objects.
+        @Override
+        protected void interpolate(double fraction) {
+            setContainerShape(
+                    startTopLeftRadius + (targetTopLeftRadius - startTopLeftRadius) * fraction,
+                    startTopRightRadius + (targetTopRightRadius - startTopRightRadius) * fraction,
+                    startBottomRightRadius + (targetBottomRightRadius - startBottomRightRadius) * fraction,
+                    startBottomLeftRadius + (targetBottomLeftRadius - startBottomLeftRadius) * fraction
+            );
+            getSkinnable().requestLayout();
+        }
+    }
+
+    /// A reusable asymmetric rounded rectangle used to clip menu-item surfaces.
+    @NotNullByDefault
+    private static final class RoundedRectangleClip extends Path {
+        /// The top-right corner element index.
+        private static final int TOP_RIGHT_CORNER_INDEX = 2;
+
+        /// The bottom-right corner element index.
+        private static final int BOTTOM_RIGHT_CORNER_INDEX = 4;
+
+        /// The bottom-left corner element index.
+        private static final int BOTTOM_LEFT_CORNER_INDEX = 6;
+
+        /// The top-left corner element index.
+        private static final int TOP_LEFT_CORNER_INDEX = 8;
+
+        /// The path starting point.
+        private final MoveTo start = new MoveTo();
+
+        /// The top edge.
+        private final LineTo topEdge = new LineTo();
+
+        /// The rounded top-right corner.
+        private final ArcTo topRightArc = new ArcTo();
+
+        /// The square top-right corner.
+        private final LineTo topRightLine = new LineTo();
+
+        /// The right edge.
+        private final LineTo rightEdge = new LineTo();
+
+        /// The rounded bottom-right corner.
+        private final ArcTo bottomRightArc = new ArcTo();
+
+        /// The square bottom-right corner.
+        private final LineTo bottomRightLine = new LineTo();
+
+        /// The bottom edge.
+        private final LineTo bottomEdge = new LineTo();
+
+        /// The rounded bottom-left corner.
+        private final ArcTo bottomLeftArc = new ArcTo();
+
+        /// The square bottom-left corner.
+        private final LineTo bottomLeftLine = new LineTo();
+
+        /// The left edge.
+        private final LineTo leftEdge = new LineTo();
+
+        /// The rounded top-left corner.
+        private final ArcTo topLeftArc = new ArcTo();
+
+        /// The square top-left corner.
+        private final LineTo topLeftLine = new LineTo();
+
+        /// The width represented by the current path.
+        private double width = Double.NaN;
+
+        /// The height represented by the current path.
+        private double height = Double.NaN;
+
+        /// The current top-left radius.
+        private double topLeftRadius = Double.NaN;
+
+        /// The current top-right radius.
+        private double topRightRadius = Double.NaN;
+
+        /// The current bottom-right radius.
+        private double bottomRightRadius = Double.NaN;
+
+        /// The current bottom-left radius.
+        private double bottomLeftRadius = Double.NaN;
+
+        /// Creates an empty reusable rounded rectangle.
+        private RoundedRectangleClip() {
+            setFill(Color.BLACK);
+            setStroke(null);
+            getElements().addAll(
+                    start,
+                    topEdge,
+                    topRightArc,
+                    rightEdge,
+                    bottomRightArc,
+                    bottomEdge,
+                    bottomLeftArc,
+                    leftEdge,
+                    topLeftArc,
+                    new ClosePath()
+            );
+        }
+
+        /// Returns this path for installation as a node clip.
+        private Path path() {
+            return this;
+        }
+
+        /// Updates the path to the supplied bounds and corner radii.
+        private void update(
+                double width,
+                double height,
+                double topLeftRadius,
+                double topRightRadius,
+                double bottomRightRadius,
+                double bottomLeftRadius
+        ) {
+            if (Double.compare(this.width, width) == 0
+                    && Double.compare(this.height, height) == 0
+                    && Double.compare(this.topLeftRadius, topLeftRadius) == 0
+                    && Double.compare(this.topRightRadius, topRightRadius) == 0
+                    && Double.compare(this.bottomRightRadius, bottomRightRadius) == 0
+                    && Double.compare(this.bottomLeftRadius, bottomLeftRadius) == 0) {
+                return;
+            }
+
+            this.width = width;
+            this.height = height;
+            this.topLeftRadius = topLeftRadius;
+            this.topRightRadius = topRightRadius;
+            this.bottomRightRadius = bottomRightRadius;
+            this.bottomLeftRadius = bottomLeftRadius;
+
+            start.setX(topLeftRadius);
+            start.setY(0.0);
+            topEdge.setX(width - topRightRadius);
+            topEdge.setY(0.0);
+            updateCorner(
+                    TOP_RIGHT_CORNER_INDEX,
+                    topRightArc,
+                    topRightLine,
+                    topRightRadius,
+                    width,
+                    topRightRadius
+            );
+            rightEdge.setX(width);
+            rightEdge.setY(height - bottomRightRadius);
+            updateCorner(
+                    BOTTOM_RIGHT_CORNER_INDEX,
+                    bottomRightArc,
+                    bottomRightLine,
+                    bottomRightRadius,
+                    width - bottomRightRadius,
+                    height
+            );
+            bottomEdge.setX(bottomLeftRadius);
+            bottomEdge.setY(height);
+            updateCorner(
+                    BOTTOM_LEFT_CORNER_INDEX,
+                    bottomLeftArc,
+                    bottomLeftLine,
+                    bottomLeftRadius,
+                    0.0,
+                    height - bottomLeftRadius
+            );
+            leftEdge.setX(0.0);
+            leftEdge.setY(topLeftRadius);
+            updateCorner(
+                    TOP_LEFT_CORNER_INDEX,
+                    topLeftArc,
+                    topLeftLine,
+                    topLeftRadius,
+                    topLeftRadius,
+                    0.0
+            );
+        }
+
+        /// Updates one corner and selects its rounded or square path element.
+        private void updateCorner(
+                int index,
+                ArcTo arc,
+                LineTo line,
+                double radius,
+                double x,
+                double y
+        ) {
+            arc.setRadiusX(radius);
+            arc.setRadiusY(radius);
+            arc.setX(x);
+            arc.setY(y);
+            arc.setSweepFlag(true);
+            line.setX(x);
+            line.setY(y);
+            PathElement element = radius <= 0.0 ? line : arc;
+            if (getElements().get(index) != element) {
+                getElements().set(index, element);
+            }
+        }
     }
 
 }

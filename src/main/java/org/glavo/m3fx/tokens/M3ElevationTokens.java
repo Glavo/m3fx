@@ -97,20 +97,30 @@ public sealed interface M3ElevationTokens permits M3ElevationTokensImpl {
         appendShadowRule(builder, ".m3-fab:hover", level5(), level3());
         appendShadowRule(builder, ".m3-fab:focus-visible, .m3-fab:armed, .m3-fab:pressed", level4(), level2());
         appendEffectResetRule(builder, ".m3-elevated-button:disabled, .m3-elevated-chip:disabled, .m3-fab:disabled");
-        appendShadowRule(builder, ".m3-elevated-card .m3-card-container", level4(), Math.max(level1(), level2() - level1()));
-        appendShadowRule(builder, ".m3-elevated-card:hover .m3-card-container", level5(), level3());
-        appendShadowRule(builder, ".m3-elevated-card:focus-visible .m3-card-container, .m3-elevated-card:pressed .m3-card-container", level4(), Math.max(level1(), level2() - level1()));
-        appendShadowRule(builder, ".m3-filled-card:hover .m3-card-container", level4(), Math.max(level1(), level2() - level1()));
-        appendEffectResetRule(builder, ".m3-filled-card:focus-visible .m3-card-container, .m3-filled-card:pressed .m3-card-container");
-        appendShadowRule(builder, ".m3-outlined-card:hover .m3-card-container", level4(), Math.max(level1(), level2() - level1()));
-        appendEffectResetRule(builder, ".m3-outlined-card:focus-visible .m3-card-container, .m3-outlined-card:pressed .m3-card-container");
-        appendShadowRule(builder, ".m3-elevated-card:disabled .m3-card-container", level4(), Math.max(level1(), level2() - level1()));
-        appendEffectResetRule(builder, ".m3-filled-card:disabled .m3-card-container, .m3-outlined-card:disabled .m3-card-container");
-        appendShadowRule(builder, ".m3-surface-elevation-level1", level1(), level1());
-        appendShadowRule(builder, ".m3-surface-elevation-level2", level2(), Math.max(level1(), level2() - level1()));
-        appendShadowRule(builder, ".m3-surface-elevation-level3", level3(), Math.max(level1(), level3() - level2()));
-        appendShadowRule(builder, ".m3-surface-elevation-level4", level4(), Math.max(level1(), level4() - level3()));
-        appendShadowRule(builder, ".m3-surface-elevation-level5", level5(), Math.max(level1(), level5() - level4()));
+        appendShadowRule(builder, ".m3-elevated-card .m3-card-container", level1(), level1());
+        appendShadowRule(builder, ".m3-elevated-card:actionable:hover .m3-card-container", level2(), Math.max(level1(), level2() - level1()));
+        appendShadowRule(builder, ".m3-elevated-card:actionable:focus-visible .m3-card-container, .m3-elevated-card:actionable:armed .m3-card-container, .m3-elevated-card:actionable:pressed .m3-card-container", level1(), level1());
+        appendShadowRule(builder, ".m3-elevated-card:dragged .m3-card-container", level4(), Math.max(level1(), level4() - level3()));
+        appendShadowRule(builder, ".m3-filled-card:actionable:hover .m3-card-container", level1(), level1());
+        appendEffectResetRule(builder, ".m3-filled-card:actionable:focus-visible .m3-card-container, .m3-filled-card:actionable:armed .m3-card-container, .m3-filled-card:actionable:pressed .m3-card-container");
+        appendShadowRule(builder, ".m3-filled-card:dragged .m3-card-container", level3(), Math.max(level1(), level3() - level2()));
+        appendShadowRule(builder, ".m3-outlined-card:actionable:hover .m3-card-container", level1(), level1());
+        appendEffectResetRule(builder, ".m3-outlined-card:actionable:focus-visible .m3-card-container, .m3-outlined-card:actionable:armed .m3-card-container, .m3-outlined-card:actionable:pressed .m3-card-container");
+        appendShadowRule(builder, ".m3-outlined-card:dragged .m3-card-container", level3(), Math.max(level1(), level3() - level2()));
+        appendShadowRule(builder, ".m3-card.m3-elevated-card:disabled .m3-card-container", level1(), level1());
+        appendEffectResetRule(
+                builder,
+                ".m3-card.m3-filled-card:disabled .m3-card-container, "
+                        + ".m3-card.m3-outlined-card:disabled .m3-card-container"
+        );
+        appendEffectResetRule(builder, ".m3-side-sheet.m3-standard-sheet");
+        appendShadowRule(builder, ".m3-side-sheet.m3-modal-sheet", level1(), level1());
+        appendShadowRule(builder, ".m3-bottom-sheet", level1(), level1());
+        appendShadowRule(builder, ".m3-surface-elevation-level1 .m3-surface-container", level1(), level1());
+        appendShadowRule(builder, ".m3-surface-elevation-level2 .m3-surface-container", level2(), Math.max(level1(), level2() - level1()));
+        appendShadowRule(builder, ".m3-surface-elevation-level3 .m3-surface-container", level3(), Math.max(level1(), level3() - level2()));
+        appendShadowRule(builder, ".m3-surface-elevation-level4 .m3-surface-container", level4(), Math.max(level1(), level4() - level3()));
+        appendShadowRule(builder, ".m3-surface-elevation-level5 .m3-surface-container", level5(), Math.max(level1(), level5() - level4()));
         appendShadowRule(builder, ".m3-menu, .m3-rich-tooltip-container", level2(), Math.max(level1(), level2() - level1()));
         appendShadowRule(builder, ".m3-dialog-pane, .m3-snackbar-container", level3(), Math.max(level1(), level3() - level2()));
         return builder.toString().stripTrailing();

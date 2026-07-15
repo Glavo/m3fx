@@ -12,7 +12,6 @@ import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.util.Duration;
 import org.glavo.m3fx.FxTestUtils;
-import org.glavo.m3fx.animation.M3MotionBehavior;
 import org.glavo.m3fx.animation.M3MotionEasing;
 import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.animation.M3MotionSettings;
@@ -27,7 +26,6 @@ import org.junit.jupiter.api.Test;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Verifies Material motion settings and animation lifecycle behavior.
@@ -115,19 +113,6 @@ final class M3AnimationTest {
         FxTestUtils.setMotionScheme(child, M3MotionScheme.standard());
 
         assertEquals(M3MotionEasing.STANDARD, M3Animation.defaultEffects(child).easing());
-    }
-
-    /// Verifies that detached popup roots can inherit reduced motion from their owner controls.
-    @Test
-    void copiesResolvedMotionSettingsToDetachedTarget() {
-        Pane source = new Pane();
-        Pane target = new Pane();
-
-        M3MotionSettings.setReducedMotionRequested(source, true);
-        M3Animation.copyResolvedMotionSettings(source, target);
-
-        assertFalse(M3MotionSettings.areAnimationsEnabled(target));
-        assertEquals(M3MotionEasing.STANDARD, M3Animation.defaultEffects(target).easing());
     }
 
     /// Verifies that pause-transition duration changes restart only when the caller keeps the timer active.

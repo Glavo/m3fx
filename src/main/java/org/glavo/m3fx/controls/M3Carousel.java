@@ -47,9 +47,10 @@ import java.util.Objects;
 ///
 /// `M3Carousel` manages an ordered item list, one of the six Material carousel layouts, selected index, keyboard
 /// navigation, pointer selection, and animated movement through the visible item track. It can host any JavaFX node,
-/// allowing cards, media previews, or custom content to use Material carousel selection behavior. Installed items
-/// participate directly in keyboard focus traversal; their previous `focusTraversable` values are restored when they
-/// are removed.
+/// allowing cards, media previews, or custom content to use Material carousel selection behavior. The carousel skin
+/// supplies keyline masking, interaction-state feedback, and focus indication, while each item remains responsible
+/// for its own activation semantics. Installed items participate directly in keyboard focus traversal; their previous
+/// `focusTraversable` values are restored when they are removed.
 ///
 /// See [Material Design carousel](https://m3.material.io/components/carousel/overview).
 @NotNullByDefault
@@ -739,7 +740,14 @@ public class M3Carousel extends Control {
 
         @Nullable Node previousItem = selectedItem.get();
         @Nullable Node nextItem = normalizedIndex < 0 ? null : getItems().get(normalizedIndex);
-        updateItemSelectionStyles(normalizedIndex);
+        if (previousItem != null && previousItem != nextItem) {
+            previousItem.getStyleClass().remove(SELECTED_ITEM_STYLE_CLASS);
+            previousItem.pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, false);
+        }
+        if (nextItem != null) {
+            M3ControlStyles.add(nextItem, SELECTED_ITEM_STYLE_CLASS);
+            nextItem.pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, true);
+        }
         selectedItem.set(nextItem);
         if (nextItem == null) {
             selectedItems.clear();
@@ -761,20 +769,6 @@ public class M3Carousel extends Control {
     private void notifyAccessibleFocusChanged() {
         M3Accessible.notifyFocusNodeChanged(this);
         focusNotifier.refresh();
-    }
-
-    /// Applies selected item style classes and pseudo-classes.
-    private void updateItemSelectionStyles(int selectedIndex) {
-        for (int index = 0; index < getItems().size(); index++) {
-            Node item = getItems().get(index);
-            boolean selected = index == selectedIndex;
-            if (selected) {
-                M3ControlStyles.add(item, SELECTED_ITEM_STYLE_CLASS);
-            } else {
-                item.getStyleClass().remove(SELECTED_ITEM_STYLE_CLASS);
-            }
-            item.pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, selected);
-        }
     }
 
     /// Returns the valid selected index for the current item list.

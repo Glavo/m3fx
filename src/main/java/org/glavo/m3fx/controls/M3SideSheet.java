@@ -11,6 +11,7 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.css.PseudoClass;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -40,12 +41,19 @@ import java.util.Objects;
 /// A Material Design 3 side sheet container.
 ///
 /// `M3SideSheet` presents supporting content from a side edge of a view. It supports standard and modal sheet
-/// variants, headline text, action nodes, scrim handling, keyboard dismissal, and Material entrance and exit
-/// motion.
+/// variants, docked and detached container shapes, headline text, action nodes, scrim handling, keyboard dismissal,
+/// and Material entrance and exit motion. The parent layout owns the sheet's edge placement and the 16-pixel outer
+/// margin required by the detached configuration.
 ///
 /// See [Material Design side sheets](https://m3.material.io/components/side-sheets/overview).
 @NotNullByDefault
 public class M3SideSheet extends Control {
+    /// The pseudo-class applied when the sheet is separated from the adjacent content edge.
+    private static final PseudoClass DETACHED_PSEUDO_CLASS = PseudoClass.getPseudoClass("detached");
+
+    /// The pseudo-class applied while the effective node orientation is right-to-left.
+    private static final PseudoClass RTL_PSEUDO_CLASS = PseudoClass.getPseudoClass("rtl");
+
     /// The base style class for M3FX side sheets.
     public static final String STYLE_CLASS = "m3-side-sheet";
 
@@ -97,6 +105,15 @@ public class M3SideSheet extends Control {
     // Backing property for the public focus restoration API.
     private final BooleanProperty restoreFocusOnHide =
             new SimpleBooleanProperty(this, "restoreFocusOnHide", true);
+
+    /// Whether the sheet uses the detached container shape.
+    private final BooleanProperty detached = new SimpleBooleanProperty(this, "detached") {
+        /// Synchronizes the detached container pseudo-class.
+        @Override
+        protected void invalidated() {
+            pseudoClassStateChanged(DETACHED_PSEUDO_CLASS, get());
+        }
+    };
 
     /// The mutable trailing action node list.
     private final ObservableList<Node> actions = M3ObservableLists.nonNullElementList("action");
@@ -255,6 +272,31 @@ public class M3SideSheet extends Control {
         return restoreFocusOnHide;
     }
 
+    /// Returns whether this sheet is visually detached from the adjacent content edge.
+    ///
+    /// A detached sheet uses rounded corners on all four edges. Its layout owner remains responsible for the
+    /// 16-pixel outer margin specified by Material Design because that margin belongs to the surrounding layout,
+    /// not to the sheet's content box.
+    ///
+    /// @return `true` if this sheet uses the detached container shape
+    public final boolean isDetached() {
+        return detached.get();
+    }
+
+    /// Sets whether this sheet is visually detached from the adjacent content edge.
+    ///
+    /// @param detached whether the detached container shape is used
+    public final void setDetached(boolean detached) {
+        this.detached.set(detached);
+    }
+
+    /// Returns the detached presentation property.
+    ///
+    /// @return the detached presentation property
+    public final BooleanProperty detachedProperty() {
+        return detached;
+    }
+
     /// Returns the mutable trailing action node list.
     ///
     /// @return the mutable trailing action node list
@@ -337,7 +379,7 @@ public class M3SideSheet extends Control {
     /// Initializes style classes, accessibility metadata, and property listeners.
     private void initialize() {
         M3ControlStyles.initialize(this, STYLE_CLASS);
-        setAccessibleRole(AccessibleRole.PARENT);
+        setAccessibleRole(AccessibleRole.DIALOG);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
         headline.addListener((observable, oldValue, newValue) -> updateAccessibleText());
@@ -348,6 +390,7 @@ public class M3SideSheet extends Control {
             notifyFocusNodeChanged();
         });
         actions.addListener((ListChangeListener<Node>) change -> notifyAccessibleItemsChanged());
+        effectiveNodeOrientationProperty().addListener(observable -> updateOrientationPseudoClass());
         visibleProperty().addListener((observable, oldValue, newValue) -> focusTrap.update());
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
         visibilityAnimation.setOnFinished(event -> {
@@ -358,7 +401,13 @@ public class M3SideSheet extends Control {
         focusTrap.install();
         focusNotifier.start();
         updateVariantStyle();
+        updateOrientationPseudoClass();
         updateAccessibleText();
+    }
+
+    /// Updates the pseudo-class used for the modal sheet's logical start corners.
+    private void updateOrientationPseudoClass() {
+        pseudoClassStateChanged(RTL_PSEUDO_CLASS, M3NodeLayout.isRightToLeft(this));
     }
 
     /// Handles keyboard dismissal for modal sheets.

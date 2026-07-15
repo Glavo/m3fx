@@ -61,11 +61,11 @@ public final class M3PopupContextSynchronizer {
     /// Whether the current observation run has copied context from an attached owner scene.
     private boolean hasSyncedAttachedOwnerContext;
 
-    /// Whether [syncedAnimationsEnabled] contains a snapshot.
+    /// Whether [syncedReducedMotionRequested] contains a snapshot.
     private boolean hasSyncedMotionContext;
 
-    /// Last owner-resolved animation switch copied to the popup root.
-    private boolean syncedAnimationsEnabled;
+    /// Last owner-resolved reduced-motion request copied to the popup root.
+    private boolean syncedReducedMotionRequested;
 
     /// Creates a synchronizer that mirrors the owner scene stylesheets and nearest theme root.
     ///
@@ -245,18 +245,13 @@ public final class M3PopupContextSynchronizer {
 
     /// Copies the owner's resolved motion settings into the popup root and records the copied context.
     private void syncMotionContext() {
-        boolean animationsEnabled = M3MotionSettings.areAnimationsEnabled(owner);
-        syncMotionContext(animationsEnabled);
+        syncMotionContext(M3MotionSettings.shouldReduceMotion(owner));
     }
 
     /// Copies an already resolved reduced-motion setting into the popup root.
-    private void syncMotionContext(boolean animationsEnabled) {
-        cacheSyncedMotionContext(animationsEnabled);
-        if (animationsEnabled) {
-            M3MotionSettings.setReducedMotionRequested(popupRoot, false);
-        } else {
-            M3MotionSettings.setReducedMotionRequested(popupRoot, true);
-        }
+    private void syncMotionContext(boolean reducedMotionRequested) {
+        cacheSyncedMotionContext(reducedMotionRequested);
+        M3MotionSettings.setReducedMotionRequested(popupRoot, reducedMotionRequested);
     }
 
     /// Synchronizes only when a settings notification changes this owner's resolved motion context.
@@ -265,15 +260,15 @@ public final class M3PopupContextSynchronizer {
             return;
         }
 
-        boolean animationsEnabled = M3MotionSettings.areAnimationsEnabled(owner);
+        boolean reducedMotionRequested = M3MotionSettings.shouldReduceMotion(owner);
         if (hasSyncedMotionContext
-                && syncedAnimationsEnabled == animationsEnabled) {
+                && syncedReducedMotionRequested == reducedMotionRequested) {
             return;
         }
 
         syncing = true;
         try {
-            syncMotionContext(animationsEnabled);
+            syncMotionContext(reducedMotionRequested);
         } finally {
             syncing = false;
         }
@@ -305,9 +300,9 @@ public final class M3PopupContextSynchronizer {
     }
 
     /// Records the owner-resolved motion settings copied during the latest synchronization pass.
-    private void cacheSyncedMotionContext(boolean animationsEnabled) {
+    private void cacheSyncedMotionContext(boolean reducedMotionRequested) {
         hasSyncedMotionContext = true;
-        syncedAnimationsEnabled = animationsEnabled;
+        syncedReducedMotionRequested = reducedMotionRequested;
     }
 
     /// Clears the cached owner-resolved motion context after listener teardown.

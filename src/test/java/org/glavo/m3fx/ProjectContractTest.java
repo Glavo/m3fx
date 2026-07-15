@@ -173,6 +173,8 @@ final class ProjectContractTest {
                             M3ScrollPanes
                             M3SearchBar
                             M3SearchView
+                            M3SearchViewLayout
+                            M3SearchViewStyle
                             M3SegmentedButton
                             M3SegmentedButtonGroup
                             M3SegmentedButtonSelectionMode
@@ -501,12 +503,12 @@ final class ProjectContractTest {
                     org.glavo.m3fx.animation.M3MotionScheme#create(org.glavo.m3fx.animation.M3MotionSpec,org.glavo.m3fx.animation.M3MotionSpec,org.glavo.m3fx.animation.M3MotionSpec,org.glavo.m3fx.animation.M3MotionSpec,org.glavo.m3fx.animation.M3MotionSpec,org.glavo.m3fx.animation.M3MotionSpec)
                     org.glavo.m3fx.animation.M3MotionScheme#expressive()
                     org.glavo.m3fx.animation.M3MotionScheme#standard()
-                    org.glavo.m3fx.animation.M3MotionSettings#animationsEnabledProperty()
-                    org.glavo.m3fx.animation.M3MotionSettings#areAnimationsEnabled()
-                    org.glavo.m3fx.animation.M3MotionSettings#areAnimationsEnabled(javafx.scene.Node)
+                    org.glavo.m3fx.animation.M3MotionSettings#globalReducedMotionRequestedProperty()
+                    org.glavo.m3fx.animation.M3MotionSettings#isGlobalReducedMotionRequested()
                     org.glavo.m3fx.animation.M3MotionSettings#isReducedMotionRequested(javafx.scene.Node)
-                    org.glavo.m3fx.animation.M3MotionSettings#setAnimationsEnabled(boolean)
+                    org.glavo.m3fx.animation.M3MotionSettings#setGlobalReducedMotionRequested(boolean)
                     org.glavo.m3fx.animation.M3MotionSettings#setReducedMotionRequested(javafx.scene.Node,boolean)
+                    org.glavo.m3fx.animation.M3MotionSettings#shouldReduceMotion(javafx.scene.Node)
                     org.glavo.m3fx.animation.M3MotionSpec#create(javafx.util.Duration,org.glavo.m3fx.animation.M3MotionEasing)
                     """),
             "org.glavo.m3fx.theme",
@@ -694,6 +696,10 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3NavigationRailVariant#STANDARD
             org.glavo.m3fx.controls.M3NavigationItemLayout#HORIZONTAL
             org.glavo.m3fx.controls.M3NavigationItemLayout#VERTICAL
+            org.glavo.m3fx.controls.M3SearchViewLayout#DOCKED
+            org.glavo.m3fx.controls.M3SearchViewLayout#FULL_SCREEN
+            org.glavo.m3fx.controls.M3SearchViewStyle#CONTAINED
+            org.glavo.m3fx.controls.M3SearchViewStyle#DIVIDED
             org.glavo.m3fx.controls.M3SegmentedButtonSelectionMode#MULTIPLE
             org.glavo.m3fx.controls.M3SegmentedButtonSelectionMode#SINGLE
             org.glavo.m3fx.controls.M3SheetVariant#MODAL
@@ -812,8 +818,10 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3DatePicker#CONTAINER_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3DatePicker#DAY_CELL_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3DatePicker#DAY_GRID_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DatePicker#HEADER_SECTION_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3DatePicker#HEADER_STYLE_CLASS:java.lang.String
-            org.glavo.m3fx.controls.M3DatePicker#MONTH_LABEL_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DatePicker#MENU_BUTTON_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DatePicker#MONTH_MENU_BUTTON_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3DatePicker#NAVIGATION_BUTTON_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3DatePicker#OUTSIDE_MONTH_DAY_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3DatePicker#SELECTED_DAY_STYLE_CLASS:java.lang.String
@@ -821,6 +829,7 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3DatePicker#TODAY_DAY_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3DatePicker#WEEKDAY_LABEL_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3DatePicker#WEEKDAY_ROW_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3DatePicker#YEAR_MENU_BUTTON_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3DatePickerDialog#DEFAULT_TITLE:java.lang.String
             org.glavo.m3fx.controls.M3DatePickerDialog#PRESET_BUTTON_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3DatePickerDialog#PRESET_CONTENT_STYLE_CLASS:java.lang.String
@@ -921,6 +930,7 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3SearchBar#STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3SearchBar#TRAILING_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3SearchView#CONTENT_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3SearchView#DIVIDER_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3SearchView#RESULTS_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3SearchView#STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3SegmentedButton#STYLE_CLASS:java.lang.String

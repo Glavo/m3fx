@@ -157,6 +157,7 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
         appendOpacityRule(builder, hoverStateSelectors(), hoverOpacity());
         appendOpacityRule(builder, focusStateSelectors(), focusOpacity());
         appendOpacityRule(builder, pressedStateSelectors(), pressedOpacity());
+        appendOpacityRule(builder, ".m3-card:dragged .m3-state-layer", draggedOpacity());
         return builder.toString().stripTrailing();
     }
 
@@ -171,7 +172,8 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
                 + ".m3-navigation-item:hover .m3-state-layer, "
                 + ".m3-list-item:hover .m3-state-layer, "
                 + ".m3-validation-summary-item:hover .m3-state-layer, "
-                + ".m3-card:hover .m3-state-layer";
+                + ".m3-search-bar:hover .m3-state-layer, "
+                + ".m3-card:actionable:hover .m3-state-layer";
     }
 
     /// Returns selectors for controls that expose focus state layer feedback.
@@ -185,7 +187,8 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
                 + ".m3-navigation-item:focus-visible .m3-state-layer, "
                 + ".m3-list-item:focus-visible .m3-state-layer, "
                 + ".m3-validation-summary-item:focus-visible .m3-state-layer, "
-                + ".m3-card:focus-visible .m3-state-layer";
+                + ".m3-search-bar:focus-visible .m3-state-layer, "
+                + ".m3-card:actionable:focus-visible .m3-state-layer";
     }
 
     /// Returns selectors for controls that expose pressed state layer feedback.
@@ -199,7 +202,9 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
                 + ".m3-navigation-item:pressed .m3-state-layer, "
                 + ".m3-list-item:pressed .m3-state-layer, "
                 + ".m3-validation-summary-item:pressed .m3-state-layer, "
-                + ".m3-card:pressed .m3-state-layer";
+                + ".m3-search-bar:pressed .m3-state-layer, "
+                + ".m3-card:actionable:armed .m3-state-layer, "
+                + ".m3-card:actionable:pressed .m3-state-layer";
     }
 
     /// Appends an opacity CSS rule.

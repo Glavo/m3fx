@@ -3,12 +3,17 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.geometry.NodeOrientation;
 import javafx.collections.ListChangeListener;
+import javafx.scene.AccessibleAction;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseButton;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -30,10 +35,15 @@ public final class M3BottomSheetSkin extends SkinBase<M3BottomSheet> {
     private final VBox topArea = new VBox();
 
     /// The drag handle slot.
-    private final StackPane dragHandleSlot = new StackPane();
+    private final DragHandleSlot dragHandleSlot = new DragHandleSlot();
 
     /// The drag handle region.
     private final Region dragHandle = new Region();
+
+    /// Tracks keyboard-visible focus on the actionable drag handle.
+    private final M3FocusVisibleTracker dragHandleFocusVisibleTracker =
+            new M3FocusVisibleTracker(dragHandleSlot, () -> {
+            });
 
     /// The header row.
     private final HBox header = new HBox();
@@ -60,6 +70,10 @@ public final class M3BottomSheetSkin extends SkinBase<M3BottomSheet> {
     /// Updates drag handle visibility when the public property changes.
     private final ChangeListener<Boolean> dragHandleVisibleListener =
             (observable, oldValue, newValue) -> updateDragHandleVisibility();
+
+    /// Updates drag-handle interactivity when its handler or disabled state changes.
+    private final InvalidationListener dragHandleInteractivityListener =
+            observable -> updateDragHandleInteractivity();
 
     /// Updates actions when the public action list changes.
     private final ListChangeListener<Node> actionsListener = change -> updateActions();
@@ -90,11 +104,14 @@ public final class M3BottomSheetSkin extends SkinBase<M3BottomSheet> {
 
         control.contentProperty().addListener(contentListener);
         control.dragHandleVisibleProperty().addListener(dragHandleVisibleListener);
+        control.onDragHandleActionProperty().addListener(dragHandleInteractivityListener);
+        control.disabledProperty().addListener(dragHandleInteractivityListener);
         control.getActions().addListener(actionsListener);
         contentSlot.getChildren().setAll(contentOrientationBridge);
         updateContent(control.getContent());
         updateActions();
         updateDragHandleVisibility();
+        dragHandleFocusVisibleTracker.install();
         dragHandleSlot.getChildren().setAll(dragHandle);
         header.getChildren().setAll(headlineLabel, spacer, actions);
         topArea.getChildren().setAll(dragHandleSlot, header);
@@ -110,7 +127,10 @@ public final class M3BottomSheetSkin extends SkinBase<M3BottomSheet> {
         headlineLabel.textProperty().unbind();
         control.contentProperty().removeListener(contentListener);
         control.dragHandleVisibleProperty().removeListener(dragHandleVisibleListener);
+        control.onDragHandleActionProperty().removeListener(dragHandleInteractivityListener);
+        control.disabledProperty().removeListener(dragHandleInteractivityListener);
         control.getActions().removeListener(actionsListener);
+        dragHandleFocusVisibleTracker.uninstall();
         container.nodeOrientationProperty().unbind();
         topArea.nodeOrientationProperty().unbind();
         header.nodeOrientationProperty().unbind();
@@ -229,6 +249,58 @@ public final class M3BottomSheetSkin extends SkinBase<M3BottomSheet> {
         boolean visible = getSkinnable().isDragHandleVisible();
         dragHandleSlot.setVisible(visible);
         dragHandleSlot.setManaged(visible);
+        updateDragHandleInteractivity();
         getSkinnable().requestLayout();
+    }
+
+    /// Synchronizes the drag handle's keyboard and accessibility interactivity.
+    private void updateDragHandleInteractivity() {
+        M3BottomSheet control = getSkinnable();
+        boolean actionable = control.isDragHandleVisible()
+                && !control.isDisabled()
+                && control.getOnDragHandleAction() != null;
+        dragHandleSlot.setFocusTraversable(actionable);
+        dragHandleSlot.setDisable(!actionable);
+    }
+
+    /// The 48-pixel drag-handle target exposed as a keyboard and accessibility button when actionable.
+    @NotNullByDefault
+    private final class DragHandleSlot extends StackPane {
+        /// Creates the drag-handle target and installs activation handlers.
+        private DragHandleSlot() {
+            setAccessibleRole(AccessibleRole.BUTTON);
+            setAccessibleText("Resize bottom sheet");
+            setPickOnBounds(true);
+            setOnMouseClicked(event -> {
+                if (event.getButton() == MouseButton.PRIMARY && event.isStillSincePress()) {
+                    getSkinnable().fireDragHandleAction();
+                    event.consume();
+                }
+            });
+            addEventHandler(KeyEvent.KEY_PRESSED, event -> {
+                switch (event.getCode()) {
+                    case ENTER, SPACE -> {
+                        getSkinnable().fireDragHandleAction();
+                        event.consume();
+                    }
+                    default -> {
+                    }
+                }
+            });
+        }
+
+        /// Executes assistive-technology activation and focus requests for the drag handle.
+        @Override
+        public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
+            switch (action) {
+                case FIRE -> getSkinnable().fireDragHandleAction();
+                case REQUEST_FOCUS -> {
+                    if (isFocusTraversable()) {
+                        requestFocus();
+                    }
+                }
+                default -> super.executeAccessibleAction(action, parameters);
+            }
+        }
     }
 }

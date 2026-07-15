@@ -37,19 +37,7 @@ public final class M3Animation {
     /// @param owner the node whose local, inherited, or global motion settings should be resolved
     /// @return `true` when animations should play for the owner
     public static boolean areAnimationsEnabled(Node owner) {
-        return M3MotionSettings.areAnimationsEnabled(Objects.requireNonNull(owner, "owner"));
-    }
-
-    /// Returns whether an owner should use reduced motion behavior.
-    ///
-    /// Reduced motion disables finite visual transitions, shape morphs, easing-based state changes, and entrance or
-    /// exit motion. Activity indicators may still run simple linear motion so indeterminate progress remains visibly
-    /// alive without playing the full Material motion treatment.
-    ///
-    /// @param owner the node whose local, inherited, or global motion settings should be resolved
-    /// @return `true` when finite transitions should be settled and activity indicators should use reduced motion
-    public static boolean shouldReduceMotion(Node owner) {
-        return !areAnimationsEnabled(owner);
+        return !M3MotionSettings.shouldReduceMotion(Objects.requireNonNull(owner, "owner"));
     }
 
     /// Returns the semantic motion scheme for an owner node.
@@ -120,20 +108,6 @@ public final class M3Animation {
         return motionScheme(owner).slowSpatial();
     }
 
-    /// Copies the resolved reduced-motion request from a scene control into a detached popup root.
-    ///
-    /// @param source the node whose resolved motion settings should be copied
-    /// @param target the detached node that should receive the equivalent reduced-motion request
-    public static void copyResolvedMotionSettings(Node source, Node target) {
-        Objects.requireNonNull(source, "source");
-        Objects.requireNonNull(target, "target");
-        if (M3MotionSettings.areAnimationsEnabled(source)) {
-            M3MotionSettings.setReducedMotionRequested(target, false);
-        } else {
-            M3MotionSettings.setReducedMotionRequested(target, true);
-        }
-    }
-
     /// Plays a finite transition from the beginning or finishes it immediately when animations are disabled.
     ///
     /// @param owner      the node whose animation settings should be honored
@@ -159,23 +133,6 @@ public final class M3Animation {
         Objects.requireNonNull(transition, "transition");
         if (transition.getStatus() == Animation.Status.RUNNING) {
             finish(transition);
-        }
-    }
-
-    /// Finishes running finite transitions when the owner currently resolves animations as disabled.
-    ///
-    /// This is used by component-state transitions that already honor disabled motion when starting,
-    /// but also need to settle when an application disables motion while the transition is in flight.
-    ///
-    /// @param owner       the node whose inherited animation switch should be resolved
-    /// @param transitions the transitions to settle when disabled
-    public static void finishRunningAnimationsIfDisabled(Node owner, M3FiniteTransition... transitions) {
-        Objects.requireNonNull(transitions, "transitions");
-        if (areAnimationsEnabled(owner)) {
-            return;
-        }
-        for (M3FiniteTransition transition : transitions) {
-            finishIfRunning(transition);
         }
     }
 

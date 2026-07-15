@@ -171,66 +171,6 @@
     -fx-text-fill: -m3-list-item-supporting-color;
 }
 
-.m3-menu-item {
-    -m3-list-item-headline-color: -m3-color-on-surface;
-    -m3-list-item-supporting-color: -m3-color-on-surface;
-    -m3-list-item-selected-container-color: -m3-color-secondary-container;
-    -m3-list-item-selected-content-color: -m3-color-on-secondary-container;
-    -m3-list-item-state-layer-color: -m3-color-on-surface;
-}
-
-.m3-profile-expressive .m3-menu-item {
-    -m3-list-item-selected-container-color: -m3-color-tertiary-container;
-    -m3-list-item-selected-content-color: -m3-color-on-tertiary-container;
-}
-
-.m3-menu-item:vibrant {
-    -m3-list-item-headline-color: -m3-color-on-tertiary-container;
-    -m3-list-item-supporting-color: -m3-color-on-tertiary-container;
-    -m3-list-item-selected-container-color: -m3-color-tertiary;
-    -m3-list-item-selected-content-color: -m3-color-on-tertiary;
-    -m3-list-item-state-layer-color: -m3-color-on-tertiary-container;
-}
-
-.m3-menu-item-selection-container {
-    -fx-background-color: -m3-color-secondary-container;
-}
-
-.m3-profile-expressive .m3-menu-item-selection-container {
-    -fx-background-color: -m3-color-tertiary-container;
-}
-
-.m3-menu-item-selection-container.m3-menu-item-selection-container:vibrant,
-.m3-profile-expressive .m3-menu-item-selection-container.m3-menu-item-selection-container:vibrant {
-    -fx-background-color: -m3-color-tertiary;
-}
-
-.m3-menu-item-text {
-    -fx-text-fill: -m3-color-on-surface;
-}
-
-.m3-menu-item-text:selected {
-    -fx-text-fill: -m3-color-on-secondary-container;
-}
-
-.m3-profile-expressive .m3-menu-item-text:selected {
-    -fx-text-fill: -m3-color-on-tertiary-container;
-}
-
-.m3-menu-item-text.m3-menu-item-text:vibrant {
-    -fx-text-fill: -m3-color-on-tertiary-container;
-}
-
-.m3-menu-item-text.m3-menu-item-text:selected:vibrant,
-.m3-profile-expressive .m3-menu-item-text.m3-menu-item-text:selected:vibrant {
-    -fx-text-fill: -m3-color-on-tertiary;
-}
-
-.m3-state-layer.vibrant,
-.m3-ripple.vibrant {
-    -fx-background-color: -m3-color-on-tertiary-container;
-}
-
 .m3-list-item-leading,
 .m3-list-item-trailing {
     -fx-alignment: center;
@@ -245,16 +185,14 @@
     -fx-background-color: -m3-list-item-disabled-state-layer-color;
 }
 
-.m3-list-item:selected:disabled .m3-list-item-selection-container,
-.m3-menu-item:selected:disabled .m3-menu-item-selection-container {
+.m3-list-item:selected:disabled .m3-list-item-selection-container {
     -fx-background-color: -m3-state-disabled-content-color;
 }
 
 .m3-list-item:disabled .m3-list-item-overline,
 .m3-list-item:disabled .m3-list-item-headline,
 .m3-list-item:disabled .m3-list-item-supporting,
-.m3-list-item:disabled .m3-list-item-trailing-supporting,
-.m3-menu-item:disabled .m3-menu-item-text {
+.m3-list-item:disabled .m3-list-item-trailing-supporting {
     -fx-opacity: 1;
     -fx-text-fill: -m3-state-disabled-content-color;
 }

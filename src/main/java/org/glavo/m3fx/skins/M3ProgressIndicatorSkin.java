@@ -323,7 +323,7 @@ public class M3ProgressIndicatorSkin extends SkinBase<M3ProgressIndicator> {
         updatingProgressAnimation = true;
         try {
             M3ProgressIndicator progressIndicator = getSkinnable();
-            reducedMotion = M3Animation.shouldReduceMotion(progressIndicator);
+            reducedMotion = !M3Animation.areAnimationsEnabled(progressIndicator);
             double progress = progressIndicator.getProgress();
             if (progress == M3ProgressIndicator.INDETERMINATE_PROGRESS) {
                 determinateAnimation.stop();

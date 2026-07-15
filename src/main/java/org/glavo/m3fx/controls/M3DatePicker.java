@@ -7,6 +7,7 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.css.PseudoClass;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -42,6 +43,9 @@ import java.util.Objects;
 /// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview).
 @NotNullByDefault
 public class M3DatePicker extends Control {
+    /// The internal pseudo-class used when the calendar is rendered by a modal picker dialog.
+    static final PseudoClass MODAL_PSEUDO_CLASS = PseudoClass.getPseudoClass("modal");
+
     /// The base style class for M3FX date pickers.
     public static final String STYLE_CLASS = "m3-date-picker";
 
@@ -51,8 +55,17 @@ public class M3DatePicker extends Control {
     /// The style class applied to the header row.
     public static final String HEADER_STYLE_CLASS = "m3-date-picker-header";
 
-    /// The style class applied to the displayed month label.
-    public static final String MONTH_LABEL_STYLE_CLASS = "m3-date-picker-month-label";
+    /// The style class applied to the month and year navigation sections.
+    public static final String HEADER_SECTION_STYLE_CLASS = "m3-date-picker-header-section";
+
+    /// The style class applied to the month and year menu buttons.
+    public static final String MENU_BUTTON_STYLE_CLASS = "m3-date-picker-menu-button";
+
+    /// The style class applied to the month menu button.
+    public static final String MONTH_MENU_BUTTON_STYLE_CLASS = "m3-date-picker-month-menu-button";
+
+    /// The style class applied to the year menu button.
+    public static final String YEAR_MENU_BUTTON_STYLE_CLASS = "m3-date-picker-year-menu-button";
 
     /// The style class applied to previous and next month buttons.
     public static final String NAVIGATION_BUTTON_STYLE_CLASS = "m3-date-picker-navigation-button";
@@ -633,12 +646,11 @@ public class M3DatePicker extends Control {
         return cell != null && !cell.isDisabled() && M3Accessible.showItem(this, cell);
     }
 
-    /// Focuses the rendered day cell for a date when it is visible.
-    private boolean focusAccessibleDate(LocalDate date) {
-        if (isDateDisabled(date)) {
-            return false;
+    /// Focuses the rendered day cell for a selectable date when it is visible.
+    private void focusAccessibleDate(LocalDate date) {
+        if (!isDateDisabled(date)) {
+            focusAccessibleNode(dayCellForDate(date));
         }
-        return focusAccessibleNode(dayCellForDate(date));
     }
 
     /// Returns the day item requested by accessibility parameters.

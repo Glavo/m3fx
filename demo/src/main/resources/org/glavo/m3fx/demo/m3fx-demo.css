@@ -449,10 +449,6 @@
 }
 
 
-.demo-carousel-navigation {
-    -fx-alignment: center-left;
-}
-
 .demo-card-title {
     -fx-font-size: 16px;
     -fx-font-weight: 600;

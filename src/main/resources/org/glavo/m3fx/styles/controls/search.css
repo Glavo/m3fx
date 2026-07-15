@@ -2,16 +2,12 @@
     -fx-background-color: -m3-color-surface-container-high;
     -fx-background-radius: 999px;
     -fx-background-insets: 0;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 6, 0.18, 0, 3);
 }
 
-.m3-search-bar:hover,
-.m3-search-bar:focused,
-.m3-search-bar:active {
-    -fx-background-color: -m3-color-surface-container-highest;
-}
-
-.m3-search-bar:active {
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.16), 8, 0.12, 0, 2);
+.m3-search-bar .m3-state-layer,
+.m3-search-bar .m3-ripple {
+    -fx-background-color: -m3-color-on-surface;
 }
 
 .m3-search-bar-content {
@@ -24,7 +20,7 @@
 }
 
 .m3-search-bar-trailing {
-    -fx-spacing: 0px;
+    -fx-spacing: 0;
 }
 
 .m3-search-bar-default-leading {
@@ -51,31 +47,46 @@
     -fx-background-color: -m3-color-surface-container-high;
     -fx-background-radius: 28px;
     -fx-background-insets: 0;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.20), 12, 0.16, 0, 4);
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 6, 0.18, 0, 3);
 }
 
-.m3-search-view .m3-search-bar {
-    -fx-background-color: transparent;
+.m3-search-view:full-screen {
+    -fx-effect: null;
 }
 
-.m3-profile-expressive .m3-search-view {
+.m3-search-view:contained {
     -fx-background-color: -m3-color-surface-container-low;
 }
 
-.m3-profile-expressive .m3-search-view .m3-search-bar {
+.m3-search-view:contained .m3-search-bar {
     -fx-background-color: -m3-color-surface-container-high;
+}
+
+.m3-search-view:divided .m3-search-bar {
+    -fx-background-color: transparent;
+    -fx-effect: null;
 }
 
 .m3-search-view-content {
-    -fx-spacing: 0px;
+    -fx-spacing: 0;
+}
+
+.m3-search-view-divider {
+    -fx-min-height: 1px;
+    -fx-pref-height: 1px;
+    -fx-max-height: 1px;
+    -fx-background-color: -m3-color-outline-variant;
 }
 
 .m3-search-view-results {
-    -fx-spacing: 0px;
-    -fx-background-radius: 0px;
+    -fx-spacing: 0;
     -fx-background-insets: 0;
 }
 
-.m3-profile-expressive .m3-search-view-results {
+.m3-search-view:contained .m3-search-view-results {
     -fx-background-color: -m3-color-surface-container-high;
+}
+
+.m3-search-view:divided .m3-search-view-results {
+    -fx-background-color: transparent;
 }

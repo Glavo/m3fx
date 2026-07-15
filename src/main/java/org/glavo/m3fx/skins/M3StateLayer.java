@@ -53,6 +53,9 @@ final class M3StateLayer extends Pane {
     /// The pseudo-class used by JavaFX while a node is pressed.
     private static final PseudoClass PRESSED_PSEUDO_CLASS = PseudoClass.getPseudoClass("pressed");
 
+    /// The pseudo-class used by draggable components while the dragged state is active.
+    private static final PseudoClass DRAGGED_PSEUDO_CLASS = PseudoClass.getPseudoClass("dragged");
+
     /// The fallback state layer tokens used when no theme is installed.
     private static final M3StateLayerTokens FALLBACK_TOKENS = M3StateLayerTokens.baseline();
 
@@ -159,6 +162,9 @@ final class M3StateLayer extends Pane {
 
     /// The resting overlay opacity contributed by a persistent semantic state.
     private double restingOverlayOpacity;
+
+    /// Whether a delegated child currently owns keyboard-visible focus for this component.
+    private boolean delegatedFocusVisible;
 
     /// Handles disabled-state changes that should animate owner-state opacity.
     private final ChangeListener<Boolean> disabledStateListener =
@@ -341,12 +347,25 @@ final class M3StateLayer extends Pane {
         }
         stateOwner = null;
         restingOverlayOpacity = 0.0;
+        delegatedFocusVisible = false;
         cachedAnimationsEnabled = false;
         motionSettingsRevision = Long.MIN_VALUE;
         stateOpacityAnimation.stop();
         setFocusIndicatorOpacity(focusIndicator, 0.0);
         rippleAnimation.stop();
         clearRipple();
+    }
+
+    /// Sets whether a child node delegates keyboard-visible focus feedback to this state layer.
+    ///
+    /// Text-entry controls use this channel when keyboard focus is held by an embedded editor rather than the
+    /// outer Material component. The delegated state is combined with the owner's own focus-visible state.
+    void setDelegatedFocusVisible(boolean delegatedFocusVisible) {
+        if (this.delegatedFocusVisible == delegatedFocusVisible) {
+            return;
+        }
+        this.delegatedFocusVisible = delegatedFocusVisible;
+        animateOverlayOpacityFromOwnerState();
     }
 
     /// Lays out the state layer within the skinnable component.
@@ -638,9 +657,12 @@ final class M3StateLayer extends Pane {
         }
         M3StateLayerTokens tokens = stateLayerTokens(owner);
         double interactionOpacity;
-        if (isPressedLike(owner)) {
+        if (owner.getPseudoClassStates().contains(DRAGGED_PSEUDO_CLASS)) {
+            interactionOpacity = tokens.draggedOpacity();
+        } else if (isPressedLike(owner)) {
             interactionOpacity = tokens.pressedOpacity();
-        } else if (owner.getPseudoClassStates().contains(FOCUS_VISIBLE_PSEUDO_CLASS)) {
+        } else if (delegatedFocusVisible
+                || owner.getPseudoClassStates().contains(FOCUS_VISIBLE_PSEUDO_CLASS)) {
             interactionOpacity = tokens.focusOpacity();
         } else if (owner.isHover() || owner.getPseudoClassStates().contains(HOVER_PSEUDO_CLASS)) {
             interactionOpacity = tokens.hoverOpacity();
@@ -660,7 +682,8 @@ final class M3StateLayer extends Pane {
         if (owner.isDisabled()) {
             return 0.0;
         }
-        return owner.getPseudoClassStates().contains(FOCUS_VISIBLE_PSEUDO_CLASS) ? 1.0 : 0.0;
+        return delegatedFocusVisible
+                || owner.getPseudoClassStates().contains(FOCUS_VISIBLE_PSEUDO_CLASS) ? 1.0 : 0.0;
     }
 
     /// Returns the state layer tokens for the owner node.
@@ -674,8 +697,8 @@ final class M3StateLayer extends Pane {
         if (owner.isPressed() || owner.getPseudoClassStates().contains(PRESSED_PSEUDO_CLASS)) {
             return true;
         }
-        return owner instanceof ButtonBase button
-                && (button.isArmed() || owner.getPseudoClassStates().contains(ARMED_PSEUDO_CLASS));
+        return owner.getPseudoClassStates().contains(ARMED_PSEUDO_CLASS)
+                || owner instanceof ButtonBase button && button.isArmed();
     }
 
     /// Returns the node whose motion setting controls this state layer.

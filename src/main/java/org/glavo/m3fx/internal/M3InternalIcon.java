@@ -158,6 +158,9 @@ public final class M3InternalIcon extends StackPane {
         /// A close icon used by clear actions.
         CLOSE("M18.3 5.7 12 12l6.3 6.3-1.4 1.4-6.3-6.3-6.3 6.3-1.4-1.4L9.2 12 2.9 5.7l1.4-1.4 6.3 6.3 6.3-6.3z"),
 
+        /// A back arrow used to dismiss an active search view.
+        ARROW_BACK("M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20z"),
+
         /// A downward chevron used by closed popup fields.
         EXPAND_MORE("M7.4 8.6 12 13.2l4.6-4.6L18 10l-6 6-6-6z"),
 

@@ -36,7 +36,7 @@ import java.util.Objects;
 /// circular progress styles.
 ///
 /// Use this control when loading feedback needs a compact circular affordance. Indeterminate progress keeps a
-/// basic rotating sweep when full animations are disabled through [org.glavo.m3fx.animation.M3MotionSettings],
+/// basic rotating sweep when reduced motion is requested through [org.glavo.m3fx.animation.M3MotionSettings],
 /// so reduced-motion mode still communicates activity. A positive wave amplitude explicitly enables the M3
 /// Expressive wavy geometry; the Flat configuration remains the default in every theme profile. See
 /// [Material Design progress indicators](https://m3.material.io/components/progress-indicators/overview).

@@ -131,6 +131,7 @@ public class M3DatePickerDialog extends M3Dialog<LocalDate> {
     private void initialize() {
         setTitle(DEFAULT_TITLE);
         M3DialogPane pane = getM3DialogPane();
+        picker.pseudoClassStateChanged(M3DatePicker.MODAL_PSEUDO_CLASS, true);
         pane.setHeaderText(DEFAULT_TITLE);
         pane.setContent(presetContent);
         picker.nodeOrientationProperty().bind(pane.effectiveNodeOrientationProperty());

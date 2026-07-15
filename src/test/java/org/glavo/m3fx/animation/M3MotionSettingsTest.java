@@ -14,15 +14,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /// Tests runtime M3FX motion settings.
 @NotNullByDefault
 final class M3MotionSettingsTest {
-    /// Verifies the global animation switch.
+    /// Verifies the application-wide reduced-motion request.
     @Test
-    void globalAnimationSwitchControlsDefaultState() {
+    void globalReducedMotionRequestControlsDefaultState() {
         FxTestUtils.runWithMotionSettingsPreserved(() -> {
-            M3MotionSettings.setAnimationsEnabled(false);
-            assertFalse(M3MotionSettings.areAnimationsEnabled());
+            Pane owner = new Pane();
+            M3MotionSettings.setGlobalReducedMotionRequested(true);
+            assertTrue(M3MotionSettings.isGlobalReducedMotionRequested());
+            assertTrue(M3MotionSettings.globalReducedMotionRequestedProperty().get());
+            assertTrue(M3MotionSettings.shouldReduceMotion(owner));
 
-            M3MotionSettings.setAnimationsEnabled(true);
-            assertTrue(M3MotionSettings.areAnimationsEnabled());
+            M3MotionSettings.setGlobalReducedMotionRequested(false);
+            assertFalse(M3MotionSettings.isGlobalReducedMotionRequested());
+            assertFalse(M3MotionSettings.shouldReduceMotion(owner));
         });
     }
 
@@ -36,22 +40,26 @@ final class M3MotionSettingsTest {
             root.getChildren().add(child);
             child.getChildren().add(nested);
 
-            M3MotionSettings.setAnimationsEnabled(true);
-            assertTrue(M3MotionSettings.areAnimationsEnabled(nested));
+            M3MotionSettings.setGlobalReducedMotionRequested(false);
+            assertFalse(M3MotionSettings.shouldReduceMotion(nested));
             assertFalse(M3MotionSettings.isReducedMotionRequested(nested));
 
             M3MotionSettings.setReducedMotionRequested(root, true);
-            assertFalse(M3MotionSettings.areAnimationsEnabled(nested));
+            assertTrue(M3MotionSettings.shouldReduceMotion(nested));
 
             M3MotionSettings.setReducedMotionRequested(child, false);
-            assertFalse(M3MotionSettings.areAnimationsEnabled(nested));
+            assertTrue(M3MotionSettings.shouldReduceMotion(nested));
             assertFalse(M3MotionSettings.isReducedMotionRequested(child));
 
             M3MotionSettings.setReducedMotionRequested(child, false);
-            assertFalse(M3MotionSettings.areAnimationsEnabled(nested));
+            assertTrue(M3MotionSettings.shouldReduceMotion(nested));
 
             M3MotionSettings.setReducedMotionRequested(root, false);
-            assertTrue(M3MotionSettings.areAnimationsEnabled(nested));
+            assertFalse(M3MotionSettings.shouldReduceMotion(nested));
+
+            M3MotionSettings.setGlobalReducedMotionRequested(true);
+            M3MotionSettings.setReducedMotionRequested(child, false);
+            assertTrue(M3MotionSettings.shouldReduceMotion(nested));
         });
     }
 
@@ -69,7 +77,7 @@ final class M3MotionSettingsTest {
             assertFalse(child.hasProperties());
             assertFalse(nested.hasProperties());
 
-            M3MotionSettings.areAnimationsEnabled(nested);
+            M3MotionSettings.shouldReduceMotion(nested);
             assertFalse(root.hasProperties());
             assertFalse(child.hasProperties());
             assertFalse(nested.hasProperties());

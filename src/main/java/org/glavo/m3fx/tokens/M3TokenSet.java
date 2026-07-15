@@ -121,7 +121,7 @@ public sealed interface M3TokenSet permits M3TokenSetImpl {
                 + " "
                 + componentTokens().toStyleDeclarations()
                 + " "
-                + menuColorStyleDeclarations(profile());
+                + menuColorStyleDeclarations(profile(), colorTokens());
     }
 
     /// Converts state-dependent on-surface colors into reusable alpha-preserving JavaFX paints.
@@ -132,6 +132,7 @@ public sealed interface M3TokenSet permits M3TokenSetImpl {
         Color onSurface = colorTokens.get(ColorRole.ON_SURFACE);
         Color onSurfaceVariant = colorTokens.get(ColorRole.ON_SURFACE_VARIANT);
         Color surface = colorTokens.get(ColorRole.SURFACE);
+        Color surfaceVariant = colorTokens.get(ColorRole.SURFACE_VARIANT);
         Color surfaceContainerHighest = colorTokens.get(ColorRole.SURFACE_CONTAINER_HIGHEST);
         Color outline = colorTokens.get(ColorRole.OUTLINE);
         Color error = colorTokens.get(ColorRole.ERROR);
@@ -147,7 +148,7 @@ public sealed interface M3TokenSet permits M3TokenSetImpl {
                 + "-m3-button-disabled-container-color: " + toRgba(onSurface, 0.10) + "; "
                 + "-m3-list-item-disabled-state-layer-color: " + toRgba(onSurface, 0.10) + "; "
                 + "-m3-filled-card-disabled-container-color: "
-                + toRgba(surfaceContainerHighest, stateLayerTokens.disabledContentOpacity()) + "; "
+                + toRgba(surfaceVariant, stateLayerTokens.disabledContentOpacity()) + "; "
                 + "-m3-elevated-card-disabled-container-color: "
                 + toRgba(surface, stateLayerTokens.disabledContentOpacity()) + "; "
                 + "-m3-outlined-card-disabled-outline-color: "
@@ -166,15 +167,20 @@ public sealed interface M3TokenSet permits M3TokenSetImpl {
     }
 
     /// Converts menu color mappings into JavaFX inline CSS declarations.
-    private static String menuColorStyleDeclarations(M3Profile profile) {
+    private static String menuColorStyleDeclarations(M3Profile profile, M3ColorTokens colorTokens) {
         boolean expressive = profile == M3Profile.EXPRESSIVE_2025;
         String standardContainer = expressive ? "-m3-color-surface-container-low" : "-m3-color-surface-container";
         String standardSelectedContainer = expressive ? "-m3-color-tertiary-container" : "-m3-color-secondary-container";
         String standardSelectedContent = expressive ? "-m3-color-on-tertiary-container" : "-m3-color-on-secondary-container";
+        Color selectedContainerColor = colorTokens.get(expressive
+                ? ColorRole.TERTIARY_CONTAINER
+                : ColorRole.SECONDARY_CONTAINER);
         return "-m3-menu-container-color: " + standardContainer + "; "
                 + "-m3-menu-item-state-layer-color: -m3-color-on-surface; "
                 + "-m3-menu-selected-item-container-color: " + standardSelectedContainer + "; "
                 + "-m3-menu-selected-item-content-color: " + standardSelectedContent + "; "
+                + "-m3-menu-selected-disabled-container-color: "
+                + toRgba(selectedContainerColor, expressive ? 0.38 : 1.0) + "; "
                 + "-m3-menu-vibrant-container-color: -m3-color-tertiary-container; "
                 + "-m3-menu-vibrant-item-content-color: -m3-color-on-tertiary-container; "
                 + "-m3-menu-vibrant-item-state-layer-color: -m3-color-on-tertiary-container; "

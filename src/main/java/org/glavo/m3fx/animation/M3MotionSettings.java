@@ -14,12 +14,12 @@ import java.util.Objects;
 
 /// Runtime settings for Material Design 3 motion in M3FX controls.
 ///
-/// The global setting controls the application default. A node may request reduced motion for its complete subtree;
-/// full motion resumes only after that request is cleared and no ancestor or global setting still requests reduced
-/// motion. A descendant cannot override an ancestor's accessibility preference.
+/// The global setting requests reduced motion for the complete application. A node may make the same request for
+/// its subtree; full motion resumes only after that request is cleared and no ancestor or global setting still
+/// requests reduced motion. A descendant cannot override an ancestor's accessibility preference.
 ///
 /// Controls use these settings for state-layer fades, ripple release, popup entrance and exit, smooth scrolling,
-/// and progress motion. Disabling animations requests reduced motion: finite transitions settle immediately,
+/// and progress motion. Requesting reduced motion makes finite transitions settle immediately,
 /// while indeterminate activity indicators keep simple linear movement so loading and progress states remain
 /// visibly active without playing the full Material motion treatment. Motion curves, durations, and interaction
 /// timings are supplied by the active theme rather than this accessibility setting. See
@@ -30,57 +30,59 @@ public final class M3MotionSettings {
     /// The key used to store node-local reduced-motion requests.
     private static final Object REDUCED_MOTION_REQUEST_KEY = new Object();
 
-    /// The global full-motion switch.
-    private static final BooleanProperty globalAnimationsEnabled =
-            new SimpleBooleanProperty(M3MotionSettings.class, "animationsEnabled", true);
+    /// The application-wide reduced-motion request.
+    private static final BooleanProperty globalReducedMotionRequested =
+            new SimpleBooleanProperty(M3MotionSettings.class, "globalReducedMotionRequested", false);
 
     static {
-        globalAnimationsEnabled.addListener((observable, oldValue, newValue) -> markSettingsChanged(null));
+        globalReducedMotionRequested.addListener((observable, oldValue, newValue) -> markSettingsChanged(null));
     }
 
     /// Prevents instantiation.
     private M3MotionSettings() {
     }
 
-    /// Returns whether full Material motion is globally enabled.
+    /// Returns whether the application directly requests reduced motion.
     ///
-    /// @return `true` when global full-motion animations are enabled
-    public static boolean areAnimationsEnabled() {
-        return globalAnimationsEnabled.get();
+    /// This value is the application default. Use [shouldReduceMotion] to resolve the effective setting for a node.
+    ///
+    /// @return `true` when reduced motion is requested application-wide
+    public static boolean isGlobalReducedMotionRequested() {
+        return globalReducedMotionRequested.get();
     }
 
-    /// Sets whether full Material motion is globally enabled.
+    /// Sets whether the application requests reduced motion.
     ///
-    /// @param enabled whether global full-motion animations should be enabled
-    public static void setAnimationsEnabled(boolean enabled) {
-        globalAnimationsEnabled.set(enabled);
+    /// @param requested whether reduced motion should be requested application-wide
+    public static void setGlobalReducedMotionRequested(boolean requested) {
+        globalReducedMotionRequested.set(requested);
     }
 
-    /// Returns the global full-motion animation switch property.
+    /// Returns the application-wide reduced-motion request property.
     ///
-    /// @return the writable global full-motion animation switch property
-    public static BooleanProperty animationsEnabledProperty() {
-        return globalAnimationsEnabled;
+    /// @return the writable application-wide reduced-motion request property
+    public static BooleanProperty globalReducedMotionRequestedProperty() {
+        return globalReducedMotionRequested;
     }
 
-    /// Returns whether full Material motion is enabled for a node after resolving inherited overrides.
+    /// Returns whether a node should use reduced motion after resolving global and inherited requests.
     ///
     /// @param node the node used to resolve inherited motion settings
-    /// @return `true` when full-motion animations are enabled for the node
-    public static boolean areAnimationsEnabled(Node node) {
+    /// @return `true` when finite motion should settle immediately for the node
+    public static boolean shouldReduceMotion(Node node) {
         Objects.requireNonNull(node, "node");
-        if (!areAnimationsEnabled()) {
-            return false;
+        if (isGlobalReducedMotionRequested()) {
+            return true;
         }
 
         @Nullable Node current = node;
         while (current != null) {
             if (isReducedMotionRequested(current)) {
-                return false;
+                return true;
             }
             current = current.getParent();
         }
-        return true;
+        return false;
     }
 
     /// Returns whether this node directly requests reduced motion for its subtree.
@@ -98,7 +100,7 @@ public final class M3MotionSettings {
     /// Sets whether this node requests reduced motion for itself and its descendants.
     ///
     /// Clearing the request restores inherited behavior but cannot override a request made by an ancestor or the
-    /// global animation setting.
+    /// application-wide reduced-motion setting.
     ///
     /// @param node      the node to update
     /// @param requested whether this node should directly request reduced motion

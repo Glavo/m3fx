@@ -37,7 +37,7 @@ import java.util.Objects;
 /// progress styles.
 ///
 /// Use this control for horizontal loading feedback in a bounded area. Indeterminate progress keeps a basic
-/// moving segment when full animations are disabled through [org.glavo.m3fx.animation.M3MotionSettings], so
+/// moving segment when reduced motion is requested through [org.glavo.m3fx.animation.M3MotionSettings], so
 /// reduced-motion mode still communicates activity. A positive wave amplitude explicitly enables the M3
 /// Expressive wavy geometry; the Flat configuration remains the default in every theme profile. See
 /// [Material Design progress indicators](https://m3.material.io/components/progress-indicators/overview).

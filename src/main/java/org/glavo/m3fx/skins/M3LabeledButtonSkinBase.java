@@ -174,7 +174,10 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         mousePressed = true;
         M3FocusRequests.requestFocusIfTraversable(button);
         layoutStateLayer();
-        stateLayer.playRipple(event.getX(), event.getY());
+        stateLayer.playRipple(
+                event.getX() - stateLayer.getLayoutX(),
+                event.getY() - stateLayer.getLayoutY()
+        );
         button.arm();
         event.consume();
     }
@@ -408,6 +411,29 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         }
         if (control instanceof M3SegmentedButton segmentedButton) {
             layoutSegmentedButtonStateLayer(segmentedButton, width, height);
+            stateLayer.animateOverlayOpacityFromOwnerState();
+            return;
+        }
+        if (control.getStyleClass().contains(M3DatePicker.DAY_CELL_STYLE_CLASS)) {
+            Background background = control.getBackground();
+            double inset = 0.0;
+            if (background != null && !background.getFills().isEmpty()) {
+                javafx.geometry.Insets fillInsets =
+                        background.getFills().get(background.getFills().size() - 1).getInsets();
+                inset = Math.max(
+                        Math.max(fillInsets.getTop(), fillInsets.getRight()),
+                        Math.max(fillInsets.getBottom(), fillInsets.getLeft())
+                );
+            }
+            double targetWidth = Math.max(0.0, width - 2.0 * inset);
+            double targetHeight = Math.max(0.0, height - 2.0 * inset);
+            stateLayer.layoutLayer(
+                    (width - targetWidth) / 2.0,
+                    (height - targetHeight) / 2.0,
+                    targetWidth,
+                    targetHeight,
+                    Math.min(targetWidth, targetHeight) / 2.0
+            );
             stateLayer.animateOverlayOpacityFromOwnerState();
             return;
         }

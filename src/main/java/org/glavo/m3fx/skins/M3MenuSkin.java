@@ -4,6 +4,7 @@
 package org.glavo.m3fx.skins;
 
 import javafx.collections.ListChangeListener;
+import javafx.beans.InvalidationListener;
 import javafx.css.PseudoClass;
 import javafx.scene.Node;
 import javafx.scene.layout.VBox;
@@ -21,12 +22,23 @@ public final class M3MenuSkin extends M3ItemContainerSkinBase<M3Menu, VBox> {
     /// The pseudo-class applied to the last direct menu item.
     private static final PseudoClass LAST_ITEM_PSEUDO_CLASS = PseudoClass.getPseudoClass("last-menu-item");
 
+    /// Recomputes visual group boundaries when an item enters or leaves layout.
+    private final InvalidationListener itemVisibilityListener = observable -> updateItemStructurePseudoClasses();
+
     /// Updates direct menu item structural pseudo-classes after item list changes.
     private final ListChangeListener<Node> itemStructureListener = change -> {
         while (change.next()) {
             for (Node removed : change.getRemoved()) {
                 if (removed instanceof M3MenuItem item) {
+                    item.visibleProperty().removeListener(itemVisibilityListener);
+                    item.managedProperty().removeListener(itemVisibilityListener);
                     setItemStructurePseudoClasses(item, false, false);
+                }
+            }
+            for (Node added : change.getAddedSubList()) {
+                if (added instanceof M3MenuItem item) {
+                    item.visibleProperty().addListener(itemVisibilityListener);
+                    item.managedProperty().addListener(itemVisibilityListener);
                 }
             }
         }
@@ -40,6 +52,12 @@ public final class M3MenuSkin extends M3ItemContainerSkinBase<M3Menu, VBox> {
         super(control, control.getItems(), new VBox());
         getContainer().getStyleClass().add(M3Menu.CONTAINER_STYLE_CLASS);
         control.getItems().addListener(itemStructureListener);
+        for (Node child : control.getItems()) {
+            if (child instanceof M3MenuItem item) {
+                item.visibleProperty().addListener(itemVisibilityListener);
+                item.managedProperty().addListener(itemVisibilityListener);
+            }
+        }
         updateItemStructurePseudoClasses();
     }
 
@@ -47,26 +65,45 @@ public final class M3MenuSkin extends M3ItemContainerSkinBase<M3Menu, VBox> {
     @Override
     public void dispose() {
         getSkinnable().getItems().removeListener(itemStructureListener);
+        for (Node child : getSkinnable().getItems()) {
+            if (child instanceof M3MenuItem item) {
+                item.visibleProperty().removeListener(itemVisibilityListener);
+                item.managedProperty().removeListener(itemVisibilityListener);
+            }
+        }
         clearItemStructurePseudoClasses();
         super.dispose();
     }
 
-    /// Updates first and last pseudo-classes on direct menu items.
+    /// Updates first and last pseudo-classes for each contiguous visible menu-item group.
     private void updateItemStructurePseudoClasses() {
+        clearItemStructurePseudoClasses();
+
         @Nullable M3MenuItem firstItem = null;
-        @Nullable M3MenuItem lastItem = null;
+        @Nullable M3MenuItem previousItem = null;
         for (Node child : getContainer().getChildren()) {
+            if (!child.isVisible() || !child.isManaged()) {
+                continue;
+            }
             if (child instanceof M3MenuItem item) {
                 if (firstItem == null) {
                     firstItem = item;
                 }
-                lastItem = item;
+                previousItem = item;
+            } else if (firstItem != null) {
+                setItemStructurePseudoClasses(firstItem, true, firstItem == previousItem);
+                if (previousItem != firstItem) {
+                    setItemStructurePseudoClasses(previousItem, false, true);
+                }
+                firstItem = null;
+                previousItem = null;
             }
         }
 
-        for (Node child : getContainer().getChildren()) {
-            if (child instanceof M3MenuItem item) {
-                setItemStructurePseudoClasses(item, item == firstItem, item == lastItem);
+        if (firstItem != null) {
+            setItemStructurePseudoClasses(firstItem, true, firstItem == previousItem);
+            if (previousItem != firstItem) {
+                setItemStructurePseudoClasses(previousItem, false, true);
             }
         }
     }

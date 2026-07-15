@@ -43,7 +43,7 @@ final class M3MotionSettingsObserverTest {
         CountDownLatch refreshLatch = new CountDownLatch(1);
         AtomicBoolean captureRefresh = new AtomicBoolean(false);
         AtomicBoolean refreshedOnFxThread = new AtomicBoolean(false);
-        boolean previousAnimationsEnabled = M3MotionSettings.areAnimationsEnabled();
+        boolean previousReducedMotionRequested = M3MotionSettings.isGlobalReducedMotionRequested();
 
         M3MotionSettingsObserver observer = FxTestUtils.callOnFxThread(() -> {
             Pane owner = new Pane();
@@ -59,7 +59,7 @@ final class M3MotionSettingsObserverTest {
         try {
             captureRefresh.set(true);
             Thread settingsThread = new Thread(
-                    () -> M3MotionSettings.setAnimationsEnabled(!previousAnimationsEnabled),
+                    () -> M3MotionSettings.setGlobalReducedMotionRequested(!previousReducedMotionRequested),
                     "m3fx-motion-settings-test"
             );
             settingsThread.start();
@@ -73,7 +73,7 @@ final class M3MotionSettingsObserverTest {
             assertTrue(refreshedOnFxThread.get());
         } finally {
             FxTestUtils.runOnFxThread(observer::dispose);
-            M3MotionSettings.setAnimationsEnabled(previousAnimationsEnabled);
+            M3MotionSettings.setGlobalReducedMotionRequested(previousReducedMotionRequested);
         }
     }
 
@@ -81,7 +81,7 @@ final class M3MotionSettingsObserverTest {
     @Test
     void observesSettingsOnlyWhileAttachedAndNotDisposed() {
         FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
-            boolean previousAnimationsEnabled = M3MotionSettings.areAnimationsEnabled();
+            boolean previousReducedMotionRequested = M3MotionSettings.isGlobalReducedMotionRequested();
             Pane owner = new Pane();
             AtomicInteger refreshes = new AtomicInteger();
             M3MotionSettingsObserver observer = new M3MotionSettingsObserver(owner, refreshes::incrementAndGet);
@@ -95,13 +95,13 @@ final class M3MotionSettingsObserverTest {
                 assertSame(scene, owner.getScene());
                 assertEquals(1, refreshes.get());
 
-                M3MotionSettings.setAnimationsEnabled(!previousAnimationsEnabled);
+                M3MotionSettings.setGlobalReducedMotionRequested(!previousReducedMotionRequested);
 
                 assertEquals(2, refreshes.get());
 
                 root.getChildren().clear();
                 assertEquals(3, refreshes.get());
-                M3MotionSettings.setAnimationsEnabled(previousAnimationsEnabled);
+                M3MotionSettings.setGlobalReducedMotionRequested(previousReducedMotionRequested);
 
                 assertEquals(3, refreshes.get());
 
@@ -110,7 +110,7 @@ final class M3MotionSettingsObserverTest {
                 assertEquals(4, refreshes.get());
 
                 observer.dispose();
-                M3MotionSettings.setAnimationsEnabled(!previousAnimationsEnabled);
+                M3MotionSettings.setGlobalReducedMotionRequested(!previousReducedMotionRequested);
 
                 assertEquals(4, refreshes.get());
             } finally {
@@ -142,7 +142,8 @@ final class M3MotionSettingsObserverTest {
 
                 observer.stop();
                 assertFalse(owner.hasProperties());
-                M3MotionSettings.setAnimationsEnabled(!M3MotionSettings.areAnimationsEnabled());
+                M3MotionSettings.setGlobalReducedMotionRequested(
+                        !M3MotionSettings.isGlobalReducedMotionRequested());
                 assertEquals(1, refreshes.get());
 
                 observer.start();
@@ -174,7 +175,8 @@ final class M3MotionSettingsObserverTest {
             assertEquals(ownerPropertyCount, owner.getProperties().size());
             assertEquals(scenePropertyCount, scene.getProperties().size());
 
-            M3MotionSettings.setAnimationsEnabled(!M3MotionSettings.areAnimationsEnabled());
+            M3MotionSettings.setGlobalReducedMotionRequested(
+                    !M3MotionSettings.isGlobalReducedMotionRequested());
             assertEquals(1, refreshes.get());
         }));
     }
@@ -298,7 +300,7 @@ final class M3MotionSettingsObserverTest {
     @Test
     void sharesOwnerLifecycleAcrossSubscriptions() {
         FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
-            boolean animationsEnabled = M3MotionSettings.areAnimationsEnabled();
+            boolean reducedMotionRequested = M3MotionSettings.isGlobalReducedMotionRequested();
             Pane owner = new Pane();
             Scene scene = new Scene(owner);
             int initialOwnerPropertyCount = owner.getProperties().size();
@@ -320,12 +322,12 @@ final class M3MotionSettingsObserverTest {
                 assertEquals(registeredOwnerPropertyCount, owner.getProperties().size());
                 assertEquals(registeredScenePropertyCount, scene.getProperties().size());
 
-                M3MotionSettings.setAnimationsEnabled(!animationsEnabled);
+                M3MotionSettings.setGlobalReducedMotionRequested(!reducedMotionRequested);
                 assertEquals(2, firstRefreshes.get());
                 assertEquals(2, secondRefreshes.get());
 
                 first.dispose();
-                M3MotionSettings.setAnimationsEnabled(animationsEnabled);
+                M3MotionSettings.setGlobalReducedMotionRequested(reducedMotionRequested);
 
                 assertEquals(2, firstRefreshes.get());
                 assertEquals(3, secondRefreshes.get());
@@ -345,7 +347,7 @@ final class M3MotionSettingsObserverTest {
     @Test
     void supportsDisposalDuringOwnerDispatch() {
         FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
-            boolean animationsEnabled = M3MotionSettings.areAnimationsEnabled();
+            boolean reducedMotionRequested = M3MotionSettings.isGlobalReducedMotionRequested();
             Pane owner = new Pane();
             new Scene(owner);
             AtomicBoolean disposeDuringRefresh = new AtomicBoolean();
@@ -379,13 +381,13 @@ final class M3MotionSettingsObserverTest {
 
             try {
                 disposeDuringRefresh.set(true);
-                M3MotionSettings.setAnimationsEnabled(!animationsEnabled);
+                M3MotionSettings.setGlobalReducedMotionRequested(!reducedMotionRequested);
 
                 assertEquals(2, firstRefreshes.get());
                 assertEquals(1, secondRefreshes.get());
                 assertEquals(2, thirdRefreshes.get());
 
-                M3MotionSettings.setAnimationsEnabled(animationsEnabled);
+                M3MotionSettings.setGlobalReducedMotionRequested(reducedMotionRequested);
 
                 assertEquals(2, firstRefreshes.get());
                 assertEquals(1, secondRefreshes.get());
@@ -408,7 +410,7 @@ final class M3MotionSettingsObserverTest {
     @Test
     void supportsOwnerRemovalDuringSceneDispatch() {
         FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
-            boolean animationsEnabled = M3MotionSettings.areAnimationsEnabled();
+            boolean reducedMotionRequested = M3MotionSettings.isGlobalReducedMotionRequested();
             Pane firstOwner = new Pane();
             Pane secondOwner = new Pane();
             new Scene(new Pane(firstOwner, secondOwner));
@@ -432,12 +434,12 @@ final class M3MotionSettingsObserverTest {
 
             try {
                 disposeDuringRefresh.set(true);
-                M3MotionSettings.setAnimationsEnabled(!animationsEnabled);
+                M3MotionSettings.setGlobalReducedMotionRequested(!reducedMotionRequested);
 
                 assertEquals(2, firstRefreshes.get());
                 assertEquals(1, secondRefreshes.get());
 
-                M3MotionSettings.setAnimationsEnabled(animationsEnabled);
+                M3MotionSettings.setGlobalReducedMotionRequested(reducedMotionRequested);
 
                 assertEquals(3, firstRefreshes.get());
                 assertEquals(1, secondRefreshes.get());
@@ -455,7 +457,7 @@ final class M3MotionSettingsObserverTest {
     @Test
     void supportsSceneTransferDuringOwnerDispatch() {
         FxTestUtils.runOnFxThread(() -> FxTestUtils.runWithMotionSettingsPreserved(() -> {
-            boolean animationsEnabled = M3MotionSettings.areAnimationsEnabled();
+            boolean reducedMotionRequested = M3MotionSettings.isGlobalReducedMotionRequested();
             Pane owner = new Pane();
             Pane firstRoot = new Pane(owner);
             Pane secondRoot = new Pane();
@@ -479,7 +481,7 @@ final class M3MotionSettingsObserverTest {
 
             try {
                 transferDuringRefresh.set(true);
-                M3MotionSettings.setAnimationsEnabled(!animationsEnabled);
+                M3MotionSettings.setGlobalReducedMotionRequested(!reducedMotionRequested);
 
                 assertSame(secondScene, owner.getScene());
                 assertEquals(3, firstRefreshes.get());
@@ -487,7 +489,7 @@ final class M3MotionSettingsObserverTest {
                 assertEquals(firstInitialPropertyCount, firstScene.getProperties().size());
                 assertTrue(secondScene.getProperties().size() > secondInitialPropertyCount);
 
-                M3MotionSettings.setAnimationsEnabled(animationsEnabled);
+                M3MotionSettings.setGlobalReducedMotionRequested(reducedMotionRequested);
 
                 assertEquals(4, firstRefreshes.get());
                 assertEquals(3, secondRefreshes.get());

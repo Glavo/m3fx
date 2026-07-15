@@ -118,6 +118,8 @@ import org.glavo.m3fx.controls.M3RichTooltip;
 import org.glavo.m3fx.controls.M3Scrim;
 import org.glavo.m3fx.controls.M3SearchBar;
 import org.glavo.m3fx.controls.M3SearchView;
+import org.glavo.m3fx.controls.M3SearchViewLayout;
+import org.glavo.m3fx.controls.M3SearchViewStyle;
 import org.glavo.m3fx.controls.M3ScrollPanes;
 import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
@@ -1497,24 +1499,43 @@ public final class M3FXDemoApp extends Application {
         rtlSearchBar.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
         rtlSearchBar.getTrailingActions().add(createIconButton("tune"));
 
-        M3SearchView searchView = new M3SearchView("Search components");
-        searchView.setPrefWidth(520.0);
+        M3SearchView containedDocked = new M3SearchView("Search components");
+        containedDocked.setPrefWidth(520.0);
         M3IconButton tuneSearchView = createIconButton("tune");
         M3IconButton clearSearchView = createIconButton("close");
-        clearSearchView.setOnAction(event -> searchView.clear());
-        searchView.getTrailingActions().addAll(tuneSearchView, clearSearchView);
-        searchView.getResults().addAll(
+        clearSearchView.setOnAction(event -> containedDocked.clear());
+        containedDocked.getTrailingActions().addAll(tuneSearchView, clearSearchView);
+        containedDocked.getResults().addAll(
                 createSearchResult("Buttons", "Filled, tonal, outlined, text, and elevated variants"),
                 createSearchResult("Menus", "Menu surfaces, selected rows, and menu buttons"),
                 createSearchResult("Navigation", "Bars, rails, drawers, and destination items")
         );
 
-        M3SearchView inactiveView = new M3SearchView("Collapsed search");
-        inactiveView.setPrefWidth(520.0);
-        inactiveView.getResults().addAll(
-                createSearchResult("Hidden result", "Result content is hidden while inactive")
+        M3SearchView dividedDocked = new M3SearchView("Search divided results");
+        dividedDocked.setViewStyle(M3SearchViewStyle.DIVIDED);
+        dividedDocked.setPrefWidth(520.0);
+        dividedDocked.getResults().addAll(
+                createSearchResult("Color", "Dynamic color and component color roles"),
+                createSearchResult("Typography", "Material type roles and font metrics")
         );
-        inactiveView.deactivate();
+
+        M3SearchView containedFullScreen = new M3SearchView("Search full-screen content");
+        containedFullScreen.setViewLayout(M3SearchViewLayout.FULL_SCREEN);
+        containedFullScreen.setPrefWidth(520.0);
+        containedFullScreen.getResults().addAll(
+                createSearchResult("Cards", "Elevated, filled, and outlined cards"),
+                createSearchResult("Dialogs", "Basic and full-screen dialogs")
+        );
+
+        M3SearchView dividedFullScreen = new M3SearchView("Search full-screen divided content");
+        dividedFullScreen.setViewStyle(M3SearchViewStyle.DIVIDED);
+        dividedFullScreen.setViewLayout(M3SearchViewLayout.FULL_SCREEN);
+        dividedFullScreen.setPrefWidth(520.0);
+        dividedFullScreen.getTrailingActions().add(createIconButton("tune"));
+        dividedFullScreen.getResults().addAll(
+                createSearchResult("Date pickers", "Docked and modal date selection"),
+                createSearchResult("Time pickers", "Dial and keyboard time entry")
+        );
 
         M3SearchView rtlSearchView = new M3SearchView("RTL components");
         rtlSearchView.setPrefWidth(520.0);
@@ -1527,8 +1548,10 @@ public final class M3FXDemoApp extends Application {
 
         return createGallery(
                 createShowcaseGroup("Search Bars", searchBar, populated, rtlSearchBar),
-                createShowcaseGroup("Search View", searchView),
-                createShowcaseGroup("Inactive View", inactiveView),
+                createShowcaseGroup("Contained Docked", containedDocked),
+                createShowcaseGroup("Divided Docked", dividedDocked),
+                createShowcaseGroup("Contained Full-screen", containedFullScreen),
+                createShowcaseGroup("Divided Full-screen", dividedFullScreen),
                 createShowcaseGroup("Right-to-left", rtlSearchView)
         );
     }
@@ -1942,7 +1965,13 @@ public final class M3FXDemoApp extends Application {
         menuButton.getMenu().setSelectionMode(M3MenuSelectionMode.SINGLE);
 
         M3MenuItem selected = createMenuItem("Selected item", "check", "");
-        M3Menu selectedMenu = new M3Menu(selected, createMenuItem("Regular item", "label", ""));
+        M3MenuItem disabledStandard = createMenuItem("Unavailable", "delete", "");
+        disabledStandard.setDisable(true);
+        M3Menu selectedMenu = new M3Menu(
+                selected,
+                createMenuItem("Regular item", "label", ""),
+                disabledStandard
+        );
         selectedMenu.setSelectionMode(M3MenuSelectionMode.SINGLE);
         selectedMenu.setAllowEmptySelection(false);
         selectedMenu.selectIndex(0);
@@ -1958,11 +1987,14 @@ public final class M3FXDemoApp extends Application {
         multiSelectMenu.selectIndex(3);
 
         M3MenuItem vibrantSelected = createMenuItem("Pinned", "bookmark", "");
+        M3MenuItem disabledVibrant = createMenuItem("Unavailable", "delete", "");
+        disabledVibrant.setDisable(true);
         M3Menu vibrantMenu = new M3Menu(
                 new M3MenuSectionHeader("Vibrant"),
                 vibrantSelected,
                 createMenuItem("Shared", "share", ""),
-                createMenuItem("Archived", "archive", "")
+                createMenuItem("Archived", "archive", ""),
+                disabledVibrant
         );
         vibrantMenu.setColorStyle(M3MenuColorStyle.VIBRANT);
         vibrantMenu.setSelectionMode(M3MenuSelectionMode.SINGLE);
@@ -2479,100 +2511,112 @@ public final class M3FXDemoApp extends Application {
                 "Use media cards for concise previews with clear supporting actions.",
                 M3CardVariant.FILLED
         );
-        M3Card action = createMediaCard(
+        M3Card elevatedMedia = createMediaCard(
                 "Release candidate",
-                "Actionable",
-                "Click the surface or use the actions to trigger demo feedback.",
+                "Passive container",
+                "Cards with nested actions keep the container itself passive.",
                 M3CardVariant.ELEVATED
         );
-        M3Card disabled = createMediaCard(
+        M3Card outlinedMedia = createMediaCard(
                 "Archived review",
-                "Disabled",
-                "Disabled cards keep content visible while suppressing action feedback.",
+                "Supporting actions",
+                "Each nested action remains an independent keyboard and pointer target.",
+                M3CardVariant.OUTLINED
+        );
+
+        M3Card dragged = createSampleCard(
+                "Dragged card",
+                "Reordering state",
+                "Dragged cards use the published state layer and elevated container level.",
+                M3CardVariant.ELEVATED
+        );
+        dragged.setDragged(true);
+
+        M3Card disabled = createSampleCard(
+                "Disabled card",
+                "Unavailable",
+                "Disabled cards retain their variant-specific container treatment without interaction feedback.",
                 M3CardVariant.OUTLINED
         );
         disabled.setDisable(true);
 
         return createGallery(
                 createShowcaseGroup("Variants", filled, outlined, elevated),
-                createShowcaseGroup("Media And Actions", media, action, disabled)
+                createShowcaseGroup("Passive Cards With Actions", media, elevatedMedia, outlinedMedia),
+                createShowcaseGroup("States", dragged, disabled)
         );
     }
 
     /// Creates the carousel component page.
     private Node createCarouselPage() {
         M3Carousel multiBrowse = createCarousel(
-                createCarouselCard("Morning focus", "Deep work", "schedule", M3CardVariant.FILLED, 280.0, 140.0),
-                createCarouselCard("Design review", "Components", "edit", M3CardVariant.FILLED, 280.0, 140.0),
-                createCarouselCard("Release notes", "Packaging", "reports", M3CardVariant.FILLED, 280.0, 140.0),
-                createCarouselCard("Accessibility", "Keyboard", "visibility", M3CardVariant.FILLED, 280.0, 140.0),
-                createCarouselCard("Motion study", "Expressive", "spark", M3CardVariant.FILLED, 280.0, 140.0),
-                createCarouselCard("Color system", "Palettes", "image", M3CardVariant.FILLED, 280.0, 140.0)
+                createCarouselCard("Morning focus", "Deep work", "schedule", 280.0, 140.0),
+                createCarouselCard("Design review", "Components", "edit", 280.0, 140.0),
+                createCarouselCard("Release notes", "Packaging", "reports", 280.0, 140.0),
+                createCarouselCard("Accessibility", "Keyboard", "visibility", 280.0, 140.0),
+                createCarouselCard("Motion study", "Expressive", "spark", 280.0, 140.0),
+                createCarouselCard("Color system", "Palettes", "image", 280.0, 140.0)
         );
         multiBrowse.setCarouselLayout(M3CarouselLayout.MULTI_BROWSE);
         multiBrowse.setMaxWidth(Double.MAX_VALUE);
         multiBrowse.selectFirst();
 
-        M3Button previous = new M3Button("Previous", M3ButtonVariant.OUTLINED);
-        previous.setOnAction(event -> multiBrowse.selectPrevious());
-        M3Button next = new M3Button("Next", M3ButtonVariant.FILLED);
-        next.setOnAction(event -> multiBrowse.selectNext());
-        HBox navigation = new HBox(12.0, previous, next);
-        navigation.getStyleClass().add("demo-carousel-navigation");
+        M3Button showAll = new M3Button("Show all", M3ButtonVariant.TEXT);
+        showAll.setOnAction(event -> showSnackbar("Open the complete carousel collection"));
 
-        VBox multiBrowseSample = new VBox(12.0, multiBrowse, navigation);
+        VBox multiBrowseSample = new VBox(4.0, multiBrowse, showAll);
         multiBrowseSample.setFillWidth(true);
         multiBrowseSample.setMaxWidth(Double.MAX_VALUE);
 
         M3Carousel hero = createCarousel(
-                createCarouselCard("City guide", "Featured", "navigation", M3CardVariant.ELEVATED, 320.0, 168.0),
-                createCarouselCard("Architecture", "Collection", "dashboard", M3CardVariant.FILLED, 320.0, 168.0),
-                createCarouselCard("Landscape", "Weekend", "image", M3CardVariant.FILLED, 320.0, 168.0),
-                createCarouselCard("Portraits", "Stories", "person", M3CardVariant.FILLED, 320.0, 168.0)
+                createCarouselCard("City guide", "Featured", "navigation", 320.0, 168.0),
+                createCarouselCard("Architecture", "Collection", "dashboard", 320.0, 168.0),
+                createCarouselCard("Landscape", "Weekend", "image", 320.0, 168.0),
+                createCarouselCard("Portraits", "Stories", "person", 320.0, 168.0)
         );
         hero.setCarouselLayout(M3CarouselLayout.HERO);
         hero.setMaxWidth(Double.MAX_VALUE);
         hero.selectFirst();
 
         M3Carousel centerAlignedHero = createCarousel(
-                createCarouselCard("Previous", "Preview", "back", M3CardVariant.FILLED, 320.0, 168.0),
-                createCarouselCard("Research", "Background", "search", M3CardVariant.FILLED, 320.0, 168.0),
-                createCarouselCard("Featured story", "Centered", "star", M3CardVariant.ELEVATED, 320.0, 168.0),
-                createCarouselCard("Gallery", "Related", "image", M3CardVariant.FILLED, 320.0, 168.0),
-                createCarouselCard("Next", "Preview", "chevron-right", M3CardVariant.FILLED, 320.0, 168.0)
+                createCarouselCard("Previous", "Preview", "back", 320.0, 168.0),
+                createCarouselCard("Research", "Background", "search", 320.0, 168.0),
+                createCarouselCard("Featured story", "Centered", "star", 320.0, 168.0),
+                createCarouselCard("Gallery", "Related", "image", 320.0, 168.0),
+                createCarouselCard("Next", "Preview", "chevron-right", 320.0, 168.0)
         );
         centerAlignedHero.setCarouselLayout(M3CarouselLayout.CENTER_ALIGNED_HERO);
         centerAlignedHero.setMaxWidth(Double.MAX_VALUE);
         centerAlignedHero.selectIndex(2);
 
         M3Carousel uncontained = createCarousel(
-                createCarouselCard("Inbox", "24 unread", "inbox", M3CardVariant.OUTLINED, 176.0, 112.0),
-                createCarouselCard("Tasks", "6 due", "task", M3CardVariant.OUTLINED, 176.0, 112.0),
-                createCarouselCard("Files", "Recent", "folder", M3CardVariant.OUTLINED, 176.0, 112.0),
-                createCarouselCard("People", "Updates", "group", M3CardVariant.OUTLINED, 176.0, 112.0),
-                createCarouselCard("Calendar", "3 events", "calendar", M3CardVariant.OUTLINED, 176.0, 112.0),
-                createCarouselCard("Messages", "8 new", "email", M3CardVariant.OUTLINED, 176.0, 112.0)
+                createCarouselCard("Inbox", "24 unread", "inbox", 176.0, 112.0),
+                createCarouselCard("Tasks", "6 due", "task", 176.0, 112.0),
+                createCarouselCard("Files", "Recent", "folder", 176.0, 112.0),
+                createCarouselCard("People", "Updates", "group", 176.0, 112.0),
+                createCarouselCard("Calendar", "3 events", "calendar", 176.0, 112.0),
+                createCarouselCard("Messages", "8 new", "email", 176.0, 112.0)
         );
         uncontained.setCarouselLayout(M3CarouselLayout.UNCONTAINED);
         uncontained.setMaxWidth(Double.MAX_VALUE);
         uncontained.selectFirst();
 
         M3Carousel multiAspectRatio = createCarousel(
-                createCarouselCard("Morning focus", "Deep work", "schedule", M3CardVariant.FILLED, 232.0, 140.0),
-                createCarouselCard("Design review", "Components", "edit", M3CardVariant.FILLED, 280.0, 140.0),
-                createCarouselCard("Release notes", "Packaging", "reports", M3CardVariant.FILLED, 196.0, 140.0),
-                createCarouselCard("Mood board", "Inspiration", "image", M3CardVariant.FILLED, 252.0, 140.0),
-                createCarouselCard("Accessibility", "Keyboard", "visibility", M3CardVariant.FILLED, 180.0, 140.0),
-                createCarouselCard("Motion study", "Expressive", "spark", M3CardVariant.FILLED, 264.0, 140.0)
+                createCarouselCard("Morning focus", "Deep work", "schedule", 232.0, 140.0),
+                createCarouselCard("Design review", "Components", "edit", 280.0, 140.0),
+                createCarouselCard("Release notes", "Packaging", "reports", 196.0, 140.0),
+                createCarouselCard("Mood board", "Inspiration", "image", 252.0, 140.0),
+                createCarouselCard("Accessibility", "Keyboard", "visibility", 180.0, 140.0),
+                createCarouselCard("Motion study", "Expressive", "spark", 264.0, 140.0)
         );
         multiAspectRatio.setCarouselLayout(M3CarouselLayout.UNCONTAINED_MULTI_ASPECT_RATIO);
         multiAspectRatio.setMaxWidth(Double.MAX_VALUE);
         multiAspectRatio.selectFirst();
 
         M3Carousel fullScreen = createCarousel(
-                createCarouselCard("Workspace", "Edge-to-edge", "work", M3CardVariant.FILLED, 640.0, 168.0),
-                createCarouselCard("Timeline", "Project activity", "schedule", M3CardVariant.FILLED, 640.0, 168.0),
-                createCarouselCard("Insights", "Reporting", "reports", M3CardVariant.FILLED, 640.0, 168.0)
+                createCarouselCard("Workspace", "Edge-to-edge", "work", 640.0, 168.0),
+                createCarouselCard("Timeline", "Project activity", "schedule", 640.0, 168.0),
+                createCarouselCard("Insights", "Reporting", "reports", 640.0, 168.0)
         );
         fullScreen.setCarouselLayout(M3CarouselLayout.FULL_SCREEN);
         fullScreen.setMaxWidth(Double.MAX_VALUE);
@@ -2597,8 +2641,12 @@ public final class M3FXDemoApp extends Application {
         modalSideSheet.getActions().add(createIconButton("close"));
         modalSideSheet.setVariant(M3SheetVariant.MODAL);
 
+        M3SideSheet detachedSideSheet = new M3SideSheet("Detached", createSheetContent());
+        detachedSideSheet.getActions().add(createIconButton("close"));
+        detachedSideSheet.setDetached(true);
+
         return createGallery(
-                createShowcaseGroup("Side Sheets", sideSheet, modalSideSheet)
+                createShowcaseGroup("Standard, Modal, And Detached", sideSheet, modalSideSheet, detachedSideSheet)
         );
     }
 
@@ -2607,13 +2655,18 @@ public final class M3FXDemoApp extends Application {
         M3BottomSheet bottomSheet = new M3BottomSheet("Now playing", createSheetContent());
         bottomSheet.getActions().add(createIconButton("close"));
         bottomSheet.setPrefWidth(520.0);
+        bottomSheet.setOnDragHandleAction(event -> bottomSheet.setPrefHeight(
+                bottomSheet.getPrefHeight() > 360.0 ? Region.USE_COMPUTED_SIZE : 420.0
+        ));
 
-        M3BottomSheet compactBottomSheet = new M3BottomSheet("Compact", createSheetContent());
-        compactBottomSheet.setDragHandleVisible(false);
-        compactBottomSheet.setPrefWidth(520.0);
+        M3BottomSheet modalBottomSheet = new M3BottomSheet("Filters", createSheetContent());
+        modalBottomSheet.getActions().add(createIconButton("close"));
+        modalBottomSheet.setVariant(M3SheetVariant.MODAL);
+        modalBottomSheet.setDragHandleVisible(false);
+        modalBottomSheet.setPrefWidth(520.0);
 
         return createGallery(
-                createShowcaseGroup("Bottom Sheets", bottomSheet, compactBottomSheet)
+                createShowcaseGroup("Standard And Modal", bottomSheet, modalBottomSheet)
         );
     }
 
@@ -4145,15 +4198,15 @@ public final class M3FXDemoApp extends Application {
         HBox actions = new HBox(8.0);
         actions.getStyleClass().add("demo-card-actions");
         actions.setAlignment(Pos.CENTER_RIGHT);
-        actions.getChildren().addAll(
-                new M3Button("Details", M3ButtonVariant.TEXT),
-                new M3Button("Open", M3ButtonVariant.TONAL)
-        );
+        M3Button details = new M3Button("Details", M3ButtonVariant.TEXT);
+        details.setOnAction(event -> showSnackbar("Open card details"));
+        M3Button open = new M3Button("Open", M3ButtonVariant.TONAL);
+        open.setOnAction(event -> showSnackbar("Open card content"));
+        actions.getChildren().addAll(details, open);
 
         content.getChildren().addAll(media, header, actions);
 
         M3Card card = new M3Card(content, variant);
-        card.setOnAction(event -> showSnackbar("Theme-aware snackbar"));
         card.getStyleClass().add("demo-card");
         card.setPrefSize(360.0, 300.0);
         return card;
@@ -4181,7 +4234,6 @@ public final class M3FXDemoApp extends Application {
             String title,
             String body,
             String iconName,
-            M3CardVariant variant,
             double width,
             double height
     ) {
@@ -4205,7 +4257,7 @@ public final class M3FXDemoApp extends Application {
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
         content.getChildren().addAll(icon, spacer, copy);
-        M3Card card = new M3Card(content, variant);
+        M3Card card = new M3Card(content, M3CardVariant.FILLED);
         card.getStyleClass().add("demo-carousel-card");
         card.setOnAction(event -> showSnackbar("Theme-aware snackbar"));
         card.setPrefSize(width, height);

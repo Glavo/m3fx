@@ -89,21 +89,21 @@ final class DemoFxTestUtils {
         throwIfFailed(failure.get());
     }
 
-    /// Runs a task with global Material animations disabled and restores previous global motion settings.
-    static void runWithAnimationsDisabled(CheckedRunnable task) throws InterruptedException {
+    /// Runs a task with reduced motion requested globally and restores the previous setting.
+    static void runWithReducedMotion(CheckedRunnable task) throws InterruptedException {
         runWithMotionSettingsPreserved(() -> {
-            M3MotionSettings.setAnimationsEnabled(false);
+            M3MotionSettings.setGlobalReducedMotionRequested(true);
             task.run();
         });
     }
 
     /// Runs a task with global Material motion settings restored afterward.
     static void runWithMotionSettingsPreserved(CheckedRunnable task) throws InterruptedException {
-        boolean previousAnimationsEnabled = M3MotionSettings.areAnimationsEnabled();
+        boolean previousReducedMotionRequested = M3MotionSettings.isGlobalReducedMotionRequested();
         try {
             task.run();
         } finally {
-            M3MotionSettings.setAnimationsEnabled(previousAnimationsEnabled);
+            M3MotionSettings.setGlobalReducedMotionRequested(previousReducedMotionRequested);
         }
     }
 
@@ -299,7 +299,7 @@ final class DemoFxTestUtils {
     static void runOnFxThreadWithAnimationsDisabled(Runnable task) {
         runOnFxThread(() -> {
             try {
-                runWithAnimationsDisabled(task::run);
+                runWithReducedMotion(task::run);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new AssertionError(e);

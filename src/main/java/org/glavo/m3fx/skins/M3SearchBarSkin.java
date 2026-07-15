@@ -5,15 +5,24 @@ package org.glavo.m3fx.skins;
 
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
+import javafx.collections.SetChangeListener;
+import javafx.css.PseudoClass;
+import javafx.event.EventHandler;
 import javafx.geometry.Pos;
+import javafx.geometry.Point2D;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.control.SkinBase;
 import javafx.scene.control.TextField;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import org.glavo.m3fx.controls.M3SearchBar;
+import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -36,6 +45,47 @@ public final class M3SearchBarSkin extends SkinBase<M3SearchBar> {
     /// The trailing action container.
     private final HBox trailingBox = new HBox(ACTION_SPACING);
 
+    /// The bounded interaction state layer and ripple surface.
+    private final M3StateLayer stateLayer = new M3StateLayer();
+
+    /// Tracks keyboard-visible focus held by the embedded editor.
+    private final M3FocusVisibleTracker editorFocusVisibleTracker;
+
+    /// Mirrors editor focus-visible pseudo-class changes into the outer state layer.
+    private final SetChangeListener<PseudoClass> editorPseudoClassListener = change -> {
+        @Nullable PseudoClass changed = change.wasAdded() ? change.getElementAdded() : change.getElementRemoved();
+        if (changed == M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS) {
+            updateEditorFocusVisible();
+        }
+    };
+
+    /// Handles primary pointer presses anywhere inside the search bar.
+    private final EventHandler<MouseEvent> mousePressedHandler = this::handleMousePressed;
+
+    /// Handles primary pointer release after a search-bar press.
+    private final EventHandler<MouseEvent> mouseReleasedHandler = this::handleMouseReleased;
+
+    /// Handles keyboard activation before the control consumes the key event.
+    private final EventHandler<KeyEvent> keyPressedHandler = this::handleKeyPressed;
+
+    /// Releases keyboard-driven ripple feedback.
+    private final EventHandler<KeyEvent> keyReleasedHandler = this::handleKeyReleased;
+
+    /// Clears transient feedback when the control becomes disabled.
+    private final ChangeListener<Boolean> disabledListener = (observable, oldValue, newValue) -> {
+        if (newValue) {
+            mousePressed = false;
+            spaceKeyPressed = false;
+            stateLayer.releaseRipple();
+        }
+    };
+
+    /// Whether a primary pointer press currently owns ripple feedback.
+    private boolean mousePressed;
+
+    /// Whether the space key currently owns ripple feedback.
+    private boolean spaceKeyPressed;
+
     /// Updates the leading slot when the public leading node changes.
     private final ChangeListener<@Nullable Node> leadingListener =
             (observable, oldValue, newValue) -> updateLeading(newValue);
@@ -56,15 +106,24 @@ public final class M3SearchBarSkin extends SkinBase<M3SearchBar> {
         trailingBox.getStyleClass().add(M3SearchBar.TRAILING_STYLE_CLASS);
         trailingBox.setAlignment(Pos.CENTER);
         TextField editor = editor(control);
+        editorFocusVisibleTracker = new M3FocusVisibleTracker(editor, this::updateEditorFocusVisible);
         HBox.setHgrow(editor, Priority.ALWAYS);
 
         control.leadingProperty().addListener(leadingListener);
         control.getTrailingActions().addListener(trailingActionsListener);
+        editor.getPseudoClassStates().addListener(editorPseudoClassListener);
+        control.disabledProperty().addListener(disabledListener);
+        control.addEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
+        control.addEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
+        control.addEventFilter(KeyEvent.KEY_PRESSED, keyPressedHandler);
+        control.addEventFilter(KeyEvent.KEY_RELEASED, keyReleasedHandler);
+        stateLayer.installStateTransitions(control);
+        editorFocusVisibleTracker.install();
 
         updateLeading(control.getLeading());
         updateTrailingActions();
         container.getChildren().setAll(leadingSlot, editor, trailingBox);
-        getChildren().setAll(container);
+        getChildren().setAll(container, stateLayer);
     }
 
     /// Removes listeners and child references before disposal.
@@ -73,12 +132,20 @@ public final class M3SearchBarSkin extends SkinBase<M3SearchBar> {
         M3SearchBar control = getSkinnable();
         control.leadingProperty().removeListener(leadingListener);
         control.getTrailingActions().removeListener(trailingActionsListener);
+        editor(control).getPseudoClassStates().removeListener(editorPseudoClassListener);
+        control.disabledProperty().removeListener(disabledListener);
+        control.removeEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
+        control.removeEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
+        control.removeEventFilter(KeyEvent.KEY_PRESSED, keyPressedHandler);
+        control.removeEventFilter(KeyEvent.KEY_RELEASED, keyReleasedHandler);
+        editorFocusVisibleTracker.uninstall();
+        stateLayer.uninstallStateTransitions();
         container.alignmentProperty().unbind();
         container.nodeOrientationProperty().unbind();
         trailingBox.getChildren().clear();
         leadingSlot.getChildren().clear();
         container.getChildren().clear();
-        getChildren().remove(container);
+        getChildren().removeAll(container, stateLayer);
         super.dispose();
     }
 
@@ -158,6 +225,7 @@ public final class M3SearchBarSkin extends SkinBase<M3SearchBar> {
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
         container.resizeRelocate(x, y, width, height);
+        layoutStateLayer();
     }
 
     /// Returns the embedded editor exposed by the skinnable search bar.
@@ -187,5 +255,88 @@ public final class M3SearchBarSkin extends SkinBase<M3SearchBar> {
         trailingBox.setVisible(visible);
         trailingBox.setManaged(visible);
         getSkinnable().requestLayout();
+    }
+
+    /// Starts a bounded ripple for a primary pointer press.
+    private void handleMousePressed(MouseEvent event) {
+        M3SearchBar control = getSkinnable();
+        if (control.isDisabled() || event.getButton() != MouseButton.PRIMARY) {
+            return;
+        }
+
+        Node target = event.getPickResult().getIntersectedNode();
+        @Nullable Node leading = control.getLeading();
+        if (leading != null
+                && M3Accessible.structuralFocusTarget(leading) != null
+                && M3Accessible.containsNode(leading, target)) {
+            return;
+        }
+        for (Node action : control.getTrailingActions()) {
+            if (M3Accessible.structuralFocusTarget(action) != null
+                    && M3Accessible.containsNode(action, target)) {
+                return;
+            }
+        }
+
+        mousePressed = true;
+        layoutStateLayer();
+        Point2D point = control.sceneToLocal(event.getSceneX(), event.getSceneY());
+        stateLayer.playRipple(point.getX(), point.getY());
+    }
+
+    /// Releases pointer-driven ripple feedback without consuming editor input.
+    private void handleMouseReleased(MouseEvent event) {
+        if (!mousePressed || event.getButton() != MouseButton.PRIMARY) {
+            return;
+        }
+        mousePressed = false;
+        stateLayer.releaseRipple();
+    }
+
+    /// Starts keyboard ripple feedback when the search-bar container owns activation.
+    private void handleKeyPressed(KeyEvent event) {
+        M3SearchBar control = getSkinnable();
+        if (control.isDisabled() || !control.isFocused()) {
+            return;
+        }
+
+        if (event.getCode() == KeyCode.SPACE && !spaceKeyPressed) {
+            spaceKeyPressed = true;
+            layoutStateLayer();
+            stateLayer.playCenteredRipple();
+        } else if (event.getCode() == KeyCode.ENTER) {
+            layoutStateLayer();
+            stateLayer.playCenteredRipple();
+            stateLayer.releaseRipple();
+        }
+    }
+
+    /// Releases ripple feedback after keyboard activation.
+    private void handleKeyReleased(KeyEvent event) {
+        if (event.getCode() != KeyCode.SPACE || !spaceKeyPressed) {
+            return;
+        }
+        spaceKeyPressed = false;
+        stateLayer.releaseRipple();
+    }
+
+    /// Sizes interaction feedback to the complete search-bar container rather than its padded content bounds.
+    private void layoutStateLayer() {
+        M3SearchBar control = getSkinnable();
+        double width = control.getWidth();
+        double height = control.getHeight();
+        if (width <= 0.0 || height <= 0.0) {
+            return;
+        }
+        stateLayer.layoutLayer(0.0, 0.0, width, height, height / 2.0);
+        stateLayer.animateOverlayOpacityFromOwnerState();
+    }
+
+    /// Updates delegated focus feedback from the editor's current focus-visible pseudo-class.
+    private void updateEditorFocusVisible() {
+        TextField editor = editor(getSkinnable());
+        stateLayer.setDelegatedFocusVisible(editor.getPseudoClassStates().contains(
+                M3FocusVisibleTracker.FOCUS_VISIBLE_PSEUDO_CLASS
+        ));
     }
 }

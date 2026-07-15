@@ -15,12 +15,8 @@ import javafx.scene.control.Skin;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3DatePicker;
-import org.glavo.m3fx.controls.M3IconButton;
-import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -29,7 +25,6 @@ import org.jetbrains.annotations.Nullable;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
-import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.List;
@@ -51,16 +46,7 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
     private final VBox container = new VBox();
 
     /// The month navigation header.
-    private final HBox header = new HBox();
-
-    /// The localized displayed-month label.
-    private final Label monthLabel = new Label();
-
-    /// The button that navigates to the previous month.
-    private final M3IconButton previousButton = createNavigationButton(M3InternalIcon.Glyph.CHEVRON_LEFT);
-
-    /// The button that navigates to the next month.
-    private final M3IconButton nextButton = createNavigationButton(M3InternalIcon.Glyph.CHEVRON_RIGHT);
+    private final M3DatePickerHeader header;
 
     /// The row containing localized weekday labels.
     private final HBox weekdayRow = new HBox();
@@ -76,9 +62,6 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
 
     /// The locale used to create the cached month formatter.
     private @Nullable Locale cachedFormatLocale;
-
-    /// The cached formatter for the localized month heading.
-    private @Nullable DateTimeFormatter cachedMonthFormatter;
 
     /// The month currently mapped into reusable day cells.
     private @Nullable YearMonth mappedMonth;
@@ -98,14 +81,17 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
     /// Refreshes cell availability and navigation after date-bound changes.
     private final InvalidationListener boundsInvalidation = observable -> refreshBounds();
 
-    /// Updates logical layout when the effective node orientation changes.
-    private final InvalidationListener nodeOrientationInvalidation = observable -> updateNodeOrientationLayout();
-
     /// Creates a date picker skin.
     ///
     /// @param control the date picker controlled by this skin
     public M3DatePickerSkin(M3DatePicker control) {
         super(control);
+        header = new M3DatePickerHeader(
+                control,
+                control.displayedMonthProperty(),
+                control.minDateProperty(),
+                control.maxDateProperty()
+        );
         initializeNodes();
         installListeners(control);
         getChildren().setAll(container);
@@ -122,10 +108,8 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
         control.minDateProperty().removeListener(boundsInvalidation);
         control.maxDateProperty().removeListener(boundsInvalidation);
         control.showAdjacentMonthDaysProperty().removeListener(calendarInvalidation);
-        control.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
         container.nodeOrientationProperty().unbind();
-        header.nodeOrientationProperty().unbind();
-        header.alignmentProperty().unbind();
+        header.dispose();
         weekdayRow.nodeOrientationProperty().unbind();
         weekdayRow.alignmentProperty().unbind();
         dayGrid.nodeOrientationProperty().unbind();
@@ -190,19 +174,11 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
     /// Creates and styles the reusable skin nodes.
     private void initializeNodes() {
         container.getStyleClass().add(M3DatePicker.CONTAINER_STYLE_CLASS);
-        header.getStyleClass().add(M3DatePicker.HEADER_STYLE_CLASS);
-        monthLabel.getStyleClass().add(M3DatePicker.MONTH_LABEL_STYLE_CLASS);
         weekdayRow.getStyleClass().add(M3DatePicker.WEEKDAY_ROW_STYLE_CLASS);
         dayGrid.getStyleClass().add(M3DatePicker.DAY_GRID_STYLE_CLASS);
         container.nodeOrientationProperty().bind(getSkinnable().effectiveNodeOrientationProperty());
-        header.nodeOrientationProperty().bind(getSkinnable().effectiveNodeOrientationProperty());
         weekdayRow.nodeOrientationProperty().bind(getSkinnable().effectiveNodeOrientationProperty());
         dayGrid.nodeOrientationProperty().bind(getSkinnable().effectiveNodeOrientationProperty());
-
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        header.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(getSkinnable()));
-        header.getChildren().addAll(monthLabel, spacer, previousButton, nextButton);
 
         weekdayRow.alignmentProperty().bind(M3NodeLayout.createLogicalStartCenterAlignmentBinding(getSkinnable()));
         for (int column = 0; column < COLUMN_COUNT; column++) {
@@ -217,10 +193,7 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
             dayGrid.add(dayCell, index % COLUMN_COUNT, index / COLUMN_COUNT);
         }
 
-        previousButton.setOnAction(event -> getSkinnable().showPreviousMonth());
-        nextButton.setOnAction(event -> getSkinnable().showNextMonth());
         container.getChildren().addAll(header, weekdayRow, dayGrid);
-        updateNodeOrientationLayout();
     }
 
     /// Installs listeners that keep the skin synchronized with control state.
@@ -231,7 +204,6 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
         control.minDateProperty().addListener(boundsInvalidation);
         control.maxDateProperty().addListener(boundsInvalidation);
         control.showAdjacentMonthDaysProperty().addListener(calendarInvalidation);
-        control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
     }
 
     /// Updates localized labels, date mappings, state classes, and navigation for a calendar structure change.
@@ -245,9 +217,6 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
         boolean monthChanged = !displayedMonth.equals(mappedMonth);
         boolean firstDayChanged = firstDayOfWeek != mappedFirstDayOfWeek;
         boolean adjacentVisibilityChanged = showAdjacentMonthDays != mappedShowAdjacentMonthDays;
-        if (localeChanged || monthChanged) {
-            monthLabel.setText(monthFormatter(locale).format(displayedMonth.atDay(1)));
-        }
         if (localeChanged || firstDayChanged) {
             refreshWeekdayLabels(control, locale);
         }
@@ -259,14 +228,14 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
         }
         refreshDayCellAvailability(control);
         refreshSelection();
-        refreshNavigationButtons(control, displayedMonth);
+        header.refresh();
     }
 
     /// Updates disabled day states and navigation after optional date bounds change.
     private void refreshBounds() {
         M3DatePicker control = getSkinnable();
         refreshDayCellAvailability(control);
-        refreshNavigationButtons(control, control.getDisplayedMonth());
+        header.refresh();
     }
 
     /// Updates localized weekday labels starting from the configured first day.
@@ -276,6 +245,7 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
             DayOfWeek dayOfWeek = firstDayOfWeek.plus(column);
             weekdayLabels.get(column).setText(dayOfWeek.getDisplayName(TextStyle.SHORT_STANDALONE, locale));
         }
+        cachedFormatLocale = locale;
     }
 
     /// Updates day cell dates, labels, visibility, and structural state classes.
@@ -326,38 +296,6 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
         }
     }
 
-    /// Returns the cached localized month formatter, rebuilding it only when the default format locale changes.
-    private DateTimeFormatter monthFormatter(Locale locale) {
-        DateTimeFormatter formatter = cachedMonthFormatter;
-        if (formatter == null || !locale.equals(cachedFormatLocale)) {
-            formatter = DateTimeFormatter.ofPattern("MMMM uuuu", locale);
-            cachedFormatLocale = locale;
-            cachedMonthFormatter = formatter;
-        }
-        return formatter;
-    }
-
-    /// Updates month navigation buttons according to optional date bounds.
-    private void refreshNavigationButtons(M3DatePicker control, YearMonth displayedMonth) {
-        LocalDate previousMonthEnd = displayedMonth.minusMonths(1).atEndOfMonth();
-        LocalDate nextMonthStart = displayedMonth.plusMonths(1).atDay(1);
-        LocalDate minDate = control.getMinDate();
-        LocalDate maxDate = control.getMaxDate();
-        previousButton.setDisable(minDate != null && previousMonthEnd.isBefore(minDate));
-        nextButton.setDisable(maxDate != null && nextMonthStart.isAfter(maxDate));
-    }
-
-    /// Updates orientation-dependent navigation glyphs.
-    private void updateNodeOrientationLayout() {
-        boolean rightToLeft = M3NodeLayout.isRightToLeft(getSkinnable());
-        setNavigationIcon(previousButton, rightToLeft
-                ? M3InternalIcon.Glyph.CHEVRON_RIGHT
-                : M3InternalIcon.Glyph.CHEVRON_LEFT);
-        setNavigationIcon(nextButton, rightToLeft
-                ? M3InternalIcon.Glyph.CHEVRON_LEFT
-                : M3InternalIcon.Glyph.CHEVRON_RIGHT);
-    }
-
     /// Selects the date represented by a day cell action.
     private void handleDayCellAction(ActionEvent event) {
         if (event.getSource() instanceof Node node && node.getUserData() instanceof LocalDate date) {
@@ -365,20 +303,6 @@ public class M3DatePickerSkin extends SkinBase<M3DatePicker> {
             if (!control.isDateDisabled(date)) {
                 control.selectDate(date);
             }
-        }
-    }
-
-    /// Creates a navigation icon button.
-    private static M3IconButton createNavigationButton(M3InternalIcon.Glyph glyph) {
-        M3IconButton button = new M3IconButton(new M3InternalIcon(glyph, M3InternalIcon.ColorRole.PRIMARY));
-        button.getStyleClass().add(M3DatePicker.NAVIGATION_BUTTON_STYLE_CLASS);
-        return button;
-    }
-
-    /// Updates a navigation button icon glyph.
-    private static void setNavigationIcon(M3IconButton button, M3InternalIcon.Glyph glyph) {
-        if (button.getGraphic() instanceof M3InternalIcon icon) {
-            icon.setGlyph(glyph);
         }
     }
 

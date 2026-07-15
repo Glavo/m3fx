@@ -1,34 +1,49 @@
-.m3-side-sheet,
+.m3-side-sheet {
+    -fx-min-width: 256px;
+    -fx-pref-width: 256px;
+    -fx-max-width: 400px;
+    -fx-background-color: -m3-color-surface;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+    -fx-effect: null;
+}
+
+.m3-side-sheet.m3-modal-sheet {
+    -fx-background-color: -m3-color-surface-container-low;
+    -fx-background-radius: 16px 0 0 16px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 1, 0.18, 0, 1);
+}
+
+.m3-side-sheet.m3-modal-sheet:rtl {
+    -fx-background-radius: 0 16px 16px 0;
+}
+
+.m3-side-sheet.m3-side-sheet:detached {
+    -fx-background-radius: 16px;
+}
+
 .m3-bottom-sheet {
+    -fx-max-width: 640px;
     -fx-background-color: -m3-color-surface-container-low;
     -fx-background-insets: 0;
-}
-
-.m3-side-sheet {
-    -fx-pref-width: 360px;
-    -fx-background-radius: 28px 0 0 28px;
-}
-
-.m3-bottom-sheet {
-    -fx-pref-height: 320px;
     -fx-background-radius: 28px 28px 0 0;
-}
-
-.m3-modal-sheet {
-    -fx-background-color: -m3-color-surface-container-high;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.20), 16, 0.18, 0, 6);
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 1, 0.18, 0, 1);
 }
 
 .m3-sheet-header {
     -fx-alignment: center-left;
     -fx-spacing: 8px;
-    -fx-padding: 24px 24px 8px 24px;
+    -fx-padding: 24px 24px 12px 24px;
 }
 
 .m3-sheet-title {
     -fx-font-size: 22px;
     -fx-font-weight: 400;
     -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-side-sheet .m3-sheet-title {
+    -fx-text-fill: -m3-color-on-surface-variant;
 }
 
 .m3-sheet-actions {
@@ -42,7 +57,7 @@
 
 .m3-bottom-sheet-drag-handle-container {
     -fx-alignment: center;
-    -fx-padding: 12px 0 8px 0;
+    -fx-padding: 22px 0;
 }
 
 .m3-bottom-sheet-drag-handle {
@@ -55,4 +70,11 @@
     -fx-background-color: -m3-color-on-surface-variant;
     -fx-background-radius: 2px;
     -fx-opacity: 0.4;
+}
+
+.m3-bottom-sheet-drag-handle-container:focus-visible .m3-bottom-sheet-drag-handle {
+    -fx-border-color: -m3-state-focus-indicator-color;
+    -fx-border-width: -m3-state-focus-indicator-thickness;
+    -fx-border-insets: -2px;
+    -fx-border-radius: 4px;
 }

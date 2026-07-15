@@ -89,6 +89,18 @@
     -fx-padding: 0;
 }
 
+.m3-time-picker-cell .m3-state-layer,
+.m3-time-picker-cell .m3-ripple {
+    -fx-background-color: -m3-color-on-surface;
+}
+
+.m3-time-picker-cell:selected .m3-state-layer,
+.m3-time-picker-cell:selected .m3-ripple,
+.m3-time-picker-cell.m3-time-picker-selected-cell .m3-state-layer,
+.m3-time-picker-cell.m3-time-picker-selected-cell .m3-ripple {
+    -fx-background-color: -m3-color-on-primary-container;
+}
+
 .m3-time-picker-cell:hover .m3-state-layer {
     -fx-opacity: 0.08;
 }
@@ -116,7 +128,7 @@
     -fx-cursor: hand;
 }
 
-.m3-time-picker-dial:focused {
+.m3-time-picker-dial:focus-visible {
     -fx-border-color: -m3-state-focus-indicator-color;
     -fx-border-width: -m3-state-focus-indicator-thickness;
 }
@@ -162,7 +174,7 @@
     -fx-text-fill: -m3-color-on-surface;
 }
 
-.m3-time-picker-dial-label:focused {
+.m3-time-picker-dial-label:focus-visible {
     -fx-border-color: -m3-state-focus-indicator-color;
 }
 
@@ -219,6 +231,18 @@
 .m3-time-picker-period-cell.m3-time-picker-selected-cell {
     -fx-background-color: -m3-color-tertiary-container;
     -fx-text-fill: -m3-color-on-tertiary-container;
+}
+
+.m3-time-picker-period-cell .m3-state-layer,
+.m3-time-picker-period-cell .m3-ripple {
+    -fx-background-color: -m3-color-on-surface-variant;
+}
+
+.m3-time-picker-period-cell:selected .m3-state-layer,
+.m3-time-picker-period-cell:selected .m3-ripple,
+.m3-time-picker-period-cell.m3-time-picker-selected-cell .m3-state-layer,
+.m3-time-picker-period-cell.m3-time-picker-selected-cell .m3-ripple {
+    -fx-background-color: -m3-color-on-tertiary-container;
 }
 
 .m3-time-picker-period-row:vertical .m3-time-picker-period-start {

@@ -35,7 +35,7 @@ control subclasses where M3FX owns the behavior surface.
 - MonetFX-backed light and dark color schemes.
 - Baseline and Expressive profiles for system and component tokens.
 - Token-driven typography, shape, elevation, density, state layers, and component metrics.
-- Global animation settings and subtree reduced-motion requests, with Standard and Expressive motion schemes and
+- Application-wide and subtree-inherited reduced-motion requests, with Standard and Expressive motion schemes and
   behavior timings supplied by the active theme tokens.
 - Reduced-motion behavior for transitions, overlays, scrolling, progress indicators, and loading indicators.
 - Theme and direction propagation into popup roots.
@@ -87,6 +87,11 @@ size-specific icon and extended-label spacing, and logical RTL padding. FAB menu
 four-pixel action spacing, an eight-pixel close gap, paired tonal and solid color families, logical trailing
 alignment, and a dedicated close-button transition. Chip metrics remain on the published baseline token set because
 the current Expressive specification does not define a replacement size scale.
+Carousels now implement Multi-browse, Uncontained, Uncontained multi-aspect ratio, Hero, Center-aligned hero, and
+Full-screen arrangements with Material keyline widths, logical padding, clipping, snapping, keyboard focus, item
+state layers, bounded ripples, disabled treatment, RTL placement, and reduced-motion equal-width behavior. The
+track reuses layout and transition storage, and direct-scroll settlement searches neighboring keylines instead of
+recomputing every possible target.
 The slider family now provides the published five-size Expressive scale, centered and range selection, discrete
 stops, value indicators, dual-handle keyboard and accessibility behavior, and logical RTL interaction. Inset track
 graphics switch between active and inactive segments according to available space, while handle-bound focus
@@ -107,8 +112,25 @@ Text fields, password fields, and text areas retain the published 56-pixel singl
 metrics in both profiles because the current Expressive specification does not define a replacement size scale.
 Filled and outlined containers now cover the specified hover and error-hover colors, focused state precedence,
 floating labels, trailing adornments, supporting-row spacing, RTL layout, multiline surfaces, and validation feedback.
-Remaining component families will be audited against the local Material reference snapshot rather than inferred
-from baseline behavior.
+Menus now implement the published Standard and Vibrant color mappings, 44-pixel Expressive rows, grouped outer and
+inner corners, selected and active submenu-owner shapes, disabled content treatment, popup direction, RTL behavior,
+and profile-specific typography and icon sizing. Menu shape transitions reuse preallocated path geometry and are
+allocated only for menu items, leaving virtualized list cells on the lower-cost list-item path.
+Search now provides the published Contained and Divided styles in Docked and Full-screen layouts, including
+style-specific header metrics, result-container ownership, divider treatment, state layers, action hit testing,
+keyboard and accessibility focus order, RTL geometry, and reduced-motion behavior. Search results retain List item
+tokens rather than receiving Search-specific row overrides.
+Date and date-range pickers now use the published docked and modal container geometry, separate month and year menu
+navigation, 48-pixel day targets with 40-pixel state layers, bounded navigation, continuous range strips, logical RTL
+endpoints, and shared reusable header content. Time pickers retain the published portrait, landscape, dial, input,
+period, state-color, and focus-visible geometry. The current Expressive specification does not publish replacement
+date or time picker metrics, so both profiles use the same component dimensions.
+Cards now distinguish passive containers from direct action surfaces. Passive cards remain outside keyboard traversal
+and do not expose hover, focus, press, or ripple feedback, while direct action cards provide whole-surface pointer and
+keyboard activation without intercepting nested controls. Filled, elevated, and outlined variants use their published
+rest, hover, focus, pressed, dragged, and disabled colors, outlines, state layers, and elevation levels. Surface
+containers render color, shape, and elevation on one internal visual layer so styleable corner radii and shadows stay
+geometrically aligned without changing content padding.
 
 ### 2. Finish The Component-State Visual Audit
 

@@ -33,8 +33,8 @@ import java.util.Objects;
 /// shape states. It is intended for short operations whose progress cannot be measured. Use [M3ProgressBar] or
 /// [M3ProgressIndicator] when determinate progress must be communicated.
 ///
-/// The indeterminate animation follows [org.glavo.m3fx.animation.M3MotionSettings]. When full animations are
-/// disabled, the control keeps a simpler rotating affordance so an indeterminate operation still communicates
+/// The indeterminate animation follows [org.glavo.m3fx.animation.M3MotionSettings]. When reduced motion is
+/// requested, the control keeps a simpler rotating affordance so an indeterminate operation still communicates
 /// activity without running the full morph sequence. See
 /// [Material Design loading indicators](https://m3.material.io/components/loading-indicator/overview).
 @NotNullByDefault
@@ -190,10 +190,10 @@ public class M3LoadingIndicator extends Control {
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
-        return switch (attribute) {
-            case INDETERMINATE -> true;
-            default -> super.queryAccessibleAttribute(attribute, parameters);
-        };
+        if (attribute == AccessibleAttribute.INDETERMINATE) {
+            return true;
+        }
+        return super.queryAccessibleAttribute(attribute, parameters);
     }
 
     /// Returns the user-agent stylesheet for M3FX loading indicators.

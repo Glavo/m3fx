@@ -3,9 +3,12 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.css.CssMetaData;
+import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
@@ -39,9 +42,13 @@ import java.util.Objects;
 /// A Material Design 3 card container.
 ///
 /// `M3Card` groups related content in a filled, elevated, or outlined container. It can be passive content or an
-/// actionable surface when an action handler is installed. The control exposes token-backed container shape,
-/// content padding, outline width, and variant state so cards can participate in the same theme and density
-/// system as other M3FX controls.
+/// actionable surface when an action handler is installed. A directly actionable card must not contain buttons,
+/// links, or other independently actionable descendants; use a passive card when the content owns its actions.
+/// Passive cards are not focus targets and do not display hover, pressed, or ripple feedback.
+///
+/// The control exposes token-backed container shape, content padding, outline width, and variant state so cards can
+/// participate in the same theme and density system as other M3FX controls. Applications that implement card
+/// reordering can set the dragged property for the duration of the drag gesture to apply the Material dragged state.
 ///
 /// See [Material Design cards](https://m3.material.io/components/cards/overview).
 @NotNullByDefault
@@ -57,6 +64,12 @@ public class M3Card extends Control {
 
     /// The default outlined card border width.
     private static final double DEFAULT_OUTLINE_WIDTH = 1.0;
+
+    /// The pseudo-class applied while the card has a direct action.
+    private static final PseudoClass ACTIONABLE_PSEUDO_CLASS = PseudoClass.getPseudoClass("actionable");
+
+    /// The pseudo-class applied while the card participates in a drag operation.
+    private static final PseudoClass DRAGGED_PSEUDO_CLASS = PseudoClass.getPseudoClass("dragged");
 
     // The card content node property.
     private final ObjectProperty<@Nullable Node> content = new SimpleObjectProperty<>(this, "content") {
@@ -80,6 +93,15 @@ public class M3Card extends Control {
                     updateActionAccessibility();
                 }
             };
+
+    /// Whether the card is currently represented in the Material dragged state.
+    private final BooleanProperty dragged = new SimpleBooleanProperty(this, "dragged", false) {
+        /// Updates the dragged pseudo-class after the state changes.
+        @Override
+        protected void invalidated() {
+            pseudoClassStateChanged(DRAGGED_PSEUDO_CLASS, get());
+        }
+    };
 
     // The card variant property.
     private final ObjectProperty<M3CardVariant> variant = new SimpleObjectProperty<>(this, "variant", M3CardVariant.FILLED) {
@@ -167,6 +189,10 @@ public class M3Card extends Control {
 
     /// Sets the action handler.
     ///
+    /// Installing a handler makes the complete card surface focusable and directly actionable. Such a card should
+    /// not contain another actionable control. Set this property to `null` when buttons, links, or other actions are
+    /// hosted by the card content.
+    ///
     /// @param onAction the action handler invoked when the card fires, or `null` for a passive card
     public final void setOnAction(@Nullable EventHandler<ActionEvent> onAction) {
         this.onAction.set(onAction);
@@ -177,6 +203,31 @@ public class M3Card extends Control {
     /// @return the action handler property
     public final ObjectProperty<@Nullable EventHandler<ActionEvent>> onActionProperty() {
         return onAction;
+    }
+
+    /// Returns whether this card is currently represented as dragged.
+    ///
+    /// @return `true` while the Material dragged state is active
+    public final boolean isDragged() {
+        return dragged.get();
+    }
+
+    /// Sets whether this card is currently represented as dragged.
+    ///
+    /// This property describes visual interaction state and does not start a JavaFX drag-and-drop gesture.
+    /// Applications should set it when their drag operation starts and clear it when that operation finishes or is
+    /// cancelled.
+    ///
+    /// @param dragged whether the Material dragged state is active
+    public final void setDragged(boolean dragged) {
+        this.dragged.set(dragged);
+    }
+
+    /// Returns the dragged state property.
+    ///
+    /// @return the writable dragged state property
+    public final BooleanProperty draggedProperty() {
+        return dragged;
     }
 
     /// Returns the card variant.
@@ -466,6 +517,7 @@ public class M3Card extends Control {
     /// Updates accessibility role and traversal from the card action state.
     private void updateActionAccessibility() {
         boolean actionable = getOnAction() != null;
+        pseudoClassStateChanged(ACTIONABLE_PSEUDO_CLASS, actionable);
         setAccessibleRole(actionable ? AccessibleRole.BUTTON : AccessibleRole.PARENT);
         if (actionable) {
             if (!actionFocusTraversableApplied) {

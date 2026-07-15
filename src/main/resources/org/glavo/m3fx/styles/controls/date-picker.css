@@ -1,42 +1,68 @@
-.m3-date-picker {
-    -fx-background-color: transparent;
-}
-
+.m3-date-picker,
 .m3-date-range-picker {
     -fx-background-color: transparent;
 }
 
 .m3-date-picker-container {
-    -fx-background-color: -m3-color-surface-container-low;
-    -m3-container-shape: 28px;
-    -m3-container-padding: 16px;
-    -m3-container-spacing: 12px;
-    -m3-header-spacing: 4px;
-    -m3-navigation-button-size: 40px;
-    -m3-navigation-button-shape: 999px;
-    -m3-day-cell-size: 40px;
-    -m3-day-cell-shape: 999px;
-    -m3-grid-gap: 4px;
+    -fx-min-width: 360px;
+    -fx-pref-width: 360px;
+    -fx-max-width: 360px;
+    -fx-background-color: -m3-color-surface-container-high;
+    -fx-background-radius: 16px;
+    -fx-padding: 0 12px;
+    -fx-spacing: 0;
+}
+
+.m3-date-picker:modal .m3-date-picker-container {
     -fx-background-radius: 28px;
-    -fx-padding: 16px;
-    -fx-spacing: 12px;
+}
+
+.m3-date-range-picker .m3-date-picker-container {
+    -fx-background-radius: 0;
 }
 
 .m3-date-picker-header {
+    -fx-min-height: 64px;
+    -fx-pref-height: 64px;
+    -fx-max-height: 64px;
     -fx-alignment: center-left;
-    -fx-spacing: 4px;
+    -fx-spacing: 0;
 }
 
-.m3-date-picker-month-label {
-    -fx-font-size: 16px;
-    -fx-font-weight: 600;
+.m3-date-picker-header-section {
+    -fx-alignment: center;
+    -fx-spacing: 0;
+}
+
+.m3-date-picker .m3-button.m3-date-picker-menu-button,
+.m3-date-range-picker .m3-button.m3-date-picker-menu-button {
+    -m3-container-height: 40px;
+    -m3-container-shape: 999px;
+    -m3-horizontal-padding: 4px;
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
     -fx-text-fill: -m3-color-on-surface;
 }
 
-.m3-icon-button.m3-date-picker-navigation-button {
+.m3-date-picker .m3-button.m3-date-picker-month-menu-button,
+.m3-date-range-picker .m3-button.m3-date-picker-month-menu-button {
+    -fx-min-width: 80px;
+    -fx-pref-width: 80px;
+    -fx-max-width: 80px;
+}
+
+.m3-date-picker .m3-button.m3-date-picker-year-menu-button,
+.m3-date-range-picker .m3-button.m3-date-picker-year-menu-button {
+    -fx-min-width: 96px;
+    -fx-pref-width: 96px;
+    -fx-max-width: 96px;
+}
+
+.m3-date-picker .m3-icon-button.m3-date-picker-navigation-button,
+.m3-date-range-picker .m3-icon-button.m3-date-picker-navigation-button {
     -m3-container-height: 40px;
     -m3-container-shape: 999px;
-    -m3-horizontal-padding: 0px;
+    -m3-horizontal-padding: 0;
     -fx-min-width: 40px;
     -fx-pref-width: 40px;
     -fx-max-width: 40px;
@@ -44,33 +70,25 @@
 
 .m3-date-picker-weekday-row {
     -fx-alignment: center-left;
-    -fx-spacing: 4px;
-}
-
-.m3-date-range-picker-weekday-row {
-    -fx-spacing: 0px;
+    -fx-spacing: 0;
 }
 
 .m3-date-picker-weekday-label {
-    -fx-min-width: 40px;
-    -fx-pref-width: 40px;
-    -fx-max-width: 40px;
-    -fx-min-height: 40px;
-    -fx-pref-height: 40px;
-    -fx-max-height: 40px;
-    -fx-font-size: 12px;
-    -fx-font-weight: 600;
-    -fx-text-fill: -m3-color-on-surface-variant;
+    -fx-min-width: 48px;
+    -fx-pref-width: 48px;
+    -fx-max-width: 48px;
+    -fx-min-height: 48px;
+    -fx-pref-height: 48px;
+    -fx-max-height: 48px;
+    -fx-font-size: 16px;
+    -fx-font-weight: 400;
+    -fx-text-fill: -m3-color-on-surface;
     -fx-alignment: center;
 }
 
 .m3-date-picker-day-grid {
-    -fx-hgap: 4px;
-    -fx-vgap: 4px;
-}
-
-.m3-date-range-picker-day-grid {
-    -fx-hgap: 0px;
+    -fx-hgap: 0;
+    -fx-vgap: 0;
 }
 
 .m3-date-picker-day-cell,
@@ -78,26 +96,29 @@
 .m3-date-picker-day-cell:focused,
 .m3-date-picker-day-cell:armed,
 .m3-date-picker-day-cell:pressed {
-    -fx-min-width: 40px;
-    -fx-pref-width: 40px;
-    -fx-max-width: 40px;
-    -fx-min-height: 40px;
-    -fx-pref-height: 40px;
-    -fx-max-height: 40px;
+    -fx-min-width: 48px;
+    -fx-pref-width: 48px;
+    -fx-max-width: 48px;
+    -fx-min-height: 48px;
+    -fx-pref-height: 48px;
+    -fx-max-height: 48px;
     -fx-background-color: transparent;
+    -fx-background-insets: 4px;
     -fx-background-radius: 999px;
     -fx-border-color: transparent;
+    -fx-border-insets: 4px;
     -fx-border-radius: 999px;
     -fx-alignment: center;
     -fx-cursor: hand;
-    -fx-font-size: 14px;
-    -fx-padding: 0px;
+    -fx-font-size: 16px;
+    -fx-font-weight: 400;
+    -fx-padding: 0;
     -fx-text-fill: -m3-color-on-surface;
 }
 
 .m3-date-picker-day-cell .m3-state-layer,
 .m3-date-picker-day-cell .m3-ripple {
-    -fx-background-color: -m3-color-primary;
+    -fx-background-color: -m3-color-on-surface-variant;
 }
 
 .m3-date-picker-day-cell:hover .m3-state-layer {
@@ -118,8 +139,8 @@
 .m3-date-picker-outside-month-day:focused,
 .m3-date-picker-outside-month-day:armed,
 .m3-date-picker-outside-month-day:pressed {
-    -fx-text-fill: -m3-color-on-surface-variant;
-    -fx-opacity: 0.62;
+    -fx-text-fill: -m3-color-on-surface;
+    -fx-opacity: 0.38;
 }
 
 .m3-date-picker-today-day,
@@ -132,15 +153,21 @@
     -fx-text-fill: -m3-color-primary;
 }
 
+.m3-date-picker-today-day .m3-state-layer,
+.m3-date-picker-today-day .m3-ripple {
+    -fx-background-color: -m3-color-primary;
+}
+
 .m3-date-picker-selected-day,
 .m3-date-picker-selected-day:hover,
 .m3-date-picker-selected-day:focused,
 .m3-date-picker-selected-day:armed,
 .m3-date-picker-selected-day:pressed {
     -fx-background-color: -m3-color-primary;
-    -fx-border-color: -m3-color-primary;
+    -fx-background-insets: 4px;
+    -fx-border-color: transparent;
     -fx-text-fill: -m3-color-on-primary;
-    -fx-opacity: 1.0;
+    -fx-opacity: 1;
 }
 
 .m3-date-picker-selected-day .m3-state-layer,
@@ -154,107 +181,59 @@
 .m3-date-picker-day-cell.m3-date-range-picker-range-middle-day:armed,
 .m3-date-picker-day-cell.m3-date-range-picker-range-middle-day:pressed {
     -fx-background-color: -m3-color-secondary-container;
-    -fx-background-radius: 0px;
+    -fx-background-insets: 4px 0;
+    -fx-background-radius: 0;
     -fx-text-fill: -m3-color-on-secondary-container;
-    -fx-opacity: 1.0;
+    -fx-opacity: 1;
 }
 
 .m3-date-picker-day-cell.m3-date-range-picker-range-middle-day .m3-state-layer,
 .m3-date-picker-day-cell.m3-date-range-picker-range-middle-day .m3-ripple {
-    -fx-background-color: -m3-color-on-secondary-container;
+    -fx-background-color: -m3-color-on-primary-container;
 }
 
-.m3-date-picker-day-cell.m3-date-range-picker-range-start-day,
-.m3-date-picker-day-cell.m3-date-range-picker-range-start-day:hover,
-.m3-date-picker-day-cell.m3-date-range-picker-range-start-day:focused,
-.m3-date-picker-day-cell.m3-date-range-picker-range-start-day:armed,
-.m3-date-picker-day-cell.m3-date-range-picker-range-start-day:pressed {
-    -fx-background-radius: 999px 0 0 999px;
+.m3-date-picker-day-cell.m3-date-range-picker-range-start-day {
+    -fx-background-color: -m3-color-secondary-container, -m3-color-primary;
+    -fx-background-insets: 4px 0 4px 24px, 4px;
+    -fx-background-radius: 0, 999px;
 }
 
-.m3-date-picker-day-cell.m3-date-range-picker-range-end-day,
-.m3-date-picker-day-cell.m3-date-range-picker-range-end-day:hover,
-.m3-date-picker-day-cell.m3-date-range-picker-range-end-day:focused,
-.m3-date-picker-day-cell.m3-date-range-picker-range-end-day:armed,
-.m3-date-picker-day-cell.m3-date-range-picker-range-end-day:pressed {
-    -fx-background-radius: 0 999px 999px 0;
+.m3-date-picker-day-cell.m3-date-range-picker-range-end-day {
+    -fx-background-color: -m3-color-secondary-container, -m3-color-primary;
+    -fx-background-insets: 4px 24px 4px 0, 4px;
+    -fx-background-radius: 0, 999px;
 }
 
-.m3-date-picker-day-cell.m3-date-range-picker-range-single-day,
-.m3-date-picker-day-cell.m3-date-range-picker-range-single-day:hover,
-.m3-date-picker-day-cell.m3-date-range-picker-range-single-day:focused,
-.m3-date-picker-day-cell.m3-date-range-picker-range-single-day:armed,
-.m3-date-picker-day-cell.m3-date-range-picker-range-single-day:pressed {
+.m3-date-picker-day-cell:rtl.m3-date-range-picker-range-start-day {
+    -fx-background-insets: 4px 24px 4px 0, 4px;
+    -fx-background-radius: 0, 999px;
+}
+
+.m3-date-picker-day-cell:rtl.m3-date-range-picker-range-end-day {
+    -fx-background-insets: 4px 0 4px 24px, 4px;
+    -fx-background-radius: 0, 999px;
+}
+
+.m3-date-picker-day-cell.m3-date-range-picker-range-single-day {
+    -fx-background-color: -m3-color-primary;
+    -fx-background-insets: 4px;
     -fx-background-radius: 999px;
 }
 
-.m3-date-picker-day-cell.m3-date-range-picker-range-row-start-day,
-.m3-date-picker-day-cell.m3-date-range-picker-range-row-start-day:hover,
-.m3-date-picker-day-cell.m3-date-range-picker-range-row-start-day:focused,
-.m3-date-picker-day-cell.m3-date-range-picker-range-row-start-day:armed,
-.m3-date-picker-day-cell.m3-date-range-picker-range-row-start-day:pressed {
+.m3-date-picker-day-cell.m3-date-range-picker-range-middle-day.m3-date-range-picker-range-row-start-day {
     -fx-background-radius: 999px 0 0 999px;
 }
 
-.m3-date-picker-day-cell.m3-date-range-picker-range-row-end-day,
-.m3-date-picker-day-cell.m3-date-range-picker-range-row-end-day:hover,
-.m3-date-picker-day-cell.m3-date-range-picker-range-row-end-day:focused,
-.m3-date-picker-day-cell.m3-date-range-picker-range-row-end-day:armed,
-.m3-date-picker-day-cell.m3-date-range-picker-range-row-end-day:pressed {
+.m3-date-picker-day-cell.m3-date-range-picker-range-middle-day.m3-date-range-picker-range-row-end-day {
     -fx-background-radius: 0 999px 999px 0;
 }
 
-.m3-date-picker-day-cell.m3-date-range-picker-range-row-start-day.m3-date-range-picker-range-row-end-day,
-.m3-date-picker-day-cell.m3-date-range-picker-range-row-start-day.m3-date-range-picker-range-row-end-day:hover,
-.m3-date-picker-day-cell.m3-date-range-picker-range-row-start-day.m3-date-range-picker-range-row-end-day:focused,
-.m3-date-picker-day-cell.m3-date-range-picker-range-row-start-day.m3-date-range-picker-range-row-end-day:armed,
-.m3-date-picker-day-cell.m3-date-range-picker-range-row-start-day.m3-date-range-picker-range-row-end-day:pressed {
-    -fx-background-radius: 999px;
-}
-
-.m3-date-picker-day-cell:rtl.m3-date-range-picker-range-start-day,
-.m3-date-picker-day-cell:rtl.m3-date-range-picker-range-start-day:hover,
-.m3-date-picker-day-cell:rtl.m3-date-range-picker-range-start-day:focused,
-.m3-date-picker-day-cell:rtl.m3-date-range-picker-range-start-day:armed,
-.m3-date-picker-day-cell:rtl.m3-date-range-picker-range-start-day:pressed {
+.m3-date-picker-day-cell:rtl.m3-date-range-picker-range-middle-day.m3-date-range-picker-range-row-start-day {
     -fx-background-radius: 0 999px 999px 0;
 }
 
-.m3-date-picker-day-cell:rtl.m3-date-range-picker-range-end-day,
-.m3-date-picker-day-cell:rtl.m3-date-range-picker-range-end-day:hover,
-.m3-date-picker-day-cell:rtl.m3-date-range-picker-range-end-day:focused,
-.m3-date-picker-day-cell:rtl.m3-date-range-picker-range-end-day:armed,
-.m3-date-picker-day-cell:rtl.m3-date-range-picker-range-end-day:pressed {
+.m3-date-picker-day-cell:rtl.m3-date-range-picker-range-middle-day.m3-date-range-picker-range-row-end-day {
     -fx-background-radius: 999px 0 0 999px;
-}
-
-.m3-date-picker-day-cell:rtl.m3-date-range-picker-range-row-start-day,
-.m3-date-picker-day-cell:rtl.m3-date-range-picker-range-row-start-day:hover,
-.m3-date-picker-day-cell:rtl.m3-date-range-picker-range-row-start-day:focused,
-.m3-date-picker-day-cell:rtl.m3-date-range-picker-range-row-start-day:armed,
-.m3-date-picker-day-cell:rtl.m3-date-range-picker-range-row-start-day:pressed {
-    -fx-background-radius: 0 999px 999px 0;
-}
-
-.m3-date-picker-day-cell:rtl.m3-date-range-picker-range-row-end-day,
-.m3-date-picker-day-cell:rtl.m3-date-range-picker-range-row-end-day:hover,
-.m3-date-picker-day-cell:rtl.m3-date-range-picker-range-row-end-day:focused,
-.m3-date-picker-day-cell:rtl.m3-date-range-picker-range-row-end-day:armed,
-.m3-date-picker-day-cell:rtl.m3-date-range-picker-range-row-end-day:pressed {
-    -fx-background-radius: 999px 0 0 999px;
-}
-
-.m3-date-picker-day-cell:rtl.m3-date-range-picker-range-single-day,
-.m3-date-picker-day-cell:rtl.m3-date-range-picker-range-single-day:hover,
-.m3-date-picker-day-cell:rtl.m3-date-range-picker-range-single-day:focused,
-.m3-date-picker-day-cell:rtl.m3-date-range-picker-range-single-day:armed,
-.m3-date-picker-day-cell:rtl.m3-date-range-picker-range-single-day:pressed,
-.m3-date-picker-day-cell:rtl.m3-date-range-picker-range-row-start-day.m3-date-range-picker-range-row-end-day,
-.m3-date-picker-day-cell:rtl.m3-date-range-picker-range-row-start-day.m3-date-range-picker-range-row-end-day:hover,
-.m3-date-picker-day-cell:rtl.m3-date-range-picker-range-row-start-day.m3-date-range-picker-range-row-end-day:focused,
-.m3-date-picker-day-cell:rtl.m3-date-range-picker-range-row-start-day.m3-date-range-picker-range-row-end-day:armed,
-.m3-date-picker-day-cell:rtl.m3-date-range-picker-range-row-start-day.m3-date-range-picker-range-row-end-day:pressed {
-    -fx-background-radius: 999px;
 }
 
 .m3-date-picker-day-cell:disabled {

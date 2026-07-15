@@ -9,6 +9,7 @@ import javafx.beans.InvalidationListener;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.collections.ObservableList;
+import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.geometry.BoundingBox;
@@ -55,6 +56,9 @@ import java.util.Objects;
 /// See [Material Design menus](https://m3.material.io/components/menus/overview).
 @NotNullByDefault
 public class M3SubMenuItem extends M3MenuItem {
+    /// The pseudo-class applied while the submenu is visible.
+    private static final PseudoClass ACTIVE_PSEUDO_CLASS = PseudoClass.getPseudoClass("active");
+
     /// The base style class for M3FX submenu items.
     public static final String STYLE_CLASS = "m3-sub-menu-item";
 
@@ -102,7 +106,14 @@ public class M3SubMenuItem extends M3MenuItem {
             );
 
     // Backing property for the public read-only submenu showing state API.
-    private final ReadOnlyBooleanWrapper subMenuShowing = new ReadOnlyBooleanWrapper(this, "subMenuShowing");
+    private final ReadOnlyBooleanWrapper subMenuShowing =
+            new ReadOnlyBooleanWrapper(this, "subMenuShowing") {
+                /// Mirrors the expanded submenu state to the Material active-state pseudo-class.
+                @Override
+                protected void invalidated() {
+                    pseudoClassStateChanged(ACTIVE_PSEUDO_CLASS, get());
+                }
+            };
 
     /// The reusable submenu popup enter and exit animation.
     private final M3NodeTransition popupAnimation = new M3NodeTransition(subMenu);
@@ -161,7 +172,7 @@ public class M3SubMenuItem extends M3MenuItem {
 
     /// Creates a submenu item with text and submenu content.
     ///
-    /// @param text the submenu item text
+    /// @param text  the submenu item text
     /// @param items the submenu item nodes
     public M3SubMenuItem(String text, Node... items) {
         this(text);
@@ -181,9 +192,6 @@ public class M3SubMenuItem extends M3MenuItem {
     public final ObservableList<Node> getItems() {
         return subMenu.getItems();
     }
-
-
-
 
 
     /// Sets the menu that directly owns this submenu item.
@@ -312,7 +320,7 @@ public class M3SubMenuItem extends M3MenuItem {
 
     /// Returns accessibility attributes for submenu content and expanded state.
     ///
-    /// @param attribute the requested accessibility attribute
+    /// @param attribute  the requested accessibility attribute
     /// @param parameters the optional attribute parameters
     /// @return the attribute value, or `null` when unavailable
     @Override
@@ -332,7 +340,7 @@ public class M3SubMenuItem extends M3MenuItem {
 
     /// Executes submenu-related accessibility actions.
     ///
-    /// @param action the requested accessibility action
+    /// @param action     the requested accessibility action
     /// @param parameters the optional action parameters
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {

@@ -23,9 +23,11 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.glavo.m3fx.M3TestControls.*;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -107,7 +109,7 @@ final class M3SheetKeyboardTest {
         }));
     }
 
-    /// Verifies that modal bottom sheets keep Tab and F6 traversal inside sheet content and actions.
+    /// Verifies that modal bottom sheets include an actionable drag handle in cyclic Tab and F6 traversal.
     @Test
     void bottomSheetModalFocusCyclesInsideSheet() {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> FxTestUtils.assertNoCssWarnings(() -> {
@@ -118,6 +120,8 @@ final class M3SheetKeyboardTest {
             M3Button outside = new M3Button("Outside");
             M3BottomSheet sheet = bottomSheet("Queue", editor);
             sheet.getActions().addAll(first, second);
+            AtomicInteger dragHandleActions = new AtomicInteger();
+            sheet.setOnDragHandleAction(event -> dragHandleActions.incrementAndGet());
             sheet.setVariant(M3SheetVariant.MODAL);
             sheet.setShown(false);
             VBox root = new VBox(previousFocus, sheet, outside);
@@ -128,7 +132,26 @@ final class M3SheetKeyboardTest {
             root.applyCss();
             root.layout();
 
-            assertModalSheetFocusCycle(previousFocus, editor, first, second, outside);
+            Node dragHandle = Objects.requireNonNull(
+                    sheet.lookup("." + M3BottomSheet.DRAG_HANDLE_CONTAINER_STYLE_CLASS),
+                    "drag handle"
+            );
+            previousFocus.fireEvent(keyEvent(KeyCode.TAB));
+            assertTrue(dragHandle.isFocused(), "Tab should enter an actionable drag handle first");
+            dragHandle.fireEvent(keyEvent(KeyCode.SPACE));
+            assertTrue(dragHandle.isFocused(), "activating the drag handle should retain focus");
+            assertEquals(1, dragHandleActions.get(), "Space should invoke the drag-handle action");
+            dragHandle.fireEvent(keyEvent(KeyCode.TAB));
+            assertTrue(editor.isFocused(), "Tab should move from the drag handle into sheet content");
+            editor.fireEvent(keyEvent(KeyCode.TAB));
+            assertTrue(first.isFocused(), "Tab should move from sheet content to the first action");
+            first.fireEvent(keyEvent(KeyCode.TAB));
+            assertTrue(second.isFocused(), "Tab should move between sheet actions");
+            second.fireEvent(keyEvent(KeyCode.TAB));
+            assertTrue(dragHandle.isFocused(), "Tab should wrap from the last action to the drag handle");
+            dragHandle.fireEvent(keyEvent(KeyCode.F6, true));
+            assertTrue(second.isFocused(), "Shift+F6 should wrap backward to the last action");
+            assertFalse(outside.isFocused(), "modal traversal must not leave the bottom sheet");
         }));
     }
 

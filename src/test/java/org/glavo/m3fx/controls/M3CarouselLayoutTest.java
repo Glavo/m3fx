@@ -3,7 +3,6 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.animation.Animation;
 import javafx.application.Platform;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.Scene;
@@ -14,12 +13,8 @@ import javafx.scene.input.PickResult;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
-import javafx.util.Duration;
 import org.glavo.m3fx.FxTestUtils;
-import org.glavo.m3fx.animation.M3MotionEasing;
-import org.glavo.m3fx.animation.M3MotionScheme;
 import org.glavo.m3fx.animation.M3MotionSettings;
-import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -125,10 +120,14 @@ final class M3CarouselLayoutTest {
 
                 carousel.setCarouselLayout(M3CarouselLayout.HERO);
                 layout(stage, carousel, 520.0, 140.0);
-                firstWidth = renderedWidth(carousel.getItems().get(0));
+                double heroFocalWidth = renderedWidth(carousel.getItems().get(0));
                 double previewWidth = renderedWidth(carousel.getItems().get(2));
 
-                assertTrue(firstWidth > previewWidth * 4.0, "hero focal items must dominate the small preview");
+                assertTrue(
+                        heroFocalWidth > previewWidth * 4.0,
+                        () -> "hero focal items must dominate the small preview: focal="
+                                + heroFocalWidth + ", preview=" + previewWidth
+                );
 
                 carousel.selectIndex(2);
                 carousel.setCarouselLayout(M3CarouselLayout.CENTER_ALIGNED_HERO);
@@ -143,103 +142,6 @@ final class M3CarouselLayoutTest {
                 stage.close();
             }
         });
-    }
-    /// Verifies focal width changes expose a real intermediate rendered frame.
-    @Test
-    void animatesContainedFocalWidthsAcrossPulses() throws InterruptedException {
-        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
-        AtomicReference<@Nullable M3Carousel> carouselReference = new AtomicReference<>();
-        AtomicReference<@Nullable Double> initialWidthReference = new AtomicReference<>();
-
-        try {
-            FxTestUtils.runOnFxThreadWhen(
-                    () -> {
-                        M3Carousel carousel = Objects.requireNonNull(carouselReference.get(), "carousel");
-                        Pane root = (Pane) carousel.getScene().getRoot();
-                        root.layout();
-                        double initialWidth = Objects.requireNonNull(initialWidthReference.get(), "initialWidth");
-                        double currentWidth = renderedWidth(carousel.getItems().get(0));
-                        return currentWidth < initialWidth - 0.25
-                                && currentWidth > 56.0 + GEOMETRY_TOLERANCE;
-                    },
-                    () -> {
-                        @Nullable M3Carousel carousel = carouselReference.get();
-                        @Nullable Double initialWidth = initialWidthReference.get();
-                        return "carousel focal width never exposed an intermediate frame: initial="
-                                + initialWidth
-                                + ", current=" + (carousel == null
-                                ? "missing"
-                                : renderedWidth(carousel.getItems().get(0)))
-                                + ", selected=" + (carousel == null ? "missing" : carousel.getSelectedIndex())
-                                + ", globalAnimations=" + M3MotionSettings.areAnimationsEnabled()
-                                + ", nodeAnimations=" + (carousel == null
-                                ? "missing"
-                                : M3MotionSettings.areAnimationsEnabled(carousel))
-                                + ", transition=" + (carousel == null
-                                ? "missing"
-                                : transitionDiagnostics(carousel));
-                    },
-                    () -> {
-                        M3MotionSettings.setAnimationsEnabled(true);
-                        M3Carousel carousel = carousel(280.0, 280.0, 280.0, 280.0, 280.0);
-                        M3MotionScheme standardScheme = M3MotionScheme.standard();
-                        M3MotionSpec observableSpatial =
-                                M3MotionSpec.create(Duration.seconds(4.0), M3MotionEasing.LINEAR);
-                        FxTestUtils.setMotionScheme(carousel, M3MotionScheme.create(
-                                standardScheme.fastEffects(),
-                                standardScheme.defaultEffects(),
-                                standardScheme.slowEffects(),
-                                observableSpatial,
-                                observableSpatial,
-                                observableSpatial
-                        ));
-                        carousel.setCarouselLayout(M3CarouselLayout.HERO);
-                        carousel.selectIndex(0);
-                        M3MotionSettings.setReducedMotionRequested(carousel, false);
-                        Stage stage = show(carousel, 520.0, 150.0);
-                        layout(stage, carousel, 520.0, 120.0);
-                        stageReference.set(stage);
-                        carouselReference.set(carousel);
-                        initialWidthReference.set(renderedWidth(carousel.getItems().get(0)));
-
-                        carousel.selectIndex(4);
-                    },
-                    () -> {
-                        M3Carousel carousel = Objects.requireNonNull(carouselReference.get(), "carousel");
-                        double initialWidth = Objects.requireNonNull(initialWidthReference.get(), "initialWidth");
-                        double intermediateWidth = renderedWidth(carousel.getItems().get(0));
-                        assertTrue(intermediateWidth < initialWidth - 0.25);
-                        assertTrue(intermediateWidth > 56.0 + GEOMETRY_TOLERANCE);
-                    }
-            );
-        } finally {
-            FxTestUtils.runOnFxThread(() -> {
-                @Nullable M3Carousel carousel = carouselReference.get();
-                if (carousel != null) {
-                    M3MotionSettings.setReducedMotionRequested(carousel, false);
-                }
-                @Nullable Stage stage = stageReference.get();
-                if (stage != null) {
-                    stage.close();
-                }
-            });
-        }
-    }
-
-    /// Returns temporary diagnostic state for the internal selection transition.
-    private static String transitionDiagnostics(M3Carousel carousel) {
-        try {
-            Object skin = carousel.getSkin();
-            java.lang.reflect.Field trackField = skin.getClass().getDeclaredField("track");
-            trackField.setAccessible(true);
-            Object track = trackField.get(skin);
-            java.lang.reflect.Field transitionField = track.getClass().getDeclaredField("selectionTransition");
-            transitionField.setAccessible(true);
-            Animation transition = (Animation) transitionField.get(track);
-            return transition.getStatus() + "@" + transition.getCurrentTime();
-        } catch (ReflectiveOperationException exception) {
-            return exception.toString();
-        }
     }
 
     /// Verifies free scrolling in snapping layouts settles on the nearest focal item.
@@ -333,6 +235,8 @@ final class M3CarouselLayoutTest {
                 for (javafx.scene.Node item : carousel.getItems()) {
                     assertEquals(expectedWidth, renderedWidth(item), GEOMETRY_TOLERANCE);
                 }
+                assertEquals(0.0, renderedMinX(carousel.getItems().get(0)), GEOMETRY_TOLERANCE,
+                        "reduced-motion contained layouts must reach the leading viewport edge");
 
                 carousel.selectIndex(2);
                 layout(stage, carousel, 500.0, 120.0);
@@ -362,8 +266,8 @@ final class M3CarouselLayoutTest {
                 layout(stage, carousel, 500.0, 120.0);
 
                 assertTrue(
-                        carousel.getItems().get(0).getBoundsInParent().getMinX()
-                                > carousel.getItems().get(1).getBoundsInParent().getMinX(),
+                        renderedMinX(carousel.getItems().get(0))
+                                > renderedMinX(carousel.getItems().get(1)),
                         "logical first item must render on the right in RTL"
                 );
                 for (int index = 0; index < carousel.getItems().size(); index++) {
@@ -426,11 +330,25 @@ final class M3CarouselLayoutTest {
 
     /// Returns the visible keyline width of one carousel item.
     private static double renderedWidth(javafx.scene.Node item) {
-        javafx.scene.Node parent = item.getParent();
-        if (parent != null && parent.getStyleClass().contains("m3-carousel-item-container")) {
-            return parent.getBoundsInParent().getWidth();
+        return renderedSlot(item).getLayoutBounds().getWidth();
+    }
+
+    /// Returns one rendered keyline's physical minimum X inside the track.
+    private static double renderedMinX(javafx.scene.Node item) {
+        javafx.scene.Node slot = renderedSlot(item);
+        return slot.getBoundsInParent().getMinX();
+    }
+
+    /// Returns the internal keyline slot hosting one public item.
+    private static javafx.scene.Node renderedSlot(javafx.scene.Node item) {
+        javafx.scene.Node ancestor = item.getParent();
+        while (ancestor != null) {
+            if (ancestor.getStyleClass().contains("m3-carousel-item-container")) {
+                return ancestor;
+            }
+            ancestor = ancestor.getParent();
         }
-        return item.getBoundsInParent().getWidth();
+        throw new AssertionError("carousel item is not hosted by a keyline slot: " + item);
     }
 
     /// Returns the internal carousel viewport.

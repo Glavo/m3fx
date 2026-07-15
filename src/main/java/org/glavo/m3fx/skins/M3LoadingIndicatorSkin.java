@@ -150,7 +150,7 @@ public class M3LoadingIndicatorSkin extends SkinBase<M3LoadingIndicator> {
 
     /// Updates the loading animation for the current attachment and motion settings.
     private void updateAnimationState() {
-        reducedMotion = M3Animation.shouldReduceMotion(getSkinnable());
+        reducedMotion = !M3Animation.areAnimationsEnabled(getSkinnable());
         if (shouldPauseActivityAnimations()) {
             indeterminateAnimation.stop();
             basicRotationAnimation.stop();
