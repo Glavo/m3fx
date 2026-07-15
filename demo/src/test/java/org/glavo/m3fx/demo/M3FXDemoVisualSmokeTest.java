@@ -122,6 +122,7 @@ import org.glavo.m3fx.controls.M3PickerField;
 import org.glavo.m3fx.controls.M3ProgressBar;
 import org.glavo.m3fx.controls.M3ProgressIndicator;
 import org.glavo.m3fx.controls.M3RadioButton;
+import org.glavo.m3fx.controls.M3RangeSlider;
 import org.glavo.m3fx.controls.M3RichTooltip;
 import org.glavo.m3fx.controls.M3Scrim;
 import org.glavo.m3fx.controls.M3ScrollPanes;
@@ -136,6 +137,7 @@ import org.glavo.m3fx.controls.M3Snackbar;
 import org.glavo.m3fx.controls.M3SnackbarHost;
 import org.glavo.m3fx.controls.M3SplitButton;
 import org.glavo.m3fx.controls.M3Slider;
+import org.glavo.m3fx.controls.M3SliderSize;
 import org.glavo.m3fx.controls.M3SubMenuItem;
 import org.glavo.m3fx.controls.M3Surface;
 import org.glavo.m3fx.controls.M3SurfaceElevation;
@@ -190,6 +192,9 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Collectors;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -4287,16 +4292,42 @@ final class M3FXDemoVisualSmokeTest {
             @Unmodifiable List<String> pageTitles =
                     Objects.requireNonNull(appReference.get(), "app").demoPageTitles();
             for (String pageTitle : pageTitles) {
+                AtomicReference<Boolean> overflowReference = new AtomicReference<>(false);
                 showPageWhenSidebarSelectionSettled(
                         appReference,
                         sceneReference,
                         pageTitle,
                         M3FXDemoVisualSmokeTest::resetDemoPageScroll,
-                        () -> assertScrolledDemoPageVisualGeometry(
-                                Objects.requireNonNull(sceneReference.get(), "scene"),
-                                pageTitle
-                        )
+                        () -> {
+                            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                            overflowReference.set(demoPageHasVerticalOverflow(demoPageScrollPane(scene)));
+                            assertDemoPageScrollPosition(scene, pageTitle, 0.0);
+                        }
                 );
+                if (!overflowReference.get()) {
+                    continue;
+                }
+
+                for (double scrollPosition : DEMO_PAGE_SCROLL_VISUAL_POSITIONS) {
+                    if (scrollPosition <= 0.0) {
+                        continue;
+                    }
+                    showPageWhenSidebarSelectionSettled(
+                            appReference,
+                            sceneReference,
+                            pageTitle,
+                            scene -> {
+                                ScrollPane scrollPane = demoPageScrollPane(scene);
+                                scrollPane.setHvalue(0.0);
+                                scrollPane.setVvalue(scrollPosition);
+                            },
+                            () -> assertDemoPageScrollPosition(
+                                    Objects.requireNonNull(sceneReference.get(), "scene"),
+                                    pageTitle,
+                                    scrollPosition
+                            )
+                    );
+                }
             }
         } finally {
             DemoFxTestUtils.runOnFxThread(() -> {
@@ -5655,6 +5686,8 @@ final class M3FXDemoVisualSmokeTest {
         AtomicReference<@Nullable WritableImage> normalReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> intermediateReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> settledReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> focusedReference = new AtomicReference<>();
+        AtomicReference<@Nullable WritableImage> draggedReference = new AtomicReference<>();
 
         runOnFxThreadWhenNodeAreaChanged(targetReference, normalReference, sceneReference, intermediateReference, () -> {
             M3FXDemoApp app = Objects.requireNonNull(appReference.get(), "app");
@@ -5713,6 +5746,91 @@ final class M3FXDemoVisualSmokeTest {
                 Objects.requireNonNull(settledReference.get(), "settled switch snapshot"),
                 "switch selection settling frame"
         );
+
+        AtomicReference<@Nullable M3Switch> previousReference = new AtomicReference<>();
+        DemoFxTestUtils.runOnFxThreadWhenStable(() -> {
+            @Nullable Scene scene = sceneReference.get();
+            @Nullable M3Switch previous = previousReference.get();
+            return scene != null
+                    && scene.getWindow() != null
+                    && scene.getWindow().isFocused()
+                    && previous != null
+                    && previous.isFocused();
+        }, SETTLED_STATE_PULSES, () -> {
+            @Nullable Scene scene = sceneReference.get();
+            return "switch focus preparation: windowFocused="
+                    + (scene != null && scene.getWindow() != null && scene.getWindow().isFocused())
+                    + ", focusOwner=" + (scene == null ? null : scene.getFocusOwner());
+        }, () -> {
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            M3Switch previous = Objects.requireNonNull(
+                    firstVisibleSwitchWithText(scene.getRoot(), "On"),
+                    "preceding switch"
+            );
+            previousReference.set(previous);
+            if (scene.getWindow() instanceof Stage stage) {
+                stage.toFront();
+                stage.requestFocus();
+            }
+            previous.requestFocus();
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+        }, () -> {
+            M3Switch previous = Objects.requireNonNull(previousReference.get(), "preceding switch");
+            if (!requestNextKeyboardFocus(previous)) {
+                if (screenCaptureRobot == null) {
+                    screenCaptureRobot = new Robot();
+                }
+                screenCaptureRobot.keyPress(KeyCode.TAB);
+                screenCaptureRobot.keyRelease(KeyCode.TAB);
+            }
+        });
+
+        runOnFxThreadWhenNodeAreaChanged(targetReference, settledReference, sceneReference, focusedReference, () -> {
+        }, () -> {
+            WritableImage focused = Objects.requireNonNull(focusedReference.get(), "focused switch snapshot");
+            writeInteractionSnapshot(focused, "switch-selection", "focused");
+            assertTrue(target.isFocused(), "Keyboard traversal should focus the second interactive switch");
+            assertSwitchFocusIndicatorSurroundsTrack(target);
+        });
+
+        runOnFxThreadWhenNodeAreaStable(targetReference, sceneReference, draggedReference, target::isArmed, () -> {
+            Node track = Objects.requireNonNull(target.lookup(".m3-switch-track"), "switch track");
+            fireSwitchTrackMouseEventAtPosition(track, MouseEvent.MOUSE_PRESSED, 1.0, true);
+            fireSwitchTrackMouseEventAtPosition(track, MouseEvent.MOUSE_DRAGGED, 0.0, true);
+            Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+        }, () -> {
+            WritableImage dragged = Objects.requireNonNull(draggedReference.get(), "dragged switch snapshot");
+            writeInteractionSnapshot(dragged, "switch-selection", "dragged-off");
+            assertTrue(target.isSelected(), "Switch selection should remain committed until the drag is released");
+            assertSwitchThumbAtOffSide(target);
+            Node thumb = Objects.requireNonNull(target.lookup(".m3-switch-thumb"), "switch thumb");
+            Bounds thumbBounds = thumb.localToScene(thumb.getBoundsInLocal());
+            assertEquals(target.getPressedHandleSize(), thumbBounds.getWidth(), CONTROL_EDGE_TOLERANCE,
+                    "A dragged switch should use its pressed handle-size token");
+            assertEquals(target.getPressedHandleSize(), thumbBounds.getHeight(), CONTROL_EDGE_TOLERANCE,
+                    "A dragged switch should keep the pressed handle circular");
+
+            Node track = Objects.requireNonNull(target.lookup(".m3-switch-track"), "switch track");
+            fireSwitchTrackMouseEventAtPosition(track, MouseEvent.MOUSE_RELEASED, 0.0, false);
+            assertFalse(target.isSelected(), "Releasing a handle drag at the off side should clear selection");
+            DemoFxTestUtils.clearMotionScheme(target);
+        });
+
+        assertNodeAreaChanged(
+                target,
+                Objects.requireNonNull(settledReference.get(), "settled switch snapshot"),
+                Objects.requireNonNull(focusedReference.get(), "focused switch snapshot"),
+                "switch full-track focus indicator"
+        );
+        assertNodeAreaChanged(
+                target,
+                Objects.requireNonNull(focusedReference.get(), "focused switch snapshot"),
+                Objects.requireNonNull(draggedReference.get(), "dragged switch snapshot"),
+                "switch direct handle drag"
+        );
     }
 
     /// Verifies that a horizontal slider responds to real pointer press, drag, release, and settling.
@@ -5744,6 +5862,32 @@ final class M3FXDemoVisualSmokeTest {
                     "slider-drag",
                     "normal"
             );
+
+            M3MotionSettings.setReducedMotionRequested(target, true);
+            target.pseudoClassStateChanged(PseudoClass.getPseudoClass("focus-visible"), true);
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+            Node focusIndicator = Objects.requireNonNull(
+                    target.lookup(".m3-focus-indicator"),
+                    "slider focus indicator"
+            );
+            Node thumb = Objects.requireNonNull(target.lookup(".thumb"), "slider thumb");
+            Bounds focusBounds = focusIndicator.localToScene(focusIndicator.getBoundsInLocal());
+            Bounds thumbBounds = thumb.localToScene(thumb.getBoundsInLocal());
+            assertTrue(focusIndicator.isVisible(), "Keyboard-visible slider focus should render an indicator");
+            assertTrue(focusBounds.getMinX() <= thumbBounds.getMinX() + CONTROL_EDGE_TOLERANCE
+                            && focusBounds.getMaxX() >= thumbBounds.getMaxX() - CONTROL_EDGE_TOLERANCE
+                            && focusBounds.getMinY() <= thumbBounds.getMinY() + CONTROL_EDGE_TOLERANCE
+                            && focusBounds.getMaxY() >= thumbBounds.getMaxY() - CONTROL_EDGE_TOLERANCE,
+                    "Slider focus indicator should surround the visible handle");
+            assertTrue(focusBounds.getWidth() < target.getTouchTargetSize(),
+                    "Slider focus indicator should not outline the circular touch target");
+            writeInteractionSnapshot(snapshot(scene), "slider-drag", "focused");
+            target.pseudoClassStateChanged(PseudoClass.getPseudoClass("focus-visible"), false);
+            M3MotionSettings.setReducedMotionRequested(target, false);
+            scene.getRoot().applyCss();
+            scene.getRoot().layout();
+
             fireSliderMouseEventAtPosition(target, MouseEvent.MOUSE_PRESSED, normalizedSliderPosition(target), true);
             scene.getRoot().applyCss();
             scene.getRoot().layout();
@@ -8213,28 +8357,38 @@ final class M3FXDemoVisualSmokeTest {
         scrollPane.setHvalue(0.0);
     }
 
-    /// Verifies one demo page at every meaningful vertical scroll position.
-    private static void assertScrolledDemoPageVisualGeometry(Scene scene, String pageTitle) {
+    /// Verifies one demo page after the requested scroll position has settled across real JavaFX pulses.
+    private static void assertDemoPageScrollPosition(Scene scene, String pageTitle, double scrollPosition) {
         ScrollPane scrollPane = demoPageScrollPane(scene);
-        if (!demoPageHasVerticalOverflow(scrollPane)) {
-            assertDemoPageScrolledSectionVisualGeometry(scene, pageTitle);
-            return;
+        assertEquals(scrollPosition, scrollPane.getVvalue(), 0.0001,
+                () -> pageTitle + " visual capture did not reach requested scroll position");
+
+        if (scrollPosition >= 1.0 && pageTitle.equals("Sliders")) {
+            Label finalSectionLabel = visibleNodesOfType(currentDemoPage(scene, pageTitle), Label.class).stream()
+                    .filter(label -> label.getStyleClass().contains("demo-group-title"))
+                    .filter(label -> label.getText().equals("Vertical"))
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError("Sliders page is missing the Vertical section"));
+            Node viewport = Objects.requireNonNull(scrollPane.lookup(".viewport"), "demo page viewport");
+            Parent finalSection = Objects.requireNonNull(
+                    nearestAncestorWithStyle(finalSectionLabel, "demo-showcase-group"), "final slider section");
+            Bounds finalSectionBounds = finalSection.localToScene(finalSection.getLayoutBounds());
+            Bounds viewportBounds = viewport.localToScene(viewport.getBoundsInLocal());
+            assertTrue(finalSectionBounds.getHeight() >= 220.0,
+                    () -> "Vertical slider section did not reserve its sample height: " + finalSectionBounds);
+            assertTrue(viewportBounds.contains(finalSectionBounds),
+                    () -> "Bottom scroll position does not fully reveal the final Sliders section: section="
+                            + finalSectionBounds + ", viewport=" + viewportBounds
+                            + ", content=" + scrollPane.getContent().getLayoutBounds());
         }
 
-        for (double scrollPosition : DEMO_PAGE_SCROLL_VISUAL_POSITIONS) {
-            scrollPane.setHvalue(0.0);
-            scrollPane.setVvalue(scrollPosition);
-            applySceneCssAndLayout(scene);
-            assertEquals(scrollPosition, scrollPane.getVvalue(), 0.0001,
-                    () -> pageTitle + " visual capture did not reach requested scroll position");
-            String scrollName = scrollPositionName(scrollPosition);
-            writePageSnapshot(
-                    scene,
-                    "demo-scrolled-" + snapshotFileName(pageTitle) + "-" + scrollName + ".png",
-                    pageTitle + " " + scrollName + " scrolled section"
-            );
-            assertDemoPageScrolledSectionVisualGeometry(scene, pageTitle);
-        }
+        String scrollName = scrollPositionName(scrollPosition);
+        writePageSnapshot(
+                scene,
+                "demo-scrolled-" + snapshotFileName(pageTitle) + "-" + scrollName + ".png",
+                pageTitle + " " + scrollName + " scrolled section"
+        );
+        assertDemoPageScrolledSectionVisualGeometry(scene, pageTitle);
     }
 
     /// Returns whether a demo page has content below the first viewport.
@@ -12322,6 +12476,22 @@ final class M3FXDemoVisualSmokeTest {
                 "Progress page should render indeterminate circular indicators");
         assertTrue(indicators.stream().anyMatch(indicator -> !indicator.isIndeterminate() && indicator.getProgress() > 0.0),
                 "Progress page should render determinate circular indicators");
+        assertTrue(bars.stream().anyMatch(bar -> bar.getWaveAmplitude() > 0.0),
+                "Progress page should render explicitly configured wavy bars");
+        assertTrue(bars.stream().anyMatch(bar -> bar.getWaveAmplitude() == 0.0),
+                "Progress page should retain flat bars");
+        assertTrue(indicators.stream().anyMatch(indicator -> indicator.getWaveAmplitude() > 0.0),
+                "Progress page should render explicitly configured wavy circular indicators");
+        assertTrue(indicators.stream().anyMatch(indicator -> indicator.getWaveAmplitude() == 0.0),
+                "Progress page should retain flat circular indicators");
+        for (M3ProgressBar bar : bars) {
+            if (bar.getWaveAmplitude() > 0.0) {
+                assertEquals(bar.isIndeterminate() ? 20.0 : 40.0,
+                        bar.isIndeterminate() ? bar.getIndeterminateWavelength() : bar.getWavelength(),
+                        0.0001,
+                        "wavy linear wavelength");
+            }
+        }
         for (int index = 0; index < bars.size(); index++) {
             assertProgressBarDemoGeometry(bars.get(index), "Progress linear sample " + index);
         }
@@ -15242,19 +15412,180 @@ final class M3FXDemoVisualSmokeTest {
         assertVisibleText(root, "Continuous", "Sliders");
         assertVisibleText(root, "Discrete", "Sliders");
         assertVisibleText(root, "Centered", "Sliders");
+        assertVisibleText(root, "Range", "Sliders");
+        assertVisibleText(root, "Expressive Sizes", "Sliders");
+        assertVisibleText(root, "Value Indicator", "Sliders");
         assertVisibleText(root, "Vertical", "Sliders");
 
+        Map<String, Label> sectionLabels = visibleNodesOfType(page, Label.class).stream()
+                .filter(label -> label.getStyleClass().contains("demo-group-title"))
+                .filter(label -> Set.of("Expressive Sizes", "Value Indicator", "Vertical").contains(label.getText()))
+                .collect(java.util.stream.Collectors.toMap(Label::getText, Function.identity()));
+        assertEquals(3, sectionLabels.size(), "Sliders page should retain all lower showcase sections");
+        Bounds sizeSectionBounds = sectionLabels.get("Expressive Sizes").localToScene(
+                sectionLabels.get("Expressive Sizes").getBoundsInLocal()
+        );
+        Bounds valueSectionBounds = sectionLabels.get("Value Indicator").localToScene(
+                sectionLabels.get("Value Indicator").getBoundsInLocal()
+        );
+        Bounds verticalSectionBounds = sectionLabels.get("Vertical").localToScene(
+                sectionLabels.get("Vertical").getBoundsInLocal()
+        );
+        Bounds pageBounds = page.localToScene(page.getLayoutBounds());
+        assertTrue(verticalSectionBounds.getMaxY() <= pageBounds.getMaxY() + CONTROL_EDGE_TOLERANCE,
+                () -> "Sliders page layout excludes its final section: page=" + pageBounds
+                        + ", vertical=" + verticalSectionBounds);
+        assertTrue(valueSectionBounds.getMaxY() < verticalSectionBounds.getMinY(),
+                "Vertical sliders should follow the Value Indicator section without overlap");
+
         List<M3Slider> sliders = visibleNodesOfType(page, M3Slider.class);
-        assertEquals(10, sliders.size(),
-                () -> "Sliders page should render ten slider states, found " + sliders.size());
+        assertEquals(16, sliders.size(),
+                () -> "Sliders page should render sixteen representative sliders, found " + sliders.size());
+        M3Slider extraLargeSlider = sliders.stream()
+                .filter(slider -> slider.getSize() == M3SliderSize.EXTRA_LARGE)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Sliders page is missing the extra-large size sample"));
+        Bounds extraLargeBounds = extraLargeSlider.localToScene(extraLargeSlider.getBoundsInLocal());
+        assertTrue(sizeSectionBounds.getMaxY() < extraLargeBounds.getMinY(),
+                "The extra-large slider should follow the Expressive Sizes heading");
+        assertTrue(extraLargeBounds.getMaxY() < valueSectionBounds.getMinY(),
+                "Value Indicator should follow the complete Expressive Sizes matrix without overlap");
         assertEquals(1, sliders.stream().filter(Node::isDisabled).count(),
                 "Sliders page should render one disabled slider");
         assertEquals(2, sliders.stream().filter(slider -> slider.getOrientation() == Orientation.VERTICAL).count(),
                 "Sliders page should render two vertical sliders");
-        assertEquals(3, sliders.stream().filter(slider -> slider.getStepSize() > 0.0).count(),
-                "Sliders page should render three discrete sliders");
+        assertEquals(4, sliders.stream().filter(slider -> slider.getStepSize() > 0.0).count(),
+                "Sliders page should render four discrete sliders");
         assertEquals(4, sliders.stream().filter(M3Slider::isCentered).count(),
                 "Sliders page should render four centered sliders");
+        assertEquals(1, sliders.stream().filter(M3Slider::isShowValueIndicator).count(),
+                "Sliders page should render one interactive value-indicator example");
+
+        List<M3RangeSlider> rangeSliders = visibleNodesOfType(page, M3RangeSlider.class);
+        assertEquals(4, rangeSliders.size(),
+                () -> "Sliders page should render four representative range sliders, found "
+                        + rangeSliders.size());
+        assertEquals(1, rangeSliders.stream().filter(Node::isDisabled).count(),
+                "Sliders page should render one disabled range slider");
+        assertEquals(1, rangeSliders.stream().filter(slider -> slider.getStepSize() > 0.0).count(),
+                "Sliders page should render one discrete range slider");
+        assertEquals(1, rangeSliders.stream().filter(M3RangeSlider::isShowValueIndicator).count(),
+                "Sliders page should render one range value-indicator example");
+        for (M3RangeSlider rangeSlider : rangeSliders) {
+            assertEquals(2, rangeSlider.lookupAll(".range-thumb").size(),
+                    "Range slider should render two independent handles");
+            assertEquals(2, rangeSlider.lookupAll(".track").size(),
+                    "Range slider should render two inactive track segments");
+            assertNotNull(rangeSlider.lookup(".range-active-track"),
+                    "Range slider active track was not rendered");
+        }
+
+        for (M3SliderSize size : M3SliderSize.values()) {
+            long count = sliders.stream().filter(slider -> slider.getSize() == size).count();
+            assertTrue(count >= 1, () -> "Sliders page is missing the " + size + " size");
+            if (size != M3SliderSize.EXTRA_SMALL) {
+                assertEquals(1, count, () -> "Sliders page should contain one " + size + " size sample");
+            }
+        }
+
+        double[] expectedTrackHeights = {16.0, 24.0, 40.0, 56.0, 96.0};
+        double[] expectedHandleHeights = {44.0, 44.0, 52.0, 68.0, 108.0};
+        for (M3SliderSize size : M3SliderSize.values()) {
+            M3Slider slider = sliders.stream()
+                    .filter(candidate -> candidate.getSize() == size)
+                    .findFirst()
+                    .orElseThrow();
+            if (slider.getOrientation() != Orientation.HORIZONTAL) {
+                continue;
+            }
+            Region track = (Region) slider.lookup(".track");
+            Region thumb = (Region) slider.lookup(".thumb");
+            assertNotNull(track, () -> size + " slider track was not rendered");
+            assertNotNull(thumb, () -> size + " slider handle was not rendered");
+            assertEquals(expectedTrackHeights[size.ordinal()], track.getHeight(), CONTROL_EDGE_TOLERANCE);
+            assertEquals(expectedHandleHeights[size.ordinal()], thumb.getHeight(), CONTROL_EDGE_TOLERANCE);
+            assertTrue(slider.getBoundsInLocal().contains(thumb.getBoundsInParent()),
+                    () -> size + " slider handle is clipped by its control bounds");
+            if (size.ordinal() >= M3SliderSize.MEDIUM.ordinal()) {
+                assertNotNull(slider.getActiveTrackGraphic(), () -> size + " active track icon is missing");
+                assertNotNull(slider.getInactiveTrackGraphic(), () -> size + " inactive track icon is missing");
+                Node activeGraphicSlot = slider.lookup(".m3-slider-active-track-graphic-slot");
+                Node inactiveGraphicSlot = slider.lookup(".m3-slider-inactive-track-graphic-slot");
+                assertNotNull(activeGraphicSlot, () -> size + " active track icon slot is missing");
+                assertNotNull(inactiveGraphicSlot, () -> size + " inactive track icon slot is missing");
+                assertTrue(activeGraphicSlot.isVisible(),
+                        () -> size + " active track icon should be visible");
+                assertFalse(inactiveGraphicSlot.isVisible(),
+                        () -> size + " inactive track icon should remain hidden while the active icon fits");
+            }
+        }
+
+        M3Slider indicatorSlider = sliders.stream()
+                .filter(M3Slider::isShowValueIndicator)
+                .findFirst()
+                .orElseThrow();
+        Label indicator = (Label) indicatorSlider.lookup(".m3-slider-value-indicator");
+        assertNotNull(indicator, "Slider value indicator was not rendered");
+        assertFalse(indicator.isVisible(), "Slider value indicator should rest hidden");
+        try {
+            fireSliderMouseEventAtPosition(
+                    indicatorSlider,
+                    MouseEvent.MOUSE_PRESSED,
+                    0.5,
+                    true
+            );
+            root.applyCss();
+            root.layout();
+            assertTrue(indicator.isVisible(), "Slider value indicator should appear during direct manipulation");
+            assertEquals("50", indicator.getText());
+            assertNodeSnapshotHasOpaquePixels(indicator, "slider value indicator");
+        } finally {
+            fireSliderMouseEventAtPosition(
+                    indicatorSlider,
+                    MouseEvent.MOUSE_RELEASED,
+                    0.5,
+                    false
+            );
+        }
+        assertFalse(indicator.isVisible(), "Slider value indicator should hide after release");
+
+        M3RangeSlider rangeIndicatorSlider = rangeSliders.stream()
+                .filter(M3RangeSlider::isShowValueIndicator)
+                .findFirst()
+                .orElseThrow();
+        Label rangeIndicator = (Label) rangeIndicatorSlider.lookup(".m3-slider-value-indicator");
+        Node rangeLowThumb = Objects.requireNonNull(
+                rangeIndicatorSlider.lookup(".range-low-thumb"),
+                "range low thumb"
+        );
+        assertNotNull(rangeIndicator, "Range slider value indicator was not rendered");
+        assertFalse(rangeIndicator.isVisible(), "Range slider value indicator should rest hidden");
+        double rangePressX = rangeLowThumb.getBoundsInLocal().getCenterX();
+        double rangePressY = rangeLowThumb.getBoundsInLocal().getCenterY();
+        try {
+            rangeLowThumb.fireEvent(primaryMouseEvent(
+                    rangeLowThumb,
+                    MouseEvent.MOUSE_PRESSED,
+                    rangePressX,
+                    rangePressY,
+                    true
+            ));
+            root.applyCss();
+            root.layout();
+            assertTrue(rangeIndicator.isVisible(),
+                    "Range slider should show exactly one value indicator during direct manipulation");
+            assertEquals("25", rangeIndicator.getText());
+            assertNodeSnapshotHasOpaquePixels(rangeIndicator, "range slider value indicator");
+        } finally {
+            rangeLowThumb.fireEvent(primaryMouseEvent(
+                    rangeLowThumb,
+                    MouseEvent.MOUSE_RELEASED,
+                    rangePressX,
+                    rangePressY,
+                    false
+            ));
+        }
+        assertFalse(rangeIndicator.isVisible(), "Range slider value indicator should hide after release");
         assertSelectionIndicatorsCentered(scene, "Sliders");
     }
 
@@ -15783,6 +16114,16 @@ final class M3FXDemoVisualSmokeTest {
                         slider,
                         pageTitle + " slider",
                         image -> assertSliderTrackThumbGeometry(slider, sceneBounds, image, pageTitle)
+                );
+            }
+        }
+        for (M3RangeSlider slider : visibleNodesOfType(page, M3RangeSlider.class)) {
+            if (hasRenderableBounds(slider)) {
+                assertWithNodeFullyVisibleSnapshot(
+                        scene,
+                        slider,
+                        pageTitle + " range slider",
+                        image -> assertRangeSliderTrackThumbGeometry(slider, sceneBounds, image, pageTitle)
                 );
             }
         }
@@ -16769,6 +17110,62 @@ final class M3FXDemoVisualSmokeTest {
                 () -> pageTitle + " rendered radio dot pixels are not square: " + renderedBounds);
     }
 
+    /// Verifies that the visible switch focus indicator surrounds the complete track.
+    private static void assertSwitchFocusIndicatorSurroundsTrack(M3Switch switchControl) {
+        Node track = Objects.requireNonNull(switchControl.lookup(".m3-switch-track"), "switch track");
+        Node focusIndicator = Objects.requireNonNull(
+                switchControl.lookup(".m3-focus-indicator"),
+                "switch focus indicator"
+        );
+        Node label = Objects.requireNonNull(switchControl.lookup(".m3-selection-label"), "switch label");
+        Bounds trackBounds = track.localToScene(track.getBoundsInLocal());
+        Bounds focusBounds = focusIndicator.localToScene(focusIndicator.getBoundsInLocal());
+        Bounds labelBounds = label.localToScene(label.getBoundsInLocal());
+        boolean rightToLeft = switchControl.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+        assertTrue(focusIndicator.isVisible() && focusIndicator.getOpacity() > 0.0,
+                "A focus-visible switch should render its focus indicator");
+        assertTrue(focusBounds.getMinX() < trackBounds.getMinX()
+                        && focusBounds.getMaxX() > trackBounds.getMaxX()
+                        && focusBounds.getMinY() < trackBounds.getMinY()
+                        && focusBounds.getMaxY() > trackBounds.getMaxY(),
+                () -> "Switch focus indicator should surround the complete track: focus="
+                        + focusBounds + ", track=" + trackBounds);
+        assertEquals(trackBounds.getCenterX(), focusBounds.getCenterX(), CONTROL_EDGE_TOLERANCE,
+                "Switch focus indicator should share the track horizontal center");
+        assertEquals(trackBounds.getCenterY(), focusBounds.getCenterY(), CONTROL_EDGE_TOLERANCE,
+                "Switch focus indicator should share the track vertical center");
+        assertTrue(!rightToLeft
+                        ? focusBounds.getMaxX() <= labelBounds.getMinX()
+                        : focusBounds.getMinX() >= labelBounds.getMaxX(),
+                () -> "Switch focus indicator should not overlap its label: focus="
+                        + focusBounds + ", label=" + labelBounds);
+    }
+
+    /// Verifies that a dragged switch thumb occupies the logical off side before selection is committed.
+    private static void assertSwitchThumbAtOffSide(M3Switch switchControl) {
+        Region track = assertInstanceOf(
+                Region.class,
+                switchControl.lookup(".m3-switch-track"),
+                "switch track"
+        );
+        Node thumb = Objects.requireNonNull(switchControl.lookup(".m3-switch-thumb"), "switch thumb");
+        assertTrue(
+                switchControl.getPseudoClassStates().contains(PseudoClass.getPseudoClass("drag-unselected")),
+                "A dragged-off switch should expose its unselected visual preview"
+        );
+        assertFalse(track.getBackground().getFills().isEmpty(), "Dragged-off switch track should keep its fill");
+        assertFalse(track.getBorder().getStrokes().isEmpty(), "Dragged-off switch track should restore its outline");
+        Bounds trackBounds = track.localToScene(track.getBoundsInLocal());
+        Bounds thumbBounds = thumb.localToScene(thumb.getBoundsInLocal());
+        boolean rightToLeft = switchControl.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+        assertTrue(!rightToLeft
+                        ? thumbBounds.getCenterX() < trackBounds.getCenterX()
+                        : thumbBounds.getCenterX() > trackBounds.getCenterX(),
+                () -> "Dragged switch thumb is on the wrong off side: orientation="
+                        + switchControl.getEffectiveNodeOrientation()
+                        + ", thumb=" + thumbBounds + ", track=" + trackBounds);
+    }
+
     /// Verifies that a switch thumb stays vertically centered and inside its track.
     private static void assertSwitchThumbInsideTrack(
             Node root,
@@ -16844,6 +17241,127 @@ final class M3FXDemoVisualSmokeTest {
                         + thumbBounds + ", thumbPixels=" + thumbPixels);
         assertTrue(Math.abs(thumbPixels.getWidth() - thumbPixels.getHeight()) <= SELECTION_PIXEL_SHAPE_TOLERANCE,
                 () -> pageTitle + " rendered switch thumb pixels are not square: " + thumbPixels);
+    }
+
+    /// Verifies range-slider outer tracks, selected track, handle gaps, and rendered handle centering.
+    private static void assertRangeSliderTrackThumbGeometry(
+            M3RangeSlider slider,
+            Bounds sceneBounds,
+            WritableImage image,
+            String pageTitle
+    ) {
+        @Nullable Node activeTrack = slider.lookup(".range-active-track");
+        @Nullable Node lowThumb = slider.lookup(".range-low-thumb");
+        @Nullable Node highThumb = slider.lookup(".range-high-thumb");
+        @Nullable Node lowHandle = lowThumb == null ? null : lowThumb.lookup(".thumb");
+        @Nullable Node highHandle = highThumb == null ? null : highThumb.lookup(".thumb");
+        List<Node> inactiveTracks = slider.lookupAll(".track").stream()
+                .filter(Node::isVisible)
+                .filter(M3FXDemoVisualSmokeTest::hasRenderableBounds)
+                .toList();
+        if (activeTrack == null
+                || lowHandle == null
+                || highHandle == null
+                || inactiveTracks.size() != 2
+                || !hasRenderableBounds(activeTrack)
+                || !hasRenderableBounds(lowHandle)
+                || !hasRenderableBounds(highHandle)) {
+            fail(pageTitle + " range slider is missing selected track, outer tracks, or handles: " + slider);
+        }
+
+        Bounds sliderBounds = slider.localToScene(slider.getBoundsInLocal());
+        Bounds activeBounds = activeTrack.localToScene(activeTrack.getBoundsInLocal());
+        Bounds lowBounds = lowHandle.localToScene(lowHandle.getBoundsInLocal());
+        Bounds highBounds = highHandle.localToScene(highHandle.getBoundsInLocal());
+        if (isOutsideSceneViewport(lowHandle, lowBounds, sceneBounds)
+                || isOutsideSceneViewport(highHandle, highBounds, sceneBounds)
+                || isClippedAtScrollViewportEdge(lowHandle, lowBounds)
+                || isClippedAtScrollViewportEdge(highHandle, highBounds)) {
+            return;
+        }
+
+        assertTrue(containsBoundsWithTolerance(sliderBounds, activeBounds, CONTROL_EDGE_TOLERANCE));
+        assertTrue(containsBoundsWithTolerance(sliderBounds, lowBounds, CONTROL_EDGE_TOLERANCE));
+        assertTrue(containsBoundsWithTolerance(sliderBounds, highBounds, CONTROL_EDGE_TOLERANCE));
+        for (Node inactiveTrack : inactiveTracks) {
+            Bounds bounds = inactiveTrack.localToScene(inactiveTrack.getBoundsInLocal());
+            assertTrue(containsBoundsWithTolerance(sliderBounds, bounds, CONTROL_EDGE_TOLERANCE),
+                    () -> pageTitle + " range slider inactive track leaves its control: " + bounds);
+        }
+
+        double valueRange = slider.getMax() - slider.getMin();
+        double lowPosition = valueRange <= 0.0 ? 0.0 : (slider.getLowValue() - slider.getMin()) / valueRange;
+        double highPosition = valueRange <= 0.0 ? 0.0 : (slider.getHighValue() - slider.getMin()) / valueRange;
+        double gap = slider.getThumbTrackGap();
+        if (slider.getOrientation() == Orientation.VERTICAL) {
+            inactiveTracks = inactiveTracks.stream()
+                    .sorted((first, second) -> Double.compare(
+                            first.localToScene(first.getBoundsInLocal()).getMinY(),
+                            second.localToScene(second.getBoundsInLocal()).getMinY()
+                    ))
+                    .toList();
+            double trackStart = sliderBounds.getMinY() + slider.getThumbWidth() / 2.0;
+            double trackEnd = sliderBounds.getMaxY() - slider.getThumbWidth() / 2.0;
+            double lowCenter = trackEnd - (trackEnd - trackStart) * lowPosition;
+            double highCenter = trackEnd - (trackEnd - trackStart) * highPosition;
+            double firstCenter = Math.min(lowCenter, highCenter);
+            double secondCenter = Math.max(lowCenter, highCenter);
+            double lowGapExtent = lowBounds.getHeight() / 2.0 + gap;
+            double highGapExtent = highBounds.getHeight() / 2.0 + gap;
+            double firstGapExtent = lowCenter <= highCenter ? lowGapExtent : highGapExtent;
+            double secondGapExtent = lowCenter <= highCenter ? highGapExtent : lowGapExtent;
+            Bounds leadingBounds = inactiveTracks.get(0).localToScene(inactiveTracks.get(0).getBoundsInLocal());
+            Bounds trailingBounds = inactiveTracks.get(1).localToScene(inactiveTracks.get(1).getBoundsInLocal());
+
+            assertEquals(lowCenter, lowBounds.getCenterY(), 1.25);
+            assertEquals(highCenter, highBounds.getCenterY(), 1.25);
+            assertEquals(trackStart, leadingBounds.getMinY(), 1.25);
+            assertEquals(firstCenter - firstGapExtent, leadingBounds.getMaxY(), 1.25);
+            assertEquals(firstCenter + firstGapExtent, activeBounds.getMinY(), 1.25);
+            assertEquals(secondCenter - secondGapExtent, activeBounds.getMaxY(), 1.25);
+            assertEquals(secondCenter + secondGapExtent, trailingBounds.getMinY(), 1.25);
+            assertEquals(trackEnd, trailingBounds.getMaxY(), 1.25);
+        } else {
+            inactiveTracks = inactiveTracks.stream()
+                    .sorted((first, second) -> Double.compare(
+                            first.localToScene(first.getBoundsInLocal()).getMinX(),
+                            second.localToScene(second.getBoundsInLocal()).getMinX()
+                    ))
+                    .toList();
+            double trackStart = sliderBounds.getMinX() + slider.getThumbWidth() / 2.0;
+            double trackEnd = sliderBounds.getMaxX() - slider.getThumbWidth() / 2.0;
+            if (slider.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT) {
+                lowPosition = 1.0 - lowPosition;
+                highPosition = 1.0 - highPosition;
+            }
+            double lowCenter = trackStart + (trackEnd - trackStart) * lowPosition;
+            double highCenter = trackStart + (trackEnd - trackStart) * highPosition;
+            double firstCenter = Math.min(lowCenter, highCenter);
+            double secondCenter = Math.max(lowCenter, highCenter);
+            double lowGapExtent = lowBounds.getWidth() / 2.0 + gap;
+            double highGapExtent = highBounds.getWidth() / 2.0 + gap;
+            double firstGapExtent = lowCenter <= highCenter ? lowGapExtent : highGapExtent;
+            double secondGapExtent = lowCenter <= highCenter ? highGapExtent : lowGapExtent;
+            Bounds leadingBounds = inactiveTracks.get(0).localToScene(inactiveTracks.get(0).getBoundsInLocal());
+            Bounds trailingBounds = inactiveTracks.get(1).localToScene(inactiveTracks.get(1).getBoundsInLocal());
+
+            assertEquals(lowCenter, lowBounds.getCenterX(), 1.25,
+                    () -> pageTitle + " range-slider lower handle does not match its value: orientation="
+                            + slider.getEffectiveNodeOrientation() + ", slider=" + sliderBounds
+                            + ", expected=" + lowCenter + ", actual=" + lowBounds);
+            assertEquals(highCenter, highBounds.getCenterX(), 1.25,
+                    () -> pageTitle + " range-slider upper handle does not match its value: orientation="
+                            + slider.getEffectiveNodeOrientation() + ", slider=" + sliderBounds
+                            + ", expected=" + highCenter + ", actual=" + highBounds);
+            assertEquals(trackStart, leadingBounds.getMinX(), 1.25);
+            assertEquals(firstCenter - firstGapExtent, leadingBounds.getMaxX(), 1.25);
+            assertEquals(firstCenter + firstGapExtent, activeBounds.getMinX(), 1.25);
+            assertEquals(secondCenter - secondGapExtent, activeBounds.getMaxX(), 1.25);
+            assertEquals(secondCenter + secondGapExtent, trailingBounds.getMinX(), 1.25);
+            assertEquals(trackEnd, trailingBounds.getMaxX(), 1.25);
+        }
+        assertSliderThumbPixelsCentered(image, lowHandle, lowBounds, pageTitle);
+        assertSliderThumbPixelsCentered(image, highHandle, highBounds, pageTitle);
     }
 
     /// Verifies that slider track segments, handle gap, and thumb match the current value and orientation.
@@ -16945,21 +17463,38 @@ final class M3FXDemoVisualSmokeTest {
             double trackEnd = sliderBounds.getMaxY() - slider.getThumbWidth() / 2.0;
             double trackCenter = (trackStart + trackEnd) / 2.0;
             double thumbCenter = trackEnd - (trackEnd - trackStart) * logicalPosition;
+            double gapExtent = thumbBounds.getHeight() / 2.0 + slider.getThumbTrackGap();
             Bounds upperInactive = inactiveTracks.get(0).localToScene(inactiveTracks.get(0).getBoundsInLocal());
             Bounds lowerInactive = inactiveTracks.get(1).localToScene(inactiveTracks.get(1).getBoundsInLocal());
             assertEquals(thumbCenter, thumbBounds.getCenterY(), 1.25);
             assertEquals(trackStart, upperInactive.getMinY(), 1.25);
-            assertEquals(Math.min(trackCenter, thumbCenter - slider.getThumbTrackGap()),
+            assertEquals(Math.min(trackCenter, thumbCenter - gapExtent),
                     upperInactive.getMaxY(), 1.25);
-            assertEquals(Math.max(trackCenter, thumbCenter + slider.getThumbTrackGap()),
+            assertEquals(Math.max(trackCenter, thumbCenter + gapExtent),
                     lowerInactive.getMinY(), 1.25);
             assertEquals(trackEnd, lowerInactive.getMaxY(), 1.25);
             assertEquals(Math.min(trackCenter, thumbCenter) + (thumbCenter < trackCenter
-                            ? slider.getThumbTrackGap() : 0.0),
+                            ? gapExtent : 0.0),
                     activeBounds.getMinY(), 1.25);
             assertEquals(Math.max(trackCenter, thumbCenter) - (thumbCenter > trackCenter
-                            ? slider.getThumbTrackGap() : 0.0),
+                            ? gapExtent : 0.0),
                     activeBounds.getMaxY(), 1.25);
+            endStops.sort((first, second) -> Double.compare(
+                    first.localToScene(first.getBoundsInLocal()).getMinY(),
+                    second.localToScene(second.getBoundsInLocal()).getMinY()
+            ));
+            double stopCenterOffset = slider.getStopIndicatorTrailingSpace()
+                    + slider.getStopIndicatorSize() / 2.0;
+            assertEquals(
+                    trackStart + stopCenterOffset,
+                    endStops.get(0).localToScene(endStops.get(0).getBoundsInLocal()).getCenterY(),
+                    1.25
+            );
+            assertEquals(
+                    trackEnd - stopCenterOffset,
+                    endStops.get(1).localToScene(endStops.get(1).getBoundsInLocal()).getCenterY(),
+                    1.25
+            );
         } else {
             inactiveTracks.sort((first, second) -> Double.compare(
                     first.localToScene(first.getBoundsInLocal()).getMinX(),
@@ -16972,21 +17507,38 @@ final class M3FXDemoVisualSmokeTest {
                     ? 1.0 - logicalPosition
                     : logicalPosition;
             double thumbCenter = trackStart + (trackEnd - trackStart) * visualPosition;
+            double gapExtent = thumbBounds.getWidth() / 2.0 + slider.getThumbTrackGap();
             Bounds leadingInactive = inactiveTracks.get(0).localToScene(inactiveTracks.get(0).getBoundsInLocal());
             Bounds trailingInactive = inactiveTracks.get(1).localToScene(inactiveTracks.get(1).getBoundsInLocal());
             assertEquals(thumbCenter, thumbBounds.getCenterX(), 1.25);
             assertEquals(trackStart, leadingInactive.getMinX(), 1.25);
-            assertEquals(Math.min(trackCenter, thumbCenter - slider.getThumbTrackGap()),
+            assertEquals(Math.min(trackCenter, thumbCenter - gapExtent),
                     leadingInactive.getMaxX(), 1.25);
-            assertEquals(Math.max(trackCenter, thumbCenter + slider.getThumbTrackGap()),
+            assertEquals(Math.max(trackCenter, thumbCenter + gapExtent),
                     trailingInactive.getMinX(), 1.25);
             assertEquals(trackEnd, trailingInactive.getMaxX(), 1.25);
             assertEquals(Math.min(trackCenter, thumbCenter) + (thumbCenter < trackCenter
-                            ? slider.getThumbTrackGap() : 0.0),
+                            ? gapExtent : 0.0),
                     activeBounds.getMinX(), 1.25);
             assertEquals(Math.max(trackCenter, thumbCenter) - (thumbCenter > trackCenter
-                            ? slider.getThumbTrackGap() : 0.0),
+                            ? gapExtent : 0.0),
                     activeBounds.getMaxX(), 1.25);
+            endStops.sort((first, second) -> Double.compare(
+                    first.localToScene(first.getBoundsInLocal()).getMinX(),
+                    second.localToScene(second.getBoundsInLocal()).getMinX()
+            ));
+            double stopCenterOffset = slider.getStopIndicatorTrailingSpace()
+                    + slider.getStopIndicatorSize() / 2.0;
+            assertEquals(
+                    trackStart + stopCenterOffset,
+                    endStops.get(0).localToScene(endStops.get(0).getBoundsInLocal()).getCenterX(),
+                    1.25
+            );
+            assertEquals(
+                    trackEnd - stopCenterOffset,
+                    endStops.get(1).localToScene(endStops.get(1).getBoundsInLocal()).getCenterX(),
+                    1.25
+            );
         }
         assertSliderThumbPixelsCentered(image, thumb, thumbBounds, pageTitle);
     }
@@ -17010,8 +17562,9 @@ final class M3FXDemoVisualSmokeTest {
                 ? 1.0 - logicalPosition
                 : logicalPosition;
         double thumbCenter = trackStart + trackLength * visualPosition;
-        double leadingGapEdge = Math.max(trackStart, thumbCenter - slider.getThumbTrackGap());
-        double trailingGapEdge = Math.min(trackEnd, thumbCenter + slider.getThumbTrackGap());
+        double gapExtent = thumbBounds.getWidth() / 2.0 + slider.getThumbTrackGap();
+        double leadingGapEdge = Math.max(trackStart, thumbCenter - gapExtent);
+        double trailingGapEdge = Math.min(trackEnd, thumbCenter + gapExtent);
 
         assertTrue(trackLength >= 160.0, () -> pageTitle + " horizontal slider track is too short: " + trackLength);
         assertEquals(slider.getTrackThickness(), inactiveBounds.getHeight(), 1.0,
@@ -17045,7 +17598,7 @@ final class M3FXDemoVisualSmokeTest {
             assertEquals(trackEnd, activeBounds.getMaxX(), 1.25,
                     () -> pageTitle + " RTL slider active track should end at the visual trailing edge: "
                             + activeBounds);
-            assertEquals(slider.getThumbTrackGap() * 2.0,
+            assertEquals(thumbBounds.getWidth() + slider.getThumbTrackGap() * 2.0,
                     activeBounds.getMinX() - inactiveBounds.getMaxX(),
                     1.5,
                     () -> pageTitle + " RTL slider handle gap is wrong: inactive="
@@ -17063,7 +17616,7 @@ final class M3FXDemoVisualSmokeTest {
             assertEquals(trackEnd, inactiveBounds.getMaxX(), 1.25,
                     () -> pageTitle + " slider inactive track should end at the visual trailing edge: "
                             + inactiveBounds);
-            assertEquals(slider.getThumbTrackGap() * 2.0,
+            assertEquals(thumbBounds.getWidth() + slider.getThumbTrackGap() * 2.0,
                     inactiveBounds.getMinX() - activeBounds.getMaxX(),
                     1.5,
                     () -> pageTitle + " slider handle gap is wrong: inactive="
@@ -17088,8 +17641,9 @@ final class M3FXDemoVisualSmokeTest {
         double trackEnd = sliderBounds.getMaxY() - slider.getThumbWidth() / 2.0;
         double trackLength = trackEnd - trackStart;
         double thumbCenter = trackEnd - trackLength * logicalPosition;
-        double upperGapEdge = Math.max(trackStart, thumbCenter - slider.getThumbTrackGap());
-        double lowerGapEdge = Math.min(trackEnd, thumbCenter + slider.getThumbTrackGap());
+        double gapExtent = thumbBounds.getHeight() / 2.0 + slider.getThumbTrackGap();
+        double upperGapEdge = Math.max(trackStart, thumbCenter - gapExtent);
+        double lowerGapEdge = Math.min(trackEnd, thumbCenter + gapExtent);
 
         assertTrue(trackLength >= 120.0, () -> pageTitle + " vertical slider track is too short: " + trackLength);
         assertEquals(slider.getTrackThickness(), inactiveBounds.getWidth(), 1.0,
@@ -17119,7 +17673,7 @@ final class M3FXDemoVisualSmokeTest {
                         + activeBounds);
         assertEquals(trackEnd, activeBounds.getMaxY(), 1.25,
                 () -> pageTitle + " vertical slider active track should end at the bottom: " + activeBounds);
-        assertEquals(slider.getThumbTrackGap() * 2.0,
+        assertEquals(thumbBounds.getHeight() + slider.getThumbTrackGap() * 2.0,
                 activeBounds.getMinY() - inactiveBounds.getMaxY(),
                 1.5,
                 () -> pageTitle + " vertical slider handle gap is wrong: inactive="
@@ -19220,10 +19774,13 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies one demo circular progress indicator's real active and track geometry.
     private static void assertProgressIndicatorDemoGeometry(M3ProgressIndicator indicator, String description) {
         Bounds controlBounds = indicator.localToScene(indicator.getBoundsInLocal());
-        assertTrue(controlBounds.getWidth() >= indicator.getIndicatorSize() - CONTROL_EDGE_TOLERANCE
-                        && controlBounds.getHeight() >= indicator.getIndicatorSize() - CONTROL_EDGE_TOLERANCE,
+        double expectedSize = indicator.getWaveAmplitude() > 0.0
+                ? indicator.getWaveIndicatorSize()
+                : indicator.getIndicatorSize();
+        assertTrue(controlBounds.getWidth() >= expectedSize - CONTROL_EDGE_TOLERANCE
+                        && controlBounds.getHeight() >= expectedSize - CONTROL_EDGE_TOLERANCE,
                 () -> description + " layout is smaller than the configured indicator size: bounds="
-                        + controlBounds + ", indicatorSize=" + indicator.getIndicatorSize());
+                        + controlBounds + ", expectedSize=" + expectedSize);
         assertNodeSnapshotHasOpaquePixels(indicator, description);
 
         if (indicator.getWaveAmplitude() > 0.0) {
@@ -19577,6 +20134,47 @@ final class M3FXDemoVisualSmokeTest {
         double x = bounds.getMinX() + bounds.getWidth() / 2.0;
         double y = bounds.getMinY() + bounds.getHeight() / 2.0;
         node.fireEvent(primaryMouseEvent(node, eventType, x, y, primaryButtonDown));
+    }
+
+    /// Fires a primary-button mouse event at a normalized position along a switch track.
+    private static void fireSwitchTrackMouseEventAtPosition(
+            Node track,
+            EventType<MouseEvent> eventType,
+            double position,
+            boolean primaryButtonDown
+    ) {
+        Bounds bounds = track.getLayoutBounds();
+        double fraction = Math.max(0.0, Math.min(1.0, position));
+        double x = bounds.getMinX() + bounds.getWidth() * fraction;
+        double y = bounds.getMinY() + bounds.getHeight() / 2.0;
+        track.fireEvent(primaryMouseEvent(track, eventType, x, y, primaryButtonDown));
+    }
+
+    /// Requests forward keyboard focus traversal through the public JavaFX 24 API when available.
+    private static boolean requestNextKeyboardFocus(Node node) {
+        try {
+            Class<?> directionClass = Class.forName("javafx.scene.TraversalDirection");
+            Object @Nullable [] constants = directionClass.getEnumConstants();
+            if (constants == null) {
+                return false;
+            }
+            @Nullable Object next = null;
+            for (Object constant : constants) {
+                if ("NEXT".equals(constant.toString())) {
+                    next = constant;
+                    break;
+                }
+            }
+            if (next == null) {
+                return false;
+            }
+
+            java.lang.reflect.Method traversal = Node.class.getMethod("requestFocusTraversal", directionClass);
+            @Nullable Object traversed = traversal.invoke(node, next);
+            return Boolean.TRUE.equals(traversed);
+        } catch (ReflectiveOperationException exception) {
+            return false;
+        }
     }
 
     /// Fires a primary-button mouse event at a slider position.

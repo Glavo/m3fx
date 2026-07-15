@@ -167,6 +167,7 @@ final class ProjectContractTest {
                             M3ProgressBar
                             M3ProgressIndicator
                             M3RadioButton
+                            M3RangeSlider
                             M3RichTooltip
                             M3Scrim
                             M3ScrollPanes
@@ -178,6 +179,7 @@ final class ProjectContractTest {
                             M3SheetVariant
                             M3SideSheet
                             M3Slider
+                            M3SliderSize
                             M3Snackbar
                             M3SnackbarHost
                             M3SplitButton
@@ -270,6 +272,8 @@ final class ProjectContractTest {
                     SearchTokens
                     SelectionTokens
                     SheetTokens
+                    SliderSizeTokens
+                    SliderSizingTokens
                     SliderTokens
                     SnackbarTokens
                     SplitButtonSizeTokens
@@ -694,6 +698,11 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3SegmentedButtonSelectionMode#SINGLE
             org.glavo.m3fx.controls.M3SheetVariant#MODAL
             org.glavo.m3fx.controls.M3SheetVariant#STANDARD
+            org.glavo.m3fx.controls.M3SliderSize#EXTRA_LARGE
+            org.glavo.m3fx.controls.M3SliderSize#EXTRA_SMALL
+            org.glavo.m3fx.controls.M3SliderSize#LARGE
+            org.glavo.m3fx.controls.M3SliderSize#MEDIUM
+            org.glavo.m3fx.controls.M3SliderSize#SMALL
             org.glavo.m3fx.controls.M3SurfaceElevation#LEVEL0
             org.glavo.m3fx.controls.M3SurfaceElevation#LEVEL1
             org.glavo.m3fx.controls.M3SurfaceElevation#LEVEL2
@@ -897,6 +906,7 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3ProgressIndicator#INDETERMINATE_PROGRESS:double
             org.glavo.m3fx.controls.M3ProgressIndicator#STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3RadioButton#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3RangeSlider#STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3RichTooltip#ACTIONS_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3RichTooltip#CONTAINER_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3RichTooltip#STYLE_CLASS:java.lang.String
@@ -1269,6 +1279,8 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3ProgressIndicator(double)
             org.glavo.m3fx.controls.M3RadioButton()
             org.glavo.m3fx.controls.M3RadioButton(java.lang.String)
+            org.glavo.m3fx.controls.M3RangeSlider()
+            org.glavo.m3fx.controls.M3RangeSlider(double,double,double,double)
             org.glavo.m3fx.controls.M3RichTooltip()
             org.glavo.m3fx.controls.M3RichTooltip(java.lang.String,java.lang.String)
             org.glavo.m3fx.controls.M3Scrim()
@@ -1455,6 +1467,8 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3SegmentedButtonGroup#getSelectedButtons()
             org.glavo.m3fx.controls.M3SideSheet#getActions()
             org.glavo.m3fx.controls.M3SideSheet#getContent()
+            org.glavo.m3fx.controls.M3Slider#getActiveTrackGraphic()
+            org.glavo.m3fx.controls.M3Slider#getInactiveTrackGraphic()
             org.glavo.m3fx.controls.M3SnackbarHost#getQueue()
             org.glavo.m3fx.controls.M3SnackbarHost#getSnackbar()
             org.glavo.m3fx.controls.M3SplitButton#getGraphic()
@@ -1507,6 +1521,8 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3SearchView#leadingProperty()
             org.glavo.m3fx.controls.M3SegmentedButtonGroup#selectedButtonProperty()
             org.glavo.m3fx.controls.M3SideSheet#contentProperty()
+            org.glavo.m3fx.controls.M3Slider#activeTrackGraphicProperty()
+            org.glavo.m3fx.controls.M3Slider#inactiveTrackGraphicProperty()
             org.glavo.m3fx.controls.M3SnackbarHost#snackbarProperty()
             org.glavo.m3fx.controls.M3SplitButton#graphicProperty()
             org.glavo.m3fx.controls.M3Switch#selectedIconProperty()

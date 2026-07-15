@@ -107,9 +107,9 @@ public class M3SubMenuItem extends M3MenuItem {
     /// The reusable submenu popup enter and exit animation.
     private final M3NodeTransition popupAnimation = new M3NodeTransition(subMenu);
 
-    /// Observes runtime motion settings while this item is attached to a scene.
+    /// Observes runtime motion settings while a pointer-hover delay is active.
     private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(this, this::refreshMotionSettings);
+            new M3MotionSettingsObserver(this, this::refreshMotionSettings, false);
 
     /// Reports popup submenu focus changes through this item's accessibility node.
     private final M3AccessibleFocusNotifier popupFocusNotifier =
@@ -618,9 +618,8 @@ public class M3SubMenuItem extends M3MenuItem {
         subMenu.setTranslateX(0.0);
     }
 
-    /// Applies changed runtime motion settings to active submenu popup animations.
+    /// Applies changed runtime motion settings to an active pointer-hover delay.
     private void refreshMotionSettings() {
-        M3Animation.finishRunningAnimationsIfDisabled(this, popupAnimation);
         refreshHoverDelays();
     }
 
@@ -642,6 +641,7 @@ public class M3SubMenuItem extends M3MenuItem {
         }
         if (!shouldRestart) {
             hoverDelayAction = NO_HOVER_ACTION;
+            motionSettingsObserver.stop();
         }
     }
 
@@ -677,6 +677,7 @@ public class M3SubMenuItem extends M3MenuItem {
     /// Starts the reusable hover timer with one pending action.
     private void startHoverDelay(int action, Duration duration) {
         hoverDelay.stop();
+        motionSettingsObserver.stop();
         if (!M3Accessible.canReach(this)) {
             hoverDelayAction = NO_HOVER_ACTION;
             return;
@@ -684,12 +685,14 @@ public class M3SubMenuItem extends M3MenuItem {
         hoverDelayAction = action;
         hoverDelay.setDuration(duration);
         reachabilityObserver.install();
+        motionSettingsObserver.start();
         hoverDelay.playFromStart();
     }
 
     /// Stops the reusable hover timer and clears its pending action.
     private void stopHoverDelay() {
         hoverDelay.stop();
+        motionSettingsObserver.stop();
         hoverDelayAction = NO_HOVER_ACTION;
         if (!popup.isShowing()) {
             reachabilityObserver.uninstall();
@@ -698,6 +701,7 @@ public class M3SubMenuItem extends M3MenuItem {
 
     /// Executes and clears the action owned by the reusable hover timer.
     private void handleHoverDelayFinished() {
+        motionSettingsObserver.stop();
         int action = hoverDelayAction;
         hoverDelayAction = NO_HOVER_ACTION;
         if (action == OPEN_HOVER_ACTION) {

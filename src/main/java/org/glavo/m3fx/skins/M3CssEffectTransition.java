@@ -17,7 +17,6 @@ import javafx.scene.paint.Color;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3FiniteTransition;
-import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -51,20 +50,10 @@ final class M3CssEffectTransition {
         }
     };
 
-    /// Observes runtime motion settings while the owner is attached to a scene.
-    private final M3MotionSettingsObserver motionSettingsObserver;
-
-    /// The resolved animation setting cached for [motionSettingsRevision].
-    private boolean cachedAnimationsEnabled;
-
-    /// The motion-settings revision represented by [cachedAnimationsEnabled].
-    private long motionSettingsRevision = Long.MIN_VALUE;
-
     /// Creates an effect transition.
     M3CssEffectTransition(Node owner, Node target) {
         this.owner = owner;
         this.target = target;
-        this.motionSettingsObserver = new M3MotionSettingsObserver(owner, this::refreshMotionSettings);
     }
 
     /// Installs interaction listeners.
@@ -83,7 +72,6 @@ final class M3CssEffectTransition {
         owner.pressedProperty().removeListener(interactionStateListener);
         owner.disabledProperty().removeListener(interactionStateListener);
         owner.getPseudoClassStates().removeListener(pseudoClassStateListener);
-        motionSettingsObserver.dispose();
         animation.stop();
         settleAnimation();
         animation.setOnFinished(null);
@@ -92,13 +80,6 @@ final class M3CssEffectTransition {
     /// Returns whether the effect transition is currently running.
     boolean isRunning() {
         return animation.getStatus() == Animation.Status.RUNNING;
-    }
-
-    /// Applies changed animation settings to the current effect transition.
-    private void refreshMotionSettings() {
-        if (animation.getStatus() == Animation.Status.RUNNING) {
-            animateEffectFromCss();
-        }
     }
 
     /// Animates from the current target effect to the CSS-resolved target effect.
@@ -130,7 +111,7 @@ final class M3CssEffectTransition {
         if (!supportedStart
                 || !supportedEnd
                 || animation.matchesTarget(end)
-                || !animationsEnabled()) {
+                || !M3Animation.areAnimationsEnabled(owner)) {
             return;
         }
 
@@ -138,17 +119,7 @@ final class M3CssEffectTransition {
         animationStyleOrigin = targetOrigin;
         animation.configure(M3Animation.fastEffects(owner), animated, end);
         effectProperty.applyStyle(targetOrigin, animated);
-        animation.playFromStart();
-    }
-
-    /// Returns the current inherited animation setting, refreshing the cache after any settings change.
-    private boolean animationsEnabled() {
-        long revision = M3MotionSettingsObserver.reducedMotionRevision();
-        if (motionSettingsRevision != revision) {
-            cachedAnimationsEnabled = M3Animation.areAnimationsEnabled(owner);
-            motionSettingsRevision = revision;
-        }
-        return cachedAnimationsEnabled;
+        M3Animation.playFromStart(owner, animation);
     }
 
     /// Returns the single mutable shadow used after this transition first needs animation.

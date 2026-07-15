@@ -37,8 +37,8 @@ import java.util.Objects;
 ///
 /// Use this control when loading feedback needs a compact circular affordance. Indeterminate progress keeps a
 /// basic rotating sweep when full animations are disabled through [org.glavo.m3fx.animation.M3MotionSettings],
-/// so reduced-motion mode still communicates activity. Positive wave amplitude and wavelength values enable
-/// the M3 Expressive wavy circular geometry used by the generated component tokens. See
+/// so reduced-motion mode still communicates activity. A positive wave amplitude explicitly enables the M3
+/// Expressive wavy geometry; the Flat configuration remains the default in every theme profile. See
 /// [Material Design progress indicators](https://m3.material.io/components/progress-indicators/overview).
 @NotNullByDefault
 public class M3ProgressIndicator extends Control {
@@ -57,6 +57,9 @@ public class M3ProgressIndicator extends Control {
 
     /// The default circular indicator size.
     private static final double DEFAULT_INDICATOR_SIZE = 40.0;
+
+    /// The default circular wavy indicator size.
+    private static final double DEFAULT_WAVE_INDICATOR_SIZE = 48.0;
 
     /// The default circular wave amplitude.
     private static final double DEFAULT_WAVE_AMPLITUDE = 0.0;
@@ -85,6 +88,9 @@ public class M3ProgressIndicator extends Control {
 
     // The styleable indicator size token.
     private @Nullable StyleableDoubleProperty indicatorSize;
+
+    // The styleable wavy indicator size token.
+    private @Nullable StyleableDoubleProperty waveIndicatorSize;
 
     // The styleable wave amplitude token.
     private @Nullable StyleableDoubleProperty waveAmplitude;
@@ -226,6 +232,36 @@ public class M3ProgressIndicator extends Control {
         return indicatorSize;
     }
 
+    /// Returns the circular wavy indicator size token.
+    ///
+    /// @return the circular wavy indicator size in pixels
+    public final double getWaveIndicatorSize() {
+        return waveIndicatorSize == null ? DEFAULT_WAVE_INDICATOR_SIZE : waveIndicatorSize.get();
+    }
+
+    /// Sets the circular wavy indicator size token.
+    ///
+    /// @param waveIndicatorSize the circular wavy indicator size in pixels
+    public final void setWaveIndicatorSize(double waveIndicatorSize) {
+        waveIndicatorSizeProperty().set(M3Css.nonNegative(waveIndicatorSize, "waveIndicatorSize"));
+    }
+
+    /// Returns the circular wavy indicator size token property.
+    ///
+    /// @return the styleable circular wavy indicator size property
+    public final StyleableDoubleProperty waveIndicatorSizeProperty() {
+        if (waveIndicatorSize == null) {
+            waveIndicatorSize = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_WAVE_INDICATOR_SIZE,
+                    this,
+                    "waveIndicatorSize",
+                    StyleableProperties.WAVE_INDICATOR_SIZE,
+                    this::updateMetrics
+            );
+        }
+        return waveIndicatorSize;
+    }
+
     /// Returns the wavy progress amplitude token.
     ///
     /// @return the wavy progress amplitude in pixels
@@ -250,7 +286,7 @@ public class M3ProgressIndicator extends Control {
                     this,
                     "waveAmplitude",
                     StyleableProperties.WAVE_AMPLITUDE,
-                    this::requestLayout
+                    this::updateMetrics
             );
         }
         return waveAmplitude;
@@ -374,7 +410,7 @@ public class M3ProgressIndicator extends Control {
 
     /// Applies size-related component tokens to JavaFX layout properties.
     private void updateMetrics() {
-        double size = getIndicatorSize();
+        double size = getWaveAmplitude() > 0.0 ? getWaveIndicatorSize() : getIndicatorSize();
         setMinSize(size, size);
         setPrefSize(size, size);
         setMaxSize(USE_COMPUTED_SIZE, USE_COMPUTED_SIZE);
@@ -420,6 +456,26 @@ public class M3ProgressIndicator extends Control {
                     @Override
                     public StyleableProperty<Number> getStyleableProperty(M3ProgressIndicator control) {
                         return control.indicatorSizeProperty();
+                    }
+                };
+
+        /// CSS metadata for the circular wavy indicator size token.
+        private static final CssMetaData<M3ProgressIndicator, Number> WAVE_INDICATOR_SIZE =
+                new CssMetaData<>(
+                        "-m3-wave-indicator-size",
+                        SizeConverter.getInstance(),
+                        DEFAULT_WAVE_INDICATOR_SIZE
+                ) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3ProgressIndicator control) {
+                        return M3Css.isSettable(control.waveIndicatorSizeProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3ProgressIndicator control) {
+                        return control.waveIndicatorSizeProperty();
                     }
                 };
 
@@ -478,6 +534,7 @@ public class M3ProgressIndicator extends Control {
             List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Control.getClassCssMetaData());
             styleables.add(TRACK_THICKNESS);
             styleables.add(INDICATOR_SIZE);
+            styleables.add(WAVE_INDICATOR_SIZE);
             styleables.add(WAVE_AMPLITUDE);
             styleables.add(WAVELENGTH);
             styleables.add(TRACK_GAP);

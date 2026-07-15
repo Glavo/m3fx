@@ -134,6 +134,9 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     /// Whether the current inherited motion settings require reduced-motion rendering.
     private boolean reducedMotion;
 
+    /// Whether progress animation state is currently being recomputed.
+    private boolean updatingProgressAnimation;
+
     /// Updates internal progress geometry after animation ticks without invalidating parent layout.
     private final InvalidationListener animationInvalidation =
             observable -> updateAnimatedVisuals();
@@ -141,9 +144,9 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     /// Updates animations when the public progress value changes.
     private final InvalidationListener progressInvalidation = observable -> updateProgressAnimation(true);
 
-    /// Updates indeterminate animation state when global or node-local motion settings change.
+    /// Observes motion settings while determinate or indeterminate progress is active.
     private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(getSkinnable(), () -> updateProgressAnimation(false));
+            new M3MotionSettingsObserver(getSkinnable(), () -> updateProgressAnimation(false), false);
 
     /// Requests layout after size-related token changes.
     private final InvalidationListener layoutInvalidation = observable -> getSkinnable().requestLayout();
@@ -196,8 +199,10 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         control.trackShapeProperty().addListener(layoutInvalidation);
         control.waveAmplitudeProperty().addListener(layoutInvalidation);
         control.wavelengthProperty().addListener(layoutInvalidation);
+        control.indeterminateWavelengthProperty().addListener(layoutInvalidation);
         control.trackGapProperty().addListener(layoutInvalidation);
         control.stopSizeProperty().addListener(layoutInvalidation);
+        determinateAnimation.setOnFinished(event -> motionSettingsObserver.stop());
         updateProgressAnimation(false);
     }
 
@@ -206,6 +211,7 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
     public void dispose() {
         M3ProgressBar progressBar = getSkinnable();
         determinateAnimation.stop();
+        determinateAnimation.setOnFinished(null);
         indeterminateAnimation.stop();
         displayedProgress.removeListener(animationInvalidation);
         progressBar.progressProperty().removeListener(progressInvalidation);
@@ -214,6 +220,7 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
         progressBar.trackShapeProperty().removeListener(layoutInvalidation);
         progressBar.waveAmplitudeProperty().removeListener(layoutInvalidation);
         progressBar.wavelengthProperty().removeListener(layoutInvalidation);
+        progressBar.indeterminateWavelengthProperty().removeListener(layoutInvalidation);
         progressBar.trackGapProperty().removeListener(layoutInvalidation);
         progressBar.stopSizeProperty().removeListener(layoutInvalidation);
         getChildren().remove(container);
@@ -612,7 +619,7 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
                 clamp(end) * width,
                 centerY,
                 amplitude,
-                getSkinnable().getWavelength(),
+                getSkinnable().getIndeterminateWavelength(),
                 indeterminateCycleFraction,
                 Math.max(2, (int) Math.ceil(width / LINEAR_WAVE_SAMPLE_LENGTH))
         );
@@ -668,25 +675,39 @@ public class M3ProgressBarSkin extends SkinBase<M3ProgressBar> {
 
     /// Updates determinate or indeterminate animation state for the current progress value.
     private void updateProgressAnimation(boolean animateDeterminateProgress) {
-        M3ProgressBar progressBar = getSkinnable();
-        reducedMotion = M3Animation.shouldReduceMotion(progressBar);
-        double progress = progressBar.getProgress();
-        if (progress == M3ProgressBar.INDETERMINATE_PROGRESS) {
-            determinateAnimation.stop();
-            if (shouldPauseActivityAnimations()) {
+        if (updatingProgressAnimation) {
+            return;
+        }
+        updatingProgressAnimation = true;
+        try {
+            M3ProgressBar progressBar = getSkinnable();
+            reducedMotion = M3Animation.shouldReduceMotion(progressBar);
+            double progress = progressBar.getProgress();
+            if (progress == M3ProgressBar.INDETERMINATE_PROGRESS) {
+                determinateAnimation.stop();
+                if (shouldPauseActivityAnimations()) {
+                    indeterminateAnimation.stop();
+                    resetIndeterminateSegments();
+                } else {
+                    startIndeterminateAnimation();
+                }
+                updateAnimatedVisuals();
+                motionSettingsObserver.start();
+            } else {
                 indeterminateAnimation.stop();
                 resetIndeterminateSegments();
-            } else {
-                startIndeterminateAnimation();
+                animateDisplayedProgress(
+                        clamp(progress),
+                        animateDeterminateProgress && !shouldPauseActivityAnimations()
+                );
+                if (determinateAnimation.getStatus() == Animation.Status.RUNNING) {
+                    motionSettingsObserver.start();
+                } else {
+                    motionSettingsObserver.stop();
+                }
             }
-            updateAnimatedVisuals();
-        } else {
-            indeterminateAnimation.stop();
-            resetIndeterminateSegments();
-            animateDisplayedProgress(
-                    clamp(progress),
-                    animateDeterminateProgress && !shouldPauseActivityAnimations()
-            );
+        } finally {
+            updatingProgressAnimation = false;
         }
     }
 

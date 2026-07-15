@@ -42,6 +42,9 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
     /// Handles primary mouse releases.
     private final EventHandler<MouseEvent> mouseReleasedHandler = this::handleMouseReleased;
 
+    /// Handles primary-button pointer drags.
+    private final EventHandler<MouseEvent> mouseDraggedHandler = this::handleMouseDragged;
+
     /// Handles pointer entry while a mouse press is active.
     private final EventHandler<MouseEvent> mouseEnteredHandler = this::handleMouseEntered;
 
@@ -57,6 +60,13 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
     /// Clears transient interaction state when the control becomes disabled.
     private final ChangeListener<Boolean> disabledListener = (observable, oldValue, newValue) -> {
         if (newValue) {
+            resetInteractionState();
+        }
+    };
+
+    /// Clears keyboard and pointer interaction state when focus leaves the control.
+    private final ChangeListener<Boolean> focusedListener = (observable, oldValue, newValue) -> {
+        if (!newValue) {
             resetInteractionState();
         }
     };
@@ -83,6 +93,7 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
         getChildren().setAll(container);
         installInteractionHandlers(control);
         control.disabledProperty().addListener(disabledListener);
+        control.focusedProperty().addListener(focusedListener);
     }
 
     /// Removes behavior handlers before the skin is disposed.
@@ -92,11 +103,13 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
         resetInteractionState();
         stateLayer.uninstallStateTransitions();
         control.disabledProperty().removeListener(disabledListener);
+        control.focusedProperty().removeListener(focusedListener);
         container.alignmentProperty().unbind();
         container.nodeOrientationProperty().unbind();
         unbindLabel();
         control.removeEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
         control.removeEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
+        control.removeEventHandler(MouseEvent.MOUSE_DRAGGED, mouseDraggedHandler);
         control.removeEventHandler(MouseEvent.MOUSE_ENTERED, mouseEnteredHandler);
         control.removeEventHandler(MouseEvent.MOUSE_EXITED, mouseExitedHandler);
         control.removeEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
@@ -225,6 +238,48 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
         stateLayer.layoutLayer(x, y, width, height, shapeRadius);
     }
 
+    /// Lays out a focus indicator independently from the bounded state layer.
+    ///
+    /// Coordinates are relative to the state layer itself, not the indicator slot.
+    ///
+    /// @param x the focus indicator container x position
+    /// @param y the focus indicator container y position
+    /// @param width the focus indicator container width
+    /// @param height the focus indicator container height
+    /// @param shapeRadius the focus indicator container shape radius
+    protected final void layoutIndicatorFocusIndicator(
+            double x,
+            double y,
+            double width,
+            double height,
+            double shapeRadius
+    ) {
+        stateLayer.layoutFocusIndicator(x, y, width, height, shapeRadius);
+    }
+
+    /// Begins a component-specific primary-pointer interaction after the control is armed.
+    ///
+    /// @param event the primary mouse press
+    protected void beginPrimaryPointerInteraction(MouseEvent event) {
+    }
+
+    /// Continues a component-specific primary-pointer interaction.
+    ///
+    /// @param event the primary-button drag event
+    protected void continuePrimaryPointerInteraction(MouseEvent event) {
+    }
+
+    /// Completes a component-specific primary-pointer interaction before normal click activation.
+    ///
+    /// Returning `false` suppresses the base click action because the subclass has committed the interaction.
+    ///
+    /// @param event the primary mouse release
+    /// @param releasedInside whether the armed pointer was released inside the control
+    /// @return whether normal click activation should continue
+    protected boolean completePrimaryPointerInteraction(MouseEvent event, boolean releasedInside) {
+        return true;
+    }
+
     /// Binds label content and presentation properties to the skinnable control.
     private void bindLabel(C control) {
         label.textProperty().bind(control.textProperty());
@@ -263,6 +318,7 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
     private void installInteractionHandlers(C control) {
         control.addEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
         control.addEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
+        control.addEventHandler(MouseEvent.MOUSE_DRAGGED, mouseDraggedHandler);
         control.addEventHandler(MouseEvent.MOUSE_ENTERED, mouseEnteredHandler);
         control.addEventHandler(MouseEvent.MOUSE_EXITED, mouseExitedHandler);
         control.addEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
@@ -280,6 +336,17 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
         M3FocusRequests.requestFocusIfTraversable(control);
         playRipple(event);
         control.arm();
+        beginPrimaryPointerInteraction(event);
+        event.consume();
+    }
+
+    /// Forwards primary-button drag events to component-specific pointer behavior.
+    private void handleMouseDragged(MouseEvent event) {
+        if (!mousePressed || !event.isPrimaryButtonDown() || getSkinnable().isDisabled()) {
+            return;
+        }
+
+        continuePrimaryPointerInteraction(event);
         event.consume();
     }
 
@@ -290,7 +357,8 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
             return;
         }
 
-        boolean shouldFire = control.isArmed() && control.contains(event.getX(), event.getY());
+        boolean releasedInside = control.isArmed() && control.contains(event.getX(), event.getY());
+        boolean shouldFire = completePrimaryPointerInteraction(event, releasedInside) && releasedInside;
         mousePressed = false;
         stateLayer.releaseRipple();
         control.disarm();
@@ -360,6 +428,10 @@ abstract class M3SelectionControlSkinBase<C extends ButtonBase> extends SkinBase
     /// Plays an indicator-bounded ripple from a mouse event.
     private void playRipple(MouseEvent event) {
         Point2D point = stateLayer.sceneToLocal(event.getSceneX(), event.getSceneY());
-        stateLayer.playRipple(point.getX(), point.getY());
+        if (stateLayer.contains(point)) {
+            stateLayer.playRipple(point.getX(), point.getY());
+        } else {
+            stateLayer.playCenteredRipple();
+        }
     }
 }

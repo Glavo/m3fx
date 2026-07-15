@@ -43,7 +43,8 @@ control subclasses where M3FX owns the behavior surface.
 ### Components
 
 - Buttons, icon buttons, FABs, FAB menus, button groups, split buttons, segmented buttons, tabs, and chips.
-- Checkboxes, radio buttons, switches, sliders, progress indicators, and loading indicators.
+- Checkboxes, radio buttons, switches, standard, centered, and range sliders, progress indicators, and loading
+  indicators.
 - Text fields, password fields, text areas, validation, and form composition.
 - Navigation bars, navigation rails, navigation drawers, lists, virtualized list views, and carousels.
 - Menus, search, date pickers, date-range pickers, time pickers, and picker fields.
@@ -86,6 +87,22 @@ size-specific icon and extended-label spacing, and logical RTL padding. FAB menu
 four-pixel action spacing, an eight-pixel close gap, paired tonal and solid color families, logical trailing
 alignment, and a dedicated close-button transition. Chip metrics remain on the published baseline token set because
 the current Expressive specification does not define a replacement size scale.
+The slider family now provides the published five-size Expressive scale, centered and range selection, discrete
+stops, value indicators, dual-handle keyboard and accessibility behavior, and logical RTL interaction. Inset track
+graphics switch between active and inactive segments according to available space, while handle-bound focus
+indication and pressed-handle geometry replace the deprecated slider state-layer and ripple treatment. Track gaps
+are measured from the visible handle edge, and end stops retain the specified four-pixel outer spacing across all
+sizes and orientations.
+Selection controls use the published baseline component metrics and state colors in both profiles. Checkboxes and
+radio buttons preserve their complete selected, indeterminate, error, disabled, focus-visible, and RTL behavior;
+switches additionally support direct handle dragging with destination-state visual preview, release-time value
+commit, pressed-handle growth, logical RTL movement, and a track-shaped focus indicator. The current Expressive
+specification does not publish a separate selection-control size scale.
+Progress indicators now use the published Flat treatment by default in both profiles, with Expressive Wavy geometry
+available through explicit component configuration. Linear and circular indicator sizes, determinate and
+indeterminate wavelengths, track gaps, stops, inactive tracks, and reduced-motion activity follow the published
+tokens. Loading indicators provide the Expressive Default and Contained variants, retain centered reusable morph
+geometry, and fall back to basic continuous rotation when decorative motion is disabled.
 Remaining component families will be audited against the local Material reference snapshot rather than inferred
 from baseline behavior.
 

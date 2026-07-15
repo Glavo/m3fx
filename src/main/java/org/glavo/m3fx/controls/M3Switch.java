@@ -37,7 +37,8 @@ import java.util.function.Function;
 ///
 /// `M3Switch` is built on JavaFX [ButtonBase] and exposes a selected property rather than extending JavaFX's
 /// concrete toggle controls. The skin renders the Material track, handle, selected state, hover and focus state
-/// layers, ripple feedback, and token-backed touch target.
+/// layers, ripple feedback, and token-backed touch target. Pressing and dragging the track moves the handle
+/// directly; releasing after a drag commits the state nearest to the handle.
 ///
 /// Use a switch for a setting whose change takes effect immediately. For selection from multiple choices, use
 /// radio buttons or segmented buttons. See [Material Design switches](https://m3.material.io/components/switch/overview).
@@ -124,22 +125,30 @@ public class M3Switch extends ButtonBase {
     }
 
     /// Creates a switch with text.
+    ///
+    /// @param text the text displayed next to the switch
     public M3Switch(String text) {
         super(text);
         initialize();
     }
 
     /// Sets whether this switch is selected.
+    ///
+    /// @param selected whether this switch is selected
     public final void setSelected(boolean selected) {
         selectedProperty().set(selected);
     }
 
     /// Returns whether this switch is selected.
+    ///
+    /// @return `true` when this switch is selected
     public final boolean isSelected() {
         return selected != null && selected.get();
     }
 
     /// Returns the selected state property.
+    ///
+    /// @return the writable selected state property
     public final BooleanProperty selectedProperty() {
         if (selected == null) {
             selected = new BooleanPropertyBase(false) {

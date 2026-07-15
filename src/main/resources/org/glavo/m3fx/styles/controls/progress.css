@@ -3,6 +3,7 @@
     -m3-track-shape: 999px;
     -m3-wave-amplitude: 0px;
     -m3-wavelength: 40px;
+    -m3-indeterminate-wavelength: 20px;
     -m3-track-gap: 4px;
     -m3-stop-size: 4px;
     -fx-accent: -m3-color-primary;
@@ -61,6 +62,7 @@
 .m3-progress-indicator.m3-progress-indicator:indeterminate {
     -m3-track-thickness: 4px;
     -m3-indicator-size: 40px;
+    -m3-wave-indicator-size: 48px;
     -m3-wave-amplitude: 0px;
     -m3-wavelength: 15px;
     -m3-track-gap: 4px;

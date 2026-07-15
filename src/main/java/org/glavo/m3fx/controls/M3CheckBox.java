@@ -109,7 +109,7 @@ public class M3CheckBox extends ButtonBase {
     // Whether user activation cycles through the indeterminate state.
     private @Nullable BooleanProperty allowIndeterminate;
 
-    /// Whether the checkbox renders its error state.
+    // Whether the checkbox renders its error state.
     private @Nullable BooleanProperty error;
 
     /// Creates an empty checkbox.

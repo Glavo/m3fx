@@ -1,11 +1,57 @@
 .m3-slider {
-    -m3-track-thickness: 16px;
-    -m3-track-shape: 999px;
+    -fx-cursor: hand;
     -m3-stop-indicator-size: 4px;
-    -m3-thumb-size: 44px;
+    -m3-stop-indicator-trailing-space: 4px;
     -m3-thumb-width: 4px;
+    -m3-focused-thumb-width: 2px;
+    -m3-pressed-thumb-width: 2px;
     -m3-thumb-track-gap: 6px;
     -m3-touch-target-size: 48px;
+    -m3-value-indicator-bottom-space: 12px;
+}
+
+.m3-slider:disabled {
+    -fx-cursor: default;
+}
+
+.m3-slider-extra-small {
+    -m3-track-thickness: 16px;
+    -m3-track-shape: 8px;
+    -m3-thumb-size: 44px;
+    -m3-slider-icon-size: 0px;
+    -m3-slider-icon-padding: 0px;
+}
+
+.m3-slider-small {
+    -m3-track-thickness: 24px;
+    -m3-track-shape: 8px;
+    -m3-thumb-size: 44px;
+    -m3-slider-icon-size: 0px;
+    -m3-slider-icon-padding: 0px;
+}
+
+.m3-slider-medium {
+    -m3-track-thickness: 40px;
+    -m3-track-shape: 12px;
+    -m3-thumb-size: 52px;
+    -m3-slider-icon-size: 24px;
+    -m3-slider-icon-padding: 6px;
+}
+
+.m3-slider-large {
+    -m3-track-thickness: 56px;
+    -m3-track-shape: 16px;
+    -m3-thumb-size: 68px;
+    -m3-slider-icon-size: 24px;
+    -m3-slider-icon-padding: 6px;
+}
+
+.m3-slider-extra-large {
+    -m3-track-thickness: 96px;
+    -m3-track-shape: 28px;
+    -m3-thumb-size: 108px;
+    -m3-slider-icon-size: 32px;
+    -m3-slider-icon-padding: 8px;
 }
 
 .m3-slider.m3-slider .stop-indicator {
@@ -31,7 +77,7 @@
     -fx-border-color: transparent;
     -fx-border-insets: 0;
     -fx-border-width: 0px;
-    -fx-pref-height: 16px;
+    -fx-pref-height: -m3-track-thickness;
 }
 
 .m3-slider.m3-slider .active-track,
@@ -44,7 +90,7 @@
     -fx-border-color: transparent;
     -fx-border-insets: 0;
     -fx-border-width: 0px;
-    -fx-pref-height: 16px;
+    -fx-pref-height: -m3-track-thickness;
 }
 
 .m3-slider.m3-slider .thumb,
@@ -66,9 +112,27 @@
     -m3-thumb-width: 2px;
 }
 
-.m3-slider .m3-state-layer,
-.m3-slider .m3-ripple {
-    -fx-background-color: -m3-color-primary;
+.m3-slider .m3-slider-active-track-graphic {
+    -fx-background-color: -m3-color-on-primary;
+    -fx-fill: -m3-color-on-primary;
+    -fx-text-fill: -m3-color-on-primary;
+}
+
+.m3-slider .m3-slider-inactive-track-graphic {
+    -fx-background-color: -m3-color-on-secondary-container;
+    -fx-fill: -m3-color-on-secondary-container;
+    -fx-text-fill: -m3-color-on-secondary-container;
+}
+
+.m3-slider .m3-slider-value-indicator {
+    -fx-alignment: center;
+    -fx-background-color: -m3-color-inverse-surface;
+    -fx-background-insets: 0;
+    -fx-background-radius: 999px;
+    -fx-padding: 6px 12px;
+    -fx-text-fill: -m3-color-inverse-on-surface;
+    -fx-min-width: 48px;
+    -fx-min-height: 44px;
 }
 
 .m3-slider:disabled .track {

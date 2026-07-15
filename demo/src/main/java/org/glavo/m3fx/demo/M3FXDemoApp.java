@@ -113,6 +113,7 @@ import org.glavo.m3fx.controls.M3PasswordField;
 import org.glavo.m3fx.controls.M3ProgressBar;
 import org.glavo.m3fx.controls.M3ProgressIndicator;
 import org.glavo.m3fx.controls.M3RadioButton;
+import org.glavo.m3fx.controls.M3RangeSlider;
 import org.glavo.m3fx.controls.M3RichTooltip;
 import org.glavo.m3fx.controls.M3Scrim;
 import org.glavo.m3fx.controls.M3SearchBar;
@@ -124,6 +125,7 @@ import org.glavo.m3fx.controls.M3SegmentedButtonSelectionMode;
 import org.glavo.m3fx.controls.M3SheetVariant;
 import org.glavo.m3fx.controls.M3SideSheet;
 import org.glavo.m3fx.controls.M3Slider;
+import org.glavo.m3fx.controls.M3SliderSize;
 import org.glavo.m3fx.controls.M3Snackbar;
 import org.glavo.m3fx.controls.M3SnackbarHost;
 import org.glavo.m3fx.controls.M3SplitButton;
@@ -1628,6 +1630,22 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the slider component page.
     private Node createSlidersPage() {
+        M3RangeSlider continuousRange = new M3RangeSlider(0.0, 100.0, 20.0, 78.0);
+        continuousRange.setPrefWidth(300.0);
+
+        M3RangeSlider discreteRange = new M3RangeSlider(0.0, 100.0, 30.0, 70.0);
+        discreteRange.setStepSize(10.0);
+        discreteRange.setSize(M3SliderSize.SMALL);
+        discreteRange.setPrefWidth(300.0);
+
+        M3RangeSlider indicatorRange = new M3RangeSlider(0.0, 100.0, 25.0, 65.0);
+        indicatorRange.setShowValueIndicator(true);
+        indicatorRange.setPrefWidth(300.0);
+
+        M3RangeSlider disabledRange = new M3RangeSlider(0.0, 100.0, 35.0, 85.0);
+        disabledRange.setDisable(true);
+        disabledRange.setPrefWidth(300.0);
+
         M3Slider vertical = createSlider(48.0, false);
         vertical.setOrientation(Orientation.VERTICAL);
         vertical.setPrefSize(56.0, 180.0);
@@ -1648,6 +1666,39 @@ public final class M3FXDemoApp extends Application {
         centeredVertical.setOrientation(Orientation.VERTICAL);
         centeredVertical.setPrefSize(56.0, 180.0);
 
+        VBox sizeSamples = new VBox(12.0);
+        M3SliderSize[] sizes = M3SliderSize.values();
+        String[] sizeLabels = {"XS · 16 dp", "S · 24 dp", "M · 40 dp", "L · 56 dp", "XL · 96 dp"};
+        for (int index = 0; index < sizes.length; index++) {
+            M3Slider slider = createSlider(20.0 + index * 15.0, false);
+            slider.setSize(sizes[index]);
+            slider.setPrefWidth(360.0);
+            if (index >= M3SliderSize.MEDIUM.ordinal()) {
+                SVGPath activeIcon = DemoIcons.onPrimary("visibility");
+                SVGPath inactiveIcon = DemoIcons.onSecondaryContainer("visibility");
+                if (sizes[index] == M3SliderSize.EXTRA_LARGE) {
+                    activeIcon.setScaleX(4.0 / 3.0);
+                    activeIcon.setScaleY(4.0 / 3.0);
+                    inactiveIcon.setScaleX(4.0 / 3.0);
+                    inactiveIcon.setScaleY(4.0 / 3.0);
+                }
+                slider.setActiveTrackGraphic(activeIcon);
+                slider.setInactiveTrackGraphic(inactiveIcon);
+            }
+
+            M3Text sizeLabel = new M3Text(sizeLabels[index], M3TextRole.LABEL_LARGE);
+            sizeLabel.setMinWidth(88.0);
+            sizeLabel.setPrefWidth(88.0);
+            HBox row = new HBox(16.0, sizeLabel, slider);
+            row.setAlignment(Pos.CENTER_LEFT);
+            HBox.setHgrow(slider, Priority.ALWAYS);
+            sizeSamples.getChildren().add(row);
+        }
+
+        M3Slider valueIndicator = createSlider(50.0, false);
+        valueIndicator.setStepSize(10.0);
+        valueIndicator.setShowValueIndicator(true);
+
         return createGallery(
                 createShowcaseGroup(
                         "Continuous",
@@ -1666,6 +1717,15 @@ public final class M3FXDemoApp extends Application {
                         centeredNeutral,
                         centeredPositive
                 ),
+                createShowcaseGroup(
+                        "Range",
+                        continuousRange,
+                        discreteRange,
+                        indicatorRange,
+                        disabledRange
+                ),
+                createFullWidthShowcaseGroup("Expressive Sizes", sizeSamples),
+                createShowcaseGroup("Value Indicator", valueIndicator),
                 createShowcaseGroup("Vertical", vertical, centeredVertical)
         );
     }
@@ -2203,10 +2263,8 @@ public final class M3FXDemoApp extends Application {
         indeterminateBar.setPrefWidth(380.0);
         applyBaselineProgress(indeterminateBar);
         M3ProgressIndicator determinateIndicator = new M3ProgressIndicator(0.32);
-        determinateIndicator.setPrefSize(64.0, 64.0);
         applyBaselineProgress(determinateIndicator);
         M3ProgressIndicator indeterminateIndicator = new M3ProgressIndicator();
-        indeterminateIndicator.setPrefSize(64.0, 64.0);
         applyBaselineProgress(indeterminateIndicator);
 
         M3ProgressBar expressiveDeterminateBar = new M3ProgressBar(0.32);
@@ -2216,10 +2274,8 @@ public final class M3FXDemoApp extends Application {
         expressiveIndeterminateBar.setPrefWidth(380.0);
         applyExpressiveLinearProgress(expressiveIndeterminateBar);
         M3ProgressIndicator expressiveDeterminateIndicator = new M3ProgressIndicator(0.32);
-        expressiveDeterminateIndicator.setPrefSize(64.0, 64.0);
         applyExpressiveCircularProgress(expressiveDeterminateIndicator);
         M3ProgressIndicator expressiveIndeterminateIndicator = new M3ProgressIndicator();
-        expressiveIndeterminateIndicator.setPrefSize(64.0, 64.0);
         applyExpressiveCircularProgress(expressiveIndeterminateIndicator);
 
         playProgressShowcaseAnimation(determinateBar, determinateIndicator);
@@ -2954,13 +3010,15 @@ public final class M3FXDemoApp extends Application {
     private static void applyExpressiveLinearProgress(M3ProgressBar progressBar) {
         progressBar.setStyle("-m3-wave-amplitude: 3px; "
                 + "-m3-wavelength: 40px; "
+                + "-m3-indeterminate-wavelength: 20px; "
                 + "-m3-track-gap: 4px; "
                 + "-m3-stop-size: 4px;");
     }
 
     /// Applies expressive wavy circular progress geometry to a single demo progress indicator.
     private static void applyExpressiveCircularProgress(M3ProgressIndicator progressIndicator) {
-        progressIndicator.setStyle("-m3-wave-amplitude: 2px; "
+        progressIndicator.setStyle("-m3-wave-amplitude: 1.6px; "
+                + "-m3-wave-indicator-size: 48px; "
                 + "-m3-wavelength: 15px; "
                 + "-m3-track-gap: 4px;");
     }
@@ -3023,7 +3081,6 @@ public final class M3FXDemoApp extends Application {
             M3ProgressIndicator progressIndicator = indeterminate
                     ? new M3ProgressIndicator()
                     : new M3ProgressIndicator(0.62);
-            progressIndicator.setIndicatorSize(56.0);
             if (expressive) {
                 applyExpressiveCircularProgress(progressIndicator);
             } else {
@@ -3031,7 +3088,7 @@ public final class M3FXDemoApp extends Application {
             }
             appendInlineStyle(progressIndicator, "-m3-track-thickness: " + trackHeight + "px;");
             indicator = progressIndicator;
-            sampleWidth = 72.0;
+            sampleWidth = 64.0;
         } else {
             M3ProgressBar progressBar = indeterminate ? new M3ProgressBar() : new M3ProgressBar(0.62);
             progressBar.setPrefWidth(180.0);

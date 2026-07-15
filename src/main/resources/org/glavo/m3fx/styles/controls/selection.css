@@ -4,6 +4,7 @@
     -m3-state-layer-size: 40px;
     -fx-text-fill: -m3-color-on-surface;
     -fx-font-size: 14px;
+    -fx-cursor: hand;
 }
 
 .m3-checkbox {
@@ -32,11 +33,22 @@
     -m3-icon-size: 16px;
     -fx-text-fill: -m3-color-on-surface;
     -fx-font-size: 14px;
+    -fx-cursor: hand;
+}
+
+.m3-checkbox:disabled,
+.m3-radio-button:disabled,
+.m3-switch:disabled {
+    -fx-cursor: default;
 }
 
 .m3-selection-container {
     -fx-alignment: center-left;
     -fx-spacing: 4px;
+}
+
+.m3-switch .m3-selection-container {
+    -fx-spacing: 8px;
 }
 
 .m3-selection-indicator {
@@ -378,6 +390,7 @@
     -fx-background-color: -m3-color-on-surface;
     -fx-border-color: -m3-color-on-surface;
     -fx-border-width: 0px;
+    -fx-opacity: -m3-state-disabled-container-opacity;
 }
 
 .m3-switch:disabled .thumb,

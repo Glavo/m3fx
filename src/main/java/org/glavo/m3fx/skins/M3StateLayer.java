@@ -38,6 +38,9 @@ import org.jetbrains.annotations.Nullable;
 /// A bounded Material Design 3 state layer with ripple animation support.
 @NotNullByDefault
 final class M3StateLayer extends Pane {
+    /// Whether this layer renders hover, pressed, and ripple feedback in addition to keyboard focus.
+    private final boolean interactionFeedbackEnabled;
+
     /// The pseudo-class used by button-like controls while their armed state is active.
     private static final PseudoClass ARMED_PSEUDO_CLASS = PseudoClass.getPseudoClass("armed");
 
@@ -234,8 +237,20 @@ final class M3StateLayer extends Pane {
     /// The bottom-left radius currently represented by the rounded-rectangle clip.
     private double clipBottomLeftRadius = Double.NaN;
 
-    /// Creates a state layer.
+    /// Creates a state layer with interaction feedback and keyboard-focus indication.
     M3StateLayer() {
+        this(true);
+    }
+
+    /// Creates a state layer with optional interaction feedback.
+    ///
+    /// Focus-visible tracking and focus-indicator rendering remain active when interaction feedback is disabled.
+    /// This mode is used by components whose current specification replaces the legacy state layer and ripple with
+    /// direct geometry changes.
+    ///
+    /// @param interactionFeedbackEnabled whether hover overlays and ripples are rendered
+    M3StateLayer(boolean interactionFeedbackEnabled) {
+        this.interactionFeedbackEnabled = interactionFeedbackEnabled;
         getStyleClass().add(STYLE_CLASS);
         overlay.getStyleClass().add(OVERLAY_STYLE_CLASS);
         ripple.getStyleClass().add(RIPPLE_STYLE_CLASS);
@@ -356,12 +371,26 @@ final class M3StateLayer extends Pane {
         double bottomLeft = resolvedShapeRadius(width, height, bottomLeftRadius);
         resizeRelocate(x, y, width, height);
         overlay.resizeRelocate(0.0, 0.0, width, height);
-        updateFocusIndicatorShape(width, height, topLeft, topRight, bottomRight, bottomLeft);
+        updateFocusIndicatorShape(0.0, 0.0, width, height, topLeft, topRight, bottomRight, bottomLeft);
         updateClip(width, height, topLeft, topRight, bottomRight, bottomLeft);
+    }
+
+    /// Lays out the keyboard focus indicator independently from the bounded overlay and ripple geometry.
+    ///
+    /// The coordinates are relative to this state layer. Components whose focus outline follows a larger visual
+    /// container can keep the interaction overlay bounded to its own state-layer token while outlining that
+    /// container.
+    void layoutFocusIndicator(double x, double y, double width, double height, double shapeRadius) {
+        double radius = resolvedShapeRadius(width, height, shapeRadius);
+        updateFocusIndicatorShape(x, y, width, height, radius, radius, radius, radius);
     }
 
     /// Plays a bounded ripple from a point in this state layer's coordinate space.
     void playRipple(double x, double y) {
+        if (!interactionFeedbackEnabled) {
+            clearRipple();
+            return;
+        }
         Node owner = animationOwner();
         if (animationsDisabled(owner)) {
             rippleAnimation.stop();
@@ -394,6 +423,10 @@ final class M3StateLayer extends Pane {
 
     /// Releases the active ripple and fades it out.
     void releaseRipple() {
+        if (!interactionFeedbackEnabled) {
+            clearRipple();
+            return;
+        }
         Node owner = animationOwner();
         if (animationsDisabled(owner)) {
             rippleAnimation.stop();
@@ -600,7 +633,7 @@ final class M3StateLayer extends Pane {
 
     /// Returns the target overlay opacity for the owner interaction state.
     private double resolvedOverlayOpacity(Node owner) {
-        if (owner.isDisabled()) {
+        if (!interactionFeedbackEnabled || owner.isDisabled()) {
             return 0.0;
         }
         M3StateLayerTokens tokens = stateLayerTokens(owner);
@@ -876,6 +909,8 @@ final class M3StateLayer extends Pane {
 
     /// Updates the keyboard focus indicator ring to follow the component shape and focus offset token.
     private void updateFocusIndicatorShape(
+            double x,
+            double y,
             double width,
             double height,
             double topLeft,
@@ -902,8 +937,8 @@ final class M3StateLayer extends Pane {
         double adjustedBottomRight = adjustedIndicatorRadius(bottomRight, outwardExpansion - inwardOffset);
         double adjustedBottomLeft = adjustedIndicatorRadius(bottomLeft, outwardExpansion - inwardOffset);
         focusIndicator.resizeRelocate(
-                -outwardExpansion,
-                -outwardExpansion,
+                x - outwardExpansion,
+                y - outwardExpansion,
                 indicatorWidth,
                 indicatorHeight
         );

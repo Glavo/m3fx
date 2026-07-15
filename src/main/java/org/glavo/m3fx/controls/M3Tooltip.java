@@ -868,7 +868,7 @@ public class M3Tooltip extends PopupControl {
             this.node = node;
             this.tooltip = tooltip;
             timer.setOnFinished(event -> handleTimerFinished());
-            motionSettingsObserver = new M3MotionSettingsObserver(node, this::refreshMotionSettings);
+            motionSettingsObserver = new M3MotionSettingsObserver(node, this::refreshMotionSettings, false);
             accessibleHelpListener = (observable, oldValue, newValue) ->
                     node.setAccessibleHelp(accessibleHelpText(newValue));
         }
@@ -910,6 +910,7 @@ public class M3Tooltip extends PopupControl {
             node.removeEventFilter(KeyEvent.KEY_PRESSED, keyPressedHandler);
             node.focusedProperty().removeListener(focusListener);
             tooltip.showingProperty().removeListener(showingListener);
+            stopTimer();
             motionSettingsObserver.dispose();
             uninstallTooltipHoverHandlers();
             @Nullable SceneThemeListener themeListener = sceneThemeListener;
@@ -923,7 +924,6 @@ public class M3Tooltip extends PopupControl {
             ownerContainsPointer = false;
             tooltipContainsPointer = false;
             tooltipContainsFocus = false;
-            stopTimer();
             if (tooltip.isShowing()) {
                 tooltip.hide();
             }
@@ -1280,14 +1280,17 @@ public class M3Tooltip extends PopupControl {
         /// @param duration the delay before the action
         private void startTimer(int action, Duration duration) {
             timer.stop();
+            motionSettingsObserver.stop();
             timerAction = action;
             timer.setDuration(duration);
+            motionSettingsObserver.start();
             timer.playFromStart();
         }
 
         /// Stops the reusable timer and clears its pending action.
         private void stopTimer() {
             timer.stop();
+            motionSettingsObserver.stop();
             timerAction = NO_TIMER_ACTION;
         }
 
@@ -1296,15 +1299,16 @@ public class M3Tooltip extends PopupControl {
         /// @param duration the updated delay
         /// @param restartIfRunning whether the active interaction still requires the timer
         private void refreshRunningTimer(Duration duration, boolean restartIfRunning) {
-            boolean wasRunning = timer.getStatus() == Animation.Status.RUNNING;
             M3Animation.updatePauseDuration(timer, duration, restartIfRunning);
-            if (wasRunning && !restartIfRunning) {
+            if (!restartIfRunning) {
+                motionSettingsObserver.stop();
                 timerAction = NO_TIMER_ACTION;
             }
         }
 
         /// Executes and clears the action owned by the reusable timer.
         private void handleTimerFinished() {
+            motionSettingsObserver.stop();
             int action = timerAction;
             timerAction = NO_TIMER_ACTION;
             switch (action) {

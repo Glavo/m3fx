@@ -98,9 +98,9 @@ public class M3SnackbarHost extends Control {
     /// The snackbar associated with the current display timer.
     private @Nullable M3Snackbar displayTimerTarget;
 
-    /// Observes runtime motion settings while this host is attached to a scene.
+    /// Observes runtime motion settings while a snackbar is active.
     private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(this, this::refreshMotionSettings);
+            new M3MotionSettingsObserver(this, this::refreshMotionSettings, false);
 
     /// Reports hosted snackbar focus changes to accessibility clients.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -218,6 +218,7 @@ public class M3SnackbarHost extends Control {
     /// Shows the supplied snackbar and optionally transfers current snackbar action focus to it.
     private void show(M3Snackbar snackbar, boolean transferActionFocus) {
         Objects.requireNonNull(snackbar, "snackbar");
+        motionSettingsObserver.start();
 
         stopDisplayTimer();
         stopTransition(showAnimation);
@@ -372,7 +373,7 @@ public class M3SnackbarHost extends Control {
 
     /// Applies changed runtime motion settings and window lifecycle to active snackbar work.
     private void refreshMotionSettings() {
-        if (!M3Animation.areAnimationsEnabled(this) || !isShowingWindow()) {
+        if (!isShowingWindow()) {
             M3Animation.finishIfRunning(showAnimation);
             M3Animation.finishIfRunning(hideAnimation);
         }
@@ -562,7 +563,11 @@ public class M3SnackbarHost extends Control {
 
     /// Shows the next queued snackbar and optionally transfers focused action ownership to it.
     private void showNextQueuedSnackbar(boolean transferActionFocus) {
-        if (getSnackbar() != null || queue.isEmpty()) {
+        if (getSnackbar() != null) {
+            return;
+        }
+        if (queue.isEmpty()) {
+            motionSettingsObserver.stop();
             return;
         }
 

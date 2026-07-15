@@ -27,6 +27,7 @@ import javafx.geometry.Rectangle2D;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
+import javafx.scene.Cursor;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -77,6 +78,7 @@ import javafx.scene.text.TextAlignment;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import javafx.util.StringConverter;
 import org.glavo.m3fx.internal.M3SelectionNavigation;
 import org.glavo.m3fx.internal.M3FocusTraversal;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
@@ -130,6 +132,7 @@ import org.glavo.m3fx.skins.M3NavigationRailSkin;
 import org.glavo.m3fx.skins.M3ProgressBarSkin;
 import org.glavo.m3fx.skins.M3ProgressIndicatorSkin;
 import org.glavo.m3fx.skins.M3RadioButtonSkin;
+import org.glavo.m3fx.skins.M3RangeSliderSkin;
 import org.glavo.m3fx.skins.M3SegmentedButtonGroupSkin;
 import org.glavo.m3fx.skins.M3SegmentedButtonSkin;
 import org.glavo.m3fx.skins.M3SearchBarSkin;
@@ -152,6 +155,7 @@ import org.glavo.m3fx.theme.M3ThemeManager;
 import org.glavo.m3fx.tokens.M3ComponentTokens;
 import org.glavo.m3fx.tokens.M3Density;
 import org.glavo.m3fx.tokens.M3Profile;
+import org.glavo.m3fx.tokens.M3StateLayerTokens;
 import org.glavo.monetfx.Brightness;
 import org.glavo.m3fx.internal.M3PopupPositioning;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -2304,18 +2308,26 @@ final class M3ControlStyleTest {
                 "-m3-track-thickness: 4px; "
                         + "-m3-track-shape: 999px; "
                         + "-m3-stop-indicator-size: 4px; "
+                        + "-m3-stop-indicator-trailing-space: 4px; "
                         + "-m3-thumb-size: 44px; "
                         + "-m3-thumb-width: 4px; "
                         + "-m3-thumb-track-gap: 6px; "
-                        + "-m3-touch-target-size: 48px;"
+                        + "-m3-touch-target-size: 48px; "
+                        + "-m3-slider-icon-size: 0px; "
+                        + "-m3-slider-icon-padding: 0px; "
+                        + "-m3-value-indicator-bottom-space: 12px;"
         );
         slider.setTrackThickness(8.0);
         slider.setTrackShape(12.0);
         slider.setStopIndicatorSize(6.0);
+        slider.setStopIndicatorTrailingSpace(7.0);
         slider.setThumbSize(52.0);
         slider.setThumbWidth(8.0);
         slider.setThumbTrackGap(10.0);
         slider.setTouchTargetSize(56.0);
+        slider.setIconSize(18.0);
+        slider.setIconPadding(9.0);
+        slider.setValueIndicatorBottomSpace(14.0);
 
         M3Switch switchControl = new M3Switch("Switch");
         switchControl.setStyle("""
@@ -2389,10 +2401,14 @@ final class M3ControlStyleTest {
         assertEquals(8.0, slider.getTrackThickness(), 0.0001);
         assertEquals(12.0, slider.getTrackShape(), 0.0001);
         assertEquals(6.0, slider.getStopIndicatorSize(), 0.0001);
+        assertEquals(7.0, slider.getStopIndicatorTrailingSpace(), 0.0001);
         assertEquals(52.0, slider.getThumbSize(), 0.0001);
         assertEquals(8.0, slider.getThumbWidth(), 0.0001);
         assertEquals(10.0, slider.getThumbTrackGap(), 0.0001);
         assertEquals(56.0, slider.getTouchTargetSize(), 0.0001);
+        assertEquals(18.0, slider.getIconSize(), 0.0001);
+        assertEquals(9.0, slider.getIconPadding(), 0.0001);
+        assertEquals(14.0, slider.getValueIndicatorBottomSpace(), 0.0001);
         assertEquals(56.0, slider.prefHeight(-1.0), 0.0001);
 
         assertEquals(60.0, switchControl.getTouchTargetSize(), 0.0001);
@@ -2457,6 +2473,7 @@ final class M3ControlStyleTest {
         M3Slider slider = new M3Slider(0.0, 100.0, 50.0);
         slider.setTrackThickness(7.0);
         slider.setTrackShape(11.0);
+        slider.setStopIndicatorTrailingSpace(8.0);
         slider.setThumbSize(27.0);
         slider.setThumbWidth(5.0);
         slider.setThumbTrackGap(9.0);
@@ -2574,6 +2591,7 @@ final class M3ControlStyleTest {
 
         assertEquals(7.0, slider.getTrackThickness(), 0.0001);
         assertEquals(11.0, slider.getTrackShape(), 0.0001);
+        assertEquals(8.0, slider.getStopIndicatorTrailingSpace(), 0.0001);
         assertEquals(27.0, slider.getThumbSize(), 0.0001);
         assertEquals(5.0, slider.getThumbWidth(), 0.0001);
         assertEquals(9.0, slider.getThumbTrackGap(), 0.0001);
@@ -20065,6 +20083,9 @@ final class M3ControlStyleTest {
                 -m3-color-error: rgb(13,14,15);
                 -m3-color-on-error: rgb(16,17,18);
                 -m3-color-surface: rgb(19,20,21);
+                -m3-color-outline: rgb(22,23,24);
+                -m3-color-on-primary: rgb(25,26,27);
+                -m3-color-primary-container: rgb(28,29,30);
                 """);
         root.applyCss();
 
@@ -20121,13 +20142,61 @@ final class M3ControlStyleTest {
         assertEquals(0.38, checkBoxContainer.getOpacity(), 0.0001);
         assertRegionFill(lookupRegion(checkBox, ".mark"), Color.rgb(19, 20, 21));
 
+        Region switchTrack = lookupRegion(switchControl, ".box");
+        Region switchThumb = lookupRegion(switchControl, ".thumb");
+        Region switchStateLayer = lookupRegion(switchControl, ".m3-state-layer");
+        assertRegionFill(switchTrack, Color.rgb(10, 11, 12));
+        assertBorderColor(switchTrack, Color.rgb(22, 23, 24));
+        assertRegionFill(switchThumb, Color.rgb(22, 23, 24));
+        assertRegionFill(switchStateLayer, Color.rgb(4, 5, 6));
+
+        switchControl.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
+        root.applyCss();
+        assertRegionFill(switchTrack, Color.rgb(10, 11, 12));
+        assertBorderColor(switchTrack, Color.rgb(22, 23, 24));
+        assertRegionFill(switchThumb, Color.rgb(7, 8, 9));
+        assertRegionFill(switchStateLayer, Color.rgb(4, 5, 6));
+
+        switchControl.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), false);
+        switchControl.pseudoClassStateChanged(PseudoClass.getPseudoClass("focus-visible"), true);
+        root.applyCss();
+        assertRegionFill(switchThumb, Color.rgb(7, 8, 9));
+        assertRegionFill(switchStateLayer, Color.rgb(4, 5, 6));
+
+        switchControl.pseudoClassStateChanged(PseudoClass.getPseudoClass("focus-visible"), false);
+        switchControl.arm();
+        root.applyCss();
+        assertRegionFill(switchThumb, Color.rgb(7, 8, 9));
+        assertRegionFill(switchStateLayer, Color.rgb(4, 5, 6));
+
+        switchControl.disarm();
         switchControl.setSelected(true);
         root.applyCss();
-        assertNoBorder(lookupRegion(switchControl, ".box"));
-        switchControl.setSelected(false);
+        assertRegionFill(switchTrack, Color.rgb(1, 2, 3));
+        assertNoBorder(switchTrack);
+        assertRegionFill(switchThumb, Color.rgb(25, 26, 27));
+        assertRegionFill(switchStateLayer, Color.rgb(1, 2, 3));
+
+        switchControl.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
+        root.applyCss();
+        assertRegionFill(switchThumb, Color.rgb(28, 29, 30));
+        assertRegionFill(switchStateLayer, Color.rgb(1, 2, 3));
+
+        switchControl.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), false);
         switchControl.setDisable(true);
         root.applyCss();
-        assertRegionFill(lookupRegion(switchControl, ".box"), Color.rgb(10, 11, 12));
+        assertRegionFill(switchTrack, Color.rgb(4, 5, 6));
+        assertEquals(0.12, switchTrack.getOpacity(), 0.0001);
+        assertRegionFill(switchThumb, Color.rgb(19, 20, 21));
+        assertEquals(1.0, switchThumb.getOpacity(), 0.0001);
+
+        switchControl.setSelected(false);
+        root.applyCss();
+        assertRegionFill(switchTrack, Color.rgb(10, 11, 12));
+        assertBorderColor(switchTrack, Color.rgb(4, 5, 6));
+        assertEquals(0.12, switchTrack.getOpacity(), 0.0001);
+        assertRegionFill(switchThumb, Color.rgb(4, 5, 6));
+        assertEquals(0.38, switchThumb.getOpacity(), 0.0001);
     }
 
     /// Verifies that selection controls create Material Design 3 skins.
@@ -20174,7 +20243,7 @@ final class M3ControlStyleTest {
         assertEquals(1.0, checkedDotLayer.getScaleX(), 0.0001);
     }
 
-    /// Verifies that checkbox and radio skins consume component geometry tokens.
+    /// Verifies that selection-control skins consume component geometry and focus-indicator tokens.
     @Test
     void selectionIndicatorGeometryUsesComponentTokens() {
         M3CheckBox selectedCheckBox = createCheckBox("Checked", true);
@@ -20200,19 +20269,39 @@ final class M3ControlStyleTest {
                 -m3-selected-dot-size: 12px;
                 """);
 
-        Pane root = new Pane(selectedCheckBox, indeterminateCheckBox, selectedRadioButton);
-        Scene scene = new Scene(root, 560.0, 180.0);
+        M3Switch switchControl = new M3Switch("Switch");
+        switchControl.setStyle("""
+                -m3-touch-target-size: 50px;
+                -m3-track-shape: 18px;
+                -m3-track-width: 60px;
+                -m3-track-height: 36px;
+                -m3-state-layer-size: 44px;
+                """);
+
+        Pane root = new Pane(selectedCheckBox, indeterminateCheckBox, selectedRadioButton, switchControl);
+        Scene scene = new Scene(root, 560.0, 240.0);
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         root.applyCss();
         selectedCheckBox.resizeRelocate(0.0, 0.0, 180.0, 52.0);
         indeterminateCheckBox.resizeRelocate(0.0, 56.0, 180.0, 52.0);
         selectedRadioButton.resizeRelocate(0.0, 112.0, 180.0, 50.0);
+        switchControl.resizeRelocate(0.0, 168.0, 180.0, 50.0);
         root.layout();
+        applyPseudoState(selectedCheckBox, "focus-visible");
+        applyPseudoState(selectedRadioButton, "focus-visible");
+        applyPseudoState(switchControl, "focus-visible");
+        root.applyCss();
+        root.layout();
+        M3StateLayerTokens stateTokens = M3Theme.defaultTheme().tokens().stateLayerTokens();
+        double focusExpansion = stateTokens.focusIndicatorOuterOffset() + stateTokens.focusIndicatorThickness();
 
         Region selectedSlot = lookupRegion(selectedCheckBox, ".m3-selection-indicator");
         Region selectedLayer = lookupRegion(selectedCheckBox, ".m3-state-layer-container");
         Region selectedBox = lookupRegion(selectedCheckBox, ".m3-checkbox-box");
         Region selectedMark = lookupRegion(selectedCheckBox, ".m3-checkbox-mark");
+        Region selectedFocusIndicator = lookupRegion(selectedCheckBox, ".m3-focus-indicator");
+        Bounds selectedLayerBounds = selectedLayer.localToScene(selectedLayer.getLayoutBounds());
+        Bounds selectedFocusBounds = selectedFocusIndicator.localToScene(selectedFocusIndicator.getBoundsInLocal());
         assertEquals(52.0, selectedSlot.getLayoutBounds().getWidth(), 0.0001);
         assertEquals(52.0, selectedSlot.getLayoutBounds().getHeight(), 0.0001);
         assertEquals(40.0, selectedLayer.getLayoutBounds().getWidth(), 0.0001);
@@ -20223,6 +20312,14 @@ final class M3ControlStyleTest {
         assertEquals(20.0, selectedBox.getLayoutBounds().getHeight(), 0.0001);
         assertEquals(14.0, selectedMark.getLayoutBounds().getWidth(), 0.0001);
         assertEquals(11.0, selectedMark.getLayoutBounds().getHeight(), 0.0001);
+        assertEquals(selectedLayerBounds.getWidth() + focusExpansion * 2.0,
+                selectedFocusBounds.getWidth(), 0.0001);
+        assertEquals(selectedLayerBounds.getHeight() + focusExpansion * 2.0,
+                selectedFocusBounds.getHeight(), 0.0001);
+        assertEquals(selectedLayerBounds.getCenterX(), selectedFocusBounds.getCenterX(), 0.0001,
+                "Checkbox focus indicator should follow the circular state layer horizontally");
+        assertEquals(selectedLayerBounds.getCenterY(), selectedFocusBounds.getCenterY(), 0.0001,
+                "Checkbox focus indicator should follow the circular state layer vertically");
 
         Region indeterminateMark = lookupRegion(indeterminateCheckBox, ".m3-checkbox-mark");
         assertEquals(16.0, indeterminateMark.getLayoutBounds().getWidth(), 0.0001);
@@ -20233,6 +20330,9 @@ final class M3ControlStyleTest {
         Region radio = radioIndicator(selectedRadioButton);
         Shape ring = radioRing(selectedRadioButton);
         Shape dot = radioDot(selectedRadioButton);
+        Region radioFocusIndicator = lookupRegion(selectedRadioButton, ".m3-focus-indicator");
+        Bounds radioLayerBounds = radioLayer.localToScene(radioLayer.getLayoutBounds());
+        Bounds radioFocusBounds = radioFocusIndicator.localToScene(radioFocusIndicator.getBoundsInLocal());
         assertEquals(50.0, radioSlot.getLayoutBounds().getWidth(), 0.0001);
         assertEquals(50.0, radioSlot.getLayoutBounds().getHeight(), 0.0001);
         assertEquals(36.0, radioLayer.getLayoutBounds().getWidth(), 0.0001);
@@ -20245,6 +20345,43 @@ final class M3ControlStyleTest {
         assertEquals(22.0, ring.getLayoutBounds().getHeight(), 0.0001);
         assertEquals(12.0, dot.getLayoutBounds().getWidth(), 0.0001);
         assertEquals(12.0, dot.getLayoutBounds().getHeight(), 0.0001);
+        assertEquals(radioLayerBounds.getWidth() + focusExpansion * 2.0,
+                radioFocusBounds.getWidth(), 0.0001);
+        assertEquals(radioLayerBounds.getHeight() + focusExpansion * 2.0,
+                radioFocusBounds.getHeight(), 0.0001);
+        assertEquals(radioLayerBounds.getCenterX(), radioFocusBounds.getCenterX(), 0.0001,
+                "Radio-button focus indicator should follow the circular state layer horizontally");
+        assertEquals(radioLayerBounds.getCenterY(), radioFocusBounds.getCenterY(), 0.0001,
+                "Radio-button focus indicator should follow the circular state layer vertically");
+
+        Region switchTrack = lookupRegion(switchControl, ".m3-switch-track");
+        Region switchLayer = lookupRegion(switchControl, ".m3-state-layer-container");
+        Region focusIndicator = lookupRegion(switchControl, ".m3-focus-indicator");
+        Labeled switchLabel = assertInstanceOf(Labeled.class, switchControl.lookup(".m3-selection-label"));
+        Bounds trackBounds = switchTrack.localToScene(switchTrack.getBoundsInLocal());
+        Bounds focusBounds = focusIndicator.localToScene(focusIndicator.getBoundsInLocal());
+        Bounds labelBounds = switchLabel.localToScene(switchLabel.getBoundsInLocal());
+        assertEquals(60.0, trackBounds.getWidth(), 0.0001);
+        assertEquals(36.0, trackBounds.getHeight(), 0.0001);
+        assertEquals(44.0, switchLayer.getWidth(), 0.0001);
+        assertEquals(44.0, switchLayer.getHeight(), 0.0001);
+        assertEquals(trackBounds.getWidth() + focusExpansion * 2.0, focusBounds.getWidth(), 0.0001);
+        assertEquals(trackBounds.getHeight() + focusExpansion * 2.0, focusBounds.getHeight(), 0.0001);
+        assertEquals(
+                (trackBounds.getMinX() + trackBounds.getMaxX()) / 2.0,
+                (focusBounds.getMinX() + focusBounds.getMaxX()) / 2.0,
+                0.0001,
+                "Switch focus indicator should follow the complete track horizontally"
+        );
+        assertEquals(
+                (trackBounds.getMinY() + trackBounds.getMaxY()) / 2.0,
+                (focusBounds.getMinY() + focusBounds.getMaxY()) / 2.0,
+                0.0001,
+                "Switch focus indicator should follow the complete track vertically"
+        );
+        assertTrue(focusBounds.getMaxX() <= labelBounds.getMinX(),
+                () -> "Switch focus indicator should not overlap its label: focus="
+                        + focusBounds + ", label=" + labelBounds);
     }
 
     /// Verifies that selection control skins handle pointer and keyboard activation.
@@ -20263,13 +20400,16 @@ final class M3ControlStyleTest {
         Pane root = new Pane(checkBox, radioButton, nextRadioButton, disabledRadioButton, switchControl);
         Scene scene = new Scene(root, 480.0, 160.0);
 
-        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        M3Theme theme = M3Theme.defaultTheme();
+        M3ThemeManager.install(scene, theme);
         root.applyCss();
         checkBox.resize(120.0, 48.0);
         radioButton.resize(120.0, 48.0);
         nextRadioButton.resize(120.0, 48.0);
         disabledRadioButton.resize(120.0, 48.0);
         switchControl.resize(120.0, 48.0);
+        M3MotionSettings.setReducedMotionRequested(switchControl, true);
+        switchControl.layout();
 
         checkBox.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 10.0, 10.0, true));
         assertTrue(checkBox.isArmed());
@@ -20302,6 +20442,138 @@ final class M3ControlStyleTest {
         assertTrue(switchControl.isArmed());
         switchControl.fireEvent(keyEvent(KeyEvent.KEY_RELEASED, KeyCode.SPACE));
         assertTrue(switchControl.isSelected());
+
+        AtomicInteger switchActions = new AtomicInteger();
+        switchControl.setOnAction(event -> switchActions.incrementAndGet());
+        Region switchTrack = lookupRegion(switchControl, ".m3-switch-track");
+        double offCenter = switchControl.getTrackHeight() / 2.0;
+        double onCenter = switchTrack.getWidth() - offCenter;
+        double trackCenterY = switchTrack.getHeight() / 2.0;
+        switchTrack.fireEvent(primaryMouseEvent(
+                switchTrack,
+                MouseEvent.MOUSE_PRESSED,
+                onCenter,
+                trackCenterY,
+                true
+        ));
+        switchTrack.fireEvent(primaryMouseEvent(
+                switchTrack,
+                MouseEvent.MOUSE_DRAGGED,
+                offCenter,
+                trackCenterY,
+                true
+        ));
+        root.applyCss();
+        assertTrue(
+                switchControl.getPseudoClassStates().contains(PseudoClass.getPseudoClass("drag-unselected")),
+                "Dragging to the off side should expose the unselected visual preview"
+        );
+        assertTrue(switchControl.isSelected(), "Dragging should preview the destination before committing selection");
+        assertRegionFill(
+                switchTrack,
+                theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.SURFACE_CONTAINER_HIGHEST)
+        );
+        javafx.scene.layout.BorderStroke offPreviewBorder = switchTrack.getBorder().getStrokes().get(0);
+        assertEquals(theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.OUTLINE),
+                offPreviewBorder.getTopStroke());
+        assertEquals(2.0, offPreviewBorder.getWidths().getTop(), 0.0001);
+        assertRegionFill(
+                lookupRegion(switchControl, ".m3-switch-thumb"),
+                theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SURFACE_VARIANT)
+        );
+        switchTrack.fireEvent(primaryMouseEvent(
+                switchTrack,
+                MouseEvent.MOUSE_RELEASED,
+                offCenter,
+                trackCenterY,
+                false
+        ));
+        assertFalse(switchControl.isSelected(), "Dragging the handle to the off side should clear selection");
+        assertFalse(switchControl.getPseudoClassStates().contains(PseudoClass.getPseudoClass("drag-unselected")));
+        assertEquals(1, switchActions.get(), "A committed handle drag should fire one action event");
+
+        switchTrack.fireEvent(primaryMouseEvent(
+                switchTrack,
+                MouseEvent.MOUSE_PRESSED,
+                offCenter,
+                trackCenterY,
+                true
+        ));
+        switchTrack.fireEvent(primaryMouseEvent(
+                switchTrack,
+                MouseEvent.MOUSE_DRAGGED,
+                onCenter,
+                trackCenterY,
+                true
+        ));
+        root.applyCss();
+        assertFalse(switchControl.isSelected(), "Dragging should not commit the selected state before release");
+        assertRegionFill(
+                switchTrack,
+                theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.PRIMARY)
+        );
+        assertNoBorder(switchTrack);
+        assertRegionFill(
+                lookupRegion(switchControl, ".m3-switch-thumb"),
+                theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.PRIMARY_CONTAINER)
+        );
+        switchTrack.fireEvent(primaryMouseEvent(
+                switchTrack,
+                MouseEvent.MOUSE_RELEASED,
+                onCenter,
+                trackCenterY,
+                false
+        ));
+        assertTrue(switchControl.isSelected(), "Dragging the handle to the on side should select the switch");
+        assertFalse(switchControl.getPseudoClassStates().contains(PseudoClass.getPseudoClass("drag-selected")));
+        assertEquals(2, switchActions.get(), "Opposite handle drags should each commit one action event");
+
+        switchControl.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+        root.applyCss();
+        root.layout();
+        switchControl.layout();
+        Bounds rtlTrackBounds = switchTrack.localToScene(switchTrack.getBoundsInLocal());
+        Bounds rtlSelectedThumbBounds = lookupRegion(switchControl, ".m3-switch-thumb")
+                .localToScene(lookupRegion(switchControl, ".m3-switch-thumb").getBoundsInLocal());
+        assertTrue(rtlSelectedThumbBounds.getCenterX() < rtlTrackBounds.getCenterX(),
+                "The selected handle should occupy the logical end side in RTL orientation");
+
+        switchTrack.fireEvent(primaryMouseEvent(
+                switchTrack,
+                MouseEvent.MOUSE_PRESSED,
+                onCenter,
+                trackCenterY,
+                true
+        ));
+        switchTrack.fireEvent(primaryMouseEvent(
+                switchTrack,
+                MouseEvent.MOUSE_DRAGGED,
+                offCenter,
+                trackCenterY,
+                true
+        ));
+        switchTrack.fireEvent(primaryMouseEvent(
+                switchTrack,
+                MouseEvent.MOUSE_RELEASED,
+                offCenter,
+                trackCenterY,
+                false
+        ));
+        assertFalse(switchControl.isSelected(), "Dragging toward the logical start should clear an RTL switch");
+        assertEquals(3, switchActions.get(), "An RTL handle drag should fire one action event");
+        Bounds rtlUnselectedThumbBounds = lookupRegion(switchControl, ".m3-switch-thumb")
+                .localToScene(lookupRegion(switchControl, ".m3-switch-thumb").getBoundsInLocal());
+        assertTrue(rtlUnselectedThumbBounds.getCenterX() > rtlTrackBounds.getCenterX(),
+                "The unselected handle should occupy the logical start side in RTL orientation");
+
+        switchControl.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+        root.applyCss();
+        root.layout();
+        switchControl.layout();
+        switchControl.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 100.0, 24.0, true));
+        switchControl.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 100.0, 24.0, false));
+        assertTrue(switchControl.isSelected(), "Clicking the adjacent switch label should still toggle selection");
+        assertEquals(4, switchActions.get(), "Label activation should continue to fire one action event");
     }
 
     /// Verifies that selection indicator animations expose intermediate and final rendered states.
@@ -20865,18 +21137,6 @@ final class M3ControlStyleTest {
         assertEquals(12.0, track.getBorder().getStrokes().get(0).getRadii().getTopLeftHorizontalRadius(), 0.0001);
     }
 
-    /// Verifies that selection factories apply initial selected state.
-    @Test
-    void selectionFactoriesApplyInitialSelection() {
-        M3CheckBox checkBox = createCheckBox("Check", true);
-        M3RadioButton radioButton = createRadioButton("Radio", true);
-        M3Switch switchControl = createSwitch("Switch", true);
-
-        assertTrue(checkBox.isSelected());
-        assertTrue(radioButton.isSelected());
-        assertTrue(switchControl.isSelected());
-    }
-
     /// Verifies that radio buttons keep JavaFX ToggleGroup semantics without inheriting RadioButton.
     @Test
     void radioButtonSupportsToggleGroupSelection() {
@@ -21033,10 +21293,14 @@ final class M3ControlStyleTest {
                 "-m3-track-thickness: 8px; "
                         + "-m3-track-shape: 12px; "
                         + "-m3-stop-indicator-size: 6px; "
+                        + "-m3-stop-indicator-trailing-space: 7px; "
                         + "-m3-thumb-size: 52px; "
                         + "-m3-thumb-width: 8px; "
                         + "-m3-thumb-track-gap: 10px; "
-                        + "-m3-touch-target-size: 56px;"
+                        + "-m3-touch-target-size: 56px; "
+                        + "-m3-slider-icon-size: 18px; "
+                        + "-m3-slider-icon-padding: 9px; "
+                        + "-m3-value-indicator-bottom-space: 14px;"
         );
 
         applyCss(slider);
@@ -21044,11 +21308,204 @@ final class M3ControlStyleTest {
         assertEquals(8.0, slider.getTrackThickness(), 0.0001);
         assertEquals(12.0, slider.getTrackShape(), 0.0001);
         assertEquals(6.0, slider.getStopIndicatorSize(), 0.0001);
+        assertEquals(7.0, slider.getStopIndicatorTrailingSpace(), 0.0001);
         assertEquals(52.0, slider.getThumbSize(), 0.0001);
         assertEquals(8.0, slider.getThumbWidth(), 0.0001);
         assertEquals(10.0, slider.getThumbTrackGap(), 0.0001);
         assertEquals(56.0, slider.getTouchTargetSize(), 0.0001);
         assertEquals(56.0, slider.prefHeight(-1.0), 0.0001);
+    }
+
+    /// Verifies the complete Material slider size scale, inset-icon geometry, and interaction handle widths.
+    @Test
+    void sliderSizeScaleRendersPublishedGeometryAndTrackGraphics() {
+        M3SliderSize[] sizes = M3SliderSize.values();
+        double[] trackHeights = {16.0, 24.0, 40.0, 56.0, 96.0};
+        double[] trackShapes = {8.0, 8.0, 12.0, 16.0, 28.0};
+        double[] handleHeights = {44.0, 44.0, 52.0, 68.0, 108.0};
+        double[] iconSizes = {0.0, 0.0, 24.0, 24.0, 32.0};
+        double[] iconPaddings = {0.0, 0.0, 6.0, 6.0, 8.0};
+        List<M3Slider> sliders = new ArrayList<>(sizes.length);
+        List<Region> activeGraphics = new ArrayList<>(sizes.length);
+        List<Region> inactiveGraphics = new ArrayList<>(sizes.length);
+        VBox root = new VBox(8.0);
+
+        for (M3SliderSize size : sizes) {
+            M3Slider slider = new M3Slider(0.0, 100.0, 50.0);
+            Region activeGraphic = new Region();
+            Region inactiveGraphic = new Region();
+            slider.setSize(size);
+            slider.setActiveTrackGraphic(activeGraphic);
+            slider.setInactiveTrackGraphic(inactiveGraphic);
+            slider.setPrefWidth(280.0);
+            sliders.add(slider);
+            activeGraphics.add(activeGraphic);
+            inactiveGraphics.add(inactiveGraphic);
+            root.getChildren().add(slider);
+        }
+
+        Scene scene = new Scene(root, 360.0, 520.0);
+        M3Theme theme = M3Theme.fromSeed(
+                Color.web("#6750a4"),
+                M3Profile.EXPRESSIVE_2025,
+                Brightness.LIGHT
+        );
+        M3ThemeManager.install(scene, theme);
+        root.resize(360.0, 520.0);
+        root.applyCss();
+        root.layout();
+
+        for (int index = 0; index < sizes.length; index++) {
+            M3Slider slider = sliders.get(index);
+            slider.layout();
+            Region track = lookupRegion(slider, ".track");
+            Region thumb = lookupRegion(slider, ".thumb");
+            Region activeSlot = lookupRegion(slider, ".m3-slider-active-track-graphic-slot");
+            Region inactiveSlot = lookupRegion(slider, ".m3-slider-inactive-track-graphic-slot");
+
+            assertTrue(slider.getStyleClass().contains(M3Slider.sizeStyleClass(sizes[index])));
+            assertEquals(trackHeights[index], slider.getTrackThickness(), 0.0001);
+            assertEquals(trackShapes[index], slider.getTrackShape(), 0.0001);
+            assertEquals(handleHeights[index], slider.getThumbSize(), 0.0001);
+            assertEquals(iconSizes[index], slider.getIconSize(), 0.0001);
+            assertEquals(iconPaddings[index], slider.getIconPadding(), 0.0001);
+            assertEquals(trackHeights[index], track.getHeight(), 0.0001);
+            assertEquals(handleHeights[index], thumb.getHeight(), 0.0001);
+            assertTrue(slider.getHeight() + 0.0001 >= handleHeights[index]);
+
+            boolean supportsInsetIcons = iconSizes[index] > 0.0;
+            assertEquals(supportsInsetIcons, activeSlot.isVisible());
+            assertFalse(inactiveSlot.isVisible(), "Only one inset-icon variant may be visible at a time");
+            if (supportsInsetIcons) {
+                assertEquals(iconSizes[index], activeSlot.getWidth(), 0.0001);
+                assertEquals(iconSizes[index], activeSlot.getHeight(), 0.0001);
+                assertRegionFill(
+                        activeGraphics.get(index),
+                        theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_PRIMARY)
+                );
+                assertRegionFill(
+                        inactiveGraphics.get(index),
+                        theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SECONDARY_CONTAINER)
+                );
+            }
+        }
+
+        M3Slider medium = sliders.get(M3SliderSize.MEDIUM.ordinal());
+        assertEquals(Cursor.HAND, medium.getCursor());
+        Region mediumActiveSlot = lookupRegion(medium, ".m3-slider-active-track-graphic-slot");
+        Region mediumInactiveSlot = lookupRegion(medium, ".m3-slider-inactive-track-graphic-slot");
+        M3MotionSettings.setReducedMotionRequested(root, true);
+        medium.setValue(0.0);
+        root.applyCss();
+        root.layout();
+        medium.layout();
+        assertFalse(mediumActiveSlot.isVisible(), "The active segment cannot contain an icon at minimum value");
+        assertTrue(mediumInactiveSlot.isVisible(), "The inset icon should move to the inactive track");
+        assertEquals(medium.getIconSize(), mediumInactiveSlot.getWidth(), 0.0001);
+        assertEquals(medium.getIconSize(), mediumInactiveSlot.getHeight(), 0.0001);
+
+        medium.pseudoClassStateChanged(PseudoClass.getPseudoClass("focus-visible"), true);
+        root.applyCss();
+        medium.layout();
+        assertEquals(2.0, medium.getThumbWidth(), 0.0001);
+        Region mediumThumb = lookupRegion(medium, ".thumb");
+        Region focusIndicator = lookupRegion(medium, ".m3-focus-indicator");
+        Region stateOverlay = lookupRegion(medium, ".m3-state-layer");
+        assertEquals(2.0, mediumThumb.getWidth(), 0.0001);
+        assertTrue(focusIndicator.isVisible());
+        assertTrue(focusIndicator.getWidth() < medium.getTouchTargetSize(),
+                "Slider focus should outline the handle rather than the circular touch target");
+        assertTrue(focusIndicator.getHeight() > mediumThumb.getHeight());
+        assertEquals(0.0, stateOverlay.getOpacity(), 0.0001,
+                "Current slider tokens do not render the deprecated circular state layer");
+
+        medium.pseudoClassStateChanged(PseudoClass.getPseudoClass("focus-visible"), false);
+        root.applyCss();
+        medium.layout();
+        assertEquals(4.0, medium.getThumbWidth(), 0.0001);
+        assertFalse(focusIndicator.isVisible());
+        M3MotionSettings.setReducedMotionRequested(root, false);
+    }
+
+    /// Verifies value-indicator content, state timing, Material colors, and mounted-graphic ownership cleanup.
+    @Test
+    void sliderValueIndicatorFollowsDirectManipulationAndSkinLifetime() {
+        M3Slider slider = new M3Slider(0.0, 100.0, 37.0);
+        Region activeGraphic = new Region();
+        Region inactiveGraphic = new Region();
+        slider.setSize(M3SliderSize.MEDIUM);
+        slider.setActiveTrackGraphic(activeGraphic);
+        slider.setInactiveTrackGraphic(inactiveGraphic);
+        slider.setShowValueIndicator(true);
+        slider.setLabelFormatter(new StringConverter<>() {
+            /// Formats a slider value as a whole-number percentage.
+            @Override
+            public String toString(Double value) {
+                return Math.round(value) + "%";
+            }
+
+            /// Parses a percentage string for the bidirectional converter contract.
+            @Override
+            public Double fromString(String text) {
+                return Double.valueOf(text.replace("%", ""));
+            }
+        });
+        Pane root = new Pane(slider);
+        Scene scene = new Scene(root, 320.0, 160.0);
+        M3Theme theme = M3Theme.defaultTheme();
+        M3ThemeManager.install(scene, theme);
+        root.applyCss();
+        slider.resize(280.0, slider.prefHeight(-1.0));
+        slider.layout();
+
+        Label indicator = (Label) slider.lookup(".m3-slider-value-indicator");
+        Region thumb = lookupRegion(slider, ".thumb");
+        assertNotNull(indicator);
+        assertFalse(indicator.isVisible());
+        assertTrue(slider.getHeight() >= 104.0);
+
+        slider.fireEvent(primaryMouseEvent(
+                slider,
+                MouseEvent.MOUSE_PRESSED,
+                140.0,
+                slider.getHeight() - 24.0,
+                true
+        ));
+        root.applyCss();
+        slider.layout();
+
+        assertTrue(indicator.isVisible());
+        assertEquals("50%", indicator.getText());
+        assertTrue(indicator.getBoundsInParent().getMaxY() + slider.getValueIndicatorBottomSpace()
+                <= thumb.getBoundsInParent().getMinY() + 0.0001);
+        assertRegionFill(indicator, theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.INVERSE_SURFACE));
+        assertEquals(
+                theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.INVERSE_ON_SURFACE),
+                indicator.getTextFill()
+        );
+        @Nullable AccessibleAttribute valueStringAttribute = M3Accessible.attribute("VALUE_STRING");
+        if (valueStringAttribute != null) {
+            assertEquals("50%", slider.queryAccessibleAttribute(valueStringAttribute));
+        }
+
+        slider.fireEvent(primaryMouseEvent(
+                slider,
+                MouseEvent.MOUSE_RELEASED,
+                140.0,
+                slider.getHeight() - 24.0,
+                false
+        ));
+        assertFalse(indicator.isVisible());
+
+        Skin<?> skin = slider.getSkin();
+        assertNotNull(skin);
+        assertTrue(activeGraphic.getStyleClass().contains("m3-slider-active-track-graphic"));
+        assertTrue(inactiveGraphic.getStyleClass().contains("m3-slider-inactive-track-graphic"));
+        skin.dispose();
+        assertFalse(activeGraphic.getStyleClass().contains("m3-slider-active-track-graphic"));
+        assertFalse(inactiveGraphic.getStyleClass().contains("m3-slider-inactive-track-graphic"));
+        assertNull(activeGraphic.getParent());
+        assertNull(inactiveGraphic.getParent());
     }
 
     /// Verifies that slider metric tokens do not overwrite explicit preferred sizes.
@@ -21278,7 +21735,7 @@ final class M3ControlStyleTest {
         ));
         assertEquals(0.0, activeTrack.getWidth(), 0.0001);
         assertEquals(2, inactiveTracks.size());
-        assertEquals(slider.getThumbTrackGap() * 2.0,
+        assertEquals(slider.getThumbWidth() + slider.getThumbTrackGap() * 2.0,
                 inactiveTracks.get(1).getBoundsInParent().getMinX()
                         - inactiveTracks.get(0).getBoundsInParent().getMaxX(),
                 0.0001);
@@ -21328,10 +21785,307 @@ final class M3ControlStyleTest {
         root.applyCss();
 
         assertEquals(1.0, slider.getOpacity(), 0.0001);
+        assertEquals(Cursor.DEFAULT, slider.getCursor());
         assertEquals(0.12, lookupRegion(slider, ".track").getOpacity(), 0.0001);
         assertEquals(0.38, lookupRegion(slider, ".active-track").getOpacity(), 0.0001);
         assertEquals(0.38, lookupRegion(slider, ".thumb").getOpacity(), 0.0001);
         assertEquals(0.38, lookupRegion(slider, ".stop-indicator").getOpacity(), 0.0001);
+    }
+
+    /// Verifies range-slider values, Material geometry, state colors, input, accessibility, RTL, and skin cleanup.
+    @Test
+    void rangeSliderImplementsMaterialGeometryInteractionAccessibilityAndLifetime() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3RangeSlider range = new M3RangeSlider(0.0, 100.0, 25.0, 75.0);
+            range.setSize(M3SliderSize.MEDIUM);
+            range.setStepSize(5.0);
+            range.setShowValueIndicator(true);
+
+            M3RangeSlider rightToLeft = new M3RangeSlider(0.0, 100.0, 20.0, 80.0);
+
+            M3RangeSlider vertical = new M3RangeSlider(0.0, 100.0, 20.0, 80.0);
+            vertical.setOrientation(Orientation.VERTICAL);
+            vertical.setSize(M3SliderSize.SMALL);
+
+            M3RangeSlider disabled = new M3RangeSlider(0.0, 100.0, 35.0, 85.0);
+            disabled.setDisable(true);
+
+            Pane root = new Pane(range, rightToLeft, vertical, disabled);
+            Scene scene = new Scene(root, 520.0, 360.0);
+            M3Theme theme = M3Theme.fromSeed(
+                    Color.web("#6750a4"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.LIGHT
+            );
+            M3ThemeManager.install(scene, theme);
+
+            Stage stage = new Stage();
+            stage.setScene(scene);
+            stage.show();
+            try {
+                root.applyCss();
+                range.resizeRelocate(20.0, 20.0, 320.0, range.prefHeight(-1.0));
+                rightToLeft.resizeRelocate(20.0, 145.0, 320.0, rightToLeft.prefHeight(-1.0));
+                disabled.resizeRelocate(20.0, 220.0, 320.0, disabled.prefHeight(-1.0));
+                vertical.resizeRelocate(400.0, 20.0, vertical.prefWidth(-1.0), 260.0);
+                root.layout();
+                range.layout();
+                rightToLeft.layout();
+                vertical.layout();
+                disabled.layout();
+                root.applyCss();
+
+                range.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+                vertical.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+                disabled.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+                root.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                root.applyCss();
+                root.layout();
+                rightToLeft.layout();
+
+                assertInstanceOf(M3RangeSliderSkin.class, range.getSkin());
+                assertEquals(AccessibleRole.PARENT, range.getAccessibleRole());
+                assertFalse(range.isFocusTraversable());
+                assertTrue(range.getStyleClass().contains(M3Slider.STYLE_CLASS));
+                assertTrue(range.getStyleClass().contains(M3RangeSlider.STYLE_CLASS));
+                assertTrue(range.getStyleClass().contains(M3Slider.sizeStyleClass(M3SliderSize.MEDIUM)));
+                assertEquals(40.0, range.getTrackThickness(), 0.0001);
+                assertEquals(12.0, range.getTrackShape(), 0.0001);
+                assertEquals(52.0, range.getThumbSize(), 0.0001);
+                assertEquals(4.0, range.getThumbWidth(), 0.0001);
+                assertEquals(2.0, range.getFocusedThumbWidth(), 0.0001);
+                assertEquals(2.0, range.getPressedThumbWidth(), 0.0001);
+                assertEquals(4.0, range.getStopIndicatorTrailingSpace(), 0.0001);
+
+                Pane lowThumb = assertInstanceOf(Pane.class, range.lookup(".range-low-thumb"));
+                Pane highThumb = assertInstanceOf(Pane.class, range.lookup(".range-high-thumb"));
+                Region lowHandle = assertInstanceOf(Region.class, lowThumb.lookup(".thumb"));
+                Region highHandle = assertInstanceOf(Region.class, highThumb.lookup(".thumb"));
+                Region leadingTrack = lookupRegion(range, ".range-leading-track");
+                Region activeTrack = lookupRegion(range, ".range-active-track");
+                Region trailingTrack = lookupRegion(range, ".range-trailing-track");
+
+                double lowCenter = lowThumb.getBoundsInParent().getCenterX();
+                double highCenter = highThumb.getBoundsInParent().getCenterX();
+                assertTrue(lowCenter < highCenter);
+                double lowGapExtent = lowHandle.getWidth() / 2.0 + range.getThumbTrackGap();
+                double highGapExtent = highHandle.getWidth() / 2.0 + range.getThumbTrackGap();
+                assertEquals(lowGapExtent,
+                        lowCenter - leadingTrack.getBoundsInParent().getMaxX(),
+                        0.0001);
+                assertEquals(lowGapExtent,
+                        activeTrack.getBoundsInParent().getMinX() - lowCenter,
+                        0.0001);
+                assertEquals(highGapExtent,
+                        highCenter - activeTrack.getBoundsInParent().getMaxX(),
+                        0.0001);
+                assertEquals(highGapExtent,
+                        trailingTrack.getBoundsInParent().getMinX() - highCenter,
+                        0.0001);
+                assertEquals(40.0, leadingTrack.getHeight(), 0.0001);
+                assertEquals(52.0, lowHandle.getHeight(), 0.0001,
+                        () -> "lowThumb=" + lowThumb.getBoundsInParent()
+                                + ", lowHandle=" + lowHandle.getBoundsInParent()
+                                + ", children=" + lowThumb.getChildren());
+                assertEquals(4.0, lowHandle.getWidth(), 0.0001);
+                assertEquals(4.0, highHandle.getWidth(), 0.0001);
+                assertRegionRadii(leadingTrack, 12.0, 0.0, 0.0, 12.0);
+                assertRegionRadii(activeTrack, 0.0, 0.0, 0.0, 0.0);
+                assertRegionRadii(trailingTrack, 0.0, 12.0, 12.0, 0.0);
+                assertRegionFill(activeTrack, theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.PRIMARY));
+                assertRegionFill(leadingTrack,
+                        theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.SECONDARY_CONTAINER));
+                assertRegionFill(lowHandle, theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.PRIMARY));
+
+                List<Region> endStops = range.lookupAll(".stop-indicator").stream()
+                        .filter(Node::isVisible)
+                        .map(node -> assertInstanceOf(Region.class, node))
+                        .filter(region -> !region.getStyleClass().contains("step-indicator"))
+                        .sorted((first, second) -> Double.compare(
+                                first.getBoundsInParent().getMinX(),
+                                second.getBoundsInParent().getMinX()
+                        ))
+                        .toList();
+                assertEquals(2, endStops.size());
+                double stopCenterOffset = range.getThumbWidth() / 2.0
+                        + range.getStopIndicatorTrailingSpace()
+                        + range.getStopIndicatorSize() / 2.0;
+                assertEquals(stopCenterOffset, endStops.get(0).getBoundsInParent().getCenterX(), 0.0001);
+                assertEquals(
+                        range.getWidth() - stopCenterOffset,
+                        endStops.get(1).getBoundsInParent().getCenterX(),
+                        0.0001
+                );
+
+                List<Region> stops = range.lookupAll(".step-indicator").stream()
+                        .filter(Node::isVisible)
+                        .map(node -> assertInstanceOf(Region.class, node))
+                        .toList();
+                assertEquals(17, stops.size());
+                assertEquals(9, stops.stream()
+                        .filter(stop -> stop.getPseudoClassStates().contains(PseudoClass.getPseudoClass("active")))
+                        .count());
+
+                assertEquals(AccessibleRole.SLIDER, lowThumb.getAccessibleRole());
+                assertEquals(0.0, lowThumb.queryAccessibleAttribute(AccessibleAttribute.MIN_VALUE));
+                assertEquals(75.0, lowThumb.queryAccessibleAttribute(AccessibleAttribute.MAX_VALUE));
+                assertEquals(25.0, lowThumb.queryAccessibleAttribute(AccessibleAttribute.VALUE));
+                assertEquals(25.0, highThumb.queryAccessibleAttribute(AccessibleAttribute.MIN_VALUE));
+                assertEquals(100.0, highThumb.queryAccessibleAttribute(AccessibleAttribute.MAX_VALUE));
+                assertEquals(75.0, highThumb.queryAccessibleAttribute(AccessibleAttribute.VALUE));
+                assertEquals(Orientation.HORIZONTAL,
+                        lowThumb.queryAccessibleAttribute(AccessibleAttribute.ORIENTATION));
+
+                lowThumb.requestFocus();
+                assertTrue(lowThumb.isFocused());
+                lowThumb.fireEvent(targetedKeyEvent(KeyEvent.KEY_PRESSED, KeyCode.RIGHT, lowThumb));
+                assertEquals(30.0, range.getLowValue(), 0.0001);
+                lowThumb.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.TAB));
+                assertTrue(highThumb.isFocused(), "Tab should move from the lower handle to the upper handle");
+                highThumb.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.TAB, true));
+                assertTrue(lowThumb.isFocused(), "Shift+Tab should return to the lower handle");
+                M3MotionSettings.setReducedMotionRequested(range, true);
+                lowThumb.pseudoClassStateChanged(PseudoClass.getPseudoClass("focus-visible"), true);
+                root.applyCss();
+                range.layout();
+                assertEquals(2.0, lowHandle.getWidth(), 0.0001);
+                Region lowFocusIndicator = lookupRegion(lowThumb, ".m3-focus-indicator");
+                Region lowStateOverlay = lookupRegion(lowThumb, ".m3-state-layer");
+                assertTrue(lowFocusIndicator.isVisible());
+                assertTrue(lowFocusIndicator.getWidth() < range.getTouchTargetSize(),
+                        "Range-slider focus should outline its handle instead of the circular touch target");
+                assertTrue(lowFocusIndicator.getHeight() > lowHandle.getHeight());
+                assertEquals(0.0, lowStateOverlay.getOpacity(), 0.0001);
+                lowThumb.pseudoClassStateChanged(PseudoClass.getPseudoClass("focus-visible"), false);
+                root.applyCss();
+                assertFalse(lowFocusIndicator.isVisible());
+                M3MotionSettings.setReducedMotionRequested(range, false);
+
+                Label valueIndicator = assertInstanceOf(
+                        Label.class,
+                        range.lookup(".m3-slider-value-indicator")
+                );
+                double pressX = highThumb.getBoundsInParent().getCenterX();
+                double pressY = highThumb.getBoundsInParent().getCenterY();
+                range.fireEvent(primaryMouseEvent(range, MouseEvent.MOUSE_PRESSED, pressX, pressY, true));
+                range.layout();
+                assertTrue(range.isHighValueChanging());
+                assertFalse(range.isLowValueChanging());
+                assertTrue(valueIndicator.isVisible());
+                assertEquals(2.0, highHandle.getWidth(), 0.0001);
+                assertEquals(
+                        highHandle.getWidth() / 2.0 + range.getThumbTrackGap(),
+                        highThumb.getBoundsInParent().getCenterX()
+                                - activeTrack.getBoundsInParent().getMaxX(),
+                        0.0001
+                );
+                assertEquals(
+                        highHandle.getWidth() / 2.0 + range.getThumbTrackGap(),
+                        trailingTrack.getBoundsInParent().getMinX()
+                                - highThumb.getBoundsInParent().getCenterX(),
+                        0.0001
+                );
+
+                double targetX = range.getThumbWidth() / 2.0
+                        + (range.getWidth() - range.getThumbWidth()) * 0.9;
+                range.fireEvent(primaryMouseEvent(
+                        range,
+                        MouseEvent.MOUSE_DRAGGED,
+                        targetX,
+                        pressY,
+                        true
+                ));
+                assertEquals(90.0, range.getHighValue(), 0.0001);
+                range.fireEvent(primaryMouseEvent(
+                        range,
+                        MouseEvent.MOUSE_RELEASED,
+                        targetX,
+                        pressY,
+                        false
+                ));
+                assertFalse(range.isHighValueChanging());
+                assertFalse(valueIndicator.isVisible());
+
+                double highThumbLocalX = highThumb.getWidth() / 2.0;
+                double highThumbLocalY = highThumb.getHeight() / 2.0;
+                highThumb.fireEvent(primaryMouseEvent(
+                        highThumb,
+                        MouseEvent.MOUSE_PRESSED,
+                        highThumbLocalX,
+                        highThumbLocalY,
+                        true
+                ));
+                highThumb.fireEvent(primaryMouseEvent(
+                        highThumb,
+                        MouseEvent.MOUSE_RELEASED,
+                        highThumbLocalX,
+                        highThumbLocalY,
+                        false
+                ));
+                assertEquals(90.0, range.getHighValue(), 0.0001,
+                        "Clicking a handle must use coordinates local to the range slider");
+                assertEquals(30.0, range.getLowValue(), 0.0001,
+                        "Clicking the upper handle must not move the lower handle");
+
+                highThumb.executeAccessibleAction(AccessibleAction.DECREMENT);
+                assertEquals(85.0, range.getHighValue(), 0.0001);
+                highThumb.executeAccessibleAction(AccessibleAction.SET_VALUE, 65.0);
+                assertEquals(65.0, range.getHighValue(), 0.0001);
+                lowThumb.executeAccessibleAction(AccessibleAction.SET_VALUE, 80.0);
+                assertEquals(65.0, range.getLowValue(), 0.0001);
+
+                Pane rtlLowThumb = assertInstanceOf(Pane.class, rightToLeft.lookup(".range-low-thumb"));
+                Pane rtlHighThumb = assertInstanceOf(Pane.class, rightToLeft.lookup(".range-high-thumb"));
+                assertEquals(NodeOrientation.RIGHT_TO_LEFT, rightToLeft.getEffectiveNodeOrientation());
+                assertTrue(rtlLowThumb.localToScene(rtlLowThumb.getBoundsInLocal()).getCenterX()
+                        > rtlHighThumb.localToScene(rtlHighThumb.getBoundsInLocal()).getCenterX());
+                rtlLowThumb.requestFocus();
+                assertTrue(rtlLowThumb.isFocused());
+                rtlLowThumb.fireEvent(targetedKeyEvent(KeyEvent.KEY_PRESSED, KeyCode.LEFT, rtlLowThumb));
+                assertEquals(30.0, rightToLeft.getLowValue(), 0.0001);
+                double rtlLowLocalX = rtlLowThumb.getBoundsInLocal().getCenterX();
+                double rtlLowLocalY = rtlLowThumb.getBoundsInLocal().getCenterY();
+                rtlLowThumb.fireEvent(primaryMouseEvent(
+                        rtlLowThumb,
+                        MouseEvent.MOUSE_PRESSED,
+                        rtlLowLocalX,
+                        rtlLowLocalY,
+                        true
+                ));
+                assertTrue(rightToLeft.isLowValueChanging());
+                assertFalse(rightToLeft.isHighValueChanging());
+                rtlLowThumb.fireEvent(primaryMouseEvent(
+                        rtlLowThumb,
+                        MouseEvent.MOUSE_RELEASED,
+                        rtlLowLocalX,
+                        rtlLowLocalY,
+                        false
+                ));
+                assertEquals(30.0, rightToLeft.getLowValue(), 0.0001);
+                assertEquals(80.0, rightToLeft.getHighValue(), 0.0001);
+
+                Pane verticalLowThumb = assertInstanceOf(Pane.class, vertical.lookup(".range-low-thumb"));
+                Pane verticalHighThumb = assertInstanceOf(Pane.class, vertical.lookup(".range-high-thumb"));
+                assertTrue(verticalLowThumb.getBoundsInParent().getCenterY()
+                        > verticalHighThumb.getBoundsInParent().getCenterY());
+                assertEquals(24.0, lookupRegion(vertical, ".range-active-track").getWidth(), 0.0001);
+
+                assertEquals(1.0, disabled.getOpacity(), 0.0001);
+                assertEquals(0.12, lookupRegion(disabled, ".range-leading-track").getOpacity(), 0.0001);
+                assertEquals(0.38, lookupRegion(disabled, ".range-active-track").getOpacity(), 0.0001);
+                assertEquals(0.38, lookupRegion(disabled, ".thumb").getOpacity(), 0.0001);
+                assertEquals(0.38, lookupRegion(disabled, ".stop-indicator").getOpacity(), 0.0001);
+
+                M3RangeSliderSkin skin = assertInstanceOf(M3RangeSliderSkin.class, range.getSkin());
+                skin.dispose();
+                assertNull(lowThumb.getParent());
+                assertNull(highThumb.getParent());
+                assertFalse(range.isLowValueChanging());
+                assertFalse(range.isHighValueChanging());
+            } finally {
+                stage.close();
+            }
+        });
     }
 
     /// Verifies that progress component token properties are styleable from CSS.
@@ -21342,12 +22096,14 @@ final class M3ControlStyleTest {
                 + "-m3-track-shape: 18px; "
                 + "-m3-wave-amplitude: 3px; "
                 + "-m3-wavelength: 36px; "
+                + "-m3-indeterminate-wavelength: 19px; "
                 + "-m3-track-gap: 7px; "
                 + "-m3-stop-size: 8px;");
 
         M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.5);
         progressIndicator.setStyle("-m3-track-thickness: 6px; "
                 + "-m3-indicator-size: 72px; "
+                + "-m3-wave-indicator-size: 80px; "
                 + "-m3-wave-amplitude: 2px; "
                 + "-m3-wavelength: 18px; "
                 + "-m3-track-gap: 5px;");
@@ -21359,28 +22115,36 @@ final class M3ControlStyleTest {
         assertEquals(18.0, progressBar.getTrackShape(), 0.0001);
         assertEquals(3.0, progressBar.getWaveAmplitude(), 0.0001);
         assertEquals(36.0, progressBar.getWavelength(), 0.0001);
+        assertEquals(19.0, progressBar.getIndeterminateWavelength(), 0.0001);
         assertEquals(7.0, progressBar.getTrackGap(), 0.0001);
         assertEquals(8.0, progressBar.getStopSize(), 0.0001);
         assertEquals(12.0, progressBar.getPrefHeight(), 0.0001);
         assertEquals(6.0, progressIndicator.getTrackThickness(), 0.0001);
         assertEquals(72.0, progressIndicator.getIndicatorSize(), 0.0001);
+        assertEquals(80.0, progressIndicator.getWaveIndicatorSize(), 0.0001);
         assertEquals(2.0, progressIndicator.getWaveAmplitude(), 0.0001);
         assertEquals(18.0, progressIndicator.getWavelength(), 0.0001);
         assertEquals(5.0, progressIndicator.getTrackGap(), 0.0001);
-        assertEquals(72.0, progressIndicator.getPrefWidth(), 0.0001);
-        assertEquals(72.0, progressIndicator.getPrefHeight(), 0.0001);
+        assertEquals(80.0, progressIndicator.getPrefWidth(), 0.0001);
+        assertEquals(80.0, progressIndicator.getPrefHeight(), 0.0001);
     }
 
     /// Verifies that fallback progress and loading indicator tokens match Material Design defaults.
     @Test
     void progressAndLoadingFallbackTokensMatchMaterialDefaults() {
+        M3ProgressBar progressBar = new M3ProgressBar(0.5);
         M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.5);
         M3LoadingIndicator loadingIndicator = new M3LoadingIndicator();
 
+        applyCss(progressBar);
         applyCss(progressIndicator);
         applyCss(loadingIndicator);
 
+        assertEquals(0.0, progressBar.getWaveAmplitude(), 0.0001);
+        assertEquals(40.0, progressBar.getWavelength(), 0.0001);
+        assertEquals(20.0, progressBar.getIndeterminateWavelength(), 0.0001);
         assertEquals(40.0, progressIndicator.getIndicatorSize(), 0.0001);
+        assertEquals(48.0, progressIndicator.getWaveIndicatorSize(), 0.0001);
         assertEquals(40.0, progressIndicator.getPrefWidth(), 0.0001);
         assertEquals(40.0, progressIndicator.getPrefHeight(), 0.0001);
         assertEquals(48.0, loadingIndicator.getContainerSize(), 0.0001);
@@ -21404,9 +22168,9 @@ final class M3ControlStyleTest {
         assertEquals(72.0, loadingIndicator.getPrefHeight(), 0.0001);
     }
 
-    /// Verifies that the expressive profile applies wavy progress defaults through generated CSS.
+    /// Verifies that the Expressive profile retains Flat progress defaults while publishing Wavy metrics.
     @Test
-    void expressiveProgressTokensApplyWavyDefaults() {
+    void expressiveProgressTokensKeepFlatDefaults() {
         M3ProgressBar progressBar = new M3ProgressBar(0.5);
         M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.5);
         M3LoadingIndicator loadingIndicator = new M3LoadingIndicator();
@@ -21421,20 +22185,23 @@ final class M3ControlStyleTest {
         root.applyCss();
 
         assertEquals(4.0, progressBar.getTrackThickness(), 0.0001);
-        assertEquals(3.0, progressBar.getWaveAmplitude(), 0.0001);
+        assertEquals(0.0, progressBar.getWaveAmplitude(), 0.0001);
         assertEquals(40.0, progressBar.getWavelength(), 0.0001);
+        assertEquals(20.0, progressBar.getIndeterminateWavelength(), 0.0001);
         assertEquals(4.0, progressBar.getTrackGap(), 0.0001);
         assertEquals(4.0, progressBar.getStopSize(), 0.0001);
-        assertEquals(10.0, progressBar.getPrefHeight(), 0.0001);
+        assertEquals(4.0, progressBar.getPrefHeight(), 0.0001);
         assertEquals(4.0, progressIndicator.getTrackThickness(), 0.0001);
-        assertEquals(48.0, progressIndicator.getIndicatorSize(), 0.0001);
-        assertEquals(1.6, progressIndicator.getWaveAmplitude(), 0.0001);
+        assertEquals(40.0, progressIndicator.getIndicatorSize(), 0.0001);
+        assertEquals(48.0, progressIndicator.getWaveIndicatorSize(), 0.0001);
+        assertEquals(0.0, progressIndicator.getWaveAmplitude(), 0.0001);
         assertEquals(15.0, progressIndicator.getWavelength(), 0.0001);
         assertEquals(4.0, progressIndicator.getTrackGap(), 0.0001);
+        assertEquals(40.0, progressIndicator.getPrefWidth(), 0.0001);
+        assertEquals(40.0, progressIndicator.getPrefHeight(), 0.0001);
         assertEquals(48.0, loadingIndicator.getContainerSize(), 0.0001);
         assertEquals(38.0, loadingIndicator.getIndicatorSize(), 0.0001);
     }
-
     /// Verifies that m3fx progress controls create Material Design 3 skins.
     @Test
     void progressControlsCreateMaterialSkins() {
@@ -22212,10 +22979,11 @@ final class M3ControlStyleTest {
         }
     }
 
-    /// Verifies that expressive progress bars render a wavy active path with separated track and stop indicator.
+    /// Verifies that an explicitly wavy progress bar renders a separated active path, track, and stop indicator.
     @Test
-    void expressiveProgressBarSkinDrawsWavyIndicatorAndStop() {
+    void configuredWavyProgressBarSkinDrawsIndicatorAndStop() {
         M3ProgressBar progressBar = new M3ProgressBar(0.5);
+        progressBar.setWaveAmplitude(3.0);
         Pane root = new Pane(progressBar);
         Scene scene = new Scene(root, 280.0, 60.0);
 
@@ -22695,10 +23463,11 @@ final class M3ControlStyleTest {
         }
     }
 
-    /// Verifies that expressive circular progress uses wavy paths instead of the baseline arc geometry.
+    /// Verifies that explicitly wavy circular progress uses paths instead of the Flat arc geometry.
     @Test
-    void expressiveProgressIndicatorSkinDrawsWavyIndicatorAndTrack() {
+    void configuredWavyProgressIndicatorSkinDrawsIndicatorAndTrack() {
         M3ProgressIndicator progressIndicator = new M3ProgressIndicator(0.5);
+        progressIndicator.setWaveAmplitude(1.6);
         Pane root = new Pane(progressIndicator);
         Scene scene = new Scene(root, 96.0, 96.0);
 
@@ -22708,7 +23477,9 @@ final class M3ControlStyleTest {
                 Brightness.LIGHT
         ));
         root.applyCss();
-        progressIndicator.resize(64.0, 64.0);
+        double indicatorSize = progressIndicator.prefWidth(-1.0);
+        assertEquals(48.0, indicatorSize, 0.0001);
+        progressIndicator.resize(indicatorSize, indicatorSize);
         progressIndicator.layout();
 
         Arc track = (Arc) lookupShape(progressIndicator, ".track");
@@ -31469,7 +32240,7 @@ final class M3ControlStyleTest {
         assertEquals(1.0, checkBox.getOpacity(), 0.0001);
         assertEquals(0.08, lookupRegion(checkBox, ".m3-state-layer").getOpacity(), 0.0001);
         assertEquals(1.0, slider.getOpacity(), 0.0001);
-        assertEquals(0.1, lookupRegion(slider, ".m3-state-layer").getOpacity(), 0.0001);
+        assertEquals(0.0, lookupRegion(slider, ".m3-state-layer").getOpacity(), 0.0001);
         assertEquals(1.0, tab.getOpacity(), 0.0001);
         assertEquals(0.1, lookupRegion(tab, ".m3-state-layer").getOpacity(), 0.0001);
         assertEquals(1.0, navigationItem.getOpacity(), 0.0001);
@@ -31822,7 +32593,7 @@ final class M3ControlStyleTest {
             assertStateLayerOpacity(hoverCheckBox, 0.08);
             assertStateLayerOpacity(focusRadioButton, 0.1);
             assertStateLayerOpacity(pressedSwitch, 0.1);
-            assertStateLayerOpacity(pressedSlider, 0.1);
+            assertStateLayerOpacity(pressedSlider, 0.0);
             assertStateLayerOpacity(focusTab, 0.1);
             assertStateLayerOpacity(hoverNavigationItem, 0.08);
             assertStateLayerOpacity(pressedListItem, 0.1);
@@ -32208,9 +32979,9 @@ final class M3ControlStyleTest {
         });
     }
 
-    /// Verifies that expressive progress snapshots render wavy linear and circular indicators.
+    /// Verifies that Expressive progress remains flat by default and renders wavy geometry when configured.
     @Test
-    void expressiveProgressSnapshotRendersWavyIndicators() {
+    void expressiveProgressDefaultsToFlatAndSupportsWavyConfiguration() {
         FxTestUtils.runOnFxThread(() -> {
             M3ProgressBar determinateBar = new M3ProgressBar(0.55);
             determinateBar.setPrefWidth(260.0);
@@ -32221,7 +32992,7 @@ final class M3ControlStyleTest {
             FlowPane root = new FlowPane(24.0, 24.0, determinateBar, indeterminateBar,
                     determinateIndicator, indeterminateIndicator);
             root.setStyle("-fx-background-color: white; -fx-padding: 24px; " + visualTestColors());
-            Scene scene = new Scene(root, 640.0, 160.0);
+            Scene scene = new Scene(root, 640.0, 176.0);
 
             M3ThemeManager.install(scene, M3Theme.fromSeed(
                     Color.web("#006a6a"),
@@ -32229,13 +33000,38 @@ final class M3ControlStyleTest {
                     Brightness.LIGHT
             ));
             root.applyCss();
-            root.resize(640.0, 160.0);
+            root.resize(640.0, 176.0);
             root.layout();
 
+            assertFalse(lookupShape(determinateBar, ".m3-progress-bar-wave").isVisible());
+            assertFalse(lookupShape(indeterminateBar, ".m3-progress-bar-wave").isVisible());
+            assertFalse(lookupShape(determinateIndicator, ".m3-progress-indicator-wave").isVisible());
+            assertFalse(lookupShape(indeterminateIndicator, ".m3-progress-indicator-wave").isVisible());
+            assertTrue(lookupShape(determinateBar, ".bar").isVisible());
+            assertTrue(lookupShape(determinateIndicator, ".indicator").isVisible());
+            assertEquals(40.0, determinateIndicator.getIndicatorSize(), 0.0001);
+            assertEquals(48.0, determinateIndicator.getWaveIndicatorSize(), 0.0001);
+
+            String linearWaveStyle = "-m3-wave-amplitude: 3px; "
+                    + "-m3-wavelength: 40px; "
+                    + "-m3-indeterminate-wavelength: 20px;";
+            String circularWaveStyle = "-m3-wave-amplitude: 1.6px; "
+                    + "-m3-wave-indicator-size: 48px; "
+                    + "-m3-wavelength: 15px;";
+            determinateBar.setStyle(linearWaveStyle);
+            indeterminateBar.setStyle(linearWaveStyle);
+            determinateIndicator.setStyle(circularWaveStyle);
+            indeterminateIndicator.setStyle(circularWaveStyle);
+            root.applyCss();
+            root.layout();
+
+            assertEquals(20.0, indeterminateBar.getIndeterminateWavelength(), 0.0001);
             assertTrue(lookupShape(determinateBar, ".m3-progress-bar-wave").isVisible());
             assertTrue(lookupShape(indeterminateBar, ".m3-progress-bar-wave").isVisible());
             assertTrue(lookupShape(determinateIndicator, ".m3-progress-indicator-wave").isVisible());
             assertTrue(lookupShape(indeterminateIndicator, ".m3-progress-indicator-wave").isVisible());
+            assertEquals(48.0, determinateIndicator.getWidth(), 0.0001);
+            assertEquals(48.0, determinateIndicator.getHeight(), 0.0001);
 
             WritableImage image = snapshotImageOnFxThread(root);
             assertSnapshotHasColorVariety(image, 6);
@@ -32251,7 +33047,6 @@ final class M3ControlStyleTest {
             ));
         });
     }
-
     /// Verifies that inputs render filled, outlined, password, and multiline visual variants.
     @Test
     void inputSnapshotRendersFilledOutlinedPasswordAndTextAreaControls() {
@@ -35450,7 +36245,7 @@ final class M3ControlStyleTest {
         assertEquals(100.0, slider.queryAccessibleAttribute(AccessibleAttribute.MAX_VALUE));
         assertEquals(40.0, (Double) slider.queryAccessibleAttribute(AccessibleAttribute.VALUE), 0.0001);
         if (valueStringAttribute != null) {
-            assertEquals("40.0", slider.queryAccessibleAttribute(valueStringAttribute));
+            assertEquals("40", slider.queryAccessibleAttribute(valueStringAttribute));
         }
         assertEquals(Orientation.HORIZONTAL, slider.queryAccessibleAttribute(AccessibleAttribute.ORIENTATION));
 
@@ -35675,9 +36470,9 @@ final class M3ControlStyleTest {
         assertTrue(slider.isValueChanging());
     }
 
-    /// Verifies that slider skins expose bounded thumb ripple feedback.
+    /// Verifies that slider skins do not restore deprecated state-layer or ripple feedback.
     @Test
-    void sliderSkinPlaysBoundedRippleOnPress() {
+    void sliderSkinKeepsDeprecatedRippleFeedbackDisabled() {
         M3Slider slider = new M3Slider(0.0, 100.0, 50.0);
         Pane root = new Pane(slider);
         Scene scene = new Scene(root, 240.0, 80.0);
@@ -35690,7 +36485,8 @@ final class M3ControlStyleTest {
         assertInstanceOf(Region.class, slider.lookup(".m3-state-layer"));
         slider.fireEvent(primaryMouseEvent(slider, MouseEvent.MOUSE_PRESSED, 110.0, 24.0, true));
 
-        assertTrue(lookupRegion(slider, ".m3-ripple").getOpacity() > 0.0);
+        assertEquals(0.0, lookupRegion(slider, ".m3-state-layer").getOpacity(), 0.0001);
+        assertEquals(0.0, lookupRegion(slider, ".m3-ripple").getOpacity(), 0.0001);
     }
 
     /// Verifies style classes for action controls.
@@ -40887,8 +41683,9 @@ final class M3ControlStyleTest {
         double logicalPosition = normalizedSliderValue(slider);
         double visualPosition = rightToLeft ? 1.0 - logicalPosition : logicalPosition;
         double thumbCenter = trackStart + trackLength * visualPosition;
-        double leadingGapEdge = Math.max(trackStart, thumbCenter - slider.getThumbTrackGap());
-        double trailingGapEdge = Math.min(trackEnd, thumbCenter + slider.getThumbTrackGap());
+        double gapExtent = thumbBounds.getWidth() / 2.0 + slider.getThumbTrackGap();
+        double leadingGapEdge = Math.max(trackStart, thumbCenter - gapExtent);
+        double trailingGapEdge = Math.min(trackEnd, thumbCenter + gapExtent);
 
         assertEquals(thumbCenter, thumbBounds.getCenterX(), 0.0001);
         assertEquals(slider.getThumbWidth(), thumbBounds.getWidth(), 0.0001);
@@ -40906,15 +41703,11 @@ final class M3ControlStyleTest {
         double segmentGap = rightToLeft
                 ? activeBounds.getMinX() - inactiveBounds.getMaxX()
                 : inactiveBounds.getMinX() - activeBounds.getMaxX();
-        assertEquals(slider.getThumbTrackGap() * 2.0, segmentGap, 0.0001);
+        assertEquals(thumbBounds.getWidth() + slider.getThumbTrackGap() * 2.0, segmentGap, 0.0001);
         double stopRadius = slider.getStopIndicatorSize() / 2.0;
-        double trackCornerRadius = Math.max(
-                stopRadius,
-                Math.min(slider.getTrackThickness() / 2.0, slider.getTrackShape())
-        );
         double expectedStopCenter = rightToLeft
-                ? trackStart + trackCornerRadius
-                : trackEnd - trackCornerRadius;
+                ? trackStart + slider.getStopIndicatorTrailingSpace() + stopRadius
+                : trackEnd - slider.getStopIndicatorTrailingSpace() - stopRadius;
         assertTrue(stopIndicator.isVisible());
         assertEquals(expectedStopCenter, stopIndicatorBounds.getCenterX(), 0.0001);
         assertEquals(slider.getStopIndicatorSize(), stopIndicatorBounds.getWidth(), 0.0001);
@@ -40936,8 +41729,9 @@ final class M3ControlStyleTest {
         double trackEnd = sliderBounds.getMaxY() - slider.getThumbWidth() / 2.0;
         double trackLength = trackEnd - trackStart;
         double thumbCenter = trackEnd - trackLength * normalizedSliderValue(slider);
-        double upperGapEdge = Math.max(trackStart, thumbCenter - slider.getThumbTrackGap());
-        double lowerGapEdge = Math.min(trackEnd, thumbCenter + slider.getThumbTrackGap());
+        double gapExtent = thumbBounds.getHeight() / 2.0 + slider.getThumbTrackGap();
+        double upperGapEdge = Math.max(trackStart, thumbCenter - gapExtent);
+        double lowerGapEdge = Math.min(trackEnd, thumbCenter + gapExtent);
 
         assertEquals(thumbCenter, thumbBounds.getCenterY(), 0.0001);
         assertEquals(slider.getThumbWidth(), thumbBounds.getHeight(), 0.0001);
@@ -40945,16 +41739,16 @@ final class M3ControlStyleTest {
         assertEquals(upperGapEdge, inactiveBounds.getMaxY(), 0.0001);
         assertEquals(lowerGapEdge, activeBounds.getMinY(), 0.0001);
         assertEquals(trackEnd, activeBounds.getMaxY(), 0.0001);
-        assertEquals(slider.getThumbTrackGap() * 2.0,
+        assertEquals(thumbBounds.getHeight() + slider.getThumbTrackGap() * 2.0,
                 activeBounds.getMinY() - inactiveBounds.getMaxY(),
                 0.0001);
         double stopRadius = slider.getStopIndicatorSize() / 2.0;
-        double trackCornerRadius = Math.max(
-                stopRadius,
-                Math.min(slider.getTrackThickness() / 2.0, slider.getTrackShape())
-        );
         assertTrue(stopIndicator.isVisible());
-        assertEquals(trackStart + trackCornerRadius, stopIndicatorBounds.getCenterY(), 0.0001);
+        assertEquals(
+                trackStart + slider.getStopIndicatorTrailingSpace() + stopRadius,
+                stopIndicatorBounds.getCenterY(),
+                0.0001
+        );
         assertEquals(slider.getStopIndicatorSize(), stopIndicatorBounds.getWidth(), 0.0001);
         assertEquals(slider.getStopIndicatorSize(), stopIndicatorBounds.getHeight(), 0.0001);
     }
@@ -40987,33 +41781,31 @@ final class M3ControlStyleTest {
         double logicalPosition = normalizedSliderValue(slider);
         double visualPosition = rightToLeft ? 1.0 - logicalPosition : logicalPosition;
         double thumbCenter = trackStart + (trackEnd - trackStart) * visualPosition;
+        double gapExtent = thumbBounds.getWidth() / 2.0 + slider.getThumbTrackGap();
         double activeStart = thumbCenter < trackCenter
-                ? thumbCenter + slider.getThumbTrackGap()
+                ? thumbCenter + gapExtent
                 : trackCenter;
         double activeEnd = thumbCenter < trackCenter
                 ? trackCenter
-                : thumbCenter - slider.getThumbTrackGap();
+                : thumbCenter - gapExtent;
 
         assertEquals(thumbCenter, thumbBounds.getCenterX(), 0.0001);
         assertEquals(trackStart, leadingInactive.getMinX(), 0.0001);
-        assertEquals(Math.min(trackCenter, thumbCenter - slider.getThumbTrackGap()),
+        assertEquals(Math.min(trackCenter, thumbCenter - gapExtent),
                 leadingInactive.getMaxX(), 0.0001);
         assertEquals(activeStart, activeBounds.getMinX(), 0.0001);
         assertEquals(activeEnd, activeBounds.getMaxX(), 0.0001);
-        assertEquals(Math.max(trackCenter, thumbCenter + slider.getThumbTrackGap()),
+        assertEquals(Math.max(trackCenter, thumbCenter + gapExtent),
                 trailingInactive.getMinX(), 0.0001);
         assertEquals(trackEnd, trailingInactive.getMaxX(), 0.0001);
         assertRegionRadii(activeTrack, 0.0, 0.0, 0.0, 0.0);
 
         double stopRadius = slider.getStopIndicatorSize() / 2.0;
-        double trackCornerRadius = Math.max(
-                stopRadius,
-                Math.min(slider.getTrackThickness() / 2.0, slider.getTrackShape())
-        );
+        double stopCenterOffset = slider.getStopIndicatorTrailingSpace() + stopRadius;
         Bounds leadingStop = stopIndicators.get(0).localToScene(stopIndicators.get(0).getBoundsInLocal());
         Bounds trailingStop = stopIndicators.get(1).localToScene(stopIndicators.get(1).getBoundsInLocal());
-        assertEquals(trackStart + trackCornerRadius, leadingStop.getCenterX(), 0.0001);
-        assertEquals(trackEnd - trackCornerRadius, trailingStop.getCenterX(), 0.0001);
+        assertEquals(trackStart + stopCenterOffset, leadingStop.getCenterX(), 0.0001);
+        assertEquals(trackEnd - stopCenterOffset, trailingStop.getCenterX(), 0.0001);
     }
 
     /// Verifies centered vertical slider segments and end stops in rendered scene coordinates.
@@ -41042,32 +41834,30 @@ final class M3ControlStyleTest {
         double trackEnd = sliderBounds.getMaxY() - slider.getThumbWidth() / 2.0;
         double trackCenter = (trackStart + trackEnd) / 2.0;
         double thumbCenter = trackEnd - (trackEnd - trackStart) * normalizedSliderValue(slider);
+        double gapExtent = thumbBounds.getHeight() / 2.0 + slider.getThumbTrackGap();
         double activeStart = thumbCenter < trackCenter
-                ? thumbCenter + slider.getThumbTrackGap()
+                ? thumbCenter + gapExtent
                 : trackCenter;
         double activeEnd = thumbCenter < trackCenter
                 ? trackCenter
-                : thumbCenter - slider.getThumbTrackGap();
+                : thumbCenter - gapExtent;
 
         assertEquals(thumbCenter, thumbBounds.getCenterY(), 0.0001);
         assertEquals(trackStart, upperInactive.getMinY(), 0.0001);
-        assertEquals(Math.min(trackCenter, thumbCenter - slider.getThumbTrackGap()),
+        assertEquals(Math.min(trackCenter, thumbCenter - gapExtent),
                 upperInactive.getMaxY(), 0.0001);
         assertEquals(activeStart, activeBounds.getMinY(), 0.0001);
         assertEquals(activeEnd, activeBounds.getMaxY(), 0.0001);
-        assertEquals(Math.max(trackCenter, thumbCenter + slider.getThumbTrackGap()),
+        assertEquals(Math.max(trackCenter, thumbCenter + gapExtent),
                 lowerInactive.getMinY(), 0.0001);
         assertEquals(trackEnd, lowerInactive.getMaxY(), 0.0001);
 
         double stopRadius = slider.getStopIndicatorSize() / 2.0;
-        double trackCornerRadius = Math.max(
-                stopRadius,
-                Math.min(slider.getTrackThickness() / 2.0, slider.getTrackShape())
-        );
+        double stopCenterOffset = slider.getStopIndicatorTrailingSpace() + stopRadius;
         Bounds upperStop = stopIndicators.get(0).localToScene(stopIndicators.get(0).getBoundsInLocal());
         Bounds lowerStop = stopIndicators.get(1).localToScene(stopIndicators.get(1).getBoundsInLocal());
-        assertEquals(trackStart + trackCornerRadius, upperStop.getCenterY(), 0.0001);
-        assertEquals(trackEnd - trackCornerRadius, lowerStop.getCenterY(), 0.0001);
+        assertEquals(trackStart + stopCenterOffset, upperStop.getCenterY(), 0.0001);
+        assertEquals(trackEnd - stopCenterOffset, lowerStop.getCenterY(), 0.0001);
     }
 
     /// Returns visible slider regions matching a CSS selector.
@@ -41097,6 +41887,7 @@ final class M3ControlStyleTest {
         Region activeTrack = lookupRegion(slider, ".active-track");
         double coveredHeight = inactiveTrack.getBoundsInParent().getHeight()
                 + activeTrack.getBoundsInParent().getHeight()
+                + slider.getThumbWidth()
                 + slider.getThumbTrackGap() * 2.0;
         assertTrue(coveredHeight >= 140.0, () -> "vertical slider track is too short: " + coveredHeight);
     }

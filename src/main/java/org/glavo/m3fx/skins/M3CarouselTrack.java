@@ -370,12 +370,6 @@ final class M3CarouselTrack extends HBox {
         return low;
     }
 
-    /// Settles dynamic widths when reduced motion becomes active.
-    void refreshMotionSettings() {
-        M3Animation.finishRunningAnimationsIfDisabled(owner, selectionTransition);
-        requestLayout();
-    }
-
     /// Updates the viewport width used by arrangement solving.
     ///
     /// @param viewportWidth the visible viewport width

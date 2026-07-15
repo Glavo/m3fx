@@ -9,6 +9,7 @@ import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.DoublePropertyBase;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ObjectPropertyBase;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.css.CssMetaData;
 import javafx.css.PseudoClass;
 import javafx.css.Styleable;
@@ -19,8 +20,10 @@ import javafx.geometry.Orientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
+import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
+import javafx.util.StringConverter;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
@@ -54,6 +57,9 @@ public class M3Slider extends Control {
     /// The pseudo-class applied while the slider uses a centered active track.
     private static final PseudoClass CENTERED_PSEUDO_CLASS = PseudoClass.getPseudoClass("centered");
 
+    /// The default Material slider size.
+    private static final M3SliderSize DEFAULT_SIZE = M3SliderSize.EXTRA_SMALL;
+
     /// The default minimum slider value.
     private static final double DEFAULT_MIN = 0.0;
 
@@ -78,6 +84,9 @@ public class M3Slider extends Control {
     /// The default slider stop indicator diameter.
     private static final double DEFAULT_STOP_INDICATOR_SIZE = 4.0;
 
+    /// The default distance between the inactive-track outer edge and the stop indicator.
+    private static final double DEFAULT_STOP_INDICATOR_TRAILING_SPACE = 4.0;
+
     /// The default slider handle long-side size.
     private static final double DEFAULT_THUMB_SIZE = 44.0;
 
@@ -89,6 +98,15 @@ public class M3Slider extends Control {
 
     /// The default slider touch target size.
     private static final double DEFAULT_TOUCH_TARGET_SIZE = 48.0;
+
+    /// The default inset-icon size for the extra-small slider.
+    private static final double DEFAULT_ICON_SIZE = 0.0;
+
+    /// The default inset-icon padding for the extra-small slider.
+    private static final double DEFAULT_ICON_PADDING = 0.0;
+
+    /// The default distance between the handle and the value indicator.
+    private static final double DEFAULT_VALUE_INDICATOR_BOTTOM_SPACE = 12.0;
 
     /// The optional accessible value-string attribute available on newer JavaFX runtimes.
     private static final @Nullable AccessibleAttribute VALUE_STRING_ATTRIBUTE =
@@ -118,6 +136,32 @@ public class M3Slider extends Control {
     // Backing property for the public centered-track API.
     private @Nullable BooleanProperty centered;
 
+    // The Material slider size property.
+    private final ObjectProperty<M3SliderSize> size = new SimpleObjectProperty<>(this, "size", DEFAULT_SIZE) {
+        /// Updates the component token style class when the size changes.
+        @Override
+        protected void invalidated() {
+            if (get() == null) {
+                set(DEFAULT_SIZE);
+                return;
+            }
+            updateSizeStyle();
+            requestLayout();
+        }
+    };
+
+    // The optional graphic inset into the active track.
+    private @Nullable ObjectProperty<@Nullable Node> activeTrackGraphic;
+
+    // The optional graphic inset into the inactive track.
+    private @Nullable ObjectProperty<@Nullable Node> inactiveTrackGraphic;
+
+    // Whether the value indicator is displayed during direct manipulation.
+    private @Nullable BooleanProperty showValueIndicator;
+
+    // The optional formatter used by the value indicator and accessibility value string.
+    private @Nullable ObjectProperty<@Nullable StringConverter<Double>> labelFormatter;
+
     // Backing property for the public track thickness token API.
     private @Nullable StyleableDoubleProperty trackThickness;
 
@@ -126,6 +170,9 @@ public class M3Slider extends Control {
 
     // Backing property for the public stop indicator size token API.
     private @Nullable StyleableDoubleProperty stopIndicatorSize;
+
+    // Backing property for the public stop indicator trailing-space token API.
+    private @Nullable StyleableDoubleProperty stopIndicatorTrailingSpace;
 
     // Backing property for the public thumb size token API.
     private @Nullable StyleableDoubleProperty thumbSize;
@@ -138,6 +185,15 @@ public class M3Slider extends Control {
 
     // Backing property for the public touch target size token API.
     private @Nullable StyleableDoubleProperty touchTargetSize;
+
+    // The styleable inset-icon size token.
+    private @Nullable StyleableDoubleProperty iconSize;
+
+    // The styleable inset-icon outer padding token.
+    private @Nullable StyleableDoubleProperty iconPadding;
+
+    // The styleable value-indicator bottom-space token.
+    private @Nullable StyleableDoubleProperty valueIndicatorBottomSpace;
 
     /// Creates a slider with the JavaFX default range.
     public M3Slider() {
@@ -154,6 +210,219 @@ public class M3Slider extends Control {
         setMin(min);
         setMax(max);
         setValue(value);
+    }
+
+    /// Returns the Material slider size.
+    ///
+    /// The size selects the published track height, track shape, handle height, and inset-icon metrics. It does not
+    /// affect the numeric range, step size, orientation, or current value.
+    ///
+    /// @return the current Material slider size
+    public final M3SliderSize getSize() {
+        return size.get();
+    }
+
+    /// Sets the Material slider size.
+    ///
+    /// Explicitly selecting a size applies that size's Material component tokens. Applications may still override
+    /// individual styleable metric properties after CSS resolution when a custom configuration is required.
+    ///
+    /// @param size the Material slider size
+    public final void setSize(M3SliderSize size) {
+        this.size.set(Objects.requireNonNull(size, "size"));
+    }
+
+    /// Returns the Material slider size property.
+    ///
+    /// @return the writable slider size property
+    public final ObjectProperty<M3SliderSize> sizeProperty() {
+        return size;
+    }
+
+    /// Returns the graphic inset into the active track.
+    ///
+    /// The graphic is rendered only when the active track is large enough for the current slider size's icon and
+    /// padding tokens. When it does not fit, the inactive-track graphic is used instead. The two graphics are
+    /// mutually exclusive visual variants of one inset icon; they are not rendered at the same time. Extra-small
+    /// and small sliders define no inset-icon slot. A non-null graphic must not already be attached to another
+    /// parent in the scene graph.
+    ///
+    /// @return the active-track graphic, or `null` when none is configured
+    public final @Nullable Node getActiveTrackGraphic() {
+        return activeTrackGraphic == null ? null : activeTrackGraphic.get();
+    }
+
+    /// Sets the graphic inset into the active track.
+    ///
+    /// @param graphic the active-track graphic, or `null` to remove it
+    public final void setActiveTrackGraphic(@Nullable Node graphic) {
+        activeTrackGraphicProperty().set(graphic);
+    }
+
+    /// Returns the active-track graphic property.
+    ///
+    /// @return the writable active-track graphic property
+    public final ObjectProperty<@Nullable Node> activeTrackGraphicProperty() {
+        if (activeTrackGraphic == null) {
+            activeTrackGraphic = new ObjectPropertyBase<>() {
+                /// Requests layout when the mounted graphic changes.
+                @Override
+                protected void invalidated() {
+                    requestLayout();
+                }
+
+                /// Returns the owning bean.
+                @Override
+                public Object getBean() {
+                    return M3Slider.this;
+                }
+
+                /// Returns the property name.
+                @Override
+                public String getName() {
+                    return "activeTrackGraphic";
+                }
+            };
+        }
+        return activeTrackGraphic;
+    }
+
+    /// Returns the graphic inset into the inactive track.
+    ///
+    /// This graphic is the fallback visual variant shown when the active segment cannot contain the active-track
+    /// graphic. It follows the maximum-value outer edge and is hidden whenever the active-track graphic fits, when
+    /// the current size does not define an inset-icon slot, or when the inactive segment cannot contain it.
+    ///
+    /// @return the inactive-track graphic, or `null` when none is configured
+    public final @Nullable Node getInactiveTrackGraphic() {
+        return inactiveTrackGraphic == null ? null : inactiveTrackGraphic.get();
+    }
+
+    /// Sets the graphic inset into the inactive track.
+    ///
+    /// @param graphic the inactive-track graphic, or `null` to remove it
+    public final void setInactiveTrackGraphic(@Nullable Node graphic) {
+        inactiveTrackGraphicProperty().set(graphic);
+    }
+
+    /// Returns the inactive-track graphic property.
+    ///
+    /// @return the writable inactive-track graphic property
+    public final ObjectProperty<@Nullable Node> inactiveTrackGraphicProperty() {
+        if (inactiveTrackGraphic == null) {
+            inactiveTrackGraphic = new ObjectPropertyBase<>() {
+                /// Requests layout when the mounted graphic changes.
+                @Override
+                protected void invalidated() {
+                    requestLayout();
+                }
+
+                /// Returns the owning bean.
+                @Override
+                public Object getBean() {
+                    return M3Slider.this;
+                }
+
+                /// Returns the property name.
+                @Override
+                public String getName() {
+                    return "inactiveTrackGraphic";
+                }
+            };
+        }
+        return inactiveTrackGraphic;
+    }
+
+    /// Returns whether a value indicator is shown during direct pointer manipulation.
+    ///
+    /// @return `true` when the slider reserves and displays a value indicator
+    public final boolean isShowValueIndicator() {
+        return showValueIndicator != null && showValueIndicator.get();
+    }
+
+    /// Sets whether a value indicator is shown during direct pointer manipulation.
+    ///
+    /// Enabling the indicator reserves space on the logical top side of a horizontal slider or beside a vertical
+    /// slider so that showing the indicator does not move surrounding content.
+    ///
+    /// @param showValueIndicator whether the value indicator is available
+    public final void setShowValueIndicator(boolean showValueIndicator) {
+        showValueIndicatorProperty().set(showValueIndicator);
+    }
+
+    /// Returns the value-indicator visibility property.
+    ///
+    /// @return the writable value-indicator visibility property
+    public final BooleanProperty showValueIndicatorProperty() {
+        if (showValueIndicator == null) {
+            showValueIndicator = new BooleanPropertyBase(false) {
+                /// Updates the reserved indicator space.
+                @Override
+                protected void invalidated() {
+                    requestLayout();
+                }
+
+                /// Returns the owning bean.
+                @Override
+                public Object getBean() {
+                    return M3Slider.this;
+                }
+
+                /// Returns the property name.
+                @Override
+                public String getName() {
+                    return "showValueIndicator";
+                }
+            };
+        }
+        return showValueIndicator;
+    }
+
+    /// Returns the formatter used for the value indicator and accessible value string.
+    ///
+    /// A null formatter uses a compact decimal representation that preserves fractional values without adding
+    /// locale-specific grouping.
+    ///
+    /// @return the value formatter, or `null` to use the default representation
+    public final @Nullable StringConverter<Double> getLabelFormatter() {
+        return labelFormatter == null ? null : labelFormatter.get();
+    }
+
+    /// Sets the formatter used for the value indicator and accessible value string.
+    ///
+    /// @param formatter the formatter, or `null` to use the default representation
+    public final void setLabelFormatter(@Nullable StringConverter<Double> formatter) {
+        labelFormatterProperty().set(formatter);
+    }
+
+    /// Returns the value formatter property.
+    ///
+    /// @return the writable value formatter property
+    public final ObjectProperty<@Nullable StringConverter<Double>> labelFormatterProperty() {
+        if (labelFormatter == null) {
+            labelFormatter = new ObjectPropertyBase<>() {
+                /// Refreshes the visual and accessible value representation.
+                @Override
+                protected void invalidated() {
+                    notifyAccessibleAttributeChanged(AccessibleAttribute.VALUE);
+                    M3Accessible.notifyAttribute(M3Slider.this, VALUE_STRING_ATTRIBUTE);
+                    requestLayout();
+                }
+
+                /// Returns the owning bean.
+                @Override
+                public Object getBean() {
+                    return M3Slider.this;
+                }
+
+                /// Returns the property name.
+                @Override
+                public String getName() {
+                    return "labelFormatter";
+                }
+            };
+        }
+        return labelFormatter;
     }
 
     /// Returns the minimum slider value.
@@ -391,7 +660,7 @@ public class M3Slider extends Control {
     ///
     /// @param blockIncrement the amount changed by page navigation and continuous single-step navigation
     public final void setBlockIncrement(double blockIncrement) {
-        blockIncrementProperty().set(blockIncrement);
+        blockIncrementProperty().set(M3Css.nonNegative(blockIncrement, "blockIncrement"));
     }
 
     /// Returns the block increment property.
@@ -400,6 +669,15 @@ public class M3Slider extends Control {
     public final DoubleProperty blockIncrementProperty() {
         if (blockIncrement == null) {
             blockIncrement = new DoublePropertyBase(DEFAULT_BLOCK_INCREMENT) {
+                /// Rejects negative or non-finite adjustment amounts.
+                @Override
+                protected void invalidated() {
+                    double normalized = M3Css.nonNegative(get(), "blockIncrement");
+                    if (Double.compare(normalized, get()) != 0) {
+                        set(normalized);
+                    }
+                }
+
                 /// Returns the owning bean.
                 @Override
                 public Object getBean() {
@@ -623,6 +901,44 @@ public class M3Slider extends Control {
         return stopIndicatorSize;
     }
 
+    /// Returns the distance between an inactive track's outer edge and its stop indicator.
+    ///
+    /// The distance is measured from the outer track edge to the nearest edge of the indicator. It is independent
+    /// of the track thickness and corner radius.
+    ///
+    /// @return the stop indicator trailing-space token in pixels
+    public final double getStopIndicatorTrailingSpace() {
+        return stopIndicatorTrailingSpace == null
+                ? DEFAULT_STOP_INDICATOR_TRAILING_SPACE
+                : stopIndicatorTrailingSpace.get();
+    }
+
+    /// Sets the distance between an inactive track's outer edge and its stop indicator.
+    ///
+    /// @param stopIndicatorTrailingSpace the non-negative trailing-space token in pixels
+    public final void setStopIndicatorTrailingSpace(double stopIndicatorTrailingSpace) {
+        stopIndicatorTrailingSpaceProperty().set(M3Css.nonNegative(
+                stopIndicatorTrailingSpace,
+                "stopIndicatorTrailingSpace"
+        ));
+    }
+
+    /// Returns the stop indicator trailing-space token property.
+    ///
+    /// @return the stop indicator trailing-space token property
+    public final StyleableDoubleProperty stopIndicatorTrailingSpaceProperty() {
+        if (stopIndicatorTrailingSpace == null) {
+            stopIndicatorTrailingSpace = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_STOP_INDICATOR_TRAILING_SPACE,
+                    this,
+                    "stopIndicatorTrailingSpace",
+                    StyleableProperties.STOP_INDICATOR_TRAILING_SPACE,
+                    this::requestLayout
+            );
+        }
+        return stopIndicatorTrailingSpace;
+    }
+
     /// Returns the slider handle long-side size token.
     ///
     /// @return the slider handle long-side size token in pixels
@@ -743,6 +1059,102 @@ public class M3Slider extends Control {
         return touchTargetSize;
     }
 
+    /// Returns the inset-icon size token.
+    ///
+    /// A value of zero disables inset icons for the current slider size.
+    ///
+    /// @return the inset-icon size in pixels
+    public final double getIconSize() {
+        return iconSize == null ? DEFAULT_ICON_SIZE : iconSize.get();
+    }
+
+    /// Sets the inset-icon size token.
+    ///
+    /// @param iconSize the non-negative inset-icon size in pixels
+    public final void setIconSize(double iconSize) {
+        iconSizeProperty().set(M3Css.nonNegative(iconSize, "iconSize"));
+    }
+
+    /// Returns the inset-icon size token property.
+    ///
+    /// @return the styleable inset-icon size property
+    public final StyleableDoubleProperty iconSizeProperty() {
+        if (iconSize == null) {
+            iconSize = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_ICON_SIZE,
+                    this,
+                    "iconSize",
+                    StyleableProperties.ICON_SIZE,
+                    this::requestLayout
+            );
+        }
+        return iconSize;
+    }
+
+    /// Returns the distance between an inset icon and the track's outer edge.
+    ///
+    /// @return the inset-icon padding in pixels
+    public final double getIconPadding() {
+        return iconPadding == null ? DEFAULT_ICON_PADDING : iconPadding.get();
+    }
+
+    /// Sets the distance between an inset icon and the track's outer edge.
+    ///
+    /// @param iconPadding the non-negative inset-icon padding in pixels
+    public final void setIconPadding(double iconPadding) {
+        iconPaddingProperty().set(M3Css.nonNegative(iconPadding, "iconPadding"));
+    }
+
+    /// Returns the inset-icon padding token property.
+    ///
+    /// @return the styleable inset-icon padding property
+    public final StyleableDoubleProperty iconPaddingProperty() {
+        if (iconPadding == null) {
+            iconPadding = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_ICON_PADDING,
+                    this,
+                    "iconPadding",
+                    StyleableProperties.ICON_PADDING,
+                    this::requestLayout
+            );
+        }
+        return iconPadding;
+    }
+
+    /// Returns the distance between the handle and the value indicator.
+    ///
+    /// @return the value-indicator bottom space in pixels
+    public final double getValueIndicatorBottomSpace() {
+        return valueIndicatorBottomSpace == null
+                ? DEFAULT_VALUE_INDICATOR_BOTTOM_SPACE
+                : valueIndicatorBottomSpace.get();
+    }
+
+    /// Sets the distance between the handle and the value indicator.
+    ///
+    /// @param bottomSpace the non-negative value-indicator bottom space in pixels
+    public final void setValueIndicatorBottomSpace(double bottomSpace) {
+        valueIndicatorBottomSpaceProperty().set(
+                M3Css.nonNegative(bottomSpace, "bottomSpace")
+        );
+    }
+
+    /// Returns the value-indicator bottom-space token property.
+    ///
+    /// @return the styleable value-indicator bottom-space property
+    public final StyleableDoubleProperty valueIndicatorBottomSpaceProperty() {
+        if (valueIndicatorBottomSpace == null) {
+            valueIndicatorBottomSpace = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_VALUE_INDICATOR_BOTTOM_SPACE,
+                    this,
+                    "valueIndicatorBottomSpace",
+                    StyleableProperties.VALUE_INDICATOR_BOTTOM_SPACE,
+                    this::requestLayout
+            );
+        }
+        return valueIndicatorBottomSpace;
+    }
+
     /// Returns the CSS metadata for this control class.
     ///
     /// @return the CSS metadata for this control class
@@ -775,7 +1187,13 @@ public class M3Slider extends Control {
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
         if (attribute == VALUE_STRING_ATTRIBUTE) {
-            return Double.toString(getValue());
+            StringConverter<Double> formatter = getLabelFormatter();
+            if (formatter != null) {
+                @Nullable String text = formatter.toString(getValue());
+                return text == null ? "" : text;
+            }
+            double value = getValue();
+            return Math.rint(value) == value ? Long.toString((long) value) : Double.toString(value);
         }
         return switch (attribute) {
             case MIN_VALUE -> getMin();
@@ -820,10 +1238,32 @@ public class M3Slider extends Control {
     /// Adds base style classes.
     private void initialize() {
         M3ControlStyles.initialize(this, STYLE_CLASS);
+        updateSizeStyle();
         setAccessibleRole(AccessibleRole.SLIDER);
         M3Accessible.installAccessibleActionRoute(this, () -> M3Accessible.showDirectItem(this, this), null);
         setFocusTraversable(true);
         requestLayout();
+    }
+
+    /// Applies the style class associated with the current Material size.
+    private void updateSizeStyle() {
+        M3ControlStyles.replaceVariant(
+                this,
+                sizeStyleClass(getSize()),
+                sizeStyleClass(M3SliderSize.EXTRA_SMALL),
+                sizeStyleClass(M3SliderSize.SMALL),
+                sizeStyleClass(M3SliderSize.MEDIUM),
+                sizeStyleClass(M3SliderSize.LARGE),
+                sizeStyleClass(M3SliderSize.EXTRA_LARGE)
+        );
+    }
+
+    /// Returns the control style class for a Material slider size.
+    ///
+    /// @param size the slider size
+    /// @return the style class for the size
+    static String sizeStyleClass(M3SliderSize size) {
+        return "m3-slider-" + size.cssSuffix();
     }
 
     /// Clamps the current value after a range change.
@@ -930,6 +1370,26 @@ public class M3Slider extends Control {
                     }
                 };
 
+        /// CSS metadata for the stop indicator trailing-space token.
+        private static final CssMetaData<M3Slider, Number> STOP_INDICATOR_TRAILING_SPACE =
+                new CssMetaData<>(
+                        "-m3-stop-indicator-trailing-space",
+                        SizeConverter.getInstance(),
+                        DEFAULT_STOP_INDICATOR_TRAILING_SPACE
+                ) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3Slider control) {
+                        return M3Css.isSettable(control.stopIndicatorTrailingSpaceProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3Slider control) {
+                        return control.stopIndicatorTrailingSpaceProperty();
+                    }
+                };
+
         /// CSS metadata for the thumb long-side size token.
         private static final CssMetaData<M3Slider, Number> THUMB_SIZE =
                 new CssMetaData<>("-m3-thumb-size", SizeConverter.getInstance(), DEFAULT_THUMB_SIZE) {
@@ -994,6 +1454,58 @@ public class M3Slider extends Control {
                     }
                 };
 
+        /// CSS metadata for the inset-icon size token.
+        private static final CssMetaData<M3Slider, Number> ICON_SIZE =
+                new CssMetaData<>("-m3-slider-icon-size", SizeConverter.getInstance(), DEFAULT_ICON_SIZE) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3Slider control) {
+                        return M3Css.isSettable(control.iconSizeProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3Slider control) {
+                        return control.iconSizeProperty();
+                    }
+                };
+
+        /// CSS metadata for the inset-icon padding token.
+        private static final CssMetaData<M3Slider, Number> ICON_PADDING =
+                new CssMetaData<>("-m3-slider-icon-padding", SizeConverter.getInstance(), DEFAULT_ICON_PADDING) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3Slider control) {
+                        return M3Css.isSettable(control.iconPaddingProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3Slider control) {
+                        return control.iconPaddingProperty();
+                    }
+                };
+
+        /// CSS metadata for the value-indicator bottom-space token.
+        private static final CssMetaData<M3Slider, Number> VALUE_INDICATOR_BOTTOM_SPACE =
+                new CssMetaData<>(
+                        "-m3-value-indicator-bottom-space",
+                        SizeConverter.getInstance(),
+                        DEFAULT_VALUE_INDICATOR_BOTTOM_SPACE
+                ) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3Slider control) {
+                        return M3Css.isSettable(control.valueIndicatorBottomSpaceProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3Slider control) {
+                        return control.valueIndicatorBottomSpaceProperty();
+                    }
+                };
+
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
@@ -1002,10 +1514,14 @@ public class M3Slider extends Control {
             styleables.add(TRACK_THICKNESS);
             styleables.add(TRACK_SHAPE);
             styleables.add(STOP_INDICATOR_SIZE);
+            styleables.add(STOP_INDICATOR_TRAILING_SPACE);
             styleables.add(THUMB_SIZE);
             styleables.add(THUMB_WIDTH);
             styleables.add(THUMB_TRACK_GAP);
             styleables.add(TOUCH_TARGET_SIZE);
+            styleables.add(ICON_SIZE);
+            styleables.add(ICON_PADDING);
+            styleables.add(VALUE_INDICATOR_BOTTOM_SPACE);
             STYLEABLES = Collections.unmodifiableList(styleables);
         }
     }

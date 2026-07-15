@@ -38,8 +38,8 @@ import java.util.Objects;
 ///
 /// Use this control for horizontal loading feedback in a bounded area. Indeterminate progress keeps a basic
 /// moving segment when full animations are disabled through [org.glavo.m3fx.animation.M3MotionSettings], so
-/// reduced-motion mode still communicates activity. Positive wave amplitude and wavelength values enable the
-/// M3 Expressive wavy track geometry used by the generated component tokens. See
+/// reduced-motion mode still communicates activity. A positive wave amplitude explicitly enables the M3
+/// Expressive wavy geometry; the Flat configuration remains the default in every theme profile. See
 /// [Material Design progress indicators](https://m3.material.io/components/progress-indicators/overview).
 @NotNullByDefault
 public class M3ProgressBar extends Control {
@@ -64,6 +64,9 @@ public class M3ProgressBar extends Control {
 
     /// The default linear wave length.
     private static final double DEFAULT_WAVELENGTH = 40.0;
+
+    /// The default indeterminate linear wave length.
+    private static final double DEFAULT_INDETERMINATE_WAVELENGTH = 20.0;
 
     /// The default gap between active progress and track.
     private static final double DEFAULT_TRACK_GAP = 4.0;
@@ -95,6 +98,9 @@ public class M3ProgressBar extends Control {
 
     // The styleable wavelength token.
     private @Nullable StyleableDoubleProperty wavelength;
+
+    // The styleable indeterminate wavelength token.
+    private @Nullable StyleableDoubleProperty indeterminateWavelength;
 
     // The styleable track gap token.
     private @Nullable StyleableDoubleProperty trackGap;
@@ -294,6 +300,41 @@ public class M3ProgressBar extends Control {
             );
         }
         return wavelength;
+    }
+
+    /// Returns the wavy indeterminate progress wavelength token.
+    ///
+    /// @return the wavy indeterminate progress wavelength in pixels
+    public final double getIndeterminateWavelength() {
+        return indeterminateWavelength == null
+                ? DEFAULT_INDETERMINATE_WAVELENGTH
+                : indeterminateWavelength.get();
+    }
+
+    /// Sets the wavy indeterminate progress wavelength token.
+    ///
+    /// @param indeterminateWavelength the wavy indeterminate progress wavelength in pixels
+    public final void setIndeterminateWavelength(double indeterminateWavelength) {
+        indeterminateWavelengthProperty().set(M3Css.nonNegative(
+                indeterminateWavelength,
+                "indeterminateWavelength"
+        ));
+    }
+
+    /// Returns the wavy indeterminate progress wavelength token property.
+    ///
+    /// @return the styleable wavy indeterminate progress wavelength property
+    public final StyleableDoubleProperty indeterminateWavelengthProperty() {
+        if (indeterminateWavelength == null) {
+            indeterminateWavelength = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_INDETERMINATE_WAVELENGTH,
+                    this,
+                    "indeterminateWavelength",
+                    StyleableProperties.INDETERMINATE_WAVELENGTH,
+                    this::requestLayout
+            );
+        }
+        return indeterminateWavelength;
     }
 
     /// Returns the gap token between active progress and track.
@@ -497,6 +538,26 @@ public class M3ProgressBar extends Control {
                     }
                 };
 
+        /// CSS metadata for the indeterminate wavelength token.
+        private static final CssMetaData<M3ProgressBar, Number> INDETERMINATE_WAVELENGTH =
+                new CssMetaData<>(
+                        "-m3-indeterminate-wavelength",
+                        SizeConverter.getInstance(),
+                        DEFAULT_INDETERMINATE_WAVELENGTH
+                ) {
+                    /// Returns whether this property can be set by CSS.
+                    @Override
+                    public boolean isSettable(M3ProgressBar control) {
+                        return M3Css.isSettable(control.indeterminateWavelengthProperty());
+                    }
+
+                    /// Returns the styleable property for a control.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3ProgressBar control) {
+                        return control.indeterminateWavelengthProperty();
+                    }
+                };
+
         /// CSS metadata for the active-to-track gap token.
         private static final CssMetaData<M3ProgressBar, Number> TRACK_GAP =
                 new CssMetaData<>("-m3-track-gap", SizeConverter.getInstance(), DEFAULT_TRACK_GAP) {
@@ -538,6 +599,7 @@ public class M3ProgressBar extends Control {
             styleables.add(TRACK_SHAPE);
             styleables.add(WAVE_AMPLITUDE);
             styleables.add(WAVELENGTH);
+            styleables.add(INDETERMINATE_WAVELENGTH);
             styleables.add(TRACK_GAP);
             styleables.add(STOP_SIZE);
             STYLEABLES = Collections.unmodifiableList(styleables);

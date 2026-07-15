@@ -98,7 +98,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
 
     /// Updates running smooth scroll when global or node-local motion settings change.
     private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(getSkinnable(), this::refreshMotionSettings);
+            new M3MotionSettingsObserver(getSkinnable(), this::refreshMotionSettings, false);
 
     /// The completion callback attached to the currently running smooth scroll animation.
     private @Nullable Runnable smoothScrollOnFinished;
@@ -161,8 +161,8 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     @Override
     public void dispose() {
         M3ListView<T> listView = getSkinnable();
-        motionSettingsObserver.dispose();
         stopSmoothScrollAnimation();
+        motionSettingsObserver.dispose();
         smoothScrollAnimation.setOnFinished(null);
         listView.removeEventFilter(ScrollEvent.SCROLL, smoothScrollHandler);
         listView.getItems().removeListener(itemsListener);
@@ -684,6 +684,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         M3MotionSpec spec = M3Animation.defaultSpatial(getSkinnable());
         smoothScrollAnimation.configure(spec, flow.getPosition(), smoothScrollTargetPosition);
         smoothScrollOnFinished = onFinished;
+        motionSettingsObserver.start();
         smoothScrollAnimation.playFromStart();
     }
 
@@ -699,6 +700,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
 
     /// Runs the current smooth-scroll completion callback after the reusable transition finishes.
     private void finishSmoothScrollAnimation() {
+        motionSettingsObserver.stop();
         @Nullable Runnable onFinished = smoothScrollOnFinished;
         smoothScrollOnFinished = null;
         flow.setPosition(smoothScrollTargetPosition);
@@ -711,6 +713,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     /// Stops the running smooth scroll animation.
     private void stopSmoothScrollAnimation() {
         smoothScrollAnimation.stop();
+        motionSettingsObserver.stop();
         smoothScrollOnFinished = null;
     }
 

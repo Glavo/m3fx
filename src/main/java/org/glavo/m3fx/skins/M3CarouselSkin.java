@@ -21,7 +21,6 @@ import org.glavo.m3fx.controls.M3Carousel;
 import org.glavo.m3fx.controls.M3CarouselLayout;
 import org.glavo.m3fx.controls.M3ScrollPanes;
 import org.glavo.m3fx.internal.M3Animation;
-import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default skin for [M3Carousel].
@@ -128,13 +127,6 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
                 requestSelectedScroll(false);
             };
 
-    /// Settles running selected-item scroll transitions when runtime motion settings change.
-    private final M3MotionSettingsObserver motionSettingsObserver =
-            new M3MotionSettingsObserver(
-                    getSkinnable(),
-                    this::refreshMotionSettings
-            );
-
     /// Whether scrolling should be retried after the next layout pass.
     private boolean pendingSelectedScroll;
 
@@ -161,7 +153,6 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
     /// Removes listeners, animations, and child references before disposal.
     @Override
     public void dispose() {
-        motionSettingsObserver.dispose();
         cancelViewportInteraction();
         scrollSettleDelay.stop();
         scrollSettleDelay.setOnFinished(null);
@@ -391,17 +382,9 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
         }
     }
 
-    /// Settles a running scroll animation if the carousel now resolves reduced motion.
-    private void refreshMotionSettings() {
-        track.refreshMotionSettings();
-        M3Animation.finishRunningAnimationsIfDisabled(getSkinnable(), scrollAnimation);
-        requestSelectedScroll(false);
-    }
-
     /// Stops the current scroll animation.
     private void stopScrollAnimation() {
         scrollAnimation.stop();
     }
-
 
 }

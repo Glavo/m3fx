@@ -451,7 +451,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double progressCircularWaveAmplitude = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 1.6 : 0.0);
         double loadingIndicatorContainerSize = density.apply(48.0);
         double loadingIndicatorIndicatorSize = density.apply(38.0);
-        double progressCircularIndicatorSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 48.0 : 40.0);
+        double progressCircularIndicatorSize = density.apply(40.0);
+        double progressCircularWaveIndicatorSize = density.apply(48.0);
         boolean expressive = profile == M3Profile.EXPRESSIVE_2025;
         double navigationContentSpacing = density.apply(4.0);
         double navigationHorizontalPadding = density.apply(8.0);
@@ -617,12 +618,50 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double switchSelectedHandleSize = density.apply(24.0);
         double switchPressedHandleSize = density.apply(28.0);
         double switchIconSize = density.apply(16.0);
-        double sliderTrackThickness = density.apply(16.0);
         double sliderStopIndicatorSize = density.apply(4.0);
-        double sliderThumbSize = density.apply(44.0);
+        double sliderStopIndicatorTrailingSpace = density.apply(4.0);
         double sliderThumbWidth = density.apply(4.0);
+        double sliderFocusedThumbWidth = density.apply(2.0);
+        double sliderPressedThumbWidth = density.apply(2.0);
         double sliderThumbTrackGap = density.apply(6.0);
         double sliderTouchTargetSize = density.apply(48.0);
+        SliderSizingTokens sliderSizing = new SliderSizingTokens(
+                new SliderSizeTokens(
+                        density.apply(16.0),
+                        density.apply(8.0),
+                        density.apply(44.0),
+                        0.0,
+                        0.0
+                ),
+                new SliderSizeTokens(
+                        density.apply(24.0),
+                        density.apply(8.0),
+                        density.apply(44.0),
+                        0.0,
+                        0.0
+                ),
+                new SliderSizeTokens(
+                        density.apply(40.0),
+                        density.apply(12.0),
+                        density.apply(52.0),
+                        density.apply(24.0),
+                        density.apply(6.0)
+                ),
+                new SliderSizeTokens(
+                        density.apply(56.0),
+                        density.apply(16.0),
+                        density.apply(68.0),
+                        density.apply(24.0),
+                        density.apply(6.0)
+                ),
+                new SliderSizeTokens(
+                        density.apply(96.0),
+                        density.apply(28.0),
+                        density.apply(108.0),
+                        density.apply(32.0),
+                        density.apply(8.0)
+                )
+        );
         double surfaceContainerShape = expressive ? shapeTokens.large() : shapeTokens.medium();
         double surfaceContentPadding = density.apply(expressive ? 20.0 : 16.0);
         double carouselTrackHorizontalPadding = density.apply(16.0);
@@ -954,11 +993,12 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         switchIconSize
                 ),
                 new SliderTokens(
-                        sliderTrackThickness,
-                        shapeTokens.full(),
+                        sliderSizing,
                         sliderStopIndicatorSize,
-                        sliderThumbSize,
+                        sliderStopIndicatorTrailingSpace,
                         sliderThumbWidth,
+                        sliderFocusedThumbWidth,
+                        sliderPressedThumbWidth,
                         sliderThumbTrackGap,
                         sliderTouchTargetSize
                 ),
@@ -979,8 +1019,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         density.apply(4.0),
                         shapeTokens.full(),
                         progressCircularIndicatorSize,
+                        progressCircularWaveIndicatorSize,
                         progressLinearWaveAmplitude,
                         density.apply(40.0),
+                        density.apply(20.0),
                         density.apply(4.0),
                         density.apply(4.0),
                         progressCircularWaveAmplitude,
@@ -1485,9 +1527,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendSelectionRule(builder, selection());
         appendSwitchRule(builder, selection());
         appendSwitchBoxRule(builder, selection());
-        appendSliderRule(builder, slider());
-        appendSliderTrackRule(builder, slider());
-        appendSliderThumbRule(builder, slider());
+        appendSliderRules(builder, slider());
         appendChipRule(builder, chip());
         appendChipGroupRule(builder, chip());
         appendProgressBarRule(builder, progress());
@@ -1999,15 +2039,31 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
 
     /// Appends slider token declarations.
     private static void append(StringBuilder builder, SliderTokens tokens) {
-        M3TokenCss.append(builder, "-m3-slider-track-thickness", M3TokenCss.pixels(tokens.trackThickness()));
-        M3TokenCss.append(builder, "-m3-slider-track-shape", M3TokenCss.pixels(tokens.trackShape()));
+        SliderSizeTokens defaultSize = tokens.sizing().extraSmall();
+        M3TokenCss.append(builder, "-m3-slider-track-thickness", M3TokenCss.pixels(defaultSize.trackThickness()));
+        M3TokenCss.append(builder, "-m3-slider-track-shape", M3TokenCss.pixels(defaultSize.trackShape()));
         M3TokenCss.append(
                 builder,
                 "-m3-slider-stop-indicator-size",
                 M3TokenCss.pixels(tokens.stopIndicatorSize())
         );
-        M3TokenCss.append(builder, "-m3-slider-thumb-size", M3TokenCss.pixels(tokens.thumbSize()));
+        M3TokenCss.append(
+                builder,
+                "-m3-slider-stop-indicator-trailing-space",
+                M3TokenCss.pixels(tokens.stopIndicatorTrailingSpace())
+        );
+        M3TokenCss.append(builder, "-m3-slider-thumb-size", M3TokenCss.pixels(defaultSize.thumbSize()));
         M3TokenCss.append(builder, "-m3-slider-thumb-width", M3TokenCss.pixels(tokens.thumbWidth()));
+        M3TokenCss.append(
+                builder,
+                "-m3-slider-focused-thumb-width",
+                M3TokenCss.pixels(tokens.focusedThumbWidth())
+        );
+        M3TokenCss.append(
+                builder,
+                "-m3-slider-pressed-thumb-width",
+                M3TokenCss.pixels(tokens.pressedThumbWidth())
+        );
         M3TokenCss.append(builder, "-m3-slider-thumb-track-gap", M3TokenCss.pixels(tokens.thumbTrackGap()));
         M3TokenCss.append(builder, "-m3-slider-touch-target-size", M3TokenCss.pixels(tokens.touchTargetSize()));
     }
@@ -2032,8 +2088,18 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-progress-thickness", M3TokenCss.pixels(tokens.thickness()));
         M3TokenCss.append(builder, "-m3-progress-shape", M3TokenCss.pixels(tokens.shape()));
         M3TokenCss.append(builder, "-m3-progress-indicator-size", M3TokenCss.pixels(tokens.indicatorSize()));
+        M3TokenCss.append(
+                builder,
+                "-m3-progress-wave-indicator-size",
+                M3TokenCss.pixels(tokens.waveIndicatorSize())
+        );
         M3TokenCss.append(builder, "-m3-progress-linear-wave-amplitude", M3TokenCss.pixels(tokens.linearWaveAmplitude()));
         M3TokenCss.append(builder, "-m3-progress-linear-wavelength", M3TokenCss.pixels(tokens.linearWavelength()));
+        M3TokenCss.append(
+                builder,
+                "-m3-progress-linear-indeterminate-wavelength",
+                M3TokenCss.pixels(tokens.linearIndeterminateWavelength())
+        );
         M3TokenCss.append(builder, "-m3-progress-linear-track-gap", M3TokenCss.pixels(tokens.linearTrackGap()));
         M3TokenCss.append(builder, "-m3-progress-linear-stop-size", M3TokenCss.pixels(tokens.linearStopSize()));
         M3TokenCss.append(builder, "-m3-progress-circular-wave-amplitude", M3TokenCss.pixels(tokens.circularWaveAmplitude()));
@@ -3526,31 +3592,50 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         endRule(builder);
     }
 
-    /// Appends a slider token CSS rule.
-    private static void appendSliderRule(StringBuilder builder, SliderTokens tokens) {
+    /// Appends common and size-specific slider token CSS rules.
+    private static void appendSliderRules(StringBuilder builder, SliderTokens tokens) {
         beginRule(builder, ".m3-slider");
-        appendDeclaration(builder, "-m3-track-thickness", M3TokenCss.pixels(tokens.trackThickness()));
-        appendDeclaration(builder, "-m3-track-shape", M3TokenCss.pixels(tokens.trackShape()));
         appendDeclaration(builder, "-m3-stop-indicator-size", M3TokenCss.pixels(tokens.stopIndicatorSize()));
-        appendDeclaration(builder, "-m3-thumb-size", M3TokenCss.pixels(tokens.thumbSize()));
+        appendDeclaration(
+                builder,
+                "-m3-stop-indicator-trailing-space",
+                M3TokenCss.pixels(tokens.stopIndicatorTrailingSpace())
+        );
         appendDeclaration(builder, "-m3-thumb-width", M3TokenCss.pixels(tokens.thumbWidth()));
+        appendDeclaration(builder, "-m3-focused-thumb-width", M3TokenCss.pixels(tokens.focusedThumbWidth()));
+        appendDeclaration(builder, "-m3-pressed-thumb-width", M3TokenCss.pixels(tokens.pressedThumbWidth()));
         appendDeclaration(builder, "-m3-thumb-track-gap", M3TokenCss.pixels(tokens.thumbTrackGap()));
         appendDeclaration(builder, "-m3-touch-target-size", M3TokenCss.pixels(tokens.touchTargetSize()));
         endRule(builder);
-    }
 
-    /// Appends a slider track visual CSS rule.
-    private static void appendSliderTrackRule(StringBuilder builder, SliderTokens tokens) {
-        beginRule(builder, ".m3-slider .track");
-        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.trackShape()));
-        appendDeclaration(builder, "-fx-pref-height", M3TokenCss.pixels(tokens.trackThickness()));
+        beginRule(builder, ".m3-slider:focus-visible");
+        appendDeclaration(builder, "-m3-thumb-width", M3TokenCss.pixels(tokens.focusedThumbWidth()));
         endRule(builder);
+
+        beginRule(builder, ".m3-slider:pressed");
+        appendDeclaration(builder, "-m3-thumb-width", M3TokenCss.pixels(tokens.pressedThumbWidth()));
+        endRule(builder);
+
+        SliderSizingTokens sizing = tokens.sizing();
+        appendSliderSizeRule(builder, ".m3-slider-extra-small", sizing.extraSmall());
+        appendSliderSizeRule(builder, ".m3-slider-small", sizing.small());
+        appendSliderSizeRule(builder, ".m3-slider-medium", sizing.medium());
+        appendSliderSizeRule(builder, ".m3-slider-large", sizing.large());
+        appendSliderSizeRule(builder, ".m3-slider-extra-large", sizing.extraLarge());
     }
 
-    /// Appends a slider thumb visual CSS rule.
-    private static void appendSliderThumbRule(StringBuilder builder, SliderTokens tokens) {
-        beginRule(builder, ".m3-slider .thumb");
-        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.trackShape()));
+    /// Appends one Material slider size token rule.
+    private static void appendSliderSizeRule(
+            StringBuilder builder,
+            String selector,
+            SliderSizeTokens tokens
+    ) {
+        beginRule(builder, selector);
+        appendDeclaration(builder, "-m3-track-thickness", M3TokenCss.pixels(tokens.trackThickness()));
+        appendDeclaration(builder, "-m3-track-shape", M3TokenCss.pixels(tokens.trackShape()));
+        appendDeclaration(builder, "-m3-thumb-size", M3TokenCss.pixels(tokens.thumbSize()));
+        appendDeclaration(builder, "-m3-slider-icon-size", M3TokenCss.pixels(tokens.iconSize()));
+        appendDeclaration(builder, "-m3-slider-icon-padding", M3TokenCss.pixels(tokens.iconPadding()));
         endRule(builder);
     }
 
@@ -3586,8 +3671,13 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         beginRule(builder, ".m3-progress-bar");
         appendDeclaration(builder, "-m3-track-thickness", M3TokenCss.pixels(tokens.thickness()));
         appendDeclaration(builder, "-m3-track-shape", M3TokenCss.pixels(tokens.shape()));
-        appendDeclaration(builder, "-m3-wave-amplitude", M3TokenCss.pixels(tokens.linearWaveAmplitude()));
+        appendDeclaration(builder, "-m3-wave-amplitude", M3TokenCss.pixels(0.0));
         appendDeclaration(builder, "-m3-wavelength", M3TokenCss.pixels(tokens.linearWavelength()));
+        appendDeclaration(
+                builder,
+                "-m3-indeterminate-wavelength",
+                M3TokenCss.pixels(tokens.linearIndeterminateWavelength())
+        );
         appendDeclaration(builder, "-m3-track-gap", M3TokenCss.pixels(tokens.linearTrackGap()));
         appendDeclaration(builder, "-m3-stop-size", M3TokenCss.pixels(tokens.linearStopSize()));
         endRule(builder);
@@ -3611,7 +3701,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         beginRule(builder, ".m3-progress-indicator");
         appendDeclaration(builder, "-m3-track-thickness", M3TokenCss.pixels(tokens.thickness()));
         appendDeclaration(builder, "-m3-indicator-size", M3TokenCss.pixels(tokens.indicatorSize()));
-        appendDeclaration(builder, "-m3-wave-amplitude", M3TokenCss.pixels(tokens.circularWaveAmplitude()));
+        appendDeclaration(builder, "-m3-wave-indicator-size", M3TokenCss.pixels(tokens.waveIndicatorSize()));
+        appendDeclaration(builder, "-m3-wave-amplitude", M3TokenCss.pixels(0.0));
         appendDeclaration(builder, "-m3-wavelength", M3TokenCss.pixels(tokens.circularWavelength()));
         appendDeclaration(builder, "-m3-track-gap", M3TokenCss.pixels(tokens.circularTrackGap()));
         endRule(builder);
@@ -4950,32 +5041,85 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         }
     }
 
-    /// Tokens shared by sliders.
+    /// Tokens for the Material slider size scale.
     ///
-    /// @param trackThickness    the slider track thickness
-    /// @param trackShape        the slider track radius
-    /// @param stopIndicatorSize the diameter of the inactive-track stop indicator
-    /// @param thumbSize         the slider handle long-side size
-    /// @param thumbWidth        the slider handle short-side width
-    /// @param thumbTrackGap     the gap between the handle and each adjacent track segment
-    /// @param touchTargetSize   the preferred slider touch target size
+    /// @param extraSmall the extra-small slider tokens
+    /// @param small      the small slider tokens
+    /// @param medium     the medium slider tokens
+    /// @param large      the large slider tokens
+    /// @param extraLarge the extra-large slider tokens
     @NotNullByDefault
-    record SliderTokens(
+    record SliderSizingTokens(
+            SliderSizeTokens extraSmall,
+            SliderSizeTokens small,
+            SliderSizeTokens medium,
+            SliderSizeTokens large,
+            SliderSizeTokens extraLarge
+    ) {
+        /// Creates slider sizing tokens.
+        public SliderSizingTokens {
+            Objects.requireNonNull(extraSmall, "extraSmall");
+            Objects.requireNonNull(small, "small");
+            Objects.requireNonNull(medium, "medium");
+            Objects.requireNonNull(large, "large");
+            Objects.requireNonNull(extraLarge, "extraLarge");
+        }
+    }
+
+    /// Tokens for one Material slider size.
+    ///
+    /// @param trackThickness the active and inactive track height
+    /// @param trackShape     the outer track corner radius
+    /// @param thumbSize      the handle long-side size
+    /// @param iconSize       the inset-icon size, or zero when inset icons are unavailable
+    /// @param iconPadding    the inset-icon distance from the outer track edge
+    @NotNullByDefault
+    record SliderSizeTokens(
             double trackThickness,
             double trackShape,
-            double stopIndicatorSize,
             double thumbSize,
+            double iconSize,
+            double iconPadding
+    ) {
+        /// Creates tokens for one slider size.
+        public SliderSizeTokens {
+            validateNonNegative(trackThickness, "trackThickness");
+            validateNonNegative(trackShape, "trackShape");
+            validateNonNegative(thumbSize, "thumbSize");
+            validateNonNegative(iconSize, "iconSize");
+            validateNonNegative(iconPadding, "iconPadding");
+        }
+    }
+
+    /// Tokens shared by sliders.
+    ///
+    /// @param sizing                     the Material slider size-scale tokens
+    /// @param stopIndicatorSize          the diameter of the inactive-track stop indicator
+    /// @param stopIndicatorTrailingSpace the distance from the outer track edge to the nearest stop-indicator edge
+    /// @param thumbWidth                 the slider handle short-side width while enabled or hovered
+    /// @param focusedThumbWidth         the slider handle short-side width while keyboard focused
+    /// @param pressedThumbWidth         the slider handle short-side width while pressed
+    /// @param thumbTrackGap             the gap between the handle and each adjacent track segment
+    /// @param touchTargetSize           the preferred slider touch target size
+    @NotNullByDefault
+    record SliderTokens(
+            SliderSizingTokens sizing,
+            double stopIndicatorSize,
+            double stopIndicatorTrailingSpace,
             double thumbWidth,
+            double focusedThumbWidth,
+            double pressedThumbWidth,
             double thumbTrackGap,
             double touchTargetSize
     ) {
         /// Creates slider tokens.
         public SliderTokens {
-            validateNonNegative(trackThickness, "trackThickness");
-            validateNonNegative(trackShape, "trackShape");
+            Objects.requireNonNull(sizing, "sizing");
             validateNonNegative(stopIndicatorSize, "stopIndicatorSize");
-            validateNonNegative(thumbSize, "thumbSize");
+            validateNonNegative(stopIndicatorTrailingSpace, "stopIndicatorTrailingSpace");
             validateNonNegative(thumbWidth, "thumbWidth");
+            validateNonNegative(focusedThumbWidth, "focusedThumbWidth");
+            validateNonNegative(pressedThumbWidth, "pressedThumbWidth");
             validateNonNegative(thumbTrackGap, "thumbTrackGap");
             validateNonNegative(touchTargetSize, "touchTargetSize");
         }
@@ -5028,10 +5172,12 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ///
     /// @param thickness             the default track thickness
     /// @param shape                 the progress indicator radius
-    /// @param indicatorSize         the circular indicator size
-    /// @param linearWaveAmplitude   the linear wavy indicator amplitude
-    /// @param linearWavelength      the linear wavy indicator wavelength
-    /// @param linearTrackGap        the gap between the linear active indicator and track
+    /// @param indicatorSize                the flat circular indicator size
+    /// @param waveIndicatorSize            the wavy circular indicator size
+    /// @param linearWaveAmplitude          the linear wavy indicator amplitude
+    /// @param linearWavelength             the determinate linear wavy indicator wavelength
+    /// @param linearIndeterminateWavelength the indeterminate linear wavy indicator wavelength
+    /// @param linearTrackGap               the gap between the linear active indicator and track
     /// @param linearStopSize        the stop indicator diameter at the end of the linear track
     /// @param circularWaveAmplitude the circular wavy indicator amplitude
     /// @param circularWavelength    the circular wavy indicator wavelength
@@ -5041,8 +5187,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double thickness,
             double shape,
             double indicatorSize,
+            double waveIndicatorSize,
             double linearWaveAmplitude,
             double linearWavelength,
+            double linearIndeterminateWavelength,
             double linearTrackGap,
             double linearStopSize,
             double circularWaveAmplitude,
@@ -5054,8 +5202,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(thickness, "thickness");
             validateNonNegative(shape, "shape");
             validateNonNegative(indicatorSize, "indicatorSize");
+            validateNonNegative(waveIndicatorSize, "waveIndicatorSize");
             validateNonNegative(linearWaveAmplitude, "linearWaveAmplitude");
             validateNonNegative(linearWavelength, "linearWavelength");
+            validateNonNegative(linearIndeterminateWavelength, "linearIndeterminateWavelength");
             validateNonNegative(linearTrackGap, "linearTrackGap");
             validateNonNegative(linearStopSize, "linearStopSize");
             validateNonNegative(circularWaveAmplitude, "circularWaveAmplitude");

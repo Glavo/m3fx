@@ -282,15 +282,26 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-switch-pressed-handle-size: 28px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-switch-icon-size: 17px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-slider-thumb-width: 7px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-slider-focused-thumb-width: 3px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-slider-pressed-thumb-width: 2px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-slider-thumb-track-gap: 8px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-slider-stop-indicator-size: 6px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains(
+                "-m3-slider-stop-indicator-trailing-space: 9px"
+        ));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-chip-icon-horizontal-padding: 8px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-chip-element-spacing: 9px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-chip-icon-size: 18px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-chip-avatar-size: 24px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-chip-outline-width: 1px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-progress-indicator-size: 52px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-progress-wave-indicator-size: 54px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-progress-linear-wave-amplitude: 3px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-progress-linear-indeterminate-wavelength: 21px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-progress-circular-wavelength: 16px"));
+        assertTrue(tokenSet.toControlStyleRules().contains("-m3-wave-amplitude: 0px"));
+        assertTrue(tokenSet.toControlStyleRules().contains("-m3-wave-indicator-size: 54px"));
+        assertTrue(tokenSet.toControlStyleRules().contains("-m3-indeterminate-wavelength: 21px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-loading-indicator-container-size: 63px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-loading-indicator-indicator-size: 22px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-list-section-header-height: 32px"));
@@ -351,6 +362,7 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-wavelength: 41px"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-stop-size: 7px"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-stop-indicator-size: 6px"));
+        assertTrue(tokenSet.toControlStyleRules().contains("-m3-stop-indicator-trailing-space: 9px"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-avatar.m3-avatar"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-action-spacing: 7px"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-toolbar"));
@@ -367,7 +379,7 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-selected-dot-size: 11px"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-track-width: 52px"));
         assertTrue(tokenSet.toControlStyleRules().contains("-m3-pressed-handle-size: 28px"));
-        assertTrue(tokenSet.toControlStyleRules().contains(".m3-slider:pressed .m3-state-layer"));
+        assertFalse(tokenSet.toControlStyleRules().contains(".m3-slider:pressed .m3-state-layer"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-elevated-card:hover .m3-card-container"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-filled-card:hover .m3-card-container"));
         assertTrue(tokenSet.toControlStyleRules().contains(".m3-outlined-card:hover .m3-card-container"));
@@ -375,7 +387,7 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toControlStyleRules().contains("-fx-opacity: 0.15"));
     }
 
-    /// Verifies that every generated root component token value feeds at least one generated control rule.
+    /// Verifies that generated default component token values feed generated control rules.
     @Test
     void componentTokenValuesFeedGeneratedControlRules() {
         M3ComponentTokens componentTokens = createComponentTokensWithUniqueValues();
@@ -512,9 +524,26 @@ final class M3TokenFactoryTest {
                         28.0,
                         17.0
                 ),
-                new M3ComponentTokens.SliderTokens(5.0, 18.0, 6.0, 24.0, 7.0, 8.0, 50.0),
+                new M3ComponentTokens.SliderTokens(
+                        new M3ComponentTokens.SliderSizingTokens(
+                                new M3ComponentTokens.SliderSizeTokens(5.0, 18.0, 24.0, 0.0, 0.0),
+                                new M3ComponentTokens.SliderSizeTokens(6.0, 19.0, 25.0, 0.0, 0.0),
+                                new M3ComponentTokens.SliderSizeTokens(7.0, 20.0, 26.0, 21.0, 9.0),
+                                new M3ComponentTokens.SliderSizeTokens(8.0, 21.0, 27.0, 22.0, 10.0),
+                                new M3ComponentTokens.SliderSizeTokens(9.0, 22.0, 28.0, 23.0, 11.0)
+                        ),
+                        6.0,
+                        9.0,
+                        7.0,
+                        3.0,
+                        2.0,
+                        8.0,
+                        50.0
+                ),
                 new M3ComponentTokens.ChipTokens(34.0, 10.0, 15.0, 8.0, 9.0, 18.0, 24.0, 12.0, 1.0, 11.0, 13.0),
-                new M3ComponentTokens.ProgressTokens(5.0, 18.0, 52.0, 3.0, 41.0, 6.0, 7.0, 2.0, 16.0, 5.0),
+                new M3ComponentTokens.ProgressTokens(
+                        5.0, 18.0, 52.0, 54.0, 3.0, 41.0, 21.0, 6.0, 7.0, 2.0, 16.0, 5.0
+                ),
                 new M3ComponentTokens.LoadingIndicatorTokens(63.0, 22.0),
                 new M3ComponentTokens.SurfaceTokens(22.0, 19.0),
                 new M3ComponentTokens.CarouselTokens(16.0, 8.0, 8.0, 28.0, 40.0, 56.0, 320.0),
@@ -694,14 +723,16 @@ final class M3TokenFactoryTest {
         }
     }
 
-    /// Returns root component token declarations whose values are not present in generated control rules.
+    /// Returns default root component token declarations whose values are not present in generated control rules.
     private static List<String> missingComponentTokenControlValues(M3ComponentTokens componentTokens) {
         String controlStyleRules = componentTokens.toControlStyleRules();
         List<String> missing = new ArrayList<>();
         for (String declaration : cssDeclarationLines(componentTokens.toStyleDeclarations())) {
             String property = cssProperty(declaration);
             String value = cssValue(declaration);
-            if (!controlStyleRules.contains(value)) {
+            boolean optionalProgressConfiguration = property.equals("-m3-progress-linear-wave-amplitude")
+                    || property.equals("-m3-progress-circular-wave-amplitude");
+            if (!optionalProgressConfiguration && !controlStyleRules.contains(value)) {
                 missing.add(property + ": " + value);
             }
         }

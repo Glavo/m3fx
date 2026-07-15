@@ -209,13 +209,15 @@ public final class M3ScrollPanes {
             scrollPane.fitToWidthProperty().addListener(scrollMetricsInvalidation);
             scrollPane.fitToHeightProperty().addListener(scrollMetricsInvalidation);
             scrollPane.addEventFilter(ScrollEvent.SCROLL, scrollHandler);
-            motionSettingsObserver = new M3MotionSettingsObserver(scrollPane, this::refreshMotionSettings);
+            motionSettingsObserver = new M3MotionSettingsObserver(scrollPane, this::refreshMotionSettings, false);
+            animation.setOnFinished(event -> motionSettingsObserver.stop());
         }
 
         /// Removes smooth wheel behavior and stops any running animation.
         private void dispose() {
-            motionSettingsObserver.dispose();
             stopAnimation();
+            motionSettingsObserver.dispose();
+            animation.setOnFinished(null);
             scrollPane.removeEventFilter(ScrollEvent.SCROLL, scrollHandler);
             scrollPane.contentProperty().removeListener(contentListener);
             scrollPane.viewportBoundsProperty().removeListener(scrollMetricsInvalidation);
@@ -318,6 +320,7 @@ public final class M3ScrollPanes {
 
             if (animationsDisabled()) {
                 animation.finish();
+                motionSettingsObserver.stop();
             } else {
                 animateToTarget();
             }
@@ -340,6 +343,7 @@ public final class M3ScrollPanes {
                     scrollPane.getVvalue(),
                     targetVValue
             );
+            motionSettingsObserver.start();
             animation.playFromStart();
         }
 
@@ -356,6 +360,7 @@ public final class M3ScrollPanes {
         /// Stops the current scroll animation.
         private void stopAnimation() {
             animation.stop();
+            motionSettingsObserver.stop();
         }
 
         /// Replaces the content geometry listener and invalidates cached scroll metrics.
