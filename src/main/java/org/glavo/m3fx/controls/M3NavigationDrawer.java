@@ -461,7 +461,7 @@ public class M3NavigationDrawer extends Control {
                 this::showAccessibleItem,
                 this::containsAccessibleRevealTarget
         );
-        addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
+        addEventFilter(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         addEventHandler(KeyEvent.KEY_TYPED, this::handleTypeAheadKeyTyped);
         getItems().addListener(childrenListener);
         effectiveNodeOrientationProperty().addListener(observable -> updateOrientationPseudoClass());

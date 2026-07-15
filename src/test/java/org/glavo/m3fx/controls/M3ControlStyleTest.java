@@ -732,54 +732,9 @@ final class M3ControlStyleTest {
     /// Verifies that standalone picker field popups resolve fallback color tokens without requiring a theme.
     @Test
     void standalonePickerFieldPopupsResolveFallbackColorTokens() throws InterruptedException {
-        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
-        AtomicReference<@Nullable M3DatePickerField> datePickerFieldReference = new AtomicReference<>();
-        AtomicReference<@Nullable M3TimePickerField> timePickerFieldReference = new AtomicReference<>();
-        AtomicReference<@Nullable M3DateRangePickerField> dateRangePickerFieldReference = new AtomicReference<>();
-
-        FxTestUtils.runOnFxThreadWhenStable(() -> standalonePickerPopupsReady(
-                stageReference,
-                datePickerFieldReference,
-                timePickerFieldReference,
-                dateRangePickerFieldReference
-        ), STANDALONE_FALLBACK_STYLE_STABLE_PULSES, () -> {
-            M3DatePickerField datePickerField = new M3DatePickerField();
-            M3TimePickerField timePickerField = new M3TimePickerField();
-            M3DateRangePickerField dateRangePickerField = new M3DateRangePickerField();
-            VBox root = new VBox(12.0, datePickerField, timePickerField, dateRangePickerField);
-            Scene scene = new Scene(root, 560.0, 360.0);
-            Stage stage = new Stage();
-
-            stageReference.set(stage);
-            datePickerFieldReference.set(datePickerField);
-            timePickerFieldReference.set(timePickerField);
-            dateRangePickerFieldReference.set(dateRangePickerField);
-            stage.setScene(scene);
-            stage.show();
-            root.applyCss();
-            root.layout();
-
-            showAndApplyPickerPopup(datePickerField, datePickerField.getPicker());
-            showAndApplyPickerPopup(timePickerField, timePickerField.getPicker());
-            showAndApplyPickerPopup(dateRangePickerField, dateRangePickerField.getPicker());
-        }, () -> {
-            @Nullable M3DatePickerField datePickerField = datePickerFieldReference.get();
-            if (datePickerField != null) {
-                datePickerField.hidePicker();
-            }
-            @Nullable M3TimePickerField timePickerField = timePickerFieldReference.get();
-            if (timePickerField != null) {
-                timePickerField.hidePicker();
-            }
-            @Nullable M3DateRangePickerField dateRangePickerField = dateRangePickerFieldReference.get();
-            if (dateRangePickerField != null) {
-                dateRangePickerField.hidePicker();
-            }
-            @Nullable Stage stage = stageReference.get();
-            if (stage != null) {
-                stage.close();
-            }
-        });
+        assertStandalonePickerPopupReady(new M3DatePickerField());
+        assertStandalonePickerPopupReady(new M3TimePickerField());
+        assertStandalonePickerPopupReady(new M3DateRangePickerField());
     }
 
     /// Verifies that standalone tooltip popups resolve fallback color tokens without requiring a theme.
@@ -3503,36 +3458,38 @@ final class M3ControlStyleTest {
                     M3Profile.EXPRESSIVE_2025,
                     Brightness.LIGHT
             ));
-            root.applyCss();
-            root.resize(520.0, 180.0);
-            root.layout();
-            connected.layout();
-            standard.layout();
-            root.requestLayout();
-            root.layout();
+            Stage stage = new Stage();
+            try {
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
 
-            assertEquals(480.0, connected.getWidth(), 0.01);
-            assertEquals(
-                    connected.getWidth(),
-                    first.getWidth() + middle.getWidth() + last.getWidth() + 2.0 * connected.getSpacing(),
-                    0.01
-            );
-            assertTrue(first.getWidth() >= 48.0);
-            assertTrue(middle.getWidth() >= 48.0);
-            assertTrue(last.getWidth() >= 48.0);
-            assertTrue(standard.getWidth() <= standard.prefWidth(-1.0) + 0.5);
-            assertTrue(standard.getWidth() < connected.getWidth());
+                assertEquals(480.0, connected.getWidth(), 0.01);
+                assertEquals(
+                        connected.getWidth(),
+                        first.getWidth() + middle.getWidth() + last.getWidth() + 2.0 * connected.getSpacing(),
+                        0.01
+                );
+                assertTrue(first.getWidth() >= 48.0);
+                assertTrue(middle.getWidth() >= 48.0);
+                assertTrue(last.getWidth() >= 48.0);
+                assertTrue(standard.getWidth() <= standard.prefWidth(-1.0) + 0.5);
+                assertTrue(standard.getWidth() < connected.getWidth());
 
-            connected.setSize(M3ButtonSize.SMALL);
-            connected.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
-            root.applyCss();
-            root.layout();
-            connected.layout();
+                connected.setSize(M3ButtonSize.SMALL);
+                connected.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                root.applyCss();
+                root.layout();
+                connected.layout();
 
-            assertEquals(480.0, connected.getWidth(), 0.01);
-            assertTrue(first.getWidth() >= 48.0);
-            assertTrue(first.localToScene(first.getBoundsInLocal()).getMinX()
-                    > last.localToScene(last.getBoundsInLocal()).getMinX());
+                assertEquals(480.0, connected.getWidth(), 0.01);
+                assertTrue(first.getWidth() >= 48.0);
+                assertTrue(first.localToScene(first.getBoundsInLocal()).getMinX()
+                        > last.localToScene(last.getBoundsInLocal()).getMinX());
+            } finally {
+                stage.close();
+            }
         });
     }
 
@@ -44013,36 +43970,6 @@ final class M3ControlStyleTest {
         });
     }
 
-    /// Returns whether standalone picker field popups have reached a renderable fallback-styled state.
-    private static boolean standalonePickerPopupsReady(
-            AtomicReference<@Nullable Stage> stageReference,
-            AtomicReference<@Nullable M3DatePickerField> datePickerFieldReference,
-            AtomicReference<@Nullable M3TimePickerField> timePickerFieldReference,
-            AtomicReference<@Nullable M3DateRangePickerField> dateRangePickerFieldReference
-    ) {
-        @Nullable Stage stage = stageReference.get();
-        @Nullable M3DatePickerField datePickerField = datePickerFieldReference.get();
-        @Nullable M3TimePickerField timePickerField = timePickerFieldReference.get();
-        @Nullable M3DateRangePickerField dateRangePickerField = dateRangePickerFieldReference.get();
-        if (stage == null
-                || datePickerField == null
-                || timePickerField == null
-                || dateRangePickerField == null
-                || !stage.isShowing()
-                || stage.getScene() == null) {
-            return false;
-        }
-
-        Parent root = stage.getScene().getRoot();
-        root.applyCss();
-        root.layout();
-        return datePickerField.isShowing()
-                && pickerControlReady(datePickerField.getPicker())
-                && timePickerField.isShowing()
-                && pickerControlReady(timePickerField.getPicker())
-                && pickerPopupReady(dateRangePickerField, dateRangePickerField.getPicker());
-    }
-
     /// Returns whether a picker control has completed CSS and layout after a popup presentation.
     private static boolean pickerControlReady(Control picker) {
         if (picker.getScene() == null) {
@@ -44051,17 +43978,6 @@ final class M3ControlStyleTest {
         picker.applyCss();
         picker.layout();
         return picker.getSkin() != null && hasRenderableBounds(picker);
-    }
-
-    /// Returns whether a date range picker field popup and picker control are visible and renderable.
-    private static boolean pickerPopupReady(M3DateRangePickerField field, M3DateRangePicker picker) {
-        if (!field.isShowing() || picker.getScene() == null) {
-            return false;
-        }
-
-        picker.applyCss();
-        picker.layout();
-        return hasRenderableBounds(picker);
     }
 
     /// Returns whether a standalone internal icon has resolved a renderable fallback token fill.
@@ -44081,20 +43997,87 @@ final class M3ControlStyleTest {
         return hasRenderableBounds(icon) && icon.getPath().getFill() != null;
     }
 
-    /// Shows a picker field popup and applies CSS to the popup picker.
-    private static <T, P extends Control> void showAndApplyPickerPopup(M3PickerField<T, P> field, P picker) {
-        field.showPicker();
-        assertTrue(field.isShowing());
-        picker.applyCss();
-        picker.layout();
+    /// Verifies one generic picker field popup reaches a renderable fallback-styled state in isolation.
+    private static <T, P extends Control> void assertStandalonePickerPopupReady(
+            M3PickerField<T, P> field
+    ) throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        P picker = field.getPicker();
+        FxTestUtils.runOnFxThreadWhenStable(
+                () -> {
+                    @Nullable Stage stage = stageReference.get();
+                    return stage != null
+                            && stage.isShowing()
+                            && field.isShowing()
+                            && pickerControlReady(picker);
+                },
+                STANDALONE_FALLBACK_STYLE_STABLE_PULSES,
+                () -> showStandalonePickerPopup(stageReference, field),
+                () -> {
+                    field.hidePicker();
+                    @Nullable Stage stage = stageReference.get();
+                    if (stage != null) {
+                        stage.close();
+                    }
+                }
+        );
     }
 
-    /// Shows a date range picker field popup and applies CSS to the popup picker.
-    private static void showAndApplyPickerPopup(M3DateRangePickerField field, M3DateRangePicker picker) {
+    /// Verifies one date-range picker popup reaches a renderable fallback-styled state in isolation.
+    private static void assertStandalonePickerPopupReady(
+            M3DateRangePickerField field
+    ) throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        M3DateRangePicker picker = field.getPicker();
+        FxTestUtils.runOnFxThreadWhenStable(
+                () -> {
+                    @Nullable Stage stage = stageReference.get();
+                    return stage != null
+                            && stage.isShowing()
+                            && field.isShowing()
+                            && pickerControlReady(picker);
+                },
+                STANDALONE_FALLBACK_STYLE_STABLE_PULSES,
+                () -> showStandalonePickerPopup(stageReference, field),
+                () -> {
+                    field.hidePicker();
+                    @Nullable Stage stage = stageReference.get();
+                    if (stage != null) {
+                        stage.close();
+                    }
+                }
+        );
+    }
+
+    /// Shows one generic picker field in a dedicated owner window.
+    private static <T, P extends Control> void showStandalonePickerPopup(
+            AtomicReference<@Nullable Stage> stageReference,
+            M3PickerField<T, P> field
+    ) {
+        Stage stage = showStandalonePickerOwner(field);
+        stageReference.set(stage);
         field.showPicker();
-        assertTrue(field.isShowing());
-        picker.applyCss();
-        picker.layout();
+    }
+
+    /// Shows one date-range picker field in a dedicated owner window.
+    private static void showStandalonePickerPopup(
+            AtomicReference<@Nullable Stage> stageReference,
+            M3DateRangePickerField field
+    ) {
+        Stage stage = showStandalonePickerOwner(field);
+        stageReference.set(stage);
+        field.showPicker();
+    }
+
+    /// Creates and shows a standalone owner window for one picker field.
+    private static Stage showStandalonePickerOwner(Control field) {
+        VBox root = new VBox(field);
+        Stage stage = new Stage();
+        stage.setScene(new Scene(root, 560.0, 360.0));
+        stage.show();
+        root.applyCss();
+        root.layout();
+        return stage;
     }
 
     /// Verifies that token updates do not overwrite application-bound Region layout properties.

@@ -289,6 +289,9 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
 
     /// Schedules selected item scrolling for the next layout pass.
     private void requestSelectedScroll(boolean animated) {
+        if (viewportInteractionActive) {
+            return;
+        }
         pendingSelectedScroll = true;
         pendingSelectedScrollAnimated = pendingSelectedScrollAnimated || animated;
         getSkinnable().requestLayout();
