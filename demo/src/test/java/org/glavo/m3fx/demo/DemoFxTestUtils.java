@@ -455,7 +455,6 @@ final class DemoFxTestUtils {
                         try {
                             if (diagnostics.evaluate(condition)) {
                                 stop();
-                                verification.run();
                                 latch.countDown();
                             } else if (System.nanoTime() >= deadlineNanos) {
                                 stop();
@@ -471,7 +470,6 @@ final class DemoFxTestUtils {
                 };
 
                 if (diagnostics.evaluate(condition)) {
-                    verification.run();
                     latch.countDown();
                 } else {
                     timer.start();
@@ -484,6 +482,7 @@ final class DemoFxTestUtils {
 
         awaitFxConditionLatch(latch, failure, timeoutMessage, diagnostics);
         throwIfFailed(failure.get());
+        runOnFxThread(verification);
     }
 
     /// Runs setup on the FX application thread and verifies after a condition remains true across pulses.
@@ -523,7 +522,6 @@ final class DemoFxTestUtils {
                                 diagnostics.recordStablePulses(stablePulses);
                                 if (stablePulses >= stablePulseCount) {
                                     stop();
-                                    verification.run();
                                     latch.countDown();
                                     return;
                                 }
@@ -552,6 +550,7 @@ final class DemoFxTestUtils {
 
         awaitFxConditionLatch(latch, failure, timeoutMessage, diagnostics);
         throwIfFailed(failure.get());
+        runOnFxThread(verification);
     }
 
     /// Creates a timeout assertion from the most recent FX-thread diagnostic message.
