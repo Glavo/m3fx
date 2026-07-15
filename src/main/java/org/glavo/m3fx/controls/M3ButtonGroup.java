@@ -272,6 +272,17 @@ public class M3ButtonGroup extends Control {
         return standardPressedWidthMultiplierStyleable;
     }
 
+    /// Returns a content-hugging maximum width for standard groups and a flexible maximum for connected groups.
+    ///
+    /// @param height the height constraint, or `-1` when unconstrained
+    /// @return the computed maximum width
+    @Override
+    protected double computeMaxWidth(double height) {
+        return getVariant() == M3ButtonGroupVariant.STANDARD
+                ? prefWidth(height)
+                : super.computeMaxWidth(height);
+    }
+
     /// Returns the user-agent stylesheet for M3FX button groups.
     @Override
     public String getUserAgentStylesheet() {

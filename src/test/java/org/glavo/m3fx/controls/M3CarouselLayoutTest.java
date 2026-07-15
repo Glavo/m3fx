@@ -5,6 +5,7 @@ package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
 import javafx.geometry.NodeOrientation;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.input.MouseButton;
@@ -24,6 +25,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -150,6 +152,8 @@ final class M3CarouselLayoutTest {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Carousel> carouselReference = new AtomicReference<>();
         AtomicReference<@Nullable ScrollPane> viewportReference = new AtomicReference<>();
+        AtomicReference<@Nullable Double> hvalueAfterInteractionReference = new AtomicReference<>();
+        AtomicBoolean interactionStarted = new AtomicBoolean();
 
         try {
             FxTestUtils.runOnFxThreadWhen(
@@ -158,28 +162,18 @@ final class M3CarouselLayoutTest {
                         ScrollPane viewport = Objects.requireNonNull(viewportReference.get(), "viewport");
                         Pane root = (Pane) carousel.getScene().getRoot();
                         root.layout();
-                        return carousel.getSelectedIndex() == 2
-                                && Math.abs(viewport.getHvalue() - 2.0 / 3.0) < 0.03;
-                    },
-                    () -> {
-                        @Nullable M3Carousel carousel = carouselReference.get();
-                        @Nullable ScrollPane viewport = viewportReference.get();
-                        return "full-screen carousel did not snap to the nearest item: selected="
-                                + (carousel == null ? "missing" : carousel.getSelectedIndex())
-                                + ", hvalue=" + (viewport == null ? "missing" : viewport.getHvalue());
-                    },
-                    () -> {
-                        M3Carousel carousel = carousel(280.0, 280.0, 280.0, 280.0);
-                        carousel.setCarouselLayout(M3CarouselLayout.FULL_SCREEN);
-                        carousel.selectIndex(0);
-                        Stage stage = show(carousel, 480.0, 150.0);
-                        layout(stage, carousel, 480.0, 120.0);
-                        ScrollPane viewport = viewport(carousel);
 
-                        stageReference.set(stage);
-                        carouselReference.set(carousel);
-                        viewportReference.set(viewport);
-                        Platform.runLater(() -> {
+                        if (!interactionStarted.get()) {
+                            @Nullable Node content = viewport.getContent();
+                            double viewportWidth = viewport.getViewportBounds().getWidth();
+                            if (content == null
+                                    || carousel.getScene().getFocusOwner() == null
+                                    || viewportWidth <= 0.0
+                                    || content.getLayoutBounds().getWidth() <= viewportWidth) {
+                                return false;
+                            }
+
+                            interactionStarted.set(true);
                             viewport.fireEvent(new MouseEvent(
                                     MouseEvent.MOUSE_DRAGGED,
                                     8.0,
@@ -201,7 +195,38 @@ final class M3CarouselLayoutTest {
                                     new PickResult(viewport, 8.0, 8.0)
                             ));
                             viewport.setHvalue(0.68);
-                        });
+                            hvalueAfterInteractionReference.set(viewport.getHvalue());
+                            return false;
+                        }
+
+                        return carousel.getSelectedIndex() == 2
+                                && Math.abs(viewport.getHvalue() - 2.0 / 3.0) < 0.03;
+                    },
+                    () -> {
+                        @Nullable M3Carousel carousel = carouselReference.get();
+                        @Nullable ScrollPane viewport = viewportReference.get();
+                        @Nullable Node content = viewport == null ? null : viewport.getContent();
+                        return "full-screen carousel did not snap to the nearest item: selected="
+                                + (carousel == null ? "missing" : carousel.getSelectedIndex())
+                                + ", hvalue=" + (viewport == null ? "missing" : viewport.getHvalue())
+                                + ", interactionStarted=" + interactionStarted.get()
+                                + ", hvalueAfterInteraction=" + hvalueAfterInteractionReference.get()
+                                + ", viewportWidth="
+                                + (viewport == null ? "missing" : viewport.getViewportBounds().getWidth())
+                                + ", contentWidth="
+                                + (content == null ? "missing" : content.getLayoutBounds().getWidth());
+                    },
+                    () -> {
+                        M3Carousel carousel = carousel(280.0, 280.0, 280.0, 280.0);
+                        carousel.setCarouselLayout(M3CarouselLayout.FULL_SCREEN);
+                        carousel.selectIndex(0);
+                        Stage stage = show(carousel, 480.0, 150.0);
+                        layout(stage, carousel, 480.0, 120.0);
+                        ScrollPane viewport = viewport(carousel);
+
+                        stageReference.set(stage);
+                        carouselReference.set(carousel);
+                        viewportReference.set(viewport);
                     },
                     () -> {
                         M3Carousel carousel = Objects.requireNonNull(carouselReference.get(), "carousel");

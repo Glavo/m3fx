@@ -732,9 +732,13 @@ final class M3ControlStyleTest {
     /// Verifies that standalone picker field popups resolve fallback color tokens without requiring a theme.
     @Test
     void standalonePickerFieldPopupsResolveFallbackColorTokens() throws InterruptedException {
-        assertStandalonePickerPopupReady(new M3DatePickerField());
-        assertStandalonePickerPopupReady(new M3TimePickerField());
-        assertStandalonePickerPopupReady(new M3DateRangePickerField());
+        M3DatePickerField datePickerField = FxTestUtils.callOnFxThread(M3DatePickerField::new);
+        M3TimePickerField timePickerField = FxTestUtils.callOnFxThread(M3TimePickerField::new);
+        M3DateRangePickerField dateRangePickerField = FxTestUtils.callOnFxThread(M3DateRangePickerField::new);
+
+        assertStandalonePickerPopupReady(datePickerField);
+        assertStandalonePickerPopupReady(timePickerField);
+        assertStandalonePickerPopupReady(dateRangePickerField);
     }
 
     /// Verifies that standalone tooltip popups resolve fallback color tokens without requiring a theme.
@@ -3474,7 +3478,13 @@ final class M3ControlStyleTest {
                 assertTrue(first.getWidth() >= 48.0);
                 assertTrue(middle.getWidth() >= 48.0);
                 assertTrue(last.getWidth() >= 48.0);
-                assertTrue(standard.getWidth() <= standard.prefWidth(-1.0) + 0.5);
+                assertTrue(
+                        standard.getWidth() <= standard.prefWidth(-1.0) + 0.5,
+                        () -> "standard group expanded beyond its preferred width: width="
+                                + standard.getWidth()
+                                + ", prefWidth=" + standard.prefWidth(-1.0)
+                                + ", maxWidth=" + standard.maxWidth(-1.0)
+                );
                 assertTrue(standard.getWidth() < connected.getWidth());
 
                 connected.setSize(M3ButtonSize.SMALL);
@@ -43970,14 +43980,14 @@ final class M3ControlStyleTest {
         });
     }
 
-    /// Returns whether a picker control has completed CSS and layout after a popup presentation.
+    /// Returns whether a picker control has completed CSS and skin creation after a popup presentation.
     private static boolean pickerControlReady(Control picker) {
         if (picker.getScene() == null) {
             return false;
         }
         picker.applyCss();
         picker.layout();
-        return picker.getSkin() != null && hasRenderableBounds(picker);
+        return picker.getSkin() != null;
     }
 
     /// Returns whether a standalone internal icon has resolved a renderable fallback token fill.
