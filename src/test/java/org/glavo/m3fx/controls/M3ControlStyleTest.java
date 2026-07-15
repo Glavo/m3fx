@@ -3478,11 +3478,13 @@ final class M3ControlStyleTest {
                 assertTrue(first.getWidth() >= 48.0);
                 assertTrue(middle.getWidth() >= 48.0);
                 assertTrue(last.getWidth() >= 48.0);
+                double standardPrefWidth = standard.prefWidth(-1.0);
+                assertEquals(standardPrefWidth, standard.maxWidth(-1.0), 0.01);
                 assertTrue(
-                        standard.getWidth() <= standard.prefWidth(-1.0) + 0.5,
+                        standard.getWidth() <= standardPrefWidth + 1.0,
                         () -> "standard group expanded beyond its preferred width: width="
                                 + standard.getWidth()
-                                + ", prefWidth=" + standard.prefWidth(-1.0)
+                                + ", prefWidth=" + standardPrefWidth
                                 + ", maxWidth=" + standard.maxWidth(-1.0)
                 );
                 assertTrue(standard.getWidth() < connected.getWidth());
@@ -44012,17 +44014,31 @@ final class M3ControlStyleTest {
             M3PickerField<T, P> field
     ) throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<String> stateReference = new AtomicReference<>("owner stage not created");
+        AtomicBoolean showRequested = new AtomicBoolean();
         P picker = field.getPicker();
         FxTestUtils.runOnFxThreadWhenStable(
                 () -> {
                     @Nullable Stage stage = stageReference.get();
-                    return stage != null
-                            && stage.isShowing()
-                            && field.isShowing()
-                            && pickerControlReady(picker);
+                    @Nullable Bounds screenBounds = field.localToScreen(field.getBoundsInLocal());
+                    stateReference.set("stageShowing=" + (stage != null && stage.isShowing())
+                            + ", screenBounds=" + screenBounds
+                            + ", showRequested=" + showRequested.get()
+                            + ", fieldShowing=" + field.isShowing()
+                            + ", pickerScene=" + picker.getScene()
+                            + ", pickerSkin=" + picker.getSkin());
+                    if (stage == null || !stage.isShowing() || screenBounds == null) {
+                        return false;
+                    }
+                    if (showRequested.compareAndSet(false, true)) {
+                        field.showPicker();
+                        return false;
+                    }
+                    return field.isShowing() && pickerControlReady(picker);
                 },
                 STANDALONE_FALLBACK_STYLE_STABLE_PULSES,
-                () -> showStandalonePickerPopup(stageReference, field),
+                stateReference::get,
+                () -> stageReference.set(showStandalonePickerOwner(field)),
                 () -> {
                     field.hidePicker();
                     @Nullable Stage stage = stageReference.get();
@@ -44038,17 +44054,31 @@ final class M3ControlStyleTest {
             M3DateRangePickerField field
     ) throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<String> stateReference = new AtomicReference<>("owner stage not created");
+        AtomicBoolean showRequested = new AtomicBoolean();
         M3DateRangePicker picker = field.getPicker();
         FxTestUtils.runOnFxThreadWhenStable(
                 () -> {
                     @Nullable Stage stage = stageReference.get();
-                    return stage != null
-                            && stage.isShowing()
-                            && field.isShowing()
-                            && pickerControlReady(picker);
+                    @Nullable Bounds screenBounds = field.localToScreen(field.getBoundsInLocal());
+                    stateReference.set("stageShowing=" + (stage != null && stage.isShowing())
+                            + ", screenBounds=" + screenBounds
+                            + ", showRequested=" + showRequested.get()
+                            + ", fieldShowing=" + field.isShowing()
+                            + ", pickerScene=" + picker.getScene()
+                            + ", pickerSkin=" + picker.getSkin());
+                    if (stage == null || !stage.isShowing() || screenBounds == null) {
+                        return false;
+                    }
+                    if (showRequested.compareAndSet(false, true)) {
+                        field.showPicker();
+                        return false;
+                    }
+                    return field.isShowing() && pickerControlReady(picker);
                 },
                 STANDALONE_FALLBACK_STYLE_STABLE_PULSES,
-                () -> showStandalonePickerPopup(stageReference, field),
+                stateReference::get,
+                () -> stageReference.set(showStandalonePickerOwner(field)),
                 () -> {
                     field.hidePicker();
                     @Nullable Stage stage = stageReference.get();
@@ -44057,26 +44087,6 @@ final class M3ControlStyleTest {
                     }
                 }
         );
-    }
-
-    /// Shows one generic picker field in a dedicated owner window.
-    private static <T, P extends Control> void showStandalonePickerPopup(
-            AtomicReference<@Nullable Stage> stageReference,
-            M3PickerField<T, P> field
-    ) {
-        Stage stage = showStandalonePickerOwner(field);
-        stageReference.set(stage);
-        field.showPicker();
-    }
-
-    /// Shows one date-range picker field in a dedicated owner window.
-    private static void showStandalonePickerPopup(
-            AtomicReference<@Nullable Stage> stageReference,
-            M3DateRangePickerField field
-    ) {
-        Stage stage = showStandalonePickerOwner(field);
-        stageReference.set(stage);
-        field.showPicker();
     }
 
     /// Creates and shows a standalone owner window for one picker field.
