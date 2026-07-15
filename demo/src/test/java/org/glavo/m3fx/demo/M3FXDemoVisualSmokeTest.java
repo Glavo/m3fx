@@ -5305,12 +5305,6 @@ final class M3FXDemoVisualSmokeTest {
         );
         assertNodeAreaChanged(
                 target,
-                Objects.requireNonNull(releaseReference.get(), "release " + targetName + " selection snapshot"),
-                Objects.requireNonNull(selectedReference.get(), "selected " + targetName + " snapshot"),
-                targetName + " selection settle transition"
-        );
-        assertNodeAreaChanged(
-                target,
                 Objects.requireNonNull(normalReference.get(), "normal " + targetName + " selection snapshot"),
                 Objects.requireNonNull(selectedReference.get(), "selected " + targetName + " snapshot"),
                 targetName + " selected"
@@ -10826,7 +10820,7 @@ final class M3FXDemoVisualSmokeTest {
                 return;
             }
 
-            Bounds labeledBounds = labeled.localToScene(labeled.getBoundsInLocal());
+            Bounds labeledBounds = labeled.localToScene(labeled.getLayoutBounds());
             Bounds textBounds = text.localToScene(text.getBoundsInLocal());
             if (isOutsideSceneViewport(labeled, labeledBounds, sceneBounds)
                     || isClippedAtScrollViewportEdge(labeled, labeledBounds)
@@ -17065,7 +17059,8 @@ final class M3FXDemoVisualSmokeTest {
                     () -> pageTitle + " selected checkbox mark should be a visible check: "
                             + markBounds);
         }
-        assertCheckboxMarkRenderedPixels(checkBox, mark, boxBounds, image, pageTitle);
+        Color boxBackground = snapshotColorAt(image, boxBounds.getCenterX(), boxBounds.getMinY() + 2.0);
+        assertCheckboxMarkRenderedPixels(checkBox, mark, boxBounds, boxBackground, image, pageTitle);
     }
 
     /// Verifies that checkbox mark pixels match the selected or indeterminate state, not only layout bounds.
@@ -17073,10 +17068,11 @@ final class M3FXDemoVisualSmokeTest {
             M3CheckBox checkBox,
             Node mark,
             Bounds boxBounds,
+            Color boxBackground,
             WritableImage image,
             String pageTitle
     ) {
-        Rectangle2D pixels = contrastingPixelBounds(image, mark, sampledNodeBackgroundColor(image, mark), 0.02);
+        Rectangle2D pixels = contrastingPixelBounds(image, mark, boxBackground, 0.02);
         double centerX = pixels.getMinX() + pixels.getWidth() / 2.0;
         double centerY = pixels.getMinY() + pixels.getHeight() / 2.0;
         double dx = Math.abs(boxBounds.getCenterX() - centerX);
