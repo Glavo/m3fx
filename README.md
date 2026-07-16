@@ -82,7 +82,50 @@ public final class DemoApp extends Application {
 }
 ```
 
-`M3ThemeManager` is a convenience installer, not a required runtime singleton. Applications can install the base stylesheet and generated theme stylesheet separately when they need more control over theme ownership.
+`M3ThemeManager` is a stateless installer rather than a required runtime singleton. It can install a theme on a complete `Scene` or on a `Parent` subtree. Theme stylesheet compilation is an internal implementation detail, so applications should use the manager instead of constructing generated stylesheet URLs.
+
+## Per-Control Configuration
+
+Use JavaFX properties for component semantics, behavior, and common geometry:
+
+```java
+M3Button button = new M3Button("Save");
+button.setVariant(M3ButtonVariant.TONAL);
+button.setSize(M3ButtonSize.LARGE);
+button.setButtonShape(M3ButtonShape.SQUARE);
+
+M3ListPane list = new M3ListPane();
+list.setListStyle(M3ListStyle.SEGMENTED);
+list.setItemSpacing(6.0);
+```
+
+Install a local theme when one application section needs a different token set without changing the complete scene:
+
+```java
+VBox themedSection = new VBox();
+M3ThemeManager.install(themedSection, sectionTheme);
+```
+
+Use CSS for brand colors, specialized typography, or visual treatments outside the component property model. Color, typography, and elevation remain theme-token concerns rather than being duplicated as properties on every control.
+
+A card becomes an interactive whole only when it has an action handler:
+
+```java
+M3Card projectCard = new M3Card(projectSummary);
+projectCard.setOnAction(event -> openProject());
+```
+
+Leave `onAction` unset when a card contains independent buttons or links. This keeps the card passive and lets its descendants own pointer and keyboard actions.
+
+Style an application-owned JavaFX scroll pane explicitly; this installs only the Material scrollbar visuals. Smooth wheel motion remains an independent opt-in:
+
+```java
+ScrollPane viewport = new ScrollPane(content);
+M3ScrollPanes.style(viewport);
+M3ScrollPanes.enableSmoothScrolling(viewport);
+```
+
+M3FX-owned scrolling controls, including `M3ListView` and `M3TextArea`, style their internal scrollbars automatically. Ordinary JavaFX scroll panes remain unchanged until passed to `M3ScrollPanes.style(...)`.
 
 ## Component Areas
 

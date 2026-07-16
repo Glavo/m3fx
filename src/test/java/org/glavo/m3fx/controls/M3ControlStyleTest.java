@@ -40,6 +40,7 @@ import javafx.scene.control.DialogEvent;
 import javafx.scene.control.DialogPane;
 import javafx.scene.control.Label;
 import javafx.scene.control.Labeled;
+import javafx.scene.control.ScrollBar;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Skin;
 import javafx.scene.control.TextArea;
@@ -1982,6 +1983,18 @@ final class M3ControlStyleTest {
                 round.disarm();
                 root.applyCss();
                 assertEquals(999.0, round.getContainerShape(), 0.0001);
+
+                square.arm();
+                root.applyCss();
+                assertEquals(
+                        pressedShapes[index],
+                        square.getContainerShape(),
+                        0.0001,
+                        () -> "pressed square shape mismatch for " + square.getSize()
+                );
+                square.disarm();
+                root.applyCss();
+                assertEquals(squareShapes[index], square.getContainerShape(), 0.0001);
             }
 
             assertEquals(16.0, roundButtons.get(1).getHorizontalPadding(), 0.0001);
@@ -1989,6 +2002,24 @@ final class M3ControlStyleTest {
 
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
             root.applyCss();
+            for (int index = 0; index < M3ButtonSize.values().length; index++) {
+                M3Button round = roundButtons.get(index);
+                M3Button square = squareButtons.get(index);
+                double roundRestingShape = round.getContainerShape();
+                double squareRestingShape = square.getContainerShape();
+
+                round.arm();
+                square.arm();
+                root.applyCss();
+                assertEquals(roundRestingShape, round.getContainerShape(), 0.0001);
+                assertEquals(squareRestingShape, square.getContainerShape(), 0.0001);
+
+                round.disarm();
+                square.disarm();
+                root.applyCss();
+                assertEquals(roundRestingShape, round.getContainerShape(), 0.0001);
+                assertEquals(squareRestingShape, square.getContainerShape(), 0.0001);
+            }
             assertEquals(24.0, roundButtons.get(1).getHorizontalPadding(), 0.0001);
             assertEquals(12.0, smallText.getHorizontalPadding(), 0.0001);
         });
@@ -2811,6 +2842,76 @@ final class M3ControlStyleTest {
         assertIconButtonMetrics(medium, mediumIcon, 72.0, 56.0, 24.0, 16.0);
         assertIconButtonMetrics(large, largeIcon, 128.0, 96.0, 32.0, 28.0);
         assertIconButtonMetrics(extraLarge, extraLargeIcon, 104.0, 136.0, 40.0, 999.0);
+
+        List<M3IconButton> buttons = List.of(extraSmall, small, medium, large, extraLarge);
+        for (M3IconButton button : buttons) {
+            double restingShape = button.getContainerShape();
+            button.arm();
+            root.applyCss();
+            assertEquals(restingShape, button.getContainerShape(), 0.0001);
+            button.disarm();
+            root.applyCss();
+            assertEquals(restingShape, button.getContainerShape(), 0.0001);
+        }
+
+        FxTestUtils.runOnFxThread(() -> {
+            List<M3IconButton> expressiveRoundButtons = new ArrayList<>();
+            List<M3IconButton> expressiveSquareButtons = new ArrayList<>();
+            for (M3ButtonSize size : M3ButtonSize.values()) {
+                expressiveRoundButtons.add(createIconButton(
+                        new M3Icon("R"),
+                        size,
+                        M3IconButtonWidth.DEFAULT,
+                        M3ButtonShape.ROUND
+                ));
+                expressiveSquareButtons.add(createIconButton(
+                        new M3Icon("S"),
+                        size,
+                        M3IconButtonWidth.DEFAULT,
+                        M3ButtonShape.SQUARE
+                ));
+            }
+            HBox expressiveRoot = new HBox();
+            expressiveRoot.getChildren().addAll(expressiveRoundButtons);
+            expressiveRoot.getChildren().addAll(expressiveSquareButtons);
+            Scene expressiveScene = new Scene(expressiveRoot, 1800.0, 180.0);
+            Stage stage = new Stage();
+            try {
+                M3ThemeManager.install(expressiveScene, M3Theme.fromSeed(
+                        Color.web("#6750a4"),
+                        M3Profile.EXPRESSIVE_2025,
+                        Brightness.LIGHT
+                ));
+                stage.setScene(expressiveScene);
+                stage.show();
+                expressiveRoot.applyCss();
+                expressiveRoot.layout();
+
+                double[] expressivePressedShapes = {8.0, 8.0, 12.0, 16.0, 16.0};
+                for (int index = 0; index < M3ButtonSize.values().length; index++) {
+                    M3IconButton expressiveRound = expressiveRoundButtons.get(index);
+                    M3IconButton expressiveSquare = expressiveSquareButtons.get(index);
+                    double roundRestingShape = expressiveRound.getContainerShape();
+                    double squareRestingShape = expressiveSquare.getContainerShape();
+
+                    expressiveRound.arm();
+                    expressiveSquare.arm();
+                    expressiveRoot.applyCss();
+                    expressiveRoot.layout();
+                    assertEquals(expressivePressedShapes[index], expressiveRound.getContainerShape(), 0.0001);
+                    assertEquals(expressivePressedShapes[index], expressiveSquare.getContainerShape(), 0.0001);
+
+                    expressiveRound.disarm();
+                    expressiveSquare.disarm();
+                    expressiveRoot.applyCss();
+                    expressiveRoot.layout();
+                    assertEquals(roundRestingShape, expressiveRound.getContainerShape(), 0.0001);
+                    assertEquals(squareRestingShape, expressiveSquare.getContainerShape(), 0.0001);
+                }
+            } finally {
+                stage.close();
+            }
+        });
     }
 
     /// Verifies that toggle icon button selected and pressed shapes resolve from Material metrics.
@@ -2831,13 +2932,136 @@ final class M3ControlStyleTest {
         HBox root = new HBox(extraSmall, medium, largeSquare, pressedSmall);
         Scene scene = new Scene(root);
 
-        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        M3ThemeManager.install(scene, M3Theme.fromSeed(
+                Color.web("#6750a4"),
+                M3Profile.EXPRESSIVE_2025,
+                Brightness.LIGHT
+        ));
         root.applyCss();
 
         assertIconToggleButtonMetrics(extraSmall, extraSmallIcon, 32.0, 32.0, 20.0, 12.0);
         assertIconToggleButtonMetrics(medium, mediumIcon, 72.0, 56.0, 24.0, 16.0);
         assertIconToggleButtonMetrics(largeSquare, largeIcon, 128.0, 96.0, 32.0, 999.0);
         assertEquals(8.0, pressedSmall.getContainerShape(), 0.0001);
+
+        extraSmall.arm();
+        largeSquare.arm();
+        root.applyCss();
+        assertEquals(8.0, extraSmall.getContainerShape(), 0.0001);
+        assertEquals(16.0, largeSquare.getContainerShape(), 0.0001);
+        extraSmall.disarm();
+        largeSquare.disarm();
+        root.applyCss();
+        assertEquals(12.0, extraSmall.getContainerShape(), 0.0001);
+        assertEquals(999.0, largeSquare.getContainerShape(), 0.0001);
+
+        pressedSmall.disarm();
+        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        root.applyCss();
+        assertEquals(999.0, extraSmall.getContainerShape(), 0.0001);
+        assertEquals(999.0, medium.getContainerShape(), 0.0001);
+        assertEquals(28.0, largeSquare.getContainerShape(), 0.0001);
+        assertEquals(999.0, pressedSmall.getContainerShape(), 0.0001);
+
+        pressedSmall.arm();
+        root.applyCss();
+        assertEquals(999.0, pressedSmall.getContainerShape(), 0.0001);
+        pressedSmall.disarm();
+        root.applyCss();
+        assertEquals(999.0, pressedSmall.getContainerShape(), 0.0001);
+    }
+
+    /// Verifies selected and pressed Toggle icon-button shapes across every size and Material profile.
+    @Test
+    void iconToggleButtonShapesFollowProfilesAcrossEverySize() {
+        FxTestUtils.runOnFxThread(() -> {
+            List<M3IconToggleButton> roundButtons = new ArrayList<>();
+            List<M3IconToggleButton> squareButtons = new ArrayList<>();
+            for (M3ButtonSize size : M3ButtonSize.values()) {
+                roundButtons.add(createIconToggleButton(
+                        new M3Icon("R"),
+                        size,
+                        M3IconButtonWidth.DEFAULT,
+                        M3ButtonShape.ROUND,
+                        true
+                ));
+                squareButtons.add(createIconToggleButton(
+                        new M3Icon("S"),
+                        size,
+                        M3IconButtonWidth.DEFAULT,
+                        M3ButtonShape.SQUARE,
+                        true
+                ));
+            }
+
+            HBox root = new HBox(8.0);
+            root.getChildren().addAll(roundButtons);
+            root.getChildren().addAll(squareButtons);
+            Scene scene = new Scene(root, 1800.0, 180.0);
+            List<M3Theme> themes = List.of(
+                    M3Theme.fromSeed(
+                            Color.web("#6750a4"),
+                            M3Profile.EXPRESSIVE_2025,
+                            Brightness.LIGHT
+                    ),
+                    M3Theme.defaultTheme()
+            );
+            Stage stage = new Stage();
+            try {
+                stage.setScene(scene);
+                stage.show();
+                for (M3Theme theme : themes) {
+                    M3ThemeManager.install(scene, theme);
+                    root.applyCss();
+                    root.layout();
+                    boolean expressive = theme.profile() == M3Profile.EXPRESSIVE_2025;
+
+                    for (int index = 0; index < M3ButtonSize.values().length; index++) {
+                        M3ButtonSize size = M3ButtonSize.values()[index];
+                        M3ComponentTokens.IconButtonSizeTokens tokens = switch (size) {
+                            case EXTRA_SMALL -> theme.tokens().componentTokens().iconButton().extraSmall();
+                            case SMALL -> theme.tokens().componentTokens().iconButton().small();
+                            case MEDIUM -> theme.tokens().componentTokens().iconButton().medium();
+                            case LARGE -> theme.tokens().componentTokens().iconButton().large();
+                            case EXTRA_LARGE -> theme.tokens().componentTokens().iconButton().extraLarge();
+                        };
+                        M3IconToggleButton round = roundButtons.get(index);
+                        M3IconToggleButton square = squareButtons.get(index);
+                        double selectedRoundShape = expressive
+                                ? tokens.selectedRoundContainerShape()
+                                : tokens.roundContainerShape();
+                        double selectedSquareShape = expressive
+                                ? tokens.selectedSquareContainerShape()
+                                : tokens.squareContainerShape();
+
+                        assertTrue(round.isSelected());
+                        assertTrue(square.isSelected());
+                        assertEquals(selectedRoundShape, round.getContainerShape(), 0.0001);
+                        assertEquals(selectedSquareShape, square.getContainerShape(), 0.0001);
+
+                        round.arm();
+                        square.arm();
+                        root.applyCss();
+                        double pressedRoundShape = expressive
+                                ? tokens.pressedContainerShape()
+                                : selectedRoundShape;
+                        double pressedSquareShape = expressive
+                                ? tokens.pressedContainerShape()
+                                : selectedSquareShape;
+                        assertEquals(pressedRoundShape, round.getContainerShape(), 0.0001);
+                        assertEquals(pressedSquareShape, square.getContainerShape(), 0.0001);
+
+                        round.disarm();
+                        square.disarm();
+                        root.applyCss();
+                        assertEquals(selectedRoundShape, round.getContainerShape(), 0.0001);
+                        assertEquals(selectedSquareShape, square.getContainerShape(), 0.0001);
+                    }
+                }
+            } finally {
+                stage.close();
+            }
+        });
     }
 
     /// Verifies that button groups assign connected position style classes.
@@ -3664,10 +3888,10 @@ final class M3ControlStyleTest {
 
             assertTrue(standaloneFirst.getPseudoClassStates().stream()
                     .anyMatch(state -> state.getPseudoClassName().equals("connected-group")));
-            assertRegionRadii(standaloneFirst, 28.0, 28.0, 28.0, 28.0);
+            assertRegionRadii(standaloneFirst, 28.0, 8.0, 8.0, 28.0);
             assertRegionRadii(standaloneLast, 8.0, 28.0, 28.0, 8.0);
             WritableImage standalone = snapshotImageOnFxThread(standaloneRoot);
-            assertStateLayerRadii(standaloneFirst, 28.0, 28.0, 28.0, 28.0);
+            assertStateLayerRadii(standaloneFirst, 28.0, 8.0, 8.0, 28.0);
             assertStateLayerRadii(standaloneLast, 8.0, 28.0, 28.0, 8.0);
             assertRenderedTopRightCorner(standaloneFirst, standalone, true, Color.WHITE);
             assertRenderedTopLeftCorner(standaloneLast, standalone, false, Color.WHITE);
@@ -24774,6 +24998,327 @@ final class M3ControlStyleTest {
         });
     }
 
+    /// Verifies that scroll styling is explicit for JavaFX controls and automatic for M3FX-owned viewports.
+    @Test
+    void materialScrollbarsInstallWithoutGlobalJavaFxOverrides() {
+        FxTestUtils.runOnFxThread(() -> {
+            VBox styledContent = new VBox();
+            VBox plainContent = new VBox();
+            for (int index = 0; index < 24; index++) {
+                styledContent.getChildren().add(new Label("Styled row " + index));
+                plainContent.getChildren().add(new Label("Plain row " + index));
+            }
+
+            ScrollPane styled = new ScrollPane(styledContent);
+            styled.setPrefSize(180.0, 120.0);
+            M3ScrollPanes.style(styled);
+            M3ScrollPanes.style(styled);
+
+            ScrollPane plain = new ScrollPane(plainContent);
+            plain.setPrefSize(180.0, 120.0);
+
+            M3TextArea textArea = new M3TextArea("One\nTwo\nThree\nFour\nFive\nSix\nSeven\nEight");
+            textArea.setPrefSize(220.0, 96.0);
+
+            M3ListView<String> listView = new M3ListView<>();
+            for (int index = 0; index < 32; index++) {
+                listView.getItems().add("List row " + index);
+            }
+            listView.setFixedCellSize(56.0);
+            listView.setPrefSize(220.0, 120.0);
+
+            HBox root = new HBox(12.0, styled, plain, textArea, listView);
+            Scene scene = new Scene(root, 880.0, 180.0);
+            M3Theme theme = M3Theme.defaultTheme();
+            Stage stage = new Stage();
+            try {
+                M3ThemeManager.install(scene, theme);
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                assertTrue(styled.getStyleClass().contains(M3ScrollPanes.STYLE_CLASS));
+                assertEquals(1, styled.getStylesheets().stream()
+                        .filter(stylesheet -> stylesheet.endsWith("/scroll.css"))
+                        .count());
+                assertFalse(plain.getStyleClass().contains(M3ScrollPanes.STYLE_CLASS));
+                assertTrue(plain.getStylesheets().stream()
+                        .noneMatch(stylesheet -> stylesheet.endsWith("/scroll.css")));
+
+                ScrollBar styledVerticalBar = styled.lookupAll(".scroll-bar").stream()
+                        .filter(ScrollBar.class::isInstance)
+                        .map(ScrollBar.class::cast)
+                        .filter(scrollBar -> scrollBar.getOrientation() == Orientation.VERTICAL)
+                        .findFirst()
+                        .orElseThrow(() -> new AssertionError("styled vertical scrollbar"));
+                Region styledThumb = assertInstanceOf(
+                        Region.class,
+                        styledVerticalBar.lookup(".thumb"),
+                        "styled scrollbar thumb"
+                );
+                assertEquals(16.0, styledVerticalBar.getPrefWidth(), 0.0001);
+                assertEquals(0.48, styledThumb.getOpacity(), 0.0001);
+                assertEquals(
+                        theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.PRIMARY),
+                        styledThumb.getBackground().getFills().get(0).getFill(),
+                        "scrollbar surface tint"
+                );
+
+                styledVerticalBar.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
+                root.applyCss();
+                assertEquals(0.64, styledThumb.getOpacity(), 0.0001);
+                styledVerticalBar.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
+                root.applyCss();
+                assertEquals(0.78, styledThumb.getOpacity(), 0.0001);
+                styledVerticalBar.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), false);
+                styledVerticalBar.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), false);
+
+                ScrollPane textAreaViewport = assertInstanceOf(
+                        ScrollPane.class,
+                        textArea.lookup(".scroll-pane"),
+                        "text area viewport"
+                );
+                assertTrue(textAreaViewport.getStyleClass().contains(M3ScrollPanes.STYLE_CLASS));
+                assertEquals(1, textAreaViewport.getStylesheets().stream()
+                        .filter(stylesheet -> stylesheet.endsWith("/scroll.css"))
+                        .count());
+
+                VirtualFlow<?> flow = assertInstanceOf(
+                        VirtualFlow.class,
+                        listView.lookup(".m3-list-view-flow"),
+                        "list view virtual flow"
+                );
+                List<ScrollBar> listScrollBars = flow.lookupAll(".scroll-bar").stream()
+                        .filter(ScrollBar.class::isInstance)
+                        .map(ScrollBar.class::cast)
+                        .toList();
+                assertFalse(listScrollBars.isEmpty(), "list view should materialize internal scrollbars");
+                assertTrue(listScrollBars.stream().allMatch(scrollBar ->
+                        scrollBar.getStyleClass().contains(M3ScrollPanes.SCROLL_BAR_STYLE_CLASS)));
+                assertTrue(listScrollBars.stream().allMatch(scrollBar ->
+                        scrollBar.getStylesheets().stream().filter(stylesheet ->
+                                stylesheet.endsWith("/scroll.css")).count() == 1));
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies Standard and Segmented static-list spacing, including non-item boundaries.
+    @Test
+    void listPaneAppliesSegmentedSpacingOnlyBetweenAdjacentItems() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3ListItem first = new M3ListItem("First");
+            M3ListItem second = new M3ListItem("Second");
+            M3ListSectionHeader header = new M3ListSectionHeader("Section");
+            M3ListItem afterHeader = new M3ListItem("After header");
+            M3Divider divider = new M3Divider();
+            M3ListItem afterDivider = new M3ListItem("After divider");
+            M3ListItem last = new M3ListItem("Last");
+
+            M3ListPane list = listPane(first, second, header, afterHeader, divider, afterDivider, last);
+            list.setListStyle(M3ListStyle.SEGMENTED);
+            list.setPrefWidth(360.0);
+            VBox root = new VBox(list);
+            Scene scene = new Scene(root, 400.0, 520.0);
+            Stage stage = new Stage();
+            try {
+                M3ThemeManager.install(scene, M3Theme.fromSeed(
+                        Color.web("#6750a4"),
+                        M3Profile.EXPRESSIVE_2025,
+                        Brightness.LIGHT
+                ));
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                assertEquals(M3ListStyle.SEGMENTED, list.getListStyle());
+                assertTrue(list.getStyleClass().contains(M3ListStyle.SEGMENTED.styleClass()));
+                assertFalse(list.getStyleClass().contains(M3ListStyle.STANDARD.styleClass()));
+                assertEquals(2.0, list.getItemSpacing(), 0.0001);
+                assertEquals(2.0, second.getLayoutY() - (first.getLayoutY() + first.getHeight()), 0.0001);
+                assertEquals(0.0, header.getLayoutY() - (second.getLayoutY() + second.getHeight()), 0.0001);
+                assertEquals(0.0, afterHeader.getLayoutY() - (header.getLayoutY() + header.getHeight()), 0.0001);
+                assertEquals(0.0, divider.getLayoutY() - (afterHeader.getLayoutY() + afterHeader.getHeight()), 0.0001);
+                assertEquals(0.0, afterDivider.getLayoutY() - (divider.getLayoutY() + divider.getHeight()), 0.0001);
+                assertEquals(2.0, last.getLayoutY() - (afterDivider.getLayoutY() + afterDivider.getHeight()), 0.0001);
+
+                list.setItemSpacing(6.0);
+                root.applyCss();
+                root.layout();
+                assertEquals(6.0, list.getItemSpacing(), 0.0001);
+                assertEquals(6.0, second.getLayoutY() - (first.getLayoutY() + first.getHeight()), 0.0001);
+                assertEquals(0.0, header.getLayoutY() - (second.getLayoutY() + second.getHeight()), 0.0001);
+
+                M3ListPane standard = listPane(new M3ListItem("A"), new M3ListItem("B"));
+                root.getChildren().add(standard);
+                root.applyCss();
+                root.layout();
+                assertEquals(M3ListStyle.STANDARD, standard.getListStyle());
+                assertEquals(0.0, standard.getItemSpacing(), 0.0001);
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that virtualized segmented gaps augment cell stride without shrinking fixed-height rows.
+    @Test
+    void listViewSegmentedSpacingPreservesFixedItemHeight() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3ListView<String> listView = new M3ListView<>();
+            for (int index = 0; index < 40; index++) {
+                listView.getItems().add("Row " + index);
+            }
+            listView.setListStyle(M3ListStyle.SEGMENTED);
+            listView.setFixedCellSize(56.0);
+            listView.setPrefSize(320.0, 180.0);
+
+            StackPane root = new StackPane(listView);
+            Scene scene = new Scene(root, 360.0, 220.0);
+            Stage stage = new Stage();
+            try {
+                M3ThemeManager.install(scene, M3Theme.fromSeed(
+                        Color.web("#6750a4"),
+                        M3Profile.EXPRESSIVE_2025,
+                        Brightness.LIGHT
+                ));
+                stage.setScene(scene);
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                assertEquals(2.0, listView.getItemSpacing(), 0.0001);
+                assertEquals(56.0, listView.getFixedCellSize(), 0.0001);
+                VirtualFlow<?> flow = assertInstanceOf(
+                        VirtualFlow.class,
+                        listView.lookup(".m3-list-view-flow")
+                );
+                assertEquals(0.0, flow.getFixedCellSize(), 0.0001);
+
+                List<? extends M3ListCell<?>> cells = listView.lookupAll("." + M3ListCell.STYLE_CLASS).stream()
+                        .filter(M3ListCell.class::isInstance)
+                        .map(node -> (M3ListCell<?>) node)
+                        .filter(cell -> !cell.isEmpty())
+                        .sorted((firstCell, secondCell) -> Integer.compare(firstCell.getIndex(), secondCell.getIndex()))
+                        .toList();
+                assertTrue(cells.size() >= 2);
+                M3ListCell<?> firstCell = cells.get(0);
+                M3ListCell<?> secondCell = cells.get(1);
+                M3ListItem firstRow = Objects.requireNonNull(firstCell.getListItem(), "first row");
+                M3ListItem secondRow = Objects.requireNonNull(secondCell.getListItem(), "second row");
+                assertEquals(58.0, firstCell.getHeight(), 0.0001);
+                assertEquals(56.0, firstRow.getHeight(), 0.0001);
+                assertEquals(
+                        2.0,
+                        secondRow.localToScene(secondRow.getBoundsInLocal()).getMinY()
+                                - firstRow.localToScene(firstRow.getBoundsInLocal()).getMaxY(),
+                        0.0001
+                );
+
+                listView.setItemSpacing(6.0);
+                root.applyCss();
+                root.layout();
+                cells = listView.lookupAll("." + M3ListCell.STYLE_CLASS).stream()
+                        .filter(M3ListCell.class::isInstance)
+                        .map(node -> (M3ListCell<?>) node)
+                        .filter(cell -> !cell.isEmpty())
+                        .sorted((firstVisible, secondVisible) ->
+                                Integer.compare(firstVisible.getIndex(), secondVisible.getIndex()))
+                        .toList();
+                assertEquals(62.0, cells.get(0).getHeight(), 0.0001);
+                assertEquals(56.0, Objects.requireNonNull(cells.get(0).getListItem(), "updated first row").getHeight(),
+                        0.0001);
+
+                listView.setFixedCellSize(64.0);
+                root.applyCss();
+                root.layout();
+                cells = listView.lookupAll("." + M3ListCell.STYLE_CLASS).stream()
+                        .filter(M3ListCell.class::isInstance)
+                        .map(node -> (M3ListCell<?>) node)
+                        .filter(cell -> !cell.isEmpty())
+                        .sorted((firstVisible, secondVisible) ->
+                                Integer.compare(firstVisible.getIndex(), secondVisible.getIndex()))
+                        .toList();
+                assertEquals(70.0, cells.get(0).getHeight(), 0.0001);
+                assertEquals(64.0, Objects.requireNonNull(cells.get(0).getListItem(), "resized first row").getHeight(),
+                        0.0001);
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that segmented-list shapes follow the active profile and official interaction-state tokens.
+    @Test
+    void segmentedListShapesFollowProfileAndInteractionTokens() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3ListItem standardItem = new M3ListItem("Standard");
+            M3ListPane standardList = listPane(standardItem);
+            M3ListItem segmentedItem = new M3ListItem("Segmented");
+            M3ListPane segmentedList = listPane(segmentedItem);
+            segmentedList.setListStyle(M3ListStyle.SEGMENTED);
+
+            VBox root = new VBox(8.0, standardList, segmentedList);
+            Scene scene = new Scene(root, 360.0, 180.0);
+            M3Theme baseline = M3Theme.fromSeed(
+                    Color.web("#6750a4"),
+                    M3Profile.BASELINE_2021,
+                    Brightness.LIGHT
+            );
+            M3Theme expressive = M3Theme.fromSeed(
+                    Color.web("#6750a4"),
+                    M3Profile.EXPRESSIVE_2025,
+                    Brightness.LIGHT
+            );
+            Stage stage = new Stage();
+            try {
+                stage.setScene(scene);
+                M3ThemeManager.install(scene, baseline);
+                stage.show();
+                root.applyCss();
+                root.layout();
+                assertEquals(0.0, standardItem.getContainerShape(), 0.0001);
+                assertEquals(0.0, segmentedItem.getContainerShape(), 0.0001);
+
+                M3ThemeManager.install(scene, expressive);
+                root.applyCss();
+                root.layout();
+                assertEquals(0.0, standardItem.getContainerShape(), 0.0001);
+                assertEquals(expressive.tokens().shapeTokens().extraSmall(), segmentedItem.getContainerShape(), 0.0001);
+
+                PseudoClass hover = PseudoClass.getPseudoClass("hover");
+                segmentedItem.pseudoClassStateChanged(hover, true);
+                root.applyCss();
+                assertEquals(expressive.tokens().shapeTokens().medium(), segmentedItem.getContainerShape(), 0.0001);
+
+                segmentedItem.setDisable(true);
+                root.applyCss();
+                assertEquals(expressive.tokens().shapeTokens().extraSmall(), segmentedItem.getContainerShape(), 0.0001);
+
+                segmentedItem.setDisable(false);
+                segmentedItem.pseudoClassStateChanged(hover, false);
+                segmentedList.setSelectionMode(M3SelectionMode.SINGLE);
+                segmentedList.select(segmentedItem);
+                root.applyCss();
+                assertTrue(segmentedItem.isSelected());
+                assertTrue(segmentedItem.getPseudoClassStates().contains(PseudoClass.getPseudoClass("selected")));
+                assertEquals(expressive.tokens().shapeTokens().large(), segmentedItem.getContainerShape(), 0.0001);
+
+                segmentedItem.setSelected(false);
+                segmentedItem.setDisable(false);
+                segmentedItem.pseudoClassStateChanged(hover, false);
+                segmentedItem.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
+                root.applyCss();
+                assertEquals(expressive.tokens().shapeTokens().large(), segmentedItem.getContainerShape(), 0.0001);
+            } finally {
+                stage.close();
+            }
+        });
+    }
+
     /// Verifies that lists expose item selection policies.
     @Test
     void listGroupsItemsAndKeepsSelectionPolicy() {
@@ -36684,7 +37229,7 @@ final class M3ControlStyleTest {
             assertEquals(16.0, searchBar.getPadding().getLeft(), 0.0001);
             assertEquals(4.0, searchView.getPadding().getBottom(), 0.0001);
             assertEquals(64.0, searchResult.getOneLineHeight(), 0.0001);
-            assertEquals(10.0, searchResult.getContainerShape(), 0.0001);
+            assertEquals(0.0, searchResult.getContainerShape(), 0.0001);
             assertEquals(20.0, searchResult.getHorizontalPadding(), 0.0001);
             assertEquals(20.0, searchResult.getContentSpacing(), 0.0001);
             assertEquals(64.0, listItem.getOneLineHeight(), 0.0001);

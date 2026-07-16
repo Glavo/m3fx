@@ -153,6 +153,7 @@ final class ProjectContractTest {
                             M3ListItemSlotSize
                             M3ListPane
                             M3ListSectionHeader
+                            M3ListStyle
                             M3ListView
                             M3LoadingIndicator
                             M3LoadingIndicatorVariant
@@ -696,6 +697,8 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3ListItemSlotSize#ICON
             org.glavo.m3fx.controls.M3ListItemSlotSize#THUMBNAIL
             org.glavo.m3fx.controls.M3ListItemSlotSize#WIDE_THUMBNAIL
+            org.glavo.m3fx.controls.M3ListStyle#SEGMENTED
+            org.glavo.m3fx.controls.M3ListStyle#STANDARD
             org.glavo.m3fx.controls.M3LoadingIndicatorVariant#CONTAINED
             org.glavo.m3fx.controls.M3LoadingIndicatorVariant#DEFAULT
             org.glavo.m3fx.controls.M3MenuColorStyle#STANDARD

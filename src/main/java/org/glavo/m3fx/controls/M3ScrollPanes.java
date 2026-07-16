@@ -25,6 +25,7 @@ import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
+import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -58,11 +59,15 @@ public final class M3ScrollPanes {
     private M3ScrollPanes() {
     }
 
-    /// Adds the Material scroll style class to a JavaFX scroll pane.
+    /// Installs the Material scroll style class, fallback tokens, and scrollbar stylesheet on a JavaFX scroll pane.
+    ///
+    /// Repeated calls are idempotent and do not enable smooth wheel scrolling.
     ///
     /// @param scrollPane the scroll pane to style
     public static void style(ScrollPane scrollPane) {
-        M3ControlStyles.initializeOnce(Objects.requireNonNull(scrollPane, "scrollPane"), STYLE_CLASS);
+        ScrollPane target = Objects.requireNonNull(scrollPane, "scrollPane");
+        M3ControlStyles.initializeOnce(target, STYLE_CLASS);
+        installScrollStylesheet(target);
     }
 
     /// Enables Material smooth wheel scrolling for a JavaFX scroll pane.
@@ -99,11 +104,23 @@ public final class M3ScrollPanes {
                 && scrollPane.getProperties().get(SMOOTH_SCROLL_STATE_KEY) instanceof SmoothScrollState;
     }
 
-    /// Adds the Material scroll style class to a standalone JavaFX scroll bar.
+    /// Installs the Material scroll style class, fallback tokens, and stylesheet on a standalone JavaFX scroll bar.
+    ///
+    /// Repeated calls are idempotent.
     ///
     /// @param scrollBar the scroll bar to style
     public static void style(ScrollBar scrollBar) {
-        M3ControlStyles.initializeOnce(Objects.requireNonNull(scrollBar, "scrollBar"), SCROLL_BAR_STYLE_CLASS);
+        ScrollBar target = Objects.requireNonNull(scrollBar, "scrollBar");
+        M3ControlStyles.initializeOnce(target, SCROLL_BAR_STYLE_CLASS);
+        installScrollStylesheet(target);
+    }
+
+    /// Installs the standalone scroll stylesheet on one styled JavaFX control.
+    private static void installScrollStylesheet(Region control) {
+        String stylesheet = M3Stylesheets.controlStylesheet("scroll.css");
+        if (!control.getStylesheets().contains(stylesheet)) {
+            control.getStylesheets().add(stylesheet);
+        }
     }
 
     /// Returns whether a scroll event target belongs directly to the supplied scroll pane.

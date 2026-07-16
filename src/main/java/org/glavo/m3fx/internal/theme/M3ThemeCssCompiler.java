@@ -74,7 +74,7 @@ public final class M3ThemeCssCompiler {
     public static String controlStyleRules(M3TokenSet tokens) {
         return M3TokenCssCompiler.controlStyleRules(tokens.typographyTokens())
                 + "\n\n"
-                + M3ComponentTokenCssCompiler.controlStyleRules(tokens.componentTokens())
+                + M3ComponentTokenCssCompiler.controlStyleRules(tokens.componentTokens(), tokens.profile())
                 + "\n\n"
                 + M3TokenCssCompiler.controlStyleRules(tokens.stateLayerTokens())
                 + "\n\n"

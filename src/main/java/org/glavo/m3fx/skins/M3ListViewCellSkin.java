@@ -95,9 +95,8 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListCell<T>> {
             double leftInset
     ) {
         Node row = graphic;
-        return row == null
-                ? topInset + fallbackRowHeight() + bottomInset
-                : topInset + row.minHeight(width) + bottomInset;
+        double itemHeight = fixedOrMeasuredHeight(row == null ? fallbackRowHeight() : row.minHeight(width));
+        return topInset + itemHeight + trailingSpacing() + bottomInset;
     }
 
     /// Computes the preferred width from the rendered row.
@@ -137,9 +136,8 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListCell<T>> {
             double leftInset
     ) {
         Node row = graphic;
-        return row == null
-                ? topInset + fallbackRowHeight() + bottomInset
-                : topInset + row.prefHeight(width) + bottomInset;
+        double itemHeight = fixedOrMeasuredHeight(row == null ? fallbackRowHeight() : row.prefHeight(width));
+        return topInset + itemHeight + trailingSpacing() + bottomInset;
     }
 
     /// Lays out the rendered row in the full cell content area.
@@ -171,25 +169,29 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListCell<T>> {
             return;
         }
 
+        double itemAreaHeight = Math.max(0.0, height - trailingSpacing());
         double rowWidth = snapSizeX(boundedSize(
                 rowMinimumWidth(row, height),
                 width,
                 rowMaximumWidth(row, height),
                 width
         ));
-        double rowHeight = snapSizeY(boundedSize(
-                row.minHeight(rowWidth),
-                row.prefHeight(rowWidth),
-                row.maxHeight(rowWidth),
-                height
-        ));
+        double fixedCellSize = getSkinnable().getListView().getFixedCellSize();
+        double rowHeight = fixedCellSize > 0.0
+                ? snapSizeY(Math.min(fixedCellSize, itemAreaHeight))
+                : snapSizeY(boundedSize(
+                        row.minHeight(rowWidth),
+                        row.prefHeight(rowWidth),
+                        row.maxHeight(rowWidth),
+                        itemAreaHeight
+                ));
         double rowX = alignedX(
                 x,
                 width,
                 rowWidth,
                 M3NodeLayout.logicalStartHorizontalAlignment(getSkinnable())
         );
-        double rowY = y + (height - rowHeight) / 2.0;
+        double rowY = y + (itemAreaHeight - rowHeight) / 2.0;
         row.resizeRelocate(snapPositionX(rowX), snapPositionY(rowY), rowWidth, rowHeight);
     }
 
@@ -216,6 +218,21 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListCell<T>> {
     private double fallbackRowHeight() {
         double fixedCellSize = getSkinnable().getListView().getFixedCellSize();
         return fixedCellSize > 0.0 ? fixedCellSize : DEFAULT_ROW_HEIGHT;
+    }
+
+    /// Returns a configured fixed item height or the supplied measured item height.
+    private double fixedOrMeasuredHeight(double measuredHeight) {
+        double fixedCellSize = getSkinnable().getListView().getFixedCellSize();
+        return fixedCellSize > 0.0 ? fixedCellSize : measuredHeight;
+    }
+
+    /// Returns the gap following this cell, excluding the final data item.
+    private double trailingSpacing() {
+        M3ListCell<T> cell = getSkinnable();
+        int index = cell.getIndex();
+        return index >= 0 && index + 1 < cell.getListView().getItems().size()
+                ? cell.getListView().getItemSpacing()
+                : 0.0;
     }
 
     /// Returns the physical x coordinate for one horizontal alignment.

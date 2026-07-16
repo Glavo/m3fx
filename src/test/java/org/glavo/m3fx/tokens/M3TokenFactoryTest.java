@@ -452,7 +452,7 @@ final class M3TokenFactoryTest {
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(
                 ".m3-button-group.m3-button-group-extra-large.m3-connected-button-group"
         ));
-        assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(
+        assertFalse(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(
                 ".m3-grouped-button.m3-button-group-first:pressed"
         ));
         assertTrue(M3ThemeCssCompiler.controlStyleRules(tokenSet).contains(".m3-tab-active-indicator"));
@@ -533,6 +533,38 @@ final class M3TokenFactoryTest {
         List<String> missing = missingComponentTokenControlValues(componentTokens);
 
         assertTrue(missing.isEmpty(), () -> "Missing component token values in generated control rules: " + missing);
+    }
+
+    /// Verifies that Baseline themes omit interaction shapes reserved for the Expressive profile.
+    @Test
+    void profileControlsGeneratedExpressiveShapeRules() {
+        ColorScheme colorScheme = ColorScheme.fromSeed(Color.web("#6750a4"));
+        M3TokenSet baseline = M3TokenSet.builder(
+                M3Profile.BASELINE_2021,
+                colorScheme,
+                M3Density.standard()
+        ).build();
+        M3TokenSet expressive = M3TokenSet.builder(
+                M3Profile.EXPRESSIVE_2025,
+                colorScheme,
+                M3Density.standard()
+        ).build();
+
+        String baselineRules = M3ThemeCssCompiler.controlStyleRules(baseline);
+        String expressiveRules = M3ThemeCssCompiler.controlStyleRules(expressive);
+        List<String> expressiveOnlySelectors = List.of(
+                ".m3-button.m3-button-small.m3-button-round:armed",
+                ".m3-button.m3-icon-button.m3-icon-button-small.m3-icon-button-round:armed",
+                ".m3-icon-toggle-button.m3-icon-button-small.m3-icon-button-round:selected",
+                ".m3-button-group.m3-button-group-small.m3-connected-button-group "
+                        + ".m3-grouped-button.m3-button-group-first:selected",
+                ".m3-segmented-list .m3-list-item:hover"
+        );
+
+        for (String selector : expressiveOnlySelectors) {
+            assertFalse(baselineRules.contains(selector), () -> "Baseline rule should omit " + selector);
+            assertTrue(expressiveRules.contains(selector), () -> "Expressive rule should include " + selector);
+        }
     }
 
     /// Verifies that generated component custom properties are consumed by production controls or stylesheets.
@@ -806,7 +838,9 @@ final class M3TokenFactoryTest {
                                 20.0,
                                 24.0
                         ))
-                .listItem(new M3ComponentTokens.ListItemTokens(58.0, 74.0, 90.0, 6.0, 18.0, 9.0, 15.0, 32.0, 19.0))
+                .listItem(new M3ComponentTokens.ListItemTokens(
+                        58.0, 74.0, 90.0, 6.0, 18.0, 9.0, 15.0, 3.0, 32.0, 19.0
+                ))
                 .build();
     }
 

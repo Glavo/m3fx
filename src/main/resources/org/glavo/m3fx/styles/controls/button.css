@@ -561,26 +561,26 @@
     -fx-border-radius: 28px;
 }
 
-.m3-icon-button.m3-icon-button-extra-small:armed,
-.m3-icon-button.m3-icon-button-extra-small:pressed,
-.m3-icon-button.m3-icon-button-small:armed,
-.m3-icon-button.m3-icon-button-small:pressed {
+.m3-profile-expressive .m3-icon-button.m3-icon-button-extra-small:armed,
+.m3-profile-expressive .m3-icon-button.m3-icon-button-extra-small:pressed,
+.m3-profile-expressive .m3-icon-button.m3-icon-button-small:armed,
+.m3-profile-expressive .m3-icon-button.m3-icon-button-small:pressed {
     -m3-container-shape: 8px;
     -fx-background-radius: 8px;
     -fx-border-radius: 8px;
 }
 
-.m3-icon-button.m3-icon-button-medium:armed,
-.m3-icon-button.m3-icon-button-medium:pressed {
+.m3-profile-expressive .m3-icon-button.m3-icon-button-medium:armed,
+.m3-profile-expressive .m3-icon-button.m3-icon-button-medium:pressed {
     -m3-container-shape: 12px;
     -fx-background-radius: 12px;
     -fx-border-radius: 12px;
 }
 
-.m3-icon-button.m3-icon-button-large:armed,
-.m3-icon-button.m3-icon-button-large:pressed,
-.m3-icon-button.m3-icon-button-extra-large:armed,
-.m3-icon-button.m3-icon-button-extra-large:pressed {
+.m3-profile-expressive .m3-icon-button.m3-icon-button-large:armed,
+.m3-profile-expressive .m3-icon-button.m3-icon-button-large:pressed,
+.m3-profile-expressive .m3-icon-button.m3-icon-button-extra-large:armed,
+.m3-profile-expressive .m3-icon-button.m3-icon-button-extra-large:pressed {
     -m3-container-shape: 16px;
     -fx-background-radius: 16px;
     -fx-border-radius: 16px;

@@ -6,6 +6,7 @@ package org.glavo.m3fx.skins;
 import javafx.animation.Animation;
 import javafx.animation.Transition;
 import javafx.beans.InvalidationListener;
+import javafx.beans.binding.Bindings;
 import javafx.beans.value.ChangeListener;
 import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
@@ -25,6 +26,7 @@ import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListView;
 import org.glavo.m3fx.controls.M3ListCell;
+import org.glavo.m3fx.controls.M3ScrollPanes;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3ScrollReveal;
@@ -64,6 +66,9 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
 
     /// Rebuilds visible cells when the cell factory changes.
     private final InvalidationListener cellFactoryInvalidation = observable -> rebuildCells();
+
+    /// Reconfigures cell measurement after item height or spacing changes.
+    private final InvalidationListener cellMetricsInvalidation = observable -> flow.refreshCellMetrics();
 
     /// Updates logical focused-row visuals when the list view focus owner state changes.
     private final InvalidationListener focusedInvalidation = observable -> refreshCells();
@@ -143,13 +148,20 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         flow.setVertical(true);
         flow.setPannable(true);
         flow.setCellFactory(flow -> createCell(control));
+        flow.styleScrollBars();
         smoothScrollAnimation.setOnFinished(event -> finishSmoothScrollAnimation());
-        flow.fixedCellSizeProperty().bind(control.fixedCellSizeProperty());
+        flow.fixedCellSizeProperty().bind(Bindings.createDoubleBinding(
+                () -> control.getItemSpacing() > 0.0 ? 0.0 : control.getFixedCellSize(),
+                control.fixedCellSizeProperty(),
+                control.itemSpacingProperty()
+        ));
         control.addEventFilter(ScrollEvent.SCROLL, smoothScrollHandler);
         getChildren().setAll(flow);
 
         control.getItems().addListener(itemsListener);
         control.cellFactoryProperty().addListener(cellFactoryInvalidation);
+        control.itemSpacingProperty().addListener(cellMetricsInvalidation);
+        control.fixedCellSizeProperty().addListener(cellMetricsInvalidation);
         control.focusedProperty().addListener(focusedInvalidation);
         focusVisibleTracker.install();
         control.sceneProperty().addListener(sceneListener);
@@ -168,6 +180,8 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         listView.removeEventFilter(ScrollEvent.SCROLL, smoothScrollHandler);
         listView.getItems().removeListener(itemsListener);
         listView.cellFactoryProperty().removeListener(cellFactoryInvalidation);
+        listView.itemSpacingProperty().removeListener(cellMetricsInvalidation);
+        listView.fixedCellSizeProperty().removeListener(cellMetricsInvalidation);
         listView.focusedProperty().removeListener(focusedInvalidation);
         focusVisibleTracker.uninstall();
         listView.sceneProperty().removeListener(sceneListener);
@@ -240,9 +254,10 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
             double leftInset
     ) {
         double fixedCellSize = getSkinnable().getFixedCellSize();
-        double visibleRows = Math.min(8.0, Math.max(1.0, getSkinnable().getItems().size()));
+        int visibleRows = Math.min(8, Math.max(1, getSkinnable().getItems().size()));
         double rowHeight = fixedCellSize > 0.0 ? fixedCellSize : 56.0;
-        return topInset + rowHeight * visibleRows + bottomInset;
+        double spacing = getSkinnable().getItemSpacing() * Math.max(0, visibleRows - 1);
+        return topInset + rowHeight * visibleRows + spacing + bottomInset;
     }
 
     /// Updates the number of cells owned by the virtual flow.
@@ -865,6 +880,18 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
     /// A private wrapper exposing protected virtual flow hooks to this skin.
     @NotNullByDefault
     private static final class ListViewVirtualFlow<T> extends VirtualFlow<M3ListCell<T>> {
+        /// Applies standalone Material styling to both virtual-flow scroll bars.
+        private void styleScrollBars() {
+            M3ScrollPanes.style(getHbar());
+            M3ScrollPanes.style(getVbar());
+        }
+
+        /// Invalidates cached variable cell lengths after item stride metrics change.
+        private void refreshCellMetrics() {
+            reconfigureCells();
+            requestLayout();
+        }
+
         /// Requests visible cell relayout and selection refresh.
         private void refreshCells() {
             requestCellLayout();

@@ -108,6 +108,7 @@ import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListItemBase;
 import org.glavo.m3fx.controls.M3ListItemSlotSize;
 import org.glavo.m3fx.controls.M3ListPane;
+import org.glavo.m3fx.controls.M3ListStyle;
 import org.glavo.m3fx.controls.M3ListView;
 import org.glavo.m3fx.controls.M3LoadingIndicator;
 import org.glavo.m3fx.controls.M3LoadingIndicatorVariant;
@@ -9116,8 +9117,8 @@ final class M3FXDemoVisualSmokeTest {
             M3ListItem item = (M3ListItem) result;
             Bounds resultBounds = item.localToScene(item.getBoundsInLocal());
             assertSearchResultRowGeometry(item, resultBounds, resultsBounds);
-            assertEquals(isExpressiveTheme(item) ? 10.0 : 0.0, item.getContainerShape(), CONTROL_EDGE_TOLERANCE,
-                    () -> "search result row should retain the active list-item shape token: item="
+            assertEquals(0.0, item.getContainerShape(), CONTROL_EDGE_TOLERANCE,
+                    () -> "search result row should remain part of the contiguous Standard list: item="
                             + item.getHeadlineText());
             double expectedMinY = previousMaxY;
             assertEquals(expectedMinY, resultBounds.getMinY(), CONTROL_EDGE_TOLERANCE,
@@ -12503,20 +12504,55 @@ final class M3FXDemoVisualSmokeTest {
         Parent root = scene.getRoot();
         Node page = currentDemoPage(scene, "Lists");
         assertCurrentPageTitle(scene, "Lists");
-        assertVisibleText(root, "Static Pane", "Lists");
-        assertVisibleText(root, "Virtualized View", "Lists");
+        assertVisibleText(root, "Standard", "Lists");
+        assertVisibleText(root, "Segmented", "Lists");
+        assertVisibleText(root, "Virtualized Segmented", "Lists");
         assertVisibleText(root, "Selected item", "Lists");
         assertVisibleText(root, "Disabled item", "Lists");
 
         List<M3ListPane> listPanes = visibleNodesOfType(page, M3ListPane.class);
-        assertEquals(1, listPanes.size(), () -> "Lists page should render one static list pane: " + listPanes);
+        assertEquals(2, listPanes.size(), () -> "Lists page should render standard and segmented panes: " + listPanes);
+        M3ListPane standardList = listPanes.stream()
+                .filter(listPane -> listPane.getListStyle() == M3ListStyle.STANDARD)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("standard list pane"));
+        M3ListPane segmentedList = listPanes.stream()
+                .filter(listPane -> listPane.getListStyle() == M3ListStyle.SEGMENTED)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("segmented list pane"));
+        assertEquals(0.0, standardList.getItemSpacing(), 0.0001, "standard list spacing");
+        assertEquals(2.0, segmentedList.getItemSpacing(), 0.0001, "segmented list spacing");
+        List<M3ListItem> segmentedItems = segmentedList.getItems().stream()
+                .filter(M3ListItem.class::isInstance)
+                .map(M3ListItem.class::cast)
+                .toList();
+        assertTrue(segmentedItems.size() >= 2, "segmented list should render adjacent items");
+        Bounds firstSegmentedBounds = segmentedItems.get(0).localToScene(segmentedItems.get(0).getBoundsInLocal());
+        Bounds secondSegmentedBounds = segmentedItems.get(1).localToScene(segmentedItems.get(1).getBoundsInLocal());
+        assertEquals(
+                2.0,
+                secondSegmentedBounds.getMinY() - firstSegmentedBounds.getMaxY(),
+                CONTROL_EDGE_TOLERANCE,
+                "segmented list rendered gap"
+        );
+
         List<M3ListView> listViews = visibleNodesOfType(page, M3ListView.class);
         assertEquals(1, listViews.size(), () -> "Lists page should render one virtualized list view: " + listViews);
         M3ListView listView = listViews.get(0);
+        assertEquals(M3ListStyle.SEGMENTED, listView.getListStyle(), "virtualized segmented list style");
+        assertEquals(2.0, listView.getItemSpacing(), 0.0001, "virtualized segmented list spacing");
         assertEquals(240, listView.getItems().size(), "virtualized list item count");
         assertEquals(2, listView.getSelectedIndex(), "virtualized list selected index");
         assertEquals(72.0, listView.getFixedCellSize(), 0.0001, "virtualized list fixed cell size");
-        assertNotNull(firstVisibleStyledDescendant(listView, "m3-list-view-flow"), "M3ListView should use VirtualFlow");
+        Node listFlow = Objects.requireNonNull(
+                firstVisibleStyledDescendant(listView, "m3-list-view-flow"),
+                "M3ListView should use VirtualFlow"
+        );
+        assertTrue(
+                listFlow.lookupAll(".scroll-bar").stream()
+                        .allMatch(scrollBar -> scrollBar.getStyleClass().contains(M3ScrollPanes.SCROLL_BAR_STYLE_CLASS)),
+                "M3ListView VirtualFlow scrollbars should use Material styling"
+        );
         assertTrue(visibleNodesOfType(page, M3ListItem.class).stream()
                         .anyMatch(item -> item.isSelected() && "Selected item".equals(item.getHeadlineText())),
                 "static list should render a selected Material list item");
@@ -15516,7 +15552,8 @@ final class M3FXDemoVisualSmokeTest {
                     group.getItems().get(index),
                     description + " child " + index
             );
-            double innerCorner = button instanceof M3IconToggleButton toggleButton && toggleButton.isSelected()
+            double innerCorner = theme.profile() == M3Profile.EXPRESSIVE_2025
+                    && button instanceof M3IconToggleButton toggleButton && toggleButton.isSelected()
                     ? groupTokens.connectedSelectedInnerCorner()
                     : groupTokens.connectedInnerCorner();
             double topLeft = index == 0 ? outerCorner : innerCorner;

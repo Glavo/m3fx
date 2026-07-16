@@ -1,6 +1,12 @@
 .m3-list-pane,
 .m3-list-view {
+    -m3-list-item-spacing: 0px;
     -fx-background-color: transparent;
+}
+
+.m3-list-pane.m3-segmented-list,
+.m3-list-view.m3-segmented-list {
+    -m3-list-item-spacing: -m3-list-segmented-gap;
 }
 
 .m3-list-view-cell {
@@ -52,6 +58,30 @@
 
 .m3-list-item-container {
     -fx-background-color: transparent;
+}
+
+.m3-segmented-list .m3-list-item-container {
+    -fx-background-color: -m3-color-surface;
+}
+
+.m3-profile-expressive .m3-segmented-list .m3-list-item {
+    -m3-container-shape: -m3-shape-corner-extra-small;
+}
+
+.m3-profile-expressive .m3-segmented-list .m3-list-item:hover {
+    -m3-container-shape: -m3-shape-corner-medium;
+}
+
+.m3-profile-expressive .m3-segmented-list .m3-list-item:disabled {
+    -m3-container-shape: -m3-shape-corner-extra-small;
+}
+
+.m3-profile-expressive .m3-segmented-list .m3-list-item:focus-visible,
+.m3-profile-expressive .m3-segmented-list .m3-list-item:pressed,
+.m3-profile-expressive .m3-segmented-list .m3-list-item:armed,
+.m3-profile-expressive .m3-segmented-list .m3-list-item:selected,
+.m3-profile-expressive .m3-segmented-list .m3-list-item:selected:disabled {
+    -m3-container-shape: -m3-shape-corner-large;
 }
 
 .m3-list-item-selection-container {

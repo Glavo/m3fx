@@ -1233,10 +1233,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         listItemOneLineHeight,
                         listItemTwoLineHeight,
                         listItemThreeLineHeight,
-                        expressive ? shapeTokens.small() : 0.0,
+                        0.0,
                         listItemHorizontalPadding,
                         listItemVerticalPadding,
                         listItemContentSpacing,
+                        density.apply(2.0),
                         listSectionHeaderHeight,
                         listSectionHeaderHorizontalPadding
                 )
@@ -3047,6 +3048,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param horizontalPadding              the horizontal content padding
     /// @param verticalPadding                the vertical content padding
     /// @param contentSpacing                 the spacing between content regions
+    /// @param segmentedGap                   the gap between adjacent segmented list items
     /// @param sectionHeaderHeight            the preferred list section header height
     /// @param sectionHeaderHorizontalPadding the horizontal list section header padding
     @NotNullByDefault
@@ -3058,6 +3060,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double horizontalPadding,
             double verticalPadding,
             double contentSpacing,
+            double segmentedGap,
             double sectionHeaderHeight,
             double sectionHeaderHorizontalPadding
     ) {
@@ -3070,6 +3073,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(horizontalPadding, "horizontalPadding");
             validateNonNegative(verticalPadding, "verticalPadding");
             validateNonNegative(contentSpacing, "contentSpacing");
+            validateNonNegative(segmentedGap, "segmentedGap");
             validateNonNegative(sectionHeaderHeight, "sectionHeaderHeight");
             validateNonNegative(sectionHeaderHorizontalPadding, "sectionHeaderHorizontalPadding");
         }

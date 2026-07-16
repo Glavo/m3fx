@@ -94,6 +94,7 @@ import org.glavo.m3fx.controls.M3ListPane;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListCell;
 import org.glavo.m3fx.controls.M3ListSectionHeader;
+import org.glavo.m3fx.controls.M3ListStyle;
 import org.glavo.m3fx.controls.M3SelectionMode;
 import org.glavo.m3fx.controls.M3ListItemSlotSize;
 import org.glavo.m3fx.controls.M3ListView;
@@ -2486,6 +2487,11 @@ public final class M3FXDemoApp extends Application {
         M3ListItem oneLine = new M3ListItem("One-line item");
         oneLine.setLeading(createSurfaceVariantIcon("inbox"));
 
+        M3ListItem disabled = new M3ListItem("Disabled item");
+        disabled.setSupportingText("Unavailable destination");
+        disabled.setLeading(createSurfaceVariantIcon("lock"));
+        disabled.setDisable(true);
+
         M3ListItem twoLine = new M3ListItem("Two-line item");
         twoLine.setSupportingText("Supporting text");
         twoLine.setTrailingSupportingText("3 min");
@@ -2495,6 +2501,17 @@ public final class M3FXDemoApp extends Application {
         threeLine.setOverlineText("Overline");
         threeLine.setSupportingText("Supporting text can span a denser row.");
         threeLine.setLeadingAvatar("A");
+
+        M3ListPane standardList = new M3ListPane();
+        standardList.getStyleClass().add("demo-list");
+        standardList.setSelectionMode(M3SelectionMode.SINGLE);
+        standardList.getItems().addAll(
+                new M3ListSectionHeader("Recent"),
+                oneLine,
+                disabled,
+                twoLine,
+                threeLine
+        );
 
         M3ListItem thumbnail = new M3ListItem("Thumbnail item");
         thumbnail.setSupportingText("Leading square media and trailing metadata.");
@@ -2511,36 +2528,17 @@ public final class M3FXDemoApp extends Application {
         selected.setLeading(createSurfaceVariantIcon("done"));
         selected.setTrailingSupportingText("Now");
 
-        M3ListItem disabled = new M3ListItem("Disabled item");
-        disabled.setSupportingText("Unavailable destination");
-        disabled.setLeading(createSurfaceVariantIcon("lock"));
-        disabled.setDisable(true);
-
-        M3ListPane listPane = new M3ListPane();
-        listPane.getStyleClass().add("demo-list");
-        listPane.setSelectionMode(M3SelectionMode.SINGLE);
-        listPane.getItems().addAll(
-                new M3ListSectionHeader("Recent"),
-                oneLine,
-                new M3Divider(),
-                disabled,
-                new M3Divider(),
-                twoLine,
-                new M3Divider(),
-                threeLine,
-                new M3Divider(),
-                thumbnail,
-                new M3Divider(),
-                wideThumbnail,
-                new M3Divider(),
-                new M3ListSectionHeader("Pinned"),
-                selected
-        );
-        listPane.select(selected);
+        M3ListPane segmentedList = new M3ListPane();
+        segmentedList.getStyleClass().add("demo-list");
+        segmentedList.setListStyle(M3ListStyle.SEGMENTED);
+        segmentedList.setSelectionMode(M3SelectionMode.SINGLE);
+        segmentedList.getItems().addAll(thumbnail, wideThumbnail, selected);
+        segmentedList.select(selected);
 
         return createGallery(
-                createShowcaseGroup("Static Pane", listPane),
-                createShowcaseGroup("Virtualized View", createVirtualizedListView())
+                createShowcaseGroup("Standard", standardList),
+                createShowcaseGroup("Segmented", segmentedList),
+                createShowcaseGroup("Virtualized Segmented", createVirtualizedListView())
         );
     }
 
@@ -2548,6 +2546,7 @@ public final class M3FXDemoApp extends Application {
     private static M3ListView<String> createVirtualizedListView() {
         M3ListView<String> listView = new M3ListView<>();
         listView.getStyleClass().add("demo-virtualized-list");
+        listView.setListStyle(M3ListStyle.SEGMENTED);
         for (int i = 1; i <= 240; i++) {
             listView.getItems().add("Virtualized row " + i);
         }

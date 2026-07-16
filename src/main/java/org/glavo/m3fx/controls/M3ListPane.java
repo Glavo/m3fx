@@ -14,6 +14,11 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.css.CssMetaData;
+import javafx.css.Styleable;
+import javafx.css.StyleableDoubleProperty;
+import javafx.css.StyleableProperty;
+import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.AccessibleAction;
@@ -29,6 +34,7 @@ import org.glavo.m3fx.internal.M3FocusGuards;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
+import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3ObservableLists;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3TypeAheadState;
@@ -39,6 +45,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -55,8 +62,31 @@ public final class M3ListPane extends Control {
     /// The base style class for M3FX static list panes.
     public static final String STYLE_CLASS = "m3-list-pane";
 
+    /// The default list containment style.
+    private static final M3ListStyle DEFAULT_LIST_STYLE = M3ListStyle.STANDARD;
+
+    /// The default item spacing used by standard lists.
+    private static final double DEFAULT_ITEM_SPACING = 0.0;
+
     /// The mutable list content.
     private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
+
+    /// The list containment style property.
+    private final ObjectProperty<M3ListStyle> listStyle =
+            new SimpleObjectProperty<>(this, "listStyle", DEFAULT_LIST_STYLE) {
+                /// Updates the list style class after the containment style changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(DEFAULT_LIST_STYLE);
+                        return;
+                    }
+                    updateListStyle();
+                }
+            };
+
+    /// The styleable gap between adjacent list items.
+    private @Nullable StyleableDoubleProperty itemSpacing;
 
     /// Notifies accessibility clients when focus moves between list items.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -160,9 +190,61 @@ public final class M3ListPane extends Control {
         return items;
     }
 
+    /// Returns the list containment style.
+    ///
+    /// @return the standard or segmented list style
+    public final M3ListStyle getListStyle() {
+        return listStyle.get();
+    }
 
+    /// Sets the list containment style.
+    ///
+    /// @param listStyle the standard or segmented list style
+    public final void setListStyle(M3ListStyle listStyle) {
+        this.listStyle.set(Objects.requireNonNull(listStyle, "listStyle"));
+    }
 
+    /// Returns the list containment style property.
+    ///
+    /// @return the writable list style property
+    public final ObjectProperty<M3ListStyle> listStyleProperty() {
+        return listStyle;
+    }
 
+    /// Returns the gap between directly adjacent [M3ListItem] nodes.
+    ///
+    /// Section headers, dividers, and other content nodes do not receive this gap.
+    ///
+    /// @return the item spacing in pixels
+    public final double getItemSpacing() {
+        return itemSpacing == null ? DEFAULT_ITEM_SPACING : itemSpacing.get();
+    }
+
+    /// Sets the gap between directly adjacent [M3ListItem] nodes.
+    ///
+    /// An explicit Java value overrides the style default selected by [listStyleProperty()]. Section headers,
+    /// dividers, and other content nodes remain contiguous with their neighbors.
+    ///
+    /// @param itemSpacing the non-negative item spacing in pixels
+    public final void setItemSpacing(double itemSpacing) {
+        itemSpacingProperty().set(M3Css.nonNegative(itemSpacing, "itemSpacing"));
+    }
+
+    /// Returns the styleable item spacing property.
+    ///
+    /// @return the writable item spacing property
+    public final StyleableDoubleProperty itemSpacingProperty() {
+        if (itemSpacing == null) {
+            itemSpacing = M3Css.nonNegativeStyleableDoubleProperty(
+                    DEFAULT_ITEM_SPACING,
+                    this,
+                    "itemSpacing",
+                    StyleableProperties.ITEM_SPACING,
+                    this::requestLayout
+            );
+        }
+        return itemSpacing;
+    }
 
     /// Returns the list item selection mode.
     ///
@@ -405,6 +487,7 @@ public final class M3ListPane extends Control {
     /// Adds base style classes and installs child listeners.
     private void initialize() {
         M3ControlStyles.initialize(this, STYLE_CLASS);
+        updateListStyle();
         setAccessibleRole(AccessibleRole.LIST_VIEW);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleSelectionTarget, this::showAccessibleItem);
@@ -745,6 +828,62 @@ public final class M3ListPane extends Control {
     @Override
     protected Skin<?> createDefaultSkin() {
         return new M3ListPaneSkin(this);
+    }
+
+    /// Returns the CSS metadata for this control class.
+    ///
+    /// @return the immutable CSS metadata list
+    public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
+        return StyleableProperties.STYLEABLES;
+    }
+
+    /// Returns the CSS metadata for this control.
+    ///
+    /// @return the immutable CSS metadata list
+    @Override
+    public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+        return getClassCssMetaData();
+    }
+
+    /// Applies the active list containment style class.
+    private void updateListStyle() {
+        M3ControlStyles.replaceVariant(
+                this,
+                getListStyle().styleClass(),
+                M3ListStyle.STANDARD.styleClass(),
+                M3ListStyle.SEGMENTED.styleClass()
+        );
+        requestLayout();
+    }
+
+    /// CSS metadata for static list layout tokens.
+    @NotNullByDefault
+    private static final class StyleableProperties {
+        /// CSS metadata for the gap between adjacent list items.
+        private static final CssMetaData<M3ListPane, Number> ITEM_SPACING =
+                new CssMetaData<>("-m3-list-item-spacing", SizeConverter.getInstance(), DEFAULT_ITEM_SPACING) {
+                    /// Returns whether the spacing can be set from CSS.
+                    @Override
+                    public boolean isSettable(M3ListPane control) {
+                        return M3Css.isSettable(control.itemSpacingProperty());
+                    }
+
+                    /// Returns the styleable spacing property.
+                    @Override
+                    public StyleableProperty<Number> getStyleableProperty(M3ListPane control) {
+                        return control.itemSpacingProperty();
+                    }
+                };
+
+        /// The complete immutable CSS metadata list.
+        private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
+
+        static {
+            List<CssMetaData<? extends Styleable, ?>> styleables =
+                    new ArrayList<>(Control.getClassCssMetaData());
+            styleables.add(ITEM_SPACING);
+            STYLEABLES = Collections.unmodifiableList(styleables);
+        }
     }
 
 }

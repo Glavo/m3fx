@@ -50,7 +50,9 @@ import org.glavo.m3fx.controls.M3IconVariant;
 import org.glavo.m3fx.controls.M3IconToggleButton;
 import org.glavo.m3fx.controls.M3IconToggleButtonGroup;
 import org.glavo.m3fx.controls.M3ListItem;
+import org.glavo.m3fx.controls.M3ListPane;
 import org.glavo.m3fx.controls.M3ListSectionHeader;
+import org.glavo.m3fx.controls.M3ListStyle;
 import org.glavo.m3fx.controls.M3LoadingIndicator;
 import org.glavo.m3fx.controls.M3Menu;
 import org.glavo.m3fx.controls.M3MenuButton;
@@ -1289,7 +1291,7 @@ final class M3ThemeTest {
         assertEquals(12.0, searchView.getPadding().getRight(), 0.0001);
         M3ListItem themedSearchResult = (M3ListItem) searchView.getResults().get(0);
         assertEquals(64.0, themedSearchResult.getOneLineHeight(), 0.0001);
-        assertEquals(10.0, themedSearchResult.getContainerShape(), 0.0001);
+        assertEquals(0.0, themedSearchResult.getContainerShape(), 0.0001);
         assertEquals(20.0, themedSearchResult.getHorizontalPadding(), 0.0001);
         assertEquals(0.0, ((Region) datePicker.lookup("." + M3DatePicker.CONTAINER_STYLE_CLASS)).getPadding().getTop(), 0.0001);
         assertEquals(40.0, datePicker.lookup("." + M3DatePicker.NAVIGATION_BUTTON_STYLE_CLASS).prefWidth(-1.0), 0.0001);
@@ -1777,9 +1779,13 @@ final class M3ThemeTest {
     /// Verifies that generated component stylesheets apply list item tokens.
     @Test
     void generatedComponentStylesheetAppliesListItemTokens() {
-        M3ListItem listItem = new M3ListItem("Headline");
+        M3ListItem standardItem = new M3ListItem("Standard headline");
+        M3ListItem segmentedItem = new M3ListItem("Segmented headline");
+        M3ListPane segmentedList = new M3ListPane();
+        segmentedList.setListStyle(M3ListStyle.SEGMENTED);
+        segmentedList.getItems().add(segmentedItem);
         M3ListSectionHeader sectionHeader = new M3ListSectionHeader("Pinned");
-        Pane root = new Pane(listItem, sectionHeader);
+        Pane root = new Pane(standardItem, segmentedList, sectionHeader);
         Scene scene = new Scene(root);
 
         M3Theme expressiveTheme = M3Theme.fromSeed(
@@ -1791,13 +1797,19 @@ final class M3ThemeTest {
         M3ThemeManager.install(scene, expressiveTheme);
         root.applyCss();
 
-        assertEquals(64.0, listItem.getOneLineHeight(), 0.0001);
-        assertEquals(80.0, listItem.getTwoLineHeight(), 0.0001);
-        assertEquals(96.0, listItem.getThreeLineHeight(), 0.0001);
-        assertEquals(10.0, listItem.getContainerShape(), 0.0001);
-        assertEquals(20.0, listItem.getHorizontalPadding(), 0.0001);
-        assertEquals(10.0, listItem.getVerticalPadding(), 0.0001);
-        assertEquals(20.0, listItem.getContentSpacing(), 0.0001);
+        assertEquals(64.0, standardItem.getOneLineHeight(), 0.0001);
+        assertEquals(80.0, standardItem.getTwoLineHeight(), 0.0001);
+        assertEquals(96.0, standardItem.getThreeLineHeight(), 0.0001);
+        assertEquals(0.0, standardItem.getContainerShape(), 0.0001);
+        assertEquals(20.0, standardItem.getHorizontalPadding(), 0.0001);
+        assertEquals(10.0, standardItem.getVerticalPadding(), 0.0001);
+        assertEquals(20.0, standardItem.getContentSpacing(), 0.0001);
+        assertEquals(2.0, segmentedList.getItemSpacing(), 0.0001);
+        assertEquals(
+                expressiveTheme.tokens().shapeTokens().extraSmall(),
+                segmentedItem.getContainerShape(),
+                0.0001
+        );
         assertEquals(56.0, sectionHeader.prefHeight(-1.0), 0.0001);
         assertEquals(20.0, sectionHeader.getPadding().getLeft(), 0.0001);
     }

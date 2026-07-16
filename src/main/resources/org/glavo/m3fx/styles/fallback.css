@@ -76,6 +76,17 @@
     -m3-color-inverse-primary: rgb(207,189,254);
     -monet-surface-tint: rgb(101,85,143);
     -m3-color-surface-tint: rgb(101,85,143);
+    -m3-shape-corner-none: 0px;
+    -m3-shape-corner-extra-small: 4px;
+    -m3-shape-corner-small: 8px;
+    -m3-shape-corner-medium: 12px;
+    -m3-shape-corner-large: 16px;
+    -m3-shape-corner-large-increased: 20px;
+    -m3-shape-corner-extra-large: 28px;
+    -m3-shape-corner-extra-large-increased: 32px;
+    -m3-shape-corner-extra-extra-large: 48px;
+    -m3-shape-corner-full: 999px;
+    -m3-list-segmented-gap: 2px;
     -m3-state-hover-opacity: 0.08;
     -m3-state-focus-opacity: 0.10;
     -m3-state-pressed-opacity: 0.10;

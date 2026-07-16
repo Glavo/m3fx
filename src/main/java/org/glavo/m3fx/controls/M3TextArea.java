@@ -3,16 +3,20 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.beans.InvalidationListener;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.css.CssMetaData;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.scene.AccessibleRole;
+import javafx.scene.Node;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import org.glavo.m3fx.internal.M3TextInputSupport;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -28,6 +32,9 @@ import java.util.List;
 public final class M3TextArea extends TextArea implements M3TextInput {
     /// The base style class for M3FX text areas.
     public static final String STYLE_CLASS = "m3-text-area";
+
+    /// Styles the native text-area viewport after JavaFX installs or replaces its skin.
+    private final InvalidationListener skinInvalidation = observable -> styleInternalScrollPane();
 
     /// Shared Material text input state and token plumbing.
     private final M3TextInputSupport<M3TextArea> support = new M3TextInputSupport<>(
@@ -179,8 +186,17 @@ public final class M3TextArea extends TextArea implements M3TextInput {
     /// Adds base style classes and applies the default variant.
     private void initialize() {
         support.initialize(STYLE_CLASS);
+        skinProperty().addListener(skinInvalidation);
         setAccessibleRole(AccessibleRole.TEXT_AREA);
         setWrapText(true);
+    }
+
+    /// Installs Material scrollbar styling on the ScrollPane owned by the current JavaFX text-area skin.
+    private void styleInternalScrollPane() {
+        @Nullable Node node = lookup(".scroll-pane");
+        if (node instanceof ScrollPane scrollPane) {
+            M3ScrollPanes.style(scrollPane);
+        }
     }
 
     /// CSS metadata for M3FX text area component tokens.

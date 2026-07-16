@@ -494,6 +494,11 @@
     -fx-max-width: 560px;
 }
 
+.demo-list.m3-segmented-list {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
 .demo-list-thumbnail {
     -fx-background-color: -m3-color-tertiary-container;
     -fx-background-radius: 4px;
