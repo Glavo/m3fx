@@ -67,7 +67,7 @@ final class M3CarouselLayoutTest {
         assertTrue(carousel.getStyleClass().contains("m3-carousel-uncontained"));
     }
 
-    /// Verifies uncontained layouts preserve authored widths and full-screen items match the viewport.
+    /// Verifies uncontained layouts preserve authored widths and full-screen items page vertically.
     @Test
     void rendersUncontainedAndFullScreenGeometry() {
         FxTestUtils.runOnFxThread(() -> {
@@ -91,10 +91,26 @@ final class M3CarouselLayoutTest {
                 layout(stage, carousel, 480.0, 120.0);
                 ScrollPane viewport = viewport(carousel);
                 double viewportWidth = viewport.getViewportBounds().getWidth();
+                double viewportHeight = viewport.getViewportBounds().getHeight();
 
+                assertTrue(viewport.isFitToWidth());
+                assertFalse(viewport.isFitToHeight());
                 for (javafx.scene.Node item : carousel.getItems()) {
                     assertEquals(viewportWidth, renderedWidth(item), GEOMETRY_TOLERANCE);
+                    assertEquals(viewportHeight, renderedHeight(item), GEOMETRY_TOLERANCE);
                 }
+                assertEquals(0.0, renderedMinY(carousel.getItems().get(0)), GEOMETRY_TOLERANCE);
+                assertEquals(
+                        viewportHeight + 16.0,
+                        renderedMinY(carousel.getItems().get(1)),
+                        GEOMETRY_TOLERANCE
+                );
+
+                carousel.setCarouselLayout(M3CarouselLayout.UNCONTAINED);
+                layout(stage, carousel, 480.0, 120.0);
+                assertFalse(viewport.isFitToWidth());
+                assertTrue(viewport.isFitToHeight());
+                assertEquals(0.0, viewport.getVvalue(), 0.0001);
             } finally {
                 stage.close();
             }
@@ -152,7 +168,7 @@ final class M3CarouselLayoutTest {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Carousel> carouselReference = new AtomicReference<>();
         AtomicReference<@Nullable ScrollPane> viewportReference = new AtomicReference<>();
-        AtomicReference<@Nullable Double> hvalueAfterInteractionReference = new AtomicReference<>();
+        AtomicReference<@Nullable Double> vvalueAfterInteractionReference = new AtomicReference<>();
         AtomicBoolean interactionStarted = new AtomicBoolean();
 
         try {
@@ -165,11 +181,11 @@ final class M3CarouselLayoutTest {
 
                         if (!interactionStarted.get()) {
                             @Nullable Node content = viewport.getContent();
-                            double viewportWidth = viewport.getViewportBounds().getWidth();
+                            double viewportHeight = viewport.getViewportBounds().getHeight();
                             if (content == null
                                     || carousel.getScene().getFocusOwner() == null
-                                    || viewportWidth <= 0.0
-                                    || content.getLayoutBounds().getWidth() <= viewportWidth) {
+                                    || viewportHeight <= 0.0
+                                    || content.getLayoutBounds().getHeight() <= viewportHeight) {
                                 return false;
                             }
 
@@ -194,13 +210,13 @@ final class M3CarouselLayoutTest {
                                     false,
                                     new PickResult(viewport, 8.0, 8.0)
                             ));
-                            viewport.setHvalue(0.68);
-                            hvalueAfterInteractionReference.set(viewport.getHvalue());
+                            viewport.setVvalue(0.68);
+                            vvalueAfterInteractionReference.set(viewport.getVvalue());
                             return false;
                         }
 
                         return carousel.getSelectedIndex() == 2
-                                && Math.abs(viewport.getHvalue() - 2.0 / 3.0) < 0.03;
+                                && Math.abs(viewport.getVvalue() - 2.0 / 3.0) < 0.03;
                     },
                     () -> {
                         @Nullable M3Carousel carousel = carouselReference.get();
@@ -208,13 +224,13 @@ final class M3CarouselLayoutTest {
                         @Nullable Node content = viewport == null ? null : viewport.getContent();
                         return "full-screen carousel did not snap to the nearest item: selected="
                                 + (carousel == null ? "missing" : carousel.getSelectedIndex())
-                                + ", hvalue=" + (viewport == null ? "missing" : viewport.getHvalue())
+                                + ", vvalue=" + (viewport == null ? "missing" : viewport.getVvalue())
                                 + ", interactionStarted=" + interactionStarted.get()
-                                + ", hvalueAfterInteraction=" + hvalueAfterInteractionReference.get()
-                                + ", viewportWidth="
-                                + (viewport == null ? "missing" : viewport.getViewportBounds().getWidth())
-                                + ", contentWidth="
-                                + (content == null ? "missing" : content.getLayoutBounds().getWidth());
+                                + ", vvalueAfterInteraction=" + vvalueAfterInteractionReference.get()
+                                + ", viewportHeight="
+                                + (viewport == null ? "missing" : viewport.getViewportBounds().getHeight())
+                                + ", contentHeight="
+                                + (content == null ? "missing" : content.getLayoutBounds().getHeight());
                     },
                     () -> {
                         M3Carousel carousel = carousel(280.0, 280.0, 280.0, 280.0);
@@ -232,7 +248,7 @@ final class M3CarouselLayoutTest {
                         M3Carousel carousel = Objects.requireNonNull(carouselReference.get(), "carousel");
                         ScrollPane viewport = Objects.requireNonNull(viewportReference.get(), "viewport");
                         assertEquals(2, carousel.getSelectedIndex());
-                        assertEquals(2.0 / 3.0, viewport.getHvalue(), 0.03);
+                        assertEquals(2.0 / 3.0, viewport.getVvalue(), 0.03);
                     }
             );
         } finally {
@@ -302,6 +318,14 @@ final class M3CarouselLayoutTest {
                             0.0001
                     );
                 }
+
+                carousel.setCarouselLayout(M3CarouselLayout.FULL_SCREEN);
+                layout(stage, carousel, 500.0, 120.0);
+                assertTrue(
+                        renderedMinY(carousel.getItems().get(0))
+                                < renderedMinY(carousel.getItems().get(1)),
+                        "RTL must not reverse a vertical full-screen feed"
+                );
             } finally {
                 stage.close();
             }
@@ -358,10 +382,21 @@ final class M3CarouselLayoutTest {
         return renderedSlot(item).getLayoutBounds().getWidth();
     }
 
+    /// Returns the visible keyline height of one carousel item.
+    private static double renderedHeight(javafx.scene.Node item) {
+        return renderedSlot(item).getLayoutBounds().getHeight();
+    }
+
     /// Returns one rendered keyline's physical minimum X inside the track.
     private static double renderedMinX(javafx.scene.Node item) {
         javafx.scene.Node slot = renderedSlot(item);
         return slot.getBoundsInParent().getMinX();
+    }
+
+    /// Returns one rendered keyline's physical minimum Y inside the track.
+    private static double renderedMinY(javafx.scene.Node item) {
+        javafx.scene.Node slot = renderedSlot(item);
+        return slot.getBoundsInParent().getMinY();
     }
 
     /// Returns the internal keyline slot hosting one public item.

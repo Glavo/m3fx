@@ -43,14 +43,15 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Objects;
 
-/// A Material Design 3 carousel for horizontally browsing arbitrary item nodes.
+/// A Material Design 3 carousel for browsing arbitrary item nodes.
 ///
 /// `M3Carousel` manages an ordered item list, one of the six Material carousel layouts, selected index, keyboard
-/// navigation, pointer selection, and animated movement through the visible item track. It can host any JavaFX node,
-/// allowing cards, media previews, or custom content to use Material carousel selection behavior. The carousel skin
-/// supplies keyline masking, interaction-state feedback, and focus indication, while each item remains responsible
-/// for its own activation semantics. Installed items participate directly in keyboard focus traversal; their previous
-/// `focusTraversable` values are restored when they are removed.
+/// navigation, pointer selection, and animated movement through the visible item track. Multi-browse, uncontained,
+/// and hero layouts scroll horizontally; the full-screen layout scrolls vertically and gives each item one complete
+/// viewport page. It can host any JavaFX node, allowing cards, media previews, or custom content to use Material
+/// carousel selection behavior. The carousel skin supplies keyline masking, interaction-state feedback, and focus
+/// indication, while each item remains responsible for its own activation semantics. Installed items participate
+/// directly in keyboard focus traversal; their previous `focusTraversable` values are restored when they are removed.
 ///
 /// See [Material Design carousel](https://m3.material.io/components/carousel/overview).
 @NotNullByDefault

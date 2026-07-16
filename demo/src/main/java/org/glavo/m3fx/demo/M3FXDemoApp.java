@@ -440,7 +440,7 @@ public final class M3FXDemoApp extends Application {
                 new DemoPage("Segmented Buttons", "Segmented buttons", BUTTONS_GROUP, "Single- and multi-select segmented control states", DemoMaterialDocs.SEGMENTED_BUTTONS, this::createSegmentedButtonsPage),
                 new DemoPage("Split Buttons", "Split buttons", BUTTONS_GROUP, "Primary actions with attached menus", DemoMaterialDocs.SPLIT_BUTTON, this::createSplitButtonsPage),
                 new DemoPage("Cards", "Cards", "Cards", "Filled, outlined, elevated, and interactive cards", DemoMaterialDocs.CARDS, this::createCardsPage),
-                new DemoPage("Carousel", "Carousel", "Carousel", "Horizontal content browsing with selected-item snapping", DemoMaterialDocs.CAROUSEL, this::createCarouselPage),
+                new DemoPage("Carousel", "Carousel", "Carousel", "Adaptive visual browsing with Material keyline layouts", DemoMaterialDocs.CAROUSEL, this::createCarouselPage),
                 new DemoPage("Checkboxes", "Checkbox", "Checkbox", "Checked, unchecked, indeterminate, error, and disabled states", DemoMaterialDocs.CHECKBOX, this::createCheckboxesPage),
                 new DemoPage("Chips", "Chips", "Chips", "Assist, filter, input, suggestion, and disabled chips", DemoMaterialDocs.CHIPS, this::createChipsPage),
                 new DemoPage("Date Pickers", "Date pickers", DATE_TIME_PICKERS_GROUP, "Calendar date selection, ranges, and month visibility", DemoMaterialDocs.DATE_PICKERS, this::createDatePickersPage),
@@ -2759,12 +2759,13 @@ public final class M3FXDemoApp extends Application {
         multiAspectRatio.selectFirst();
 
         M3Carousel fullScreen = createCarousel(
-                createCarouselCard("Workspace", "Edge-to-edge", "work", 640.0, 168.0),
-                createCarouselCard("Timeline", "Project activity", "schedule", 640.0, 168.0),
-                createCarouselCard("Insights", "Reporting", "reports", 640.0, 168.0)
+                createCarouselCard("Workspace", "Edge-to-edge", "work", 320.0, 420.0),
+                createCarouselCard("Timeline", "Project activity", "schedule", 320.0, 420.0),
+                createCarouselCard("Insights", "Reporting", "reports", 320.0, 420.0)
         );
         fullScreen.setCarouselLayout(M3CarouselLayout.FULL_SCREEN);
-        fullScreen.setMaxWidth(Double.MAX_VALUE);
+        fullScreen.setPrefSize(320.0, 420.0);
+        fullScreen.setMaxSize(320.0, 420.0);
         fullScreen.selectFirst();
 
         return createGallery(

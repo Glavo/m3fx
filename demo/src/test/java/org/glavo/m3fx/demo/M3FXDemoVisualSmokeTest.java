@@ -2202,6 +2202,40 @@ final class M3FXDemoVisualSmokeTest {
                         false,
                         "full-screen carousel"
                 );
+                M3Carousel fullScreen = carouselWithLayout(carousels, M3CarouselLayout.FULL_SCREEN);
+                ScrollPane fullScreenViewport = assertInstanceOf(
+                        ScrollPane.class,
+                        requireVisibleStyledDescendant(
+                                fullScreen,
+                                M3Carousel.VIEWPORT_STYLE_CLASS,
+                                "full-screen carousel viewport"
+                        )
+                );
+                Node fullScreenViewportNode = Objects.requireNonNull(
+                        fullScreenViewport.lookup(".viewport"),
+                        "full-screen carousel viewport node"
+                );
+                Node fullScreenTrack = requireVisibleStyledDescendant(
+                        fullScreen,
+                        M3Carousel.TRACK_STYLE_CLASS,
+                        "full-screen carousel track"
+                );
+                Bounds fullScreenViewportBounds =
+                        fullScreenViewportNode.localToScene(fullScreenViewportNode.getLayoutBounds());
+                Bounds fullScreenTrackBounds = fullScreenTrack.localToScene(fullScreenTrack.getLayoutBounds());
+                assertTrue(
+                        fullScreenTrackBounds.getHeight() > fullScreenViewportBounds.getHeight() * 2.0,
+                        () -> "full-screen carousel should stack vertical pages: track="
+                                + fullScreenTrackBounds + ", viewport=" + fullScreenViewportBounds
+                );
+                for (Node item : fullScreen.getItems()) {
+                    Node mask = carouselItemMask(item, "full-screen carousel");
+                    Bounds maskBounds = mask.localToScene(mask.getLayoutBounds());
+                    assertEquals(fullScreenViewportBounds.getWidth(), maskBounds.getWidth(), 1.5,
+                            "full-screen item width should fill its viewport");
+                    assertEquals(fullScreenViewportBounds.getHeight(), maskBounds.getHeight(), 1.5,
+                            "full-screen item height should fill its viewport");
+                }
 
                 M3Carousel multiBrowse = carouselWithLayout(carousels, M3CarouselLayout.MULTI_BROWSE);
                 M3Carousel uncontained = carouselWithLayout(carousels, M3CarouselLayout.UNCONTAINED);
@@ -16925,8 +16959,8 @@ final class M3FXDemoVisualSmokeTest {
                                 + ", appBarBounds=" + appBarBounds);
                 assertTrue(titleBounds.getCenterY() > appBarBounds.getCenterY(),
                         () -> "tall top app bar title should sit below the icon row: variant="
-                            + appBar.getVariant() + ", titleBounds=" + titleBounds
-                            + ", appBarBounds=" + appBarBounds);
+                                + appBar.getVariant() + ", titleBounds=" + titleBounds
+                                + ", appBarBounds=" + appBarBounds);
             }
             case MEDIUM_FLEXIBLE, LARGE_FLEXIBLE -> {
                 if (compactFlexibleTitle) {

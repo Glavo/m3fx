@@ -8,7 +8,8 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// Defines the Material Design 3 layout strategy used by [M3Carousel].
 ///
 /// Contained layouts dynamically assign large, medium, and small item widths around the selected focal item.
-/// Uncontained layouts preserve authored item widths, while full-screen layouts size each item to the viewport.
+/// Uncontained layouts preserve authored item widths, while the full-screen layout stacks viewport-sized items
+/// vertically.
 /// See [Material Design carousel layouts](https://m3.material.io/components/carousel/specs).
 @NotNullByDefault
 public enum M3CarouselLayout {
@@ -32,7 +33,7 @@ public enum M3CarouselLayout {
     /// Shows one centered large focal item between two small preview items.
     CENTER_ALIGNED_HERO("m3-carousel-center-aligned-hero", true, true, false),
 
-    /// Shows one edge-to-edge item at a time and always snaps to item boundaries.
+    /// Shows one edge-to-edge item at a time in a vertical feed and always snaps to item boundaries.
     FULL_SCREEN("m3-carousel-full-screen", true, false, false);
 
     /// The style class applied to carousels using this layout.
@@ -49,9 +50,9 @@ public enum M3CarouselLayout {
 
     /// Creates a carousel layout descriptor.
     ///
-    /// @param styleClass the style class applied to the carousel
-    /// @param snapScrolling whether free scrolling should settle on an item
-    /// @param centeredFocalItem whether the focal item is centered
+    /// @param styleClass              the style class applied to the carousel
+    /// @param snapScrolling           whether free scrolling should settle on an item
+    /// @param centeredFocalItem       whether the focal item is centered
     /// @param preservesAuthoredWidths whether child preferred widths are preserved
     M3CarouselLayout(
             String styleClass,

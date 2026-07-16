@@ -30,14 +30,19 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
     /// The default maximum preferred viewport width.
     private static final double DEFAULT_MAX_PREF_WIDTH = M3CarouselTrack.DEFAULT_MAX_PREF_WIDTH;
 
-    /// The internal horizontal item track.
+    /// The internal item track.
     private final M3CarouselTrack track = new M3CarouselTrack(getSkinnable());
 
     /// The internal viewport used to scroll the item track.
     private final ScrollPane viewport = new ScrollPane(track);
 
-    /// The reusable selected-item scroll transition.
-    private final M3DoubleTransition scrollAnimation = new M3DoubleTransition(viewport.hvalueProperty());
+    /// The reusable selected-item horizontal scroll transition.
+    private final M3DoubleTransition horizontalScrollAnimation =
+            new M3DoubleTransition(viewport.hvalueProperty());
+
+    /// The reusable selected-item vertical scroll transition.
+    private final M3DoubleTransition verticalScrollAnimation =
+            new M3DoubleTransition(viewport.vvalueProperty());
 
     /// Refreshes keyline geometry and active scrolling when inherited reduced-motion settings change.
     private final M3MotionSettingsObserver motionSettingsObserver;
@@ -55,7 +60,7 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
     private boolean viewportTrackingDirty;
 
     /// Latest normalized viewport value received during direct interaction.
-    private double pendingViewportHValue;
+    private double pendingViewportValue;
 
     /// Coalesces high-frequency viewport changes to one keyline update per JavaFX pulse.
     private final AnimationTimer viewportTrackingTimer = new AnimationTimer() {
@@ -85,14 +90,20 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
     };
 
     /// Observes viewport movement and schedules snap settling for contained layouts.
-    private final ChangeListener<Number> viewportHValueListener = (observable, oldValue, newValue) -> {
+    private final ChangeListener<Number> viewportValueListener = (observable, oldValue, newValue) -> {
+        boolean vertical = getSkinnable().getCarouselLayout() == M3CarouselLayout.FULL_SCREEN;
+        if ((vertical && observable != viewport.vvalueProperty())
+                || (!vertical && observable != viewport.hvalueProperty())) {
+            return;
+        }
         if (settingScrollValue
                 || !viewportInteractionActive
-                || scrollAnimation.getStatus() == Animation.Status.RUNNING
+                || horizontalScrollAnimation.getStatus() == Animation.Status.RUNNING
+                || verticalScrollAnimation.getStatus() == Animation.Status.RUNNING
                 || !getSkinnable().getCarouselLayout().usesSnapScrolling()) {
             return;
         }
-        pendingViewportHValue = newValue.doubleValue();
+        pendingViewportValue = newValue.doubleValue();
         viewportTrackingDirty = true;
         scrollSettleDelay.playFromStart();
     };
@@ -113,6 +124,8 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
     private final ChangeListener<M3CarouselLayout> carouselLayoutListener =
             (observable, oldValue, newValue) -> {
                 cancelViewportInteraction();
+                stopScrollAnimation();
+                configureViewportAxis();
                 track.refreshLayoutStrategy();
                 requestSelectedScroll(false);
             };
@@ -124,10 +137,10 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
                 requestSelectedScroll(false);
             };
 
-    /// Supplies final viewport width to contained arrangement solving.
+    /// Supplies final viewport dimensions to arrangement solving and full-screen pagination.
     private final ChangeListener<Bounds> viewportBoundsListener =
             (observable, oldValue, newValue) -> {
-                track.setViewportWidth(newValue.getWidth());
+                track.setViewportSize(newValue.getWidth(), newValue.getHeight());
                 requestSelectedScroll(false);
             };
 
@@ -150,7 +163,8 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
         control.carouselLayoutProperty().addListener(carouselLayoutListener);
         control.effectiveNodeOrientationProperty().addListener(orientationListener);
         viewport.viewportBoundsProperty().addListener(viewportBoundsListener);
-        viewport.hvalueProperty().addListener(viewportHValueListener);
+        viewport.hvalueProperty().addListener(viewportValueListener);
+        viewport.vvalueProperty().addListener(viewportValueListener);
         scrollSettleDelay.setOnFinished(event -> settleToNearestItem());
         updateItems();
     }
@@ -170,7 +184,8 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
         getSkinnable().carouselLayoutProperty().removeListener(carouselLayoutListener);
         getSkinnable().effectiveNodeOrientationProperty().removeListener(orientationListener);
         viewport.viewportBoundsProperty().removeListener(viewportBoundsListener);
-        viewport.hvalueProperty().removeListener(viewportHValueListener);
+        viewport.hvalueProperty().removeListener(viewportValueListener);
+        viewport.vvalueProperty().removeListener(viewportValueListener);
         viewport.removeEventFilter(ScrollEvent.SCROLL, viewportScrollInteractionHandler);
         viewport.removeEventFilter(MouseEvent.MOUSE_DRAGGED, viewportDragInteractionHandler);
         viewport.removeEventFilter(MouseEvent.MOUSE_RELEASED, viewportReleaseInteractionHandler);
@@ -209,6 +224,11 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
             double bottomInset,
             double leftInset
     ) {
+        if (getSkinnable().getCarouselLayout() == M3CarouselLayout.FULL_SCREEN) {
+            return topInset
+                    + track.preferredViewportHeight(Math.max(0.0, width - leftInset - rightInset))
+                    + bottomInset;
+        }
         return topInset + viewport.minHeight(width) + bottomInset;
     }
 
@@ -234,13 +254,18 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
             double bottomInset,
             double leftInset
     ) {
+        if (getSkinnable().getCarouselLayout() == M3CarouselLayout.FULL_SCREEN) {
+            return topInset
+                    + track.preferredViewportHeight(Math.max(0.0, width - leftInset - rightInset))
+                    + bottomInset;
+        }
         return topInset + viewport.prefHeight(width) + bottomInset;
     }
 
     /// Lays out the viewport in the control bounds and completes any pending selected-item scroll.
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
-        track.setViewportWidth(width);
+        track.setViewportSize(width, height);
         viewport.resizeRelocate(x, y, width, height);
         if (pendingSelectedScroll) {
             boolean animated = pendingSelectedScrollAnimated;
@@ -262,15 +287,33 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
         M3ScrollPanes.enableSmoothScrolling(viewport);
         track.getStyleClass().add(M3Carousel.TRACK_STYLE_CLASS);
         viewport.setManaged(false);
-        viewport.setFitToHeight(true);
         viewport.setPannable(true);
         viewport.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         viewport.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        configureViewportAxis();
+    }
+
+    /// Configures the ScrollPane for horizontal keylines or vertical full-screen pages.
+    private void configureViewportAxis() {
+        boolean vertical = getSkinnable().getCarouselLayout() == M3CarouselLayout.FULL_SCREEN;
+        viewport.setFitToWidth(vertical);
+        viewport.setFitToHeight(!vertical);
+        settingScrollValue = true;
+        try {
+            if (vertical) {
+                viewport.setHvalue(0.0);
+            } else {
+                viewport.setVvalue(0.0);
+            }
+        } finally {
+            settingScrollValue = false;
+        }
     }
 
     /// Mirrors the public item list into the internal track.
     private void updateItems() {
         cancelViewportInteraction();
+        stopScrollAnimation();
         track.setItems(getSkinnable().getItems());
         getSkinnable().requestLayout();
     }
@@ -304,22 +347,30 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
             return false;
         }
 
-        double viewportWidth = viewport.getViewportBounds().getWidth();
-        if (viewportWidth <= 0.0) {
+        boolean vertical = getSkinnable().getCarouselLayout() == M3CarouselLayout.FULL_SCREEN;
+        double viewportExtent = vertical
+                ? viewport.getViewportBounds().getHeight()
+                : viewport.getViewportBounds().getWidth();
+        if (viewportExtent <= 0.0) {
             return true;
         }
 
-        animateOrSetHValue(track.targetHValue(selectedIndex, viewportWidth), animated);
+        animateOrSetScrollValue(track.targetScrollValue(selectedIndex, viewportExtent), animated);
         return false;
     }
 
-    /// Animates or directly sets the viewport horizontal value.
-    private void animateOrSetHValue(double targetHValue, boolean animated) {
+    /// Animates or directly sets the viewport value for the active scrolling axis.
+    private void animateOrSetScrollValue(double targetValue, boolean animated) {
         stopScrollAnimation();
+        boolean vertical = getSkinnable().getCarouselLayout() == M3CarouselLayout.FULL_SCREEN;
         if (!animated || getSkinnable().getScene() == null) {
             settingScrollValue = true;
             try {
-                viewport.setHvalue(targetHValue);
+                if (vertical) {
+                    viewport.setVvalue(targetValue);
+                } else {
+                    viewport.setHvalue(targetValue);
+                }
             } finally {
                 settingScrollValue = false;
             }
@@ -327,8 +378,9 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
         }
 
         M3MotionSpec spec = M3Animation.defaultSpatial(getSkinnable());
-        scrollAnimation.configure(spec, targetHValue);
-        M3Animation.playFromStart(getSkinnable(), scrollAnimation);
+        M3DoubleTransition animation = vertical ? verticalScrollAnimation : horizontalScrollAnimation;
+        animation.configure(spec, targetValue);
+        M3Animation.playFromStart(getSkinnable(), animation);
     }
 
     /// Marks subsequent viewport value changes as direct interaction-driven movement.
@@ -342,7 +394,9 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
         pendingSelectedScrollAnimated = false;
         if (!viewportInteractionActive) {
             viewportInteractionActive = true;
-            pendingViewportHValue = viewport.getHvalue();
+            pendingViewportValue = getSkinnable().getCarouselLayout() == M3CarouselLayout.FULL_SCREEN
+                    ? viewport.getVvalue()
+                    : viewport.getHvalue();
             viewportTrackingDirty = false;
             viewportTrackingTimer.start();
         }
@@ -354,7 +408,10 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
             return;
         }
         viewportTrackingDirty = false;
-        track.followViewportPosition(pendingViewportHValue, viewport.getViewportBounds().getWidth());
+        double viewportExtent = getSkinnable().getCarouselLayout() == M3CarouselLayout.FULL_SCREEN
+                ? viewport.getViewportBounds().getHeight()
+                : viewport.getViewportBounds().getWidth();
+        track.followViewportPosition(pendingViewportValue, viewportExtent);
     }
 
     /// Stops interaction tracking without selecting or scrolling an item.
@@ -375,12 +432,16 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
             return;
         }
 
-        double viewportWidth = viewport.getViewportBounds().getWidth();
-        if (viewportWidth <= 0.0) {
+        boolean vertical = carousel.getCarouselLayout() == M3CarouselLayout.FULL_SCREEN;
+        double viewportExtent = vertical
+                ? viewport.getViewportBounds().getHeight()
+                : viewport.getViewportBounds().getWidth();
+        if (viewportExtent <= 0.0) {
             return;
         }
 
-        int nearestIndex = track.nearestSelectableIndex(viewport.getHvalue(), viewportWidth);
+        double viewportValue = vertical ? viewport.getVvalue() : viewport.getHvalue();
+        int nearestIndex = track.nearestSelectableIndex(viewportValue, viewportExtent);
 
         if (nearestIndex < 0) {
             return;
@@ -388,13 +449,14 @@ public final class M3CarouselSkin extends SkinBase<M3Carousel> {
         if (nearestIndex != carousel.getSelectedIndex()) {
             carousel.selectIndex(nearestIndex);
         } else {
-            animateOrSetHValue(track.targetHValue(nearestIndex, viewportWidth), true);
+            animateOrSetScrollValue(track.targetScrollValue(nearestIndex, viewportExtent), true);
         }
     }
 
     /// Stops the current scroll animation.
     private void stopScrollAnimation() {
-        scrollAnimation.stop();
+        horizontalScrollAnimation.stop();
+        verticalScrollAnimation.stop();
     }
 
 }

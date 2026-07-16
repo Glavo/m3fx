@@ -28,7 +28,8 @@ import java.util.function.Function;
 /// Internal carousel track that computes and animates Material keyline arrangements.
 ///
 /// The track owns layout geometry but never changes application-owned minimum, preferred, or maximum child sizes.
-/// One reusable transition interpolates width roles without allocating per-frame collections or path objects.
+/// One reusable transition interpolates width roles without allocating per-frame collections or path objects. The
+/// five browsing layouts use horizontal keylines; the full-screen layout stacks viewport-sized items vertically.
 @NotNullByDefault
 final class M3CarouselTrack extends HBox {
     /// Default maximum preferred viewport width used before a real viewport is available.
@@ -139,6 +140,9 @@ final class M3CarouselTrack extends HBox {
 
     /// Width of the visible viewport.
     private double viewportWidth;
+
+    /// Height of the visible viewport.
+    private double viewportHeight;
 
     /// Solved large-item width for the current pass.
     private double solvedLargeWidth;
@@ -299,7 +303,7 @@ final class M3CarouselTrack extends HBox {
 
     /// Follows direct viewport movement by interpolating between neighboring snapping arrangements.
     ///
-    /// @param hvalue the normalized viewport position
+    /// @param hvalue       the normalized viewport position
     /// @param visibleWidth the visible viewport width
     void followViewportPosition(double hvalue, double visibleWidth) {
         M3CarouselLayout layout = owner.getCarouselLayout();
@@ -320,8 +324,8 @@ final class M3CarouselTrack extends HBox {
         int secondOrdinal = Math.max(0, Math.min(layoutItemCount - 1, insertionOrdinal));
         int firstIndex = layoutIndices[firstOrdinal];
         int secondIndex = layoutIndices[secondOrdinal];
-        double firstPosition = targetHValue(firstIndex, visibleWidth);
-        double secondPosition = targetHValue(secondIndex, visibleWidth);
+        double firstPosition = targetScrollValue(firstIndex, visibleWidth);
+        double secondPosition = targetScrollValue(secondIndex, visibleWidth);
         int lowerIndex;
         int upperIndex;
         double lowerPosition;
@@ -350,16 +354,17 @@ final class M3CarouselTrack extends HBox {
             requestLayout();
         }
     }
+
     /// Returns the insertion ordinal surrounding one normalized viewport target.
     private int targetInsertionOrdinal(double position, double visibleWidth) {
-        double firstTarget = targetHValue(layoutIndices[0], visibleWidth);
-        double lastTarget = targetHValue(layoutIndices[layoutItemCount - 1], visibleWidth);
+        double firstTarget = targetScrollValue(layoutIndices[0], visibleWidth);
+        double lastTarget = targetScrollValue(layoutIndices[layoutItemCount - 1], visibleWidth);
         boolean ascending = firstTarget <= lastTarget;
         int low = 0;
         int high = layoutItemCount;
         while (low < high) {
             int middle = (low + high) >>> 1;
-            double target = targetHValue(layoutIndices[middle], visibleWidth);
+            double target = targetScrollValue(layoutIndices[middle], visibleWidth);
             boolean beforeInsertion = ascending ? target < position : target > position;
             if (beforeInsertion) {
                 low = middle + 1;
@@ -376,7 +381,7 @@ final class M3CarouselTrack extends HBox {
     /// insertion point can be nearest. This avoids recomputing every item's complete target geometry when direct
     /// scrolling settles.
     ///
-    /// @param position the normalized viewport position
+    /// @param position     the normalized viewport position
     /// @param visibleWidth the visible viewport width
     /// @return the nearest selectable public item index, or `-1` when none participates
     int nearestSelectableIndex(double position, double visibleWidth) {
@@ -406,20 +411,24 @@ final class M3CarouselTrack extends HBox {
 
         int leadingIndex = layoutIndices[leadingOrdinal];
         int trailingIndex = layoutIndices[trailingOrdinal];
-        double leadingDistance = Math.abs(targetHValue(leadingIndex, visibleWidth) - normalizedPosition);
-        double trailingDistance = Math.abs(targetHValue(trailingIndex, visibleWidth) - normalizedPosition);
+        double leadingDistance = Math.abs(targetScrollValue(leadingIndex, visibleWidth) - normalizedPosition);
+        double trailingDistance = Math.abs(targetScrollValue(trailingIndex, visibleWidth) - normalizedPosition);
         return leadingDistance <= trailingDistance ? leadingIndex : trailingIndex;
     }
 
-    /// Updates the viewport width used by arrangement solving.
+    /// Updates the viewport size used by arrangement solving and full-screen pagination.
     ///
-    /// @param viewportWidth the visible viewport width
-    void setViewportWidth(double viewportWidth) {
+    /// @param viewportWidth  the visible viewport width
+    /// @param viewportHeight the visible viewport height
+    void setViewportSize(double viewportWidth, double viewportHeight) {
         double normalizedWidth = Math.max(0.0, viewportWidth);
-        if (Math.abs(this.viewportWidth - normalizedWidth) < 0.001) {
+        double normalizedHeight = Math.max(0.0, viewportHeight);
+        if (Math.abs(this.viewportWidth - normalizedWidth) < 0.001
+                && Math.abs(this.viewportHeight - normalizedHeight) < 0.001) {
             return;
         }
         this.viewportWidth = normalizedWidth;
+        this.viewportHeight = normalizedHeight;
         requestLayout();
     }
 
@@ -432,6 +441,16 @@ final class M3CarouselTrack extends HBox {
     /// Computes preferred width from the active arrangement.
     @Override
     protected double computePrefWidth(double height) {
+        if (owner.getCarouselLayout() == M3CarouselLayout.FULL_SCREEN) {
+            double width = viewportWidth;
+            for (Node child : getChildren()) {
+                M3CarouselItemSlot slot = (M3CarouselItemSlot) child;
+                if (slot.participatesInLayout()) {
+                    width = Math.max(width, childPrefWidth(slot, height));
+                }
+            }
+            return width;
+        }
         prepareArrangement();
         return totalWidth(fromSelection, toSelection, selectionProgress.get(), height);
     }
@@ -445,18 +464,58 @@ final class M3CarouselTrack extends HBox {
     /// Computes preferred height from child content and vertical padding.
     @Override
     protected double computePrefHeight(double width) {
+        if (owner.getCarouselLayout() == M3CarouselLayout.FULL_SCREEN) {
+            prepareLayoutOrdinals();
+            if (layoutItemCount == 0) {
+                return 0.0;
+            }
+            return fullScreenItemHeight(width) * layoutItemCount
+                    + effectiveSpacing() * Math.max(0, layoutItemCount - 1);
+        }
+        return preferredHorizontalViewportHeight(width);
+    }
+
+    /// Returns the preferred height of one visible carousel viewport.
+    ///
+    /// @param width the available content width
+    /// @return the preferred viewport height
+    double preferredViewportHeight(double width) {
+        return preferredHorizontalViewportHeight(width);
+    }
+
+    /// Returns the largest authored item height used by a horizontal track or one full-screen page.
+    private double preferredHorizontalViewportHeight(double width) {
         double height = 0.0;
         for (Node child : getChildren()) {
             M3CarouselItemSlot slot = (M3CarouselItemSlot) child;
             if (slot.participatesInLayout()) {
-                height = Math.max(height, childPrefHeight(slot, -1.0));
+                height = Math.max(height, childPrefHeight(slot, width));
             }
         }
         return verticalLeadingPadding() + height + verticalTrailingPadding();
     }
+
     /// Positions children using the interpolated focal arrangement.
     @Override
     protected void layoutChildren() {
+        if (owner.getCarouselLayout() == M3CarouselLayout.FULL_SCREEN) {
+            double width = getWidth();
+            double height = fullScreenItemHeight(width);
+            double cursor = 0.0;
+            double spacing = effectiveSpacing();
+            for (int index = 0; index < getChildren().size(); index++) {
+                M3CarouselItemSlot slot = slotAt(index);
+                if (!slot.participatesInLayout()) {
+                    continue;
+                }
+                slot.configure(width, itemShape.get(), false);
+                layoutChild(slot, 0.0, cursor, width, height);
+                slot.layout();
+                cursor += height + spacing;
+            }
+            return;
+        }
+
         prepareArrangement();
         double progress = selectionProgress.get();
         double contentHeight = Math.max(
@@ -512,14 +571,26 @@ final class M3CarouselTrack extends HBox {
 
     /// Returns the final normalized scroll value for a selected item.
     ///
-    /// @param index the selected item index
-    /// @param visibleWidth the viewport width
-    /// @return the normalized horizontal scroll value
-    double targetHValue(int index, double visibleWidth) {
+    /// @param index         the selected item index
+    /// @param visibleExtent the viewport width, or height for a full-screen layout
+    /// @return the normalized scroll value
+    double targetScrollValue(int index, double visibleExtent) {
         prepareArrangement();
         int selection = normalizedSelection(index);
+        if (owner.getCarouselLayout() == M3CarouselLayout.FULL_SCREEN) {
+            double itemHeight = fullScreenItemHeight(viewportWidth);
+            double contentHeight = itemHeight * layoutItemCount
+                    + effectiveSpacing() * Math.max(0, layoutItemCount - 1);
+            double maxPixel = Math.max(0.0, contentHeight - visibleExtent);
+            if (maxPixel <= 0.0) {
+                return 0.0;
+            }
+            double targetPixel = layoutOrdinal(index) * (itemHeight + effectiveSpacing());
+            return clamp(targetPixel / maxPixel);
+        }
+
         double contentWidth = totalWidth(selection, selection, 1.0, getHeight());
-        double maxPixel = Math.max(0.0, contentWidth - visibleWidth);
+        double maxPixel = Math.max(0.0, contentWidth - visibleExtent);
         if (maxPixel <= 0.0) {
             return 0.0;
         }
@@ -529,9 +600,9 @@ final class M3CarouselTrack extends HBox {
         M3CarouselLayout layout = owner.getCarouselLayout();
         double targetPixel;
         if (layout.centersFocalItem() || layout.preservesAuthoredWidths()) {
-            targetPixel = itemMinX - (visibleWidth - itemWidth) / 2.0;
+            targetPixel = itemMinX - (visibleExtent - itemWidth) / 2.0;
         } else if (M3NodeLayout.isRightToLeft(owner)) {
-            targetPixel = itemMinX + itemWidth - visibleWidth;
+            targetPixel = itemMinX + itemWidth - visibleExtent;
         } else {
             targetPixel = itemMinX;
         }
@@ -848,6 +919,7 @@ final class M3CarouselTrack extends HBox {
         }
         return new Arrangement(priority, small, smallCount, medium, mediumCount, large, largeCount);
     }
+
     /// Returns the interpolated width for one item.
     private double interpolatedWidth(
             int index,
@@ -963,6 +1035,7 @@ final class M3CarouselTrack extends HBox {
         int ordinal = layoutOrdinals[index];
         return Math.max(ordinal, 0);
     }
+
     /// Computes total track width for an interpolated arrangement.
     private double totalWidth(
             int startSelection,
@@ -1017,6 +1090,14 @@ final class M3CarouselTrack extends HBox {
         return owner.getCarouselLayout() == M3CarouselLayout.FULL_SCREEN
                 ? getSpacing() * 2.0
                 : getSpacing();
+    }
+
+    /// Returns one full-screen page height, preferring the final viewport height when available.
+    private double fullScreenItemHeight(double width) {
+        if (viewportHeight > 0.0) {
+            return viewportHeight;
+        }
+        return Math.max(MIN_LAYOUT_ITEM_WIDTH, preferredHorizontalViewportHeight(width));
     }
 
     /// Returns logical leading padding for the selected layout.
@@ -1150,13 +1231,13 @@ final class M3CarouselTrack extends HBox {
 
     /// One fitted combination of Material small, medium, and large item roles.
     ///
-    /// @param priority the source permutation priority
-    /// @param smallSize the fitted small-item width
-    /// @param smallCount the number of small items
-    /// @param mediumSize the fitted medium-item width
+    /// @param priority    the source permutation priority
+    /// @param smallSize   the fitted small-item width
+    /// @param smallCount  the number of small items
+    /// @param mediumSize  the fitted medium-item width
     /// @param mediumCount the number of medium items
-    /// @param largeSize the fitted large-item width
-    /// @param largeCount the number of large items
+    /// @param largeSize   the fitted large-item width
+    /// @param largeCount  the number of large items
     @NotNullByDefault
     private record Arrangement(
             int priority,
@@ -1209,6 +1290,7 @@ final class M3CarouselTrack extends HBox {
             return true;
         }
     }
+
     /// CSS metadata for internal carousel track metrics.
     @NotNullByDefault
     private static final class StyleableProperties {
