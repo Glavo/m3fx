@@ -136,6 +136,7 @@ Use these tasks before distributing artifacts:
 ```shell
 ./gradlew releaseCheck
 ./gradlew check
+./gradlew fullTest
 ./gradlew compileJava
 ./gradlew test
 ./gradlew shadowDemoJar
@@ -143,9 +144,9 @@ Use these tasks before distributing artifacts:
 ./gradlew jlinkDemoAllPlatformArchitectureRuntimes
 ```
 
-`releaseCheck` runs `check`, `:demo:test`, `shadowDemoJar`, and `jlinkDemoRuntime`. It is the local release gate for the library publication, demo visual and behavior tests, and the host-platform demo distribution. It does not run the all-platform jlink aggregate task, so release builds can opt into the cross-platform runtime images they actually need.
+`releaseCheck` runs `check`, `fullTest`, `shadowDemoJar`, and `jlinkDemoRuntime`. It is the local release gate for the library publication, all test tiers, demo visual and behavior tests, and the host-platform demo distribution. It does not run the all-platform jlink aggregate task, so release builds can opt into the cross-platform runtime images they actually need.
 
-The GitHub Actions release workflow runs the same `releaseCheck` entry point under Xvfb on Linux and then uploads the generated demo shadow jar with `actions/upload-artifact@v7` and `archive: false`. It also uploads visual report directories, including snapshot PNGs and HTML indexes, plus Gradle HTML and XML test reports with `if: always()` so failed or suspicious visual runs keep reviewable evidence.
+The GitHub Actions workflow runs the Tier 1 build gate under Xvfb for pushes and pull requests. A manual workflow dispatch runs the complete `releaseCheck` entry point. Both paths upload the generated demo shadow jar with `actions/upload-artifact@v7` and `archive: false`, and preserve available visual, HTML, and XML test reports with `if: always()`.
 
 `check` runs publication metadata verification. The verification generates the Maven POM and fails if copied project metadata remains or if JavaFX appears in the published dependency metadata.
 

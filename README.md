@@ -173,11 +173,14 @@ Common local gates:
 
 ```shell
 ./gradlew check --warning-mode all
+./gradlew fullTest --warning-mode all
 ./gradlew releaseCheck --warning-mode all
 ./gradlew jlinkDemoAllPlatformArchitectureRuntimes
 ```
 
-`check` covers compilation, tests, Maven publication metadata, main, sources, and Javadoc artifact structure, and build-local publication consumption. `releaseCheck` adds demo tests, demo shadow jar verification, and the default host-platform demo jlink runtime image. The all-platform jlink aggregate validates Windows, Linux, and macOS runtime images on x64 and AArch64 targets.
+`check` covers compilation, fast Tier 1 tests, Maven publication metadata, main, sources, and Javadoc artifact structure, and build-local publication consumption. `fullTest` runs every library and demo test tier. `releaseCheck` adds the demo shadow jar verification and the default host-platform demo jlink runtime image. The all-platform jlink aggregate validates Windows, Linux, and macOS runtime images on x64 and AArch64 targets.
+
+See [docs/TESTING.md](docs/TESTING.md) for the test-tier boundaries and commands.
 
 ## Packaging Notes
 

@@ -35,6 +35,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.glavo.m3fx.testing.Tier2Test;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -861,6 +862,7 @@ final class M3FormControlsTest {
     }
 
     /// Verifies that validation summary rows expose Material state layer and ripple feedback.
+    @Tier2Test
     @Test
     void validationSummaryRowsExposeMaterialStateLayerFeedback() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();

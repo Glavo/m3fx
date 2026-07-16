@@ -21,6 +21,7 @@ import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
+import org.glavo.m3fx.testing.Tier2Test;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -68,6 +69,7 @@ final class M3CarouselLayoutTest {
     }
 
     /// Verifies uncontained layouts preserve authored widths and full-screen items page vertically.
+    @Tier2Test
     @Test
     void rendersUncontainedAndFullScreenGeometry() {
         FxTestUtils.runOnFxThread(() -> {
@@ -118,6 +120,7 @@ final class M3CarouselLayoutTest {
     }
 
     /// Verifies contained layouts produce their required focal, medium, and preview width roles.
+    @Tier2Test
     @Test
     void rendersContainedKeylineRoles() {
         FxTestUtils.runOnFxThread(() -> {
@@ -163,6 +166,7 @@ final class M3CarouselLayoutTest {
     }
 
     /// Verifies free scrolling in snapping layouts settles on the nearest focal item.
+    @Tier2Test
     @Test
     void snapsFullScreenScrollingToNearestItem() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();

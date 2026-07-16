@@ -16,6 +16,7 @@ import javafx.stage.Stage;
 import javafx.stage.Window;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.testing.Tier2Test;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -35,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Verifies popup lifecycle behavior when owners leave the reachable scene graph.
 @NotNullByDefault
+@Tier2Test
 final class M3PopupReachabilityTest {
     /// Starts JavaFX before popup reachability tests create windows.
     @BeforeAll

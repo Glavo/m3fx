@@ -48,6 +48,7 @@ dependencies {
     addJavafxDependencies("implementation", javafxVersion)
 
     testImplementation(platform("org.junit:junit-bom:6.0.0"))
+    testImplementation(testFixtures(project(":")))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
@@ -67,10 +68,6 @@ val jlinkExecutable = providers.gradleProperty("m3fx.jlink.executable")
 tasks.withType<JavaCompile>().configureEach {
     options.release = 17
     options.encoding = "UTF-8"
-}
-
-tasks.test {
-    useJUnitPlatform()
 }
 
 val downloadDemoFont = tasks.register("downloadDemoFont") {

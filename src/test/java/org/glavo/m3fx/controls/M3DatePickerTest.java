@@ -22,6 +22,7 @@ import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
+import org.glavo.m3fx.testing.Tier2Test;
 import org.junit.jupiter.api.Test;
 
 import java.time.DayOfWeek;
@@ -386,6 +387,7 @@ final class M3DatePickerTest {
     }
 
     /// Verifies that the date picker renders a non-empty Material-colored calendar surface.
+    @Tier2Test
     @Test
     void datePickerSnapshotRendersCalendarSurface() {
         FxTestUtils.runOnFxThread(() -> {

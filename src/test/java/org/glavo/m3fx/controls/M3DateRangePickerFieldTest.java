@@ -22,6 +22,7 @@ import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
+import org.glavo.m3fx.testing.Tier2Test;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -130,6 +131,7 @@ final class M3DateRangePickerFieldTest {
     }
 
     /// Verifies that popup presets render next to the picker and update the field range immediately.
+    @Tier2Test
     @Test
     void dateRangePickerFieldPresetsRenderAndApplyRange() {
         FxTestUtils.runOnFxThread(() -> {

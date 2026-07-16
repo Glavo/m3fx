@@ -26,6 +26,7 @@ import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.controls.M3ListCell;
 import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.testing.Tier2Test;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -43,6 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Verifies Material smooth scrolling behavior.
 @NotNullByDefault
+@Tier2Test
 final class M3ScrollPanesTest {
     /// The pulse count used after a smooth scroll reaches its target position.
     private static final int SMOOTH_SCROLL_COMPLETION_STABLE_PULSES = 2;

@@ -327,6 +327,18 @@ public final class FxTestUtils {
         assertTrue(warnings.isEmpty(), () -> formatLogRecords(warnings));
     }
 
+    /// Verifies that an interruptible task does not emit JavaFX CSS warnings.
+    ///
+    /// @param task the interruptible task to execute while warnings are captured
+    public static void assertNoCssWarningsInterruptibly(InterruptibleRunnable task) {
+        List<LogRecord> warnings = captureWarningsChecked(
+                Objects.requireNonNull(task, "task")::run,
+                "javafx.css",
+                "javafx.scene.CssStyleHelper"
+        );
+        assertTrue(warnings.isEmpty(), () -> formatLogRecords(warnings));
+    }
+
     /// Verifies that a task does not emit matching JavaFX CSS warnings.
     public static void assertNoCssWarningsMatching(Runnable task, Predicate<LogRecord> predicate) {
         List<LogRecord> warnings = captureCssWarnings(task);
@@ -836,6 +848,13 @@ public final class FxTestUtils {
     /// Represents a test action that may be interrupted while waiting for JavaFX work.
     @FunctionalInterface
     private interface CheckedRunnable {
+        /// Runs this action.
+        void run() throws InterruptedException;
+    }
+
+    /// Represents a public test-fixture action that may be interrupted while waiting for JavaFX work.
+    @FunctionalInterface
+    public interface InterruptibleRunnable {
         /// Runs this action.
         void run() throws InterruptedException;
     }

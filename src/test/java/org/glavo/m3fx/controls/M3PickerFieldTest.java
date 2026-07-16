@@ -24,6 +24,7 @@ import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
+import org.glavo.m3fx.testing.Tier2Test;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -76,6 +77,7 @@ final class M3PickerFieldTest {
     }
 
     /// Verifies that date picker field presets render next to the picker and update the field value.
+    @Tier2Test
     @Test
     void datePickerFieldPresetsRenderAndApplyDate() {
         FxTestUtils.runOnFxThread(() -> {
@@ -189,6 +191,7 @@ final class M3PickerFieldTest {
     }
 
     /// Verifies that time picker field presets render next to the picker and update the field value.
+    @Tier2Test
     @Test
     void timePickerFieldPresetsRenderAndApplyTime() {
         FxTestUtils.runOnFxThread(() -> {

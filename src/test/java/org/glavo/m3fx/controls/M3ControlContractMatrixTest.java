@@ -94,7 +94,6 @@ import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3DisclosureIcon;
 import org.glavo.m3fx.internal.M3InternalIcon;
-import org.glavo.m3fx.controls.M3ListCell;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
 import org.glavo.m3fx.internal.M3PopupStyles;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -164,6 +163,7 @@ import org.glavo.m3fx.internal.M3PopupPositioning;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
+import org.glavo.m3fx.testing.Tier2Test;
 import org.junit.jupiter.api.Test;
 
 import java.awt.image.BufferedImage;
@@ -199,9 +199,9 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/// Tests style classes and skins for m3fx controls.
+/// Verifies the shared behavioral, styling, skin, and rendering contracts of M3FX controls.
 @NotNullByDefault
-final class M3ControlStyleTest {
+final class M3ControlContractMatrixTest {
     /// The pulse count used after a rich tooltip popup takes pointer ownership.
     private static final int RICH_TOOLTIP_POPUP_OWNERSHIP_STABLE_PULSES = 2;
 
@@ -432,6 +432,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that standalone control stylesheets provide fallback color tokens without requiring a theme.
+    @Tier2Test
     @Test
     void standaloneControlStylesheetsResolveFallbackColorTokens() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -733,6 +734,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that standalone picker field popups resolve fallback color tokens without requiring a theme.
+    @Tier2Test
     @Test
     void standalonePickerFieldPopupsResolveFallbackColorTokens() throws InterruptedException {
         M3DatePickerField datePickerField = FxTestUtils.callOnFxThread(M3DatePickerField::new);
@@ -745,6 +747,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that standalone tooltip popups resolve fallback color tokens without requiring a theme.
+    @Tier2Test
     @Test
     void standaloneTooltipPopupsResolveFallbackColorTokens() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -860,6 +863,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that standalone controls resolve internal icon colors from fallback token CSS.
+    @Tier2Test
     @Test
     void standaloneInternalIconsResolveFallbackTokenColors() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -1492,6 +1496,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that disabled chips, segmented buttons, and list items render independent Material layers.
+    @Tier2Test
     @Test
     void disabledSelectionControlsRenderIndependentMaterialLayers() {
         M3Theme theme = M3Theme.defaultTheme();
@@ -1695,7 +1700,7 @@ final class M3ControlStyleTest {
             Region cardContainer = lookupRegion(card, ".m3-card-container");
             List<Node> effectTargets = List.of(button, chip, fab, cardContainer);
             List<DropShadow> enabledShadows = effectTargets.stream()
-                    .map(M3ControlStyleTest::assertDropShadow)
+                    .map(M3ControlContractMatrixTest::assertDropShadow)
                     .toList();
             List<Node> owners = List.of(button, chip, fab, card);
             PseudoClass focusVisible = PseudoClass.getPseudoClass("focus-visible");
@@ -1737,6 +1742,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that non-elevated button variants do not use pressed container scaling.
+    @Tier2Test
     @Test
     void nonElevatedButtonVariantsDoNotScaleWhenPressed() throws InterruptedException {
         for (M3ButtonVariant variant : List.of(
@@ -1764,6 +1770,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that flat labeled button controls do not use depth-style pressed scaling.
+    @Tier2Test
     @Test
     void flatLabeledButtonControlsDoNotScaleWhenPressed() throws InterruptedException {
         assertPressedScaleAfterRealPulse(() -> new M3AssistChip("Chip"), 120.0, 40.0, 1.0, "M3Chip");
@@ -1775,6 +1782,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that floating action buttons keep depth-style pressed scaling.
+    @Tier2Test
     @Test
     void floatingActionButtonKeepsDepthPressedScaling() throws InterruptedException {
         assertPressedScaleAfterRealPulse(
@@ -3346,6 +3354,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that standard-group expansion and release expose real intermediate animation frames.
+    @Tier2Test
     @Test
     void standardButtonGroupAnimatesArmedWidthAndRelease() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -3726,6 +3735,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies rendered connected-group surfaces and state layers for action and toggle-icon children.
+    @Tier2Test
     @Test
     void connectedButtonGroupsRenderStateSpecificInnerCorners() {
         FxTestUtils.runOnFxThread(() -> {
@@ -5060,6 +5070,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that right-to-left joined buttons render mirrored edge shapes in snapshots.
+    @Tier2Test
     @Test
     void rightToLeftJoinedButtonsRenderMirroredCornersInSnapshot() {
         FxTestUtils.runOnFxThread(() -> {
@@ -5477,6 +5488,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that FAB menu expand and collapse animations reach observable public states.
+    @Tier2Test
     @Test
     void fabMenuExpandAndCollapseAnimationsReachObservableStates() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -5904,6 +5916,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that disabled card variants style their containers without compounding content opacity.
+    @Tier2Test
     @Test
     void disabledCardsRenderVariantSpecificContainersWithoutCompoundingContentOpacity() {
         M3Theme theme = M3Theme.defaultTheme();
@@ -6540,6 +6553,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that running carousel scroll transitions settle when animations are disabled at runtime.
+    @Tier2Test
     @Test
     void carouselSettlesRunningScrollAnimationWhenAnimationsAreDisabled() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -7748,6 +7762,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that snackbar hosts remove dismissed snackbars after the exit animation.
+    @Tier2Test
     @Test
     void snackbarHostRemovesDismissedSnackbars() throws InterruptedException {
         AtomicReference<@Nullable M3Snackbar> snackbarReference = new AtomicReference<>();
@@ -7784,6 +7799,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that snackbar hosts display queued snackbars after the current snackbar is dismissed.
+    @Tier2Test
     @Test
     void snackbarHostQueuesSnackbars() throws InterruptedException {
         AtomicReference<@Nullable M3SnackbarHost> hostReference = new AtomicReference<>();
@@ -7887,6 +7903,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that snackbar hosts can dismiss the current snackbar and clear the queue in one call.
+    @Tier2Test
     @Test
     void snackbarHostDismissAllClearsCurrentAndQueuedSnackbars() throws InterruptedException {
         AtomicReference<@Nullable M3SnackbarHost> hostReference = new AtomicReference<>();
@@ -8265,6 +8282,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that queued snackbar promotion preserves action focus when the dismissed action owned focus.
+    @Tier2Test
     @Test
     void snackbarHostTransfersFocusedActionWhenQueuedSnackbarIsPromoted() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -8342,6 +8360,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that queued snackbar promotion does not steal focus from unrelated page content.
+    @Tier2Test
     @Test
     void snackbarHostKeepsExternalFocusWhenQueuedSnackbarPromotes() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -8429,6 +8448,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that explicit display-duration changes drive automatic snackbar dismissal.
+    @Tier2Test
     @Test
     void snackbarHostAutoDismissesWhenExplicitDurationBecomesFinite() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -8487,6 +8507,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that actionable snackbars remain visible until their interactive affordance is removed.
+    @Tier2Test
     @Test
     void snackbarHostKeepsActionableSnackbarUntilInteractivityIsRemoved() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -8563,6 +8584,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that inherited motion-behavior duration changes drive automatic snackbar dismissal.
+    @Tier2Test
     @Test
     void snackbarHostAutoDismissesWhenInheritedMotionBehaviorDurationChanges() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -8624,6 +8646,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that indefinite display duration disables automatic snackbar dismissal until a finite duration is set.
+    @Tier2Test
     @Test
     void snackbarHostIndefiniteDisplayDurationKeepsCurrentSnackbar() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -10936,6 +10959,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that text input layout presentation changes are observable in real JavaFX pulses.
+    @Tier2Test
     @Test
     void textInputLayoutAnimatesLabelClearButtonAndSupportingRow() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -10988,6 +11012,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that runtime motion changes settle active text input presentation animations.
+    @Tier2Test
     @Test
     void textInputLayoutSettlesRunningPresentationAnimationsWhenMotionIsDisabled() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -11502,6 +11527,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that text input trailing icon buttons keep square state layers and visible ripples.
+    @Tier2Test
     @Test
     void textInputLayoutTrailingIconButtonKeepsSquareRipple() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -12213,6 +12239,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that installed tooltips open from keyboard focus and close from Escape.
+    @Tier2Test
     @Test
     void tooltipInstalledOnFocusSupportsKeyboardDismissal() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -12257,6 +12284,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that installed tooltip popups inherit the owner's local motion settings.
+    @Tier2Test
     @Test
     void tooltipPopupInheritsOwnerMotionSettings() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -12364,6 +12392,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that installed tooltip show delays refresh while a pointer-triggered open is pending.
+    @Tier2Test
     @Test
     void tooltipShowDelayRefreshUsesThemeBehavior() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -12413,6 +12442,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that installed tooltip visible durations refresh while a pointer-triggered tooltip is showing.
+    @Tier2Test
     @Test
     void tooltipShowDurationRefreshUsesThemeBehavior() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -12471,6 +12501,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that installed tooltip hide delays refresh while a pointer-triggered close is pending.
+    @Tier2Test
     @Test
     void tooltipHideDelayRefreshUsesThemeBehavior() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -12763,6 +12794,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that rich tooltip popup hover keeps action content reachable.
+    @Tier2Test
     @Test
     void richTooltipStaysOpenWhilePopupIsHovered() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -12892,6 +12924,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that rich tooltip popup focus keeps action content reachable from the keyboard.
+    @Tier2Test
     @Test
     void richTooltipStaysOpenWhilePopupActionHasKeyboardFocus() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -12951,6 +12984,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that rich tooltip keyboard traversal connects the owner and popup actions.
+    @Tier2Test
     @Test
     void richTooltipKeyboardTraversalConnectsOwnerAndActions() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -13590,6 +13624,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that fallback text glyphs keep a padded line box instead of touching clipped edges.
+    @Tier2Test
     @Test
     void iconFallbackGlyphKeepsClearSnapshotEdges() {
         FxTestUtils.runOnFxThread(() -> {
@@ -13631,6 +13666,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that disclosure icons expose expanded state and animate their arrow rotation.
+    @Tier2Test
     @Test
     void disclosureIconAnimatesExpandedState() throws InterruptedException {
         AtomicReference<@Nullable SVGPath> shape = new AtomicReference<>();
@@ -14513,6 +14549,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that menu section headers and dividers render as grouped menu content.
+    @Tier2Test
     @Test
     void menuSectionHeaderSnapshotRendersGroupedContent() {
         FxTestUtils.runOnFxThread(() -> {
@@ -14796,6 +14833,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that submenu hover opens and closes the submenu popup after Material delays.
+    @Tier2Test
     @Test
     void subMenuItemHoverOpensAndClosesPopup() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -16674,6 +16712,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that rich tooltip popup action focus opened from a menu item is exposed through owner containers.
+    @Tier2Test
     @Test
     void menuItemRichTooltipPopupActionFocusRoutesThroughOwnerStack() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -17072,6 +17111,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that type-ahead reset delays refresh while printable-key prefixes are buffered.
+    @Tier2Test
     @Test
     void typeAheadResetDelayRefreshUsesThemeBehavior() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -17207,6 +17247,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that submenu hover open and close delays refresh while hover transitions are pending.
+    @Tier2Test
     @Test
     void subMenuHoverDelayRefreshUsesThemeBehavior() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -17398,6 +17439,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that submenu keyboard open and close keys mirror in right-to-left menus.
+    @Tier2Test
     @Test
     void menuKeyboardNavigationMirrorsSubMenuKeysForRightToLeft() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -17450,6 +17492,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that opening one submenu closes sibling submenus and keeps focus in the active branch.
+    @Tier2Test
     @Test
     void siblingSubMenusAreMutuallyExclusive() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -17516,6 +17559,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that submenu dismissal returns focus to the owning item without closing the parent popup.
+    @Tier2Test
     @Test
     void subMenuEscapeReturnsFocusToOwnerItem() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -17614,6 +17658,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that repeated dismissal calls retain an earlier popup focus-restoration request.
+    @Tier2Test
     @Test
     void repeatedPopupDismissalPreservesRequestedFocusRestoration() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -17761,6 +17806,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that submenu actions close the owning popup menu and return focus to the menu button.
+    @Tier2Test
     @Test
     void subMenuActionClosesMenuButtonPopup() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -17863,6 +17909,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies bounded pointer feedback and delegated editor focus feedback on the complete search container.
+    @Tier2Test
     @Test
     void searchBarRendersRippleStateLayerAndEditorFocusIndicator() {
         M3SearchBar searchBar = new M3SearchBar("Search");
@@ -18595,6 +18642,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that search views use active state to show or hide results.
+    @Tier2Test
     @Test
     void searchViewActiveStateControlsResultsVisibility() throws InterruptedException {
         M3SearchView searchView = searchView("Find");
@@ -18632,6 +18680,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that search view result transitions settle immediately when animations are disabled at runtime.
+    @Tier2Test
     @Test
     void searchViewResultsTransitionSettlesWhenAnimationsAreDisabledAtRuntime() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -19462,6 +19511,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that sheet controls expose animated shown state changes.
+    @Tier2Test
     @Test
     void sheetControlsSupportAnimatedShownState() throws InterruptedException {
         M3SideSheet sideSheet = sideSheet("Details", new Label("Side"));
@@ -19768,6 +19818,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that scrims expose animated shown state changes.
+    @Tier2Test
     @Test
     void scrimSupportsAnimatedShownState() throws InterruptedException {
         M3Scrim scrim = new M3Scrim();
@@ -20654,6 +20705,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that segmented button selected containers animate between selected states.
+    @Tier2Test
     @Test
     void segmentedButtonSelectionContainersAnimateBetweenStates() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -21613,6 +21665,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that selection indicator animations expose intermediate and final rendered states.
+    @Tier2Test
     @Test
     void selectionIndicatorAnimationsRenderIntermediateAndFinalStates() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -21817,6 +21870,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that checkbox indeterminate-to-selected transitions replay the mark animation.
+    @Tier2Test
     @Test
     void checkBoxIndeterminateTransitionReplaysMarkAnimation() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -22095,6 +22149,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that the switch hover state renders circular thumb feedback in snapshots.
+    @Tier2Test
     @Test
     void switchHoverStateLayerRendersCircularThumbFeedback() {
         FxTestUtils.runOnFxThread(() -> {
@@ -22268,6 +22323,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that a selected radio button paints its dot at the visual center of the outer indicator.
+    @Tier2Test
     @Test
     void selectedRadioButtonDotRendersCenteredInIndicator() {
         FxTestUtils.runOnFxThread(() -> {
@@ -22353,6 +22409,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies the complete Material slider size scale, inset-icon geometry, and interaction handle widths.
+    @Tier2Test
     @Test
     void sliderSizeScaleRendersPublishedGeometryAndTrackGraphics() {
         M3SliderSize[] sizes = M3SliderSize.values();
@@ -23256,6 +23313,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that indeterminate progress animations respond to runtime motion setting changes.
+    @Tier2Test
     @Test
     void indeterminateProgressAnimationsRefreshWhenMotionSettingsChange() throws InterruptedException {
         AtomicReference<@Nullable IndeterminateProgressMotionScene> sceneReference = new AtomicReference<>();
@@ -23309,6 +23367,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that the loading indicator restarts each indeterminate morph segment continuously.
+    @Tier2Test
     @Test
     void loadingIndicatorIndeterminateMorphSegmentsKeepRunning() throws InterruptedException {
         AtomicReference<@Nullable IndeterminateProgressMotionScene> sceneReference = new AtomicReference<>();
@@ -23338,6 +23397,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that the loading indicator morph reaches an observable scaled frame with local motion settings.
+    @Tier2Test
     @Test
     void loadingIndicatorIndeterminateMorphUsesMotionSchemeTiming() throws InterruptedException {
         AtomicReference<@Nullable IndeterminateProgressMotionScene> sceneReference = new AtomicReference<>();
@@ -23368,6 +23428,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that runtime motion behavior changes reconfigure an already running loading indicator loop.
+    @Tier2Test
     @Test
     void loadingIndicatorMotionBehaviorChangesRefreshRunningLoop() throws InterruptedException {
         AtomicReference<@Nullable IndeterminateProgressMotionScene> sceneReference = new AtomicReference<>();
@@ -23498,6 +23559,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that loading indicator morph frames reuse their path elements.
+    @Tier2Test
     @Test
     void loadingIndicatorMorphFramesReusePathElements() throws InterruptedException {
         AtomicReference<@Nullable IndeterminateProgressMotionScene> sceneReference = new AtomicReference<>();
@@ -23530,6 +23592,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that sampled indeterminate loading indicator frames stay centered.
+    @Tier2Test
     @Test
     void loadingIndicatorIndeterminateMorphFramesStayCentered() {
         FxTestUtils.runOnFxThread(() -> {
@@ -23620,6 +23683,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that disabled full motion keeps a basic loading indicator rotation without morphing.
+    @Tier2Test
     @Test
     void loadingIndicatorUsesBasicRotationWhenAnimationsDisabled() throws InterruptedException {
         AtomicReference<@Nullable IndeterminateProgressMotionScene> sceneReference = new AtomicReference<>();
@@ -23866,6 +23930,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that determinate progress bar value changes are animated.
+    @Tier2Test
     @Test
     void progressBarSkinAnimatesDeterminateProgressChanges() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -23917,6 +23982,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that indeterminate progress bar segments move over time.
+    @Tier2Test
     @Test
     void progressBarSkinAnimatesIndeterminateProgress() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -23991,6 +24057,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that disabled full motion keeps a basic indeterminate progress bar loop.
+    @Tier2Test
     @Test
     void progressBarUsesBasicIndeterminateLoopWhenAnimationsDisabled() throws InterruptedException {
         AtomicReference<@Nullable IndeterminateProgressMotionScene> sceneReference = new AtomicReference<>();
@@ -24049,6 +24116,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that expressive indeterminate progress bars keep the track outside the moving wave.
+    @Tier2Test
     @Test
     void expressiveProgressBarSkinSeparatesIndeterminateWaveFromTrack() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -24120,6 +24188,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that expressive progress animations update sampled paths without rebuilding elements.
+    @Tier2Test
     @Test
     void expressiveProgressWavePathsReuseElementsDuringAnimation() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -24341,6 +24410,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that determinate circular progress value changes are animated.
+    @Tier2Test
     @Test
     void progressIndicatorSkinAnimatesDeterminateProgressChanges() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -24392,6 +24462,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that indeterminate circular progress rotates without oversized sweeps.
+    @Tier2Test
     @Test
     void progressIndicatorSkinAnimatesIndeterminateProgress() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -24452,6 +24523,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that disabled full motion keeps a basic indeterminate circular progress loop.
+    @Tier2Test
     @Test
     void progressIndicatorUsesBasicIndeterminateLoopWhenAnimationsDisabled() throws InterruptedException {
         AtomicReference<@Nullable IndeterminateProgressMotionScene> sceneReference = new AtomicReference<>();
@@ -24479,6 +24551,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that indeterminate circular progress uses a seamless phase cycle.
+    @Tier2Test
     @Test
     void progressIndicatorIndeterminateCycleHasNoPhaseJump() throws InterruptedException {
         AtomicReference<@Nullable IndeterminateProgressMotionScene> sceneReference = new AtomicReference<>();
@@ -24867,6 +24940,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that list item media slots render the supported fixed-size variants.
+    @Tier2Test
     @Test
     void listItemMediaSnapshotRendersSlotVariants() {
         FxTestUtils.runOnFxThread(() -> {
@@ -25793,6 +25867,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that virtualized list views use VirtualFlow-backed cells instead of materializing every item.
+    @Tier2Test
     @Test
     void listViewVirtualizesRenderedItems() {
         FxTestUtils.runOnFxThread(() -> {
@@ -25951,6 +26026,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that completed virtualized list wheel scrolling settles at its rendered target position.
+    @Tier2Test
     @Test
     void listViewSmoothScrollingSettlesAtTargetAfterCompletion() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -26852,6 +26928,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that virtualized list view keyboard and accessibility focus scrolls rows into view.
+    @Tier2Test
     @Test
     void listViewFocusesVirtualizedRowsFromKeyboardAndAccessibility() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -26930,6 +27007,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that deferred virtualized focus retries do not apply CSS after the list view is detached.
+    @Tier2Test
     @Test
     void listViewSkipsDeferredFocusCssWhenDetached() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -26963,6 +27041,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that virtualized list view accessibility actions accept rendered row descendants.
+    @Tier2Test
     @Test
     void listViewAccessibilityActionsAcceptRenderedRowDescendants() {
         FxTestUtils.runOnFxThread(() -> {
@@ -27483,6 +27562,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that virtualized list cells align row graphics to the logical visual start edge.
+    @Tier2Test
     @Test
     void listViewCellAlignsReusableRowToVisualStartInRuntimeOrientation() {
         M3ListView<String> listView = listView("First");
@@ -27742,6 +27822,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that virtualized list view rows are actually visible in rendered snapshots.
+    @Tier2Test
     @Test
     void listViewSnapshotRendersVisibleRows() {
         FxTestUtils.runOnFxThread(() -> {
@@ -27842,6 +27923,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that list and drawer selected containers animate incoming and outgoing states.
+    @Tier2Test
     @Test
     void listItemSelectionContainerAnimationsRenderIntermediateAndFinalStates() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -27997,6 +28079,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that mouse selection keeps ripple feedback while the selected container transitions.
+    @Tier2Test
     @Test
     void navigationDrawerMouseSelectionKeepsRippleAndAnimatesSelection() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -29319,6 +29402,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies the observable intermediate and settled geometry of a flexible app bar in a real window.
+    @Tier2Test
     @Test
     void flexibleTopAppBarCollapseAnimationPreservesMaterialGeometry() throws InterruptedException {
         double geometryTolerance = 1.0;
@@ -31134,6 +31218,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that navigation drawer groups animate child row expansion and collapse.
+    @Tier2Test
     @Test
     void navigationDrawerGroupAnimatesExpansionAndCollapse() throws InterruptedException {
         AtomicReference<@Nullable M3NavigationDrawerGroup> groupReference = new AtomicReference<>();
@@ -33682,6 +33767,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that navigation selection indicators animate both outgoing and incoming selected states.
+    @Tier2Test
     @Test
     void navigationIndicatorAnimationsRenderIntermediateAndFinalStates() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -33913,6 +33999,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that finite skin-owned state transitions settle when runtime motion is disabled.
+    @Tier2Test
     @Test
     void skinOwnedStateTransitionsSettleWhenMotionIsDisabled() throws InterruptedException {
         AtomicReference<@Nullable SkinOwnedStateMotionScene> sceneReference = new AtomicReference<>();
@@ -33940,6 +34027,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that finite overlay and container-owned animations settle when runtime motion is disabled.
+    @Tier2Test
     @Test
     void overlayOwnedStateTransitionsSettleWhenMotionIsDisabled() throws InterruptedException {
         AtomicReference<@Nullable OverlayOwnedStateMotionScene> sceneReference = new AtomicReference<>();
@@ -33991,6 +34079,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that detached popup surface animations settle and inherit updated motion settings.
+    @Tier2Test
     @Test
     void popupSurfaceTransitionsSettleWhenMotionIsDisabled() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -34136,6 +34225,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that state layer feedback changes rendered button pixels.
+    @Tier2Test
     @Test
     void buttonStateLayerChangesRenderedPixels() {
         FxTestUtils.runOnFxThread(() -> {
@@ -34164,6 +34254,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that representative interactive states render visible state layer feedback.
+    @Tier2Test
     @Test
     void interactiveStateSnapshotRendersHoverFocusAndPressedFeedback() {
         FxTestUtils.runOnFxThread(() -> {
@@ -34300,6 +34391,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that a real button ripple remains visible after release and fades out through animation.
+    @Tier2Test
     @Test
     void buttonRippleReleaseAnimationFadesAfterPointerRelease() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -34367,6 +34459,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that ripple opacity starts fading immediately when a quick pointer click is released.
+    @Tier2Test
     @Test
     void buttonRippleReleaseAnimationFadesDuringExpansionAfterQuickClick() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -34424,6 +34517,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that a representative control set renders non-blank visible output.
+    @Tier2Test
     @Test
     void visualSmokeSnapshotRendersCoreControlsWithContrast() {
         FxTestUtils.runOnFxThread(() -> {
@@ -34468,6 +34562,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that slider snapshots show distinct rendered track and thumb pixels.
+    @Tier2Test
     @Test
     void sliderSnapshotRendersTrackAndThumbPixels() {
         FxTestUtils.runOnFxThread(() -> {
@@ -34509,6 +34604,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that selected segmented button backgrounds keep rounded end caps in rendered output.
+    @Tier2Test
     @Test
     void segmentedButtonSnapshotKeepsSelectedEndRounded() {
         FxTestUtils.runOnFxThread(() -> {
@@ -34553,6 +34649,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that determinate progress snapshots show separated fill, track, and rounded caps.
+    @Tier2Test
     @Test
     void progressBarSnapshotRendersFillTrackAndRoundedCaps() {
         FxTestUtils.runOnFxThread(() -> {
@@ -34600,6 +34697,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that circular progress snapshots show distinct track and indicator arc pixels.
+    @Tier2Test
     @Test
     void progressIndicatorSnapshotRendersTrackAndArcPixels() {
         FxTestUtils.runOnFxThread(() -> {
@@ -34708,6 +34806,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that inputs render filled, outlined, password, and multiline visual variants.
+    @Tier2Test
     @Test
     void inputSnapshotRendersFilledOutlinedPasswordAndTextAreaControls() {
         FxTestUtils.runOnFxThread(() -> {
@@ -34755,6 +34854,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that text input layouts render supporting text, validation, errors, and character counters.
+    @Tier2Test
     @Test
     void inputLayoutSnapshotRendersSupportingErrorAndCounterText() {
         FxTestUtils.runOnFxThread(() -> {
@@ -34875,6 +34975,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that right-to-left text input layouts keep rendered ink, slots, counters, and notches stable.
+    @Tier2Test
     @Test
     void inputLayoutSnapshotRendersRightToLeftStatesWithStableTextInk() {
         FxTestUtils.runOnFxThread(() -> {
@@ -34976,6 +35077,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that a focused right-to-left outlined text area keeps content, notch, and adornments stable.
+    @Tier2Test
     @Test
     void focusedRightToLeftOutlinedTextAreaSnapshotKeepsContentAndAdornmentGeometry() {
         FxTestUtils.runOnFxThread(() -> {
@@ -35050,6 +35152,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that outlined text input layouts cut a real outline notch instead of painting a label mask.
+    @Tier2Test
     @Test
     void outlinedInputLayoutSnapshotRendersNotchedOutlineWithoutLabelMask() {
         FxTestUtils.runOnFxThread(() -> {
@@ -35219,6 +35322,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that validation summaries render invalid input rows in snapshots.
+    @Tier2Test
     @Test
     void validationSummarySnapshotRendersInvalidInputRows() {
         FxTestUtils.runOnFxThread(() -> {
@@ -35552,6 +35656,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that selection controls render selected, indeterminate, and disabled states.
+    @Tier2Test
     @Test
     void selectionSnapshotRendersStateMatrix() {
         FxTestUtils.runOnFxThread(() -> {
@@ -35713,6 +35818,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that containment, feedback, and navigation controls render visible surfaces.
+    @Tier2Test
     @Test
     void containmentFeedbackAndNavigationSnapshotRendersVisibleSurfaces() {
         FxTestUtils.runOnFxThread(() -> {
@@ -35766,6 +35872,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that expanded navigation drawer groups render header and child rows.
+    @Tier2Test
     @Test
     void navigationDrawerGroupSnapshotRendersExpandedRows() {
         FxTestUtils.runOnFxThread(() -> {
@@ -35807,6 +35914,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies Carousel item geometry and interaction states in one rendered matrix.
+    @Tier2Test
     @Test
     void carouselSnapshotRendersItemStatesAndFocusIndicator() {
         FxTestUtils.runOnFxThread(() -> {
@@ -35873,6 +35981,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that date range dialog presets render beside the picker.
+    @Tier2Test
     @Test
     void dateRangePresetDialogSnapshotRendersPresetColumn() {
         FxTestUtils.runOnFxThread(() -> {
@@ -35912,6 +36021,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that single-date dialog presets render beside the picker.
+    @Tier2Test
     @Test
     void datePresetDialogSnapshotRendersPresetColumn() {
         FxTestUtils.runOnFxThread(() -> {
@@ -35948,6 +36058,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that time dialog presets render in a wrapping row above the picker.
+    @Tier2Test
     @Test
     void timePresetDialogSnapshotRendersPresetRow() {
         FxTestUtils.runOnFxThread(() -> {
@@ -36075,6 +36186,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that date range field presets render beside the popup picker.
+    @Tier2Test
     @Test
     void dateRangePickerFieldPresetPopupSnapshotRendersPresetColumn() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -36150,6 +36262,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that date range field preset popups mirror preset columns in right-to-left layout.
+    @Tier2Test
     @Test
     void dateRangePickerFieldPresetPopupMirrorsRightToLeft() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -36225,6 +36338,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that open picker field preset popups reflow when inherited node orientation changes at runtime.
+    @Tier2Test
     @Test
     void pickerFieldPresetPopupsReflowAfterRuntimeInheritedOrientationChanges() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -36665,6 +36779,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that every implemented node-backed control family renders in a full visual gallery.
+    @Tier2Test
     @Test
     void allImplementedControlFamiliesRenderVisualGallery() {
         FxTestUtils.runOnFxThread(() -> {
@@ -37098,6 +37213,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that the expressive profile affects real rendered controls, not only generated token text.
+    @Tier2Test
     @Test
     void expressiveProfileVisualSnapshotRendersProfileControls() {
         FxTestUtils.runOnFxThread(() -> {
@@ -37418,6 +37534,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that actual dark expressive theme tokens render the main control families visibly.
+    @Tier2Test
     @Test
     void darkExpressiveVisualSnapshotRendersTokenDrivenControls() {
         FxTestUtils.runOnFxThread(() -> {
@@ -37527,6 +37644,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that dark expressive popup roots inherit theme mode classes and render visible content.
+    @Tier2Test
     @Test
     void darkExpressivePopupVisualSnapshotInheritsThemeContext() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -37642,6 +37760,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that real Material dialog popups inherit dark expressive owner theme tokens.
+    @Tier2Test
     @Test
     void darkExpressiveDialogPopupInheritsOwnerThemeContext() throws InterruptedException {
         AtomicReference<@Nullable Stage> ownerStageReference = new AtomicReference<>();
@@ -37734,6 +37853,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that tooltip popups render their inverse surface and text.
+    @Tier2Test
     @Test
     void tooltipSnapshotRendersPopupSurface() {
         FxTestUtils.runOnFxThread(() -> {
@@ -37841,6 +37961,7 @@ final class M3ControlStyleTest {
     }
 
     /// Verifies that rich tooltip popups render their surface, text, and actions.
+    @Tier2Test
     @Test
     void richTooltipSnapshotRendersPopupSurface() {
         FxTestUtils.runOnFxThread(() -> {

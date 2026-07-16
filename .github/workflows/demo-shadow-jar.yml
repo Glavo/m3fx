@@ -1,4 +1,4 @@
-name: Release Check
+name: Build and Test
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   build:
-    name: Verify release artifacts
+    name: Verify M3FX
     runs-on: ubuntu-latest
 
     steps:
@@ -23,7 +23,14 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      - name: Run release check
+      - name: Run core check
+        if: github.event_name != 'workflow_dispatch'
+        env:
+          GRADLE_USER_HOME: .gradle-user-home
+        run: xvfb-run -a ./gradlew check :demo:test :demo:verifyShadowJar --no-daemon
+
+      - name: Run full release check
+        if: github.event_name == 'workflow_dispatch'
         env:
           GRADLE_USER_HOME: .gradle-user-home
         run: xvfb-run -a ./gradlew releaseCheck --no-daemon
@@ -48,8 +55,8 @@ jobs:
           for path in \
             build/reports/tests \
             demo/build/reports/tests \
-            build/test-results/test \
-            demo/build/test-results/test; do
+            build/test-results \
+            demo/build/test-results; do
             if [[ -e "$path" ]]; then
               test_paths+=("$path")
             fi

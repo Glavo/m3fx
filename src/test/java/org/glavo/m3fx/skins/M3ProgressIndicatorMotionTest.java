@@ -5,6 +5,7 @@ package org.glavo.m3fx.skins;
 
 import org.glavo.m3fx.animation.M3Motion;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.glavo.m3fx.testing.Tier2Test;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -17,6 +18,7 @@ final class M3ProgressIndicatorMotionTest {
     private static final double EPSILON = 0.000_001;
 
     /// Verifies that the active sweep grows linearly and contracts with the standard easing.
+    @Tier2Test
     @Test
     void samplesCircularSweepKeyframes() {
         assertEquals(0.10, M3ProgressIndicatorSkin.indeterminateSweepFraction(0.0), EPSILON);
@@ -31,6 +33,7 @@ final class M3ProgressIndicatorMotionTest {
     }
 
     /// Verifies the four 300 ms linear quarter-turn pulses and their intervening holds.
+    @Tier2Test
     @Test
     void samplesCircularAdditionalRotationKeyframes() {
         assertEquals(0.0, M3ProgressIndicatorSkin.additionalRotationDegrees(0.0), EPSILON);

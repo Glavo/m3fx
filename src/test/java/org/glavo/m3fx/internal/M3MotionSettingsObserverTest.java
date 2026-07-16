@@ -14,6 +14,7 @@ import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
+import org.glavo.m3fx.testing.Tier2Test;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CountDownLatch;
@@ -38,6 +39,7 @@ final class M3MotionSettingsObserverTest {
     }
 
     /// Verifies that observer refreshes caused by background settings changes run on the JavaFX thread.
+    @Tier2Test
     @Test
     void dispatchesBackgroundSettingsChangesToFxThread() throws InterruptedException {
         CountDownLatch refreshLatch = new CountDownLatch(1);

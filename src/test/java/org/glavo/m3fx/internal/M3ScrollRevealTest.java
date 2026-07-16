@@ -20,6 +20,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.glavo.m3fx.testing.Tier2Test;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicReference;
@@ -89,6 +90,7 @@ final class M3ScrollRevealTest {
     }
 
     /// Verifies reveal retries after the next pulse when scroll metrics are not laid out yet.
+    @Tier2Test
     @Test
     void revealRetriesAfterLayoutPulseWhenScrollMetricsAreMissing() throws InterruptedException {
         AtomicReference<@Nullable ScrollPane> scrollPaneRef = new AtomicReference<>();

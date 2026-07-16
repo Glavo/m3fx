@@ -22,6 +22,7 @@ import org.glavo.m3fx.tokens.M3TokenSet;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
+import org.glavo.m3fx.testing.Tier2Test;
 import org.junit.jupiter.api.Test;
 
 import java.util.Objects;
@@ -242,6 +243,7 @@ final class M3StateLayerTest {
     }
 
     /// Verifies that keyboard-visible focus renders an outer Material focus indicator for button-like controls.
+    @Tier2Test
     @Test
     void focusVisibleRendersOuterFocusIndicatorForButtonLikeControls() {
         FxTestUtils.runOnFxThread(() -> {
@@ -289,6 +291,7 @@ final class M3StateLayerTest {
     }
 
     /// Verifies that item-style controls render keyboard focus indicators inside their container bounds.
+    @Tier2Test
     @Test
     void focusVisibleRendersInnerFocusIndicatorForItemControls() {
         FxTestUtils.runOnFxThread(() -> {
@@ -417,6 +420,7 @@ final class M3StateLayerTest {
     }
 
     /// Verifies that ripples remain visible until explicitly released.
+    @Tier2Test
     @Test
     void rippleHoldsUntilReleaseThenFades() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -480,6 +484,7 @@ final class M3StateLayerTest {
     }
 
     /// Verifies that an early release lets the ripple expand while it fades.
+    @Tier2Test
     @Test
     void rippleReleasedBeforeExpansionCompletesStillExpandsWhileFading() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();

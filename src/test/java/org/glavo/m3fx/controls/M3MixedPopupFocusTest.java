@@ -16,6 +16,7 @@ import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.testing.Tier2Test;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -41,6 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Verifies representative keyboard and accessibility routes across mixed popup and overlay stacks.
 @NotNullByDefault
+@Tier2Test
 final class M3MixedPopupFocusTest {
     /// Starts the JavaFX toolkit before tests create controls and scenes.
     @BeforeAll

@@ -33,6 +33,7 @@ import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
+import org.glavo.m3fx.testing.Tier2Test;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalTime;
@@ -443,6 +444,7 @@ final class M3TimePickerTest {
     }
 
     /// Verifies selected, 24-hour, Input, and bounded states in a rendered snapshot.
+    @Tier2Test
     @Test
     void timePickerSnapshotRendersDialAndInputVariants() {
         FxTestUtils.runOnFxThread(() -> {

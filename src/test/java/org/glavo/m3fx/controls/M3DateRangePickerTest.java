@@ -24,6 +24,7 @@ import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
+import org.glavo.m3fx.testing.Tier2Test;
 import org.junit.jupiter.api.Test;
 
 import java.time.DayOfWeek;
@@ -384,6 +385,7 @@ final class M3DateRangePickerTest {
     }
 
     /// Verifies that the date range picker renders selected endpoint and in-range states.
+    @Tier2Test
     @Test
     void dateRangePickerSnapshotRendersRangeStates() {
         FxTestUtils.runOnFxThread(() -> {

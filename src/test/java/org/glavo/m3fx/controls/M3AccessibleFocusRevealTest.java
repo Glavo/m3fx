@@ -22,6 +22,7 @@ import javafx.stage.Window;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3TooltipRegistry;
 import org.glavo.m3fx.FxTestUtils;
+import org.glavo.m3fx.testing.Tier2Test;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
@@ -40,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Verifies accessibility focus reveal and focus restoration behavior.
 @NotNullByDefault
+@Tier2Test
 final class M3AccessibleFocusRevealTest {
     /// Starts the JavaFX toolkit for focus reveal tests.
     @BeforeAll

@@ -1,12 +1,16 @@
 import java.util.zip.ZipFile
+import org.gradle.api.component.AdhocComponentWithVariants
 import org.gradle.api.tasks.Delete
+import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.attributes.Bundling
 import org.gradle.api.attributes.Category
 import org.gradle.api.attributes.LibraryElements
 import org.gradle.api.attributes.Usage
+import org.gradle.api.tasks.testing.Test
 
 plugins {
     id("java-library")
+    id("java-test-fixtures")
     id("jacoco")
     id("maven-publish")
     id("signing")
@@ -58,6 +62,10 @@ dependencies {
     addJavafxDependencies("testImplementation", javafxVersion)
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+    testFixturesImplementation(platform("org.junit:junit-bom:6.0.0"))
+    addJavafxDependencies("testFixturesImplementation", javafxVersion)
+    testFixturesImplementation("org.junit.jupiter:junit-jupiter")
 }
 
 tasks.withType<JavaCompile> {
@@ -65,10 +73,8 @@ tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
 }
 
-tasks.test {
-    useJUnitPlatform()
-    maxHeapSize = providers.gradleProperty("m3fx.test.maxHeapSize").orElse("1g").get()
-
+/// Rejects unresolved M3FX CSS values emitted by one test task.
+fun Test.rejectM3CssWarnings() {
     doLast {
         val resultDirectory = reports.junitXml.outputLocation.get().asFile
         val documentBuilder = javax.xml.parsers.DocumentBuilderFactory.newInstance().newDocumentBuilder()
@@ -99,9 +105,65 @@ tasks.test {
     }
 }
 
+/// Registers the mutually exclusive test tier tasks for one Java project.
+fun Project.configureTestTiers() {
+    pluginManager.withPlugin("java") {
+        val sourceSets = extensions.getByType(SourceSetContainer::class.java)
+        val testSourceSet = sourceSets.named("test")
+
+        tasks.named<Test>("test") {
+            group = "verification"
+            description = "Runs fast, deterministic Tier 1 tests."
+            useJUnitPlatform {
+                excludeTags("tier2", "tier3")
+            }
+        }
+
+        tasks.register<Test>("testTier2") {
+            group = "verification"
+            description = "Runs Tier 2 rendering and window-integration tests."
+            testClassesDirs = testSourceSet.get().output.classesDirs
+            classpath = testSourceSet.get().runtimeClasspath
+            useJUnitPlatform {
+                includeTags("tier2")
+            }
+            shouldRunAfter(tasks.named("test"))
+        }
+
+        tasks.register<Test>("testTier3") {
+            group = "verification"
+            description = "Runs Tier 3 real-window, animation-frame, and visual-matrix tests."
+            testClassesDirs = testSourceSet.get().output.classesDirs
+            classpath = testSourceSet.get().runtimeClasspath
+            useJUnitPlatform {
+                includeTags("tier3")
+            }
+            shouldRunAfter(tasks.named("testTier2"))
+        }
+
+        tasks.withType<Test>().configureEach {
+            maxHeapSize = providers.gradleProperty("m3fx.test.maxHeapSize").orElse("1g").get()
+            rejectM3CssWarnings()
+        }
+    }
+}
+
+allprojects {
+    configureTestTiers()
+}
+
 java {
     withSourcesJar()
     withJavadocJar()
+}
+
+components.named<AdhocComponentWithVariants>("java") {
+    withVariantsFromConfiguration(configurations["testFixturesApiElements"]) {
+        skip()
+    }
+    withVariantsFromConfiguration(configurations["testFixturesRuntimeElements"]) {
+        skip()
+    }
 }
 
 val monetFxJavadocLinkDirectory =
@@ -615,12 +677,25 @@ tasks.register("shadowDemoJar") {
     dependsOn(":demo:verifyShadowJar")
 }
 
+tasks.register("fullTest") {
+    group = "verification"
+    description = "Runs all library and demo test tiers."
+    dependsOn(
+        tasks.named("test"),
+        tasks.named("testTier2"),
+        tasks.named("testTier3"),
+        project(":demo").tasks.named("test"),
+        project(":demo").tasks.named("testTier2"),
+        project(":demo").tasks.named("testTier3")
+    )
+}
+
 tasks.register("releaseCheck") {
     group = "verification"
-    description = "Runs local release verification for the library publication, demo tests, and demo distribution."
+    description = "Runs full tests and local release verification for publication and demo distribution."
     dependsOn(
         tasks.named("check"),
-        project(":demo").tasks.named("test"),
+        tasks.named("fullTest"),
         tasks.named("shadowDemoJar"),
         tasks.named("jlinkDemoRuntime")
     )
