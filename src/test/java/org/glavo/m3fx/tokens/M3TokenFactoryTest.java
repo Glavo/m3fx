@@ -8,6 +8,8 @@ import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3MotionBehavior;
 import org.glavo.m3fx.animation.M3MotionEasing;
 import org.glavo.m3fx.animation.M3MotionScheme;
+import org.glavo.m3fx.internal.tokens.M3ComponentTokenCssCompiler;
+import org.glavo.m3fx.internal.tokens.M3TokenCssCompiler;
 import org.glavo.m3fx.internal.theme.M3ThemeCssCompiler;
 import org.glavo.monetfx.ColorScheme;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -26,6 +28,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Tests explicit token construction and generated token output.
@@ -34,21 +37,21 @@ final class M3TokenFactoryTest {
     /// Verifies that system token groups can be created with explicit values.
     @Test
     void createsExplicitSystemTokens() {
-        M3TextStyle displayLarge = M3TextStyle.create("Demo", 60.0, 68.0, 600, -0.2);
-        M3TextStyle displayMedium = M3TextStyle.create("Demo", 48.0, 56.0, 600);
-        M3TextStyle displaySmall = M3TextStyle.create("Demo", 38.0, 46.0, 600);
-        M3TextStyle headlineLarge = M3TextStyle.create("Demo", 34.0, 42.0, 500);
-        M3TextStyle headlineMedium = M3TextStyle.create("Demo", 30.0, 38.0, 500);
-        M3TextStyle headlineSmall = M3TextStyle.create("Demo", 26.0, 34.0, 500);
-        M3TextStyle titleLarge = M3TextStyle.create("Demo", 24.0, 32.0, 500);
-        M3TextStyle titleMedium = M3TextStyle.create("Demo", 18.0, 26.0, 500);
-        M3TextStyle titleSmall = M3TextStyle.create("Demo", 16.0, 24.0, 500);
-        M3TextStyle labelLarge = M3TextStyle.create("Demo", 15.0, 22.0, 600);
-        M3TextStyle labelMedium = M3TextStyle.create("Demo", 13.0, 18.0, 600);
-        M3TextStyle labelSmall = M3TextStyle.create("Demo", 11.0, 16.0, 600);
-        M3TextStyle bodyLarge = M3TextStyle.create("Demo", 17.0, 26.0, 400);
-        M3TextStyle bodyMedium = M3TextStyle.create("Demo", 15.0, 23.0, 400);
-        M3TextStyle bodySmall = M3TextStyle.create("Demo", 13.0, 18.0, 400);
+        M3TextStyle displayLarge = M3TextStyle.of("Demo", 60.0, 68.0, 600, -0.2);
+        M3TextStyle displayMedium = M3TextStyle.of("Demo", 48.0, 56.0, 600);
+        M3TextStyle displaySmall = M3TextStyle.of("Demo", 38.0, 46.0, 600);
+        M3TextStyle headlineLarge = M3TextStyle.of("Demo", 34.0, 42.0, 500);
+        M3TextStyle headlineMedium = M3TextStyle.of("Demo", 30.0, 38.0, 500);
+        M3TextStyle headlineSmall = M3TextStyle.of("Demo", 26.0, 34.0, 500);
+        M3TextStyle titleLarge = M3TextStyle.of("Demo", 24.0, 32.0, 500);
+        M3TextStyle titleMedium = M3TextStyle.of("Demo", 18.0, 26.0, 500);
+        M3TextStyle titleSmall = M3TextStyle.of("Demo", 16.0, 24.0, 500);
+        M3TextStyle labelLarge = M3TextStyle.of("Demo", 15.0, 22.0, 600);
+        M3TextStyle labelMedium = M3TextStyle.of("Demo", 13.0, 18.0, 600);
+        M3TextStyle labelSmall = M3TextStyle.of("Demo", 11.0, 16.0, 600);
+        M3TextStyle bodyLarge = M3TextStyle.of("Demo", 17.0, 26.0, 400);
+        M3TextStyle bodyMedium = M3TextStyle.of("Demo", 15.0, 23.0, 400);
+        M3TextStyle bodySmall = M3TextStyle.of("Demo", 13.0, 18.0, 400);
 
         M3TypographyTokens typography = M3TypographyTokens.builder(M3TypographyTokens.baseline())
                 .displayLarge(displayLarge)
@@ -79,8 +82,19 @@ final class M3TokenFactoryTest {
                 .extraExtraLarge(48.0)
                 .full(999.0)
                 .build();
-        M3ElevationTokens elevation = M3ElevationTokens.create(0.0, 2.0, 4.0, 8.0, 12.0, 16.0);
-        M3MotionTokens motion = M3MotionTokens.create(90, 210, 420);
+        M3ElevationTokens elevation = M3ElevationTokens.builder()
+                .level1(2.0)
+                .level2(4.0)
+                .level3(8.0)
+                .level4(12.0)
+                .level5(16.0)
+                .build();
+        M3MotionTokens motion = M3MotionTokens.builder()
+                .shortDurations(90)
+                .mediumDurations(210)
+                .longDurations(420)
+                .extraLongDurations(840)
+                .build();
         M3StateLayerTokens stateLayer = M3StateLayerTokens.builder(M3StateLayerTokens.baseline())
                 .hoverOpacity(0.05)
                 .focusOpacity(0.11)
@@ -104,41 +118,67 @@ final class M3TokenFactoryTest {
         assertEquals(30.0, shape.extraLarge(), 0.0001);
         assertEquals(16.0, elevation.level5(), 0.0001);
         assertEquals(90, motion.short2());
-        assertEquals(210, motion.mediumDuration());
+        assertEquals(210, motion.medium1());
         assertEquals(420, motion.long2());
+        assertEquals(840, motion.extraLong2());
         assertEquals(M3MotionEasing.STANDARD, motion.defaultEffects().easing());
         assertEquals(Duration.millis(500.0), motion.behavior().tooltipShowDelay());
         assertEquals(0.42, stateLayer.disabledContentOpacity(), 0.0001);
-        assertTrue(typography.toStyleDeclarations().contains("-m3-typescale-display-large-font-family: \"Demo\""));
-        assertTrue(typography.toStyleDeclarations().contains("-m3-typescale-title-small-font-size: 16px"));
-        assertTrue(typography.toStyleDeclarations().contains("-m3-typescale-display-large-tracking: -0.2px"));
-        assertTrue(typography.toControlStyleRules().contains(".m3-display-large-text"));
-        assertTrue(typography.toControlStyleRules().contains(".m3-label-small-text"));
-        assertTrue(typography.toControlStyleRules().contains("-m3-typography-font-size: 60px"));
-        assertTrue(typography.toControlStyleRules().contains("-m3-typography-line-height: 68px"));
-        assertTrue(typography.toControlStyleRules().contains("-m3-typography-tracking: -0.2px"));
-        assertTrue(stateLayer.toStyleDeclarations().contains("-m3-state-disabled-content-opacity: 0.42"));
-        assertTrue(stateLayer.toStyleDeclarations().contains("-m3-state-focus-indicator-thickness: 4px"));
-        assertTrue(stateLayer.toStyleDeclarations().contains("-m3-state-focus-indicator-outer-offset: 3px"));
-        assertTrue(stateLayer.toStyleDeclarations().contains("-m3-state-focus-indicator-inner-offset: -3px"));
-        assertTrue(stateLayer.toControlStyleRules().contains(".m3-button:focus-visible .m3-state-layer"));
-        assertTrue(stateLayer.toControlStyleRules().contains(".m3-tab:focus-visible .m3-state-layer"));
-        assertTrue(stateLayer.toControlStyleRules().contains(".m3-icon-toggle-button:focus-visible .m3-state-layer"));
-        assertTrue(stateLayer.toControlStyleRules().contains(".m3-button:pressed .m3-state-layer"));
-        assertTrue(stateLayer.toControlStyleRules().contains("-fx-opacity: 0.13"));
-        assertFalse(stateLayer.toControlStyleRules().contains(":disabled"));
-        assertTrue(elevation.toControlStyleRules().contains(".m3-elevated-button:hover"));
-        assertTrue(elevation.toControlStyleRules().contains(".m3-fab:hover"));
-        assertTrue(elevation.toControlStyleRules().contains(".m3-surface-elevation-level3"));
-        assertTrue(elevation.toControlStyleRules().contains(".m3-menu, .m3-rich-tooltip-container"));
-        assertTrue(elevation.toControlStyleRules().contains(".m3-dialog-pane, .m3-snackbar-container"));
+        assertTrue(M3TokenCssCompiler.styleDeclarations(typography).contains("-m3-typescale-display-large-font-family: \"Demo\""));
+        assertTrue(M3TokenCssCompiler.styleDeclarations(typography).contains("-m3-typescale-title-small-font-size: 16px"));
+        assertTrue(M3TokenCssCompiler.styleDeclarations(typography).contains("-m3-typescale-display-large-tracking: -0.2px"));
+        assertTrue(M3TokenCssCompiler.controlStyleRules(typography).contains(".m3-display-large-text"));
+        assertTrue(M3TokenCssCompiler.controlStyleRules(typography).contains(".m3-label-small-text"));
+        assertTrue(M3TokenCssCompiler.controlStyleRules(typography).contains("-m3-typography-font-size: 60px"));
+        assertTrue(M3TokenCssCompiler.controlStyleRules(typography).contains("-m3-typography-line-height: 68px"));
+        assertTrue(M3TokenCssCompiler.controlStyleRules(typography).contains("-m3-typography-tracking: -0.2px"));
+        assertTrue(M3TokenCssCompiler.styleDeclarations(stateLayer).contains("-m3-state-disabled-content-opacity: 0.42"));
+        assertTrue(M3TokenCssCompiler.styleDeclarations(stateLayer).contains("-m3-state-focus-indicator-thickness: 4px"));
+        assertTrue(M3TokenCssCompiler.styleDeclarations(stateLayer).contains("-m3-state-focus-indicator-outer-offset: 3px"));
+        assertTrue(M3TokenCssCompiler.styleDeclarations(stateLayer).contains("-m3-state-focus-indicator-inner-offset: -3px"));
+        assertTrue(M3TokenCssCompiler.controlStyleRules(stateLayer).contains(".m3-button:focus-visible .m3-state-layer"));
+        assertTrue(M3TokenCssCompiler.controlStyleRules(stateLayer).contains(".m3-tab:focus-visible .m3-state-layer"));
+        assertTrue(M3TokenCssCompiler.controlStyleRules(stateLayer).contains(".m3-icon-toggle-button:focus-visible .m3-state-layer"));
+        assertTrue(M3TokenCssCompiler.controlStyleRules(stateLayer).contains(".m3-button:pressed .m3-state-layer"));
+        assertTrue(M3TokenCssCompiler.controlStyleRules(stateLayer).contains("-fx-opacity: 0.13"));
+        assertFalse(M3TokenCssCompiler.controlStyleRules(stateLayer).contains(":disabled"));
+        assertTrue(M3TokenCssCompiler.controlStyleRules(elevation).contains(".m3-elevated-button:hover"));
+        assertTrue(M3TokenCssCompiler.controlStyleRules(elevation).contains(".m3-fab:hover"));
+        assertTrue(M3TokenCssCompiler.controlStyleRules(elevation).contains(".m3-surface-elevation-level3"));
+        assertTrue(M3TokenCssCompiler.controlStyleRules(elevation).contains(".m3-menu, .m3-rich-tooltip-container"));
+        assertTrue(M3TokenCssCompiler.controlStyleRules(elevation).contains(".m3-dialog-pane, .m3-snackbar-container"));
+    }
+
+    /// Verifies that public token factories reject non-finite values before rendering.
+    @Test
+    void rejectsNonFiniteTokenValues() {
+        assertThrows(IllegalArgumentException.class, () -> M3Density.of(Double.NaN));
+        assertThrows(IllegalArgumentException.class, () -> M3Density.standard().apply(Double.POSITIVE_INFINITY));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> M3ElevationTokens.builder().level1(Double.POSITIVE_INFINITY)
+        );
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> M3ShapeTokens.builder().small(Double.NaN).build()
+        );
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> M3StateLayerTokens.builder()
+                        .hoverOpacity(Double.NaN)
+                        .build()
+        );
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> M3TextStyle.of("Demo", Double.NaN, 16.0, 400)
+        );
     }
 
     /// Verifies that component and token set factories preserve explicit token groups.
     @Test
     void createsExplicitComponentTokensAndTokenSet() {
         ColorScheme colorScheme = ColorScheme.fromSeed(Color.web("#6750a4"));
-        M3ColorTokens colorTokens = M3ColorTokens.create(colorScheme);
+        M3ColorTokens colorTokens = M3ColorTokens.fromColorScheme(colorScheme);
         M3TypographyTokens typographyTokens = M3TypographyTokens.baseline();
         M3ShapeTokens shapeTokens = M3ShapeTokens.builder(M3ShapeTokens.baseline())
                 .extraSmall(3.0)
@@ -151,8 +191,19 @@ final class M3TokenFactoryTest {
                 .extraExtraLarge(29.0)
                 .full(999.0)
                 .build();
-        M3ElevationTokens elevationTokens = M3ElevationTokens.create(0.0, 2.0, 5.0, 9.0, 13.0, 18.0);
-        M3MotionTokens motionTokens = M3MotionTokens.create(80, 220, 460);
+        M3ElevationTokens elevationTokens = M3ElevationTokens.builder()
+                .level1(2.0)
+                .level2(5.0)
+                .level3(9.0)
+                .level4(13.0)
+                .level5(18.0)
+                .build();
+        M3MotionTokens motionTokens = M3MotionTokens.builder()
+                .shortDurations(80)
+                .mediumDurations(220)
+                .longDurations(460)
+                .extraLongDurations(920)
+                .build();
         M3StateLayerTokens stateLayerTokens = M3StateLayerTokens.builder(M3StateLayerTokens.baseline())
                 .hoverOpacity(0.07)
                 .focusOpacity(0.12)
@@ -384,6 +435,8 @@ final class M3TokenFactoryTest {
         assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(tokenSet).contains("-m3-motion-duration-medium: 220ms"));
         assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(tokenSet).contains("-m3-motion-duration-short2: 80ms"));
         assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(tokenSet).contains("-m3-motion-duration-long2: 460ms"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(tokenSet)
+                .contains("-m3-motion-duration-extra-long2: 920ms"));
         assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(tokenSet).contains("-m3-motion-default-effects-easing: standard"));
         assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(tokenSet).contains("-m3-motion-default-spatial-duration: 350ms"));
         assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(tokenSet).contains("-m3-motion-sub-menu-hover-open-delay: 200ms"));
@@ -489,7 +542,7 @@ final class M3TokenFactoryTest {
         String consumerSources = readTokenConsumerSources();
         List<String> unused = new ArrayList<>();
 
-        for (String declaration : cssDeclarationLines(componentTokens.toControlStyleRules())) {
+        for (String declaration : cssDeclarationLines(M3ComponentTokenCssCompiler.controlStyleRules(componentTokens))) {
             String property = cssProperty(declaration);
             if (property.startsWith("-m3-") && !consumerSources.contains(property)) {
                 unused.add(declaration);
@@ -523,15 +576,15 @@ final class M3TokenFactoryTest {
                 .behavior(M3MotionBehavior.expressive())
                 .build();
 
-        assertEquals(20, motion.shortDuration());
-        assertEquals(50, motion.mediumDuration());
-        assertEquals(100, motion.longDuration());
+        assertEquals(20, motion.short2());
+        assertEquals(50, motion.medium1());
+        assertEquals(100, motion.long2());
         assertEquals(M3MotionEasing.EMPHASIZED, motion.defaultEffects().easing());
         assertEquals(150.0, motion.behavior().subMenuHoverOpenDelay().toMillis(), 0.0001);
         assertEquals(400.0, motion.defaultSpatial().duration().toMillis(), 0.0001);
-        assertTrue(motion.toStyleDeclarations().contains("-m3-motion-default-effects-easing: emphasized"));
-        assertTrue(motion.toStyleDeclarations().contains("-m3-motion-default-spatial-duration: 400ms"));
-        assertTrue(motion.toStyleDeclarations().contains("-m3-motion-sub-menu-hover-open-delay: 150ms"));
+        assertTrue(M3TokenCssCompiler.styleDeclarations(motion).contains("-m3-motion-default-effects-easing: emphasized"));
+        assertTrue(M3TokenCssCompiler.styleDeclarations(motion).contains("-m3-motion-default-spatial-duration: 400ms"));
+        assertTrue(M3TokenCssCompiler.styleDeclarations(motion).contains("-m3-motion-sub-menu-hover-open-delay: 150ms"));
     }
 
     /// Creates component tokens with distinctive values for generated output assertions.
@@ -894,9 +947,9 @@ final class M3TokenFactoryTest {
 
     /// Returns default root component token declarations whose values are not present in generated control rules.
     private static List<String> missingComponentTokenControlValues(M3ComponentTokens componentTokens) {
-        String controlStyleRules = componentTokens.toControlStyleRules();
+        String controlStyleRules = M3ComponentTokenCssCompiler.controlStyleRules(componentTokens);
         List<String> missing = new ArrayList<>();
-        for (String declaration : cssDeclarationLines(componentTokens.toStyleDeclarations())) {
+        for (String declaration : cssDeclarationLines(M3ComponentTokenCssCompiler.styleDeclarations(componentTokens))) {
             String property = cssProperty(declaration);
             String value = cssValue(declaration);
             boolean optionalProgressConfiguration = property.equals("-m3-progress-linear-wave-amplitude")

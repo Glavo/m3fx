@@ -83,8 +83,8 @@ public sealed interface M3Theme permits M3ThemeImpl {
         ColorScheme colorScheme = ColorScheme.newBuilder()
                 .setPrimaryColorSeed(seedColor)
                 .setBrightness(brightness)
-                .setSpecVersion(profile.getColorSpecVersion())
-                .setColorStyle(profile.getColorStyle())
+                .setSpecVersion(profile.colorSpecVersion())
+                .setColorStyle(profile.colorStyle())
                 .build();
         return fromColorScheme(profile, colorScheme, density);
     }
@@ -105,7 +105,7 @@ public sealed interface M3Theme permits M3ThemeImpl {
         Objects.requireNonNull(colorScheme, "colorScheme");
         Objects.requireNonNull(density, "density");
 
-        return fromTokenSet(M3TokenSet.create(profile, colorScheme, density));
+        return fromTokenSet(M3TokenSet.builder(profile, colorScheme, density).build());
     }
 
     /// Creates a theme from an explicit token set.

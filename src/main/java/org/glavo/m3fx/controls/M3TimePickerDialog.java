@@ -5,6 +5,7 @@ package org.glavo.m3fx.controls;
 
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.ObservableList;
 import javafx.css.PseudoClass;
 import javafx.scene.Node;
@@ -33,7 +34,7 @@ import java.time.LocalTime;
 @NotNullByDefault
 public final class M3TimePickerDialog extends M3Dialog<LocalTime> {
     /// The default title and header text for time picker dialogs.
-    public static final String DEFAULT_TITLE = "Select time";
+    private static final String DEFAULT_TITLE = "Select time";
 
     /// The style class applied to dialog content when preset actions are visible.
     public static final String PRESET_CONTENT_STYLE_CLASS = "m3-time-picker-dialog-preset-content";
@@ -60,6 +61,12 @@ public final class M3TimePickerDialog extends M3Dialog<LocalTime> {
 
     /// The time picker displayed as dialog content.
     private final M3TimePicker picker;
+
+    /// Internal storage for [valueProperty].
+    private final ObjectProperty<@Nullable LocalTime> value;
+
+    /// Whether the dialog and embedded picker are currently synchronizing selected values.
+    private boolean synchronizingValue;
 
     /// The mutable time preset list rendered before the picker.
     private final ObservableList<M3TimePreset> presets = M3ObservableLists.nonNullElementList("preset");
@@ -92,6 +99,7 @@ public final class M3TimePickerDialog extends M3Dialog<LocalTime> {
     private M3TimePickerDialog(TimePickerDialogPane pane, @Nullable LocalTime value) {
         super(pane);
         picker = pane.picker;
+        this.value = createValueProperty();
         presetContent = new HBox(16.0, presetList, picker);
         presetController = new M3PickerPresetController<>(presets, presetList, PRESET_BUTTON_STYLE_CLASS) {
             /// Returns one time preset label.
@@ -135,26 +143,31 @@ public final class M3TimePickerDialog extends M3Dialog<LocalTime> {
     ///
     /// @return the selected time, or `null` when no time is selected
     public final @Nullable LocalTime getValue() {
-        return picker.getValue();
+        return value.get();
     }
 
     /// Sets the selected time, or clears selection when `null` is supplied.
     ///
     /// @param value the selected time, or `null` to clear selection
     public final void setValue(@Nullable LocalTime value) {
-        picker.setValue(value);
+        this.value.set(value);
     }
 
     /// Returns the selected time property.
     ///
-    /// @return the selected time property from the picker
+    /// @return the selected time property
     public final ObjectProperty<@Nullable LocalTime> valueProperty() {
-        return picker.valueProperty();
+        return value;
     }
 
     /// Configures dialog content, buttons, result conversion, and button state.
     @SuppressWarnings("DataFlowIssue")
     private void initialize() {
+        picker.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (!synchronizingValue) {
+                value.set(newValue);
+            }
+        });
         setTitle(DEFAULT_TITLE);
         M3DialogPane pane = getM3DialogPane();
         pane.setHeaderText(DEFAULT_TITLE);
@@ -173,11 +186,32 @@ public final class M3TimePickerDialog extends M3Dialog<LocalTime> {
         );
         pane.getButtonTypes().setAll(MODE_SWITCH_BUTTON_TYPE, ButtonType.CANCEL, ButtonType.OK);
         setResultConverter(buttonType -> buttonType == ButtonType.OK ? getValue() : null);
-        picker.valueProperty().addListener((observable, oldValue, newValue) -> updateOkButtonState());
+        value.addListener((observable, oldValue, newValue) -> updateOkButtonState());
         picker.minTimeProperty().addListener(presetBoundsInvalidation);
         picker.maxTimeProperty().addListener(presetBoundsInvalidation);
         presetController.install();
         updateOkButtonState();
+    }
+
+    /// Creates the dialog-owned value property synchronized with the already constructed picker.
+    private ObjectProperty<@Nullable LocalTime> createValueProperty() {
+        return new SimpleObjectProperty<>(this, "value") {
+            /// Validates and normalizes direct writes through the picker before committing the public value.
+            @Override
+            public void set(@Nullable LocalTime newValue) {
+                if (synchronizingValue) {
+                    super.set(newValue);
+                    return;
+                }
+                synchronizingValue = true;
+                try {
+                    picker.setValue(newValue);
+                    super.set(picker.getValue());
+                } finally {
+                    synchronizingValue = false;
+                }
+            }
+        };
     }
 
     /// Enables the OK button only when a selected time exists.

@@ -128,6 +128,19 @@ public final class M3MotionTokensBuilder {
         return this;
     }
 
+    /// Replaces every short duration token with one value.
+    ///
+    /// @param duration the replacement duration in milliseconds
+    /// @return this builder
+    public M3MotionTokensBuilder shortDurations(int duration) {
+        int value = nonNegativeDuration(duration, "duration");
+        short1 = value;
+        short2 = value;
+        short3 = value;
+        short4 = value;
+        return this;
+    }
+
     /// Replaces the medium1 duration.
     ///
     /// @param medium1 the duration in milliseconds
@@ -161,6 +174,19 @@ public final class M3MotionTokensBuilder {
     /// @return this builder
     public M3MotionTokensBuilder medium4(int medium4) {
         this.medium4 = nonNegativeDuration(medium4, "medium4");
+        return this;
+    }
+
+    /// Replaces every medium duration token with one value.
+    ///
+    /// @param duration the replacement duration in milliseconds
+    /// @return this builder
+    public M3MotionTokensBuilder mediumDurations(int duration) {
+        int value = nonNegativeDuration(duration, "duration");
+        medium1 = value;
+        medium2 = value;
+        medium3 = value;
+        medium4 = value;
         return this;
     }
 
@@ -236,6 +262,32 @@ public final class M3MotionTokensBuilder {
         return this;
     }
 
+    /// Replaces every long duration token with one value.
+    ///
+    /// @param duration the replacement duration in milliseconds
+    /// @return this builder
+    public M3MotionTokensBuilder longDurations(int duration) {
+        int value = nonNegativeDuration(duration, "duration");
+        long1 = value;
+        long2 = value;
+        long3 = value;
+        long4 = value;
+        return this;
+    }
+
+    /// Replaces every extra-long duration token with one value.
+    ///
+    /// @param duration the replacement duration in milliseconds
+    /// @return this builder
+    public M3MotionTokensBuilder extraLongDurations(int duration) {
+        int value = nonNegativeDuration(duration, "duration");
+        extraLong1 = value;
+        extraLong2 = value;
+        extraLong3 = value;
+        extraLong4 = value;
+        return this;
+    }
+
     /// Replaces the semantic motion scheme.
     ///
     /// @param scheme the replacement scheme
@@ -288,4 +340,3 @@ public final class M3MotionTokensBuilder {
         return value;
     }
 }
-

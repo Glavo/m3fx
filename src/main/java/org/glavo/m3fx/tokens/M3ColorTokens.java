@@ -14,20 +14,14 @@ import java.util.List;
 
 /// Wraps MonetFX color scheme output as M3FX color tokens.
 ///
-/// Color tokens expose the Material Design 3 color roles generated from a MonetFX [ColorScheme]. They are
-/// converted into both `-monet-*` and `-m3-color-*` JavaFX CSS variables so controls and application styles can
-/// address the same dynamic color system.
+/// Color tokens expose the Material Design 3 color roles generated from a MonetFX [ColorScheme]. They provide
+/// the same dynamic color roles to controls, themes, and application code without coupling the token model
+/// to a particular rendering backend.
 ///
 /// See [Material Design color](https://m3.material.io/styles/color/overview) and
 /// [Material Design](https://m3.material.io/).
 @NotNullByDefault
 public sealed interface M3ColorTokens permits M3ColorTokensImpl {
-    /// The default CSS prefix used for Monet color roles.
-    String DEFAULT_CSS_PREFIX = "-monet";
-
-    /// The M3FX CSS prefix used for Material color roles.
-    String M3_CSS_PREFIX = "-m3-color";
-
     /// Returns the MonetFX color scheme used by this token set.
     ///
     /// @return the MonetFX color scheme backing this token set
@@ -37,7 +31,7 @@ public sealed interface M3ColorTokens permits M3ColorTokensImpl {
     ///
     /// @param colorScheme the MonetFX color scheme backing the created token set
     /// @return a color token set backed by the supplied color scheme
-    static M3ColorTokens create(ColorScheme colorScheme) {
+    static M3ColorTokens fromColorScheme(ColorScheme colorScheme) {
         return new M3ColorTokensImpl(colorScheme);
     }
 
@@ -56,35 +50,4 @@ public sealed interface M3ColorTokens permits M3ColorTokensImpl {
         return ColorRole.ALL;
     }
 
-    /// Converts the color tokens into a JavaFX stylesheet rule for a style class.
-    ///
-    /// @param styleClass the style class selector without the leading dot
-    /// @return a JavaFX CSS rule containing color token declarations
-    default String toStyleSheet(String styleClass) {
-        return colorScheme().toStyleSheet(styleClass, DEFAULT_CSS_PREFIX, roles());
-    }
-
-    /// Converts the color tokens into inline JavaFX CSS declarations.
-    ///
-    /// @return inline JavaFX CSS declarations for all supported color roles
-    default String toStyleDeclarations() {
-        StringBuilder builder = new StringBuilder();
-        for (ColorRole role : roles()) {
-            String color = toRgb(get(role));
-            M3TokenCss.append(builder, role.getVariableName(DEFAULT_CSS_PREFIX), color);
-            M3TokenCss.append(builder, role.getVariableName(M3_CSS_PREFIX), color);
-        }
-        return builder.toString().trim();
-    }
-
-    /// Converts a color into a JavaFX CSS rgb value.
-    ///
-    /// @param color the JavaFX color to convert
-    /// @return a JavaFX CSS `rgb(r,g,b)` color value
-    private static String toRgb(Color color) {
-        int red = (int) Math.round(color.getRed() * 255.0);
-        int green = (int) Math.round(color.getGreen() * 255.0);
-        int blue = (int) Math.round(color.getBlue() * 255.0);
-        return "rgb(" + red + "," + green + "," + blue + ")";
-    }
 }

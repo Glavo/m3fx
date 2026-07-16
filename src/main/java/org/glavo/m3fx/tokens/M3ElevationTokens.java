@@ -41,106 +41,26 @@ public sealed interface M3ElevationTokens permits M3ElevationTokensImpl {
     /// @return elevation level five
     double level5();
 
-    /// Creates elevation tokens.
+    /// Creates a builder initialized with baseline elevation levels.
     ///
-    /// @param level0 the elevation value for level zero
-    /// @param level1 the elevation value for level one
-    /// @param level2 the elevation value for level two
-    /// @param level3 the elevation value for level three
-    /// @param level4 the elevation value for level four
-    /// @param level5 the elevation value for level five
-    /// @return elevation tokens containing the supplied levels
-    static M3ElevationTokens create(
-            double level0,
-            double level1,
-            double level2,
-            double level3,
-            double level4,
-            double level5
-    ) {
-        return new M3ElevationTokensImpl(level0, level1, level2, level3, level4, level5);
+    /// @return a mutable elevation-token builder
+    static M3ElevationTokensBuilder builder() {
+        return new M3ElevationTokensBuilder(baseline());
+    }
+
+    /// Creates a builder initialized from an existing elevation token set.
+    ///
+    /// @param tokens the elevation tokens to copy
+    /// @return a mutable elevation-token builder
+    static M3ElevationTokensBuilder builder(M3ElevationTokens tokens) {
+        return new M3ElevationTokensBuilder(tokens);
     }
 
     /// Returns baseline elevation tokens.
     ///
     /// @return baseline elevation tokens
     static M3ElevationTokens baseline() {
-        return create(0.0, 1.0, 3.0, 6.0, 8.0, 12.0);
+        return new M3ElevationTokensImpl(0.0, 1.0, 3.0, 6.0, 8.0, 12.0);
     }
 
-    /// Converts elevation tokens into inline JavaFX CSS declarations.
-    ///
-    /// @return inline JavaFX CSS declarations for these elevation tokens
-    default String toStyleDeclarations() {
-        StringBuilder builder = new StringBuilder();
-        M3TokenCss.append(builder, "-m3-elevation-level0", M3TokenCss.pixels(level0()));
-        M3TokenCss.append(builder, "-m3-elevation-level1", M3TokenCss.pixels(level1()));
-        M3TokenCss.append(builder, "-m3-elevation-level2", M3TokenCss.pixels(level2()));
-        M3TokenCss.append(builder, "-m3-elevation-level3", M3TokenCss.pixels(level3()));
-        M3TokenCss.append(builder, "-m3-elevation-level4", M3TokenCss.pixels(level4()));
-        M3TokenCss.append(builder, "-m3-elevation-level5", M3TokenCss.pixels(level5()));
-        return builder.toString().trim();
-    }
-
-    /// Converts elevation tokens into JavaFX CSS rules for M3FX controls.
-    ///
-    /// @return JavaFX CSS rules for M3FX controls using these elevation tokens
-    default String toControlStyleRules() {
-        StringBuilder builder = new StringBuilder();
-        appendShadowRule(builder, ".m3-elevated-button", level3(), level1());
-        appendShadowRule(builder, ".m3-elevated-button:hover", level4(), level2());
-        appendShadowRule(builder, ".m3-elevated-button:focus-visible, .m3-elevated-button:armed, .m3-elevated-button:pressed", level3(), level1());
-        appendShadowRule(builder, ".m3-elevated-chip", level2(), level1());
-        appendShadowRule(builder, ".m3-elevated-chip:hover", level3(), level2());
-        appendShadowRule(builder, ".m3-elevated-chip:focus-visible, .m3-elevated-chip:armed, .m3-elevated-chip:pressed", level2(), level1());
-        appendShadowRule(builder, ".m3-fab", level4(), level2());
-        appendShadowRule(builder, ".m3-fab:hover", level5(), level3());
-        appendShadowRule(builder, ".m3-fab:focus-visible, .m3-fab:armed, .m3-fab:pressed", level4(), level2());
-        appendEffectResetRule(builder, ".m3-elevated-button:disabled, .m3-elevated-chip:disabled, .m3-fab:disabled");
-        appendShadowRule(builder, ".m3-elevated-card .m3-card-container", level1(), level1());
-        appendShadowRule(builder, ".m3-elevated-card:actionable:hover .m3-card-container", level2(), Math.max(level1(), level2() - level1()));
-        appendShadowRule(builder, ".m3-elevated-card:actionable:focus-visible .m3-card-container, .m3-elevated-card:actionable:armed .m3-card-container, .m3-elevated-card:actionable:pressed .m3-card-container", level1(), level1());
-        appendShadowRule(builder, ".m3-elevated-card:dragged .m3-card-container", level4(), Math.max(level1(), level4() - level3()));
-        appendShadowRule(builder, ".m3-filled-card:actionable:hover .m3-card-container", level1(), level1());
-        appendEffectResetRule(builder, ".m3-filled-card:actionable:focus-visible .m3-card-container, .m3-filled-card:actionable:armed .m3-card-container, .m3-filled-card:actionable:pressed .m3-card-container");
-        appendShadowRule(builder, ".m3-filled-card:dragged .m3-card-container", level3(), Math.max(level1(), level3() - level2()));
-        appendShadowRule(builder, ".m3-outlined-card:actionable:hover .m3-card-container", level1(), level1());
-        appendEffectResetRule(builder, ".m3-outlined-card:actionable:focus-visible .m3-card-container, .m3-outlined-card:actionable:armed .m3-card-container, .m3-outlined-card:actionable:pressed .m3-card-container");
-        appendShadowRule(builder, ".m3-outlined-card:dragged .m3-card-container", level3(), Math.max(level1(), level3() - level2()));
-        appendShadowRule(builder, ".m3-card.m3-elevated-card:disabled .m3-card-container", level1(), level1());
-        appendEffectResetRule(
-                builder,
-                ".m3-card.m3-filled-card:disabled .m3-card-container, "
-                        + ".m3-card.m3-outlined-card:disabled .m3-card-container"
-        );
-        appendEffectResetRule(builder, ".m3-side-sheet.m3-standard-sheet");
-        appendShadowRule(builder, ".m3-side-sheet.m3-modal-sheet", level1(), level1());
-        appendShadowRule(builder, ".m3-bottom-sheet", level1(), level1());
-        appendShadowRule(builder, ".m3-surface-elevation-level1 .m3-surface-container", level1(), level1());
-        appendShadowRule(builder, ".m3-surface-elevation-level2 .m3-surface-container", level2(), Math.max(level1(), level2() - level1()));
-        appendShadowRule(builder, ".m3-surface-elevation-level3 .m3-surface-container", level3(), Math.max(level1(), level3() - level2()));
-        appendShadowRule(builder, ".m3-surface-elevation-level4 .m3-surface-container", level4(), Math.max(level1(), level4() - level3()));
-        appendShadowRule(builder, ".m3-surface-elevation-level5 .m3-surface-container", level5(), Math.max(level1(), level5() - level4()));
-        appendShadowRule(builder, ".m3-menu, .m3-rich-tooltip-container", level2(), Math.max(level1(), level2() - level1()));
-        appendShadowRule(builder, ".m3-top-app-bar:scrolled-under", level2(), Math.max(level1(), level2() - level1()));
-        appendShadowRule(builder, ".m3-toolbar-floating", level3(), Math.max(level1(), level3() - level2()));
-        appendShadowRule(builder, ".m3-dialog-pane, .m3-snackbar-container", level3(), Math.max(level1(), level3() - level2()));
-        return builder.toString().stripTrailing();
-    }
-
-    /// Appends an effect reset CSS rule.
-    private static void appendEffectResetRule(StringBuilder builder, String selector) {
-        builder.append(selector)
-                .append(" {\n    -fx-effect: null;\n}\n\n");
-    }
-
-    /// Appends a dropshadow CSS rule.
-    private static void appendShadowRule(StringBuilder builder, String selector, double radius, double offsetY) {
-        builder.append(selector)
-                .append(" {\n    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), ")
-                .append(M3TokenCss.format(radius))
-                .append(", 0.18, 0, ")
-                .append(M3TokenCss.format(offsetY))
-                .append(");\n}\n\n");
-    }
 }

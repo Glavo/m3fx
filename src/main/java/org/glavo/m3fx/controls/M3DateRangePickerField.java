@@ -92,7 +92,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// The initial popup picker offset used for enter and exit motion.
     private static final double POPUP_TRANSITION_OFFSET_Y = 6.0;
 
-    // Internal storage for [startDateProperty].
+    /// Internal storage for [startDateProperty].
     private final ObjectProperty<@Nullable LocalDate> startDate =
             new SimpleObjectProperty<>(this, "startDate") {
                 /// Validates direct property writes before applying them.
@@ -117,7 +117,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
                 }
             };
 
-    // Internal storage for [endDateProperty].
+    /// Internal storage for [endDateProperty].
     private final ObjectProperty<@Nullable LocalDate> endDate =
             new SimpleObjectProperty<>(this, "endDate") {
                 /// Validates direct property writes before applying them.
@@ -142,7 +142,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
                 }
             };
 
-    // Internal storage for [formatterProperty].
+    /// Internal storage for [formatterProperty].
     private final ObjectProperty<DateTimeFormatter> formatter =
             new SimpleObjectProperty<>(this, "formatter") {
                 /// Keeps formatter values non-null.
@@ -158,7 +158,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
                 }
             };
 
-    // Internal storage for [invalidTextErrorTextProperty].
+    /// Internal storage for [invalidTextErrorTextProperty].
     private final StringProperty invalidTextErrorText =
             new SimpleStringProperty(this, "invalidTextErrorText") {
                 /// Keeps parse error text non-null.
@@ -168,13 +168,107 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
                 }
             };
 
-    // Internal storage for [rangeErrorTextProperty].
+    /// Internal storage for [rangeErrorTextProperty].
     private final StringProperty rangeErrorText =
             new SimpleStringProperty(this, "rangeErrorText") {
                 /// Keeps range error text non-null.
                 @Override
                 public void set(String newValue) {
                     super.set(Objects.requireNonNull(newValue, "rangeErrorText"));
+                }
+            };
+
+    /// Internal storage for [startTextProperty].
+    private final StringProperty startText = new SimpleStringProperty(this, "startText", "") {
+        /// Keeps start editor text non-null.
+        @Override
+        public void set(String newValue) {
+            super.set(Objects.requireNonNull(newValue, "startText"));
+        }
+    };
+
+    /// Internal storage for [endTextProperty].
+    private final StringProperty endText = new SimpleStringProperty(this, "endText", "") {
+        /// Keeps end editor text non-null.
+        @Override
+        public void set(String newValue) {
+            super.set(Objects.requireNonNull(newValue, "endText"));
+        }
+    };
+
+    /// Internal storage for [startVariantProperty].
+    private final ObjectProperty<M3TextInputVariant> startVariant =
+            new SimpleObjectProperty<>(this, "startVariant", M3TextInputVariant.FILLED) {
+                /// Keeps the start text input variant non-null.
+                @Override
+                public void set(M3TextInputVariant newValue) {
+                    super.set(Objects.requireNonNull(newValue, "startVariant"));
+                }
+            };
+
+    /// Internal storage for [endVariantProperty].
+    private final ObjectProperty<M3TextInputVariant> endVariant =
+            new SimpleObjectProperty<>(this, "endVariant", M3TextInputVariant.FILLED) {
+                /// Keeps the end text input variant non-null.
+                @Override
+                public void set(M3TextInputVariant newValue) {
+                    super.set(Objects.requireNonNull(newValue, "endVariant"));
+                }
+            };
+
+    /// Internal storage for [startErrorTextProperty].
+    private final StringProperty startErrorText = new SimpleStringProperty(this, "startErrorText", "") {
+        /// Keeps start error text non-null.
+        @Override
+        public void set(String newValue) {
+            super.set(Objects.requireNonNull(newValue, "startErrorText"));
+        }
+    };
+
+    /// Internal storage for [endErrorTextProperty].
+    private final StringProperty endErrorText = new SimpleStringProperty(this, "endErrorText", "") {
+        /// Keeps end error text non-null.
+        @Override
+        public void set(String newValue) {
+            super.set(Objects.requireNonNull(newValue, "endErrorText"));
+        }
+    };
+
+    /// Internal storage for [startLabelTextProperty].
+    private final StringProperty startLabelText = new SimpleStringProperty(this, "startLabelText", "") {
+        /// Keeps start label text non-null.
+        @Override
+        public void set(String newValue) {
+            super.set(Objects.requireNonNull(newValue, "startLabelText"));
+        }
+    };
+
+    /// Internal storage for [endLabelTextProperty].
+    private final StringProperty endLabelText = new SimpleStringProperty(this, "endLabelText", "") {
+        /// Keeps end label text non-null.
+        @Override
+        public void set(String newValue) {
+            super.set(Objects.requireNonNull(newValue, "endLabelText"));
+        }
+    };
+
+    /// Internal storage for [startSupportingTextProperty].
+    private final StringProperty startSupportingText =
+            new SimpleStringProperty(this, "startSupportingText", "") {
+                /// Keeps start supporting text non-null.
+                @Override
+                public void set(String newValue) {
+                    super.set(Objects.requireNonNull(newValue, "startSupportingText"));
+                }
+            };
+
+    /// Internal storage for [endSupportingTextProperty].
+    private final StringProperty endSupportingText =
+            new SimpleStringProperty(this, "endSupportingText", "") {
+                /// Keeps end supporting text non-null.
+                @Override
+                public void set(String newValue) {
+                    super.set(Objects.requireNonNull(newValue, "endSupportingText"));
                 }
             };
 
@@ -221,7 +315,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     private final M3PopupContextSynchronizer popupContextSynchronizer =
             new M3PopupContextSynchronizer(this, popupContent, M3Stylesheets.controlStylesheet("picker-field.css"));
 
-    // Internal storage for [showingProperty].
+    /// Internal storage for [showingProperty].
     private final ReadOnlyBooleanWrapper showing = new ReadOnlyBooleanWrapper(this, "showing");
 
     /// The reusable picker popup enter and exit animation.
@@ -390,7 +484,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     ///
     /// @return the current raw start-date editor text
     public String getStartText() {
-        return startEditor.getText();
+        return startText.get();
     }
 
     /// Sets the raw start-date editor text.
@@ -399,14 +493,14 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     ///
     /// @param startText the raw start-date editor text
     public void setStartText(String startText) {
-        startEditor.setText(Objects.requireNonNull(startText, "startText"));
+        this.startText.set(startText);
     }
 
     /// Returns the raw start-date editor text property.
     ///
     /// @return the raw start-date editor text property
     public StringProperty startTextProperty() {
-        return startEditor.textProperty();
+        return startText;
     }
 
     /// Returns the current raw end-date editor text.
@@ -416,7 +510,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     ///
     /// @return the current raw end-date editor text
     public String getEndText() {
-        return endEditor.getText();
+        return endText.get();
     }
 
     /// Sets the raw end-date editor text.
@@ -425,98 +519,98 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     ///
     /// @param endText the raw end-date editor text
     public void setEndText(String endText) {
-        endEditor.setText(Objects.requireNonNull(endText, "endText"));
+        this.endText.set(endText);
     }
 
     /// Returns the raw end-date editor text property.
     ///
     /// @return the raw end-date editor text property
     public StringProperty endTextProperty() {
-        return endEditor.textProperty();
+        return endText;
     }
 
     /// Returns the text input variant used by the start-date editor.
     ///
     /// @return the text input variant used by the start-date editor
     public M3TextInputVariant getStartVariant() {
-        return startEditor.getVariant();
+        return startVariant.get();
     }
 
     /// Sets the text input variant used by the start-date editor.
     ///
     /// @param variant the text input variant used by the start-date editor
     public void setStartVariant(M3TextInputVariant variant) {
-        startEditor.setVariant(variant);
+        startVariant.set(variant);
     }
 
     /// Returns the start-date editor variant property.
     ///
     /// @return the start-date editor variant property
     public ObjectProperty<M3TextInputVariant> startVariantProperty() {
-        return startEditor.variantProperty();
+        return startVariant;
     }
 
     /// Returns the text input variant used by the end-date editor.
     ///
     /// @return the text input variant used by the end-date editor
     public M3TextInputVariant getEndVariant() {
-        return endEditor.getVariant();
+        return endVariant.get();
     }
 
     /// Sets the text input variant used by the end-date editor.
     ///
     /// @param variant the text input variant used by the end-date editor
     public void setEndVariant(M3TextInputVariant variant) {
-        endEditor.setVariant(variant);
+        endVariant.set(variant);
     }
 
     /// Returns the end-date editor variant property.
     ///
     /// @return the end-date editor variant property
     public ObjectProperty<M3TextInputVariant> endVariantProperty() {
-        return endEditor.variantProperty();
+        return endVariant;
     }
 
     /// Returns the current error text shown for the start-date editor.
     ///
     /// @return the current error text shown for the start-date editor
     public String getStartErrorText() {
-        return startInputLayout.getErrorText();
+        return startErrorText.get();
     }
 
     /// Sets the current error text shown for the start-date editor.
     ///
     /// @param errorText the current error text shown for the start-date editor
     public void setStartErrorText(String errorText) {
-        startInputLayout.setErrorText(errorText);
+        startErrorText.set(errorText);
     }
 
     /// Returns the start-date editor error text property.
     ///
     /// @return the start-date editor error text property
     public StringProperty startErrorTextProperty() {
-        return startInputLayout.errorTextProperty();
+        return startErrorText;
     }
 
     /// Returns the current error text shown for the end-date editor.
     ///
     /// @return the current error text shown for the end-date editor
     public String getEndErrorText() {
-        return endInputLayout.getErrorText();
+        return endErrorText.get();
     }
 
     /// Sets the current error text shown for the end-date editor.
     ///
     /// @param errorText the current error text shown for the end-date editor
     public void setEndErrorText(String errorText) {
-        endInputLayout.setErrorText(errorText);
+        endErrorText.set(errorText);
     }
 
     /// Returns the end-date editor error text property.
     ///
     /// @return the end-date editor error text property
     public StringProperty endErrorTextProperty() {
-        return endInputLayout.errorTextProperty();
+        return endErrorText;
     }
 
     /// Returns the editable text field shown for the start date.
@@ -628,84 +722,84 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     ///
     /// @return the label text displayed by the start date input layout
     public String getStartLabelText() {
-        return startInputLayout.getLabelText();
+        return startLabelText.get();
     }
 
     /// Sets the label text displayed by the start date input layout.
     ///
     /// @param startLabelText the label text displayed by the start date input layout
     public void setStartLabelText(String startLabelText) {
-        startInputLayout.setLabelText(startLabelText);
+        this.startLabelText.set(startLabelText);
     }
 
     /// Returns the start label text property.
     ///
     /// @return the start label text property
     public StringProperty startLabelTextProperty() {
-        return startInputLayout.labelTextProperty();
+        return startLabelText;
     }
 
     /// Returns the label text displayed by the end date input layout.
     ///
     /// @return the label text displayed by the end date input layout
     public String getEndLabelText() {
-        return endInputLayout.getLabelText();
+        return endLabelText.get();
     }
 
     /// Sets the label text displayed by the end date input layout.
     ///
     /// @param endLabelText the label text displayed by the end date input layout
     public void setEndLabelText(String endLabelText) {
-        endInputLayout.setLabelText(endLabelText);
+        this.endLabelText.set(endLabelText);
     }
 
     /// Returns the end label text property.
     ///
     /// @return the end label text property
     public StringProperty endLabelTextProperty() {
-        return endInputLayout.labelTextProperty();
+        return endLabelText;
     }
 
     /// Returns the supporting text displayed by the start date input layout.
     ///
     /// @return the supporting text displayed by the start date input layout
     public String getStartSupportingText() {
-        return startInputLayout.getSupportingText();
+        return startSupportingText.get();
     }
 
     /// Sets the supporting text displayed by the start date input layout.
     ///
     /// @param supportingText the supporting text displayed by the start date input layout
     public void setStartSupportingText(String supportingText) {
-        startInputLayout.setSupportingText(supportingText);
+        startSupportingText.set(supportingText);
     }
 
     /// Returns the start supporting text property.
     ///
     /// @return the start supporting text property
     public StringProperty startSupportingTextProperty() {
-        return startInputLayout.supportingTextProperty();
+        return startSupportingText;
     }
 
     /// Returns the supporting text displayed by the end date input layout.
     ///
     /// @return the supporting text displayed by the end date input layout
     public String getEndSupportingText() {
-        return endInputLayout.getSupportingText();
+        return endSupportingText.get();
     }
 
     /// Sets the supporting text displayed by the end date input layout.
     ///
     /// @param supportingText the supporting text displayed by the end date input layout
     public void setEndSupportingText(String supportingText) {
-        endInputLayout.setSupportingText(supportingText);
+        endSupportingText.set(supportingText);
     }
 
     /// Returns the end supporting text property.
     ///
     /// @return the end supporting text property
     public StringProperty endSupportingTextProperty() {
-        return endInputLayout.supportingTextProperty();
+        return endSupportingText;
     }
 
     /// Returns whether the picker popup is currently showing.
@@ -857,12 +951,22 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// Adds base style classes and installs event handling.
     private void initialize() {
         M3ControlStyles.initialize(this, STYLE_CLASS);
+        startEditor.textProperty().bindBidirectional(startText);
+        endEditor.textProperty().bindBidirectional(endText);
+        startEditor.variantProperty().bindBidirectional(startVariant);
+        endEditor.variantProperty().bindBidirectional(endVariant);
+        startInputLayout.errorTextProperty().bindBidirectional(startErrorText);
+        endInputLayout.errorTextProperty().bindBidirectional(endErrorText);
+        startInputLayout.labelTextProperty().bindBidirectional(startLabelText);
+        endInputLayout.labelTextProperty().bindBidirectional(endLabelText);
+        startInputLayout.supportingTextProperty().bindBidirectional(startSupportingText);
+        endInputLayout.supportingTextProperty().bindBidirectional(endSupportingText);
         setAccessibleRole(AccessibleRole.PARENT);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem,
                 this::handlesAccessibleShowTarget);
-        startInputLayout.setLabelText("Start date");
-        endInputLayout.setLabelText("End date");
+        setStartLabelText("Start date");
+        setEndLabelText("End date");
         startInputLayout.setTrailing(startOpenButton);
         endInputLayout.setTrailing(endOpenButton);
         startInputLayout.disableProperty().bind(disabledProperty());

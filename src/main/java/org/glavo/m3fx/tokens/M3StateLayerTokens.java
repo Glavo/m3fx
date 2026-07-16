@@ -60,6 +60,13 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
     /// @return the keyboard focus indicator inner offset in pixels
     double focusIndicatorInnerOffset();
 
+    /// Creates a builder initialized with baseline state-layer tokens.
+    ///
+    /// @return a mutable state-layer-token builder
+    static M3StateLayerTokensBuilder builder() {
+        return new M3StateLayerTokensBuilder(baseline());
+    }
+
     /// Creates a builder initialized from an existing state-layer token set.
     ///
     /// @param tokens the state-layer tokens to copy
@@ -139,88 +146,6 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
     /// @return baseline Material Design 3 state layer tokens
     static M3StateLayerTokens baseline() {
         return create(0.08, 0.10, 0.10, 0.16, 0.12, 0.38);
-    }
-
-    /// Converts the state tokens into root-level JavaFX CSS declarations.
-    ///
-    /// @return root-level JavaFX CSS declarations for this state layer token set
-    default String toStyleDeclarations() {
-        return "-m3-state-hover-opacity: " + M3TokenCss.format(hoverOpacity()) + "; "
-                + "-m3-state-focus-opacity: " + M3TokenCss.format(focusOpacity()) + "; "
-                + "-m3-state-pressed-opacity: " + M3TokenCss.format(pressedOpacity()) + "; "
-                + "-m3-state-dragged-opacity: " + M3TokenCss.format(draggedOpacity()) + "; "
-                + "-m3-state-disabled-container-opacity: " + M3TokenCss.format(disabledContainerOpacity()) + "; "
-                + "-m3-state-disabled-content-opacity: " + M3TokenCss.format(disabledContentOpacity()) + "; "
-                + "-m3-state-focus-indicator-color: -m3-color-secondary; "
-                + "-m3-state-focus-indicator-thickness: " + M3TokenCss.pixels(focusIndicatorThickness()) + "; "
-                + "-m3-state-focus-indicator-outer-offset: " + M3TokenCss.pixels(focusIndicatorOuterOffset()) + "; "
-                + "-m3-state-focus-indicator-inner-offset: " + M3TokenCss.pixels(focusIndicatorInnerOffset()) + ";";
-    }
-
-    /// Converts state layer tokens into JavaFX CSS rules for M3FX controls.
-    ///
-    /// @return JavaFX CSS rules for controls that render interaction state layers
-    default String toControlStyleRules() {
-        StringBuilder builder = new StringBuilder();
-        appendOpacityRule(builder, hoverStateSelectors(), hoverOpacity());
-        appendOpacityRule(builder, focusStateSelectors(), focusOpacity());
-        appendOpacityRule(builder, pressedStateSelectors(), pressedOpacity());
-        appendOpacityRule(builder, ".m3-card:dragged .m3-state-layer", draggedOpacity());
-        return builder.toString().stripTrailing();
-    }
-
-    /// Returns selectors for controls that expose hover state layer feedback.
-    private static String hoverStateSelectors() {
-        return ".m3-button:hover .m3-state-layer, .m3-chip:hover .m3-state-layer, "
-                + ".m3-icon-button:hover .m3-state-layer, .m3-icon-toggle-button:hover .m3-state-layer, "
-                + ".m3-fab:hover .m3-state-layer, "
-                + ".m3-segmented-button:hover .m3-state-layer, .m3-checkbox:hover .m3-state-layer, "
-                + ".m3-radio-button:hover .m3-state-layer, .m3-switch:hover .m3-state-layer, "
-                + ".m3-tab:hover .m3-state-layer, "
-                + ".m3-navigation-item:hover .m3-state-layer, "
-                + ".m3-list-item:hover .m3-state-layer, "
-                + ".m3-validation-summary-item:hover .m3-state-layer, "
-                + ".m3-search-bar:hover .m3-state-layer, "
-                + ".m3-card:actionable:hover .m3-state-layer";
-    }
-
-    /// Returns selectors for controls that expose focus state layer feedback.
-    private static String focusStateSelectors() {
-        return ".m3-button:focus-visible .m3-state-layer, .m3-chip:focus-visible .m3-state-layer, "
-                + ".m3-icon-button:focus-visible .m3-state-layer, "
-                + ".m3-icon-toggle-button:focus-visible .m3-state-layer, .m3-fab:focus-visible .m3-state-layer, "
-                + ".m3-segmented-button:focus-visible .m3-state-layer, .m3-checkbox:focus-visible .m3-state-layer, "
-                + ".m3-radio-button:focus-visible .m3-state-layer, .m3-switch:focus-visible .m3-state-layer, "
-                + ".m3-tab:focus-visible .m3-state-layer, "
-                + ".m3-navigation-item:focus-visible .m3-state-layer, "
-                + ".m3-list-item:focus-visible .m3-state-layer, "
-                + ".m3-validation-summary-item:focus-visible .m3-state-layer, "
-                + ".m3-search-bar:focus-visible .m3-state-layer, "
-                + ".m3-card:actionable:focus-visible .m3-state-layer";
-    }
-
-    /// Returns selectors for controls that expose pressed state layer feedback.
-    private static String pressedStateSelectors() {
-        return ".m3-button:pressed .m3-state-layer, .m3-chip:pressed .m3-state-layer, "
-                + ".m3-icon-button:pressed .m3-state-layer, .m3-icon-toggle-button:pressed .m3-state-layer, "
-                + ".m3-fab:pressed .m3-state-layer, "
-                + ".m3-segmented-button:pressed .m3-state-layer, .m3-checkbox:pressed .m3-state-layer, "
-                + ".m3-radio-button:pressed .m3-state-layer, .m3-switch:pressed .m3-state-layer, "
-                + ".m3-tab:pressed .m3-state-layer, "
-                + ".m3-navigation-item:pressed .m3-state-layer, "
-                + ".m3-list-item:pressed .m3-state-layer, "
-                + ".m3-validation-summary-item:pressed .m3-state-layer, "
-                + ".m3-search-bar:pressed .m3-state-layer, "
-                + ".m3-card:actionable:armed .m3-state-layer, "
-                + ".m3-card:actionable:pressed .m3-state-layer";
-    }
-
-    /// Appends an opacity CSS rule.
-    private static void appendOpacityRule(StringBuilder builder, String selector, double opacity) {
-        builder.append(selector)
-                .append(" {\n    -fx-opacity: ")
-                .append(M3TokenCss.format(opacity))
-                .append(";\n}\n\n");
     }
 
 }

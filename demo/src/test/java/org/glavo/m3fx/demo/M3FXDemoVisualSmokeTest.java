@@ -5773,15 +5773,11 @@ final class M3FXDemoVisualSmokeTest {
     /// Returns a ripple-specific motion scheme that makes release fade frames observable in real snapshots.
     private static M3MotionScheme visualRippleMotionScheme() {
         M3MotionScheme standard = M3MotionScheme.standard();
-        M3MotionSpec observableSpec = M3MotionSpec.create(OBSERVABLE_MOTION_DURATION, M3MotionEasing.LINEAR);
-        return M3MotionScheme.create(
-                standard.fastEffects(),
-                observableSpec,
-                standard.slowEffects(),
-                standard.fastSpatial(),
-                observableSpec,
-                standard.slowSpatial()
-        );
+        M3MotionSpec observableSpec = M3MotionSpec.of(OBSERVABLE_MOTION_DURATION, M3MotionEasing.LINEAR);
+        return M3MotionScheme.builder(standard)
+                .defaultEffects(observableSpec)
+                .defaultSpatial(observableSpec)
+                .build();
     }
 
     /// Verifies that switch selection produces visible thumb animation intermediate frames.
@@ -6071,14 +6067,9 @@ final class M3FXDemoVisualSmokeTest {
     /// Returns a switch-specific motion scheme that makes real visual intermediate frames observable.
     private static M3MotionScheme visualSwitchMotionScheme() {
         M3MotionScheme standard = M3MotionScheme.standard();
-        return M3MotionScheme.create(
-                standard.fastEffects(),
-                standard.defaultEffects(),
-                standard.slowEffects(),
-                M3MotionSpec.create(OBSERVABLE_MOTION_DURATION, M3MotionEasing.LINEAR),
-                standard.defaultSpatial(),
-                standard.slowSpatial()
-        );
+        return M3MotionScheme.builder(standard)
+                .fastSpatial(M3MotionSpec.of(OBSERVABLE_MOTION_DURATION, M3MotionEasing.LINEAR))
+                .build();
     }
 
     /// Verifies popup motion together with the split button selected-state shape morph.
@@ -6116,15 +6107,12 @@ final class M3FXDemoVisualSmokeTest {
                     ), "split button");
                     M3MotionScheme standard = M3MotionScheme.standard();
                     M3MotionSpec observableSpec =
-                            M3MotionSpec.create(OBSERVABLE_MOTION_DURATION, M3MotionEasing.LINEAR);
-                    DemoFxTestUtils.setMotionScheme(target, M3MotionScheme.create(
-                            standard.fastEffects(),
-                            observableSpec,
-                            standard.slowEffects(),
-                            observableSpec,
-                            observableSpec,
-                            standard.slowSpatial()
-                    ));
+                            M3MotionSpec.of(OBSERVABLE_MOTION_DURATION, M3MotionEasing.LINEAR);
+                    DemoFxTestUtils.setMotionScheme(target, M3MotionScheme.builder(standard)
+                            .defaultEffects(observableSpec)
+                            .fastSpatial(observableSpec)
+                            .defaultSpatial(observableSpec)
+                            .build());
                     closedButtonReference.set(snapshotNode(target));
                     target.showMenu();
                     assertTrue(target.isShowing());
@@ -6517,14 +6505,9 @@ final class M3FXDemoVisualSmokeTest {
     /// Returns a popup-specific motion scheme that makes real visual intermediate frames observable.
     private static M3MotionScheme visualPopupMotionScheme() {
         M3MotionScheme standard = M3MotionScheme.standard();
-        return M3MotionScheme.create(
-                standard.fastEffects(),
-                standard.defaultEffects(),
-                standard.slowEffects(),
-                M3MotionSpec.create(OBSERVABLE_MOTION_DURATION, M3MotionEasing.LINEAR),
-                standard.defaultSpatial(),
-                standard.slowSpatial()
-        );
+        return M3MotionScheme.builder(standard)
+                .fastSpatial(M3MotionSpec.of(OBSERVABLE_MOTION_DURATION, M3MotionEasing.LINEAR))
+                .build();
     }
 
     /// Verifies selected-indicator motion on a demo navigation item.
@@ -6954,15 +6937,12 @@ final class M3FXDemoVisualSmokeTest {
     /// Returns a navigation-specific motion scheme that makes selection and disclosure frames observable.
     private static M3MotionScheme visualNavigationMotionScheme() {
         M3MotionScheme standard = M3MotionScheme.standard();
-        M3MotionSpec observableSpec = M3MotionSpec.create(OBSERVABLE_MOTION_DURATION, M3MotionEasing.LINEAR);
-        return M3MotionScheme.create(
-                standard.fastEffects(),
-                observableSpec,
-                standard.slowEffects(),
-                observableSpec,
-                observableSpec,
-                standard.slowSpatial()
-        );
+        M3MotionSpec observableSpec = M3MotionSpec.of(OBSERVABLE_MOTION_DURATION, M3MotionEasing.LINEAR);
+        return M3MotionScheme.builder(standard)
+                .defaultEffects(observableSpec)
+                .fastSpatial(observableSpec)
+                .defaultSpatial(observableSpec)
+                .build();
     }
 
     /// Verifies bottom sheet hide and show motion in the demo page.
@@ -7168,15 +7148,11 @@ final class M3FXDemoVisualSmokeTest {
     /// Returns a sheet-specific motion scheme that makes visibility motion frames observable.
     private static M3MotionScheme visualSheetMotionScheme() {
         M3MotionScheme standard = M3MotionScheme.standard();
-        M3MotionSpec observableSpec = M3MotionSpec.create(OBSERVABLE_MOTION_DURATION, M3MotionEasing.LINEAR);
-        return M3MotionScheme.create(
-                standard.fastEffects(),
-                standard.defaultEffects(),
-                standard.slowEffects(),
-                observableSpec,
-                observableSpec,
-                standard.slowSpatial()
-        );
+        M3MotionSpec observableSpec = M3MotionSpec.of(OBSERVABLE_MOTION_DURATION, M3MotionEasing.LINEAR);
+        return M3MotionScheme.builder(standard)
+                .fastSpatial(observableSpec)
+                .defaultSpatial(observableSpec)
+                .build();
     }
 
     /// Verifies snackbar entrance and dismissal motion on the demo host.
@@ -7818,15 +7794,13 @@ final class M3FXDemoVisualSmokeTest {
     /// Returns an overlay-specific motion scheme that makes popup and surface transitions observable.
     private static M3MotionScheme visualOverlayMotionScheme() {
         M3MotionScheme standard = M3MotionScheme.standard();
-        M3MotionSpec observableSpec = M3MotionSpec.create(OBSERVABLE_MOTION_DURATION, M3MotionEasing.LINEAR);
-        return M3MotionScheme.create(
-                observableSpec,
-                observableSpec,
-                standard.slowEffects(),
-                observableSpec,
-                observableSpec,
-                standard.slowSpatial()
-        );
+        M3MotionSpec observableSpec = M3MotionSpec.of(OBSERVABLE_MOTION_DURATION, M3MotionEasing.LINEAR);
+        return M3MotionScheme.builder(standard)
+                .fastEffects(observableSpec)
+                .defaultEffects(observableSpec)
+                .fastSpatial(observableSpec)
+                .defaultSpatial(observableSpec)
+                .build();
     }
 
     /// Verifies focus feedback on a populated text field in the demo page.

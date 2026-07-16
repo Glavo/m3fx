@@ -53,7 +53,7 @@ public final class M3TokenSetBuilder {
     M3TokenSetBuilder(M3Profile profile, ColorScheme colorScheme, M3Density density) {
         this.profile = Objects.requireNonNull(profile, "profile");
         this.density = Objects.requireNonNull(density, "density");
-        colorTokens = M3ColorTokens.create(Objects.requireNonNull(colorScheme, "colorScheme"));
+        colorTokens = M3ColorTokens.fromColorScheme(Objects.requireNonNull(colorScheme, "colorScheme"));
         boolean expressive = profile == M3Profile.EXPRESSIVE_2025;
         typographyTokens = expressive ? M3TypographyTokens.expressive() : M3TypographyTokens.baseline();
         shapeTokens = expressive ? M3ShapeTokens.expressive() : M3ShapeTokens.baseline();
@@ -170,7 +170,7 @@ public final class M3TokenSetBuilder {
     /// @return the built token set
     public M3TokenSet build() {
         M3ComponentTokens resolvedComponentTokens = componentTokens == null
-                ? M3ComponentTokens.create(profile, shapeTokens, density)
+                ? M3ComponentTokens.builder(profile, shapeTokens, density).build()
                 : componentTokens;
         return new M3TokenSetImpl(
                 profile,

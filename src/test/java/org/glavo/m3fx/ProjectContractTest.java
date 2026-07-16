@@ -78,8 +78,10 @@ final class ProjectContractTest {
                     typeNames("""
                             M3Motion
                             M3MotionBehavior
+                            M3MotionBehaviorBuilder
                             M3MotionEasing
                             M3MotionScheme
+                            M3MotionSchemeBuilder
                             M3MotionSettings
                             M3MotionSpec
                             """),
@@ -142,7 +144,6 @@ final class ProjectContractTest {
                             M3IconSize
                             M3IconToggleButton
                             M3IconToggleButtonGroup
-                            M3SelectionMode
                             M3IconToggleButtonVariant
                             M3IconVariant
                             M3ListCell
@@ -152,7 +153,6 @@ final class ProjectContractTest {
                             M3ListItemSlotSize
                             M3ListPane
                             M3ListSectionHeader
-                            M3SelectionMode
                             M3ListView
                             M3LoadingIndicator
                             M3LoadingIndicatorVariant
@@ -161,7 +161,6 @@ final class ProjectContractTest {
                             M3MenuColorStyle
                             M3MenuItem
                             M3MenuSectionHeader
-                            M3SelectionMode
                             M3NavigationBar
                             M3NavigationDrawer
                             M3NavigationDrawerGroup
@@ -185,7 +184,6 @@ final class ProjectContractTest {
                             M3SearchViewStyle
                             M3SegmentedButton
                             M3SegmentedButtonGroup
-                            M3SelectionMode
                             M3SheetVariant
                             M3SideSheet
                             M3Slider
@@ -193,7 +191,6 @@ final class ProjectContractTest {
                             M3Snackbar
                             M3SnackbarHost
                             M3SplitButton
-                            M3ButtonSize
                             M3SubMenuItem
                             M3Surface
                             M3SurfaceElevation
@@ -237,6 +234,7 @@ final class ProjectContractTest {
                             M3ComponentTokensBuilder
                             M3Density
                             M3ElevationTokens
+                            M3ElevationTokensBuilder
                             M3MotionTokens
                             M3MotionTokensBuilder
                             M3Profile
@@ -524,10 +522,12 @@ final class ProjectContractTest {
             SUPPORTED_PUBLIC_STATIC_METHODS_BY_NON_CONTROL_PACKAGE = Map.of(
             "org.glavo.m3fx.animation",
             typeNames("""
-                    org.glavo.m3fx.animation.M3MotionBehavior#create(javafx.util.Duration,javafx.util.Duration,javafx.util.Duration,javafx.util.Duration,javafx.util.Duration,javafx.util.Duration,javafx.util.Duration,javafx.util.Duration,javafx.util.Duration,javafx.util.Duration,javafx.util.Duration,javafx.util.Duration)
+                    org.glavo.m3fx.animation.M3MotionBehavior#builder()
+                    org.glavo.m3fx.animation.M3MotionBehavior#builder(org.glavo.m3fx.animation.M3MotionBehavior)
                     org.glavo.m3fx.animation.M3MotionBehavior#expressive()
                     org.glavo.m3fx.animation.M3MotionBehavior#standard()
-                    org.glavo.m3fx.animation.M3MotionScheme#create(org.glavo.m3fx.animation.M3MotionSpec,org.glavo.m3fx.animation.M3MotionSpec,org.glavo.m3fx.animation.M3MotionSpec,org.glavo.m3fx.animation.M3MotionSpec,org.glavo.m3fx.animation.M3MotionSpec,org.glavo.m3fx.animation.M3MotionSpec)
+                    org.glavo.m3fx.animation.M3MotionScheme#builder()
+                    org.glavo.m3fx.animation.M3MotionScheme#builder(org.glavo.m3fx.animation.M3MotionScheme)
                     org.glavo.m3fx.animation.M3MotionScheme#expressive()
                     org.glavo.m3fx.animation.M3MotionScheme#standard()
                     org.glavo.m3fx.animation.M3MotionSettings#globalReducedMotionRequestedProperty()
@@ -536,7 +536,7 @@ final class ProjectContractTest {
                     org.glavo.m3fx.animation.M3MotionSettings#setGlobalReducedMotionRequested(boolean)
                     org.glavo.m3fx.animation.M3MotionSettings#setReducedMotionRequested(javafx.scene.Node,boolean)
                     org.glavo.m3fx.animation.M3MotionSettings#shouldReduceMotion(javafx.scene.Node)
-                    org.glavo.m3fx.animation.M3MotionSpec#create(javafx.util.Duration,org.glavo.m3fx.animation.M3MotionEasing)
+                    org.glavo.m3fx.animation.M3MotionSpec#of(javafx.util.Duration,org.glavo.m3fx.animation.M3MotionEasing)
                     """),
             "org.glavo.m3fx.theme",
             typeNames("""
@@ -549,52 +549,44 @@ final class ProjectContractTest {
                     org.glavo.m3fx.theme.M3Theme#fromSeed(javafx.scene.paint.Color,org.glavo.m3fx.tokens.M3Profile,org.glavo.monetfx.Brightness)
                     org.glavo.m3fx.theme.M3Theme#fromSeed(javafx.scene.paint.Color,org.glavo.m3fx.tokens.M3Profile,org.glavo.monetfx.Brightness,org.glavo.m3fx.tokens.M3Density)
                     org.glavo.m3fx.theme.M3Theme#fromTokenSet(org.glavo.m3fx.tokens.M3TokenSet)
-                    org.glavo.m3fx.theme.M3ThemeManager#applyThemeStyleClasses(javafx.css.Styleable,org.glavo.m3fx.theme.M3Theme)
-                    org.glavo.m3fx.theme.M3ThemeManager#clearThemeStyleClasses(javafx.css.Styleable)
-                    org.glavo.m3fx.theme.M3ThemeManager#copyThemeContext(javafx.scene.Parent,javafx.scene.Parent)
                     org.glavo.m3fx.theme.M3ThemeManager#getTheme(javafx.scene.Parent)
                     org.glavo.m3fx.theme.M3ThemeManager#getTheme(javafx.scene.Scene)
                     org.glavo.m3fx.theme.M3ThemeManager#install(javafx.scene.Parent,org.glavo.m3fx.theme.M3Theme)
                     org.glavo.m3fx.theme.M3ThemeManager#install(javafx.scene.Scene,org.glavo.m3fx.theme.M3Theme)
-                    org.glavo.m3fx.theme.M3ThemeManager#installStylesheet(javafx.scene.Scene)
-                    org.glavo.m3fx.theme.M3ThemeManager#installThemeStylesheet(javafx.scene.Scene,org.glavo.m3fx.theme.M3Theme)
-                    org.glavo.m3fx.theme.M3ThemeManager#installUserAgentStylesheet()
-                    org.glavo.m3fx.theme.M3ThemeManager#stylesheetUrl()
-                    org.glavo.m3fx.theme.M3ThemeManager#themeStylesheetUrl(org.glavo.m3fx.theme.M3Theme)
                     org.glavo.m3fx.theme.M3ThemeManager#uninstall(javafx.scene.Parent)
                     org.glavo.m3fx.theme.M3ThemeManager#uninstall(javafx.scene.Scene)
-                    org.glavo.m3fx.theme.M3ThemeManager#uninstallStylesheet(javafx.scene.Scene)
-                    org.glavo.m3fx.theme.M3ThemeManager#uninstallThemeStylesheet(javafx.scene.Scene)
                     """),
             "org.glavo.m3fx.tokens",
             typeNames("""
-                    org.glavo.m3fx.tokens.M3ColorTokens#create(org.glavo.monetfx.ColorScheme)
+                    org.glavo.m3fx.tokens.M3ColorTokens#fromColorScheme(org.glavo.monetfx.ColorScheme)
                     org.glavo.m3fx.tokens.M3ComponentTokens#builder(org.glavo.m3fx.tokens.M3Profile,org.glavo.m3fx.tokens.M3ShapeTokens,org.glavo.m3fx.tokens.M3Density)
                     org.glavo.m3fx.tokens.M3ComponentTokens#builder(org.glavo.m3fx.tokens.M3ComponentTokens)
-                    org.glavo.m3fx.tokens.M3ComponentTokens#create(org.glavo.m3fx.tokens.M3Profile,org.glavo.m3fx.tokens.M3ShapeTokens,org.glavo.m3fx.tokens.M3Density)
                     org.glavo.m3fx.tokens.M3Density#of(double)
                     org.glavo.m3fx.tokens.M3Density#standard()
                     org.glavo.m3fx.tokens.M3ElevationTokens#baseline()
-                    org.glavo.m3fx.tokens.M3ElevationTokens#create(double,double,double,double,double,double)
+                    org.glavo.m3fx.tokens.M3ElevationTokens#builder()
+                    org.glavo.m3fx.tokens.M3ElevationTokens#builder(org.glavo.m3fx.tokens.M3ElevationTokens)
                     org.glavo.m3fx.tokens.M3MotionTokens#baseline()
-                    org.glavo.m3fx.tokens.M3MotionTokens#create(int,int,int)
+                    org.glavo.m3fx.tokens.M3MotionTokens#builder()
                     org.glavo.m3fx.tokens.M3MotionTokens#builder(org.glavo.m3fx.tokens.M3MotionTokens)
 
 
                     org.glavo.m3fx.tokens.M3MotionTokens#expressive()
                     org.glavo.m3fx.tokens.M3ShapeTokens#baseline()
+                    org.glavo.m3fx.tokens.M3ShapeTokens#builder()
                     org.glavo.m3fx.tokens.M3ShapeTokens#builder(org.glavo.m3fx.tokens.M3ShapeTokens)
 
                     org.glavo.m3fx.tokens.M3ShapeTokens#expressive()
                     org.glavo.m3fx.tokens.M3StateLayerTokens#baseline()
+                    org.glavo.m3fx.tokens.M3StateLayerTokens#builder()
                     org.glavo.m3fx.tokens.M3StateLayerTokens#builder(org.glavo.m3fx.tokens.M3StateLayerTokens)
 
-                    org.glavo.m3fx.tokens.M3TextStyle#create(java.lang.String,double,double,int)
-                    org.glavo.m3fx.tokens.M3TextStyle#create(java.lang.String,double,double,int,double)
+                    org.glavo.m3fx.tokens.M3TextStyle#of(java.lang.String,double,double,int)
+                    org.glavo.m3fx.tokens.M3TextStyle#of(java.lang.String,double,double,int,double)
                     org.glavo.m3fx.tokens.M3TokenSet#builder(org.glavo.m3fx.tokens.M3Profile,org.glavo.monetfx.ColorScheme,org.glavo.m3fx.tokens.M3Density)
                     org.glavo.m3fx.tokens.M3TokenSet#builder(org.glavo.m3fx.tokens.M3TokenSet)
-                    org.glavo.m3fx.tokens.M3TokenSet#create(org.glavo.m3fx.tokens.M3Profile,org.glavo.monetfx.ColorScheme,org.glavo.m3fx.tokens.M3Density)
                     org.glavo.m3fx.tokens.M3TypographyTokens#baseline()
+                    org.glavo.m3fx.tokens.M3TypographyTokens#builder()
                     org.glavo.m3fx.tokens.M3TypographyTokens#builder(org.glavo.m3fx.tokens.M3TypographyTokens)
                     org.glavo.m3fx.tokens.M3TypographyTokens#expressive()
                     """)
@@ -618,8 +610,8 @@ final class ProjectContractTest {
             Set.of(),
             "org.glavo.m3fx.tokens",
             typeNames("""
-                    org.glavo.m3fx.tokens.M3Profile#getColorSpecVersion()
-                    org.glavo.m3fx.tokens.M3Profile#getColorStyle()
+                    org.glavo.m3fx.tokens.M3Profile#colorSpecVersion()
+                    org.glavo.m3fx.tokens.M3Profile#colorStyle()
                     """)
     );
 
@@ -663,6 +655,7 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3CarouselLayout#UNCONTAINED
             org.glavo.m3fx.controls.M3CarouselLayout#UNCONTAINED_MULTI_ASPECT_RATIO
             org.glavo.m3fx.controls.M3SelectionMode#MULTIPLE
+            org.glavo.m3fx.controls.M3SelectionMode#NONE
             org.glavo.m3fx.controls.M3SelectionMode#SINGLE
             org.glavo.m3fx.controls.M3ChipStyle#ELEVATED
             org.glavo.m3fx.controls.M3ChipStyle#FLAT
@@ -684,8 +677,6 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3IconSize#LARGE
             org.glavo.m3fx.controls.M3IconSize#MEDIUM
             org.glavo.m3fx.controls.M3IconSize#SMALL
-            org.glavo.m3fx.controls.M3SelectionMode#MULTIPLE
-            org.glavo.m3fx.controls.M3SelectionMode#SINGLE
             org.glavo.m3fx.controls.M3IconToggleButtonVariant#FILLED
             org.glavo.m3fx.controls.M3IconToggleButtonVariant#OUTLINED
             org.glavo.m3fx.controls.M3IconToggleButtonVariant#STANDARD
@@ -705,16 +696,10 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3ListItemSlotSize#ICON
             org.glavo.m3fx.controls.M3ListItemSlotSize#THUMBNAIL
             org.glavo.m3fx.controls.M3ListItemSlotSize#WIDE_THUMBNAIL
-            org.glavo.m3fx.controls.M3SelectionMode#MULTIPLE
-            org.glavo.m3fx.controls.M3SelectionMode#NONE
-            org.glavo.m3fx.controls.M3SelectionMode#SINGLE
             org.glavo.m3fx.controls.M3LoadingIndicatorVariant#CONTAINED
             org.glavo.m3fx.controls.M3LoadingIndicatorVariant#DEFAULT
             org.glavo.m3fx.controls.M3MenuColorStyle#STANDARD
             org.glavo.m3fx.controls.M3MenuColorStyle#VIBRANT
-            org.glavo.m3fx.controls.M3SelectionMode#MULTIPLE
-            org.glavo.m3fx.controls.M3SelectionMode#NONE
-            org.glavo.m3fx.controls.M3SelectionMode#SINGLE
             org.glavo.m3fx.controls.M3NavigationDrawerVariant#MODAL
             org.glavo.m3fx.controls.M3NavigationDrawerVariant#STANDARD
             org.glavo.m3fx.controls.M3NavigationRailVariant#MODAL
@@ -725,8 +710,6 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3SearchViewLayout#FULL_SCREEN
             org.glavo.m3fx.controls.M3SearchViewStyle#CONTAINED
             org.glavo.m3fx.controls.M3SearchViewStyle#DIVIDED
-            org.glavo.m3fx.controls.M3SelectionMode#MULTIPLE
-            org.glavo.m3fx.controls.M3SelectionMode#SINGLE
             org.glavo.m3fx.controls.M3SheetVariant#MODAL
             org.glavo.m3fx.controls.M3SheetVariant#STANDARD
             org.glavo.m3fx.controls.M3SliderSize#EXTRA_LARGE
@@ -866,7 +849,6 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3DatePicker#WEEKDAY_LABEL_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3DatePicker#WEEKDAY_ROW_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3DatePicker#YEAR_MENU_BUTTON_STYLE_CLASS:java.lang.String
-            org.glavo.m3fx.controls.M3DatePickerDialog#DEFAULT_TITLE:java.lang.String
             org.glavo.m3fx.controls.M3DatePickerDialog#PRESET_BUTTON_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3DatePickerDialog#PRESET_CONTENT_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3DatePickerDialog#PRESET_LIST_STYLE_CLASS:java.lang.String
@@ -884,7 +866,6 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3DateRangePicker#RANGE_START_DAY_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3DateRangePicker#STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3DateRangePicker#WEEKDAY_ROW_STYLE_CLASS:java.lang.String
-            org.glavo.m3fx.controls.M3DateRangePickerDialog#DEFAULT_TITLE:java.lang.String
             org.glavo.m3fx.controls.M3DateRangePickerDialog#PRESET_BUTTON_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3DateRangePickerDialog#PRESET_CONTENT_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3DateRangePickerDialog#PRESET_LIST_STYLE_CLASS:java.lang.String
@@ -1033,7 +1014,6 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3TimePicker#PERIOD_ROW_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3TimePicker#SELECTED_CELL_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3TimePicker#STYLE_CLASS:java.lang.String
-            org.glavo.m3fx.controls.M3TimePickerDialog#DEFAULT_TITLE:java.lang.String
             org.glavo.m3fx.controls.M3TimePickerDialog#PRESET_BUTTON_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3TimePickerDialog#PRESET_CONTENT_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3TimePickerDialog#PRESET_LIST_STYLE_CLASS:java.lang.String
@@ -1067,8 +1047,6 @@ final class ProjectContractTest {
             org.glavo.m3fx.theme.M3ThemeManager#EXPRESSIVE_PROFILE_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.theme.M3ThemeManager#LIGHT_BRIGHTNESS_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.theme.M3ThemeManager#ROOT_STYLE_CLASS:java.lang.String
-            org.glavo.m3fx.tokens.M3ColorTokens#DEFAULT_CSS_PREFIX:java.lang.String
-            org.glavo.m3fx.tokens.M3ColorTokens#M3_CSS_PREFIX:java.lang.String
             """);
     /// Picker wrapper methods that duplicate the embedded picker API instead of the wrapper value API.
     private static final @Unmodifiable Map<String, @Unmodifiable Set<String>> FORBIDDEN_PICKER_WRAPPER_METHODS = Map.of(

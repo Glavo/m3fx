@@ -44,15 +44,15 @@ public record M3StateLayerTokensImpl(
 
     /// Validates an opacity token.
     private static void validateOpacity(double value, String name) {
-        if (value < 0.0 || value > 1.0) {
-            throw new IllegalArgumentException(name + " must be between 0.0 and 1.0");
+        if (!Double.isFinite(value) || value < 0.0 || value > 1.0) {
+            throw new IllegalArgumentException(name + " must be finite and between 0.0 and 1.0");
         }
     }
 
     /// Validates a non-negative length token.
     private static void validateNonNegative(double value, String name) {
-        if (value < 0.0) {
-            throw new IllegalArgumentException(name + " must not be negative");
+        if (!Double.isFinite(value) || value < 0.0) {
+            throw new IllegalArgumentException(name + " must be finite and non-negative");
         }
     }
 

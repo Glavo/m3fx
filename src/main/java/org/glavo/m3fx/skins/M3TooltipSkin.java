@@ -14,7 +14,7 @@ import org.glavo.m3fx.controls.M3Tooltip;
 import org.glavo.m3fx.internal.M3PopupStyles;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.theme.M3Theme;
-import org.glavo.m3fx.theme.M3ThemeManager;
+import org.glavo.m3fx.internal.theme.M3ThemeRuntime;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -180,7 +180,7 @@ public final class M3TooltipSkin extends M3PopupSkinBase<M3Tooltip> {
             return;
         }
 
-        String themeStylesheet = M3ThemeManager.themeStylesheetUrl(theme);
+        String themeStylesheet = M3ThemeRuntime.themeStylesheetUrl(theme);
         if (!newScene.getStylesheets().contains(themeStylesheet)) {
             newScene.getStylesheets().add(themeStylesheet);
         }

@@ -41,6 +41,9 @@ public sealed interface M3Density permits M3DensityImpl {
     /// @param value the baseline size to adjust
     /// @return the density-adjusted size, never less than zero
     default double apply(double value) {
+        if (!Double.isFinite(value)) {
+            throw new IllegalArgumentException("value must be finite");
+        }
         return Math.max(0.0, value + scale() * 4.0);
     }
 }

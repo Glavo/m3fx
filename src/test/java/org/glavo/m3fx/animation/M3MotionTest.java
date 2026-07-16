@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /// Tests Material Design 3 motion constants.
@@ -101,5 +102,26 @@ final class M3MotionTest {
 
         assertEquals(Duration.millis(150.0), expressive.subMenuHoverOpenDelay());
         assertEquals(Duration.millis(150.0), expressive.subMenuHoverCloseDelay());
+    }
+
+    /// Verifies that motion builders copy complete defaults and override only named values.
+    @Test
+    void motionBuildersSupportTargetedOverrides() {
+        M3MotionSpec customSpec = M3MotionSpec.of(Duration.millis(275.0), M3MotionEasing.EMPHASIZED);
+        M3MotionScheme scheme = M3MotionScheme.builder(M3MotionScheme.standard())
+                .defaultSpatial(customSpec)
+                .build();
+        M3MotionBehavior behavior = M3MotionBehavior.builder(M3MotionBehavior.expressive())
+                .snackbarDisplayDuration(Duration.seconds(7.0))
+                .build();
+
+        assertSame(customSpec, scheme.defaultSpatial());
+        assertEquals(M3MotionScheme.standard().fastEffects(), scheme.fastEffects());
+        assertEquals(Duration.seconds(7.0), behavior.snackbarDisplayDuration());
+        assertEquals(M3MotionBehavior.expressive().subMenuHoverOpenDelay(), behavior.subMenuHoverOpenDelay());
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> M3MotionBehavior.builder().tooltipShowDelay(Duration.INDEFINITE)
+        );
     }
 }

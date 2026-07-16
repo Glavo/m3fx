@@ -7,7 +7,7 @@ import javafx.css.Styleable;
 import javafx.scene.Parent;
 import org.glavo.m3fx.internal.theme.M3ThemeMetadata;
 import org.glavo.m3fx.theme.M3Theme;
-import org.glavo.m3fx.theme.M3ThemeManager;
+import org.glavo.m3fx.internal.theme.M3ThemeRuntime;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -64,7 +64,7 @@ public final class M3PopupStyles {
         preserveBaseStyle(popupRoot);
         @Nullable M3Theme theme = themeRoot == null ? null : M3ThemeMetadata.getTheme(themeRoot);
         if (themeRoot != null) {
-            M3ThemeManager.copyThemeContext(themeRoot, popupRoot);
+            M3ThemeRuntime.copyThemeContext(themeRoot, popupRoot);
             updateCopiedThemeStylesheet(popupRoot, sourceStylesheets, theme);
         } else {
             restoreBaseStyle(popupRoot);
@@ -91,7 +91,7 @@ public final class M3PopupStyles {
     ) {
         Object previousValue = popupRoot.getProperties().get(COPIED_THEME_STYLESHEET_PROPERTY_KEY);
         @Nullable String previousStylesheet = previousValue instanceof String stylesheet ? stylesheet : null;
-        @Nullable String stylesheet = theme == null ? null : M3ThemeManager.themeStylesheetUrl(theme);
+        @Nullable String stylesheet = theme == null ? null : M3ThemeRuntime.themeStylesheetUrl(theme);
         if (previousStylesheet != null
                 && !previousStylesheet.equals(stylesheet)
                 && !sourceStylesheets.contains(previousStylesheet)) {
@@ -182,7 +182,7 @@ public final class M3PopupStyles {
     ///
     /// @param popupRoot the popup-hosted root whose copied theme context should be cleared
     private static void restoreBaseStyle(Parent popupRoot) {
-        M3ThemeManager.clearThemeStyleClasses(popupRoot);
+        M3ThemeRuntime.clearThemeStyleClasses(popupRoot);
         M3ThemeMetadata.clearTheme(popupRoot);
         Object baseStyleValue = popupRoot.getProperties().get(BASE_STYLE_PROPERTY_KEY);
         String baseStyle = baseStyleValue instanceof String style ? style : "";

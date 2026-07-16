@@ -92,7 +92,7 @@ public final class M3TimePickerField extends M3PickerField<LocalTime, M3TimePick
 
     /// Returns whether this field can reveal the supplied accessibility time target.
     @Override
-    protected boolean handlesAccessibleShowTarget(@Nullable Object parameter) {
+    boolean handlesAccessibleShowTarget(@Nullable Object parameter) {
         return parameter instanceof LocalTime time && !getPicker().isTimeDisabled(time);
     }
 
@@ -121,31 +121,31 @@ public final class M3TimePickerField extends M3PickerField<LocalTime, M3TimePick
 
     /// Parses one editor time string.
     @Override
-    protected LocalTime parseValue(String text, DateTimeFormatter formatter) {
+    LocalTime parseValue(String text, DateTimeFormatter formatter) {
         return LocalTime.from(formatter.parse(text));
     }
 
     /// Formats one time value for editor display.
     @Override
-    protected String formatValue(LocalTime value, DateTimeFormatter formatter) {
+    String formatValue(LocalTime value, DateTimeFormatter formatter) {
         return formatter.format(value);
     }
 
     /// Clears seconds and nanos because this field edits hour and minute precision.
     @Override
-    protected LocalTime normalizeValue(LocalTime value) {
+    LocalTime normalizeValue(LocalTime value) {
         return Objects.requireNonNull(value, "value").withSecond(0).withNano(0);
     }
 
     /// Returns whether a time is outside the popup picker's selectable range.
     @Override
-    protected boolean isPickerValueDisabled(LocalTime value) {
+    boolean isPickerValueDisabled(LocalTime value) {
         return getPicker().isTimeDisabled(value);
     }
 
     /// Applies a value to the popup time picker.
     @Override
-    protected void setPickerValue(@Nullable LocalTime value) {
+    void setPickerValue(@Nullable LocalTime value) {
         getPicker().setValue(value);
     }
 

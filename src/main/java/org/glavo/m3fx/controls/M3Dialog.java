@@ -23,7 +23,7 @@ import org.glavo.m3fx.internal.M3ThemeResolver;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.internal.theme.M3ThemeCssCompiler;
 import org.glavo.m3fx.internal.theme.M3ThemeMetadata;
-import org.glavo.m3fx.theme.M3ThemeManager;
+import org.glavo.m3fx.internal.theme.M3ThemeRuntime;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -496,7 +496,7 @@ public class M3Dialog<R> extends Dialog<R> {
         @Nullable ObservableList<String> ownerStylesheets = observedOwnerStylesheets;
         ObservableList<String> stylesheets = pane.getStylesheets();
         if (ownerStylesheets == null) {
-            stylesheets.setAll(M3ThemeManager.stylesheetUrl());
+            stylesheets.setAll(M3ThemeRuntime.stylesheetUrl());
             return;
         }
 
@@ -510,14 +510,14 @@ public class M3Dialog<R> extends Dialog<R> {
         @Nullable Scene ownerScene = ownerThemeScene();
         @Nullable M3Theme ownerSceneTheme = ownerScene == null ? null : M3ThemeResolver.findTheme(ownerScene);
         if (ownerSceneTheme != null && ownerSceneTheme != effectiveTheme) {
-            stylesheets.remove(M3ThemeManager.themeStylesheetUrl(ownerSceneTheme));
+            stylesheets.remove(M3ThemeRuntime.themeStylesheetUrl(ownerSceneTheme));
         }
     }
 
     /// Adds the shared M3FX stylesheet to the dialog pane.
     private static void installStylesheet(M3DialogPane pane) {
         M3PopupStyles.addFallbackRootStyleClass(pane);
-        String stylesheet = M3ThemeManager.stylesheetUrl();
+        String stylesheet = M3ThemeRuntime.stylesheetUrl();
         moveOrAdd(pane.getStylesheets(), stylesheet, 0);
     }
 
@@ -525,14 +525,14 @@ public class M3Dialog<R> extends Dialog<R> {
     private static void applyTheme(M3DialogPane pane, @Nullable M3Theme theme) {
         if (theme == null) {
             uninstallThemeStylesheet(pane);
-            M3ThemeManager.clearThemeStyleClasses(pane);
+            M3ThemeRuntime.clearThemeStyleClasses(pane);
             Object baseStyleValue = pane.getProperties().remove(BASE_STYLE_PROPERTY_KEY);
             pane.setStyle(baseStyleValue instanceof String baseStyle ? baseStyle : "");
             return;
         }
 
         installStylesheet(pane);
-        M3ThemeManager.applyThemeStyleClasses(pane, theme);
+        M3ThemeRuntime.applyThemeStyleClasses(pane, theme);
         installThemeStylesheet(pane, theme);
 
         if (!pane.getProperties().containsKey(BASE_STYLE_PROPERTY_KEY)) {
@@ -546,13 +546,13 @@ public class M3Dialog<R> extends Dialog<R> {
 
     /// Adds the generated theme stylesheet for the supplied theme.
     private static void installThemeStylesheet(M3DialogPane pane, M3Theme theme) {
-        String stylesheet = M3ThemeManager.themeStylesheetUrl(theme);
+        String stylesheet = M3ThemeRuntime.themeStylesheetUrl(theme);
         Object previousStylesheet = pane.getProperties().put(THEME_STYLESHEET_PROPERTY_KEY, stylesheet);
         if (previousStylesheet instanceof String previous && !previous.equals(stylesheet)) {
             pane.getStylesheets().remove(previous);
         }
         ObservableList<String> stylesheets = pane.getStylesheets();
-        int baseStylesheetIndex = stylesheets.indexOf(M3ThemeManager.stylesheetUrl());
+        int baseStylesheetIndex = stylesheets.indexOf(M3ThemeRuntime.stylesheetUrl());
         moveOrAdd(stylesheets, stylesheet, baseStylesheetIndex >= 0 ? baseStylesheetIndex + 1 : 0);
     }
 

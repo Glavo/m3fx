@@ -13,8 +13,8 @@ import org.jetbrains.annotations.NotNullByDefault;
 public record M3DensityImpl(double scale) implements M3Density {
     /// Creates a density value after validating its supported range.
     public M3DensityImpl {
-        if (scale < -4.0 || scale > 4.0) {
-            throw new IllegalArgumentException("Density scale must be between -4.0 and 4.0");
+        if (!Double.isFinite(scale) || scale < -4.0 || scale > 4.0) {
+            throw new IllegalArgumentException("Density scale must be finite and between -4.0 and 4.0");
         }
     }
 }

@@ -48,7 +48,7 @@ import org.glavo.m3fx.skins.M3TooltipSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.internal.theme.M3ThemeMetadata;
 import org.glavo.m3fx.internal.theme.M3ThemeCssCompiler;
-import org.glavo.m3fx.theme.M3ThemeManager;
+import org.glavo.m3fx.internal.theme.M3ThemeRuntime;
 import org.glavo.m3fx.tokens.M3ComponentTokens;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -537,7 +537,7 @@ public class M3Tooltip extends PopupControl {
     private void applyTheme(@Nullable M3Theme theme) {
         updateExplicitThemeRoot(theme);
         if (theme == null) {
-            M3ThemeManager.clearThemeStyleClasses(this);
+            M3ThemeRuntime.clearThemeStyleClasses(this);
             String currentBaseStyle = baseStyle;
             if (currentBaseStyle != null) {
                 setStyle(currentBaseStyle);
@@ -557,7 +557,7 @@ public class M3Tooltip extends PopupControl {
             resolvedBaseStyle = getStyle();
             baseStyle = resolvedBaseStyle;
         }
-        M3ThemeManager.applyThemeStyleClasses(this, theme);
+        M3ThemeRuntime.applyThemeStyleClasses(this, theme);
         String themeStyle = M3ThemeCssCompiler.rootStyleDeclarations(theme);
         if (usesPlainContainerStyle()) {
             themeStyle = mergeStyles(themeStyle, plainContainerStyle(theme.tokens().componentTokens().tooltip()));
@@ -574,9 +574,9 @@ public class M3Tooltip extends PopupControl {
     /// Updates the detached theme root used for explicitly themed popup content.
     private void updateExplicitThemeRoot(@Nullable M3Theme theme) {
         if (theme != null && !themeInherited) {
-            M3ThemeManager.install(explicitThemeRoot, theme);
+            M3ThemeRuntime.install(explicitThemeRoot, theme);
         } else {
-            M3ThemeManager.uninstall(explicitThemeRoot);
+            M3ThemeRuntime.uninstall(explicitThemeRoot);
         }
     }
 

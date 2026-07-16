@@ -4,6 +4,8 @@
 package org.glavo.m3fx.internal.theme;
 
 import javafx.scene.paint.Color;
+import org.glavo.m3fx.internal.tokens.M3ComponentTokenCssCompiler;
+import org.glavo.m3fx.internal.tokens.M3TokenCssCompiler;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.tokens.M3ColorTokens;
 import org.glavo.m3fx.tokens.M3Profile;
@@ -46,21 +48,21 @@ public final class M3ThemeCssCompiler {
     /// @param tokens the token set to compile
     /// @return JavaFX inline CSS declarations
     public static String rootStyleDeclarations(M3TokenSet tokens) {
-        return tokens.colorTokens().toStyleDeclarations()
+        return M3TokenCssCompiler.styleDeclarations(tokens.colorTokens())
                 + " "
-                + tokens.typographyTokens().toStyleDeclarations()
+                + M3TokenCssCompiler.styleDeclarations(tokens.typographyTokens())
                 + " "
-                + tokens.shapeTokens().toStyleDeclarations()
+                + M3TokenCssCompiler.styleDeclarations(tokens.shapeTokens())
                 + " "
-                + tokens.elevationTokens().toStyleDeclarations()
+                + M3TokenCssCompiler.styleDeclarations(tokens.elevationTokens())
                 + " "
-                + tokens.motionTokens().toStyleDeclarations()
+                + M3TokenCssCompiler.styleDeclarations(tokens.motionTokens())
                 + " "
-                + tokens.stateLayerTokens().toStyleDeclarations()
+                + M3TokenCssCompiler.styleDeclarations(tokens.stateLayerTokens())
                 + " "
                 + stateColorStyleDeclarations(tokens.colorTokens(), tokens.stateLayerTokens())
                 + " "
-                + tokens.componentTokens().toStyleDeclarations()
+                + M3ComponentTokenCssCompiler.styleDeclarations(tokens.componentTokens())
                 + " "
                 + menuColorStyleDeclarations(tokens.profile(), tokens.colorTokens());
     }
@@ -70,13 +72,13 @@ public final class M3ThemeCssCompiler {
     /// @param tokens the token set to compile
     /// @return JavaFX CSS rules
     public static String controlStyleRules(M3TokenSet tokens) {
-        return tokens.typographyTokens().toControlStyleRules()
+        return M3TokenCssCompiler.controlStyleRules(tokens.typographyTokens())
                 + "\n\n"
-                + tokens.componentTokens().toControlStyleRules()
+                + M3ComponentTokenCssCompiler.controlStyleRules(tokens.componentTokens())
                 + "\n\n"
-                + tokens.stateLayerTokens().toControlStyleRules()
+                + M3TokenCssCompiler.controlStyleRules(tokens.stateLayerTokens())
                 + "\n\n"
-                + tokens.elevationTokens().toControlStyleRules();
+                + M3TokenCssCompiler.controlStyleRules(tokens.elevationTokens());
     }
 
     /// Compiles state-dependent colors that combine role colors with state opacities.

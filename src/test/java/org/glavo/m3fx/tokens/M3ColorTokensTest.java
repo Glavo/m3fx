@@ -4,6 +4,7 @@
 package org.glavo.m3fx.tokens;
 
 import javafx.scene.paint.Color;
+import org.glavo.m3fx.internal.tokens.M3TokenCssCompiler;
 import org.glavo.monetfx.ColorRole;
 import org.glavo.monetfx.ColorScheme;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -19,11 +20,10 @@ final class M3ColorTokensTest {
     @Test
     void convertsColorRolesToCssDeclarations() {
         ColorScheme colorScheme = ColorScheme.fromSeed(Color.web("#6750a4"));
-        M3ColorTokens tokens = M3ColorTokens.create(colorScheme);
+        M3ColorTokens tokens = M3ColorTokens.fromColorScheme(colorScheme);
 
         assertEquals(colorScheme.getColor(ColorRole.PRIMARY), tokens.get(ColorRole.PRIMARY));
-        assertTrue(tokens.toStyleDeclarations().contains("-monet-primary"));
-        assertTrue(tokens.toStyleDeclarations().contains("-m3-color-primary"));
-        assertTrue(tokens.toStyleSheet("m3-root").contains(".m3-root"));
+        assertTrue(M3TokenCssCompiler.styleDeclarations(tokens).contains("-monet-primary"));
+        assertTrue(M3TokenCssCompiler.styleDeclarations(tokens).contains("-m3-color-primary"));
     }
 }

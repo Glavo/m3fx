@@ -88,6 +88,7 @@ import org.glavo.m3fx.controls.M3TextRole;
 import org.glavo.m3fx.controls.M3TimePicker;
 import org.glavo.m3fx.controls.M3TopAppBar;
 import org.glavo.m3fx.internal.theme.M3ThemeCssCompiler;
+import org.glavo.m3fx.internal.theme.M3ThemeRuntime;
 import org.glavo.m3fx.controls.M3TopAppBarVariant;
 import org.glavo.m3fx.tokens.M3ComponentTokens;
 import org.glavo.m3fx.tokens.M3Density;
@@ -710,7 +711,7 @@ final class M3ThemeTest {
     void createsThemeFromExplicitTokenSet() {
         ColorScheme colorScheme = ColorScheme.fromSeed(Color.web("#6750a4"));
         M3Density density = M3Density.of(2.0);
-        M3TokenSet tokenSet = M3TokenSet.create(M3Profile.BASELINE_2021, colorScheme, density);
+        M3TokenSet tokenSet = M3TokenSet.builder(M3Profile.BASELINE_2021, colorScheme, density).build();
 
         M3Theme theme = M3Theme.fromTokenSet(tokenSet);
 
@@ -754,8 +755,8 @@ final class M3ThemeTest {
         assertSame(theme, M3ThemeManager.getTheme(root));
         assertTrue(root.getStyle().contains("-m3-color-primary"));
         assertEquals(2, scene.getStylesheets().size());
-        assertEquals(M3ThemeManager.stylesheetUrl(), scene.getStylesheets().get(0));
-        assertTrue(M3ThemeManager.stylesheetUrl().endsWith("/styles/base.css"));
+        assertEquals(M3ThemeRuntime.stylesheetUrl(), scene.getStylesheets().get(0));
+        assertTrue(M3ThemeRuntime.stylesheetUrl().endsWith("/styles/base.css"));
     }
 
     /// Verifies that root profile and brightness style classes track theme reinstallations.
@@ -815,7 +816,7 @@ final class M3ThemeTest {
         );
 
         M3ThemeManager.install(scene, theme);
-        M3ThemeManager.copyThemeContext(root, popupRoot);
+        M3ThemeRuntime.copyThemeContext(root, popupRoot);
 
         assertTrue(popupRoot.getStyleClass().contains("popup-root"));
         assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
@@ -835,14 +836,14 @@ final class M3ThemeTest {
                 (MapChangeListener<Object, Object>) change -> themeMetadataChanges.incrementAndGet()
         );
 
-        M3ThemeManager.copyThemeContext(root, popupRoot);
+        M3ThemeRuntime.copyThemeContext(root, popupRoot);
 
         assertEquals(0, styleClassChanges.get());
         assertEquals(0, themeMetadataChanges.get());
 
         M3Theme baselineTheme = M3Theme.defaultTheme();
         M3ThemeManager.install(scene, baselineTheme);
-        M3ThemeManager.copyThemeContext(root, popupRoot);
+        M3ThemeRuntime.copyThemeContext(root, popupRoot);
 
         assertTrue(popupRoot.getStyleClass().contains("popup-root"));
         assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
@@ -878,8 +879,8 @@ final class M3ThemeTest {
     void exposesGeneratedThemeStylesheetUrl() throws Exception {
         M3Theme theme = M3Theme.defaultTheme();
 
-        String stylesheet = M3ThemeManager.themeStylesheetUrl(theme);
-        String repeatedStylesheet = M3ThemeManager.themeStylesheetUrl(theme);
+        String stylesheet = M3ThemeRuntime.themeStylesheetUrl(theme);
+        String repeatedStylesheet = M3ThemeRuntime.themeStylesheetUrl(theme);
         String stylesheetContent = Files.readString(Path.of(URI.create(stylesheet)));
 
         assertEquals(stylesheet, repeatedStylesheet);
@@ -898,16 +899,16 @@ final class M3ThemeTest {
         Scene scene = new Scene(root);
         M3Theme theme = M3Theme.defaultTheme();
 
-        M3ThemeManager.installThemeStylesheet(scene, theme);
-        M3ThemeManager.installThemeStylesheet(scene, theme);
+        M3ThemeRuntime.installThemeStylesheet(scene, theme);
+        M3ThemeRuntime.installThemeStylesheet(scene, theme);
 
         assertEquals(1, scene.getStylesheets().size());
-        assertEquals(M3ThemeManager.themeStylesheetUrl(theme), scene.getStylesheets().get(0));
+        assertEquals(M3ThemeRuntime.themeStylesheetUrl(theme), scene.getStylesheets().get(0));
         assertFalse(root.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
         assertNull(M3ThemeManager.getTheme(root));
 
-        M3ThemeManager.uninstallThemeStylesheet(scene);
-        M3ThemeManager.uninstallThemeStylesheet(scene);
+        M3ThemeRuntime.uninstallThemeStylesheet(scene);
+        M3ThemeRuntime.uninstallThemeStylesheet(scene);
 
         assertEquals(0, scene.getStylesheets().size());
     }
@@ -933,8 +934,8 @@ final class M3ThemeTest {
         root.applyCss();
 
         assertTrue(scene.getStylesheets().get(0).endsWith("/styles/fallback.css"));
-        assertEquals(M3ThemeManager.stylesheetUrl(), scene.getStylesheets().get(1));
-        assertEquals(M3ThemeManager.themeStylesheetUrl(theme), scene.getStylesheets().get(2));
+        assertEquals(M3ThemeRuntime.stylesheetUrl(), scene.getStylesheets().get(1));
+        assertEquals(M3ThemeRuntime.themeStylesheetUrl(theme), scene.getStylesheets().get(2));
         assertEquals(applicationStylesheet, scene.getStylesheets().get(3));
         assertEquals(320.0, navigationDrawer.getMinWidth(), 0.0001);
         assertEquals(320.0, navigationDrawer.getPrefWidth(), 0.0001);
@@ -1064,8 +1065,8 @@ final class M3ThemeTest {
         root.applyCss();
 
         assertTrue(scene.getStylesheets().get(0).endsWith("/styles/fallback.css"));
-        assertEquals(M3ThemeManager.stylesheetUrl(), scene.getStylesheets().get(1));
-        assertEquals(M3ThemeManager.themeStylesheetUrl(M3Theme.fromSeed(Color.web("#006a6a"))), scene.getStylesheets().get(2));
+        assertEquals(M3ThemeRuntime.stylesheetUrl(), scene.getStylesheets().get(1));
+        assertEquals(M3ThemeRuntime.themeStylesheetUrl(M3Theme.fromSeed(Color.web("#006a6a"))), scene.getStylesheets().get(2));
         assertEquals(applicationStylesheet, scene.getStylesheets().get(3));
         assertSeedButtonMetrics(button);
     }
@@ -1092,7 +1093,7 @@ final class M3ThemeTest {
         assertFalse(root.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
         assertNull(M3ThemeManager.getTheme(root));
         assertEquals("-fx-padding: 4px;", root.getStyle());
-        assertFalse(scene.getStylesheets().contains(M3ThemeManager.stylesheetUrl()));
+        assertFalse(scene.getStylesheets().contains(M3ThemeRuntime.stylesheetUrl()));
         assertEquals(0, scene.getStylesheets().size());
         assertEquals(initialPropertyCount, scene.getProperties().size());
     }

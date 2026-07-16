@@ -28,7 +28,7 @@ import java.time.LocalDate;
 @NotNullByDefault
 public final class M3DateRangePickerDialog extends M3Dialog<M3DateRange> {
     /// The default title and header text for date range picker dialogs.
-    public static final String DEFAULT_TITLE = "Select date range";
+    private static final String DEFAULT_TITLE = "Select date range";
 
     /// The style class applied to dialog content when preset actions are visible.
     public static final String PRESET_CONTENT_STYLE_CLASS = "m3-date-range-picker-dialog-preset-content";

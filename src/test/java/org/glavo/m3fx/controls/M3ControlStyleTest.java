@@ -150,6 +150,7 @@ import org.glavo.m3fx.skins.M3TextInputLayoutSkin;
 import org.glavo.m3fx.skins.M3TextSkin;
 import org.glavo.m3fx.skins.M3TooltipSkin;
 import org.glavo.m3fx.skins.M3TopAppBarSkin;
+import org.glavo.m3fx.internal.theme.M3ThemeRuntime;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.glavo.m3fx.tokens.M3ComponentTokens;
@@ -302,8 +303,8 @@ final class M3ControlStyleTest {
             M3ThemeManager.install(scene, baselineTheme);
 
             assertThemedRoot(firstRoot, baselineTheme);
-            assertTrue(scene.getStylesheets().contains(M3ThemeManager.stylesheetUrl()));
-            assertTrue(scene.getStylesheets().contains(M3ThemeManager.themeStylesheetUrl(baselineTheme)));
+            assertTrue(scene.getStylesheets().contains(M3ThemeRuntime.stylesheetUrl()));
+            assertTrue(scene.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(baselineTheme)));
 
             scene.setRoot(secondRoot);
 
@@ -313,8 +314,8 @@ final class M3ControlStyleTest {
             M3ThemeManager.install(scene, expressiveDarkTheme);
 
             assertThemedRoot(secondRoot, expressiveDarkTheme);
-            assertFalse(scene.getStylesheets().contains(M3ThemeManager.themeStylesheetUrl(baselineTheme)));
-            assertTrue(scene.getStylesheets().contains(M3ThemeManager.themeStylesheetUrl(expressiveDarkTheme)));
+            assertFalse(scene.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(baselineTheme)));
+            assertTrue(scene.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(expressiveDarkTheme)));
 
             scene.setRoot(thirdRoot);
 
@@ -338,8 +339,8 @@ final class M3ControlStyleTest {
             M3ThemeManager.uninstall(scene);
 
             assertUnthemedRoot(firstRoot, "");
-            assertFalse(scene.getStylesheets().contains(M3ThemeManager.stylesheetUrl()));
-            assertFalse(scene.getStylesheets().contains(M3ThemeManager.themeStylesheetUrl(theme)));
+            assertFalse(scene.getStylesheets().contains(M3ThemeRuntime.stylesheetUrl()));
+            assertFalse(scene.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(theme)));
 
             scene.setRoot(secondRoot);
 
@@ -399,8 +400,8 @@ final class M3ControlStyleTest {
 
             assertThemedRoot(root, localTheme);
             assertTrue(root.getStyle().contains("-fx-padding: 12px;"));
-            assertFalse(scene.getStylesheets().contains(M3ThemeManager.stylesheetUrl()));
-            assertFalse(scene.getStylesheets().contains(M3ThemeManager.themeStylesheetUrl(sceneTheme)));
+            assertFalse(scene.getStylesheets().contains(M3ThemeRuntime.stylesheetUrl()));
+            assertFalse(scene.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(sceneTheme)));
         });
     }
 
@@ -8965,7 +8966,7 @@ final class M3ControlStyleTest {
             assertEquals(java.util.List.of(ButtonType.CANCEL, ButtonType.OK), pane.getButtonTypes());
             assertTrue(pane.getStyleClass().contains(M3DialogPane.STYLE_CLASS));
             assertTrue(pane.getStyleClass().contains("root"));
-            assertTrue(pane.getStylesheets().contains(M3ThemeManager.stylesheetUrl()));
+            assertTrue(pane.getStylesheets().contains(M3ThemeRuntime.stylesheetUrl()));
 
             applyCss(pane);
 
@@ -8987,14 +8988,14 @@ final class M3ControlStyleTest {
             assertEquals(theme, dialog.getTheme());
             assertTrue(pane.getStyle().contains("-fx-opacity: 0.9;"));
             assertTrue(pane.getStyle().contains("-m3-color-primary"));
-            assertEquals(M3ThemeManager.stylesheetUrl(), pane.getStylesheets().get(0));
-            assertEquals(M3ThemeManager.themeStylesheetUrl(theme), pane.getStylesheets().get(1));
+            assertEquals(M3ThemeRuntime.stylesheetUrl(), pane.getStylesheets().get(0));
+            assertEquals(M3ThemeRuntime.themeStylesheetUrl(theme), pane.getStylesheets().get(1));
 
             dialog.setTheme(null);
 
             assertNull(dialog.getTheme());
             assertEquals("-fx-opacity: 0.9;", pane.getStyle());
-            assertEquals(java.util.List.of(M3ThemeManager.stylesheetUrl()), pane.getStylesheets());
+            assertEquals(java.util.List.of(M3ThemeRuntime.stylesheetUrl()), pane.getStylesheets());
         });
     }
 
@@ -9017,7 +9018,7 @@ final class M3ControlStyleTest {
 
                 assertNull(dialog.getTheme());
                 assertTrue(pane.getStyle().contains("-m3-color-primary"));
-                assertEquals(M3ThemeManager.themeStylesheetUrl(theme), pane.getStylesheets().get(1));
+                assertEquals(M3ThemeRuntime.themeStylesheetUrl(theme), pane.getStylesheets().get(1));
             } finally {
                 owner.close();
             }
@@ -9043,7 +9044,7 @@ final class M3ControlStyleTest {
             assertNull(dialog.getTheme());
             assertTrue(pane.getStyle().contains("-m3-color-primary"));
             assertSame(localTheme, M3ThemeManager.getTheme(localRoot));
-            assertEquals(M3ThemeManager.themeStylesheetUrl(localTheme), pane.getStylesheets().get(1));
+            assertEquals(M3ThemeRuntime.themeStylesheetUrl(localTheme), pane.getStylesheets().get(1));
         });
     }
 
@@ -9200,7 +9201,7 @@ final class M3ControlStyleTest {
                 assertFalse(pane.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
                 assertFalse(pane.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
                 assertFalse(pane.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
-                assertTrue(pane.getStylesheets().contains(M3ThemeManager.stylesheetUrl()));
+                assertTrue(pane.getStylesheets().contains(M3ThemeRuntime.stylesheetUrl()));
                 assertTrue(pane.getStylesheets().contains(secondStylesheet));
 
                 Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_HIDDEN));
@@ -9283,15 +9284,15 @@ final class M3ControlStyleTest {
 
                 assertDialogPaneUsesTheme(pane, explicitTheme);
                 assertTrue(pane.getStylesheets().contains(firstStylesheet));
-                assertFalse(pane.getStylesheets().contains(M3ThemeManager.themeStylesheetUrl(firstOwnerTheme)));
+                assertFalse(pane.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(firstOwnerTheme)));
 
                 owner.setScene(secondScene);
 
                 assertDialogPaneUsesTheme(pane, explicitTheme);
                 assertFalse(pane.getStylesheets().contains(firstStylesheet));
                 assertTrue(pane.getStylesheets().contains(secondStylesheet));
-                assertFalse(pane.getStylesheets().contains(M3ThemeManager.themeStylesheetUrl(firstOwnerTheme)));
-                assertFalse(pane.getStylesheets().contains(M3ThemeManager.themeStylesheetUrl(secondOwnerTheme)));
+                assertFalse(pane.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(firstOwnerTheme)));
+                assertFalse(pane.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(secondOwnerTheme)));
 
                 Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_HIDDEN));
             } finally {
@@ -9472,7 +9473,7 @@ final class M3ControlStyleTest {
         assertTrue(pane.getStyleClass().contains(theme.brightness() == Brightness.DARK
                 ? M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS
                 : M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
-        assertEquals(M3ThemeManager.themeStylesheetUrl(theme), pane.getStylesheets().get(1));
+        assertEquals(M3ThemeRuntime.themeStylesheetUrl(theme), pane.getStylesheets().get(1));
     }
 
     /// Asserts that a Material dialog pane has cleared copied theme context.
@@ -9483,7 +9484,7 @@ final class M3ControlStyleTest {
         assertFalse(pane.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
         assertFalse(pane.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
         assertFalse(pane.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
-        assertEquals(List.of(M3ThemeManager.stylesheetUrl()), pane.getStylesheets());
+        assertEquals(List.of(M3ThemeRuntime.stylesheetUrl()), pane.getStylesheets());
     }
 
     /// Verifies that dialogs initialized from detached owner nodes resolve the window owner before showing.
@@ -12895,7 +12896,7 @@ final class M3ControlStyleTest {
                 assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
                 assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
                 assertTrue(tooltip.getScene().getStylesheets().contains(
-                        M3ThemeManager.themeStylesheetUrl(expressiveDarkTheme)
+                        M3ThemeRuntime.themeStylesheetUrl(expressiveDarkTheme)
                 ));
             } finally {
                 tooltip.hide();
@@ -12935,7 +12936,7 @@ final class M3ControlStyleTest {
                 assertSame(baselineTheme, M3ThemeManager.getTheme(popupRoot));
                 assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
                 assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
-                assertTrue(popupRoot.getStylesheets().contains(M3ThemeManager.themeStylesheetUrl(baselineTheme)));
+                assertTrue(popupRoot.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(baselineTheme)));
 
                 scene.getStylesheets().add(extraStylesheet);
 
@@ -12948,7 +12949,7 @@ final class M3ControlStyleTest {
                 assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
                 assertTrue(popupRoot.getStylesheets().contains(extraStylesheet));
                 assertTrue(popupRoot.getStylesheets().contains(
-                        M3ThemeManager.themeStylesheetUrl(expressiveDarkTheme)
+                        M3ThemeRuntime.themeStylesheetUrl(expressiveDarkTheme)
                 ));
 
                 M3ThemeManager.uninstall(scene);
@@ -13002,7 +13003,7 @@ final class M3ControlStyleTest {
                 assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
                 assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
                 assertTrue(popupRoot.getStylesheets().contains(
-                        M3ThemeManager.themeStylesheetUrl(explicitTooltipTheme)
+                        M3ThemeRuntime.themeStylesheetUrl(explicitTooltipTheme)
                 ));
 
                 M3ThemeManager.install(scene, ownerReplacementTheme);
@@ -13012,7 +13013,7 @@ final class M3ControlStyleTest {
                 assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
                 assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
                 assertTrue(popupRoot.getStylesheets().contains(
-                        M3ThemeManager.themeStylesheetUrl(explicitTooltipTheme)
+                        M3ThemeRuntime.themeStylesheetUrl(explicitTooltipTheme)
                 ));
             } finally {
                 tooltip.hide();
@@ -13063,7 +13064,7 @@ final class M3ControlStyleTest {
                 assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
                 assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
                 assertTrue(tooltip.getScene().getStylesheets().contains(
-                        M3ThemeManager.themeStylesheetUrl(expressiveDarkTheme)
+                        M3ThemeRuntime.themeStylesheetUrl(expressiveDarkTheme)
                 ));
 
                 M3ThemeManager.uninstall(scene);
@@ -13129,7 +13130,7 @@ final class M3ControlStyleTest {
                 assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
                 assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
                 assertTrue(tooltip.getScene().getStylesheets().contains(
-                        M3ThemeManager.themeStylesheetUrl(expressiveDarkTheme)
+                        M3ThemeRuntime.themeStylesheetUrl(expressiveDarkTheme)
                 ));
             } finally {
                 tooltip.hide();
@@ -13178,7 +13179,7 @@ final class M3ControlStyleTest {
                 assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
                 assertTrue(tooltip.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
                 assertTrue(tooltip.getScene().getStylesheets().contains(
-                        M3ThemeManager.themeStylesheetUrl(expressiveDarkTheme)
+                        M3ThemeRuntime.themeStylesheetUrl(expressiveDarkTheme)
                 ));
 
                 secondLocalRoot.getChildren().remove(target);
@@ -14965,7 +14966,7 @@ final class M3ControlStyleTest {
                 assertSame(expressiveDarkTheme, M3ThemeManager.getTheme(menu));
                 assertTrue(menu.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
                 assertTrue(menu.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
-                assertTrue(menu.getStylesheets().contains(M3ThemeManager.themeStylesheetUrl(expressiveDarkTheme)));
+                assertTrue(menu.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(expressiveDarkTheme)));
             } finally {
                 menuButton.hideMenu();
                 stage.close();
@@ -14998,7 +14999,7 @@ final class M3ControlStyleTest {
                 M3Menu menu = menuButton.getMenu();
                 assertTrue(menuButton.isShowing());
                 assertTrue(menu.getStylesheets().contains(firstStylesheet));
-                assertTrue(menu.getStylesheets().contains(M3ThemeManager.themeStylesheetUrl(theme)));
+                assertTrue(menu.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(theme)));
 
                 scene.getStylesheets().remove(firstStylesheet);
                 scene.getStylesheets().add(secondStylesheet);
@@ -15040,7 +15041,7 @@ final class M3ControlStyleTest {
                 assertEquals(M3Stylesheets.fallbackStylesheet(), popupRoot.getStylesheets().get(0));
                 assertTrue(popupRoot.getStylesheets().contains(firstStylesheet));
                 assertTrue(popupRoot.getStylesheets().contains(controlStylesheet));
-                assertTrue(popupRoot.getStylesheets().contains(M3ThemeManager.themeStylesheetUrl(theme)));
+                assertTrue(popupRoot.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(theme)));
 
                 AtomicInteger stylesheetChanges = new AtomicInteger();
                 AtomicInteger styleClassChanges = new AtomicInteger();
@@ -15062,11 +15063,11 @@ final class M3ControlStyleTest {
                 assertFalse(popupRoot.getStylesheets().contains(firstStylesheet));
                 assertTrue(popupRoot.getStylesheets().contains(secondStylesheet));
                 assertTrue(popupRoot.getStylesheets().contains(controlStylesheet));
-                assertTrue(popupRoot.getStylesheets().contains(M3ThemeManager.themeStylesheetUrl(theme)));
+                assertTrue(popupRoot.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(theme)));
 
                 M3ThemeManager.uninstall(scene);
 
-                assertFalse(popupRoot.getStylesheets().contains(M3ThemeManager.themeStylesheetUrl(theme)));
+                assertFalse(popupRoot.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(theme)));
                 assertTrue(popupRoot.getStylesheets().contains(secondStylesheet));
                 assertTrue(popupRoot.getStylesheets().contains(controlStylesheet));
             } finally {
@@ -15389,7 +15390,7 @@ final class M3ControlStyleTest {
                 M3ThemeManager.install(scene, baselineTheme);
                 synchronizer.start();
 
-                String baselineThemeStylesheet = M3ThemeManager.themeStylesheetUrl(baselineTheme);
+                String baselineThemeStylesheet = M3ThemeRuntime.themeStylesheetUrl(baselineTheme);
                 List<String> baselineStylesheets = popupRoot.getStylesheets();
                 assertTrue(baselineStylesheets.indexOf(controlStylesheet)
                         < baselineStylesheets.lastIndexOf(baselineThemeStylesheet));
@@ -15397,7 +15398,7 @@ final class M3ControlStyleTest {
 
                 M3ThemeManager.install(scene, expressiveDarkTheme);
 
-                String expressiveThemeStylesheet = M3ThemeManager.themeStylesheetUrl(expressiveDarkTheme);
+                String expressiveThemeStylesheet = M3ThemeRuntime.themeStylesheetUrl(expressiveDarkTheme);
                 List<String> expressiveStylesheets = popupRoot.getStylesheets();
                 assertFalse(expressiveStylesheets.contains(baselineThemeStylesheet));
                 assertTrue(expressiveStylesheets.indexOf(controlStylesheet)
@@ -15442,7 +15443,7 @@ final class M3ControlStyleTest {
                 synchronizer.start();
 
                 assertSame(baselineTheme, M3ThemeManager.getTheme(popupRoot));
-                assertTrue(popupRoot.getStylesheets().contains(M3ThemeManager.themeStylesheetUrl(baselineTheme)));
+                assertTrue(popupRoot.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(baselineTheme)));
 
                 Pane secondRoot = new Pane();
                 firstRoot.getChildren().remove(ownerContainer);
@@ -15456,7 +15457,7 @@ final class M3ControlStyleTest {
                 assertSame(expressiveDarkTheme, M3ThemeManager.getTheme(popupRoot));
                 assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
                 assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
-                assertTrue(popupRoot.getStylesheets().contains(M3ThemeManager.themeStylesheetUrl(expressiveDarkTheme)));
+                assertTrue(popupRoot.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(expressiveDarkTheme)));
 
                 M3ThemeManager.uninstall(scene);
 
@@ -15606,7 +15607,7 @@ final class M3ControlStyleTest {
             assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
             assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
             assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
-            assertFalse(popupRoot.getStylesheets().contains(M3ThemeManager.themeStylesheetUrl(localTheme)));
+            assertFalse(popupRoot.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(localTheme)));
         });
     }
 
@@ -15646,7 +15647,7 @@ final class M3ControlStyleTest {
                 assertSame(expressiveDarkTheme, M3ThemeManager.getTheme(subMenu));
                 assertTrue(subMenu.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
                 assertTrue(subMenu.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
-                assertTrue(subMenu.getStylesheets().contains(M3ThemeManager.themeStylesheetUrl(expressiveDarkTheme)));
+                assertTrue(subMenu.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(expressiveDarkTheme)));
             } finally {
                 subMenuItem.hideSubMenu();
                 menuButton.hideMenu();
@@ -15688,7 +15689,7 @@ final class M3ControlStyleTest {
                 assertTrue(popupSurface.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
                 assertTrue(popupSurface.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
                 assertTrue(popupSurface.getStylesheets().contains(
-                        M3ThemeManager.themeStylesheetUrl(expressiveDarkTheme)
+                        M3ThemeRuntime.themeStylesheetUrl(expressiveDarkTheme)
                 ));
             } finally {
                 field.hidePicker();
@@ -15733,7 +15734,7 @@ final class M3ControlStyleTest {
                 assertTrue(popupSurface.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
                 assertTrue(popupSurface.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
                 assertTrue(popupSurface.getStylesheets().contains(
-                        M3ThemeManager.themeStylesheetUrl(expressiveDarkTheme)
+                        M3ThemeRuntime.themeStylesheetUrl(expressiveDarkTheme)
                 ));
             } finally {
                 field.hidePicker();
@@ -16515,7 +16516,7 @@ final class M3ControlStyleTest {
                 assertTrue(menuButton.isShowing());
                 assertTrue(moveTo.isSubMenuShowing());
                 assertTrue(subMenu.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
-                assertTrue(subMenu.getStylesheets().contains(M3ThemeManager.themeStylesheetUrl(theme)));
+                assertTrue(subMenu.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(theme)));
                 assertResolvedBackgroundFill(menu, "menu");
                 assertResolvedBackgroundFill(subMenu, "submenu");
                 assertResolvedListItemTextFill(moveTo);
@@ -33521,7 +33522,7 @@ final class M3ControlStyleTest {
 
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         M3MotionSettings.setReducedMotionRequested(root, true);
-        M3ThemeManager.uninstallThemeStylesheet(scene);
+        M3ThemeRuntime.uninstallThemeStylesheet(scene);
         button.pseudoClassStateChanged(PseudoClass.getPseudoClass("hover"), true);
         tab.pseudoClassStateChanged(PseudoClass.getPseudoClass("focus-visible"), true);
         navigationItem.pseudoClassStateChanged(PseudoClass.getPseudoClass("pressed"), true);
@@ -38887,40 +38888,18 @@ final class M3ControlStyleTest {
 
     /// Creates motion behavior that only overrides snackbar display duration from the standard profile.
     private static M3MotionBehavior snackbarBehavior(Duration snackbarDisplayDuration) {
-        M3MotionBehavior standard = M3MotionBehavior.standard();
-        return M3MotionBehavior.create(
-                standard.tooltipShowDelay(),
-                standard.tooltipHideDelay(),
-                standard.tooltipShowDuration(),
-                standard.richTooltipShowDuration(),
-                Objects.requireNonNull(snackbarDisplayDuration, "snackbarDisplayDuration"),
-                standard.subMenuHoverOpenDelay(),
-                standard.typeAheadResetDelay(),
-                standard.subMenuHoverCloseDelay(),
-                standard.linearProgressIndeterminateCycleDuration(),
-                standard.circularProgressIndeterminateCycleDuration(),
-                standard.loadingIndicatorMorphInterval(),
-                standard.loadingIndicatorGlobalRotationDuration()
-        );
+        return M3MotionBehavior.builder()
+                .snackbarDisplayDuration(Objects.requireNonNull(snackbarDisplayDuration, "snackbarDisplayDuration"))
+                .build();
     }
 
     /// Creates motion behavior that only overrides plain tooltip timings from the standard profile.
     private static M3MotionBehavior tooltipBehavior(Duration showDelay, Duration hideDelay, Duration showDuration) {
-        M3MotionBehavior standard = M3MotionBehavior.standard();
-        return M3MotionBehavior.create(
-                Objects.requireNonNull(showDelay, "showDelay"),
-                Objects.requireNonNull(hideDelay, "hideDelay"),
-                Objects.requireNonNull(showDuration, "showDuration"),
-                standard.richTooltipShowDuration(),
-                standard.snackbarDisplayDuration(),
-                standard.subMenuHoverOpenDelay(),
-                standard.typeAheadResetDelay(),
-                standard.subMenuHoverCloseDelay(),
-                standard.linearProgressIndeterminateCycleDuration(),
-                standard.circularProgressIndeterminateCycleDuration(),
-                standard.loadingIndicatorMorphInterval(),
-                standard.loadingIndicatorGlobalRotationDuration()
-        );
+        return M3MotionBehavior.builder()
+                .tooltipShowDelay(Objects.requireNonNull(showDelay, "showDelay"))
+                .tooltipHideDelay(Objects.requireNonNull(hideDelay, "hideDelay"))
+                .tooltipShowDuration(Objects.requireNonNull(showDuration, "showDuration"))
+                .build();
     }
 
     /// Creates motion behavior that only overrides type-ahead and submenu hover timings from the standard profile.
@@ -38929,40 +38908,21 @@ final class M3ControlStyleTest {
             Duration subMenuHoverOpenDelay,
             Duration subMenuHoverCloseDelay
     ) {
-        M3MotionBehavior standard = M3MotionBehavior.standard();
-        return M3MotionBehavior.create(
-                standard.tooltipShowDelay(),
-                standard.tooltipHideDelay(),
-                standard.tooltipShowDuration(),
-                standard.richTooltipShowDuration(),
-                standard.snackbarDisplayDuration(),
-                Objects.requireNonNull(subMenuHoverOpenDelay, "subMenuHoverOpenDelay"),
-                Objects.requireNonNull(typeAheadResetDelay, "typeAheadResetDelay"),
-                Objects.requireNonNull(subMenuHoverCloseDelay, "subMenuHoverCloseDelay"),
-                standard.linearProgressIndeterminateCycleDuration(),
-                standard.circularProgressIndeterminateCycleDuration(),
-                standard.loadingIndicatorMorphInterval(),
-                standard.loadingIndicatorGlobalRotationDuration()
-        );
+        return M3MotionBehavior.builder()
+                .subMenuHoverOpenDelay(Objects.requireNonNull(subMenuHoverOpenDelay, "subMenuHoverOpenDelay"))
+                .typeAheadResetDelay(Objects.requireNonNull(typeAheadResetDelay, "typeAheadResetDelay"))
+                .subMenuHoverCloseDelay(Objects.requireNonNull(subMenuHoverCloseDelay, "subMenuHoverCloseDelay"))
+                .build();
     }
 
     /// Creates motion behavior with progress and loading indicator cycles that are observable in pulse tests.
     private static M3MotionBehavior observableIndeterminateProgressBehavior() {
-        M3MotionBehavior standard = M3MotionBehavior.standard();
-        return M3MotionBehavior.create(
-                standard.tooltipShowDelay(),
-                standard.tooltipHideDelay(),
-                standard.tooltipShowDuration(),
-                standard.richTooltipShowDuration(),
-                standard.snackbarDisplayDuration(),
-                standard.subMenuHoverOpenDelay(),
-                standard.typeAheadResetDelay(),
-                standard.subMenuHoverCloseDelay(),
-                OBSERVABLE_TEST_MOTION_DURATION,
-                OBSERVABLE_TEST_MOTION_DURATION,
-                OBSERVABLE_TEST_MOTION_DURATION,
-                OBSERVABLE_TEST_MOTION_DURATION
-        );
+        return M3MotionBehavior.builder()
+                .linearProgressIndeterminateCycleDuration(OBSERVABLE_TEST_MOTION_DURATION)
+                .circularProgressIndeterminateCycleDuration(OBSERVABLE_TEST_MOTION_DURATION)
+                .loadingIndicatorMorphInterval(OBSERVABLE_TEST_MOTION_DURATION)
+                .loadingIndicatorGlobalRotationDuration(OBSERVABLE_TEST_MOTION_DURATION)
+                .build();
     }
 
     /// Creates motion behavior that only overrides loading indicator morph and rotation timings.
@@ -38970,21 +38930,16 @@ final class M3ControlStyleTest {
             Duration loadingIndicatorMorphInterval,
             Duration loadingIndicatorGlobalRotationDuration
     ) {
-        M3MotionBehavior standard = M3MotionBehavior.standard();
-        return M3MotionBehavior.create(
-                standard.tooltipShowDelay(),
-                standard.tooltipHideDelay(),
-                standard.tooltipShowDuration(),
-                standard.richTooltipShowDuration(),
-                standard.snackbarDisplayDuration(),
-                standard.subMenuHoverOpenDelay(),
-                standard.typeAheadResetDelay(),
-                standard.subMenuHoverCloseDelay(),
-                standard.linearProgressIndeterminateCycleDuration(),
-                standard.circularProgressIndeterminateCycleDuration(),
-                Objects.requireNonNull(loadingIndicatorMorphInterval, "loadingIndicatorMorphInterval"),
-                Objects.requireNonNull(loadingIndicatorGlobalRotationDuration, "loadingIndicatorGlobalRotationDuration")
-        );
+        return M3MotionBehavior.builder()
+                .loadingIndicatorMorphInterval(Objects.requireNonNull(
+                        loadingIndicatorMorphInterval,
+                        "loadingIndicatorMorphInterval"
+                ))
+                .loadingIndicatorGlobalRotationDuration(Objects.requireNonNull(
+                        loadingIndicatorGlobalRotationDuration,
+                        "loadingIndicatorGlobalRotationDuration"
+                ))
+                .build();
     }
 
     /// Returns whether a snackbar's exposed focus node currently owns focus.
@@ -39825,15 +39780,13 @@ final class M3ControlStyleTest {
     private static M3MotionScheme observableTestMotionScheme() {
         M3MotionScheme standard = M3MotionScheme.standard();
         M3MotionSpec observableSpec =
-                M3MotionSpec.create(OBSERVABLE_TEST_MOTION_DURATION, M3MotionEasing.LINEAR);
-        return M3MotionScheme.create(
-                observableSpec,
-                observableSpec,
-                standard.slowEffects(),
-                observableSpec,
-                observableSpec,
-                standard.slowSpatial()
-        );
+                M3MotionSpec.of(OBSERVABLE_TEST_MOTION_DURATION, M3MotionEasing.LINEAR);
+        return M3MotionScheme.builder(standard)
+                .fastEffects(observableSpec)
+                .defaultEffects(observableSpec)
+                .fastSpatial(observableSpec)
+                .defaultSpatial(observableSpec)
+                .build();
     }
 
     /// Holds the real-window controls used by the skin-owned state-transition test.

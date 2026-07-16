@@ -45,44 +45,32 @@ public sealed interface M3MotionScheme permits M3MotionSchemeImpl {
     /// @return the slow spatial motion spec
     M3MotionSpec slowSpatial();
 
-    /// Creates a motion scheme from explicit specs.
+    /// Creates a builder initialized with the standard motion scheme.
     ///
-    /// @param fastEffects the fast effects spec
-    /// @param defaultEffects the default effects spec
-    /// @param slowEffects the slow effects spec
-    /// @param fastSpatial the fast spatial spec
-    /// @param defaultSpatial the default spatial spec
-    /// @param slowSpatial the slow spatial spec
-    /// @return an immutable motion scheme
-    static M3MotionScheme create(
-            M3MotionSpec fastEffects,
-            M3MotionSpec defaultEffects,
-            M3MotionSpec slowEffects,
-            M3MotionSpec fastSpatial,
-            M3MotionSpec defaultSpatial,
-            M3MotionSpec slowSpatial
-    ) {
-        return new M3MotionSchemeImpl(
-                fastEffects,
-                defaultEffects,
-                slowEffects,
-                fastSpatial,
-                defaultSpatial,
-                slowSpatial
-        );
+    /// @return a mutable motion scheme builder
+    static M3MotionSchemeBuilder builder() {
+        return new M3MotionSchemeBuilder(standard());
+    }
+
+    /// Creates a builder initialized from an existing scheme.
+    ///
+    /// @param scheme the scheme to copy
+    /// @return a mutable motion scheme builder
+    static M3MotionSchemeBuilder builder(M3MotionScheme scheme) {
+        return new M3MotionSchemeBuilder(scheme);
     }
 
     /// Returns the standard Material motion scheme for recurring utility interactions.
     ///
     /// @return the baseline M3FX motion scheme
     static M3MotionScheme standard() {
-        return create(
-                M3MotionSpec.create(M3Motion.SHORT1, M3MotionEasing.STANDARD),
-                M3MotionSpec.create(M3Motion.SHORT4, M3MotionEasing.STANDARD),
-                M3MotionSpec.create(M3Motion.MEDIUM2, M3MotionEasing.STANDARD),
-                M3MotionSpec.create(M3Motion.SHORT3, M3MotionEasing.STANDARD),
-                M3MotionSpec.create(M3Motion.MEDIUM3, M3MotionEasing.STANDARD),
-                M3MotionSpec.create(M3Motion.LONG2, M3MotionEasing.STANDARD)
+        return new M3MotionSchemeImpl(
+                M3MotionSpec.of(M3Motion.SHORT1, M3MotionEasing.STANDARD),
+                M3MotionSpec.of(M3Motion.SHORT4, M3MotionEasing.STANDARD),
+                M3MotionSpec.of(M3Motion.MEDIUM2, M3MotionEasing.STANDARD),
+                M3MotionSpec.of(M3Motion.SHORT3, M3MotionEasing.STANDARD),
+                M3MotionSpec.of(M3Motion.MEDIUM3, M3MotionEasing.STANDARD),
+                M3MotionSpec.of(M3Motion.LONG2, M3MotionEasing.STANDARD)
         );
     }
 
@@ -90,13 +78,13 @@ public sealed interface M3MotionScheme permits M3MotionSchemeImpl {
     ///
     /// @return the expressive M3FX motion scheme
     static M3MotionScheme expressive() {
-        return create(
-                M3MotionSpec.create(M3Motion.SHORT3, M3MotionEasing.EMPHASIZED),
-                M3MotionSpec.create(M3Motion.MEDIUM1, M3MotionEasing.EMPHASIZED),
-                M3MotionSpec.create(M3Motion.MEDIUM3, M3MotionEasing.EMPHASIZED),
-                M3MotionSpec.create(M3Motion.MEDIUM1, M3MotionEasing.EMPHASIZED_DECELERATE),
-                M3MotionSpec.create(M3Motion.MEDIUM4, M3MotionEasing.EMPHASIZED),
-                M3MotionSpec.create(M3Motion.LONG3, M3MotionEasing.EMPHASIZED)
+        return new M3MotionSchemeImpl(
+                M3MotionSpec.of(M3Motion.SHORT3, M3MotionEasing.EMPHASIZED),
+                M3MotionSpec.of(M3Motion.MEDIUM1, M3MotionEasing.EMPHASIZED),
+                M3MotionSpec.of(M3Motion.MEDIUM3, M3MotionEasing.EMPHASIZED),
+                M3MotionSpec.of(M3Motion.MEDIUM1, M3MotionEasing.EMPHASIZED_DECELERATE),
+                M3MotionSpec.of(M3Motion.MEDIUM4, M3MotionEasing.EMPHASIZED),
+                M3MotionSpec.of(M3Motion.LONG3, M3MotionEasing.EMPHASIZED)
         );
     }
 }

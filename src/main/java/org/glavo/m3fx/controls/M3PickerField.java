@@ -9,6 +9,8 @@ import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
@@ -45,8 +47,8 @@ import java.util.Objects;
 
 /// A base control for Material Design 3 text fields that edit values through a picker popup.
 ///
-/// Subclasses provide value parsing, formatting, range checks, and the concrete picker control while this base class
-/// owns the shared text field, popup placement, popup motion, accessibility state, and validation handoff.
+/// [M3DatePickerField] and [M3TimePickerField] provide value parsing, formatting, and range checks while this base
+/// class owns their shared text field, popup placement, popup motion, accessibility state, and validation handoff.
 ///
 /// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview),
 /// [Material Design time pickers](https://m3.material.io/components/time-pickers/overview), and
@@ -55,7 +57,8 @@ import java.util.Objects;
 /// @param <T> the value type edited by the field
 /// @param <P> the popup picker control type
 @NotNullByDefault
-public abstract class M3PickerField<T, P extends Control> extends Control {
+public abstract sealed class M3PickerField<T, P extends Control> extends Control
+        permits M3DatePickerField, M3TimePickerField {
     /// The base style class for M3FX picker fields.
     public static final String STYLE_CLASS = "m3-picker-field";
 
@@ -74,7 +77,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
     /// The initial popup picker offset used for enter and exit motion.
     private static final double POPUP_TRANSITION_OFFSET_Y = 6.0;
 
-    // Internal storage for [valueProperty].
+    /// Internal storage for [valueProperty].
     private final ObjectProperty<@Nullable T> value =
             new SimpleObjectProperty<>(this, "value") {
                 /// Normalizes and validates values assigned through the property.
@@ -92,7 +95,73 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
                 }
             };
 
-    // Internal storage for [formatterProperty].
+    /// Internal storage for [textProperty].
+    private final StringProperty text = new SimpleStringProperty(this, "text", "") {
+        /// Keeps editor text non-null.
+        @Override
+        public void set(String newValue) {
+            super.set(Objects.requireNonNull(newValue, "text"));
+        }
+    };
+
+    /// Internal storage for [variantProperty].
+    private final ObjectProperty<M3TextInputVariant> variant =
+            new SimpleObjectProperty<>(this, "variant", M3TextInputVariant.FILLED) {
+                /// Keeps the text input variant non-null.
+                @Override
+                public void set(M3TextInputVariant newValue) {
+                    super.set(Objects.requireNonNull(newValue, "variant"));
+                }
+            };
+
+    /// Internal storage for [characterCounterVisibleProperty].
+    private final BooleanProperty characterCounterVisible =
+            new SimpleBooleanProperty(this, "characterCounterVisible");
+
+    /// Internal storage for [characterLimitEnforcedProperty].
+    private final BooleanProperty characterLimitEnforced =
+            new SimpleBooleanProperty(this, "characterLimitEnforced");
+
+    /// Internal storage for [characterLimitProperty].
+    private final IntegerProperty characterLimit = new SimpleIntegerProperty(this, "characterLimit", -1) {
+        /// Accepts `-1` for no limit or a non-negative character count.
+        @Override
+        public void set(int newValue) {
+            if (newValue < -1) {
+                throw new IllegalArgumentException("characterLimit must be -1 or non-negative");
+            }
+            super.set(newValue);
+        }
+    };
+
+    /// Internal storage for [labelTextProperty].
+    private final StringProperty labelText = new SimpleStringProperty(this, "labelText", "") {
+        /// Keeps label text non-null.
+        @Override
+        public void set(String newValue) {
+            super.set(Objects.requireNonNull(newValue, "labelText"));
+        }
+    };
+
+    /// Internal storage for [supportingTextProperty].
+    private final StringProperty supportingText = new SimpleStringProperty(this, "supportingText", "") {
+        /// Keeps supporting text non-null.
+        @Override
+        public void set(String newValue) {
+            super.set(Objects.requireNonNull(newValue, "supportingText"));
+        }
+    };
+
+    /// Internal storage for [errorTextProperty].
+    private final StringProperty errorText = new SimpleStringProperty(this, "errorText", "") {
+        /// Keeps error text non-null.
+        @Override
+        public void set(String newValue) {
+            super.set(Objects.requireNonNull(newValue, "errorText"));
+        }
+    };
+
+    /// Internal storage for [formatterProperty].
     private final ObjectProperty<DateTimeFormatter> formatter =
             new SimpleObjectProperty<>(this, "formatter") {
                 /// Keeps formatter values non-null.
@@ -108,7 +177,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
                 }
             };
 
-    // Internal storage for [invalidTextErrorTextProperty].
+    /// Internal storage for [invalidTextErrorTextProperty].
     private final StringProperty invalidTextErrorText =
             new SimpleStringProperty(this, "invalidTextErrorText") {
                 /// Keeps parse error text non-null.
@@ -118,7 +187,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
                 }
             };
 
-    // Internal storage for [rangeErrorTextProperty].
+    /// Internal storage for [rangeErrorTextProperty].
     private final StringProperty rangeErrorText =
             new SimpleStringProperty(this, "rangeErrorText") {
                 /// Keeps range error text non-null.
@@ -153,7 +222,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
     private final M3PopupContextSynchronizer popupContextSynchronizer =
             new M3PopupContextSynchronizer(this, popupContent, M3Stylesheets.controlStylesheet("picker-field.css"));
 
-    // Internal storage for [showingProperty].
+    /// Internal storage for [showingProperty].
     private final ReadOnlyBooleanWrapper showing = new ReadOnlyBooleanWrapper(this, "showing");
 
     /// The reusable picker popup enter and exit animation.
@@ -193,7 +262,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
     /// @param openButtonAccessibleText the accessible text for the trailing open button
     /// @param invalidTextErrorText the error text shown when editor text cannot be parsed
     /// @param rangeErrorText the error text shown when editor text parses outside the selectable range
-    protected M3PickerField(
+    M3PickerField(
             P picker,
             ObjectProperty<@Nullable T> pickerValue,
             DateTimeFormatter formatter,
@@ -210,6 +279,14 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
         this.formatter.set(Objects.requireNonNull(formatter, "formatter"));
         this.invalidTextErrorText.set(Objects.requireNonNull(invalidTextErrorText, "invalidTextErrorText"));
         this.rangeErrorText.set(Objects.requireNonNull(rangeErrorText, "rangeErrorText"));
+        editor.textProperty().bindBidirectional(text);
+        editor.variantProperty().bindBidirectional(variant);
+        inputLayout.characterCounterVisibleProperty().bindBidirectional(characterCounterVisible);
+        inputLayout.characterLimitEnforcedProperty().bindBidirectional(characterLimitEnforced);
+        inputLayout.characterLimitProperty().bindBidirectional(characterLimit);
+        inputLayout.labelTextProperty().bindBidirectional(labelText);
+        inputLayout.supportingTextProperty().bindBidirectional(supportingText);
+        inputLayout.errorTextProperty().bindBidirectional(errorText);
         initialize(
                 Objects.requireNonNull(styleClass, "styleClass"),
                 Objects.requireNonNull(popupStyleClass, "popupStyleClass"),
@@ -245,7 +322,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
     ///
     /// @return the current raw editor text
     public final String getText() {
-        return editor.getText();
+        return text.get();
     }
 
     /// Sets the raw editor text.
@@ -254,98 +331,98 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
     ///
     /// @param text the raw editor text
     public final void setText(String text) {
-        editor.setText(Objects.requireNonNull(text, "text"));
+        this.text.set(text);
     }
 
     /// Returns the raw editor text property.
     ///
     /// @return the raw editor text property
     public final StringProperty textProperty() {
-        return editor.textProperty();
+        return text;
     }
 
     /// Returns the text input variant used by the embedded editor.
     ///
     /// @return the text input variant used by the embedded editor
     public final M3TextInputVariant getVariant() {
-        return editor.getVariant();
+        return variant.get();
     }
 
     /// Sets the text input variant used by the embedded editor.
     ///
     /// @param variant the text input variant used by the embedded editor
     public final void setVariant(M3TextInputVariant variant) {
-        editor.setVariant(variant);
+        this.variant.set(variant);
     }
 
-    /// Returns the embedded editor variant property.
+    /// Returns the text input variant property.
     ///
-    /// @return the embedded editor variant property
+    /// @return the text input variant property
     public final ObjectProperty<M3TextInputVariant> variantProperty() {
-        return editor.variantProperty();
+        return variant;
     }
 
     /// Returns whether the character counter is visible below the editor.
     ///
     /// @return `true` when the character counter is visible
     public final boolean isCharacterCounterVisible() {
-        return inputLayout.isCharacterCounterVisible();
+        return characterCounterVisible.get();
     }
 
     /// Sets whether the character counter is visible below the editor.
     ///
     /// @param characterCounterVisible whether the character counter is visible
     public final void setCharacterCounterVisible(boolean characterCounterVisible) {
-        inputLayout.setCharacterCounterVisible(characterCounterVisible);
+        this.characterCounterVisible.set(characterCounterVisible);
     }
 
     /// Returns the character counter visibility property.
     ///
     /// @return the character counter visibility property
     public final BooleanProperty characterCounterVisibleProperty() {
-        return inputLayout.characterCounterVisibleProperty();
+        return characterCounterVisible;
     }
 
     /// Returns whether editor text is truncated to the configured character limit.
     ///
     /// @return `true` when editor text is truncated to the configured character limit
     public final boolean isCharacterLimitEnforced() {
-        return inputLayout.isCharacterLimitEnforced();
+        return characterLimitEnforced.get();
     }
 
     /// Sets whether editor text is truncated to the configured character limit.
     ///
     /// @param characterLimitEnforced whether editor text is truncated to the configured character limit
     public final void setCharacterLimitEnforced(boolean characterLimitEnforced) {
-        inputLayout.setCharacterLimitEnforced(characterLimitEnforced);
+        this.characterLimitEnforced.set(characterLimitEnforced);
     }
 
     /// Returns the character limit enforcement property.
     ///
     /// @return the character limit enforcement property
     public final BooleanProperty characterLimitEnforcedProperty() {
-        return inputLayout.characterLimitEnforcedProperty();
+        return characterLimitEnforced;
     }
 
     /// Returns the active character limit, or `-1` when no limit is active.
     ///
     /// @return the active character limit, or `-1` when no limit is active
     public final int getCharacterLimit() {
-        return inputLayout.getCharacterLimit();
+        return characterLimit.get();
     }
 
     /// Sets the active character limit, or `-1` to disable the limit.
     ///
     /// @param characterLimit the active character limit, or `-1` to disable the limit
     public final void setCharacterLimit(int characterLimit) {
-        inputLayout.setCharacterLimit(characterLimit);
+        this.characterLimit.set(characterLimit);
     }
 
     /// Returns the character limit property.
     ///
     /// @return the character limit property
     public final IntegerProperty characterLimitProperty() {
-        return inputLayout.characterLimitProperty();
+        return characterLimit;
     }
 
     /// Returns the current editor text character count.
@@ -408,63 +485,63 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
     ///
     /// @return the label text displayed by the wrapped input layout
     public final String getLabelText() {
-        return inputLayout.getLabelText();
+        return labelText.get();
     }
 
     /// Sets the label text displayed by the wrapped input layout.
     ///
     /// @param labelText the label text displayed by the wrapped input layout
     public final void setLabelText(String labelText) {
-        inputLayout.setLabelText(labelText);
+        this.labelText.set(labelText);
     }
 
-    /// Returns the label text property from the wrapped input layout.
+    /// Returns the label text property.
     ///
-    /// @return the label text property from the wrapped input layout
+    /// @return the label text property
     public final StringProperty labelTextProperty() {
-        return inputLayout.labelTextProperty();
+        return labelText;
     }
 
     /// Returns the supporting text shown when no error is active.
     ///
     /// @return the supporting text shown when no error is active
     public final String getSupportingText() {
-        return inputLayout.getSupportingText();
+        return supportingText.get();
     }
 
     /// Sets the supporting text shown when no error is active.
     ///
     /// @param supportingText the supporting text shown when no error is active
     public final void setSupportingText(String supportingText) {
-        inputLayout.setSupportingText(supportingText);
+        this.supportingText.set(supportingText);
     }
 
-    /// Returns the supporting text property from the wrapped input layout.
+    /// Returns the supporting text property.
     ///
-    /// @return the supporting text property from the wrapped input layout
+    /// @return the supporting text property
     public final StringProperty supportingTextProperty() {
-        return inputLayout.supportingTextProperty();
+        return supportingText;
     }
 
     /// Returns the current error text shown by the wrapped input layout.
     ///
     /// @return the current error text shown by the wrapped input layout
     public final String getErrorText() {
-        return inputLayout.getErrorText();
+        return errorText.get();
     }
 
     /// Sets the current error text shown by the wrapped input layout.
     ///
     /// @param errorText the current error text shown by the wrapped input layout
     public final void setErrorText(String errorText) {
-        inputLayout.setErrorText(errorText);
+        this.errorText.set(errorText);
     }
 
-    /// Returns the error text property from the wrapped input layout.
+    /// Returns the error text property.
     ///
-    /// @return the error text property from the wrapped input layout
+    /// @return the error text property
     public final StringProperty errorTextProperty() {
-        return inputLayout.errorTextProperty();
+        return errorText;
     }
 
     /// Returns the parse error message used when editor text is invalid.
@@ -642,41 +719,41 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
     /// @param text the non-empty editor text to parse
     /// @param formatter the formatter used by this field
     /// @return the parsed value
-    protected abstract T parseValue(String text, DateTimeFormatter formatter);
+    abstract T parseValue(String text, DateTimeFormatter formatter);
 
     /// Formats one selected value for editor display.
     ///
     /// @param value the selected value to format
     /// @param formatter the formatter used by this field
     /// @return the editor text representation of the value
-    protected abstract String formatValue(T value, DateTimeFormatter formatter);
+    abstract String formatValue(T value, DateTimeFormatter formatter);
 
     /// Normalizes one selected value to the precision used by the picker.
     ///
     /// @param value the selected value to normalize
     /// @return the normalized value
-    protected abstract T normalizeValue(T value);
+    abstract T normalizeValue(T value);
 
     /// Returns whether one normalized value is outside the concrete picker's selectable range.
     ///
     /// @param value the normalized value to test
     /// @return `true` when the value is outside the selectable range
-    protected abstract boolean isPickerValueDisabled(T value);
+    abstract boolean isPickerValueDisabled(T value);
 
     /// Applies a field value to the concrete picker without changing field-specific state.
     ///
     /// @param value the field value to apply to the picker, or `null` to clear picker selection
-    protected abstract void setPickerValue(@Nullable T value);
+    abstract void setPickerValue(@Nullable T value);
 
     /// Replaces the node hosted by the popup surface.
     ///
     /// @param content the popup content node
-    protected final void setPopupContent(Node content) {
+    final void setPopupContent(Node content) {
         popupContent.getChildren().setAll(Objects.requireNonNull(content, "content"));
     }
 
     /// Restores the popup surface to host only the concrete picker.
-    protected final void resetPopupContent() {
+    final void resetPopupContent() {
         setPopupContent(picker);
     }
 
@@ -901,7 +978,7 @@ public abstract class M3PickerField<T, P extends Control> extends Control {
     }
 
     /// Returns whether this field can reveal the supplied non-node accessibility target.
-    protected boolean handlesAccessibleShowTarget(@Nullable Object parameter) {
+    boolean handlesAccessibleShowTarget(@Nullable Object parameter) {
         return false;
     }
 

@@ -15,7 +15,7 @@ import javafx.scene.control.Skin;
 import org.glavo.m3fx.internal.M3ThemeResolver;
 import org.glavo.m3fx.internal.theme.M3ThemeMetadata;
 import org.glavo.m3fx.skins.M3ListViewCellSkin;
-import org.glavo.m3fx.theme.M3ThemeManager;
+import org.glavo.m3fx.internal.theme.M3ThemeRuntime;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -168,9 +168,9 @@ public class M3ListCell<T> extends IndexedCell<T> {
     private void copyThemeContext(M3ListItem itemNode) {
         @Nullable Parent themeRoot = M3ThemeResolver.findThemeRoot(getListView());
         if (themeRoot != null) {
-            M3ThemeManager.copyThemeContext(themeRoot, itemNode);
+            M3ThemeRuntime.copyThemeContext(themeRoot, itemNode);
         } else {
-            M3ThemeManager.clearThemeStyleClasses(itemNode);
+            M3ThemeRuntime.clearThemeStyleClasses(itemNode);
             M3ThemeMetadata.clearTheme(itemNode);
         }
     }

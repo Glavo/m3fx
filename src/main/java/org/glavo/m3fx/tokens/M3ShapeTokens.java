@@ -65,6 +65,13 @@ public sealed interface M3ShapeTokens permits M3ShapeTokensImpl {
     /// @return the full corner radius used for pills, in pixels
     double full();
 
+    /// Creates a builder initialized with baseline shape tokens.
+    ///
+    /// @return a mutable shape-token builder
+    static M3ShapeTokensBuilder builder() {
+        return new M3ShapeTokensBuilder(baseline());
+    }
+
     /// Creates a builder initialized from an existing shape token set.
     ///
     /// @param tokens the shape tokens to copy
@@ -146,21 +153,4 @@ public sealed interface M3ShapeTokens permits M3ShapeTokensImpl {
         return create(0.0, 6.0, 10.0, 16.0, 24.0, 28.0, 32.0, 40.0, 48.0, 999.0);
     }
 
-    /// Converts shape tokens into inline JavaFX CSS declarations.
-    ///
-    /// @return inline JavaFX CSS declarations for this shape token set
-    default String toStyleDeclarations() {
-        StringBuilder builder = new StringBuilder();
-        M3TokenCss.append(builder, "-m3-shape-corner-none", M3TokenCss.pixels(none()));
-        M3TokenCss.append(builder, "-m3-shape-corner-extra-small", M3TokenCss.pixels(extraSmall()));
-        M3TokenCss.append(builder, "-m3-shape-corner-small", M3TokenCss.pixels(small()));
-        M3TokenCss.append(builder, "-m3-shape-corner-medium", M3TokenCss.pixels(medium()));
-        M3TokenCss.append(builder, "-m3-shape-corner-large", M3TokenCss.pixels(large()));
-        M3TokenCss.append(builder, "-m3-shape-corner-large-increased", M3TokenCss.pixels(largeIncreased()));
-        M3TokenCss.append(builder, "-m3-shape-corner-extra-large", M3TokenCss.pixels(extraLarge()));
-        M3TokenCss.append(builder, "-m3-shape-corner-extra-large-increased", M3TokenCss.pixels(extraLargeIncreased()));
-        M3TokenCss.append(builder, "-m3-shape-corner-extra-extra-large", M3TokenCss.pixels(extraExtraLarge()));
-        M3TokenCss.append(builder, "-m3-shape-corner-full", M3TokenCss.pixels(full()));
-        return builder.toString().trim();
-    }
 }

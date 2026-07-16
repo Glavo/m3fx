@@ -30,12 +30,12 @@ public sealed interface M3TextStyle permits M3TextStyleImpl {
     double tracking();
 
     /// Creates a text style token.
-    static M3TextStyle create(String fontFamily, double size, double lineHeight, int weight) {
-        return create(fontFamily, size, lineHeight, weight, 0.0);
+    static M3TextStyle of(String fontFamily, double size, double lineHeight, int weight) {
+        return of(fontFamily, size, lineHeight, weight, 0.0);
     }
 
     /// Creates a text style token.
-    static M3TextStyle create(String fontFamily, double size, double lineHeight, int weight, double tracking) {
+    static M3TextStyle of(String fontFamily, double size, double lineHeight, int weight, double tracking) {
         return new M3TextStyleImpl(fontFamily, size, lineHeight, weight, tracking);
     }
 }

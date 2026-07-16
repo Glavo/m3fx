@@ -20,6 +20,11 @@ The remaining risk is concentrated in specification fidelity and runtime quality
 The current component set includes the six Material carousel layouts. Full-screen carousels use vertical,
 viewport-sized pagination; the remaining layouts retain horizontal Material keyline behavior.
 
+The exported API has completed a pre-freeze structural review. Public theme and token types are immutable data
+models with internal implementations, rendering compilers remain internal, configurable token groups use copyable
+builders, and composite controls own the properties and events they expose. The API is not frozen until the final
+release review confirms that remaining behavior work requires no contract changes.
+
 ## Remaining Work
 
 ### 1. Close Material Specification Gaps

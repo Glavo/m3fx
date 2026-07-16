@@ -7,6 +7,7 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -75,7 +76,7 @@ public final class M3SearchBar extends Control {
     /// The default horizontal padding.
     private static final double DEFAULT_HORIZONTAL_PADDING = 16.0;
 
-    // Backing property for the public leading slot API.
+    /// Backing property for the public leading slot API.
     private final ObjectProperty<@Nullable Node> leading = new SimpleObjectProperty<>(this, "leading") {
         /// Updates accessibility state when the leading slot changes.
         @Override
@@ -84,7 +85,25 @@ public final class M3SearchBar extends Control {
         }
     };
 
-    // Backing property for the public action handler API.
+    /// Backing property for the public search text API.
+    private final StringProperty text = new SimpleStringProperty(this, "text", "") {
+        /// Keeps search text non-null.
+        @Override
+        public void set(String newValue) {
+            super.set(Objects.requireNonNull(newValue, "text"));
+        }
+    };
+
+    /// Backing property for the public prompt text API.
+    private final StringProperty promptText = new SimpleStringProperty(this, "promptText", "") {
+        /// Keeps prompt text non-null.
+        @Override
+        public void set(String newValue) {
+            super.set(Objects.requireNonNull(newValue, "promptText"));
+        }
+    };
+
+    /// Backing property for the public action handler API.
     private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
             new SimpleObjectProperty<>(this, "onAction") {
                 /// Updates the registered action event handler.
@@ -94,7 +113,7 @@ public final class M3SearchBar extends Control {
                 }
             };
 
-    // Backing property for the public active state API.
+    /// Backing property for the public active state API.
     private final BooleanProperty active = new SimpleBooleanProperty(this, "active") {
         /// Updates active pseudo-class state and input focus.
         @Override
@@ -139,43 +158,42 @@ public final class M3SearchBar extends Control {
     ///
     /// @return the text entered in this search bar
     public final String getText() {
-        return editor.getText();
+        return text.get();
     }
 
     /// Sets the text entered in this search bar.
     ///
     /// @param text the text entered in this search bar
     public final void setText(String text) {
-        editor.setText(Objects.requireNonNull(text, "text"));
+        this.text.set(text);
     }
 
     /// Returns the text property.
     ///
-    /// @return the embedded editor text property
+    /// @return the search bar text property
     public final StringProperty textProperty() {
-        return editor.textProperty();
+        return text;
     }
 
     /// Returns the prompt text displayed when the search text is empty.
     ///
     /// @return the prompt text displayed when the search text is empty
     public final String getPromptText() {
-        @Nullable String promptText = editor.getPromptText();
-        return promptText == null ? "" : promptText;
+        return promptText.get();
     }
 
     /// Sets the prompt text displayed when the search text is empty.
     ///
     /// @param promptText the prompt text displayed when the search text is empty
     public final void setPromptText(String promptText) {
-        editor.setPromptText(Objects.requireNonNull(promptText, "promptText"));
+        this.promptText.set(promptText);
     }
 
     /// Returns the prompt text property.
     ///
-    /// @return the embedded editor prompt text property
+    /// @return the search bar prompt text property
     public final StringProperty promptTextProperty() {
-        return editor.promptTextProperty();
+        return promptText;
     }
 
     /// Returns whether this search bar is in its active input state.
@@ -333,8 +351,8 @@ public final class M3SearchBar extends Control {
             }
             case COLLAPSE -> deactivate();
             case SET_TEXT -> {
-                if (parameters.length > 0 && parameters[0] instanceof String text) {
-                    setText(text);
+                if (parameters.length > 0 && parameters[0] instanceof String replacementText) {
+                    setText(replacementText);
                 }
             }
             default -> super.executeAccessibleAction(action, parameters);
@@ -353,6 +371,9 @@ public final class M3SearchBar extends Control {
     private void initialize() {
         M3ControlStyles.initialize(this, STYLE_CLASS);
         editor.getStyleClass().add(INPUT_STYLE_CLASS);
+        editor.setPromptText("");
+        editor.textProperty().bindBidirectional(text);
+        editor.promptTextProperty().bindBidirectional(promptText);
         setAccessibleRole(AccessibleRole.PARENT);
         M3Accessible.installAccessibleActionRoute(this, () -> focusAccessibleItem(accessibleFocusNode()), this::showAccessibleItem);
         setFocusTraversable(true);
@@ -366,7 +387,7 @@ public final class M3SearchBar extends Control {
             notifyAccessibleItemsChanged();
             requestLayout();
         });
-        editor.textProperty().addListener((observable, oldValue, newValue) ->
+        text.addListener((observable, oldValue, newValue) ->
                 notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT));
         editor.focusedProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue) {

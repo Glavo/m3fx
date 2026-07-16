@@ -93,7 +93,7 @@ public final class M3DatePickerField extends M3PickerField<LocalDate, M3DatePick
 
     /// Returns whether this field can reveal the supplied accessibility date target.
     @Override
-    protected boolean handlesAccessibleShowTarget(@Nullable Object parameter) {
+    boolean handlesAccessibleShowTarget(@Nullable Object parameter) {
         return parameter instanceof LocalDate date && !getPicker().isDateDisabled(date);
     }
 
@@ -124,31 +124,31 @@ public final class M3DatePickerField extends M3PickerField<LocalDate, M3DatePick
 
     /// Parses one editor date string.
     @Override
-    protected LocalDate parseValue(String text, DateTimeFormatter formatter) {
+    LocalDate parseValue(String text, DateTimeFormatter formatter) {
         return LocalDate.from(formatter.parse(text));
     }
 
     /// Formats one date value for editor display.
     @Override
-    protected String formatValue(LocalDate value, DateTimeFormatter formatter) {
+    String formatValue(LocalDate value, DateTimeFormatter formatter) {
         return formatter.format(value);
     }
 
     /// Dates already use the popup picker's precision.
     @Override
-    protected LocalDate normalizeValue(LocalDate value) {
+    LocalDate normalizeValue(LocalDate value) {
         return Objects.requireNonNull(value, "value");
     }
 
     /// Returns whether a date is outside the popup picker's selectable range.
     @Override
-    protected boolean isPickerValueDisabled(LocalDate value) {
+    boolean isPickerValueDisabled(LocalDate value) {
         return getPicker().isDateDisabled(value);
     }
 
     /// Applies a value to the popup date picker.
     @Override
-    protected void setPickerValue(@Nullable LocalDate value) {
+    void setPickerValue(@Nullable LocalDate value) {
         getPicker().setValue(value);
     }
 

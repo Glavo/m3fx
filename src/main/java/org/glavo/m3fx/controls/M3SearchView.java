@@ -5,12 +5,15 @@ package org.glavo.m3fx.controls;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
+import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
@@ -91,7 +94,42 @@ public final class M3SearchView extends Control {
     /// The embedded search bar.
     private final M3SearchBar searchBar = new M3SearchBar();
 
-    // Backing property for the public visual-treatment API.
+    /// Backing property for the public leading slot API.
+    private final ObjectProperty<@Nullable Node> leading =
+            new SimpleObjectProperty<>(this, "leading", searchBar.getLeading());
+
+    /// Backing property for the public search text API.
+    private final StringProperty text = new SimpleStringProperty(this, "text", "") {
+        /// Keeps search text non-null.
+        @Override
+        public void set(String newValue) {
+            super.set(Objects.requireNonNull(newValue, "text"));
+        }
+    };
+
+    /// Backing property for the public prompt text API.
+    private final StringProperty promptText = new SimpleStringProperty(this, "promptText", "") {
+        /// Keeps prompt text non-null.
+        @Override
+        public void set(String newValue) {
+            super.set(Objects.requireNonNull(newValue, "promptText"));
+        }
+    };
+
+    /// Backing property for the public action handler API.
+    private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
+            new SimpleObjectProperty<>(this, "onAction") {
+                /// Updates the registered action event handler.
+                @Override
+                protected void invalidated() {
+                    setEventHandler(ActionEvent.ACTION, get());
+                }
+            };
+
+    /// Backing property for the public active state API.
+    private final BooleanProperty active = new SimpleBooleanProperty(this, "active");
+
+    /// Backing property for the public visual-treatment API.
     private final ObjectProperty<M3SearchViewStyle> viewStyle =
             new SimpleObjectProperty<>(this, "viewStyle", DEFAULT_VIEW_STYLE) {
                 /// Updates treatment pseudo-classes when the value changes.
@@ -106,7 +144,7 @@ public final class M3SearchView extends Control {
                 }
             };
 
-    // Backing property for the public window-relative layout API.
+    /// Backing property for the public window-relative layout API.
     private final ObjectProperty<M3SearchViewLayout> viewLayout =
             new SimpleObjectProperty<>(this, "viewLayout", DEFAULT_VIEW_LAYOUT) {
                 /// Updates layout pseudo-classes when the value changes.
@@ -201,25 +239,25 @@ public final class M3SearchView extends Control {
     }
 
 
-    /// Returns the leading content node from the embedded search bar.
+    /// Returns the leading content node.
     ///
     /// @return the leading content node, or `null` if none is set
     public final @Nullable Node getLeading() {
-        return searchBar.getLeading();
+        return leading.get();
     }
 
-    /// Sets the leading content node on the embedded search bar.
+    /// Sets the leading content node.
     ///
     /// @param leading the leading content node, or `null` to clear it
     public final void setLeading(@Nullable Node leading) {
-        searchBar.setLeading(leading);
+        this.leading.set(leading);
     }
 
-    /// Returns the embedded search bar leading content node property.
+    /// Returns the leading content node property.
     ///
-    /// @return the embedded search bar leading content node property
+    /// @return the leading content node property
     public final ObjectProperty<@Nullable Node> leadingProperty() {
-        return searchBar.leadingProperty();
+        return leading;
     }
 
     /// Returns the mutable trailing action list from the embedded search bar.
@@ -229,73 +267,73 @@ public final class M3SearchView extends Control {
         return searchBar.getTrailingActions();
     }
 
-    /// Returns the text entered in the embedded search bar.
+    /// Returns the entered search text.
     ///
     /// @return the text entered in the embedded search bar
     public final String getText() {
-        return searchBar.getText();
+        return text.get();
     }
 
-    /// Sets the text entered in the embedded search bar.
+    /// Sets the entered search text.
     ///
     /// @param text the text entered in the embedded search bar
     public final void setText(String text) {
-        searchBar.setText(Objects.requireNonNull(text, "text"));
+        this.text.set(text);
     }
 
-    /// Returns the embedded search bar text property.
+    /// Returns the search text property.
     ///
-    /// @return the embedded search bar text property
+    /// @return the search text property
     public final StringProperty textProperty() {
-        return searchBar.textProperty();
+        return text;
     }
 
     /// Returns the prompt text displayed by the embedded search bar.
     ///
     /// @return the prompt text displayed by the embedded search bar
     public final String getPromptText() {
-        return searchBar.getPromptText();
+        return promptText.get();
     }
 
     /// Sets the prompt text displayed by the embedded search bar.
     ///
     /// @param promptText the prompt text displayed by the embedded search bar
     public final void setPromptText(String promptText) {
-        searchBar.setPromptText(Objects.requireNonNull(promptText, "promptText"));
+        this.promptText.set(promptText);
     }
 
-    /// Returns the embedded search bar prompt text property.
+    /// Returns the prompt text property.
     ///
-    /// @return the embedded search bar prompt text property
+    /// @return the prompt text property
     public final StringProperty promptTextProperty() {
-        return searchBar.promptTextProperty();
+        return promptText;
     }
 
     /// Returns the search submission handler.
     ///
     /// @return the search submission handler, or `null` if none is set
     public final @Nullable EventHandler<ActionEvent> getOnAction() {
-        return searchBar.getOnAction();
+        return onAction.get();
     }
 
     /// Sets the search submission handler.
     ///
     /// @param onAction the search submission handler, or `null` to clear it
     public final void setOnAction(@Nullable EventHandler<ActionEvent> onAction) {
-        searchBar.setOnAction(onAction);
+        this.onAction.set(onAction);
     }
 
     /// Returns the search submission handler property.
     ///
     /// @return the search submission handler property
     public final ObjectProperty<@Nullable EventHandler<ActionEvent>> onActionProperty() {
-        return searchBar.onActionProperty();
+        return onAction;
     }
 
-    /// Fires the embedded search bar action event.
+    /// Fires this search view's action event.
     public final void fire() {
         if (!isDisabled()) {
-            searchBar.fire();
+            Event.fireEvent(this, new ActionEvent(this, this));
         }
     }
 
@@ -303,41 +341,42 @@ public final class M3SearchView extends Control {
     ///
     /// @return `true` if this search view is showing active search results
     public final boolean isActive() {
-        return searchBar.isActive();
+        return active.get();
     }
 
     /// Sets whether this search view is showing active search results.
     ///
     /// @param active whether this search view is showing active search results
     public final void setActive(boolean active) {
-        searchBar.setActive(active);
+        this.active.set(active);
     }
 
     /// Returns the active search result state property.
     ///
     /// @return the active search result state property
     public final BooleanProperty activeProperty() {
-        return searchBar.activeProperty();
+        return active;
     }
 
     /// Moves the search view into its active result state.
     public final void activate() {
-        searchBar.activate();
+        setActive(true);
     }
 
     /// Moves the search view out of its active result state.
     public final void deactivate() {
-        searchBar.deactivate();
+        setActive(false);
     }
 
     /// Clears the embedded search bar text.
     public final void clear() {
-        searchBar.clear();
+        setText("");
     }
 
     /// Clears the embedded search text and moves this search view out of its active result state.
     public final void clearAndDeactivate() {
-        searchBar.clearAndDeactivate();
+        clear();
+        deactivate();
     }
 
     /// Returns the user-agent stylesheet for M3FX search views.
@@ -380,8 +419,8 @@ public final class M3SearchView extends Control {
 
         switch (action) {
             case SET_TEXT -> {
-                if (parameters.length > 0 && parameters[0] instanceof String text) {
-                    setText(text);
+                if (parameters.length > 0 && parameters[0] instanceof String replacementText) {
+                    setText(replacementText);
                 }
             }
             case REQUEST_FOCUS -> focusAccessibleNode();
@@ -404,6 +443,14 @@ public final class M3SearchView extends Control {
     /// Adds base style classes and configures search result behavior.
     private void initialize() {
         M3ControlStyles.initialize(this, STYLE_CLASS);
+        searchBar.leadingProperty().bindBidirectional(leading);
+        searchBar.textProperty().bindBidirectional(text);
+        searchBar.promptTextProperty().bindBidirectional(promptText);
+        searchBar.activeProperty().bindBidirectional(active);
+        searchBar.setOnAction(event -> {
+            event.consume();
+            fire();
+        });
         setAccessibleRole(AccessibleRole.PARENT);
         setFocusTraversable(false);
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleResult);
@@ -416,7 +463,7 @@ public final class M3SearchView extends Control {
                 applyResultsVisibilityImmediately(false);
             }
         });
-        searchBar.activeProperty().addListener((observable, oldValue, newValue) -> {
+        active.addListener((observable, oldValue, newValue) -> {
             boolean restoreSearchBarFocus = !newValue && focusedResultIndex() >= 0;
             pseudoClassStateChanged(ACTIVE_PSEUDO_CLASS, newValue);
             notifyAccessibleAttributeChanged(AccessibleAttribute.EXPANDED);
@@ -426,7 +473,7 @@ public final class M3SearchView extends Control {
             notifyFocusNodeChanged();
             updateResultsVisibility();
         });
-        searchBar.textProperty().addListener((observable, oldValue, newValue) ->
+        text.addListener((observable, oldValue, newValue) ->
                 notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT));
         resultsBox.getChildren().addListener((ListChangeListener<Node>) change -> {
             notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);

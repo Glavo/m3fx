@@ -4,6 +4,7 @@
 package org.glavo.m3fx.controls;
 
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.InvalidationListener;
 import javafx.collections.ObservableList;
 import javafx.scene.Node;
@@ -29,7 +30,7 @@ import java.time.LocalDate;
 @NotNullByDefault
 public final class M3DatePickerDialog extends M3Dialog<LocalDate> {
     /// The default title and header text for date picker dialogs.
-    public static final String DEFAULT_TITLE = "Select date";
+    private static final String DEFAULT_TITLE = "Select date";
 
     /// The style class applied to dialog content when preset actions are visible.
     public static final String PRESET_CONTENT_STYLE_CLASS = "m3-date-picker-dialog-preset-content";
@@ -42,6 +43,29 @@ public final class M3DatePickerDialog extends M3Dialog<LocalDate> {
 
     /// The date picker displayed as dialog content.
     private final M3DatePicker picker = new M3DatePicker();
+
+    /// Internal storage for [valueProperty].
+    private final ObjectProperty<@Nullable LocalDate> value =
+            new SimpleObjectProperty<>(this, "value") {
+                /// Validates direct writes through the picker before committing the public value.
+                @Override
+                public void set(@Nullable LocalDate newValue) {
+                    if (synchronizingValue) {
+                        super.set(newValue);
+                        return;
+                    }
+                    synchronizingValue = true;
+                    try {
+                        picker.setValue(newValue);
+                        super.set(picker.getValue());
+                    } finally {
+                        synchronizingValue = false;
+                    }
+                }
+            };
+
+    /// Whether the dialog and embedded picker are currently synchronizing selected values.
+    private boolean synchronizingValue;
 
     /// The mutable date preset list rendered before the picker.
     private final ObservableList<M3DatePreset> presets = M3ObservableLists.nonNullElementList("preset");
@@ -109,26 +133,31 @@ public final class M3DatePickerDialog extends M3Dialog<LocalDate> {
     ///
     /// @return the selected date, or `null` when no date is selected
     public final @Nullable LocalDate getValue() {
-        return picker.getValue();
+        return value.get();
     }
 
     /// Sets the selected date, or clears selection when `null` is supplied.
     ///
     /// @param value the selected date, or `null` to clear selection
     public final void setValue(@Nullable LocalDate value) {
-        picker.setValue(value);
+        this.value.set(value);
     }
 
     /// Returns the selected date property.
     ///
-    /// @return the selected date property from the picker
+    /// @return the selected date property
     public final ObjectProperty<@Nullable LocalDate> valueProperty() {
-        return picker.valueProperty();
+        return value;
     }
 
     /// Configures dialog content, buttons, result conversion, and button state.
     @SuppressWarnings("DataFlowIssue")
     private void initialize() {
+        picker.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (!synchronizingValue) {
+                value.set(newValue);
+            }
+        });
         setTitle(DEFAULT_TITLE);
         M3DialogPane pane = getM3DialogPane();
         picker.pseudoClassStateChanged(M3DatePicker.MODAL_PSEUDO_CLASS, true);
@@ -144,7 +173,7 @@ public final class M3DatePickerDialog extends M3Dialog<LocalDate> {
         M3PresetNavigation.installColumn(presetList, pane, () -> M3Accessible.requestAccessibleFocus(pane, picker));
         pane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
         setResultConverter(buttonType -> buttonType == ButtonType.OK ? getValue() : null);
-        picker.valueProperty().addListener((observable, oldValue, newValue) -> updateOkButtonState());
+        value.addListener((observable, oldValue, newValue) -> updateOkButtonState());
         picker.minDateProperty().addListener(presetBoundsInvalidation);
         picker.maxDateProperty().addListener(presetBoundsInvalidation);
         presetController.install();

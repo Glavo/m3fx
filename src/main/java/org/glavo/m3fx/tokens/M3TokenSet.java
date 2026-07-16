@@ -65,9 +65,4 @@ public sealed interface M3TokenSet permits M3TokenSetImpl {
         return new M3TokenSetBuilder(tokenSet);
     }
 
-    /// Creates a complete default token set for a profile and color scheme.
-    static M3TokenSet create(M3Profile profile, ColorScheme colorScheme, M3Density density) {
-        return builder(profile, colorScheme, density).build();
-    }
-
 }

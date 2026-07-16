@@ -7,8 +7,6 @@ import javafx.util.Duration;
 import org.glavo.m3fx.internal.animation.M3MotionBehaviorImpl;
 import org.jetbrains.annotations.NotNullByDefault;
 
-import java.util.Objects;
-
 /// Describes motion-adjacent interaction timings that are not animation specs.
 ///
 /// Behavior timings cover delays and cycle durations that are part of the interaction model but are not direct
@@ -79,68 +77,26 @@ public sealed interface M3MotionBehavior permits M3MotionBehaviorImpl {
     /// @return the duration of one loading indicator global rotation loop
     Duration loadingIndicatorGlobalRotationDuration();
 
-    /// Creates finite non-negative motion behavior timings.
+    /// Creates a builder initialized with the standard interaction timings.
     ///
-    /// @param tooltipShowDelay the delay before a tooltip opens
-    /// @param tooltipHideDelay the delay before a tooltip closes
-    /// @param tooltipShowDuration the visible duration for plain tooltips
-    /// @param richTooltipShowDuration the visible duration for rich tooltips
-    /// @param snackbarDisplayDuration the default snackbar display duration
-    /// @param subMenuHoverOpenDelay the delay before hover opens a submenu
-    /// @param typeAheadResetDelay the idle delay after which type-ahead search resets
-    /// @param subMenuHoverCloseDelay the delay before hover exit closes a submenu
-    /// @param linearProgressIndeterminateCycleDuration the linear progress indeterminate cycle duration
-    /// @param circularProgressIndeterminateCycleDuration the circular progress indeterminate cycle duration
-    /// @param loadingIndicatorMorphInterval the loading indicator morph segment duration
-    /// @param loadingIndicatorGlobalRotationDuration the loading indicator global rotation loop duration
-    /// @return immutable motion behavior timings
-    static M3MotionBehavior create(
-            Duration tooltipShowDelay,
-            Duration tooltipHideDelay,
-            Duration tooltipShowDuration,
-            Duration richTooltipShowDuration,
-            Duration snackbarDisplayDuration,
-            Duration subMenuHoverOpenDelay,
-            Duration typeAheadResetDelay,
-            Duration subMenuHoverCloseDelay,
-            Duration linearProgressIndeterminateCycleDuration,
-            Duration circularProgressIndeterminateCycleDuration,
-            Duration loadingIndicatorMorphInterval,
-            Duration loadingIndicatorGlobalRotationDuration
-    ) {
-        return new M3MotionBehaviorImpl(
-                Objects.requireNonNull(tooltipShowDelay, "tooltipShowDelay"),
-                Objects.requireNonNull(tooltipHideDelay, "tooltipHideDelay"),
-                Objects.requireNonNull(tooltipShowDuration, "tooltipShowDuration"),
-                Objects.requireNonNull(richTooltipShowDuration, "richTooltipShowDuration"),
-                Objects.requireNonNull(snackbarDisplayDuration, "snackbarDisplayDuration"),
-                Objects.requireNonNull(subMenuHoverOpenDelay, "subMenuHoverOpenDelay"),
-                Objects.requireNonNull(typeAheadResetDelay, "typeAheadResetDelay"),
-                Objects.requireNonNull(subMenuHoverCloseDelay, "subMenuHoverCloseDelay"),
-                Objects.requireNonNull(
-                        linearProgressIndeterminateCycleDuration,
-                        "linearProgressIndeterminateCycleDuration"
-                ),
-                Objects.requireNonNull(
-                        circularProgressIndeterminateCycleDuration,
-                        "circularProgressIndeterminateCycleDuration"
-                ),
-                Objects.requireNonNull(
-                        loadingIndicatorMorphInterval,
-                        "loadingIndicatorMorphInterval"
-                ),
-                Objects.requireNonNull(
-                        loadingIndicatorGlobalRotationDuration,
-                        "loadingIndicatorGlobalRotationDuration"
-                )
-        );
+    /// @return a mutable motion behavior builder
+    static M3MotionBehaviorBuilder builder() {
+        return new M3MotionBehaviorBuilder(standard());
+    }
+
+    /// Creates a builder initialized from an existing behavior.
+    ///
+    /// @param behavior the behavior to copy
+    /// @return a mutable motion behavior builder
+    static M3MotionBehaviorBuilder builder(M3MotionBehavior behavior) {
+        return new M3MotionBehaviorBuilder(behavior);
     }
 
     /// Returns the standard M3FX interaction timings.
     ///
     /// @return the baseline behavior timings
     static M3MotionBehavior standard() {
-        return create(
+        return new M3MotionBehaviorImpl(
                 Duration.millis(500.0),
                 Duration.ZERO,
                 Duration.seconds(5.0),
@@ -160,7 +116,7 @@ public sealed interface M3MotionBehavior permits M3MotionBehaviorImpl {
     ///
     /// @return the expressive behavior timings
     static M3MotionBehavior expressive() {
-        return create(
+        return new M3MotionBehaviorImpl(
                 Duration.millis(500.0),
                 Duration.ZERO,
                 Duration.seconds(5.0),

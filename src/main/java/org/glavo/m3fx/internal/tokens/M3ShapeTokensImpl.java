@@ -47,8 +47,8 @@ public record M3ShapeTokensImpl(
 
     /// Validates a radius token.
     private static void validate(double value, String name) {
-        if (value < 0.0) {
-            throw new IllegalArgumentException(name + " must not be negative");
+        if (!Double.isFinite(value) || value < 0.0) {
+            throw new IllegalArgumentException(name + " must be finite and non-negative");
         }
     }
 }

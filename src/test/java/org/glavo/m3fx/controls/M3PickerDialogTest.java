@@ -61,8 +61,8 @@ final class M3PickerDialogTest {
             assertSame(dialog.getPicker(), content.getChildren().get(1));
             assertSame(content, dialog.getPicker().getParent());
             assertFalse(content.getChildren().get(0).isManaged());
-            assertEquals(M3DatePickerDialog.DEFAULT_TITLE, dialog.getTitle());
-            assertEquals(M3DatePickerDialog.DEFAULT_TITLE, pane.getHeaderText());
+            assertEquals("Select date", dialog.getTitle());
+            assertEquals(dialog.getTitle(), pane.getHeaderText());
             assertTrue(pane.lookupButton(ButtonType.OK).isDisabled());
 
             dialog.setValue(value);
@@ -258,8 +258,8 @@ final class M3PickerDialogTest {
             assertSame(dialog.getPicker(), content.getChildren().get(1));
             assertSame(content, dialog.getPicker().getParent());
             assertFalse(content.getChildren().get(0).isManaged());
-            assertEquals(M3DateRangePickerDialog.DEFAULT_TITLE, dialog.getTitle());
-            assertEquals(M3DateRangePickerDialog.DEFAULT_TITLE, pane.getHeaderText());
+            assertEquals("Select date range", dialog.getTitle());
+            assertEquals(dialog.getTitle(), pane.getHeaderText());
             assertTrue(pane.lookupButton(ButtonType.OK).isDisabled());
 
             dialog.getPicker().setStartDate(start);
@@ -564,8 +564,8 @@ final class M3PickerDialogTest {
                     dialog.getPicker().lookup("." + M3TimePicker.CONTAINER_STYLE_CLASS)
             );
             assertEquals(0.0, pickerContainer.getPadding().getTop(), 0.0001);
-            assertEquals(M3TimePickerDialog.DEFAULT_TITLE, dialog.getTitle());
-            assertEquals(M3TimePickerDialog.DEFAULT_TITLE, pane.getHeaderText());
+            assertEquals("Select time", dialog.getTitle());
+            assertEquals(dialog.getTitle(), pane.getHeaderText());
             assertTrue(pane.lookupButton(ButtonType.OK).isDisabled());
             assertEquals(1, pane.lookupAll("." + M3TimePicker.MODE_BUTTON_STYLE_CLASS).size());
             M3IconButton modeButton = assertInstanceOf(

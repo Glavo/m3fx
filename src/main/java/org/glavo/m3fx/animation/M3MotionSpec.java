@@ -39,7 +39,7 @@ public sealed interface M3MotionSpec permits M3MotionSpecImpl {
     /// @param duration the animation duration
     /// @param easing the named easing curve
     /// @return an immutable motion spec
-    static M3MotionSpec create(Duration duration, M3MotionEasing easing) {
+    static M3MotionSpec of(Duration duration, M3MotionEasing easing) {
         return new M3MotionSpecImpl(duration, easing);
     }
 }
