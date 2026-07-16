@@ -47,6 +47,7 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.SVGPath;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import javafx.stage.Window;
 import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3MotionEasing;
@@ -7643,6 +7644,10 @@ final class M3FXDemoVisualSmokeTest {
             M3Dialog<ButtonType> dialog = Objects.requireNonNull(dialogReference.get(), "dialog");
             assertTrue(dialog.isShowing());
             Parent dialogPane = dialog.getDialogPane();
+            Scene dialogScene = Objects.requireNonNull(dialogPane.getScene(), "dialog scene");
+            Stage dialogStage = assertInstanceOf(Stage.class, dialogScene.getWindow());
+            assertEquals(StageStyle.TRANSPARENT, dialogStage.getStyle());
+            assertEquals(Color.TRANSPARENT, dialogScene.getFill());
             dialogPane.applyCss();
             dialogPane.layout();
             assertDialogPaneFitsOwner(ownerScene, dialogPane);

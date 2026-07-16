@@ -17,6 +17,8 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.DialogEvent;
 import javafx.scene.control.DialogPane;
+import javafx.scene.paint.Color;
+import javafx.stage.StageStyle;
 import javafx.stage.Window;
 import org.glavo.m3fx.internal.M3PopupStyles;
 import org.glavo.m3fx.internal.M3ThemeResolver;
@@ -34,9 +36,11 @@ import java.util.Objects;
 /// A JavaFX dialog that uses an [M3DialogPane] by default.
 ///
 /// `M3Dialog` keeps the standard JavaFX [Dialog] lifecycle, result conversion, modality, ownership, and button
-/// handling while installing a Material Design 3 dialog pane. It can inherit the theme from an owner window or
-/// accept an explicit [org.glavo.m3fx.theme.M3Theme] so dialogs opened from popups or secondary windows retain
-/// the same color and typography context.
+/// handling while installing a Material Design 3 dialog pane. Its host window is transparent so the pane's
+/// Material container shape and elevation are not obscured by native window decorations or an opaque rectangular
+/// scene background. It can inherit the theme from an owner window or accept an explicit
+/// [org.glavo.m3fx.theme.M3Theme] so dialogs opened from popups or secondary windows retain the same color and
+/// typography context.
 ///
 /// See [Material Design dialogs](https://m3.material.io/components/dialogs/overview).
 ///
@@ -139,9 +143,14 @@ public class M3Dialog<R> extends Dialog<R> {
     /// @param pane the Material dialog pane installed before lifecycle handlers are registered
     M3Dialog(M3DialogPane pane) {
         M3DialogPane materialPane = Objects.requireNonNull(pane, "pane");
+        initStyle(StageStyle.TRANSPARENT);
         installStylesheet(materialPane);
         setDialogPane(materialPane);
         addEventFilter(DialogEvent.DIALOG_SHOWING, event -> {
+            Scene scene = getDialogPane().getScene();
+            if (scene != null) {
+                scene.setFill(Color.TRANSPARENT);
+            }
             refreshOwnerWindowFromNode();
             startInheritedThemeContextObservation();
             syncOwnerNodeOrientation();

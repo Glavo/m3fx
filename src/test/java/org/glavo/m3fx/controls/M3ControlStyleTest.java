@@ -78,6 +78,7 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
 import org.glavo.m3fx.internal.M3SelectionNavigation;
@@ -9195,6 +9196,25 @@ final class M3ControlStyleTest {
             applyCss(pane);
 
             assertInstanceOf(M3Button.class, pane.lookupButton(ButtonType.OK));
+        });
+    }
+
+    /// Verifies that Material dialogs use a transparent host for their shaped container and elevation.
+    @Test
+    void dialogUsesTransparentHostWindow() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Dialog<Void> dialog = new M3Dialog<>();
+            try {
+                dialog.show();
+
+                Scene scene = Objects.requireNonNull(dialog.getDialogPane().getScene(), "dialog scene");
+                Stage stage = assertInstanceOf(Stage.class, scene.getWindow());
+
+                assertEquals(StageStyle.TRANSPARENT, stage.getStyle());
+                assertEquals(Color.TRANSPARENT, scene.getFill());
+            } finally {
+                dialog.close();
+            }
         });
     }
 
