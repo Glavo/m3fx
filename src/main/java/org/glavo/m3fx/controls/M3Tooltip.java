@@ -3,7 +3,6 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.animation.Animation;
 import javafx.animation.PauseTransition;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.BooleanPropertyBase;
@@ -17,6 +16,8 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.geometry.Bounds;
+import javafx.geometry.NodeOrientation;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -25,9 +26,11 @@ import javafx.scene.control.PopupControl;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
 import javafx.stage.WindowEvent;
+import javafx.stage.Screen;
 import javafx.util.Duration;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
@@ -49,6 +52,7 @@ import org.glavo.m3fx.tokens.M3ComponentTokens;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Objects;
 
@@ -71,7 +75,10 @@ public class M3Tooltip extends PopupControl {
     /// The minimum grace period for moving the pointer from an interactive owner to its popup.
     private static final Duration INTERACTIVE_POINTER_TRANSFER_DELAY = M3Motion.SHORT4;
 
-    // The text displayed by the tooltip.
+    /// The currently visible installed tooltip, retained weakly so unused tooltips remain collectable.
+    private static @Nullable WeakReference<M3Tooltip> activeTooltipReference;
+
+    /// The text displayed by the tooltip.
     private final StringProperty text = new SimpleStringProperty(this, "text", "");
 
     // The graphic displayed by the tooltip.
@@ -420,7 +427,13 @@ public class M3Tooltip extends PopupControl {
         setAutoFix(true);
         setAutoHide(true);
         setHideOnEscape(true);
-        addEventHandler(WindowEvent.WINDOW_HIDDEN, event -> stopPopupContextSynchronizer());
+        addEventHandler(WindowEvent.WINDOW_HIDDEN, event -> {
+            stopPopupContextSynchronizer();
+            @Nullable WeakReference<M3Tooltip> reference = activeTooltipReference;
+            if (reference != null && reference.get() == this) {
+                activeTooltipReference = null;
+            }
+        });
     }
 
     /// Sets the default visible duration without marking it as an application override.
@@ -443,6 +456,13 @@ public class M3Tooltip extends PopupControl {
     ///
     /// @return `true` when popup hover participates in tooltip lifetime management
     protected boolean isInteractive() {
+        return false;
+    }
+
+    /// Returns whether installed activation requires an explicit click or keyboard command.
+    ///
+    /// @return `true` when hover and focus must not open this tooltip
+    protected boolean usesPersistentActivation() {
         return false;
     }
 
@@ -832,6 +852,9 @@ public class M3Tooltip extends PopupControl {
         /// Whether keyboard focus is currently inside the tooltip popup.
         private boolean tooltipContainsFocus;
 
+        /// Whether a persistent tooltip was visible before the current pointer press.
+        private boolean persistentShowingBeforePress;
+
         /// Handles pointer entry.
         private final javafx.event.EventHandler<MouseEvent> enteredHandler = this::handleEntered;
 
@@ -839,7 +862,10 @@ public class M3Tooltip extends PopupControl {
         private final javafx.event.EventHandler<MouseEvent> exitedHandler = this::handleExited;
 
         /// Handles pointer presses.
-        private final javafx.event.EventHandler<MouseEvent> pressedHandler = event -> hideImmediately();
+        private final javafx.event.EventHandler<MouseEvent> pressedHandler = this::handlePressed;
+
+        /// Handles explicit persistent-tooltip activation.
+        private final javafx.event.EventHandler<MouseEvent> clickedHandler = this::handleClicked;
 
         /// Handles pointer entry into an interactive tooltip popup.
         private final javafx.event.EventHandler<MouseEvent> tooltipEnteredHandler = this::handleTooltipEntered;
@@ -893,6 +919,7 @@ public class M3Tooltip extends PopupControl {
             node.addEventHandler(MouseEvent.MOUSE_ENTERED, enteredHandler);
             node.addEventHandler(MouseEvent.MOUSE_EXITED, exitedHandler);
             node.addEventHandler(MouseEvent.MOUSE_PRESSED, pressedHandler);
+            node.addEventFilter(MouseEvent.MOUSE_CLICKED, clickedHandler);
             node.addEventFilter(KeyEvent.KEY_PRESSED, keyPressedHandler);
             node.focusedProperty().addListener(focusListener);
             tooltip.showingProperty().addListener(showingListener);
@@ -907,6 +934,7 @@ public class M3Tooltip extends PopupControl {
             node.removeEventHandler(MouseEvent.MOUSE_ENTERED, enteredHandler);
             node.removeEventHandler(MouseEvent.MOUSE_EXITED, exitedHandler);
             node.removeEventHandler(MouseEvent.MOUSE_PRESSED, pressedHandler);
+            node.removeEventFilter(MouseEvent.MOUSE_CLICKED, clickedHandler);
             node.removeEventFilter(KeyEvent.KEY_PRESSED, keyPressedHandler);
             node.focusedProperty().removeListener(focusListener);
             tooltip.showingProperty().removeListener(showingListener);
@@ -924,6 +952,7 @@ public class M3Tooltip extends PopupControl {
             ownerContainsPointer = false;
             tooltipContainsPointer = false;
             tooltipContainsFocus = false;
+            persistentShowingBeforePress = false;
             if (tooltip.isShowing()) {
                 tooltip.hide();
             }
@@ -932,13 +961,40 @@ public class M3Tooltip extends PopupControl {
         /// Schedules tooltip display after pointer entry.
         private void handleEntered(MouseEvent event) {
             ownerContainsPointer = true;
-            scheduleShow();
+            if (!tooltip.usesPersistentActivation()) {
+                scheduleShow();
+            }
         }
 
         /// Schedules tooltip hiding after pointer exit.
         private void handleExited(MouseEvent event) {
             ownerContainsPointer = false;
-            scheduleHide();
+            if (!tooltip.usesPersistentActivation()) {
+                scheduleHide();
+            }
+        }
+
+        /// Records the pre-press state or dismisses a transient tooltip before owner activation.
+        private void handlePressed(MouseEvent event) {
+            if (tooltip.usesPersistentActivation()) {
+                persistentShowingBeforePress = tooltip.isShowing();
+                stopTimer();
+            } else {
+                hideImmediately();
+            }
+        }
+
+        /// Toggles a persistent tooltip after primary-button activation of its owner.
+        private void handleClicked(MouseEvent event) {
+            if (!tooltip.usesPersistentActivation() || event.getButton() != MouseButton.PRIMARY) {
+                return;
+            }
+            if (persistentShowingBeforePress) {
+                hideImmediately();
+            } else {
+                showTooltip();
+            }
+            persistentShowingBeforePress = false;
         }
 
         /// Shows or hides the tooltip when keyboard focus enters or leaves the target.
@@ -947,10 +1003,12 @@ public class M3Tooltip extends PopupControl {
                 Boolean oldValue,
                 Boolean newValue
         ) {
-            if (newValue) {
-                scheduleShow();
-            } else {
-                scheduleHide();
+            if (!tooltip.usesPersistentActivation()) {
+                if (newValue) {
+                    scheduleShow();
+                } else {
+                    scheduleHide();
+                }
             }
         }
 
@@ -965,7 +1023,9 @@ public class M3Tooltip extends PopupControl {
         /// Schedules hiding once the pointer leaves an interactive tooltip popup.
         private void handleTooltipExited(MouseEvent event) {
             tooltipContainsPointer = false;
-            scheduleHide();
+            if (!tooltip.usesPersistentActivation()) {
+                scheduleHide();
+            }
         }
 
         /// Handles dismissal and keyboard traversal while focus is inside the tooltip popup.
@@ -1005,7 +1065,7 @@ public class M3Tooltip extends PopupControl {
                     && M3Accessible.containsNode(tooltipRoot, newValue);
             if (tooltipContainsFocus) {
                 stopTimer();
-            } else if (tooltip.isShowing()) {
+            } else if (tooltip.isShowing() && !tooltip.usesPersistentActivation()) {
                 scheduleHide();
             }
             notifyOwnerFocusNodeChanged();
@@ -1025,6 +1085,7 @@ public class M3Tooltip extends PopupControl {
                 }
                 tooltipContainsPointer = false;
                 tooltipContainsFocus = false;
+                persistentShowingBeforePress = false;
                 uninstallTooltipHoverHandlers();
             }
         }
@@ -1039,6 +1100,14 @@ public class M3Tooltip extends PopupControl {
             }
             if (event.getCode() == KeyCode.ESCAPE && tooltip.isShowing()) {
                 hideImmediately();
+                event.consume();
+            } else if (tooltip.usesPersistentActivation()
+                    && (event.getCode() == KeyCode.ENTER || event.getCode() == KeyCode.SPACE)) {
+                if (tooltip.isShowing()) {
+                    hideImmediately();
+                } else {
+                    showTooltip();
+                }
                 event.consume();
             } else if ((event.getCode() == KeyCode.TAB || event.getCode() == KeyCode.F6)
                     && tooltip.isInteractive()
@@ -1149,6 +1218,9 @@ public class M3Tooltip extends PopupControl {
         /// Schedules tooltip display after the configured show delay.
         private void scheduleShow() {
             stopTimer();
+            if (tooltip.usesPersistentActivation()) {
+                return;
+            }
             if (tooltip.isInteractive() && tooltip.isShowing()) {
                 return;
             }
@@ -1158,6 +1230,9 @@ public class M3Tooltip extends PopupControl {
         /// Schedules tooltip hiding after the configured hide delay.
         private void scheduleHide() {
             stopTimer();
+            if (tooltip.usesPersistentActivation()) {
+                return;
+            }
             if (tooltip.isInteractive() && isTooltipActive()) {
                 return;
             }
@@ -1189,13 +1264,93 @@ public class M3Tooltip extends PopupControl {
                 return;
             }
 
+            @Nullable WeakReference<M3Tooltip> activeReference = activeTooltipReference;
+            @Nullable M3Tooltip activeTooltip = activeReference == null ? null : activeReference.get();
+            if (activeTooltip != null && activeTooltip != tooltip && activeTooltip.isShowing()) {
+                activeTooltip.hide();
+            }
+
             tooltip.show(node, screenBounds.getMinX(), screenBounds.getMaxY() + POPUP_VERTICAL_OFFSET);
+            if (!tooltip.isShowing()) {
+                return;
+            }
+            activeTooltipReference = new WeakReference<>(tooltip);
+            positionTooltip(screenBounds);
             installTooltipHoverHandlers();
             scheduleAutoHide();
         }
 
+        /// Positions the realized popup according to the plain or rich Material placement rules.
+        private void positionTooltip(Bounds ownerBounds) {
+            Parent popupRoot = tooltip.getScene().getRoot();
+            popupRoot.applyCss();
+            popupRoot.layout();
+
+            double popupWidth = Math.max(1.0, tooltip.getWidth());
+            double popupHeight = Math.max(1.0, tooltip.getHeight());
+            ObservableList<Screen> screens = Screen.getScreensForRectangle(
+                    ownerBounds.getMinX(),
+                    ownerBounds.getMinY(),
+                    Math.max(1.0, ownerBounds.getWidth()),
+                    Math.max(1.0, ownerBounds.getHeight())
+            );
+            Rectangle2D visualBounds = screens.isEmpty()
+                    ? Screen.getPrimary().getVisualBounds()
+                    : screens.get(0).getVisualBounds();
+
+            boolean rich = tooltip instanceof M3RichTooltip;
+            double gap = rich ? POPUP_VERTICAL_OFFSET : 4.0;
+            double edgeMargin = 8.0;
+            double anchorX;
+            double anchorY;
+            if (rich) {
+                boolean rightToLeft = node.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+                anchorX = rightToLeft
+                        ? ownerBounds.getMinX() - popupWidth - gap
+                        : ownerBounds.getMaxX() + gap;
+                if (anchorX < visualBounds.getMinX() + edgeMargin
+                        || anchorX + popupWidth > visualBounds.getMaxX() - edgeMargin) {
+                    anchorX = rightToLeft
+                            ? ownerBounds.getMaxX() + gap
+                            : ownerBounds.getMinX() - popupWidth - gap;
+                }
+                anchorY = ownerBounds.getMaxY() + gap;
+                if (anchorY + popupHeight > visualBounds.getMaxY() - edgeMargin) {
+                    anchorY = ownerBounds.getMinY() - popupHeight - gap;
+                }
+            } else {
+                anchorX = ownerBounds.getMinX() + (ownerBounds.getWidth() - popupWidth) / 2.0;
+                anchorY = ownerBounds.getMinY() - popupHeight - gap;
+                if (anchorY < visualBounds.getMinY() + edgeMargin) {
+                    anchorY = ownerBounds.getMaxY() + gap;
+                }
+            }
+
+            if (popupWidth >= visualBounds.getWidth() - edgeMargin * 2.0) {
+                anchorX = visualBounds.getMinX();
+            } else {
+                anchorX = Math.max(
+                        visualBounds.getMinX() + edgeMargin,
+                        Math.min(anchorX, visualBounds.getMaxX() - popupWidth - edgeMargin)
+                );
+            }
+            if (popupHeight >= visualBounds.getHeight() - edgeMargin * 2.0) {
+                anchorY = visualBounds.getMinY();
+            } else {
+                anchorY = Math.max(
+                        visualBounds.getMinY() + edgeMargin,
+                        Math.min(anchorY, visualBounds.getMaxY() - popupHeight - edgeMargin)
+                );
+            }
+            tooltip.setAnchorX(anchorX);
+            tooltip.setAnchorY(anchorY);
+        }
+
         /// Schedules automatic hiding for finite show durations.
         private void scheduleAutoHide() {
+            if (tooltip.usesPersistentActivation()) {
+                return;
+            }
             Duration duration = tooltip.effectiveShowDuration(node);
             if (!isFiniteDuration(duration)) {
                 return;
@@ -1238,6 +1393,10 @@ public class M3Tooltip extends PopupControl {
 
         /// Applies changed runtime motion settings to delayed tooltip activation timers.
         private void refreshMotionSettings() {
+            if (tooltip.usesPersistentActivation()) {
+                stopTimer();
+                return;
+            }
             if (timerAction == SHOW_TIMER_ACTION) {
                 refreshRunningTimer(
                         tooltip.effectiveShowDelay(node),

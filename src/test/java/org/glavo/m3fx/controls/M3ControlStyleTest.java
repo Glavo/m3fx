@@ -3688,7 +3688,9 @@ final class M3ControlStyleTest {
                         + "-m3-container-width: 80px; "
                         + "-m3-item-slot-size: 52px; "
                         + "-m3-content-padding: 10px; "
-                        + "-m3-item-spacing: 6px;"
+                        + "-m3-docked-content-padding: 12px; "
+                        + "-m3-item-spacing: 6px; "
+                        + "-m3-docked-max-item-spacing: 24px;"
         );
 
         applyCss(toolbar);
@@ -3697,7 +3699,9 @@ final class M3ControlStyleTest {
         assertEquals(80.0, toolbar.getContainerWidth(), 0.0001);
         assertEquals(52.0, toolbar.getItemSlotSize(), 0.0001);
         assertEquals(10.0, toolbar.getContentPadding(), 0.0001);
+        assertEquals(12.0, toolbar.getDockedContentPadding(), 0.0001);
         assertEquals(6.0, toolbar.getItemSpacing(), 0.0001);
+        assertEquals(24.0, toolbar.getDockedMaxItemSpacing(), 0.0001);
         assertEquals(72.0, toolbar.getPrefHeight(), 0.0001);
         assertEquals(10.0, toolbar.getPadding().getLeft(), 0.0001);
 
@@ -3707,32 +3711,106 @@ final class M3ControlStyleTest {
         assertEquals(80.0, toolbar.getPrefWidth(), 0.0001);
     }
 
-    /// Verifies that toolbar variants update style classes and accessibility item metadata.
+    /// Verifies that toolbar position variants and color styles update independently.
     @Test
     void toolbarVariantsAndAccessibilityAreStable() {
         M3Button first = new M3Button("Archive");
         M3Button second = new M3Button("Share");
         M3Toolbar toolbar = toolbar(first, second);
 
-        assertTrue(toolbar.getStyleClass().contains(M3ToolbarVariant.STANDARD.styleClass()));
+        assertEquals(M3ToolbarVariant.FLOATING, toolbar.getVariant());
+        assertEquals(M3ToolbarColorStyle.STANDARD, toolbar.getColorStyle());
+        assertTrue(toolbar.getStyleClass().contains(M3ToolbarVariant.FLOATING.styleClass()));
         applyCss(toolbar);
         assertRegionRadii(toolbar, 16.0, 16.0, 16.0, 16.0);
 
-        toolbar.setVariant(M3ToolbarVariant.FLOATING);
-        assertTrue(toolbar.getStyleClass().contains(M3ToolbarVariant.FLOATING.styleClass()));
-        assertFalse(toolbar.getStyleClass().contains(M3ToolbarVariant.STANDARD.styleClass()));
-        applyCss(toolbar);
-        assertRegionRadii(toolbar, 16.0, 16.0, 16.0, 16.0);
+        toolbar.setColorStyle(M3ToolbarColorStyle.VIBRANT);
+        assertTrue(toolbar.getPseudoClassStates().stream()
+                .anyMatch(pseudoClass -> pseudoClass.getPseudoClassName().equals("vibrant")));
 
         toolbar.setVariant(M3ToolbarVariant.DOCKED);
         assertTrue(toolbar.getStyleClass().contains(M3ToolbarVariant.DOCKED.styleClass()));
         assertFalse(toolbar.getStyleClass().contains(M3ToolbarVariant.FLOATING.styleClass()));
         applyCss(toolbar);
         assertRegionRadii(toolbar, 0.0, 0.0, 0.0, 0.0);
+        assertEquals(8.0, toolbar.getPadding().getTop(), 0.0001);
+        assertEquals(16.0, toolbar.getPadding().getRight(), 0.0001);
+        assertEquals(8.0, toolbar.getPadding().getBottom(), 0.0001);
+        assertEquals(16.0, toolbar.getPadding().getLeft(), 0.0001);
 
         assertEquals(2, toolbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
         assertSame(first, toolbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
         assertSame(second, toolbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1));
+
+        assertTrue(first.getPseudoClassStates().stream()
+                .anyMatch(pseudoClass -> pseudoClass.getPseudoClassName().equals("toolbar-action")));
+        assertTrue(first.getPseudoClassStates().stream()
+                .anyMatch(pseudoClass -> pseudoClass.getPseudoClassName().equals("vibrant")));
+        toolbar.getItems().remove(first);
+        assertFalse(first.getPseudoClassStates().stream()
+                .anyMatch(pseudoClass -> pseudoClass.getPseudoClassName().equals("toolbar-action")));
+        assertFalse(first.getPseudoClassStates().stream()
+                .anyMatch(pseudoClass -> pseudoClass.getPseudoClassName().equals("vibrant")));
+    }
+
+    /// Verifies the published Standard and Vibrant toolbar color mappings for action states.
+    @Test
+    void toolbarColorStylesMapActionStates() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Icon unselectedIcon = new M3Icon("A");
+            M3Icon selectedIcon = new M3Icon("B");
+            M3Icon disabledIcon = new M3Icon("C");
+            M3IconButton unselected = new M3IconButton(unselectedIcon);
+            M3IconToggleButton selected = new M3IconToggleButton(selectedIcon);
+            selected.setSelected(true);
+            M3IconButton disabled = new M3IconButton(disabledIcon);
+            disabled.setDisable(true);
+            M3Toolbar toolbar = toolbar(unselected, selected, disabled);
+            VBox root = new VBox(toolbar);
+            root.setStyle(visualTestColors());
+            Stage stage = new Stage();
+            try {
+                stage.setScene(new Scene(root, 360.0, 120.0));
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                Color surfaceContainer = Color.rgb(243, 237, 247);
+                Color secondaryContainer = Color.rgb(222, 214, 250);
+                Color onSurfaceVariant = Color.rgb(73, 69, 79);
+                Color onSecondaryContainer = Color.rgb(40, 27, 92);
+                Color onSurface = Color.rgb(30, 28, 32);
+                assertEquals(surfaceContainer, toolbar.getBackground().getFills().get(0).getFill());
+                assertLabeledColors(unselected, Color.TRANSPARENT, onSurfaceVariant);
+                assertLabeledColors(selected, secondaryContainer, onSecondaryContainer);
+                assertEquals(onSurfaceVariant, unselectedIcon.getTextFill());
+                assertEquals(onSecondaryContainer, selectedIcon.getTextFill());
+                assertEquals(onSurfaceVariant, lookupRegion(unselected, ".m3-state-layer")
+                        .getBackground().getFills().get(0).getFill());
+                assertEquals(onSecondaryContainer, lookupRegion(selected, ".m3-state-layer")
+                        .getBackground().getFills().get(0).getFill());
+                assertEquals(onSurface, disabledIcon.getTextFill());
+
+                toolbar.setColorStyle(M3ToolbarColorStyle.VIBRANT);
+                root.applyCss();
+                root.layout();
+
+                Color primaryContainer = Color.rgb(226, 221, 255);
+                Color onPrimaryContainer = Color.rgb(36, 14, 110);
+                assertEquals(primaryContainer, toolbar.getBackground().getFills().get(0).getFill());
+                assertLabeledColors(unselected, Color.TRANSPARENT, onPrimaryContainer);
+                assertLabeledColors(selected, surfaceContainer, onSurface);
+                assertEquals(onPrimaryContainer, unselectedIcon.getTextFill());
+                assertEquals(onSurface, selectedIcon.getTextFill());
+                assertEquals(onPrimaryContainer, lookupRegion(unselected, ".m3-ripple")
+                        .getBackground().getFills().get(0).getFill());
+                assertEquals(onSurface, lookupRegion(selected, ".m3-ripple")
+                        .getBackground().getFills().get(0).getFill());
+                assertEquals(onSurface, disabledIcon.getTextFill());
+            } finally {
+                stage.close();
+            }
+        });
     }
 
     /// Verifies that toolbar arrow keys follow orientation, right-to-left direction, and reachable item filtering.
@@ -6661,9 +6739,9 @@ final class M3ControlStyleTest {
         assertEquals(new Insets(26.0, 30.0, 26.0, 30.0), banner.getPadding());
     }
 
-    /// Verifies that banner component tokens apply profile-specific layout metrics.
+    /// Verifies that banners preserve their published baseline layout metrics across profiles.
     @Test
-    void bannerAppliesProfileMetrics() {
+    void bannerPreservesBaselineMetricsAcrossProfiles() {
         M3Banner banner = createBanner("Message", new Label("i"), new M3Button("Action"));
         Pane root = new Pane(banner);
         Scene scene = new Scene(root);
@@ -6675,16 +6753,16 @@ final class M3ControlStyleTest {
         ));
         root.applyCss();
 
-        assertEquals(88.0, banner.getContainerMinHeight(), 0.0001);
-        assertEquals(20.0, banner.getVerticalPadding(), 0.0001);
-        assertEquals(28.0, banner.getHorizontalPadding(), 0.0001);
-        assertEquals(20.0, banner.getContentSpacing(), 0.0001);
-        assertEquals(12.0, banner.getActionSpacing(), 0.0001);
-        assertEquals(88.0, banner.getMinHeight(), 0.0001);
-        assertEquals(20.0, banner.getPadding().getTop(), 0.0001);
-        assertEquals(28.0, banner.getPadding().getLeft(), 0.0001);
-        assertEquals(20.0, assertInstanceOf(HBox.class, banner.lookup("." + M3Banner.CONTAINER_STYLE_CLASS)).getSpacing(), 0.0001);
-        assertEquals(12.0, assertInstanceOf(HBox.class, banner.lookup("." + M3Banner.ACTIONS_STYLE_CLASS)).getSpacing(), 0.0001);
+        assertEquals(80.0, banner.getContainerMinHeight(), 0.0001);
+        assertEquals(16.0, banner.getVerticalPadding(), 0.0001);
+        assertEquals(24.0, banner.getHorizontalPadding(), 0.0001);
+        assertEquals(16.0, banner.getContentSpacing(), 0.0001);
+        assertEquals(8.0, banner.getActionSpacing(), 0.0001);
+        assertEquals(80.0, banner.getMinHeight(), 0.0001);
+        assertEquals(16.0, banner.getPadding().getTop(), 0.0001);
+        assertEquals(24.0, banner.getPadding().getLeft(), 0.0001);
+        assertEquals(16.0, assertInstanceOf(HBox.class, banner.lookup("." + M3Banner.CONTAINER_STYLE_CLASS)).getSpacing(), 0.0001);
+        assertEquals(8.0, assertInstanceOf(HBox.class, banner.lookup("." + M3Banner.ACTIONS_STYLE_CLASS)).getSpacing(), 0.0001);
 
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         root.applyCss();
@@ -6775,8 +6853,11 @@ final class M3ControlStyleTest {
     void snackbarCreatesMaterialSkinAndActionButton() {
         M3Snackbar snackbar = new M3Snackbar("Saved");
         snackbar.setActionText("Undo");
+        snackbar.setCloseButtonVisible(true);
         AtomicInteger actionCount = new AtomicInteger();
+        AtomicInteger dismissRequestCount = new AtomicInteger();
         snackbar.setOnAction(event -> actionCount.incrementAndGet());
+        snackbar.addEventHandler(M3Snackbar.DISMISS_REQUEST, event -> dismissRequestCount.incrementAndGet());
 
         applyCss(snackbar);
 
@@ -6785,10 +6866,15 @@ final class M3ControlStyleTest {
         assertEquals(M3ButtonVariant.TEXT, actionButton.getVariant());
         assertTrue(actionButton.isVisible());
         assertTrue(actionButton.isManaged());
+        M3IconButton closeButton = assertInstanceOf(M3IconButton.class, snackbar.lookup(".m3-snackbar-close"));
+        assertTrue(closeButton.isVisible());
+        assertTrue(closeButton.isManaged());
 
         actionButton.fire();
+        closeButton.fire();
 
         assertEquals(1, actionCount.get());
+        assertEquals(1, dismissRequestCount.get());
     }
 
     /// Verifies that snackbars expose their rendered action button to accessibility clients.
@@ -6796,6 +6882,7 @@ final class M3ControlStyleTest {
     void snackbarExposesAccessibleActionButton() {
         FxTestUtils.runOnFxThread(() -> {
             M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
+            snackbar.setCloseButtonVisible(true);
             Pane root = new Pane(snackbar);
             Stage stage = new Stage();
             try {
@@ -6809,9 +6896,13 @@ final class M3ControlStyleTest {
                         M3Button.class,
                         snackbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0)
                 );
+                M3IconButton closeButton = assertInstanceOf(
+                        M3IconButton.class,
+                        snackbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 1)
+                );
 
                 assertEquals("Saved Undo", snackbar.queryAccessibleAttribute(AccessibleAttribute.TEXT));
-                assertEquals(1, snackbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+                assertEquals(2, snackbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
                 assertEquals(actionButton, snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
                 snackbar.executeAccessibleAction(AccessibleAction.REQUEST_FOCUS);
@@ -6822,6 +6913,11 @@ final class M3ControlStyleTest {
 
                 snackbar.setActionText("");
 
+                assertEquals(1, snackbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+                assertEquals(closeButton, snackbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
+                assertEquals(closeButton, snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+
+                snackbar.setCloseButtonVisible(false);
                 assertEquals(0, snackbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
                 assertNull(snackbar.queryAccessibleAttribute(AccessibleAttribute.ITEM_AT_INDEX, 0));
                 assertNull(snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
@@ -7335,6 +7431,7 @@ final class M3ControlStyleTest {
     void snackbarActionUsesInverseColors() {
         M3Snackbar snackbar = new M3Snackbar("Saved");
         snackbar.setActionText("Undo");
+        snackbar.setCloseButtonVisible(true);
         Pane root = new Pane(snackbar);
         Scene scene = new Scene(root);
 
@@ -7347,6 +7444,12 @@ final class M3ControlStyleTest {
         M3Button actionButton = assertInstanceOf(M3Button.class, snackbar.lookup(".m3-snackbar-action"));
         assertEquals(Color.rgb(56, 57, 58), actionButton.getTextFill());
         assertRegionFill(lookupRegion(actionButton, ".m3-state-layer"), Color.rgb(56, 57, 58));
+        M3IconButton closeButton = assertInstanceOf(M3IconButton.class, snackbar.lookup(".m3-snackbar-close"));
+        assertRegionFill(lookupRegion(closeButton, ".m3-state-layer"), Color.rgb(53, 54, 55));
+        assertEquals(
+                Color.rgb(53, 54, 55),
+                assertInstanceOf(SVGPath.class, closeButton.lookup(".m3-internal-icon-path")).getFill()
+        );
     }
 
     /// Verifies that snackbar hosts show action snackbars and route action events.
@@ -7355,6 +7458,7 @@ final class M3ControlStyleTest {
         FxTestUtils.runOnFxThread(() -> {
             M3SnackbarHost host = new M3SnackbarHost();
             host.setDisplayDuration(Duration.INDEFINITE);
+            M3MotionSettings.setReducedMotionRequested(host, true);
             AtomicInteger actionCount = new AtomicInteger();
             Pane root = new Pane(host);
             Scene scene = new Scene(root, 320.0, 120.0);
@@ -7380,6 +7484,18 @@ final class M3ControlStyleTest {
             actionButton.fire();
 
             assertEquals(1, actionCount.get());
+            assertFalse(host.isShowing());
+
+            M3Snackbar closableSnackbar = new M3Snackbar("Closable");
+            closableSnackbar.setCloseButtonVisible(true);
+            host.show(closableSnackbar);
+            root.applyCss();
+            M3IconButton closeButton = assertInstanceOf(
+                    M3IconButton.class,
+                    closableSnackbar.lookup(".m3-snackbar-close")
+            );
+            closeButton.fire();
+
             assertFalse(host.isShowing());
         });
     }
@@ -8143,6 +8259,82 @@ final class M3ControlStyleTest {
                     assertNull(first.getParent());
                     assertTrue(second.getParent() != null);
                     assertFalse(first.isVisible());
+
+                    M3MotionSettings.setReducedMotionRequested(Objects.requireNonNull(rootReference.get(), "root"), false);
+                    Objects.requireNonNull(stageReference.get(), "stage").close();
+                }
+        );
+    }
+
+    /// Verifies that actionable snackbars remain visible until their interactive affordance is removed.
+    @Test
+    void snackbarHostKeepsActionableSnackbarUntilInteractivityIsRemoved() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable VBox> rootReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3SnackbarHost> hostReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Snackbar> firstReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Snackbar> secondReference = new AtomicReference<>();
+
+        FxTestUtils.runOnFxThreadWhenStable(
+                () -> queuedSnackbarStillCurrent(hostReference, firstReference, secondReference),
+                SNACKBAR_DISABLED_TIMER_STABLE_PULSES,
+                () -> {
+                    M3SnackbarHost host = new M3SnackbarHost();
+                    host.setDisplayDuration(Duration.millis(1.0));
+                    VBox root = new VBox(host);
+                    Stage stage = new Stage();
+
+                    M3MotionSettings.setReducedMotionRequested(root, true);
+                    Scene scene = new Scene(root, 360.0, 140.0);
+                    M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                    stage.setScene(scene);
+                    stage.show();
+                    root.applyCss();
+                    root.layout();
+
+                    M3Snackbar first = new M3Snackbar("First", "Undo");
+                    M3Snackbar second = new M3Snackbar("Second", "Open");
+                    host.enqueue(first);
+                    host.enqueue(second);
+
+                    stageReference.set(stage);
+                    rootReference.set(root);
+                    hostReference.set(host);
+                    firstReference.set(first);
+                    secondReference.set(second);
+                },
+                () -> {
+                    M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "host");
+                    M3Snackbar first = Objects.requireNonNull(firstReference.get(), "first");
+                    M3Snackbar second = Objects.requireNonNull(secondReference.get(), "second");
+
+                    assertSame(first, host.getSnackbar());
+                    assertTrue(host.isShowing());
+                    assertEquals(List.of(second), host.getQueue());
+                    first.setActionText("");
+                }
+        );
+
+        FxTestUtils.runOnFxThreadWhen(
+                () -> queuedSnackbarShown(hostReference, firstReference, secondReference),
+                () -> describeSnackbarHostState(
+                        hostReference,
+                        firstReference,
+                        secondReference,
+                        "Snackbar timer did not resume after its action was removed"
+                ),
+                () -> {
+                },
+                () -> {
+                    M3SnackbarHost host = Objects.requireNonNull(hostReference.get(), "host");
+                    M3Snackbar first = Objects.requireNonNull(firstReference.get(), "first");
+                    M3Snackbar second = Objects.requireNonNull(secondReference.get(), "second");
+
+                    assertSame(second, host.getSnackbar());
+                    assertTrue(host.isShowing());
+                    assertTrue(host.getQueue().isEmpty());
+                    assertNull(first.getParent());
+                    assertTrue(second.getParent() != null);
 
                     M3MotionSettings.setReducedMotionRequested(Objects.requireNonNull(rootReference.get(), "root"), false);
                     Objects.requireNonNull(stageReference.get(), "stage").close();
@@ -12080,6 +12272,10 @@ final class M3ControlStyleTest {
         assertEquals("Title Supporting text", tooltip.getText());
         assertEquals(action, tooltip.getActions().get(0));
         assertInstanceOf(VBox.class, tooltip.getGraphic());
+        assertFalse(tooltip.isPersistent());
+        tooltip.setPersistent(true);
+        assertTrue(tooltip.isPersistent());
+        assertTrue(tooltip.persistentProperty().get());
 
         tooltip.setTitle("");
         assertEquals("Supporting text", tooltip.getText());
@@ -12223,6 +12419,73 @@ final class M3ControlStyleTest {
 
         M3Tooltip.uninstall(target, tooltip);
         assertNull(target.getAccessibleHelp());
+    }
+
+    /// Verifies explicit persistent activation, pointer-exit retention, and the one-tooltip-at-a-time rule.
+    @Test
+    void persistentRichTooltipUsesExplicitExclusiveActivation() {
+        FxTestUtils.runOnFxThread(() -> {
+            Stage stage = new Stage();
+            M3Button firstOwner = new M3Button("First");
+            M3Button secondOwner = new M3Button("Second");
+            M3RichTooltip firstTooltip = new M3RichTooltip("First details", "Persistent help");
+            M3RichTooltip secondTooltip = new M3RichTooltip("Second details", "Persistent help");
+            firstTooltip.setPersistent(true);
+            secondTooltip.setPersistent(true);
+            M3Tooltip.install(firstOwner, firstTooltip);
+            M3Tooltip.install(secondOwner, secondTooltip);
+
+            HBox root = new HBox(240.0, firstOwner, secondOwner);
+            root.setPadding(new Insets(120.0));
+            try {
+                stage.setScene(new Scene(root, 960.0, 420.0));
+                stage.show();
+                root.applyCss();
+                root.layout();
+
+                firstOwner.fireEvent(primaryMouseEvent(
+                        firstOwner,
+                        MouseEvent.MOUSE_ENTERED,
+                        firstOwner.getWidth() / 2.0,
+                        firstOwner.getHeight() / 2.0,
+                        false
+                ));
+                assertFalse(firstTooltip.isShowing(), "persistent rich tooltip must ignore hover");
+
+                firePrimaryClick(firstOwner);
+                assertTrue(firstTooltip.isShowing());
+                Bounds firstOwnerBounds = Objects.requireNonNull(
+                        firstOwner.localToScreen(firstOwner.getBoundsInLocal()),
+                        "first owner screen bounds"
+                );
+                assertFalse(
+                        popupOverlaps(firstTooltip, firstOwnerBounds),
+                        "rich tooltip must not cover its owner"
+                );
+
+                firstOwner.fireEvent(primaryMouseEvent(
+                        firstOwner,
+                        MouseEvent.MOUSE_EXITED,
+                        firstOwner.getWidth() / 2.0,
+                        firstOwner.getHeight() / 2.0,
+                        false
+                ));
+                assertTrue(firstTooltip.isShowing(), "persistent rich tooltip must survive pointer exit");
+
+                firePrimaryClick(secondOwner);
+                assertFalse(firstTooltip.isShowing(), "opening another tooltip must close the previous tooltip");
+                assertTrue(secondTooltip.isShowing());
+
+                firePrimaryClick(secondOwner);
+                assertFalse(secondTooltip.isShowing(), "activating the same owner again must dismiss its tooltip");
+            } finally {
+                M3Tooltip.uninstall(firstOwner, firstTooltip);
+                M3Tooltip.uninstall(secondOwner, secondTooltip);
+                firstTooltip.hide();
+                secondTooltip.hide();
+                stage.close();
+            }
+        });
     }
 
     /// Verifies that rich tooltip popup hover keeps action content reachable.
@@ -20218,7 +20481,9 @@ final class M3ControlStyleTest {
                         + "-m3-tab-min-width: 120px; "
                         + "-m3-horizontal-padding: 20px; "
                         + "-m3-active-indicator-height: 4px; "
-                        + "-m3-active-indicator-shape: 2px;"
+                        + "-m3-active-indicator-shape: 2px; "
+                        + "-m3-active-indicator-min-width: 28px; "
+                        + "-m3-active-indicator-horizontal-inset: 3px;"
         );
 
         applyCss(tab);
@@ -20229,6 +20494,8 @@ final class M3ControlStyleTest {
         assertEquals(20.0, tab.getHorizontalPadding(), 0.0001);
         assertEquals(4.0, tab.getActiveIndicatorHeight(), 0.0001);
         assertEquals(2.0, tab.getActiveIndicatorShape(), 0.0001);
+        assertEquals(28.0, tab.getActiveIndicatorMinWidth(), 0.0001);
+        assertEquals(3.0, tab.getActiveIndicatorHorizontalInset(), 0.0001);
         assertEquals(120.0, tab.getMinWidth(), 0.0001);
         assertEquals(52.0, tab.getPrefHeight(), 0.0001);
         assertInstanceOf(M3TabSkin.class, tab.getSkin());
@@ -20294,29 +20561,140 @@ final class M3ControlStyleTest {
         assertTrue(overview.isSelected());
     }
 
-    /// Verifies that tab skins expose the active indicator and ripple feedback.
+    /// Verifies fixed and scrollable primary and secondary tab geometry, reveal behavior, and feedback.
     @Test
     void tabSkinLaysOutIndicatorAndRipple() {
-        M3Tab tab = new M3Tab("Overview");
-        tab.setSelected(true);
-        Pane root = new Pane(tab);
-        Scene scene = new Scene(root, 160.0, 80.0);
+        M3Tab primaryTab = new M3Tab("Overview");
+        M3Tab secondaryTab = new M3Tab("Specifications");
+        M3TabBar primaryBar = tabBar(primaryTab, new M3Tab("Activity"));
+        M3TabBar secondaryBar = tabBar(secondaryTab, new M3Tab("Reviews"));
+        secondaryBar.setVariant(M3TabBarVariant.SECONDARY);
+        M3Tab firstScrollableTab = new M3Tab("Overview");
+        M3Tab longScrollableTab = new M3Tab("Technical specifications");
+        M3Tab lastScrollableTab = new M3Tab("Connected applications");
+        M3TabBar scrollableBar = tabBar(
+                firstScrollableTab,
+                new M3Tab("Recent activity"),
+                longScrollableTab,
+                new M3Tab("Storage management"),
+                lastScrollableTab
+        );
+        scrollableBar.setTabLayout(M3TabBarLayout.SCROLLABLE);
+        VBox root = new VBox(primaryBar, secondaryBar, scrollableBar);
+        Scene scene = new Scene(root, 360.0, 144.0);
 
-        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+        M3Theme theme = M3Theme.defaultTheme();
+        M3ThemeManager.install(scene, theme);
         root.applyCss();
-        tab.resize(120.0, 48.0);
-        tab.layout();
+        root.layout();
 
-        Region indicator = lookupRegion(tab, ".m3-tab-active-indicator");
-        assertEquals(120.0, indicator.getWidth(), 0.0001);
-        assertEquals(3.0, indicator.getHeight(), 0.0001);
-        assertEquals(1.0, indicator.getOpacity(), 0.0001);
+        PseudoClass secondaryPseudoClass = PseudoClass.getPseudoClass("secondary");
+        assertEquals(M3TabBarVariant.PRIMARY, primaryBar.getVariant());
+        assertEquals(M3TabBarVariant.SECONDARY, secondaryBar.getVariant());
+        assertFalse(primaryTab.getPseudoClassStates().contains(secondaryPseudoClass));
+        assertTrue(secondaryBar.getPseudoClassStates().contains(secondaryPseudoClass));
+        assertTrue(secondaryTab.getPseudoClassStates().contains(secondaryPseudoClass));
+        assertEquals(
+                primaryTab.getWidth(),
+                assertInstanceOf(M3Tab.class, primaryBar.getTabs().get(1)).getWidth(),
+                0.0001
+        );
+        assertEquals(
+                secondaryTab.getWidth(),
+                assertInstanceOf(M3Tab.class, secondaryBar.getTabs().get(1)).getWidth(),
+                0.0001
+        );
+        assertEquals(primaryBar.getWidth() / 2.0, primaryTab.getWidth(), 0.0001);
+        assertEquals(secondaryBar.getWidth() / 2.0, secondaryTab.getWidth(), 0.0001);
+        assertEquals(M3TabBarLayout.FIXED, primaryBar.getTabLayout());
+        assertEquals(M3TabBarLayout.SCROLLABLE, scrollableBar.getTabLayout());
+        assertTrue(scrollableBar.getPseudoClassStates().contains(PseudoClass.getPseudoClass("scrollable")));
+        assertEquals(52.0, firstScrollableTab.getLayoutX(), 0.75);
+        assertTrue(longScrollableTab.getWidth() > firstScrollableTab.getWidth(),
+                "scrollable tab widths should follow their labels");
+        assertTrue(lastScrollableTab.getLayoutX() >= scrollableBar.getWidth(),
+                "the overflowing final tab should begin outside the initial viewport");
+        for (Node node : scrollableBar.getTabs()) {
+            M3Tab tab = assertInstanceOf(M3Tab.class, node);
+            Text label = assertInstanceOf(Text.class, tab.lookup(".text"));
+            assertEquals(tab.getText(), label.getText(), () -> "scrollable tab labels should remain complete: text="
+                    + tab.getText() + ", width=" + tab.getWidth() + ", prefWidth=" + tab.prefWidth(-1.0)
+                    + ", minWidth=" + tab.minWidth(-1.0) + ", padding=" + tab.getPadding());
+        }
 
-        tab.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 40.0, 24.0, true));
-        assertTrue(tab.isArmed());
-        tab.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 40.0, 24.0, false));
+        Region primaryIndicator = lookupRegion(primaryTab, ".m3-tab-active-indicator");
+        Region secondaryIndicator = lookupRegion(secondaryTab, ".m3-tab-active-indicator");
+        Text primaryText = assertInstanceOf(Text.class, primaryTab.lookup(".text"));
+        double expectedPrimaryIndicatorWidth = Math.max(
+                primaryTab.getActiveIndicatorMinWidth(),
+                primaryText.getBoundsInParent().getWidth()
+                        + primaryTab.getActiveIndicatorHorizontalInset() * 2.0
+        );
+        assertEquals(expectedPrimaryIndicatorWidth, primaryIndicator.getWidth(), 1.0);
+        assertTrue(primaryIndicator.getWidth() < primaryTab.getWidth());
+        assertEquals(3.0, primaryIndicator.getHeight(), 0.0001);
+        assertEquals(3.0, primaryTab.getActiveIndicatorShape(), 0.0001);
+        assertEquals(1.0, primaryIndicator.getOpacity(), 0.0001);
+        assertEquals(secondaryTab.getWidth(), secondaryIndicator.getWidth(), 0.0001);
+        assertEquals(2.0, secondaryIndicator.getHeight(), 0.0001);
+        assertEquals(0.0, secondaryTab.getActiveIndicatorShape(), 0.0001);
+        assertEquals(1.0, secondaryIndicator.getOpacity(), 0.0001);
+        assertEquals(
+                theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.PRIMARY),
+                primaryTab.getTextFill()
+        );
+        assertEquals(
+                theme.colorScheme().getColor(org.glavo.monetfx.ColorRole.ON_SURFACE),
+                secondaryTab.getTextFill()
+        );
 
-        assertTrue(lookupRegion(tab, ".m3-ripple").getOpacity() > 0.0);
+        Region primaryDivider = lookupRegion(primaryBar, "." + M3TabBar.DIVIDER_STYLE_CLASS);
+        Region secondaryDivider = lookupRegion(secondaryBar, "." + M3TabBar.DIVIDER_STYLE_CLASS);
+        assertEquals(1.0, primaryDivider.getHeight(), 0.0001);
+        assertEquals(1.0, secondaryDivider.getHeight(), 0.0001);
+        assertEquals(primaryBar.getWidth(), primaryDivider.getWidth(), 0.0001);
+        assertEquals(secondaryBar.getWidth(), secondaryDivider.getWidth(), 0.0001);
+
+        secondaryTab.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_PRESSED, 40.0, 24.0, true));
+        assertTrue(secondaryTab.isArmed());
+        secondaryTab.fireEvent(primaryMouseEvent(MouseEvent.MOUSE_RELEASED, 40.0, 24.0, false));
+
+        assertTrue(lookupRegion(secondaryTab, ".m3-ripple").getOpacity() > 0.0);
+
+        secondaryBar.setVariant(M3TabBarVariant.PRIMARY);
+        assertFalse(secondaryBar.getPseudoClassStates().contains(secondaryPseudoClass));
+        assertFalse(secondaryTab.getPseudoClassStates().contains(secondaryPseudoClass));
+        secondaryBar.setVariant(M3TabBarVariant.SECONDARY);
+        assertTrue(secondaryBar.getPseudoClassStates().contains(secondaryPseudoClass));
+        assertTrue(secondaryTab.getPseudoClassStates().contains(secondaryPseudoClass));
+
+        M3MotionSettings.setReducedMotionRequested(root, true);
+        scrollableBar.select(lastScrollableTab);
+        root.layout();
+        root.layout();
+        assertTrue(lastScrollableTab.getLayoutX() + lastScrollableTab.getWidth() <= scrollableBar.getWidth() + 0.75,
+                "selection should reveal the complete final tab");
+
+        scrollableBar.select(firstScrollableTab);
+        root.layout();
+        root.layout();
+        assertEquals(52.0, firstScrollableTab.getLayoutX(), 0.75,
+                "returning to the first tab should restore the Material leading offset");
+        scrollableBar.fireEvent(scrollEvent(scrollableBar, 0.0, -36.0, false, false));
+        root.layout();
+        assertEquals(16.0, firstScrollableTab.getLayoutX(), 0.75,
+                "vertical wheel movement should browse the horizontal tab track");
+
+        scrollableBar.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+        scrollableBar.select(lastScrollableTab);
+        scrollableBar.select(firstScrollableTab);
+        root.layout();
+        root.layout();
+        Bounds firstRtlBounds = firstScrollableTab.localToScene(firstScrollableTab.getBoundsInLocal());
+        Bounds scrollableBarBounds = scrollableBar.localToScene(scrollableBar.getBoundsInLocal());
+        assertEquals(scrollableBarBounds.getMaxX() - 52.0, firstRtlBounds.getMaxX(), 0.75,
+                "RTL scrollable tabs should apply the leading offset from the right edge");
+        M3MotionSettings.setReducedMotionRequested(root, false);
     }
 
     /// Verifies that selection component token properties are styleable from CSS.
@@ -28010,7 +28388,7 @@ final class M3ControlStyleTest {
         });
     }
 
-    /// Verifies that top app bars expose navigation, title, and action slots.
+    /// Verifies that top app bars expose navigation, title, subtitle, custom title, and action slots.
     @Test
     void topAppBarExposesSlots() {
         Label navigation = new Label("Menu");
@@ -28030,6 +28408,16 @@ final class M3ControlStyleTest {
         assertTrue(topAppBar.getActions().contains(search));
         assertTrue(topAppBar.getActions().contains(more));
 
+        Label customTitle = new Label("Workspace logo");
+        topAppBar.setSubtitle("3 unread messages");
+        topAppBar.setTitleContent(customTitle);
+
+        assertEquals("3 unread messages", topAppBar.getSubtitle());
+        assertSame(customTitle, topAppBar.getTitleContent());
+        assertEquals("Inbox, 3 unread messages", topAppBar.queryAccessibleAttribute(AccessibleAttribute.TEXT));
+        assertTrue(navigation.getPseudoClassStates().contains(PseudoClass.getPseudoClass("top-app-bar-leading")));
+        assertTrue(search.getPseudoClassStates().contains(PseudoClass.getPseudoClass("top-app-bar-trailing")));
+
         topAppBar.getActions().clear();
         topAppBar.getActions().add(search);
         topAppBar.getActions().setAll(more);
@@ -28037,10 +28425,17 @@ final class M3ControlStyleTest {
         assertEquals(java.util.List.of(more), topAppBar.getActions());
 
         topAppBar.setTitle("Archive");
+        topAppBar.setSubtitle("");
+        topAppBar.setTitleContent(null);
         topAppBar.setNavigation(null);
 
         assertEquals("Archive", topAppBar.getTitle());
+        assertEquals("Archive", topAppBar.queryAccessibleAttribute(AccessibleAttribute.TEXT));
         assertNull(topAppBar.getNavigation());
+        assertNull(topAppBar.getTitleContent());
+        assertFalse(navigation.getPseudoClassStates().contains(PseudoClass.getPseudoClass("top-app-bar-leading")));
+        assertFalse(search.getPseudoClassStates().contains(PseudoClass.getPseudoClass("top-app-bar-trailing")));
+        assertTrue(more.getPseudoClassStates().contains(PseudoClass.getPseudoClass("top-app-bar-trailing")));
     }
 
     /// Verifies that top app bar variants update style classes and layout state.
@@ -28072,6 +28467,25 @@ final class M3ControlStyleTest {
         assertFalse(topAppBar.getStyleClass().contains(M3TopAppBarVariant.MEDIUM.styleClass()));
         assertEquals(152.0, topAppBar.getPrefHeight(), 0.0001);
 
+        topAppBar.setVariant(M3TopAppBarVariant.MEDIUM_FLEXIBLE);
+        assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.MEDIUM_FLEXIBLE.styleClass()));
+        assertFalse(topAppBar.getStyleClass().contains(M3TopAppBarVariant.LARGE.styleClass()));
+        assertEquals(112.0, topAppBar.getPrefHeight(), 0.0001);
+        topAppBar.setSubtitle("Supporting context");
+        assertEquals(136.0, topAppBar.getPrefHeight(), 0.0001);
+        topAppBar.setCollapseProgress(0.5);
+        assertEquals(100.0, topAppBar.getPrefHeight(), 0.0001);
+
+        topAppBar.setCollapseProgress(0.0);
+        topAppBar.setVariant(M3TopAppBarVariant.LARGE_FLEXIBLE);
+        assertTrue(topAppBar.getStyleClass().contains(M3TopAppBarVariant.LARGE_FLEXIBLE.styleClass()));
+        assertFalse(topAppBar.getStyleClass().contains(M3TopAppBarVariant.MEDIUM_FLEXIBLE.styleClass()));
+        assertEquals(152.0, topAppBar.getPrefHeight(), 0.0001);
+        topAppBar.setSubtitle("");
+        assertEquals(120.0, topAppBar.getPrefHeight(), 0.0001);
+        topAppBar.setCollapseProgress(1.0);
+        assertEquals(64.0, topAppBar.getPrefHeight(), 0.0001);
+
         topAppBar.variantProperty().set(null);
 
         assertEquals(M3TopAppBarVariant.SMALL, topAppBar.getVariant());
@@ -28093,12 +28507,18 @@ final class M3ControlStyleTest {
         assertEquals(64.0, topAppBar.getContainerHeight(), 0.0001);
         assertEquals(112.0, topAppBar.getMediumContainerHeight(), 0.0001);
         assertEquals(152.0, topAppBar.getLargeContainerHeight(), 0.0001);
+        assertEquals(112.0, topAppBar.getMediumFlexibleContainerHeight(), 0.0001);
+        assertEquals(136.0, topAppBar.getMediumFlexibleSubtitleContainerHeight(), 0.0001);
+        assertEquals(120.0, topAppBar.getLargeFlexibleContainerHeight(), 0.0001);
+        assertEquals(152.0, topAppBar.getLargeFlexibleSubtitleContainerHeight(), 0.0001);
+        assertEquals(4.0, topAppBar.getEdgePadding(), 0.0001);
         assertEquals(16.0, topAppBar.getHorizontalPadding(), 0.0001);
         assertEquals(20.0, topAppBar.getMediumBottomPadding(), 0.0001);
         assertEquals(28.0, topAppBar.getLargeBottomPadding(), 0.0001);
-        assertEquals(8.0, topAppBar.getContentSpacing(), 0.0001);
+        assertEquals(12.0, topAppBar.getFlexibleBottomPadding(), 0.0001);
+        assertEquals(0.0, topAppBar.getContentSpacing(), 0.0001);
         assertEquals(0.0, topAppBar.getActionSpacing(), 0.0001);
-        assertEquals(16.0, topAppBar.getPadding().getLeft(), 0.0001);
+        assertEquals(Insets.EMPTY, topAppBar.getPadding());
         assertInstanceOf(M3TopAppBarSkin.class, topAppBar.getSkin());
         assertInstanceOf(Label.class, topAppBar.lookup("." + M3TopAppBar.TITLE_STYLE_CLASS));
         HBox actions = assertInstanceOf(HBox.class, topAppBar.lookup("." + M3TopAppBar.ACTIONS_STYLE_CLASS));
@@ -28106,11 +28526,9 @@ final class M3ControlStyleTest {
         topAppBar.setVariant(M3TopAppBarVariant.MEDIUM);
         root.applyCss();
         assertEquals(112.0, topAppBar.getPrefHeight(), 0.0001);
-        assertEquals(20.0, topAppBar.getPadding().getBottom(), 0.0001);
         topAppBar.setVariant(M3TopAppBarVariant.LARGE);
         root.applyCss();
         assertEquals(152.0, topAppBar.getPrefHeight(), 0.0001);
-        assertEquals(28.0, topAppBar.getPadding().getBottom(), 0.0001);
         topAppBar.setVariant(M3TopAppBarVariant.SMALL);
         root.applyCss();
 
@@ -28121,25 +28539,29 @@ final class M3ControlStyleTest {
         ));
         root.applyCss();
 
-        assertEquals(72.0, topAppBar.getPrefHeight(), 0.0001);
-        assertEquals(72.0, topAppBar.getContainerHeight(), 0.0001);
-        assertEquals(120.0, topAppBar.getMediumContainerHeight(), 0.0001);
-        assertEquals(160.0, topAppBar.getLargeContainerHeight(), 0.0001);
-        assertEquals(24.0, topAppBar.getHorizontalPadding(), 0.0001);
-        assertEquals(24.0, topAppBar.getMediumBottomPadding(), 0.0001);
-        assertEquals(32.0, topAppBar.getLargeBottomPadding(), 0.0001);
-        assertEquals(12.0, topAppBar.getContentSpacing(), 0.0001);
+        assertEquals(64.0, topAppBar.getPrefHeight(), 0.0001);
+        assertEquals(64.0, topAppBar.getContainerHeight(), 0.0001);
+        assertEquals(112.0, topAppBar.getMediumContainerHeight(), 0.0001);
+        assertEquals(152.0, topAppBar.getLargeContainerHeight(), 0.0001);
+        assertEquals(112.0, topAppBar.getMediumFlexibleContainerHeight(), 0.0001);
+        assertEquals(136.0, topAppBar.getMediumFlexibleSubtitleContainerHeight(), 0.0001);
+        assertEquals(120.0, topAppBar.getLargeFlexibleContainerHeight(), 0.0001);
+        assertEquals(152.0, topAppBar.getLargeFlexibleSubtitleContainerHeight(), 0.0001);
+        assertEquals(4.0, topAppBar.getEdgePadding(), 0.0001);
+        assertEquals(16.0, topAppBar.getHorizontalPadding(), 0.0001);
+        assertEquals(20.0, topAppBar.getMediumBottomPadding(), 0.0001);
+        assertEquals(28.0, topAppBar.getLargeBottomPadding(), 0.0001);
+        assertEquals(12.0, topAppBar.getFlexibleBottomPadding(), 0.0001);
+        assertEquals(0.0, topAppBar.getContentSpacing(), 0.0001);
         assertEquals(0.0, topAppBar.getActionSpacing(), 0.0001);
-        assertEquals(24.0, topAppBar.getPadding().getLeft(), 0.0001);
+        assertEquals(Insets.EMPTY, topAppBar.getPadding());
         assertEquals(0.0, actions.getSpacing(), 0.0001);
         topAppBar.setVariant(M3TopAppBarVariant.MEDIUM);
         root.applyCss();
-        assertEquals(120.0, topAppBar.getPrefHeight(), 0.0001);
-        assertEquals(24.0, topAppBar.getPadding().getBottom(), 0.0001);
+        assertEquals(112.0, topAppBar.getPrefHeight(), 0.0001);
         topAppBar.setVariant(M3TopAppBarVariant.LARGE);
         root.applyCss();
-        assertEquals(160.0, topAppBar.getPrefHeight(), 0.0001);
-        assertEquals(32.0, topAppBar.getPadding().getBottom(), 0.0001);
+        assertEquals(152.0, topAppBar.getPrefHeight(), 0.0001);
         topAppBar.setActionSpacing(18.0);
         assertEquals(18.0, topAppBar.getActionSpacing(), 0.0001);
         assertEquals(18.0, actions.getSpacing(), 0.0001);
@@ -28152,9 +28574,15 @@ final class M3ControlStyleTest {
         assertCssProperty(topAppBarCssMetaData, "-m3-container-height");
         assertCssProperty(topAppBarCssMetaData, "-m3-medium-container-height");
         assertCssProperty(topAppBarCssMetaData, "-m3-large-container-height");
+        assertCssProperty(topAppBarCssMetaData, "-m3-medium-flexible-container-height");
+        assertCssProperty(topAppBarCssMetaData, "-m3-medium-flexible-subtitle-container-height");
+        assertCssProperty(topAppBarCssMetaData, "-m3-large-flexible-container-height");
+        assertCssProperty(topAppBarCssMetaData, "-m3-large-flexible-subtitle-container-height");
+        assertCssProperty(topAppBarCssMetaData, "-m3-edge-padding");
         assertCssProperty(topAppBarCssMetaData, "-m3-horizontal-padding");
         assertCssProperty(topAppBarCssMetaData, "-m3-medium-bottom-padding");
         assertCssProperty(topAppBarCssMetaData, "-m3-large-bottom-padding");
+        assertCssProperty(topAppBarCssMetaData, "-m3-flexible-bottom-padding");
         assertCssProperty(topAppBarCssMetaData, "-m3-content-spacing");
         assertCssProperty(topAppBarCssMetaData, "-m3-action-spacing");
 
@@ -28173,9 +28601,15 @@ final class M3ControlStyleTest {
                 "-m3-container-height: 70px; "
                         + "-m3-medium-container-height: 118px; "
                         + "-m3-large-container-height: 158px; "
+                        + "-m3-medium-flexible-container-height: 124px; "
+                        + "-m3-medium-flexible-subtitle-container-height: 144px; "
+                        + "-m3-large-flexible-container-height: 132px; "
+                        + "-m3-large-flexible-subtitle-container-height: 164px; "
+                        + "-m3-edge-padding: 6px; "
                         + "-m3-horizontal-padding: 22px; "
                         + "-m3-medium-bottom-padding: 24px; "
                         + "-m3-large-bottom-padding: 32px; "
+                        + "-m3-flexible-bottom-padding: 10px; "
                         + "-m3-content-spacing: 18px; "
                         + "-m3-action-spacing: 11px;"
         );
@@ -28196,12 +28630,18 @@ final class M3ControlStyleTest {
         assertEquals(70.0, topAppBar.getContainerHeight(), 0.0001);
         assertEquals(118.0, topAppBar.getMediumContainerHeight(), 0.0001);
         assertEquals(158.0, topAppBar.getLargeContainerHeight(), 0.0001);
+        assertEquals(124.0, topAppBar.getMediumFlexibleContainerHeight(), 0.0001);
+        assertEquals(144.0, topAppBar.getMediumFlexibleSubtitleContainerHeight(), 0.0001);
+        assertEquals(132.0, topAppBar.getLargeFlexibleContainerHeight(), 0.0001);
+        assertEquals(164.0, topAppBar.getLargeFlexibleSubtitleContainerHeight(), 0.0001);
+        assertEquals(6.0, topAppBar.getEdgePadding(), 0.0001);
         assertEquals(22.0, topAppBar.getHorizontalPadding(), 0.0001);
         assertEquals(24.0, topAppBar.getMediumBottomPadding(), 0.0001);
         assertEquals(32.0, topAppBar.getLargeBottomPadding(), 0.0001);
+        assertEquals(10.0, topAppBar.getFlexibleBottomPadding(), 0.0001);
         assertEquals(18.0, topAppBar.getContentSpacing(), 0.0001);
         assertEquals(11.0, topAppBar.getActionSpacing(), 0.0001);
-        assertEquals(22.0, topAppBar.getPadding().getLeft(), 0.0001);
+        assertEquals(Insets.EMPTY, topAppBar.getPadding());
         assertEquals(11.0, assertInstanceOf(
                 HBox.class,
                 topAppBar.lookup("." + M3TopAppBar.ACTIONS_STYLE_CLASS)
@@ -28210,12 +28650,22 @@ final class M3ControlStyleTest {
         topAppBar.setVariant(M3TopAppBarVariant.MEDIUM);
         root.applyCss();
         assertEquals(118.0, topAppBar.getPrefHeight(), 0.0001);
-        assertEquals(24.0, topAppBar.getPadding().getBottom(), 0.0001);
 
         topAppBar.setVariant(M3TopAppBarVariant.LARGE);
         root.applyCss();
         assertEquals(158.0, topAppBar.getPrefHeight(), 0.0001);
-        assertEquals(32.0, topAppBar.getPadding().getBottom(), 0.0001);
+
+        topAppBar.setVariant(M3TopAppBarVariant.MEDIUM_FLEXIBLE);
+        root.applyCss();
+        assertEquals(124.0, topAppBar.getPrefHeight(), 0.0001);
+        topAppBar.setSubtitle("Subtitle");
+        assertEquals(144.0, topAppBar.getPrefHeight(), 0.0001);
+
+        topAppBar.setVariant(M3TopAppBarVariant.LARGE_FLEXIBLE);
+        root.applyCss();
+        assertEquals(164.0, topAppBar.getPrefHeight(), 0.0001);
+        topAppBar.setSubtitle("");
+        assertEquals(132.0, topAppBar.getPrefHeight(), 0.0001);
 
         assertEquals(86.0, bottomAppBar.getPrefHeight(), 0.0001);
         assertEquals(86.0, bottomAppBar.getContainerHeight(), 0.0001);
@@ -28462,7 +28912,9 @@ final class M3ControlStyleTest {
     @Test
     void topAppBarScrolledUnderStateUsesPseudoClassAndCss() {
         M3TopAppBar topAppBar = topAppBar("Inbox");
+        topAppBar.setVariant(M3TopAppBarVariant.MEDIUM_FLEXIBLE);
         PseudoClass scrolledUnder = PseudoClass.getPseudoClass("scrolled-under");
+        PseudoClass collapsed = PseudoClass.getPseudoClass("collapsed");
 
         StackPane root = new StackPane(topAppBar);
         Scene scene = new Scene(root, 360.0, 120.0);
@@ -28472,6 +28924,9 @@ final class M3ControlStyleTest {
 
         assertFalse(topAppBar.isScrolledUnder());
         assertFalse(topAppBar.getPseudoClassStates().contains(scrolledUnder));
+        assertFalse(topAppBar.getPseudoClassStates().contains(collapsed));
+        assertEquals(0.0, topAppBar.getCollapseProgress(), 0.0001);
+        assertEquals(112.0, topAppBar.getPrefHeight(), 0.0001);
         assertNull(topAppBar.getEffect());
 
         topAppBar.setScrolledUnder(true);
@@ -28480,14 +28935,238 @@ final class M3ControlStyleTest {
 
         assertTrue(topAppBar.isScrolledUnder());
         assertTrue(topAppBar.getPseudoClassStates().contains(scrolledUnder));
-        assertInstanceOf(DropShadow.class, topAppBar.getEffect());
+        assertTrue(topAppBar.getPseudoClassStates().contains(collapsed));
+        assertEquals(1.0, topAppBar.getCollapseProgress(), 0.0001);
+        assertEquals(64.0, topAppBar.getPrefHeight(), 0.0001);
+        assertDropShadow(topAppBar);
 
         topAppBar.setScrolledUnder(false);
         root.applyCss();
         root.layout();
 
         assertFalse(topAppBar.getPseudoClassStates().contains(scrolledUnder));
+        assertFalse(topAppBar.getPseudoClassStates().contains(collapsed));
+        assertEquals(0.0, topAppBar.getCollapseProgress(), 0.0001);
+        assertEquals(112.0, topAppBar.getPrefHeight(), 0.0001);
         assertNull(topAppBar.getEffect());
+    }
+
+    /// Verifies the observable intermediate and settled geometry of a flexible app bar in a real window.
+    @Test
+    void flexibleTopAppBarCollapseAnimationPreservesMaterialGeometry() throws InterruptedException {
+        double geometryTolerance = 1.0;
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable Parent> rootReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3TopAppBar> appBarReference = new AtomicReference<>();
+
+        try {
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> {
+                        @Nullable M3TopAppBar appBar = appBarReference.get();
+                        @Nullable Parent root = rootReference.get();
+                        if (appBar == null || root == null) {
+                            return false;
+                        }
+                        root.applyCss();
+                        root.layout();
+                        double progress = appBar.getCollapseProgress();
+                        return progress > 0.30 && progress < 0.55;
+                    },
+                    () -> {
+                        M3TopAppBar appBar = createGeometryTopAppBar(
+                                "Collections",
+                                M3TopAppBarVariant.LARGE_FLEXIBLE
+                        );
+                        appBar.setSubtitle("Recently updated");
+                        VBox root = new VBox(appBar, new Region());
+                        VBox.setVgrow(root.getChildren().get(1), javafx.scene.layout.Priority.ALWAYS);
+                        root.setStyle("-fx-background-color: white; " + visualTestColors());
+                        Scene scene = new Scene(root, 680.0, 360.0);
+                        Stage stage = new Stage();
+
+                        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                        M3MotionSettings.setReducedMotionRequested(root, false);
+                        FxTestUtils.setMotionScheme(root, observableTestMotionScheme());
+                        stage.setScene(scene);
+                        stage.show();
+                        root.applyCss();
+                        root.layout();
+
+                        assertEquals(152.0, appBar.getHeight(), geometryTolerance);
+                        stageReference.set(stage);
+                        rootReference.set(root);
+                        appBarReference.set(appBar);
+                        appBar.setScrolledUnder(true);
+                    },
+                    () -> {
+                        Parent root = Objects.requireNonNull(rootReference.get(), "root");
+                        M3TopAppBar appBar = Objects.requireNonNull(appBarReference.get(), "appBar");
+                        double progress = appBar.getCollapseProgress();
+                        double expectedHeight = 152.0 + (64.0 - 152.0) * progress;
+                        Label expandedTitle = assertInstanceOf(
+                                Label.class,
+                                appBar.lookup("." + M3TopAppBar.TITLE_STYLE_CLASS)
+                        );
+                        Label compactTitle = assertInstanceOf(
+                                Label.class,
+                                appBar.lookup("." + M3TopAppBar.COMPACT_TITLE_STYLE_CLASS)
+                        );
+
+                        assertEquals(expectedHeight, appBar.getPrefHeight(), geometryTolerance);
+                        assertEquals(expectedHeight, appBar.getHeight(), geometryTolerance);
+                        assertEquals(1.0 - progress, expandedTitle.getOpacity(), 0.02);
+                        assertEquals(progress, compactTitle.getOpacity(), 0.02);
+                        assertTrue(expandedTitle.isVisible());
+                        assertTrue(compactTitle.isVisible());
+                        assertTopAppBarMaterialSlotGeometry(appBar);
+
+                        WritableImage image = snapshotImageOnFxThread(root);
+                        assertSnapshotNodeContainsContrast(image, appBar, Color.WHITE, 0.04);
+                        writeVisualSnapshot(image, java.nio.file.Path.of(
+                                "build",
+                                "reports",
+                                "m3fx-visual",
+                                "visual-top-app-bar-collapse-intermediate.png"
+                        ));
+                    }
+            );
+
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> {
+                        @Nullable M3TopAppBar appBar = appBarReference.get();
+                        return appBar != null && Math.abs(appBar.getCollapseProgress() - 1.0) < 0.0001;
+                    },
+                    () -> {
+                    },
+                    () -> {
+                        Parent root = Objects.requireNonNull(rootReference.get(), "root");
+                        M3TopAppBar appBar = Objects.requireNonNull(appBarReference.get(), "appBar");
+                        root.applyCss();
+                        root.layout();
+
+                        assertEquals(64.0, appBar.getPrefHeight(), geometryTolerance);
+                        assertEquals(64.0, appBar.getHeight(), geometryTolerance);
+                        assertTrue(appBar.getPseudoClassStates().contains(PseudoClass.getPseudoClass("collapsed")));
+                        assertTopAppBarMaterialSlotGeometry(appBar);
+                        appBar.setScrolledUnder(false);
+                    }
+            );
+
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> {
+                        @Nullable M3TopAppBar appBar = appBarReference.get();
+                        if (appBar == null) {
+                            return false;
+                        }
+                        double progress = appBar.getCollapseProgress();
+                        return progress > 0.30 && progress < 0.55;
+                    },
+                    () -> {
+                    },
+                    () -> {
+                        Parent root = Objects.requireNonNull(rootReference.get(), "root");
+                        M3TopAppBar appBar = Objects.requireNonNull(appBarReference.get(), "appBar");
+                        root.applyCss();
+                        root.layout();
+
+                        double progress = appBar.getCollapseProgress();
+                        double expectedHeight = 152.0 + (64.0 - 152.0) * progress;
+                        assertEquals(expectedHeight, appBar.getHeight(), geometryTolerance);
+                        assertTopAppBarMaterialSlotGeometry(appBar);
+                    }
+            );
+
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> {
+                        @Nullable M3TopAppBar appBar = appBarReference.get();
+                        return appBar != null && Math.abs(appBar.getCollapseProgress()) < 0.0001;
+                    },
+                    () -> {
+                    },
+                    () -> {
+                        Parent root = Objects.requireNonNull(rootReference.get(), "root");
+                        M3TopAppBar appBar = Objects.requireNonNull(appBarReference.get(), "appBar");
+                        root.applyCss();
+                        root.layout();
+
+                        assertEquals(152.0, appBar.getPrefHeight(), geometryTolerance);
+                        assertEquals(152.0, appBar.getHeight(), geometryTolerance);
+                        assertFalse(appBar.getPseudoClassStates().contains(PseudoClass.getPseudoClass("collapsed")));
+                        assertTopAppBarMaterialSlotGeometry(appBar);
+                        appBar.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                        appBar.setScrolledUnder(true);
+                    }
+            );
+
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> {
+                        @Nullable M3TopAppBar appBar = appBarReference.get();
+                        if (appBar == null) {
+                            return false;
+                        }
+                        double progress = appBar.getCollapseProgress();
+                        return progress > 0.30 && progress < 0.55;
+                    },
+                    () -> {
+                    },
+                    () -> {
+                        Parent root = Objects.requireNonNull(rootReference.get(), "root");
+                        M3TopAppBar appBar = Objects.requireNonNull(appBarReference.get(), "appBar");
+                        root.applyCss();
+                        root.layout();
+
+                        assertEquals(NodeOrientation.RIGHT_TO_LEFT, appBar.getEffectiveNodeOrientation());
+                        assertTopAppBarMaterialSlotGeometry(appBar);
+                        WritableImage image = snapshotImageOnFxThread(root);
+                        assertSnapshotNodeContainsContrast(image, appBar, Color.WHITE, 0.04);
+                        writeVisualSnapshot(image, java.nio.file.Path.of(
+                                "build",
+                                "reports",
+                                "m3fx-visual",
+                                "visual-top-app-bar-collapse-intermediate-rtl.png"
+                        ));
+                    }
+            );
+
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> {
+                        @Nullable M3TopAppBar appBar = appBarReference.get();
+                        return appBar != null && Math.abs(appBar.getCollapseProgress() - 1.0) < 0.0001;
+                    },
+                    () -> {
+                    },
+                    () -> {
+                        Parent root = Objects.requireNonNull(rootReference.get(), "root");
+                        M3TopAppBar appBar = Objects.requireNonNull(appBarReference.get(), "appBar");
+                        root.applyCss();
+                        root.layout();
+
+                        assertEquals(64.0, appBar.getHeight(), geometryTolerance);
+                        assertTopAppBarMaterialSlotGeometry(appBar);
+                        appBar.setScrolledUnder(false);
+                    }
+            );
+
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> {
+                        @Nullable M3TopAppBar appBar = appBarReference.get();
+                        return appBar != null && Math.abs(appBar.getCollapseProgress()) < 0.0001;
+                    },
+                    () -> {
+                    },
+                    () -> {
+                        Parent root = Objects.requireNonNull(rootReference.get(), "root");
+                        M3TopAppBar appBar = Objects.requireNonNull(appBarReference.get(), "appBar");
+                        root.applyCss();
+                        root.layout();
+
+                        assertEquals(152.0, appBar.getHeight(), geometryTolerance);
+                        assertTopAppBarMaterialSlotGeometry(appBar);
+                    }
+            );
+        } finally {
+            closeObservableMotionWindow(stageReference, rootReference);
+        }
     }
 
     /// Verifies that top app bar variants apply distinct Material title type scale roles.
@@ -28500,8 +29179,14 @@ final class M3ControlStyleTest {
         medium.setVariant(M3TopAppBarVariant.MEDIUM);
         M3TopAppBar large = topAppBar("Workspace");
         large.setVariant(M3TopAppBarVariant.LARGE);
+        M3TopAppBar mediumFlexible = topAppBar("Library");
+        mediumFlexible.setVariant(M3TopAppBarVariant.MEDIUM_FLEXIBLE);
+        mediumFlexible.setSubtitle("12 collections");
+        M3TopAppBar largeFlexible = topAppBar("Discover");
+        largeFlexible.setVariant(M3TopAppBarVariant.LARGE_FLEXIBLE);
+        largeFlexible.setSubtitle("Recommended for you");
 
-        VBox root = new VBox(small, centerAligned, medium, large);
+        VBox root = new VBox(small, centerAligned, medium, large, mediumFlexible, largeFlexible);
         Scene scene = new Scene(root);
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         root.applyCss();
@@ -28510,6 +29195,22 @@ final class M3ControlStyleTest {
         assertTopAppBarTitleFontSize(centerAligned, 22.0);
         assertTopAppBarTitleFontSize(medium, 24.0);
         assertTopAppBarTitleFontSize(large, 28.0);
+        assertTopAppBarTitleFontSize(mediumFlexible, 28.0);
+        assertTopAppBarTitleFontSize(largeFlexible, 36.0);
+        assertFalse(assertInstanceOf(Label.class, small.lookup("." + M3TopAppBar.TITLE_STYLE_CLASS)).isWrapText());
+        assertFalse(assertInstanceOf(Label.class, centerAligned.lookup("." + M3TopAppBar.TITLE_STYLE_CLASS)).isWrapText());
+        assertFalse(assertInstanceOf(Label.class, medium.lookup("." + M3TopAppBar.TITLE_STYLE_CLASS)).isWrapText());
+        assertFalse(assertInstanceOf(Label.class, large.lookup("." + M3TopAppBar.TITLE_STYLE_CLASS)).isWrapText());
+        assertTrue(assertInstanceOf(Label.class, mediumFlexible.lookup("." + M3TopAppBar.TITLE_STYLE_CLASS)).isWrapText());
+        assertTrue(assertInstanceOf(Label.class, largeFlexible.lookup("." + M3TopAppBar.TITLE_STYLE_CLASS)).isWrapText());
+        assertEquals(14.0, assertInstanceOf(
+                Label.class,
+                mediumFlexible.lookup("." + M3TopAppBar.SUBTITLE_STYLE_CLASS)
+        ).getFont().getSize(), 0.0001);
+        assertEquals(16.0, assertInstanceOf(
+                Label.class,
+                largeFlexible.lookup("." + M3TopAppBar.SUBTITLE_STYLE_CLASS)
+        ).getFont().getSize(), 0.0001);
     }
 
     /// Verifies that all top app bar variants use Material row, title, and action slot geometry.
@@ -28520,24 +29221,47 @@ final class M3ControlStyleTest {
             M3TopAppBar centerAligned = createGeometryTopAppBar("Calendar", M3TopAppBarVariant.CENTER_ALIGNED);
             M3TopAppBar medium = createGeometryTopAppBar("Project", M3TopAppBarVariant.MEDIUM);
             M3TopAppBar large = createGeometryTopAppBar("Workspace", M3TopAppBarVariant.LARGE);
+            M3TopAppBar mediumFlexible = createGeometryTopAppBar("Library", M3TopAppBarVariant.MEDIUM_FLEXIBLE);
+            M3TopAppBar mediumFlexibleSubtitle = createGeometryTopAppBar(
+                    "Messages",
+                    M3TopAppBarVariant.MEDIUM_FLEXIBLE
+            );
+            mediumFlexibleSubtitle.setSubtitle("4 unread conversations");
+            M3TopAppBar largeFlexible = createGeometryTopAppBar("Discover", M3TopAppBarVariant.LARGE_FLEXIBLE);
+            M3TopAppBar largeFlexibleSubtitle = createGeometryTopAppBar(
+                    "Collections",
+                    M3TopAppBarVariant.LARGE_FLEXIBLE
+            );
+            largeFlexibleSubtitle.setSubtitle("Recently updated");
 
-            VBox root = new VBox(8.0, small, centerAligned, medium, large);
+            List<M3TopAppBar> appBars = List.of(
+                    small,
+                    centerAligned,
+                    medium,
+                    large,
+                    mediumFlexible,
+                    mediumFlexibleSubtitle,
+                    largeFlexible,
+                    largeFlexibleSubtitle
+            );
+            VBox root = new VBox(8.0);
+            root.getChildren().addAll(appBars);
             root.setFillWidth(true);
             root.setStyle("-fx-background-color: white; " + visualTestColors());
-            Scene scene = new Scene(root, 680.0, 440.0);
+            Scene scene = new Scene(root, 680.0, 1040.0);
 
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
             root.applyCss();
-            root.resize(680.0, 440.0);
+            root.resize(680.0, 1040.0);
             root.layout();
 
-            for (M3TopAppBar appBar : List.of(small, centerAligned, medium, large)) {
+            for (M3TopAppBar appBar : appBars) {
                 assertTopAppBarMaterialSlotGeometry(appBar);
                 assertTopAppBarIconButtonTargets(appBar);
             }
 
             WritableImage image = snapshotImageOnFxThread(root);
-            for (M3TopAppBar appBar : List.of(small, centerAligned, medium, large)) {
+            for (M3TopAppBar appBar : appBars) {
                 assertSnapshotNodeContainsContrast(image, appBar, Color.WHITE, 0.04);
             }
             writeVisualSnapshot(image, java.nio.file.Path.of(
@@ -28557,19 +29281,32 @@ final class M3ControlStyleTest {
             M3TopAppBar centerAligned = createGeometryTopAppBar("Calendar", M3TopAppBarVariant.CENTER_ALIGNED);
             M3TopAppBar medium = createGeometryTopAppBar("Project", M3TopAppBarVariant.MEDIUM);
             M3TopAppBar large = createGeometryTopAppBar("Workspace", M3TopAppBarVariant.LARGE);
+            M3TopAppBar mediumFlexible = createGeometryTopAppBar("Library", M3TopAppBarVariant.MEDIUM_FLEXIBLE);
+            mediumFlexible.setSubtitle("12 collections");
+            M3TopAppBar largeFlexible = createGeometryTopAppBar("Discover", M3TopAppBarVariant.LARGE_FLEXIBLE);
+            largeFlexible.setSubtitle("Recommended for you");
 
-            VBox root = new VBox(8.0, small, centerAligned, medium, large);
+            List<M3TopAppBar> appBars = List.of(
+                    small,
+                    centerAligned,
+                    medium,
+                    large,
+                    mediumFlexible,
+                    largeFlexible
+            );
+            VBox root = new VBox(8.0);
+            root.getChildren().addAll(appBars);
             root.setFillWidth(true);
             root.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
             root.setStyle("-fx-background-color: white; " + visualTestColors());
-            Scene scene = new Scene(root, 680.0, 440.0);
+            Scene scene = new Scene(root, 680.0, 800.0);
 
             M3ThemeManager.install(scene, M3Theme.defaultTheme());
             root.applyCss();
-            root.resize(680.0, 440.0);
+            root.resize(680.0, 800.0);
             root.layout();
 
-            for (M3TopAppBar appBar : List.of(small, centerAligned, medium, large)) {
+            for (M3TopAppBar appBar : appBars) {
                 assertTopAppBarMaterialSlotGeometry(appBar);
                 assertTopAppBarIconButtonTargets(appBar);
             }
@@ -28654,19 +29391,22 @@ final class M3ControlStyleTest {
                 appBar.lookup("." + M3TopAppBar.NAVIGATION_STYLE_CLASS)
         );
         Label title = assertInstanceOf(Label.class, appBar.lookup("." + M3TopAppBar.TITLE_STYLE_CLASS));
+        Label subtitle = assertInstanceOf(Label.class, appBar.lookup("." + M3TopAppBar.SUBTITLE_STYLE_CLASS));
         HBox actions = assertInstanceOf(HBox.class, appBar.lookup("." + M3TopAppBar.ACTIONS_STYLE_CLASS));
         Text titleText = assertInstanceOf(Text.class, title.lookup(".text"));
 
-        Bounds appBarBounds = appBar.localToScene(appBar.getBoundsInLocal());
+        Bounds appBarBounds = appBar.localToScene(appBar.getLayoutBounds());
         Bounds navigationBounds = navigation.localToScene(navigation.getLayoutBounds());
         Bounds titleBounds = title.localToScene(title.getBoundsInLocal());
         Bounds titleTextBounds = titleText.localToScene(titleText.getBoundsInLocal());
+        Bounds subtitleBounds = subtitle.localToScene(subtitle.getBoundsInLocal());
         Bounds actionsBounds = actions.localToScene(actions.getBoundsInLocal());
         List<Node> actionSlots = appBar.lookupAll("." + M3TopAppBar.ACTION_SLOT_STYLE_CLASS).stream()
                 .sorted(java.util.Comparator.comparingDouble(node ->
                         node.localToScene(node.getBoundsInLocal()).getMinX()))
                 .toList();
         double horizontalPadding = appBar.getHorizontalPadding();
+        double edgePadding = appBar.getEdgePadding();
         double rowCenterY = appBarBounds.getMinY() + appBar.getContainerHeight() / 2.0;
         boolean rightToLeft = appBar.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
 
@@ -28683,20 +29423,20 @@ final class M3ControlStyleTest {
                         + ", appBar=" + appBarBounds);
         assertTopAppBarActionSlots(appBar, navigation, actionSlots, rowCenterY);
         if (rightToLeft) {
-            assertEquals(appBarBounds.getMaxX() - horizontalPadding, navigationBounds.getMaxX(), 1.0,
+            assertEquals(appBarBounds.getMaxX() - edgePadding, navigationBounds.getMaxX(), 1.0,
                     () -> "RTL top app bar navigation target ignores leading padding: variant="
                             + appBar.getVariant() + ", navigation=" + navigationBounds
                             + ", appBar=" + appBarBounds);
-            assertEquals(appBarBounds.getMinX() + horizontalPadding, actionsBounds.getMinX(), 1.0,
+            assertEquals(appBarBounds.getMinX() + edgePadding, actionsBounds.getMinX(), 1.0,
                     () -> "RTL top app bar action targets ignore trailing padding: variant="
                             + appBar.getVariant() + ", actions=" + actionsBounds
                             + ", appBar=" + appBarBounds);
         } else {
-            assertEquals(appBarBounds.getMinX() + horizontalPadding, navigationBounds.getMinX(), 1.0,
+            assertEquals(appBarBounds.getMinX() + edgePadding, navigationBounds.getMinX(), 1.0,
                     () -> "top app bar navigation target ignores leading padding: variant="
                             + appBar.getVariant() + ", navigation=" + navigationBounds
                             + ", appBar=" + appBarBounds);
-            assertEquals(appBarBounds.getMaxX() - horizontalPadding, actionsBounds.getMaxX(), 1.0,
+            assertEquals(appBarBounds.getMaxX() - edgePadding, actionsBounds.getMaxX(), 1.0,
                     () -> "top app bar action targets ignore trailing padding: variant="
                             + appBar.getVariant() + ", actions=" + actionsBounds
                             + ", appBar=" + appBarBounds);
@@ -28732,6 +29472,125 @@ final class M3ControlStyleTest {
                                 + ", appBar=" + appBarBounds);
                 assertTrue(titleTextBounds.getCenterY() > rowCenterY,
                         () -> "tall top app bar title should sit below the icon row: variant="
+                            + appBar.getVariant() + ", title=" + titleTextBounds
+                            + ", rowCenterY=" + rowCenterY);
+            }
+            case MEDIUM_FLEXIBLE, LARGE_FLEXIBLE -> {
+                double collapseProgress = appBar.getCollapseProgress();
+                if (collapseProgress >= 0.999) {
+                    Label compactTitle = assertInstanceOf(
+                            Label.class,
+                            appBar.lookup("." + M3TopAppBar.COMPACT_TITLE_STYLE_CLASS)
+                    );
+                    Label compactSubtitle = assertInstanceOf(
+                            Label.class,
+                            appBar.lookup("." + M3TopAppBar.COMPACT_SUBTITLE_STYLE_CLASS)
+                    );
+                    Text compactTitleText = assertInstanceOf(Text.class, compactTitle.lookup(".text"));
+                    Bounds compactTitleBounds = compactTitle.localToScene(compactTitle.getBoundsInLocal());
+                    Bounds compactTitleTextBounds = compactTitleText.localToScene(compactTitleText.getBoundsInLocal());
+                    Bounds compactSubtitleBounds = compactSubtitle.localToScene(compactSubtitle.getBoundsInLocal());
+                    double contentMinY = compactTitleBounds.getMinY();
+                    double contentMaxY = appBar.getSubtitle().isEmpty()
+                            ? compactTitleBounds.getMaxY()
+                            : compactSubtitleBounds.getMaxY();
+
+                    assertEquals(rowCenterY, (contentMinY + contentMaxY) / 2.0, 1.0,
+                            () -> "collapsed flexible app bar title content is not centered in the small row: variant="
+                                    + appBar.getVariant() + ", title=" + compactTitleBounds
+                                    + ", subtitle=" + compactSubtitleBounds + ", appBar=" + appBarBounds);
+                    if (rightToLeft) {
+                        assertTrue(compactTitleTextBounds.getMaxX() <= navigationBounds.getMinX() + 1.0,
+                                () -> "RTL collapsed flexible title overlaps the navigation target: title="
+                                        + compactTitleTextBounds + ", navigation=" + navigationBounds);
+                    } else {
+                        assertTrue(compactTitleBounds.getMinX() >= navigationBounds.getMaxX() - 1.0,
+                                () -> "collapsed flexible title overlaps the navigation target: title="
+                                        + compactTitleBounds + ", navigation=" + navigationBounds);
+                    }
+                    break;
+                }
+
+                if (collapseProgress > 0.001) {
+                    Label compactTitle = assertInstanceOf(
+                            Label.class,
+                            appBar.lookup("." + M3TopAppBar.COMPACT_TITLE_STYLE_CLASS)
+                    );
+                    Label compactSubtitle = assertInstanceOf(
+                            Label.class,
+                            appBar.lookup("." + M3TopAppBar.COMPACT_SUBTITLE_STYLE_CLASS)
+                    );
+                    Bounds compactTitleBounds = compactTitle.localToScene(compactTitle.getBoundsInLocal());
+                    Bounds compactSubtitleBounds = compactSubtitle.localToScene(compactSubtitle.getBoundsInLocal());
+                    double expandedLeading = rightToLeft
+                            ? appBarBounds.getMaxX() - horizontalPadding
+                            : appBarBounds.getMinX() + horizontalPadding;
+                    double compactLeading = rightToLeft
+                            ? navigationBounds.getMinX() - appBar.getContentSpacing()
+                            : navigationBounds.getMaxX() + appBar.getContentSpacing();
+                    double expectedLeading = expandedLeading
+                            + (compactLeading - expandedLeading) * collapseProgress;
+
+                    if (rightToLeft) {
+                        assertEquals(expectedLeading, titleBounds.getMaxX(), 1.0,
+                                () -> "RTL flexible title does not follow its logical collapse path: title="
+                                        + titleBounds + ", progress=" + collapseProgress);
+                        assertEquals(titleBounds.getMaxX(), compactTitleBounds.getMaxX(), 1.0,
+                                () -> "RTL flexible title representations diverged during collapse: expanded="
+                                        + titleBounds + ", compact=" + compactTitleBounds);
+                    } else {
+                        assertEquals(expectedLeading, titleBounds.getMinX(), 1.0,
+                                () -> "flexible title does not follow its logical collapse path: title="
+                                        + titleBounds + ", progress=" + collapseProgress);
+                        assertEquals(titleBounds.getMinX(), compactTitleBounds.getMinX(), 1.0,
+                                () -> "flexible title representations diverged during collapse: expanded="
+                                        + titleBounds + ", compact=" + compactTitleBounds);
+                    }
+                    assertEquals(titleBounds.getCenterY(), compactTitleBounds.getCenterY(), 1.0,
+                            () -> "flexible title representations diverged vertically during collapse: expanded="
+                                    + titleBounds + ", compact=" + compactTitleBounds);
+                    assertTrue(titleBounds.getCenterY() >= rowCenterY - 1.0,
+                            () -> "flexible title moved above the compact app-bar row: title="
+                                    + titleBounds + ", rowCenterY=" + rowCenterY);
+                    if (!appBar.getSubtitle().isEmpty()) {
+                        if (rightToLeft) {
+                            assertEquals(subtitleBounds.getMaxX(), compactSubtitleBounds.getMaxX(), 1.0,
+                                    () -> "RTL flexible subtitle representations diverged during collapse: expanded="
+                                            + subtitleBounds + ", compact=" + compactSubtitleBounds);
+                        } else {
+                            assertEquals(subtitleBounds.getMinX(), compactSubtitleBounds.getMinX(), 1.0,
+                                    () -> "flexible subtitle representations diverged during collapse: expanded="
+                                            + subtitleBounds + ", compact=" + compactSubtitleBounds);
+                        }
+                        assertEquals(subtitleBounds.getCenterY(), compactSubtitleBounds.getCenterY(), 1.0,
+                                () -> "flexible subtitle representations diverged vertically during collapse: expanded="
+                                        + subtitleBounds + ", compact=" + compactSubtitleBounds);
+                    }
+                    break;
+                }
+
+                if (rightToLeft) {
+                    assertEquals(appBarBounds.getMaxX() - horizontalPadding, titleTextBounds.getMaxX(), 1.0,
+                            () -> "RTL flexible app bar title ignores leading padding: variant="
+                                    + appBar.getVariant() + ", titleText=" + titleTextBounds
+                                    + ", appBar=" + appBarBounds);
+                } else {
+                    assertEquals(appBarBounds.getMinX() + horizontalPadding, titleBounds.getMinX(), 1.0,
+                            () -> "flexible app bar title ignores leading padding: variant="
+                                    + appBar.getVariant() + ", title=" + titleBounds
+                                    + ", appBar=" + appBarBounds);
+                }
+                Bounds bottomContentBounds = appBar.getSubtitle().isEmpty() ? titleBounds : subtitleBounds;
+                assertEquals(
+                        appBarBounds.getMaxY() - appBar.getFlexibleBottomPadding(),
+                        bottomContentBounds.getMaxY(),
+                        1.0,
+                        () -> "flexible app bar content ignores bottom padding: variant="
+                                + appBar.getVariant() + ", content=" + bottomContentBounds
+                                + ", appBar=" + appBarBounds
+                );
+                assertTrue(titleTextBounds.getCenterY() > rowCenterY,
+                        () -> "expanded flexible title should sit below the icon row: variant="
                                 + appBar.getVariant() + ", title=" + titleTextBounds
                                 + ", rowCenterY=" + rowCenterY);
             }
@@ -28797,6 +29656,20 @@ final class M3ControlStyleTest {
         return switch (appBar.getVariant()) {
             case MEDIUM -> appBar.getMediumContainerHeight();
             case LARGE -> appBar.getLargeContainerHeight();
+            case MEDIUM_FLEXIBLE -> (appBar.getSubtitle().isEmpty()
+                    ? appBar.getMediumFlexibleContainerHeight()
+                    : appBar.getMediumFlexibleSubtitleContainerHeight())
+                    + (appBar.getContainerHeight() - (appBar.getSubtitle().isEmpty()
+                    ? appBar.getMediumFlexibleContainerHeight()
+                    : appBar.getMediumFlexibleSubtitleContainerHeight()))
+                    * appBar.getCollapseProgress();
+            case LARGE_FLEXIBLE -> (appBar.getSubtitle().isEmpty()
+                    ? appBar.getLargeFlexibleContainerHeight()
+                    : appBar.getLargeFlexibleSubtitleContainerHeight())
+                    + (appBar.getContainerHeight() - (appBar.getSubtitle().isEmpty()
+                    ? appBar.getLargeFlexibleContainerHeight()
+                    : appBar.getLargeFlexibleSubtitleContainerHeight()))
+                    * appBar.getCollapseProgress();
             case SMALL, CENTER_ALIGNED -> appBar.getContainerHeight();
         };
     }
@@ -28991,11 +29864,11 @@ final class M3ControlStyleTest {
         ));
         root.applyCss();
 
-        assertEquals(88.0, bottomAppBar.getPrefHeight(), 0.0001);
-        assertEquals(88.0, bottomAppBar.getContainerHeight(), 0.0001);
-        assertEquals(24.0, bottomAppBar.getHorizontalPadding(), 0.0001);
-        assertEquals(20.0, bottomAppBar.getContentSpacing(), 0.0001);
-        assertEquals(24.0, bottomAppBar.getPadding().getLeft(), 0.0001);
+        assertEquals(80.0, bottomAppBar.getPrefHeight(), 0.0001);
+        assertEquals(80.0, bottomAppBar.getContainerHeight(), 0.0001);
+        assertEquals(16.0, bottomAppBar.getHorizontalPadding(), 0.0001);
+        assertEquals(16.0, bottomAppBar.getContentSpacing(), 0.0001);
+        assertEquals(16.0, bottomAppBar.getPadding().getLeft(), 0.0001);
         assertEquals(0.0, bottomAppBar.getActionSpacing(), 0.0001);
         assertEquals(0.0, actions.getSpacing(), 0.0001);
         bottomAppBar.setActionSpacing(18.0);
@@ -31933,6 +32806,8 @@ final class M3ControlStyleTest {
             Label sideContent = new Label("Side content");
             M3Button sideAction = createButton("Close", M3ButtonVariant.TEXT);
             M3SideSheet sideSheet = sideSheet("Details", sideContent, sideAction);
+            M3IconButton sideHeaderAction = createIconButton("C");
+            sideSheet.getHeaderActions().add(sideHeaderAction);
             sideSheet.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
             sideSheet.setPrefSize(300.0, 160.0);
 
@@ -31986,6 +32861,10 @@ final class M3ControlStyleTest {
             HBox sideActions = assertInstanceOf(
                     HBox.class,
                     sideSheet.lookup("." + M3SideSheet.ACTIONS_STYLE_CLASS)
+            );
+            HBox sideHeaderActions = assertInstanceOf(
+                    HBox.class,
+                    sideSheet.lookup("." + M3SideSheet.HEADER_ACTIONS_STYLE_CLASS)
             );
             HBox bottomHeader = assertInstanceOf(
                     HBox.class,
@@ -32045,8 +32924,11 @@ final class M3ControlStyleTest {
             assertEquals(NodeOrientation.LEFT_TO_RIGHT, summaryItemLabel.getEffectiveNodeOrientation());
             assertEquals(NodeOrientation.LEFT_TO_RIGHT, summaryItemError.getEffectiveNodeOrientation());
             assertEquals(Pos.CENTER_RIGHT, sideHeader.getAlignment());
-            assertEquals(Pos.CENTER_LEFT, sideActions.getAlignment());
+            assertEquals(Pos.CENTER_LEFT, sideHeaderActions.getAlignment());
+            assertEquals(Pos.CENTER_RIGHT, sideActions.getAlignment());
             assertEquals(Pos.TOP_RIGHT, sideContentSlot.getAlignment());
+            assertEquals(sideHeaderAction, sideHeaderActions.getChildren().get(0));
+            assertEquals(sideAction, sideActions.getChildren().get(0));
             assertEquals(Pos.CENTER_RIGHT, bottomHeader.getAlignment());
             assertEquals(Pos.CENTER_LEFT, bottomActions.getAlignment());
             assertEquals(Pos.TOP_RIGHT, bottomContentSlot.getAlignment());
@@ -35850,7 +36732,7 @@ final class M3ControlStyleTest {
 
     /// Verifies that the expressive profile affects real rendered controls, not only generated token text.
     @Test
-    void expressiveProfileVisualSnapshotRendersProfileSizedControls() {
+    void expressiveProfileVisualSnapshotRendersProfileControls() {
         FxTestUtils.runOnFxThread(() -> {
             M3Button filledButton = createButton("Filled", M3ButtonVariant.FILLED);
             M3IconButton iconButton = new M3IconButton(visualIcon("search"));
@@ -36006,11 +36888,11 @@ final class M3ControlStyleTest {
             assertEquals(40.0, standardToggle.getContainerHeight(), 0.0001);
             assertEquals(56.0, regularFab.getContainerSize(), 0.0001);
             assertEquals(16.0, regularFab.getHorizontalPadding(), 0.0001);
-            assertEquals(48.0, day.getContainerHeight(), 0.0001);
-            assertEquals(16.0, day.getHorizontalPadding(), 0.0001);
-            assertEquals(56.0, selectedTab.getContainerHeight(), 0.0001);
-            assertEquals(20.0, selectedTab.getHorizontalPadding(), 0.0001);
-            assertEquals(4.0, selectedTab.getActiveIndicatorHeight(), 0.0001);
+            assertEquals(40.0, day.getContainerHeight(), 0.0001);
+            assertEquals(12.0, day.getHorizontalPadding(), 0.0001);
+            assertEquals(48.0, selectedTab.getContainerHeight(), 0.0001);
+            assertEquals(16.0, selectedTab.getHorizontalPadding(), 0.0001);
+            assertEquals(3.0, selectedTab.getActiveIndicatorHeight(), 0.0001);
             assertEquals(56.0, textField.getContainerHeight(), 0.0001);
             assertEquals(16.0, textField.getHorizontalPadding(), 0.0001);
             assertEquals(112.0, textArea.getContainerHeight(), 0.0001);
@@ -36039,9 +36921,9 @@ final class M3ControlStyleTest {
             assertEquals(20.0, searchResult.getHorizontalPadding(), 0.0001);
             assertEquals(20.0, searchResult.getContentSpacing(), 0.0001);
             assertEquals(64.0, listItem.getOneLineHeight(), 0.0001);
-            assertEquals(44.0, avatar.getContainerSize(), 0.0001);
-            assertEquals(24.0, card.getContainerShape(), 0.0001);
-            assertEquals(20.0, card.getContentPadding(), 0.0001);
+            assertEquals(40.0, avatar.getContainerSize(), 0.0001);
+            assertEquals(16.0, card.getContainerShape(), 0.0001);
+            assertEquals(16.0, card.getContentPadding(), 0.0001);
             assertEquals(6.0, snackbar.getContainerShape(), 0.0001);
             assertEquals(16.0, snackbar.getContentPadding(), 0.0001);
             assertEquals(256.0, sideSheet.getPrefWidth(), 0.0001);
@@ -36070,16 +36952,17 @@ final class M3ControlStyleTest {
             assertEquals(999.0, drawerItem.getContainerShape(), 0.0001);
             assertEquals(16.0, drawerItem.getHorizontalPadding(), 0.0001);
             assertEquals(12.0, drawerItem.getContentSpacing(), 0.0001);
-            assertEquals(72.0, topAppBar.getPrefHeight(), 0.0001);
-            assertEquals(120.0, mediumTopAppBar.getPrefHeight(), 0.0001);
-            assertEquals(24.0, mediumTopAppBar.getPadding().getBottom(), 0.0001);
-            assertEquals(72.0, toolbar.getContainerHeight(), 0.0001);
-            assertEquals(72.0, toolbar.getContainerWidth(), 0.0001);
-            assertEquals(56.0, toolbar.getItemSlotSize(), 0.0001);
-            assertEquals(10.0, toolbar.getContentPadding(), 0.0001);
+            assertEquals(64.0, topAppBar.getPrefHeight(), 0.0001);
+            assertEquals(112.0, mediumTopAppBar.getPrefHeight(), 0.0001);
+            assertEquals(20.0, mediumTopAppBar.getMediumBottomPadding(), 0.0001);
+            assertEquals(Insets.EMPTY, mediumTopAppBar.getPadding());
+            assertEquals(64.0, toolbar.getContainerHeight(), 0.0001);
+            assertEquals(64.0, toolbar.getContainerWidth(), 0.0001);
+            assertEquals(48.0, toolbar.getItemSlotSize(), 0.0001);
+            assertEquals(8.0, toolbar.getContentPadding(), 0.0001);
             assertEquals(4.0, toolbar.getItemSpacing(), 0.0001);
-            assertEquals(10.0, toolbar.getPadding().getTop(), 0.0001);
-            assertEquals(72.0, toolbar.getPrefHeight(), 0.0001);
+            assertEquals(8.0, toolbar.getPadding().getTop(), 0.0001);
+            assertEquals(64.0, toolbar.getPrefHeight(), 0.0001);
 
             WritableImage image = snapshotImageOnFxThread(root);
             assertSnapshotHasColorVariety(image, 18);
@@ -36631,6 +37514,11 @@ final class M3ControlStyleTest {
                 assertRegionFill(container, Color.rgb(242, 236, 244));
                 assertRegionRadii(container, 12.0, 12.0, 12.0, 12.0);
                 assertEquals(new Insets(12.0, 16.0, 8.0, 16.0), container.getPadding());
+                assertTrue(
+                        tooltip.getHeight() < 160.0,
+                        () -> "rich tooltip should size to content instead of forcing a 160px minimum: "
+                                + tooltip.getHeight()
+                );
                 Label titleLabel = assertInstanceOf(
                         Label.class,
                         tooltipRoot.lookup("." + M3RichTooltip.TITLE_STYLE_CLASS)
@@ -43731,6 +44619,7 @@ final class M3ControlStyleTest {
             case ON_SECONDARY -> M3InternalIcon.ON_SECONDARY_STYLE_CLASS;
             case ON_TERTIARY -> M3InternalIcon.ON_TERTIARY_STYLE_CLASS;
             case ON_SURFACE -> M3InternalIcon.ON_SURFACE_STYLE_CLASS;
+            case INVERSE_ON_SURFACE -> M3InternalIcon.INVERSE_ON_SURFACE_STYLE_CLASS;
             case ON_SURFACE_VARIANT -> M3InternalIcon.ON_SURFACE_VARIANT_STYLE_CLASS;
             case ON_PRIMARY_CONTAINER -> M3InternalIcon.ON_PRIMARY_CONTAINER_STYLE_CLASS;
         };
@@ -44673,6 +45562,28 @@ final class M3ControlStyleTest {
     private static void resizeButtonGroupToPreferredSize(M3ButtonGroup group) {
         group.resize(group.prefWidth(-1.0), group.prefHeight(-1.0));
         group.layout();
+    }
+
+    /// Fires one complete synthetic primary-button click at the center of a node.
+    private static void firePrimaryClick(Node node) {
+        Bounds bounds = node.getLayoutBounds();
+        double x = bounds.getMinX() + bounds.getWidth() / 2.0;
+        double y = bounds.getMinY() + bounds.getHeight() / 2.0;
+        node.fireEvent(primaryMouseEvent(node, MouseEvent.MOUSE_PRESSED, x, y, true));
+        node.fireEvent(primaryMouseEvent(node, MouseEvent.MOUSE_RELEASED, x, y, false));
+        node.fireEvent(primaryMouseEvent(node, MouseEvent.MOUSE_CLICKED, x, y, false));
+    }
+
+    /// Returns whether a tooltip popup overlaps one owner rectangle in screen coordinates.
+    private static boolean popupOverlaps(M3Tooltip tooltip, Bounds ownerBounds) {
+        double popupMinX = tooltip.getX();
+        double popupMinY = tooltip.getY();
+        double popupMaxX = popupMinX + tooltip.getWidth();
+        double popupMaxY = popupMinY + tooltip.getHeight();
+        return popupMaxX > ownerBounds.getMinX()
+                && popupMinX < ownerBounds.getMaxX()
+                && popupMaxY > ownerBounds.getMinY()
+                && popupMinY < ownerBounds.getMaxY();
     }
 
     /// Creates a primary mouse event for control behavior tests.

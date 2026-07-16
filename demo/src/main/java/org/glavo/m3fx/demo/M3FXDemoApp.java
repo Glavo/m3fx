@@ -138,6 +138,8 @@ import org.glavo.m3fx.controls.M3SurfaceVariant;
 import org.glavo.m3fx.controls.M3Switch;
 import org.glavo.m3fx.controls.M3Tab;
 import org.glavo.m3fx.controls.M3TabBar;
+import org.glavo.m3fx.controls.M3TabBarLayout;
+import org.glavo.m3fx.controls.M3TabBarVariant;
 import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.controls.M3TextArea;
 import org.glavo.m3fx.controls.M3TextField;
@@ -151,6 +153,7 @@ import org.glavo.m3fx.controls.M3TimePickerField;
 import org.glavo.m3fx.controls.M3TimePresets;
 import org.glavo.m3fx.controls.M3Tooltip;
 import org.glavo.m3fx.controls.M3Toolbar;
+import org.glavo.m3fx.controls.M3ToolbarColorStyle;
 import org.glavo.m3fx.controls.M3ToolbarVariant;
 import org.glavo.m3fx.controls.M3TopAppBar;
 import org.glavo.m3fx.controls.M3TopAppBarVariant;
@@ -458,9 +461,9 @@ public final class M3FXDemoApp extends Application {
                 new DemoPage("Sliders", "Sliders", "Sliders", "Different values and disabled slider states", DemoMaterialDocs.SLIDERS, this::createSlidersPage),
                 new DemoPage("Snackbars", "Snackbar", "Snackbar", "Snackbar host with action and queued messages", DemoMaterialDocs.SNACKBAR, this::createSnackbarsPage),
                 new DemoPage("Switches", "Switch", "Switch", "On, off, and disabled switch states", DemoMaterialDocs.SWITCH, this::createSwitchesPage),
-                new DemoPage("Tabs", "Tabs", "Tabs", "Primary tabs with animated active indicators", DemoMaterialDocs.TABS, this::createTabsPage),
+                new DemoPage("Tabs", "Tabs", "Tabs", "Primary and secondary fixed and scrollable tabs", DemoMaterialDocs.TABS, this::createTabsPage),
                 new DemoPage("Text Fields", "Text fields", "Text fields", "Filled, outlined, populated, error, and disabled fields", DemoMaterialDocs.TEXT_FIELDS, this::createTextFieldsPage),
-                new DemoPage("Toolbars", "Toolbars", TOOLBARS_GROUP, "Standard, floating, docked, and vertical action toolbars", DemoMaterialDocs.TOOLBARS, this::createToolbarsPage),
+                new DemoPage("Toolbars", "Toolbars", TOOLBARS_GROUP, "Floating and docked toolbars with Standard and Vibrant colors", DemoMaterialDocs.TOOLBARS, this::createToolbarsPage),
                 new DemoPage("Bottom App Bars", "Bottom app bars", TOOLBARS_GROUP, "Legacy bottom app bars with floating action alignment", DemoMaterialDocs.BOTTOM_APP_BARS, this::createBottomAppBarsPage),
                 new DemoPage("Tooltips", "Tooltips", "Tooltips", "Plain and longer contextual help", DemoMaterialDocs.TOOLTIPS, this::createTooltipsPage),
                 new DemoPage("Banners", "Banners", ADDITIONAL_DEMOS_GROUP, "Persistent inline feedback with optional actions", DemoMaterialDocs.BANNERS, this::createBannersPage),
@@ -2065,12 +2068,50 @@ public final class M3FXDemoApp extends Application {
     /// Creates the tab component page.
     private Node createTabsPage() {
         M3TabBar primary = createTabBar("Overview", "Activity", "Files");
-        M3TabBar disabled = createTabBar("Today", "Week", "Month");
-        disabled.getTabs().get(2).setDisable(true);
+        M3TabBar secondary = createTabBar("Overview", "Details", "Reviews");
+        secondary.setVariant(M3TabBarVariant.SECONDARY);
+        secondary.getTabs().get(2).setDisable(true);
+
+        M3TabBar scrollablePrimary = createTabBar(
+                new M3Tab("Overview"),
+                new M3Tab("Recent activity"),
+                new M3Tab("Shared with me"),
+                new M3Tab("Offline files"),
+                new M3Tab("Storage management"),
+                new M3Tab("Notifications"),
+                new M3Tab("Security and privacy"),
+                new M3Tab("Connected applications")
+        );
+        scrollablePrimary.setTabLayout(M3TabBarLayout.SCROLLABLE);
+        scrollablePrimary.setPrefWidth(720.0);
+        scrollablePrimary.setMaxWidth(720.0);
+
+        M3TabBar scrollableSecondary = createTabBar(
+                new M3Tab("Highlights"),
+                new M3Tab("Technical specifications"),
+                new M3Tab("Customer reviews"),
+                new M3Tab("Compatibility"),
+                new M3Tab("Accessories"),
+                new M3Tab("Support resources"),
+                new M3Tab("Release history")
+        );
+        scrollableSecondary.setVariant(M3TabBarVariant.SECONDARY);
+        scrollableSecondary.setTabLayout(M3TabBarLayout.SCROLLABLE);
+        scrollableSecondary.setPrefWidth(720.0);
+        scrollableSecondary.setMaxWidth(720.0);
+
+        M3TabBar hierarchyPrimary = createTabBar("Flights", "Trips", "Explore");
+        M3TabBar hierarchySecondary = createTabBar("Upcoming", "Previous", "Saved");
+        hierarchySecondary.setVariant(M3TabBarVariant.SECONDARY);
+        VBox hierarchy = new VBox(hierarchyPrimary, hierarchySecondary);
+        hierarchy.getStyleClass().add("demo-tab-hierarchy");
 
         return createGallery(
-                createShowcaseGroup("Primary", primary),
-                createShowcaseGroup("Disabled", disabled)
+                createShowcaseGroup("Primary Fixed", primary),
+                createShowcaseGroup("Secondary Fixed", secondary),
+                createFullWidthShowcaseGroup("Primary Scrollable", scrollablePrimary),
+                createFullWidthShowcaseGroup("Secondary Scrollable", scrollableSecondary),
+                createShowcaseGroup("Primary And Secondary Hierarchy", hierarchy)
         );
     }
 
@@ -2079,41 +2120,110 @@ public final class M3FXDemoApp extends Application {
         M3TopAppBar small = createTopAppBar("Inbox", M3TopAppBarVariant.SMALL, "menu", "search", "more");
         M3TopAppBar centerAligned = createTopAppBar("Calendar", M3TopAppBarVariant.CENTER_ALIGNED,
                 "back", "add", "more");
+        M3TopAppBar mediumFlexible = createTopAppBar(
+                "Library",
+                M3TopAppBarVariant.MEDIUM_FLEXIBLE,
+                "menu",
+                "search",
+                "more"
+        );
+        M3TopAppBar mediumFlexibleSubtitle = createTopAppBar(
+                "Messages",
+                M3TopAppBarVariant.MEDIUM_FLEXIBLE,
+                "back",
+                "search",
+                "more"
+        );
+        mediumFlexibleSubtitle.setSubtitle("4 unread conversations");
+        M3TopAppBar largeFlexible = createTopAppBar(
+                "Discover",
+                M3TopAppBarVariant.LARGE_FLEXIBLE,
+                "menu",
+                "search",
+                "more"
+        );
+        M3TopAppBar largeFlexibleSubtitle = createTopAppBar(
+                "Collections",
+                M3TopAppBarVariant.LARGE_FLEXIBLE,
+                "back",
+                "search",
+                "more"
+        );
+        largeFlexibleSubtitle.setSubtitle("Recently updated");
+
         M3TopAppBar medium = createTopAppBar("Project", M3TopAppBarVariant.MEDIUM, "menu", "search", "more");
         M3TopAppBar large = createTopAppBar("Workspace", M3TopAppBarVariant.LARGE, "menu", "search", "more");
-        M3TopAppBar smallScrolled = createTopAppBar("Inbox", M3TopAppBarVariant.SMALL, "menu", "search", "more");
-        M3TopAppBar mediumScrolled = createTopAppBar("Project", M3TopAppBarVariant.MEDIUM, "menu", "search", "more");
-        smallScrolled.setScrolledUnder(true);
+
+        M3TopAppBar mediumScrolled = createTopAppBar(
+                "Downloads",
+                M3TopAppBarVariant.MEDIUM_FLEXIBLE,
+                "menu",
+                "search",
+                "more"
+        );
+        M3TopAppBar largeScrolled = createTopAppBar(
+                "Photography",
+                M3TopAppBarVariant.LARGE_FLEXIBLE,
+                "back",
+                "search",
+                "more"
+        );
+        largeScrolled.setSubtitle("Shared collection");
         mediumScrolled.setScrolledUnder(true);
+        largeScrolled.setScrolledUnder(true);
+
+        M3Button toggleScrollState = new M3Button("Toggle scroll state");
+        toggleScrollState.setVariant(M3ButtonVariant.TONAL);
+        toggleScrollState.setOnAction(event -> {
+            boolean scrolledUnder = !mediumScrolled.isScrolledUnder();
+            mediumScrolled.setScrolledUnder(scrolledUnder);
+            largeScrolled.setScrolledUnder(scrolledUnder);
+        });
 
         return createGallery(
                 createAppBarShowcaseGroup(
-                        "Top App Bars",
+                        "Current Variants",
                         createLabeledAppBarPreview("Small", createTopAppBarPreview(small)),
                         createLabeledAppBarPreview("Center Aligned", createTopAppBarPreview(centerAligned)),
+                        createLabeledAppBarPreview("Medium Flexible", createTopAppBarPreview(mediumFlexible)),
+                        createLabeledAppBarPreview(
+                                "Medium Flexible with Subtitle",
+                                createTopAppBarPreview(mediumFlexibleSubtitle)
+                        ),
+                        createLabeledAppBarPreview("Large Flexible", createTopAppBarPreview(largeFlexible)),
+                        createLabeledAppBarPreview(
+                                "Large Flexible with Subtitle",
+                                createTopAppBarPreview(largeFlexibleSubtitle)
+                        )
+                ),
+                createAppBarShowcaseGroup(
+                        "Baseline Compatibility",
                         createLabeledAppBarPreview("Medium", createTopAppBarPreview(medium)),
                         createLabeledAppBarPreview("Large", createTopAppBarPreview(large))
                 ),
                 createAppBarShowcaseGroup(
-                        "Scrolled Under",
-                        createLabeledAppBarPreview("Small scrolled", createTopAppBarPreview(smallScrolled)),
-                        createLabeledAppBarPreview("Medium scrolled", createTopAppBarPreview(mediumScrolled))
+                        "Scroll Transformation",
+                        toggleScrollState,
+                        createLabeledAppBarPreview("Medium Flexible collapsed", createTopAppBarPreview(mediumScrolled)),
+                        createLabeledAppBarPreview("Large Flexible collapsed", createTopAppBarPreview(largeScrolled))
                 )
         );
     }
 
     /// Creates the toolbar component page.
     private Node createToolbarsPage() {
-        M3Toolbar standard = createToolbar(
-                M3ToolbarVariant.STANDARD,
+        M3Toolbar floatingStandard = createToolbar(
+                M3ToolbarVariant.FLOATING,
+                M3ToolbarColorStyle.STANDARD,
                 Orientation.HORIZONTAL,
                 "archive",
                 "share",
                 "edit",
                 "more"
         );
-        M3Toolbar floating = createToolbar(
+        M3Toolbar floatingVibrant = createToolbar(
                 M3ToolbarVariant.FLOATING,
+                M3ToolbarColorStyle.VIBRANT,
                 Orientation.HORIZONTAL,
                 "bold",
                 "italic",
@@ -2121,18 +2231,31 @@ public final class M3FXDemoApp extends Application {
                 "tune",
                 "visibility"
         );
-        M3Toolbar docked = createToolbar(
+        M3Toolbar dockedStandard = createToolbar(
                 M3ToolbarVariant.DOCKED,
+                M3ToolbarColorStyle.STANDARD,
                 Orientation.HORIZONTAL,
                 "home",
                 "search",
                 "notifications",
                 "person"
         );
-        docked.setMaxWidth(Double.MAX_VALUE);
+        dockedStandard.setMaxWidth(Double.MAX_VALUE);
+
+        M3Toolbar dockedVibrant = createToolbar(
+                M3ToolbarVariant.DOCKED,
+                M3ToolbarColorStyle.VIBRANT,
+                Orientation.HORIZONTAL,
+                "search",
+                "favorite",
+                "settings",
+                "more"
+        );
+        dockedVibrant.setMaxWidth(Double.MAX_VALUE);
 
         M3Toolbar vertical = createToolbar(
                 M3ToolbarVariant.FLOATING,
+                M3ToolbarColorStyle.VIBRANT,
                 Orientation.VERTICAL,
                 "search",
                 "favorite",
@@ -2140,11 +2263,33 @@ public final class M3FXDemoApp extends Application {
                 "more"
         );
 
+        M3Toolbar pairedToolbar = createToolbar(
+                M3ToolbarVariant.FLOATING,
+                M3ToolbarColorStyle.STANDARD,
+                Orientation.HORIZONTAL,
+                "archive",
+                "share",
+                "more"
+        );
+        HBox toolbarWithFab = new HBox(
+                8.0,
+                pairedToolbar,
+                createFab(
+                        "add",
+                        M3FloatingActionButtonVariant.SECONDARY_CONTAINER,
+                        M3FloatingActionButtonSize.REGULAR
+                )
+        );
+        toolbarWithFab.setAlignment(Pos.CENTER_LEFT);
+        toolbarWithFab.getStyleClass().add("demo-toolbar-fab-pair");
+
         return createGallery(
-                createShowcaseGroup("Standard", standard),
-                createShowcaseGroup("Floating", floating),
-                createFullWidthShowcaseGroup("Docked", createToolbarPreview(docked)),
-                createShowcaseGroup("Vertical", vertical)
+                createShowcaseGroup("Floating Standard", floatingStandard),
+                createShowcaseGroup("Floating Vibrant", floatingVibrant),
+                createFullWidthShowcaseGroup("Docked Standard", createToolbarPreview(dockedStandard)),
+                createFullWidthShowcaseGroup("Docked Vibrant", createToolbarPreview(dockedVibrant)),
+                createShowcaseGroup("Floating With FAB", toolbarWithFab),
+                createShowcaseGroup("Vertical Floating", vertical)
         );
     }
 
@@ -2635,14 +2780,18 @@ public final class M3FXDemoApp extends Application {
     /// Creates the side sheet component page.
     private Node createSideSheetsPage() {
         M3SideSheet sideSheet = new M3SideSheet("Details", createSheetContent());
-        sideSheet.getActions().add(createIconButton("close"));
+        sideSheet.getHeaderActions().add(createIconButton("close"));
 
         M3SideSheet modalSideSheet = new M3SideSheet("Filters", createSheetContent());
-        modalSideSheet.getActions().add(createIconButton("close"));
+        modalSideSheet.getHeaderActions().add(createIconButton("close"));
+        modalSideSheet.getActions().addAll(
+                new M3Button("Cancel", M3ButtonVariant.TEXT),
+                new M3Button("Apply", M3ButtonVariant.FILLED)
+        );
         modalSideSheet.setVariant(M3SheetVariant.MODAL);
 
         M3SideSheet detachedSideSheet = new M3SideSheet("Detached", createSheetContent());
-        detachedSideSheet.getActions().add(createIconButton("close"));
+        detachedSideSheet.getHeaderActions().add(createIconButton("close"));
         detachedSideSheet.setDetached(true);
 
         return createGallery(
@@ -2853,8 +3002,24 @@ public final class M3FXDemoApp extends Application {
         actionButton.setOnAction(event -> showActionSnackbar());
         M3Button queueButton = new M3Button("Queue messages", M3ButtonVariant.OUTLINED);
         queueButton.setOnAction(event -> showQueuedSnackbars());
+        M3Button dismissibleButton = new M3Button("Show dismissible", M3ButtonVariant.ELEVATED);
+        dismissibleButton.setOnAction(event -> {
+            M3SnackbarHost activeHost = snackbarHost;
+            if (activeHost == null) {
+                return;
+            }
+            M3Snackbar snackbar = new M3Snackbar("Dismiss this message");
+            snackbar.setCloseButtonVisible(true);
+            activeHost.show(snackbar);
+        });
 
-        return createGallery(createShowcaseGroup("Snackbar Host", messageButton, actionButton, queueButton));
+        return createGallery(createShowcaseGroup(
+                "Snackbar Host",
+                messageButton,
+                actionButton,
+                dismissibleButton,
+                queueButton
+        ));
     }
 
     /// Creates the form helpers demo page.
@@ -2984,9 +3149,22 @@ public final class M3FXDemoApp extends Application {
         richActionTooltip.getActions().add(actionButton);
         M3Tooltip.install(richAction, richActionTooltip);
 
+        M3Button persistent = new M3Button("Persistent rich tooltip", M3ButtonVariant.FILLED);
+        M3RichTooltip persistentTooltip = new M3RichTooltip(
+                "Try keyboard shortcuts",
+                "Persistent rich tooltips open from an explicit click and remain available while their actions are used."
+        );
+        persistentTooltip.setPersistent(true);
+        M3Button learnMore = new M3Button("Learn more", M3ButtonVariant.TEXT);
+        M3Button dismiss = new M3Button("Dismiss", M3ButtonVariant.TEXT);
+        dismiss.setOnAction(event -> persistentTooltip.hide());
+        persistentTooltip.getActions().addAll(learnMore, dismiss);
+        M3Tooltip.install(persistent, persistentTooltip);
+
         return createGallery(
                 createShowcaseGroup("Plain", plain, longText, iconButton),
-                createShowcaseGroup("Rich", rich, richAction)
+                createShowcaseGroup("Transient Rich", rich, richAction),
+                createShowcaseGroup("Persistent Rich", persistent)
         );
     }
 
@@ -3449,14 +3627,33 @@ public final class M3FXDemoApp extends Application {
     }
 
     /// Creates a toolbar sample.
-    private static M3Toolbar createToolbar(M3ToolbarVariant variant, Orientation orientation, String... iconNames) {
+    private static M3Toolbar createToolbar(
+            M3ToolbarVariant variant,
+            M3ToolbarColorStyle colorStyle,
+            Orientation orientation,
+            String... iconNames
+    ) {
         Objects.requireNonNull(iconNames, "iconNames");
 
         M3Toolbar toolbar = new M3Toolbar();
         toolbar.setVariant(variant);
+        toolbar.setColorStyle(colorStyle);
         toolbar.setOrientation(orientation);
-        for (String iconName : iconNames) {
-            toolbar.getItems().add(createToolbarIconButton(iconName));
+        for (int index = 0; index < iconNames.length; index++) {
+            String iconName = iconNames[index];
+            if (index == 1) {
+                M3IconToggleButton selected = createIconToggleButton(
+                        iconName,
+                        M3IconToggleButtonVariant.STANDARD,
+                        true
+                );
+                selected.setAccessibleText(toolbarIconAccessibleText(iconName));
+                toolbar.getItems().add(selected);
+            } else {
+                M3IconButton button = createToolbarIconButton(iconName);
+                button.setDisable(index == iconNames.length - 1);
+                toolbar.getItems().add(button);
+            }
         }
         return toolbar;
     }

@@ -5,22 +5,18 @@ package org.glavo.m3fx.controls;
 
 import org.jetbrains.annotations.NotNullByDefault;
 
-/// Defines the visual treatment of a Material Design toolbar.
+/// Identifies how a Material Design toolbar is positioned relative to application content.
 ///
-/// Toolbar variants change the container color, shape, and elevation while keeping the same item layout API.
-/// Use `STANDARD` for inline tool rows, `FLOATING` for prominent contextual tool palettes, and `DOCKED` when the
-/// toolbar sits flush against an application edge.
+/// Floating and docked toolbars use different container shapes, elevation, padding, and item-spacing rules. Their
+/// color mapping is selected independently through [M3Toolbar#setColorStyle(M3ToolbarColorStyle)].
 ///
 /// See [Material Design toolbars](https://m3.material.io/components/toolbars/overview).
 @NotNullByDefault
 public enum M3ToolbarVariant {
-    /// A flat toolbar that blends with the surrounding surface.
-    STANDARD("m3-toolbar-standard"),
-
-    /// A rounded elevated toolbar for floating contextual tools.
+    /// A rounded, elevated toolbar placed over or between application content.
     FLOATING("m3-toolbar-floating"),
 
-    /// A full-width or full-height toolbar docked to an application edge.
+    /// A flat toolbar attached to an application edge.
     DOCKED("m3-toolbar-docked");
 
     /// The style class representing this variant.

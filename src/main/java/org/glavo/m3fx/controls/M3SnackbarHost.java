@@ -5,6 +5,7 @@ package org.glavo.m3fx.controls;
 
 import javafx.animation.Animation;
 import javafx.animation.PauseTransition;
+import javafx.beans.InvalidationListener;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
@@ -14,6 +15,8 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.event.Event;
+import javafx.event.EventHandler;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -106,6 +109,17 @@ public class M3SnackbarHost extends Control {
     private final M3AccessibleFocusNotifier focusNotifier =
             new M3AccessibleFocusNotifier(this, this::currentFocusNode);
 
+    /// Refreshes automatic dismissal when the current snackbar gains or loses an interactive affordance.
+    private final InvalidationListener snackbarInteractivityInvalidation = observable -> refreshDisplayTimer();
+
+    /// Dismisses the current snackbar when its close affordance requests dismissal.
+    private final EventHandler<Event> dismissRequestHandler = event -> {
+        if (event.getSource() == getSnackbar()) {
+            event.consume();
+            dismiss();
+        }
+    };
+
     /// Creates an empty snackbar host.
     public M3SnackbarHost() {
         M3ControlStyles.initialize(this, STYLE_CLASS);
@@ -161,8 +175,10 @@ public class M3SnackbarHost extends Control {
 
     /// Returns the display duration before automatic dismissal.
     ///
-    /// A null value resolves from the active [org.glavo.m3fx.animation.M3MotionBehavior]. A zero, unknown, or
-    /// indefinite duration disables automatic dismissal.
+    /// The duration applies only to snackbars without an action or close affordance. Actionable snackbars remain
+    /// visible until an action, dismissal request, replacement, or explicit host dismissal occurs. A null value
+    /// resolves from the active [org.glavo.m3fx.animation.M3MotionBehavior]. A zero, unknown, or indefinite duration
+    /// disables automatic dismissal.
     ///
     /// @return the display duration before automatic dismissal
     public final Duration getDisplayDuration() {
@@ -172,8 +188,9 @@ public class M3SnackbarHost extends Control {
 
     /// Sets the display duration before automatic dismissal.
     ///
-    /// A zero, unknown, or indefinite duration disables automatic dismissal. Set [displayDurationProperty] to
-    /// null to restore motion-behavior defaults.
+    /// The duration applies only to snackbars without an action or close affordance. A zero, unknown, or indefinite
+    /// duration disables automatic dismissal. Set [displayDurationProperty] to null to restore motion-behavior
+    /// defaults.
     ///
     /// @param displayDuration the display duration before automatic dismissal
     public final void setDisplayDuration(Duration displayDuration) {
@@ -182,8 +199,9 @@ public class M3SnackbarHost extends Control {
 
     /// Returns the display duration property.
     ///
-    /// A null value resolves from the active [org.glavo.m3fx.animation.M3MotionBehavior]. A zero, unknown, or
-    /// indefinite duration disables automatic dismissal.
+    /// The duration applies only to snackbars without an action or close affordance. A null value resolves from the
+    /// active [org.glavo.m3fx.animation.M3MotionBehavior]. A zero, unknown, or indefinite duration disables automatic
+    /// dismissal.
     ///
     /// @return the display duration property
     public final ObjectProperty<@Nullable Duration> displayDurationProperty() {
@@ -228,9 +246,15 @@ public class M3SnackbarHost extends Control {
         boolean enteringNewSnackbar = previousSnackbar != snackbar;
         if (enteringNewSnackbar) {
             if (previousSnackbar != null) {
+                previousSnackbar.actionTextProperty().removeListener(snackbarInteractivityInvalidation);
+                previousSnackbar.closeButtonVisibleProperty().removeListener(snackbarInteractivityInvalidation);
+                previousSnackbar.removeEventHandler(M3Snackbar.DISMISS_REQUEST, dismissRequestHandler);
                 resetSnackbar(previousSnackbar);
             }
             this.snackbar.set(snackbar);
+            snackbar.actionTextProperty().addListener(snackbarInteractivityInvalidation);
+            snackbar.closeButtonVisibleProperty().addListener(snackbarInteractivityInvalidation);
+            snackbar.addEventHandler(M3Snackbar.DISMISS_REQUEST, dismissRequestHandler);
             snackbar.setOpacity(0.0);
             snackbar.setTranslateY(TRANSITION_OFFSET_Y);
             notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
@@ -401,6 +425,8 @@ public class M3SnackbarHost extends Control {
         if (target == null
                 || !showing.get()
                 || !isShowingWindow()
+                || target.hasAction()
+                || target.isCloseButtonVisible()
                 || duration.isUnknown()
                 || duration.isIndefinite()
                 || duration.lessThanOrEqualTo(Duration.ZERO)) {
@@ -544,6 +570,9 @@ public class M3SnackbarHost extends Control {
         }
 
         boolean transferActionFocus = snackbarFocusNodeOwnsFocus(target);
+        target.actionTextProperty().removeListener(snackbarInteractivityInvalidation);
+        target.closeButtonVisibleProperty().removeListener(snackbarInteractivityInvalidation);
+        target.removeEventHandler(M3Snackbar.DISMISS_REQUEST, dismissRequestHandler);
         resetSnackbar(target);
         this.snackbar.set(null);
         notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);

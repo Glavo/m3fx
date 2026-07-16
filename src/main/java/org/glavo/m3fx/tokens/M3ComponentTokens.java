@@ -411,26 +411,30 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double iconMediumSize = density.apply(24.0);
         double iconLargeSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 36.0 : 32.0);
         double iconExtraLargeSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 44.0 : 40.0);
-        double segmentedButtonHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 48.0 : 40.0);
-        double tabHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 56.0 : 48.0);
-        double tabMinWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 104.0 : 90.0);
+        double segmentedButtonHeight = density.apply(40.0);
+        double tabHeight = density.apply(48.0);
+        double tabMinWidth = density.apply(90.0);
         double fieldHeight = density.apply(56.0);
         double textAreaHeight = density.apply(112.0);
         double menuItemHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 44.0 : 48.0);
         double searchBarHeight = density.apply(56.0);
-        double pickerNavigationButtonSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 48.0 : 40.0);
+        double pickerNavigationButtonSize = density.apply(40.0);
         double sideSheetWidth = density.apply(256.0);
         double sideSheetMaxWidth = density.apply(400.0);
         double bottomSheetMaxWidth = density.apply(640.0);
         double chipHeight = density.apply(32.0);
-        double badgeSmallSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 8.0 : 6.0);
-        double badgeLargeHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 18.0 : 16.0);
-        double badgeLargeMinWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 18.0 : 16.0);
-        double avatarSize = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 44.0 : 40.0);
-        double topAppBarHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 72.0 : 64.0);
-        double topAppBarMediumHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 120.0 : 112.0);
-        double topAppBarLargeHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 160.0 : 152.0);
-        double bottomAppBarHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 88.0 : 80.0);
+        double badgeSmallSize = density.apply(6.0);
+        double badgeLargeHeight = density.apply(16.0);
+        double badgeLargeMinWidth = density.apply(16.0);
+        double avatarSize = density.apply(40.0);
+        double topAppBarHeight = density.apply(64.0);
+        double topAppBarMediumHeight = density.apply(112.0);
+        double topAppBarLargeHeight = density.apply(152.0);
+        double topAppBarMediumFlexibleHeight = density.apply(112.0);
+        double topAppBarMediumFlexibleSubtitleHeight = density.apply(136.0);
+        double topAppBarLargeFlexibleHeight = density.apply(120.0);
+        double topAppBarLargeFlexibleSubtitleHeight = density.apply(152.0);
+        double bottomAppBarHeight = density.apply(80.0);
         double navigationBarHeight = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 64.0 : 80.0);
         double navigationItemWidth = density.apply(80.0);
         double navigationIndicatorWidth = density.apply(profile == M3Profile.EXPRESSIVE_2025 ? 56.0 : 64.0);
@@ -497,12 +501,12 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double searchViewMaxWidth = density.apply(720.0);
         double searchViewDockedMinHeight = density.apply(240.0);
         double searchViewFullScreenDividedHeaderHeight = density.apply(72.0);
-        double pickerFieldPopupShape = expressive ? shapeTokens.extraLarge() : 28.0;
-        double pickerFieldPopupPadding = density.apply(expressive ? 20.0 : 16.0);
-        double pickerFieldPopupSpacing = density.apply(expressive ? 20.0 : 16.0);
-        double pickerFieldPresetListWidth = density.apply(expressive ? 148.0 : 132.0);
-        double pickerFieldPresetListSpacing = density.apply(expressive ? 8.0 : 6.0);
-        double pickerFieldPresetButtonHorizontalPadding = density.apply(expressive ? 16.0 : 12.0);
+        double pickerFieldPopupShape = shapeTokens.extraLarge();
+        double pickerFieldPopupPadding = density.apply(16.0);
+        double pickerFieldPopupSpacing = density.apply(16.0);
+        double pickerFieldPresetListWidth = density.apply(132.0);
+        double pickerFieldPresetListSpacing = density.apply(6.0);
+        double pickerFieldPresetButtonHorizontalPadding = density.apply(12.0);
         double datePickerContainerWidth = density.apply(360.0);
         double datePickerDockedContainerShape = shapeTokens.large();
         double datePickerModalContainerShape = shapeTokens.extraLarge();
@@ -539,8 +543,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double sheetDragHandleVerticalPadding = density.apply(22.0);
         double sheetDragHandleWidth = density.apply(32.0);
         double sheetDragHandleHeight = density.apply(4.0);
-        double cardContainerShape = expressive ? shapeTokens.large() : shapeTokens.medium();
-        double cardContentPadding = density.apply(expressive ? 20.0 : 16.0);
+        double cardContainerShape = shapeTokens.medium();
+        double cardContentPadding = density.apply(16.0);
         double dialogContentPadding = density.apply(24.0);
         double dialogContainerMinWidth = density.apply(280.0);
         double dialogContainerMaxWidth = density.apply(560.0);
@@ -553,11 +557,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double snackbarSingleLineContainerHeight = density.apply(48.0);
         double snackbarTwoLineContainerHeight = density.apply(68.0);
         double snackbarActionContainerHeight = density.apply(32.0);
-        double bannerMinHeight = density.apply(expressive ? 88.0 : 80.0);
-        double bannerVerticalPadding = density.apply(expressive ? 20.0 : 16.0);
-        double bannerHorizontalPadding = density.apply(expressive ? 28.0 : 24.0);
-        double bannerContentSpacing = density.apply(expressive ? 20.0 : 16.0);
-        double bannerActionSpacing = density.apply(expressive ? 12.0 : 8.0);
+        double bannerMinHeight = density.apply(80.0);
+        double bannerVerticalPadding = density.apply(16.0);
+        double bannerHorizontalPadding = density.apply(24.0);
+        double bannerContentSpacing = density.apply(16.0);
+        double bannerActionSpacing = density.apply(8.0);
         double tooltipPlainContainerShape = shapeTokens.extraSmall();
         double tooltipPlainVerticalPadding = density.apply(4.0);
         double tooltipPlainHorizontalPadding = density.apply(8.0);
@@ -570,25 +574,32 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double tooltipRichActionSpacing = density.apply(8.0);
         double tooltipRichActionButtonHeight = density.apply(32.0);
         double tooltipRichActionButtonHorizontalPadding = density.apply(12.0);
-        double appBarHorizontalPadding = density.apply(expressive ? 24.0 : 16.0);
-        double topAppBarContentSpacing = density.apply(expressive ? 12.0 : 8.0);
+        double appBarHorizontalPadding = density.apply(16.0);
+        double topAppBarEdgePadding = density.apply(4.0);
+        double topAppBarContentSpacing = 0.0;
         double topAppBarActionSpacing = 0.0;
-        double bottomAppBarContentSpacing = density.apply(expressive ? 20.0 : 16.0);
+        double bottomAppBarContentSpacing = density.apply(16.0);
         double bottomAppBarActionSpacing = 0.0;
-        double topAppBarMediumBottomPadding = density.apply(expressive ? 24.0 : 20.0);
-        double topAppBarLargeBottomPadding = density.apply(expressive ? 32.0 : 28.0);
-        double toolbarContainerHeight = density.apply(expressive ? 72.0 : 64.0);
-        double toolbarContainerWidth = density.apply(expressive ? 72.0 : 64.0);
-        double toolbarContainerShape = expressive ? shapeTokens.extraLarge() : shapeTokens.large();
-        double toolbarItemSlotSize = density.apply(expressive ? 56.0 : 48.0);
-        double toolbarContentPadding = density.apply(expressive ? 10.0 : 8.0);
-        double toolbarItemSpacing = density.apply(expressive ? 4.0 : 0.0);
+        double topAppBarMediumBottomPadding = density.apply(20.0);
+        double topAppBarLargeBottomPadding = density.apply(28.0);
+        double topAppBarFlexibleBottomPadding = density.apply(12.0);
+        double toolbarContainerHeight = density.apply(64.0);
+        double toolbarContainerWidth = density.apply(64.0);
+        double toolbarContainerShape = expressive ? shapeTokens.full() : shapeTokens.large();
+        double toolbarItemSlotSize = density.apply(48.0);
+        double toolbarContentPadding = density.apply(8.0);
+        double toolbarDockedContentPadding = density.apply(16.0);
+        double toolbarItemSpacing = density.apply(4.0);
+        double toolbarDockedMaxItemSpacing = density.apply(32.0);
         double buttonHorizontalPadding = density.apply(expressive ? 16.0 : 24.0);
         double textButtonHorizontalPadding = density.apply(expressive ? 16.0 : 12.0);
-        double segmentedButtonHorizontalPadding = density.apply(expressive ? 16.0 : 12.0);
-        double tabHorizontalPadding = density.apply(expressive ? 20.0 : 16.0);
-        double tabActiveIndicatorHeight = density.apply(expressive ? 4.0 : 3.0);
-        double tabActiveIndicatorShape = density.apply(expressive ? 4.0 : 3.0);
+        double segmentedButtonHorizontalPadding = density.apply(12.0);
+        double tabHorizontalPadding = density.apply(16.0);
+        double tabActiveIndicatorHeight = density.apply(3.0);
+        double tabSecondaryActiveIndicatorHeight = density.apply(2.0);
+        double tabActiveIndicatorShape = density.apply(3.0);
+        double tabActiveIndicatorMinWidth = density.apply(24.0);
+        double tabActiveIndicatorHorizontalInset = density.apply(2.0);
         double chipHorizontalPadding = density.apply(16.0);
         double chipIconHorizontalPadding = density.apply(8.0);
         double chipElementSpacing = density.apply(8.0);
@@ -601,20 +612,20 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         double fieldHorizontalPadding = density.apply(16.0);
         double textAreaHorizontalPadding = density.apply(16.0);
         double textAreaVerticalPadding = density.apply(16.0);
-        double formRowSpacing = density.apply(expressive ? 20.0 : 16.0);
-        double formSectionContentSpacing = density.apply(expressive ? 16.0 : 12.0);
-        double formSectionHeaderSpacing = density.apply(expressive ? 6.0 : 4.0);
-        double formSectionHeaderBottomPadding = density.apply(expressive ? 6.0 : 4.0);
-        double formRowLabelWidth = density.apply(expressive ? 200.0 : 180.0);
-        double formRowColumnSpacing = density.apply(expressive ? 28.0 : 24.0);
-        double formRowMinHeight = density.apply(expressive ? 72.0 : 64.0);
-        double formRowTextSpacing = density.apply(expressive ? 4.0 : 2.0);
-        double validationSummaryContainerShape = expressive ? shapeTokens.medium() : shapeTokens.small();
-        double validationSummaryContentPadding = density.apply(expressive ? 20.0 : 16.0);
-        double validationSummaryItemsSpacing = density.apply(expressive ? 6.0 : 4.0);
-        double validationSummaryItemShape = expressive ? shapeTokens.small() : shapeTokens.extraSmall();
-        double validationSummaryItemVerticalPadding = density.apply(expressive ? 10.0 : 8.0);
-        double validationSummaryItemHorizontalPadding = density.apply(expressive ? 12.0 : 10.0);
+        double formRowSpacing = density.apply(16.0);
+        double formSectionContentSpacing = density.apply(12.0);
+        double formSectionHeaderSpacing = density.apply(4.0);
+        double formSectionHeaderBottomPadding = density.apply(4.0);
+        double formRowLabelWidth = density.apply(180.0);
+        double formRowColumnSpacing = density.apply(24.0);
+        double formRowMinHeight = density.apply(64.0);
+        double formRowTextSpacing = density.apply(2.0);
+        double validationSummaryContainerShape = shapeTokens.small();
+        double validationSummaryContentPadding = density.apply(16.0);
+        double validationSummaryItemsSpacing = density.apply(4.0);
+        double validationSummaryItemShape = shapeTokens.extraSmall();
+        double validationSummaryItemVerticalPadding = density.apply(8.0);
+        double validationSummaryItemHorizontalPadding = density.apply(10.0);
         double selectionTouchTargetSize = density.apply(48.0);
         double selectionStateLayerSize = density.apply(40.0);
         double checkboxContainerSize = density.apply(18.0);
@@ -677,8 +688,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         density.apply(8.0)
                 )
         );
-        double surfaceContainerShape = expressive ? shapeTokens.large() : shapeTokens.medium();
-        double surfaceContentPadding = density.apply(expressive ? 20.0 : 16.0);
+        double surfaceContainerShape = shapeTokens.medium();
+        double surfaceContentPadding = density.apply(16.0);
         double carouselTrackHorizontalPadding = density.apply(16.0);
         double carouselTrackVerticalPadding = density.apply(8.0);
         double carouselItemSpacing = density.apply(8.0);
@@ -878,7 +889,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         tabMinWidth,
                         tabHorizontalPadding,
                         tabActiveIndicatorHeight,
-                        tabActiveIndicatorShape
+                        tabSecondaryActiveIndicatorHeight,
+                        tabActiveIndicatorShape,
+                        tabActiveIndicatorMinWidth,
+                        tabActiveIndicatorHorizontalInset
                 ),
                 new FieldTokens(fieldHeight, shapeTokens.extraSmall(), fieldHorizontalPadding),
                 new TextAreaTokens(
@@ -1119,9 +1133,15 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         topAppBarHeight,
                         topAppBarMediumHeight,
                         topAppBarLargeHeight,
+                        topAppBarMediumFlexibleHeight,
+                        topAppBarMediumFlexibleSubtitleHeight,
+                        topAppBarLargeFlexibleHeight,
+                        topAppBarLargeFlexibleSubtitleHeight,
+                        topAppBarEdgePadding,
                         appBarHorizontalPadding,
                         topAppBarMediumBottomPadding,
                         topAppBarLargeBottomPadding,
+                        topAppBarFlexibleBottomPadding,
                         topAppBarContentSpacing,
                         topAppBarActionSpacing
                 ),
@@ -1137,7 +1157,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
                         toolbarContainerShape,
                         toolbarItemSlotSize,
                         toolbarContentPadding,
-                        toolbarItemSpacing
+                        toolbarDockedContentPadding,
+                        toolbarItemSpacing,
+                        toolbarDockedMaxItemSpacing
                 ),
                 new NavigationBarTokens(
                         navigationBarHeight,
@@ -1578,20 +1600,6 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendBadgeRule(builder, badge());
         appendAvatarRule(builder, avatar());
         appendTopAppBarRule(builder, topAppBar());
-        appendTopAppBarVariantRule(
-                builder,
-                ".m3-top-app-bar-medium",
-                topAppBar().mediumContainerHeight(),
-                topAppBar().mediumBottomPadding(),
-                topAppBar()
-        );
-        appendTopAppBarVariantRule(
-                builder,
-                ".m3-top-app-bar-large",
-                topAppBar().largeContainerHeight(),
-                topAppBar().largeBottomPadding(),
-                topAppBar()
-        );
         appendBottomAppBarRule(builder, bottomAppBar());
         appendToolbarRule(builder, toolbar());
         appendNavigationBarRule(builder, navigationBar());
@@ -1866,7 +1874,22 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-tab-min-width", M3TokenCss.pixels(tokens.tabMinWidth()));
         M3TokenCss.append(builder, "-m3-tab-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
         M3TokenCss.append(builder, "-m3-tab-active-indicator-height", M3TokenCss.pixels(tokens.activeIndicatorHeight()));
+        M3TokenCss.append(
+                builder,
+                "-m3-secondary-tab-active-indicator-height",
+                M3TokenCss.pixels(tokens.secondaryActiveIndicatorHeight())
+        );
         M3TokenCss.append(builder, "-m3-tab-active-indicator-shape", M3TokenCss.pixels(tokens.activeIndicatorShape()));
+        M3TokenCss.append(
+                builder,
+                "-m3-tab-active-indicator-min-width",
+                M3TokenCss.pixels(tokens.activeIndicatorMinWidth())
+        );
+        M3TokenCss.append(
+                builder,
+                "-m3-tab-active-indicator-horizontal-inset",
+                M3TokenCss.pixels(tokens.activeIndicatorHorizontalInset())
+        );
     }
 
     /// Appends field token declarations.
@@ -2302,9 +2325,20 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-top-app-bar-container-height", M3TokenCss.pixels(tokens.containerHeight()));
         M3TokenCss.append(builder, "-m3-top-app-bar-medium-container-height", M3TokenCss.pixels(tokens.mediumContainerHeight()));
         M3TokenCss.append(builder, "-m3-top-app-bar-large-container-height", M3TokenCss.pixels(tokens.largeContainerHeight()));
+        M3TokenCss.append(builder, "-m3-top-app-bar-medium-flexible-container-height",
+                M3TokenCss.pixels(tokens.mediumFlexibleContainerHeight()));
+        M3TokenCss.append(builder, "-m3-top-app-bar-medium-flexible-subtitle-container-height",
+                M3TokenCss.pixels(tokens.mediumFlexibleSubtitleContainerHeight()));
+        M3TokenCss.append(builder, "-m3-top-app-bar-large-flexible-container-height",
+                M3TokenCss.pixels(tokens.largeFlexibleContainerHeight()));
+        M3TokenCss.append(builder, "-m3-top-app-bar-large-flexible-subtitle-container-height",
+                M3TokenCss.pixels(tokens.largeFlexibleSubtitleContainerHeight()));
+        M3TokenCss.append(builder, "-m3-top-app-bar-edge-padding", M3TokenCss.pixels(tokens.edgePadding()));
         M3TokenCss.append(builder, "-m3-top-app-bar-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
         M3TokenCss.append(builder, "-m3-top-app-bar-medium-bottom-padding", M3TokenCss.pixels(tokens.mediumBottomPadding()));
         M3TokenCss.append(builder, "-m3-top-app-bar-large-bottom-padding", M3TokenCss.pixels(tokens.largeBottomPadding()));
+        M3TokenCss.append(builder, "-m3-top-app-bar-flexible-bottom-padding",
+                M3TokenCss.pixels(tokens.flexibleBottomPadding()));
         M3TokenCss.append(builder, "-m3-top-app-bar-content-spacing", M3TokenCss.pixels(tokens.contentSpacing()));
         M3TokenCss.append(builder, "-m3-top-app-bar-action-spacing", M3TokenCss.pixels(tokens.actionSpacing()));
     }
@@ -2324,7 +2358,17 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         M3TokenCss.append(builder, "-m3-toolbar-container-shape", M3TokenCss.pixels(tokens.containerShape()));
         M3TokenCss.append(builder, "-m3-toolbar-item-slot-size", M3TokenCss.pixels(tokens.itemSlotSize()));
         M3TokenCss.append(builder, "-m3-toolbar-content-padding", M3TokenCss.pixels(tokens.contentPadding()));
+        M3TokenCss.append(
+                builder,
+                "-m3-toolbar-docked-content-padding",
+                M3TokenCss.pixels(tokens.dockedContentPadding())
+        );
         M3TokenCss.append(builder, "-m3-toolbar-item-spacing", M3TokenCss.pixels(tokens.itemSpacing()));
+        M3TokenCss.append(
+                builder,
+                "-m3-toolbar-docked-max-item-spacing",
+                M3TokenCss.pixels(tokens.dockedMaxItemSpacing())
+        );
     }
 
     /// Appends navigation bar token declarations.
@@ -2646,6 +2690,21 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
         appendDeclaration(builder, "-m3-active-indicator-height", M3TokenCss.pixels(tokens.activeIndicatorHeight()));
         appendDeclaration(builder, "-m3-active-indicator-shape", M3TokenCss.pixels(tokens.activeIndicatorShape()));
+        appendDeclaration(builder, "-m3-active-indicator-min-width", M3TokenCss.pixels(tokens.activeIndicatorMinWidth()));
+        appendDeclaration(
+                builder,
+                "-m3-active-indicator-horizontal-inset",
+                M3TokenCss.pixels(tokens.activeIndicatorHorizontalInset())
+        );
+        endRule(builder);
+
+        beginRule(builder, ".m3-tab:secondary");
+        appendDeclaration(
+                builder,
+                "-m3-active-indicator-height",
+                M3TokenCss.pixels(tokens.secondaryActiveIndicatorHeight())
+        );
+        appendDeclaration(builder, "-m3-active-indicator-shape", "0px");
         endRule(builder);
     }
 
@@ -4118,31 +4177,22 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(tokens.containerHeight()));
         appendDeclaration(builder, "-m3-medium-container-height", M3TokenCss.pixels(tokens.mediumContainerHeight()));
         appendDeclaration(builder, "-m3-large-container-height", M3TokenCss.pixels(tokens.largeContainerHeight()));
+        appendDeclaration(builder, "-m3-medium-flexible-container-height",
+                M3TokenCss.pixels(tokens.mediumFlexibleContainerHeight()));
+        appendDeclaration(builder, "-m3-medium-flexible-subtitle-container-height",
+                M3TokenCss.pixels(tokens.mediumFlexibleSubtitleContainerHeight()));
+        appendDeclaration(builder, "-m3-large-flexible-container-height",
+                M3TokenCss.pixels(tokens.largeFlexibleContainerHeight()));
+        appendDeclaration(builder, "-m3-large-flexible-subtitle-container-height",
+                M3TokenCss.pixels(tokens.largeFlexibleSubtitleContainerHeight()));
+        appendDeclaration(builder, "-m3-edge-padding", M3TokenCss.pixels(tokens.edgePadding()));
         appendDeclaration(builder, "-m3-horizontal-padding", M3TokenCss.pixels(tokens.horizontalPadding()));
         appendDeclaration(builder, "-m3-medium-bottom-padding", M3TokenCss.pixels(tokens.mediumBottomPadding()));
         appendDeclaration(builder, "-m3-large-bottom-padding", M3TokenCss.pixels(tokens.largeBottomPadding()));
+        appendDeclaration(builder, "-m3-flexible-bottom-padding", M3TokenCss.pixels(tokens.flexibleBottomPadding()));
         appendDeclaration(builder, "-m3-content-spacing", M3TokenCss.pixels(tokens.contentSpacing()));
         appendDeclaration(builder, "-m3-action-spacing", M3TokenCss.pixels(tokens.actionSpacing()));
-        appendDeclaration(builder, "-fx-min-height", M3TokenCss.pixels(tokens.containerHeight()));
-        appendDeclaration(builder, "-fx-pref-height", M3TokenCss.pixels(tokens.containerHeight()));
-        appendDeclaration(builder, "-fx-padding", "0 " + M3TokenCss.pixels(tokens.horizontalPadding()));
-        endRule(builder);
-    }
-
-    /// Appends a top app bar variant token CSS rule.
-    private static void appendTopAppBarVariantRule(
-            StringBuilder builder,
-            String selector,
-            double containerHeight,
-            double bottomPadding,
-            TopAppBarTokens tokens
-    ) {
-        String horizontalPadding = M3TokenCss.pixels(tokens.horizontalPadding());
-        String padding = "0 " + horizontalPadding + " " + M3TokenCss.pixels(bottomPadding) + " " + horizontalPadding;
-        beginRule(builder, selector);
-        appendDeclaration(builder, "-fx-min-height", M3TokenCss.pixels(containerHeight));
-        appendDeclaration(builder, "-fx-pref-height", M3TokenCss.pixels(containerHeight));
-        appendDeclaration(builder, "-fx-padding", padding);
+        appendDeclaration(builder, "-fx-padding", "0");
         endRule(builder);
     }
 
@@ -4167,21 +4217,45 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
         appendDeclaration(builder, "-m3-toolbar-container-shape", M3TokenCss.pixels(tokens.containerShape()));
         appendDeclaration(builder, "-m3-toolbar-item-slot-size", M3TokenCss.pixels(tokens.itemSlotSize()));
         appendDeclaration(builder, "-m3-toolbar-content-padding", M3TokenCss.pixels(tokens.contentPadding()));
+        appendDeclaration(
+                builder,
+                "-m3-toolbar-docked-content-padding",
+                M3TokenCss.pixels(tokens.dockedContentPadding())
+        );
         appendDeclaration(builder, "-m3-toolbar-item-spacing", M3TokenCss.pixels(tokens.itemSpacing()));
+        appendDeclaration(
+                builder,
+                "-m3-toolbar-docked-max-item-spacing",
+                M3TokenCss.pixels(tokens.dockedMaxItemSpacing())
+        );
         appendDeclaration(builder, "-m3-container-height", M3TokenCss.pixels(tokens.containerHeight()));
         appendDeclaration(builder, "-m3-container-width", M3TokenCss.pixels(tokens.containerWidth()));
         appendDeclaration(builder, "-m3-container-shape", M3TokenCss.pixels(tokens.containerShape()));
         appendDeclaration(builder, "-m3-item-slot-size", M3TokenCss.pixels(tokens.itemSlotSize()));
         appendDeclaration(builder, "-m3-content-padding", M3TokenCss.pixels(tokens.contentPadding()));
+        appendDeclaration(
+                builder,
+                "-m3-docked-content-padding",
+                M3TokenCss.pixels(tokens.dockedContentPadding())
+        );
         appendDeclaration(builder, "-m3-item-spacing", M3TokenCss.pixels(tokens.itemSpacing()));
-        endRule(builder);
-
-        beginRule(builder, ".m3-toolbar.m3-toolbar-standard");
-        appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.containerShape()));
+        appendDeclaration(
+                builder,
+                "-m3-docked-max-item-spacing",
+                M3TokenCss.pixels(tokens.dockedMaxItemSpacing())
+        );
         endRule(builder);
 
         beginRule(builder, ".m3-toolbar.m3-toolbar-floating");
         appendDeclaration(builder, "-fx-background-radius", M3TokenCss.pixels(tokens.containerShape()));
+        endRule(builder);
+
+        beginRule(builder, ".m3-toolbar.m3-toolbar-docked");
+        appendDeclaration(
+                builder,
+                "-m3-docked-content-padding",
+                M3TokenCss.pixels(tokens.dockedContentPadding())
+        );
         endRule(builder);
     }
 
@@ -4791,15 +4865,21 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param containerHeight       the tab container height
     /// @param tabMinWidth           the tab minimum width
     /// @param horizontalPadding     the horizontal content padding
-    /// @param activeIndicatorHeight the active indicator height
-    /// @param activeIndicatorShape  the active indicator radius
+    /// @param activeIndicatorHeight           the primary active indicator height
+    /// @param secondaryActiveIndicatorHeight  the secondary active indicator height
+    /// @param activeIndicatorShape            the active indicator radius
+    /// @param activeIndicatorMinWidth         the minimum primary active indicator length
+    /// @param activeIndicatorHorizontalInset  the extension on each side of primary tab content
     @NotNullByDefault
     record TabTokens(
             double containerHeight,
             double tabMinWidth,
             double horizontalPadding,
             double activeIndicatorHeight,
-            double activeIndicatorShape
+            double secondaryActiveIndicatorHeight,
+            double activeIndicatorShape,
+            double activeIndicatorMinWidth,
+            double activeIndicatorHorizontalInset
     ) {
         /// Creates tab tokens.
         public TabTokens {
@@ -4807,7 +4887,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(tabMinWidth, "tabMinWidth");
             validateNonNegative(horizontalPadding, "horizontalPadding");
             validateNonNegative(activeIndicatorHeight, "activeIndicatorHeight");
+            validateNonNegative(secondaryActiveIndicatorHeight, "secondaryActiveIndicatorHeight");
             validateNonNegative(activeIndicatorShape, "activeIndicatorShape");
+            validateNonNegative(activeIndicatorMinWidth, "activeIndicatorMinWidth");
+            validateNonNegative(activeIndicatorHorizontalInset, "activeIndicatorHorizontalInset");
         }
     }
 
@@ -5772,9 +5855,15 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param containerHeight       the small top app bar container height
     /// @param mediumContainerHeight the medium top app bar container height
     /// @param largeContainerHeight  the large top app bar container height
+    /// @param mediumFlexibleContainerHeight the medium flexible container height without a subtitle
+    /// @param mediumFlexibleSubtitleContainerHeight the medium flexible container height with a subtitle
+    /// @param largeFlexibleContainerHeight the large flexible container height without a subtitle
+    /// @param largeFlexibleSubtitleContainerHeight the large flexible container height with a subtitle
+    /// @param edgePadding            the outer space before leading and after trailing action slots
     /// @param horizontalPadding     the horizontal content padding
     /// @param mediumBottomPadding   the medium top app bar bottom content padding
     /// @param largeBottomPadding    the large top app bar bottom content padding
+    /// @param flexibleBottomPadding the bottom space below flexible title content
     /// @param contentSpacing        the spacing between leading, title, and trailing regions
     /// @param actionSpacing         the spacing between trailing action nodes
     @NotNullByDefault
@@ -5782,9 +5871,15 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double containerHeight,
             double mediumContainerHeight,
             double largeContainerHeight,
+            double mediumFlexibleContainerHeight,
+            double mediumFlexibleSubtitleContainerHeight,
+            double largeFlexibleContainerHeight,
+            double largeFlexibleSubtitleContainerHeight,
+            double edgePadding,
             double horizontalPadding,
             double mediumBottomPadding,
             double largeBottomPadding,
+            double flexibleBottomPadding,
             double contentSpacing,
             double actionSpacing
     ) {
@@ -5793,9 +5888,17 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(containerHeight, "containerHeight");
             validateNonNegative(mediumContainerHeight, "mediumContainerHeight");
             validateNonNegative(largeContainerHeight, "largeContainerHeight");
+            validateNonNegative(mediumFlexibleContainerHeight, "mediumFlexibleContainerHeight");
+            validateNonNegative(mediumFlexibleSubtitleContainerHeight,
+                    "mediumFlexibleSubtitleContainerHeight");
+            validateNonNegative(largeFlexibleContainerHeight, "largeFlexibleContainerHeight");
+            validateNonNegative(largeFlexibleSubtitleContainerHeight,
+                    "largeFlexibleSubtitleContainerHeight");
+            validateNonNegative(edgePadding, "edgePadding");
             validateNonNegative(horizontalPadding, "horizontalPadding");
             validateNonNegative(mediumBottomPadding, "mediumBottomPadding");
             validateNonNegative(largeBottomPadding, "largeBottomPadding");
+            validateNonNegative(flexibleBottomPadding, "flexibleBottomPadding");
             validateNonNegative(contentSpacing, "contentSpacing");
             validateNonNegative(actionSpacing, "actionSpacing");
         }
@@ -5830,7 +5933,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param containerShape  the toolbar container radius
     /// @param itemSlotSize    the minimum action slot width and height
     /// @param contentPadding  the padding around the toolbar item flow
-    /// @param itemSpacing     the spacing between action slots
+    /// @param dockedContentPadding the leading and trailing padding of a docked toolbar
+    /// @param itemSpacing     the minimum spacing between action slots
+    /// @param dockedMaxItemSpacing the preferred maximum spacing between docked action slots
     @NotNullByDefault
     record ToolbarTokens(
             double containerHeight,
@@ -5838,7 +5943,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double containerShape,
             double itemSlotSize,
             double contentPadding,
-            double itemSpacing
+            double dockedContentPadding,
+            double itemSpacing,
+            double dockedMaxItemSpacing
     ) {
         /// Creates toolbar tokens.
         public ToolbarTokens {
@@ -5847,7 +5954,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             validateNonNegative(containerShape, "containerShape");
             validateNonNegative(itemSlotSize, "itemSlotSize");
             validateNonNegative(contentPadding, "contentPadding");
+            validateNonNegative(dockedContentPadding, "dockedContentPadding");
             validateNonNegative(itemSpacing, "itemSpacing");
+            validateNonNegative(dockedMaxItemSpacing, "dockedMaxItemSpacing");
         }
     }
 

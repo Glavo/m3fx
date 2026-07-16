@@ -5,13 +5,16 @@ package org.glavo.m3fx.controls;
 
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.css.PseudoClass;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -39,7 +42,10 @@ import java.util.Objects;
 ///
 /// `M3TabBar` manages a list of [M3Tab] nodes, keeps selected tabs synchronized, exposes read-only selected-tab
 /// views, and supports keyboard traversal. It is intended for navigation between peer pages or views at the same
-/// hierarchy level.
+/// hierarchy level. Use [M3TabBarVariant#PRIMARY] for the principal peer views in a content region and
+/// [M3TabBarVariant#SECONDARY] for a subordinate level placed below primary tabs. [M3TabBarLayout#FIXED] keeps a
+/// small tab set visible in equal-width cells, while [M3TabBarLayout#SCROLLABLE] preserves content-derived widths
+/// for longer labels and larger sets.
 ///
 /// See [Material Design tabs](https://m3.material.io/components/tabs/overview).
 @NotNullByDefault
@@ -50,6 +56,44 @@ public class M3TabBar extends Control {
     /// The style class applied to the internal tab row container.
     public static final String CONTAINER_STYLE_CLASS = "m3-tab-bar-container";
 
+    /// The style class applied to the bottom divider rendered behind tab indicators.
+    public static final String DIVIDER_STYLE_CLASS = "m3-tab-bar-divider";
+
+    /// The pseudo-class applied to secondary tab bars and their tabs.
+    private static final PseudoClass SECONDARY_PSEUDO_CLASS = PseudoClass.getPseudoClass("secondary");
+
+    /// The pseudo-class applied while the tab row uses scrollable layout.
+    private static final PseudoClass SCROLLABLE_PSEUDO_CLASS = PseudoClass.getPseudoClass("scrollable");
+
+    /// The tab bar variant property.
+    private final ObjectProperty<M3TabBarVariant> variant =
+            new SimpleObjectProperty<>(this, "variant", M3TabBarVariant.PRIMARY) {
+                /// Updates the visual role of this bar and its installed tabs.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(M3TabBarVariant.PRIMARY);
+                        return;
+                    }
+                    updateVariantState();
+                }
+            };
+
+    /// The strategy used to distribute tabs in the bar.
+    private final ObjectProperty<M3TabBarLayout> tabLayout =
+            new SimpleObjectProperty<>(this, "tabLayout", M3TabBarLayout.FIXED) {
+                /// Normalizes null assignments and refreshes layout state.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(M3TabBarLayout.FIXED);
+                        return;
+                    }
+                    pseudoClassStateChanged(SCROLLABLE_PSEUDO_CLASS, get() == M3TabBarLayout.SCROLLABLE);
+                    requestLayout();
+                }
+            };
+
     /// The mutable tab content.
     private final ObservableList<Node> tabs = M3ObservableLists.nonNullElementList("tab");
 
@@ -58,7 +102,7 @@ public class M3TabBar extends Control {
             new M3AccessibleFocusNotifier(this, () ->
                     M3Accessible.currentOrSelectionFocusTarget(this, getTabs(), getSelectedTab(), M3Tab.class));
 
-    // The currently selected tab.
+    /// The currently selected tab.
     private final ReadOnlyObjectWrapper<@Nullable M3Tab> selectedTab =
             new ReadOnlyObjectWrapper<>(this, "selectedTab");
 
@@ -69,7 +113,7 @@ public class M3TabBar extends Control {
     private final @UnmodifiableView ObservableList<M3Tab> selectedTabsView =
             FXCollections.unmodifiableObservableList(selectedTabs);
 
-    // Whether the tab bar allows all tabs to be unselected.
+    /// Whether the tab bar allows all tabs to be unselected.
     private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection") {
         /// Restores a selected tab when empty selection is disabled.
         @Override
@@ -132,9 +176,52 @@ public class M3TabBar extends Control {
         return tabs;
     }
 
+    /// Returns the visual and hierarchical role of this tab bar.
+    ///
+    /// @return the tab bar variant
+    public final M3TabBarVariant getVariant() {
+        return variant.get();
+    }
 
+    /// Sets the visual and hierarchical role of this tab bar.
+    ///
+    /// Changing the variant preserves the selected tab and all keyboard and accessibility state.
+    ///
+    /// @param variant the tab bar variant
+    public final void setVariant(M3TabBarVariant variant) {
+        this.variant.set(Objects.requireNonNull(variant, "variant"));
+    }
 
+    /// Returns the tab bar variant property.
+    ///
+    /// @return the tab bar variant property
+    public final ObjectProperty<M3TabBarVariant> variantProperty() {
+        return variant;
+    }
 
+    /// Returns the strategy used to distribute tabs in this bar.
+    ///
+    /// @return the current tab layout
+    public final M3TabBarLayout getTabLayout() {
+        return tabLayout.get();
+    }
+
+    /// Sets the strategy used to distribute tabs in this bar.
+    ///
+    /// Changing the layout preserves selection. A scrollable layout automatically reveals the selected or focused
+    /// tab when keyboard, pointer, or accessibility interaction moves to an item outside the viewport.
+    ///
+    /// @param tabLayout the tab layout
+    public final void setTabLayout(M3TabBarLayout tabLayout) {
+        this.tabLayout.set(Objects.requireNonNull(tabLayout, "tabLayout"));
+    }
+
+    /// Returns the tab layout property.
+    ///
+    /// @return the tab layout property
+    public final ObjectProperty<M3TabBarLayout> tabLayoutProperty() {
+        return tabLayout;
+    }
 
     /// Returns the selected tabs in child order.
     public final @UnmodifiableView ObservableList<M3Tab> getSelectedTabs() {
@@ -338,6 +425,8 @@ public class M3TabBar extends Control {
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         getTabs().addListener(childrenListener);
         focusNotifier.start();
+        updateVariantState();
+        pseudoClassStateChanged(SCROLLABLE_PSEUDO_CLASS, getTabLayout() == M3TabBarLayout.SCROLLABLE);
     }
 
     /// Applies keyboard navigation across enabled tabs.
@@ -367,6 +456,7 @@ public class M3TabBar extends Control {
 
     /// Installs a selected-state listener on a tab.
     private void installTab(M3Tab tab) {
+        tab.updateNavigationVariant(getVariant());
         tab.selectedProperty().addListener(selectedInvalidation);
         tab.disabledProperty().addListener(reachabilityInvalidation);
         tab.visibleProperty().addListener(reachabilityInvalidation);
@@ -377,6 +467,19 @@ public class M3TabBar extends Control {
         tab.selectedProperty().removeListener(selectedInvalidation);
         tab.disabledProperty().removeListener(reachabilityInvalidation);
         tab.visibleProperty().removeListener(reachabilityInvalidation);
+        tab.updateNavigationVariant(M3TabBarVariant.PRIMARY);
+    }
+
+    /// Applies the current variant pseudo-class to this bar and its installed tabs.
+    private void updateVariantState() {
+        M3TabBarVariant currentVariant = getVariant();
+        boolean secondary = currentVariant == M3TabBarVariant.SECONDARY;
+        pseudoClassStateChanged(SECONDARY_PSEUDO_CLASS, secondary);
+        for (Node child : getTabs()) {
+            if (child instanceof M3Tab tab) {
+                tab.updateNavigationVariant(currentVariant);
+            }
+        }
     }
 
     /// Keeps externally changed tab selected states mutually exclusive.

@@ -44,6 +44,9 @@ public class M3IconToggleButton extends ButtonBase {
     /// The base style class for M3FX toggle icon buttons.
     public static final String STYLE_CLASS = "m3-icon-toggle-button";
 
+    /// The pseudo-class applied to an M3FX icon used directly as a button graphic.
+    private static final PseudoClass BUTTON_GRAPHIC_PSEUDO_CLASS = PseudoClass.getPseudoClass("button-graphic");
+
     /// The selected pseudo-class used by toggle icon buttons.
     private static final PseudoClass SELECTED_PSEUDO_CLASS = PseudoClass.getPseudoClass("selected");
 
@@ -146,6 +149,9 @@ public class M3IconToggleButton extends ButtonBase {
 
     // The styleable icon glyph size token.
     private @Nullable StyleableDoubleProperty iconSize;
+
+    /// The direct M3FX icon whose embedded color and size are managed by this button.
+    private @Nullable M3Icon managedIconGraphic;
 
     /// Creates an empty standard toggle icon button.
     public M3IconToggleButton() {
@@ -540,8 +546,18 @@ public class M3IconToggleButton extends ButtonBase {
 
     /// Applies the resolved icon button size token to direct M3FX icon graphics.
     private void updateM3IconGraphicSize() {
-        if (getGraphic() instanceof M3Icon icon) {
-            icon.setIconSize(getIconSize());
+        @Nullable M3Icon currentIcon = getGraphic() instanceof M3Icon icon ? icon : null;
+        if (managedIconGraphic != currentIcon) {
+            if (managedIconGraphic != null) {
+                managedIconGraphic.pseudoClassStateChanged(BUTTON_GRAPHIC_PSEUDO_CLASS, false);
+            }
+            managedIconGraphic = currentIcon;
+            if (currentIcon != null) {
+                currentIcon.pseudoClassStateChanged(BUTTON_GRAPHIC_PSEUDO_CLASS, true);
+            }
+        }
+        if (currentIcon != null) {
+            currentIcon.setIconSize(getIconSize());
         }
     }
 

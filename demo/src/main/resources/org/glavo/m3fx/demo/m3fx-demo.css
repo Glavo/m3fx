@@ -311,6 +311,29 @@
     -fx-fill: -m3-color-on-surface;
 }
 
+.m3-icon-button.m3-text-button:toolbar-action .demo-vector-icon,
+.m3-icon-toggle-button.m3-standard-icon-toggle-button:toolbar-action .demo-vector-icon {
+    -fx-fill: -m3-color-on-surface-variant;
+}
+
+.m3-icon-toggle-button.m3-standard-icon-toggle-button:toolbar-action:selected .demo-vector-icon {
+    -fx-fill: -m3-color-on-secondary-container;
+}
+
+.m3-icon-button.m3-text-button:toolbar-action:vibrant .demo-vector-icon,
+.m3-icon-toggle-button.m3-standard-icon-toggle-button:toolbar-action:vibrant .demo-vector-icon {
+    -fx-fill: -m3-color-on-primary-container;
+}
+
+.m3-icon-toggle-button.m3-standard-icon-toggle-button:toolbar-action:vibrant:selected .demo-vector-icon {
+    -fx-fill: -m3-color-on-surface;
+}
+
+.m3-icon-button.m3-text-button:toolbar-action:disabled .demo-vector-icon,
+.m3-icon-toggle-button.m3-standard-icon-toggle-button:toolbar-action:disabled .demo-vector-icon {
+    -fx-fill: -m3-color-on-surface;
+}
+
 .demo-vector-icon-viewport {
     -fx-min-width: 24px;
     -fx-min-height: 24px;

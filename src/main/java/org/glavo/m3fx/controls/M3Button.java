@@ -47,6 +47,9 @@ public class M3Button extends ButtonBase {
     /// The base style class for all M3FX buttons.
     public static final String STYLE_CLASS = "m3-button";
 
+    /// The pseudo-class applied to an M3FX icon used directly as a button graphic.
+    private static final PseudoClass BUTTON_GRAPHIC_PSEUDO_CLASS = PseudoClass.getPseudoClass("button-graphic");
+
     /// The pseudo-class used when this button is the default action.
     private static final PseudoClass DEFAULT_PSEUDO_CLASS = PseudoClass.getPseudoClass("default");
 
@@ -125,6 +128,9 @@ public class M3Button extends ButtonBase {
 
     // The styleable icon glyph size token.
     private @Nullable StyleableDoubleProperty iconSize;
+
+    /// The direct M3FX icon whose embedded color and size are managed by this button.
+    private @Nullable M3Icon managedIconGraphic;
 
     // Whether this button is the default action in its containing context.
     private @Nullable BooleanProperty defaultButton;
@@ -577,8 +583,18 @@ public class M3Button extends ButtonBase {
 
     /// Applies the resolved button icon token to a direct M3FX icon graphic.
     private void updateM3IconGraphicSize() {
-        if (getGraphic() instanceof M3Icon icon) {
-            icon.setIconSize(getIconSize());
+        @Nullable M3Icon currentIcon = getGraphic() instanceof M3Icon icon ? icon : null;
+        if (managedIconGraphic != currentIcon) {
+            if (managedIconGraphic != null) {
+                managedIconGraphic.pseudoClassStateChanged(BUTTON_GRAPHIC_PSEUDO_CLASS, false);
+            }
+            managedIconGraphic = currentIcon;
+            if (currentIcon != null) {
+                currentIcon.pseudoClassStateChanged(BUTTON_GRAPHIC_PSEUDO_CLASS, true);
+            }
+        }
+        if (currentIcon != null) {
+            currentIcon.setIconSize(getIconSize());
         }
     }
 

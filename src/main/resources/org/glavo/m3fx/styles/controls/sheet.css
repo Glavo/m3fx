@@ -32,7 +32,7 @@
 
 .m3-sheet-header {
     -fx-alignment: center-left;
-    -fx-spacing: 8px;
+    -fx-spacing: 12px;
     -fx-padding: 24px 24px 12px 24px;
 }
 
@@ -46,7 +46,19 @@
     -fx-text-fill: -m3-color-on-surface-variant;
 }
 
-.m3-sheet-actions {
+.m3-side-sheet-header-actions {
+    -fx-alignment: center;
+    -fx-spacing: 8px;
+}
+
+.m3-side-sheet-actions {
+    -fx-alignment: center-left;
+    -fx-spacing: 8px;
+    -fx-min-height: 72px;
+    -fx-padding: 16px 24px 24px 24px;
+}
+
+.m3-bottom-sheet .m3-sheet-actions {
     -fx-alignment: center;
     -fx-spacing: 8px;
 }

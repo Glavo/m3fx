@@ -8,6 +8,7 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
+import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
@@ -53,11 +54,20 @@ public class M3Toolbar extends Control {
     /// The toolbar item slot style class.
     public static final String ITEM_SLOT_STYLE_CLASS = "m3-toolbar-item-slot";
 
+    /// The pseudo-class used for the Vibrant toolbar color mapping.
+    private static final PseudoClass VIBRANT_PSEUDO_CLASS = PseudoClass.getPseudoClass("vibrant");
+
+    /// The pseudo-class applied to controls hosted as toolbar actions.
+    private static final PseudoClass TOOLBAR_ACTION_PSEUDO_CLASS = PseudoClass.getPseudoClass("toolbar-action");
+
     /// The default toolbar orientation.
     private static final Orientation DEFAULT_ORIENTATION = Orientation.HORIZONTAL;
 
     /// The default toolbar variant.
-    private static final M3ToolbarVariant DEFAULT_VARIANT = M3ToolbarVariant.STANDARD;
+    private static final M3ToolbarVariant DEFAULT_VARIANT = M3ToolbarVariant.FLOATING;
+
+    /// The default toolbar color style.
+    private static final M3ToolbarColorStyle DEFAULT_COLOR_STYLE = M3ToolbarColorStyle.STANDARD;
 
     /// The default horizontal toolbar container height in pixels.
     private static final double DEFAULT_CONTAINER_HEIGHT = 64.0;
@@ -71,13 +81,19 @@ public class M3Toolbar extends Control {
     /// The default toolbar content padding in pixels.
     private static final double DEFAULT_CONTENT_PADDING = 8.0;
 
+    /// The default leading and trailing padding of a docked toolbar in pixels.
+    private static final double DEFAULT_DOCKED_CONTENT_PADDING = 16.0;
+
     /// The default toolbar item spacing in pixels.
-    private static final double DEFAULT_ITEM_SPACING = 0.0;
+    private static final double DEFAULT_ITEM_SPACING = 4.0;
+
+    /// The default preferred spacing between docked toolbar items in pixels.
+    private static final double DEFAULT_DOCKED_MAX_ITEM_SPACING = 32.0;
 
     /// The mutable toolbar item list.
     private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
 
-    // The toolbar visual variant backing property.
+    /// The toolbar visual variant backing property.
     private final ObjectProperty<M3ToolbarVariant> variant =
             new SimpleObjectProperty<>(this, "variant", DEFAULT_VARIANT) {
                 /// Updates variant style classes when the property changes.
@@ -88,10 +104,25 @@ public class M3Toolbar extends Control {
                         return;
                     }
                     updateVariantStyle();
+                    updateMetrics();
                 }
             };
 
-    // The toolbar layout orientation backing property.
+    /// The toolbar color-style backing property.
+    private final ObjectProperty<M3ToolbarColorStyle> colorStyle =
+            new SimpleObjectProperty<>(this, "colorStyle", DEFAULT_COLOR_STYLE) {
+                /// Updates the color-style pseudo-class when the property changes.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(DEFAULT_COLOR_STYLE);
+                        return;
+                    }
+                    updateColorStylePseudoClass();
+                }
+            };
+
+    /// The toolbar layout orientation backing property.
     private final ObjectProperty<Orientation> orientation =
             new SimpleObjectProperty<>(this, "orientation", DEFAULT_ORIENTATION) {
                 /// Updates orientation style classes and layout metrics when the property changes.
@@ -106,27 +137,33 @@ public class M3Toolbar extends Control {
                 }
             };
 
-    // The styleable horizontal toolbar height backing property.
+    /// The styleable horizontal toolbar height backing property.
     private @Nullable StyleableDoubleProperty containerHeight;
 
-    // The styleable vertical toolbar width backing property.
+    /// The styleable vertical toolbar width backing property.
     private @Nullable StyleableDoubleProperty containerWidth;
 
-    // The styleable item slot size backing property.
+    /// The styleable item slot size backing property.
     private @Nullable StyleableDoubleProperty itemSlotSize;
 
-    // The styleable content padding backing property.
+    /// The styleable content padding backing property.
     private @Nullable StyleableDoubleProperty contentPadding;
 
-    // The styleable item spacing backing property.
+    /// The styleable docked-toolbar leading and trailing padding backing property.
+    private @Nullable StyleableDoubleProperty dockedContentPadding;
+
+    /// The styleable item spacing backing property.
     private @Nullable StyleableDoubleProperty itemSpacing;
+
+    /// The styleable preferred docked-toolbar item spacing backing property.
+    private @Nullable StyleableDoubleProperty dockedMaxItemSpacing;
 
     /// Notifies accessibility clients when focus moves between toolbar actions.
     private final M3AccessibleFocusNotifier focusNotifier =
             new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(this, getItems()));
 
     /// Updates accessibility and layout after toolbar item changes.
-    private final ListChangeListener<Node> itemsListener = change -> handleItemsChanged();
+    private final ListChangeListener<Node> itemsListener = this::handleItemsChanged;
 
     /// Creates an empty toolbar.
     public M3Toolbar() {
@@ -163,6 +200,27 @@ public class M3Toolbar extends Control {
     /// @return the toolbar visual variant property
     public final ObjectProperty<M3ToolbarVariant> variantProperty() {
         return variant;
+    }
+
+    /// Returns the toolbar color style.
+    ///
+    /// @return the toolbar color style
+    public final M3ToolbarColorStyle getColorStyle() {
+        return colorStyle.get();
+    }
+
+    /// Sets the toolbar color style.
+    ///
+    /// @param colorStyle the toolbar color style
+    public final void setColorStyle(M3ToolbarColorStyle colorStyle) {
+        this.colorStyle.set(Objects.requireNonNull(colorStyle, "colorStyle"));
+    }
+
+    /// Returns the toolbar color-style property.
+    ///
+    /// @return the toolbar color-style property
+    public final ObjectProperty<M3ToolbarColorStyle> colorStyleProperty() {
+        return colorStyle;
     }
 
     /// Returns the toolbar layout orientation.
@@ -298,6 +356,34 @@ public class M3Toolbar extends Control {
         return contentPadding;
     }
 
+    /// Returns the leading and trailing padding token used by docked toolbars.
+    ///
+    /// @return the docked toolbar leading and trailing padding in pixels
+    public final double getDockedContentPadding() {
+        return dockedContentPadding == null ? DEFAULT_DOCKED_CONTENT_PADDING : dockedContentPadding.get();
+    }
+
+    /// Sets the leading and trailing padding token used by docked toolbars.
+    ///
+    /// @param dockedContentPadding the docked toolbar leading and trailing padding in pixels
+    public final void setDockedContentPadding(double dockedContentPadding) {
+        dockedContentPaddingProperty().set(M3Css.nonNegative(dockedContentPadding, "dockedContentPadding"));
+    }
+
+    /// Returns the docked toolbar leading and trailing padding token property.
+    ///
+    /// @return the docked toolbar leading and trailing padding token property
+    public final StyleableDoubleProperty dockedContentPaddingProperty() {
+        if (dockedContentPadding == null) {
+            dockedContentPadding = createStyleableDoubleProperty(
+                    DEFAULT_DOCKED_CONTENT_PADDING,
+                    "dockedContentPadding",
+                    StyleableProperties.DOCKED_CONTENT_PADDING
+            );
+        }
+        return dockedContentPadding;
+    }
+
     /// Returns the toolbar item spacing token.
     ///
     /// @return the toolbar item spacing in pixels
@@ -324,6 +410,36 @@ public class M3Toolbar extends Control {
             );
         }
         return itemSpacing;
+    }
+
+    /// Returns the preferred maximum spacing token used between docked toolbar items.
+    ///
+    /// The skin reduces this value toward [#getItemSpacing()] when the docked toolbar does not have enough room.
+    ///
+    /// @return the preferred docked toolbar item spacing in pixels
+    public final double getDockedMaxItemSpacing() {
+        return dockedMaxItemSpacing == null ? DEFAULT_DOCKED_MAX_ITEM_SPACING : dockedMaxItemSpacing.get();
+    }
+
+    /// Sets the preferred maximum spacing token used between docked toolbar items.
+    ///
+    /// @param dockedMaxItemSpacing the preferred docked toolbar item spacing in pixels
+    public final void setDockedMaxItemSpacing(double dockedMaxItemSpacing) {
+        dockedMaxItemSpacingProperty().set(M3Css.nonNegative(dockedMaxItemSpacing, "dockedMaxItemSpacing"));
+    }
+
+    /// Returns the preferred docked toolbar item-spacing token property.
+    ///
+    /// @return the preferred docked toolbar item-spacing token property
+    public final StyleableDoubleProperty dockedMaxItemSpacingProperty() {
+        if (dockedMaxItemSpacing == null) {
+            dockedMaxItemSpacing = createStyleableDoubleProperty(
+                    DEFAULT_DOCKED_MAX_ITEM_SPACING,
+                    "dockedMaxItemSpacing",
+                    StyleableProperties.DOCKED_MAX_ITEM_SPACING
+            );
+        }
+        return dockedMaxItemSpacing;
     }
 
     /// Returns the user-agent stylesheet for M3FX toolbars.
@@ -422,6 +538,7 @@ public class M3Toolbar extends Control {
         getItems().addListener(itemsListener);
         focusNotifier.start();
         updateVariantStyle();
+        updateColorStylePseudoClass();
         updateOrientationStyle();
         updateMetrics();
     }
@@ -441,7 +558,16 @@ public class M3Toolbar extends Control {
     }
 
     /// Handles item list changes.
-    private void handleItemsChanged() {
+    private void handleItemsChanged(ListChangeListener.Change<? extends Node> change) {
+        while (change.next()) {
+            for (Node removed : change.getRemoved()) {
+                removed.pseudoClassStateChanged(TOOLBAR_ACTION_PSEUDO_CLASS, false);
+                removed.pseudoClassStateChanged(VIBRANT_PSEUDO_CLASS, false);
+            }
+            for (Node added : change.getAddedSubList()) {
+                updateActionColorStylePseudoClasses(added);
+            }
+        }
         requestLayout();
         notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
@@ -454,10 +580,24 @@ public class M3Toolbar extends Control {
         M3ControlStyles.replaceVariant(
                 this,
                 getVariant().styleClass(),
-                M3ToolbarVariant.STANDARD.styleClass(),
                 M3ToolbarVariant.FLOATING.styleClass(),
                 M3ToolbarVariant.DOCKED.styleClass()
         );
+    }
+
+    /// Applies the active toolbar color-style pseudo-class.
+    private void updateColorStylePseudoClass() {
+        boolean vibrant = getColorStyle() == M3ToolbarColorStyle.VIBRANT;
+        pseudoClassStateChanged(VIBRANT_PSEUDO_CLASS, vibrant);
+        for (Node item : getItems()) {
+            updateActionColorStylePseudoClasses(item);
+        }
+    }
+
+    /// Applies toolbar ownership and color-style pseudo-classes to an action node.
+    private void updateActionColorStylePseudoClasses(Node item) {
+        item.pseudoClassStateChanged(TOOLBAR_ACTION_PSEUDO_CLASS, true);
+        item.pseudoClassStateChanged(VIBRANT_PSEUDO_CLASS, getColorStyle() == M3ToolbarColorStyle.VIBRANT);
     }
 
     /// Applies the active toolbar orientation style class.
@@ -473,7 +613,12 @@ public class M3Toolbar extends Control {
     /// Applies size-related component tokens to JavaFX layout properties.
     private void updateMetrics() {
         double contentPadding = getContentPadding();
-        M3Css.setPaddingIfUnbound(this, new Insets(contentPadding));
+        double mainAxisPadding = getVariant() == M3ToolbarVariant.DOCKED
+                ? getDockedContentPadding()
+                : contentPadding;
+        M3Css.setPaddingIfUnbound(this, getOrientation() == Orientation.HORIZONTAL
+                ? new Insets(contentPadding, mainAxisPadding, contentPadding, mainAxisPadding)
+                : new Insets(mainAxisPadding, contentPadding, mainAxisPadding, contentPadding));
         if (getOrientation() == Orientation.HORIZONTAL) {
             M3Css.setMinHeightIfUnbound(this, getContainerHeight());
             M3Css.setPrefHeightIfUnbound(this, getContainerHeight());
@@ -526,10 +671,20 @@ public class M3Toolbar extends Control {
                 createSizeCssMetaData("-m3-content-padding", DEFAULT_CONTENT_PADDING,
                         M3Toolbar::contentPaddingProperty);
 
+        /// CSS metadata for docked toolbar leading and trailing padding.
+        private static final CssMetaData<M3Toolbar, Number> DOCKED_CONTENT_PADDING =
+                createSizeCssMetaData("-m3-docked-content-padding", DEFAULT_DOCKED_CONTENT_PADDING,
+                        M3Toolbar::dockedContentPaddingProperty);
+
         /// CSS metadata for toolbar item spacing.
         private static final CssMetaData<M3Toolbar, Number> ITEM_SPACING =
                 createSizeCssMetaData("-m3-item-spacing", DEFAULT_ITEM_SPACING,
                         M3Toolbar::itemSpacingProperty);
+
+        /// CSS metadata for preferred docked toolbar item spacing.
+        private static final CssMetaData<M3Toolbar, Number> DOCKED_MAX_ITEM_SPACING =
+                createSizeCssMetaData("-m3-docked-max-item-spacing", DEFAULT_DOCKED_MAX_ITEM_SPACING,
+                        M3Toolbar::dockedMaxItemSpacingProperty);
 
         /// The complete immutable CSS metadata list.
         private static final @Unmodifiable List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
@@ -540,7 +695,9 @@ public class M3Toolbar extends Control {
             styleables.add(CONTAINER_WIDTH);
             styleables.add(ITEM_SLOT_SIZE);
             styleables.add(CONTENT_PADDING);
+            styleables.add(DOCKED_CONTENT_PADDING);
             styleables.add(ITEM_SPACING);
+            styleables.add(DOCKED_MAX_ITEM_SPACING);
             STYLEABLES = Collections.unmodifiableList(styleables);
         }
 

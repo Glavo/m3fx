@@ -36,6 +36,7 @@
     -m3-color-surface: rgb(253,247,255);
     -monet-on-surface: rgb(29,27,32);
     -m3-color-on-surface: rgb(29,27,32);
+    -m3-button-icon-color: rgb(73,69,79);
     -monet-surface-dim: rgb(222,216,224);
     -m3-color-surface-dim: rgb(222,216,224);
     -monet-surface-bright: rgb(253,247,255);
@@ -135,6 +136,10 @@
 
 .m3-internal-icon-on-surface .m3-internal-icon-path {
     -fx-fill: -m3-color-on-surface;
+}
+
+.m3-internal-icon-inverse-on-surface .m3-internal-icon-path {
+    -fx-fill: -m3-color-inverse-on-surface;
 }
 
 .m3-internal-icon-on-surface-variant .m3-internal-icon-path {

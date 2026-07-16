@@ -7,6 +7,13 @@
     -fx-spacing: 0px;
 }
 
+.m3-tab-bar-divider {
+    -fx-min-height: 1px;
+    -fx-pref-height: 1px;
+    -fx-max-height: 1px;
+    -fx-background-color: -m3-color-surface-variant;
+}
+
 .m3-tab.m3-tab,
 .m3-tab.m3-tab:hover,
 .m3-tab.m3-tab:focused,
@@ -18,18 +25,42 @@
     -m3-horizontal-padding: 16px;
     -m3-active-indicator-height: 3px;
     -m3-active-indicator-shape: 3px;
+    -m3-active-indicator-min-width: 24px;
+    -m3-active-indicator-horizontal-inset: 2px;
     -fx-background-color: transparent;
     -fx-background-insets: 0;
     -fx-border-color: transparent;
     -fx-border-width: 0px;
+    -fx-alignment: center;
     -fx-text-fill: -m3-color-on-surface-variant;
     -fx-font-size: 14px;
     -fx-font-weight: 600;
     -fx-cursor: hand;
 }
 
-.m3-tab:selected {
+.m3-tab:hover,
+.m3-tab:focused,
+.m3-tab:pressed {
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-tab:selected,
+.m3-tab:selected:hover,
+.m3-tab:selected:focused,
+.m3-tab:selected:pressed {
     -fx-text-fill: -m3-color-primary;
+}
+
+.m3-tab.m3-tab:secondary {
+    -m3-active-indicator-height: 2px;
+    -m3-active-indicator-shape: 0px;
+}
+
+.m3-tab:secondary:selected,
+.m3-tab:secondary:hover,
+.m3-tab:secondary:focused,
+.m3-tab:secondary:pressed {
+    -fx-text-fill: -m3-color-on-surface;
 }
 
 .m3-tab-active-indicator {
@@ -46,6 +77,13 @@
 .m3-tab:selected .m3-state-layer,
 .m3-tab:selected .m3-ripple {
     -fx-background-color: -m3-color-primary;
+}
+
+.m3-tab:secondary .m3-state-layer,
+.m3-tab:secondary .m3-ripple,
+.m3-tab:secondary:selected .m3-state-layer,
+.m3-tab:secondary:selected .m3-ripple {
+    -fx-background-color: -m3-color-on-surface;
 }
 
 .m3-tab:disabled {

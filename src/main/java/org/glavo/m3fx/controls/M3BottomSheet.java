@@ -58,8 +58,8 @@ public class M3BottomSheet extends Control {
     /// The shared sheet title style class.
     public static final String TITLE_STYLE_CLASS = M3SideSheet.TITLE_STYLE_CLASS;
 
-    /// The shared sheet action container style class.
-    public static final String ACTIONS_STYLE_CLASS = M3SideSheet.ACTIONS_STYLE_CLASS;
+    /// The bottom-sheet action container style class.
+    public static final String ACTIONS_STYLE_CLASS = "m3-sheet-actions";
 
     /// The shared sheet content slot style class.
     public static final String CONTENT_STYLE_CLASS = M3SideSheet.CONTENT_STYLE_CLASS;

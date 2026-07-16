@@ -19,6 +19,7 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import org.glavo.m3fx.internal.M3FocusTraversal;
 import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
@@ -41,7 +42,8 @@ import java.util.Objects;
 /// A Material Design 3 side sheet container.
 ///
 /// `M3SideSheet` presents supporting content from a side edge of a view. It supports standard and modal sheet
-/// variants, docked and detached container shapes, headline text, action nodes, scrim handling, keyboard dismissal,
+/// variants, docked and detached container shapes, headline text, header icon actions, bottom action buttons, scrim
+/// handling, keyboard dismissal,
 /// and Material entrance and exit motion. The parent layout owns the sheet's edge placement and the 16-pixel outer
 /// margin required by the detached configuration.
 ///
@@ -63,19 +65,22 @@ public class M3SideSheet extends Control {
     /// The shared sheet title style class.
     public static final String TITLE_STYLE_CLASS = "m3-sheet-title";
 
-    /// The shared sheet action container style class.
-    public static final String ACTIONS_STYLE_CLASS = "m3-sheet-actions";
+    /// The header icon action container style class.
+    public static final String HEADER_ACTIONS_STYLE_CLASS = "m3-side-sheet-header-actions";
+
+    /// The bottom action button container style class.
+    public static final String ACTIONS_STYLE_CLASS = "m3-side-sheet-actions";
 
     /// The shared sheet content slot style class.
     public static final String CONTENT_STYLE_CLASS = "m3-sheet-content";
 
-    // Backing property for the public sheet headline API.
+    /// The sheet headline property.
     private final StringProperty headline = new SimpleStringProperty(this, "headline", "");
 
-    // Backing property for the public sheet content API.
+    /// The sheet content property.
     private final ObjectProperty<@Nullable Node> content = new SimpleObjectProperty<>(this, "content");
 
-    // Backing property for the public sheet variant API.
+    /// The sheet variant property.
     private final ObjectProperty<M3SheetVariant> variant =
             new SimpleObjectProperty<>(this, "variant", M3SheetVariant.STANDARD) {
                 /// Updates variant style classes when the property changes.
@@ -90,7 +95,7 @@ public class M3SideSheet extends Control {
                 }
             };
 
-    // Backing property for the public shown state API.
+    /// The shown state property.
     private final BooleanProperty shown = new SimpleBooleanProperty(this, "shown", true) {
         /// Updates the sheet visibility when the property changes.
         @Override
@@ -102,7 +107,7 @@ public class M3SideSheet extends Control {
         }
     };
 
-    // Backing property for the public focus restoration API.
+    /// The focus restoration property.
     private final BooleanProperty restoreFocusOnHide =
             new SimpleBooleanProperty(this, "restoreFocusOnHide", true);
 
@@ -115,17 +120,19 @@ public class M3SideSheet extends Control {
         }
     };
 
-    /// The mutable trailing action node list.
+    /// The mutable header icon action list, in logical start-to-end order.
+    private final ObservableList<Node> headerActions = M3ObservableLists.nonNullElementList("header action");
+
+    /// The mutable bottom action button list, in logical start-to-end order.
     private final ObservableList<Node> actions = M3ObservableLists.nonNullElementList("action");
+
+    /// The ordered sheet items used by accessibility and modal focus traversal.
+    private final ObservableList<Node> accessibleItems = M3ObservableLists.nonNullElementList("accessible item");
 
     /// Notifies accessibility clients when focus moves between sheet content and action children.
     private final M3AccessibleFocusNotifier focusNotifier =
             new M3AccessibleFocusNotifier(this, () -> isShown()
-                    ? M3Accessible.currentOrFirstFocusTarget(
-                            this,
-                            getContent(),
-                            getActions()
-                    )
+                    ? M3Accessible.currentOrFirstFocusTarget(this, accessibleItems)
                     : null);
 
     /// Keeps keyboard traversal inside this sheet while it is shown as a modal surface.
@@ -297,9 +304,22 @@ public class M3SideSheet extends Control {
         return detachedState;
     }
 
-    /// Returns the mutable trailing action node list.
+    /// Returns the mutable header icon action list.
     ///
-    /// @return the mutable trailing action node list
+    /// Header actions are rendered beside the headline. Use this slot for the optional back and close icon buttons
+    /// from the Material side-sheet anatomy. Bottom action buttons belong in [getActions].
+    ///
+    /// @return the mutable header icon action list
+    public final ObservableList<Node> getHeaderActions() {
+        return headerActions;
+    }
+
+    /// Returns the mutable bottom action button list.
+    ///
+    /// The skin places these actions in the 72-pixel bottom action area and aligns them to the logical start edge.
+    /// This list must not contain `null` elements.
+    ///
+    /// @return the mutable bottom action button list
     public final ObservableList<Node> getActions() {
         return actions;
     }
@@ -333,11 +353,9 @@ public class M3SideSheet extends Control {
         return switch (attribute) {
             case CONTENTS -> getContent();
             case EXPANDED -> isShown();
-            case FOCUS_NODE -> isShown()
-                    ? M3Accessible.currentOrFirstFocusTarget(this, getContent(), getActions())
-                    : null;
-            case ITEM_COUNT -> M3Accessible.itemCount(getContent(), getActions());
-            case ITEM_AT_INDEX -> M3Accessible.itemAt(getContent(), getActions(), parameters);
+            case FOCUS_NODE -> isShown() ? M3Accessible.currentOrFirstFocusTarget(this, accessibleItems) : null;
+            case ITEM_COUNT -> accessibleItems.size();
+            case ITEM_AT_INDEX -> M3Accessible.itemAt(accessibleItems, parameters);
             case TEXT -> getHeadline();
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
@@ -384,12 +402,20 @@ public class M3SideSheet extends Control {
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
         headline.addListener((observable, oldValue, newValue) -> updateAccessibleText());
         content.addListener((observable, oldValue, newValue) -> {
+            rebuildAccessibleItems();
             notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
             notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
             notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
             notifyFocusNodeChanged();
         });
-        actions.addListener((ListChangeListener<Node>) change -> notifyAccessibleItemsChanged());
+        headerActions.addListener((ListChangeListener<Node>) change -> {
+            rebuildAccessibleItems();
+            notifyAccessibleItemsChanged();
+        });
+        actions.addListener((ListChangeListener<Node>) change -> {
+            rebuildAccessibleItems();
+            notifyAccessibleItemsChanged();
+        });
         effectiveNodeOrientationProperty().addListener(observable -> updateOrientationPseudoClass());
         visibleProperty().addListener((observable, oldValue, newValue) -> focusTrap.update());
         addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
@@ -400,6 +426,7 @@ public class M3SideSheet extends Control {
         });
         focusTrap.install();
         focusNotifier.start();
+        rebuildAccessibleItems();
         updateVariantStyle();
         updateOrientationPseudoClass();
         updateAccessibleText();
@@ -412,14 +439,13 @@ public class M3SideSheet extends Control {
 
     /// Handles keyboard dismissal for modal sheets.
     private void handleKeyPressed(KeyEvent event) {
-        switch (event.getCode()) {
-            case ESCAPE -> {
-                if (isShown() && getVariant() == M3SheetVariant.MODAL) {
-                    hide();
-                    event.consume();
-                }
+        if (event.getCode() == KeyCode.ESCAPE) {
+            if (isShown() && getVariant() == M3SheetVariant.MODAL) {
+                hide();
+                event.consume();
             }
-            default -> handleActionNavigationKey(event);
+        } else {
+            handleActionNavigationKey(event);
         }
     }
 
@@ -442,7 +468,7 @@ public class M3SideSheet extends Control {
 
     /// Returns the focus targets contained by this modal sheet in traversal order.
     private List<Node> modalFocusTargets() {
-        return M3FocusTraversal.focusTargetsInReachableTrees(getContent(), getActions());
+        return M3FocusTraversal.focusTargetsInReachableTrees(accessibleItems);
     }
 
     /// Processes shown state transitions and related focus bookkeeping.
@@ -482,11 +508,11 @@ public class M3SideSheet extends Control {
         if (!M3Accessible.canReveal(this)) {
             return false;
         }
-        if (!isShown() && parameters.length > 0 && !M3Accessible.canShowItem(getContent(), getActions(), parameters)) {
+        if (!isShown() && parameters.length > 0 && !M3Accessible.canShowItem(null, accessibleItems, parameters)) {
             return false;
         }
         show();
-        if (M3Accessible.showCurrentOrItem(this, getContent(), getActions(), parameters)) {
+        if (M3Accessible.showCurrentOrItem(this, accessibleItems, parameters)) {
             notifyFocusNodeChanged();
             return true;
         }
@@ -498,7 +524,7 @@ public class M3SideSheet extends Control {
     /// @return `true` when the current target accepted focus
     final boolean focusAccessibleNode() {
         if (isShown() && M3Accessible.canReach(this)
-                && M3Accessible.showCurrentOrItem(this, getContent(), getActions())) {
+                && M3Accessible.showCurrentOrItem(this, accessibleItems)) {
             notifyFocusNodeChanged();
             return true;
         }
@@ -509,6 +535,17 @@ public class M3SideSheet extends Control {
     private void notifyFocusNodeChanged() {
         M3Accessible.notifyFocusNodeChanged(this);
         focusNotifier.refresh();
+    }
+
+    /// Rebuilds the stable traversal order after a public content slot changes.
+    private void rebuildAccessibleItems() {
+        accessibleItems.clear();
+        accessibleItems.addAll(headerActions);
+        @Nullable Node currentContent = getContent();
+        if (currentContent != null) {
+            accessibleItems.add(currentContent);
+        }
+        accessibleItems.addAll(actions);
     }
 
     /// Stores the current scene focus owner before a modal sheet takes interaction.

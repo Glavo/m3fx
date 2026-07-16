@@ -3,6 +3,8 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.ListChangeListener;
@@ -45,14 +47,14 @@ public class M3RichTooltip extends M3Tooltip {
     /// The action row style class.
     public static final String ACTIONS_STYLE_CLASS = "m3-rich-tooltip-actions";
 
-    /// The minimum rich tooltip height when actions are visible.
-    private static final double ACTION_CONTENT_MIN_HEIGHT = 160.0;
-
-    // Backing property for the public rich tooltip title API.
+    /// Backing property for the public rich tooltip title API.
     private final StringProperty title = new SimpleStringProperty(this, "title", "");
 
-    // Backing property for the public supporting text API.
+    /// Backing property for the public supporting text API.
     private final StringProperty supportingText = new SimpleStringProperty(this, "supportingText", "");
+
+    /// Whether the tooltip is opened explicitly and remains visible until another interaction dismisses it.
+    private final BooleanProperty persistent = new SimpleBooleanProperty(this, "persistent");
 
     /// The title label.
     private final Label titleLabel = new Label();
@@ -64,7 +66,7 @@ public class M3RichTooltip extends M3Tooltip {
     private final HBox actions = new HBox();
 
     /// The root graphic node rendered by the tooltip skin.
-    private final VBox container = new RichTooltipContainer();
+    private final VBox container = new VBox();
 
     /// Creates an empty rich tooltip.
     public M3RichTooltip() {
@@ -124,7 +126,35 @@ public class M3RichTooltip extends M3Tooltip {
         return supportingText;
     }
 
+    /// Returns whether this rich tooltip uses persistent interaction behavior.
+    ///
+    /// Persistent rich tooltips open from an explicit click or keyboard activation rather than hover or focus.
+    /// They remain visible when the pointer leaves the owner and close when another UI interaction auto-hides the
+    /// popup, the owner is activated again, or Escape is pressed.
+    ///
+    /// @return `true` if this tooltip uses persistent behavior
+    public final boolean isPersistent() {
+        return persistent.get();
+    }
+
+    /// Sets whether this rich tooltip uses persistent interaction behavior.
+    ///
+    /// @param persistent whether explicit persistent behavior is enabled
+    public final void setPersistent(boolean persistent) {
+        this.persistent.set(persistent);
+    }
+
+    /// Returns the persistent interaction property.
+    ///
+    /// @return the persistent interaction property
+    public final BooleanProperty persistentProperty() {
+        return persistent;
+    }
+
     /// Returns the mutable action node list.
+    ///
+    /// Material rich tooltips support at most two brief text-button actions. Callers are responsible for preserving
+    /// that content constraint when mutating this list.
     ///
     /// @return the mutable action node list displayed in the tooltip action row
     public final ObservableList<Node> getActions() {
@@ -204,6 +234,14 @@ public class M3RichTooltip extends M3Tooltip {
     @Override
     protected boolean isInteractive() {
         return true;
+    }
+
+    /// Returns whether installed activation uses explicit persistent behavior.
+    ///
+    /// @return the configured persistent state
+    @Override
+    protected boolean usesPersistentActivation() {
+        return isPersistent();
     }
 
     /// Returns the first action focus target inside the rich tooltip popup.
@@ -312,20 +350,4 @@ public class M3RichTooltip extends M3Tooltip {
         return -1;
     }
 
-    /// Rich tooltip content container that preserves the action minimum height without clipping longer content.
-    @NotNullByDefault
-    private final class RichTooltipContainer extends VBox {
-        /// Computes the preferred height from content and the Material action minimum height.
-        @Override
-        protected double computePrefHeight(double width) {
-            double computedHeight = super.computePrefHeight(width);
-            return actions.isManaged() ? Math.max(computedHeight, ACTION_CONTENT_MIN_HEIGHT) : computedHeight;
-        }
-
-        /// Computes the minimum height from the preferred height so popup sizing does not compress actions.
-        @Override
-        protected double computeMinHeight(double width) {
-            return computePrefHeight(width);
-        }
-    }
 }

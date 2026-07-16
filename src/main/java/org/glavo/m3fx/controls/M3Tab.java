@@ -45,6 +45,9 @@ public class M3Tab extends ButtonBase {
     /// The selected pseudo-class used by tabs.
     private static final PseudoClass SELECTED_PSEUDO_CLASS = PseudoClass.getPseudoClass("selected");
 
+    /// The pseudo-class inherited from a secondary tab bar.
+    private static final PseudoClass SECONDARY_PSEUDO_CLASS = PseudoClass.getPseudoClass("secondary");
+
     /// The default tab container height.
     private static final double DEFAULT_CONTAINER_HEIGHT = 48.0;
 
@@ -60,22 +63,34 @@ public class M3Tab extends ButtonBase {
     /// The default active indicator shape radius.
     private static final double DEFAULT_ACTIVE_INDICATOR_SHAPE = 3.0;
 
-    // The styleable container height token.
+    /// The default minimum length of a primary active indicator.
+    private static final double DEFAULT_ACTIVE_INDICATOR_MIN_WIDTH = 24.0;
+
+    /// The default extension on each side of primary tab content.
+    private static final double DEFAULT_ACTIVE_INDICATOR_HORIZONTAL_INSET = 2.0;
+
+    /// The styleable container height token.
     private @Nullable StyleableDoubleProperty containerHeight;
 
-    // The styleable tab minimum width token.
+    /// The styleable tab minimum width token.
     private @Nullable StyleableDoubleProperty tabMinWidth;
 
-    // The styleable horizontal padding token.
+    /// The styleable horizontal padding token.
     private @Nullable StyleableDoubleProperty horizontalPadding;
 
-    // The styleable active indicator height token.
+    /// The styleable active indicator height token.
     private @Nullable StyleableDoubleProperty activeIndicatorHeight;
 
-    // The styleable active indicator shape token.
+    /// The styleable active indicator shape token.
     private @Nullable StyleableDoubleProperty activeIndicatorShape;
 
-    // The selected state property.
+    /// The styleable minimum length of a primary active indicator.
+    private @Nullable StyleableDoubleProperty activeIndicatorMinWidth;
+
+    /// The styleable extension on each side of primary tab content.
+    private @Nullable StyleableDoubleProperty activeIndicatorHorizontalInset;
+
+    /// The selected state property.
     private final BooleanProperty selected = new SimpleBooleanProperty(this, "selected") {
         /// Updates selected pseudo-class state.
         @Override
@@ -231,6 +246,78 @@ public class M3Tab extends ButtonBase {
         return activeIndicatorShape;
     }
 
+    /// Returns the minimum length of a primary active indicator.
+    ///
+    /// Secondary indicators fill the tab width and do not use this value.
+    ///
+    /// @return the minimum primary active-indicator length in pixels
+    public final double getActiveIndicatorMinWidth() {
+        return activeIndicatorMinWidth == null
+                ? DEFAULT_ACTIVE_INDICATOR_MIN_WIDTH
+                : activeIndicatorMinWidth.get();
+    }
+
+    /// Sets the minimum length of a primary active indicator.
+    ///
+    /// @param activeIndicatorMinWidth the minimum indicator length in pixels
+    public final void setActiveIndicatorMinWidth(double activeIndicatorMinWidth) {
+        activeIndicatorMinWidthProperty().set(M3Css.nonNegative(
+                activeIndicatorMinWidth,
+                "activeIndicatorMinWidth"
+        ));
+    }
+
+    /// Returns the minimum primary active-indicator length property.
+    ///
+    /// @return the minimum primary active-indicator length property
+    public final StyleableDoubleProperty activeIndicatorMinWidthProperty() {
+        if (activeIndicatorMinWidth == null) {
+            activeIndicatorMinWidth = createStyleableDoubleProperty(
+                    DEFAULT_ACTIVE_INDICATOR_MIN_WIDTH,
+                    "activeIndicatorMinWidth",
+                    StyleableProperties.ACTIVE_INDICATOR_MIN_WIDTH,
+                    false
+            );
+        }
+        return activeIndicatorMinWidth;
+    }
+
+    /// Returns the extension on each side of primary tab content used to size its active indicator.
+    ///
+    /// Secondary indicators fill the tab width and do not use this value.
+    ///
+    /// @return the primary active-indicator extension on each side in pixels
+    public final double getActiveIndicatorHorizontalInset() {
+        return activeIndicatorHorizontalInset == null
+                ? DEFAULT_ACTIVE_INDICATOR_HORIZONTAL_INSET
+                : activeIndicatorHorizontalInset.get();
+    }
+
+    /// Sets the extension on each side of primary tab content used to size its active indicator.
+    ///
+    /// @param activeIndicatorHorizontalInset the extension on each side in pixels
+    public final void setActiveIndicatorHorizontalInset(double activeIndicatorHorizontalInset) {
+        activeIndicatorHorizontalInsetProperty().set(M3Css.nonNegative(
+                activeIndicatorHorizontalInset,
+                "activeIndicatorHorizontalInset"
+        ));
+    }
+
+    /// Returns the primary active-indicator horizontal-inset property.
+    ///
+    /// @return the primary active-indicator horizontal-inset property
+    public final StyleableDoubleProperty activeIndicatorHorizontalInsetProperty() {
+        if (activeIndicatorHorizontalInset == null) {
+            activeIndicatorHorizontalInset = createStyleableDoubleProperty(
+                    DEFAULT_ACTIVE_INDICATOR_HORIZONTAL_INSET,
+                    "activeIndicatorHorizontalInset",
+                    StyleableProperties.ACTIVE_INDICATOR_HORIZONTAL_INSET,
+                    false
+            );
+        }
+        return activeIndicatorHorizontalInset;
+    }
+
     /// Returns the CSS metadata for this control class.
     public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
@@ -292,6 +379,14 @@ public class M3Tab extends ButtonBase {
         M3Css.setPaddingIfUnbound(this, new Insets(0.0, padding, 0.0, padding));
     }
 
+    /// Applies the visual role inherited from the containing tab bar.
+    ///
+    /// @param variant the containing tab bar variant
+    final void updateNavigationVariant(M3TabBarVariant variant) {
+        pseudoClassStateChanged(SECONDARY_PSEUDO_CLASS, variant == M3TabBarVariant.SECONDARY);
+        requestLayout();
+    }
+
     /// Creates a non-negative styleable double property.
     private StyleableDoubleProperty createStyleableDoubleProperty(
             double initialValue,
@@ -331,6 +426,22 @@ public class M3Tab extends ButtonBase {
         private static final CssMetaData<M3Tab, Number> ACTIVE_INDICATOR_SHAPE =
                 createSizeCssMetaData("-m3-active-indicator-shape", DEFAULT_ACTIVE_INDICATOR_SHAPE, M3Tab::activeIndicatorShapeProperty);
 
+        /// CSS metadata for the minimum primary active-indicator length token.
+        private static final CssMetaData<M3Tab, Number> ACTIVE_INDICATOR_MIN_WIDTH =
+                createSizeCssMetaData(
+                        "-m3-active-indicator-min-width",
+                        DEFAULT_ACTIVE_INDICATOR_MIN_WIDTH,
+                        M3Tab::activeIndicatorMinWidthProperty
+                );
+
+        /// CSS metadata for the primary active-indicator horizontal inset token.
+        private static final CssMetaData<M3Tab, Number> ACTIVE_INDICATOR_HORIZONTAL_INSET =
+                createSizeCssMetaData(
+                        "-m3-active-indicator-horizontal-inset",
+                        DEFAULT_ACTIVE_INDICATOR_HORIZONTAL_INSET,
+                        M3Tab::activeIndicatorHorizontalInsetProperty
+                );
+
         /// The complete immutable CSS metadata list.
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
@@ -341,6 +452,8 @@ public class M3Tab extends ButtonBase {
             styleables.add(HORIZONTAL_PADDING);
             styleables.add(ACTIVE_INDICATOR_HEIGHT);
             styleables.add(ACTIVE_INDICATOR_SHAPE);
+            styleables.add(ACTIVE_INDICATOR_MIN_WIDTH);
+            styleables.add(ACTIVE_INDICATOR_HORIZONTAL_INSET);
             STYLEABLES = Collections.unmodifiableList(styleables);
         }
 

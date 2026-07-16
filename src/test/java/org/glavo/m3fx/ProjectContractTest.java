@@ -193,6 +193,8 @@ final class ProjectContractTest {
                             M3Switch
                             M3Tab
                             M3TabBar
+                            M3TabBarLayout
+                            M3TabBarVariant
                             M3Text
                             M3TextArea
                             M3TextField
@@ -208,6 +210,7 @@ final class ProjectContractTest {
                             M3TimePreset
                             M3TimePresets
                             M3Toolbar
+                            M3ToolbarColorStyle
                             M3ToolbarVariant
                             M3Tooltip
                             M3TopAppBar
@@ -741,12 +744,19 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3TextRole#TITLE_LARGE
             org.glavo.m3fx.controls.M3TextRole#TITLE_MEDIUM
             org.glavo.m3fx.controls.M3TextRole#TITLE_SMALL
+            org.glavo.m3fx.controls.M3TabBarVariant#PRIMARY
+            org.glavo.m3fx.controls.M3TabBarVariant#SECONDARY
+            org.glavo.m3fx.controls.M3TabBarLayout#FIXED
+            org.glavo.m3fx.controls.M3TabBarLayout#SCROLLABLE
+            org.glavo.m3fx.controls.M3ToolbarColorStyle#STANDARD
+            org.glavo.m3fx.controls.M3ToolbarColorStyle#VIBRANT
             org.glavo.m3fx.controls.M3ToolbarVariant#DOCKED
             org.glavo.m3fx.controls.M3ToolbarVariant#FLOATING
-            org.glavo.m3fx.controls.M3ToolbarVariant#STANDARD
             org.glavo.m3fx.controls.M3TopAppBarVariant#CENTER_ALIGNED
             org.glavo.m3fx.controls.M3TopAppBarVariant#LARGE
+            org.glavo.m3fx.controls.M3TopAppBarVariant#LARGE_FLEXIBLE
             org.glavo.m3fx.controls.M3TopAppBarVariant#MEDIUM
+            org.glavo.m3fx.controls.M3TopAppBarVariant#MEDIUM_FLEXIBLE
             org.glavo.m3fx.controls.M3TopAppBarVariant#SMALL
             org.glavo.m3fx.tokens.M3Profile#BASELINE_2021
             org.glavo.m3fx.tokens.M3Profile#EXPRESSIVE_2025
@@ -941,10 +951,12 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3SegmentedButtonGroup#STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3SideSheet#ACTIONS_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3SideSheet#CONTENT_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3SideSheet#HEADER_ACTIONS_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3SideSheet#HEADER_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3SideSheet#STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3SideSheet#TITLE_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3Slider#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3Snackbar#DISMISS_REQUEST:javafx.event.EventType
             org.glavo.m3fx.controls.M3Snackbar#STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3SnackbarHost#STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3SplitButton#ACTION_BUTTON_STYLE_CLASS:java.lang.String
@@ -956,6 +968,7 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3Switch#STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3Tab#STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3TabBar#CONTAINER_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TabBar#DIVIDER_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3TabBar#STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3Text#STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3TextArea#STYLE_CLASS:java.lang.String
@@ -1007,8 +1020,12 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3Tooltip#STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3TopAppBar#ACTION_SLOT_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3TopAppBar#ACTIONS_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TopAppBar#COMPACT_SUBTITLE_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TopAppBar#COMPACT_TITLE_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3TopAppBar#NAVIGATION_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3TopAppBar#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TopAppBar#SUBTITLE_STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3TopAppBar#TITLE_CONTENT_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3TopAppBar#TITLE_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3ValidationSummary#EMPTY_TEXT_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3ValidationSummary#ITEM_ERROR_STYLE_CLASS:java.lang.String
@@ -1477,6 +1494,7 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3SegmentedButtonGroup#getSelectedButtons()
             org.glavo.m3fx.controls.M3SideSheet#getActions()
             org.glavo.m3fx.controls.M3SideSheet#getContent()
+            org.glavo.m3fx.controls.M3SideSheet#getHeaderActions()
             org.glavo.m3fx.controls.M3Slider#getActiveTrackGraphic()
             org.glavo.m3fx.controls.M3Slider#getInactiveTrackGraphic()
             org.glavo.m3fx.controls.M3SnackbarHost#getQueue()
@@ -1500,6 +1518,7 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3Tooltip#getGraphic()
             org.glavo.m3fx.controls.M3TopAppBar#getActions()
             org.glavo.m3fx.controls.M3TopAppBar#getNavigation()
+            org.glavo.m3fx.controls.M3TopAppBar#getTitleContent()
             """);
 
     /// Public properties that intentionally expose user-supplied slots, selections, or embedded configuration controls.
@@ -1543,6 +1562,7 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3TextInputLayout#trailingProperty()
             org.glavo.m3fx.controls.M3Tooltip#graphicProperty()
             org.glavo.m3fx.controls.M3TopAppBar#navigationProperty()
+            org.glavo.m3fx.controls.M3TopAppBar#titleContentProperty()
             """);
 
     /// Matches public static class CSS metadata entry points.

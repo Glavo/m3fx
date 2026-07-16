@@ -4,8 +4,10 @@
 package org.glavo.m3fx.controls;
 
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
@@ -44,16 +46,28 @@ import java.util.Objects;
 
 /// A Material Design 3 top app bar.
 ///
-/// `M3TopAppBar` provides navigation, title, and trailing action slots for the top edge of an application view.
-/// The variant property selects the small, medium, large, or centered layout metrics, while the action list
-/// allows arbitrary JavaFX nodes such as [M3IconButton] instances. The scroll-under state exposes the
-/// `:scrolled-under` pseudo-class used when content moves beneath the app bar.
+/// `M3TopAppBar` provides navigation, title, optional subtitle, and trailing action slots for the top edge of an
+/// application view. The variant property selects a small, centered, baseline tall, or flexible layout. Flexible
+/// variants can transform into the small arrangement from either [scrolledUnderProperty] or a directly bound
+/// [collapseProgressProperty]. The action list accepts arbitrary JavaFX nodes such as [M3IconButton] instances.
 ///
 /// See [Material Design app bars](https://m3.material.io/components/app-bars/overview).
 @NotNullByDefault
 public class M3TopAppBar extends Control {
     /// The pseudo-class applied while content is scrolled beneath the app bar.
     private static final PseudoClass SCROLLED_UNDER_PSEUDO_CLASS = PseudoClass.getPseudoClass("scrolled-under");
+
+    /// The pseudo-class applied while subtitle text is present.
+    private static final PseudoClass HAS_SUBTITLE_PSEUDO_CLASS = PseudoClass.getPseudoClass("has-subtitle");
+
+    /// The pseudo-class applied when a flexible app bar has completed its small-layout transformation.
+    private static final PseudoClass COLLAPSED_PSEUDO_CLASS = PseudoClass.getPseudoClass("collapsed");
+
+    /// The pseudo-class applied to the leading navigation control for app bar color roles.
+    private static final PseudoClass LEADING_ACTION_PSEUDO_CLASS = PseudoClass.getPseudoClass("top-app-bar-leading");
+
+    /// The pseudo-class applied to trailing action controls for app bar color roles.
+    private static final PseudoClass TRAILING_ACTION_PSEUDO_CLASS = PseudoClass.getPseudoClass("top-app-bar-trailing");
 
     /// The default small top app bar container height in pixels.
     private static final double DEFAULT_CONTAINER_HEIGHT = 64.0;
@@ -64,6 +78,21 @@ public class M3TopAppBar extends Control {
     /// The default large top app bar container height in pixels.
     private static final double DEFAULT_LARGE_CONTAINER_HEIGHT = 152.0;
 
+    /// The default medium flexible container height without a subtitle in pixels.
+    private static final double DEFAULT_MEDIUM_FLEXIBLE_CONTAINER_HEIGHT = 112.0;
+
+    /// The default medium flexible container height with a subtitle in pixels.
+    private static final double DEFAULT_MEDIUM_FLEXIBLE_SUBTITLE_CONTAINER_HEIGHT = 136.0;
+
+    /// The default large flexible container height without a subtitle in pixels.
+    private static final double DEFAULT_LARGE_FLEXIBLE_CONTAINER_HEIGHT = 120.0;
+
+    /// The default large flexible container height with a subtitle in pixels.
+    private static final double DEFAULT_LARGE_FLEXIBLE_SUBTITLE_CONTAINER_HEIGHT = 152.0;
+
+    /// The default outer space before leading and after trailing action slots in pixels.
+    private static final double DEFAULT_EDGE_PADDING = 4.0;
+
     /// The default horizontal content padding in pixels.
     private static final double DEFAULT_HORIZONTAL_PADDING = 16.0;
 
@@ -73,8 +102,11 @@ public class M3TopAppBar extends Control {
     /// The default large bottom content padding in pixels.
     private static final double DEFAULT_LARGE_BOTTOM_PADDING = 28.0;
 
+    /// The default bottom space below flexible title content in pixels.
+    private static final double DEFAULT_FLEXIBLE_BOTTOM_PADDING = 12.0;
+
     /// The default spacing between the leading navigation slot and the title in pixels.
-    private static final double DEFAULT_CONTENT_SPACING = 8.0;
+    private static final double DEFAULT_CONTENT_SPACING = 0.0;
 
     /// The default spacing between trailing action slots in pixels.
     private static final double DEFAULT_ACTION_SPACING = 0.0;
@@ -88,16 +120,46 @@ public class M3TopAppBar extends Control {
     /// The title label style class.
     public static final String TITLE_STYLE_CLASS = "m3-top-app-bar-title";
 
+    /// The subtitle label style class.
+    public static final String SUBTITLE_STYLE_CLASS = "m3-top-app-bar-subtitle";
+
+    /// The style class applied to optional custom title content.
+    public static final String TITLE_CONTENT_STYLE_CLASS = "m3-top-app-bar-title-content";
+
+    /// The compact title label style class used while a flexible app bar transforms into the small arrangement.
+    public static final String COMPACT_TITLE_STYLE_CLASS = "m3-top-app-bar-compact-title";
+
+    /// The compact subtitle label style class used while a flexible app bar transforms into the small arrangement.
+    public static final String COMPACT_SUBTITLE_STYLE_CLASS = "m3-top-app-bar-compact-subtitle";
+
     /// The actions container style class.
     public static final String ACTIONS_STYLE_CLASS = "m3-top-app-bar-actions";
 
     /// The style class applied to each 48 dp trailing action slot.
     public static final String ACTION_SLOT_STYLE_CLASS = "m3-top-app-bar-action-slot";
 
-    // The app bar title text property.
+    /// The app bar title text property.
     private final StringProperty title = new SimpleStringProperty(this, "title", "");
 
-    // The top app bar variant property.
+    /// The optional app bar subtitle text property.
+    private final StringProperty subtitle = new SimpleStringProperty(this, "subtitle", "") {
+        /// Updates subtitle state and height metrics when the text changes.
+        @Override
+        protected void invalidated() {
+            if (get() == null) {
+                set("");
+                return;
+            }
+            pseudoClassStateChanged(HAS_SUBTITLE_PSEUDO_CLASS, !get().isEmpty());
+            updateAccessibleText();
+            updateMetrics();
+        }
+    };
+
+    /// Optional custom visual content that replaces the title text in the expanded arrangement.
+    private final ObjectProperty<@Nullable Node> titleContent = new SimpleObjectProperty<>(this, "titleContent");
+
+    /// The top app bar variant property.
     private final ObjectProperty<M3TopAppBarVariant> variant =
             new SimpleObjectProperty<>(this, "variant", M3TopAppBarVariant.SMALL) {
                 /// Updates variant style classes and layout metrics when the property changes.
@@ -112,7 +174,7 @@ public class M3TopAppBar extends Control {
                 }
             };
 
-    // Whether scrollable content currently passes beneath this app bar.
+    /// Whether scrollable content currently passes beneath this app bar.
     private final BooleanProperty scrolledUnder = new SimpleBooleanProperty(this, "scrolledUnder") {
         /// Updates the scroll-under pseudo-class when the property changes.
         @Override
@@ -121,34 +183,62 @@ public class M3TopAppBar extends Control {
         }
     };
 
-    // The optional leading navigation node property.
+    /// The flexible app bar transformation progress from expanded zero to collapsed one.
+    private final DoubleProperty collapseProgress = new SimpleDoubleProperty(this, "collapseProgress", 0.0) {
+        /// Updates height and layout as direct scrolling or the built-in transition changes progress.
+        @Override
+        protected void invalidated() {
+            pseudoClassStateChanged(COLLAPSED_PSEUDO_CLASS, getCollapseProgress() >= 1.0);
+            updateMetrics();
+        }
+    };
+
+    /// The optional leading navigation node property.
     private final ObjectProperty<@Nullable Node> navigation = new SimpleObjectProperty<>(this, "navigation");
 
     /// The mutable trailing action node list.
     private final ObservableList<Node> actions = M3ObservableLists.nonNullElementList("action");
 
-    // The small and centered app bar container height token.
+    /// The small and centered app bar container height token.
     private @Nullable StyleableDoubleProperty containerHeight;
 
-    // The medium app bar container height token.
+    /// The medium app bar container height token.
     private @Nullable StyleableDoubleProperty mediumContainerHeight;
 
-    // The large app bar container height token.
+    /// The large app bar container height token.
     private @Nullable StyleableDoubleProperty largeContainerHeight;
 
-    // The horizontal content padding token.
+    /// The medium flexible app bar container height token.
+    private @Nullable StyleableDoubleProperty mediumFlexibleContainerHeight;
+
+    /// The medium flexible app bar container height token when a subtitle is present.
+    private @Nullable StyleableDoubleProperty mediumFlexibleSubtitleContainerHeight;
+
+    /// The large flexible app bar container height token.
+    private @Nullable StyleableDoubleProperty largeFlexibleContainerHeight;
+
+    /// The large flexible app bar container height token when a subtitle is present.
+    private @Nullable StyleableDoubleProperty largeFlexibleSubtitleContainerHeight;
+
+    /// The outer leading and trailing action-slot space token.
+    private @Nullable StyleableDoubleProperty edgePadding;
+
+    /// The horizontal content padding token.
     private @Nullable StyleableDoubleProperty horizontalPadding;
 
-    // The medium app bar bottom content padding token.
+    /// The medium app bar bottom content padding token.
     private @Nullable StyleableDoubleProperty mediumBottomPadding;
 
-    // The large app bar bottom content padding token.
+    /// The large app bar bottom content padding token.
     private @Nullable StyleableDoubleProperty largeBottomPadding;
 
-    // The spacing token between leading, title, and trailing content slots.
+    /// The bottom space below flexible title content token.
+    private @Nullable StyleableDoubleProperty flexibleBottomPadding;
+
+    /// The spacing token between leading, title, and trailing content slots.
     private @Nullable StyleableDoubleProperty contentSpacing;
 
-    // The spacing token between trailing action nodes.
+    /// The spacing token between trailing action nodes.
     private @Nullable StyleableDoubleProperty actionSpacing;
 
     /// Notifies accessibility clients when focus moves between navigation and action children.
@@ -186,6 +276,56 @@ public class M3TopAppBar extends Control {
         return title;
     }
 
+    /// Returns the app bar subtitle.
+    ///
+    /// An empty string suppresses the subtitle and uses the shorter flexible container height. Small app bars use
+    /// the small subtitle typography within their single row; baseline medium and large variants do not render a
+    /// subtitle because the Material specification assigns subtitle support to the flexible replacements.
+    ///
+    /// @return the subtitle text, never `null`
+    public final String getSubtitle() {
+        return subtitle.get();
+    }
+
+    /// Sets the app bar subtitle.
+    ///
+    /// @param subtitle the subtitle text, or an empty string to remove it
+    public final void setSubtitle(String subtitle) {
+        this.subtitle.set(Objects.requireNonNull(subtitle, "subtitle"));
+    }
+
+    /// Returns the app bar subtitle property.
+    ///
+    /// @return the subtitle property
+    public final StringProperty subtitleProperty() {
+        return subtitle;
+    }
+
+    /// Returns the optional custom title content.
+    ///
+    /// When present, this node replaces the expanded title label. The [titleProperty] remains the accessible name
+    /// and supplies the compact title used during a flexible app bar collapse. A title-content node must not already
+    /// belong to another parent when the app bar skin installs it.
+    ///
+    /// @return the custom title content, or `null` when the title string is rendered
+    public final @Nullable Node getTitleContent() {
+        return titleContent.get();
+    }
+
+    /// Sets the optional custom title content.
+    ///
+    /// @param titleContent the custom title node, or `null` to render the title string
+    public final void setTitleContent(@Nullable Node titleContent) {
+        this.titleContent.set(titleContent);
+    }
+
+    /// Returns the custom title-content property.
+    ///
+    /// @return the custom title-content property
+    public final ObjectProperty<@Nullable Node> titleContentProperty() {
+        return titleContent;
+    }
+
     /// Returns the top app bar variant.
     public final M3TopAppBarVariant getVariant() {
         return variant.get();
@@ -221,6 +361,36 @@ public class M3TopAppBar extends Control {
     /// Returns the scroll-under state property.
     public final BooleanProperty scrolledUnderProperty() {
         return scrolledUnder;
+    }
+
+    /// Returns the current flexible app bar collapse progress.
+    ///
+    /// Zero represents the fully expanded flexible arrangement and one represents the small arrangement. Values
+    /// between those endpoints are used during Material spatial motion. Applications may bind this property to a
+    /// continuous scroll offset; while it is unbound, the default skin animates it in response to
+    /// [scrolledUnderProperty]. Baseline variants ignore this value.
+    ///
+    /// @return the collapse progress in the closed interval from zero to one
+    public final double getCollapseProgress() {
+        return Math.max(0.0, Math.min(1.0, collapseProgress.get()));
+    }
+
+    /// Sets the flexible app bar collapse progress.
+    ///
+    /// @param collapseProgress the collapse progress in the closed interval from zero to one
+    /// @throws IllegalArgumentException if the value is not finite or lies outside the supported interval
+    public final void setCollapseProgress(double collapseProgress) {
+        if (!Double.isFinite(collapseProgress) || collapseProgress < 0.0 || collapseProgress > 1.0) {
+            throw new IllegalArgumentException("collapseProgress must be finite and between 0 and 1");
+        }
+        this.collapseProgress.set(collapseProgress);
+    }
+
+    /// Returns the flexible app bar collapse-progress property.
+    ///
+    /// @return the collapse-progress property
+    public final DoubleProperty collapseProgressProperty() {
+        return collapseProgress;
     }
 
     /// Returns the optional leading navigation node.
@@ -321,6 +491,158 @@ public class M3TopAppBar extends Control {
         return largeContainerHeight;
     }
 
+    /// Returns the medium flexible container height without a subtitle.
+    ///
+    /// @return the medium flexible container height in pixels
+    public final double getMediumFlexibleContainerHeight() {
+        return mediumFlexibleContainerHeight == null
+                ? DEFAULT_MEDIUM_FLEXIBLE_CONTAINER_HEIGHT
+                : mediumFlexibleContainerHeight.get();
+    }
+
+    /// Sets the medium flexible container height without a subtitle.
+    ///
+    /// @param height the medium flexible container height in pixels
+    public final void setMediumFlexibleContainerHeight(double height) {
+        mediumFlexibleContainerHeightProperty().set(M3Css.nonNegative(height, "mediumFlexibleContainerHeight"));
+    }
+
+    /// Returns the medium flexible container-height property.
+    ///
+    /// @return the medium flexible container-height property
+    public final StyleableDoubleProperty mediumFlexibleContainerHeightProperty() {
+        if (mediumFlexibleContainerHeight == null) {
+            mediumFlexibleContainerHeight = createStyleableDoubleProperty(
+                    DEFAULT_MEDIUM_FLEXIBLE_CONTAINER_HEIGHT,
+                    "mediumFlexibleContainerHeight",
+                    StyleableProperties.MEDIUM_FLEXIBLE_CONTAINER_HEIGHT
+            );
+        }
+        return mediumFlexibleContainerHeight;
+    }
+
+    /// Returns the medium flexible container height used while a subtitle is present.
+    ///
+    /// @return the medium flexible subtitle container height in pixels
+    public final double getMediumFlexibleSubtitleContainerHeight() {
+        return mediumFlexibleSubtitleContainerHeight == null
+                ? DEFAULT_MEDIUM_FLEXIBLE_SUBTITLE_CONTAINER_HEIGHT
+                : mediumFlexibleSubtitleContainerHeight.get();
+    }
+
+    /// Sets the medium flexible container height used while a subtitle is present.
+    ///
+    /// @param height the medium flexible subtitle container height in pixels
+    public final void setMediumFlexibleSubtitleContainerHeight(double height) {
+        mediumFlexibleSubtitleContainerHeightProperty().set(
+                M3Css.nonNegative(height, "mediumFlexibleSubtitleContainerHeight")
+        );
+    }
+
+    /// Returns the medium flexible subtitle container-height property.
+    ///
+    /// @return the medium flexible subtitle container-height property
+    public final StyleableDoubleProperty mediumFlexibleSubtitleContainerHeightProperty() {
+        if (mediumFlexibleSubtitleContainerHeight == null) {
+            mediumFlexibleSubtitleContainerHeight = createStyleableDoubleProperty(
+                    DEFAULT_MEDIUM_FLEXIBLE_SUBTITLE_CONTAINER_HEIGHT,
+                    "mediumFlexibleSubtitleContainerHeight",
+                    StyleableProperties.MEDIUM_FLEXIBLE_SUBTITLE_CONTAINER_HEIGHT
+            );
+        }
+        return mediumFlexibleSubtitleContainerHeight;
+    }
+
+    /// Returns the large flexible container height without a subtitle.
+    ///
+    /// @return the large flexible container height in pixels
+    public final double getLargeFlexibleContainerHeight() {
+        return largeFlexibleContainerHeight == null
+                ? DEFAULT_LARGE_FLEXIBLE_CONTAINER_HEIGHT
+                : largeFlexibleContainerHeight.get();
+    }
+
+    /// Sets the large flexible container height without a subtitle.
+    ///
+    /// @param height the large flexible container height in pixels
+    public final void setLargeFlexibleContainerHeight(double height) {
+        largeFlexibleContainerHeightProperty().set(M3Css.nonNegative(height, "largeFlexibleContainerHeight"));
+    }
+
+    /// Returns the large flexible container-height property.
+    ///
+    /// @return the large flexible container-height property
+    public final StyleableDoubleProperty largeFlexibleContainerHeightProperty() {
+        if (largeFlexibleContainerHeight == null) {
+            largeFlexibleContainerHeight = createStyleableDoubleProperty(
+                    DEFAULT_LARGE_FLEXIBLE_CONTAINER_HEIGHT,
+                    "largeFlexibleContainerHeight",
+                    StyleableProperties.LARGE_FLEXIBLE_CONTAINER_HEIGHT
+            );
+        }
+        return largeFlexibleContainerHeight;
+    }
+
+    /// Returns the large flexible container height used while a subtitle is present.
+    ///
+    /// @return the large flexible subtitle container height in pixels
+    public final double getLargeFlexibleSubtitleContainerHeight() {
+        return largeFlexibleSubtitleContainerHeight == null
+                ? DEFAULT_LARGE_FLEXIBLE_SUBTITLE_CONTAINER_HEIGHT
+                : largeFlexibleSubtitleContainerHeight.get();
+    }
+
+    /// Sets the large flexible container height used while a subtitle is present.
+    ///
+    /// @param height the large flexible subtitle container height in pixels
+    public final void setLargeFlexibleSubtitleContainerHeight(double height) {
+        largeFlexibleSubtitleContainerHeightProperty().set(
+                M3Css.nonNegative(height, "largeFlexibleSubtitleContainerHeight")
+        );
+    }
+
+    /// Returns the large flexible subtitle container-height property.
+    ///
+    /// @return the large flexible subtitle container-height property
+    public final StyleableDoubleProperty largeFlexibleSubtitleContainerHeightProperty() {
+        if (largeFlexibleSubtitleContainerHeight == null) {
+            largeFlexibleSubtitleContainerHeight = createStyleableDoubleProperty(
+                    DEFAULT_LARGE_FLEXIBLE_SUBTITLE_CONTAINER_HEIGHT,
+                    "largeFlexibleSubtitleContainerHeight",
+                    StyleableProperties.LARGE_FLEXIBLE_SUBTITLE_CONTAINER_HEIGHT
+            );
+        }
+        return largeFlexibleSubtitleContainerHeight;
+    }
+
+    /// Returns the outer space before leading and after trailing action slots.
+    ///
+    /// @return the action-slot edge padding in pixels
+    public final double getEdgePadding() {
+        return edgePadding == null ? DEFAULT_EDGE_PADDING : edgePadding.get();
+    }
+
+    /// Sets the outer space before leading and after trailing action slots.
+    ///
+    /// @param edgePadding the action-slot edge padding in pixels
+    public final void setEdgePadding(double edgePadding) {
+        edgePaddingProperty().set(M3Css.nonNegative(edgePadding, "edgePadding"));
+    }
+
+    /// Returns the action-slot edge-padding property.
+    ///
+    /// @return the action-slot edge-padding property
+    public final StyleableDoubleProperty edgePaddingProperty() {
+        if (edgePadding == null) {
+            edgePadding = createStyleableDoubleProperty(
+                    DEFAULT_EDGE_PADDING,
+                    "edgePadding",
+                    StyleableProperties.EDGE_PADDING
+            );
+        }
+        return edgePadding;
+    }
+
     /// Returns the horizontal content padding token.
     ///
     /// @return the horizontal content padding in pixels
@@ -397,6 +719,34 @@ public class M3TopAppBar extends Control {
             );
         }
         return largeBottomPadding;
+    }
+
+    /// Returns the bottom space below expanded flexible title content.
+    ///
+    /// @return the flexible title bottom padding in pixels
+    public final double getFlexibleBottomPadding() {
+        return flexibleBottomPadding == null ? DEFAULT_FLEXIBLE_BOTTOM_PADDING : flexibleBottomPadding.get();
+    }
+
+    /// Sets the bottom space below expanded flexible title content.
+    ///
+    /// @param flexibleBottomPadding the flexible title bottom padding in pixels
+    public final void setFlexibleBottomPadding(double flexibleBottomPadding) {
+        flexibleBottomPaddingProperty().set(M3Css.nonNegative(flexibleBottomPadding, "flexibleBottomPadding"));
+    }
+
+    /// Returns the flexible title bottom-padding property.
+    ///
+    /// @return the flexible title bottom-padding property
+    public final StyleableDoubleProperty flexibleBottomPaddingProperty() {
+        if (flexibleBottomPadding == null) {
+            flexibleBottomPadding = createStyleableDoubleProperty(
+                    DEFAULT_FLEXIBLE_BOTTOM_PADDING,
+                    "flexibleBottomPadding",
+                    StyleableProperties.FLEXIBLE_BOTTOM_PADDING
+            );
+        }
+        return flexibleBottomPadding;
     }
 
     /// Returns the spacing token between leading, title, and trailing content slots.
@@ -478,19 +828,28 @@ public class M3TopAppBar extends Control {
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleItem, this::showAccessibleItem);
         addEventFilter(KeyEvent.KEY_PRESSED, this::handleNavigationKeyPressed);
         title.addListener(observable -> updateAccessibleText());
-        navigation.addListener((observable, oldValue, newValue) -> notifyAccessibleItemsChanged());
-        actions.addListener((ListChangeListener<Node>) change -> notifyAccessibleItemsChanged());
+        titleContent.addListener((observable, oldValue, newValue) -> requestLayout());
+        navigation.addListener((observable, oldValue, newValue) -> {
+            if (oldValue != null) {
+                oldValue.pseudoClassStateChanged(LEADING_ACTION_PSEUDO_CLASS, false);
+            }
+            if (newValue != null) {
+                newValue.pseudoClassStateChanged(LEADING_ACTION_PSEUDO_CLASS, true);
+            }
+            notifyAccessibleItemsChanged();
+        });
+        actions.addListener(this::handleActionsChanged);
         focusNotifier.start();
         updateAccessibleText();
         updateVariantStyle();
         updateMetrics();
     }
 
-    /// Returns accessibility attributes for the title and action collection.
+    /// Returns accessibility attributes for the title, subtitle, and action collection.
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         return switch (attribute) {
-            case TEXT -> getTitle();
+            case TEXT -> getSubtitle().isEmpty() ? getTitle() : getTitle() + ", " + getSubtitle();
             case ITEM_COUNT -> M3Accessible.itemCount(getNavigation(), getActions());
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getNavigation(), getActions(), parameters);
             case FOCUS_NODE -> M3Accessible.currentOrFirstFocusTarget(this, getNavigation(), getActions());
@@ -560,7 +919,7 @@ public class M3TopAppBar extends Control {
 
     /// Updates the accessible text exposed by the app bar.
     private void updateAccessibleText() {
-        setAccessibleText(getTitle());
+        setAccessibleText(getSubtitle().isEmpty() ? getTitle() : getTitle() + ", " + getSubtitle());
         notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
     }
 
@@ -572,6 +931,21 @@ public class M3TopAppBar extends Control {
         focusNotifier.refresh();
     }
 
+    /// Updates trailing action color-role state and accessibility after list changes.
+    private void handleActionsChanged(ListChangeListener.Change<? extends Node> change) {
+        while (change.next()) {
+            for (Node removed : change.getRemoved()) {
+                removed.pseudoClassStateChanged(TRAILING_ACTION_PSEUDO_CLASS, false);
+            }
+            if (change.wasAdded()) {
+                for (Node added : change.getAddedSubList()) {
+                    added.pseudoClassStateChanged(TRAILING_ACTION_PSEUDO_CLASS, true);
+                }
+            }
+        }
+        notifyAccessibleItemsChanged();
+    }
+
     /// Updates the active variant style class.
     private void updateVariantStyle() {
         M3ControlStyles.replaceVariant(
@@ -580,26 +954,33 @@ public class M3TopAppBar extends Control {
                 M3TopAppBarVariant.SMALL.styleClass(),
                 M3TopAppBarVariant.CENTER_ALIGNED.styleClass(),
                 M3TopAppBarVariant.MEDIUM.styleClass(),
-                M3TopAppBarVariant.LARGE.styleClass()
+                M3TopAppBarVariant.LARGE.styleClass(),
+                M3TopAppBarVariant.MEDIUM_FLEXIBLE.styleClass(),
+                M3TopAppBarVariant.LARGE_FLEXIBLE.styleClass()
         );
     }
 
     /// Applies size-related component tokens to JavaFX layout properties.
     private void updateMetrics() {
-        double height = switch (getVariant()) {
+        double expandedHeight = switch (getVariant()) {
             case MEDIUM -> getMediumContainerHeight();
             case LARGE -> getLargeContainerHeight();
+            case MEDIUM_FLEXIBLE -> getSubtitle().isEmpty()
+                    ? getMediumFlexibleContainerHeight()
+                    : getMediumFlexibleSubtitleContainerHeight();
+            case LARGE_FLEXIBLE -> getSubtitle().isEmpty()
+                    ? getLargeFlexibleContainerHeight()
+                    : getLargeFlexibleSubtitleContainerHeight();
             case SMALL, CENTER_ALIGNED -> getContainerHeight();
         };
-        double bottomPadding = switch (getVariant()) {
-            case MEDIUM -> getMediumBottomPadding();
-            case LARGE -> getLargeBottomPadding();
-            case SMALL, CENTER_ALIGNED -> 0.0;
+        double height = switch (getVariant()) {
+            case MEDIUM_FLEXIBLE, LARGE_FLEXIBLE -> expandedHeight
+                    + (getContainerHeight() - expandedHeight) * getCollapseProgress();
+            case SMALL, CENTER_ALIGNED, MEDIUM, LARGE -> expandedHeight;
         };
-        double horizontalPadding = getHorizontalPadding();
         M3Css.setMinHeightIfUnbound(this, height);
         M3Css.setPrefHeightIfUnbound(this, height);
-        M3Css.setPaddingIfUnbound(this, new Insets(0.0, horizontalPadding, bottomPadding, horizontalPadding));
+        M3Css.setPaddingIfUnbound(this, Insets.EMPTY);
         requestLayout();
     }
 
@@ -636,6 +1017,42 @@ public class M3TopAppBar extends Control {
                 createSizeCssMetaData("-m3-large-container-height", DEFAULT_LARGE_CONTAINER_HEIGHT,
                         M3TopAppBar::largeContainerHeightProperty);
 
+        /// CSS metadata for the medium flexible container height token.
+        private static final CssMetaData<M3TopAppBar, Number> MEDIUM_FLEXIBLE_CONTAINER_HEIGHT =
+                createSizeCssMetaData(
+                        "-m3-medium-flexible-container-height",
+                        DEFAULT_MEDIUM_FLEXIBLE_CONTAINER_HEIGHT,
+                        M3TopAppBar::mediumFlexibleContainerHeightProperty
+                );
+
+        /// CSS metadata for the medium flexible subtitle container height token.
+        private static final CssMetaData<M3TopAppBar, Number> MEDIUM_FLEXIBLE_SUBTITLE_CONTAINER_HEIGHT =
+                createSizeCssMetaData(
+                        "-m3-medium-flexible-subtitle-container-height",
+                        DEFAULT_MEDIUM_FLEXIBLE_SUBTITLE_CONTAINER_HEIGHT,
+                        M3TopAppBar::mediumFlexibleSubtitleContainerHeightProperty
+                );
+
+        /// CSS metadata for the large flexible container height token.
+        private static final CssMetaData<M3TopAppBar, Number> LARGE_FLEXIBLE_CONTAINER_HEIGHT =
+                createSizeCssMetaData(
+                        "-m3-large-flexible-container-height",
+                        DEFAULT_LARGE_FLEXIBLE_CONTAINER_HEIGHT,
+                        M3TopAppBar::largeFlexibleContainerHeightProperty
+                );
+
+        /// CSS metadata for the large flexible subtitle container height token.
+        private static final CssMetaData<M3TopAppBar, Number> LARGE_FLEXIBLE_SUBTITLE_CONTAINER_HEIGHT =
+                createSizeCssMetaData(
+                        "-m3-large-flexible-subtitle-container-height",
+                        DEFAULT_LARGE_FLEXIBLE_SUBTITLE_CONTAINER_HEIGHT,
+                        M3TopAppBar::largeFlexibleSubtitleContainerHeightProperty
+                );
+
+        /// CSS metadata for the leading and trailing edge-padding token.
+        private static final CssMetaData<M3TopAppBar, Number> EDGE_PADDING =
+                createSizeCssMetaData("-m3-edge-padding", DEFAULT_EDGE_PADDING, M3TopAppBar::edgePaddingProperty);
+
         /// CSS metadata for the horizontal padding token.
         private static final CssMetaData<M3TopAppBar, Number> HORIZONTAL_PADDING =
                 createSizeCssMetaData("-m3-horizontal-padding", DEFAULT_HORIZONTAL_PADDING,
@@ -650,6 +1067,14 @@ public class M3TopAppBar extends Control {
         private static final CssMetaData<M3TopAppBar, Number> LARGE_BOTTOM_PADDING =
                 createSizeCssMetaData("-m3-large-bottom-padding", DEFAULT_LARGE_BOTTOM_PADDING,
                         M3TopAppBar::largeBottomPaddingProperty);
+
+        /// CSS metadata for the flexible title bottom-padding token.
+        private static final CssMetaData<M3TopAppBar, Number> FLEXIBLE_BOTTOM_PADDING =
+                createSizeCssMetaData(
+                        "-m3-flexible-bottom-padding",
+                        DEFAULT_FLEXIBLE_BOTTOM_PADDING,
+                        M3TopAppBar::flexibleBottomPaddingProperty
+                );
 
         /// CSS metadata for the content slot spacing token.
         private static final CssMetaData<M3TopAppBar, Number> CONTENT_SPACING =
@@ -669,9 +1094,15 @@ public class M3TopAppBar extends Control {
             styleables.add(CONTAINER_HEIGHT);
             styleables.add(MEDIUM_CONTAINER_HEIGHT);
             styleables.add(LARGE_CONTAINER_HEIGHT);
+            styleables.add(MEDIUM_FLEXIBLE_CONTAINER_HEIGHT);
+            styleables.add(MEDIUM_FLEXIBLE_SUBTITLE_CONTAINER_HEIGHT);
+            styleables.add(LARGE_FLEXIBLE_CONTAINER_HEIGHT);
+            styleables.add(LARGE_FLEXIBLE_SUBTITLE_CONTAINER_HEIGHT);
+            styleables.add(EDGE_PADDING);
             styleables.add(HORIZONTAL_PADDING);
             styleables.add(MEDIUM_BOTTOM_PADDING);
             styleables.add(LARGE_BOTTOM_PADDING);
+            styleables.add(FLEXIBLE_BOTTOM_PADDING);
             styleables.add(CONTENT_SPACING);
             styleables.add(ACTION_SPACING);
             STYLEABLES = Collections.unmodifiableList(styleables);

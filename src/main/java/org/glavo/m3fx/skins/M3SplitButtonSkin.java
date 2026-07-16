@@ -17,7 +17,6 @@ import javafx.scene.shape.ClosePath;
 import javafx.scene.shape.LineTo;
 import javafx.scene.shape.MoveTo;
 import javafx.scene.shape.Path;
-import javafx.scene.shape.PathElement;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3MenuButton;
@@ -471,18 +470,6 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
     /// A reusable asymmetric rounded rectangle used as a JavaFX region shape.
     @NotNullByDefault
     private static final class SplitPartShape extends Path {
-        /// The top-right corner element index.
-        private static final int TOP_RIGHT_CORNER_INDEX = 2;
-
-        /// The bottom-right corner element index.
-        private static final int BOTTOM_RIGHT_CORNER_INDEX = 4;
-
-        /// The bottom-left corner element index.
-        private static final int BOTTOM_LEFT_CORNER_INDEX = 6;
-
-        /// The top-left corner element index.
-        private static final int TOP_LEFT_CORNER_INDEX = 8;
-
         /// The path starting point.
         private final MoveTo start = new MoveTo();
 
@@ -492,17 +479,11 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
         /// The rounded top-right corner.
         private final ArcTo topRightArc = new ArcTo();
 
-        /// The square top-right corner.
-        private final LineTo topRightLine = new LineTo();
-
         /// The right edge.
         private final LineTo rightEdge = new LineTo();
 
         /// The rounded bottom-right corner.
         private final ArcTo bottomRightArc = new ArcTo();
-
-        /// The square bottom-right corner.
-        private final LineTo bottomRightLine = new LineTo();
 
         /// The bottom edge.
         private final LineTo bottomEdge = new LineTo();
@@ -510,17 +491,11 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
         /// The rounded bottom-left corner.
         private final ArcTo bottomLeftArc = new ArcTo();
 
-        /// The square bottom-left corner.
-        private final LineTo bottomLeftLine = new LineTo();
-
         /// The left edge.
         private final LineTo leftEdge = new LineTo();
 
         /// The rounded top-left corner.
         private final ArcTo topLeftArc = new ArcTo();
-
-        /// The square top-left corner.
-        private final LineTo topLeftLine = new LineTo();
 
         /// The width represented by the current path.
         private double width = Double.NaN;
@@ -591,13 +566,11 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
             start.setY(0.0);
             topEdge.setX(width - topRight);
             topEdge.setY(0.0);
-            updateCorner(TOP_RIGHT_CORNER_INDEX, topRightArc, topRightLine, topRight, width, topRight);
+            updateCorner(topRightArc, topRight, width, topRight);
             rightEdge.setX(width);
             rightEdge.setY(height - topRight);
             updateCorner(
-                    BOTTOM_RIGHT_CORNER_INDEX,
                     bottomRightArc,
-                    bottomRightLine,
                     topRight,
                     width - topRight,
                     height
@@ -605,23 +578,19 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
             bottomEdge.setX(topLeft);
             bottomEdge.setY(height);
             updateCorner(
-                    BOTTOM_LEFT_CORNER_INDEX,
                     bottomLeftArc,
-                    bottomLeftLine,
                     topLeft,
                     0.0,
                     height - topLeft
             );
             leftEdge.setX(0.0);
             leftEdge.setY(topLeft);
-            updateCorner(TOP_LEFT_CORNER_INDEX, topLeftArc, topLeftLine, topLeft, topLeft, 0.0);
+            updateCorner(topLeftArc, topLeft, topLeft, 0.0);
         }
 
-        /// Updates one corner and selects its rounded or square path element.
+        /// Updates one corner without replacing path elements during shape animation.
         private void updateCorner(
-                int index,
                 ArcTo arc,
-                LineTo line,
                 double radius,
                 double x,
                 double y
@@ -631,12 +600,6 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
             arc.setX(x);
             arc.setY(y);
             arc.setSweepFlag(true);
-            line.setX(x);
-            line.setY(y);
-            PathElement element = radius <= 0.0 ? line : arc;
-            if (getElements().get(index) != element) {
-                getElements().set(index, element);
-            }
         }
     }
 }

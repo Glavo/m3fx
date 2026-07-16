@@ -142,6 +142,7 @@ public sealed interface M3TokenSet permits M3TokenSetImpl {
         );
         return "-m3-state-disabled-container-color: "
                 + toRgba(onSurface, stateLayerTokens.disabledContainerOpacity()) + "; "
+                + "-m3-button-icon-color: " + toRgba(onSurfaceVariant, 1.0) + "; "
                 + "-m3-disclosure-icon-color: " + toRgba(onSurfaceVariant, 1.0) + "; "
                 + "-m3-state-disabled-content-color: "
                 + toRgba(onSurface, stateLayerTokens.disabledContentOpacity()) + "; "

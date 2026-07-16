@@ -5,6 +5,7 @@ package org.glavo.m3fx.skins;
 
 import javafx.beans.InvalidationListener;
 import javafx.css.StyleOrigin;
+import javafx.event.Event;
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
@@ -12,7 +13,9 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonVariant;
+import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3Snackbar;
+import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -30,9 +33,19 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
     /// The snackbar action button.
     private final M3Button actionButton = new M3Button();
 
+    /// The optional snackbar close affordance.
+    private final M3IconButton closeButton = new M3IconButton(new M3InternalIcon(
+            M3InternalIcon.Glyph.CLOSE,
+            M3InternalIcon.ColorRole.INVERSE_ON_SURFACE
+    ));
+
     /// Updates action visibility after action text changes.
     private final InvalidationListener actionTextInvalidation =
             observable -> updateActionVisibility(getSkinnable().getActionText());
+
+    /// Updates close-affordance visibility.
+    private final InvalidationListener closeButtonVisibilityInvalidation =
+            observable -> updateCloseButtonVisibility();
 
     /// Applies token changes to snackbar geometry.
     private final InvalidationListener tokenInvalidation = observable -> updateTokenStyles();
@@ -49,7 +62,9 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
         container.getStyleClass().add("m3-snackbar-container");
         textLabel.getStyleClass().add("m3-snackbar-text");
         actionButton.getStyleClass().add("m3-snackbar-action");
+        closeButton.getStyleClass().add("m3-snackbar-close");
         actionButton.setVariant(M3ButtonVariant.TEXT);
+        closeButton.setAccessibleText("Dismiss");
 
         textLabel.textProperty().bind(control.textProperty());
         textLabel.setWrapText(true);
@@ -60,7 +75,13 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
             event.consume();
             getSkinnable().fireAction();
         });
+        closeButton.setOnAction(event -> {
+            event.consume();
+            M3Snackbar snackbar = getSkinnable();
+            Event.fireEvent(snackbar, new Event(snackbar, snackbar, M3Snackbar.DISMISS_REQUEST));
+        });
         control.actionTextProperty().addListener(actionTextInvalidation);
+        control.closeButtonVisibleProperty().addListener(closeButtonVisibilityInvalidation);
         control.containerShapeProperty().addListener(tokenInvalidation);
         control.contentPaddingProperty().addListener(tokenInvalidation);
         control.containerMinWidthProperty().addListener(tokenInvalidation);
@@ -71,9 +92,10 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
         control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
 
         container.nodeOrientationProperty().bind(control.effectiveNodeOrientationProperty());
-        container.getChildren().addAll(textLabel, actionButton);
+        container.getChildren().addAll(textLabel, actionButton, closeButton);
         getChildren().setAll(container);
         updateActionVisibility(control.getActionText());
+        updateCloseButtonVisibility();
         updateTokenStyles();
     }
 
@@ -84,7 +106,9 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
         textLabel.textProperty().unbind();
         actionButton.textProperty().unbind();
         actionButton.setOnAction(null);
+        closeButton.setOnAction(null);
         snackbar.actionTextProperty().removeListener(actionTextInvalidation);
+        snackbar.closeButtonVisibleProperty().removeListener(closeButtonVisibilityInvalidation);
         snackbar.containerShapeProperty().removeListener(tokenInvalidation);
         snackbar.contentPaddingProperty().removeListener(tokenInvalidation);
         snackbar.containerMinWidthProperty().removeListener(tokenInvalidation);
@@ -106,6 +130,14 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
         updateTokenStyles();
     }
 
+    /// Updates the optional close affordance from the public visibility property.
+    private void updateCloseButtonVisibility() {
+        boolean visible = getSkinnable().isCloseButtonVisible();
+        closeButton.setVisible(visible);
+        closeButton.setManaged(visible);
+        updateTokenStyles();
+    }
+
     /// Applies styleable component tokens to the snackbar container.
     private void updateTokenStyles() {
         M3Snackbar snackbar = getSkinnable();
@@ -114,7 +146,7 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
 
         double padding = snackbar.getContentPadding();
         double verticalPadding = padding / 2.0;
-        double trailingPadding = actionButton.isManaged() ? padding / 2.0 : padding;
+        double trailingPadding = actionButton.isManaged() || closeButton.isManaged() ? padding / 2.0 : padding;
         container.setPadding(M3NodeLayout.logicalInsets(
                 snackbar,
                 verticalPadding,
@@ -225,6 +257,9 @@ public class M3SnackbarSkin extends SkinBase<M3Snackbar> {
         double labelWidth = containerWidth - padding.getLeft() - padding.getRight();
         if (actionButton.isManaged()) {
             labelWidth -= actionButton.prefWidth(-1.0) + container.getSpacing();
+        }
+        if (closeButton.isManaged()) {
+            labelWidth -= closeButton.prefWidth(-1.0) + container.getSpacing();
         }
         labelWidth = Math.max(0.0, labelWidth);
         double singleLineHeight = textLabel.prefHeight(-1.0);

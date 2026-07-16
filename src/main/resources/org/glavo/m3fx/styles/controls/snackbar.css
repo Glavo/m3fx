@@ -28,6 +28,17 @@
     -fx-text-fill: -m3-color-inverse-primary;
 }
 
+.m3-snackbar .m3-snackbar-action .m3-state-layer,
+.m3-snackbar .m3-snackbar-action .m3-ripple {
+    -fx-background-color: -m3-color-inverse-primary;
+}
+
+.m3-snackbar-close {
+    -m3-container-height: 40px;
+    -m3-container-width: 40px;
+    -fx-text-fill: -m3-color-inverse-on-surface;
+}
+
 .m3-snackbar:disabled {
     -fx-opacity: -m3-state-disabled-content-opacity;
 }

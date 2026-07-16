@@ -7,8 +7,10 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 /// Defines the visual arrangement used by an [M3TopAppBar].
 ///
-/// Top app bar variants choose the title placement and height metrics for different page hierarchy levels. The
-/// variant is visual and does not change the navigation or action slot APIs.
+/// Top app bar variants choose the title placement, typography, and height metrics for different page hierarchy
+/// levels. The flexible variants support subtitles, two-line headlines, custom title content, and transformation
+/// into the small arrangement when content scrolls beneath the app bar. Baseline medium and large variants remain
+/// available for applications that have not adopted the Expressive replacements.
 ///
 /// See [Material Design app bars](https://m3.material.io/components/app-bars/overview).
 @NotNullByDefault
@@ -23,7 +25,13 @@ public enum M3TopAppBarVariant {
     MEDIUM("m3-top-app-bar-medium"),
 
     /// Uses the large top app bar container height.
-    LARGE("m3-top-app-bar-large");
+    LARGE("m3-top-app-bar-large"),
+
+    /// Uses the Material Expressive medium flexible arrangement.
+    MEDIUM_FLEXIBLE("m3-top-app-bar-medium-flexible"),
+
+    /// Uses the Material Expressive large flexible arrangement.
+    LARGE_FLEXIBLE("m3-top-app-bar-large-flexible");
 
     /// The style class associated with this variant.
     private final String styleClass;

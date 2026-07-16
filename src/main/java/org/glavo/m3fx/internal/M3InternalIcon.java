@@ -31,6 +31,9 @@ public final class M3InternalIcon extends StackPane {
     /// The style class applied when the icon uses the on-surface color role.
     public static final String ON_SURFACE_STYLE_CLASS = "m3-internal-icon-on-surface";
 
+    /// The style class applied when the icon uses the inverse-on-surface color role.
+    public static final String INVERSE_ON_SURFACE_STYLE_CLASS = "m3-internal-icon-inverse-on-surface";
+
     /// The style class applied when the icon uses the on-surface-variant color role.
     public static final String ON_SURFACE_VARIANT_STYLE_CLASS = "m3-internal-icon-on-surface-variant";
 
@@ -141,6 +144,7 @@ public final class M3InternalIcon extends StackPane {
         List<String> styleClasses = getStyleClass();
         styleClasses.remove(PRIMARY_STYLE_CLASS);
         styleClasses.remove(ON_SURFACE_STYLE_CLASS);
+        styleClasses.remove(INVERSE_ON_SURFACE_STYLE_CLASS);
         styleClasses.remove(ON_SURFACE_VARIANT_STYLE_CLASS);
         styleClasses.remove(ON_PRIMARY_CONTAINER_STYLE_CLASS);
         styleClasses.remove(ON_PRIMARY_STYLE_CLASS);
@@ -200,6 +204,9 @@ public final class M3InternalIcon extends StackPane {
 
         /// The on-surface content color.
         ON_SURFACE(ON_SURFACE_STYLE_CLASS),
+
+        /// The inverse-on-surface content color.
+        INVERSE_ON_SURFACE(INVERSE_ON_SURFACE_STYLE_CLASS),
 
         /// The on-surface-variant content color.
         ON_SURFACE_VARIANT(ON_SURFACE_VARIANT_STYLE_CLASS),

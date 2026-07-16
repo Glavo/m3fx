@@ -2,17 +2,25 @@
     -m3-container-height: 64px;
     -m3-medium-container-height: 112px;
     -m3-large-container-height: 152px;
+    -m3-medium-flexible-container-height: 112px;
+    -m3-medium-flexible-subtitle-container-height: 136px;
+    -m3-large-flexible-container-height: 120px;
+    -m3-large-flexible-subtitle-container-height: 152px;
+    -m3-edge-padding: 4px;
     -m3-horizontal-padding: 16px;
     -m3-medium-bottom-padding: 20px;
     -m3-large-bottom-padding: 28px;
-    -m3-content-spacing: 8px;
+    -m3-flexible-bottom-padding: 12px;
+    -m3-content-spacing: 0px;
     -m3-action-spacing: 0px;
     -fx-background-color: -m3-color-surface;
+    -fx-effect: null;
+    -fx-padding: 0;
 }
 
 .m3-top-app-bar:scrolled-under {
     -fx-background-color: -m3-color-surface-container;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 8, 0.16, 0, 2);
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 3, 0.18, 0, 2);
 }
 
 .m3-top-app-bar-navigation {
@@ -20,6 +28,19 @@
 }
 
 .m3-top-app-bar-title {
+    -fx-font-size: 22px;
+    -fx-font-weight: 400;
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-top-app-bar-subtitle,
+.m3-top-app-bar-compact-subtitle {
+    -fx-font-size: 12px;
+    -fx-font-weight: 500;
+    -fx-text-fill: -m3-color-on-surface-variant;
+}
+
+.m3-top-app-bar-compact-title {
     -fx-font-size: 22px;
     -fx-font-weight: 400;
     -fx-text-fill: -m3-color-on-surface;
@@ -33,6 +54,26 @@
 .m3-top-app-bar-large .m3-top-app-bar-title {
     -fx-font-size: 28px;
     -fx-font-weight: 400;
+}
+
+.m3-top-app-bar-medium-flexible .m3-top-app-bar-title {
+    -fx-font-size: 28px;
+    -fx-font-weight: 400;
+}
+
+.m3-top-app-bar-medium-flexible .m3-top-app-bar-subtitle {
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+}
+
+.m3-top-app-bar-large-flexible .m3-top-app-bar-title {
+    -fx-font-size: 36px;
+    -fx-font-weight: 400;
+}
+
+.m3-top-app-bar-large-flexible .m3-top-app-bar-subtitle {
+    -fx-font-size: 16px;
+    -fx-font-weight: 500;
 }
 
 .m3-top-app-bar-actions {

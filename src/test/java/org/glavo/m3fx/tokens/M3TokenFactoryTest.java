@@ -160,8 +160,14 @@ final class M3TokenFactoryTest {
         assertEquals(59.0, tokenSet.componentTokens().topAppBar().containerHeight(), 0.0001);
         assertEquals(60.0, tokenSet.componentTokens().topAppBar().mediumContainerHeight(), 0.0001);
         assertEquals(61.0, tokenSet.componentTokens().topAppBar().largeContainerHeight(), 0.0001);
+        assertEquals(62.0, tokenSet.componentTokens().topAppBar().mediumFlexibleContainerHeight(), 0.0001);
+        assertEquals(63.0, tokenSet.componentTokens().topAppBar().mediumFlexibleSubtitleContainerHeight(), 0.0001);
+        assertEquals(64.0, tokenSet.componentTokens().topAppBar().largeFlexibleContainerHeight(), 0.0001);
+        assertEquals(65.0, tokenSet.componentTokens().topAppBar().largeFlexibleSubtitleContainerHeight(), 0.0001);
+        assertEquals(10.0, tokenSet.componentTokens().topAppBar().edgePadding(), 0.0001);
         assertEquals(12.0, tokenSet.componentTokens().topAppBar().mediumBottomPadding(), 0.0001);
         assertEquals(13.0, tokenSet.componentTokens().topAppBar().largeBottomPadding(), 0.0001);
+        assertEquals(14.0, tokenSet.componentTokens().topAppBar().flexibleBottomPadding(), 0.0001);
         assertEquals(6.0, tokenSet.componentTokens().topAppBar().actionSpacing(), 0.0001);
         assertEquals(70.0, tokenSet.componentTokens().banner().containerMinHeight(), 0.0001);
         assertEquals(6.0, tokenSet.componentTokens().tooltip().richContainerShape(), 0.0001);
@@ -200,6 +206,8 @@ final class M3TokenFactoryTest {
         assertEquals(7.0, tokenSet.componentTokens().bottomAppBar().actionSpacing(), 0.0001);
         assertEquals(63.0, tokenSet.componentTokens().toolbar().containerHeight(), 0.0001);
         assertEquals(25.0, tokenSet.componentTokens().toolbar().containerShape(), 0.0001);
+        assertEquals(12.0, tokenSet.componentTokens().toolbar().dockedContentPadding(), 0.0001);
+        assertEquals(24.0, tokenSet.componentTokens().toolbar().dockedMaxItemSpacing(), 0.0001);
         assertEquals(72.0, tokenSet.componentTokens().navigationRail().collapsedContainerWidth(), 0.0001);
         assertEquals(64.0, tokenSet.componentTokens().navigationRail().narrowCollapsedContainerWidth(), 0.0001);
         assertEquals(220.0, tokenSet.componentTokens().navigationRail().expandedMinimumContainerWidth(), 0.0001);
@@ -218,9 +226,22 @@ final class M3TokenFactoryTest {
         ));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-button-filled-container-height: 51px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-tab-container-height: 61px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-tab-active-indicator-height: 4px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-secondary-tab-active-indicator-height: 2px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-tab-active-indicator-min-width: 24px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains(
+                "-m3-tab-active-indicator-horizontal-inset: 2px"
+        ));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-top-app-bar-container-height: 59px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-top-app-bar-medium-container-height: 60px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-top-app-bar-large-container-height: 61px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains(
+                "-m3-top-app-bar-medium-flexible-container-height: 62px"
+        ));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains(
+                "-m3-top-app-bar-large-flexible-subtitle-container-height: 65px"
+        ));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-top-app-bar-edge-padding: 10px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-top-app-bar-medium-bottom-padding: 12px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-top-app-bar-large-bottom-padding: 13px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-top-app-bar-action-spacing: 6px"));
@@ -233,6 +254,7 @@ final class M3TokenFactoryTest {
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-bottom-app-bar-action-spacing: 7px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-toolbar-container-height: 63px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-toolbar-container-shape: 25px"));
+        assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-toolbar-docked-max-item-spacing: 24px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains("-m3-navigation-bar-item-spacing: 10px"));
         assertTrue(tokenSet.toRootStyleDeclarations().contains(
                 "-m3-navigation-rail-collapsed-container-width: 72px"
@@ -494,7 +516,7 @@ final class M3TokenFactoryTest {
                 createButtonGroupTokens(),
                 createSplitButtonTokens(),
                 new M3ComponentTokens.ButtonTokens(57.0, 26.0, 14.0),
-                new M3ComponentTokens.TabTokens(61.0, 91.0, 15.0, 4.0, 4.0),
+                new M3ComponentTokens.TabTokens(61.0, 91.0, 15.0, 4.0, 2.0, 4.0, 24.0, 2.0),
                 new M3ComponentTokens.FieldTokens(66.0, 8.0, 18.0),
                 new M3ComponentTokens.TextAreaTokens(67.0, 9.0, 19.0, 20.0),
                 new M3ComponentTokens.FormTokens(1.0, 12.0, 11.0, 3.0, 4.0, 190.0, 25.0, 71.0, 5.0),
@@ -650,9 +672,24 @@ final class M3TokenFactoryTest {
                 new M3ComponentTokens.DividerTokens(2.0, 8.0, 12.0),
                 new M3ComponentTokens.BadgeTokens(7.0, 19.0, 21.0, 10.0, 5.0),
                 new M3ComponentTokens.AvatarTokens(35.0, 17.0),
-                new M3ComponentTokens.TopAppBarTokens(59.0, 60.0, 61.0, 11.0, 12.0, 13.0, 14.0, 6.0),
+                new M3ComponentTokens.TopAppBarTokens(
+                        59.0,
+                        60.0,
+                        61.0,
+                        62.0,
+                        63.0,
+                        64.0,
+                        65.0,
+                        10.0,
+                        11.0,
+                        12.0,
+                        13.0,
+                        14.0,
+                        15.0,
+                        6.0
+                ),
                 new M3ComponentTokens.BottomAppBarTokens(62.0, 12.0, 14.0, 7.0),
-                new M3ComponentTokens.ToolbarTokens(63.0, 64.0, 25.0, 49.0, 8.0, 3.0),
+                new M3ComponentTokens.ToolbarTokens(63.0, 64.0, 25.0, 49.0, 8.0, 12.0, 3.0, 24.0),
                 new M3ComponentTokens.NavigationBarTokens(67.0, 68.0, 69.0, 30.0, 15.0, 4.0, 9.0, 10.0),
                 new M3ComponentTokens.NavigationRailTokens(72.0, 64.0, 220.0, 280.0, 360.0, 73.0, 74.0, 75.0, 31.0, 16.0, 5.0, 17.0, 9.0, 10.0, 11.0, 44.0, 20.0, 19.0, 18.0),
                 new M3ComponentTokens.NavigationDrawerTokens(

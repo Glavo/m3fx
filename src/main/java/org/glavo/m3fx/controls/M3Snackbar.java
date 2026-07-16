@@ -3,7 +3,9 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
@@ -15,6 +17,7 @@ import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
+import javafx.event.EventType;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
@@ -47,6 +50,10 @@ public class M3Snackbar extends Control {
     /// The base style class for M3FX snackbars.
     public static final String STYLE_CLASS = "m3-snackbar";
 
+    /// The event fired when the optional close affordance requests dismissal.
+    public static final EventType<Event> DISMISS_REQUEST =
+            new EventType<>(Event.ANY, "M3_SNACKBAR_DISMISS_REQUEST");
+
     /// The default snackbar container shape radius.
     private static final double DEFAULT_CONTAINER_SHAPE = 4.0;
 
@@ -67,17 +74,21 @@ public class M3Snackbar extends Control {
 
     /// The default snackbar action button container height.
     private static final double DEFAULT_ACTION_CONTAINER_HEIGHT = 32.0;
-    // Backing property for the public snackbar message text API.
+    /// Backing property for the public snackbar message text API.
     private final StringProperty text = new SimpleStringProperty(this, "text", "");
 
-    // Backing property for the public action button text API.
+    /// Backing property for the public action button text API.
     private final StringProperty actionText = new SimpleStringProperty(this, "actionText", "");
 
-    // Backing property for the public action handler API.
+    /// Backing property for the public action handler API.
     private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
             new SimpleObjectProperty<>(this, "onAction");
 
-    // Backing property for the public container shape token API.
+    /// Whether the optional close affordance is shown.
+    private final BooleanProperty closeButtonVisible =
+            new SimpleBooleanProperty(this, "closeButtonVisible");
+
+    /// Backing property for the public container shape token API.
     private @Nullable StyleableDoubleProperty containerShape;
 
     // Backing property for the public content padding token API.
@@ -120,6 +131,7 @@ public class M3Snackbar extends Control {
             notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
             notifyAccessibleItemsChanged();
         });
+        closeButtonVisible.addListener((observable, oldValue, newValue) -> notifyAccessibleItemsChanged());
         setText(text);
         updateAccessibleText();
     }
@@ -203,6 +215,30 @@ public class M3Snackbar extends Control {
         return !getActionText().isBlank();
     }
 
+    /// Returns whether the optional close affordance is visible.
+    ///
+    /// @return `true` if the snackbar exposes a close affordance
+    public final boolean isCloseButtonVisible() {
+        return closeButtonVisible.get();
+    }
+
+    /// Sets whether the optional close affordance is visible.
+    ///
+    /// When this snackbar is hosted by [M3SnackbarHost], activating the close affordance dismisses the current
+    /// snackbar and advances the host queue.
+    ///
+    /// @param closeButtonVisible whether the close affordance is visible
+    public final void setCloseButtonVisible(boolean closeButtonVisible) {
+        this.closeButtonVisible.set(closeButtonVisible);
+    }
+
+    /// Returns the close-affordance visibility property.
+    ///
+    /// @return the close-affordance visibility property
+    public final BooleanProperty closeButtonVisibleProperty() {
+        return closeButtonVisible;
+    }
+
     /// Updates the text exposed to assistive technologies.
     private void updateAccessibleText() {
         String message = getText();
@@ -234,8 +270,8 @@ public class M3Snackbar extends Control {
         Objects.requireNonNull(attribute, "attribute");
         return switch (attribute) {
             case FOCUS_NODE -> accessibleFocusNode();
-            case ITEM_COUNT -> hasAction() ? 1 : 0;
-            case ITEM_AT_INDEX -> actionButtonAt(parameters);
+            case ITEM_COUNT -> interactiveItemCount();
+            case ITEM_AT_INDEX -> interactiveItemAt(parameters);
             case TEXT -> accessibleText();
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
@@ -518,15 +554,18 @@ public class M3Snackbar extends Control {
         return accessibleText == null ? "" : accessibleText;
     }
 
-    /// Returns the preferred action focus node when one is rendered.
+    /// Returns the preferred interactive focus node when one is rendered.
     private @Nullable Node accessibleFocusNode() {
-        @Nullable Node actionButton = renderedActionButton();
-        if (actionButton == null) {
+        @Nullable Node interactiveItem = renderedActionButton();
+        if (interactiveItem == null) {
+            interactiveItem = renderedCloseButton();
+        }
+        if (interactiveItem == null) {
             return null;
         }
 
-        @Nullable Node externalTarget = M3Accessible.activeExternalFocusTarget(this, actionButton);
-        return externalTarget == null ? actionButton : externalTarget;
+        @Nullable Node externalTarget = M3Accessible.activeExternalFocusTarget(this, interactiveItem);
+        return externalTarget == null ? interactiveItem : externalTarget;
     }
 
     /// Returns the rendered action button when one is visible.
@@ -535,7 +574,13 @@ public class M3Snackbar extends Control {
         return actionButton != null && actionButton.isManaged() ? actionButton : null;
     }
 
-    /// Focuses the snackbar action button when it exists.
+    /// Returns the rendered close button when it is visible.
+    private @Nullable Node renderedCloseButton() {
+        @Nullable Node closeButton = lookup(".m3-snackbar-close");
+        return closeButton != null && closeButton.isManaged() ? closeButton : null;
+    }
+
+    /// Focuses the snackbar's first interactive item when one exists.
     ///
     /// @return `true` when the action button accepted focus
     final boolean focusAccessibleNode() {
@@ -546,27 +591,46 @@ public class M3Snackbar extends Control {
         return false;
     }
 
-    /// Returns the action button for an accessibility item index.
-    private @Nullable Node actionButtonAt(Object... parameters) {
-        int index = M3Accessible.indexParameter(parameters);
-        return index == 0 ? renderedActionButton() : null;
+    /// Returns the number of rendered interactive snackbar items.
+    private int interactiveItemCount() {
+        return (renderedActionButton() == null ? 0 : 1) + (renderedCloseButton() == null ? 0 : 1);
     }
 
-    /// Returns the action button referenced by accessibility action parameters.
-    private @Nullable Node accessibleActionButton(Object... parameters) {
+    /// Returns an interactive snackbar item for an accessibility item index.
+    private @Nullable Node interactiveItemAt(Object... parameters) {
+        int index = M3Accessible.indexParameter(parameters);
+        if (index < 0) {
+            return null;
+        }
+        @Nullable Node actionButton = renderedActionButton();
+        if (actionButton != null) {
+            if (index == 0) {
+                return actionButton;
+            }
+            index--;
+        }
+        return index == 0 ? renderedCloseButton() : null;
+    }
+
+    /// Returns the interactive item referenced by accessibility action parameters.
+    private @Nullable Node accessibleInteractiveItem(Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
         if (parameters.length == 0) {
             return accessibleFocusNode();
         }
         if (parameters[0] instanceof Number) {
-            return actionButtonAt(parameters);
+            return interactiveItemAt(parameters);
         }
 
         @Nullable Node actionButton = renderedActionButton();
-        if (actionButton == null) {
-            return null;
+        if (actionButton != null) {
+            @Nullable Node target = M3Accessible.actionItem(actionButton, parameters);
+            if (target != null) {
+                return target;
+            }
         }
-        return M3Accessible.actionItem(actionButton, parameters);
+        @Nullable Node closeButton = renderedCloseButton();
+        return closeButton == null ? null : M3Accessible.actionItem(closeButton, parameters);
     }
 
     /// Focuses the snackbar action or delegates to nested action-owned popup targets.
@@ -574,19 +638,22 @@ public class M3Snackbar extends Control {
     /// @param parameters optional accessibility target parameters
     /// @return `true` when focus moved to the action or requested nested target
     final boolean showAccessibleItem(Object... parameters) {
-        @Nullable Node actionButton = accessibleActionButton(parameters);
-        if (actionButton != null) {
+        @Nullable Node interactiveItem = accessibleInteractiveItem(parameters);
+        if (interactiveItem != null) {
             Object[] targetParameters = actionTargetParameters(parameters);
             if (targetParameters.length > 0
-                    && M3Accessible.showAccessibleActionTarget(this, actionButton, targetParameters)) {
+                    && M3Accessible.showAccessibleActionTarget(this, interactiveItem, targetParameters)) {
                 M3Accessible.notifyFocusNodeChanged(this);
                 return true;
             }
             if (targetParameters.length > 0
-                    && !M3Accessible.parametersContainDirectTarget(parameter -> parameter == actionButton, targetParameters)) {
+                    && !M3Accessible.parametersContainDirectTarget(
+                            parameter -> parameter == interactiveItem,
+                            targetParameters
+                    )) {
                 return false;
             }
-            if (M3Accessible.showItem(this, actionButton)) {
+            if (M3Accessible.showItem(this, interactiveItem)) {
                 M3Accessible.notifyFocusNodeChanged(this);
                 return true;
             }

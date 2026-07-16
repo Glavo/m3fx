@@ -5,12 +5,17 @@ package org.glavo.m3fx.skins;
 
 import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
+import javafx.css.PseudoClass;
+import javafx.geometry.Bounds;
+import javafx.scene.Node;
 import javafx.scene.layout.Region;
+import javafx.scene.text.Text;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Tab;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3NodeTransition;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 
 /// The default skin for [M3Tab].
 @NotNullByDefault
@@ -21,6 +26,9 @@ public class M3TabSkin extends M3LabeledButtonSkinBase<M3Tab> {
     /// The selected indicator hidden scale.
     private static final double HIDDEN_INDICATOR_SCALE = 0.72;
 
+    /// The pseudo-class inherited from a secondary tab bar.
+    private static final PseudoClass SECONDARY_PSEUDO_CLASS = PseudoClass.getPseudoClass("secondary");
+
     /// The active indicator region.
     private final Region activeIndicator = new Region();
 
@@ -29,6 +37,9 @@ public class M3TabSkin extends M3LabeledButtonSkinBase<M3Tab> {
 
     /// The last shape radius applied to the active indicator.
     private double appliedIndicatorShape = Double.NaN;
+
+    /// The text node created by [javafx.scene.control.skin.LabeledSkinBase], cached after its first layout.
+    private @Nullable Text labelText;
 
     /// Animates the active indicator when selection changes.
     private final ChangeListener<Boolean> selectedListener =
@@ -49,6 +60,8 @@ public class M3TabSkin extends M3LabeledButtonSkinBase<M3Tab> {
         control.selectedProperty().addListener(selectedListener);
         control.activeIndicatorHeightProperty().addListener(indicatorMetricsInvalidation);
         control.activeIndicatorShapeProperty().addListener(indicatorMetricsInvalidation);
+        control.activeIndicatorMinWidthProperty().addListener(indicatorMetricsInvalidation);
+        control.activeIndicatorHorizontalInsetProperty().addListener(indicatorMetricsInvalidation);
     }
 
     /// Stops animations and removes listeners before the skin is disposed.
@@ -59,6 +72,9 @@ public class M3TabSkin extends M3LabeledButtonSkinBase<M3Tab> {
         tab.selectedProperty().removeListener(selectedListener);
         tab.activeIndicatorHeightProperty().removeListener(indicatorMetricsInvalidation);
         tab.activeIndicatorShapeProperty().removeListener(indicatorMetricsInvalidation);
+        tab.activeIndicatorMinWidthProperty().removeListener(indicatorMetricsInvalidation);
+        tab.activeIndicatorHorizontalInsetProperty().removeListener(indicatorMetricsInvalidation);
+        labelText = null;
         super.dispose();
     }
 
@@ -76,7 +92,57 @@ public class M3TabSkin extends M3LabeledButtonSkinBase<M3Tab> {
             tabHeight = tab.getLayoutBounds().getHeight();
         }
         double indicatorHeight = tab.getActiveIndicatorHeight();
-        activeIndicator.resizeRelocate(0.0, tabHeight - indicatorHeight, tabWidth, indicatorHeight);
+        double indicatorX = 0.0;
+        double indicatorWidth = tabWidth;
+        if (!tab.getPseudoClassStates().contains(SECONDARY_PSEUDO_CLASS)) {
+            Text text = labelText;
+            if (text == null || text.getParent() == null) {
+                text = null;
+                for (Node child : getChildren()) {
+                    if (child instanceof Text candidate) {
+                        text = candidate;
+                        break;
+                    }
+                }
+                labelText = text;
+            }
+
+            double contentMinX = Double.POSITIVE_INFINITY;
+            double contentMaxX = Double.NEGATIVE_INFINITY;
+            if (text != null && text.isVisible()) {
+                Bounds bounds = text.getBoundsInParent();
+                contentMinX = bounds.getMinX();
+                contentMaxX = bounds.getMaxX();
+            }
+            @Nullable Node graphic = tab.getGraphic();
+            if (graphic != null && graphic.isVisible()) {
+                Bounds bounds = graphic.getBoundsInParent();
+                contentMinX = Math.min(contentMinX, bounds.getMinX());
+                contentMaxX = Math.max(contentMaxX, bounds.getMaxX());
+            }
+
+            boolean hasContentBounds = Double.isFinite(contentMinX) && Double.isFinite(contentMaxX);
+            double contentCenterX = hasContentBounds
+                    ? (contentMinX + contentMaxX) / 2.0
+                    : tabWidth / 2.0;
+            double contentWidth = hasContentBounds
+                    ? Math.max(0.0, contentMaxX - contentMinX)
+                    : 0.0;
+            indicatorWidth = Math.min(
+                    tabWidth,
+                    Math.max(
+                            tab.getActiveIndicatorMinWidth(),
+                            contentWidth + tab.getActiveIndicatorHorizontalInset() * 2.0
+                    )
+            );
+            indicatorX = Math.max(0.0, Math.min(tabWidth - indicatorWidth, contentCenterX - indicatorWidth / 2.0));
+        }
+        activeIndicator.resizeRelocate(
+                snapPositionX(indicatorX),
+                snapPositionY(tabHeight - indicatorHeight),
+                snapSizeX(indicatorWidth),
+                snapSizeY(indicatorHeight)
+        );
         double indicatorShape = tab.getActiveIndicatorShape();
         if (Double.compare(appliedIndicatorShape, indicatorShape) != 0) {
             appliedIndicatorShape = indicatorShape;

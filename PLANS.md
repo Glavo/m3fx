@@ -70,87 +70,43 @@ control subclasses where M3FX owns the behavior surface.
 
 ## Remaining Release Work
 
-### 1. Complete MD3 Expressive Component Parity
+Implementation coverage is broad, but release readiness remains unproven until the following audits and validation
+gates are complete.
 
-Token-profile support is present, but every component must also match the Expressive specification in rendered
-geometry, adaptive layout, state color, shape, and motion. The navigation family now includes flexible vertical and
-horizontal navigation bars, regular and narrow collapsed rails, standard and modal expanded rails, top- and
-center-aligned destination groups, content-hugging and full-width active indicators, and immersive hiding behavior.
-Baseline navigation drawers now preserve the specified 360-pixel container and 336-pixel indicator geometry while
-providing independent vertical scrolling, focus reveal, logical corners, modal surfaces, and complete destination
-state colors. Material Design 3 Expressive does not define a replacement drawer token set; expanded navigation rails
-are used instead. Button groups now distinguish content-hugging standard layout from full-width connected layout,
-including even flexible growth and the 48-pixel compact connected-item target minimum. Split-button state shape
-changes use spatial motion while their disclosure icon retains the standard motion scheme required by the
-specification. FABs now expose the published 40-, 56-, 80-, and 96-pixel size scale, tonal and solid color roles,
-size-specific icon and extended-label spacing, and logical RTL padding. FAB menus use 56-pixel labeled actions,
-four-pixel action spacing, an eight-pixel close gap, paired tonal and solid color families, logical trailing
-alignment, and a dedicated close-button transition. Chip metrics remain on the published baseline token set because
-the current Expressive specification does not define a replacement size scale.
-Carousels now implement Multi-browse, Uncontained, Uncontained multi-aspect ratio, Hero, Center-aligned hero, and
-Full-screen arrangements with Material keyline widths, logical padding, clipping, snapping, keyboard focus, item
-state layers, bounded ripples, disabled treatment, RTL placement, and reduced-motion equal-width behavior. The
-track reuses layout and transition storage, and direct-scroll settlement searches neighboring keylines instead of
-recomputing every possible target.
-The slider family now provides the published five-size Expressive scale, centered and range selection, discrete
-stops, value indicators, dual-handle keyboard and accessibility behavior, and logical RTL interaction. Inset track
-graphics switch between active and inactive segments according to available space, while handle-bound focus
-indication and pressed-handle geometry replace the deprecated slider state-layer and ripple treatment. Track gaps
-are measured from the visible handle edge, and end stops retain the specified four-pixel outer spacing across all
-sizes and orientations.
-Selection controls use the published baseline component metrics and state colors in both profiles. Checkboxes and
-radio buttons preserve their complete selected, indeterminate, error, disabled, focus-visible, and RTL behavior;
-switches additionally support direct handle dragging with destination-state visual preview, release-time value
-commit, pressed-handle growth, logical RTL movement, and a track-shaped focus indicator. The current Expressive
-specification does not publish a separate selection-control size scale.
-Progress indicators now use the published Flat treatment by default in both profiles, with Expressive Wavy geometry
-available through explicit component configuration. Linear and circular indicator sizes, determinate and
-indeterminate wavelengths, track gaps, stops, inactive tracks, and reduced-motion activity follow the published
-tokens. Loading indicators provide the Expressive Default and Contained variants, retain centered reusable morph
-geometry, and fall back to basic continuous rotation when decorative motion is disabled.
-Text fields, password fields, and text areas retain the published 56-pixel single-line and 112-pixel multiline
-metrics in both profiles because the current Expressive specification does not define a replacement size scale.
-Filled and outlined containers now cover the specified hover and error-hover colors, focused state precedence,
-floating labels, trailing adornments, supporting-row spacing, RTL layout, multiline surfaces, and validation feedback.
-Menus now implement the published Standard and Vibrant color mappings, 44-pixel Expressive rows, grouped outer and
-inner corners, selected and active submenu-owner shapes, disabled content treatment, popup direction, RTL behavior,
-and profile-specific typography and icon sizing. Menu shape transitions reuse preallocated path geometry and are
-allocated only for menu items, leaving virtualized list cells on the lower-cost list-item path.
-Search now provides the published Contained and Divided styles in Docked and Full-screen layouts, including
-style-specific header metrics, result-container ownership, divider treatment, state layers, action hit testing,
-keyboard and accessibility focus order, RTL geometry, and reduced-motion behavior. Search results retain List item
-tokens rather than receiving Search-specific row overrides.
-Date and date-range pickers now use the published docked and modal container geometry, separate month and year menu
-navigation, 48-pixel day targets with 40-pixel state layers, bounded navigation, continuous range strips, logical RTL
-endpoints, and shared reusable header content. Time pickers retain the published portrait, landscape, dial, input,
-period, state-color, and focus-visible geometry. The current Expressive specification does not publish replacement
-date or time picker metrics, so both profiles use the same component dimensions.
-Cards now distinguish passive containers from direct action surfaces. Passive cards remain outside keyboard traversal
-and do not expose hover, focus, press, or ripple feedback, while direct action cards provide whole-surface pointer and
-keyboard activation without intercepting nested controls. Filled, elevated, and outlined variants use their published
-rest, hover, focus, pressed, dragged, and disabled colors, outlines, state layers, and elevation levels. Surface
-containers render color, shape, and elevation on one internal visual layer so styleable corner radii and shadows stay
-geometrically aligned without changing content padding.
+### 1. Finish Material Component Parity
+
+Compare every public component and supported variant with the locally captured Material Design 3 specification. Verify
+token roles, geometry, adaptive layout, interaction semantics, accessibility, RTL behavior, and motion. Expressive
+variants must use published Expressive tokens and patterns; components without a published Expressive replacement
+must retain their baseline Material behavior rather than receiving invented profile-specific metrics.
+
+Complete integrated regression of the recently revised app bars, toolbars, tabs, sheets, snackbars, and tooltips.
+Corrections should preserve existing API ownership boundaries and avoid compatibility layers that are unnecessary
+before the first stable release.
 
 ### 2. Finish The Component-State Visual Audit
 
-Review every public component in Standard and Expressive profiles across all applicable interaction states. Visual
-checks must validate geometry and representative pixels, not only confirm that a screenshot was produced. Animated
-components require stable start, intermediate, release, and settled frames so malformed transitional geometry is
-detectable.
+Review every public component in Standard and Expressive profiles across all applicable normal, hovered, pressed,
+focused, selected, disabled, error, indeterminate, dragged, expanded, and popup states. Repeat representative checks
+in light and dark themes, LTR and RTL orientation, and normal and reduced-motion configurations.
+
+Visual checks must validate geometry and representative pixels, not only confirm that a screenshot was produced.
+Animated components require stable start, intermediate, release, and settled frames so malformed transitional
+geometry, clipping, jumps, and stale state layers remain detectable.
 
 ### 3. Complete Performance And Lifetime Review
 
 Audit skins, popup owners, animation loops, virtualized cells, and shared observers for retained listeners, stale
 scene references, unnecessary per-pulse allocation, and avoidable layout or CSS invalidation. Prefer reusable
-animation state and direct layout calculations on hot paths, while keeping public APIs and ownership boundaries
-clear.
+animation state and direct layout calculations on hot paths. Verify that skin replacement, scene detachment, popup
+dismissal, and queue replacement release all component-owned observers and transient nodes.
 
-### 4. Release-Candidate Verification
+### 4. Complete Release-Candidate Verification
 
-After the visual, motion, performance, and lifetime audits are complete, run the complete library and demo test
-suites, publication checks, demo shadow-JAR verification, and host runtime-image validation. Cross-platform runtime
-images must be revalidated when build logic, modules, JavaFX resolution, or packaging changes.
+Run the complete library and demo test suites after the parity, visual, performance, and lifetime audits are closed.
+Then validate publication metadata and artifacts, the demo shadow JAR, the host runtime image, and the GitHub Actions
+workflow. Revalidate cross-platform runtime images whenever build logic, modules, JavaFX resolution, or packaging
+changes.
 
 ## Validation Entry Points
 
