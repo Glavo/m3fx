@@ -6,8 +6,9 @@
     -m3-action-spacing: 8px;
     -m3-dialog-icon-size: 24px;
     -fx-background-color: -m3-color-surface-container-high;
+    -fx-background-insets: 12px;
     -fx-background-radius: 28px;
-    -fx-padding: 24px;
+    -fx-padding: 36px;
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 6, 0.18, 0, 3);
 }
 

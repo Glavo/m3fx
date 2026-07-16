@@ -10,6 +10,7 @@ import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
+import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
@@ -78,6 +79,9 @@ public class M3DialogPane extends DialogPane {
 
     /// The default dialog graphic icon size.
     private static final double DEFAULT_ICON_SIZE = 24.0;
+
+    /// The transparent layout margin reserved around the dialog surface for its level 3 shadow.
+    private static final double SURFACE_EFFECT_MARGIN = 12.0;
 
     /// The style class applied to Material icons used as dialog graphics.
     private static final String GRAPHIC_ICON_STYLE_CLASS = "m3-dialog-graphic-icon";
@@ -403,7 +407,11 @@ public class M3DialogPane extends DialogPane {
         M3Button button = new M3Button(buttonType.getText());
         button.getStyleClass().add(BUTTON_STYLE_CLASS);
         button.setVariant(M3ButtonVariant.TEXT);
-        button.setOnAction(sourceButton.getOnAction());
+        button.addEventHandler(ActionEvent.ACTION, event -> {
+            if (!event.isConsumed()) {
+                sourceButton.fire();
+            }
+        });
         ButtonBar.setButtonData(button, ButtonBar.getButtonData(sourceNode));
         ButtonBar.setButtonUniformSize(button, ButtonBar.isButtonUniformSize(sourceNode));
         if (sourceButton instanceof Button sourcePlainButton) {
@@ -464,11 +472,11 @@ public class M3DialogPane extends DialogPane {
 
     /// Applies size-related component tokens to JavaFX layout properties.
     private void updateMetrics() {
-        double padding = getContentPadding();
-        double minWidth = getContainerMinWidth();
-        M3Css.setPaddingIfUnbound(this, new Insets(padding));
+        double surfaceInsets = SURFACE_EFFECT_MARGIN * 2.0;
+        double minWidth = getContainerMinWidth() + surfaceInsets;
+        M3Css.setPaddingIfUnbound(this, new Insets(getContentPadding() + SURFACE_EFFECT_MARGIN));
         M3Css.setMinWidthIfUnbound(this, minWidth);
-        M3Css.setMaxWidthIfUnbound(this, Math.max(minWidth, getContainerMaxWidth()));
+        M3Css.setMaxWidthIfUnbound(this, Math.max(minWidth, getContainerMaxWidth() + surfaceInsets));
         updateActionSpacing();
         updateGraphicMetrics(null, getGraphic());
     }

@@ -1363,9 +1363,9 @@ final class M3ThemeTest {
         assertEquals(24.0, dialogPane.getContentPadding(), 0.0001);
         assertEquals(280.0, dialogPane.getContainerMinWidth(), 0.0001);
         assertEquals(560.0, dialogPane.getContainerMaxWidth(), 0.0001);
-        assertEquals(280.0, dialogPane.getMinWidth(), 0.0001);
-        assertEquals(560.0, dialogPane.getMaxWidth(), 0.0001);
-        assertEquals(24.0, dialogPane.getPadding().getTop(), 0.0001);
+        assertEquals(304.0, dialogPane.getMinWidth(), 0.0001);
+        assertEquals(584.0, dialogPane.getMaxWidth(), 0.0001);
+        assertEquals(36.0, dialogPane.getPadding().getTop(), 0.0001);
         assertEquals(6.0, snackbar.getContainerShape(), 0.0001);
         assertEquals(16.0, snackbar.getContentPadding(), 0.0001);
         assertEquals(344.0, snackbar.getContainerMinWidth(), 0.0001);
@@ -1838,9 +1838,9 @@ final class M3ThemeTest {
         assertEquals(24.0, dialogPane.getContentPadding(), 0.0001);
         assertEquals(280.0, dialogPane.getContainerMinWidth(), 0.0001);
         assertEquals(560.0, dialogPane.getContainerMaxWidth(), 0.0001);
-        assertEquals(280.0, dialogPane.getMinWidth(), 0.0001);
-        assertEquals(560.0, dialogPane.getMaxWidth(), 0.0001);
-        assertEquals(24.0, dialogPane.getPadding().getTop(), 0.0001);
+        assertEquals(304.0, dialogPane.getMinWidth(), 0.0001);
+        assertEquals(584.0, dialogPane.getMaxWidth(), 0.0001);
+        assertEquals(36.0, dialogPane.getPadding().getTop(), 0.0001);
     }
 
     /// Writes an application stylesheet for stylesheet cascade tests.

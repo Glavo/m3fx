@@ -205,6 +205,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.function.DoublePredicate;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -7656,6 +7657,7 @@ final class M3FXDemoVisualSmokeTest {
                     "dialog popup snapshot"
             );
             assertDialogPopupHeaderUsesContainerSurface(dialogImage);
+            assertDialogPopupShadowHasClearWindowMargins(dialogImage);
             writeAnimationSnapshot(
                     Objects.requireNonNull(dialogSnapshotReference.get(), "dialog popup snapshot"),
                     "dialog-popup",
@@ -19830,9 +19832,10 @@ final class M3FXDemoVisualSmokeTest {
     /// Verifies that a dialog pane respects Material width limits and remains inside its owner viewport.
     private static void assertDialogPaneFitsOwner(Scene ownerScene, Node dialogPane) {
         Bounds bounds = dialogPane.getLayoutBounds();
-        double maxWidth = Math.min(560.0, ownerScene.getWidth() - 48.0);
+        double effectInsets = 24.0;
+        double maxWidth = Math.min(560.0 + effectInsets, ownerScene.getWidth() - 48.0);
         double maxHeight = ownerScene.getHeight() - 48.0;
-        assertTrue(bounds.getWidth() >= 280.0 && bounds.getWidth() <= maxWidth,
+        assertTrue(bounds.getWidth() >= 280.0 + effectInsets && bounds.getWidth() <= maxWidth,
                 () -> "Dialog pane width exceeds Material or viewport limits: bounds=" + bounds
                         + ", ownerWidth=" + ownerScene.getWidth());
         assertTrue(bounds.getHeight() >= 120.0 && bounds.getHeight() <= maxHeight,
@@ -19852,6 +19855,87 @@ final class M3FXDemoVisualSmokeTest {
                 () -> "Dialog popup header paints a surface strip: header=" + headerSurface
                         + ", body=" + bodySurface
                         + ", distance=" + distance);
+    }
+
+    /// Verifies that the dialog shadow is visible on every side without reaching the transparent window edges.
+    private static void assertDialogPopupShadowHasClearWindowMargins(WritableImage image) {
+        int width = (int) image.getWidth();
+        int height = (int) image.getHeight();
+        int sideBand = 18;
+        int topBand = 16;
+        int bottomBand = 12;
+
+        assertFalse(snapshotAreaContainsAlpha(image, 0, 0, width, 1), "dialog shadow reaches top window edge");
+        assertFalse(snapshotAreaContainsAlpha(image, 0, height - 1, width, height),
+                "dialog shadow reaches bottom window edge");
+        assertFalse(snapshotAreaContainsAlpha(image, 0, 0, 1, height), "dialog shadow reaches left window edge");
+        assertFalse(snapshotAreaContainsAlpha(image, width - 1, 0, width, height),
+                "dialog shadow reaches right window edge");
+
+        int middleMinX = width / 3;
+        int middleMaxX = width * 2 / 3;
+        int middleMinY = height / 3;
+        int middleMaxY = height * 2 / 3;
+        assertTrue(snapshotAreaContainsPartialAlpha(image, middleMinX, 0, middleMaxX, topBand),
+                "dialog top shadow is missing");
+        assertTrue(snapshotAreaContainsPartialAlpha(image, middleMinX, height - bottomBand, middleMaxX, height),
+                "dialog bottom shadow is missing");
+        assertTrue(snapshotAreaContainsPartialAlpha(image, 0, middleMinY, sideBand, middleMaxY),
+                "dialog left shadow is missing");
+        assertTrue(snapshotAreaContainsPartialAlpha(image, width - sideBand, middleMinY, width, middleMaxY),
+                "dialog right shadow is missing");
+    }
+
+    /// Returns whether a snapshot area contains a pixel with nonzero alpha.
+    private static boolean snapshotAreaContainsAlpha(
+            WritableImage image,
+            int minX,
+            int minY,
+            int maxX,
+            int maxY
+    ) {
+        return snapshotAreaMatchesOpacity(image, minX, minY, maxX, maxY, opacity -> opacity > 0.001);
+    }
+
+    /// Returns whether a snapshot area contains a translucent pixel from a rendered shadow.
+    private static boolean snapshotAreaContainsPartialAlpha(
+            WritableImage image,
+            int minX,
+            int minY,
+            int maxX,
+            int maxY
+    ) {
+        return snapshotAreaMatchesOpacity(
+                image,
+                minX,
+                minY,
+                maxX,
+                maxY,
+                opacity -> opacity > 0.001 && opacity < 0.98
+        );
+    }
+
+    /// Returns whether any pixel in a snapshot area has an opacity accepted by the predicate.
+    private static boolean snapshotAreaMatchesOpacity(
+            WritableImage image,
+            int minX,
+            int minY,
+            int maxX,
+            int maxY,
+            DoublePredicate predicate
+    ) {
+        int startX = Math.max(0, minX);
+        int startY = Math.max(0, minY);
+        int endX = Math.min((int) image.getWidth(), maxX);
+        int endY = Math.min((int) image.getHeight(), maxY);
+        for (int y = startY; y < endY; y++) {
+            for (int x = startX; x < endX; x++) {
+                if (predicate.test(image.getPixelReader().getColor(x, y).getOpacity())) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /// Returns the average color in a snapshot rectangle.

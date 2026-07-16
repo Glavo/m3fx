@@ -2718,7 +2718,6 @@ public final class M3ComponentTokenCssCompiler {
         appendDeclaration(builder, "-m3-action-spacing", pixels(tokens.actionSpacing()));
         appendDeclaration(builder, "-m3-dialog-icon-size", pixels(tokens.iconSize()));
         appendDeclaration(builder, "-fx-background-radius", pixels(tokens.containerShape()));
-        appendDeclaration(builder, "-fx-padding", pixels(tokens.contentPadding()));
         endRule(builder);
     }
 

@@ -8697,16 +8697,16 @@ final class M3ControlStyleTest {
 
         assertEquals(20.0, dialogPane.getContainerShape(), 0.0001);
         assertEquals(28.0, dialogPane.getContentPadding(), 0.0001);
-        assertEquals(28.0, dialogPane.getPadding().getTop(), 0.0001);
-        assertEquals(28.0, dialogPane.getPadding().getRight(), 0.0001);
-        assertEquals(28.0, dialogPane.getPadding().getBottom(), 0.0001);
-        assertEquals(28.0, dialogPane.getPadding().getLeft(), 0.0001);
+        assertEquals(40.0, dialogPane.getPadding().getTop(), 0.0001);
+        assertEquals(40.0, dialogPane.getPadding().getRight(), 0.0001);
+        assertEquals(40.0, dialogPane.getPadding().getBottom(), 0.0001);
+        assertEquals(40.0, dialogPane.getPadding().getLeft(), 0.0001);
         assertEquals(300.0, dialogPane.getContainerMinWidth(), 0.0001);
         assertEquals(520.0, dialogPane.getContainerMaxWidth(), 0.0001);
         assertEquals(12.0, dialogPane.getActionSpacing(), 0.0001);
         assertEquals(28.0, dialogPane.getIconSize(), 0.0001);
-        assertEquals(300.0, dialogPane.getMinWidth(), 0.0001);
-        assertEquals(520.0, dialogPane.getMaxWidth(), 0.0001);
+        assertEquals(324.0, dialogPane.getMinWidth(), 0.0001);
+        assertEquals(544.0, dialogPane.getMaxWidth(), 0.0001);
         assertEquals(28.0, graphic.getIconSize(), 0.0001);
         assertEquals(M3IconVariant.ON_SURFACE_VARIANT, graphic.getVariant());
         assertTrue(graphic.getStyle().contains("-fx-text-fill: -m3-color-secondary;"));
@@ -9214,6 +9214,41 @@ final class M3ControlStyleTest {
                 assertEquals(Color.TRANSPARENT, scene.getFill());
             } finally {
                 dialog.close();
+            }
+        });
+    }
+
+    /// Verifies that Material dialog actions preserve JavaFX result conversion and close the host window.
+    @Test
+    void dialogActionsSetResultAndCloseWindow() {
+        FxTestUtils.runOnFxThread(() -> {
+            for (ButtonType buttonType : List.of(ButtonType.OK, ButtonType.CANCEL)) {
+                M3Dialog<ButtonType> dialog = new M3Dialog<>(
+                        "Action dialog",
+                        "Confirm action",
+                        "Choose an action.",
+                        ButtonType.CANCEL,
+                        ButtonType.OK
+                );
+                try {
+                    dialog.show();
+                    M3Button button = assertInstanceOf(
+                            M3Button.class,
+                            dialog.getDialogPane().lookupButton(buttonType)
+                    );
+                    dialog.getDialogPane().applyCss();
+                    dialog.getDialogPane().layout();
+                    double x = button.getWidth() * 0.5;
+                    double y = button.getHeight() * 0.5;
+
+                    button.fireEvent(primaryMouseEvent(button, MouseEvent.MOUSE_PRESSED, x, y, true));
+                    button.fireEvent(primaryMouseEvent(button, MouseEvent.MOUSE_RELEASED, x, y, false));
+
+                    assertFalse(dialog.isShowing(), () -> buttonType + " should close the dialog");
+                    assertSame(buttonType, dialog.getResult());
+                } finally {
+                    dialog.close();
+                }
             }
         });
     }
