@@ -3,6 +3,7 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.scene.Node;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3NavigationDrawer;
@@ -11,7 +12,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default Material Design 3 skin for [M3NavigationDrawer].
 @NotNullByDefault
-public final class M3NavigationDrawerSkin extends M3ItemContainerSkinBase<M3NavigationDrawer, VBox> {
+public final class M3NavigationDrawerSkin extends M3ItemContainerSkinBase<M3NavigationDrawer, VBox, Node> {
     /// The vertically scrollable viewport containing the drawer destinations.
     private final ScrollPane viewport = new ScrollPane();
 

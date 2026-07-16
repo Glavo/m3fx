@@ -213,42 +213,13 @@ final class DemoFxTestUtils {
 
         M3TokenSet baseTokens = state.baseTheme.tokens();
         M3MotionTokens baseMotion = baseTokens.motionTokens();
-        M3MotionTokens motion = M3MotionTokens.create(
-                baseMotion.short1(),
-                baseMotion.short2(),
-                baseMotion.short3(),
-                baseMotion.short4(),
-                baseMotion.medium1(),
-                baseMotion.medium2(),
-                baseMotion.medium3(),
-                baseMotion.medium4(),
-                baseMotion.long1(),
-                baseMotion.long2(),
-                baseMotion.long3(),
-                baseMotion.long4(),
-                baseMotion.extraLong1(),
-                baseMotion.extraLong2(),
-                baseMotion.extraLong3(),
-                baseMotion.extraLong4(),
-                state.scheme,
-                baseMotion.behavior()
-        );
-        M3TokenSet tokens = M3TokenSet.create(
-                baseTokens.profile(),
-                baseTokens.colorTokens(),
-                baseTokens.typographyTokens(),
-                baseTokens.shapeTokens(),
-                baseTokens.elevationTokens(),
-                motion,
-                baseTokens.stateLayerTokens(),
-                baseTokens.componentTokens()
-        );
-        M3Theme theme = M3Theme.fromTokenSet(
-                state.baseTheme.profile(),
-                state.baseTheme.colorScheme(),
-                state.baseTheme.density(),
-                tokens
-        );
+        M3MotionTokens motion = M3MotionTokens.builder(baseMotion)
+                .scheme(state.scheme)
+                .build();
+        M3TokenSet tokens = M3TokenSet.builder(baseTokens)
+                .motionTokens(motion)
+                .build();
+        M3Theme theme = M3Theme.fromTokenSet(tokens);
         if (state.scene == null) {
             M3ThemeManager.install(root, theme);
         } else {

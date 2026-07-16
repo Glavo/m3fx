@@ -46,7 +46,7 @@ import java.util.Objects;
 ///
 /// See [Material Design](https://m3.material.io/) for the component and interaction principles used by M3FX.
 @NotNullByDefault
-public class M3Banner extends Control {
+public final class M3Banner extends Control {
     /// The base style class for M3FX banners.
     public static final String STYLE_CLASS = "m3-banner";
 

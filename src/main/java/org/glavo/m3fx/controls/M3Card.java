@@ -52,7 +52,7 @@ import java.util.Objects;
 ///
 /// See [Material Design cards](https://m3.material.io/components/cards/overview).
 @NotNullByDefault
-public class M3Card extends Control {
+public final class M3Card extends Control {
     /// The base style class for M3FX cards.
     public static final String STYLE_CLASS = "m3-card";
 
@@ -90,6 +90,7 @@ public class M3Card extends Control {
                 /// Updates accessibility semantics when action behavior changes.
                 @Override
                 protected void invalidated() {
+                    setEventHandler(ActionEvent.ACTION, get() == null ? null : M3Card.this::handleOwnAction);
                     updateActionAccessibility();
                 }
             };
@@ -369,14 +370,18 @@ public class M3Card extends Control {
     /// Fires this card's action event.
     public final void fire() {
         if (!isDisabled()) {
-            ActionEvent event = new ActionEvent(this, this);
-            @Nullable EventHandler<ActionEvent> handler = getOnAction();
-            if (handler != null) {
-                handler.handle(event);
-            }
-            if (!event.isConsumed()) {
-                Event.fireEvent(this, event);
-            }
+            Event.fireEvent(this, new ActionEvent(this, this));
+        }
+    }
+
+    /// Invokes the action property only for events fired by this card rather than nested controls.
+    private void handleOwnAction(ActionEvent event) {
+        if (event.getTarget() != this) {
+            return;
+        }
+        @Nullable EventHandler<ActionEvent> handler = getOnAction();
+        if (handler != null) {
+            handler.handle(event);
         }
     }
 

@@ -65,6 +65,14 @@ public sealed interface M3ShapeTokens permits M3ShapeTokensImpl {
     /// @return the full corner radius used for pills, in pixels
     double full();
 
+    /// Creates a builder initialized from an existing shape token set.
+    ///
+    /// @param tokens the shape tokens to copy
+    /// @return a mutable shape-token builder
+    static M3ShapeTokensBuilder builder(M3ShapeTokens tokens) {
+        return new M3ShapeTokensBuilder(tokens);
+    }
+
     /// Creates shape tokens from the original compact M3FX scale.
     ///
     /// @param extraSmall the extra-small corner radius in pixels
@@ -74,7 +82,7 @@ public sealed interface M3ShapeTokens permits M3ShapeTokensImpl {
     /// @param extraLarge the extra-large corner radius in pixels
     /// @param full the full corner radius used for pills, in pixels
     /// @return the created shape token set
-    static M3ShapeTokens create(
+    private static M3ShapeTokens create(
             double extraSmall,
             double small,
             double medium,
@@ -98,7 +106,7 @@ public sealed interface M3ShapeTokens permits M3ShapeTokensImpl {
     /// @param extraExtraLarge the extra-extra-large corner radius in pixels
     /// @param full the full corner radius used for pills, in pixels
     /// @return the created shape token set
-    static M3ShapeTokens create(
+    private static M3ShapeTokens create(
             double none,
             double extraSmall,
             double small,

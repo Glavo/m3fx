@@ -45,7 +45,7 @@ import java.util.Set;
 /// See [Material Design text fields](https://m3.material.io/components/text-fields/overview) for the error and
 /// supporting-text model that this summary complements.
 @NotNullByDefault
-public class M3ValidationSummary extends Control {
+public final class M3ValidationSummary extends Control {
     /// The base style class for M3FX validation summaries.
     public static final String STYLE_CLASS = "m3-validation-summary";
 

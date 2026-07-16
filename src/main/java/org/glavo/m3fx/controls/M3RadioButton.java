@@ -44,7 +44,7 @@ import java.util.function.Function;
 /// Use radio buttons when all available options should remain visible. See
 /// [Material Design radio buttons](https://m3.material.io/components/radio-button/overview).
 @NotNullByDefault
-public class M3RadioButton extends ButtonBase implements Toggle {
+public final class M3RadioButton extends ButtonBase implements Toggle {
     /// The base style class for M3FX radio buttons.
     public static final String STYLE_CLASS = "m3-radio-button";
 

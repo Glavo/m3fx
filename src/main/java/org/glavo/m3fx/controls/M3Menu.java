@@ -53,7 +53,7 @@ import java.util.Objects;
 ///
 /// See [Material Design menus](https://m3.material.io/components/menus/overview).
 @NotNullByDefault
-public class M3Menu extends Control {
+public final class M3Menu extends Control {
     /// The pseudo-class applied when the menu uses the vibrant color style.
     private static final PseudoClass VIBRANT_PSEUDO_CLASS = PseudoClass.getPseudoClass("vibrant");
 
@@ -81,13 +81,13 @@ public class M3Menu extends Control {
             };
 
     // The menu selection mode.
-    private final ObjectProperty<M3MenuSelectionMode> selectionMode =
-            new SimpleObjectProperty<>(this, "selectionMode", M3MenuSelectionMode.NONE) {
+    private final ObjectProperty<M3SelectionMode> selectionMode =
+            new SimpleObjectProperty<>(this, "selectionMode", M3SelectionMode.NONE) {
                 /// Enforces selection invariants when the mode changes.
                 @Override
                 protected void invalidated() {
                     if (get() == null) {
-                        set(M3MenuSelectionMode.NONE);
+                        set(M3SelectionMode.NONE);
                         return;
                     }
                     enforceSelectionPolicy();
@@ -273,21 +273,21 @@ public class M3Menu extends Control {
     /// Returns the menu selection mode.
     ///
     /// @return the active menu selection mode
-    public final M3MenuSelectionMode getSelectionMode() {
+    public final M3SelectionMode getSelectionMode() {
         return selectionMode.get();
     }
 
     /// Sets the menu selection mode.
     ///
     /// @param selectionMode the active menu selection mode
-    public final void setSelectionMode(M3MenuSelectionMode selectionMode) {
+    public final void setSelectionMode(M3SelectionMode selectionMode) {
         this.selectionMode.set(Objects.requireNonNull(selectionMode, "selectionMode"));
     }
 
     /// Returns the menu selection mode property.
     ///
     /// @return the writable menu selection mode property
-    public final ObjectProperty<M3MenuSelectionMode> selectionModeProperty() {
+    public final ObjectProperty<M3SelectionMode> selectionModeProperty() {
         return selectionMode;
     }
 
@@ -353,7 +353,7 @@ public class M3Menu extends Control {
             throw new IllegalArgumentException("item must be selectable");
         }
 
-        if (getSelectionMode() == M3MenuSelectionMode.MULTIPLE) {
+        if (getSelectionMode() == M3SelectionMode.MULTIPLE) {
             setItemSelected(item, true);
         } else {
             selectOnly(item);
@@ -406,7 +406,7 @@ public class M3Menu extends Control {
 
     /// Clears the current selection when empty selection is allowed.
     public final void clearSelection() {
-        if (!isAllowEmptySelection() && getSelectionMode() != M3MenuSelectionMode.NONE) {
+        if (!isAllowEmptySelection() && getSelectionMode() != M3SelectionMode.NONE) {
             selectFirstItemIfNeeded();
             return;
         }
@@ -431,7 +431,7 @@ public class M3Menu extends Control {
             case FOCUS_NODE -> focusedAccessibleNode();
             case ITEM_COUNT -> getItems().size();
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getItems(), parameters);
-            case MULTIPLE_SELECTION -> getSelectionMode() == M3MenuSelectionMode.MULTIPLE;
+            case MULTIPLE_SELECTION -> getSelectionMode() == M3SelectionMode.MULTIPLE;
             case SELECTED_ITEMS -> selectedItemsView;
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
@@ -568,7 +568,7 @@ public class M3Menu extends Control {
 
     /// Selects a keyboard-focused item when the current selection policy does so.
     private void applyKeyboardSelection(M3MenuItem target) {
-        if (getSelectionMode() == M3MenuSelectionMode.SINGLE && isSelectableMenuItem(target)) {
+        if (getSelectionMode() == M3SelectionMode.SINGLE && isSelectableMenuItem(target)) {
             select(target);
         }
     }
@@ -635,11 +635,11 @@ public class M3Menu extends Control {
 
     /// Applies selected menu items supplied by an accessibility client.
     private void setAccessibleSelectedItems(Object... parameters) {
-        if (getSelectionMode() == M3MenuSelectionMode.NONE) {
+        if (getSelectionMode() == M3SelectionMode.NONE) {
             return;
         }
 
-        if (getSelectionMode() == M3MenuSelectionMode.SINGLE) {
+        if (getSelectionMode() == M3SelectionMode.SINGLE) {
             @Nullable M3MenuItem item = firstAccessibleSelectableItem(parameters);
             if (item == null) {
                 clearSelection();
@@ -1009,21 +1009,21 @@ public class M3Menu extends Control {
         if (!isReachableSelectableMenuItem(item)) {
             if (selected) {
                 setItemSelected(item, false);
-                if (!isAllowEmptySelection() && getSelectionMode() != M3MenuSelectionMode.NONE) {
+                if (!isAllowEmptySelection() && getSelectionMode() != M3SelectionMode.NONE) {
                     selectFirstItemIfNeeded();
                 }
             }
             return;
         }
 
-        if (selected && getSelectionMode() == M3MenuSelectionMode.SINGLE) {
+        if (selected && getSelectionMode() == M3SelectionMode.SINGLE) {
             selectOnly(item);
             return;
         }
 
         refreshSelectedItems();
         if (!selected && !isAllowEmptySelection()
-                && getSelectionMode() != M3MenuSelectionMode.NONE
+                && getSelectionMode() != M3SelectionMode.NONE
                 && selectedItems.isEmpty()) {
             select(item);
         } else {
@@ -1044,11 +1044,11 @@ public class M3Menu extends Control {
     /// Enforces selection invariants for the current selection mode.
     private void enforceSelectionPolicy() {
         refreshSelectedItems();
-        if (getSelectionMode() == M3MenuSelectionMode.SINGLE && selectedItems.size() > 1) {
+        if (getSelectionMode() == M3SelectionMode.SINGLE && selectedItems.size() > 1) {
             selectOnly(selectedItems.get(0));
             return;
         }
-        if (!isAllowEmptySelection() && getSelectionMode() != M3MenuSelectionMode.NONE) {
+        if (!isAllowEmptySelection() && getSelectionMode() != M3SelectionMode.NONE) {
             selectFirstItemIfNeeded();
         }
     }

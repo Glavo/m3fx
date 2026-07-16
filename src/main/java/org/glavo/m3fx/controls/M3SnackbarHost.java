@@ -53,7 +53,7 @@ import java.util.Objects;
 ///
 /// See [Material Design snackbars](https://m3.material.io/components/snackbar/overview).
 @NotNullByDefault
-public class M3SnackbarHost extends Control {
+public final class M3SnackbarHost extends Control {
     /// The base style class for M3FX snackbar hosts.
     public static final String STYLE_CLASS = "m3-snackbar-host";
 

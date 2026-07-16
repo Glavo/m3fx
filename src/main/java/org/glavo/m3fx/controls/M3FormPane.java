@@ -42,7 +42,7 @@ import java.util.Objects;
 /// See [Material Design text fields](https://m3.material.io/components/text-fields/overview) and
 /// [Material Design](https://m3.material.io/) for the form controls commonly used inside this pane.
 @NotNullByDefault
-public class M3FormPane extends Control {
+public final class M3FormPane extends Control {
     /// The base style class for M3FX form panes.
     public static final String STYLE_CLASS = "m3-form-pane";
 

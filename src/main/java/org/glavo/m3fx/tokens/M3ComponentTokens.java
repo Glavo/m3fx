@@ -248,6 +248,24 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @return the list item component tokens
     ListItemTokens listItem();
 
+    /// Creates a builder initialized with generated component tokens for a profile.
+    ///
+    /// @param profile the Material token profile
+    /// @param shapeTokens the shape scale used by generated component tokens
+    /// @param density the density adjustment applied to component metrics
+    /// @return a mutable component-token builder
+    static M3ComponentTokensBuilder builder(M3Profile profile, M3ShapeTokens shapeTokens, M3Density density) {
+        return new M3ComponentTokensBuilder(create(profile, shapeTokens, density));
+    }
+
+    /// Creates a builder initialized from an existing component token set.
+    ///
+    /// @param tokens the component tokens to copy
+    /// @return a mutable component-token builder
+    static M3ComponentTokensBuilder builder(M3ComponentTokens tokens) {
+        return new M3ComponentTokensBuilder(tokens);
+    }
+
     /// Creates component tokens from explicit component token values.
     ///
     /// @param filledButton         the filled button component tokens
@@ -297,7 +315,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param navigationDrawer     the navigation drawer component tokens
     /// @param listItem             the list item component tokens
     /// @return a component token set containing the supplied values
-    static M3ComponentTokens create(
+    private static M3ComponentTokens create(
             ButtonTokens filledButton,
             ButtonTokens tonalButton,
             ButtonTokens outlinedButton,

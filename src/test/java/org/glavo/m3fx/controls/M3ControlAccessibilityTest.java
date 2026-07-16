@@ -17,7 +17,7 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionSettings;
-import org.glavo.m3fx.internal.M3ListViewCell;
+import org.glavo.m3fx.controls.M3ListCell;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -112,14 +112,12 @@ final class M3ControlAccessibilityTest {
         assertEquals(AccessibleRole.PARENT, new M3SearchView().getAccessibleRole());
         assertEquals(AccessibleRole.LIST_VIEW, new M3ListPane().getAccessibleRole());
         assertEquals(AccessibleRole.LIST_VIEW, new M3ListView<>().getAccessibleRole());
-        assertEquals(AccessibleRole.LIST_ITEM, new M3ListViewCell<>(new M3ListView<>()).getAccessibleRole());
+        assertEquals(AccessibleRole.LIST_ITEM, new M3ListCell<>(new M3ListView<>()).getAccessibleRole());
         assertEquals(AccessibleRole.LIST_ITEM, new M3ListItem().getAccessibleRole());
         assertEquals(AccessibleRole.TEXT, new M3ListSectionHeader().getAccessibleRole());
         assertEquals(AccessibleRole.LIST_VIEW, new M3ChipGroup().getAccessibleRole());
-        M3Chip assistChip = new M3Chip();
-        assertEquals(AccessibleRole.BUTTON, assistChip.getAccessibleRole());
-        assistChip.setVariant(M3ChipVariant.FILTER);
-        assertEquals(AccessibleRole.TOGGLE_BUTTON, assistChip.getAccessibleRole());
+        assertEquals(AccessibleRole.BUTTON, new M3AssistChip().getAccessibleRole());
+        assertEquals(AccessibleRole.TOGGLE_BUTTON, new M3FilterChip().getAccessibleRole());
         assertEquals(AccessibleRole.TOOL_BAR, new M3IconToggleButtonGroup().getAccessibleRole());
         assertEquals(AccessibleRole.TOGGLE_BUTTON, new M3IconToggleButton().getAccessibleRole());
         assertEquals(AccessibleRole.TOOL_BAR, new M3SegmentedButtonGroup().getAccessibleRole());
@@ -167,7 +165,7 @@ final class M3ControlAccessibilityTest {
                 new M3SubMenuItem(),
                 new M3ListItem(),
                 new M3ListView<>(),
-                new M3Chip(),
+                new M3AssistChip(),
                 new M3IconToggleButton(),
                 new M3SegmentedButton(),
                 new M3Tab(),
@@ -271,8 +269,7 @@ final class M3ControlAccessibilityTest {
         M3IconToggleButton iconToggleButton = new M3IconToggleButton("A");
         assertAccessibleFireToggles(iconToggleButton, iconToggleButton::isSelected);
 
-        M3Chip chip = new M3Chip("Chip");
-        chip.setVariant(M3ChipVariant.FILTER);
+        M3FilterChip chip = new M3FilterChip("Chip");
         assertAccessibleFireToggles(chip, chip::isSelected);
 
         M3SegmentedButton segmentedButton = new M3SegmentedButton("Segment");
@@ -343,8 +340,7 @@ final class M3ControlAccessibilityTest {
         M3IconToggleButton iconToggleButton = new M3IconToggleButton("A");
         assertDisabledAccessibleFireDoesNotToggle(iconToggleButton, iconToggleButton::isSelected);
 
-        M3Chip chip = new M3Chip("Chip");
-        chip.setVariant(M3ChipVariant.FILTER);
+        M3FilterChip chip = new M3FilterChip("Chip");
         assertDisabledAccessibleFireDoesNotToggle(chip, chip::isSelected);
 
         M3SegmentedButton segmentedButton = new M3SegmentedButton("Segment");
@@ -357,7 +353,7 @@ final class M3ControlAccessibilityTest {
         M3MenuItem menuFirst = new M3MenuItem("Open");
         M3MenuItem menuSecond = new M3MenuItem("Save");
         M3Menu menu = new M3Menu(menuFirst, menuSecond);
-        menu.setSelectionMode(M3MenuSelectionMode.SINGLE);
+        menu.setSelectionMode(M3SelectionMode.SINGLE);
         menu.select(menuFirst);
         menu.setDisable(true);
         menu.executeAccessibleAction(AccessibleAction.SET_SELECTED_ITEMS, menuSecond);
@@ -366,7 +362,7 @@ final class M3ControlAccessibilityTest {
         M3ListItem listFirst = new M3ListItem("Inbox");
         M3ListItem listSecond = new M3ListItem("Archive");
         M3ListPane listPane = new M3ListPane();
-        listPane.setSelectionMode(M3ListSelectionMode.SINGLE);
+        listPane.setSelectionMode(M3SelectionMode.SINGLE);
         listPane.getItems().addAll(listFirst, listSecond);
         listPane.select(listFirst);
         listPane.setDisable(true);
@@ -567,18 +563,18 @@ final class M3ControlAccessibilityTest {
             M3MenuItem menuFirst = new M3MenuItem("Open");
             M3MenuItem menuSecond = new M3MenuItem("Save");
             M3MenuButton menuButton = new M3MenuButton("Menu", menuFirst, menuSecond);
-            menuButton.getMenu().setSelectionMode(M3MenuSelectionMode.SINGLE);
+            menuButton.getMenu().setSelectionMode(M3SelectionMode.SINGLE);
 
             M3MenuItem splitFirst = new M3MenuItem("Copy");
             M3MenuItem splitSecond = new M3MenuItem("Paste");
             M3SplitButton splitButton = new M3SplitButton("Split");
             splitButton.getItems().addAll(splitFirst, splitSecond);
-            splitButton.getMenu().setSelectionMode(M3MenuSelectionMode.MULTIPLE);
+            splitButton.getMenu().setSelectionMode(M3SelectionMode.MULTIPLE);
 
             M3MenuItem subFirst = new M3MenuItem("Archive");
             M3MenuItem subSecond = new M3MenuItem("Trash");
             M3SubMenuItem subMenuItem = new M3SubMenuItem("Move to", subFirst, subSecond);
-            subMenuItem.getSubMenu().setSelectionMode(M3MenuSelectionMode.MULTIPLE);
+            subMenuItem.getSubMenu().setSelectionMode(M3SelectionMode.MULTIPLE);
 
             HBox root = new HBox(12.0, menuButton, splitButton, subMenuItem);
             Stage stage = new Stage();
@@ -691,8 +687,8 @@ final class M3ControlAccessibilityTest {
         assertAccessibleFireInvokesAction(control, fireCount);
     }
 
-    /// Verifies a list item fires its handler from the accessibility fire action.
-    private static void assertAccessibleFireInvokesListItemAction(M3ListItem control) {
+    /// Verifies a row action control fires its handler from the accessibility fire action.
+    private static void assertAccessibleFireInvokesListItemAction(M3ListItemBase control) {
         AtomicInteger fireCount = new AtomicInteger();
         control.setOnAction(event -> fireCount.incrementAndGet());
         assertAccessibleFireInvokesAction(control, fireCount);

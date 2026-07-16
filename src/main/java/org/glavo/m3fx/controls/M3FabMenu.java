@@ -57,7 +57,7 @@ import java.util.Objects;
 ///
 /// See [Material Design FAB menus](https://m3.material.io/components/fab-menu/overview).
 @NotNullByDefault
-public class M3FabMenu extends Control {
+public final class M3FabMenu extends Control {
     /// The base style class for M3FX floating action button menus.
     public static final String STYLE_CLASS = "m3-fab-menu";
 

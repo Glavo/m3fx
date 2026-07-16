@@ -30,7 +30,7 @@ import javafx.scene.shape.Path;
 import javafx.scene.shape.PathElement;
 import javafx.scene.shape.Rectangle;
 import org.glavo.m3fx.animation.M3MotionSpec;
-import org.glavo.m3fx.controls.M3ListItem;
+import org.glavo.m3fx.controls.M3ListItemBase;
 import org.glavo.m3fx.controls.M3ListItemSlotSize;
 import org.glavo.m3fx.controls.M3MenuItem;
 import org.glavo.m3fx.controls.M3SubMenuItem;
@@ -46,9 +46,9 @@ import org.glavo.m3fx.tokens.M3StateLayerTokens;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
-/// The default skin for [M3ListItem].
+/// The default skin for [M3ListItemBase].
 @NotNullByDefault
-public class M3ListItemSkin extends SkinBase<M3ListItem> {
+public class M3ListItemSkin extends SkinBase<M3ListItemBase> {
     /// The pseudo-class applied to the first item in a visible menu group.
     private static final PseudoClass FIRST_MENU_ITEM_PSEUDO_CLASS = PseudoClass.getPseudoClass("first-menu-item");
 
@@ -214,7 +214,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     /// Creates a list item skin.
     ///
     /// @param control the list item controlled by this skin
-    public M3ListItemSkin(M3ListItem control) {
+    public M3ListItemSkin(M3ListItemBase control) {
         super(control);
         selectionContainer.getStyleClass().add("m3-list-item-selection-container");
         container.getStyleClass().add("m3-list-item-container");
@@ -295,7 +295,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     /// Removes behavior handlers before the skin is disposed.
     @Override
     public void dispose() {
-        M3ListItem item = getSkinnable();
+        M3ListItemBase item = getSkinnable();
         selectionAnimation.stop();
         @Nullable ContainerShapeTransition shapeAnimation = containerShapeAnimation;
         if (shapeAnimation != null) {
@@ -369,7 +369,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     /// Lays out the container and bounded state layer.
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
-        M3ListItem item = getSkinnable();
+        M3ListItemBase item = getSkinnable();
         double outerRadius = resolvedShapeRadius(width, height, item.getContainerShape());
         selectionContainer.resizeRelocate(x, y, width, height);
         container.resizeRelocate(x, y, width, height);
@@ -461,7 +461,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
 
     /// Updates label text and visibility.
     private void updateText() {
-        M3ListItem item = getSkinnable();
+        M3ListItemBase item = getSkinnable();
         updateLabel(overlineLabel, item.getOverlineText());
         updateLabel(headlineLabel, item.getHeadlineText());
         updateLabel(supportingLabel, item.getSupportingText());
@@ -470,8 +470,8 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     }
 
     /// Updates one label from a string value.
-    private static void updateLabel(Label label, String text) {
-        boolean visible = !text.isBlank();
+    private static void updateLabel(Label label, @Nullable String text) {
+        boolean visible = text != null && !text.isBlank();
         label.setText(text);
         label.setVisible(visible);
         label.setManaged(visible);
@@ -479,7 +479,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
 
     /// Updates leading and trailing slot content.
     private void updateSlots() {
-        M3ListItem item = getSkinnable();
+        M3ListItemBase item = getSkinnable();
         updateSlot(leadingSlot, item.getLeading());
         updateSlot(trailingSlot, item.getTrailing());
         updateTrailingBoxVisibility();
@@ -500,7 +500,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
 
     /// Updates fixed metrics and clipping for optional node slots.
     private void updateSlotMetrics() {
-        M3ListItem item = getSkinnable();
+        M3ListItemBase item = getSkinnable();
         updateSlotMetrics(leadingSlot, leadingClip, item.getLeadingSlotSize());
         updateSlotMetrics(trailingSlot, trailingClip, item.getTrailingSlotSize());
         item.requestLayout();
@@ -573,7 +573,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
 
     /// Applies token-driven layout metrics.
     private void updateMetrics() {
-        M3ListItem item = getSkinnable();
+        M3ListItemBase item = getSkinnable();
         double height = preferredHeight(item);
         double horizontalPadding = item.getHorizontalPadding();
         double verticalPadding = item.getVerticalPadding();
@@ -588,7 +588,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
 
 
     /// Returns the preferred height for the current text structure.
-    private static double preferredHeight(M3ListItem item) {
+    private static double preferredHeight(M3ListItemBase item) {
         return switch (item.getLineCount()) {
             case ONE_LINE -> item.getOneLineHeight();
             case TWO_LINE -> item.getTwoLineHeight();
@@ -684,7 +684,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
 
     /// Applies the menu active-state opacity while a submenu remains visible.
     private void updateSubMenuActiveState() {
-        M3ListItem item = getSkinnable();
+        M3ListItemBase item = getSkinnable();
         if (!(item instanceof M3SubMenuItem subMenuItem) || !subMenuItem.isSubMenuShowing()) {
             stateLayer.setRestingOverlayOpacity(0.0);
             return;
@@ -751,7 +751,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
     }
 
     /// Installs behavior handlers for pointer and keyboard activation.
-    private void installBehaviorHandlers(M3ListItem item) {
+    private void installBehaviorHandlers(M3ListItemBase item) {
         item.addEventHandler(MouseEvent.MOUSE_PRESSED, mousePressedHandler);
         item.addEventHandler(MouseEvent.MOUSE_RELEASED, mouseReleasedHandler);
         item.addEventHandler(KeyEvent.KEY_PRESSED, keyPressedHandler);
@@ -760,7 +760,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
 
     /// Starts list item feedback on primary mouse press.
     private void handleMousePressed(MouseEvent event) {
-        M3ListItem item = getSkinnable();
+        M3ListItemBase item = getSkinnable();
         if (item.isDisabled() || event.getButton() != MouseButton.PRIMARY) {
             return;
         }
@@ -773,7 +773,7 @@ public class M3ListItemSkin extends SkinBase<M3ListItem> {
 
     /// Releases list item feedback and fires when the primary mouse is released inside the item.
     private void handleMouseReleased(MouseEvent event) {
-        M3ListItem item = getSkinnable();
+        M3ListItemBase item = getSkinnable();
         if (!mousePressed || event.getButton() != MouseButton.PRIMARY) {
             return;
         }

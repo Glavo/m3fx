@@ -28,7 +28,8 @@ import java.util.Arrays;
 @NotNullByDefault
 public final class M3ButtonGroupSkin extends M3ItemContainerSkinBase<
         M3ButtonGroup,
-        M3ButtonGroupSkin.ButtonGroupPane
+        M3ButtonGroupSkin.ButtonGroupPane,
+        ButtonBase
         > {
     /// Creates a button group skin.
     ///
@@ -280,7 +281,7 @@ public final class M3ButtonGroupSkin extends M3ItemContainerSkinBase<
         /// Preserves current interaction values while realigning storage with the public item list.
         private void rebuildInteractionState() {
             interactionTransition.stop();
-            ObservableList<Node> items = control.getItems();
+            ObservableList<ButtonBase> items = control.getItems();
             int itemCount = items.size();
             Node[] oldItems = interactionItems;
             double[] oldProgress = interactionProgress;

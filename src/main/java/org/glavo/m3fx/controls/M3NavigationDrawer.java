@@ -68,7 +68,7 @@ import java.util.Objects;
 /// Use a drawer for larger destination sets or grouped navigation. See
 /// [Material Design navigation drawer](https://m3.material.io/components/navigation-drawer/overview).
 @NotNullByDefault
-public class M3NavigationDrawer extends Control {
+public final class M3NavigationDrawer extends Control {
     /// The base style class for M3FX navigation drawers.
     public static final String STYLE_CLASS = "m3-navigation-drawer";
 

@@ -16,7 +16,7 @@ import org.glavo.m3fx.controls.M3DatePicker;
 import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3MenuButton;
 import org.glavo.m3fx.controls.M3MenuItem;
-import org.glavo.m3fx.controls.M3MenuSelectionMode;
+import org.glavo.m3fx.controls.M3SelectionMode;
 import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -221,7 +221,7 @@ final class M3DatePickerHeader extends HBox {
 
     /// Creates persistent month and year menu items and connects their actions to the displayed month.
     private void initializeMenus() {
-        monthButton.getMenu().setSelectionMode(M3MenuSelectionMode.SINGLE);
+        monthButton.getMenu().setSelectionMode(M3SelectionMode.SINGLE);
         monthButton.getMenu().setAllowEmptySelection(false);
         for (Month month : Month.values()) {
             M3MenuItem item = new M3MenuItem();
@@ -235,7 +235,7 @@ final class M3DatePickerHeader extends HBox {
         }
         monthButton.getItems().setAll(monthItems);
 
-        yearButton.getMenu().setSelectionMode(M3MenuSelectionMode.SINGLE);
+        yearButton.getMenu().setSelectionMode(M3SelectionMode.SINGLE);
         yearButton.getMenu().setAllowEmptySelection(false);
         for (int index = 0; index < YEAR_MENU_ITEM_COUNT; index++) {
             M3MenuItem item = new M3MenuItem();

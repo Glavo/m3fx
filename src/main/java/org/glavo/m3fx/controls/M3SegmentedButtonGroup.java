@@ -49,13 +49,13 @@ import java.util.Objects;
 /// A Material Design 3 segmented button group that lays out adjacent segments.
 ///
 /// The group manages the selected state of child [M3SegmentedButton] instances, applies the configured
-/// [M3SegmentedButtonSelectionMode], and renders the shared outline geometry expected by Material segmented
+/// [M3SelectionMode], and renders the shared outline geometry expected by Material segmented
 /// buttons. It also provides keyboard traversal and empty-selection control for groups that require at least one
 /// selected segment.
 ///
 /// See [Material Design segmented buttons](https://m3.material.io/components/segmented-buttons/overview).
 @NotNullByDefault
-public class M3SegmentedButtonGroup extends Control {
+public final class M3SegmentedButtonGroup extends Control {
     /// The base style class for M3FX segmented button groups.
     public static final String STYLE_CLASS = "m3-segmented-button-group";
 
@@ -75,7 +75,7 @@ public class M3SegmentedButtonGroup extends Control {
     private static final double DEFAULT_SPACING = -1.0;
 
     /// The mutable segmented button group content.
-    private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
+    private final ObservableList<M3SegmentedButton> items = M3ObservableLists.nonNullElementList("item");
 
     /// Notifies accessibility clients when focus moves between segmented buttons.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -91,13 +91,13 @@ public class M3SegmentedButtonGroup extends Control {
     private @Nullable StyleableDoubleProperty spacing;
 
     // Backing property for the public segmented button selection mode API.
-    private final ObjectProperty<M3SegmentedButtonSelectionMode> selectionMode =
-            new SimpleObjectProperty<>(this, "selectionMode", M3SegmentedButtonSelectionMode.SINGLE) {
+    private final ObjectProperty<M3SelectionMode> selectionMode =
+            new SimpleObjectProperty<>(this, "selectionMode", M3SelectionMode.SINGLE) {
                 /// Enforces selection invariants when the mode changes.
                 @Override
                 protected void invalidated() {
                     if (get() == null) {
-                        set(M3SegmentedButtonSelectionMode.SINGLE);
+                        set(M3SelectionMode.SINGLE);
                         return;
                     }
                     enforceSelectionPolicy();
@@ -184,7 +184,7 @@ public class M3SegmentedButtonGroup extends Control {
     /// Returns the mutable child list used as segmented button group content.
     ///
     /// @return the mutable child list used as segmented button group content
-    public final ObservableList<Node> getItems() {
+    public final ObservableList<M3SegmentedButton> getItems() {
         return items;
     }
 
@@ -222,21 +222,21 @@ public class M3SegmentedButtonGroup extends Control {
     /// Returns the segmented button selection mode.
     ///
     /// @return the segmented button selection mode
-    public final M3SegmentedButtonSelectionMode getSelectionMode() {
+    public final M3SelectionMode getSelectionMode() {
         return selectionMode.get();
     }
 
     /// Sets the segmented button selection mode.
     ///
     /// @param selectionMode the segmented button selection mode
-    public final void setSelectionMode(M3SegmentedButtonSelectionMode selectionMode) {
+    public final void setSelectionMode(M3SelectionMode selectionMode) {
         this.selectionMode.set(Objects.requireNonNull(selectionMode, "selectionMode"));
     }
 
     /// Returns the segmented button selection mode property.
     ///
     /// @return the segmented button selection mode property
-    public final ObjectProperty<M3SegmentedButtonSelectionMode> selectionModeProperty() {
+    public final ObjectProperty<M3SelectionMode> selectionModeProperty() {
         return selectionMode;
     }
 
@@ -302,7 +302,10 @@ public class M3SegmentedButtonGroup extends Control {
         if (!isSelectableButton(button)) {
             throw new IllegalArgumentException("button must be selectable");
         }
-        if (getSelectionMode() == M3SegmentedButtonSelectionMode.MULTIPLE) {
+        if (getSelectionMode() == M3SelectionMode.NONE) {
+            return;
+        }
+        if (getSelectionMode() == M3SelectionMode.MULTIPLE) {
             setButtonSelected(button, true);
         } else {
             selectOnly(button);
@@ -371,7 +374,7 @@ public class M3SegmentedButtonGroup extends Control {
 
     /// Clears the current selection when empty selection is allowed.
     public final void clearSelection() {
-        if (!isAllowEmptySelection()) {
+        if (!isAllowEmptySelection() && getSelectionMode() != M3SelectionMode.NONE) {
             selectFirstButtonIfNeeded();
             return;
         }
@@ -416,7 +419,7 @@ public class M3SegmentedButtonGroup extends Control {
                     getSelectedButton(),
                     M3SegmentedButton.class
             );
-            case MULTIPLE_SELECTION -> getSelectionMode() == M3SegmentedButtonSelectionMode.MULTIPLE;
+            case MULTIPLE_SELECTION -> getSelectionMode() == M3SelectionMode.MULTIPLE;
             case SELECTED_ITEMS -> selectedButtonsView;
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
@@ -496,7 +499,10 @@ public class M3SegmentedButtonGroup extends Control {
 
     /// Applies keyboard navigation across enabled segmented buttons.
     private void handleNavigationKeyPressed(KeyEvent event) {
-        if (getSelectionMode() == M3SegmentedButtonSelectionMode.MULTIPLE) {
+        if (getSelectionMode() == M3SelectionMode.NONE) {
+            return;
+        }
+        if (getSelectionMode() == M3SelectionMode.MULTIPLE) {
             M3SelectionNavigation.handleKeyFocus(
                     event,
                     this,
@@ -529,7 +535,11 @@ public class M3SegmentedButtonGroup extends Control {
 
     /// Applies selected segmented buttons supplied by an accessibility client.
     private void setAccessibleSelectedItems(Object... parameters) {
-        if (getSelectionMode() == M3SegmentedButtonSelectionMode.SINGLE) {
+        if (getSelectionMode() == M3SelectionMode.NONE) {
+            selectOnly(null);
+            return;
+        }
+        if (getSelectionMode() == M3SelectionMode.SINGLE) {
             @Nullable M3SegmentedButton button =
                     firstAccessibleSelectableButton(parameters);
             if (button == null) {
@@ -576,7 +586,7 @@ public class M3SegmentedButtonGroup extends Control {
             return;
         }
 
-        if (!isSelectableButton(button)) {
+        if (getSelectionMode() == M3SelectionMode.NONE || !isSelectableButton(button)) {
             if (selected) {
                 setButtonSelected(button, false);
                 if (!isAllowEmptySelection()) {
@@ -587,7 +597,7 @@ public class M3SegmentedButtonGroup extends Control {
         }
 
         if (selected) {
-            if (getSelectionMode() == M3SegmentedButtonSelectionMode.SINGLE) {
+            if (getSelectionMode() == M3SelectionMode.SINGLE) {
                 selectOnly(button);
             } else {
                 refreshSelectedButtons();
@@ -614,7 +624,11 @@ public class M3SegmentedButtonGroup extends Control {
     /// Enforces single-selection and non-empty selection invariants.
     private void enforceSelectionPolicy() {
         refreshSelectedButtons();
-        if (getSelectionMode() == M3SegmentedButtonSelectionMode.SINGLE && selectedButtons.size() > 1) {
+        if (getSelectionMode() == M3SelectionMode.NONE) {
+            selectOnly(null);
+            return;
+        }
+        if (getSelectionMode() == M3SelectionMode.SINGLE && selectedButtons.size() > 1) {
             selectOnly(selectedButtons.get(0));
             return;
         }
@@ -625,7 +639,7 @@ public class M3SegmentedButtonGroup extends Control {
 
     /// Selects the first button when the selection is empty and empty selection is disabled.
     private void selectFirstButtonIfNeeded() {
-        if (!selectedButtons.isEmpty()) {
+        if (getSelectionMode() == M3SelectionMode.NONE || !selectedButtons.isEmpty()) {
             return;
         }
 

@@ -46,7 +46,7 @@ import java.util.Objects;
 ///
 /// See [Material Design snackbars](https://m3.material.io/components/snackbar/overview).
 @NotNullByDefault
-public class M3Snackbar extends Control {
+public final class M3Snackbar extends Control {
     /// The base style class for M3FX snackbars.
     public static final String STYLE_CLASS = "m3-snackbar";
 
@@ -82,7 +82,13 @@ public class M3Snackbar extends Control {
 
     /// Backing property for the public action handler API.
     private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
-            new SimpleObjectProperty<>(this, "onAction");
+            new SimpleObjectProperty<>(this, "onAction") {
+                /// Updates the registered action event handler.
+                @Override
+                protected void invalidated() {
+                    setEventHandler(ActionEvent.ACTION, get());
+                }
+            };
 
     /// Whether the optional close affordance is shown.
     private final BooleanProperty closeButtonVisible =
@@ -249,14 +255,7 @@ public class M3Snackbar extends Control {
     /// Fires this snackbar's action event when it has an enabled action.
     public final void fireAction() {
         if (!isDisabled() && hasAction()) {
-            ActionEvent event = new ActionEvent(this, this);
-            @Nullable EventHandler<ActionEvent> handler = getOnAction();
-            if (handler != null) {
-                handler.handle(event);
-            }
-            if (!event.isConsumed()) {
-                Event.fireEvent(this, event);
-            }
+            Event.fireEvent(this, new ActionEvent(this, this));
         }
     }
 

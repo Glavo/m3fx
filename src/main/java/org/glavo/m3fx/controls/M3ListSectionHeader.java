@@ -11,7 +11,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 ///
 /// See [Material Design lists](https://m3.material.io/components/lists/overview).
 @NotNullByDefault
-public class M3ListSectionHeader extends M3Text {
+public final class M3ListSectionHeader extends M3Text {
     /// The base style class for M3FX list section headers.
     public static final String STYLE_CLASS = "m3-list-section-header";
 

@@ -50,7 +50,7 @@ import java.util.Objects;
 ///
 /// See [Material Design search](https://m3.material.io/components/search/overview).
 @NotNullByDefault
-public class M3SearchBar extends Control {
+public final class M3SearchBar extends Control {
     /// The base style class for M3FX search bars.
     public static final String STYLE_CLASS = "m3-search-bar";
 

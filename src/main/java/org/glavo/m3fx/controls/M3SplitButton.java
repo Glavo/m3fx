@@ -5,7 +5,9 @@ package org.glavo.m3fx.controls;
 
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
+import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
@@ -49,7 +51,7 @@ import java.util.Objects;
 ///
 /// See [Material Design split buttons](https://m3.material.io/components/split-button/overview).
 @NotNullByDefault
-public class M3SplitButton extends Control {
+public final class M3SplitButton extends Control {
     /// The base style class for M3FX split buttons.
     public static final String STYLE_CLASS = "m3-split-button";
 
@@ -94,6 +96,42 @@ public class M3SplitButton extends Control {
 
     /// The disclosure icon displayed by the menu button side.
     private final M3DisclosureIcon menuIndicator = new M3DisclosureIcon();
+
+    /// The primary action text owned by this composite control.
+    private final StringProperty text = new SimpleStringProperty(this, "text", "") {
+        /// Keeps text non-null and synchronizes the primary button.
+        @Override
+        protected void invalidated() {
+            if (get() == null) {
+                set("");
+                return;
+            }
+            actionButton.setText(get());
+        }
+    };
+
+    /// The primary action graphic owned by this composite control.
+    private final ObjectProperty<@Nullable Node> graphic =
+            new SimpleObjectProperty<>(this, "graphic") {
+                /// Synchronizes the primary button graphic.
+                @Override
+                protected void invalidated() {
+                    actionButton.setGraphic(get());
+                }
+            };
+
+    /// The primary action handler owned by this composite control.
+    private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
+            new SimpleObjectProperty<>(this, "onAction") {
+                /// Updates the registered primary action event handler.
+                @Override
+                protected void invalidated() {
+                    setEventHandler(ActionEvent.ACTION, get());
+                }
+            };
+
+    /// The read-only attached-menu visibility state owned by this composite control.
+    private final ReadOnlyBooleanWrapper showing = new ReadOnlyBooleanWrapper(this, "showing");
 
     /// The focusable button parts exposed to accessibility and keyboard navigation.
     private final ObservableList<Node> buttonParts = M3ObservableLists.nonNullElementList("buttonPart");
@@ -170,68 +208,70 @@ public class M3SplitButton extends Control {
     ///
     /// @return the primary action text
     public final String getText() {
-        return actionButton.getText();
+        return text.get();
     }
 
     /// Sets the primary action text.
     ///
     /// @param text the primary action text
     public final void setText(String text) {
-        actionButton.setText(Objects.requireNonNull(text, "text"));
+        this.text.set(Objects.requireNonNull(text, "text"));
     }
 
     /// Returns the primary action text property.
     ///
     /// @return the primary action text property
     public final StringProperty textProperty() {
-        return actionButton.textProperty();
+        return text;
     }
 
     /// Returns the primary action graphic.
     ///
     /// @return the primary action graphic, or `null` if none is set
     public final @Nullable Node getGraphic() {
-        return actionButton.getGraphic();
+        return graphic.get();
     }
 
     /// Sets the primary action graphic.
     ///
     /// @param graphic the primary action graphic, or `null` to clear it
     public final void setGraphic(@Nullable Node graphic) {
-        actionButton.setGraphic(graphic);
+        this.graphic.set(graphic);
     }
 
     /// Returns the primary action graphic property.
     ///
     /// @return the primary action graphic property
     public final ObjectProperty<@Nullable Node> graphicProperty() {
-        return actionButton.graphicProperty();
+        return graphic;
     }
 
     /// Returns the primary action handler.
     ///
     /// @return the primary action handler, or `null` if none is set
     public final @Nullable EventHandler<ActionEvent> getOnAction() {
-        return actionButton.getOnAction();
+        return onAction.get();
     }
 
     /// Sets the primary action handler.
     ///
     /// @param onAction the primary action handler, or `null` to clear it
     public final void setOnAction(@Nullable EventHandler<ActionEvent> onAction) {
-        actionButton.setOnAction(onAction);
+        this.onAction.set(onAction);
     }
 
     /// Returns the primary action handler property.
     ///
     /// @return the primary action handler property
     public final ObjectProperty<@Nullable EventHandler<ActionEvent>> onActionProperty() {
-        return actionButton.onActionProperty();
+        return onAction;
     }
 
     /// Fires the primary action.
     public final void fire() {
-        actionButton.fire();
+        if (!isDisabled()) {
+            fireEvent(new ActionEvent(this, this));
+        }
     }
 
     /// Returns the button variant shared by both split button parts.
@@ -490,14 +530,14 @@ public class M3SplitButton extends Control {
     ///
     /// @return `true` if the attached menu is currently showing
     public final boolean isShowing() {
-        return menuButton.isShowing();
+        return showing.get();
     }
 
     /// Returns the read-only showing state property.
     ///
     /// @return the read-only showing state property
     public final ReadOnlyBooleanProperty showingProperty() {
-        return menuButton.showingProperty();
+        return showing.getReadOnlyProperty();
     }
 
     /// Returns the user-agent stylesheet for M3FX split buttons.
@@ -585,8 +625,13 @@ public class M3SplitButton extends Control {
         );
         buttonParts.setAll(actionButton, menuButton);
         menuButton.setHorizontalPadding(0.0);
-        actionButton.addEventHandler(ActionEvent.ACTION, event -> hideMenu());
+        actionButton.setOnAction(event -> {
+            event.consume();
+            hideMenu();
+            fire();
+        });
         menuButton.showingProperty().addListener((observable, oldValue, newValue) -> {
+            showing.set(newValue);
             if (newValue) {
                 popupFocusNotifier.start();
             } else {
@@ -694,8 +739,8 @@ public class M3SplitButton extends Control {
                 event,
                 this,
                 buttonParts,
-                M3SelectionNavigation.focused(buttonParts, M3Button.class),
-                M3Button.class,
+                M3SelectionNavigation.focused(buttonParts, M3ButtonBase.class),
+                M3ButtonBase.class,
                 true,
                 false,
                 M3NodeLayout.isRightToLeft(this)
@@ -742,7 +787,7 @@ public class M3SplitButton extends Control {
     }
 
     /// Applies local edge pseudo-classes to a child button before orientation mirroring.
-    private static void applyEdgeState(M3Button button, boolean leftEdge) {
+    private static void applyEdgeState(M3ButtonBase button, boolean leftEdge) {
         button.pseudoClassStateChanged(LEFT_EDGE_PSEUDO_CLASS, leftEdge);
         button.pseudoClassStateChanged(RIGHT_EDGE_PSEUDO_CLASS, !leftEdge);
     }

@@ -4,13 +4,14 @@
 package org.glavo.m3fx.skins;
 
 import javafx.scene.layout.FlowPane;
+import org.glavo.m3fx.controls.M3Chip;
 import org.glavo.m3fx.controls.M3ChipGroup;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default Material Design 3 skin for [M3ChipGroup].
 @NotNullByDefault
-public final class M3ChipGroupSkin extends M3ItemContainerSkinBase<M3ChipGroup, FlowPane> {
+public final class M3ChipGroupSkin extends M3ItemContainerSkinBase<M3ChipGroup, FlowPane, M3Chip> {
     /// Creates a chip group skin.
     ///
     /// @param control the chip group controlled by this skin

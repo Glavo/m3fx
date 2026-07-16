@@ -45,7 +45,7 @@ import java.util.Objects;
 ///
 /// See [Material Design search](https://m3.material.io/components/search/overview).
 @NotNullByDefault
-public class M3SearchView extends Control {
+public final class M3SearchView extends Control {
     /// The base style class for M3FX search views.
     public static final String STYLE_CLASS = "m3-search-view";
 

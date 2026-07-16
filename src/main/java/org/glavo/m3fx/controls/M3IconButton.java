@@ -29,7 +29,7 @@ import java.util.Objects;
 ///
 /// See [Material Design icon buttons](https://m3.material.io/components/icon-buttons/overview).
 @NotNullByDefault
-public class M3IconButton extends M3Button {
+public final class M3IconButton extends M3ButtonBase {
     /// The base style class for M3FX icon buttons.
     public static final String STYLE_CLASS = "m3-icon-button";
 
@@ -232,7 +232,8 @@ public class M3IconButton extends M3Button {
         private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
 
         static {
-            List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(M3Button.getClassCssMetaData());
+            List<CssMetaData<? extends Styleable, ?>> styleables =
+                    new ArrayList<>(M3ButtonBase.getClassCssMetaData());
             styleables.add(CONTAINER_WIDTH);
             STYLEABLES = Collections.unmodifiableList(styleables);
         }

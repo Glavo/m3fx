@@ -13,18 +13,18 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 /// Base skin for controls that mirror an item list into one internal layout container.
 @NotNullByDefault
-abstract class M3ItemContainerSkinBase<C extends Control, P extends Pane> extends SkinBase<C> {
+abstract class M3ItemContainerSkinBase<C extends Control, P extends Pane, N extends Node> extends SkinBase<C> {
     /// The public item list mirrored by this skin.
-    private final ObservableList<Node> items;
+    private final ObservableList<N> items;
 
     /// The internal layout container that owns item nodes while this skin is installed.
     private final P container;
 
     /// Mirrors public item changes into the skin container.
-    private final ListChangeListener<Node> itemsListener = this::updateItems;
+    private final ListChangeListener<N> itemsListener = this::updateItems;
 
     /// Creates an item-container skin.
-    M3ItemContainerSkinBase(C control, ObservableList<Node> items, P container) {
+    M3ItemContainerSkinBase(C control, ObservableList<N> items, P container) {
         super(control);
         this.items = items;
         this.container = container;
@@ -131,7 +131,7 @@ abstract class M3ItemContainerSkinBase<C extends Control, P extends Pane> extend
     }
 
     /// Applies one public item-list change to the internal container.
-    private void updateItems(ListChangeListener.Change<? extends Node> change) {
+    private void updateItems(ListChangeListener.Change<? extends N> change) {
         ObservableList<Node> children = container.getChildren();
         boolean rebuild = false;
         boolean membershipChanged = false;

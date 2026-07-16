@@ -41,7 +41,6 @@ import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
 import org.glavo.m3fx.internal.M3ObservableLists;
-import org.glavo.m3fx.internal.M3ListViewCell;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3TypeAheadState;
 import org.glavo.m3fx.skins.M3ListViewSkin;
@@ -58,9 +57,9 @@ import java.util.Objects;
 
 /// A Material Design 3 data-driven virtualized list view.
 ///
-/// `M3ListView` displays an observable item list through a cell factory that creates [M3ListItem] nodes for
-/// visible rows. Unlike [M3ListPane], it is intended for large or dynamic data sets and uses virtualization so
-/// the number of scene graph nodes is bounded by the viewport. The control exposes selection mode,
+/// `M3ListView` displays an observable item list through a cell factory that creates reusable [M3ListCell] instances.
+/// Unlike [M3ListPane], it is intended for large or dynamic data sets and uses virtualization so the number of scene
+/// graph nodes is bounded by the viewport. The control exposes selection mode,
 /// selected-index views, fixed-cell-size hints, animated scrolling, and keyboard navigation.
 ///
 /// Use this control for application data lists and feeds. See
@@ -68,7 +67,7 @@ import java.util.Objects;
 ///
 /// @param <T> the item type rendered by this list view
 @NotNullByDefault
-public class M3ListView<T> extends Control {
+public final class M3ListView<T> extends Control {
     /// The base style class for M3FX virtualized list views.
     public static final String STYLE_CLASS = "m3-list-view";
 
@@ -81,18 +80,26 @@ public class M3ListView<T> extends Control {
     /// The backing data items rendered by this view.
     private final ObservableList<T> items = M3ObservableLists.nonNullElementList("item");
 
-    // The list item factory used by virtualized cells.
-    private final ObjectProperty<@Nullable Callback<? super T, ? extends M3ListItem>> cellFactory =
-            new SimpleObjectProperty<>(this, "cellFactory");
+    // The factory used to create reusable virtualized cells.
+    private final ObjectProperty<Callback<M3ListView<T>, M3ListCell<T>>> cellFactory =
+            new SimpleObjectProperty<>(this, "cellFactory", M3ListCell::new) {
+                /// Rejects null factories installed through binding or direct property mutation.
+                @Override
+                protected void invalidated() {
+                    if (get() == null) {
+                        set(M3ListCell::new);
+                    }
+                }
+            };
 
     // The selection mode used by this virtualized list.
-    private final ObjectProperty<@Nullable M3ListSelectionMode> selectionMode =
-            new SimpleObjectProperty<>(this, "selectionMode", M3ListSelectionMode.NONE) {
+    private final ObjectProperty<M3SelectionMode> selectionMode =
+            new SimpleObjectProperty<>(this, "selectionMode", M3SelectionMode.NONE) {
                 /// Enforces selection invariants when the mode changes.
                 @Override
                 protected void invalidated() {
                     if (get() == null) {
-                        set(M3ListSelectionMode.NONE);
+                        set(M3SelectionMode.NONE);
                         return;
                     }
                     enforceSelectionPolicy();
@@ -205,45 +212,48 @@ public class M3ListView<T> extends Control {
     public final ObservableList<T> getItems() {
         return items;
     }
-    /// Returns the factory used to create a list item for one data item.
+    /// Returns the factory used to create reusable virtualized cells.
     ///
-    /// @return the cell factory, or `null` to use the default string-based item
-    public final @Nullable Callback<? super T, ? extends M3ListItem> getCellFactory() {
-        return cellFactory.get();
+    /// @return the non-null cell factory
+    public final Callback<M3ListView<T>, M3ListCell<T>> getCellFactory() {
+        return Objects.requireNonNull(cellFactory.get(), "cellFactory");
     }
 
-    /// Sets the factory used to create a list item for one data item.
+    /// Sets the factory used to create reusable virtualized cells.
     ///
-    /// @param cellFactory the cell factory, or `null` to use the default string-based item
-    public final void setCellFactory(@Nullable Callback<? super T, ? extends M3ListItem> cellFactory) {
-        this.cellFactory.set(cellFactory);
+    /// Each factory invocation must return a new cell associated with the supplied list view. A cell must update and
+    /// reuse its row content when [M3ListCell#updateItem(Object, boolean)] is called.
+    ///
+    /// @param cellFactory the non-null cell factory
+    public final void setCellFactory(Callback<M3ListView<T>, M3ListCell<T>> cellFactory) {
+        this.cellFactory.set(Objects.requireNonNull(cellFactory, "cellFactory"));
     }
 
-    /// Returns the list item factory property.
+    /// Returns the reusable cell factory property.
     ///
     /// @return the writable cell factory property
-    public final ObjectProperty<@Nullable Callback<? super T, ? extends M3ListItem>> cellFactoryProperty() {
+    public final ObjectProperty<Callback<M3ListView<T>, M3ListCell<T>>> cellFactoryProperty() {
         return cellFactory;
     }
 
     /// Returns the list item selection mode.
     ///
     /// @return the active selection mode
-    public final M3ListSelectionMode getSelectionMode() {
+    public final M3SelectionMode getSelectionMode() {
         return Objects.requireNonNull(selectionMode.get(), "selectionMode");
     }
 
     /// Sets the list item selection mode.
     ///
     /// @param selectionMode the active selection mode
-    public final void setSelectionMode(M3ListSelectionMode selectionMode) {
+    public final void setSelectionMode(M3SelectionMode selectionMode) {
         this.selectionMode.set(Objects.requireNonNull(selectionMode, "selectionMode"));
     }
 
     /// Returns the list item selection mode property.
     ///
     /// @return the writable selection mode property
-    public final ObjectProperty<@Nullable M3ListSelectionMode> selectionModeProperty() {
+    public final ObjectProperty<M3SelectionMode> selectionModeProperty() {
         return selectionMode;
     }
 
@@ -404,7 +414,7 @@ public class M3ListView<T> extends Control {
         if (!isIndexNavigable(index)) {
             return;
         }
-        if (getSelectionMode() == M3ListSelectionMode.MULTIPLE) {
+        if (getSelectionMode() == M3SelectionMode.MULTIPLE) {
             setIndexSelected(index, true);
         } else {
             selectOnly(index);
@@ -432,14 +442,14 @@ public class M3ListView<T> extends Control {
         if (selected && !isIndexNavigable(index)) {
             return;
         }
-        if (getSelectionMode() == M3ListSelectionMode.NONE) {
+        if (getSelectionMode() == M3SelectionMode.NONE) {
             if (!selected) {
                 removeSelectedIndex(index);
             }
             return;
         }
 
-        if (getSelectionMode() == M3ListSelectionMode.SINGLE) {
+        if (getSelectionMode() == M3SelectionMode.SINGLE) {
             if (selected) {
                 selectOnly(index);
             } else if (isIndexSelected(index)) {
@@ -466,7 +476,7 @@ public class M3ListView<T> extends Control {
 
     /// Clears all selected indices when empty selection is allowed.
     public final void clearSelection() {
-        if (!isAllowEmptySelection() && getSelectionMode() != M3ListSelectionMode.NONE) {
+        if (!isAllowEmptySelection() && getSelectionMode() != M3SelectionMode.NONE) {
             selectFirstItemIfNeeded();
             return;
         }
@@ -600,7 +610,7 @@ public class M3ListView<T> extends Control {
             case FOCUS_NODE -> accessibleFocusNode();
             case ITEM_COUNT -> getItems().size();
             case ITEM_AT_INDEX -> accessibleItemAt(parameters);
-            case MULTIPLE_SELECTION -> getSelectionMode() == M3ListSelectionMode.MULTIPLE;
+            case MULTIPLE_SELECTION -> getSelectionMode() == M3SelectionMode.MULTIPLE;
             case SELECTED_ITEMS -> selectedItemsView;
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
@@ -758,7 +768,7 @@ public class M3ListView<T> extends Control {
         typeAheadState.clear();
         trimSelectedIndices();
         trimFocusedIndex();
-        if (!isAllowEmptySelection() && getSelectionMode() != M3ListSelectionMode.NONE && selectedIndices.isEmpty()) {
+        if (!isAllowEmptySelection() && getSelectionMode() != M3SelectionMode.NONE && selectedIndices.isEmpty()) {
             selectFirstItemIfNeeded();
         } else {
             refreshSelectedItems();
@@ -920,7 +930,7 @@ public class M3ListView<T> extends Control {
         }
 
         updateFocusedIndex(target, true);
-        if (getSelectionMode() == M3ListSelectionMode.SINGLE) {
+        if (getSelectionMode() == M3SelectionMode.SINGLE) {
             selectOnly(target);
         }
         event.consume();
@@ -952,7 +962,7 @@ public class M3ListView<T> extends Control {
         }
 
         updateFocusedIndex(index, true);
-        if (getSelectionMode() == M3ListSelectionMode.SINGLE) {
+        if (getSelectionMode() == M3SelectionMode.SINGLE) {
             selectOnly(index);
         }
         event.consume();
@@ -1084,12 +1094,12 @@ public class M3ListView<T> extends Control {
 
     /// Applies selected items supplied by an accessibility client.
     private void setAccessibleSelectedItems(Object... parameters) {
-        if (getSelectionMode() == M3ListSelectionMode.NONE) {
+        if (getSelectionMode() == M3SelectionMode.NONE) {
             return;
         }
 
         List<Integer> indices = selectionIndicesFromParameters(parameters);
-        if (getSelectionMode() == M3ListSelectionMode.SINGLE) {
+        if (getSelectionMode() == M3SelectionMode.SINGLE) {
             if (indices.isEmpty()) {
                 clearSelection();
             } else {
@@ -1218,7 +1228,7 @@ public class M3ListView<T> extends Control {
 
     /// Returns whether a parameter identifies the row itself rather than a nested row target.
     private boolean isRowSelector(int index, @Nullable Object parameter) {
-        if (parameter instanceof Number || parameter instanceof M3ListViewCell<?>) {
+        if (parameter instanceof Number || parameter instanceof M3ListCell<?>) {
             return selectionIndex(parameter) == index;
         }
         T item = getItems().get(index);
@@ -1394,7 +1404,7 @@ public class M3ListView<T> extends Control {
             int index = number.intValue();
             return isIndexNavigable(index) ? index : -1;
         }
-        if (parameter instanceof M3ListViewCell<?> cell) {
+        if (parameter instanceof M3ListCell<?> cell) {
             int index = cell.getIndex();
             return isIndexNavigable(index) ? index : -1;
         }
@@ -1477,13 +1487,13 @@ public class M3ListView<T> extends Control {
 
     /// Enforces selection invariants for the current selection mode.
     private void enforceSelectionPolicy() {
-        if (getSelectionMode() == M3ListSelectionMode.NONE) {
+        if (getSelectionMode() == M3SelectionMode.NONE) {
             selectOnly(-1);
             return;
         }
 
         trimSelectedIndices();
-        if (getSelectionMode() == M3ListSelectionMode.SINGLE && selectedIndices.size() > 1) {
+        if (getSelectionMode() == M3SelectionMode.SINGLE && selectedIndices.size() > 1) {
             selectOnly(selectedIndices.get(0));
             return;
         }
@@ -1496,7 +1506,7 @@ public class M3ListView<T> extends Control {
 
     /// Selects the first item when selection is empty and empty selection is disabled.
     private void selectFirstItemIfNeeded() {
-        if (!selectedIndices.isEmpty() || getItems().isEmpty() || getSelectionMode() == M3ListSelectionMode.NONE) {
+        if (!selectedIndices.isEmpty() || getItems().isEmpty() || getSelectionMode() == M3SelectionMode.NONE) {
             return;
         }
         int firstIndex = firstIndex();

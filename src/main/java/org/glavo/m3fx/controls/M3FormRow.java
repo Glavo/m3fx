@@ -43,7 +43,7 @@ import java.util.Objects;
 /// See [Material Design text fields](https://m3.material.io/components/text-fields/overview) and
 /// [Material Design](https://m3.material.io/) for related form guidance.
 @NotNullByDefault
-public class M3FormRow extends Control {
+public final class M3FormRow extends Control {
     /// The base style class for M3FX form rows.
     public static final String STYLE_CLASS = "m3-form-row";
 

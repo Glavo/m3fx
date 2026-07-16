@@ -3,17 +3,17 @@
 
 package org.glavo.m3fx.skins;
 
-import org.glavo.m3fx.controls.M3Button;
+import org.glavo.m3fx.controls.M3ButtonBase;
 import org.glavo.m3fx.controls.M3ButtonVariant;
 import org.jetbrains.annotations.NotNullByDefault;
 
-/// The default animated skin for [M3Button].
+/// The default animated skin for [M3ButtonBase].
 @NotNullByDefault
-public class M3ButtonSkin extends M3LabeledButtonSkinBase<M3Button> {
+public final class M3ButtonSkin extends M3LabeledButtonSkinBase<M3ButtonBase> {
     /// Creates a button skin.
     ///
     /// @param control the button controlled by this skin
-    public M3ButtonSkin(M3Button control) {
+    public M3ButtonSkin(M3ButtonBase control) {
         super(control);
     }
 

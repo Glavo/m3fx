@@ -42,7 +42,7 @@ import java.util.Objects;
 ///
 /// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview).
 @NotNullByDefault
-public class M3DateRangePicker extends Control {
+public final class M3DateRangePicker extends Control {
     /// The base style class for M3FX date range pickers.
     public static final String STYLE_CLASS = "m3-date-range-picker";
 

@@ -31,7 +31,7 @@ import java.time.LocalTime;
 ///
 /// See [Material Design time pickers](https://m3.material.io/components/time-pickers/overview).
 @NotNullByDefault
-public class M3TimePickerDialog extends M3Dialog<LocalTime> {
+public final class M3TimePickerDialog extends M3Dialog<LocalTime> {
     /// The default title and header text for time picker dialogs.
     public static final String DEFAULT_TITLE = "Select time";
 

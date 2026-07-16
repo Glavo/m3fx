@@ -16,6 +16,7 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonBase;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
@@ -38,6 +39,7 @@ import javafx.util.Duration;
 import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.controls.M3Avatar;
 import org.glavo.m3fx.controls.M3AvatarVariant;
+import org.glavo.m3fx.controls.M3AssistChip;
 import org.glavo.m3fx.controls.M3Badge;
 import org.glavo.m3fx.controls.M3BadgedBox;
 import org.glavo.m3fx.controls.M3Banner;
@@ -58,7 +60,6 @@ import org.glavo.m3fx.controls.M3CheckBox;
 import org.glavo.m3fx.controls.M3Chip;
 import org.glavo.m3fx.controls.M3ChipGroup;
 import org.glavo.m3fx.controls.M3ChipStyle;
-import org.glavo.m3fx.controls.M3ChipVariant;
 import org.glavo.m3fx.controls.M3DateRange;
 import org.glavo.m3fx.controls.M3DatePicker;
 import org.glavo.m3fx.controls.M3DatePickerDialog;
@@ -73,6 +74,8 @@ import org.glavo.m3fx.controls.M3DialogPane;
 import org.glavo.m3fx.controls.M3Divider;
 import org.glavo.m3fx.controls.M3FabMenu;
 import org.glavo.m3fx.controls.M3FloatingActionButton;
+import org.glavo.m3fx.controls.M3FilterChip;
+import org.glavo.m3fx.controls.M3InputChip;
 import org.glavo.m3fx.controls.M3FloatingActionButtonSize;
 import org.glavo.m3fx.controls.M3FloatingActionButtonVariant;
 import org.glavo.m3fx.controls.M3FormPane;
@@ -84,13 +87,14 @@ import org.glavo.m3fx.controls.M3IconButtonWidth;
 import org.glavo.m3fx.controls.M3IconSize;
 import org.glavo.m3fx.controls.M3IconToggleButton;
 import org.glavo.m3fx.controls.M3IconToggleButtonGroup;
-import org.glavo.m3fx.controls.M3IconToggleButtonSelectionMode;
+import org.glavo.m3fx.controls.M3SelectionMode;
 import org.glavo.m3fx.controls.M3IconToggleButtonVariant;
 import org.glavo.m3fx.controls.M3IconVariant;
 import org.glavo.m3fx.controls.M3ListPane;
 import org.glavo.m3fx.controls.M3ListItem;
+import org.glavo.m3fx.controls.M3ListCell;
 import org.glavo.m3fx.controls.M3ListSectionHeader;
-import org.glavo.m3fx.controls.M3ListSelectionMode;
+import org.glavo.m3fx.controls.M3SelectionMode;
 import org.glavo.m3fx.controls.M3ListItemSlotSize;
 import org.glavo.m3fx.controls.M3ListView;
 import org.glavo.m3fx.controls.M3LoadingIndicator;
@@ -100,7 +104,7 @@ import org.glavo.m3fx.controls.M3MenuButton;
 import org.glavo.m3fx.controls.M3MenuColorStyle;
 import org.glavo.m3fx.controls.M3MenuItem;
 import org.glavo.m3fx.controls.M3MenuSectionHeader;
-import org.glavo.m3fx.controls.M3MenuSelectionMode;
+import org.glavo.m3fx.controls.M3SelectionMode;
 import org.glavo.m3fx.controls.M3NavigationBar;
 import org.glavo.m3fx.controls.M3NavigationDrawer;
 import org.glavo.m3fx.controls.M3NavigationDrawerGroup;
@@ -123,12 +127,13 @@ import org.glavo.m3fx.controls.M3SearchViewStyle;
 import org.glavo.m3fx.controls.M3ScrollPanes;
 import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
-import org.glavo.m3fx.controls.M3SegmentedButtonSelectionMode;
+import org.glavo.m3fx.controls.M3SelectionMode;
 import org.glavo.m3fx.controls.M3SheetVariant;
 import org.glavo.m3fx.controls.M3SideSheet;
 import org.glavo.m3fx.controls.M3Slider;
 import org.glavo.m3fx.controls.M3SliderSize;
 import org.glavo.m3fx.controls.M3Snackbar;
+import org.glavo.m3fx.controls.M3SuggestionChip;
 import org.glavo.m3fx.controls.M3SnackbarHost;
 import org.glavo.m3fx.controls.M3SplitButton;
 import org.glavo.m3fx.controls.M3SubMenuItem;
@@ -1758,22 +1763,25 @@ public final class M3FXDemoApp extends Application {
 
     /// Creates the chip component page.
     private Node createChipsPage() {
-        M3Chip assistDirections = createChip("Directions", M3ChipVariant.ASSIST, false, false);
+        M3AssistChip assistDirections = new M3AssistChip("Directions");
         assistDirections.setGraphic(createNavigationIcon("navigation"));
-        M3Chip assistCalendar = createChip("Add to calendar", M3ChipVariant.ASSIST, false, false);
+        M3AssistChip assistCalendar = new M3AssistChip("Add to calendar");
         assistCalendar.setGraphic(createNavigationIcon("calendar"));
         assistCalendar.setChipStyle(M3ChipStyle.ELEVATED);
-        M3Chip assistDisabled = createChip("Disabled", M3ChipVariant.ASSIST, false, true);
+        M3AssistChip assistDisabled = new M3AssistChip("Disabled");
+        assistDisabled.setDisable(true);
 
-        M3Chip filterAll = createChip("All", M3ChipVariant.FILTER, true, false);
+        M3FilterChip filterAll = new M3FilterChip("All");
+        filterAll.setSelected(true);
         filterAll.setGraphic(createNavigationIcon("check"));
-        M3Chip filterNearby = createChip("Nearby", M3ChipVariant.FILTER, false, false);
-        M3Chip filterOpen = createChip("Open now", M3ChipVariant.FILTER, true, false);
+        M3FilterChip filterNearby = new M3FilterChip("Nearby");
+        M3FilterChip filterOpen = new M3FilterChip("Open now");
+        filterOpen.setSelected(true);
         filterOpen.setGraphic(createNavigationIcon("check"));
         M3ChipGroup filters = createChipGroup(filterAll, filterNearby, filterOpen);
         filters.setPrefWrapLength(420.0);
 
-        M3Chip inputPerson = createChip("Alex Morgan", M3ChipVariant.INPUT, false, false);
+        M3InputChip inputPerson = new M3InputChip("Alex Morgan");
         inputPerson.setGraphic(createNavigationIcon("person"));
         M3IconButton removePerson = new M3IconButton(
                 createIconViewport(DemoIcons.onSurfaceVariant("close"), 18.0)
@@ -1784,7 +1792,8 @@ public final class M3FXDemoApp extends Application {
         removePerson.setOnAction(event -> inputPerson.setVisible(false));
         inputPerson.setTrailingGraphic(removePerson);
 
-        M3Chip inputTeam = createChip("Design team", M3ChipVariant.INPUT, true, false);
+        M3InputChip inputTeam = new M3InputChip("Design team");
+        inputTeam.setSelected(true);
         inputTeam.setGraphic(createNavigationIcon("group"));
         M3IconButton removeTeam = new M3IconButton(
                 createIconViewport(DemoIcons.onSurfaceVariant("close"), 18.0)
@@ -1795,7 +1804,8 @@ public final class M3FXDemoApp extends Application {
         removeTeam.setOnAction(event -> inputTeam.setSelected(false));
         inputTeam.setTrailingGraphic(removeTeam);
 
-        M3Chip inputDisabled = createChip("Unavailable", M3ChipVariant.INPUT, false, true);
+        M3InputChip inputDisabled = new M3InputChip("Unavailable");
+        inputDisabled.setDisable(true);
         M3IconButton removeDisabled = new M3IconButton(
                 createIconViewport(DemoIcons.onSurfaceVariant("close"), 18.0)
         );
@@ -1804,10 +1814,10 @@ public final class M3FXDemoApp extends Application {
         removeDisabled.setContainerHeight(24.0);
         inputDisabled.setTrailingGraphic(removeDisabled);
 
-        M3Chip suggestionReply = createChip("Reply", M3ChipVariant.SUGGESTION, false, false);
-        M3Chip suggestionRemind = createChip("Remind me", M3ChipVariant.SUGGESTION, false, false);
+        M3SuggestionChip suggestionReply = new M3SuggestionChip("Reply");
+        M3SuggestionChip suggestionRemind = new M3SuggestionChip("Remind me");
         suggestionRemind.setGraphic(createNavigationIcon("schedule"));
-        M3Chip suggestionElevated = createChip("View details", M3ChipVariant.SUGGESTION, false, false);
+        M3SuggestionChip suggestionElevated = new M3SuggestionChip("View details");
         suggestionElevated.setChipStyle(M3ChipStyle.ELEVATED);
 
         return createGallery(
@@ -1965,7 +1975,7 @@ public final class M3FXDemoApp extends Application {
                 createMenuItem("Delete", "delete", "")
         );
         menuButton.setVariant(M3ButtonVariant.OUTLINED);
-        menuButton.getMenu().setSelectionMode(M3MenuSelectionMode.SINGLE);
+        menuButton.getMenu().setSelectionMode(M3SelectionMode.SINGLE);
 
         M3MenuItem selected = createMenuItem("Selected item", "check", "");
         M3MenuItem disabledStandard = createMenuItem("Unavailable", "delete", "");
@@ -1975,7 +1985,7 @@ public final class M3FXDemoApp extends Application {
                 createMenuItem("Regular item", "label", ""),
                 disabledStandard
         );
-        selectedMenu.setSelectionMode(M3MenuSelectionMode.SINGLE);
+        selectedMenu.setSelectionMode(M3SelectionMode.SINGLE);
         selectedMenu.setAllowEmptySelection(false);
         selectedMenu.selectIndex(0);
 
@@ -1985,7 +1995,7 @@ public final class M3FXDemoApp extends Application {
                 createMenuItem("Labels", "label", ""),
                 createMenuItem("Badges", "bookmark", "")
         );
-        multiSelectMenu.setSelectionMode(M3MenuSelectionMode.MULTIPLE);
+        multiSelectMenu.setSelectionMode(M3SelectionMode.MULTIPLE);
         multiSelectMenu.selectIndex(1);
         multiSelectMenu.selectIndex(3);
 
@@ -2000,7 +2010,7 @@ public final class M3FXDemoApp extends Application {
                 disabledVibrant
         );
         vibrantMenu.setColorStyle(M3MenuColorStyle.VIBRANT);
-        vibrantMenu.setSelectionMode(M3MenuSelectionMode.SINGLE);
+        vibrantMenu.setSelectionMode(M3SelectionMode.SINGLE);
         vibrantMenu.setAllowEmptySelection(false);
         vibrantMenu.select(vibrantSelected);
 
@@ -2017,7 +2027,7 @@ public final class M3FXDemoApp extends Application {
         priority.getItems().get(2).setDisable(true);
         M3SegmentedButtonGroup channels = createSegmentedGroup("Email", "Chat", "Push");
         channels.clearSelection();
-        channels.setSelectionMode(M3SegmentedButtonSelectionMode.MULTIPLE);
+        channels.setSelectionMode(M3SelectionMode.MULTIPLE);
         channels.selectIndex(0);
         channels.selectIndex(2);
 
@@ -2508,7 +2518,7 @@ public final class M3FXDemoApp extends Application {
 
         M3ListPane listPane = new M3ListPane();
         listPane.getStyleClass().add("demo-list");
-        listPane.setSelectionMode(M3ListSelectionMode.SINGLE);
+        listPane.setSelectionMode(M3SelectionMode.SINGLE);
         listPane.getItems().addAll(
                 new M3ListSectionHeader("Recent"),
                 oneLine,
@@ -2541,15 +2551,25 @@ public final class M3FXDemoApp extends Application {
         for (int i = 1; i <= 240; i++) {
             listView.getItems().add("Virtualized row " + i);
         }
-        listView.setSelectionMode(M3ListSelectionMode.SINGLE);
+        listView.setSelectionMode(M3SelectionMode.SINGLE);
         listView.setFixedCellSize(72.0);
         listView.setPrefSize(520.0, 360.0);
-        listView.setCellFactory(text -> {
-            M3ListItem item = new M3ListItem(text);
-            item.setSupportingText("Reused VirtualFlow row with generated content");
-            item.setLeading(createSurfaceVariantIcon("task"));
-            item.setTrailingSupportingText(Integer.toString(text.length()));
-            return item;
+        listView.setCellFactory(view -> new M3ListCell<>(view) {
+            /// Creates the reusable row structure for this virtualized cell.
+            @Override
+            protected M3ListItem createListItem() {
+                M3ListItem item = new M3ListItem();
+                item.setSupportingText("Reused VirtualFlow row with generated content");
+                item.setLeading(createSurfaceVariantIcon("task"));
+                return item;
+            }
+
+            /// Updates the reusable row with the current data value.
+            @Override
+            protected void updateListItem(M3ListItem item, String text) {
+                item.setHeadlineText(text);
+                item.setTrailingSupportingText(Integer.toString(text.length()));
+            }
         });
         listView.selectIndex(2);
         return listView;
@@ -3480,20 +3500,6 @@ public final class M3FXDemoApp extends Application {
         return item;
     }
 
-    /// Creates a chip sample.
-    private static M3Chip createChip(
-            String text,
-            M3ChipVariant variant,
-            boolean selected,
-            boolean disabled
-    ) {
-        M3Chip chip = new M3Chip(text);
-        chip.setVariant(variant);
-        chip.setSelected(selected);
-        chip.setDisable(disabled);
-        return chip;
-    }
-
     /// Creates a checkbox sample.
     private static M3CheckBox createCheckBox(
             String text,
@@ -3535,7 +3541,7 @@ public final class M3FXDemoApp extends Application {
     }
 
     /// Creates a button group sample with initial buttons.
-    private static M3ButtonGroup createButtonGroup(Node... buttons) {
+    private static M3ButtonGroup createButtonGroup(ButtonBase... buttons) {
         M3ButtonGroup group = new M3ButtonGroup();
         group.getItems().addAll(buttons);
         return group;
@@ -4064,7 +4070,7 @@ public final class M3FXDemoApp extends Application {
                 secondButton,
                 thirdButton
         );
-        group.setSelectionMode(M3IconToggleButtonSelectionMode.MULTIPLE);
+        group.setSelectionMode(M3SelectionMode.MULTIPLE);
         group.selectIndex(0);
         group.selectIndex(2);
         return group;

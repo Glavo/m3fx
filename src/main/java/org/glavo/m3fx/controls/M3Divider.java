@@ -33,7 +33,7 @@ import java.util.Objects;
 ///
 /// See [Material Design dividers](https://m3.material.io/components/divider/overview).
 @NotNullByDefault
-public class M3Divider extends Control {
+public final class M3Divider extends Control {
     /// The base style class for M3FX dividers.
     public static final String STYLE_CLASS = "m3-divider";
 

@@ -38,7 +38,7 @@ import java.util.Objects;
 ///
 /// See [Material Design segmented buttons](https://m3.material.io/components/segmented-buttons/overview).
 @NotNullByDefault
-public class M3SegmentedButton extends ButtonBase {
+public final class M3SegmentedButton extends ButtonBase {
     /// The base style class for M3FX segmented buttons.
     public static final String STYLE_CLASS = "m3-segmented-button";
 

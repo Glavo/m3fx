@@ -173,6 +173,14 @@ public sealed interface M3MotionTokens permits M3MotionTokensImpl {
         return long2();
     }
 
+    /// Creates a builder initialized from an existing motion token set.
+    ///
+    /// @param tokens the motion tokens to copy
+    /// @return a mutable motion-token builder
+    static M3MotionTokensBuilder builder(M3MotionTokens tokens) {
+        return new M3MotionTokensBuilder(tokens);
+    }
+
     /// Creates motion duration tokens from coarse duration values.
     ///
     /// @param shortDuration the duration applied to all short duration tokens
@@ -221,7 +229,7 @@ public sealed interface M3MotionTokens permits M3MotionTokensImpl {
     /// @param extraLong3 the extraLong3 duration token in milliseconds
     /// @param extraLong4 the extraLong4 duration token in milliseconds
     /// @return immutable motion duration tokens
-    static M3MotionTokens create(
+    private static M3MotionTokens create(
             int short1,
             int short2,
             int short3,
@@ -281,7 +289,7 @@ public sealed interface M3MotionTokens permits M3MotionTokensImpl {
     /// @param extraLong4 the extraLong4 duration token in milliseconds
     /// @param scheme the semantic motion scheme
     /// @return immutable motion duration tokens
-    static M3MotionTokens create(
+    private static M3MotionTokens create(
             int short1,
             int short2,
             int short3,
@@ -343,7 +351,7 @@ public sealed interface M3MotionTokens permits M3MotionTokensImpl {
     /// @param scheme the semantic motion scheme
     /// @param behavior the motion-adjacent interaction timings
     /// @return immutable motion duration tokens
-    static M3MotionTokens create(
+    private static M3MotionTokens create(
             int short1,
             int short2,
             int short3,

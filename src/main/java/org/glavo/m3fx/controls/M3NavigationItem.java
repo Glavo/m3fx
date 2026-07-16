@@ -39,7 +39,7 @@ import java.util.Objects;
 ///
 /// See [Material Design navigation](https://m3.material.io/components/navigation-bar/overview).
 @NotNullByDefault
-public class M3NavigationItem extends ButtonBase {
+public final class M3NavigationItem extends ButtonBase {
     /// The base style class for M3FX navigation items.
     public static final String STYLE_CLASS = "m3-navigation-item";
 

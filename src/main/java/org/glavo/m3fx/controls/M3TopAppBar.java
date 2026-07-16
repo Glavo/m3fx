@@ -53,7 +53,7 @@ import java.util.Objects;
 ///
 /// See [Material Design app bars](https://m3.material.io/components/app-bars/overview).
 @NotNullByDefault
-public class M3TopAppBar extends Control {
+public final class M3TopAppBar extends Control {
     /// The pseudo-class applied while content is scrolled beneath the app bar.
     private static final PseudoClass SCROLLED_UNDER_PSEUDO_CLASS = PseudoClass.getPseudoClass("scrolled-under");
 

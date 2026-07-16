@@ -24,7 +24,6 @@ import javafx.css.converter.SizeConverter;
 import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
-import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
@@ -50,13 +49,13 @@ import java.util.Objects;
 
 /// A Material Design 3 chip group that lays chips out as a wrapping set.
 ///
-/// The group manages [M3Chip] selection according to [M3ChipSelectionMode], wraps chips across rows, and exposes
+/// The group manages [M3Chip] selection according to [M3SelectionMode], wraps chips across rows, and exposes
 /// read-only selected-chip views. Use it when chips form one interactive set rather than unrelated standalone
 /// actions.
 ///
 /// See [Material Design chips](https://m3.material.io/components/chips/overview).
 @NotNullByDefault
-public class M3ChipGroup extends Control {
+public final class M3ChipGroup extends Control {
     /// The base style class for M3FX chip groups.
     public static final String STYLE_CLASS = "m3-chip-group";
 
@@ -67,12 +66,17 @@ public class M3ChipGroup extends Control {
     private static final double DEFAULT_VERTICAL_GAP = 8.0;
 
     /// The mutable chip group content.
-    private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
+    private final ObservableList<M3Chip> items = M3ObservableLists.nonNullElementList("item");
 
     /// Notifies accessibility clients when focus moves between chips.
     private final M3AccessibleFocusNotifier focusNotifier =
             new M3AccessibleFocusNotifier(this, () ->
-                    M3Accessible.currentOrSelectionFocusTarget(this, getItems(), getSelectedChip(), M3Chip.class));
+                    M3Accessible.currentOrSelectionFocusTarget(
+                            this,
+                            getItems(),
+                            getSelectedChip(),
+                            M3SelectableChip.class
+                    ));
 
     // The preferred wrapping width used by the internal flow layout.
     private final DoubleProperty prefWrapLength = new SimpleDoubleProperty(this, "prefWrapLength", 400.0) {
@@ -90,13 +94,13 @@ public class M3ChipGroup extends Control {
     private @Nullable StyleableDoubleProperty verticalGap;
 
     // The chip selection mode.
-    private final ObjectProperty<M3ChipSelectionMode> selectionMode =
-            new SimpleObjectProperty<>(this, "selectionMode", M3ChipSelectionMode.MULTIPLE) {
+    private final ObjectProperty<M3SelectionMode> selectionMode =
+            new SimpleObjectProperty<>(this, "selectionMode", M3SelectionMode.MULTIPLE) {
                 /// Enforces selection invariants when the mode changes.
                 @Override
                 protected void invalidated() {
                     if (get() == null) {
-                        set(M3ChipSelectionMode.MULTIPLE);
+                        set(M3SelectionMode.MULTIPLE);
                         return;
                     }
                     enforceSelectionPolicy();
@@ -115,44 +119,47 @@ public class M3ChipGroup extends Control {
     };
 
     /// The currently selected chips in child order.
-    private final ObservableList<M3Chip> selectedChips = M3ObservableLists.nonNullElementList("selectedChip");
+    private final ObservableList<M3SelectableChip> selectedChips =
+            M3ObservableLists.nonNullElementList("selectedChip");
 
     /// The read-only view of currently selected chips.
-    private final @UnmodifiableView ObservableList<M3Chip> selectedChipsView =
+    private final @UnmodifiableView ObservableList<M3SelectableChip> selectedChipsView =
             FXCollections.unmodifiableObservableList(selectedChips);
 
     // The first selected chip in child order.
-    private final ReadOnlyObjectWrapper<@Nullable M3Chip> selectedChip =
+    private final ReadOnlyObjectWrapper<@Nullable M3SelectableChip> selectedChip =
             new ReadOnlyObjectWrapper<>(this, "selectedChip");
 
     /// Reusable storage for computing selected chips without allocating on every refresh.
-    private final List<M3Chip> selectedChipsScratch = new ArrayList<>();
+    private final List<M3SelectableChip> selectedChipsScratch = new ArrayList<>();
 
     /// Handles selected-state invalidation for every installed chip.
     private final InvalidationListener selectedInvalidation = observable -> {
-        if (observable instanceof ReadOnlyProperty<?> property && property.getBean() instanceof M3Chip chip) {
+        if (observable instanceof ReadOnlyProperty<?> property
+                && property.getBean() instanceof M3SelectableChip chip) {
             handleChipSelectedChanged(chip, chip.isSelected());
         }
     };
 
     /// Handles reachability invalidation for every installed chip.
     private final InvalidationListener reachabilityInvalidation = observable -> {
-        if (observable instanceof ReadOnlyProperty<?> property && property.getBean() instanceof M3Chip chip) {
+        if (observable instanceof ReadOnlyProperty<?> property
+                && property.getBean() instanceof M3SelectableChip chip) {
             handleChipReachabilityChanged(chip);
         }
     };
 
     /// Updates chip listeners and selection when children change.
-    private final ListChangeListener<Node> childrenListener = change -> {
+    private final ListChangeListener<M3Chip> childrenListener = change -> {
         while (change.next()) {
-            for (Node child : change.getRemoved()) {
-                if (child instanceof M3Chip chip) {
+            for (M3Chip child : change.getRemoved()) {
+                if (child instanceof M3SelectableChip chip) {
                     uninstallChip(chip);
                     chip.setSelected(false);
                 }
             }
-            for (Node child : change.getAddedSubList()) {
-                if (child instanceof M3Chip chip) {
+            for (M3Chip child : change.getAddedSubList()) {
+                if (child instanceof M3SelectableChip chip) {
                     installChip(chip);
                 }
             }
@@ -175,7 +182,7 @@ public class M3ChipGroup extends Control {
     /// Returns the mutable child list used as chip group content.
     ///
     /// @return the mutable child list used as chip group content
-    public final ObservableList<Node> getItems() {
+    public final ObservableList<M3Chip> getItems() {
         return items;
     }
 
@@ -267,21 +274,21 @@ public class M3ChipGroup extends Control {
     /// Returns the chip selection mode.
     ///
     /// @return the chip selection mode
-    public final M3ChipSelectionMode getSelectionMode() {
+    public final M3SelectionMode getSelectionMode() {
         return selectionMode.get();
     }
 
     /// Sets the chip selection mode.
     ///
     /// @param selectionMode the chip selection mode
-    public final void setSelectionMode(M3ChipSelectionMode selectionMode) {
+    public final void setSelectionMode(M3SelectionMode selectionMode) {
         this.selectionMode.set(Objects.requireNonNull(selectionMode, "selectionMode"));
     }
 
     /// Returns the chip selection mode property.
     ///
     /// @return the chip selection mode property
-    public final ObjectProperty<M3ChipSelectionMode> selectionModeProperty() {
+    public final ObjectProperty<M3SelectionMode> selectionModeProperty() {
         return selectionMode;
     }
 
@@ -309,21 +316,21 @@ public class M3ChipGroup extends Control {
     /// Returns the currently selected chips in child order.
     ///
     /// @return an immutable observable view of selected chips in child order
-    public final @UnmodifiableView ObservableList<M3Chip> getSelectedChips() {
+    public final @UnmodifiableView ObservableList<M3SelectableChip> getSelectedChips() {
         return selectedChipsView;
     }
 
     /// Returns the first selected chip in child order.
     ///
     /// @return the first selected chip in child order, or `null` when selection is empty
-    public final @Nullable M3Chip getSelectedChip() {
+    public final @Nullable M3SelectableChip getSelectedChip() {
         return selectedChip.get();
     }
 
     /// Returns the first selected chip property.
     ///
     /// @return the read-only first selected chip property
-    public final ReadOnlyObjectProperty<@Nullable M3Chip> selectedChipProperty() {
+    public final ReadOnlyObjectProperty<@Nullable M3SelectableChip> selectedChipProperty() {
         return selectedChip.getReadOnlyProperty();
     }
 
@@ -331,14 +338,14 @@ public class M3ChipGroup extends Control {
     ///
     /// @return the child index of the first selected chip, or `-1` when selection is empty
     public final int getSelectedIndex() {
-        @Nullable M3Chip chip = getSelectedChip();
+        @Nullable M3SelectableChip chip = getSelectedChip();
         return chip == null ? -1 : getItems().indexOf(chip);
     }
 
     /// Selects a chip that belongs to this group.
     ///
     /// @param chip the chip to select
-    public final void select(M3Chip chip) {
+    public final void select(M3SelectableChip chip) {
         Objects.requireNonNull(chip, "chip");
         if (!getItems().contains(chip)) {
             throw new IllegalArgumentException("chip must belong to this chip group");
@@ -346,8 +353,11 @@ public class M3ChipGroup extends Control {
         if (!isSelectableChip(chip)) {
             throw new IllegalArgumentException("chip must be selectable");
         }
+        if (getSelectionMode() == M3SelectionMode.NONE) {
+            return;
+        }
 
-        if (getSelectionMode() == M3ChipSelectionMode.SINGLE) {
+        if (getSelectionMode() == M3SelectionMode.SINGLE) {
             selectOnly(chip);
         } else {
             setChipSelected(chip, true);
@@ -358,12 +368,12 @@ public class M3ChipGroup extends Control {
     ///
     /// @param index the child index to select
     public final void selectIndex(int index) {
-        Node child = getItems().get(index);
-        if (child instanceof M3Chip chip) {
+        M3Chip child = getItems().get(index);
+        if (child instanceof M3SelectableChip chip) {
             select(chip);
             return;
         }
-        throw new IllegalArgumentException("child at index is not an M3Chip");
+        throw new IllegalArgumentException("chip at index does not support selection");
     }
 
     /// Selects the first chip when one exists.
@@ -371,7 +381,7 @@ public class M3ChipGroup extends Control {
         if (!M3Accessible.isEffectivelyReachable(this)) {
             return;
         }
-        M3Chip firstChip = firstChip();
+        M3SelectableChip firstChip = firstChip();
         if (firstChip != null) {
             select(firstChip);
         }
@@ -382,7 +392,7 @@ public class M3ChipGroup extends Control {
         if (!M3Accessible.isEffectivelyReachable(this)) {
             return;
         }
-        @Nullable M3Chip lastChip = selectableChipFrom(getItems().size() - 1, -1, false);
+        @Nullable M3SelectableChip lastChip = selectableChipFrom(getItems().size() - 1, -1, false);
         if (lastChip != null) {
             select(lastChip);
         }
@@ -393,7 +403,7 @@ public class M3ChipGroup extends Control {
         if (!M3Accessible.isEffectivelyReachable(this)) {
             return;
         }
-        @Nullable M3Chip nextChip = adjacentSelectableChip(getSelectedChip(), 1);
+        @Nullable M3SelectableChip nextChip = adjacentSelectableChip(getSelectedChip(), 1);
         if (nextChip != null) {
             select(nextChip);
         }
@@ -404,7 +414,7 @@ public class M3ChipGroup extends Control {
         if (!M3Accessible.isEffectivelyReachable(this)) {
             return;
         }
-        @Nullable M3Chip previousChip = adjacentSelectableChip(getSelectedChip(), -1);
+        @Nullable M3SelectableChip previousChip = adjacentSelectableChip(getSelectedChip(), -1);
         if (previousChip != null) {
             select(previousChip);
         }
@@ -412,7 +422,7 @@ public class M3ChipGroup extends Control {
 
     /// Clears the current selection when empty selection is allowed.
     public final void clearSelection() {
-        if (!isAllowEmptySelection()) {
+        if (!isAllowEmptySelection() && getSelectionMode() != M3SelectionMode.NONE) {
             selectFirstChipIfNeeded();
             return;
         }
@@ -449,9 +459,9 @@ public class M3ChipGroup extends Control {
                     this,
                     getItems(),
                     getSelectedChip(),
-                    M3Chip.class
+                    M3SelectableChip.class
             );
-            case MULTIPLE_SELECTION -> getSelectionMode() == M3ChipSelectionMode.MULTIPLE;
+            case MULTIPLE_SELECTION -> getSelectionMode() == M3SelectionMode.MULTIPLE;
             case SELECTED_ITEMS -> selectedChipsView;
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
@@ -482,7 +492,7 @@ public class M3ChipGroup extends Control {
                 this,
                 getItems(),
                 getSelectedChip(),
-                M3Chip.class
+                M3SelectableChip.class
         ))) {
             notifyAccessibleFocusChanged();
             return true;
@@ -499,7 +509,7 @@ public class M3ChipGroup extends Control {
                 this,
                 getItems(),
                 getSelectedChip(),
-                M3Chip.class
+                M3SelectableChip.class
         ), getItems(), parameters)) {
             notifyAccessibleFocusChanged();
             return true;
@@ -526,13 +536,20 @@ public class M3ChipGroup extends Control {
 
     /// Applies keyboard navigation across enabled chips.
     private void handleNavigationKeyPressed(KeyEvent event) {
-        if (getSelectionMode() == M3ChipSelectionMode.MULTIPLE) {
+        if (getSelectionMode() == M3SelectionMode.NONE) {
+            return;
+        }
+        if (getSelectionMode() == M3SelectionMode.MULTIPLE) {
             M3SelectionNavigation.handleKeyFocus(
                     event,
                     this,
                     getItems(),
-                    M3SelectionNavigation.focusAnchor(getItems(), getSelectedChip(), M3Chip.class),
-                    M3Chip.class,
+                    M3SelectionNavigation.focusAnchor(
+                            getItems(),
+                            getSelectedChip(),
+                            M3SelectableChip.class
+                    ),
+                    M3SelectableChip.class,
                     true,
                     true,
                     M3NodeLayout.isRightToLeft(this)
@@ -549,13 +566,13 @@ public class M3ChipGroup extends Control {
             return;
         }
 
-        @Nullable M3Chip anchor = focusedSelectableChip();
+        @Nullable M3SelectableChip anchor = focusedSelectableChip();
         if (anchor == null) {
             anchor = getSelectedChip();
         }
 
         boolean rightToLeft = M3NodeLayout.isRightToLeft(this);
-        @Nullable M3Chip target = switch (event.getCode()) {
+        @Nullable M3SelectableChip target = switch (event.getCode()) {
             case LEFT -> horizontalSelectableChip(anchor, false, rightToLeft);
             case RIGHT -> horizontalSelectableChip(anchor, true, rightToLeft);
             case UP -> adjacentSelectableChip(anchor, -1);
@@ -574,8 +591,8 @@ public class M3ChipGroup extends Control {
     }
 
     /// Returns a selectable target for a logical horizontal arrow key.
-    private @Nullable M3Chip horizontalSelectableChip(
-            @Nullable M3Chip anchor,
+    private @Nullable M3SelectableChip horizontalSelectableChip(
+            @Nullable M3SelectableChip anchor,
             boolean rightKey,
             boolean rightToLeft
     ) {
@@ -589,15 +606,18 @@ public class M3ChipGroup extends Control {
     }
 
     /// Returns the focused selectable chip when focus currently belongs to one group child.
-    private @Nullable M3Chip focusedSelectableChip() {
-        if (getScene() == null || !(getScene().getFocusOwner() instanceof M3Chip chip)) {
+    private @Nullable M3SelectableChip focusedSelectableChip() {
+        if (getScene() == null || !(getScene().getFocusOwner() instanceof M3SelectableChip chip)) {
             return null;
         }
         return getItems().contains(chip) && isSelectableChip(chip) ? chip : null;
     }
 
     /// Returns a selectable chip adjacent to the supplied anchor, wrapping at group boundaries.
-    private @Nullable M3Chip adjacentSelectableChip(@Nullable M3Chip anchor, int direction) {
+    private @Nullable M3SelectableChip adjacentSelectableChip(
+            @Nullable M3SelectableChip anchor,
+            int direction
+    ) {
         int childCount = getItems().size();
         if (childCount == 0) {
             return null;
@@ -613,17 +633,17 @@ public class M3ChipGroup extends Control {
     }
 
     /// Scans child indices for one selectable chip without allocating a filtered collection.
-    private @Nullable M3Chip selectableChipFrom(int startIndex, int direction, boolean wrap) {
+    private @Nullable M3SelectableChip selectableChipFrom(int startIndex, int direction, boolean wrap) {
         int childCount = getItems().size();
-        if (childCount == 0 || startIndex < 0 || startIndex >= childCount) {
+        if (startIndex < 0 || startIndex >= childCount) {
             return null;
         }
 
         int index = startIndex;
         int inspected = 0;
         while (index >= 0 && index < childCount && inspected < childCount) {
-            Node child = getItems().get(index);
-            if (child instanceof M3Chip chip && isSelectableChip(chip)) {
+            M3Chip child = getItems().get(index);
+            if (child instanceof M3SelectableChip chip && isSelectableChip(chip)) {
                 return chip;
             }
             index += direction;
@@ -637,8 +657,12 @@ public class M3ChipGroup extends Control {
 
     /// Applies selected chips supplied by an accessibility client.
     private void setAccessibleSelectedItems(Object... parameters) {
-        if (getSelectionMode() == M3ChipSelectionMode.SINGLE) {
-            @Nullable M3Chip chip = firstAccessibleSelectableChip(parameters);
+        if (getSelectionMode() == M3SelectionMode.NONE) {
+            selectOnly(null);
+            return;
+        }
+        if (getSelectionMode() == M3SelectionMode.SINGLE) {
+            @Nullable M3SelectableChip chip = firstAccessibleSelectableChip(parameters);
             if (chip == null) {
                 clearSelection();
             } else {
@@ -649,8 +673,8 @@ public class M3ChipGroup extends Control {
 
         updatingSelection = true;
         try {
-            for (Node child : getItems()) {
-                if (child instanceof M3Chip chip && isSelectableChip(chip)) {
+            for (M3Chip child : getItems()) {
+                if (child instanceof M3SelectableChip chip && isSelectableChip(chip)) {
                     chip.setSelected(M3Accessible.containsSelectionTarget(chip, parameters));
                 }
             }
@@ -664,28 +688,26 @@ public class M3ChipGroup extends Control {
     }
 
     /// Installs a selected-state listener on a chip.
-    private void installChip(M3Chip chip) {
+    private void installChip(M3SelectableChip chip) {
         chip.selectedProperty().addListener(selectedInvalidation);
         chip.disabledProperty().addListener(reachabilityInvalidation);
         chip.visibleProperty().addListener(reachabilityInvalidation);
-        chip.variantProperty().addListener(reachabilityInvalidation);
     }
 
     /// Removes the selected-state listener from a chip.
-    private void uninstallChip(M3Chip chip) {
+    private void uninstallChip(M3SelectableChip chip) {
         chip.selectedProperty().removeListener(selectedInvalidation);
         chip.disabledProperty().removeListener(reachabilityInvalidation);
         chip.visibleProperty().removeListener(reachabilityInvalidation);
-        chip.variantProperty().removeListener(reachabilityInvalidation);
     }
 
     /// Keeps chip selected states consistent with the current group policy.
-    private void handleChipSelectedChanged(M3Chip chip, boolean selected) {
+    private void handleChipSelectedChanged(M3SelectableChip chip, boolean selected) {
         if (updatingSelection) {
             return;
         }
 
-        if (!isSelectableChip(chip)) {
+        if (getSelectionMode() == M3SelectionMode.NONE || !isSelectableChip(chip)) {
             if (selected) {
                 setChipSelected(chip, false);
                 if (!isAllowEmptySelection()) {
@@ -695,7 +717,7 @@ public class M3ChipGroup extends Control {
             return;
         }
 
-        if (selected && getSelectionMode() == M3ChipSelectionMode.SINGLE) {
+        if (selected && getSelectionMode() == M3SelectionMode.SINGLE) {
             selectOnly(chip);
             return;
         }
@@ -714,7 +736,7 @@ public class M3ChipGroup extends Control {
     }
 
     /// Keeps selection and accessibility state consistent when a chip becomes unreachable.
-    private void handleChipReachabilityChanged(M3Chip chip) {
+    private void handleChipReachabilityChanged(M3SelectableChip chip) {
         if (chip.isSelected() && !isSelectableChip(chip)) {
             setChipSelected(chip, false);
         }
@@ -726,7 +748,11 @@ public class M3ChipGroup extends Control {
     /// Enforces single selection and non-empty selection invariants.
     private void enforceSelectionPolicy() {
         refreshSelectedChips();
-        if (getSelectionMode() == M3ChipSelectionMode.SINGLE && selectedChips.size() > 1) {
+        if (getSelectionMode() == M3SelectionMode.NONE) {
+            selectOnly(null);
+            return;
+        }
+        if (getSelectionMode() == M3SelectionMode.SINGLE && selectedChips.size() > 1) {
             selectOnly(selectedChips.get(0));
             return;
         }
@@ -737,24 +763,24 @@ public class M3ChipGroup extends Control {
 
     /// Selects the first chip when the selection is empty and empty selection is disabled.
     private void selectFirstChipIfNeeded() {
-        if (!selectedChips.isEmpty()) {
+        if (getSelectionMode() == M3SelectionMode.NONE || !selectedChips.isEmpty()) {
             return;
         }
 
-        M3Chip firstChip = firstChip();
+        M3SelectableChip firstChip = firstChip();
         if (firstChip != null) {
             select(firstChip);
         }
     }
 
     /// Sets one chip's selected state and refreshes selected chip state.
-    private void setChipSelected(M3Chip chip, boolean selected) {
+    private void setChipSelected(M3SelectableChip chip, boolean selected) {
         setChipSelectedWithoutRefresh(chip, selected);
         refreshSelectedChips();
     }
 
     /// Sets one chip's selected state without refreshing the aggregate selected chip list.
-    private void setChipSelectedWithoutRefresh(M3Chip chip, boolean selected) {
+    private void setChipSelectedWithoutRefresh(M3SelectableChip chip, boolean selected) {
         updatingSelection = true;
         try {
             chip.setSelected(selected);
@@ -764,11 +790,11 @@ public class M3ChipGroup extends Control {
     }
 
     /// Selects one chip and clears selection from the remaining chips.
-    private void selectOnly(@Nullable M3Chip chip) {
+    private void selectOnly(@Nullable M3SelectableChip chip) {
         updatingSelection = true;
         try {
-            for (Node child : getItems()) {
-                if (child instanceof M3Chip item) {
+            for (M3Chip child : getItems()) {
+                if (child instanceof M3SelectableChip item) {
                     item.setSelected(item == chip);
                 }
             }
@@ -781,8 +807,8 @@ public class M3ChipGroup extends Control {
     /// Refreshes the selected chip list from current child states.
     private void refreshSelectedChips() {
         selectedChipsScratch.clear();
-        for (Node child : getItems()) {
-            if (child instanceof M3Chip chip && chip.isSelected()) {
+        for (M3Chip child : getItems()) {
+            if (child instanceof M3SelectableChip chip && chip.isSelected()) {
                 if (isSelectableChip(chip)) {
                     selectedChipsScratch.add(chip);
                 } else {
@@ -805,9 +831,9 @@ public class M3ChipGroup extends Control {
     }
 
     /// Returns the first reachable chip whose variant supports selection.
-    private @Nullable M3Chip firstChip() {
-        for (Node child : getItems()) {
-            if (child instanceof M3Chip chip && isSelectableChip(chip)) {
+    private @Nullable M3SelectableChip firstChip() {
+        for (M3Chip child : getItems()) {
+            if (child instanceof M3SelectableChip chip && isSelectableChip(chip)) {
                 return chip;
             }
         }
@@ -815,10 +841,10 @@ public class M3ChipGroup extends Control {
     }
 
     /// Returns the first selectable chip referenced by accessibility parameters.
-    private @Nullable M3Chip firstAccessibleSelectableChip(Object... parameters) {
+    private @Nullable M3SelectableChip firstAccessibleSelectableChip(Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
-        for (Node child : getItems()) {
-            if (child instanceof M3Chip chip
+        for (M3Chip child : getItems()) {
+            if (child instanceof M3SelectableChip chip
                     && isSelectableChip(chip)
                     && M3Accessible.containsSelectionTarget(chip, parameters)) {
                 return chip;
@@ -828,9 +854,8 @@ public class M3ChipGroup extends Control {
     }
 
     /// Returns whether a chip can currently participate in selection.
-    private boolean isSelectableChip(M3Chip chip) {
-        return chip.isSelectionSupported()
-                && M3Accessible.isEffectivelyReachable(this)
+    private boolean isSelectableChip(M3SelectableChip chip) {
+        return M3Accessible.isEffectivelyReachable(this)
                 && M3Accessible.isEffectivelyReachable(chip);
     }
 

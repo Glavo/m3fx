@@ -35,7 +35,7 @@ import java.util.Objects;
 ///
 /// See [Material Design badges](https://m3.material.io/components/badges/overview).
 @NotNullByDefault
-public class M3Badge extends Control {
+public final class M3Badge extends Control {
     /// The base style class for M3FX badges.
     public static final String STYLE_CLASS = "m3-badge";
 

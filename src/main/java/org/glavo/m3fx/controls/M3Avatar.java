@@ -38,7 +38,7 @@ import java.util.Objects;
 /// See [Material Design](https://m3.material.io/) for the visual system that defines the color, shape, and
 /// typography roles used by avatars.
 @NotNullByDefault
-public class M3Avatar extends Control {
+public final class M3Avatar extends Control {
     /// The base style class for M3FX avatars.
     public static final String STYLE_CLASS = "m3-avatar";
 

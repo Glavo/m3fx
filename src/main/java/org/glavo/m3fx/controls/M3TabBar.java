@@ -49,7 +49,7 @@ import java.util.Objects;
 ///
 /// See [Material Design tabs](https://m3.material.io/components/tabs/overview).
 @NotNullByDefault
-public class M3TabBar extends Control {
+public final class M3TabBar extends Control {
     /// The base style class for M3FX tab bars.
     public static final String STYLE_CLASS = "m3-tab-bar";
 
@@ -95,7 +95,7 @@ public class M3TabBar extends Control {
             };
 
     /// The mutable tab content.
-    private final ObservableList<Node> tabs = M3ObservableLists.nonNullElementList("tab");
+    private final ObservableList<M3Tab> tabs = M3ObservableLists.nonNullElementList("tab");
 
     /// Notifies accessibility clients when focus moves between tabs.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -172,7 +172,7 @@ public class M3TabBar extends Control {
     }
 
     /// Returns the mutable child list used as tabs.
-    public final ObservableList<Node> getTabs() {
+    public final ObservableList<M3Tab> getTabs() {
         return tabs;
     }
 

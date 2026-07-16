@@ -19,6 +19,7 @@ import javafx.scene.shape.MoveTo;
 import javafx.scene.shape.Path;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Button;
+import org.glavo.m3fx.controls.M3ButtonBase;
 import org.glavo.m3fx.controls.M3MenuButton;
 import org.glavo.m3fx.controls.M3SplitButton;
 import org.glavo.m3fx.internal.M3Animation;
@@ -118,7 +119,7 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
     }
 
     /// Configures one internal region to render its background and outline through a mutable shape.
-    private static void configurePartShape(M3Button button, SplitPartShape surfaceShape) {
+    private static void configurePartShape(M3ButtonBase button, SplitPartShape surfaceShape) {
         button.setShape(surfaceShape);
         button.setScaleShape(false);
         button.setCenterShape(false);
@@ -126,7 +127,7 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
     }
 
     /// Removes the mutable shape installed by this skin.
-    private static void resetPartShape(M3Button button, SplitPartShape surfaceShape) {
+    private static void resetPartShape(M3ButtonBase button, SplitPartShape surfaceShape) {
         if (button.getShape() == surfaceShape) {
             button.setShape(null);
             button.setScaleShape(true);
@@ -391,7 +392,7 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
     @NotNullByDefault
     private final class PartShapeTransition extends M3FiniteTransition {
         /// The button surface updated by the transition.
-        private final M3Button button;
+        private final M3ButtonBase button;
 
         /// The mutable shape installed on the button surface.
         private final SplitPartShape shape;
@@ -410,7 +411,7 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
 
         /// Creates a reusable inner-corner transition.
         private PartShapeTransition(
-                M3Button button,
+                M3ButtonBase button,
                 SplitPartShape shape,
                 boolean menuPart
         ) {

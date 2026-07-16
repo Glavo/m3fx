@@ -31,7 +31,7 @@ import java.util.Objects;
 ///
 /// See [Material Design tooltips](https://m3.material.io/components/tooltips/overview).
 @NotNullByDefault
-public class M3RichTooltip extends M3Tooltip {
+public final class M3RichTooltip extends M3Tooltip {
     /// The base style class for M3FX rich tooltips.
     public static final String STYLE_CLASS = "m3-rich-tooltip";
 

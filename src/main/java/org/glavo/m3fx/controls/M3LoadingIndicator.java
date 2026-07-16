@@ -38,7 +38,7 @@ import java.util.Objects;
 /// activity without running the full morph sequence. See
 /// [Material Design loading indicators](https://m3.material.io/components/loading-indicator/overview).
 @NotNullByDefault
-public class M3LoadingIndicator extends Control {
+public final class M3LoadingIndicator extends Control {
     /// The base style class for M3FX loading indicators.
     public static final String STYLE_CLASS = "m3-loading-indicator";
 

@@ -9,12 +9,13 @@ import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import org.glavo.m3fx.controls.M3ListItem;
+import org.glavo.m3fx.controls.M3ListItemBase;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
@@ -1484,7 +1485,7 @@ public final class M3Accessible {
     /// Returns the current focus target inside a selection container, or its selected or first reachable item.
     public static <T extends Node> @Nullable Node currentOrSelectionFocusTarget(
             Node owner,
-            ObservableList<Node> items,
+            List<? extends Node> items,
             @Nullable T selectedItem,
             Class<T> itemType
     ) {
@@ -1556,7 +1557,7 @@ public final class M3Accessible {
     }
 
     /// Returns the current focus owner when it belongs to one item in the supplied list.
-    public static @Nullable Node currentFocusTarget(Node owner, ObservableList<? extends Node> items) {
+    public static @Nullable Node currentFocusTarget(Node owner, List<? extends Node> items) {
         Objects.requireNonNull(owner, "owner");
         Objects.requireNonNull(items, "items");
         @Nullable Node externalTarget = activeExternalFocusTarget(owner, items);
@@ -1828,7 +1829,7 @@ public final class M3Accessible {
     }
 
     /// Returns the first active external focus target exposed by one item list.
-    private static @Nullable Node activeExternalFocusTarget(Node owner, ObservableList<? extends Node> items) {
+    private static @Nullable Node activeExternalFocusTarget(Node owner, List<? extends Node> items) {
         Set<Node> visited = Collections.newSetFromMap(new IdentityHashMap<>());
         for (Node item : items) {
             @Nullable Node target = activeExternalFocusTarget(owner, item, visited);
@@ -1957,7 +1958,7 @@ public final class M3Accessible {
 
     /// Returns whether a Parent subtree contains a list item that can expose logical content edges.
     private static boolean containsLogicalContentOwner(Node node) {
-        if (node instanceof M3ListItem) {
+        if (node instanceof M3ListItemBase) {
             return true;
         }
         if (node instanceof Parent parent) {
@@ -1978,7 +1979,7 @@ public final class M3Accessible {
         if (!visited.add(possibleAncestor)) {
             return false;
         }
-        if (possibleAncestor instanceof M3ListItem listItem
+        if (possibleAncestor instanceof M3ListItemBase listItem
                 && (containsOptionalNode(possibleAncestor, listItem.getLeading(), possibleDescendant, visited)
                 || containsOptionalNode(possibleAncestor, listItem.getTrailing(), possibleDescendant, visited))) {
             return true;

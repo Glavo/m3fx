@@ -50,7 +50,7 @@ import java.util.Objects;
 /// Use sliders for approximate or relative numeric choices. See
 /// [Material Design sliders](https://m3.material.io/components/sliders/overview).
 @NotNullByDefault
-public class M3Slider extends Control {
+public final class M3Slider extends Control {
     /// The base style class for M3FX sliders.
     public static final String STYLE_CLASS = "m3-slider";
 

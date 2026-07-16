@@ -24,7 +24,7 @@ import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionSettings;
-import org.glavo.m3fx.internal.M3ListViewCell;
+import org.glavo.m3fx.controls.M3ListCell;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
@@ -748,7 +748,6 @@ final class M3ScrollPanesTest {
             }
             listView.setFixedCellSize(56.0);
             listView.setPrefSize(260.0, 168.0);
-            listView.setCellFactory(value -> new M3ListItem("Row " + value));
 
             Region filler = new Region();
             filler.setPrefSize(260.0, 360.0);
@@ -777,7 +776,7 @@ final class M3ScrollPanesTest {
 
                 Node cell = assertInstanceOf(
                         Node.class,
-                        listView.lookup("." + M3ListViewCell.STYLE_CLASS)
+                        listView.lookup("." + M3ListCell.STYLE_CLASS)
                 );
 
                 assertFalse(M3ScrollPanes.isEventTargetForScrollPane(scrollPane, listView));

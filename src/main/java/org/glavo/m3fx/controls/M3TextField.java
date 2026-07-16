@@ -25,7 +25,7 @@ import java.util.List;
 ///
 /// See [Material Design text fields](https://m3.material.io/components/text-fields/overview).
 @NotNullByDefault
-public class M3TextField extends TextField implements M3TextInput {
+public final class M3TextField extends TextField implements M3TextInput {
     /// The base style class for M3FX text fields.
     public static final String STYLE_CLASS = "m3-text-field";
 

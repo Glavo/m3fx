@@ -54,7 +54,7 @@ import java.util.Objects;
 ///
 /// See [Material Design navigation bars](https://m3.material.io/components/navigation-bar/overview).
 @NotNullByDefault
-public class M3NavigationBar extends Control {
+public final class M3NavigationBar extends Control {
     /// The base style class for M3FX navigation bars.
     public static final String STYLE_CLASS = "m3-navigation-bar";
 
@@ -68,7 +68,7 @@ public class M3NavigationBar extends Control {
     private static final double DEFAULT_ITEM_SPACING = 0.0;
 
     /// The mutable navigation bar content.
-    private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
+    private final ObservableList<M3NavigationItem> items = M3ObservableLists.nonNullElementList("item");
 
     /// Notifies accessibility clients when focus moves between navigation items.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -173,7 +173,7 @@ public class M3NavigationBar extends Control {
     /// Returns the mutable child list used as navigation bar items.
     ///
     /// @return the mutable navigation bar content list
-    public final ObservableList<Node> getItems() {
+    public final ObservableList<M3NavigationItem> getItems() {
         return items;
     }
 

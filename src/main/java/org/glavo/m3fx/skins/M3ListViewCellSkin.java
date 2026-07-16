@@ -9,16 +9,16 @@ import javafx.geometry.HPos;
 import javafx.scene.Node;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.Region;
-import org.glavo.m3fx.internal.M3ListViewCell;
+import org.glavo.m3fx.controls.M3ListCell;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
-/// The default skin for [M3ListViewCell].
+/// The default skin for [M3ListCell].
 ///
 /// @param <T> the item type rendered by the skinned cell
 @NotNullByDefault
-public final class M3ListViewCellSkin<T> extends SkinBase<M3ListViewCell<T>> {
+public final class M3ListViewCellSkin<T> extends SkinBase<M3ListCell<T>> {
     /// The fallback height used to measure empty trailing virtual-flow cells.
     private static final double DEFAULT_ROW_HEIGHT = 56.0;
 
@@ -38,7 +38,7 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListViewCell<T>> {
     /// Creates a virtualized list view cell skin.
     ///
     /// @param control the skinned virtualized list cell
-    public M3ListViewCellSkin(M3ListViewCell<T> control) {
+    public M3ListViewCellSkin(M3ListCell<T> control) {
         super(control);
         control.graphicProperty().addListener(graphicListener);
         control.effectiveNodeOrientationProperty().addListener(nodeOrientationInvalidation);
@@ -48,7 +48,7 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListViewCell<T>> {
     /// Removes listeners and child references before disposal.
     @Override
     public void dispose() {
-        M3ListViewCell<T> cell = getSkinnable();
+        M3ListCell<T> cell = getSkinnable();
         cell.graphicProperty().removeListener(graphicListener);
         cell.effectiveNodeOrientationProperty().removeListener(nodeOrientationInvalidation);
         if (cell.getSkin() == null || cell.getSkin() == this) {
@@ -155,7 +155,7 @@ public final class M3ListViewCellSkin<T> extends SkinBase<M3ListViewCell<T>> {
 
     /// Lays out the current rendered row within the current skinnable bounds.
     private void layoutCurrentRow() {
-        M3ListViewCell<T> cell = getSkinnable();
+        M3ListCell<T> cell = getSkinnable();
         double width = cell.getWidth();
         double height = cell.getHeight();
         if (width <= 0.0 || height <= 0.0) {

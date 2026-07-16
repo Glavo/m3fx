@@ -573,7 +573,7 @@ final class M3SelectionNavigationTest {
             M3MenuItem archive = new M3MenuItem("Archive");
             M3MenuItem settings = new M3MenuItem("Settings");
             M3Menu menu = new M3Menu(archive, settings);
-            menu.setSelectionMode(M3MenuSelectionMode.SINGLE);
+            menu.setSelectionMode(M3SelectionMode.SINGLE);
             layout(menu);
             assertTrue(M3Accessible.requestAccessibleFocus(menu, archive));
             menu.select(archive);
@@ -593,7 +593,7 @@ final class M3SelectionNavigationTest {
     void listViewModifiedNavigationKeysAreIgnored() {
         FxTestUtils.runOnFxThread(() -> {
             M3ListView<String> listView = listView("Archive", "Settings", "Search");
-            listView.setSelectionMode(M3ListSelectionMode.SINGLE);
+            listView.setSelectionMode(M3SelectionMode.SINGLE);
             listView.selectIndex(0);
             layout(listView);
 
@@ -611,7 +611,7 @@ final class M3SelectionNavigationTest {
     void listViewUnmodifiedNavigationKeysMoveFocusAndSelection() {
         FxTestUtils.runOnFxThread(() -> {
             M3ListView<String> listView = listView("Archive", "Settings", "Search");
-            listView.setSelectionMode(M3ListSelectionMode.SINGLE);
+            listView.setSelectionMode(M3SelectionMode.SINGLE);
             listView.selectIndex(0);
             layout(listView);
 

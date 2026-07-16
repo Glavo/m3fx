@@ -15,7 +15,7 @@ import org.jetbrains.annotations.Nullable;
 
 /// The default Material Design 3 skin for [M3Menu].
 @NotNullByDefault
-public final class M3MenuSkin extends M3ItemContainerSkinBase<M3Menu, VBox> {
+public final class M3MenuSkin extends M3ItemContainerSkinBase<M3Menu, VBox, Node> {
     /// The pseudo-class applied to the first direct menu item.
     private static final PseudoClass FIRST_ITEM_PSEUDO_CLASS = PseudoClass.getPseudoClass("first-menu-item");
 

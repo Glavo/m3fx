@@ -137,19 +137,16 @@ final class M3StateLayerTest {
             M3Theme baseTheme = M3Theme.defaultTheme();
             M3TokenSet baseTokens = baseTheme.tokens();
             M3Theme tokenTheme = M3Theme.fromTokenSet(
-                    baseTheme.profile(),
-                    baseTheme.colorScheme(),
-                    M3Density.standard(),
-                    M3TokenSet.create(
-                            baseTokens.profile(),
-                            baseTokens.colorTokens(),
-                            baseTokens.typographyTokens(),
-                            baseTokens.shapeTokens(),
-                            baseTokens.elevationTokens(),
-                            baseTokens.motionTokens(),
-                            M3StateLayerTokens.create(0.21, 0.22, 0.23, 0.24, 0.25, 0.26),
-                            baseTokens.componentTokens()
-                    )
+                    M3TokenSet.builder(baseTokens)
+                            .stateLayerTokens(M3StateLayerTokens.builder(M3StateLayerTokens.baseline())
+                                    .hoverOpacity(0.21)
+                                    .focusOpacity(0.22)
+                                    .pressedOpacity(0.23)
+                                    .draggedOpacity(0.24)
+                                    .disabledContainerOpacity(0.25)
+                                    .disabledContentOpacity(0.26)
+                                    .build())
+                            .build()
             );
 
             M3ThemeManager.install(scene, tokenTheme);
@@ -257,19 +254,13 @@ final class M3StateLayerTest {
             M3Theme baseTheme = M3Theme.defaultTheme();
             M3TokenSet baseTokens = baseTheme.tokens();
             M3Theme tokenTheme = M3Theme.fromTokenSet(
-                    baseTheme.profile(),
-                    baseTheme.colorScheme(),
-                    M3Density.standard(),
-                    M3TokenSet.create(
-                            baseTokens.profile(),
-                            baseTokens.colorTokens(),
-                            baseTokens.typographyTokens(),
-                            baseTokens.shapeTokens(),
-                            baseTokens.elevationTokens(),
-                            baseTokens.motionTokens(),
-                            M3StateLayerTokens.create(0.08, 0.10, 0.10, 0.16, 0.12, 0.38, 4.0, 3.0, -5.0),
-                            baseTokens.componentTokens()
-                    )
+                    M3TokenSet.builder(baseTokens)
+                            .stateLayerTokens(M3StateLayerTokens.builder(M3StateLayerTokens.baseline())
+                                    .focusIndicatorThickness(4.0)
+                                    .focusIndicatorOuterOffset(3.0)
+                                    .focusIndicatorInnerOffset(-5.0)
+                                    .build())
+                            .build()
             );
 
             M3ThemeManager.install(scene, tokenTheme);
@@ -310,19 +301,13 @@ final class M3StateLayerTest {
             M3Theme baseTheme = M3Theme.defaultTheme();
             M3TokenSet baseTokens = baseTheme.tokens();
             M3Theme tokenTheme = M3Theme.fromTokenSet(
-                    baseTheme.profile(),
-                    baseTheme.colorScheme(),
-                    M3Density.standard(),
-                    M3TokenSet.create(
-                            baseTokens.profile(),
-                            baseTokens.colorTokens(),
-                            baseTokens.typographyTokens(),
-                            baseTokens.shapeTokens(),
-                            baseTokens.elevationTokens(),
-                            baseTokens.motionTokens(),
-                            M3StateLayerTokens.create(0.08, 0.10, 0.10, 0.16, 0.12, 0.38, 4.0, 3.0, -5.0),
-                            baseTokens.componentTokens()
-                    )
+                    M3TokenSet.builder(baseTokens)
+                            .stateLayerTokens(M3StateLayerTokens.builder(M3StateLayerTokens.baseline())
+                                    .focusIndicatorThickness(4.0)
+                                    .focusIndicatorOuterOffset(3.0)
+                                    .focusIndicatorInnerOffset(-5.0)
+                                    .build())
+                            .build()
             );
 
             M3ThemeManager.install(scene, tokenTheme);

@@ -60,6 +60,14 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
     /// @return the keyboard focus indicator inner offset in pixels
     double focusIndicatorInnerOffset();
 
+    /// Creates a builder initialized from an existing state-layer token set.
+    ///
+    /// @param tokens the state-layer tokens to copy
+    /// @return a mutable state-layer-token builder
+    static M3StateLayerTokensBuilder builder(M3StateLayerTokens tokens) {
+        return new M3StateLayerTokensBuilder(tokens);
+    }
+
     /// Creates state layer opacity tokens.
     ///
     /// @param hoverOpacity the hover state layer opacity
@@ -69,7 +77,7 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
     /// @param disabledContainerOpacity the disabled container opacity
     /// @param disabledContentOpacity the disabled content opacity
     /// @return the created state layer token set
-    static M3StateLayerTokens create(
+    private static M3StateLayerTokens create(
             double hoverOpacity,
             double focusOpacity,
             double pressedOpacity,
@@ -102,7 +110,7 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
     /// @param focusIndicatorOuterOffset the keyboard focus indicator outer offset in pixels
     /// @param focusIndicatorInnerOffset the keyboard focus indicator inner offset in pixels
     /// @return the created state token set
-    static M3StateLayerTokens create(
+    private static M3StateLayerTokens create(
             double hoverOpacity,
             double focusOpacity,
             double pressedOpacity,

@@ -55,7 +55,7 @@ import java.util.Objects;
 ///
 /// See [Material Design carousel](https://m3.material.io/components/carousel/overview).
 @NotNullByDefault
-public class M3Carousel extends Control {
+public final class M3Carousel extends Control {
     /// The default carousel layout.
     private static final M3CarouselLayout DEFAULT_CAROUSEL_LAYOUT = M3CarouselLayout.UNCONTAINED;
 

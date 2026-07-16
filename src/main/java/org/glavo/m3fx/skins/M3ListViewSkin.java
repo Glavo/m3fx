@@ -24,7 +24,7 @@ import javafx.stage.Window;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListView;
-import org.glavo.m3fx.internal.M3ListViewCell;
+import org.glavo.m3fx.controls.M3ListCell;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3MotionSettingsObserver;
 import org.glavo.m3fx.internal.M3ScrollReveal;
@@ -33,6 +33,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 /// The default virtualized skin for [M3ListView].
@@ -141,7 +142,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         flow.getStyleClass().add("m3-list-view-flow");
         flow.setVertical(true);
         flow.setPannable(true);
-        flow.setCellFactory(flow -> new M3ListViewCell<>(control));
+        flow.setCellFactory(flow -> createCell(control));
         smoothScrollAnimation.setOnFinished(event -> finishSmoothScrollAnimation());
         flow.fixedCellSizeProperty().bind(control.fixedCellSizeProperty());
         control.addEventFilter(ScrollEvent.SCROLL, smoothScrollHandler);
@@ -290,6 +291,18 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         flow.rebuildAllCells();
     }
 
+    /// Creates and validates one reusable virtualized cell through the control factory.
+    private static <T> M3ListCell<T> createCell(M3ListView<T> listView) {
+        M3ListCell<T> cell = Objects.requireNonNull(
+                listView.getCellFactory().call(listView),
+                "cellFactory result"
+        );
+        if (cell.getListView() != listView) {
+            throw new IllegalArgumentException("cellFactory must create a cell for the supplied list view");
+        }
+        return cell;
+    }
+
     /// Updates virtualized row state after the list view enters or leaves a scene.
     private void handleSceneChanged(@Nullable Scene scene) {
         refreshThemeObserversAndVisibleRows();
@@ -435,7 +448,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
             return null;
         }
 
-        M3ListViewCell<T> cell = flow.visibleOrReusableCell(index);
+        M3ListCell<T> cell = flow.visibleOrReusableCell(index);
         return cell.getListItem();
     }
 
@@ -448,7 +461,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
             return null;
         }
 
-        @Nullable M3ListViewCell<T> cell = flow.findVisibleCell(index);
+        @Nullable M3ListCell<T> cell = flow.findVisibleCell(index);
         return cell == null ? null : cell.getListItem();
     }
 
@@ -481,7 +494,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
             return;
         }
 
-        @Nullable M3ListViewCell<T> cell = flow.findVisibleCell(index);
+        @Nullable M3ListCell<T> cell = flow.findVisibleCell(index);
         if (cell != null && cell.focusCell()) {
             focusRequestPending = false;
         }
@@ -851,12 +864,12 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
 
     /// A private wrapper exposing protected virtual flow hooks to this skin.
     @NotNullByDefault
-    private static final class ListViewVirtualFlow<T> extends VirtualFlow<M3ListViewCell<T>> {
+    private static final class ListViewVirtualFlow<T> extends VirtualFlow<M3ListCell<T>> {
         /// Requests visible cell relayout and selection refresh.
         private void refreshCells() {
             requestCellLayout();
             requestLayout();
-            for (M3ListViewCell<T> cell : getCells()) {
+            for (M3ListCell<T> cell : getCells()) {
                 cell.refreshSelection();
                 cell.refreshFocus();
             }
@@ -866,14 +879,14 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         private void refreshCellThemeContexts() {
             requestCellLayout();
             requestLayout();
-            for (M3ListViewCell<T> cell : getCells()) {
+            for (M3ListCell<T> cell : getCells()) {
                 cell.refreshThemeContext();
             }
         }
 
         /// Returns a current virtual flow cell for the requested index.
-        private @Nullable M3ListViewCell<T> findVisibleCell(int index) {
-            for (M3ListViewCell<T> cell : getCells()) {
+        private @Nullable M3ListCell<T> findVisibleCell(int index) {
+            for (M3ListCell<T> cell : getCells()) {
                 if (!cell.isEmpty() && cell.getIndex() == index && cell.getListItem() != null) {
                     return cell;
                 }
@@ -883,8 +896,8 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
 
         /// Returns a visible cell, asking the virtual flow for a reusable cell when needed.
         @SuppressWarnings("ConstantValue")
-        private M3ListViewCell<T> visibleOrReusableCell(int index) {
-            M3ListViewCell<T> cell = getVisibleCell(index);
+        private M3ListCell<T> visibleOrReusableCell(int index) {
+            M3ListCell<T> cell = getVisibleCell(index);
             if (cell == null) {
                 return getCell(index);
             }
@@ -900,7 +913,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
 
         /// Releases application-owned row nodes before cells are rebuilt or the skin is disposed.
         private void releaseCells() {
-            for (M3ListViewCell<T> cell : getCells()) {
+            for (M3ListCell<T> cell : getCells()) {
                 cell.updateIndex(-1);
             }
         }
@@ -909,7 +922,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
         private double averageVisibleCellHeight() {
             double totalHeight = 0.0;
             int measuredCellCount = 0;
-            for (M3ListViewCell<T> cell : getCells()) {
+            for (M3ListCell<T> cell : getCells()) {
                 double cellHeight = cell.getHeight();
                 if (!cell.isEmpty() && Double.isFinite(cellHeight) && cellHeight > 0.0) {
                     totalHeight += cellHeight;
@@ -921,7 +934,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
 
         /// Returns the index for the attached visible row that contains the supplied node.
         private int attachedVisibleItemIndex(Node node) {
-            for (M3ListViewCell<T> cell : getCells()) {
+            for (M3ListCell<T> cell : getCells()) {
                 if (cell.isEmpty() || cell.getScene() == null) {
                     continue;
                 }
@@ -935,7 +948,7 @@ public final class M3ListViewSkin<T> extends SkinBase<M3ListView<T>> {
 
         /// Returns the first attached visible list item accepted by the supplied predicate.
         private @Nullable Node findAttachedVisibleItem(Predicate<? super Node> predicate) {
-            for (M3ListViewCell<T> cell : getCells()) {
+            for (M3ListCell<T> cell : getCells()) {
                 if (cell.isEmpty() || cell.getScene() == null) {
                     continue;
                 }

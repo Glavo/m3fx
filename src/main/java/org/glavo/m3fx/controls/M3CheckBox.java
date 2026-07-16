@@ -42,7 +42,7 @@ import java.util.function.Function;
 /// Use checkboxes for independent choices or bulk-selection affordances. See
 /// [Material Design checkboxes](https://m3.material.io/components/checkbox/overview).
 @NotNullByDefault
-public class M3CheckBox extends ButtonBase {
+public final class M3CheckBox extends ButtonBase {
     /// The base style class for M3FX checkboxes.
     public static final String STYLE_CLASS = "m3-checkbox";
 

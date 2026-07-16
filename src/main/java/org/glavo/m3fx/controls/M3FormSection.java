@@ -41,7 +41,7 @@ import java.util.Objects;
 /// See [Material Design](https://m3.material.io/) for the layout and hierarchy principles reflected by this
 /// helper control.
 @NotNullByDefault
-public class M3FormSection extends Control {
+public final class M3FormSection extends Control {
     /// The base style class for M3FX form sections.
     public static final String STYLE_CLASS = "m3-form-section";
 

@@ -47,12 +47,12 @@ import java.util.Objects;
 /// A Material Design 3 toggle icon button group.
 ///
 /// The group manages selected state for child [M3IconToggleButton] controls, applies
-/// [M3IconToggleButtonSelectionMode], exposes selected-button views, and supports keyboard traversal. Use it
+/// [M3SelectionMode], exposes selected-button views, and supports keyboard traversal. Use it
 /// when a row or cluster of icon buttons represents one logical choice set.
 ///
 /// See [Material Design icon buttons](https://m3.material.io/components/icon-buttons/overview).
 @NotNullByDefault
-public class M3IconToggleButtonGroup extends Control {
+public final class M3IconToggleButtonGroup extends Control {
     /// The base style class for M3FX toggle icon button groups.
     public static final String STYLE_CLASS = "m3-icon-toggle-button-group";
 
@@ -60,7 +60,7 @@ public class M3IconToggleButtonGroup extends Control {
     private static final double DEFAULT_SPACING = 8.0;
 
     /// The mutable toggle icon button group content.
-    private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
+    private final ObservableList<M3IconToggleButton> items = M3ObservableLists.nonNullElementList("item");
 
     /// Notifies accessibility clients when focus moves between toggle icon buttons.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -76,13 +76,13 @@ public class M3IconToggleButtonGroup extends Control {
     private @Nullable StyleableDoubleProperty spacing;
 
     // The icon toggle button selection mode.
-    private final ObjectProperty<M3IconToggleButtonSelectionMode> selectionMode =
-            new SimpleObjectProperty<>(this, "selectionMode", M3IconToggleButtonSelectionMode.SINGLE) {
+    private final ObjectProperty<M3SelectionMode> selectionMode =
+            new SimpleObjectProperty<>(this, "selectionMode", M3SelectionMode.SINGLE) {
                 /// Enforces selection invariants when the mode changes.
                 @Override
                 protected void invalidated() {
                     if (get() == null) {
-                        set(M3IconToggleButtonSelectionMode.SINGLE);
+                        set(M3SelectionMode.SINGLE);
                         return;
                     }
                     enforceSelectionPolicy();
@@ -163,7 +163,7 @@ public class M3IconToggleButtonGroup extends Control {
     /// Returns the mutable child list used as toggle icon button group content.
     ///
     /// @return the mutable child list used as toggle icon button group content
-    public final ObservableList<Node> getItems() {
+    public final ObservableList<M3IconToggleButton> getItems() {
         return items;
     }
 
@@ -205,21 +205,21 @@ public class M3IconToggleButtonGroup extends Control {
     /// Returns the icon toggle button selection mode.
     ///
     /// @return the icon toggle button selection mode
-    public final M3IconToggleButtonSelectionMode getSelectionMode() {
+    public final M3SelectionMode getSelectionMode() {
         return selectionMode.get();
     }
 
     /// Sets the icon toggle button selection mode.
     ///
     /// @param selectionMode the icon toggle button selection mode
-    public final void setSelectionMode(M3IconToggleButtonSelectionMode selectionMode) {
+    public final void setSelectionMode(M3SelectionMode selectionMode) {
         this.selectionMode.set(Objects.requireNonNull(selectionMode, "selectionMode"));
     }
 
     /// Returns the icon toggle button selection mode property.
     ///
     /// @return the icon toggle button selection mode property
-    public final ObjectProperty<M3IconToggleButtonSelectionMode> selectionModeProperty() {
+    public final ObjectProperty<M3SelectionMode> selectionModeProperty() {
         return selectionMode;
     }
 
@@ -284,7 +284,10 @@ public class M3IconToggleButtonGroup extends Control {
         if (!isSelectableButton(button)) {
             throw new IllegalArgumentException("button must be selectable");
         }
-        if (getSelectionMode() == M3IconToggleButtonSelectionMode.MULTIPLE) {
+        if (getSelectionMode() == M3SelectionMode.NONE) {
+            return;
+        }
+        if (getSelectionMode() == M3SelectionMode.MULTIPLE) {
             setButtonSelected(button, true);
         } else {
             selectOnly(button);
@@ -352,7 +355,7 @@ public class M3IconToggleButtonGroup extends Control {
 
     /// Clears the current selection when empty selection is allowed.
     public final void clearSelection() {
-        if (!isAllowEmptySelection()) {
+        if (!isAllowEmptySelection() && getSelectionMode() != M3SelectionMode.NONE) {
             selectFirstButtonIfNeeded();
             return;
         }
@@ -391,7 +394,7 @@ public class M3IconToggleButtonGroup extends Control {
                     getSelectedButton(),
                     M3IconToggleButton.class
             );
-            case MULTIPLE_SELECTION -> getSelectionMode() == M3IconToggleButtonSelectionMode.MULTIPLE;
+            case MULTIPLE_SELECTION -> getSelectionMode() == M3SelectionMode.MULTIPLE;
             case SELECTED_ITEMS -> selectedButtonsView;
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
@@ -466,7 +469,10 @@ public class M3IconToggleButtonGroup extends Control {
 
     /// Applies keyboard navigation across enabled toggle icon buttons.
     private void handleNavigationKeyPressed(KeyEvent event) {
-        if (getSelectionMode() == M3IconToggleButtonSelectionMode.MULTIPLE) {
+        if (getSelectionMode() == M3SelectionMode.NONE) {
+            return;
+        }
+        if (getSelectionMode() == M3SelectionMode.MULTIPLE) {
             M3SelectionNavigation.handleKeyFocus(
                     event,
                     this,
@@ -499,7 +505,11 @@ public class M3IconToggleButtonGroup extends Control {
 
     /// Applies selected toggle icon buttons supplied by an accessibility client.
     private void setAccessibleSelectedItems(Object... parameters) {
-        if (getSelectionMode() == M3IconToggleButtonSelectionMode.SINGLE) {
+        if (getSelectionMode() == M3SelectionMode.NONE) {
+            selectOnly(null);
+            return;
+        }
+        if (getSelectionMode() == M3SelectionMode.SINGLE) {
             @Nullable M3IconToggleButton button =
                     firstAccessibleSelectableButton(parameters);
             if (button == null) {
@@ -546,7 +556,7 @@ public class M3IconToggleButtonGroup extends Control {
             return;
         }
 
-        if (!isSelectableButton(button)) {
+        if (getSelectionMode() == M3SelectionMode.NONE || !isSelectableButton(button)) {
             if (selected) {
                 setButtonSelected(button, false);
                 if (!isAllowEmptySelection()) {
@@ -557,7 +567,7 @@ public class M3IconToggleButtonGroup extends Control {
         }
 
         if (selected) {
-            if (getSelectionMode() == M3IconToggleButtonSelectionMode.SINGLE) {
+            if (getSelectionMode() == M3SelectionMode.SINGLE) {
                 selectOnly(button);
             } else {
                 refreshSelectedButtons();
@@ -584,7 +594,11 @@ public class M3IconToggleButtonGroup extends Control {
     /// Enforces single-selection and non-empty selection invariants.
     private void enforceSelectionPolicy() {
         refreshSelectedButtons();
-        if (getSelectionMode() == M3IconToggleButtonSelectionMode.SINGLE && selectedButtons.size() > 1) {
+        if (getSelectionMode() == M3SelectionMode.NONE) {
+            selectOnly(null);
+            return;
+        }
+        if (getSelectionMode() == M3SelectionMode.SINGLE && selectedButtons.size() > 1) {
             selectOnly(selectedButtons.get(0));
             return;
         }
@@ -595,7 +609,7 @@ public class M3IconToggleButtonGroup extends Control {
 
     /// Selects the first button when the selection is empty and empty selection is disabled.
     private void selectFirstButtonIfNeeded() {
-        if (!selectedButtons.isEmpty()) {
+        if (getSelectionMode() == M3SelectionMode.NONE || !selectedButtons.isEmpty()) {
             return;
         }
 

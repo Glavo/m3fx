@@ -3,19 +3,15 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.css.CssMetaData;
-import javafx.css.PseudoClass;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
 import javafx.css.converter.SizeConverter;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
-import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.ButtonBase;
@@ -32,20 +28,19 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-/// A Material Design 3 chip for compact actions, filters, inputs, or suggestions.
+/// Base class for Material Design 3 chips.
 ///
-/// `M3Chip` is a selectable [ButtonBase] with Material chip variants, leading and trailing graphic slots,
-/// token-backed height, shape, padding, and action dispatch. Selection state is available for filter and input
-/// chips, while assist and suggestion chips can be used as command surfaces.
+/// This class defines the common text, graphic, trailing-graphic, sizing, shape, and action contracts shared by
+/// [M3AssistChip], [M3FilterChip], [M3InputChip], and [M3SuggestionChip]. Use one of those concrete classes so the
+/// chip's interaction semantics are fixed for its lifetime. Selectable chips additionally derive from
+/// [M3SelectableChip].
 ///
 /// See [Material Design chips](https://m3.material.io/components/chips/overview).
 @NotNullByDefault
-public class M3Chip extends ButtonBase {
+public abstract sealed class M3Chip extends ButtonBase
+        permits M3AssistChip, M3SelectableChip, M3SuggestionChip {
     /// The base style class for M3FX chips.
     public static final String STYLE_CLASS = "m3-chip";
-
-    /// The selected pseudo-class used by chips.
-    private static final PseudoClass SELECTED_PSEUDO_CLASS = PseudoClass.getPseudoClass("selected");
 
     /// The style class applied to the logical leading graphic.
     public static final String LEADING_GRAPHIC_STYLE_CLASS = "m3-chip-leading-graphic";
@@ -67,19 +62,6 @@ public class M3Chip extends ButtonBase {
 
     /// The default size for icon graphics.
     private static final double DEFAULT_ICON_SIZE = 18.0;
-
-    // The chip variant property.
-    private final ObjectProperty<M3ChipVariant> variant = new SimpleObjectProperty<>(this, "variant", M3ChipVariant.ASSIST) {
-        /// Updates variant style classes when the property changes.
-        @Override
-        protected void invalidated() {
-            if (get() == null) {
-                set(M3ChipVariant.ASSIST);
-                return;
-            }
-            updateVariantStyle();
-        }
-    };
 
     // The chip container style property.
     private final ObjectProperty<M3ChipStyle> chipStyle =
@@ -110,21 +92,6 @@ public class M3Chip extends ButtonBase {
     // The styleable icon size token.
     private @Nullable StyleableDoubleProperty iconSize;
 
-    // The selected state property.
-    private final BooleanProperty selected = new SimpleBooleanProperty(this, "selected") {
-        /// Updates selected pseudo-class state.
-        @Override
-        protected void invalidated() {
-            if (get() && !isSelectionSupported() && !isBound()) {
-                set(false);
-                return;
-            }
-            updateSelectedState();
-            notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED);
-            notifyAccessibleAttributeChanged(AccessibleAttribute.TOGGLE_STATE);
-        }
-    };
-
     // The optional logical trailing graphic property.
     private final ObjectProperty<@Nullable Node> trailingGraphic =
             new SimpleObjectProperty<>(this, "trailingGraphic") {
@@ -136,56 +103,14 @@ public class M3Chip extends ButtonBase {
                 }
             };
 
-    /// Creates an empty assist chip.
-    public M3Chip() {
-        this("", null);
-    }
-
-    /// Creates an assist chip with text.
-    ///
-    /// @param text the text displayed by the chip
-    public M3Chip(String text) {
-        this(text, null);
-    }
-
-    /// Creates an assist chip with text and graphic content.
+    /// Creates a chip with fixed semantic styling.
     ///
     /// @param text the text displayed by the chip
     /// @param graphic the optional graphic displayed with the text
-    public M3Chip(String text, @Nullable Node graphic) {
+    /// @param variantStyleClass the style class identifying the concrete chip kind
+    M3Chip(String text, @Nullable Node graphic, String variantStyleClass) {
         super(Objects.requireNonNull(text, "text"), graphic);
-        initialize();
-    }
-
-    /// Returns whether this chip is selected.
-    ///
-    /// @return `true` when this chip is selected
-    public final boolean isSelected() {
-        return selected.get();
-    }
-
-    /// Sets whether this chip is selected.
-    ///
-    /// @param selected whether this chip should be selected
-    public final void setSelected(boolean selected) {
-        this.selected.set(selected);
-    }
-
-    /// Returns the selected state property.
-    ///
-    /// @return the selected state property
-    public final BooleanProperty selectedProperty() {
-        return selected;
-    }
-
-    /// Returns whether the current chip variant supports persistent selection.
-    ///
-    /// Filter and input chips expose selected state. Assist and suggestion chips are command surfaces and fire
-    /// actions without changing selected state.
-    ///
-    /// @return true for filter and input chip variants
-    public final boolean isSelectionSupported() {
-        return getVariant() == M3ChipVariant.FILTER || getVariant() == M3ChipVariant.INPUT;
+        initialize(Objects.requireNonNull(variantStyleClass, "variantStyleClass"));
     }
 
     /// Returns the optional graphic shown at the logical trailing edge of this chip.
@@ -210,27 +135,6 @@ public class M3Chip extends ButtonBase {
     /// @return the trailing graphic property
     public final ObjectProperty<@Nullable Node> trailingGraphicProperty() {
         return trailingGraphic;
-    }
-
-    /// Returns the chip variant.
-    ///
-    /// @return the Material chip variant
-    public final M3ChipVariant getVariant() {
-        return variant.get();
-    }
-
-    /// Sets the chip variant.
-    ///
-    /// @param variant the Material chip variant
-    public final void setVariant(M3ChipVariant variant) {
-        this.variant.set(Objects.requireNonNull(variant, "variant"));
-    }
-
-    /// Returns the chip variant property.
-    ///
-    /// @return the chip variant property
-    public final ObjectProperty<M3ChipVariant> variantProperty() {
-        return variant;
     }
 
     /// Returns the chip container style.
@@ -417,26 +321,10 @@ public class M3Chip extends ButtonBase {
         return getClassCssMetaData();
     }
 
-    /// Returns accessibility attributes for the chip selection state.
-    @Override
-    public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
-        Objects.requireNonNull(attribute, "attribute");
-        return switch (attribute) {
-            case SELECTED -> isSelectionSupported() && isSelected();
-            case TOGGLE_STATE -> isSelectionSupported() && isSelected()
-                    ? AccessibleAttribute.ToggleState.CHECKED
-                    : AccessibleAttribute.ToggleState.UNCHECKED;
-            default -> super.queryAccessibleAttribute(attribute, parameters);
-        };
-    }
-
-    /// Toggles and fires this chip.
+    /// Fires this chip's action event.
     @Override
     public void fire() {
         if (!isDisabled()) {
-            if (isSelectionSupported()) {
-                setSelected(!isSelected());
-            }
             fireEvent(new ActionEvent(this, this));
         }
     }
@@ -453,28 +341,16 @@ public class M3Chip extends ButtonBase {
         return M3Stylesheets.controlStylesheet("chip.css");
     }
 
-    /// Adds base style classes and applies the default variant.
-    private void initialize() {
+    /// Adds base and concrete-kind style classes.
+    private void initialize(String variantStyleClass) {
         M3ControlStyles.initialize(this, STYLE_CLASS);
+        getStyleClass().add(variantStyleClass);
         setFocusTraversable(true);
         setPickOnBounds(true);
+        setAccessibleRole(AccessibleRole.BUTTON);
         graphicProperty().addListener(observable -> updateMetrics());
-        updateVariantStyle();
         updateChipStyle();
         updateMetrics();
-    }
-
-    /// Applies the current variant style class.
-    private void updateVariantStyle() {
-        M3ControlStyles.replaceVariant(
-                this,
-                getVariant().styleClass(),
-                M3ChipVariant.ASSIST.styleClass(),
-                M3ChipVariant.FILTER.styleClass(),
-                M3ChipVariant.INPUT.styleClass(),
-                M3ChipVariant.SUGGESTION.styleClass()
-        );
-        updateSemanticState();
     }
 
     /// Applies the current chip style class.
@@ -509,22 +385,6 @@ public class M3Chip extends ButtonBase {
         }
     }
 
-    /// Updates the accessible role and effective selected pseudo-class for the active variant.
-    private void updateSemanticState() {
-        if (!isSelectionSupported() && selected.get() && !selected.isBound()) {
-            selected.set(false);
-        }
-        setAccessibleRole(isSelectionSupported() ? AccessibleRole.TOGGLE_BUTTON : AccessibleRole.BUTTON);
-        updateSelectedState();
-        notifyAccessibleAttributeChanged(AccessibleAttribute.ROLE);
-        notifyAccessibleAttributeChanged(AccessibleAttribute.SELECTED);
-        notifyAccessibleAttributeChanged(AccessibleAttribute.TOGGLE_STATE);
-    }
-
-    /// Applies selected styling only to chip variants that define selected state.
-    private void updateSelectedState() {
-        pseudoClassStateChanged(SELECTED_PSEUDO_CLASS, isSelectionSupported() && selected.get());
-    }
 
     /// CSS metadata for M3FX chip component tokens.
     @NotNullByDefault

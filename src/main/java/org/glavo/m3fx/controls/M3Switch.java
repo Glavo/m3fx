@@ -43,7 +43,7 @@ import java.util.function.Function;
 /// Use a switch for a setting whose change takes effect immediately. For selection from multiple choices, use
 /// radio buttons or segmented buttons. See [Material Design switches](https://m3.material.io/components/switch/overview).
 @NotNullByDefault
-public class M3Switch extends ButtonBase {
+public final class M3Switch extends ButtonBase {
     /// The base style class for M3FX switches.
     public static final String STYLE_CLASS = "m3-switch";
 

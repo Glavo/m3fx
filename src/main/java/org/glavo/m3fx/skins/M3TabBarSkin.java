@@ -28,7 +28,7 @@ import java.util.List;
 
 /// The default Material Design 3 skin for [M3TabBar].
 @NotNullByDefault
-public final class M3TabBarSkin extends M3ItemContainerSkinBase<M3TabBar, HBox> {
+public final class M3TabBarSkin extends M3ItemContainerSkinBase<M3TabBar, HBox, M3Tab> {
     /// The bottom divider rendered behind active indicators.
     private final Region divider = new Region();
 

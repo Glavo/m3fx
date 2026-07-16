@@ -31,6 +31,7 @@ import org.glavo.m3fx.controls.M3Carousel;
 import org.glavo.m3fx.controls.M3CheckBox;
 import org.glavo.m3fx.controls.M3Chip;
 import org.glavo.m3fx.controls.M3ChipGroup;
+import org.glavo.m3fx.controls.M3AssistChip;
 import org.glavo.m3fx.controls.M3DatePicker;
 import org.glavo.m3fx.controls.M3DatePickerField;
 import org.glavo.m3fx.controls.M3DialogPane;
@@ -54,7 +55,7 @@ import org.glavo.m3fx.controls.M3LoadingIndicator;
 import org.glavo.m3fx.controls.M3Menu;
 import org.glavo.m3fx.controls.M3MenuButton;
 import org.glavo.m3fx.controls.M3MenuItem;
-import org.glavo.m3fx.controls.M3MenuSelectionMode;
+import org.glavo.m3fx.controls.M3SelectionMode;
 import org.glavo.m3fx.controls.M3NavigationBar;
 import org.glavo.m3fx.controls.M3NavigationDrawer;
 import org.glavo.m3fx.controls.M3NavigationDrawerGroup;
@@ -86,6 +87,7 @@ import org.glavo.m3fx.controls.M3ValidationSummary;
 import org.glavo.m3fx.controls.M3TextRole;
 import org.glavo.m3fx.controls.M3TimePicker;
 import org.glavo.m3fx.controls.M3TopAppBar;
+import org.glavo.m3fx.internal.theme.M3ThemeCssCompiler;
 import org.glavo.m3fx.controls.M3TopAppBarVariant;
 import org.glavo.m3fx.tokens.M3ComponentTokens;
 import org.glavo.m3fx.tokens.M3Density;
@@ -130,130 +132,130 @@ final class M3ThemeTest {
         assertEquals(M3Profile.BASELINE_2021, theme.profile());
         assertSame(theme.colorScheme(), theme.tokens().colorTokens().colorScheme());
         assertEquals(M3MotionEasing.STANDARD, theme.tokens().motionTokens().defaultEffects().easing());
-        assertTrue(theme.toRootStyleDeclarations().contains("-monet-primary"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-color-primary"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-motion-default-effects-easing: standard"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-typescale-label-large-font-size"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-typescale-display-medium-font-size"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-typescale-body-small-line-height"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-typescale-body-medium-tracking: 0.25px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-shape-corner-extra-extra-large: 48px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-state-focus-indicator-thickness: 3px"));
-        assertTrue(theme.toRootStyleDeclarations().contains(
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-monet-primary"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-color-primary"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-motion-default-effects-easing: standard"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-typescale-label-large-font-size"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-typescale-display-medium-font-size"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-typescale-body-small-line-height"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-typescale-body-medium-tracking: 0.25px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-shape-corner-extra-extra-large: 48px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-state-focus-indicator-thickness: 3px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains(
                 "-m3-state-disabled-container-color: rgba(29,27,32,0.12)"
         ));
-        assertTrue(theme.toRootStyleDeclarations().contains(
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains(
                 "-m3-state-disabled-content-color: rgba(29,27,32,0.38)"
         ));
-        assertTrue(theme.toRootStyleDeclarations().contains(
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains(
                 "-m3-button-disabled-container-color: rgba(29,27,32,0.1)"
         ));
-        assertTrue(theme.toRootStyleDeclarations().contains(
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains(
                 "-m3-list-item-disabled-state-layer-color: rgba(29,27,32,0.1)"
         ));
-        assertTrue(theme.toRootStyleDeclarations().contains(
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains(
                 "-m3-filled-card-disabled-container-color: rgba(231,224,235,0.38)"
         ));
-        assertTrue(theme.toRootStyleDeclarations().contains(
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains(
                 "-m3-elevated-card-disabled-container-color: rgba(253,247,255,0.38)"
         ));
-        assertTrue(theme.toRootStyleDeclarations().contains(
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains(
                 "-m3-outlined-card-disabled-outline-color: rgba(122,117,127,0.12)"
         ));
-        assertTrue(theme.toRootStyleDeclarations().contains(
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains(
                 "-m3-text-field-disabled-container-color: rgba(29,27,32,0.04)"
         ));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-text-field-hover-container-color"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-text-input-trailing-icon-color"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-button-filled-container-height"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-split-button-menu-width"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-fab-regular-container-size"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-segmented-button-container-height"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-tab-container-height"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-slider-track-thickness"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-container-height"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-icon-size"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-outline-width"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-progress-indicator-size"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-progress-wave-indicator-size"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-progress-linear-indeterminate-wavelength"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-loading-indicator-container-size"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-loading-indicator-indicator-size"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-card-content-padding"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-divider-thickness"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-badge-small-size"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-top-app-bar-container-height"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-bottom-app-bar-container-height"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-rail-collapsed-container-width"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-drawer-container-width"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-item-one-line-height"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-section-header-height"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-form-row-min-height"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-validation-summary-container-shape"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-surface-content-padding"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-carousel-track-horizontal-padding"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-carousel-track-vertical-padding"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-carousel-item-spacing"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-carousel-item-shape"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-carousel-small-item-min-width"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-carousel-small-item-max-width"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-carousel-large-item-max-width"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-container-color: -m3-color-surface-container"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-selected-item-container-color: -m3-color-secondary-container"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-selected-item-content-color: -m3-color-on-secondary-container"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-filled-button"));
-        assertTrue(theme.toControlStyleRules().contains(
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-text-field-hover-container-color"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-text-input-trailing-icon-color"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-button-filled-container-height"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-split-button-menu-width"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-fab-regular-container-size"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-segmented-button-container-height"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-tab-container-height"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-slider-track-thickness"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-chip-container-height"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-chip-icon-size"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-chip-outline-width"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-progress-indicator-size"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-progress-wave-indicator-size"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-progress-linear-indeterminate-wavelength"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-loading-indicator-container-size"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-loading-indicator-indicator-size"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-card-content-padding"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-divider-thickness"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-badge-small-size"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-top-app-bar-container-height"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-bottom-app-bar-container-height"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-navigation-rail-collapsed-container-width"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-navigation-drawer-container-width"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-list-item-one-line-height"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-list-section-header-height"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-form-row-min-height"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-validation-summary-container-shape"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-surface-content-padding"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-carousel-track-horizontal-padding"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-carousel-track-vertical-padding"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-carousel-item-spacing"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-carousel-item-shape"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-carousel-small-item-min-width"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-carousel-small-item-max-width"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-carousel-large-item-max-width"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-menu-container-color: -m3-color-surface-container"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-menu-selected-item-container-color: -m3-color-secondary-container"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-menu-selected-item-content-color: -m3-color-on-secondary-container"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-filled-button"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(
                 ".m3-button-group.m3-button-group-small.m3-connected-button-group "
                         + ".m3-grouped-button.m3-button-group-first"
         ));
-        assertTrue(theme.toControlStyleRules().contains(".m3-button.m3-split-button-menu"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-large-icon"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-display-medium-text"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-body-small-text"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-regular-fab"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-segmented-button"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-segmented-button-first"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-tab-active-indicator"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-checkbox:hover"));
-        assertFalse(theme.toControlStyleRules().contains(".m3-slider:pressed .m3-state-layer"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-loading-indicator"));
-        assertFalse(theme.toControlStyleRules().contains(".m3-list-item:disabled"));
-        assertFalse(theme.toControlStyleRules().contains(".m3-slider:focus-visible .m3-state-layer"));
-        assertTrue(theme.toControlStyleRules().contains(
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-button.m3-split-button-menu"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-large-icon"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-display-medium-text"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-body-small-text"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-regular-fab"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-segmented-button"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-segmented-button-first"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-tab-active-indicator"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-checkbox:hover"));
+        assertFalse(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-slider:pressed .m3-state-layer"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-loading-indicator"));
+        assertFalse(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-list-item:disabled"));
+        assertFalse(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-slider:focus-visible .m3-state-layer"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(
                 ".m3-card:actionable:focus-visible .m3-state-layer"
         ));
-        assertTrue(theme.toControlStyleRules().contains(".m3-card:dragged .m3-state-layer"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-dialog-pane"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-badge"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-top-app-bar"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-bottom-app-bar"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-navigation-rail"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-navigation-drawer"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-list-item"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-list-section-header"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-form-row"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-validation-summary-item:hover .m3-state-layer"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-validation-summary-item:focus-visible .m3-state-layer"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-validation-summary-item:pressed .m3-state-layer"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-carousel-track"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-surface"));
-        assertTrue(theme.toControlStyleRules().contains("-fx-opacity: 0.08"));
-        assertTrue(theme.toControlStyleRules().contains("-fx-opacity: 0.1"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-elevated-card .m3-card-container"));
-        assertTrue(theme.toControlStyleRules().contains(
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-card:dragged .m3-state-layer"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-dialog-pane"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-badge"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-top-app-bar"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-bottom-app-bar"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-navigation-rail"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-navigation-drawer"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-list-item"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-list-section-header"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-form-row"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-validation-summary-item:hover .m3-state-layer"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-validation-summary-item:focus-visible .m3-state-layer"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-validation-summary-item:pressed .m3-state-layer"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-carousel-track"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-surface"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains("-fx-opacity: 0.08"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains("-fx-opacity: 0.1"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-elevated-card .m3-card-container"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(
                 ".m3-elevated-card:actionable:hover .m3-card-container"
         ));
-        assertTrue(theme.toControlStyleRules().contains(
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(
                 ".m3-filled-card:actionable:hover .m3-card-container"
         ));
-        assertTrue(theme.toControlStyleRules().contains(
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(
                 ".m3-outlined-card:actionable:hover .m3-card-container"
         ));
-        assertTrue(theme.toControlStyleRules().contains(
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(
                 ".m3-filled-card:actionable:focus-visible .m3-card-container"
         ));
-        assertTrue(theme.toControlStyleRules().contains(".m3-fab:hover"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-surface-elevation-level5"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-fab:hover"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-surface-elevation-level5"));
         assertNotNull(theme.tokens().componentTokens().filledButton());
         assertNotNull(theme.tokens().componentTokens().floatingActionButton());
         assertNotNull(theme.tokens().componentTokens().icon());
@@ -292,195 +294,195 @@ final class M3ThemeTest {
         assertEquals(M3MotionEasing.EMPHASIZED, theme.tokens().motionTokens().defaultEffects().easing());
         assertEquals(400.0, theme.tokens().motionTokens().defaultSpatial().duration().toMillis(), 0.0001);
         assertEquals(150.0, theme.tokens().motionTokens().behavior().subMenuHoverOpenDelay().toMillis(), 0.0001);
-        assertTrue(theme.toRootStyleDeclarations().contains("-monet-primary"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-color-primary"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-motion-default-effects-easing: emphasized"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-motion-default-spatial-duration: 400ms"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-motion-sub-menu-hover-open-delay: 150ms"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-button-filled-container-height: 40px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-button-filled-horizontal-padding: 16px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-button-text-horizontal-padding: 16px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-icon-small-size: 20px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-icon-large-size: 36px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-fab-regular-container-size: 56px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-fab-regular-leading-space: 16px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-fab-medium-container-size: 80px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-fab-large-container-size: 96px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-segmented-button-container-height: 40px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-segmented-button-horizontal-padding: 12px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-tab-container-height: 48px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-tab-horizontal-padding: 16px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-tab-active-indicator-height: 3px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-secondary-tab-active-indicator-height: 2px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-tab-active-indicator-min-width: 24px"));
-        assertTrue(theme.toRootStyleDeclarations().contains(
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-monet-primary"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-color-primary"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-motion-default-effects-easing: emphasized"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-motion-default-spatial-duration: 400ms"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-motion-sub-menu-hover-open-delay: 150ms"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-button-filled-container-height: 40px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-button-filled-horizontal-padding: 16px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-button-text-horizontal-padding: 16px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-icon-small-size: 20px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-icon-large-size: 36px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-fab-regular-container-size: 56px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-fab-regular-leading-space: 16px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-fab-medium-container-size: 80px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-fab-large-container-size: 96px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-segmented-button-container-height: 40px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-segmented-button-horizontal-padding: 12px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-tab-container-height: 48px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-tab-horizontal-padding: 16px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-tab-active-indicator-height: 3px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-secondary-tab-active-indicator-height: 2px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-tab-active-indicator-min-width: 24px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains(
                 "-m3-tab-active-indicator-horizontal-inset: 2px"
         ));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-field-horizontal-padding: 16px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-text-area-vertical-padding: 16px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-selection-touch-target-size: 48px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-selection-state-layer-size: 40px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-checkbox-container-size: 18px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-checkbox-selected-mark-width: 12px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-checkbox-selected-mark-height: 10px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-checkbox-indeterminate-mark-width: 12px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-checkbox-indeterminate-mark-height: 2px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-radio-container-size: 20px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-radio-selected-dot-size: 10px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-switch-touch-target-size: 48px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-switch-track-width: 52px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-switch-track-height: 32px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-switch-state-layer-size: 40px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-switch-unselected-handle-size: 16px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-switch-with-icon-handle-size: 24px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-switch-selected-handle-size: 24px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-switch-pressed-handle-size: 28px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-switch-icon-size: 16px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-slider-track-thickness: 16px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-slider-thumb-size: 44px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-slider-thumb-width: 4px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-slider-focused-thumb-width: 2px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-slider-pressed-thumb-width: 2px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-slider-thumb-track-gap: 6px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-slider-touch-target-size: 48px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-container-height: 32px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-horizontal-padding: 16px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-icon-horizontal-padding: 8px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-icon-size: 18px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-avatar-size: 24px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-chip-group-horizontal-gap: 8px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-container-shape: 24px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-container-padding: 2px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-item-height: 44px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-item-container-shape: 6px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-selected-item-container-shape: 16px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-first-item-container-shape: 16px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-last-item-container-shape: 16px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-item-content-spacing: 12px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-item-spacing: 2px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-container-color: -m3-color-surface-container-low"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-selected-item-container-color: -m3-color-tertiary-container"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-selected-item-content-color: -m3-color-on-tertiary-container"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-vibrant-container-color: -m3-color-tertiary-container"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-menu-vibrant-selected-item-container-color: -m3-color-tertiary"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-bar-container-height: 56px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-bar-horizontal-padding: 16px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-bar-content-spacing: 16px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-contained-bar-horizontal-padding: 4px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-contained-bar-content-spacing: 4px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-divided-bar-horizontal-padding: 16px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-bar-trailing-actions-gap: 0px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-view-horizontal-padding: 12px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-view-bar-results-gap: 2px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-view-results-shape: 16px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-view-docked-bottom-padding: 4px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-view-full-screen-bottom-padding: 16px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-view-min-width: 360px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-view-max-width: 720px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-view-docked-min-height: 240px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-search-view-full-screen-divided-header-height: 72px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-sheet-side-container-width: 256px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-sheet-side-container-max-width: 400px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-sheet-bottom-container-max-width: 640px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-sheet-content-padding: 24px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-sheet-drag-handle-width: 32px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-card-container-shape: 16px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-card-content-padding: 16px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-dialog-container-shape: 32px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-dialog-content-padding: 24px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-dialog-container-min-width: 280px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-dialog-container-max-width: 560px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-dialog-action-spacing: 8px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-dialog-icon-size: 24px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-snackbar-container-shape: 6px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-snackbar-content-padding: 16px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-snackbar-container-min-width: 344px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-snackbar-container-max-width: 672px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-snackbar-single-line-container-height: 48px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-snackbar-two-line-container-height: 68px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-snackbar-action-container-height: 32px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-banner-container-min-height: 80px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-banner-horizontal-padding: 24px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-tooltip-plain-container-shape: 6px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-tooltip-rich-pref-width: 320px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-picker-field-popup-padding: 16px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-date-picker-day-cell-size: 48px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-time-picker-dial-size: 256px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-time-picker-dial-handle-size: 48px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-time-picker-input-field-height: 72px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-badge-small-size: 6px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-top-app-bar-container-height: 64px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-top-app-bar-medium-container-height: 112px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-top-app-bar-large-container-height: 152px"));
-        assertTrue(theme.toRootStyleDeclarations().contains(
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-field-horizontal-padding: 16px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-text-area-vertical-padding: 16px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-selection-touch-target-size: 48px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-selection-state-layer-size: 40px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-checkbox-container-size: 18px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-checkbox-selected-mark-width: 12px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-checkbox-selected-mark-height: 10px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-checkbox-indeterminate-mark-width: 12px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-checkbox-indeterminate-mark-height: 2px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-radio-container-size: 20px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-radio-selected-dot-size: 10px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-switch-touch-target-size: 48px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-switch-track-width: 52px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-switch-track-height: 32px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-switch-state-layer-size: 40px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-switch-unselected-handle-size: 16px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-switch-with-icon-handle-size: 24px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-switch-selected-handle-size: 24px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-switch-pressed-handle-size: 28px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-switch-icon-size: 16px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-slider-track-thickness: 16px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-slider-thumb-size: 44px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-slider-thumb-width: 4px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-slider-focused-thumb-width: 2px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-slider-pressed-thumb-width: 2px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-slider-thumb-track-gap: 6px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-slider-touch-target-size: 48px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-chip-container-height: 32px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-chip-horizontal-padding: 16px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-chip-icon-horizontal-padding: 8px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-chip-icon-size: 18px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-chip-avatar-size: 24px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-chip-group-horizontal-gap: 8px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-menu-container-shape: 24px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-menu-container-padding: 2px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-menu-item-height: 44px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-menu-item-container-shape: 6px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-menu-selected-item-container-shape: 16px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-menu-first-item-container-shape: 16px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-menu-last-item-container-shape: 16px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-menu-item-content-spacing: 12px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-menu-item-spacing: 2px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-menu-container-color: -m3-color-surface-container-low"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-menu-selected-item-container-color: -m3-color-tertiary-container"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-menu-selected-item-content-color: -m3-color-on-tertiary-container"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-menu-vibrant-container-color: -m3-color-tertiary-container"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-menu-vibrant-selected-item-container-color: -m3-color-tertiary"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-search-bar-container-height: 56px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-search-bar-horizontal-padding: 16px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-search-bar-content-spacing: 16px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-search-contained-bar-horizontal-padding: 4px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-search-contained-bar-content-spacing: 4px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-search-divided-bar-horizontal-padding: 16px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-search-bar-trailing-actions-gap: 0px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-search-view-horizontal-padding: 12px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-search-view-bar-results-gap: 2px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-search-view-results-shape: 16px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-search-view-docked-bottom-padding: 4px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-search-view-full-screen-bottom-padding: 16px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-search-view-min-width: 360px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-search-view-max-width: 720px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-search-view-docked-min-height: 240px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-search-view-full-screen-divided-header-height: 72px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-sheet-side-container-width: 256px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-sheet-side-container-max-width: 400px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-sheet-bottom-container-max-width: 640px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-sheet-content-padding: 24px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-sheet-drag-handle-width: 32px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-card-container-shape: 16px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-card-content-padding: 16px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-dialog-container-shape: 32px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-dialog-content-padding: 24px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-dialog-container-min-width: 280px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-dialog-container-max-width: 560px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-dialog-action-spacing: 8px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-dialog-icon-size: 24px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-snackbar-container-shape: 6px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-snackbar-content-padding: 16px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-snackbar-container-min-width: 344px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-snackbar-container-max-width: 672px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-snackbar-single-line-container-height: 48px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-snackbar-two-line-container-height: 68px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-snackbar-action-container-height: 32px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-banner-container-min-height: 80px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-banner-horizontal-padding: 24px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-tooltip-plain-container-shape: 6px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-tooltip-rich-pref-width: 320px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-picker-field-popup-padding: 16px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-date-picker-day-cell-size: 48px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-time-picker-dial-size: 256px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-time-picker-dial-handle-size: 48px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-time-picker-input-field-height: 72px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-badge-small-size: 6px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-top-app-bar-container-height: 64px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-top-app-bar-medium-container-height: 112px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-top-app-bar-large-container-height: 152px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains(
                 "-m3-top-app-bar-medium-flexible-container-height: 112px"
         ));
-        assertTrue(theme.toRootStyleDeclarations().contains(
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains(
                 "-m3-top-app-bar-medium-flexible-subtitle-container-height: 136px"
         ));
-        assertTrue(theme.toRootStyleDeclarations().contains(
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains(
                 "-m3-top-app-bar-large-flexible-container-height: 120px"
         ));
-        assertTrue(theme.toRootStyleDeclarations().contains(
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains(
                 "-m3-top-app-bar-large-flexible-subtitle-container-height: 152px"
         ));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-top-app-bar-edge-padding: 4px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-top-app-bar-horizontal-padding: 16px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-top-app-bar-medium-bottom-padding: 20px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-top-app-bar-large-bottom-padding: 28px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-top-app-bar-flexible-bottom-padding: 12px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-top-app-bar-content-spacing: 0px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-top-app-bar-action-spacing: 0px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-bottom-app-bar-container-height: 80px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-bottom-app-bar-horizontal-padding: 16px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-bottom-app-bar-action-spacing: 0px"));
-        assertTrue(theme.toRootStyleDeclarations().contains(
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-top-app-bar-edge-padding: 4px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-top-app-bar-horizontal-padding: 16px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-top-app-bar-medium-bottom-padding: 20px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-top-app-bar-large-bottom-padding: 28px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-top-app-bar-flexible-bottom-padding: 12px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-top-app-bar-content-spacing: 0px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-top-app-bar-action-spacing: 0px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-bottom-app-bar-container-height: 80px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-bottom-app-bar-horizontal-padding: 16px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-bottom-app-bar-action-spacing: 0px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains(
                 "-m3-navigation-rail-collapsed-container-width: 96px"
         ));
-        assertTrue(theme.toRootStyleDeclarations().contains(
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains(
                 "-m3-navigation-rail-narrow-collapsed-container-width: 80px"
         ));
-        assertTrue(theme.toRootStyleDeclarations().contains(
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains(
                 "-m3-navigation-rail-expanded-minimum-container-width: 220px"
         ));
-        assertTrue(theme.toRootStyleDeclarations().contains(
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains(
                 "-m3-navigation-rail-expanded-maximum-container-width: 360px"
         ));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-drawer-container-width: 360px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-bar-horizontal-padding: 8px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-bar-item-spacing: 6px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-rail-item-spacing: 4px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-drawer-container-padding: 12px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-navigation-drawer-group-child-item-horizontal-padding: 32px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-item-one-line-height: 64px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-item-horizontal-padding: 20px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-item-content-spacing: 20px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-section-header-height: 56px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-list-section-header-horizontal-padding: 20px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-picker-field-popup-shape: 32px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-form-row-min-height: 64px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-validation-summary-content-padding: 16px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-split-button-spacing: 2px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-split-button-menu-width: 48px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-icon-toggle-button-group-spacing: 10px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-fab-menu-action-spacing: 4px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-fab-menu-close-spacing: 8px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-loading-indicator-container-size: 48px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-loading-indicator-indicator-size: 38px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-surface-content-padding: 16px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-carousel-item-spacing: 8px"));
-        assertTrue(theme.toRootStyleDeclarations().contains("-m3-carousel-item-shape: 32px"));
-        assertTrue(theme.toControlStyleRules().contains("-m3-container-height: 48px"));
-        assertTrue(theme.toControlStyleRules().contains("-m3-content-spacing: 4px"));
-        assertTrue(theme.toControlStyleRules().contains("-m3-horizontal-padding: 32px"));
-        assertTrue(theme.toControlStyleRules().contains("-fx-padding: 8px 10px"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-menu .m3-menu-item.m3-menu-item:first-menu-item"));
-        assertTrue(theme.toControlStyleRules().contains(".m3-menu .m3-menu-item.m3-menu-item:last-menu-item"));
-        assertTrue(theme.toControlStyleRules().contains("-fx-padding: 0 24px"));
-        assertTrue(theme.toControlStyleRules().contains("-fx-padding: 24px"));
-        assertTrue(theme.toControlStyleRules().contains("-m3-selected-mark-width: 12px"));
-        assertTrue(theme.toControlStyleRules().contains("-m3-selected-dot-size: 10px"));
-        assertTrue(theme.toControlStyleRules().contains("-fx-background-radius: 999px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-navigation-drawer-container-width: 360px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-navigation-bar-horizontal-padding: 8px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-navigation-bar-item-spacing: 6px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-navigation-rail-item-spacing: 4px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-navigation-drawer-container-padding: 12px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-navigation-drawer-group-child-item-horizontal-padding: 32px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-list-item-one-line-height: 64px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-list-item-horizontal-padding: 20px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-list-item-content-spacing: 20px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-list-section-header-height: 56px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-list-section-header-horizontal-padding: 20px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-picker-field-popup-shape: 32px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-form-row-min-height: 64px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-validation-summary-content-padding: 16px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-split-button-spacing: 2px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-split-button-menu-width: 48px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-icon-toggle-button-group-spacing: 10px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-fab-menu-action-spacing: 4px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-fab-menu-close-spacing: 8px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-loading-indicator-container-size: 48px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-loading-indicator-indicator-size: 38px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-surface-content-padding: 16px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-carousel-item-spacing: 8px"));
+        assertTrue(M3ThemeCssCompiler.rootStyleDeclarations(theme).contains("-m3-carousel-item-shape: 32px"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains("-m3-container-height: 48px"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains("-m3-content-spacing: 4px"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains("-m3-horizontal-padding: 32px"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains("-fx-padding: 8px 10px"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-menu .m3-menu-item.m3-menu-item:first-menu-item"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains(".m3-menu .m3-menu-item.m3-menu-item:last-menu-item"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains("-fx-padding: 0 24px"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains("-fx-padding: 24px"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains("-m3-selected-mark-width: 12px"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains("-m3-selected-dot-size: 10px"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains("-fx-background-radius: 999px"));
         assertNotNull(theme.tokens().componentTokens().filledButton());
         assertNotNull(theme.tokens().componentTokens().floatingActionButton());
         assertNotNull(theme.tokens().componentTokens().icon());
@@ -552,9 +554,9 @@ final class M3ThemeTest {
         assertEquals(20.0, expressiveProgress.linearIndeterminateWavelength(), 0.0001);
         assertEquals(1.6, expressiveProgress.circularWaveAmplitude(), 0.0001);
         assertEquals(15.0, expressiveProgress.circularWavelength(), 0.0001);
-        assertTrue(theme.toControlStyleRules().contains("-m3-wave-amplitude: 0px"));
-        assertTrue(theme.toControlStyleRules().contains("-m3-wave-indicator-size: 48px"));
-        assertTrue(theme.toControlStyleRules().contains("-m3-indeterminate-wavelength: 20px"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains("-m3-wave-amplitude: 0px"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains("-m3-wave-indicator-size: 48px"));
+        assertTrue(M3ThemeCssCompiler.controlStyleRules(theme).contains("-m3-indeterminate-wavelength: 20px"));
         assertEquals(48.0, theme.tokens().componentTokens().loadingIndicator().containerSize(), 0.0001);
         assertEquals(38.0, theme.tokens().componentTokens().loadingIndicator().indicatorSize(), 0.0001);
         assertEquals(16.0, theme.tokens().componentTokens().field().horizontalPadding(), 0.0001);
@@ -710,7 +712,7 @@ final class M3ThemeTest {
         M3Density density = M3Density.of(2.0);
         M3TokenSet tokenSet = M3TokenSet.create(M3Profile.BASELINE_2021, colorScheme, density);
 
-        M3Theme theme = M3Theme.fromTokenSet(M3Profile.BASELINE_2021, colorScheme, density, tokenSet);
+        M3Theme theme = M3Theme.fromTokenSet(tokenSet);
 
         assertSame(tokenSet, theme.tokens());
         assertSame(colorScheme, theme.colorScheme());
@@ -1155,8 +1157,8 @@ final class M3ThemeTest {
         M3Carousel carousel = carousel(carouselFirst, carouselSecond);
         carousel.select(carouselSecond);
         M3Icon icon = new M3Icon("I", M3IconSize.LARGE, M3IconVariant.PRIMARY);
-        M3Chip chip = new M3Chip("Chip");
-        M3ChipGroup chipGroup = chipGroup(new M3Chip("First"), new M3Chip("Second"));
+        M3Chip chip = new M3AssistChip("Chip");
+        M3ChipGroup chipGroup = chipGroup(new M3AssistChip("First"), new M3AssistChip("Second"));
         M3FloatingActionButton fab = new M3FloatingActionButton();
         fab.setSize(M3FloatingActionButtonSize.LARGE);
         M3SegmentedButton segmentedButton = new M3SegmentedButton("Week");
@@ -1275,7 +1277,7 @@ final class M3ThemeTest {
         assertEquals(6.0, lastMenuItem.getInnerCornerShape(), 0.0001);
         assertEquals(16.0, firstMenuItem.getHorizontalPadding(), 0.0001);
         assertEquals(12.0, firstMenuItem.getContentSpacing(), 0.0001);
-        menu.setSelectionMode(M3MenuSelectionMode.SINGLE);
+        menu.setSelectionMode(M3SelectionMode.SINGLE);
         menu.select(middleMenuItem);
         root.applyCss();
         assertEquals(16.0, middleMenuItem.getContainerShape(), 0.0001);

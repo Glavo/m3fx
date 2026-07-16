@@ -37,7 +37,7 @@ import java.util.Objects;
 ///
 /// See [Material Design](https://m3.material.io/) for modal surface and overlay behavior.
 @NotNullByDefault
-public class M3Scrim extends Region {
+public final class M3Scrim extends Region {
     /// The base style class for M3FX scrims.
     public static final String STYLE_CLASS = "m3-scrim";
 

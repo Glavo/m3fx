@@ -5,6 +5,7 @@ package org.glavo.m3fx.internal.tokens;
 
 import org.glavo.m3fx.tokens.M3ColorTokens;
 import org.glavo.m3fx.tokens.M3ComponentTokens;
+import org.glavo.m3fx.tokens.M3Density;
 import org.glavo.m3fx.tokens.M3ElevationTokens;
 import org.glavo.m3fx.tokens.M3MotionTokens;
 import org.glavo.m3fx.tokens.M3Profile;
@@ -19,6 +20,7 @@ import java.util.Objects;
 /// Default immutable implementation of [M3TokenSet].
 ///
 /// @param profile the profile that produced this token set
+/// @param density the density used to derive component metrics
 /// @param colorTokens the color tokens
 /// @param typographyTokens the typography tokens
 /// @param shapeTokens the shape tokens
@@ -29,6 +31,7 @@ import java.util.Objects;
 @NotNullByDefault
 public record M3TokenSetImpl(
         M3Profile profile,
+        M3Density density,
         M3ColorTokens colorTokens,
         M3TypographyTokens typographyTokens,
         M3ShapeTokens shapeTokens,
@@ -40,6 +43,7 @@ public record M3TokenSetImpl(
     /// Creates a token set implementation.
     public M3TokenSetImpl {
         Objects.requireNonNull(profile, "profile");
+        Objects.requireNonNull(density, "density");
         Objects.requireNonNull(colorTokens, "colorTokens");
         Objects.requireNonNull(typographyTokens, "typographyTokens");
         Objects.requireNonNull(shapeTokens, "shapeTokens");

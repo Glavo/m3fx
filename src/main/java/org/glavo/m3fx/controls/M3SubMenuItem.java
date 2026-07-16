@@ -55,7 +55,7 @@ import java.util.Objects;
 ///
 /// See [Material Design menus](https://m3.material.io/components/menus/overview).
 @NotNullByDefault
-public class M3SubMenuItem extends M3MenuItem {
+public final class M3SubMenuItem extends M3MenuItem {
     /// The pseudo-class applied while the submenu is visible.
     private static final PseudoClass ACTIVE_PSEUDO_CLASS = PseudoClass.getPseudoClass("active");
 
@@ -332,7 +332,7 @@ public class M3SubMenuItem extends M3MenuItem {
             case FOCUS_NODE -> focusNode();
             case ITEM_COUNT -> getItems().size();
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getItems(), parameters);
-            case MULTIPLE_SELECTION -> subMenu.getSelectionMode() == M3MenuSelectionMode.MULTIPLE;
+            case MULTIPLE_SELECTION -> subMenu.getSelectionMode() == M3SelectionMode.MULTIPLE;
             case SELECTED_ITEMS -> subMenu.getSelectedItems();
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };

@@ -45,7 +45,7 @@ import java.util.Objects;
 /// See [Material Design](https://m3.material.io/) and
 /// [Material color roles](https://m3.material.io/styles/color/roles).
 @NotNullByDefault
-public class M3Surface extends Control {
+public final class M3Surface extends Control {
     /// The base style class for M3FX surfaces.
     public static final String STYLE_CLASS = "m3-surface";
 

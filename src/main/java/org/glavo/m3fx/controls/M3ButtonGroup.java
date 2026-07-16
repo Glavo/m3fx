@@ -53,7 +53,7 @@ import java.util.Objects;
 ///
 /// See [Material Design button groups](https://m3.material.io/components/button-groups/overview).
 @NotNullByDefault
-public class M3ButtonGroup extends Control {
+public final class M3ButtonGroup extends Control {
     /// The base style class for M3FX button groups.
     public static final String STYLE_CLASS = "m3-button-group";
 
@@ -89,7 +89,7 @@ public class M3ButtonGroup extends Control {
             PseudoClass.getPseudoClass("connected-group");
 
     /// The mutable button group content.
-    private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
+    private final ObservableList<ButtonBase> items = M3ObservableLists.nonNullElementList("item");
 
     /// Notifies accessibility clients when focus moves between grouped buttons.
     private final M3AccessibleFocusNotifier focusNotifier =
@@ -161,7 +161,7 @@ public class M3ButtonGroup extends Control {
     /// Returns the mutable child list used as button group content.
     ///
     /// @return the mutable child list used as button group content
-    public final ObservableList<Node> getItems() {
+    public final ObservableList<ButtonBase> getItems() {
         return items;
     }
 

@@ -47,7 +47,7 @@ import java.util.Objects;
 ///
 /// See [Material Design toolbars](https://m3.material.io/components/toolbars/overview).
 @NotNullByDefault
-public class M3Toolbar extends Control {
+public final class M3Toolbar extends Control {
     /// The base style class for M3FX toolbars.
     public static final String STYLE_CLASS = "m3-toolbar";
 

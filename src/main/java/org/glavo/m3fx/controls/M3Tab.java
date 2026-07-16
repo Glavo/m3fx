@@ -38,7 +38,7 @@ import java.util.Objects;
 ///
 /// See [Material Design tabs](https://m3.material.io/components/tabs/overview).
 @NotNullByDefault
-public class M3Tab extends ButtonBase {
+public final class M3Tab extends ButtonBase {
     /// The base style class for M3FX tabs.
     public static final String STYLE_CLASS = "m3-tab";
 

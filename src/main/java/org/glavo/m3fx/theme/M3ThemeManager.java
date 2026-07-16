@@ -7,6 +7,7 @@ import javafx.application.Application;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.css.Styleable;
+import org.glavo.m3fx.internal.theme.M3ThemeCssCompiler;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import org.glavo.m3fx.internal.M3Stylesheets;
@@ -120,7 +121,7 @@ public final class M3ThemeManager {
 
         Object baseStyleValue = root.getProperties().get(BASE_STYLE_PROPERTY_KEY);
         String baseStyle = baseStyleValue instanceof String ? (String) baseStyleValue : "";
-        root.setStyle(mergeStyles(baseStyle, theme.toRootStyleDeclarations()));
+        root.setStyle(mergeStyles(baseStyle, M3ThemeCssCompiler.rootStyleDeclarations(theme)));
         M3ThemeMetadata.setTheme(root, theme);
     }
 
@@ -361,9 +362,9 @@ public final class M3ThemeManager {
     /// Creates the complete generated stylesheet for a theme.
     private static String themeStylesheet(M3Theme theme) {
         return "." + ROOT_STYLE_CLASS + " { "
-                + theme.toRootStyleDeclarations()
+                + M3ThemeCssCompiler.rootStyleDeclarations(theme)
                 + " }\n\n"
-                + theme.toControlStyleRules();
+                + M3ThemeCssCompiler.controlStyleRules(theme);
     }
 
     /// Computes the SHA-256 digest for generated stylesheet content.
@@ -510,7 +511,7 @@ public final class M3ThemeManager {
         /// Applies one theme over the root style captured before scene theme installation.
         private static void applyTheme(Parent root, M3Theme theme, String baseStyle) {
             applyThemeStyleClasses(root, theme);
-            String themedStyle = mergeStyles(baseStyle, theme.toRootStyleDeclarations());
+            String themedStyle = mergeStyles(baseStyle, M3ThemeCssCompiler.rootStyleDeclarations(theme));
             if (!Objects.equals(root.getStyle(), themedStyle)) {
                 root.setStyle(themedStyle);
             }

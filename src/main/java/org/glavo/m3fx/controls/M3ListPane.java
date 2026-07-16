@@ -51,7 +51,7 @@ import java.util.Objects;
 ///
 /// See [Material Design lists](https://m3.material.io/components/lists/overview).
 @NotNullByDefault
-public class M3ListPane extends Control {
+public final class M3ListPane extends Control {
     /// The base style class for M3FX static list panes.
     public static final String STYLE_CLASS = "m3-list-pane";
 
@@ -64,13 +64,13 @@ public class M3ListPane extends Control {
                     M3Accessible.currentOrSelectionFocusTarget(this, getItems(), getSelectedItem(), M3ListItem.class));
 
     // The list item selection mode.
-    private final ObjectProperty<@Nullable M3ListSelectionMode> selectionMode =
-            new SimpleObjectProperty<>(this, "selectionMode", M3ListSelectionMode.NONE) {
+    private final ObjectProperty<M3SelectionMode> selectionMode =
+            new SimpleObjectProperty<>(this, "selectionMode", M3SelectionMode.NONE) {
                 /// Enforces selection invariants when the mode changes.
                 @Override
                 protected void invalidated() {
                     if (get() == null) {
-                        set(M3ListSelectionMode.NONE);
+                        set(M3SelectionMode.NONE);
                         return;
                     }
                     enforceSelectionPolicy();
@@ -167,21 +167,21 @@ public class M3ListPane extends Control {
     /// Returns the list item selection mode.
     ///
     /// @return the list item selection mode
-    public final M3ListSelectionMode getSelectionMode() {
-        return Objects.requireNonNull(selectionMode.get(), "selectionMode");
+    public final M3SelectionMode getSelectionMode() {
+        return selectionMode.get();
     }
 
     /// Sets the list item selection mode.
     ///
     /// @param selectionMode the list item selection mode
-    public final void setSelectionMode(M3ListSelectionMode selectionMode) {
+    public final void setSelectionMode(M3SelectionMode selectionMode) {
         this.selectionMode.set(Objects.requireNonNull(selectionMode, "selectionMode"));
     }
 
     /// Returns the list item selection mode property.
     ///
     /// @return the list item selection mode property
-    public final ObjectProperty<@Nullable M3ListSelectionMode> selectionModeProperty() {
+    public final ObjectProperty<M3SelectionMode> selectionModeProperty() {
         return selectionMode;
     }
 
@@ -247,7 +247,7 @@ public class M3ListPane extends Control {
             throw new IllegalArgumentException("item must be selectable");
         }
 
-        if (getSelectionMode() == M3ListSelectionMode.MULTIPLE) {
+        if (getSelectionMode() == M3SelectionMode.MULTIPLE) {
             setItemSelected(item, true);
         } else {
             selectOnly(item);
@@ -314,7 +314,7 @@ public class M3ListPane extends Control {
 
     /// Clears the current selection when empty selection is allowed.
     public final void clearSelection() {
-        if (!isAllowEmptySelection() && getSelectionMode() != M3ListSelectionMode.NONE) {
+        if (!isAllowEmptySelection() && getSelectionMode() != M3SelectionMode.NONE) {
             selectFirstItemIfNeeded();
             return;
         }
@@ -340,7 +340,7 @@ public class M3ListPane extends Control {
                     getSelectedItem(),
                     M3ListItem.class
             );
-            case MULTIPLE_SELECTION -> getSelectionMode() == M3ListSelectionMode.MULTIPLE;
+            case MULTIPLE_SELECTION -> getSelectionMode() == M3SelectionMode.MULTIPLE;
             case SELECTED_ITEMS -> selectedItemsView;
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
@@ -425,8 +425,8 @@ public class M3ListPane extends Control {
             return;
         }
 
-        if (getSelectionMode() == M3ListSelectionMode.NONE
-                || getSelectionMode() == M3ListSelectionMode.MULTIPLE) {
+        if (getSelectionMode() == M3SelectionMode.NONE
+                || getSelectionMode() == M3SelectionMode.MULTIPLE) {
             if (M3SelectionNavigation.handleKeyFocus(
                     event,
                     this,
@@ -498,7 +498,7 @@ public class M3ListPane extends Control {
         }
 
         focusTypeAheadTarget(target);
-        if (getSelectionMode() == M3ListSelectionMode.SINGLE) {
+        if (getSelectionMode() == M3SelectionMode.SINGLE) {
             select(target);
         }
         event.consume();
@@ -527,11 +527,11 @@ public class M3ListPane extends Control {
 
     /// Applies selected list items supplied by an accessibility client.
     private void setAccessibleSelectedItems(Object... parameters) {
-        if (getSelectionMode() == M3ListSelectionMode.NONE) {
+        if (getSelectionMode() == M3SelectionMode.NONE) {
             return;
         }
 
-        if (getSelectionMode() == M3ListSelectionMode.SINGLE) {
+        if (getSelectionMode() == M3SelectionMode.SINGLE) {
             @Nullable M3ListItem item = firstAccessibleSelectableItem(parameters);
             if (item == null) {
                 clearSelection();
@@ -604,21 +604,21 @@ public class M3ListPane extends Control {
         if (!isSelectableListItem(item)) {
             if (selected) {
                 setItemSelected(item, false);
-                if (!isAllowEmptySelection() && getSelectionMode() != M3ListSelectionMode.NONE) {
+                if (!isAllowEmptySelection() && getSelectionMode() != M3SelectionMode.NONE) {
                     selectFirstItemIfNeeded();
                 }
             }
             return;
         }
 
-        if (selected && getSelectionMode() == M3ListSelectionMode.SINGLE) {
+        if (selected && getSelectionMode() == M3SelectionMode.SINGLE) {
             selectOnly(item);
             return;
         }
 
         refreshSelectedItems();
         if (!selected && !isAllowEmptySelection()
-                && getSelectionMode() != M3ListSelectionMode.NONE
+                && getSelectionMode() != M3SelectionMode.NONE
                 && selectedItems.isEmpty()) {
             select(item);
         } else {
@@ -640,11 +640,11 @@ public class M3ListPane extends Control {
     /// Enforces selection invariants for the current selection mode.
     private void enforceSelectionPolicy() {
         refreshSelectedItems();
-        if (getSelectionMode() == M3ListSelectionMode.SINGLE && selectedItems.size() > 1) {
+        if (getSelectionMode() == M3SelectionMode.SINGLE && selectedItems.size() > 1) {
             selectOnly(selectedItems.get(0));
             return;
         }
-        if (!isAllowEmptySelection() && getSelectionMode() != M3ListSelectionMode.NONE) {
+        if (!isAllowEmptySelection() && getSelectionMode() != M3SelectionMode.NONE) {
             selectFirstItemIfNeeded();
         }
     }

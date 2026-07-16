@@ -72,11 +72,15 @@ import org.glavo.m3fx.controls.M3CardVariant;
 import org.glavo.m3fx.controls.M3Carousel;
 import org.glavo.m3fx.controls.M3CarouselLayout;
 import org.glavo.m3fx.controls.M3CheckBox;
+import org.glavo.m3fx.controls.M3AssistChip;
 import org.glavo.m3fx.controls.M3Chip;
 import org.glavo.m3fx.controls.M3ChipGroup;
-import org.glavo.m3fx.controls.M3ChipSelectionMode;
+import org.glavo.m3fx.controls.M3SelectionMode;
 import org.glavo.m3fx.controls.M3ChipStyle;
-import org.glavo.m3fx.controls.M3ChipVariant;
+import org.glavo.m3fx.controls.M3FilterChip;
+import org.glavo.m3fx.controls.M3InputChip;
+import org.glavo.m3fx.controls.M3SelectableChip;
+import org.glavo.m3fx.controls.M3SuggestionChip;
 import org.glavo.m3fx.controls.M3DatePicker;
 import org.glavo.m3fx.controls.M3DatePickerDialog;
 import org.glavo.m3fx.controls.M3DatePickerField;
@@ -98,9 +102,10 @@ import org.glavo.m3fx.controls.M3IconButton;
 import org.glavo.m3fx.controls.M3IconButtonWidth;
 import org.glavo.m3fx.controls.M3IconToggleButton;
 import org.glavo.m3fx.controls.M3IconToggleButtonGroup;
-import org.glavo.m3fx.controls.M3IconToggleButtonSelectionMode;
+import org.glavo.m3fx.controls.M3SelectionMode;
 import org.glavo.m3fx.controls.M3IconToggleButtonVariant;
 import org.glavo.m3fx.controls.M3ListItem;
+import org.glavo.m3fx.controls.M3ListItemBase;
 import org.glavo.m3fx.controls.M3ListItemSlotSize;
 import org.glavo.m3fx.controls.M3ListPane;
 import org.glavo.m3fx.controls.M3ListView;
@@ -134,7 +139,7 @@ import org.glavo.m3fx.controls.M3SearchViewLayout;
 import org.glavo.m3fx.controls.M3SearchViewStyle;
 import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
-import org.glavo.m3fx.controls.M3SegmentedButtonSelectionMode;
+import org.glavo.m3fx.controls.M3SelectionMode;
 import org.glavo.m3fx.controls.M3SideSheet;
 import org.glavo.m3fx.controls.M3SheetVariant;
 import org.glavo.m3fx.controls.M3Snackbar;
@@ -706,7 +711,7 @@ final class M3FXDemoVisualSmokeTest {
                     "chip-selection",
                     "chip",
                     root -> firstVisibleChipWithText(root, "Nearby"),
-                    node -> ((M3Chip) node).isSelected()
+                    node -> ((M3SelectableChip) node).isSelected()
             ),
             new SelectionTargetCase(
                     "Segmented Buttons",
@@ -11070,7 +11075,7 @@ final class M3FXDemoVisualSmokeTest {
 
     /// Verifies one rendered list item text segment and returns its text bounds when checked.
     private static @Nullable Bounds assertListItemTextSegmentGeometry(
-            M3ListItem item,
+            M3ListItemBase item,
             String styleClass,
             String expectedText,
             String segmentName,
@@ -11131,7 +11136,7 @@ final class M3FXDemoVisualSmokeTest {
 
     /// Verifies that stacked list item text segments preserve their vertical order.
     private static void assertListItemTextSegmentOrder(
-            M3ListItem item,
+            M3ListItemBase item,
             @Nullable Bounds overlineBounds,
             @Nullable Bounds headlineBounds,
             @Nullable Bounds supportingBounds,
@@ -11187,7 +11192,7 @@ final class M3FXDemoVisualSmokeTest {
 
     /// Verifies one list item slot and its directly assigned content.
     private static void assertListItemSlotGeometry(
-            M3ListItem item,
+            M3ListItemBase item,
             @Nullable Node content,
             M3ListItemSlotSize slotSize,
             String slotStyleClass,
@@ -12050,9 +12055,9 @@ final class M3FXDemoVisualSmokeTest {
 
         List<M3SegmentedButtonGroup> groups = visibleNodesOfType(page, M3SegmentedButtonGroup.class);
         assertEquals(3, groups.size(), () -> "Segmented Buttons page should render three groups: " + groups);
-        assertEquals(M3SegmentedButtonSelectionMode.SINGLE, groups.get(0).getSelectionMode());
-        assertEquals(M3SegmentedButtonSelectionMode.SINGLE, groups.get(1).getSelectionMode());
-        assertEquals(M3SegmentedButtonSelectionMode.MULTIPLE, groups.get(2).getSelectionMode());
+        assertEquals(M3SelectionMode.SINGLE, groups.get(0).getSelectionMode());
+        assertEquals(M3SelectionMode.SINGLE, groups.get(1).getSelectionMode());
+        assertEquals(M3SelectionMode.MULTIPLE, groups.get(2).getSelectionMode());
         assertEquals(1, groups.get(0).getSelectedButtons().size(), "date range selected count");
         assertEquals(1, groups.get(1).getSelectedButtons().size(), "availability selected count");
         assertEquals(2, groups.get(2).getSelectedButtons().size(), "channel selected count");
@@ -12425,20 +12430,21 @@ final class M3FXDemoVisualSmokeTest {
 
         List<M3Chip> chips = visibleNodesOfType(page, M3Chip.class);
         assertEquals(12, chips.size(), () -> "Chips page should render twelve focused examples: " + chips);
-        assertChipVariantCount(chips, M3ChipVariant.ASSIST, 3, "Chips");
-        assertChipVariantCount(chips, M3ChipVariant.FILTER, 3, "Chips");
-        assertChipVariantCount(chips, M3ChipVariant.INPUT, 3, "Chips");
-        assertChipVariantCount(chips, M3ChipVariant.SUGGESTION, 3, "Chips");
+        assertChipTypeCount(chips, M3AssistChip.class, 3, "Chips");
+        assertChipTypeCount(chips, M3FilterChip.class, 3, "Chips");
+        assertChipTypeCount(chips, M3InputChip.class, 3, "Chips");
+        assertChipTypeCount(chips, M3SuggestionChip.class, 3, "Chips");
         assertEquals(2, chips.stream().filter(chip -> chip.getChipStyle() == M3ChipStyle.ELEVATED).count(),
                 "Chips elevated count");
-        assertEquals(3, chips.stream().filter(M3Chip::isSelected).count(), "Chips selected count");
+        assertEquals(3, chips.stream().filter(M3FXDemoVisualSmokeTest::isChipSelected).count(),
+                "Chips selected count");
         assertEquals(2, chips.stream().filter(Node::isDisabled).count(), "Chips disabled count");
         assertTrue(chips.stream().filter(chip -> chip.getGraphic() != null).count() >= 5,
                 "Chip responsibilities should include meaningful leading icons");
         assertEquals(3, chips.stream().filter(chip -> chip.getTrailingGraphic() != null).count(),
                 "Input chip trailing action count");
         for (M3Chip chip : chips) {
-            AccessibleRole expectedRole = chip.isSelectionSupported()
+            AccessibleRole expectedRole = chip instanceof M3SelectableChip
                     ? AccessibleRole.TOGGLE_BUTTON
                     : AccessibleRole.BUTTON;
             assertEquals(expectedRole, chip.getAccessibleRole(), () -> chip.getText() + " accessible role");
@@ -12467,7 +12473,7 @@ final class M3FXDemoVisualSmokeTest {
 
         List<M3ChipGroup> groups = visibleNodesOfType(page, M3ChipGroup.class);
         assertEquals(1, groups.size(), () -> "Chips page should use one filter selection group: " + groups);
-        assertEquals(M3ChipSelectionMode.MULTIPLE, groups.get(0).getSelectionMode());
+        assertEquals(M3SelectionMode.MULTIPLE, groups.get(0).getSelectionMode());
         assertEquals(2, groups.get(0).getSelectedChips().size(), "selected filter chip count");
         assertChipGroupDemoGeometry(groups.get(0));
 
@@ -12901,7 +12907,7 @@ final class M3FXDemoVisualSmokeTest {
 
     /// Verifies a selected list item's selected-container layout.
     private static void assertListItemSelectedContainerLayout(
-            M3ListItem item,
+            M3ListItemBase item,
             Node selectionContainer,
             String description
     ) {
@@ -12982,7 +12988,7 @@ final class M3FXDemoVisualSmokeTest {
     }
 
     /// Returns the selected-container node for one list item.
-    private static Node listItemSelectionContainer(M3ListItem item) {
+    private static Node listItemSelectionContainer(M3ListItemBase item) {
         return requireVisibleStyledDescendant(
                 item,
                 "m3-list-item-selection-container",
@@ -13508,7 +13514,7 @@ final class M3FXDemoVisualSmokeTest {
 
     /// Verifies physical order for horizontal navigation items.
     private static void assertHorizontalNavigationItemOrder(
-            List<Node> logicalItems,
+            List<? extends Node> logicalItems,
             List<M3NavigationItem> renderedItems,
             NodeOrientation orientation,
             double itemSpacing,
@@ -13547,7 +13553,7 @@ final class M3FXDemoVisualSmokeTest {
 
     /// Verifies physical order for vertical navigation items.
     private static void assertVerticalNavigationItemOrder(
-            List<Node> logicalItems,
+            List<? extends Node> logicalItems,
             List<M3NavigationItem> renderedItems,
             String description
     ) {
@@ -13756,7 +13762,7 @@ final class M3FXDemoVisualSmokeTest {
 
     /// Verifies physical order for horizontal tab bars.
     private static void assertHorizontalTabOrder(
-            List<Node> logicalTabs,
+            List<? extends Node> logicalTabs,
             List<M3Tab> renderedTabs,
             NodeOrientation orientation,
             String description
@@ -13929,16 +13935,21 @@ final class M3FXDemoVisualSmokeTest {
         return null;
     }
 
-    /// Verifies the number of chips with one Material chip variant.
-    private static void assertChipVariantCount(
+    /// Verifies the number of chips with one concrete Material chip type.
+    private static void assertChipTypeCount(
             List<M3Chip> chips,
-            M3ChipVariant variant,
+            Class<? extends M3Chip> chipType,
             long expected,
             String description
     ) {
-        long actual = chips.stream().filter(chip -> chip.getVariant() == variant).count();
+        long actual = chips.stream().filter(chipType::isInstance).count();
         assertEquals(expected, actual, () -> description + " should render " + expected + " "
-                + variant + " chips, found " + actual);
+                + chipType.getSimpleName() + " controls, found " + actual);
+    }
+
+    /// Returns whether a chip exposes and currently holds selected state.
+    private static boolean isChipSelected(M3Chip chip) {
+        return chip instanceof M3SelectableChip selectableChip && selectableChip.isSelected();
     }
 
     /// Verifies that one demo chip resolves visible container, text, optional icon, and selected fill geometry.
@@ -13954,7 +13965,7 @@ final class M3FXDemoVisualSmokeTest {
                 () -> description + " should be wider than tall: " + chipBounds);
 
         Color surroundingColor = sampleColorOutsideBounds(image, chipBounds);
-        if (!chip.isSelected() && chip.getChipStyle() == M3ChipStyle.FLAT) {
+        if (!isChipSelected(chip) && chip.getChipStyle() == M3ChipStyle.FLAT) {
             Rectangle2D visualPixels = contrastingPixelBounds(
                     image,
                     chip,
@@ -13989,7 +14000,7 @@ final class M3FXDemoVisualSmokeTest {
                 chipBounds.getMinY() + Math.max(4.0, chipBounds.getHeight() * 0.25)
         );
         double distance = pixelDistance(interiorColor, surroundingColor);
-        if (chip.isSelected()) {
+        if (isChipSelected(chip)) {
             assertTrue(distance >= 0.035,
                     () -> description + " selected chip interior is too close to its surrounding surface: interior="
                             + interiorColor + ", surrounding=" + surroundingColor + ", distance=" + distance);
@@ -14056,7 +14067,8 @@ final class M3FXDemoVisualSmokeTest {
         Bounds groupBounds = group.localToScene(group.getBoundsInLocal());
         List<M3Chip> chips = visibleNodesOfType(group, M3Chip.class);
         assertFalse(chips.isEmpty(), () -> "chip group should render at least one chip: " + group);
-        assertEquals(group.getSelectedChips().size(), chips.stream().filter(M3Chip::isSelected).count(),
+        assertEquals(group.getSelectedChips().size(),
+                chips.stream().filter(M3FXDemoVisualSmokeTest::isChipSelected).count(),
                 "chip group selected chip count should match rendered child state");
         for (M3Chip chip : chips) {
             Bounds chipBounds = chip.localToScene(chip.getBoundsInLocal());
@@ -14239,7 +14251,7 @@ final class M3FXDemoVisualSmokeTest {
         assertVisibleText(root, "Month", "All Buttons");
 
         List<M3Button> buttons = visibleDemoPageButtons(page);
-        assertTrue(buttons.size() >= 11, () -> "All Buttons page should render regular, grouped, and split buttons: "
+        assertTrue(buttons.size() >= 10, () -> "All Buttons page should render regular, grouped, and split actions: "
                 + buttons);
         assertButtonVariantCount(buttons, M3ButtonVariant.FILLED, 2, "All Buttons");
         assertTrue(buttons.stream().anyMatch(button -> button.getVariant() == M3ButtonVariant.OUTLINED),
@@ -14248,6 +14260,9 @@ final class M3FXDemoVisualSmokeTest {
                 "All Buttons page should include elevated actions");
         assertEquals(1, buttons.stream().filter(Node::isDisabled).count(),
                 "All Buttons page should render one disabled regular button state");
+        assertTrue(visibleNodesOfType(page, M3MenuButton.class).stream()
+                        .anyMatch(button -> button.getStyleClass().contains(M3SplitButton.MENU_BUTTON_STYLE_CLASS)),
+                "All Buttons page should render the split-button menu action");
 
         List<M3IconButton> iconButtons = visibleNodesOfType(page, M3IconButton.class);
         assertEquals(2, iconButtons.size(), () -> "All Buttons page should render two icon buttons: " + iconButtons);
@@ -14499,9 +14514,9 @@ final class M3FXDemoVisualSmokeTest {
         assertEquals(4, groups.get(0).getItems().size(), "standard toggle group item count");
         assertEquals(3, groups.get(1).getItems().size(), "tonal toggle group item count");
         assertEquals(3, groups.get(2).getItems().size(), "formatting toggle group item count");
-        assertEquals(M3IconToggleButtonSelectionMode.SINGLE, groups.get(0).getSelectionMode());
-        assertEquals(M3IconToggleButtonSelectionMode.SINGLE, groups.get(1).getSelectionMode());
-        assertEquals(M3IconToggleButtonSelectionMode.MULTIPLE, groups.get(2).getSelectionMode());
+        assertEquals(M3SelectionMode.SINGLE, groups.get(0).getSelectionMode());
+        assertEquals(M3SelectionMode.SINGLE, groups.get(1).getSelectionMode());
+        assertEquals(M3SelectionMode.MULTIPLE, groups.get(2).getSelectionMode());
         assertEquals(1, groups.get(0).getSelectedButtons().size(), "standard toggle selected count");
         assertEquals(1, groups.get(1).getSelectedButtons().size(), "tonal toggle selected count");
         assertEquals(2, groups.get(2).getSelectedButtons().size(), "formatting toggle selected count");

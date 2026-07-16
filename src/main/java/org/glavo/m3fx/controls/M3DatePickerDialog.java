@@ -27,7 +27,7 @@ import java.time.LocalDate;
 ///
 /// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview).
 @NotNullByDefault
-public class M3DatePickerDialog extends M3Dialog<LocalDate> {
+public final class M3DatePickerDialog extends M3Dialog<LocalDate> {
     /// The default title and header text for date picker dialogs.
     public static final String DEFAULT_TITLE = "Select date";
 

@@ -45,7 +45,7 @@ import java.util.Objects;
 ///
 /// See [Material Design bottom app bars](https://m3.material.io/components/bottom-app-bar/overview).
 @NotNullByDefault
-public class M3BottomAppBar extends Control {
+public final class M3BottomAppBar extends Control {
     /// The default bottom app bar container height in pixels.
     private static final double DEFAULT_CONTAINER_HEIGHT = 80.0;
 

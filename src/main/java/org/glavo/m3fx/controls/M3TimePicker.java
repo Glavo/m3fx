@@ -47,7 +47,7 @@ import java.util.Objects;
 ///
 /// See [Material Design time pickers](https://m3.material.io/components/time-pickers/overview).
 @NotNullByDefault
-public class M3TimePicker extends Control {
+public final class M3TimePicker extends Control {
     /// The base style class for M3FX time pickers.
     public static final String STYLE_CLASS = "m3-time-picker";
 

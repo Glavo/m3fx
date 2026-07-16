@@ -60,8 +60,16 @@ public sealed interface M3TypographyTokens permits M3TypographyTokensImpl {
     /// Returns the body small text style.
     M3TextStyle bodySmall();
 
+    /// Creates a builder initialized from an existing typography token set.
+    ///
+    /// @param tokens the typography tokens to copy
+    /// @return a mutable typography-token builder
+    static M3TypographyTokensBuilder builder(M3TypographyTokens tokens) {
+        return new M3TypographyTokensBuilder(tokens);
+    }
+
     /// Creates typography tokens.
-    static M3TypographyTokens create(
+    private static M3TypographyTokens create(
             M3TextStyle displayLarge,
             M3TextStyle displayMedium,
             M3TextStyle displaySmall,

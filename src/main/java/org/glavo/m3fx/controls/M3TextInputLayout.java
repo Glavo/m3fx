@@ -76,7 +76,7 @@ import java.util.Objects;
 /// with a label background, allowing the floating-label transition to match the
 /// [Material Design text fields](https://m3.material.io/components/text-fields/overview) model.
 @NotNullByDefault
-public class M3TextInputLayout extends Control {
+public final class M3TextInputLayout extends Control {
     /// The base style class for M3FX text input layouts.
     public static final String STYLE_CLASS = "m3-text-input-layout";
 

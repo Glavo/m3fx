@@ -4,13 +4,15 @@
 package org.glavo.m3fx.skins;
 
 import javafx.scene.layout.HBox;
+import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
 import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// The default Material Design 3 skin for [M3SegmentedButtonGroup].
 @NotNullByDefault
-public final class M3SegmentedButtonGroupSkin extends M3ItemContainerSkinBase<M3SegmentedButtonGroup, HBox> {
+public final class M3SegmentedButtonGroupSkin
+        extends M3ItemContainerSkinBase<M3SegmentedButtonGroup, HBox, M3SegmentedButton> {
     /// Creates a segmented button group skin.
     ///
     /// @param control the segmented button group controlled by this skin

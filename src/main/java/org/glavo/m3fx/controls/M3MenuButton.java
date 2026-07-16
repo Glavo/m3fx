@@ -40,7 +40,7 @@ import java.util.Objects;
 ///
 /// See [Material Design menus](https://m3.material.io/components/menus/overview).
 @NotNullByDefault
-public class M3MenuButton extends M3Button {
+public final class M3MenuButton extends M3ButtonBase {
     /// The base style class for M3FX menu buttons.
     public static final String STYLE_CLASS = "m3-menu-button";
 
@@ -246,7 +246,7 @@ public class M3MenuButton extends M3Button {
             case FOCUS_NODE -> focusNode();
             case ITEM_COUNT -> getItems().size();
             case ITEM_AT_INDEX -> M3Accessible.itemAt(getItems(), parameters);
-            case MULTIPLE_SELECTION -> menu.getSelectionMode() == M3MenuSelectionMode.MULTIPLE;
+            case MULTIPLE_SELECTION -> menu.getSelectionMode() == M3SelectionMode.MULTIPLE;
             case SELECTED_ITEMS -> menu.getSelectedItems();
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };

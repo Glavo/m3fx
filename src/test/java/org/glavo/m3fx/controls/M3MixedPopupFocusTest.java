@@ -296,8 +296,14 @@ final class M3MixedPopupFocusTest {
             );
             M3ListItem row = new M3ListItem("Project Alpha");
             row.setTrailing(rowAction);
-            M3ListView<M3ListItem> listView = listView(row);
-            listView.setCellFactory(item -> item);
+            M3ListView<String> listView = listView("Project Alpha");
+            listView.setCellFactory(view -> new M3ListCell<>(view) {
+                /// Creates the retained row configured for the popup-focus scenario.
+                @Override
+                protected M3ListItem createListItem() {
+                    return row;
+                }
+            });
             listView.setFixedCellSize(72.0);
             Stage stage = new Stage();
 

@@ -22,13 +22,14 @@ import java.util.List;
 
 /// A Material Design 3 menu item.
 ///
-/// `M3MenuItem` specializes [M3ListItem] for use inside [M3Menu]. It provides menu-item accessibility semantics,
-/// optional leading and trailing slots, action dispatch, and selection state when the containing menu uses a
-/// selectable mode.
+/// `M3MenuItem` is the concrete action-item type used inside [M3Menu]. It provides menu-item accessibility
+/// semantics, optional leading and trailing slots, action dispatch, and selection state when the containing menu
+/// uses a selectable mode. It shares row content APIs with [M3ListItem] through [M3ListItemBase], but it is not a
+/// list item and therefore cannot be inserted into list-only containers.
 ///
 /// See [Material Design menus](https://m3.material.io/components/menus/overview).
 @NotNullByDefault
-public class M3MenuItem extends M3ListItem {
+public sealed class M3MenuItem extends M3ListItemBase permits M3SubMenuItem {
     /// The base style class for M3FX menu items.
     public static final String STYLE_CLASS = "m3-menu-item";
 
@@ -155,7 +156,7 @@ public class M3MenuItem extends M3ListItem {
 
         static {
             List<CssMetaData<? extends Styleable, ?>> styleables =
-                    new ArrayList<>(M3ListItem.getClassCssMetaData());
+                    new ArrayList<>(M3ListItemBase.getClassCssMetaData());
             styleables.add(INNER_CORNER_SHAPE);
             STYLEABLES = Collections.unmodifiableList(styleables);
         }

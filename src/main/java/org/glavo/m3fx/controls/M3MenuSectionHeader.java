@@ -11,7 +11,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 ///
 /// See [Material Design menus](https://m3.material.io/components/menus/overview).
 @NotNullByDefault
-public class M3MenuSectionHeader extends M3Text {
+public final class M3MenuSectionHeader extends M3Text {
     /// The base style class for M3FX menu section headers.
     public static final String STYLE_CLASS = "m3-menu-section-header";
 

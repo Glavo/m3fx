@@ -42,7 +42,7 @@ import java.util.Objects;
 ///
 /// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview).
 @NotNullByDefault
-public class M3DatePicker extends Control {
+public final class M3DatePicker extends Control {
     /// The internal pseudo-class used when the calendar is rendered by a modal picker dialog.
     static final PseudoClass MODAL_PSEUDO_CLASS = PseudoClass.getPseudoClass("modal");
 

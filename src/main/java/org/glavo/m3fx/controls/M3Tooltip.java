@@ -47,6 +47,7 @@ import org.glavo.m3fx.internal.M3TooltipRegistry;
 import org.glavo.m3fx.skins.M3TooltipSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.internal.theme.M3ThemeMetadata;
+import org.glavo.m3fx.internal.theme.M3ThemeCssCompiler;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.glavo.m3fx.tokens.M3ComponentTokens;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -557,7 +558,7 @@ public class M3Tooltip extends PopupControl {
             baseStyle = resolvedBaseStyle;
         }
         M3ThemeManager.applyThemeStyleClasses(this, theme);
-        String themeStyle = theme.toRootStyleDeclarations();
+        String themeStyle = M3ThemeCssCompiler.rootStyleDeclarations(theme);
         if (usesPlainContainerStyle()) {
             themeStyle = mergeStyles(themeStyle, plainContainerStyle(theme.tokens().componentTokens().tooltip()));
         }

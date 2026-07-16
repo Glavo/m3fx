@@ -42,7 +42,7 @@ import java.util.Objects;
 /// Expressive wavy geometry; the Flat configuration remains the default in every theme profile. See
 /// [Material Design progress indicators](https://m3.material.io/components/progress-indicators/overview).
 @NotNullByDefault
-public class M3ProgressBar extends Control {
+public final class M3ProgressBar extends Control {
     /// The base style class for M3FX progress bars.
     public static final String STYLE_CLASS = "m3-progress-bar";
 

@@ -4,6 +4,7 @@
 package org.glavo.m3fx;
 
 import org.glavo.m3fx.theme.M3Theme;
+import org.glavo.m3fx.internal.theme.M3ThemeCssCompiler;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Unmodifiable;
 import org.junit.jupiter.api.Test;
@@ -92,7 +93,9 @@ final class ProjectContractTest {
                             M3BottomAppBar
                             M3BottomAppBarFloatingActionAlignment
                             M3BottomSheet
+                            M3AssistChip
                             M3Button
+                            M3ButtonBase
                             M3ButtonGroup
                             M3ButtonGroupVariant
                             M3ButtonShape
@@ -105,9 +108,12 @@ final class ProjectContractTest {
                             M3CheckBox
                             M3Chip
                             M3ChipGroup
-                            M3ChipSelectionMode
+                            M3SelectionMode
                             M3ChipStyle
-                            M3ChipVariant
+                            M3FilterChip
+                            M3InputChip
+                            M3SelectableChip
+                            M3SuggestionChip
                             M3DatePicker
                             M3DatePickerDialog
                             M3DatePickerField
@@ -136,15 +142,17 @@ final class ProjectContractTest {
                             M3IconSize
                             M3IconToggleButton
                             M3IconToggleButtonGroup
-                            M3IconToggleButtonSelectionMode
+                            M3SelectionMode
                             M3IconToggleButtonVariant
                             M3IconVariant
+                            M3ListCell
                             M3ListItem
+                            M3ListItemBase
                             M3ListItemLineCount
                             M3ListItemSlotSize
                             M3ListPane
                             M3ListSectionHeader
-                            M3ListSelectionMode
+                            M3SelectionMode
                             M3ListView
                             M3LoadingIndicator
                             M3LoadingIndicatorVariant
@@ -153,7 +161,7 @@ final class ProjectContractTest {
                             M3MenuColorStyle
                             M3MenuItem
                             M3MenuSectionHeader
-                            M3MenuSelectionMode
+                            M3SelectionMode
                             M3NavigationBar
                             M3NavigationDrawer
                             M3NavigationDrawerGroup
@@ -177,7 +185,7 @@ final class ProjectContractTest {
                             M3SearchViewStyle
                             M3SegmentedButton
                             M3SegmentedButtonGroup
-                            M3SegmentedButtonSelectionMode
+                            M3SelectionMode
                             M3SheetVariant
                             M3SideSheet
                             M3Slider
@@ -226,15 +234,21 @@ final class ProjectContractTest {
                     typeNames("""
                             M3ColorTokens
                             M3ComponentTokens
+                            M3ComponentTokensBuilder
                             M3Density
                             M3ElevationTokens
                             M3MotionTokens
+                            M3MotionTokensBuilder
                             M3Profile
                             M3ShapeTokens
+                            M3ShapeTokensBuilder
                             M3StateLayerTokens
+                            M3StateLayerTokensBuilder
                             M3TextStyle
                             M3TokenSet
+                            M3TokenSetBuilder
                             M3TypographyTokens
+                            M3TypographyTokensBuilder
                             """)
             );
 
@@ -348,9 +362,19 @@ final class ProjectContractTest {
     );
 
     /// Public control type names that would expose implementation nodes rather than user-facing controls.
-    private static final @Unmodifiable Set<String> FORBIDDEN_PUBLIC_CONTROL_TYPE_NAMES = Set.of(
-            "M3DisclosureIcon",
-            "M3ListViewCell"
+    private static final @Unmodifiable Set<String> FORBIDDEN_PUBLIC_CONTROL_TYPE_NAMES =
+            Set.of("M3DisclosureIcon");
+
+    /// Public cell types that form part of a control's customization API.
+    private static final @Unmodifiable Set<String> ALLOWED_PUBLIC_CONTROL_CELL_TYPES = Set.of("M3ListCell");
+
+    /// Concrete controls that intentionally remain subclassable extension points.
+    private static final @Unmodifiable Set<String> ALLOWED_OPEN_CONCRETE_CONTROLS = Set.of(
+            "org.glavo.m3fx.controls.M3Dialog",
+            "org.glavo.m3fx.controls.M3DialogPane",
+            "org.glavo.m3fx.controls.M3ListCell",
+            "org.glavo.m3fx.controls.M3Text",
+            "org.glavo.m3fx.controls.M3Tooltip"
     );
 
     /// Public control type suffixes reserved for implementation details.
@@ -524,7 +548,7 @@ final class ProjectContractTest {
                     org.glavo.m3fx.theme.M3Theme#fromSeed(javafx.scene.paint.Color,org.glavo.monetfx.Brightness)
                     org.glavo.m3fx.theme.M3Theme#fromSeed(javafx.scene.paint.Color,org.glavo.m3fx.tokens.M3Profile,org.glavo.monetfx.Brightness)
                     org.glavo.m3fx.theme.M3Theme#fromSeed(javafx.scene.paint.Color,org.glavo.m3fx.tokens.M3Profile,org.glavo.monetfx.Brightness,org.glavo.m3fx.tokens.M3Density)
-                    org.glavo.m3fx.theme.M3Theme#fromTokenSet(org.glavo.m3fx.tokens.M3Profile,org.glavo.monetfx.ColorScheme,org.glavo.m3fx.tokens.M3Density,org.glavo.m3fx.tokens.M3TokenSet)
+                    org.glavo.m3fx.theme.M3Theme#fromTokenSet(org.glavo.m3fx.tokens.M3TokenSet)
                     org.glavo.m3fx.theme.M3ThemeManager#applyThemeStyleClasses(javafx.css.Styleable,org.glavo.m3fx.theme.M3Theme)
                     org.glavo.m3fx.theme.M3ThemeManager#clearThemeStyleClasses(javafx.css.Styleable)
                     org.glavo.m3fx.theme.M3ThemeManager#copyThemeContext(javafx.scene.Parent,javafx.scene.Parent)
@@ -545,7 +569,8 @@ final class ProjectContractTest {
             "org.glavo.m3fx.tokens",
             typeNames("""
                     org.glavo.m3fx.tokens.M3ColorTokens#create(org.glavo.monetfx.ColorScheme)
-                    org.glavo.m3fx.tokens.M3ComponentTokens#create(org.glavo.m3fx.tokens.M3ComponentTokens$ButtonTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ButtonTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ButtonTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ButtonTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ButtonTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ButtonSizingTokens,org.glavo.m3fx.tokens.M3ComponentTokens$IconButtonTokens,org.glavo.m3fx.tokens.M3ComponentTokens$FabTokens,org.glavo.m3fx.tokens.M3ComponentTokens$IconTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ButtonGroupTokens,org.glavo.m3fx.tokens.M3ComponentTokens$SplitButtonTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ButtonTokens,org.glavo.m3fx.tokens.M3ComponentTokens$TabTokens,org.glavo.m3fx.tokens.M3ComponentTokens$FieldTokens,org.glavo.m3fx.tokens.M3ComponentTokens$TextAreaTokens,org.glavo.m3fx.tokens.M3ComponentTokens$FormTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ValidationSummaryTokens,org.glavo.m3fx.tokens.M3ComponentTokens$MenuTokens,org.glavo.m3fx.tokens.M3ComponentTokens$SearchTokens,org.glavo.m3fx.tokens.M3ComponentTokens$PickerFieldTokens,org.glavo.m3fx.tokens.M3ComponentTokens$DatePickerTokens,org.glavo.m3fx.tokens.M3ComponentTokens$TimePickerTokens,org.glavo.m3fx.tokens.M3ComponentTokens$SheetTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ScrimTokens,org.glavo.m3fx.tokens.M3ComponentTokens$SelectionTokens,org.glavo.m3fx.tokens.M3ComponentTokens$SliderTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ChipTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ProgressTokens,org.glavo.m3fx.tokens.M3ComponentTokens$LoadingIndicatorTokens,org.glavo.m3fx.tokens.M3ComponentTokens$SurfaceTokens,org.glavo.m3fx.tokens.M3ComponentTokens$CarouselTokens,org.glavo.m3fx.tokens.M3ComponentTokens$CardTokens,org.glavo.m3fx.tokens.M3ComponentTokens$DialogTokens,org.glavo.m3fx.tokens.M3ComponentTokens$SnackbarTokens,org.glavo.m3fx.tokens.M3ComponentTokens$BannerTokens,org.glavo.m3fx.tokens.M3ComponentTokens$TooltipTokens,org.glavo.m3fx.tokens.M3ComponentTokens$DividerTokens,org.glavo.m3fx.tokens.M3ComponentTokens$BadgeTokens,org.glavo.m3fx.tokens.M3ComponentTokens$AvatarTokens,org.glavo.m3fx.tokens.M3ComponentTokens$TopAppBarTokens,org.glavo.m3fx.tokens.M3ComponentTokens$BottomAppBarTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ToolbarTokens,org.glavo.m3fx.tokens.M3ComponentTokens$NavigationBarTokens,org.glavo.m3fx.tokens.M3ComponentTokens$NavigationRailTokens,org.glavo.m3fx.tokens.M3ComponentTokens$NavigationDrawerTokens,org.glavo.m3fx.tokens.M3ComponentTokens$ListItemTokens)
+                    org.glavo.m3fx.tokens.M3ComponentTokens#builder(org.glavo.m3fx.tokens.M3Profile,org.glavo.m3fx.tokens.M3ShapeTokens,org.glavo.m3fx.tokens.M3Density)
+                    org.glavo.m3fx.tokens.M3ComponentTokens#builder(org.glavo.m3fx.tokens.M3ComponentTokens)
                     org.glavo.m3fx.tokens.M3ComponentTokens#create(org.glavo.m3fx.tokens.M3Profile,org.glavo.m3fx.tokens.M3ShapeTokens,org.glavo.m3fx.tokens.M3Density)
                     org.glavo.m3fx.tokens.M3Density#of(double)
                     org.glavo.m3fx.tokens.M3Density#standard()
@@ -553,23 +578,24 @@ final class ProjectContractTest {
                     org.glavo.m3fx.tokens.M3ElevationTokens#create(double,double,double,double,double,double)
                     org.glavo.m3fx.tokens.M3MotionTokens#baseline()
                     org.glavo.m3fx.tokens.M3MotionTokens#create(int,int,int)
-                    org.glavo.m3fx.tokens.M3MotionTokens#create(int,int,int,int,int,int,int,int,int,int,int,int,int,int,int,int)
-                    org.glavo.m3fx.tokens.M3MotionTokens#create(int,int,int,int,int,int,int,int,int,int,int,int,int,int,int,int,org.glavo.m3fx.animation.M3MotionScheme)
-                    org.glavo.m3fx.tokens.M3MotionTokens#create(int,int,int,int,int,int,int,int,int,int,int,int,int,int,int,int,org.glavo.m3fx.animation.M3MotionScheme,org.glavo.m3fx.animation.M3MotionBehavior)
+                    org.glavo.m3fx.tokens.M3MotionTokens#builder(org.glavo.m3fx.tokens.M3MotionTokens)
+
+
                     org.glavo.m3fx.tokens.M3MotionTokens#expressive()
                     org.glavo.m3fx.tokens.M3ShapeTokens#baseline()
-                    org.glavo.m3fx.tokens.M3ShapeTokens#create(double,double,double,double,double,double)
-                    org.glavo.m3fx.tokens.M3ShapeTokens#create(double,double,double,double,double,double,double,double,double,double)
+                    org.glavo.m3fx.tokens.M3ShapeTokens#builder(org.glavo.m3fx.tokens.M3ShapeTokens)
+
                     org.glavo.m3fx.tokens.M3ShapeTokens#expressive()
                     org.glavo.m3fx.tokens.M3StateLayerTokens#baseline()
-                    org.glavo.m3fx.tokens.M3StateLayerTokens#create(double,double,double,double,double,double)
-                    org.glavo.m3fx.tokens.M3StateLayerTokens#create(double,double,double,double,double,double,double,double,double)
+                    org.glavo.m3fx.tokens.M3StateLayerTokens#builder(org.glavo.m3fx.tokens.M3StateLayerTokens)
+
                     org.glavo.m3fx.tokens.M3TextStyle#create(java.lang.String,double,double,int)
                     org.glavo.m3fx.tokens.M3TextStyle#create(java.lang.String,double,double,int,double)
-                    org.glavo.m3fx.tokens.M3TokenSet#create(org.glavo.m3fx.tokens.M3Profile,org.glavo.m3fx.tokens.M3ColorTokens,org.glavo.m3fx.tokens.M3TypographyTokens,org.glavo.m3fx.tokens.M3ShapeTokens,org.glavo.m3fx.tokens.M3ElevationTokens,org.glavo.m3fx.tokens.M3MotionTokens,org.glavo.m3fx.tokens.M3StateLayerTokens,org.glavo.m3fx.tokens.M3ComponentTokens)
+                    org.glavo.m3fx.tokens.M3TokenSet#builder(org.glavo.m3fx.tokens.M3Profile,org.glavo.monetfx.ColorScheme,org.glavo.m3fx.tokens.M3Density)
+                    org.glavo.m3fx.tokens.M3TokenSet#builder(org.glavo.m3fx.tokens.M3TokenSet)
                     org.glavo.m3fx.tokens.M3TokenSet#create(org.glavo.m3fx.tokens.M3Profile,org.glavo.monetfx.ColorScheme,org.glavo.m3fx.tokens.M3Density)
                     org.glavo.m3fx.tokens.M3TypographyTokens#baseline()
-                    org.glavo.m3fx.tokens.M3TypographyTokens#create(org.glavo.m3fx.tokens.M3TextStyle,org.glavo.m3fx.tokens.M3TextStyle,org.glavo.m3fx.tokens.M3TextStyle,org.glavo.m3fx.tokens.M3TextStyle,org.glavo.m3fx.tokens.M3TextStyle,org.glavo.m3fx.tokens.M3TextStyle,org.glavo.m3fx.tokens.M3TextStyle,org.glavo.m3fx.tokens.M3TextStyle,org.glavo.m3fx.tokens.M3TextStyle,org.glavo.m3fx.tokens.M3TextStyle,org.glavo.m3fx.tokens.M3TextStyle,org.glavo.m3fx.tokens.M3TextStyle,org.glavo.m3fx.tokens.M3TextStyle,org.glavo.m3fx.tokens.M3TextStyle,org.glavo.m3fx.tokens.M3TextStyle)
+                    org.glavo.m3fx.tokens.M3TypographyTokens#builder(org.glavo.m3fx.tokens.M3TypographyTokens)
                     org.glavo.m3fx.tokens.M3TypographyTokens#expressive()
                     """)
     );
@@ -636,14 +662,10 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3CarouselLayout#MULTI_BROWSE
             org.glavo.m3fx.controls.M3CarouselLayout#UNCONTAINED
             org.glavo.m3fx.controls.M3CarouselLayout#UNCONTAINED_MULTI_ASPECT_RATIO
-            org.glavo.m3fx.controls.M3ChipSelectionMode#MULTIPLE
-            org.glavo.m3fx.controls.M3ChipSelectionMode#SINGLE
+            org.glavo.m3fx.controls.M3SelectionMode#MULTIPLE
+            org.glavo.m3fx.controls.M3SelectionMode#SINGLE
             org.glavo.m3fx.controls.M3ChipStyle#ELEVATED
             org.glavo.m3fx.controls.M3ChipStyle#FLAT
-            org.glavo.m3fx.controls.M3ChipVariant#ASSIST
-            org.glavo.m3fx.controls.M3ChipVariant#FILTER
-            org.glavo.m3fx.controls.M3ChipVariant#INPUT
-            org.glavo.m3fx.controls.M3ChipVariant#SUGGESTION
             org.glavo.m3fx.controls.M3FloatingActionButtonSize#LARGE
             org.glavo.m3fx.controls.M3FloatingActionButtonSize#MEDIUM
             org.glavo.m3fx.controls.M3FloatingActionButtonSize#REGULAR
@@ -662,8 +684,8 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3IconSize#LARGE
             org.glavo.m3fx.controls.M3IconSize#MEDIUM
             org.glavo.m3fx.controls.M3IconSize#SMALL
-            org.glavo.m3fx.controls.M3IconToggleButtonSelectionMode#MULTIPLE
-            org.glavo.m3fx.controls.M3IconToggleButtonSelectionMode#SINGLE
+            org.glavo.m3fx.controls.M3SelectionMode#MULTIPLE
+            org.glavo.m3fx.controls.M3SelectionMode#SINGLE
             org.glavo.m3fx.controls.M3IconToggleButtonVariant#FILLED
             org.glavo.m3fx.controls.M3IconToggleButtonVariant#OUTLINED
             org.glavo.m3fx.controls.M3IconToggleButtonVariant#STANDARD
@@ -683,16 +705,16 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3ListItemSlotSize#ICON
             org.glavo.m3fx.controls.M3ListItemSlotSize#THUMBNAIL
             org.glavo.m3fx.controls.M3ListItemSlotSize#WIDE_THUMBNAIL
-            org.glavo.m3fx.controls.M3ListSelectionMode#MULTIPLE
-            org.glavo.m3fx.controls.M3ListSelectionMode#NONE
-            org.glavo.m3fx.controls.M3ListSelectionMode#SINGLE
+            org.glavo.m3fx.controls.M3SelectionMode#MULTIPLE
+            org.glavo.m3fx.controls.M3SelectionMode#NONE
+            org.glavo.m3fx.controls.M3SelectionMode#SINGLE
             org.glavo.m3fx.controls.M3LoadingIndicatorVariant#CONTAINED
             org.glavo.m3fx.controls.M3LoadingIndicatorVariant#DEFAULT
             org.glavo.m3fx.controls.M3MenuColorStyle#STANDARD
             org.glavo.m3fx.controls.M3MenuColorStyle#VIBRANT
-            org.glavo.m3fx.controls.M3MenuSelectionMode#MULTIPLE
-            org.glavo.m3fx.controls.M3MenuSelectionMode#NONE
-            org.glavo.m3fx.controls.M3MenuSelectionMode#SINGLE
+            org.glavo.m3fx.controls.M3SelectionMode#MULTIPLE
+            org.glavo.m3fx.controls.M3SelectionMode#NONE
+            org.glavo.m3fx.controls.M3SelectionMode#SINGLE
             org.glavo.m3fx.controls.M3NavigationDrawerVariant#MODAL
             org.glavo.m3fx.controls.M3NavigationDrawerVariant#STANDARD
             org.glavo.m3fx.controls.M3NavigationRailVariant#MODAL
@@ -703,8 +725,8 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3SearchViewLayout#FULL_SCREEN
             org.glavo.m3fx.controls.M3SearchViewStyle#CONTAINED
             org.glavo.m3fx.controls.M3SearchViewStyle#DIVIDED
-            org.glavo.m3fx.controls.M3SegmentedButtonSelectionMode#MULTIPLE
-            org.glavo.m3fx.controls.M3SegmentedButtonSelectionMode#SINGLE
+            org.glavo.m3fx.controls.M3SelectionMode#MULTIPLE
+            org.glavo.m3fx.controls.M3SelectionMode#SINGLE
             org.glavo.m3fx.controls.M3SheetVariant#MODAL
             org.glavo.m3fx.controls.M3SheetVariant#STANDARD
             org.glavo.m3fx.controls.M3SliderSize#EXTRA_LARGE
@@ -807,7 +829,7 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3BottomSheet#HEADER_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3BottomSheet#STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3BottomSheet#TITLE_STYLE_CLASS:java.lang.String
-            org.glavo.m3fx.controls.M3Button#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3ButtonBase#STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3ButtonGroup#FIRST_BUTTON_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3ButtonGroup#GROUPED_BUTTON_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3ButtonGroup#LAST_BUTTON_STYLE_CLASS:java.lang.String
@@ -821,10 +843,14 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3Carousel#TRACK_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3Carousel#VIEWPORT_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3CheckBox#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3AssistChip#STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3Chip#LEADING_GRAPHIC_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3Chip#STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3Chip#TRAILING_GRAPHIC_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3ChipGroup#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3FilterChip#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3InputChip#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3SuggestionChip#STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3DatePicker#CONTAINER_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3DatePicker#DAY_CELL_STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3DatePicker#DAY_GRID_STYLE_CLASS:java.lang.String
@@ -897,7 +923,8 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3IconButton#STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3IconToggleButton#STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3IconToggleButtonGroup#STYLE_CLASS:java.lang.String
-            org.glavo.m3fx.controls.M3ListItem#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3ListCell#STYLE_CLASS:java.lang.String
+            org.glavo.m3fx.controls.M3ListItemBase#STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3ListPane#STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3ListSectionHeader#STYLE_CLASS:java.lang.String
             org.glavo.m3fx.controls.M3ListView#STYLE_CLASS:java.lang.String
@@ -1218,10 +1245,16 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3Carousel()
             org.glavo.m3fx.controls.M3CheckBox()
             org.glavo.m3fx.controls.M3CheckBox(java.lang.String)
-            org.glavo.m3fx.controls.M3Chip()
-            org.glavo.m3fx.controls.M3Chip(java.lang.String)
-            org.glavo.m3fx.controls.M3Chip(java.lang.String,javafx.scene.Node)
+            org.glavo.m3fx.controls.M3AssistChip()
+            org.glavo.m3fx.controls.M3AssistChip(java.lang.String)
+            org.glavo.m3fx.controls.M3AssistChip(java.lang.String,javafx.scene.Node)
             org.glavo.m3fx.controls.M3ChipGroup()
+            org.glavo.m3fx.controls.M3FilterChip()
+            org.glavo.m3fx.controls.M3FilterChip(java.lang.String)
+            org.glavo.m3fx.controls.M3FilterChip(java.lang.String,javafx.scene.Node)
+            org.glavo.m3fx.controls.M3InputChip()
+            org.glavo.m3fx.controls.M3InputChip(java.lang.String)
+            org.glavo.m3fx.controls.M3InputChip(java.lang.String,javafx.scene.Node)
             org.glavo.m3fx.controls.M3DatePicker()
             org.glavo.m3fx.controls.M3DatePicker(java.time.LocalDate)
             org.glavo.m3fx.controls.M3DatePickerDialog()
@@ -1273,6 +1306,7 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3IconToggleButtonGroup()
             org.glavo.m3fx.controls.M3ListItem()
             org.glavo.m3fx.controls.M3ListItem(java.lang.String)
+            org.glavo.m3fx.controls.M3ListCell(org.glavo.m3fx.controls.M3ListView)
             org.glavo.m3fx.controls.M3ListPane()
             org.glavo.m3fx.controls.M3ListSectionHeader()
             org.glavo.m3fx.controls.M3ListSectionHeader(java.lang.String)
@@ -1328,6 +1362,9 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3Snackbar(java.lang.String)
             org.glavo.m3fx.controls.M3Snackbar(java.lang.String,java.lang.String)
             org.glavo.m3fx.controls.M3SnackbarHost()
+            org.glavo.m3fx.controls.M3SuggestionChip()
+            org.glavo.m3fx.controls.M3SuggestionChip(java.lang.String)
+            org.glavo.m3fx.controls.M3SuggestionChip(java.lang.String,javafx.scene.Node)
             org.glavo.m3fx.controls.M3SplitButton()
             org.glavo.m3fx.controls.M3SplitButton(java.lang.String)
             org.glavo.m3fx.controls.M3SubMenuItem()
@@ -1459,8 +1496,10 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3IconToggleButtonGroup#getItems()
             org.glavo.m3fx.controls.M3IconToggleButtonGroup#getSelectedButton()
             org.glavo.m3fx.controls.M3IconToggleButtonGroup#getSelectedButtons()
-            org.glavo.m3fx.controls.M3ListItem#getLeading()
-            org.glavo.m3fx.controls.M3ListItem#getTrailing()
+            org.glavo.m3fx.controls.M3ListCell#getListItem()
+            org.glavo.m3fx.controls.M3ListCell#getListView()
+            org.glavo.m3fx.controls.M3ListItemBase#getLeading()
+            org.glavo.m3fx.controls.M3ListItemBase#getTrailing()
             org.glavo.m3fx.controls.M3ListPane#getItems()
             org.glavo.m3fx.controls.M3ListPane#getSelectedItem()
             org.glavo.m3fx.controls.M3ListPane#getSelectedItems()
@@ -1537,8 +1576,8 @@ final class ProjectContractTest {
             org.glavo.m3fx.controls.M3FormRow#trailingProperty()
             org.glavo.m3fx.controls.M3FormValidator#firstInvalidInputProperty()
             org.glavo.m3fx.controls.M3IconToggleButtonGroup#selectedButtonProperty()
-            org.glavo.m3fx.controls.M3ListItem#leadingProperty()
-            org.glavo.m3fx.controls.M3ListItem#trailingProperty()
+            org.glavo.m3fx.controls.M3ListItemBase#leadingProperty()
+            org.glavo.m3fx.controls.M3ListItemBase#trailingProperty()
             org.glavo.m3fx.controls.M3ListPane#selectedItemProperty()
             org.glavo.m3fx.controls.M3Menu#selectedItemProperty()
             org.glavo.m3fx.controls.M3NavigationBar#selectedItemProperty()
@@ -1633,6 +1672,7 @@ final class ProjectContractTest {
             Map.of(
                     "org.glavo.m3fx.controls.M3Dialog", "javafx.scene.control.Dialog",
                     "org.glavo.m3fx.controls.M3DialogPane", "javafx.scene.control.DialogPane",
+                    "org.glavo.m3fx.controls.M3ListCell", "javafx.scene.control.IndexedCell",
                     "org.glavo.m3fx.controls.M3PasswordField", "javafx.scene.control.PasswordField",
                     "org.glavo.m3fx.controls.M3TextArea", "javafx.scene.control.TextArea",
                     "org.glavo.m3fx.controls.M3TextField", "javafx.scene.control.TextField",
@@ -1979,6 +2019,30 @@ final class ProjectContractTest {
 
         assertEquals(ALLOWED_EXPORTED_CONTROL_DIRECT_JAVA_FX_SUPERCLASSES, concreteJavaFxSuperclasses,
                 "Concrete JavaFX superclass exceptions in exported controls must match the allowed set");
+    }
+
+    /// Verifies that concrete controls are closed unless subclassing is an explicit public customization contract.
+    @Test
+    void concretePublicControlsStayClosedByDefault() throws Exception {
+        List<String> openControls = new ArrayList<>();
+        for (String typeName : EXPECTED_EXPORTED_TOP_LEVEL_TYPES.get("org.glavo.m3fx.controls")) {
+            Class<?> type = Class.forName("org.glavo.m3fx.controls." + typeName, false,
+                    ProjectContractTest.class.getClassLoader());
+            int modifiers = type.getModifiers();
+            if (type.isInterface()
+                    || type.isEnum()
+                    || type.isRecord()
+                    || Modifier.isAbstract(modifiers)
+                    || Modifier.isFinal(modifiers)
+                    || type.isSealed()
+                    || ALLOWED_OPEN_CONCRETE_CONTROLS.contains(type.getName())) {
+                continue;
+            }
+            openControls.add(type.getName());
+        }
+
+        assertTrue(openControls.isEmpty(),
+                () -> "Concrete controls must be final, sealed, or reviewed extension points: " + openControls);
     }
 
     /// Verifies that concrete public controls expose constructors and properties instead of static factories.
@@ -2610,7 +2674,7 @@ final class ProjectContractTest {
         List<String> invalidRules = new ArrayList<>();
         collectUnsupportedControlRootLayoutRules(
                 "generated",
-                M3Theme.defaultTheme().toControlStyleRules(),
+                M3ThemeCssCompiler.controlStyleRules(M3Theme.defaultTheme()),
                 publicControlRootAlignmentSupport(),
                 invalidRules
         );
@@ -2791,7 +2855,9 @@ final class ProjectContractTest {
     /// Verifies that project CSS only looks up generated or locally declared token properties.
     @Test
     void stylesheetTokenLookupsResolveToGeneratedOrLocalDeclarations() throws IOException {
-        Set<String> generatedTokens = tokenDeclarations(M3Theme.defaultTheme().tokens().toRootStyleDeclarations());
+        Set<String> generatedTokens = tokenDeclarations(
+                M3ThemeCssCompiler.rootStyleDeclarations(M3Theme.defaultTheme())
+        );
         assertFalse(generatedTokens.isEmpty(), "Generated root token declarations should not be empty");
 
         List<String> missingTokens = new ArrayList<>();
@@ -2836,6 +2902,9 @@ final class ProjectContractTest {
 
     /// Returns whether one public control type name looks like an implementation helper.
     private static boolean isForbiddenPublicControlImplementationType(String typeName) {
+        if (ALLOWED_PUBLIC_CONTROL_CELL_TYPES.contains(typeName)) {
+            return false;
+        }
         if (FORBIDDEN_PUBLIC_CONTROL_TYPE_NAMES.contains(typeName)) {
             return true;
         }

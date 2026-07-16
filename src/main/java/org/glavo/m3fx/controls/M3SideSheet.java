@@ -49,7 +49,7 @@ import java.util.Objects;
 ///
 /// See [Material Design side sheets](https://m3.material.io/components/side-sheets/overview).
 @NotNullByDefault
-public class M3SideSheet extends Control {
+public final class M3SideSheet extends Control {
     /// The pseudo-class applied when the sheet is separated from the adjacent content edge.
     private static final PseudoClass DETACHED_PSEUDO_CLASS = PseudoClass.getPseudoClass("detached");
 

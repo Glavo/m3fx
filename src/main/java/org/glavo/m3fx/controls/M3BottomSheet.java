@@ -48,7 +48,7 @@ import java.util.Objects;
 ///
 /// See [Material Design bottom sheets](https://m3.material.io/components/bottom-sheets/overview).
 @NotNullByDefault
-public class M3BottomSheet extends Control {
+public final class M3BottomSheet extends Control {
     /// The base style class for M3FX bottom sheets.
     public static final String STYLE_CLASS = "m3-bottom-sheet";
 
@@ -119,7 +119,13 @@ public class M3BottomSheet extends Control {
 
     /// The action invoked when the user selects the drag handle.
     private final ObjectProperty<@Nullable EventHandler<ActionEvent>> dragHandleActionHandler =
-            new SimpleObjectProperty<>(this, "onDragHandleAction");
+            new SimpleObjectProperty<>(this, "onDragHandleAction") {
+                /// Updates the registered drag-handle event handler.
+                @Override
+                protected void invalidated() {
+                    setEventHandler(ActionEvent.ACTION, get());
+                }
+            };
 
     /// The mutable trailing action node list.
     private final ObservableList<Node> actions = M3ObservableLists.nonNullElementList("action");
@@ -326,9 +332,8 @@ public class M3BottomSheet extends Control {
 
     /// Invokes the drag-handle action when the sheet and handle are enabled and visible.
     public final void fireDragHandleAction() {
-        @Nullable EventHandler<ActionEvent> handler = getOnDragHandleAction();
-        if (!isDisabled() && isDragHandleVisible() && handler != null) {
-            handler.handle(new ActionEvent(this, this));
+        if (!isDisabled() && isDragHandleVisible() && getOnDragHandleAction() != null) {
+            fireEvent(new ActionEvent(this, this));
         }
     }
 

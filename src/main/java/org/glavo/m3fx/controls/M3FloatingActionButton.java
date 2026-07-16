@@ -40,7 +40,7 @@ import java.util.Objects;
 /// Use one floating action button for the most important screen-level action. See
 /// [Material Design floating action buttons](https://m3.material.io/components/floating-action-button/overview).
 @NotNullByDefault
-public class M3FloatingActionButton extends ButtonBase {
+public final class M3FloatingActionButton extends ButtonBase {
     /// The base style class for M3FX floating action buttons.
     public static final String STYLE_CLASS = "m3-fab";
 

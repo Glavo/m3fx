@@ -40,7 +40,7 @@ import java.util.Objects;
 ///
 /// See [Material Design icon buttons](https://m3.material.io/components/icon-buttons/overview).
 @NotNullByDefault
-public class M3IconToggleButton extends ButtonBase {
+public final class M3IconToggleButton extends ButtonBase {
     /// The base style class for M3FX toggle icon buttons.
     public static final String STYLE_CLASS = "m3-icon-toggle-button";
 

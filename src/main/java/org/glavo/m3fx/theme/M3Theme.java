@@ -31,10 +31,14 @@ public sealed interface M3Theme permits M3ThemeImpl {
     Color DEFAULT_SEED_COLOR = Color.web("#6750a4");
 
     /// Returns the Material Design 3 token profile.
-    M3Profile profile();
+    default M3Profile profile() {
+        return tokens().profile();
+    }
 
     /// Returns the MonetFX color scheme.
-    ColorScheme colorScheme();
+    default ColorScheme colorScheme() {
+        return tokens().colorTokens().colorScheme();
+    }
 
     /// Returns the brightness mode used by the color scheme.
     default Brightness brightness() {
@@ -42,7 +46,9 @@ public sealed interface M3Theme permits M3ThemeImpl {
     }
 
     /// Returns the density applied to layout-sensitive component tokens.
-    M3Density density();
+    default M3Density density() {
+        return tokens().density();
+    }
 
     /// Returns the complete token set for this theme.
     M3TokenSet tokens();
@@ -99,21 +105,12 @@ public sealed interface M3Theme permits M3ThemeImpl {
         Objects.requireNonNull(colorScheme, "colorScheme");
         Objects.requireNonNull(density, "density");
 
-        return fromTokenSet(profile, colorScheme, density, M3TokenSet.create(profile, colorScheme, density));
+        return fromTokenSet(M3TokenSet.create(profile, colorScheme, density));
     }
 
     /// Creates a theme from an explicit token set.
-    static M3Theme fromTokenSet(M3Profile profile, ColorScheme colorScheme, M3Density density, M3TokenSet tokens) {
-        return new M3ThemeImpl(profile, colorScheme, density, tokens);
+    static M3Theme fromTokenSet(M3TokenSet tokens) {
+        return new M3ThemeImpl(tokens);
     }
 
-    /// Converts root-level theme tokens into JavaFX inline CSS declarations.
-    default String toRootStyleDeclarations() {
-        return tokens().toRootStyleDeclarations();
-    }
-
-    /// Converts component tokens into JavaFX CSS rules for M3FX controls.
-    default String toControlStyleRules() {
-        return tokens().toControlStyleRules();
-    }
 }

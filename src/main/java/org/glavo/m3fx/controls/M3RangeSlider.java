@@ -47,7 +47,7 @@ import java.util.Objects;
 ///
 /// See [Material Design sliders](https://m3.material.io/components/sliders/overview).
 @NotNullByDefault
-public class M3RangeSlider extends Control {
+public final class M3RangeSlider extends Control {
     /// The range-slider-specific style class.
     public static final String STYLE_CLASS = "m3-range-slider";
 

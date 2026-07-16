@@ -42,7 +42,7 @@ import java.util.Objects;
 /// See [Material Design icons](https://m3.material.io/styles/icons/overview) and
 /// [Material Design](https://m3.material.io/).
 @NotNullByDefault
-public class M3Icon extends Labeled {
+public final class M3Icon extends Labeled {
     /// The base style class for M3FX icon labels.
     public static final String STYLE_CLASS = "m3-icon";
 

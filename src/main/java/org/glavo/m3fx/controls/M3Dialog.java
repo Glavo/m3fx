@@ -21,6 +21,7 @@ import javafx.stage.Window;
 import org.glavo.m3fx.internal.M3PopupStyles;
 import org.glavo.m3fx.internal.M3ThemeResolver;
 import org.glavo.m3fx.theme.M3Theme;
+import org.glavo.m3fx.internal.theme.M3ThemeCssCompiler;
 import org.glavo.m3fx.internal.theme.M3ThemeMetadata;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -540,7 +541,7 @@ public class M3Dialog<R> extends Dialog<R> {
 
         Object baseStyleValue = pane.getProperties().get(BASE_STYLE_PROPERTY_KEY);
         String baseStyle = baseStyleValue instanceof String ? (String) baseStyleValue : "";
-        pane.setStyle(mergeStyles(baseStyle, theme.toRootStyleDeclarations()));
+        pane.setStyle(mergeStyles(baseStyle, M3ThemeCssCompiler.rootStyleDeclarations(theme)));
     }
 
     /// Adds the generated theme stylesheet for the supplied theme.
