@@ -10542,7 +10542,7 @@ final class M3FXDemoVisualMatrixTest {
     ) {
         if (slot instanceof M3Icon icon) {
             fail(() -> pageTitle + " list item " + slotName
-                    + " slot uses a text-only M3Icon: " + icon.getText());
+                    + " slot uses a text-only M3Icon: " + icon.getGlyph());
         }
     }
 

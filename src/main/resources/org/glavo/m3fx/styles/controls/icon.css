@@ -6,8 +6,10 @@
     -m3-icon-extra-large-size: 40px;
     -m3-icon-size: 24px;
     -m3-icon-font-weight: 500;
-    -fx-alignment: center;
-    -fx-text-fill: -m3-icon-color;
+}
+
+.m3-icon > .m3-icon-glyph {
+    -fx-fill: -m3-icon-color;
 }
 
 .m3-icon:button-graphic {
@@ -71,6 +73,6 @@
     -fx-opacity: 1;
 }
 
-.m3-text-input-trailing:error .m3-icon {
-    -fx-text-fill: -m3-text-input-trailing-icon-color;
+.m3-text-input-trailing:error .m3-icon > .m3-icon-glyph {
+    -fx-fill: -m3-text-input-trailing-icon-color;
 }

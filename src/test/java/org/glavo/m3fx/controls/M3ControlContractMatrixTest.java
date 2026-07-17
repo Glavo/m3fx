@@ -4011,13 +4011,13 @@ final class M3ControlContractMatrixTest {
                 assertEquals(surfaceContainer, toolbar.getBackground().getFills().get(0).getFill());
                 assertLabeledColors(unselected, Color.TRANSPARENT, onSurfaceVariant);
                 assertLabeledColors(selected, secondaryContainer, onSecondaryContainer);
-                assertEquals(onSurfaceVariant, unselectedIcon.getTextFill());
-                assertEquals(onSecondaryContainer, selectedIcon.getTextFill());
+                assertEquals(onSurfaceVariant, iconFill(unselectedIcon));
+                assertEquals(onSecondaryContainer, iconFill(selectedIcon));
                 assertEquals(onSurfaceVariant, lookupRegion(unselected, ".m3-state-layer")
                         .getBackground().getFills().get(0).getFill());
                 assertEquals(onSecondaryContainer, lookupRegion(selected, ".m3-state-layer")
                         .getBackground().getFills().get(0).getFill());
-                assertEquals(onSurface, disabledIcon.getTextFill());
+                assertEquals(onSurface, iconFill(disabledIcon));
 
                 toolbar.setColorStyle(M3ToolbarColorStyle.VIBRANT);
                 root.applyCss();
@@ -4028,13 +4028,13 @@ final class M3ControlContractMatrixTest {
                 assertEquals(primaryContainer, toolbar.getBackground().getFills().get(0).getFill());
                 assertLabeledColors(unselected, Color.TRANSPARENT, onPrimaryContainer);
                 assertLabeledColors(selected, surfaceContainer, onSurface);
-                assertEquals(onPrimaryContainer, unselectedIcon.getTextFill());
-                assertEquals(onSurface, selectedIcon.getTextFill());
+                assertEquals(onPrimaryContainer, iconFill(unselectedIcon));
+                assertEquals(onSurface, iconFill(selectedIcon));
                 assertEquals(onPrimaryContainer, lookupRegion(unselected, ".m3-ripple")
                         .getBackground().getFills().get(0).getFill());
                 assertEquals(onSurface, lookupRegion(selected, ".m3-ripple")
                         .getBackground().getFills().get(0).getFill());
-                assertEquals(onSurface, disabledIcon.getTextFill());
+                assertEquals(onSurface, iconFill(disabledIcon));
             } finally {
                 stage.close();
             }
@@ -8737,7 +8737,7 @@ final class M3ControlContractMatrixTest {
         assertEquals(M3IconVariant.ON_SURFACE_VARIANT, graphic.getVariant());
         assertEquals("-fx-opacity: 0.75;", graphic.getStyle());
         assertEquals(M3Theme.defaultTheme().colorScheme().getColor(org.glavo.monetfx.ColorRole.SECONDARY),
-                graphic.getTextFill());
+                iconFill(graphic));
         Node buttonBarContainer = Objects.requireNonNull(dialogPane.lookup(".container"),
                 "dialog button bar container");
         HBox actionRow = assertInstanceOf(HBox.class, buttonBarContainer);
@@ -12923,6 +12923,8 @@ final class M3ControlContractMatrixTest {
     void iconSizeAndVariantUpdateStyleClasses() {
         M3Icon icon = new M3Icon("A");
 
+        assertEquals(Control.class, M3Icon.class.getSuperclass());
+        assertEquals("A", icon.getGlyph());
         assertEquals(M3IconSize.MEDIUM, icon.getSize());
         assertEquals(M3IconVariant.ON_SURFACE_VARIANT, icon.getVariant());
         assertFalse(icon.isFocusTraversable());
@@ -12955,7 +12957,7 @@ final class M3ControlContractMatrixTest {
         assertEquals("serif", icon.getIconFontFamily());
         assertEquals(28.0, icon.getIconSize(), 0.0001);
         assertEquals(700.0, icon.getIconFontWeight(), 0.0001);
-        assertEquals(28.0, icon.getFont().getSize(), 0.0001);
+        assertEquals(28.0, icon.getIconFont().getSize(), 0.0001);
         assertEquals(42.0, icon.getPrefWidth(), 0.0001);
         assertEquals(42.0, icon.getPrefHeight(), 0.0001);
         assertTrue(icon.getPrefHeight() > icon.getIconSize());
@@ -13000,7 +13002,7 @@ final class M3ControlContractMatrixTest {
         applyCss(icon);
 
         assertEquals(32.0, icon.getIconSize(), 0.0001);
-        assertEquals(32.0, icon.getFont().getSize(), 0.0001);
+        assertEquals(32.0, icon.getIconFont().getSize(), 0.0001);
     }
 
     /// Verifies that disclosure icons expose expanded state and animate their arrow rotation.
@@ -19435,7 +19437,7 @@ final class M3ControlContractMatrixTest {
                         "." + M3TextInputLayout.TRAILING_STYLE_CLASS
                 );
                 assertTrue(errorTrailingSlot.getPseudoClassStates().contains(PseudoClass.getPseudoClass("error")));
-                assertEquals(onErrorContainer, errorTrailing.getTextFill());
+                assertEquals(onErrorContainer, iconFill(errorTrailing));
 
                 directFilled.pseudoClassStateChanged(hover, false);
                 directOutlined.pseudoClassStateChanged(hover, false);
@@ -19458,7 +19460,7 @@ final class M3ControlContractMatrixTest {
                 assertTrue(focusedLabel.getPseudoClassStates().contains(PseudoClass.getPseudoClass("focused")));
                 assertEquals(primary, focusedLabel.getTextFill());
                 assertEquals(error, errorLabel.getTextFill());
-                assertEquals(error, errorTrailing.getTextFill());
+                assertEquals(error, iconFill(errorTrailing));
 
                 errorField.requestFocus();
                 root.applyCss();
@@ -19467,7 +19469,7 @@ final class M3ControlContractMatrixTest {
                 assertTrue(errorField.isFocused(), "error text field should own focus");
                 assertTrue(errorLabel.getPseudoClassStates().contains(PseudoClass.getPseudoClass("focused")));
                 assertEquals(error, errorLabel.getTextFill());
-                assertEquals(error, errorTrailing.getTextFill());
+                assertEquals(error, iconFill(errorTrailing));
             } finally {
                 stage.close();
             }
@@ -39824,6 +39826,13 @@ final class M3ControlContractMatrixTest {
         Node child = node.lookup(selector);
         assertInstanceOf(Region.class, child);
         return (Region) child;
+    }
+
+    /// Returns the fill resolved for an icon's rendered glyph.
+    private static Paint iconFill(M3Icon icon) {
+        icon.applyCss();
+        Node glyphNode = icon.lookup(".m3-icon-glyph");
+        return assertInstanceOf(Text.class, glyphNode).getFill();
     }
 
     /// Returns the built-in clear button currently installed in a text input layout.
