@@ -264,6 +264,9 @@ public final class M3FXDemoApp extends Application {
     /// The active JavaFX scene.
     private @Nullable Scene scene;
 
+    /// Whether a deferred Windows per-monitor scale repair is pending.
+    private boolean windowsScaleRepairPending;
+
     /// The navigation drawer used by the demo sidebar.
     private @Nullable M3NavigationDrawer sidebarDrawer;
 
@@ -318,6 +321,55 @@ public final class M3FXDemoApp extends Application {
         stage.setMinHeight(680.0);
         stage.setScene(scene);
         stage.show();
+        installWindowsScaleTransitionRepair(stage);
+    }
+
+    /// Re-submits the demo window bounds after Windows changes its per-monitor output scale.
+    ///
+    /// JavaFX updates the logical output scale asynchronously while a window crosses monitor boundaries. On Windows,
+    /// the native window can retain bounds or minimum-size constraints calculated for the previous monitor until the
+    /// application submits another bounds request. Deferring the request avoids changing native bounds from inside
+    /// the platform scale notification and preserves the window's current logical size.
+    ///
+    /// @param stage the demo stage
+    private void installWindowsScaleTransitionRepair(Stage stage) {
+        if (!System.getProperty("os.name").toLowerCase(Locale.ROOT).startsWith("windows")) {
+            return;
+        }
+
+        stage.outputScaleXProperty().addListener(observable -> scheduleWindowsScaleTransitionRepair(stage));
+        stage.outputScaleYProperty().addListener(observable -> scheduleWindowsScaleTransitionRepair(stage));
+    }
+
+    /// Schedules one bounds refresh after the current native output-scale notification completes.
+    ///
+    /// @param stage the demo stage
+    private void scheduleWindowsScaleTransitionRepair(Stage stage) {
+        if (windowsScaleRepairPending) {
+            return;
+        }
+
+        windowsScaleRepairPending = true;
+        Platform.runLater(() -> {
+            windowsScaleRepairPending = false;
+            if (!stage.isShowing() || stage.isIconified() || stage.isMaximized() || stage.isFullScreen()) {
+                return;
+            }
+
+            double minWidth = stage.getMinWidth();
+            double minHeight = stage.getMinHeight();
+            stage.setMinWidth(0.0);
+            stage.setMinHeight(0.0);
+            stage.setMinWidth(minWidth);
+            stage.setMinHeight(minHeight);
+            stage.setWidth(stage.getWidth());
+            stage.setHeight(stage.getHeight());
+
+            @Nullable Scene activeScene = stage.getScene();
+            if (activeScene != null) {
+                activeScene.getRoot().requestLayout();
+            }
+        });
     }
 
     /// Applies the bundled default font to the demo root when the resource is present.
