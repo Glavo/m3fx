@@ -3,9 +3,9 @@
 ## Current Position
 
 M3FX is a broadly implemented preview of a Material Design 3 component library for JavaFX. It has a token-driven
-theme and motion system, broad Standard and Expressive component coverage, an independent demo catalog, rendered
-state tests, and release packaging for modular applications. The project is ready for systematic integration
-testing, but it is not yet a release candidate.
+theme and motion system, broad Standard and Expressive component coverage, an exhaustive verification demo, an
+independent focused Catalog application, rendered state tests, and release packaging for modular applications. The
+project is ready for systematic integration testing, but it is not yet a release candidate.
 
 The remaining risk is concentrated in specification fidelity and runtime quality rather than missing infrastructure:
 
@@ -82,10 +82,10 @@ Run this only after the specification, visual, and performance audits are closed
   consistency and unnecessary API surface.
 - Verify documentation against actual behavior and official Material Design references.
 - Recheck JavaFX 14 API compatibility while retaining JavaFX 21 as the default development dependency.
-- Validate the modular library, publication metadata, demo shadow JAR without bundled JavaFX, host runtime image,
-  cross-platform jlink inputs, and GitHub Actions artifacts.
-- Run the complete library and demo suites on supported desktop platforms and resolve all warnings, intermittent
-  failures, and rendering regressions before declaring a release candidate.
+- Validate the modular library, publication metadata, both sample-application shadow JARs without bundled JavaFX,
+  host runtime image, cross-platform jlink inputs, and GitHub Actions artifacts.
+- Run the complete library, demo, and Catalog suites on supported desktop platforms and resolve all warnings,
+  intermittent failures, and rendering regressions before declaring a release candidate.
 
 ## Completion Criteria
 
@@ -97,7 +97,7 @@ The first release candidate is ready when:
 - Performance and lifetime checks show no unbounded retention, persistent off-scene animation, or avoidable
   per-frame allocation on common paths.
 - The public API and documentation are internally consistent and do not expose unnecessary compatibility layers.
-- Library, demo, publication, runtime-image, and CI release checks pass from a clean checkout.
+- Library, demo, Catalog, publication, runtime-image, and CI release checks pass from a clean checkout.
 
 ## Deferred Scope
 

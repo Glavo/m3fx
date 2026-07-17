@@ -41,6 +41,23 @@ demo/build/libs/m3fx-demo-1.0-SNAPSHOT-shadow.jar
 
 Run it with a JavaFX runtime on the module path or class path according to the launcher setup used by the application environment. The shadow jar should not be treated as a self-contained desktop distribution because JavaFX native libraries are not bundled.
 
+## Catalog Shadow Jar
+
+The focused AndroidX-style Material Catalog has an independent shadow jar. It packages the Catalog application, its stylesheet,
+M3FX, MonetFX, and non-JavaFX runtime dependencies. JavaFX remains supplied by the application environment.
+
+Build it with:
+
+```shell
+./gradlew shadowCatalogJar
+```
+
+The output is:
+
+```text
+catalog/build/libs/m3fx-catalog-1.0-SNAPSHOT-shadow.jar
+```
+
 ## Demo Jlink Runtime
 
 The jlink tasks create runtime images for the demo application. They download a target BellSoft LibericaJDK Full archive, extract its `jmods`, and build a runtime image containing JavaFX and the demo modules. Windows and macOS targets use BellSoft zip archives; Linux targets use BellSoft `tar.gz` archives.
@@ -140,13 +157,14 @@ Use these tasks before distributing artifacts:
 ./gradlew compileJava
 ./gradlew test
 ./gradlew shadowDemoJar
+./gradlew shadowCatalogJar
 ./gradlew jlinkDemoRuntime
 ./gradlew jlinkDemoAllPlatformArchitectureRuntimes
 ```
 
-`releaseCheck` runs `check`, `fullTest`, `shadowDemoJar`, and `jlinkDemoRuntime`. It is the local release gate for the library publication, all test tiers, demo visual and behavior tests, and the host-platform demo distribution. It does not run the all-platform jlink aggregate task, so release builds can opt into the cross-platform runtime images they actually need.
+`releaseCheck` runs `check`, `fullTest`, both sample-application shadow jar verifications, and `jlinkDemoRuntime`. It is the local release gate for the library publication, all test tiers, sample-application behavior tests, and the host-platform demo distribution. It does not run the all-platform jlink aggregate task, so release builds can opt into the cross-platform runtime images they actually need.
 
-The GitHub Actions workflow runs the Tier 1 build gate under Xvfb for pushes and pull requests. A manual workflow dispatch runs the complete `releaseCheck` entry point. Both paths upload the generated demo shadow jar with `actions/upload-artifact@v7` and `archive: false`, and preserve available visual, HTML, and XML test reports with `if: always()`.
+The GitHub Actions workflow runs the Tier 1 build gate under Xvfb for pushes and pull requests. A manual workflow dispatch runs the complete `releaseCheck` entry point. Both paths upload the generated demo and catalog shadow jars with `actions/upload-artifact@v7` and `archive: false`, and preserve available visual, HTML, and XML test reports with `if: always()`.
 
 `check` runs publication metadata verification. The verification generates the Maven POM and fails if copied project metadata remains or if JavaFX appears in the published dependency metadata.
 
@@ -157,5 +175,8 @@ The GitHub Actions workflow runs the Tier 1 build gate under Xvfb for pushes and
 `check` also resolves that build-local Maven publication through a Gradle consumer runtime configuration. The consumer verification requires the runtime dependency to resolve M3FX and MonetFX while rejecting transitive OpenJFX artifacts. The sources and Javadoc classifier availability is covered by the publication layout verification above.
 
 `shadowDemoJar` also runs the demo shadow jar verification task. The verification fails if JavaFX classes or JavaFX jar files are bundled into the shadow jar, if the executable manifest is missing, if required demo classes, demo CSS, M3FX classes, or MonetFX classes are absent, or if the packaged `AlibabaPuHuiTi-3-65-Medium.ttf` demo font is absent or empty.
+
+`shadowCatalogJar` runs the corresponding Catalog verification. It rejects bundled JavaFX content and requires the
+Catalog launcher, application, stylesheet, M3FX controls, and MonetFX classes.
 
 For smaller cross-platform release checks, run the fixed platform and architecture jlink tasks needed by the release instead of the aggregate task.

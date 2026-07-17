@@ -2,7 +2,7 @@
 
 M3FX is a Material Design 3 component library for JavaFX applications.
 
-The library provides JavaFX controls, skins, themes, generated Material token stylesheets, motion utilities, demo pages, visual tests, and packaging tasks for demo runtime images. It uses [MonetFX](https://github.com/Glavo/MonetFX) for Material dynamic color generation and follows the Material Design guidance at [m3.material.io](https://m3.material.io/).
+The library provides JavaFX controls, skins, themes, generated Material token stylesheets, motion utilities, two standalone sample applications, visual tests, and packaging tasks for desktop artifacts. It uses [MonetFX](https://github.com/Glavo/MonetFX) for Material dynamic color generation and follows the Material Design guidance at [m3.material.io](https://m3.material.io/).
 
 ## Status
 
@@ -139,18 +139,28 @@ Implemented component families include:
 
 Controls use custom skins and avoid inheriting from concrete JavaFX controls where M3FX owns the behavior surface. Text input controls intentionally retain JavaFX text-input bases to preserve editing, selection, clipboard, IME, and multiline behavior.
 
-## Demo Application
+## Sample Applications
 
-Run the demo from the Gradle project:
+The `demo` project is the exhaustive verification gallery. It exposes complete component families, variants, states,
+directionality, and motion cases used by the visual test matrix:
 
 ```shell
 ./gradlew :demo:run
 ```
 
-Build the demo shadow jar without bundling JavaFX:
+The independent `catalog` project follows the AndroidX Material 3 Catalog's Home, Component, and Example
+hierarchy. Its home route is an alphabetical adaptive card grid; component routes provide descriptions and example
+lists, and example routes isolate one working specimen. Theme and display controls live in a modal bottom sheet:
+
+```shell
+./gradlew :catalog:run
+```
+
+Build either application as a shadow jar without bundling JavaFX:
 
 ```shell
 ./gradlew shadowDemoJar
+./gradlew shadowCatalogJar
 ```
 
 Build a host-platform jlink runtime image:
@@ -178,7 +188,7 @@ Common local gates:
 ./gradlew jlinkDemoAllPlatformArchitectureRuntimes
 ```
 
-`check` covers compilation, fast Tier 1 tests, Maven publication metadata, main, sources, and Javadoc artifact structure, and build-local publication consumption. `fullTest` runs every library and demo test tier. `releaseCheck` adds the demo shadow jar verification and the default host-platform demo jlink runtime image. The all-platform jlink aggregate validates Windows, Linux, and macOS runtime images on x64 and AArch64 targets.
+`check` covers compilation, fast Tier 1 tests, Maven publication metadata, main, sources, and Javadoc artifact structure, and build-local publication consumption. `fullTest` runs every library, demo, and catalog test tier. `releaseCheck` adds both shadow jar verifications and the default host-platform demo jlink runtime image. The all-platform jlink aggregate validates Windows, Linux, and macOS runtime images on x64 and AArch64 targets.
 
 See [docs/TESTING.md](docs/TESTING.md) for the test-tier boundaries and commands.
 
@@ -187,6 +197,7 @@ See [docs/TESTING.md](docs/TESTING.md) for the test-tier boundaries and commands
 - The library publishes JavaFX as compile-only because applications own JavaFX runtime artifacts.
 - The module descriptor uses transitive JavaFX readability because public M3FX APIs expose JavaFX types.
 - The demo shadow jar packages demo classes, demo CSS, M3FX, MonetFX, non-JavaFX dependencies, and the demo default font, and verification rejects bundled JavaFX entries.
+- The catalog shadow jar packages the focused AndroidX-style Catalog, its CSS, M3FX, MonetFX, and non-JavaFX dependencies while excluding JavaFX.
 - Jlink tasks download BellSoft LibericaJDK Full archives and use target `jmods` to create runtime images.
 
 ## License

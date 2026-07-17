@@ -1,0 +1,152 @@
+.catalog-root,
+.catalog-scaffold,
+.catalog-route-host,
+.catalog-route-page,
+.catalog-route-scroll,
+.catalog-route-scroll > .viewport {
+    -fx-background-color: -m3-color-surface;
+    -fx-background: -m3-color-surface;
+}
+
+.catalog-top-app-bar {
+    -fx-border-color: transparent transparent -m3-color-outline-variant transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.catalog-top-action .catalog-icon,
+.catalog-component-card .catalog-icon,
+.catalog-example-card .catalog-icon {
+    -fx-fill: -m3-color-on-surface-variant;
+}
+
+.catalog-component-grid {
+    -fx-padding: 12px;
+    -fx-hgap: 0px;
+    -fx-vgap: 0px;
+    -fx-alignment: top-left;
+    -fx-tile-alignment: top-left;
+    -fx-background-color: -m3-color-surface;
+}
+
+.catalog-component-card-icon,
+.catalog-component-page-icon {
+    -fx-fill: -m3-color-primary;
+}
+
+.catalog-component-card-name,
+.catalog-component-section-title,
+.catalog-component-description,
+.catalog-example-card-title {
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.catalog-component-card-name {
+    -fx-text-alignment: left;
+}
+
+.catalog-expressive-marker {
+    -fx-background-color: -m3-color-tertiary-container;
+}
+
+.catalog-expressive-marker-label {
+    -fx-text-fill: -m3-color-on-tertiary-container;
+}
+
+.catalog-component-page {
+    -fx-padding: 24px 16px 48px 16px;
+    -fx-spacing: 16px;
+}
+
+.catalog-component-page-icon-row {
+    -fx-padding: 42px 0;
+}
+
+.catalog-description-title {
+    -fx-padding: 8px 0 0 0;
+}
+
+.catalog-component-description,
+.catalog-example-card-description {
+    -fx-text-fill: -m3-color-on-surface-variant;
+}
+
+.catalog-examples-title {
+    -fx-padding: 18px 0 0 0;
+}
+
+.catalog-example-card-list {
+    -fx-spacing: 8px;
+}
+
+.catalog-example-card {
+    -fx-min-height: 88px;
+}
+
+.catalog-example-card-content {
+    -fx-min-height: 54px;
+}
+
+.catalog-example-card-labels {
+    -fx-spacing: 8px;
+    -fx-alignment: center-left;
+}
+
+.catalog-example-card-trailing {
+    -fx-spacing: 12px;
+    -fx-padding: 0 0 0 16px;
+}
+
+.catalog-example-card-arrow {
+    -fx-fill: -m3-color-on-surface-variant;
+}
+
+.catalog-example-page {
+    -fx-padding: 32px;
+    -fx-alignment: center;
+}
+
+.catalog-settings-scrim {
+    -fx-max-width: infinity;
+    -fx-max-height: infinity;
+}
+
+.catalog-settings-scroll,
+.catalog-settings-scroll > .viewport {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+
+.catalog-settings-content {
+    -fx-padding: 8px 24px 24px 24px;
+}
+
+.catalog-settings-heading {
+    -fx-padding: 12px 0 0 0;
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.catalog-seed-picker {
+    -fx-padding: 4px 0 8px 0;
+    -fx-alignment: center-left;
+}
+
+.m3-button.m3-icon-button.catalog-seed-button {
+    -m3-container-height: 40px;
+    -m3-container-shape: 999px;
+    -m3-horizontal-padding: 0px;
+    -fx-min-width: 40px;
+    -fx-min-height: 40px;
+    -fx-pref-width: 40px;
+    -fx-pref-height: 40px;
+    -fx-max-width: 40px;
+    -fx-max-height: 40px;
+    -fx-padding: 0;
+    -fx-background-radius: 999px;
+    -fx-border-color: -m3-color-outline;
+    -fx-border-radius: 999px;
+    -fx-border-width: 1px;
+}
+
+.catalog-reset-button {
+    -fx-alignment: center-left;
+}

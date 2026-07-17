@@ -680,26 +680,36 @@ tasks.register("shadowDemoJar") {
     dependsOn(":demo:verifyShadowJar")
 }
 
+tasks.register("shadowCatalogJar") {
+    group = "distribution"
+    description = "Builds an executable fat JAR for the M3FX catalog application."
+    dependsOn(":catalog:verifyShadowJar")
+}
+
 tasks.register("fullTest") {
     group = "verification"
-    description = "Runs all library and demo test tiers."
+    description = "Runs all library, demo, and catalog test tiers."
     dependsOn(
         tasks.named("test"),
         tasks.named("testTier2"),
         tasks.named("testTier3"),
         project(":demo").tasks.named("test"),
         project(":demo").tasks.named("testTier2"),
-        project(":demo").tasks.named("testTier3")
+        project(":demo").tasks.named("testTier3"),
+        project(":catalog").tasks.named("test"),
+        project(":catalog").tasks.named("testTier2"),
+        project(":catalog").tasks.named("testTier3")
     )
 }
 
 tasks.register("releaseCheck") {
     group = "verification"
-    description = "Runs full tests and local release verification for publication and demo distribution."
+    description = "Runs full tests and local release verification for publication and sample applications."
     dependsOn(
         tasks.named("check"),
         tasks.named("fullTest"),
         tasks.named("shadowDemoJar"),
+        tasks.named("shadowCatalogJar"),
         tasks.named("jlinkDemoRuntime")
     )
 }

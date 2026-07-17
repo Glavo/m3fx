@@ -27,7 +27,7 @@ jobs:
         if: github.event_name != 'workflow_dispatch'
         env:
           GRADLE_USER_HOME: .gradle-user-home
-        run: xvfb-run -a ./gradlew check :demo:test :demo:verifyShadowJar --no-daemon
+        run: xvfb-run -a ./gradlew check :demo:test :demo:verifyShadowJar :catalog:test :catalog:verifyShadowJar --no-daemon
 
       - name: Run full release check
         if: github.event_name == 'workflow_dispatch'
@@ -55,8 +55,10 @@ jobs:
           for path in \
             build/reports/tests \
             demo/build/reports/tests \
+            catalog/build/reports/tests \
             build/test-results \
-            demo/build/test-results; do
+            demo/build/test-results \
+            catalog/build/test-results; do
             if [[ -e "$path" ]]; then
               test_paths+=("$path")
             fi
@@ -88,5 +90,13 @@ jobs:
         with:
           name: m3fx-demo-shadow-jar
           path: demo/build/libs/m3fx-demo-*-shadow.jar
+          if-no-files-found: error
+          archive: false
+
+      - name: Upload catalog shadow jar
+        uses: actions/upload-artifact@v7
+        with:
+          name: m3fx-catalog-shadow-jar
+          path: catalog/build/libs/m3fx-catalog-*-shadow.jar
           if-no-files-found: error
           archive: false
