@@ -324,12 +324,12 @@ public final class M3FXDemoApp extends Application {
         installWindowsScaleTransitionRepair(stage);
     }
 
-    /// Re-submits the demo window bounds after Windows changes its per-monitor output scale.
+    /// Repairs a Windows JavaFX bounds mismatch when the demo crosses monitors at its minimum size.
     ///
-    /// JavaFX updates the logical output scale asynchronously while a window crosses monitor boundaries. On Windows,
-    /// the native window can retain bounds or minimum-size constraints calculated for the previous monitor until the
-    /// application submits another bounds request. Deferring the request avoids changing native bounds from inside
-    /// the platform scale notification and preserves the window's current logical size.
+    /// When a stage is exactly at one of its minimum-size constraints, the Windows Glass backend can retain the
+    /// previous monitor's physical bound for that axis while the JavaFX window and scene continue reporting the
+    /// logical minimum. Re-submitting only the affected constraint after the asynchronous output-scale notification
+    /// reconciles those bounds. Windows scale changes away from a minimum-size boundary need no application repair.
     ///
     /// @param stage the demo stage
     private void installWindowsScaleTransitionRepair(Stage stage) {
@@ -358,10 +358,20 @@ public final class M3FXDemoApp extends Application {
 
             double minWidth = stage.getMinWidth();
             double minHeight = stage.getMinHeight();
-            stage.setMinWidth(0.0);
-            stage.setMinHeight(0.0);
-            stage.setMinWidth(minWidth);
-            stage.setMinHeight(minHeight);
+            boolean widthAtMinimum = minWidth > 0.0 && stage.getWidth() <= minWidth + 0.5;
+            boolean heightAtMinimum = minHeight > 0.0 && stage.getHeight() <= minHeight + 0.5;
+            if (!widthAtMinimum && !heightAtMinimum) {
+                return;
+            }
+
+            if (widthAtMinimum) {
+                stage.setMinWidth(0.0);
+                stage.setMinWidth(minWidth);
+            }
+            if (heightAtMinimum) {
+                stage.setMinHeight(0.0);
+                stage.setMinHeight(minHeight);
+            }
             stage.setWidth(stage.getWidth());
             stage.setHeight(stage.getHeight());
 
