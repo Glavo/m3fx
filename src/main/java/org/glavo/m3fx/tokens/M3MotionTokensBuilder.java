@@ -11,6 +11,12 @@ import org.jetbrains.annotations.NotNullByDefault;
 import java.util.Objects;
 
 /// Builds immutable [M3MotionTokens] from named duration, scheme, and behavior values.
+///
+/// Durations are expressed in milliseconds and must be non-negative. Duration replacement methods validate
+/// eagerly and throw [IllegalArgumentException] for negative values. Scheme and behavior replacements reject
+/// `null`. A builder can be reused after [build].
+///
+/// See [Material Design motion](https://m3.material.io/styles/motion/overview).
 @NotNullByDefault
 public final class M3MotionTokensBuilder {
     /// The current short1 duration in milliseconds.
@@ -292,6 +298,7 @@ public final class M3MotionTokensBuilder {
     ///
     /// @param scheme the replacement scheme
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3MotionTokensBuilder scheme(M3MotionScheme scheme) {
         this.scheme = Objects.requireNonNull(scheme, "scheme");
         return this;
@@ -301,6 +308,7 @@ public final class M3MotionTokensBuilder {
     ///
     /// @param behavior the replacement behavior timings
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3MotionTokensBuilder behavior(M3MotionBehavior behavior) {
         this.behavior = Objects.requireNonNull(behavior, "behavior");
         return this;

@@ -71,6 +71,7 @@ public sealed interface M3StateLayerTokens permits M3StateLayerTokensImpl {
     ///
     /// @param tokens the state-layer tokens to copy
     /// @return a mutable state-layer-token builder
+    /// @throws NullPointerException if `tokens` is `null`
     static M3StateLayerTokensBuilder builder(M3StateLayerTokens tokens) {
         return new M3StateLayerTokensBuilder(tokens);
     }

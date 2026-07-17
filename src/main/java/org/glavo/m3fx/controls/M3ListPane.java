@@ -85,7 +85,7 @@ public final class M3ListPane extends Control {
                 }
             };
 
-    /// The styleable gap between adjacent list items.
+    /// The styleable item spacing property.
     private @Nullable StyleableDoubleProperty itemSpacing;
 
     /// Notifies accessibility clients when focus moves between list items.
@@ -93,7 +93,7 @@ public final class M3ListPane extends Control {
             new M3AccessibleFocusNotifier(this, () ->
                     M3Accessible.currentOrSelectionFocusTarget(this, getItems(), getSelectedItem(), M3ListItem.class));
 
-    // The list item selection mode.
+    /// The list item selection mode.
     private final ObjectProperty<M3SelectionMode> selectionMode =
             new SimpleObjectProperty<>(this, "selectionMode", M3SelectionMode.NONE) {
                 /// Enforces selection invariants when the mode changes.
@@ -107,7 +107,7 @@ public final class M3ListPane extends Control {
                 }
             };
 
-    // Whether this list allows all selectable items to be unselected.
+    /// Whether this list allows all selectable items to be unselected.
     private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection", true) {
         /// Restores a selected item when empty selection is disabled.
         @Override
@@ -125,7 +125,7 @@ public final class M3ListPane extends Control {
     private final @UnmodifiableView ObservableList<M3ListItem> selectedItemsView =
             FXCollections.unmodifiableObservableList(selectedItems);
 
-    // The first selected list item in child order.
+    /// The first selected list item in child order.
     private final ReadOnlyObjectWrapper<@Nullable M3ListItem> selectedItem =
             new ReadOnlyObjectWrapper<>(this, "selectedItem");
 
@@ -200,13 +200,11 @@ public final class M3ListPane extends Control {
     /// Sets the list containment style.
     ///
     /// @param listStyle the standard or segmented list style
+    /// @throws NullPointerException if any required argument is `null`
     public final void setListStyle(M3ListStyle listStyle) {
         this.listStyle.set(Objects.requireNonNull(listStyle, "listStyle"));
     }
 
-    /// Returns the list containment style property.
-    ///
-    /// @return the writable list style property
     public final ObjectProperty<M3ListStyle> listStyleProperty() {
         return listStyle;
     }
@@ -226,13 +224,11 @@ public final class M3ListPane extends Control {
     /// dividers, and other content nodes remain contiguous with their neighbors.
     ///
     /// @param itemSpacing the non-negative item spacing in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setItemSpacing(double itemSpacing) {
         itemSpacingProperty().set(M3Css.nonNegative(itemSpacing, "itemSpacing"));
     }
 
-    /// Returns the styleable item spacing property.
-    ///
-    /// @return the writable item spacing property
     public final StyleableDoubleProperty itemSpacingProperty() {
         if (itemSpacing == null) {
             itemSpacing = M3Css.nonNegativeStyleableDoubleProperty(
@@ -256,13 +252,11 @@ public final class M3ListPane extends Control {
     /// Sets the list item selection mode.
     ///
     /// @param selectionMode the list item selection mode
+    /// @throws NullPointerException if any required argument is `null`
     public final void setSelectionMode(M3SelectionMode selectionMode) {
         this.selectionMode.set(Objects.requireNonNull(selectionMode, "selectionMode"));
     }
 
-    /// Returns the list item selection mode property.
-    ///
-    /// @return the list item selection mode property
     public final ObjectProperty<M3SelectionMode> selectionModeProperty() {
         return selectionMode;
     }
@@ -281,9 +275,6 @@ public final class M3ListPane extends Control {
         this.allowEmptySelection.set(allowEmptySelection);
     }
 
-    /// Returns the empty-selection policy property.
-    ///
-    /// @return the empty-selection policy property
     public final BooleanProperty allowEmptySelectionProperty() {
         return allowEmptySelection;
     }
@@ -302,9 +293,6 @@ public final class M3ListPane extends Control {
         return selectedItem.get();
     }
 
-    /// Returns the first selected list item property.
-    ///
-    /// @return the first selected list item property
     public final ReadOnlyObjectProperty<@Nullable M3ListItem> selectedItemProperty() {
         return selectedItem.getReadOnlyProperty();
     }
@@ -320,6 +308,7 @@ public final class M3ListPane extends Control {
     /// Selects a list item that belongs to this list.
     ///
     /// @param item the list item to select
+    /// @throws NullPointerException if any required argument is `null`
     public final void select(M3ListItem item) {
         Objects.requireNonNull(item, "item");
         if (!getItems().contains(item)) {
@@ -410,6 +399,8 @@ public final class M3ListPane extends Control {
     }
 
     /// Returns accessibility attributes for list content and selection state.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -429,6 +420,8 @@ public final class M3ListPane extends Control {
     }
 
     /// Executes accessibility selection actions for list items.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

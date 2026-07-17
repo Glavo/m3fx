@@ -8,6 +8,9 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 /// Holds Material Design 3 elevation system tokens.
 ///
+/// Values are non-negative elevation levels in logical pixels. Level zero represents a surface without added
+/// elevation; higher levels are semantic inputs to M3FX surface and shadow rendering.
+///
 /// See [Material Design elevation](https://m3.material.io/styles/elevation/overview).
 @NotNullByDefault
 public sealed interface M3ElevationTokens permits M3ElevationTokensImpl {
@@ -52,6 +55,7 @@ public sealed interface M3ElevationTokens permits M3ElevationTokensImpl {
     ///
     /// @param tokens the elevation tokens to copy
     /// @return a mutable elevation-token builder
+    /// @throws NullPointerException if `tokens` is `null`
     static M3ElevationTokensBuilder builder(M3ElevationTokens tokens) {
         return new M3ElevationTokensBuilder(tokens);
     }

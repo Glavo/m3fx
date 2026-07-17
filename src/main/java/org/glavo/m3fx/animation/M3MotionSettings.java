@@ -25,6 +25,10 @@ import java.util.Objects;
 /// timings are supplied by the active theme rather than this accessibility setting. See
 /// [Material motion](https://m3.material.io/styles/motion/overview) and
 /// [Material Design](https://m3.material.io/).
+///
+/// Methods that inspect or mutate a live [Node] follow JavaFX scene-graph threading rules and must be called on
+/// the JavaFX Application Thread. The global property should likewise be changed on that thread when controls are
+/// observing it.
 @NotNullByDefault
 public final class M3MotionSettings {
     /// The key used to store node-local reduced-motion requests.
@@ -69,6 +73,7 @@ public final class M3MotionSettings {
     ///
     /// @param node the node used to resolve inherited motion settings
     /// @return `true` when finite motion should settle immediately for the node
+    /// @throws NullPointerException if `node` is `null`
     public static boolean shouldReduceMotion(Node node) {
         Objects.requireNonNull(node, "node");
         if (isGlobalReducedMotionRequested()) {
@@ -89,6 +94,7 @@ public final class M3MotionSettings {
     ///
     /// @param node the node to query
     /// @return `true` when this node directly requests reduced motion
+    /// @throws NullPointerException if `node` is `null`
     public static boolean isReducedMotionRequested(Node node) {
         Objects.requireNonNull(node, "node");
         if (!node.hasProperties()) {
@@ -104,6 +110,7 @@ public final class M3MotionSettings {
     ///
     /// @param node      the node to update
     /// @param requested whether this node should directly request reduced motion
+    /// @throws NullPointerException if `node` is `null`
     public static void setReducedMotionRequested(Node node, boolean requested) {
         Objects.requireNonNull(node, "node");
         if (isReducedMotionRequested(node) == requested) {

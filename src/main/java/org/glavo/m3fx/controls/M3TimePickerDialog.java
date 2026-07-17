@@ -62,7 +62,7 @@ public final class M3TimePickerDialog extends M3Dialog<LocalTime> {
     /// The time picker displayed as dialog content.
     private final M3TimePicker picker;
 
-    /// Internal storage for [valueProperty].
+    /// The selected time property.
     private final ObjectProperty<@Nullable LocalTime> value;
 
     /// Whether the dialog and embedded picker are currently synchronizing selected values.
@@ -153,9 +153,6 @@ public final class M3TimePickerDialog extends M3Dialog<LocalTime> {
         this.value.set(value);
     }
 
-    /// Returns the selected time property.
-    ///
-    /// @return the selected time property
     public final ObjectProperty<@Nullable LocalTime> valueProperty() {
         return value;
     }

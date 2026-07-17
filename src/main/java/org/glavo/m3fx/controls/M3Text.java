@@ -58,7 +58,7 @@ public class M3Text extends Labeled {
     /// The default typography font weight.
     private static final FontWeight DEFAULT_TYPOGRAPHY_FONT_WEIGHT = FontWeight.NORMAL;
 
-    // The typography role property.
+    /// The typography role property.
     private final ObjectProperty<M3TextRole> role =
             new SimpleObjectProperty<>(this, "role", M3TextRole.BODY_LARGE) {
                 /// Updates typography role style classes when the property changes.
@@ -72,16 +72,16 @@ public class M3Text extends Labeled {
                 }
             };
 
-    // The styleable typography font family token.
+    /// The styleable typography font family token.
     private @Nullable StyleableObjectProperty<@Nullable String> typographyFontFamily;
 
-    // The styleable typography font size token.
+    /// The styleable typography font size token.
     private @Nullable StyleableDoubleProperty typographyFontSize;
 
-    // The styleable typography line height token.
+    /// The styleable typography line height token.
     private @Nullable StyleableDoubleProperty typographyLineHeight;
 
-    // The styleable typography font weight token.
+    /// The styleable typography font weight token.
     private @Nullable StyleableObjectProperty<@Nullable FontWeight> typographyFontWeight;
 
     /// Creates an empty body-large text label.
@@ -117,13 +117,11 @@ public class M3Text extends Labeled {
     /// Sets the typography role.
     ///
     /// @param role the typography role used to resolve type scale tokens
+    /// @throws NullPointerException if any required argument is `null`
     public final void setRole(M3TextRole role) {
         this.role.set(Objects.requireNonNull(role, "role"));
     }
 
-    /// Returns the typography role property.
-    ///
-    /// @return the writable typography role property
     public final ObjectProperty<M3TextRole> roleProperty() {
         return role;
     }
@@ -140,13 +138,11 @@ public class M3Text extends Labeled {
     /// Sets the typography font family token.
     ///
     /// @param typographyFontFamily the font family used by this text label
+    /// @throws NullPointerException if any required argument is `null`
     public final void setTypographyFontFamily(String typographyFontFamily) {
         typographyFontFamilyProperty().set(Objects.requireNonNull(typographyFontFamily, "typographyFontFamily"));
     }
 
-    /// Returns the typography font family token property.
-    ///
-    /// @return the styleable typography font family property
     public final StyleableObjectProperty<@Nullable String> typographyFontFamilyProperty() {
         if (typographyFontFamily == null) {
             typographyFontFamily = M3Css.styleableObjectProperty(
@@ -174,13 +170,11 @@ public class M3Text extends Labeled {
     /// Sets the typography font size token.
     ///
     /// @param typographyFontSize the font size in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setTypographyFontSize(double typographyFontSize) {
         typographyFontSizeProperty().set(M3Css.nonNegative(typographyFontSize, "typographyFontSize"));
     }
 
-    /// Returns the typography font size token property.
-    ///
-    /// @return the styleable typography font size property
     public final StyleableDoubleProperty typographyFontSizeProperty() {
         if (typographyFontSize == null) {
             typographyFontSize = M3Css.nonNegativeStyleableDoubleProperty(
@@ -204,13 +198,11 @@ public class M3Text extends Labeled {
     /// Sets the typography line height token.
     ///
     /// @param typographyLineHeight the line height in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setTypographyLineHeight(double typographyLineHeight) {
         typographyLineHeightProperty().set(M3Css.nonNegative(typographyLineHeight, "typographyLineHeight"));
     }
 
-    /// Returns the typography line height token property.
-    ///
-    /// @return the styleable typography line height property
     public final StyleableDoubleProperty typographyLineHeightProperty() {
         if (typographyLineHeight == null) {
             typographyLineHeight = M3Css.nonNegativeStyleableDoubleProperty(
@@ -238,9 +230,6 @@ public class M3Text extends Labeled {
         typographyFontWeightProperty().set(validateFontWeight(typographyFontWeight));
     }
 
-    /// Returns the typography font weight token property.
-    ///
-    /// @return the styleable typography font weight property
     public final StyleableObjectProperty<@Nullable FontWeight> typographyFontWeightProperty() {
         if (typographyFontWeight == null) {
             typographyFontWeight = M3Css.styleableObjectProperty(

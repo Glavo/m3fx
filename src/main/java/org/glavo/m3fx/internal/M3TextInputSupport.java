@@ -70,22 +70,22 @@ public final class M3TextInputSupport<C extends TextInputControl & M3TextInput> 
     /// The CSS metadata for the optional vertical padding token.
     private final @Nullable CssMetaData<C, Number> verticalPaddingCssMetaData;
 
-    // The visual variant property.
+    /// The visual variant property.
     private final ObjectProperty<M3TextInputVariant> variant;
 
-    // Whether the owning input should render its error state.
+    /// Whether the owning input should render its error state.
     private final BooleanProperty error;
 
-    // The styleable container height token.
+    /// The styleable container height token.
     private @Nullable StyleableDoubleProperty containerHeight;
 
-    // The styleable container shape token.
+    /// The styleable container shape token.
     private @Nullable StyleableDoubleProperty containerShape;
 
-    // The styleable horizontal padding token.
+    /// The styleable horizontal padding token.
     private @Nullable StyleableDoubleProperty horizontalPadding;
 
-    // The styleable vertical padding token.
+    /// The styleable vertical padding token.
     private @Nullable StyleableDoubleProperty verticalPadding;
 
     /// Creates shared text input state for a concrete JavaFX text input control.
@@ -204,7 +204,6 @@ public final class M3TextInputSupport<C extends TextInputControl & M3TextInput> 
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
 
-    /// Returns the text input variant property.
     public ObjectProperty<M3TextInputVariant> variantProperty() {
         return variant;
     }
@@ -219,7 +218,6 @@ public final class M3TextInputSupport<C extends TextInputControl & M3TextInput> 
         this.error.set(error);
     }
 
-    /// Returns the error state property.
     public BooleanProperty errorProperty() {
         return error;
     }
@@ -234,7 +232,6 @@ public final class M3TextInputSupport<C extends TextInputControl & M3TextInput> 
         containerHeightProperty().set(M3Css.nonNegative(containerHeight, "containerHeight"));
     }
 
-    /// Returns the preferred container height token property.
     public StyleableDoubleProperty containerHeightProperty() {
         if (containerHeight == null) {
             containerHeight = createStyleableDoubleProperty(
@@ -257,7 +254,6 @@ public final class M3TextInputSupport<C extends TextInputControl & M3TextInput> 
         containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
     }
 
-    /// Returns the container shape radius token property.
     public StyleableDoubleProperty containerShapeProperty() {
         if (containerShape == null) {
             containerShape = createStyleableDoubleProperty(
@@ -280,7 +276,6 @@ public final class M3TextInputSupport<C extends TextInputControl & M3TextInput> 
         horizontalPaddingProperty().set(M3Css.nonNegative(horizontalPadding, "horizontalPadding"));
     }
 
-    /// Returns the horizontal content padding token property.
     public StyleableDoubleProperty horizontalPaddingProperty() {
         if (horizontalPadding == null) {
             horizontalPadding = createStyleableDoubleProperty(
@@ -303,7 +298,6 @@ public final class M3TextInputSupport<C extends TextInputControl & M3TextInput> 
         verticalPaddingProperty().set(M3Css.nonNegative(verticalPadding, "verticalPadding"));
     }
 
-    /// Returns the vertical content padding token property.
     public StyleableDoubleProperty verticalPaddingProperty() {
         CssMetaData<C, Number> cssMetaData = verticalPaddingCssMetaData;
         if (cssMetaData == null) {

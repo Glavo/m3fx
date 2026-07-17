@@ -8,7 +8,13 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.Objects;
 
-/// Builds immutable [M3ShapeTokens] by replacing named token values.
+/// Builds immutable [M3ShapeTokens] by replacing named corner-radius token values.
+///
+/// Values use JavaFX logical pixels. Replacement methods retain the supplied values; [build] validates that every
+/// radius is finite and non-negative and throws [IllegalArgumentException] otherwise. A builder can be reused
+/// after building.
+///
+/// See [Material Design shape](https://m3.material.io/styles/shape/overview).
 @NotNullByDefault
 public final class M3ShapeTokensBuilder {
     /// The current none token value.
@@ -151,6 +157,7 @@ public final class M3ShapeTokensBuilder {
     /// Creates an immutable token set from the current builder state.
     ///
     /// @return the built token set
+    /// @throws IllegalArgumentException if any radius is negative or not finite
     public M3ShapeTokens build() {
         return new M3ShapeTokensImpl(
                 none,
@@ -166,4 +173,3 @@ public final class M3ShapeTokensBuilder {
         );
     }
 }
-

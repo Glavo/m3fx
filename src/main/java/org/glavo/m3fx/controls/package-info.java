@@ -10,6 +10,17 @@
 /// such as variants, surface elevation, navigation selection, supporting text, validation, and token-backed
 /// sizing properties instead of requiring applications to copy Material CSS snippets into every control.
 ///
+/// As with the standard JavaFX scene graph, controls and their live observable collections are not thread-safe.
+/// Applications must construct or mutate controls on the JavaFX Application Thread after they become part of a
+/// live scene graph. Unless a declaration is annotated with
+/// [org.jetbrains.annotations.Nullable], reference arguments and return values are non-null. Passing `null` where
+/// it is not permitted violates the API contract and methods that validate the argument report
+/// [NullPointerException].
+///
+/// Public component dimensions use JavaFX logical pixels. Setters for non-negative styleable dimensions reject
+/// negative and non-finite values with [IllegalArgumentException]. Node lists returned by controls are live,
+/// mutable views unless documented otherwise; inserted nodes must satisfy the normal JavaFX single-parent rule.
+///
 /// A typical application installs a theme through [org.glavo.m3fx.theme.M3ThemeManager] and then creates
 /// controls such as [M3Button], [M3TextInputLayout], [M3NavigationDrawer], [M3SnackbarHost],
 /// [M3DatePicker], or [M3ProgressIndicator]. Controls resolve color, shape, typography, elevation,

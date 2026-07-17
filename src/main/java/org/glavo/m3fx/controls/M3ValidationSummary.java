@@ -70,11 +70,11 @@ public final class M3ValidationSummary extends Control {
     /// The pseudo-class used while the summary has no rendered content.
     private static final PseudoClass EMPTY_PSEUDO_CLASS = PseudoClass.getPseudoClass("empty");
 
-    // The form validator that supplies invalid input layouts.
+    /// The form validator that supplies invalid input layouts.
     private final ObjectProperty<@Nullable M3FormValidator> validator =
             new SimpleObjectProperty<>(this, "validator");
 
-    // The title displayed above invalid field entries.
+    /// The title displayed above invalid field entries.
     private final StringProperty titleText = new SimpleStringProperty(this, "titleText", "Fix the following fields") {
         /// Rejects null title text values.
         @Override
@@ -83,7 +83,7 @@ public final class M3ValidationSummary extends Control {
         }
     };
 
-    // The text displayed when the summary is configured to render while valid.
+    /// The text displayed when the summary is configured to render while valid.
     private final StringProperty emptyText = new SimpleStringProperty(this, "emptyText", "No validation issues") {
         /// Rejects null empty text values.
         @Override
@@ -92,10 +92,10 @@ public final class M3ValidationSummary extends Control {
         }
     };
 
-    // Whether the summary renders an empty state when no invalid inputs exist.
+    /// Whether the summary renders an empty state when no invalid inputs exist.
     private final BooleanProperty showWhenValid = new SimpleBooleanProperty(this, "showWhenValid", false);
 
-    // The number of invalid input layouts that currently have a visible and enabled ancestor chain.
+    /// The number of invalid input layouts that currently have a visible and enabled ancestor chain.
     private final ReadOnlyIntegerWrapper visibleInvalidInputCount =
             new ReadOnlyIntegerWrapper(this, "visibleInvalidInputCount");
 
@@ -139,72 +139,93 @@ public final class M3ValidationSummary extends Control {
     }
 
     /// Creates a validation summary for the supplied form validator.
+    ///
+    /// @param validator the validator whose invalid-input list should be observed
+    /// @throws NullPointerException if `validator` is `null`
     public M3ValidationSummary(M3FormValidator validator) {
         this();
-        setValidator(validator);
+        setValidator(Objects.requireNonNull(validator, "validator"));
     }
 
     /// Returns the form validator that supplies invalid fields.
+    ///
+    /// @return the observed validator, or `null` when this summary is detached
     public final @Nullable M3FormValidator getValidator() {
         return validator.get();
     }
 
     /// Sets the form validator that supplies invalid fields.
+    ///
+    /// The summary stops observing the previous validator before observing the replacement.
+    ///
+    /// @param validator the validator to observe, or `null` to detach the summary
     public final void setValidator(@Nullable M3FormValidator validator) {
         this.validator.set(validator);
     }
 
-    /// Returns the form validator property.
     public final ObjectProperty<@Nullable M3FormValidator> validatorProperty() {
         return validator;
     }
 
     /// Returns the title displayed above invalid field entries.
+    ///
+    /// @return the title text; never `null`
     public final String getTitleText() {
         return titleText.get();
     }
 
     /// Sets the title displayed above invalid field entries.
+    ///
+    /// @param titleText the title text, or an empty string to suppress it
+    /// @throws NullPointerException if `titleText` is `null`
     public final void setTitleText(String titleText) {
         this.titleText.set(Objects.requireNonNull(titleText, "titleText"));
     }
 
-    /// Returns the summary title text property.
     public final StringProperty titleTextProperty() {
         return titleText;
     }
 
     /// Returns the text displayed when the summary renders a valid empty state.
+    ///
+    /// @return the valid-state text; never `null`
     public final String getEmptyText() {
         return emptyText.get();
     }
 
     /// Sets the text displayed when the summary renders a valid empty state.
+    ///
+    /// @param emptyText the valid-state text, or an empty string for no message
+    /// @throws NullPointerException if `emptyText` is `null`
     public final void setEmptyText(String emptyText) {
         this.emptyText.set(Objects.requireNonNull(emptyText, "emptyText"));
     }
 
-    /// Returns the valid empty-state text property.
     public final StringProperty emptyTextProperty() {
         return emptyText;
     }
 
     /// Returns whether the summary renders an empty state when no invalid inputs exist.
+    ///
+    /// @return whether a valid-state summary is shown; the default is `false`
     public final boolean isShowWhenValid() {
         return showWhenValid.get();
     }
 
     /// Sets whether the summary renders an empty state when no invalid inputs exist.
+    ///
+    /// @param showWhenValid whether the summary should remain visible while the form is valid
     public final void setShowWhenValid(boolean showWhenValid) {
         this.showWhenValid.set(showWhenValid);
     }
 
-    /// Returns the show-when-valid property.
     public final BooleanProperty showWhenValidProperty() {
         return showWhenValid;
     }
 
     /// Returns whether the summary currently has visible content.
+    ///
+    /// @return whether invalid rows or the configured valid-state message should be rendered
     public final boolean isShowingSummary() {
         return isShowWhenValid() || getVisibleInvalidInputCount() > 0;
     }
@@ -220,20 +241,24 @@ public final class M3ValidationSummary extends Control {
         return visibleInvalidInputCount.get();
     }
 
-    /// Returns the visible invalid input count property.
-    ///
-    /// @return the visible invalid input count property
     public final ReadOnlyIntegerProperty visibleInvalidInputCountProperty() {
         return visibleInvalidInputCount.getReadOnlyProperty();
     }
 
     /// Returns the number of invalid inputs currently reported by the validator.
+    ///
+    /// Unlike [getVisibleInvalidInputCount()], this count includes invalid inputs hidden or disabled by an ancestor.
+    ///
+    /// @return the validator's complete invalid-input count, or zero when no validator is installed
     public final int getInvalidInputCount() {
         @Nullable M3FormValidator validator = getValidator();
         return validator == null ? 0 : validator.getInvalidInputs().size();
     }
 
     /// Returns the invalid input at the requested index.
+    ///
+    /// @param index the zero-based index in the validator's complete invalid-input list
+    /// @return the invalid input, or `null` when no validator is installed or the index is outside the list
     public final @Nullable M3TextInputLayout getInvalidInput(int index) {
         @Nullable M3FormValidator validator = getValidator();
         if (validator == null || index < 0 || index >= validator.getInvalidInputs().size()) {
@@ -250,6 +275,7 @@ public final class M3ValidationSummary extends Control {
     ///
     /// @param input the invalid input layout to test
     /// @return `true` when the input should be rendered by this summary
+    /// @throws NullPointerException if any required argument is `null`
     public final boolean isInvalidInputShown(M3TextInputLayout input) {
         return isShownInvalidInput(Objects.requireNonNull(input, "input"));
     }
@@ -261,11 +287,18 @@ public final class M3ValidationSummary extends Control {
     ///
     /// @param input the invalid input layout to test
     /// @return `true` when the input is reachable from this summary
+    /// @throws NullPointerException if any required argument is `null`
     public final boolean isInvalidInputReachable(M3TextInputLayout input) {
         return isAccessibleInvalidInput(Objects.requireNonNull(input, "input"));
     }
 
     /// Requests focus for one invalid input layout if it belongs to the current validator.
+    ///
+    /// The input is revealed through its containing controls before focus is requested.
+    ///
+    /// @param input the invalid input to reveal and focus
+    /// @return `true` when the input was reachable and focus was requested; otherwise `false`
+    /// @throws NullPointerException if `input` is `null`
     public final boolean focusInput(M3TextInputLayout input) {
         M3TextInputLayout validatedInput = Objects.requireNonNull(input, "input");
         @Nullable M3FormValidator validator = getValidator();
@@ -294,6 +327,8 @@ public final class M3ValidationSummary extends Control {
     }
 
     /// Returns accessibility attributes for the invalid input collection.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -307,6 +342,8 @@ public final class M3ValidationSummary extends Control {
     }
 
     /// Executes accessibility actions for indexed invalid inputs.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

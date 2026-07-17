@@ -86,6 +86,7 @@ public sealed class M3MenuItem extends M3ListItemBase permits M3SubMenuItem {
     /// Sets the radius used by the inner corners of a first or last item in a visual menu group.
     ///
     /// @param innerCornerShape the non-negative inner-corner radius
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setInnerCornerShape(double innerCornerShape) {
         innerCornerShapeProperty().set(M3Css.nonNegative(innerCornerShape, "innerCornerShape"));
     }

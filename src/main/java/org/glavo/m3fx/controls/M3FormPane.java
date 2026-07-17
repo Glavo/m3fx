@@ -65,10 +65,10 @@ public final class M3FormPane extends Control {
     private final M3AccessibleFocusNotifier focusNotifier =
             new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(this, getItems()));
 
-    // The styleable content padding token.
+    /// The styleable content padding token.
     private @Nullable StyleableDoubleProperty contentPadding;
 
-    // The styleable row spacing token.
+    /// The styleable row spacing token.
     private @Nullable StyleableDoubleProperty rowSpacing;
 
     /// Creates an empty form pane.
@@ -97,13 +97,11 @@ public final class M3FormPane extends Control {
     /// Sets the uniform content padding used by the default skin.
     ///
     /// @param contentPadding the uniform content padding used by the default skin
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContentPadding(double contentPadding) {
         contentPaddingProperty().set(M3Css.nonNegative(contentPadding, "contentPadding"));
     }
 
-    /// Returns the content padding token property.
-    ///
-    /// @return the content padding token property
     public final StyleableDoubleProperty contentPaddingProperty() {
         if (contentPadding == null) {
             contentPadding = M3Css.nonNegativeStyleableDoubleProperty(
@@ -127,13 +125,11 @@ public final class M3FormPane extends Control {
     /// Sets the vertical spacing between top-level form items.
     ///
     /// @param rowSpacing the vertical spacing between top-level form items
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setRowSpacing(double rowSpacing) {
         rowSpacingProperty().set(M3Css.nonNegative(rowSpacing, "rowSpacing"));
     }
 
-    /// Returns the row spacing token property.
-    ///
-    /// @return the row spacing token property
     public final StyleableDoubleProperty rowSpacingProperty() {
         if (rowSpacing == null) {
             rowSpacing = M3Css.nonNegativeStyleableDoubleProperty(
@@ -189,6 +185,8 @@ public final class M3FormPane extends Control {
     }
 
     /// Returns accessibility attributes for the form item collection.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -201,6 +199,8 @@ public final class M3FormPane extends Control {
     }
 
     /// Executes accessibility actions for indexed form items.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

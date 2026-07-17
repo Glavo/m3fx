@@ -105,7 +105,7 @@ public final class M3SubMenuItem extends M3MenuItem {
                     M3Stylesheets.controlStylesheet("menu.css")
             );
 
-    // Backing property for the public read-only submenu showing state API.
+    /// Backing property for the public read-only submenu showing state API.
     private final ReadOnlyBooleanWrapper subMenuShowing =
             new ReadOnlyBooleanWrapper(this, "subMenuShowing") {
                 /// Mirrors the expanded submenu state to the Material active-state pseudo-class.
@@ -206,9 +206,6 @@ public final class M3SubMenuItem extends M3MenuItem {
         return subMenuShowing.get();
     }
 
-    /// Returns the read-only submenu showing state property.
-    ///
-    /// @return the read-only submenu showing state property
     public final ReadOnlyBooleanProperty subMenuShowingProperty() {
         return subMenuShowing.getReadOnlyProperty();
     }
@@ -323,6 +320,7 @@ public final class M3SubMenuItem extends M3MenuItem {
     /// @param attribute  the requested accessibility attribute
     /// @param parameters the optional attribute parameters
     /// @return the attribute value, or `null` when unavailable
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -342,6 +340,7 @@ public final class M3SubMenuItem extends M3MenuItem {
     ///
     /// @param action     the requested accessibility action
     /// @param parameters the optional action parameters
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

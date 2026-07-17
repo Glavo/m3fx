@@ -87,10 +87,10 @@ public final class M3SegmentedButtonGroup extends Control {
                             M3SegmentedButton.class
                     ));
 
-    // Backing property for the styleable segment spacing token.
+    /// Backing property for the styleable segment spacing token.
     private @Nullable StyleableDoubleProperty spacing;
 
-    // Backing property for the public segmented button selection mode API.
+    /// Backing property for the public segmented button selection mode API.
     private final ObjectProperty<M3SelectionMode> selectionMode =
             new SimpleObjectProperty<>(this, "selectionMode", M3SelectionMode.SINGLE) {
                 /// Enforces selection invariants when the mode changes.
@@ -111,11 +111,11 @@ public final class M3SegmentedButtonGroup extends Control {
     private final @UnmodifiableView ObservableList<M3SegmentedButton> selectedButtonsView =
             FXCollections.unmodifiableObservableList(selectedButtons);
 
-    // Backing property for the public read-only selected segmented button API.
+    /// Backing property for the public read-only selected segmented button API.
     private final ReadOnlyObjectWrapper<@Nullable M3SegmentedButton> selectedButton =
             new ReadOnlyObjectWrapper<>(this, "selectedButton");
 
-    // Backing property for the public empty-selection policy API.
+    /// Backing property for the public empty-selection policy API.
     private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection", true) {
         /// Restores a selected button when empty selection is disabled.
         @Override
@@ -202,9 +202,6 @@ public final class M3SegmentedButtonGroup extends Control {
         spacingProperty().set(M3Css.finite(spacing, "spacing"));
     }
 
-    /// Returns the spacing property.
-    ///
-    /// @return the styleable child spacing property
     public final StyleableDoubleProperty spacingProperty() {
         if (spacing == null) {
             spacing = M3Css.finiteStyleableDoubleProperty(
@@ -229,13 +226,11 @@ public final class M3SegmentedButtonGroup extends Control {
     /// Sets the segmented button selection mode.
     ///
     /// @param selectionMode the segmented button selection mode
+    /// @throws NullPointerException if any required argument is `null`
     public final void setSelectionMode(M3SelectionMode selectionMode) {
         this.selectionMode.set(Objects.requireNonNull(selectionMode, "selectionMode"));
     }
 
-    /// Returns the segmented button selection mode property.
-    ///
-    /// @return the segmented button selection mode property
     public final ObjectProperty<M3SelectionMode> selectionModeProperty() {
         return selectionMode;
     }
@@ -254,9 +249,6 @@ public final class M3SegmentedButtonGroup extends Control {
         return selectedButton.get();
     }
 
-    /// Returns the selected segmented button property.
-    ///
-    /// @return the read-only selected segmented button property
     public final ReadOnlyObjectProperty<@Nullable M3SegmentedButton> selectedButtonProperty() {
         return selectedButton.getReadOnlyProperty();
     }
@@ -283,9 +275,6 @@ public final class M3SegmentedButtonGroup extends Control {
         this.allowEmptySelection.set(allowEmptySelection);
     }
 
-    /// Returns the empty-selection policy property.
-    ///
-    /// @return the empty-selection policy property
     public final BooleanProperty allowEmptySelectionProperty() {
         return allowEmptySelection;
     }
@@ -294,6 +283,7 @@ public final class M3SegmentedButtonGroup extends Control {
     ///
     /// @param button the segmented button to select
     /// @throws IllegalArgumentException if the button does not belong to this group
+    /// @throws NullPointerException if any required argument is `null`
     public final void select(M3SegmentedButton button) {
         Objects.requireNonNull(button, "button");
         if (!getItems().contains(button)) {
@@ -407,6 +397,7 @@ public final class M3SegmentedButtonGroup extends Control {
     /// @param attribute the requested accessibility attribute
     /// @param parameters the optional attribute parameters
     /// @return the attribute value, or `null` when unavailable
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -429,6 +420,7 @@ public final class M3SegmentedButtonGroup extends Control {
     ///
     /// @param action the requested accessibility action
     /// @param parameters the optional action parameters
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

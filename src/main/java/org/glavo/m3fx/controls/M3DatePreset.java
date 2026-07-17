@@ -10,6 +10,9 @@ import java.util.Objects;
 
 /// A labeled date preset for an [M3DatePicker].
 ///
+/// Presets are immutable value objects. The text is presentation content supplied by the application; M3FX does
+/// not localize it. Both components are required.
+///
 /// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview).
 ///
 /// @param text the text shown for the preset action
@@ -17,6 +20,8 @@ import java.util.Objects;
 @NotNullByDefault
 public record M3DatePreset(String text, LocalDate date) {
     /// Creates a validated date preset.
+    ///
+    /// @throws NullPointerException if `text` or `date` is `null`
     public M3DatePreset {
         Objects.requireNonNull(text, "text");
         Objects.requireNonNull(date, "date");

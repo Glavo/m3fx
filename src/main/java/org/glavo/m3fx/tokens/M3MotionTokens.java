@@ -163,6 +163,7 @@ public sealed interface M3MotionTokens permits M3MotionTokensImpl {
     ///
     /// @param tokens the motion tokens to copy
     /// @return a mutable motion-token builder
+    /// @throws NullPointerException if `tokens` is `null`
     static M3MotionTokensBuilder builder(M3MotionTokens tokens) {
         return new M3MotionTokensBuilder(tokens);
     }

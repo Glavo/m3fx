@@ -44,7 +44,7 @@ public final class M3Scrim extends Region {
     /// The default visible scrim opacity.
     private static final double DEFAULT_VISIBLE_OPACITY = 0.32;
 
-    // Backing property for the public action handler API.
+    /// Backing property for the public action handler API.
     private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
             new SimpleObjectProperty<>(this, "onAction") {
                 /// Updates the registered action event handler.
@@ -54,7 +54,7 @@ public final class M3Scrim extends Region {
                 }
             };
 
-    // Backing property for the public shown state API.
+    /// Backing property for the public shown state API.
     private final BooleanProperty shown = new SimpleBooleanProperty(this, "shown", true) {
         /// Updates the scrim visibility when the property changes.
         @Override
@@ -64,7 +64,7 @@ public final class M3Scrim extends Region {
         }
     };
 
-    // Backing property for the public visible opacity API.
+    /// Backing property for the public visible opacity API.
     private final DoubleProperty visibleOpacity =
             new SimpleDoubleProperty(this, "visibleOpacity", DEFAULT_VISIBLE_OPACITY) {
                 /// Applies the updated visible opacity when the scrim is shown.
@@ -77,7 +77,7 @@ public final class M3Scrim extends Region {
                 }
             };
 
-    // Backing property for the public dismiss-on-click API.
+    /// Backing property for the public dismiss-on-click API.
     private final BooleanProperty dismissOnClick = new SimpleBooleanProperty(this, "dismissOnClick", true);
 
     /// The scrim show and hide animation.
@@ -120,9 +120,6 @@ public final class M3Scrim extends Region {
         this.shown.set(shown);
     }
 
-    /// Returns the shown property.
-    ///
-    /// @return the shown property
     public final BooleanProperty shownProperty() {
         return shown;
     }
@@ -142,9 +139,6 @@ public final class M3Scrim extends Region {
         this.visibleOpacity.set(validateOpacity(visibleOpacity));
     }
 
-    /// Returns the visible opacity property.
-    ///
-    /// @return the visible opacity property
     public final DoubleProperty visibleOpacityProperty() {
         return visibleOpacity;
     }
@@ -163,9 +157,6 @@ public final class M3Scrim extends Region {
         this.dismissOnClick.set(dismissOnClick);
     }
 
-    /// Returns the dismiss-on-click property.
-    ///
-    /// @return the dismiss-on-click property
     public final BooleanProperty dismissOnClickProperty() {
         return dismissOnClick;
     }
@@ -184,9 +175,6 @@ public final class M3Scrim extends Region {
         this.onAction.set(onAction);
     }
 
-    /// Returns the action handler property.
-    ///
-    /// @return the action handler property
     public final ObjectProperty<@Nullable EventHandler<ActionEvent>> onActionProperty() {
         return onAction;
     }
@@ -221,6 +209,7 @@ public final class M3Scrim extends Region {
     /// @param attribute the requested accessibility attribute
     /// @param parameters the optional attribute parameters
     /// @return the attribute value, or `null` when unavailable
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -235,6 +224,7 @@ public final class M3Scrim extends Region {
     ///
     /// @param action the requested accessibility action
     /// @param parameters the optional action parameters
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

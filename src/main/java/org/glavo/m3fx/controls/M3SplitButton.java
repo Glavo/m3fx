@@ -97,7 +97,7 @@ public final class M3SplitButton extends Control {
     /// The disclosure icon displayed by the menu button side.
     private final M3DisclosureIcon menuIndicator = new M3DisclosureIcon();
 
-    /// The primary action text owned by this composite control.
+    /// The primary action text property.
     private final StringProperty text = new SimpleStringProperty(this, "text", "") {
         /// Keeps text non-null and synchronizes the primary button.
         @Override
@@ -110,7 +110,7 @@ public final class M3SplitButton extends Control {
         }
     };
 
-    /// The primary action graphic owned by this composite control.
+    /// The primary action graphic property.
     private final ObjectProperty<@Nullable Node> graphic =
             new SimpleObjectProperty<>(this, "graphic") {
                 /// Synchronizes the primary button graphic.
@@ -120,7 +120,7 @@ public final class M3SplitButton extends Control {
                 }
             };
 
-    /// The primary action handler owned by this composite control.
+    /// The primary action handler property.
     private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
             new SimpleObjectProperty<>(this, "onAction") {
                 /// Updates the registered primary action event handler.
@@ -130,7 +130,7 @@ public final class M3SplitButton extends Control {
                 }
             };
 
-    /// The read-only attached-menu visibility state owned by this composite control.
+    /// The read-only showing state property.
     private final ReadOnlyBooleanWrapper showing = new ReadOnlyBooleanWrapper(this, "showing");
 
     /// The focusable button parts exposed to accessibility and keyboard navigation.
@@ -144,7 +144,7 @@ public final class M3SplitButton extends Control {
     private final M3AccessibleFocusNotifier popupFocusNotifier =
             new M3AccessibleFocusNotifier(this, menuButton.getMenu(), this::focusNode);
 
-    // Backing property for the public shared button variant API.
+    /// Backing property for the public shared button variant API.
     private final ObjectProperty<M3ButtonVariant> variant =
             new SimpleObjectProperty<>(this, "variant", M3ButtonVariant.TONAL) {
                 /// Updates both child buttons when the variant changes.
@@ -158,7 +158,7 @@ public final class M3SplitButton extends Control {
                 }
             };
 
-    // The Material Expressive split button size property.
+    /// The Material Expressive split button size property.
     private final ObjectProperty<M3ButtonSize> size =
             new SimpleObjectProperty<>(this, "size", DEFAULT_SIZE) {
                 /// Updates size style classes when the property changes.
@@ -173,22 +173,22 @@ public final class M3SplitButton extends Control {
                 }
             };
 
-    // The styleable spacing between the action and menu parts.
+    /// The styleable spacing between the action and menu parts.
     private @Nullable StyleableDoubleProperty spacing;
 
-    // The styleable outer-corner radius shared by both button parts.
+    /// The styleable outer-corner radius shared by both button parts.
     private @Nullable StyleableDoubleProperty outerCorner;
 
-    // The styleable resting inner-corner radius shared by both button parts.
+    /// The styleable resting inner-corner radius shared by both button parts.
     private @Nullable StyleableDoubleProperty innerCorner;
 
-    // The styleable hovered inner-corner radius shared by both button parts.
+    /// The styleable hovered inner-corner radius shared by both button parts.
     private @Nullable StyleableDoubleProperty hoveredInnerCorner;
 
-    // The styleable pressed inner-corner radius shared by both button parts.
+    /// The styleable pressed inner-corner radius shared by both button parts.
     private @Nullable StyleableDoubleProperty pressedInnerCorner;
 
-    // The styleable selected trailing-button inner-corner radius.
+    /// The styleable selected trailing-button inner-corner radius.
     private @Nullable StyleableDoubleProperty selectedInnerCorner;
 
     /// Creates an empty split button.
@@ -214,13 +214,11 @@ public final class M3SplitButton extends Control {
     /// Sets the primary action text.
     ///
     /// @param text the primary action text
+    /// @throws NullPointerException if any required argument is `null`
     public final void setText(String text) {
         this.text.set(Objects.requireNonNull(text, "text"));
     }
 
-    /// Returns the primary action text property.
-    ///
-    /// @return the primary action text property
     public final StringProperty textProperty() {
         return text;
     }
@@ -239,9 +237,6 @@ public final class M3SplitButton extends Control {
         this.graphic.set(graphic);
     }
 
-    /// Returns the primary action graphic property.
-    ///
-    /// @return the primary action graphic property
     public final ObjectProperty<@Nullable Node> graphicProperty() {
         return graphic;
     }
@@ -260,9 +255,6 @@ public final class M3SplitButton extends Control {
         this.onAction.set(onAction);
     }
 
-    /// Returns the primary action handler property.
-    ///
-    /// @return the primary action handler property
     public final ObjectProperty<@Nullable EventHandler<ActionEvent>> onActionProperty() {
         return onAction;
     }
@@ -284,13 +276,11 @@ public final class M3SplitButton extends Control {
     /// Sets the button variant shared by both split button parts.
     ///
     /// @param variant the button variant shared by both split button parts
+    /// @throws NullPointerException if any required argument is `null`
     public final void setVariant(M3ButtonVariant variant) {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
 
-    /// Returns the shared button variant property.
-    ///
-    /// @return the shared button variant property
     public final ObjectProperty<M3ButtonVariant> variantProperty() {
         return variant;
     }
@@ -305,13 +295,11 @@ public final class M3SplitButton extends Control {
     /// Sets the Material Expressive split button size.
     ///
     /// @param size the Material Expressive split button size
+    /// @throws NullPointerException if any required argument is `null`
     public final void setSize(M3ButtonSize size) {
         this.size.set(Objects.requireNonNull(size, "size"));
     }
 
-    /// Returns the Material Expressive split button size property.
-    ///
-    /// @return the Material Expressive split button size property
     public final ObjectProperty<M3ButtonSize> sizeProperty() {
         return size;
     }
@@ -330,9 +318,6 @@ public final class M3SplitButton extends Control {
         spacingProperty().set(M3Css.finite(spacing, "spacing"));
     }
 
-    /// Returns the styleable part spacing property.
-    ///
-    /// @return the styleable part spacing property
     public final StyleableDoubleProperty spacingProperty() {
         if (spacing == null) {
             spacing = M3Css.finiteStyleableDoubleProperty(
@@ -356,13 +341,11 @@ public final class M3SplitButton extends Control {
     /// Sets the outer-corner radius shared by both button parts.
     ///
     /// @param outerCorner the non-negative outer-corner radius in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setOuterCorner(double outerCorner) {
         outerCornerProperty().set(M3Css.nonNegative(outerCorner, "outerCorner"));
     }
 
-    /// Returns the styleable outer-corner radius property.
-    ///
-    /// @return the outer-corner radius property
     public final StyleableDoubleProperty outerCornerProperty() {
         if (outerCorner == null) {
             outerCorner = shapeProperty(
@@ -384,13 +367,11 @@ public final class M3SplitButton extends Control {
     /// Sets the resting inner-corner radius shared by both button parts.
     ///
     /// @param innerCorner the non-negative resting inner-corner radius in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setInnerCorner(double innerCorner) {
         innerCornerProperty().set(M3Css.nonNegative(innerCorner, "innerCorner"));
     }
 
-    /// Returns the styleable resting inner-corner radius property.
-    ///
-    /// @return the resting inner-corner radius property
     public final StyleableDoubleProperty innerCornerProperty() {
         if (innerCorner == null) {
             innerCorner = shapeProperty(
@@ -412,13 +393,11 @@ public final class M3SplitButton extends Control {
     /// Sets the hovered inner-corner radius shared by both button parts.
     ///
     /// @param hoveredInnerCorner the non-negative hovered inner-corner radius in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setHoveredInnerCorner(double hoveredInnerCorner) {
         hoveredInnerCornerProperty().set(M3Css.nonNegative(hoveredInnerCorner, "hoveredInnerCorner"));
     }
 
-    /// Returns the styleable hovered inner-corner radius property.
-    ///
-    /// @return the hovered inner-corner radius property
     public final StyleableDoubleProperty hoveredInnerCornerProperty() {
         if (hoveredInnerCorner == null) {
             hoveredInnerCorner = shapeProperty(
@@ -440,13 +419,11 @@ public final class M3SplitButton extends Control {
     /// Sets the pressed inner-corner radius shared by both button parts.
     ///
     /// @param pressedInnerCorner the non-negative pressed inner-corner radius in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setPressedInnerCorner(double pressedInnerCorner) {
         pressedInnerCornerProperty().set(M3Css.nonNegative(pressedInnerCorner, "pressedInnerCorner"));
     }
 
-    /// Returns the styleable pressed inner-corner radius property.
-    ///
-    /// @return the pressed inner-corner radius property
     public final StyleableDoubleProperty pressedInnerCornerProperty() {
         if (pressedInnerCorner == null) {
             pressedInnerCorner = shapeProperty(
@@ -468,13 +445,11 @@ public final class M3SplitButton extends Control {
     /// Sets the selected trailing-button inner-corner radius.
     ///
     /// @param selectedInnerCorner the non-negative selected inner-corner radius in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setSelectedInnerCorner(double selectedInnerCorner) {
         selectedInnerCornerProperty().set(M3Css.nonNegative(selectedInnerCorner, "selectedInnerCorner"));
     }
 
-    /// Returns the styleable selected trailing-button inner-corner radius property.
-    ///
-    /// @return the selected inner-corner radius property
     public final StyleableDoubleProperty selectedInnerCornerProperty() {
         if (selectedInnerCorner == null) {
             selectedInnerCorner = shapeProperty(
@@ -533,9 +508,6 @@ public final class M3SplitButton extends Control {
         return showing.get();
     }
 
-    /// Returns the read-only showing state property.
-    ///
-    /// @return the read-only showing state property
     public final ReadOnlyBooleanProperty showingProperty() {
         return showing.getReadOnlyProperty();
     }
@@ -568,6 +540,7 @@ public final class M3SplitButton extends Control {
     /// @param attribute the requested accessibility attribute
     /// @param parameters the optional attribute parameters
     /// @return the attribute value, or `null` when unavailable
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -587,6 +560,7 @@ public final class M3SplitButton extends Control {
     ///
     /// @param action the requested accessibility action
     /// @param parameters the optional action parameters
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

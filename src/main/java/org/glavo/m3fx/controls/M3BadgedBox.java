@@ -37,13 +37,13 @@ public final class M3BadgedBox extends Control {
     /// The base style class for M3FX badged boxes.
     public static final String STYLE_CLASS = "m3-badged-box";
 
-    // The optional content node property.
+    /// The optional content node property.
     private final ObjectProperty<@Nullable Node> content = new SimpleObjectProperty<>(this, "content");
 
-    // The optional badge property.
+    /// The optional badge property.
     private final ObjectProperty<@Nullable M3Badge> badge = new SimpleObjectProperty<>(this, "badge");
 
-    // The badge alignment inside this container, resolved horizontally against the effective node orientation.
+    /// The badge alignment inside this container, resolved horizontally against the effective node orientation.
     private final ObjectProperty<Pos> badgeAlignment = new SimpleObjectProperty<>(this, "badgeAlignment", Pos.TOP_RIGHT) {
         /// Restores the default badge alignment when the property is set to null.
         @Override
@@ -56,7 +56,7 @@ public final class M3BadgedBox extends Control {
         }
     };
 
-    // The horizontal badge translation after alignment is applied.
+    /// The horizontal badge translation after alignment is applied.
     private final DoubleProperty badgeOffsetX = new SimpleDoubleProperty(this, "badgeOffsetX") {
         /// Updates badge placement after the offset changes.
         @Override
@@ -65,7 +65,7 @@ public final class M3BadgedBox extends Control {
         }
     };
 
-    // The vertical badge translation after alignment is applied.
+    /// The vertical badge translation after alignment is applied.
     private final DoubleProperty badgeOffsetY = new SimpleDoubleProperty(this, "badgeOffsetY") {
         /// Updates badge placement after the offset changes.
         @Override
@@ -118,9 +118,6 @@ public final class M3BadgedBox extends Control {
         this.content.set(content);
     }
 
-    /// Returns the optional content node property.
-    ///
-    /// @return the content node property
     public final ObjectProperty<@Nullable Node> contentProperty() {
         return content;
     }
@@ -139,9 +136,6 @@ public final class M3BadgedBox extends Control {
         this.badge.set(badge);
     }
 
-    /// Returns the optional badge property.
-    ///
-    /// @return the badge node property
     public final ObjectProperty<@Nullable M3Badge> badgeProperty() {
         return badge;
     }
@@ -162,16 +156,11 @@ public final class M3BadgedBox extends Control {
     /// against the control's effective node orientation.
     ///
     /// @param badgeAlignment the badge alignment
+    /// @throws NullPointerException if any required argument is `null`
     public final void setBadgeAlignment(Pos badgeAlignment) {
         this.badgeAlignment.set(Objects.requireNonNull(badgeAlignment, "badgeAlignment"));
     }
 
-    /// Returns the badge alignment property.
-    ///
-    /// Horizontal left and right alignments are interpreted as logical start and end and are resolved by the skin
-    /// against the control's effective node orientation.
-    ///
-    /// @return the badge alignment property
     public final ObjectProperty<Pos> badgeAlignmentProperty() {
         return badgeAlignment;
     }
@@ -190,9 +179,6 @@ public final class M3BadgedBox extends Control {
         this.badgeOffsetX.set(badgeOffsetX);
     }
 
-    /// Returns the horizontal badge translation property.
-    ///
-    /// @return the horizontal badge offset property
     public final DoubleProperty badgeOffsetXProperty() {
         return badgeOffsetX;
     }
@@ -211,9 +197,6 @@ public final class M3BadgedBox extends Control {
         this.badgeOffsetY.set(badgeOffsetY);
     }
 
-    /// Returns the vertical badge translation property.
-    ///
-    /// @return the vertical badge offset property
     public final DoubleProperty badgeOffsetYProperty() {
         return badgeOffsetY;
     }
@@ -243,6 +226,8 @@ public final class M3BadgedBox extends Control {
     }
 
     /// Executes accessibility actions for content and badge children.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

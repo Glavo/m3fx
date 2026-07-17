@@ -74,7 +74,7 @@ public final class M3FormRow extends Control {
     /// The default minimum row height.
     private static final double DEFAULT_ROW_MIN_HEIGHT = 64.0;
 
-    // The row label text.
+    /// The row label text.
     private final StringProperty labelText = new SimpleStringProperty(this, "labelText", "") {
         /// Rejects null label text values.
         @Override
@@ -90,7 +90,7 @@ public final class M3FormRow extends Control {
         }
     };
 
-    // The row supporting text.
+    /// The row supporting text.
     private final StringProperty supportingText = new SimpleStringProperty(this, "supportingText", "") {
         /// Rejects null supporting text values.
         @Override
@@ -105,7 +105,7 @@ public final class M3FormRow extends Control {
         }
     };
 
-    // The primary row content node.
+    /// The primary row content node.
     private final ObjectProperty<@Nullable Node> content = new SimpleObjectProperty<>(this, "content") {
         /// Validates content ownership before setting the node.
         @Override
@@ -125,7 +125,7 @@ public final class M3FormRow extends Control {
         }
     };
 
-    // The optional trailing row content node.
+    /// The optional trailing row content node.
     private final ObjectProperty<@Nullable Node> trailing = new SimpleObjectProperty<>(this, "trailing") {
         /// Validates trailing ownership before setting the node.
         @Override
@@ -153,13 +153,13 @@ public final class M3FormRow extends Control {
                     getTrailing()
             ));
 
-    // The styleable label width token.
+    /// The styleable label width token.
     private @Nullable StyleableDoubleProperty labelWidth;
 
-    // The styleable column spacing token.
+    /// The styleable column spacing token.
     private @Nullable StyleableDoubleProperty columnSpacing;
 
-    // The styleable row minimum height token.
+    /// The styleable row minimum height token.
     private @Nullable StyleableDoubleProperty rowMinHeight;
 
     /// Creates an empty form row.
@@ -217,9 +217,6 @@ public final class M3FormRow extends Control {
         this.labelText.set(labelText);
     }
 
-    /// Returns the row label text property.
-    ///
-    /// @return the row label text property
     public final StringProperty labelTextProperty() {
         return labelText;
     }
@@ -238,9 +235,6 @@ public final class M3FormRow extends Control {
         this.supportingText.set(supportingText);
     }
 
-    /// Returns the row supporting text property.
-    ///
-    /// @return the row supporting text property
     public final StringProperty supportingTextProperty() {
         return supportingText;
     }
@@ -259,9 +253,6 @@ public final class M3FormRow extends Control {
         this.content.set(content);
     }
 
-    /// Returns the primary row content property.
-    ///
-    /// @return the primary row content property
     public final ObjectProperty<@Nullable Node> contentProperty() {
         return content;
     }
@@ -280,9 +271,6 @@ public final class M3FormRow extends Control {
         this.trailing.set(trailing);
     }
 
-    /// Returns the optional trailing row content property.
-    ///
-    /// @return the optional trailing row content property
     public final ObjectProperty<@Nullable Node> trailingProperty() {
         return trailing;
     }
@@ -297,13 +285,11 @@ public final class M3FormRow extends Control {
     /// Sets the width reserved for the label text column.
     ///
     /// @param labelWidth the width reserved for the label text column
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setLabelWidth(double labelWidth) {
         labelWidthProperty().set(M3Css.nonNegative(labelWidth, "labelWidth"));
     }
 
-    /// Returns the label width token property.
-    ///
-    /// @return the label width token property
     public final StyleableDoubleProperty labelWidthProperty() {
         if (labelWidth == null) {
             labelWidth = M3Css.nonNegativeStyleableDoubleProperty(
@@ -327,13 +313,11 @@ public final class M3FormRow extends Control {
     /// Sets the horizontal spacing between row columns.
     ///
     /// @param columnSpacing the horizontal spacing between row columns
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setColumnSpacing(double columnSpacing) {
         columnSpacingProperty().set(M3Css.nonNegative(columnSpacing, "columnSpacing"));
     }
 
-    /// Returns the column spacing token property.
-    ///
-    /// @return the column spacing token property
     public final StyleableDoubleProperty columnSpacingProperty() {
         if (columnSpacing == null) {
             columnSpacing = M3Css.nonNegativeStyleableDoubleProperty(
@@ -357,13 +341,11 @@ public final class M3FormRow extends Control {
     /// Sets the minimum row height used by the default skin.
     ///
     /// @param rowMinHeight the minimum row height used by the default skin
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setRowMinHeight(double rowMinHeight) {
         rowMinHeightProperty().set(M3Css.nonNegative(rowMinHeight, "rowMinHeight"));
     }
 
-    /// Returns the row minimum height token property.
-    ///
-    /// @return the row minimum height token property
     public final StyleableDoubleProperty rowMinHeightProperty() {
         if (rowMinHeight == null) {
             rowMinHeight = M3Css.nonNegativeStyleableDoubleProperty(
@@ -419,6 +401,8 @@ public final class M3FormRow extends Control {
     }
 
     /// Returns accessibility attributes for the form row.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -433,6 +417,8 @@ public final class M3FormRow extends Control {
     }
 
     /// Executes accessibility actions for form row content.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

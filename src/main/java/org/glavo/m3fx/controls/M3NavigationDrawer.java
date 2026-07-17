@@ -95,7 +95,7 @@ public final class M3NavigationDrawer extends Control {
     private final M3AccessibleFocusNotifier focusNotifier =
             new M3AccessibleFocusNotifier(this, this::accessibleFocusNode);
 
-    // The currently selected navigation drawer item.
+    /// The currently selected navigation drawer item.
     private final ReadOnlyObjectWrapper<@Nullable M3ListItem> selectedItem =
             new ReadOnlyObjectWrapper<>(this, "selectedItem");
 
@@ -106,7 +106,7 @@ public final class M3NavigationDrawer extends Control {
     private final @UnmodifiableView ObservableList<M3ListItem> selectedItemsView =
             FXCollections.unmodifiableObservableList(selectedItems);
 
-    // The styleable spacing between top-level drawer items.
+    /// The styleable spacing between top-level drawer items.
     private @Nullable StyleableDoubleProperty itemSpacing;
 
     /// Backing property for the public drawer variant API.
@@ -123,7 +123,7 @@ public final class M3NavigationDrawer extends Control {
                 }
             };
 
-    // Whether the drawer allows all list items to be unselected.
+    /// Whether the drawer allows all list items to be unselected.
     private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection") {
         /// Restores a selected item when empty selection is disabled.
         @Override
@@ -215,6 +215,7 @@ public final class M3NavigationDrawer extends Control {
     /// Sets the navigation drawer presentation variant.
     ///
     /// @param variant the drawer variant
+    /// @throws NullPointerException if any required argument is `null`
     public final void setVariant(M3NavigationDrawerVariant variant) {
         drawerVariant.set(Objects.requireNonNull(variant, "variant"));
     }
@@ -241,9 +242,6 @@ public final class M3NavigationDrawer extends Control {
         return selectedItem.get();
     }
 
-    /// Returns the selected drawer list item property.
-    ///
-    /// @return the read-only selected drawer list item property
     public final ReadOnlyObjectProperty<@Nullable M3ListItem> selectedItemProperty() {
         return selectedItem.getReadOnlyProperty();
     }
@@ -270,9 +268,6 @@ public final class M3NavigationDrawer extends Control {
         this.allowEmptySelection.set(allowEmptySelection);
     }
 
-    /// Returns the empty-selection policy property.
-    ///
-    /// @return the writable empty-selection policy property
     public final BooleanProperty allowEmptySelectionProperty() {
         return allowEmptySelection;
     }
@@ -280,6 +275,7 @@ public final class M3NavigationDrawer extends Control {
     /// Selects a drawer list item that belongs to this drawer.
     ///
     /// @param item the drawer list item to select
+    /// @throws NullPointerException if any required argument is `null`
     public final void select(M3ListItem item) {
         Objects.requireNonNull(item, "item");
         if (!containsListItem(item)) {
@@ -359,13 +355,11 @@ public final class M3NavigationDrawer extends Control {
     /// Sets the spacing between top-level drawer items.
     ///
     /// @param itemSpacing the spacing between top-level drawer items in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setItemSpacing(double itemSpacing) {
         itemSpacingProperty().set(M3Css.nonNegative(itemSpacing, "itemSpacing"));
     }
 
-    /// Returns the spacing between top-level drawer items property.
-    ///
-    /// @return the styleable item spacing property
     public final StyleableDoubleProperty itemSpacingProperty() {
         if (itemSpacing == null) {
             itemSpacing = M3Css.nonNegativeStyleableDoubleProperty(
@@ -414,6 +408,7 @@ public final class M3NavigationDrawer extends Control {
     /// @param attribute  the requested accessibility attribute
     /// @param parameters optional attribute-specific parameters
     /// @return the requested accessibility value, or `null` when no value is available
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -432,6 +427,7 @@ public final class M3NavigationDrawer extends Control {
     ///
     /// @param action     the accessibility action to execute
     /// @param parameters optional action-specific parameters
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

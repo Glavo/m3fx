@@ -11,6 +11,9 @@
 /// Reduced-motion settings are resolved by walking the JavaFX parent chain, so a container can request reduced
 /// motion for an entire feature area without changing each control individually.
 ///
+/// Motion specs and schemes are immutable and can be shared. Their builders are mutable, reusable, and not
+/// thread-safe. Runtime settings that observe or mutate live nodes follow JavaFX scene-graph threading rules.
+///
 /// See [Material Design motion](https://m3.material.io/styles/motion/overview) and
 /// [Material Design](https://m3.material.io/) for the design language reflected by these APIs.
 @NotNullByDefault

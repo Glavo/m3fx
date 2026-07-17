@@ -10,6 +10,9 @@ import java.util.Objects;
 
 /// Builds immutable [M3MotionScheme] values from independently configurable semantic motion specs.
 ///
+/// A builder is initialized from a complete scheme and can be reused after [build]. Replacement specs must not be
+/// `null`; each replacement method throws [NullPointerException] when that contract is violated.
+///
 /// See [Material Design motion](https://m3.material.io/styles/motion/overview).
 @NotNullByDefault
 public final class M3MotionSchemeBuilder {
@@ -48,6 +51,7 @@ public final class M3MotionSchemeBuilder {
     ///
     /// @param spec the replacement spec
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3MotionSchemeBuilder fastEffects(M3MotionSpec spec) {
         fastEffects = Objects.requireNonNull(spec, "spec");
         return this;
@@ -57,6 +61,7 @@ public final class M3MotionSchemeBuilder {
     ///
     /// @param spec the replacement spec
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3MotionSchemeBuilder defaultEffects(M3MotionSpec spec) {
         defaultEffects = Objects.requireNonNull(spec, "spec");
         return this;
@@ -66,6 +71,7 @@ public final class M3MotionSchemeBuilder {
     ///
     /// @param spec the replacement spec
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3MotionSchemeBuilder slowEffects(M3MotionSpec spec) {
         slowEffects = Objects.requireNonNull(spec, "spec");
         return this;
@@ -75,6 +81,7 @@ public final class M3MotionSchemeBuilder {
     ///
     /// @param spec the replacement spec
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3MotionSchemeBuilder fastSpatial(M3MotionSpec spec) {
         fastSpatial = Objects.requireNonNull(spec, "spec");
         return this;
@@ -84,6 +91,7 @@ public final class M3MotionSchemeBuilder {
     ///
     /// @param spec the replacement spec
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3MotionSchemeBuilder defaultSpatial(M3MotionSpec spec) {
         defaultSpatial = Objects.requireNonNull(spec, "spec");
         return this;
@@ -93,6 +101,7 @@ public final class M3MotionSchemeBuilder {
     ///
     /// @param spec the replacement spec
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3MotionSchemeBuilder slowSpatial(M3MotionSpec spec) {
         slowSpatial = Objects.requireNonNull(spec, "spec");
         return this;

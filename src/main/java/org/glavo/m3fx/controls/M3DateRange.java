@@ -20,6 +20,9 @@ import java.util.Objects;
 @NotNullByDefault
 public record M3DateRange(LocalDate startDate, LocalDate endDate) {
     /// Creates a validated inclusive date range.
+    ///
+    /// @throws NullPointerException if either endpoint is `null`
+    /// @throws IllegalArgumentException if `endDate` is before `startDate`
     public M3DateRange {
         Objects.requireNonNull(startDate, "startDate");
         Objects.requireNonNull(endDate, "endDate");
@@ -48,6 +51,7 @@ public record M3DateRange(LocalDate startDate, LocalDate endDate) {
     ///
     /// @param date the date to test
     /// @return `true` when the supplied date is inside this inclusive range
+    /// @throws NullPointerException if `date` is `null`
     public boolean contains(LocalDate date) {
         Objects.requireNonNull(date, "date");
         return !date.isBefore(startDate) && !date.isAfter(endDate);

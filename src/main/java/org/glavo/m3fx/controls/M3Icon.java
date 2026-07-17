@@ -58,7 +58,7 @@ public final class M3Icon extends Labeled {
     /// The layout line box multiplier used to keep fallback font glyphs from being clipped.
     private static final double ICON_LINE_BOX_SCALE = 1.5;
 
-    // The icon size role property.
+    /// The icon size role property.
     private final ObjectProperty<M3IconSize> size =
             new SimpleObjectProperty<>(this, "size", M3IconSize.MEDIUM) {
                 /// Updates icon size style classes when the property changes.
@@ -72,7 +72,7 @@ public final class M3Icon extends Labeled {
                 }
             };
 
-    // The icon color variant property.
+    /// The icon color variant property.
     private final ObjectProperty<M3IconVariant> variant =
             new SimpleObjectProperty<>(this, "variant", M3IconVariant.ON_SURFACE_VARIANT) {
                 /// Updates icon color style classes when the property changes.
@@ -86,13 +86,13 @@ public final class M3Icon extends Labeled {
                 }
             };
 
-    // The styleable icon font family token.
+    /// The styleable icon font family token.
     private @Nullable StyleableObjectProperty<@Nullable String> iconFontFamily;
 
-    // The styleable icon size token.
+    /// The styleable icon size token.
     private @Nullable StyleableDoubleProperty iconSize;
 
-    // The styleable icon font weight token.
+    /// The styleable icon font weight token.
     private @Nullable StyleableObjectProperty<@Nullable FontWeight> iconFontWeight;
 
     /// Creates an empty medium icon.
@@ -103,6 +103,7 @@ public final class M3Icon extends Labeled {
     /// Creates a medium icon with text content.
     ///
     /// @param text the glyph text rendered by this icon
+    /// @throws NullPointerException if any required argument is `null`
     public M3Icon(String text) {
         initialize();
         setText(Objects.requireNonNull(text, "text"));
@@ -113,6 +114,7 @@ public final class M3Icon extends Labeled {
     /// @param text the glyph text rendered by this icon
     /// @param size the icon size role
     /// @param variant the icon color variant
+    /// @throws NullPointerException if any required argument is `null`
     public M3Icon(String text, M3IconSize size, M3IconVariant variant) {
         initialize();
         setText(Objects.requireNonNull(text, "text"));
@@ -130,13 +132,11 @@ public final class M3Icon extends Labeled {
     /// Sets the icon size role.
     ///
     /// @param size the icon size role
+    /// @throws NullPointerException if any required argument is `null`
     public final void setSize(M3IconSize size) {
         this.size.set(Objects.requireNonNull(size, "size"));
     }
 
-    /// Returns the icon size role property.
-    ///
-    /// @return the icon size role property
     public final ObjectProperty<M3IconSize> sizeProperty() {
         return size;
     }
@@ -151,13 +151,11 @@ public final class M3Icon extends Labeled {
     /// Sets the icon color variant.
     ///
     /// @param variant the icon color variant
+    /// @throws NullPointerException if any required argument is `null`
     public final void setVariant(M3IconVariant variant) {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
 
-    /// Returns the icon color variant property.
-    ///
-    /// @return the icon color variant property
     public final ObjectProperty<M3IconVariant> variantProperty() {
         return variant;
     }
@@ -174,13 +172,11 @@ public final class M3Icon extends Labeled {
     /// Sets the icon font family token.
     ///
     /// @param iconFontFamily the icon font family token
+    /// @throws NullPointerException if any required argument is `null`
     public final void setIconFontFamily(String iconFontFamily) {
         iconFontFamilyProperty().set(Objects.requireNonNull(iconFontFamily, "iconFontFamily"));
     }
 
-    /// Returns the icon font family token property.
-    ///
-    /// @return the icon font family token property
     public final StyleableObjectProperty<@Nullable String> iconFontFamilyProperty() {
         if (iconFontFamily == null) {
             iconFontFamily = M3Css.styleableObjectProperty(
@@ -210,13 +206,11 @@ public final class M3Icon extends Labeled {
     /// Sets the icon size token.
     ///
     /// @param iconSize the icon size token
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setIconSize(double iconSize) {
         iconSizeProperty().set(M3Css.nonNegative(iconSize, "iconSize"));
     }
 
-    /// Returns the icon size token property.
-    ///
-    /// @return the icon size token property
     public final StyleableDoubleProperty iconSizeProperty() {
         if (iconSize == null) {
             iconSize = M3Css.nonNegativeStyleableDoubleProperty(
@@ -247,9 +241,6 @@ public final class M3Icon extends Labeled {
         iconFontWeightProperty().set(validateFontWeight(iconFontWeight));
     }
 
-    /// Returns the icon font weight token property.
-    ///
-    /// @return the icon font weight token property
     public final StyleableObjectProperty<@Nullable FontWeight> iconFontWeightProperty() {
         if (iconFontWeight == null) {
             iconFontWeight = M3Css.styleableObjectProperty(

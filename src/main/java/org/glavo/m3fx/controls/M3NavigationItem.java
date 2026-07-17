@@ -64,25 +64,25 @@ public final class M3NavigationItem extends ButtonBase {
     /// The default content spacing.
     private static final double DEFAULT_CONTENT_SPACING = 4.0;
 
-    // The styleable container height token.
+    /// The styleable container height token.
     private @Nullable StyleableDoubleProperty containerHeight;
 
-    // The styleable item width token.
+    /// The styleable item width token.
     private @Nullable StyleableDoubleProperty itemWidth;
 
-    // The styleable selected indicator width token.
+    /// The styleable selected indicator width token.
     private @Nullable StyleableDoubleProperty indicatorWidth;
 
-    // The styleable selected indicator height token.
+    /// The styleable selected indicator height token.
     private @Nullable StyleableDoubleProperty indicatorHeight;
 
-    // The styleable selected indicator shape token.
+    /// The styleable selected indicator shape token.
     private @Nullable StyleableDoubleProperty indicatorShape;
 
-    // The styleable content spacing token.
+    /// The styleable content spacing token.
     private @Nullable StyleableDoubleProperty contentSpacing;
 
-    // The selected state property.
+    /// The selected state property.
     private final BooleanProperty selected = new SimpleBooleanProperty(this, "selected") {
         /// Updates selected pseudo-class state.
         @Override
@@ -107,7 +107,7 @@ public final class M3NavigationItem extends ButtonBase {
                 }
             };
 
-    // The badge displayed over the navigation item graphic.
+    /// The badge displayed over the navigation item graphic.
     private final ObjectProperty<@Nullable M3Badge> badge = new SimpleObjectProperty<>(this, "badge");
 
     /// Creates an empty navigation item.
@@ -135,6 +135,7 @@ public final class M3NavigationItem extends ButtonBase {
     /// @param text the navigation item label
     /// @param graphic the graphic node, or `null` for no graphic
     /// @param badge the badge shown over the graphic, or `null` for no badge
+    /// @throws NullPointerException if any required argument is `null`
     public M3NavigationItem(String text, @Nullable Node graphic, @Nullable M3Badge badge) {
         super(Objects.requireNonNull(text, "text"), graphic);
         initialize();
@@ -155,9 +156,6 @@ public final class M3NavigationItem extends ButtonBase {
         this.selected.set(selected);
     }
 
-    /// Returns the selected state property.
-    ///
-    /// @return the writable selected state property
     public final BooleanProperty selectedProperty() {
         return selected;
     }
@@ -174,6 +172,7 @@ public final class M3NavigationItem extends ButtonBase {
     /// Navigation bars and rails normally set this property for their child items.
     ///
     /// @param itemLayout the navigation item layout
+    /// @throws NullPointerException if any required argument is `null`
     public final void setItemLayout(M3NavigationItemLayout itemLayout) {
         this.itemLayoutState.set(Objects.requireNonNull(itemLayout, "itemLayout"));
     }
@@ -198,9 +197,6 @@ public final class M3NavigationItem extends ButtonBase {
         this.badge.set(badge);
     }
 
-    /// Returns the badge property.
-    ///
-    /// @return the writable badge property
     public final ObjectProperty<@Nullable M3Badge> badgeProperty() {
         return badge;
     }
@@ -215,13 +211,11 @@ public final class M3NavigationItem extends ButtonBase {
     /// Sets the navigation item container height token.
     ///
     /// @param containerHeight the navigation item container height in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContainerHeight(double containerHeight) {
         containerHeightProperty().set(M3Css.nonNegative(containerHeight, "containerHeight"));
     }
 
-    /// Returns the navigation item container height token property.
-    ///
-    /// @return the styleable navigation item container height property
     public final StyleableDoubleProperty containerHeightProperty() {
         if (containerHeight == null) {
             containerHeight = M3Css.nonNegativeStyleableDoubleProperty(
@@ -245,13 +239,11 @@ public final class M3NavigationItem extends ButtonBase {
     /// Sets the navigation item width token.
     ///
     /// @param itemWidth the navigation item width in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setItemWidth(double itemWidth) {
         itemWidthProperty().set(M3Css.nonNegative(itemWidth, "itemWidth"));
     }
 
-    /// Returns the navigation item width token property.
-    ///
-    /// @return the styleable navigation item width property
     public final StyleableDoubleProperty itemWidthProperty() {
         if (itemWidth == null) {
             itemWidth = M3Css.nonNegativeStyleableDoubleProperty(
@@ -275,13 +267,11 @@ public final class M3NavigationItem extends ButtonBase {
     /// Sets the selected indicator width token.
     ///
     /// @param indicatorWidth the selected indicator width in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setIndicatorWidth(double indicatorWidth) {
         indicatorWidthProperty().set(M3Css.nonNegative(indicatorWidth, "indicatorWidth"));
     }
 
-    /// Returns the selected indicator width token property.
-    ///
-    /// @return the styleable selected indicator width property
     public final StyleableDoubleProperty indicatorWidthProperty() {
         if (indicatorWidth == null) {
             indicatorWidth = M3Css.nonNegativeStyleableDoubleProperty(
@@ -305,13 +295,11 @@ public final class M3NavigationItem extends ButtonBase {
     /// Sets the selected indicator height token.
     ///
     /// @param indicatorHeight the selected indicator height in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setIndicatorHeight(double indicatorHeight) {
         indicatorHeightProperty().set(M3Css.nonNegative(indicatorHeight, "indicatorHeight"));
     }
 
-    /// Returns the selected indicator height token property.
-    ///
-    /// @return the styleable selected indicator height property
     public final StyleableDoubleProperty indicatorHeightProperty() {
         if (indicatorHeight == null) {
             indicatorHeight = M3Css.nonNegativeStyleableDoubleProperty(
@@ -335,13 +323,11 @@ public final class M3NavigationItem extends ButtonBase {
     /// Sets the selected indicator shape token.
     ///
     /// @param indicatorShape the selected indicator corner radius in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setIndicatorShape(double indicatorShape) {
         indicatorShapeProperty().set(M3Css.nonNegative(indicatorShape, "indicatorShape"));
     }
 
-    /// Returns the selected indicator shape token property.
-    ///
-    /// @return the styleable selected indicator shape property
     public final StyleableDoubleProperty indicatorShapeProperty() {
         if (indicatorShape == null) {
             indicatorShape = M3Css.nonNegativeStyleableDoubleProperty(
@@ -365,13 +351,11 @@ public final class M3NavigationItem extends ButtonBase {
     /// Sets the content spacing token.
     ///
     /// @param contentSpacing the spacing between item content nodes in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContentSpacing(double contentSpacing) {
         contentSpacingProperty().set(M3Css.nonNegative(contentSpacing, "contentSpacing"));
     }
 
-    /// Returns the content spacing token property.
-    ///
-    /// @return the styleable content spacing property
     public final StyleableDoubleProperty contentSpacingProperty() {
         if (contentSpacing == null) {
             contentSpacing = M3Css.nonNegativeStyleableDoubleProperty(
@@ -403,6 +387,7 @@ public final class M3NavigationItem extends ButtonBase {
     /// @param attribute the requested accessibility attribute
     /// @param parameters optional attribute-specific parameters
     /// @return the requested accessibility value, or `null` when no value is available
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");

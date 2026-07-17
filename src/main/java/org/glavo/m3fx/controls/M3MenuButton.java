@@ -66,7 +66,7 @@ public final class M3MenuButton extends M3ButtonBase {
     private final M3PopupContextSynchronizer popupContextSynchronizer =
             new M3PopupContextSynchronizer(this, menu, M3Stylesheets.controlStylesheet("menu.css"));
 
-    // Whether this menu button popup is currently showing.
+    /// Whether this menu button popup is currently showing.
     private final ReadOnlyBooleanWrapper showing = new ReadOnlyBooleanWrapper(this, "showing") {
         /// Updates the showing pseudo-class used by owner-specific component styling.
         @Override
@@ -138,9 +138,6 @@ public final class M3MenuButton extends M3ButtonBase {
         return showing.get();
     }
 
-    /// Returns the read-only showing state property.
-    ///
-    /// @return the read-only showing state property
     public final ReadOnlyBooleanProperty showingProperty() {
         return showing.getReadOnlyProperty();
     }
@@ -237,6 +234,7 @@ public final class M3MenuButton extends M3ButtonBase {
     /// @param attribute the requested accessibility attribute
     /// @param parameters optional attribute-specific parameters
     /// @return the requested accessibility value, or `null` when no value is available
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -256,6 +254,7 @@ public final class M3MenuButton extends M3ButtonBase {
     ///
     /// @param action the accessibility action to execute
     /// @param parameters optional action-specific parameters
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

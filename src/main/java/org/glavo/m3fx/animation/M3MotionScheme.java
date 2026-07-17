@@ -56,6 +56,7 @@ public sealed interface M3MotionScheme permits M3MotionSchemeImpl {
     ///
     /// @param scheme the scheme to copy
     /// @return a mutable motion scheme builder
+    /// @throws NullPointerException if `scheme` is `null`
     static M3MotionSchemeBuilder builder(M3MotionScheme scheme) {
         return new M3MotionSchemeBuilder(scheme);
     }

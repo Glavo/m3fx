@@ -76,6 +76,7 @@ public sealed interface M3ShapeTokens permits M3ShapeTokensImpl {
     ///
     /// @param tokens the shape tokens to copy
     /// @return a mutable shape-token builder
+    /// @throws NullPointerException if `tokens` is `null`
     static M3ShapeTokensBuilder builder(M3ShapeTokens tokens) {
         return new M3ShapeTokensBuilder(tokens);
     }

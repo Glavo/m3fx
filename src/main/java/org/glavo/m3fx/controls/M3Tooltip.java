@@ -79,14 +79,14 @@ public class M3Tooltip extends PopupControl {
     /// The currently visible installed tooltip, retained weakly so unused tooltips remain collectable.
     private static @Nullable WeakReference<M3Tooltip> activeTooltipReference;
 
-    /// The text displayed by the tooltip.
+    /// The displayed text property.
     private final StringProperty text = new SimpleStringProperty(this, "text", "");
 
-    // The graphic displayed by the tooltip.
+    /// The graphic displayed by the tooltip.
     private final ObjectProperty<@Nullable Node> graphic =
             new SimpleObjectProperty<>(this, "graphic");
 
-    // The text and graphic placement mode.
+    /// The text and graphic placement mode.
     private final ObjectProperty<ContentDisplay> contentDisplay =
             new ObjectPropertyBase<>(ContentDisplay.LEFT) {
                 /// Keeps the content display mode non-null.
@@ -110,7 +110,7 @@ public class M3Tooltip extends PopupControl {
                 }
             };
 
-    // Whether tooltip text wraps inside its preferred width.
+    /// Whether tooltip text wraps inside its preferred width.
     private final BooleanProperty wrapText = new BooleanPropertyBase(false) {
         /// Returns the owning bean.
         @Override
@@ -125,19 +125,19 @@ public class M3Tooltip extends PopupControl {
         }
     };
 
-    // The delay before the tooltip opens after pointer entry.
+    /// The delay before the tooltip opens after pointer entry.
     private final ObjectProperty<Duration> showDelay =
             new DurationProperty("showDelay", M3MotionBehavior.standard().tooltipShowDelay());
 
-    // The delay before the tooltip closes after pointer exit.
+    /// The delay before the tooltip closes after pointer exit.
     private final ObjectProperty<Duration> hideDelay =
             new DurationProperty("hideDelay", M3MotionBehavior.standard().tooltipHideDelay());
 
-    // The maximum duration the tooltip remains visible after pointer-triggered opening.
+    /// The maximum duration the tooltip remains visible after pointer-triggered opening.
     private final ObjectProperty<Duration> showDuration =
             new DurationProperty("showDuration", M3MotionBehavior.standard().tooltipShowDuration());
 
-    // The explicit theme applied directly to this tooltip.
+    /// The explicit theme applied directly to this tooltip.
     private final ObjectProperty<@Nullable M3Theme> theme = new SimpleObjectProperty<>(this, "theme") {
         /// Applies theme declarations to the tooltip style.
         @Override
@@ -192,6 +192,7 @@ public class M3Tooltip extends PopupControl {
     ///
     /// @param node the node that should own the tooltip
     /// @param tooltip the tooltip to install
+    /// @throws NullPointerException if any required argument is `null`
     public static void install(Node node, M3Tooltip tooltip) {
         Objects.requireNonNull(node, "node");
         Objects.requireNonNull(tooltip, "tooltip");
@@ -203,6 +204,7 @@ public class M3Tooltip extends PopupControl {
     ///
     /// @param node the node that owns the tooltip
     /// @param tooltip the tooltip to uninstall
+    /// @throws NullPointerException if any required argument is `null`
     public static void uninstall(Node node, M3Tooltip tooltip) {
         Objects.requireNonNull(node, "node");
         Objects.requireNonNull(tooltip, "tooltip");
@@ -224,9 +226,6 @@ public class M3Tooltip extends PopupControl {
         this.text.set(text);
     }
 
-    /// Returns the displayed text property.
-    ///
-    /// @return the writable displayed text property
     public final StringProperty textProperty() {
         return text;
     }
@@ -245,9 +244,6 @@ public class M3Tooltip extends PopupControl {
         this.graphic.set(graphic);
     }
 
-    /// Returns the displayed graphic property.
-    ///
-    /// @return the writable displayed graphic property
     public final ObjectProperty<@Nullable Node> graphicProperty() {
         return graphic;
     }
@@ -262,13 +258,11 @@ public class M3Tooltip extends PopupControl {
     /// Sets the text and graphic placement mode.
     ///
     /// @param contentDisplay the text and graphic placement mode
+    /// @throws NullPointerException if any required argument is `null`
     public final void setContentDisplay(ContentDisplay contentDisplay) {
         this.contentDisplay.set(Objects.requireNonNull(contentDisplay, "contentDisplay"));
     }
 
-    /// Returns the content display property.
-    ///
-    /// @return the writable content display property
     public final ObjectProperty<ContentDisplay> contentDisplayProperty() {
         return contentDisplay;
     }
@@ -287,9 +281,6 @@ public class M3Tooltip extends PopupControl {
         this.wrapText.set(wrapText);
     }
 
-    /// Returns the wrap text property.
-    ///
-    /// @return the writable wrap text property
     public final BooleanProperty wrapTextProperty() {
         return wrapText;
     }
@@ -304,14 +295,12 @@ public class M3Tooltip extends PopupControl {
     /// Sets the delay before the tooltip opens after pointer entry.
     ///
     /// @param showDelay the delay before the tooltip opens after pointer entry
+    /// @throws NullPointerException if any required argument is `null`
     public final void setShowDelay(Duration showDelay) {
         showDelayExplicit = true;
         this.showDelay.set(Objects.requireNonNull(showDelay, "showDelay"));
     }
 
-    /// Returns the show delay property.
-    ///
-    /// @return the writable show delay property
     public final ObjectProperty<Duration> showDelayProperty() {
         return showDelay;
     }
@@ -326,14 +315,12 @@ public class M3Tooltip extends PopupControl {
     /// Sets the delay before the tooltip closes after pointer exit.
     ///
     /// @param hideDelay the delay before the tooltip closes after pointer exit
+    /// @throws NullPointerException if any required argument is `null`
     public final void setHideDelay(Duration hideDelay) {
         hideDelayExplicit = true;
         this.hideDelay.set(Objects.requireNonNull(hideDelay, "hideDelay"));
     }
 
-    /// Returns the hide delay property.
-    ///
-    /// @return the writable hide delay property
     public final ObjectProperty<Duration> hideDelayProperty() {
         return hideDelay;
     }
@@ -348,14 +335,12 @@ public class M3Tooltip extends PopupControl {
     /// Sets the maximum duration the tooltip remains visible after pointer-triggered opening.
     ///
     /// @param showDuration the maximum visible duration after pointer-triggered opening
+    /// @throws NullPointerException if any required argument is `null`
     public final void setShowDuration(Duration showDuration) {
         showDurationExplicit = true;
         this.showDuration.set(Objects.requireNonNull(showDuration, "showDuration"));
     }
 
-    /// Returns the show duration property.
-    ///
-    /// @return the writable show duration property
     public final ObjectProperty<Duration> showDurationProperty() {
         return showDuration;
     }
@@ -375,9 +360,6 @@ public class M3Tooltip extends PopupControl {
         this.theme.set(theme);
     }
 
-    /// Returns the explicit theme property.
-    ///
-    /// @return the writable explicit theme property
     public final ObjectProperty<@Nullable M3Theme> themeProperty() {
         return theme;
     }
@@ -395,6 +377,7 @@ public class M3Tooltip extends PopupControl {
     /// @param ownerNode the node that owns the popup
     /// @param anchorX the screen x coordinate for the popup anchor
     /// @param anchorY the screen y coordinate for the popup anchor
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void show(Node ownerNode, double anchorX, double anchorY) {
         Objects.requireNonNull(ownerNode, "ownerNode");
@@ -589,6 +572,10 @@ public class M3Tooltip extends PopupControl {
     }
 
     /// Returns whether the tooltip root should receive plain tooltip container metrics.
+    ///
+    /// Subclasses that provide rich content return `false` so rich container tokens remain in effect.
+    ///
+    /// @return `true` for the compact plain-tooltip container style
     protected boolean usesPlainContainerStyle() {
         return true;
     }
@@ -720,18 +707,30 @@ public class M3Tooltip extends PopupControl {
     }
 
     /// Returns whether this tooltip exposes the requested interactive action target.
+    ///
+    /// @param parameters accessibility target descriptors; nested arrays and iterables are traversed
+    /// @return `true` when the parameters identify a reachable interactive popup node
+    /// @throws NullPointerException if `parameters` is `null`
     protected boolean containsInteractiveActionTarget(Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
         return interactiveFocusTargetFor(parameters) != null;
     }
 
     /// Shows one requested interactive action target inside the tooltip.
+    ///
+    /// @param parameters accessibility target descriptors; nested arrays and iterables are traversed
+    /// @return `true` when a matching target was revealed and focused
+    /// @throws NullPointerException if `parameters` is `null`
     protected boolean showInteractiveActionTarget(Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
         return focusInteractiveTarget(interactiveFocusTargetFor(parameters));
     }
 
     /// Returns the interactive popup target referenced by accessibility action parameters.
+    ///
+    /// @param parameters accessibility target descriptors; nested arrays and iterables are traversed
+    /// @return the first matching reachable popup node, or `null`
+    /// @throws NullPointerException if `parameters` is `null`
     protected @Nullable Node interactiveFocusTargetFor(Object... parameters) {
         Objects.requireNonNull(parameters, "parameters");
         for (Object parameter : parameters) {
@@ -769,6 +768,13 @@ public class M3Tooltip extends PopupControl {
     }
 
     /// Returns the interactive popup target for a requested node.
+    ///
+    /// Plain tooltips do not expose interactive targets. Rich tooltip subclasses may return a reachable descendant
+    /// that they own.
+    ///
+    /// @param requestedNode the candidate popup node
+    /// @return the owned reachable focus target, or `null` when the node is not an interactive target
+    /// @throws NullPointerException if `requestedNode` is `null`
     protected @Nullable Node interactiveFocusTargetFor(Node requestedNode) {
         Objects.requireNonNull(requestedNode, "requestedNode");
         return null;

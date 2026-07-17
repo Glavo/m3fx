@@ -64,6 +64,7 @@ public final class M3ScrollPanes {
     /// Repeated calls are idempotent and do not enable smooth wheel scrolling.
     ///
     /// @param scrollPane the scroll pane to style
+    /// @throws NullPointerException if any required argument is `null`
     public static void style(ScrollPane scrollPane) {
         ScrollPane target = Objects.requireNonNull(scrollPane, "scrollPane");
         M3ControlStyles.initializeOnce(target, STYLE_CLASS);
@@ -73,6 +74,7 @@ public final class M3ScrollPanes {
     /// Enables Material smooth wheel scrolling for a JavaFX scroll pane.
     ///
     /// @param scrollPane the scroll pane that should receive smooth wheel scrolling
+    /// @throws NullPointerException if any required argument is `null`
     public static void enableSmoothScrolling(ScrollPane scrollPane) {
         Objects.requireNonNull(scrollPane, "scrollPane");
         if (!isSmoothScrollingEnabled(scrollPane)) {
@@ -83,6 +85,7 @@ public final class M3ScrollPanes {
     /// Disables Material smooth wheel scrolling for a JavaFX scroll pane.
     ///
     /// @param scrollPane the scroll pane whose smooth wheel scrolling should be removed
+    /// @throws NullPointerException if any required argument is `null`
     public static void disableSmoothScrolling(ScrollPane scrollPane) {
         Objects.requireNonNull(scrollPane, "scrollPane");
         if (!scrollPane.hasProperties()) {
@@ -98,6 +101,7 @@ public final class M3ScrollPanes {
     ///
     /// @param scrollPane the scroll pane to inspect
     /// @return `true` if smooth wheel scrolling is installed on the scroll pane
+    /// @throws NullPointerException if any required argument is `null`
     public static boolean isSmoothScrollingEnabled(ScrollPane scrollPane) {
         Objects.requireNonNull(scrollPane, "scrollPane");
         return scrollPane.hasProperties()
@@ -109,6 +113,7 @@ public final class M3ScrollPanes {
     /// Repeated calls are idempotent.
     ///
     /// @param scrollBar the scroll bar to style
+    /// @throws NullPointerException if any required argument is `null`
     public static void style(ScrollBar scrollBar) {
         ScrollBar target = Objects.requireNonNull(scrollBar, "scrollBar");
         M3ControlStyles.initializeOnce(target, SCROLL_BAR_STYLE_CLASS);

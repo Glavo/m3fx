@@ -76,7 +76,7 @@ public final class M3SearchBar extends Control {
     /// The default horizontal padding.
     private static final double DEFAULT_HORIZONTAL_PADDING = 16.0;
 
-    /// Backing property for the public leading slot API.
+    /// The leading content node property.
     private final ObjectProperty<@Nullable Node> leading = new SimpleObjectProperty<>(this, "leading") {
         /// Updates accessibility state when the leading slot changes.
         @Override
@@ -85,7 +85,7 @@ public final class M3SearchBar extends Control {
         }
     };
 
-    /// Backing property for the public search text API.
+    /// The text property.
     private final StringProperty text = new SimpleStringProperty(this, "text", "") {
         /// Keeps search text non-null.
         @Override
@@ -94,7 +94,7 @@ public final class M3SearchBar extends Control {
         }
     };
 
-    /// Backing property for the public prompt text API.
+    /// The prompt text property.
     private final StringProperty promptText = new SimpleStringProperty(this, "promptText", "") {
         /// Keeps prompt text non-null.
         @Override
@@ -103,7 +103,7 @@ public final class M3SearchBar extends Control {
         }
     };
 
-    /// Backing property for the public action handler API.
+    /// The action handler property.
     private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
             new SimpleObjectProperty<>(this, "onAction") {
                 /// Updates the registered action event handler.
@@ -113,7 +113,7 @@ public final class M3SearchBar extends Control {
                 }
             };
 
-    /// Backing property for the public active state API.
+    /// The active input state property.
     private final BooleanProperty active = new SimpleBooleanProperty(this, "active") {
         /// Updates active pseudo-class state and input focus.
         @Override
@@ -168,9 +168,6 @@ public final class M3SearchBar extends Control {
         this.text.set(text);
     }
 
-    /// Returns the text property.
-    ///
-    /// @return the search bar text property
     public final StringProperty textProperty() {
         return text;
     }
@@ -189,9 +186,6 @@ public final class M3SearchBar extends Control {
         this.promptText.set(promptText);
     }
 
-    /// Returns the prompt text property.
-    ///
-    /// @return the search bar prompt text property
     public final StringProperty promptTextProperty() {
         return promptText;
     }
@@ -210,9 +204,6 @@ public final class M3SearchBar extends Control {
         this.active.set(active);
     }
 
-    /// Returns the active input state property.
-    ///
-    /// @return the active input state property
     public final BooleanProperty activeProperty() {
         return active;
     }
@@ -238,9 +229,6 @@ public final class M3SearchBar extends Control {
         this.leading.set(leading);
     }
 
-    /// Returns the leading content node property.
-    ///
-    /// @return the leading content node property
     public final ObjectProperty<@Nullable Node> leadingProperty() {
         return leading;
     }
@@ -266,9 +254,6 @@ public final class M3SearchBar extends Control {
         this.onAction.set(onAction);
     }
 
-    /// Returns the action handler property.
-    ///
-    /// @return the action handler property
     public final ObjectProperty<@Nullable EventHandler<ActionEvent>> onActionProperty() {
         return onAction;
     }
@@ -314,6 +299,7 @@ public final class M3SearchBar extends Control {
     /// @param attribute  the requested accessibility attribute
     /// @param parameters the optional attribute parameters
     /// @return the attribute value, or `null` when unavailable
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -332,6 +318,7 @@ public final class M3SearchBar extends Control {
     ///
     /// @param action     the requested accessibility action
     /// @param parameters the optional action parameters
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

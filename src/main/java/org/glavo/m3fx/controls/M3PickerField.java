@@ -77,7 +77,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     /// The initial popup picker offset used for enter and exit motion.
     private static final double POPUP_TRANSITION_OFFSET_Y = 6.0;
 
-    /// Internal storage for [valueProperty].
+    /// The selected value property.
     private final ObjectProperty<@Nullable T> value =
             new SimpleObjectProperty<>(this, "value") {
                 /// Normalizes and validates values assigned through the property.
@@ -95,7 +95,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
                 }
             };
 
-    /// Internal storage for [textProperty].
+    /// The raw editor text property.
     private final StringProperty text = new SimpleStringProperty(this, "text", "") {
         /// Keeps editor text non-null.
         @Override
@@ -104,7 +104,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         }
     };
 
-    /// Internal storage for [variantProperty].
+    /// The text input variant property.
     private final ObjectProperty<M3TextInputVariant> variant =
             new SimpleObjectProperty<>(this, "variant", M3TextInputVariant.FILLED) {
                 /// Keeps the text input variant non-null.
@@ -114,15 +114,15 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
                 }
             };
 
-    /// Internal storage for [characterCounterVisibleProperty].
+    /// The character counter visibility property.
     private final BooleanProperty characterCounterVisible =
             new SimpleBooleanProperty(this, "characterCounterVisible");
 
-    /// Internal storage for [characterLimitEnforcedProperty].
+    /// The character limit enforcement property.
     private final BooleanProperty characterLimitEnforced =
             new SimpleBooleanProperty(this, "characterLimitEnforced");
 
-    /// Internal storage for [characterLimitProperty].
+    /// The character limit property.
     private final IntegerProperty characterLimit = new SimpleIntegerProperty(this, "characterLimit", -1) {
         /// Accepts `-1` for no limit or a non-negative character count.
         @Override
@@ -134,7 +134,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         }
     };
 
-    /// Internal storage for [labelTextProperty].
+    /// The label text property.
     private final StringProperty labelText = new SimpleStringProperty(this, "labelText", "") {
         /// Keeps label text non-null.
         @Override
@@ -143,7 +143,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         }
     };
 
-    /// Internal storage for [supportingTextProperty].
+    /// The supporting text property.
     private final StringProperty supportingText = new SimpleStringProperty(this, "supportingText", "") {
         /// Keeps supporting text non-null.
         @Override
@@ -152,7 +152,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         }
     };
 
-    /// Internal storage for [errorTextProperty].
+    /// The error text property.
     private final StringProperty errorText = new SimpleStringProperty(this, "errorText", "") {
         /// Keeps error text non-null.
         @Override
@@ -161,7 +161,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         }
     };
 
-    /// Internal storage for [formatterProperty].
+    /// The editor text formatter property.
     private final ObjectProperty<DateTimeFormatter> formatter =
             new SimpleObjectProperty<>(this, "formatter") {
                 /// Keeps formatter values non-null.
@@ -177,7 +177,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
                 }
             };
 
-    /// Internal storage for [invalidTextErrorTextProperty].
+    /// The parse error message property.
     private final StringProperty invalidTextErrorText =
             new SimpleStringProperty(this, "invalidTextErrorText") {
                 /// Keeps parse error text non-null.
@@ -187,7 +187,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
                 }
             };
 
-    /// Internal storage for [rangeErrorTextProperty].
+    /// The range error message property.
     private final StringProperty rangeErrorText =
             new SimpleStringProperty(this, "rangeErrorText") {
                 /// Keeps range error text non-null.
@@ -206,7 +206,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     /// The concrete popup picker control.
     private final P picker;
 
-    // The picker value property used to synchronize popup selections.
+    /// The picker value property used to synchronize popup selections.
     private final ObjectProperty<@Nullable T> pickerValue;
 
     /// The trailing button that opens the popup picker.
@@ -222,7 +222,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     private final M3PopupContextSynchronizer popupContextSynchronizer =
             new M3PopupContextSynchronizer(this, popupContent, M3Stylesheets.controlStylesheet("picker-field.css"));
 
-    /// Internal storage for [showingProperty].
+    /// The read-only popup showing property.
     private final ReadOnlyBooleanWrapper showing = new ReadOnlyBooleanWrapper(this, "showing");
 
     /// The reusable picker popup enter and exit animation.
@@ -308,9 +308,6 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         this.value.set(value);
     }
 
-    /// Returns the selected value property.
-    ///
-    /// @return the selected value property
     public final ObjectProperty<@Nullable T> valueProperty() {
         return value;
     }
@@ -334,9 +331,6 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         this.text.set(text);
     }
 
-    /// Returns the raw editor text property.
-    ///
-    /// @return the raw editor text property
     public final StringProperty textProperty() {
         return text;
     }
@@ -355,9 +349,6 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         this.variant.set(variant);
     }
 
-    /// Returns the text input variant property.
-    ///
-    /// @return the text input variant property
     public final ObjectProperty<M3TextInputVariant> variantProperty() {
         return variant;
     }
@@ -376,9 +367,6 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         this.characterCounterVisible.set(characterCounterVisible);
     }
 
-    /// Returns the character counter visibility property.
-    ///
-    /// @return the character counter visibility property
     public final BooleanProperty characterCounterVisibleProperty() {
         return characterCounterVisible;
     }
@@ -397,9 +385,6 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         this.characterLimitEnforced.set(characterLimitEnforced);
     }
 
-    /// Returns the character limit enforcement property.
-    ///
-    /// @return the character limit enforcement property
     public final BooleanProperty characterLimitEnforcedProperty() {
         return characterLimitEnforced;
     }
@@ -418,9 +403,6 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         this.characterLimit.set(characterLimit);
     }
 
-    /// Returns the character limit property.
-    ///
-    /// @return the character limit property
     public final IntegerProperty characterLimitProperty() {
         return characterLimit;
     }
@@ -474,9 +456,6 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         this.formatter.set(formatter);
     }
 
-    /// Returns the editor text formatter property.
-    ///
-    /// @return the editor text formatter property
     public final ObjectProperty<DateTimeFormatter> formatterProperty() {
         return formatter;
     }
@@ -495,9 +474,6 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         this.labelText.set(labelText);
     }
 
-    /// Returns the label text property.
-    ///
-    /// @return the label text property
     public final StringProperty labelTextProperty() {
         return labelText;
     }
@@ -516,9 +492,6 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         this.supportingText.set(supportingText);
     }
 
-    /// Returns the supporting text property.
-    ///
-    /// @return the supporting text property
     public final StringProperty supportingTextProperty() {
         return supportingText;
     }
@@ -537,9 +510,6 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         this.errorText.set(errorText);
     }
 
-    /// Returns the error text property.
-    ///
-    /// @return the error text property
     public final StringProperty errorTextProperty() {
         return errorText;
     }
@@ -558,9 +528,6 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         this.invalidTextErrorText.set(invalidTextErrorText);
     }
 
-    /// Returns the parse error message property.
-    ///
-    /// @return the parse error message property
     public final StringProperty invalidTextErrorTextProperty() {
         return invalidTextErrorText;
     }
@@ -579,9 +546,6 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         this.rangeErrorText.set(rangeErrorText);
     }
 
-    /// Returns the range error message property.
-    ///
-    /// @return the range error message property
     public final StringProperty rangeErrorTextProperty() {
         return rangeErrorText;
     }
@@ -593,9 +557,6 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         return showing.get();
     }
 
-    /// Returns the read-only popup showing property.
-    ///
-    /// @return the read-only popup showing property
     public final ReadOnlyBooleanProperty showingProperty() {
         return showing.getReadOnlyProperty();
     }
@@ -680,6 +641,8 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     }
 
     /// Returns accessibility attributes for the embedded editor and popup picker.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -695,6 +658,8 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     }
 
     /// Executes editor and popup accessibility actions.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

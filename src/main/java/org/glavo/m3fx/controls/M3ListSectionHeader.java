@@ -9,6 +9,10 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 /// A non-interactive Material Design 3 list section header.
 ///
+/// A section header labels the list content that follows it and uses the list header typography and spacing
+/// supplied by the active theme. It is a structural row rather than a selectable [M3ListItem], does not participate
+/// in list selection, and is not focus traversable.
+///
 /// See [Material Design lists](https://m3.material.io/components/lists/overview).
 @NotNullByDefault
 public final class M3ListSectionHeader extends M3Text {

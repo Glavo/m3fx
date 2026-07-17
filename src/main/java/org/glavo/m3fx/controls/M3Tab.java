@@ -69,25 +69,25 @@ public final class M3Tab extends ButtonBase {
     /// The default extension on each side of primary tab content.
     private static final double DEFAULT_ACTIVE_INDICATOR_HORIZONTAL_INSET = 2.0;
 
-    /// The styleable container height token.
+    /// The tab container height token property.
     private @Nullable StyleableDoubleProperty containerHeight;
 
-    /// The styleable tab minimum width token.
+    /// The tab minimum width token property.
     private @Nullable StyleableDoubleProperty tabMinWidth;
 
-    /// The styleable horizontal padding token.
+    /// The horizontal content padding token property.
     private @Nullable StyleableDoubleProperty horizontalPadding;
 
-    /// The styleable active indicator height token.
+    /// The active indicator height token property.
     private @Nullable StyleableDoubleProperty activeIndicatorHeight;
 
-    /// The styleable active indicator shape token.
+    /// The active indicator shape token property.
     private @Nullable StyleableDoubleProperty activeIndicatorShape;
 
-    /// The styleable minimum length of a primary active indicator.
+    /// The minimum primary active-indicator length property.
     private @Nullable StyleableDoubleProperty activeIndicatorMinWidth;
 
-    /// The styleable extension on each side of primary tab content.
+    /// The primary active-indicator horizontal-inset property.
     private @Nullable StyleableDoubleProperty activeIndicatorHorizontalInset;
 
     /// The selected state property.
@@ -106,42 +106,58 @@ public final class M3Tab extends ButtonBase {
     }
 
     /// Creates a tab with text.
+    ///
+    /// @param text the tab label
+    /// @throws NullPointerException if `text` is `null`
     public M3Tab(String text) {
         this(text, null);
     }
 
     /// Creates a tab with text and graphic content.
+    ///
+    /// @param text the tab label
+    /// @param graphic the graphic displayed with the label, or `null` for none
+    /// @throws NullPointerException if `text` is `null`
     public M3Tab(String text, @Nullable Node graphic) {
         super(Objects.requireNonNull(text, "text"), graphic);
         initialize();
     }
 
     /// Returns whether this tab is selected.
+    ///
+    /// @return whether the active indicator and selected content color are shown
     public final boolean isSelected() {
         return selected.get();
     }
 
     /// Sets whether this tab is selected.
+    ///
+    /// When the tab belongs to an [M3TabBar], the bar enforces its selection policy after this value changes.
+    ///
+    /// @param selected whether this tab is selected
     public final void setSelected(boolean selected) {
         this.selected.set(selected);
     }
 
-    /// Returns the selected state property.
     public final BooleanProperty selectedProperty() {
         return selected;
     }
 
     /// Returns the tab container height token.
+    ///
+    /// @return the container height in pixels
     public final double getContainerHeight() {
         return containerHeight == null ? DEFAULT_CONTAINER_HEIGHT : containerHeight.get();
     }
 
     /// Sets the tab container height token.
+    ///
+    /// @param containerHeight the finite, non-negative height in pixels
+    /// @throws IllegalArgumentException if `containerHeight` is negative or non-finite
     public final void setContainerHeight(double containerHeight) {
         containerHeightProperty().set(M3Css.nonNegative(containerHeight, "containerHeight"));
     }
 
-    /// Returns the tab container height token property.
     public final StyleableDoubleProperty containerHeightProperty() {
         if (containerHeight == null) {
             containerHeight = createStyleableDoubleProperty(
@@ -155,16 +171,20 @@ public final class M3Tab extends ButtonBase {
     }
 
     /// Returns the tab minimum width token.
+    ///
+    /// @return the minimum tab width in pixels
     public final double getTabMinWidth() {
         return tabMinWidth == null ? DEFAULT_TAB_MIN_WIDTH : tabMinWidth.get();
     }
 
     /// Sets the tab minimum width token.
+    ///
+    /// @param tabMinWidth the finite, non-negative minimum width in pixels
+    /// @throws IllegalArgumentException if `tabMinWidth` is negative or non-finite
     public final void setTabMinWidth(double tabMinWidth) {
         tabMinWidthProperty().set(M3Css.nonNegative(tabMinWidth, "tabMinWidth"));
     }
 
-    /// Returns the tab minimum width token property.
     public final StyleableDoubleProperty tabMinWidthProperty() {
         if (tabMinWidth == null) {
             tabMinWidth = createStyleableDoubleProperty(
@@ -178,16 +198,20 @@ public final class M3Tab extends ButtonBase {
     }
 
     /// Returns the horizontal content padding token.
+    ///
+    /// @return the padding on each horizontal side in pixels
     public final double getHorizontalPadding() {
         return horizontalPadding == null ? DEFAULT_HORIZONTAL_PADDING : horizontalPadding.get();
     }
 
     /// Sets the horizontal content padding token.
+    ///
+    /// @param horizontalPadding the finite, non-negative padding in pixels
+    /// @throws IllegalArgumentException if `horizontalPadding` is negative or non-finite
     public final void setHorizontalPadding(double horizontalPadding) {
         horizontalPaddingProperty().set(M3Css.nonNegative(horizontalPadding, "horizontalPadding"));
     }
 
-    /// Returns the horizontal content padding token property.
     public final StyleableDoubleProperty horizontalPaddingProperty() {
         if (horizontalPadding == null) {
             horizontalPadding = createStyleableDoubleProperty(
@@ -201,16 +225,20 @@ public final class M3Tab extends ButtonBase {
     }
 
     /// Returns the active indicator height token.
+    ///
+    /// @return the active indicator height in pixels
     public final double getActiveIndicatorHeight() {
         return activeIndicatorHeight == null ? DEFAULT_ACTIVE_INDICATOR_HEIGHT : activeIndicatorHeight.get();
     }
 
     /// Sets the active indicator height token.
+    ///
+    /// @param activeIndicatorHeight the finite, non-negative indicator height in pixels
+    /// @throws IllegalArgumentException if `activeIndicatorHeight` is negative or non-finite
     public final void setActiveIndicatorHeight(double activeIndicatorHeight) {
         activeIndicatorHeightProperty().set(M3Css.nonNegative(activeIndicatorHeight, "activeIndicatorHeight"));
     }
 
-    /// Returns the active indicator height token property.
     public final StyleableDoubleProperty activeIndicatorHeightProperty() {
         if (activeIndicatorHeight == null) {
             activeIndicatorHeight = createStyleableDoubleProperty(
@@ -224,16 +252,20 @@ public final class M3Tab extends ButtonBase {
     }
 
     /// Returns the active indicator shape token.
+    ///
+    /// @return the active indicator corner radius in pixels
     public final double getActiveIndicatorShape() {
         return activeIndicatorShape == null ? DEFAULT_ACTIVE_INDICATOR_SHAPE : activeIndicatorShape.get();
     }
 
     /// Sets the active indicator shape token.
+    ///
+    /// @param activeIndicatorShape the finite, non-negative corner radius in pixels
+    /// @throws IllegalArgumentException if `activeIndicatorShape` is negative or non-finite
     public final void setActiveIndicatorShape(double activeIndicatorShape) {
         activeIndicatorShapeProperty().set(M3Css.nonNegative(activeIndicatorShape, "activeIndicatorShape"));
     }
 
-    /// Returns the active indicator shape token property.
     public final StyleableDoubleProperty activeIndicatorShapeProperty() {
         if (activeIndicatorShape == null) {
             activeIndicatorShape = createStyleableDoubleProperty(
@@ -260,6 +292,7 @@ public final class M3Tab extends ButtonBase {
     /// Sets the minimum length of a primary active indicator.
     ///
     /// @param activeIndicatorMinWidth the minimum indicator length in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setActiveIndicatorMinWidth(double activeIndicatorMinWidth) {
         activeIndicatorMinWidthProperty().set(M3Css.nonNegative(
                 activeIndicatorMinWidth,
@@ -267,9 +300,6 @@ public final class M3Tab extends ButtonBase {
         ));
     }
 
-    /// Returns the minimum primary active-indicator length property.
-    ///
-    /// @return the minimum primary active-indicator length property
     public final StyleableDoubleProperty activeIndicatorMinWidthProperty() {
         if (activeIndicatorMinWidth == null) {
             activeIndicatorMinWidth = createStyleableDoubleProperty(
@@ -296,6 +326,7 @@ public final class M3Tab extends ButtonBase {
     /// Sets the extension on each side of primary tab content used to size its active indicator.
     ///
     /// @param activeIndicatorHorizontalInset the extension on each side in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setActiveIndicatorHorizontalInset(double activeIndicatorHorizontalInset) {
         activeIndicatorHorizontalInsetProperty().set(M3Css.nonNegative(
                 activeIndicatorHorizontalInset,
@@ -303,9 +334,6 @@ public final class M3Tab extends ButtonBase {
         ));
     }
 
-    /// Returns the primary active-indicator horizontal-inset property.
-    ///
-    /// @return the primary active-indicator horizontal-inset property
     public final StyleableDoubleProperty activeIndicatorHorizontalInsetProperty() {
         if (activeIndicatorHorizontalInset == null) {
             activeIndicatorHorizontalInset = createStyleableDoubleProperty(
@@ -319,6 +347,8 @@ public final class M3Tab extends ButtonBase {
     }
 
     /// Returns the CSS metadata for this control class.
+    ///
+    /// @return the shared, unmodifiable CSS metadata list for [M3Tab]
     public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }
@@ -330,6 +360,8 @@ public final class M3Tab extends ButtonBase {
     }
 
     /// Returns accessibility attributes for the tab selection state.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");

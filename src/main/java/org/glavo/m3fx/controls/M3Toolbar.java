@@ -93,7 +93,7 @@ public final class M3Toolbar extends Control {
     /// The mutable toolbar item list.
     private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
 
-    /// The toolbar visual variant backing property.
+    /// The toolbar visual variant property.
     private final ObjectProperty<M3ToolbarVariant> variant =
             new SimpleObjectProperty<>(this, "variant", DEFAULT_VARIANT) {
                 /// Updates variant style classes when the property changes.
@@ -108,7 +108,7 @@ public final class M3Toolbar extends Control {
                 }
             };
 
-    /// The toolbar color-style backing property.
+    /// The toolbar color-style property.
     private final ObjectProperty<M3ToolbarColorStyle> colorStyle =
             new SimpleObjectProperty<>(this, "colorStyle", DEFAULT_COLOR_STYLE) {
                 /// Updates the color-style pseudo-class when the property changes.
@@ -122,7 +122,7 @@ public final class M3Toolbar extends Control {
                 }
             };
 
-    /// The toolbar layout orientation backing property.
+    /// The toolbar layout orientation property.
     private final ObjectProperty<Orientation> orientation =
             new SimpleObjectProperty<>(this, "orientation", DEFAULT_ORIENTATION) {
                 /// Updates orientation style classes and layout metrics when the property changes.
@@ -137,25 +137,25 @@ public final class M3Toolbar extends Control {
                 }
             };
 
-    /// The styleable horizontal toolbar height backing property.
+    /// The horizontal toolbar container height token property.
     private @Nullable StyleableDoubleProperty containerHeight;
 
-    /// The styleable vertical toolbar width backing property.
+    /// The vertical toolbar container width token property.
     private @Nullable StyleableDoubleProperty containerWidth;
 
-    /// The styleable item slot size backing property.
+    /// The toolbar item slot size token property.
     private @Nullable StyleableDoubleProperty itemSlotSize;
 
-    /// The styleable content padding backing property.
+    /// The toolbar content padding token property.
     private @Nullable StyleableDoubleProperty contentPadding;
 
-    /// The styleable docked-toolbar leading and trailing padding backing property.
+    /// The docked toolbar leading and trailing padding token property.
     private @Nullable StyleableDoubleProperty dockedContentPadding;
 
-    /// The styleable item spacing backing property.
+    /// The toolbar item spacing token property.
     private @Nullable StyleableDoubleProperty itemSpacing;
 
-    /// The styleable preferred docked-toolbar item spacing backing property.
+    /// The preferred docked toolbar item-spacing token property.
     private @Nullable StyleableDoubleProperty dockedMaxItemSpacing;
 
     /// Notifies accessibility clients when focus moves between toolbar actions.
@@ -191,13 +191,11 @@ public final class M3Toolbar extends Control {
     /// Sets the toolbar visual variant.
     ///
     /// @param variant the toolbar visual variant
+    /// @throws NullPointerException if any required argument is `null`
     public final void setVariant(M3ToolbarVariant variant) {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
 
-    /// Returns the toolbar visual variant property.
-    ///
-    /// @return the toolbar visual variant property
     public final ObjectProperty<M3ToolbarVariant> variantProperty() {
         return variant;
     }
@@ -212,13 +210,11 @@ public final class M3Toolbar extends Control {
     /// Sets the toolbar color style.
     ///
     /// @param colorStyle the toolbar color style
+    /// @throws NullPointerException if any required argument is `null`
     public final void setColorStyle(M3ToolbarColorStyle colorStyle) {
         this.colorStyle.set(Objects.requireNonNull(colorStyle, "colorStyle"));
     }
 
-    /// Returns the toolbar color-style property.
-    ///
-    /// @return the toolbar color-style property
     public final ObjectProperty<M3ToolbarColorStyle> colorStyleProperty() {
         return colorStyle;
     }
@@ -233,13 +229,11 @@ public final class M3Toolbar extends Control {
     /// Sets the toolbar layout orientation.
     ///
     /// @param orientation the toolbar layout orientation
+    /// @throws NullPointerException if any required argument is `null`
     public final void setOrientation(Orientation orientation) {
         this.orientation.set(Objects.requireNonNull(orientation, "orientation"));
     }
 
-    /// Returns the toolbar layout orientation property.
-    ///
-    /// @return the toolbar layout orientation property
     public final ObjectProperty<Orientation> orientationProperty() {
         return orientation;
     }
@@ -254,13 +248,11 @@ public final class M3Toolbar extends Control {
     /// Sets the horizontal toolbar container height token.
     ///
     /// @param containerHeight the horizontal toolbar container height in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContainerHeight(double containerHeight) {
         containerHeightProperty().set(M3Css.nonNegative(containerHeight, "containerHeight"));
     }
 
-    /// Returns the horizontal toolbar container height token property.
-    ///
-    /// @return the horizontal toolbar container height token property
     public final StyleableDoubleProperty containerHeightProperty() {
         if (containerHeight == null) {
             containerHeight = createStyleableDoubleProperty(
@@ -282,13 +274,11 @@ public final class M3Toolbar extends Control {
     /// Sets the vertical toolbar container width token.
     ///
     /// @param containerWidth the vertical toolbar container width in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContainerWidth(double containerWidth) {
         containerWidthProperty().set(M3Css.nonNegative(containerWidth, "containerWidth"));
     }
 
-    /// Returns the vertical toolbar container width token property.
-    ///
-    /// @return the vertical toolbar container width token property
     public final StyleableDoubleProperty containerWidthProperty() {
         if (containerWidth == null) {
             containerWidth = createStyleableDoubleProperty(
@@ -310,13 +300,11 @@ public final class M3Toolbar extends Control {
     /// Sets the toolbar item slot size token.
     ///
     /// @param itemSlotSize the toolbar item slot size in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setItemSlotSize(double itemSlotSize) {
         itemSlotSizeProperty().set(M3Css.nonNegative(itemSlotSize, "itemSlotSize"));
     }
 
-    /// Returns the toolbar item slot size token property.
-    ///
-    /// @return the toolbar item slot size token property
     public final StyleableDoubleProperty itemSlotSizeProperty() {
         if (itemSlotSize == null) {
             itemSlotSize = createStyleableDoubleProperty(
@@ -338,13 +326,11 @@ public final class M3Toolbar extends Control {
     /// Sets the toolbar content padding token.
     ///
     /// @param contentPadding the toolbar content padding in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContentPadding(double contentPadding) {
         contentPaddingProperty().set(M3Css.nonNegative(contentPadding, "contentPadding"));
     }
 
-    /// Returns the toolbar content padding token property.
-    ///
-    /// @return the toolbar content padding token property
     public final StyleableDoubleProperty contentPaddingProperty() {
         if (contentPadding == null) {
             contentPadding = createStyleableDoubleProperty(
@@ -366,13 +352,11 @@ public final class M3Toolbar extends Control {
     /// Sets the leading and trailing padding token used by docked toolbars.
     ///
     /// @param dockedContentPadding the docked toolbar leading and trailing padding in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setDockedContentPadding(double dockedContentPadding) {
         dockedContentPaddingProperty().set(M3Css.nonNegative(dockedContentPadding, "dockedContentPadding"));
     }
 
-    /// Returns the docked toolbar leading and trailing padding token property.
-    ///
-    /// @return the docked toolbar leading and trailing padding token property
     public final StyleableDoubleProperty dockedContentPaddingProperty() {
         if (dockedContentPadding == null) {
             dockedContentPadding = createStyleableDoubleProperty(
@@ -394,13 +378,11 @@ public final class M3Toolbar extends Control {
     /// Sets the toolbar item spacing token.
     ///
     /// @param itemSpacing the toolbar item spacing in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setItemSpacing(double itemSpacing) {
         itemSpacingProperty().set(M3Css.nonNegative(itemSpacing, "itemSpacing"));
     }
 
-    /// Returns the toolbar item spacing token property.
-    ///
-    /// @return the toolbar item spacing token property
     public final StyleableDoubleProperty itemSpacingProperty() {
         if (itemSpacing == null) {
             itemSpacing = createStyleableDoubleProperty(
@@ -424,13 +406,11 @@ public final class M3Toolbar extends Control {
     /// Sets the preferred maximum spacing token used between docked toolbar items.
     ///
     /// @param dockedMaxItemSpacing the preferred docked toolbar item spacing in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setDockedMaxItemSpacing(double dockedMaxItemSpacing) {
         dockedMaxItemSpacingProperty().set(M3Css.nonNegative(dockedMaxItemSpacing, "dockedMaxItemSpacing"));
     }
 
-    /// Returns the preferred docked toolbar item-spacing token property.
-    ///
-    /// @return the preferred docked toolbar item-spacing token property
     public final StyleableDoubleProperty dockedMaxItemSpacingProperty() {
         if (dockedMaxItemSpacing == null) {
             dockedMaxItemSpacing = createStyleableDoubleProperty(
@@ -466,6 +446,8 @@ public final class M3Toolbar extends Control {
     }
 
     /// Returns accessibility attributes for toolbar items.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -478,6 +460,8 @@ public final class M3Toolbar extends Control {
     }
 
     /// Executes accessibility actions for toolbar item children.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

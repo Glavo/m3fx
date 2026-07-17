@@ -46,6 +46,10 @@ public final class M3TextField extends TextField implements M3TextInput {
     }
 
     /// Creates a filled text field with initial text.
+    ///
+    /// As with [TextField], a `null` value is represented as empty content by the inherited text property.
+    ///
+    /// @param text the initial text content
     public M3TextField(String text) {
         super(text);
         initialize();
@@ -160,6 +164,8 @@ public final class M3TextField extends TextField implements M3TextInput {
     }
 
     /// Returns the CSS metadata for this control class.
+    ///
+    /// @return the immutable CSS metadata list for this class and its superclasses
     public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }

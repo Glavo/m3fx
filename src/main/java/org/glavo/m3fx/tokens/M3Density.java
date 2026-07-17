@@ -10,7 +10,8 @@ import org.jetbrains.annotations.NotNullByDefault;
 ///
 /// Density adjusts component metrics that are safe to compact or expand, such as heights, padding, and touch
 /// targets. A scale of `0.0` represents the baseline Material Design 3 density, and each step changes
-/// applicable dimensions by four device-independent pixels.
+/// applicable dimensions by four device-independent pixels. Supported scales are finite values in the closed
+/// interval from `-4.0` through `4.0`.
 ///
 /// See [Material Design layout](https://m3.material.io/foundations/layout/overview) and
 /// [Material Design](https://m3.material.io/).
@@ -32,6 +33,7 @@ public sealed interface M3Density permits M3DensityImpl {
     ///
     /// @param scale the density scale where zero is the baseline Material density
     /// @return a density value for the supplied scale
+    /// @throws IllegalArgumentException if `scale` is not finite or lies outside `[-4.0, 4.0]`
     static M3Density of(double scale) {
         return new M3DensityImpl(scale);
     }
@@ -40,6 +42,7 @@ public sealed interface M3Density permits M3DensityImpl {
     ///
     /// @param value the baseline size to adjust
     /// @return the density-adjusted size, never less than zero
+    /// @throws IllegalArgumentException if `value` is not finite
     default double apply(double value) {
         if (!Double.isFinite(value)) {
             throw new IllegalArgumentException("value must be finite");

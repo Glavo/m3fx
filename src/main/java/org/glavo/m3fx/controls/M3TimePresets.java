@@ -12,6 +12,9 @@ import java.util.Objects;
 
 /// Provides reusable [M3TimePreset] values for common time choices.
 ///
+/// These methods use English labels and minute precision. Seconds and nanoseconds in supplied anchor values are
+/// discarded. Applications that require localized labels can create [M3TimePreset] values directly.
+///
 /// See [Material Design time pickers](https://m3.material.io/components/time-pickers/overview).
 @NotNullByDefault
 public final class M3TimePresets {
@@ -23,6 +26,7 @@ public final class M3TimePresets {
     ///
     /// @param time the time selected by the preset
     /// @return a `Now` preset for the supplied time with seconds and nanos cleared
+    /// @throws NullPointerException if `time` is `null`
     public static M3TimePreset now(LocalTime time) {
         return new M3TimePreset("Now", normalizeTime(time));
     }
@@ -32,6 +36,7 @@ public final class M3TimePresets {
     /// @param time the anchor time
     /// @param minuteOffset the number of minutes to add to the anchor time
     /// @return a preset for the offset time with seconds and nanos cleared
+    /// @throws NullPointerException if `time` is `null`
     public static M3TimePreset minutesFrom(LocalTime time, int minuteOffset) {
         LocalTime anchorTime = normalizeTime(time);
         if (minuteOffset == 0) {
@@ -82,6 +87,7 @@ public final class M3TimePresets {
     ///
     /// @param time the anchor time used to compute relative presets
     /// @return the immutable default time preset list
+    /// @throws NullPointerException if `time` is `null`
     public static @Unmodifiable List<M3TimePreset> common(LocalTime time) {
         LocalTime anchorTime = normalizeTime(time);
         return List.of(

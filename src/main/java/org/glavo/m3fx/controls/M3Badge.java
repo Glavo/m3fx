@@ -54,10 +54,10 @@ public final class M3Badge extends Control {
     /// The default horizontal content padding.
     private static final double DEFAULT_HORIZONTAL_PADDING = 4.0;
 
-    // The badge text property.
+    /// The badge text property.
     private final StringProperty text = new SimpleStringProperty(this, "text", "");
 
-    // The maximum display text length before the badge uses an overflow suffix.
+    /// The maximum display text length before the badge uses an overflow suffix.
     private final IntegerProperty maxCharacterCount = new SimpleIntegerProperty(this, "maxCharacterCount", 3) {
         /// Validates assigned maximum character counts.
         @Override
@@ -68,19 +68,19 @@ public final class M3Badge extends Control {
         }
     };
 
-    // The styleable small dot badge size token.
+    /// The styleable small dot badge size token.
     private @Nullable StyleableDoubleProperty smallSize;
 
-    // The styleable large badge height token.
+    /// The styleable large badge height token.
     private @Nullable StyleableDoubleProperty largeHeight;
 
-    // The styleable large badge minimum width token.
+    /// The styleable large badge minimum width token.
     private @Nullable StyleableDoubleProperty largeMinWidth;
 
-    // The styleable container shape token.
+    /// The styleable container shape token.
     private @Nullable StyleableDoubleProperty containerShape;
 
-    // The styleable horizontal padding token.
+    /// The styleable horizontal padding token.
     private @Nullable StyleableDoubleProperty horizontalPadding;
 
     /// Creates a small dot badge.
@@ -118,13 +118,11 @@ public final class M3Badge extends Control {
     /// Sets the badge text.
     ///
     /// @param text the raw badge text before overflow handling
+    /// @throws NullPointerException if any required argument is `null`
     public final void setText(String text) {
         this.text.set(Objects.requireNonNull(text, "text"));
     }
 
-    /// Returns the badge text property.
-    ///
-    /// @return the badge text property
     public final StringProperty textProperty() {
         return text;
     }
@@ -154,9 +152,6 @@ public final class M3Badge extends Control {
         this.maxCharacterCount.set(maxCharacterCount);
     }
 
-    /// Returns the maximum display text length property.
-    ///
-    /// @return the maximum display text length property
     public final IntegerProperty maxCharacterCountProperty() {
         return maxCharacterCount;
     }
@@ -188,13 +183,11 @@ public final class M3Badge extends Control {
     /// Sets the small dot badge size token.
     ///
     /// @param smallSize the small dot badge size in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setSmallSize(double smallSize) {
         smallSizeProperty().set(M3Css.nonNegative(smallSize, "smallSize"));
     }
 
-    /// Returns the small dot badge size token property.
-    ///
-    /// @return the small dot badge size property
     public final StyleableDoubleProperty smallSizeProperty() {
         if (smallSize == null) {
             smallSize = M3Css.nonNegativeStyleableDoubleProperty(
@@ -218,13 +211,11 @@ public final class M3Badge extends Control {
     /// Sets the large badge height token.
     ///
     /// @param largeHeight the text badge height in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setLargeHeight(double largeHeight) {
         largeHeightProperty().set(M3Css.nonNegative(largeHeight, "largeHeight"));
     }
 
-    /// Returns the large badge height token property.
-    ///
-    /// @return the text badge height property
     public final StyleableDoubleProperty largeHeightProperty() {
         if (largeHeight == null) {
             largeHeight = M3Css.nonNegativeStyleableDoubleProperty(
@@ -248,13 +239,11 @@ public final class M3Badge extends Control {
     /// Sets the large badge minimum width token.
     ///
     /// @param largeMinWidth the text badge minimum width in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setLargeMinWidth(double largeMinWidth) {
         largeMinWidthProperty().set(M3Css.nonNegative(largeMinWidth, "largeMinWidth"));
     }
 
-    /// Returns the large badge minimum width token property.
-    ///
-    /// @return the text badge minimum width property
     public final StyleableDoubleProperty largeMinWidthProperty() {
         if (largeMinWidth == null) {
             largeMinWidth = M3Css.nonNegativeStyleableDoubleProperty(
@@ -278,13 +267,11 @@ public final class M3Badge extends Control {
     /// Sets the container shape radius token.
     ///
     /// @param containerShape the badge container corner radius in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContainerShape(double containerShape) {
         containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
     }
 
-    /// Returns the container shape radius token property.
-    ///
-    /// @return the badge container shape property
     public final StyleableDoubleProperty containerShapeProperty() {
         if (containerShape == null) {
             containerShape = M3Css.nonNegativeStyleableDoubleProperty(
@@ -308,13 +295,11 @@ public final class M3Badge extends Control {
     /// Sets the horizontal content padding token.
     ///
     /// @param horizontalPadding the horizontal padding used by text badges
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setHorizontalPadding(double horizontalPadding) {
         horizontalPaddingProperty().set(M3Css.nonNegative(horizontalPadding, "horizontalPadding"));
     }
 
-    /// Returns the horizontal content padding token property.
-    ///
-    /// @return the horizontal padding property
     public final StyleableDoubleProperty horizontalPaddingProperty() {
         if (horizontalPadding == null) {
             horizontalPadding = M3Css.nonNegativeStyleableDoubleProperty(

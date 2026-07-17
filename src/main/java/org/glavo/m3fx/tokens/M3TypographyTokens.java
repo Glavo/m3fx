@@ -16,48 +16,78 @@ import org.jetbrains.annotations.NotNullByDefault;
 @NotNullByDefault
 public sealed interface M3TypographyTokens permits M3TypographyTokensImpl {
     /// Returns the display large text style.
+    ///
+    /// @return the display large text style
     M3TextStyle displayLarge();
 
     /// Returns the display medium text style.
+    ///
+    /// @return the display medium text style
     M3TextStyle displayMedium();
 
     /// Returns the display small text style.
+    ///
+    /// @return the display small text style
     M3TextStyle displaySmall();
 
     /// Returns the headline large text style.
+    ///
+    /// @return the headline large text style
     M3TextStyle headlineLarge();
 
     /// Returns the headline medium text style.
+    ///
+    /// @return the headline medium text style
     M3TextStyle headlineMedium();
 
     /// Returns the headline small text style.
+    ///
+    /// @return the headline small text style
     M3TextStyle headlineSmall();
 
     /// Returns the title large text style.
+    ///
+    /// @return the title large text style
     M3TextStyle titleLarge();
 
     /// Returns the title medium text style.
+    ///
+    /// @return the title medium text style
     M3TextStyle titleMedium();
 
     /// Returns the title small text style.
+    ///
+    /// @return the title small text style
     M3TextStyle titleSmall();
 
     /// Returns the label large text style.
+    ///
+    /// @return the label large text style
     M3TextStyle labelLarge();
 
     /// Returns the label medium text style.
+    ///
+    /// @return the label medium text style
     M3TextStyle labelMedium();
 
     /// Returns the label small text style.
+    ///
+    /// @return the label small text style
     M3TextStyle labelSmall();
 
     /// Returns the body large text style.
+    ///
+    /// @return the body large text style
     M3TextStyle bodyLarge();
 
     /// Returns the body medium text style.
+    ///
+    /// @return the body medium text style
     M3TextStyle bodyMedium();
 
     /// Returns the body small text style.
+    ///
+    /// @return the body small text style
     M3TextStyle bodySmall();
 
     /// Creates a builder initialized with baseline typography tokens.
@@ -71,6 +101,7 @@ public sealed interface M3TypographyTokens permits M3TypographyTokensImpl {
     ///
     /// @param tokens the typography tokens to copy
     /// @return a mutable typography-token builder
+    /// @throws NullPointerException if `tokens` is `null`
     static M3TypographyTokensBuilder builder(M3TypographyTokens tokens) {
         return new M3TypographyTokensBuilder(tokens);
     }
@@ -113,6 +144,8 @@ public sealed interface M3TypographyTokens permits M3TypographyTokensImpl {
     }
 
     /// Returns the baseline Material Design 3 typography tokens.
+    ///
+    /// @return an immutable baseline type scale using the JavaFX system font family
     static M3TypographyTokens baseline() {
         return create(
                 M3TextStyle.of("System", 57.0, 64.0, 400, -0.25),
@@ -134,6 +167,8 @@ public sealed interface M3TypographyTokens permits M3TypographyTokensImpl {
     }
 
     /// Returns expressive Material Design 3 typography tokens.
+    ///
+    /// @return an immutable expressive type scale using the JavaFX system font family
     static M3TypographyTokens expressive() {
         return create(
                 M3TextStyle.of("System", 64.0, 72.0, 500, -0.25),

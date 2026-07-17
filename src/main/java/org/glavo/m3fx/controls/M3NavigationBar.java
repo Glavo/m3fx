@@ -80,7 +80,7 @@ public final class M3NavigationBar extends Control {
                             M3NavigationItem.class
                     ));
 
-    // The currently selected navigation item.
+    /// The currently selected navigation item.
     private final ReadOnlyObjectWrapper<@Nullable M3NavigationItem> selectedItem =
             new ReadOnlyObjectWrapper<>(this, "selectedItem");
 
@@ -110,7 +110,7 @@ public final class M3NavigationBar extends Control {
     /// The styleable spacing between adjacent vertical navigation item target areas.
     private @Nullable StyleableDoubleProperty itemSpacingStyleable;
 
-    // Whether the bar allows all navigation items to be unselected.
+    /// Whether the bar allows all navigation items to be unselected.
     private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection") {
         /// Restores a selected item when empty selection is disabled.
         @Override
@@ -191,6 +191,7 @@ public final class M3NavigationBar extends Control {
     /// [M3NavigationItemLayout#HORIZONTAL] in medium windows.
     ///
     /// @param itemLayout the navigation item layout
+    /// @throws NullPointerException if any required argument is `null`
     public final void setItemLayout(M3NavigationItemLayout itemLayout) {
         this.itemLayoutState.set(Objects.requireNonNull(itemLayout, "itemLayout"));
     }
@@ -215,6 +216,7 @@ public final class M3NavigationBar extends Control {
     /// Sets the spacing between adjacent vertical navigation item target areas.
     ///
     /// @param itemSpacing the non-negative item spacing in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setItemSpacing(double itemSpacing) {
         itemSpacingProperty().set(M3Css.nonNegative(itemSpacing, "itemSpacing"));
     }
@@ -249,9 +251,6 @@ public final class M3NavigationBar extends Control {
         return selectedItem.get();
     }
 
-    /// Returns the selected navigation item property.
-    ///
-    /// @return the read-only selected navigation item property
     public final ReadOnlyObjectProperty<@Nullable M3NavigationItem> selectedItemProperty() {
         return selectedItem.getReadOnlyProperty();
     }
@@ -278,9 +277,6 @@ public final class M3NavigationBar extends Control {
         this.allowEmptySelection.set(allowEmptySelection);
     }
 
-    /// Returns the empty-selection policy property.
-    ///
-    /// @return the writable empty-selection policy property
     public final BooleanProperty allowEmptySelectionProperty() {
         return allowEmptySelection;
     }
@@ -288,6 +284,7 @@ public final class M3NavigationBar extends Control {
     /// Selects a navigation item that belongs to this bar.
     ///
     /// @param item the navigation item to select
+    /// @throws NullPointerException if any required argument is `null`
     public final void select(M3NavigationItem item) {
         Objects.requireNonNull(item, "item");
         if (!getItems().contains(item)) {
@@ -393,6 +390,7 @@ public final class M3NavigationBar extends Control {
     /// @param attribute  the requested accessibility attribute
     /// @param parameters optional attribute-specific parameters
     /// @return the requested accessibility value, or `null` when no value is available
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -415,6 +413,7 @@ public final class M3NavigationBar extends Control {
     ///
     /// @param action     the accessibility action to execute
     /// @param parameters optional action-specific parameters
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

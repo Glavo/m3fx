@@ -13,6 +13,9 @@ import java.util.regex.Pattern;
 
 /// Provides reusable validators for [M3TextInputLayout].
 ///
+/// Length validators count UTF-16 code units, matching [String#length()]. Factory methods capture their arguments
+/// when the validator is created; subsequent validation does not mutate those arguments.
+///
 /// See [Material Design text fields](https://m3.material.io/components/text-fields/overview).
 @NotNullByDefault
 public final class M3TextInputValidators {
@@ -31,6 +34,7 @@ public final class M3TextInputValidators {
     ///
     /// @param errorText the error message returned for blank text
     /// @return a validator that rejects blank text
+    /// @throws NullPointerException if `errorText` is `null`
     public static M3TextInputValidator required(String errorText) {
         String message = Objects.requireNonNull(errorText, "errorText");
         return (input, text) -> text.isBlank() ? message : null;
@@ -41,6 +45,7 @@ public final class M3TextInputValidators {
     /// @param minLength the minimum accepted text length
     /// @param errorText the error message returned for shorter text
     /// @return a validator that rejects text shorter than `minLength`
+    /// @throws NullPointerException if `errorText` is `null`
     /// @throws IllegalArgumentException if `minLength` is negative
     public static M3TextInputValidator minLength(int minLength, String errorText) {
         int minimum = nonNegative(minLength, "minLength");
@@ -53,6 +58,7 @@ public final class M3TextInputValidators {
     /// @param maxLength the maximum accepted text length
     /// @param errorText the error message returned for longer text
     /// @return a validator that rejects text longer than `maxLength`
+    /// @throws NullPointerException if `errorText` is `null`
     /// @throws IllegalArgumentException if `maxLength` is negative
     public static M3TextInputValidator maxLength(int maxLength, String errorText) {
         int maximum = nonNegative(maxLength, "maxLength");
@@ -67,6 +73,7 @@ public final class M3TextInputValidators {
     /// @param tooShortErrorText the error message returned for text shorter than `minLength`
     /// @param tooLongErrorText the error message returned for text longer than `maxLength`
     /// @return a validator that rejects text outside the inclusive length range
+    /// @throws NullPointerException if either error message is `null`
     /// @throws IllegalArgumentException if either length is negative or `minLength` is greater than `maxLength`
     public static M3TextInputValidator lengthBetween(
             int minLength,
@@ -95,6 +102,7 @@ public final class M3TextInputValidators {
     /// @param pattern the regular expression pattern that valid text must match completely
     /// @param errorText the error message returned when text does not match `pattern`
     /// @return a validator backed by the supplied pattern
+    /// @throws NullPointerException if `pattern` or `errorText` is `null`
     public static M3TextInputValidator pattern(Pattern pattern, String errorText) {
         Pattern validatedPattern = Objects.requireNonNull(pattern, "pattern");
         String message = Objects.requireNonNull(errorText, "errorText");
@@ -106,6 +114,7 @@ public final class M3TextInputValidators {
     /// @param predicate the predicate that receives the text input control and current text
     /// @param errorText the error message returned when `predicate` returns `false`
     /// @return a validator backed by the supplied predicate
+    /// @throws NullPointerException if `predicate` or `errorText` is `null`
     public static M3TextInputValidator predicate(
             BiPredicate<? super TextInputControl, ? super String> predicate,
             String errorText
@@ -120,6 +129,7 @@ public final class M3TextInputValidators {
     ///
     /// @param validators the validators to evaluate in order
     /// @return a validator that returns the first non-empty error message from `validators`
+    /// @throws NullPointerException if `validators` or any element is `null`
     public static M3TextInputValidator all(M3TextInputValidator... validators) {
         M3TextInputValidator[] validatedValidators = validatedValidators(validators);
         return (input, text) -> firstError(input, text, validatedValidators);

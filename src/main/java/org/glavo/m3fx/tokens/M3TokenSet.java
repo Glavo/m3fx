@@ -21,30 +21,48 @@ import org.jetbrains.annotations.NotNullByDefault;
 @NotNullByDefault
 public sealed interface M3TokenSet permits M3TokenSetImpl {
     /// Returns the profile that produced this token set.
+    ///
+    /// @return the Material token profile
     M3Profile profile();
 
     /// Returns the density used to derive layout-sensitive component tokens.
+    ///
+    /// @return the component density
     M3Density density();
 
     /// Returns the color tokens.
+    ///
+    /// @return the color token group
     M3ColorTokens colorTokens();
 
     /// Returns the typography tokens.
+    ///
+    /// @return the typography token group
     M3TypographyTokens typographyTokens();
 
     /// Returns the shape tokens.
+    ///
+    /// @return the shape token group
     M3ShapeTokens shapeTokens();
 
     /// Returns the elevation tokens.
+    ///
+    /// @return the elevation token group
     M3ElevationTokens elevationTokens();
 
     /// Returns the motion tokens.
+    ///
+    /// @return the motion token group
     M3MotionTokens motionTokens();
 
     /// Returns the state layer tokens.
+    ///
+    /// @return the interaction-state opacity token group
     M3StateLayerTokens stateLayerTokens();
 
     /// Returns the component tokens.
+    ///
+    /// @return the component-specific metric token group
     M3ComponentTokens componentTokens();
 
     /// Creates a builder initialized with the profile defaults and supplied color scheme and density.
@@ -53,6 +71,7 @@ public sealed interface M3TokenSet permits M3TokenSetImpl {
     /// @param colorScheme the MonetFX color scheme
     /// @param density the density used for component metrics
     /// @return a mutable token-set builder
+    /// @throws NullPointerException if any argument is `null`
     static M3TokenSetBuilder builder(M3Profile profile, ColorScheme colorScheme, M3Density density) {
         return new M3TokenSetBuilder(profile, colorScheme, density);
     }
@@ -61,6 +80,7 @@ public sealed interface M3TokenSet permits M3TokenSetImpl {
     ///
     /// @param tokenSet the token set to copy
     /// @return a mutable token-set builder
+    /// @throws NullPointerException if `tokenSet` is `null`
     static M3TokenSetBuilder builder(M3TokenSet tokenSet) {
         return new M3TokenSetBuilder(tokenSet);
     }

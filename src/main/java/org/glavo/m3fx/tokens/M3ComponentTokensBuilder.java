@@ -12,6 +12,10 @@ import java.util.Objects;
 ///
 /// The builder is initialized from a complete component token set, so every result remains complete even when only
 /// one component group is customized. Each setter replaces one semantic group and returns this builder.
+/// Replacement groups must not be `null`; replacement methods throw [NullPointerException] when that contract is
+/// violated. A builder can be reused after [build].
+///
+/// See [Material Design](https://m3.material.io/).
 @NotNullByDefault
 public final class M3ComponentTokensBuilder {
     /// The current filledButton token group.
@@ -209,6 +213,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param filledButton the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder filledButton(M3ComponentTokens.ButtonTokens filledButton) {
         this.filledButton = Objects.requireNonNull(filledButton, "filledButton");
         return this;
@@ -218,6 +223,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param tonalButton the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder tonalButton(M3ComponentTokens.ButtonTokens tonalButton) {
         this.tonalButton = Objects.requireNonNull(tonalButton, "tonalButton");
         return this;
@@ -227,6 +233,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param outlinedButton the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder outlinedButton(M3ComponentTokens.ButtonTokens outlinedButton) {
         this.outlinedButton = Objects.requireNonNull(outlinedButton, "outlinedButton");
         return this;
@@ -236,6 +243,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param textButton the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder textButton(M3ComponentTokens.ButtonTokens textButton) {
         this.textButton = Objects.requireNonNull(textButton, "textButton");
         return this;
@@ -245,6 +253,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param elevatedButton the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder elevatedButton(M3ComponentTokens.ButtonTokens elevatedButton) {
         this.elevatedButton = Objects.requireNonNull(elevatedButton, "elevatedButton");
         return this;
@@ -254,6 +263,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param buttonSizing the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder buttonSizing(M3ComponentTokens.ButtonSizingTokens buttonSizing) {
         this.buttonSizing = Objects.requireNonNull(buttonSizing, "buttonSizing");
         return this;
@@ -263,6 +273,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param iconButton the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder iconButton(M3ComponentTokens.IconButtonTokens iconButton) {
         this.iconButton = Objects.requireNonNull(iconButton, "iconButton");
         return this;
@@ -272,6 +283,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param floatingActionButton the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder floatingActionButton(M3ComponentTokens.FabTokens floatingActionButton) {
         this.floatingActionButton = Objects.requireNonNull(floatingActionButton, "floatingActionButton");
         return this;
@@ -281,6 +293,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param icon the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder icon(M3ComponentTokens.IconTokens icon) {
         this.icon = Objects.requireNonNull(icon, "icon");
         return this;
@@ -290,6 +303,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param buttonGroup the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder buttonGroup(M3ComponentTokens.ButtonGroupTokens buttonGroup) {
         this.buttonGroup = Objects.requireNonNull(buttonGroup, "buttonGroup");
         return this;
@@ -299,6 +313,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param splitButton the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder splitButton(M3ComponentTokens.SplitButtonTokens splitButton) {
         this.splitButton = Objects.requireNonNull(splitButton, "splitButton");
         return this;
@@ -308,6 +323,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param segmentedButton the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder segmentedButton(M3ComponentTokens.ButtonTokens segmentedButton) {
         this.segmentedButton = Objects.requireNonNull(segmentedButton, "segmentedButton");
         return this;
@@ -317,6 +333,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param tab the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder tab(M3ComponentTokens.TabTokens tab) {
         this.tab = Objects.requireNonNull(tab, "tab");
         return this;
@@ -326,6 +343,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param field the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder field(M3ComponentTokens.FieldTokens field) {
         this.field = Objects.requireNonNull(field, "field");
         return this;
@@ -335,6 +353,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param textArea the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder textArea(M3ComponentTokens.TextAreaTokens textArea) {
         this.textArea = Objects.requireNonNull(textArea, "textArea");
         return this;
@@ -344,6 +363,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param form the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder form(M3ComponentTokens.FormTokens form) {
         this.form = Objects.requireNonNull(form, "form");
         return this;
@@ -353,6 +373,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param validationSummary the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder validationSummary(M3ComponentTokens.ValidationSummaryTokens validationSummary) {
         this.validationSummary = Objects.requireNonNull(validationSummary, "validationSummary");
         return this;
@@ -362,6 +383,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param menu the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder menu(M3ComponentTokens.MenuTokens menu) {
         this.menu = Objects.requireNonNull(menu, "menu");
         return this;
@@ -371,6 +393,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param search the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder search(M3ComponentTokens.SearchTokens search) {
         this.search = Objects.requireNonNull(search, "search");
         return this;
@@ -380,6 +403,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param pickerField the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder pickerField(M3ComponentTokens.PickerFieldTokens pickerField) {
         this.pickerField = Objects.requireNonNull(pickerField, "pickerField");
         return this;
@@ -389,6 +413,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param datePicker the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder datePicker(M3ComponentTokens.DatePickerTokens datePicker) {
         this.datePicker = Objects.requireNonNull(datePicker, "datePicker");
         return this;
@@ -398,6 +423,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param timePicker the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder timePicker(M3ComponentTokens.TimePickerTokens timePicker) {
         this.timePicker = Objects.requireNonNull(timePicker, "timePicker");
         return this;
@@ -407,6 +433,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param sheet the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder sheet(M3ComponentTokens.SheetTokens sheet) {
         this.sheet = Objects.requireNonNull(sheet, "sheet");
         return this;
@@ -416,6 +443,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param scrim the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder scrim(M3ComponentTokens.ScrimTokens scrim) {
         this.scrim = Objects.requireNonNull(scrim, "scrim");
         return this;
@@ -425,6 +453,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param selection the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder selection(M3ComponentTokens.SelectionTokens selection) {
         this.selection = Objects.requireNonNull(selection, "selection");
         return this;
@@ -434,6 +463,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param slider the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder slider(M3ComponentTokens.SliderTokens slider) {
         this.slider = Objects.requireNonNull(slider, "slider");
         return this;
@@ -443,6 +473,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param chip the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder chip(M3ComponentTokens.ChipTokens chip) {
         this.chip = Objects.requireNonNull(chip, "chip");
         return this;
@@ -452,6 +483,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param progress the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder progress(M3ComponentTokens.ProgressTokens progress) {
         this.progress = Objects.requireNonNull(progress, "progress");
         return this;
@@ -461,6 +493,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param loadingIndicator the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder loadingIndicator(M3ComponentTokens.LoadingIndicatorTokens loadingIndicator) {
         this.loadingIndicator = Objects.requireNonNull(loadingIndicator, "loadingIndicator");
         return this;
@@ -470,6 +503,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param surface the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder surface(M3ComponentTokens.SurfaceTokens surface) {
         this.surface = Objects.requireNonNull(surface, "surface");
         return this;
@@ -479,6 +513,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param carousel the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder carousel(M3ComponentTokens.CarouselTokens carousel) {
         this.carousel = Objects.requireNonNull(carousel, "carousel");
         return this;
@@ -488,6 +523,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param card the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder card(M3ComponentTokens.CardTokens card) {
         this.card = Objects.requireNonNull(card, "card");
         return this;
@@ -497,6 +533,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param dialog the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder dialog(M3ComponentTokens.DialogTokens dialog) {
         this.dialog = Objects.requireNonNull(dialog, "dialog");
         return this;
@@ -506,6 +543,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param snackbar the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder snackbar(M3ComponentTokens.SnackbarTokens snackbar) {
         this.snackbar = Objects.requireNonNull(snackbar, "snackbar");
         return this;
@@ -515,6 +553,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param banner the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder banner(M3ComponentTokens.BannerTokens banner) {
         this.banner = Objects.requireNonNull(banner, "banner");
         return this;
@@ -524,6 +563,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param tooltip the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder tooltip(M3ComponentTokens.TooltipTokens tooltip) {
         this.tooltip = Objects.requireNonNull(tooltip, "tooltip");
         return this;
@@ -533,6 +573,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param divider the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder divider(M3ComponentTokens.DividerTokens divider) {
         this.divider = Objects.requireNonNull(divider, "divider");
         return this;
@@ -542,6 +583,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param badge the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder badge(M3ComponentTokens.BadgeTokens badge) {
         this.badge = Objects.requireNonNull(badge, "badge");
         return this;
@@ -551,6 +593,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param avatar the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder avatar(M3ComponentTokens.AvatarTokens avatar) {
         this.avatar = Objects.requireNonNull(avatar, "avatar");
         return this;
@@ -560,6 +603,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param topAppBar the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder topAppBar(M3ComponentTokens.TopAppBarTokens topAppBar) {
         this.topAppBar = Objects.requireNonNull(topAppBar, "topAppBar");
         return this;
@@ -569,6 +613,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param bottomAppBar the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder bottomAppBar(M3ComponentTokens.BottomAppBarTokens bottomAppBar) {
         this.bottomAppBar = Objects.requireNonNull(bottomAppBar, "bottomAppBar");
         return this;
@@ -578,6 +623,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param toolbar the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder toolbar(M3ComponentTokens.ToolbarTokens toolbar) {
         this.toolbar = Objects.requireNonNull(toolbar, "toolbar");
         return this;
@@ -587,6 +633,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param navigationBar the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder navigationBar(M3ComponentTokens.NavigationBarTokens navigationBar) {
         this.navigationBar = Objects.requireNonNull(navigationBar, "navigationBar");
         return this;
@@ -596,6 +643,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param navigationRail the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder navigationRail(M3ComponentTokens.NavigationRailTokens navigationRail) {
         this.navigationRail = Objects.requireNonNull(navigationRail, "navigationRail");
         return this;
@@ -605,6 +653,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param navigationDrawer the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder navigationDrawer(M3ComponentTokens.NavigationDrawerTokens navigationDrawer) {
         this.navigationDrawer = Objects.requireNonNull(navigationDrawer, "navigationDrawer");
         return this;
@@ -614,6 +663,7 @@ public final class M3ComponentTokensBuilder {
     ///
     /// @param listItem the replacement token group
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3ComponentTokensBuilder listItem(M3ComponentTokens.ListItemTokens listItem) {
         this.listItem = Objects.requireNonNull(listItem, "listItem");
         return this;
@@ -673,4 +723,3 @@ public final class M3ComponentTokensBuilder {
         );
     }
 }
-

@@ -78,7 +78,7 @@ public final class M3ChipGroup extends Control {
                             M3SelectableChip.class
                     ));
 
-    // The preferred wrapping width used by the internal flow layout.
+    /// The preferred wrapping width used by the internal flow layout.
     private final DoubleProperty prefWrapLength = new SimpleDoubleProperty(this, "prefWrapLength", 400.0) {
         /// Validates updated preferred wrap length values.
         @Override
@@ -87,13 +87,13 @@ public final class M3ChipGroup extends Control {
         }
     };
 
-    // The styleable horizontal gap between chips.
+    /// The styleable horizontal gap between chips.
     private @Nullable StyleableDoubleProperty horizontalGap;
 
-    // The styleable vertical gap between wrapped chip rows.
+    /// The styleable vertical gap between wrapped chip rows.
     private @Nullable StyleableDoubleProperty verticalGap;
 
-    // The chip selection mode.
+    /// The chip selection mode.
     private final ObjectProperty<M3SelectionMode> selectionMode =
             new SimpleObjectProperty<>(this, "selectionMode", M3SelectionMode.MULTIPLE) {
                 /// Enforces selection invariants when the mode changes.
@@ -107,7 +107,7 @@ public final class M3ChipGroup extends Control {
                 }
             };
 
-    // Whether the group allows all chips to be unselected.
+    /// Whether the group allows all chips to be unselected.
     private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection", true) {
         /// Restores a selected chip when empty selection is disabled.
         @Override
@@ -126,7 +126,7 @@ public final class M3ChipGroup extends Control {
     private final @UnmodifiableView ObservableList<M3SelectableChip> selectedChipsView =
             FXCollections.unmodifiableObservableList(selectedChips);
 
-    // The first selected chip in child order.
+    /// The first selected chip in child order.
     private final ReadOnlyObjectWrapper<@Nullable M3SelectableChip> selectedChip =
             new ReadOnlyObjectWrapper<>(this, "selectedChip");
 
@@ -200,13 +200,11 @@ public final class M3ChipGroup extends Control {
     /// Sets the preferred wrapping width used by the chip flow layout.
     ///
     /// @param prefWrapLength the preferred wrap length in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setPrefWrapLength(double prefWrapLength) {
         this.prefWrapLength.set(M3Css.nonNegative(prefWrapLength, "prefWrapLength"));
     }
 
-    /// Returns the preferred wrapping width property.
-    ///
-    /// @return the preferred wrap length property
     public final DoubleProperty prefWrapLengthProperty() {
         return prefWrapLength;
     }
@@ -221,13 +219,11 @@ public final class M3ChipGroup extends Control {
     /// Sets the horizontal gap between chips.
     ///
     /// @param horizontalGap the horizontal chip gap in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setHorizontalGap(double horizontalGap) {
         horizontalGapProperty().set(M3Css.nonNegative(horizontalGap, "horizontalGap"));
     }
 
-    /// Returns the horizontal gap property.
-    ///
-    /// @return the styleable horizontal chip gap property
     public final StyleableDoubleProperty horizontalGapProperty() {
         if (horizontalGap == null) {
             horizontalGap = M3Css.nonNegativeStyleableDoubleProperty(
@@ -251,13 +247,11 @@ public final class M3ChipGroup extends Control {
     /// Sets the vertical gap between wrapped chip rows.
     ///
     /// @param verticalGap the vertical chip row gap in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setVerticalGap(double verticalGap) {
         verticalGapProperty().set(M3Css.nonNegative(verticalGap, "verticalGap"));
     }
 
-    /// Returns the vertical gap property.
-    ///
-    /// @return the styleable vertical chip row gap property
     public final StyleableDoubleProperty verticalGapProperty() {
         if (verticalGap == null) {
             verticalGap = M3Css.nonNegativeStyleableDoubleProperty(
@@ -281,13 +275,11 @@ public final class M3ChipGroup extends Control {
     /// Sets the chip selection mode.
     ///
     /// @param selectionMode the chip selection mode
+    /// @throws NullPointerException if any required argument is `null`
     public final void setSelectionMode(M3SelectionMode selectionMode) {
         this.selectionMode.set(Objects.requireNonNull(selectionMode, "selectionMode"));
     }
 
-    /// Returns the chip selection mode property.
-    ///
-    /// @return the chip selection mode property
     public final ObjectProperty<M3SelectionMode> selectionModeProperty() {
         return selectionMode;
     }
@@ -306,9 +298,6 @@ public final class M3ChipGroup extends Control {
         this.allowEmptySelection.set(allowEmptySelection);
     }
 
-    /// Returns the empty-selection policy property.
-    ///
-    /// @return the empty-selection policy property
     public final BooleanProperty allowEmptySelectionProperty() {
         return allowEmptySelection;
     }
@@ -327,9 +316,6 @@ public final class M3ChipGroup extends Control {
         return selectedChip.get();
     }
 
-    /// Returns the first selected chip property.
-    ///
-    /// @return the read-only first selected chip property
     public final ReadOnlyObjectProperty<@Nullable M3SelectableChip> selectedChipProperty() {
         return selectedChip.getReadOnlyProperty();
     }
@@ -345,6 +331,7 @@ public final class M3ChipGroup extends Control {
     /// Selects a chip that belongs to this group.
     ///
     /// @param chip the chip to select
+    /// @throws NullPointerException if any required argument is `null`
     public final void select(M3SelectableChip chip) {
         Objects.requireNonNull(chip, "chip");
         if (!getItems().contains(chip)) {
@@ -449,6 +436,8 @@ public final class M3ChipGroup extends Control {
     }
 
     /// Returns accessibility attributes for chip group content and selection state.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -468,6 +457,8 @@ public final class M3ChipGroup extends Control {
     }
 
     /// Executes accessibility selection actions for chips.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

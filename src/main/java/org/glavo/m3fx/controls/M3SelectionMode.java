@@ -9,6 +9,8 @@ import org.jetbrains.annotations.NotNullByDefault;
 ///
 /// A container may support all modes or restrict the modes that are meaningful for its component contract. Changing
 /// the mode causes the container to immediately enforce the corresponding selection invariant.
+///
+/// See [Material Design interaction states](https://m3.material.io/foundations/interaction/states/overview).
 @NotNullByDefault
 public enum M3SelectionMode {
     /// Disables selection and clears any existing selection.

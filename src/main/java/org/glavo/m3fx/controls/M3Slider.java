@@ -112,31 +112,31 @@ public final class M3Slider extends Control {
     private static final @Nullable AccessibleAttribute VALUE_STRING_ATTRIBUTE =
             M3Accessible.attribute("VALUE_STRING");
 
-    // Backing property for the public minimum value API.
+    /// Backing property for the public minimum value API.
     private @Nullable DoubleProperty min;
 
-    // Backing property for the public maximum value API.
+    /// Backing property for the public maximum value API.
     private @Nullable DoubleProperty max;
 
-    // Backing property for the public current value API.
+    /// Backing property for the public current value API.
     private @Nullable DoubleProperty value;
 
-    // Backing property for the public orientation API.
+    /// Backing property for the public orientation API.
     private @Nullable ObjectProperty<Orientation> orientation;
 
-    // Backing property for the public value-changing API.
+    /// Backing property for the public value-changing API.
     private @Nullable BooleanProperty valueChanging;
 
-    // Backing property for the public block increment API.
+    /// Backing property for the public block increment API.
     private @Nullable DoubleProperty blockIncrement;
 
-    // Backing property for the public discrete step API.
+    /// Backing property for the public discrete step API.
     private @Nullable DoubleProperty stepSize;
 
-    // Backing property for the public centered-track API.
+    /// Backing property for the public centered-track API.
     private @Nullable BooleanProperty centered;
 
-    // The Material slider size property.
+    /// The Material slider size property.
     private final ObjectProperty<M3SliderSize> size = new SimpleObjectProperty<>(this, "size", DEFAULT_SIZE) {
         /// Updates the component token style class when the size changes.
         @Override
@@ -150,49 +150,49 @@ public final class M3Slider extends Control {
         }
     };
 
-    // The optional graphic inset into the active track.
+    /// The optional graphic inset into the active track.
     private @Nullable ObjectProperty<@Nullable Node> activeTrackGraphic;
 
-    // The optional graphic inset into the inactive track.
+    /// The optional graphic inset into the inactive track.
     private @Nullable ObjectProperty<@Nullable Node> inactiveTrackGraphic;
 
-    // Whether the value indicator is displayed during direct manipulation.
+    /// Whether the value indicator is displayed during direct manipulation.
     private @Nullable BooleanProperty showValueIndicator;
 
-    // The optional formatter used by the value indicator and accessibility value string.
+    /// The optional formatter used by the value indicator and accessibility value string.
     private @Nullable ObjectProperty<@Nullable StringConverter<Double>> labelFormatter;
 
-    // Backing property for the public track thickness token API.
+    /// Backing property for the public track thickness token API.
     private @Nullable StyleableDoubleProperty trackThickness;
 
-    // Backing property for the public track shape token API.
+    /// Backing property for the public track shape token API.
     private @Nullable StyleableDoubleProperty trackShape;
 
-    // Backing property for the public stop indicator size token API.
+    /// Backing property for the public stop indicator size token API.
     private @Nullable StyleableDoubleProperty stopIndicatorSize;
 
-    // Backing property for the public stop indicator trailing-space token API.
+    /// Backing property for the public stop indicator trailing-space token API.
     private @Nullable StyleableDoubleProperty stopIndicatorTrailingSpace;
 
-    // Backing property for the public thumb size token API.
+    /// Backing property for the public thumb size token API.
     private @Nullable StyleableDoubleProperty thumbSize;
 
-    // Backing property for the public thumb width token API.
+    /// Backing property for the public thumb width token API.
     private @Nullable StyleableDoubleProperty thumbWidth;
 
-    // Backing property for the public thumb track-gap token API.
+    /// Backing property for the public thumb track-gap token API.
     private @Nullable StyleableDoubleProperty thumbTrackGap;
 
-    // Backing property for the public touch target size token API.
+    /// Backing property for the public touch target size token API.
     private @Nullable StyleableDoubleProperty touchTargetSize;
 
-    // The styleable inset-icon size token.
+    /// The styleable inset-icon size token.
     private @Nullable StyleableDoubleProperty iconSize;
 
-    // The styleable inset-icon outer padding token.
+    /// The styleable inset-icon outer padding token.
     private @Nullable StyleableDoubleProperty iconPadding;
 
-    // The styleable value-indicator bottom-space token.
+    /// The styleable value-indicator bottom-space token.
     private @Nullable StyleableDoubleProperty valueIndicatorBottomSpace;
 
     /// Creates a slider with the JavaFX default range.
@@ -228,13 +228,11 @@ public final class M3Slider extends Control {
     /// individual styleable metric properties after CSS resolution when a custom configuration is required.
     ///
     /// @param size the Material slider size
+    /// @throws NullPointerException if any required argument is `null`
     public final void setSize(M3SliderSize size) {
         this.size.set(Objects.requireNonNull(size, "size"));
     }
 
-    /// Returns the Material slider size property.
-    ///
-    /// @return the writable slider size property
     public final ObjectProperty<M3SliderSize> sizeProperty() {
         return size;
     }
@@ -259,9 +257,6 @@ public final class M3Slider extends Control {
         activeTrackGraphicProperty().set(graphic);
     }
 
-    /// Returns the active-track graphic property.
-    ///
-    /// @return the writable active-track graphic property
     public final ObjectProperty<@Nullable Node> activeTrackGraphicProperty() {
         if (activeTrackGraphic == null) {
             activeTrackGraphic = new ObjectPropertyBase<>() {
@@ -305,9 +300,6 @@ public final class M3Slider extends Control {
         inactiveTrackGraphicProperty().set(graphic);
     }
 
-    /// Returns the inactive-track graphic property.
-    ///
-    /// @return the writable inactive-track graphic property
     public final ObjectProperty<@Nullable Node> inactiveTrackGraphicProperty() {
         if (inactiveTrackGraphic == null) {
             inactiveTrackGraphic = new ObjectPropertyBase<>() {
@@ -350,9 +342,6 @@ public final class M3Slider extends Control {
         showValueIndicatorProperty().set(showValueIndicator);
     }
 
-    /// Returns the value-indicator visibility property.
-    ///
-    /// @return the writable value-indicator visibility property
     public final BooleanProperty showValueIndicatorProperty() {
         if (showValueIndicator == null) {
             showValueIndicator = new BooleanPropertyBase(false) {
@@ -395,9 +384,6 @@ public final class M3Slider extends Control {
         labelFormatterProperty().set(formatter);
     }
 
-    /// Returns the value formatter property.
-    ///
-    /// @return the writable value formatter property
     public final ObjectProperty<@Nullable StringConverter<Double>> labelFormatterProperty() {
         if (labelFormatter == null) {
             labelFormatter = new ObjectPropertyBase<>() {
@@ -439,9 +425,6 @@ public final class M3Slider extends Control {
         minProperty().set(min);
     }
 
-    /// Returns the minimum slider value property.
-    ///
-    /// @return the minimum slider value property
     public final DoubleProperty minProperty() {
         if (min == null) {
             min = new DoublePropertyBase(DEFAULT_MIN) {
@@ -485,9 +468,6 @@ public final class M3Slider extends Control {
         maxProperty().set(max);
     }
 
-    /// Returns the maximum slider value property.
-    ///
-    /// @return the maximum slider value property
     public final DoubleProperty maxProperty() {
         if (max == null) {
             max = new DoublePropertyBase(DEFAULT_MAX) {
@@ -531,9 +511,6 @@ public final class M3Slider extends Control {
         valueProperty().set(value);
     }
 
-    /// Returns the current slider value property.
-    ///
-    /// @return the current slider value property
     public final DoubleProperty valueProperty() {
         if (value == null) {
             value = new DoublePropertyBase(DEFAULT_VALUE) {
@@ -580,9 +557,6 @@ public final class M3Slider extends Control {
         orientationProperty().set(orientation);
     }
 
-    /// Returns the slider orientation property.
-    ///
-    /// @return the slider orientation property
     public final ObjectProperty<Orientation> orientationProperty() {
         if (orientation == null) {
             orientation = new ObjectPropertyBase<>(Orientation.HORIZONTAL) {
@@ -627,9 +601,6 @@ public final class M3Slider extends Control {
         valueChangingProperty().set(valueChanging);
     }
 
-    /// Returns the value-changing property.
-    ///
-    /// @return the value-changing property
     public final BooleanProperty valueChangingProperty() {
         if (valueChanging == null) {
             valueChanging = new BooleanPropertyBase(false) {
@@ -659,13 +630,11 @@ public final class M3Slider extends Control {
     /// Sets the amount changed by page navigation and continuous single-step navigation.
     ///
     /// @param blockIncrement the amount changed by page navigation and continuous single-step navigation
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setBlockIncrement(double blockIncrement) {
         blockIncrementProperty().set(M3Css.nonNegative(blockIncrement, "blockIncrement"));
     }
 
-    /// Returns the block increment property.
-    ///
-    /// @return the block increment property
     public final DoubleProperty blockIncrementProperty() {
         if (blockIncrement == null) {
             blockIncrement = new DoublePropertyBase(DEFAULT_BLOCK_INCREMENT) {
@@ -724,13 +693,11 @@ public final class M3Slider extends Control {
     /// and accessibility value changes to the nearest step measured from `min`.
     ///
     /// @param stepSize the non-negative step size
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setStepSize(double stepSize) {
         stepSizeProperty().set(M3Css.nonNegative(stepSize, "stepSize"));
     }
 
-    /// Returns the step-size property.
-    ///
-    /// @return the step-size property
     public final DoubleProperty stepSizeProperty() {
         if (stepSize == null) {
             stepSize = new DoublePropertyBase(DEFAULT_STEP_SIZE) {
@@ -780,9 +747,6 @@ public final class M3Slider extends Control {
         centeredProperty().set(centered);
     }
 
-    /// Returns the centered-track property.
-    ///
-    /// @return the centered-track property
     public final BooleanProperty centeredProperty() {
         if (centered == null) {
             centered = new BooleanPropertyBase(false) {
@@ -819,13 +783,11 @@ public final class M3Slider extends Control {
     /// Sets the slider track thickness token.
     ///
     /// @param trackThickness the slider track thickness token in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setTrackThickness(double trackThickness) {
         trackThicknessProperty().set(M3Css.nonNegative(trackThickness, "trackThickness"));
     }
 
-    /// Returns the slider track thickness token property.
-    ///
-    /// @return the slider track thickness token property
     public final StyleableDoubleProperty trackThicknessProperty() {
         if (trackThickness == null) {
             trackThickness = M3Css.nonNegativeStyleableDoubleProperty(
@@ -849,13 +811,11 @@ public final class M3Slider extends Control {
     /// Sets the slider track shape radius token.
     ///
     /// @param trackShape the slider track shape radius token in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setTrackShape(double trackShape) {
         trackShapeProperty().set(M3Css.nonNegative(trackShape, "trackShape"));
     }
 
-    /// Returns the slider track shape radius token property.
-    ///
-    /// @return the slider track shape radius token property
     public final StyleableDoubleProperty trackShapeProperty() {
         if (trackShape == null) {
             trackShape = M3Css.nonNegativeStyleableDoubleProperty(
@@ -881,13 +841,11 @@ public final class M3Slider extends Control {
     /// A value of zero hides the stop indicator.
     ///
     /// @param stopIndicatorSize the non-negative stop indicator diameter token in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setStopIndicatorSize(double stopIndicatorSize) {
         stopIndicatorSizeProperty().set(M3Css.nonNegative(stopIndicatorSize, "stopIndicatorSize"));
     }
 
-    /// Returns the inactive-track stop indicator diameter token property.
-    ///
-    /// @return the stop indicator diameter token property
     public final StyleableDoubleProperty stopIndicatorSizeProperty() {
         if (stopIndicatorSize == null) {
             stopIndicatorSize = M3Css.nonNegativeStyleableDoubleProperty(
@@ -916,6 +874,7 @@ public final class M3Slider extends Control {
     /// Sets the distance between an inactive track's outer edge and its stop indicator.
     ///
     /// @param stopIndicatorTrailingSpace the non-negative trailing-space token in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setStopIndicatorTrailingSpace(double stopIndicatorTrailingSpace) {
         stopIndicatorTrailingSpaceProperty().set(M3Css.nonNegative(
                 stopIndicatorTrailingSpace,
@@ -923,9 +882,6 @@ public final class M3Slider extends Control {
         ));
     }
 
-    /// Returns the stop indicator trailing-space token property.
-    ///
-    /// @return the stop indicator trailing-space token property
     public final StyleableDoubleProperty stopIndicatorTrailingSpaceProperty() {
         if (stopIndicatorTrailingSpace == null) {
             stopIndicatorTrailingSpace = M3Css.nonNegativeStyleableDoubleProperty(
@@ -949,13 +905,11 @@ public final class M3Slider extends Control {
     /// Sets the slider handle long-side size token.
     ///
     /// @param thumbSize the slider handle long-side size token in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setThumbSize(double thumbSize) {
         thumbSizeProperty().set(M3Css.nonNegative(thumbSize, "thumbSize"));
     }
 
-    /// Returns the slider handle long-side size token property.
-    ///
-    /// @return the slider handle long-side size token property
     public final StyleableDoubleProperty thumbSizeProperty() {
         if (thumbSize == null) {
             thumbSize = M3Css.nonNegativeStyleableDoubleProperty(
@@ -979,13 +933,11 @@ public final class M3Slider extends Control {
     /// Sets the slider handle short-side width token.
     ///
     /// @param thumbWidth the slider handle short-side width token in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setThumbWidth(double thumbWidth) {
         thumbWidthProperty().set(M3Css.nonNegative(thumbWidth, "thumbWidth"));
     }
 
-    /// Returns the slider handle short-side width token property.
-    ///
-    /// @return the slider handle short-side width token property
     public final StyleableDoubleProperty thumbWidthProperty() {
         if (thumbWidth == null) {
             thumbWidth = M3Css.nonNegativeStyleableDoubleProperty(
@@ -1009,13 +961,11 @@ public final class M3Slider extends Control {
     /// Sets the gap between the handle and each adjacent track segment.
     ///
     /// @param thumbTrackGap the handle track-gap token in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setThumbTrackGap(double thumbTrackGap) {
         thumbTrackGapProperty().set(M3Css.nonNegative(thumbTrackGap, "thumbTrackGap"));
     }
 
-    /// Returns the handle track-gap token property.
-    ///
-    /// @return the handle track-gap token property
     public final StyleableDoubleProperty thumbTrackGapProperty() {
         if (thumbTrackGap == null) {
             thumbTrackGap = M3Css.nonNegativeStyleableDoubleProperty(
@@ -1039,13 +989,11 @@ public final class M3Slider extends Control {
     /// Sets the preferred touch target size token.
     ///
     /// @param touchTargetSize the preferred touch target size token in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setTouchTargetSize(double touchTargetSize) {
         touchTargetSizeProperty().set(M3Css.nonNegative(touchTargetSize, "touchTargetSize"));
     }
 
-    /// Returns the preferred touch target size token property.
-    ///
-    /// @return the preferred touch target size token property
     public final StyleableDoubleProperty touchTargetSizeProperty() {
         if (touchTargetSize == null) {
             touchTargetSize = M3Css.nonNegativeStyleableDoubleProperty(
@@ -1071,13 +1019,11 @@ public final class M3Slider extends Control {
     /// Sets the inset-icon size token.
     ///
     /// @param iconSize the non-negative inset-icon size in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setIconSize(double iconSize) {
         iconSizeProperty().set(M3Css.nonNegative(iconSize, "iconSize"));
     }
 
-    /// Returns the inset-icon size token property.
-    ///
-    /// @return the styleable inset-icon size property
     public final StyleableDoubleProperty iconSizeProperty() {
         if (iconSize == null) {
             iconSize = M3Css.nonNegativeStyleableDoubleProperty(
@@ -1101,13 +1047,11 @@ public final class M3Slider extends Control {
     /// Sets the distance between an inset icon and the track's outer edge.
     ///
     /// @param iconPadding the non-negative inset-icon padding in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setIconPadding(double iconPadding) {
         iconPaddingProperty().set(M3Css.nonNegative(iconPadding, "iconPadding"));
     }
 
-    /// Returns the inset-icon padding token property.
-    ///
-    /// @return the styleable inset-icon padding property
     public final StyleableDoubleProperty iconPaddingProperty() {
         if (iconPadding == null) {
             iconPadding = M3Css.nonNegativeStyleableDoubleProperty(
@@ -1133,15 +1077,13 @@ public final class M3Slider extends Control {
     /// Sets the distance between the handle and the value indicator.
     ///
     /// @param bottomSpace the non-negative value-indicator bottom space in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setValueIndicatorBottomSpace(double bottomSpace) {
         valueIndicatorBottomSpaceProperty().set(
                 M3Css.nonNegative(bottomSpace, "bottomSpace")
         );
     }
 
-    /// Returns the value-indicator bottom-space token property.
-    ///
-    /// @return the styleable value-indicator bottom-space property
     public final StyleableDoubleProperty valueIndicatorBottomSpaceProperty() {
         if (valueIndicatorBottomSpace == null) {
             valueIndicatorBottomSpace = M3Css.nonNegativeStyleableDoubleProperty(
@@ -1183,6 +1125,7 @@ public final class M3Slider extends Control {
     /// @param attribute  the requested accessibility attribute
     /// @param parameters the optional attribute parameters
     /// @return the attribute value, or `null` when unavailable
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -1208,6 +1151,7 @@ public final class M3Slider extends Control {
     ///
     /// @param action     the requested accessibility action
     /// @param parameters the optional action parameters
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

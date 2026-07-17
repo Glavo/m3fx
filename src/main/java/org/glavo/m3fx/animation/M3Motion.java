@@ -9,6 +9,10 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 /// Material Design 3 motion easing and duration constants for JavaFX animations.
 ///
+/// Duration constants are immutable [Duration] values. Easing constants map normalized input progress to
+/// normalized output progress and can be supplied directly to JavaFX transitions. Component code should normally
+/// consume semantic [M3MotionSpec] roles from the active theme so Standard and Expressive profiles can differ.
+///
 /// See [Material Design motion](https://m3.material.io/styles/motion/overview).
 @NotNullByDefault
 public final class M3Motion {

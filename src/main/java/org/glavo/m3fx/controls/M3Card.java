@@ -71,7 +71,7 @@ public final class M3Card extends Control {
     /// The pseudo-class applied while the card participates in a drag operation.
     private static final PseudoClass DRAGGED_PSEUDO_CLASS = PseudoClass.getPseudoClass("dragged");
 
-    // The card content node property.
+    /// The card content node property.
     private final ObjectProperty<@Nullable Node> content = new SimpleObjectProperty<>(this, "content") {
         /// Updates accessibility semantics when content changes.
         @Override
@@ -84,7 +84,7 @@ public final class M3Card extends Control {
     private final M3AccessibleFocusNotifier focusNotifier =
             new M3AccessibleFocusNotifier(this, this::accessibleFocusNode);
 
-    // The action handler property.
+    /// The action handler property.
     private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
             new SimpleObjectProperty<>(this, "onAction") {
                 /// Updates accessibility semantics when action behavior changes.
@@ -104,7 +104,7 @@ public final class M3Card extends Control {
         }
     };
 
-    // The card variant property.
+    /// The card variant property.
     private final ObjectProperty<M3CardVariant> variant = new SimpleObjectProperty<>(this, "variant", M3CardVariant.FILLED) {
         /// Updates variant style classes when the property changes.
         @Override
@@ -117,13 +117,13 @@ public final class M3Card extends Control {
         }
     };
 
-    // The styleable container shape token.
+    /// The styleable container shape token.
     private @Nullable StyleableDoubleProperty containerShape;
 
-    // The styleable content padding token.
+    /// The styleable content padding token.
     private @Nullable StyleableDoubleProperty contentPadding;
 
-    // The styleable outline width token.
+    /// The styleable outline width token.
     private @Nullable StyleableDoubleProperty outlineWidth;
 
     /// Whether focus traversal was enabled automatically because the card became actionable.
@@ -174,9 +174,6 @@ public final class M3Card extends Control {
         this.content.set(content);
     }
 
-    /// Returns the card content property.
-    ///
-    /// @return the card content property
     public final ObjectProperty<@Nullable Node> contentProperty() {
         return content;
     }
@@ -199,9 +196,6 @@ public final class M3Card extends Control {
         this.onAction.set(onAction);
     }
 
-    /// Returns the action handler property.
-    ///
-    /// @return the action handler property
     public final ObjectProperty<@Nullable EventHandler<ActionEvent>> onActionProperty() {
         return onAction;
     }
@@ -241,13 +235,11 @@ public final class M3Card extends Control {
     /// Sets the card variant.
     ///
     /// @param variant the Material card variant
+    /// @throws NullPointerException if any required argument is `null`
     public final void setVariant(M3CardVariant variant) {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
 
-    /// Returns the card variant property.
-    ///
-    /// @return the card variant property
     public final ObjectProperty<M3CardVariant> variantProperty() {
         return variant;
     }
@@ -262,13 +254,11 @@ public final class M3Card extends Control {
     /// Sets the card container shape radius token.
     ///
     /// @param containerShape the card container corner radius in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContainerShape(double containerShape) {
         containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
     }
 
-    /// Returns the card container shape radius token property.
-    ///
-    /// @return the card container shape property
     public final StyleableDoubleProperty containerShapeProperty() {
         if (containerShape == null) {
             containerShape = M3Css.nonNegativeStyleableDoubleProperty(
@@ -292,13 +282,11 @@ public final class M3Card extends Control {
     /// Sets the card content padding token.
     ///
     /// @param contentPadding the card content padding in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContentPadding(double contentPadding) {
         contentPaddingProperty().set(M3Css.nonNegative(contentPadding, "contentPadding"));
     }
 
-    /// Returns the card content padding token property.
-    ///
-    /// @return the card content padding property
     public final StyleableDoubleProperty contentPaddingProperty() {
         if (contentPadding == null) {
             contentPadding = M3Css.nonNegativeStyleableDoubleProperty(
@@ -322,13 +310,11 @@ public final class M3Card extends Control {
     /// Sets the outlined card border width token.
     ///
     /// @param outlineWidth the outlined card border width in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setOutlineWidth(double outlineWidth) {
         outlineWidthProperty().set(M3Css.nonNegative(outlineWidth, "outlineWidth"));
     }
 
-    /// Returns the outlined card border width token property.
-    ///
-    /// @return the outlined card border width property
     public final StyleableDoubleProperty outlineWidthProperty() {
         if (outlineWidth == null) {
             outlineWidth = M3Css.nonNegativeStyleableDoubleProperty(
@@ -386,6 +372,8 @@ public final class M3Card extends Control {
     }
 
     /// Executes assistive-technology actions supported by this card.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

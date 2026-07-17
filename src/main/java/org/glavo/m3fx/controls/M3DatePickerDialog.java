@@ -44,7 +44,7 @@ public final class M3DatePickerDialog extends M3Dialog<LocalDate> {
     /// The date picker displayed as dialog content.
     private final M3DatePicker picker = new M3DatePicker();
 
-    /// Internal storage for [valueProperty].
+    /// The selected date property.
     private final ObjectProperty<@Nullable LocalDate> value =
             new SimpleObjectProperty<>(this, "value") {
                 /// Validates direct writes through the picker before committing the public value.
@@ -143,9 +143,6 @@ public final class M3DatePickerDialog extends M3Dialog<LocalDate> {
         this.value.set(value);
     }
 
-    /// Returns the selected date property.
-    ///
-    /// @return the selected date property
     public final ObjectProperty<@Nullable LocalDate> valueProperty() {
         return value;
     }

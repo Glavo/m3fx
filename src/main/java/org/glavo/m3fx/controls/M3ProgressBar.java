@@ -84,28 +84,28 @@ public final class M3ProgressBar extends Control {
     private static final @Nullable AccessibleAttribute VALUE_STRING_ATTRIBUTE =
             M3Accessible.attribute("VALUE_STRING");
 
-    // The current progress value.
+    /// The current progress value.
     private @Nullable DoubleProperty progress;
 
-    // The styleable track thickness token.
+    /// The styleable track thickness token.
     private @Nullable StyleableDoubleProperty trackThickness;
 
-    // The styleable track shape token.
+    /// The styleable track shape token.
     private @Nullable StyleableDoubleProperty trackShape;
 
-    // The styleable wave amplitude token.
+    /// The styleable wave amplitude token.
     private @Nullable StyleableDoubleProperty waveAmplitude;
 
-    // The styleable wavelength token.
+    /// The styleable wavelength token.
     private @Nullable StyleableDoubleProperty wavelength;
 
-    // The styleable indeterminate wavelength token.
+    /// The styleable indeterminate wavelength token.
     private @Nullable StyleableDoubleProperty indeterminateWavelength;
 
-    // The styleable track gap token.
+    /// The styleable track gap token.
     private @Nullable StyleableDoubleProperty trackGap;
 
-    // The styleable stop indicator size token.
+    /// The styleable stop indicator size token.
     private @Nullable StyleableDoubleProperty stopSize;
 
     /// Creates an indeterminate progress bar.
@@ -135,9 +135,6 @@ public final class M3ProgressBar extends Control {
         progressProperty().set(progress);
     }
 
-    /// Returns the current progress value property.
-    ///
-    /// @return the writable progress value property
     public final DoubleProperty progressProperty() {
         if (progress == null) {
             progress = new DoublePropertyBase(INDETERMINATE_PROGRESS) {
@@ -189,13 +186,11 @@ public final class M3ProgressBar extends Control {
     /// Sets the progress track thickness token.
     ///
     /// @param trackThickness the progress track thickness in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setTrackThickness(double trackThickness) {
         trackThicknessProperty().set(M3Css.nonNegative(trackThickness, "trackThickness"));
     }
 
-    /// Returns the progress track thickness token property.
-    ///
-    /// @return the styleable progress track thickness property
     public final StyleableDoubleProperty trackThicknessProperty() {
         if (trackThickness == null) {
             trackThickness = M3Css.nonNegativeStyleableDoubleProperty(
@@ -219,13 +214,11 @@ public final class M3ProgressBar extends Control {
     /// Sets the progress track shape radius token.
     ///
     /// @param trackShape the progress track corner radius in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setTrackShape(double trackShape) {
         trackShapeProperty().set(M3Css.nonNegative(trackShape, "trackShape"));
     }
 
-    /// Returns the progress track shape radius token property.
-    ///
-    /// @return the styleable progress track shape property
     public final StyleableDoubleProperty trackShapeProperty() {
         if (trackShape == null) {
             trackShape = M3Css.nonNegativeStyleableDoubleProperty(
@@ -249,13 +242,11 @@ public final class M3ProgressBar extends Control {
     /// Sets the wavy progress amplitude token.
     ///
     /// @param waveAmplitude the wavy progress amplitude in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setWaveAmplitude(double waveAmplitude) {
         waveAmplitudeProperty().set(M3Css.nonNegative(waveAmplitude, "waveAmplitude"));
     }
 
-    /// Returns the wavy progress amplitude token property.
-    ///
-    /// @return the styleable wavy progress amplitude property
     public final StyleableDoubleProperty waveAmplitudeProperty() {
         if (waveAmplitude == null) {
             waveAmplitude = M3Css.nonNegativeStyleableDoubleProperty(
@@ -282,13 +273,11 @@ public final class M3ProgressBar extends Control {
     /// Sets the wavy progress wavelength token.
     ///
     /// @param wavelength the wavy progress wavelength in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setWavelength(double wavelength) {
         wavelengthProperty().set(M3Css.nonNegative(wavelength, "wavelength"));
     }
 
-    /// Returns the wavy progress wavelength token property.
-    ///
-    /// @return the styleable wavy progress wavelength property
     public final StyleableDoubleProperty wavelengthProperty() {
         if (wavelength == null) {
             wavelength = M3Css.nonNegativeStyleableDoubleProperty(
@@ -314,6 +303,7 @@ public final class M3ProgressBar extends Control {
     /// Sets the wavy indeterminate progress wavelength token.
     ///
     /// @param indeterminateWavelength the wavy indeterminate progress wavelength in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setIndeterminateWavelength(double indeterminateWavelength) {
         indeterminateWavelengthProperty().set(M3Css.nonNegative(
                 indeterminateWavelength,
@@ -321,9 +311,6 @@ public final class M3ProgressBar extends Control {
         ));
     }
 
-    /// Returns the wavy indeterminate progress wavelength token property.
-    ///
-    /// @return the styleable wavy indeterminate progress wavelength property
     public final StyleableDoubleProperty indeterminateWavelengthProperty() {
         if (indeterminateWavelength == null) {
             indeterminateWavelength = M3Css.nonNegativeStyleableDoubleProperty(
@@ -347,13 +334,11 @@ public final class M3ProgressBar extends Control {
     /// Sets the gap token between active progress and track.
     ///
     /// @param trackGap the gap between active progress and track in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setTrackGap(double trackGap) {
         trackGapProperty().set(M3Css.nonNegative(trackGap, "trackGap"));
     }
 
-    /// Returns the gap token property between active progress and track.
-    ///
-    /// @return the styleable active-to-track gap property
     public final StyleableDoubleProperty trackGapProperty() {
         if (trackGap == null) {
             trackGap = M3Css.nonNegativeStyleableDoubleProperty(
@@ -377,13 +362,11 @@ public final class M3ProgressBar extends Control {
     /// Sets the stop indicator size token.
     ///
     /// @param stopSize the stop indicator size in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setStopSize(double stopSize) {
         stopSizeProperty().set(M3Css.nonNegative(stopSize, "stopSize"));
     }
 
-    /// Returns the stop indicator size token property.
-    ///
-    /// @return the styleable stop indicator size property
     public final StyleableDoubleProperty stopSizeProperty() {
         if (stopSize == null) {
             stopSize = M3Css.nonNegativeStyleableDoubleProperty(
@@ -423,6 +406,7 @@ public final class M3ProgressBar extends Control {
     /// @param attribute the requested accessibility attribute
     /// @param parameters optional attribute-specific parameters
     /// @return the requested accessibility value, or `null` when no value is available
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");

@@ -9,6 +9,9 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 /// A non-interactive Material Design 3 menu section header.
 ///
+/// A section header labels the menu actions that follow it. It is structural content rather than a selectable
+/// [M3MenuItem], cannot be selected by [M3Menu#selectIndex], and is not focus traversable.
+///
 /// See [Material Design menus](https://m3.material.io/components/menus/overview).
 @NotNullByDefault
 public final class M3MenuSectionHeader extends M3Text {

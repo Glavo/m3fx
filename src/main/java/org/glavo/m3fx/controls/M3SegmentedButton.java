@@ -54,16 +54,16 @@ public final class M3SegmentedButton extends ButtonBase {
     /// The default horizontal content padding.
     private static final double DEFAULT_HORIZONTAL_PADDING = 12.0;
 
-    // Backing property for the public container height token API.
+    /// Backing property for the public container height token API.
     private @Nullable StyleableDoubleProperty containerHeight;
 
-    // Backing property for the public container shape token API.
+    /// Backing property for the public container shape token API.
     private @Nullable StyleableDoubleProperty containerShape;
 
-    // Backing property for the public horizontal padding token API.
+    /// Backing property for the public horizontal padding token API.
     private @Nullable StyleableDoubleProperty horizontalPadding;
 
-    // Backing property for the public selected state API.
+    /// Backing property for the public selected state API.
     private final BooleanProperty selected = new SimpleBooleanProperty(this, "selected") {
         /// Updates selected pseudo-class state.
         @Override
@@ -110,9 +110,6 @@ public final class M3SegmentedButton extends ButtonBase {
         this.selected.set(selected);
     }
 
-    /// Returns the selected state property.
-    ///
-    /// @return the selected state property
     public final BooleanProperty selectedProperty() {
         return selected;
     }
@@ -127,13 +124,11 @@ public final class M3SegmentedButton extends ButtonBase {
     /// Sets the preferred container height token.
     ///
     /// @param containerHeight the preferred container height token in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContainerHeight(double containerHeight) {
         containerHeightProperty().set(M3Css.nonNegative(containerHeight, "containerHeight"));
     }
 
-    /// Returns the preferred container height token property.
-    ///
-    /// @return the preferred container height token property
     public final StyleableDoubleProperty containerHeightProperty() {
         if (containerHeight == null) {
             containerHeight = M3Css.nonNegativeStyleableDoubleProperty(
@@ -157,13 +152,11 @@ public final class M3SegmentedButton extends ButtonBase {
     /// Sets the container shape radius token.
     ///
     /// @param containerShape the container shape radius token in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContainerShape(double containerShape) {
         containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
     }
 
-    /// Returns the container shape radius token property.
-    ///
-    /// @return the container shape radius token property
     public final StyleableDoubleProperty containerShapeProperty() {
         if (containerShape == null) {
             containerShape = M3Css.nonNegativeStyleableDoubleProperty(
@@ -187,13 +180,11 @@ public final class M3SegmentedButton extends ButtonBase {
     /// Sets the horizontal content padding token.
     ///
     /// @param horizontalPadding the horizontal content padding token in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setHorizontalPadding(double horizontalPadding) {
         horizontalPaddingProperty().set(M3Css.nonNegative(horizontalPadding, "horizontalPadding"));
     }
 
-    /// Returns the horizontal content padding token property.
-    ///
-    /// @return the horizontal content padding token property
     public final StyleableDoubleProperty horizontalPaddingProperty() {
         if (horizontalPadding == null) {
             horizontalPadding = M3Css.nonNegativeStyleableDoubleProperty(
@@ -227,6 +218,7 @@ public final class M3SegmentedButton extends ButtonBase {
     /// @param attribute the requested accessibility attribute
     /// @param parameters the optional attribute parameters
     /// @return the attribute value, or `null` when unavailable
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");

@@ -39,6 +39,8 @@ public sealed interface M3MotionSpec permits M3MotionSpecImpl {
     /// @param duration the animation duration
     /// @param easing the named easing curve
     /// @return an immutable motion spec
+    /// @throws NullPointerException if `duration` or `easing` is `null`
+    /// @throws IllegalArgumentException if `duration` is negative, indefinite, or unknown
     static M3MotionSpec of(Duration duration, M3MotionEasing easing) {
         return new M3MotionSpecImpl(duration, easing);
     }

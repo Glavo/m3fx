@@ -8,7 +8,11 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.Objects;
 
-/// Builds immutable [M3TypographyTokens] by replacing named token values.
+/// Builds immutable [M3TypographyTokens] by replacing named semantic text styles.
+///
+/// A builder starts from a complete token set, rejects `null` replacements, and can be reused after [build].
+///
+/// See [Material Design typography](https://m3.material.io/styles/typography/overview).
 @NotNullByDefault
 public final class M3TypographyTokensBuilder {
     /// The current displayLarge token value.
@@ -82,6 +86,7 @@ public final class M3TypographyTokensBuilder {
     ///
     /// @param displayLarge the replacement value
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3TypographyTokensBuilder displayLarge(M3TextStyle displayLarge) {
         this.displayLarge = Objects.requireNonNull(displayLarge, "displayLarge");
         return this;
@@ -91,6 +96,7 @@ public final class M3TypographyTokensBuilder {
     ///
     /// @param displayMedium the replacement value
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3TypographyTokensBuilder displayMedium(M3TextStyle displayMedium) {
         this.displayMedium = Objects.requireNonNull(displayMedium, "displayMedium");
         return this;
@@ -100,6 +106,7 @@ public final class M3TypographyTokensBuilder {
     ///
     /// @param displaySmall the replacement value
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3TypographyTokensBuilder displaySmall(M3TextStyle displaySmall) {
         this.displaySmall = Objects.requireNonNull(displaySmall, "displaySmall");
         return this;
@@ -109,6 +116,7 @@ public final class M3TypographyTokensBuilder {
     ///
     /// @param headlineLarge the replacement value
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3TypographyTokensBuilder headlineLarge(M3TextStyle headlineLarge) {
         this.headlineLarge = Objects.requireNonNull(headlineLarge, "headlineLarge");
         return this;
@@ -118,6 +126,7 @@ public final class M3TypographyTokensBuilder {
     ///
     /// @param headlineMedium the replacement value
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3TypographyTokensBuilder headlineMedium(M3TextStyle headlineMedium) {
         this.headlineMedium = Objects.requireNonNull(headlineMedium, "headlineMedium");
         return this;
@@ -127,6 +136,7 @@ public final class M3TypographyTokensBuilder {
     ///
     /// @param headlineSmall the replacement value
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3TypographyTokensBuilder headlineSmall(M3TextStyle headlineSmall) {
         this.headlineSmall = Objects.requireNonNull(headlineSmall, "headlineSmall");
         return this;
@@ -136,6 +146,7 @@ public final class M3TypographyTokensBuilder {
     ///
     /// @param titleLarge the replacement value
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3TypographyTokensBuilder titleLarge(M3TextStyle titleLarge) {
         this.titleLarge = Objects.requireNonNull(titleLarge, "titleLarge");
         return this;
@@ -145,6 +156,7 @@ public final class M3TypographyTokensBuilder {
     ///
     /// @param titleMedium the replacement value
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3TypographyTokensBuilder titleMedium(M3TextStyle titleMedium) {
         this.titleMedium = Objects.requireNonNull(titleMedium, "titleMedium");
         return this;
@@ -154,6 +166,7 @@ public final class M3TypographyTokensBuilder {
     ///
     /// @param titleSmall the replacement value
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3TypographyTokensBuilder titleSmall(M3TextStyle titleSmall) {
         this.titleSmall = Objects.requireNonNull(titleSmall, "titleSmall");
         return this;
@@ -163,6 +176,7 @@ public final class M3TypographyTokensBuilder {
     ///
     /// @param labelLarge the replacement value
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3TypographyTokensBuilder labelLarge(M3TextStyle labelLarge) {
         this.labelLarge = Objects.requireNonNull(labelLarge, "labelLarge");
         return this;
@@ -172,6 +186,7 @@ public final class M3TypographyTokensBuilder {
     ///
     /// @param labelMedium the replacement value
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3TypographyTokensBuilder labelMedium(M3TextStyle labelMedium) {
         this.labelMedium = Objects.requireNonNull(labelMedium, "labelMedium");
         return this;
@@ -181,6 +196,7 @@ public final class M3TypographyTokensBuilder {
     ///
     /// @param labelSmall the replacement value
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3TypographyTokensBuilder labelSmall(M3TextStyle labelSmall) {
         this.labelSmall = Objects.requireNonNull(labelSmall, "labelSmall");
         return this;
@@ -190,6 +206,7 @@ public final class M3TypographyTokensBuilder {
     ///
     /// @param bodyLarge the replacement value
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3TypographyTokensBuilder bodyLarge(M3TextStyle bodyLarge) {
         this.bodyLarge = Objects.requireNonNull(bodyLarge, "bodyLarge");
         return this;
@@ -199,6 +216,7 @@ public final class M3TypographyTokensBuilder {
     ///
     /// @param bodyMedium the replacement value
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3TypographyTokensBuilder bodyMedium(M3TextStyle bodyMedium) {
         this.bodyMedium = Objects.requireNonNull(bodyMedium, "bodyMedium");
         return this;
@@ -208,6 +226,7 @@ public final class M3TypographyTokensBuilder {
     ///
     /// @param bodySmall the replacement value
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3TypographyTokensBuilder bodySmall(M3TextStyle bodySmall) {
         this.bodySmall = Objects.requireNonNull(bodySmall, "bodySmall");
         return this;
@@ -236,4 +255,3 @@ public final class M3TypographyTokensBuilder {
         );
     }
 }
-

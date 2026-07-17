@@ -105,10 +105,10 @@ public final class M3ListView<T> extends Control {
                 }
             };
 
-    /// The styleable gap between adjacent virtualized items.
+    /// The styleable item spacing property.
     private @Nullable StyleableDoubleProperty itemSpacing;
 
-    // The factory used to create reusable virtualized cells.
+    /// The factory used to create reusable virtualized cells.
     private final ObjectProperty<Callback<M3ListView<T>, M3ListCell<T>>> cellFactory =
             new SimpleObjectProperty<>(this, "cellFactory", M3ListCell::new) {
                 /// Rejects null factories installed through binding or direct property mutation.
@@ -120,7 +120,7 @@ public final class M3ListView<T> extends Control {
                 }
             };
 
-    // The selection mode used by this virtualized list.
+    /// The selection mode used by this virtualized list.
     private final ObjectProperty<M3SelectionMode> selectionMode =
             new SimpleObjectProperty<>(this, "selectionMode", M3SelectionMode.NONE) {
                 /// Enforces selection invariants when the mode changes.
@@ -134,7 +134,7 @@ public final class M3ListView<T> extends Control {
                 }
             };
 
-    // Whether this list view allows all selectable items to be unselected.
+    /// Whether this list view allows all selectable items to be unselected.
     private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection", true) {
         /// Restores a selected item when empty selection is disabled.
         @Override
@@ -145,7 +145,7 @@ public final class M3ListView<T> extends Control {
         }
     };
 
-    // The fixed cell size hint forwarded to the virtual flow.
+    /// The fixed cell size hint forwarded to the virtual flow.
     private final DoubleProperty fixedCellSize =
             new SimpleDoubleProperty(this, "fixedCellSize", DEFAULT_FIXED_CELL_SIZE) {
                 /// Validates updated fixed cell size values.
@@ -155,7 +155,7 @@ public final class M3ListView<T> extends Control {
                 }
             };
 
-    // Whether focus and programmatic scrolling animate the virtual flow position.
+    /// Whether focus and programmatic scrolling animate the virtual flow position.
     private final BooleanProperty animatedScroll = new SimpleBooleanProperty(this, "animatedScroll", true);
 
     /// The selected indices in ascending order.
@@ -178,17 +178,17 @@ public final class M3ListView<T> extends Control {
     private final @UnmodifiableView ObservableList<T> selectedItemsView =
             FXCollections.unmodifiableObservableList(selectedItems);
 
-    // The first selected index, or `-1` when selection is empty.
+    /// The first selected index, or `-1` when selection is empty.
     private final ReadOnlyIntegerWrapper selectedIndex = new ReadOnlyIntegerWrapper(this, "selectedIndex", -1);
 
-    // The first selected item, or `null` when selection is empty.
+    /// The first selected item, or `null` when selection is empty.
     private final ReadOnlyObjectWrapper<@Nullable T> selectedItem =
             new ReadOnlyObjectWrapper<>(this, "selectedItem");
 
-    // The keyboard-focused data index, or `-1` when no row has list focus.
+    /// The keyboard-focused data index, or `-1` when no row has list focus.
     private final ReadOnlyIntegerWrapper focusedIndex = new ReadOnlyIntegerWrapper(this, "focusedIndex", -1);
 
-    // The keyboard-focused data item, or `null` when no row has list focus.
+    /// The keyboard-focused data item, or `null` when no row has list focus.
     private final ReadOnlyObjectWrapper<@Nullable T> focusedItem =
             new ReadOnlyObjectWrapper<>(this, "focusedItem");
 
@@ -251,13 +251,11 @@ public final class M3ListView<T> extends Control {
     /// Sets the list containment style.
     ///
     /// @param listStyle the standard or segmented list style
+    /// @throws NullPointerException if any required argument is `null`
     public final void setListStyle(M3ListStyle listStyle) {
         this.listStyle.set(Objects.requireNonNull(listStyle, "listStyle"));
     }
 
-    /// Returns the list containment style property.
-    ///
-    /// @return the writable list style property
     public final ObjectProperty<M3ListStyle> listStyleProperty() {
         return listStyle;
     }
@@ -277,13 +275,11 @@ public final class M3ListView<T> extends Control {
     /// augments the virtual-flow stride without reducing the rendered item height.
     ///
     /// @param itemSpacing the non-negative item spacing in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setItemSpacing(double itemSpacing) {
         itemSpacingProperty().set(M3Css.nonNegative(itemSpacing, "itemSpacing"));
     }
 
-    /// Returns the styleable item spacing property.
-    ///
-    /// @return the writable item spacing property
     public final StyleableDoubleProperty itemSpacingProperty() {
         if (itemSpacing == null) {
             itemSpacing = M3Css.nonNegativeStyleableDoubleProperty(
@@ -310,13 +306,11 @@ public final class M3ListView<T> extends Control {
     /// reuse its row content when [M3ListCell#updateItem(Object, boolean)] is called.
     ///
     /// @param cellFactory the non-null cell factory
+    /// @throws NullPointerException if any required argument is `null`
     public final void setCellFactory(Callback<M3ListView<T>, M3ListCell<T>> cellFactory) {
         this.cellFactory.set(Objects.requireNonNull(cellFactory, "cellFactory"));
     }
 
-    /// Returns the reusable cell factory property.
-    ///
-    /// @return the writable cell factory property
     public final ObjectProperty<Callback<M3ListView<T>, M3ListCell<T>>> cellFactoryProperty() {
         return cellFactory;
     }
@@ -331,13 +325,11 @@ public final class M3ListView<T> extends Control {
     /// Sets the list item selection mode.
     ///
     /// @param selectionMode the active selection mode
+    /// @throws NullPointerException if any required argument is `null`
     public final void setSelectionMode(M3SelectionMode selectionMode) {
         this.selectionMode.set(Objects.requireNonNull(selectionMode, "selectionMode"));
     }
 
-    /// Returns the list item selection mode property.
-    ///
-    /// @return the writable selection mode property
     public final ObjectProperty<M3SelectionMode> selectionModeProperty() {
         return selectionMode;
     }
@@ -356,9 +348,6 @@ public final class M3ListView<T> extends Control {
         this.allowEmptySelection.set(allowEmptySelection);
     }
 
-    /// Returns the empty-selection policy property.
-    ///
-    /// @return the writable empty-selection policy property
     public final BooleanProperty allowEmptySelectionProperty() {
         return allowEmptySelection;
     }
@@ -377,13 +366,11 @@ public final class M3ListView<T> extends Control {
     /// [getItemSpacing()] is added to the flow stride independently and is not included in this value.
     ///
     /// @param fixedCellSize the fixed item height in pixels, or `0` to allow variable item heights
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setFixedCellSize(double fixedCellSize) {
         this.fixedCellSize.set(M3Css.nonNegative(fixedCellSize, "fixedCellSize"));
     }
 
-    /// Returns the fixed cell size property.
-    ///
-    /// @return the writable fixed cell size property
     public final DoubleProperty fixedCellSizeProperty() {
         return fixedCellSize;
     }
@@ -402,9 +389,6 @@ public final class M3ListView<T> extends Control {
         this.animatedScroll.set(animatedScroll);
     }
 
-    /// Returns the animated virtual flow scrolling property.
-    ///
-    /// @return the writable animated scrolling property
     public final BooleanProperty animatedScrollProperty() {
         return animatedScroll;
     }
@@ -430,9 +414,6 @@ public final class M3ListView<T> extends Control {
         return selectedIndex.get();
     }
 
-    /// Returns the first selected index property.
-    ///
-    /// @return the read-only first selected index property
     public final ReadOnlyIntegerProperty selectedIndexProperty() {
         return selectedIndex.getReadOnlyProperty();
     }
@@ -444,9 +425,6 @@ public final class M3ListView<T> extends Control {
         return selectedItem.get();
     }
 
-    /// Returns the first selected item property.
-    ///
-    /// @return the read-only first selected item property
     public final ReadOnlyObjectProperty<@Nullable T> selectedItemProperty() {
         return selectedItem.getReadOnlyProperty();
     }
@@ -458,9 +436,6 @@ public final class M3ListView<T> extends Control {
         return focusedIndex.get();
     }
 
-    /// Returns the keyboard-focused data index property.
-    ///
-    /// @return the read-only keyboard-focused data index property
     public final ReadOnlyIntegerProperty focusedIndexProperty() {
         return focusedIndex.getReadOnlyProperty();
     }
@@ -472,9 +447,6 @@ public final class M3ListView<T> extends Control {
         return focusedItem.get();
     }
 
-    /// Returns the keyboard-focused data item property.
-    ///
-    /// @return the read-only keyboard-focused data item property
     public final ReadOnlyObjectProperty<@Nullable T> focusedItemProperty() {
         return focusedItem.getReadOnlyProperty();
     }
@@ -513,6 +485,7 @@ public final class M3ListView<T> extends Control {
     /// Selects the first item equal to the supplied value.
     ///
     /// @param item the non-null data item to select
+    /// @throws NullPointerException if any required argument is `null`
     public final void selectItem(T item) {
         Objects.requireNonNull(item, "item");
         int index = getItems().indexOf(item);
@@ -707,6 +680,7 @@ public final class M3ListView<T> extends Control {
     /// @param attribute the requested accessibility attribute
     /// @param parameters optional attribute-specific parameters
     /// @return the requested accessibility value, or `null` when no value is available
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -724,6 +698,7 @@ public final class M3ListView<T> extends Control {
     ///
     /// @param action the accessibility action to execute
     /// @param parameters optional action-specific parameters
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

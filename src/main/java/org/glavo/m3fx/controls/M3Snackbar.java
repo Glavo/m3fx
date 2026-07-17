@@ -74,13 +74,13 @@ public final class M3Snackbar extends Control {
 
     /// The default snackbar action button container height.
     private static final double DEFAULT_ACTION_CONTAINER_HEIGHT = 32.0;
-    /// Backing property for the public snackbar message text API.
+    /// The snackbar message text property.
     private final StringProperty text = new SimpleStringProperty(this, "text", "");
 
-    /// Backing property for the public action button text API.
+    /// The action button text property.
     private final StringProperty actionText = new SimpleStringProperty(this, "actionText", "");
 
-    /// Backing property for the public action handler API.
+    /// The action event handler property.
     private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
             new SimpleObjectProperty<>(this, "onAction") {
                 /// Updates the registered action event handler.
@@ -90,29 +90,29 @@ public final class M3Snackbar extends Control {
                 }
             };
 
-    /// Whether the optional close affordance is shown.
+    /// The close-affordance visibility property.
     private final BooleanProperty closeButtonVisible =
             new SimpleBooleanProperty(this, "closeButtonVisible");
 
-    /// Backing property for the public container shape token API.
+    /// The snackbar container shape radius token property.
     private @Nullable StyleableDoubleProperty containerShape;
 
-    // Backing property for the public content padding token API.
+    /// Backing property for the public content padding token API.
     private @Nullable StyleableDoubleProperty contentPadding;
 
-    // Backing property for the public minimum container width token API.
+    /// Backing property for the public minimum container width token API.
     private @Nullable StyleableDoubleProperty containerMinWidth;
 
-    // Backing property for the public maximum container width token API.
+    /// Backing property for the public maximum container width token API.
     private @Nullable StyleableDoubleProperty containerMaxWidth;
 
-    // Backing property for the public single-line container height token API.
+    /// Backing property for the public single-line container height token API.
     private @Nullable StyleableDoubleProperty singleLineContainerHeight;
 
-    // Backing property for the public two-line container height token API.
+    /// Backing property for the public two-line container height token API.
     private @Nullable StyleableDoubleProperty twoLineContainerHeight;
 
-    // Backing property for the public action button container height token API.
+    /// Backing property for the public action button container height token API.
     private @Nullable StyleableDoubleProperty actionContainerHeight;
 
     /// Creates an empty snackbar.
@@ -161,13 +161,11 @@ public final class M3Snackbar extends Control {
     /// Sets the snackbar message text.
     ///
     /// @param text the snackbar message text
+    /// @throws NullPointerException if any required argument is `null`
     public final void setText(String text) {
         this.text.set(Objects.requireNonNull(text, "text"));
     }
 
-    /// Returns the snackbar message text property.
-    ///
-    /// @return the snackbar message text property
     public final StringProperty textProperty() {
         return text;
     }
@@ -182,13 +180,11 @@ public final class M3Snackbar extends Control {
     /// Sets the action button text.
     ///
     /// @param actionText the action button text
+    /// @throws NullPointerException if any required argument is `null`
     public final void setActionText(String actionText) {
         this.actionText.set(Objects.requireNonNull(actionText, "actionText"));
     }
 
-    /// Returns the action button text property.
-    ///
-    /// @return the action button text property
     public final StringProperty actionTextProperty() {
         return actionText;
     }
@@ -207,9 +203,6 @@ public final class M3Snackbar extends Control {
         this.onAction.set(onAction);
     }
 
-    /// Returns the action event handler property.
-    ///
-    /// @return the action event handler property
     public final ObjectProperty<@Nullable EventHandler<ActionEvent>> onActionProperty() {
         return onAction;
     }
@@ -238,9 +231,6 @@ public final class M3Snackbar extends Control {
         this.closeButtonVisible.set(closeButtonVisible);
     }
 
-    /// Returns the close-affordance visibility property.
-    ///
-    /// @return the close-affordance visibility property
     public final BooleanProperty closeButtonVisibleProperty() {
         return closeButtonVisible;
     }
@@ -264,6 +254,7 @@ public final class M3Snackbar extends Control {
     /// @param attribute the requested accessibility attribute
     /// @param parameters the optional attribute parameters
     /// @return the attribute value, or `null` when unavailable
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -280,6 +271,7 @@ public final class M3Snackbar extends Control {
     ///
     /// @param action the requested accessibility action
     /// @param parameters the optional action parameters
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
@@ -306,13 +298,11 @@ public final class M3Snackbar extends Control {
     /// Sets the snackbar container shape radius token.
     ///
     /// @param containerShape the snackbar container shape radius token in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContainerShape(double containerShape) {
         containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
     }
 
-    /// Returns the snackbar container shape radius token property.
-    ///
-    /// @return the snackbar container shape radius token property
     public final StyleableDoubleProperty containerShapeProperty() {
         if (containerShape == null) {
             containerShape = M3Css.nonNegativeStyleableDoubleProperty(
@@ -336,13 +326,11 @@ public final class M3Snackbar extends Control {
     /// Sets the snackbar content padding token.
     ///
     /// @param contentPadding the snackbar content padding token in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContentPadding(double contentPadding) {
         contentPaddingProperty().set(M3Css.nonNegative(contentPadding, "contentPadding"));
     }
 
-    /// Returns the snackbar content padding token property.
-    ///
-    /// @return the snackbar content padding token property
     public final StyleableDoubleProperty contentPaddingProperty() {
         if (contentPadding == null) {
             contentPadding = M3Css.nonNegativeStyleableDoubleProperty(
@@ -366,13 +354,11 @@ public final class M3Snackbar extends Control {
     /// Sets the minimum snackbar container width token.
     ///
     /// @param containerMinWidth the minimum snackbar container width token in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContainerMinWidth(double containerMinWidth) {
         containerMinWidthProperty().set(M3Css.nonNegative(containerMinWidth, "containerMinWidth"));
     }
 
-    /// Returns the minimum snackbar container width token property.
-    ///
-    /// @return the minimum snackbar container width token property
     public final StyleableDoubleProperty containerMinWidthProperty() {
         if (containerMinWidth == null) {
             containerMinWidth = M3Css.nonNegativeStyleableDoubleProperty(
@@ -396,13 +382,11 @@ public final class M3Snackbar extends Control {
     /// Sets the maximum snackbar container width token.
     ///
     /// @param containerMaxWidth the maximum snackbar container width token in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContainerMaxWidth(double containerMaxWidth) {
         containerMaxWidthProperty().set(M3Css.nonNegative(containerMaxWidth, "containerMaxWidth"));
     }
 
-    /// Returns the maximum snackbar container width token property.
-    ///
-    /// @return the maximum snackbar container width token property
     public final StyleableDoubleProperty containerMaxWidthProperty() {
         if (containerMaxWidth == null) {
             containerMaxWidth = M3Css.nonNegativeStyleableDoubleProperty(
@@ -428,6 +412,7 @@ public final class M3Snackbar extends Control {
     /// Sets the single-line snackbar container height token.
     ///
     /// @param singleLineContainerHeight the single-line snackbar container height token in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setSingleLineContainerHeight(double singleLineContainerHeight) {
         singleLineContainerHeightProperty().set(M3Css.nonNegative(
                 singleLineContainerHeight,
@@ -435,9 +420,6 @@ public final class M3Snackbar extends Control {
         ));
     }
 
-    /// Returns the single-line snackbar container height token property.
-    ///
-    /// @return the single-line snackbar container height token property
     public final StyleableDoubleProperty singleLineContainerHeightProperty() {
         if (singleLineContainerHeight == null) {
             singleLineContainerHeight = M3Css.nonNegativeStyleableDoubleProperty(
@@ -463,6 +445,7 @@ public final class M3Snackbar extends Control {
     /// Sets the two-line snackbar container height token.
     ///
     /// @param twoLineContainerHeight the two-line snackbar container height token in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setTwoLineContainerHeight(double twoLineContainerHeight) {
         twoLineContainerHeightProperty().set(M3Css.nonNegative(
                 twoLineContainerHeight,
@@ -470,9 +453,6 @@ public final class M3Snackbar extends Control {
         ));
     }
 
-    /// Returns the two-line snackbar container height token property.
-    ///
-    /// @return the two-line snackbar container height token property
     public final StyleableDoubleProperty twoLineContainerHeightProperty() {
         if (twoLineContainerHeight == null) {
             twoLineContainerHeight = M3Css.nonNegativeStyleableDoubleProperty(
@@ -496,13 +476,11 @@ public final class M3Snackbar extends Control {
     /// Sets the action button container height token.
     ///
     /// @param actionContainerHeight the action button container height token in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setActionContainerHeight(double actionContainerHeight) {
         actionContainerHeightProperty().set(M3Css.nonNegative(actionContainerHeight, "actionContainerHeight"));
     }
 
-    /// Returns the action button container height token property.
-    ///
-    /// @return the action button container height token property
     public final StyleableDoubleProperty actionContainerHeightProperty() {
         if (actionContainerHeight == null) {
             actionContainerHeight = M3Css.nonNegativeStyleableDoubleProperty(

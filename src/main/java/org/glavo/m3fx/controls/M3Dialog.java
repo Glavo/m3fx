@@ -54,7 +54,7 @@ public class M3Dialog<R> extends Dialog<R> {
     private static final String THEME_STYLESHEET_PROPERTY_KEY =
             M3Dialog.class.getName() + ".themeStylesheet";
 
-    // The explicit theme applied directly to the dialog pane.
+    /// The explicit theme applied directly to the dialog pane.
     private final ObjectProperty<@Nullable M3Theme> theme = new SimpleObjectProperty<>(this, "theme") {
         /// Applies theme declarations to the Material dialog pane.
         @Override
@@ -162,6 +162,7 @@ public class M3Dialog<R> extends Dialog<R> {
     /// Creates a Material Design 3 dialog with a title.
     ///
     /// @param title the dialog window title
+    /// @throws NullPointerException if any required argument is `null`
     public M3Dialog(String title) {
         this();
         setTitle(Objects.requireNonNull(title, "title"));
@@ -173,6 +174,7 @@ public class M3Dialog<R> extends Dialog<R> {
     /// @param headerText the dialog pane header text
     /// @param contentText the dialog pane content text
     /// @param buttonTypes the button types installed in the dialog pane
+    /// @throws NullPointerException if any required argument is `null`
     public M3Dialog(
             String title,
             String headerText,
@@ -220,9 +222,6 @@ public class M3Dialog<R> extends Dialog<R> {
         this.theme.set(theme);
     }
 
-    /// Returns the explicit theme property.
-    ///
-    /// @return the explicit theme property
     public final ObjectProperty<@Nullable M3Theme> themeProperty() {
         return theme;
     }
@@ -233,6 +232,7 @@ public class M3Dialog<R> extends Dialog<R> {
     /// the node is already attached to a window, the JavaFX window owner is initialized from the node scene.
     ///
     /// @param owner the node that owns this dialog
+    /// @throws NullPointerException if any required argument is `null`
     public final void initOwner(Node owner) {
         @Nullable Node previousOwnerNode = ownerNode;
         if (observingInheritedThemeContext && previousOwnerNode != null) {

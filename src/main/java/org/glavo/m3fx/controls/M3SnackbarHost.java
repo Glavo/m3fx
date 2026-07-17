@@ -60,7 +60,7 @@ public final class M3SnackbarHost extends Control {
     /// The initial vertical offset used by snackbar entrance and exit motion.
     private static final double TRANSITION_OFFSET_Y = 16.0;
 
-    // Backing property for the public read-only current snackbar API.
+    /// Backing property for the public read-only current snackbar API.
     private final ReadOnlyObjectWrapper<@Nullable M3Snackbar> snackbar =
             new ReadOnlyObjectWrapper<>(this, "snackbar");
 
@@ -71,7 +71,7 @@ public final class M3SnackbarHost extends Control {
     private final @UnmodifiableView ObservableList<M3Snackbar> queueView =
             FXCollections.unmodifiableObservableList(queue);
 
-    // Backing property for the public display duration API.
+    /// Backing property for the public display duration API.
     private final ObjectProperty<@Nullable Duration> displayDuration =
             new SimpleObjectProperty<>(this, "displayDuration") {
                 /// Keeps explicit display durations non-negative.
@@ -86,7 +86,7 @@ public final class M3SnackbarHost extends Control {
                 }
             };
 
-    // Backing property for the public read-only showing state API.
+    /// Backing property for the public read-only showing state API.
     private final ReadOnlyBooleanWrapper showing = new ReadOnlyBooleanWrapper(this, "showing");
 
     /// The automatic dismissal timer.
@@ -145,9 +145,6 @@ public final class M3SnackbarHost extends Control {
         return snackbar.get();
     }
 
-    /// Returns the currently hosted snackbar property.
-    ///
-    /// @return the read-only currently hosted snackbar property
     public final ReadOnlyObjectProperty<@Nullable M3Snackbar> snackbarProperty() {
         return snackbar.getReadOnlyProperty();
     }
@@ -159,9 +156,6 @@ public final class M3SnackbarHost extends Control {
         return showing.get();
     }
 
-    /// Returns the read-only showing state property.
-    ///
-    /// @return the read-only showing state property
     public final ReadOnlyBooleanProperty showingProperty() {
         return showing.getReadOnlyProperty();
     }
@@ -193,17 +187,11 @@ public final class M3SnackbarHost extends Control {
     /// defaults.
     ///
     /// @param displayDuration the display duration before automatic dismissal
+    /// @throws NullPointerException if any required argument is `null`
     public final void setDisplayDuration(Duration displayDuration) {
         this.displayDuration.set(Objects.requireNonNull(displayDuration, "displayDuration"));
     }
 
-    /// Returns the display duration property.
-    ///
-    /// The duration applies only to snackbars without an action or close affordance. A null value resolves from the
-    /// active [org.glavo.m3fx.animation.M3MotionBehavior]. A zero, unknown, or indefinite duration disables automatic
-    /// dismissal.
-    ///
-    /// @return the display duration property
     public final ObjectProperty<@Nullable Duration> displayDurationProperty() {
         return displayDuration;
     }
@@ -211,6 +199,7 @@ public final class M3SnackbarHost extends Control {
     /// Adds the supplied snackbar to the end of the display queue.
     ///
     /// @param snackbar the snackbar to enqueue
+    /// @throws NullPointerException if any required argument is `null`
     public final void enqueue(M3Snackbar snackbar) {
         Objects.requireNonNull(snackbar, "snackbar");
         if (getSnackbar() == null && !showing.get()) {
@@ -313,6 +302,7 @@ public final class M3SnackbarHost extends Control {
     /// @param attribute the requested accessibility attribute
     /// @param parameters the optional attribute parameters
     /// @return the attribute value, or `null` when unavailable
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -331,6 +321,7 @@ public final class M3SnackbarHost extends Control {
     ///
     /// @param action the requested accessibility action
     /// @param parameters the optional action parameters
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

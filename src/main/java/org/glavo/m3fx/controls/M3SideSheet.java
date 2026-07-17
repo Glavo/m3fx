@@ -77,7 +77,7 @@ public final class M3SideSheet extends Control {
     /// The sheet headline property.
     private final StringProperty headline = new SimpleStringProperty(this, "headline", "");
 
-    /// The sheet content property.
+    /// The sheet content node property.
     private final ObjectProperty<@Nullable Node> content = new SimpleObjectProperty<>(this, "content");
 
     /// The sheet variant property.
@@ -95,7 +95,7 @@ public final class M3SideSheet extends Control {
                 }
             };
 
-    /// The shown state property.
+    /// The shown property.
     private final BooleanProperty shown = new SimpleBooleanProperty(this, "shown", true) {
         /// Updates the sheet visibility when the property changes.
         @Override
@@ -184,13 +184,11 @@ public final class M3SideSheet extends Control {
     /// Sets the sheet headline.
     ///
     /// @param headline the sheet headline text
+    /// @throws NullPointerException if any required argument is `null`
     public final void setHeadline(String headline) {
         this.headline.set(Objects.requireNonNull(headline, "headline"));
     }
 
-    /// Returns the sheet headline property.
-    ///
-    /// @return the sheet headline property
     public final StringProperty headlineProperty() {
         return headline;
     }
@@ -209,9 +207,6 @@ public final class M3SideSheet extends Control {
         this.content.set(content);
     }
 
-    /// Returns the sheet content node property.
-    ///
-    /// @return the sheet content node property
     public final ObjectProperty<@Nullable Node> contentProperty() {
         return content;
     }
@@ -226,13 +221,11 @@ public final class M3SideSheet extends Control {
     /// Sets the sheet variant.
     ///
     /// @param variant the sheet variant
+    /// @throws NullPointerException if any required argument is `null`
     public final void setVariant(M3SheetVariant variant) {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
 
-    /// Returns the sheet variant property.
-    ///
-    /// @return the sheet variant property
     public final ObjectProperty<M3SheetVariant> variantProperty() {
         return variant;
     }
@@ -251,9 +244,6 @@ public final class M3SideSheet extends Control {
         this.shown.set(shown);
     }
 
-    /// Returns the shown property.
-    ///
-    /// @return the shown property
     public final BooleanProperty shownProperty() {
         return shown;
     }
@@ -272,9 +262,6 @@ public final class M3SideSheet extends Control {
         this.restoreFocusOnHide.set(restoreFocusOnHide);
     }
 
-    /// Returns the focus restoration property.
-    ///
-    /// @return the focus restoration property
     public final BooleanProperty restoreFocusOnHideProperty() {
         return restoreFocusOnHide;
     }
@@ -347,6 +334,7 @@ public final class M3SideSheet extends Control {
     /// @param attribute the requested accessibility attribute
     /// @param parameters the optional attribute parameters
     /// @return the attribute value, or `null` when unavailable
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -365,6 +353,7 @@ public final class M3SideSheet extends Control {
     ///
     /// @param action the requested accessibility action
     /// @param parameters the optional action parameters
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

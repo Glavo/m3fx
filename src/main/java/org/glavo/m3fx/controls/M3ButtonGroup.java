@@ -95,7 +95,7 @@ public final class M3ButtonGroup extends Control {
     private final M3AccessibleFocusNotifier focusNotifier =
             new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(this, getItems()));
 
-    // The button group visual variant property.
+    /// The button group visual variant property.
     private final ObjectProperty<M3ButtonGroupVariant> variant =
             new SimpleObjectProperty<>(this, "variant", DEFAULT_VARIANT) {
                 /// Updates variant style classes when the property changes.
@@ -111,7 +111,7 @@ public final class M3ButtonGroup extends Control {
                 }
             };
 
-    // The button group size property.
+    /// The button group size property.
     private final ObjectProperty<M3ButtonSize> size =
             new SimpleObjectProperty<>(this, "size", DEFAULT_SIZE) {
                 /// Updates size style classes when the property changes.
@@ -127,7 +127,7 @@ public final class M3ButtonGroup extends Control {
                 }
             };
 
-    // The styleable spacing between grouped buttons.
+    /// The styleable spacing between grouped buttons.
     private @Nullable StyleableDoubleProperty spacing;
 
     /// The styleable standard-group pressed width multiplier.
@@ -175,13 +175,11 @@ public final class M3ButtonGroup extends Control {
     /// Sets the visual button group variant.
     ///
     /// @param variant the visual button group variant
+    /// @throws NullPointerException if any required argument is `null`
     public final void setVariant(M3ButtonGroupVariant variant) {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
 
-    /// Returns the visual button group variant property.
-    ///
-    /// @return the visual button group variant property
     public final ObjectProperty<M3ButtonGroupVariant> variantProperty() {
         return variant;
     }
@@ -196,13 +194,11 @@ public final class M3ButtonGroup extends Control {
     /// Sets the Material Expressive button group size.
     ///
     /// @param size the Material Expressive button group size
+    /// @throws NullPointerException if any required argument is `null`
     public final void setSize(M3ButtonSize size) {
         this.size.set(Objects.requireNonNull(size, "size"));
     }
 
-    /// Returns the Material Expressive button group size property.
-    ///
-    /// @return the Material Expressive button group size property
     public final ObjectProperty<M3ButtonSize> sizeProperty() {
         return size;
     }
@@ -221,9 +217,6 @@ public final class M3ButtonGroup extends Control {
         spacingProperty().set(M3Css.finite(spacing, "spacing"));
     }
 
-    /// Returns the spacing property.
-    ///
-    /// @return the styleable child spacing property
     public final StyleableDoubleProperty spacingProperty() {
         if (spacing == null) {
             spacing = M3Css.finiteStyleableDoubleProperty(
@@ -250,6 +243,7 @@ public final class M3ButtonGroup extends Control {
     /// Sets the proportional width increase applied to an activated button in a standard group.
     ///
     /// @param multiplier the non-negative pressed width multiplier
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setStandardPressedWidthMultiplier(double multiplier) {
         standardPressedWidthMultiplierProperty().set(
                 M3Css.nonNegative(multiplier, "standardPressedWidthMultiplier")
@@ -303,6 +297,8 @@ public final class M3ButtonGroup extends Control {
     }
 
     /// Returns accessibility attributes for grouped button content.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -315,6 +311,8 @@ public final class M3ButtonGroup extends Control {
     }
 
     /// Executes accessibility actions for grouped button content.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

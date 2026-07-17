@@ -16,6 +16,11 @@ import java.util.Objects;
 /// which avoids positional factory methods with many unrelated arguments and keeps custom themes internally
 /// consistent. Unless [componentTokens(M3ComponentTokens)] is called, component tokens are derived at build time
 /// from the current profile, shape tokens, and density.
+///
+/// Replacement token groups must not be `null`; replacement methods throw [NullPointerException] when that
+/// contract is violated. A builder can be reused after [build].
+///
+/// See [Material Design styles](https://m3.material.io/styles).
 @NotNullByDefault
 public final class M3TokenSetBuilder {
     /// The immutable profile for the token set being built.
@@ -96,6 +101,7 @@ public final class M3TokenSetBuilder {
     ///
     /// @param colorTokens the replacement color tokens
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3TokenSetBuilder colorTokens(M3ColorTokens colorTokens) {
         this.colorTokens = Objects.requireNonNull(colorTokens, "colorTokens");
         return this;
@@ -105,6 +111,7 @@ public final class M3TokenSetBuilder {
     ///
     /// @param typographyTokens the replacement typography tokens
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3TokenSetBuilder typographyTokens(M3TypographyTokens typographyTokens) {
         this.typographyTokens = Objects.requireNonNull(typographyTokens, "typographyTokens");
         return this;
@@ -116,6 +123,7 @@ public final class M3TokenSetBuilder {
     ///
     /// @param shapeTokens the replacement shape tokens
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3TokenSetBuilder shapeTokens(M3ShapeTokens shapeTokens) {
         this.shapeTokens = Objects.requireNonNull(shapeTokens, "shapeTokens");
         return this;
@@ -125,6 +133,7 @@ public final class M3TokenSetBuilder {
     ///
     /// @param elevationTokens the replacement elevation tokens
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3TokenSetBuilder elevationTokens(M3ElevationTokens elevationTokens) {
         this.elevationTokens = Objects.requireNonNull(elevationTokens, "elevationTokens");
         return this;
@@ -134,6 +143,7 @@ public final class M3TokenSetBuilder {
     ///
     /// @param motionTokens the replacement motion tokens
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3TokenSetBuilder motionTokens(M3MotionTokens motionTokens) {
         this.motionTokens = Objects.requireNonNull(motionTokens, "motionTokens");
         return this;
@@ -143,6 +153,7 @@ public final class M3TokenSetBuilder {
     ///
     /// @param stateLayerTokens the replacement state-layer tokens
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3TokenSetBuilder stateLayerTokens(M3StateLayerTokens stateLayerTokens) {
         this.stateLayerTokens = Objects.requireNonNull(stateLayerTokens, "stateLayerTokens");
         return this;
@@ -152,6 +163,7 @@ public final class M3TokenSetBuilder {
     ///
     /// @param componentTokens the replacement component tokens
     /// @return this builder
+    /// @throws NullPointerException if any required argument is `null`
     public M3TokenSetBuilder componentTokens(M3ComponentTokens componentTokens) {
         this.componentTokens = Objects.requireNonNull(componentTokens, "componentTokens");
         return this;

@@ -116,7 +116,7 @@ public final class M3NavigationRail extends Control {
                             M3NavigationItem.class
                     ));
 
-    // The currently selected navigation item.
+    /// The currently selected navigation item.
     private final ReadOnlyObjectWrapper<@Nullable M3NavigationItem> selectedItem =
             new ReadOnlyObjectWrapper<>(this, "selectedItem");
 
@@ -127,7 +127,7 @@ public final class M3NavigationRail extends Control {
     private final @UnmodifiableView ObservableList<M3NavigationItem> selectedItemsView =
             FXCollections.unmodifiableObservableList(selectedItems);
 
-    // The styleable spacing between navigation item rows.
+    /// The styleable spacing between navigation item rows.
     private @Nullable StyleableDoubleProperty itemSpacing;
 
     /// The styleable collapsed navigation rail width.
@@ -221,7 +221,7 @@ public final class M3NavigationRail extends Control {
                 }
             };
 
-    // Whether the rail allows all navigation items to be unselected.
+    /// Whether the rail allows all navigation items to be unselected.
     private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection") {
         /// Restores a selected item when empty selection is disabled.
         @Override
@@ -447,6 +447,7 @@ public final class M3NavigationRail extends Control {
     /// navigation rail surface.
     ///
     /// @param variant the expanded rail variant
+    /// @throws NullPointerException if any required argument is `null`
     public final void setVariant(M3NavigationRailVariant variant) {
         railVariant.set(Objects.requireNonNull(variant, "variant"));
     }
@@ -472,9 +473,6 @@ public final class M3NavigationRail extends Control {
         return selectedItem.get();
     }
 
-    /// Returns the selected navigation item property.
-    ///
-    /// @return the read-only selected navigation item property
     public final ReadOnlyObjectProperty<@Nullable M3NavigationItem> selectedItemProperty() {
         return selectedItem.getReadOnlyProperty();
     }
@@ -501,9 +499,6 @@ public final class M3NavigationRail extends Control {
         this.allowEmptySelection.set(allowEmptySelection);
     }
 
-    /// Returns the empty-selection policy property.
-    ///
-    /// @return the writable empty-selection policy property
     public final BooleanProperty allowEmptySelectionProperty() {
         return allowEmptySelection;
     }
@@ -511,6 +506,7 @@ public final class M3NavigationRail extends Control {
     /// Selects a navigation item that belongs to this rail.
     ///
     /// @param item the navigation item to select
+    /// @throws NullPointerException if any required argument is `null`
     public final void select(M3NavigationItem item) {
         Objects.requireNonNull(item, "item");
         if (!getItems().contains(item)) {
@@ -591,13 +587,11 @@ public final class M3NavigationRail extends Control {
     /// Sets the spacing between navigation rail items.
     ///
     /// @param itemSpacing the spacing between navigation rail items in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setItemSpacing(double itemSpacing) {
         itemSpacingProperty().set(M3Css.nonNegative(itemSpacing, "itemSpacing"));
     }
 
-    /// Returns the spacing between navigation rail items property.
-    ///
-    /// @return the styleable item spacing property
     public final StyleableDoubleProperty itemSpacingProperty() {
         if (itemSpacing == null) {
             itemSpacing = M3Css.nonNegativeStyleableDoubleProperty(
@@ -623,6 +617,7 @@ public final class M3NavigationRail extends Control {
     /// Sets the collapsed navigation rail width.
     ///
     /// @param collapsedContainerWidth the collapsed container width in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setCollapsedContainerWidth(double collapsedContainerWidth) {
         collapsedContainerWidthProperty().set(
                 M3Css.nonNegative(collapsedContainerWidth, "collapsedContainerWidth")
@@ -661,6 +656,7 @@ public final class M3NavigationRail extends Control {
     /// Sets the minimum width accepted by the expanded rail.
     ///
     /// @param expandedMinimumContainerWidth the non-negative expanded minimum width in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setExpandedMinimumContainerWidth(double expandedMinimumContainerWidth) {
         expandedMinimumContainerWidthProperty().set(
                 M3Css.nonNegative(expandedMinimumContainerWidth, "expandedMinimumContainerWidth")
@@ -698,6 +694,7 @@ public final class M3NavigationRail extends Control {
     /// Sets the expanded navigation rail width.
     ///
     /// @param expandedContainerWidth the expanded container width in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setExpandedContainerWidth(double expandedContainerWidth) {
         expandedContainerWidthProperty().set(
                 M3Css.nonNegative(expandedContainerWidth, "expandedContainerWidth")
@@ -735,6 +732,7 @@ public final class M3NavigationRail extends Control {
     /// Sets the maximum width accepted by the expanded rail.
     ///
     /// @param expandedMaximumContainerWidth the non-negative expanded maximum width in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setExpandedMaximumContainerWidth(double expandedMaximumContainerWidth) {
         expandedMaximumContainerWidthProperty().set(
                 M3Css.nonNegative(expandedMaximumContainerWidth, "expandedMaximumContainerWidth")
@@ -767,6 +765,7 @@ public final class M3NavigationRail extends Control {
     /// Sets the minimum spacing between the optional header and destination items.
     ///
     /// @param headerSpacing the non-negative header spacing in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setHeaderSpacing(double headerSpacing) {
         headerSpacingProperty().set(M3Css.nonNegative(headerSpacing, "headerSpacing"));
     }
@@ -822,6 +821,7 @@ public final class M3NavigationRail extends Control {
     /// @param attribute  the requested accessibility attribute
     /// @param parameters optional attribute-specific parameters
     /// @return the requested accessibility value, or `null` when no value is available
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -845,6 +845,7 @@ public final class M3NavigationRail extends Control {
     ///
     /// @param action     the accessibility action to execute
     /// @param parameters optional action-specific parameters
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

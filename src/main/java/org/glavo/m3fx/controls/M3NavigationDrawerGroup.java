@@ -33,6 +33,11 @@ import java.util.Objects;
 
 /// A collapsible Material Design 3 navigation drawer destination group.
 ///
+/// The group owns one header row and exposes a live list of child [M3ListItem] destinations. Activating the header
+/// toggles [expandedProperty]; collapsed children are removed from layout, focus traversal, and accessibility
+/// indexing. The header is managed by the group and is available through [getHeaderItem] for presentation
+/// customization, but it must not be reparented.
+///
 /// See [Material Design navigation drawer](https://m3.material.io/components/navigation-drawer/overview).
 @NotNullByDefault
 public final class M3NavigationDrawerGroup extends Control {
@@ -48,10 +53,10 @@ public final class M3NavigationDrawerGroup extends Control {
     /// The expanded pseudo-class used by navigation drawer groups.
     private static final PseudoClass EXPANDED_PSEUDO_CLASS = PseudoClass.getPseudoClass("expanded");
 
-    // The group title displayed by the header list item.
+    /// The group title displayed by the header list item.
     private final StringProperty title = new SimpleStringProperty(this, "title", "");
 
-    // Whether child destination items are visible.
+    /// Whether child destination items are visible.
     private final BooleanProperty expanded = new SimpleBooleanProperty(this, "expanded") {
         /// Updates expanded pseudo-class state.
         @Override
@@ -107,6 +112,7 @@ public final class M3NavigationDrawerGroup extends Control {
     /// Creates a navigation drawer group with the supplied title.
     ///
     /// @param title the group title displayed by the header row
+    /// @throws NullPointerException if `title` is `null`
     public M3NavigationDrawerGroup(String title) {
         initialize();
         setTitle(title);
@@ -122,13 +128,11 @@ public final class M3NavigationDrawerGroup extends Control {
     /// Sets the group title displayed by the header list item.
     ///
     /// @param title the group title displayed by the header row
+    /// @throws NullPointerException if `title` is `null`
     public void setTitle(String title) {
         this.title.set(Objects.requireNonNull(title, "title"));
     }
 
-    /// Returns the group title property.
-    ///
-    /// @return the writable group title property
     public StringProperty titleProperty() {
         return title;
     }
@@ -147,22 +151,25 @@ public final class M3NavigationDrawerGroup extends Control {
         this.expanded.set(expanded);
     }
 
-    /// Returns the expanded-state property.
-    ///
-    /// @return the writable expanded-state property
     public BooleanProperty expandedProperty() {
         return expanded;
     }
 
     /// Returns the mutable child destination list.
     ///
-    /// @return the mutable child destination list
+    /// Changes to the returned list are observed immediately. The list rejects `null` elements. Items must not
+    /// simultaneously belong to another parent.
+    ///
+    /// @return the live, mutable child destination list
     public ObservableList<M3ListItem> getItems() {
         return items;
     }
 
 
     /// Returns the header list item owned by this group.
+    ///
+    /// The returned item remains owned by this group. Applications may customize its supported presentation
+    /// properties but must not add it to another parent or replace its disclosure behavior.
     ///
     /// @return the header list item owned by this group
     public M3ListItem getHeaderItem() {
@@ -174,6 +181,7 @@ public final class M3NavigationDrawerGroup extends Control {
     /// @param attribute  the requested accessibility attribute
     /// @param parameters optional attribute-specific parameters
     /// @return the requested accessibility value, or `null` when no value is available
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -192,6 +200,7 @@ public final class M3NavigationDrawerGroup extends Control {
     ///
     /// @param action     the accessibility action to execute
     /// @param parameters optional action-specific parameters
+    /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

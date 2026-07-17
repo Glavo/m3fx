@@ -10,6 +10,9 @@ import java.util.Objects;
 
 /// Builds immutable [M3ElevationTokens] by overriding named elevation levels.
 ///
+/// Replacement values must be finite and non-negative. Each replacement method validates eagerly and throws
+/// [IllegalArgumentException] for an invalid value. A builder can be reused after [build].
+///
 /// See [Material Design elevation](https://m3.material.io/styles/elevation/overview).
 @NotNullByDefault
 public final class M3ElevationTokensBuilder {

@@ -26,7 +26,7 @@ public abstract sealed class M3SelectableChip extends M3Chip permits M3FilterChi
     /// The pseudo-class representing selected state.
     private static final PseudoClass SELECTED_PSEUDO_CLASS = PseudoClass.getPseudoClass("selected");
 
-    // The persistent selected state.
+    /// The persistent selected state.
     private final BooleanProperty selected = new SimpleBooleanProperty(this, "selected") {
         /// Updates visual and accessibility state when selection changes.
         @Override
@@ -61,14 +61,13 @@ public abstract sealed class M3SelectableChip extends M3Chip permits M3FilterChi
         this.selected.set(selected);
     }
 
-    /// Returns the selected state property.
-    ///
-    /// @return the selected state property
     public final BooleanProperty selectedProperty() {
         return selected;
     }
 
     /// Returns accessibility attributes for the selected state.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");

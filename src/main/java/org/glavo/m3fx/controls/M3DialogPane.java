@@ -99,22 +99,22 @@ public class M3DialogPane extends DialogPane {
     /// Whether the managed container shape style must be synchronized before the next layout pass.
     private boolean containerShapeStyleDirty;
 
-    // The styleable dialog container shape token.
+    /// The styleable dialog container shape token.
     private @Nullable StyleableDoubleProperty containerShape;
 
-    // The styleable dialog content padding token.
+    /// The styleable dialog content padding token.
     private @Nullable StyleableDoubleProperty contentPadding;
 
-    // The styleable minimum dialog container width token.
+    /// The styleable minimum dialog container width token.
     private @Nullable StyleableDoubleProperty containerMinWidth;
 
-    // The styleable maximum dialog container width token.
+    /// The styleable maximum dialog container width token.
     private @Nullable StyleableDoubleProperty containerMaxWidth;
 
-    // The styleable spacing between dialog action buttons.
+    /// The styleable spacing between dialog action buttons.
     private @Nullable StyleableDoubleProperty actionSpacing;
 
-    // The styleable dialog graphic icon size token.
+    /// The styleable dialog graphic icon size token.
     private @Nullable StyleableDoubleProperty iconSize;
 
     /// The internal dialog action button bar.
@@ -166,13 +166,11 @@ public class M3DialogPane extends DialogPane {
     /// Sets the dialog container shape radius token.
     ///
     /// @param containerShape the dialog container shape radius token
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContainerShape(double containerShape) {
         containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
     }
 
-    /// Returns the dialog container shape radius token property.
-    ///
-    /// @return the dialog container shape radius token property
     public final StyleableDoubleProperty containerShapeProperty() {
         if (containerShape == null) {
             containerShape = M3Css.nonNegativeStyleableDoubleProperty(
@@ -196,13 +194,11 @@ public class M3DialogPane extends DialogPane {
     /// Sets the dialog content padding token.
     ///
     /// @param contentPadding the dialog content padding token
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContentPadding(double contentPadding) {
         contentPaddingProperty().set(M3Css.nonNegative(contentPadding, "contentPadding"));
     }
 
-    /// Returns the dialog content padding token property.
-    ///
-    /// @return the dialog content padding token property
     public final StyleableDoubleProperty contentPaddingProperty() {
         if (contentPadding == null) {
             contentPadding = M3Css.nonNegativeStyleableDoubleProperty(
@@ -226,13 +222,11 @@ public class M3DialogPane extends DialogPane {
     /// Sets the minimum dialog container width token.
     ///
     /// @param containerMinWidth the minimum dialog container width token
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContainerMinWidth(double containerMinWidth) {
         containerMinWidthProperty().set(M3Css.nonNegative(containerMinWidth, "containerMinWidth"));
     }
 
-    /// Returns the minimum dialog container width token property.
-    ///
-    /// @return the minimum dialog container width token property
     public final StyleableDoubleProperty containerMinWidthProperty() {
         if (containerMinWidth == null) {
             containerMinWidth = M3Css.nonNegativeStyleableDoubleProperty(
@@ -256,13 +250,11 @@ public class M3DialogPane extends DialogPane {
     /// Sets the maximum dialog container width token.
     ///
     /// @param containerMaxWidth the maximum dialog container width token
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContainerMaxWidth(double containerMaxWidth) {
         containerMaxWidthProperty().set(M3Css.nonNegative(containerMaxWidth, "containerMaxWidth"));
     }
 
-    /// Returns the maximum dialog container width token property.
-    ///
-    /// @return the maximum dialog container width token property
     public final StyleableDoubleProperty containerMaxWidthProperty() {
         if (containerMaxWidth == null) {
             containerMaxWidth = M3Css.nonNegativeStyleableDoubleProperty(
@@ -286,13 +278,11 @@ public class M3DialogPane extends DialogPane {
     /// Sets the spacing between dialog action buttons.
     ///
     /// @param actionSpacing the spacing between dialog action buttons
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setActionSpacing(double actionSpacing) {
         actionSpacingProperty().set(M3Css.nonNegative(actionSpacing, "actionSpacing"));
     }
 
-    /// Returns the spacing property for dialog action buttons.
-    ///
-    /// @return the spacing property for dialog action buttons
     public final StyleableDoubleProperty actionSpacingProperty() {
         if (actionSpacing == null) {
             actionSpacing = M3Css.nonNegativeStyleableDoubleProperty(
@@ -316,13 +306,11 @@ public class M3DialogPane extends DialogPane {
     /// Sets the dialog graphic icon size token.
     ///
     /// @param iconSize the dialog graphic icon size token
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setIconSize(double iconSize) {
         iconSizeProperty().set(M3Css.nonNegative(iconSize, "iconSize"));
     }
 
-    /// Returns the dialog graphic icon size token property.
-    ///
-    /// @return the dialog graphic icon size token property
     public final StyleableDoubleProperty iconSizeProperty() {
         if (iconSize == null) {
             iconSize = M3Css.nonNegativeStyleableDoubleProperty(
@@ -350,6 +338,8 @@ public class M3DialogPane extends DialogPane {
     }
 
     /// Returns accessibility attributes for the dialog text.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -367,6 +357,8 @@ public class M3DialogPane extends DialogPane {
     }
 
     /// Executes accessibility actions for dialog content and action buttons.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

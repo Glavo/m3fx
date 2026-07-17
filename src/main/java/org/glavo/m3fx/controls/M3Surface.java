@@ -62,7 +62,7 @@ public final class M3Surface extends Control {
     private final M3AccessibleFocusNotifier focusNotifier =
             new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(this, getContent()));
 
-    // Backing property for the public surface color variant API.
+    /// Backing property for the public surface color variant API.
     private final ObjectProperty<M3SurfaceVariant> variant =
             new SimpleObjectProperty<>(this, "variant", M3SurfaceVariant.CONTAINER) {
                 /// Updates variant style classes when the property changes.
@@ -76,7 +76,7 @@ public final class M3Surface extends Control {
                 }
             };
 
-    // Backing property for the public surface elevation API.
+    /// Backing property for the public surface elevation API.
     private final ObjectProperty<M3SurfaceElevation> elevation =
             new SimpleObjectProperty<>(this, "elevation", M3SurfaceElevation.LEVEL0) {
                 /// Updates elevation style classes when the property changes.
@@ -90,10 +90,10 @@ public final class M3Surface extends Control {
                 }
             };
 
-    // Backing property for the public container shape token API.
+    /// Backing property for the public container shape token API.
     private @Nullable StyleableDoubleProperty containerShape;
 
-    // Backing property for the public content padding token API.
+    /// Backing property for the public content padding token API.
     private @Nullable StyleableDoubleProperty contentPadding;
 
     /// Creates an empty surface.
@@ -118,13 +118,11 @@ public final class M3Surface extends Control {
     /// Sets the surface color variant.
     ///
     /// @param variant the surface color variant
+    /// @throws NullPointerException if any required argument is `null`
     public final void setVariant(M3SurfaceVariant variant) {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
 
-    /// Returns the surface color variant property.
-    ///
-    /// @return the surface color variant property
     public final ObjectProperty<M3SurfaceVariant> variantProperty() {
         return variant;
     }
@@ -139,13 +137,11 @@ public final class M3Surface extends Control {
     /// Sets the surface elevation level.
     ///
     /// @param elevation the surface elevation level
+    /// @throws NullPointerException if any required argument is `null`
     public final void setElevation(M3SurfaceElevation elevation) {
         this.elevation.set(Objects.requireNonNull(elevation, "elevation"));
     }
 
-    /// Returns the surface elevation property.
-    ///
-    /// @return the surface elevation property
     public final ObjectProperty<M3SurfaceElevation> elevationProperty() {
         return elevation;
     }
@@ -160,13 +156,11 @@ public final class M3Surface extends Control {
     /// Sets the surface container shape token.
     ///
     /// @param containerShape the surface container shape token in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContainerShape(double containerShape) {
         containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
     }
 
-    /// Returns the surface container shape token property.
-    ///
-    /// @return the surface container shape token property
     public final StyleableDoubleProperty containerShapeProperty() {
         if (containerShape == null) {
             containerShape = M3Css.nonNegativeStyleableDoubleProperty(
@@ -190,13 +184,11 @@ public final class M3Surface extends Control {
     /// Sets the surface content padding token.
     ///
     /// @param contentPadding the surface content padding token in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContentPadding(double contentPadding) {
         contentPaddingProperty().set(M3Css.nonNegative(contentPadding, "contentPadding"));
     }
 
-    /// Returns the surface content padding token property.
-    ///
-    /// @return the surface content padding token property
     public final StyleableDoubleProperty contentPaddingProperty() {
         if (contentPadding == null) {
             contentPadding = M3Css.nonNegativeStyleableDoubleProperty(
@@ -275,6 +267,7 @@ public final class M3Surface extends Control {
     ///
     /// @param action the requested accessibility action
     /// @param parameters the optional action parameters
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

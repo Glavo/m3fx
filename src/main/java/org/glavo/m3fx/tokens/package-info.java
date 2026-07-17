@@ -12,6 +12,10 @@
 /// convert tokens into JavaFX CSS custom properties and component rules that can be installed through
 /// [org.glavo.m3fx.theme.M3ThemeManager].
 ///
+/// Token sets and token groups are immutable and may be shared across threads after construction. Builder classes
+/// are mutable, reusable after a build operation, and not thread-safe. Length tokens use JavaFX logical pixels;
+/// duration tokens use milliseconds unless a method exposes [javafx.util.Duration] directly.
+///
 /// See [Material Design](https://m3.material.io/),
 /// [Material Design color](https://m3.material.io/styles/color/overview), and
 /// [Material Design motion](https://m3.material.io/styles/motion/overview) for the upstream design system

@@ -83,7 +83,7 @@ public final class M3Carousel extends Control {
     /// The focus-traversable value restored when an application-owned item leaves this carousel.
     private final Map<Node, Boolean> originalItemFocusTraversable = new IdentityHashMap<>();
 
-    // The Material layout strategy used to size and position carousel items.
+    /// The Material layout strategy used to size and position carousel items.
     private final ObjectProperty<M3CarouselLayout> carouselLayout =
             new SimpleObjectProperty<>(this, "carouselLayout", DEFAULT_CAROUSEL_LAYOUT) {
                 /// Normalizes null assignments and refreshes layout-specific styles.
@@ -98,7 +98,7 @@ public final class M3Carousel extends Control {
                 }
             };
 
-    // The selected item index, or `-1` when no item is selected.
+    /// The selected item index, or `-1` when no item is selected.
     private final IntegerProperty selectedIndex = new SimpleIntegerProperty(this, "selectedIndex", -1) {
         /// Applies selection changes and keeps the index inside the current item range.
         @Override
@@ -110,13 +110,13 @@ public final class M3Carousel extends Control {
         }
     };
 
-    // Whether keyboard previous and next navigation wraps around list edges.
+    /// Whether keyboard previous and next navigation wraps around list edges.
     private final BooleanProperty wrapAround = new SimpleBooleanProperty(this, "wrapAround", false);
 
-    // Whether programmatic selection changes animate viewport scrolling.
+    /// Whether programmatic selection changes animate viewport scrolling.
     private final BooleanProperty animatedScroll = new SimpleBooleanProperty(this, "animatedScroll", true);
 
-    // The currently selected item.
+    /// The currently selected item.
     private final ReadOnlyObjectWrapper<@Nullable Node> selectedItem =
             new ReadOnlyObjectWrapper<>(this, "selectedItem");
 
@@ -195,9 +195,6 @@ public final class M3Carousel extends Control {
         this.carouselLayout.set(carouselLayout);
     }
 
-    /// Returns the Material carousel layout property.
-    ///
-    /// @return the carousel layout property
     public final ObjectProperty<M3CarouselLayout> carouselLayoutProperty() {
         return carouselLayout;
     }
@@ -216,9 +213,6 @@ public final class M3Carousel extends Control {
         this.selectedIndex.set(selectedIndex);
     }
 
-    /// Returns the selected item index property.
-    ///
-    /// @return the selected item index property
     public final IntegerProperty selectedIndexProperty() {
         return selectedIndex;
     }
@@ -230,9 +224,6 @@ public final class M3Carousel extends Control {
         return selectedItem.get();
     }
 
-    /// Returns the selected item property.
-    ///
-    /// @return the read-only selected item property
     public final ReadOnlyObjectProperty<@Nullable Node> selectedItemProperty() {
         return selectedItem.getReadOnlyProperty();
     }
@@ -258,9 +249,6 @@ public final class M3Carousel extends Control {
         this.wrapAround.set(wrapAround);
     }
 
-    /// Returns the wrap-around navigation property.
-    ///
-    /// @return the wrap-around navigation property
     public final BooleanProperty wrapAroundProperty() {
         return wrapAround;
     }
@@ -279,9 +267,6 @@ public final class M3Carousel extends Control {
         this.animatedScroll.set(animatedScroll);
     }
 
-    /// Returns the animated viewport scrolling property.
-    ///
-    /// @return the animated viewport scrolling property
     public final BooleanProperty animatedScrollProperty() {
         return animatedScroll;
     }
@@ -289,6 +274,7 @@ public final class M3Carousel extends Control {
     /// Selects the supplied item node.
     ///
     /// @param item the item node to select
+    /// @throws NullPointerException if any required argument is `null`
     public final void select(Node item) {
         Objects.requireNonNull(item, "item");
         int index = getItems().indexOf(item);
@@ -369,6 +355,8 @@ public final class M3Carousel extends Control {
     }
 
     /// Returns accessibility attributes for carousel items and selection.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -383,6 +371,8 @@ public final class M3Carousel extends Control {
     }
 
     /// Executes accessibility selection and reveal actions.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

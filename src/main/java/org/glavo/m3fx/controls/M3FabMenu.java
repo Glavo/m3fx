@@ -91,10 +91,10 @@ public final class M3FabMenu extends Control {
     /// The action item container.
     private final VBox actions = new VBox();
 
-    // The styleable spacing between expanded action items.
+    /// The styleable spacing between expanded action items.
     private @Nullable StyleableDoubleProperty actionSpacing;
 
-    // The styleable spacing between the last action and close button.
+    /// The styleable spacing between the last action and close button.
     private @Nullable StyleableDoubleProperty closeSpacing;
 
     /// The toggle floating action button.
@@ -103,7 +103,7 @@ public final class M3FabMenu extends Control {
     /// The close floating action button shown while expanded.
     private final M3FloatingActionButton closeButton = createCloseButton();
 
-    // Whether the action items are currently expanded.
+    /// Whether the action items are currently expanded.
     private final BooleanProperty expanded = new SimpleBooleanProperty(this, "expanded") {
         /// Applies expanded state when changed.
         @Override
@@ -155,6 +155,7 @@ public final class M3FabMenu extends Control {
     /// Creates a floating action button menu with a custom toggle button.
     ///
     /// @param toggleButton the floating action button used to expand or collapse the menu
+    /// @throws NullPointerException if any required argument is `null`
     public M3FabMenu(M3FloatingActionButton toggleButton) {
         this.toggleButton = Objects.requireNonNull(toggleButton, "toggleButton");
         initialize();
@@ -184,13 +185,11 @@ public final class M3FabMenu extends Control {
     /// Sets the spacing between expanded action items.
     ///
     /// @param actionSpacing the action item spacing in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setActionSpacing(double actionSpacing) {
         actionSpacingProperty().set(M3Css.nonNegative(actionSpacing, "actionSpacing"));
     }
 
-    /// Returns the action item spacing property.
-    ///
-    /// @return the styleable action item spacing property
     public final StyleableDoubleProperty actionSpacingProperty() {
         if (actionSpacing == null) {
             actionSpacing = M3Css.nonNegativeStyleableDoubleProperty(
@@ -214,13 +213,11 @@ public final class M3FabMenu extends Control {
     /// Sets the spacing between the last expanded action and close button.
     ///
     /// @param closeSpacing the close button spacing in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setCloseSpacing(double closeSpacing) {
         closeSpacingProperty().set(M3Css.nonNegative(closeSpacing, "closeSpacing"));
     }
 
-    /// Returns the close button spacing property.
-    ///
-    /// @return the styleable close button spacing property
     public final StyleableDoubleProperty closeSpacingProperty() {
         if (closeSpacing == null) {
             closeSpacing = M3Css.nonNegativeStyleableDoubleProperty(
@@ -259,9 +256,6 @@ public final class M3FabMenu extends Control {
         this.expanded.set(expanded);
     }
 
-    /// Returns the expanded state property.
-    ///
-    /// @return the expanded state property
     public final BooleanProperty expandedProperty() {
         return expanded;
     }
@@ -301,6 +295,8 @@ public final class M3FabMenu extends Control {
     }
 
     /// Returns accessibility attributes for the menu and action items.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -314,6 +310,8 @@ public final class M3FabMenu extends Control {
     }
 
     /// Executes accessibility actions for expanding, collapsing, and toggling the menu.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

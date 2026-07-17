@@ -53,6 +53,10 @@ public final class M3TextArea extends TextArea implements M3TextInput {
     }
 
     /// Creates a filled text area with initial text.
+    ///
+    /// As with [TextArea], a `null` value is represented as empty content by the inherited text property.
+    ///
+    /// @param text the initial text content
     public M3TextArea(String text) {
         super(text);
         initialize();
@@ -167,6 +171,8 @@ public final class M3TextArea extends TextArea implements M3TextInput {
     }
 
     /// Returns the CSS metadata for this control class.
+    ///
+    /// @return the immutable CSS metadata list for this class and its superclasses
     public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
         return StyleableProperties.STYLEABLES;
     }

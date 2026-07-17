@@ -47,13 +47,13 @@ public final class M3RichTooltip extends M3Tooltip {
     /// The action row style class.
     public static final String ACTIONS_STYLE_CLASS = "m3-rich-tooltip-actions";
 
-    /// Backing property for the public rich tooltip title API.
+    /// The rich tooltip title property.
     private final StringProperty title = new SimpleStringProperty(this, "title", "");
 
-    /// Backing property for the public supporting text API.
+    /// The rich tooltip supporting text property.
     private final StringProperty supportingText = new SimpleStringProperty(this, "supportingText", "");
 
-    /// Whether the tooltip is opened explicitly and remains visible until another interaction dismisses it.
+    /// The persistent interaction property.
     private final BooleanProperty persistent = new SimpleBooleanProperty(this, "persistent");
 
     /// The title label.
@@ -94,13 +94,11 @@ public final class M3RichTooltip extends M3Tooltip {
     /// Sets the rich tooltip title.
     ///
     /// @param title the title displayed at the top of the tooltip
+    /// @throws NullPointerException if any required argument is `null`
     public final void setTitle(String title) {
         this.title.set(Objects.requireNonNull(title, "title"));
     }
 
-    /// Returns the rich tooltip title property.
-    ///
-    /// @return the rich tooltip title property
     public final StringProperty titleProperty() {
         return title;
     }
@@ -115,13 +113,11 @@ public final class M3RichTooltip extends M3Tooltip {
     /// Sets the rich tooltip supporting text.
     ///
     /// @param supportingText the supporting text displayed below the title
+    /// @throws NullPointerException if any required argument is `null`
     public final void setSupportingText(String supportingText) {
         this.supportingText.set(Objects.requireNonNull(supportingText, "supportingText"));
     }
 
-    /// Returns the rich tooltip supporting text property.
-    ///
-    /// @return the rich tooltip supporting text property
     public final StringProperty supportingTextProperty() {
         return supportingText;
     }
@@ -144,9 +140,6 @@ public final class M3RichTooltip extends M3Tooltip {
         this.persistent.set(persistent);
     }
 
-    /// Returns the persistent interaction property.
-    ///
-    /// @return the persistent interaction property
     public final BooleanProperty persistentProperty() {
         return persistent;
     }

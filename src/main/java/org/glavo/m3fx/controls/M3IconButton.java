@@ -39,7 +39,7 @@ public final class M3IconButton extends M3ButtonBase {
     /// The default icon button container width.
     private static final double DEFAULT_CONTAINER_WIDTH = 40.0;
 
-    // The icon button width role property.
+    /// The icon button width role property.
     private final ObjectProperty<M3IconButtonWidth> widthRole =
             new SimpleObjectProperty<>(this, "widthRole", DEFAULT_WIDTH) {
                 /// Updates width style classes when the property changes.
@@ -53,7 +53,7 @@ public final class M3IconButton extends M3ButtonBase {
                 }
             };
 
-    // The styleable visual container width token.
+    /// The styleable visual container width token.
     private @Nullable StyleableDoubleProperty containerWidth;
 
     /// Creates an icon button without a graphic.
@@ -81,13 +81,11 @@ public final class M3IconButton extends M3ButtonBase {
     /// Sets the icon button width role.
     ///
     /// @param widthRole the icon button width role
+    /// @throws NullPointerException if any required argument is `null`
     public final void setWidthRole(M3IconButtonWidth widthRole) {
         this.widthRole.set(Objects.requireNonNull(widthRole, "widthRole"));
     }
 
-    /// Returns the icon button width role property.
-    ///
-    /// @return the icon button width role property
     public final ObjectProperty<M3IconButtonWidth> widthRoleProperty() {
         return widthRole;
     }
@@ -102,13 +100,11 @@ public final class M3IconButton extends M3ButtonBase {
     /// Sets the preferred visual container width token.
     ///
     /// @param containerWidth the preferred visual container width in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContainerWidth(double containerWidth) {
         containerWidthProperty().set(M3Css.nonNegative(containerWidth, "containerWidth"));
     }
 
-    /// Returns the preferred visual container width token property.
-    ///
-    /// @return the preferred visual container width property
     public final StyleableDoubleProperty containerWidthProperty() {
         if (containerWidth == null) {
             containerWidth = M3Css.nonNegativeStyleableDoubleProperty(

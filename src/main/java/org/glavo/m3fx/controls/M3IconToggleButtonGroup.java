@@ -72,10 +72,10 @@ public final class M3IconToggleButtonGroup extends Control {
                             M3IconToggleButton.class
                     ));
 
-    // The styleable spacing between toggle icon buttons.
+    /// The styleable spacing between toggle icon buttons.
     private @Nullable StyleableDoubleProperty spacing;
 
-    // The icon toggle button selection mode.
+    /// The icon toggle button selection mode.
     private final ObjectProperty<M3SelectionMode> selectionMode =
             new SimpleObjectProperty<>(this, "selectionMode", M3SelectionMode.SINGLE) {
                 /// Enforces selection invariants when the mode changes.
@@ -96,11 +96,11 @@ public final class M3IconToggleButtonGroup extends Control {
     private final @UnmodifiableView ObservableList<M3IconToggleButton> selectedButtonsView =
             FXCollections.unmodifiableObservableList(selectedButtons);
 
-    // The currently selected toggle icon button.
+    /// The currently selected toggle icon button.
     private final ReadOnlyObjectWrapper<@Nullable M3IconToggleButton> selectedButton =
             new ReadOnlyObjectWrapper<>(this, "selectedButton");
 
-    // Whether the group allows all buttons to be unselected.
+    /// Whether the group allows all buttons to be unselected.
     private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection", true) {
         /// Restores a selected button when empty selection is disabled.
         @Override
@@ -177,13 +177,11 @@ public final class M3IconToggleButtonGroup extends Control {
     /// Sets the spacing between toggle icon buttons.
     ///
     /// @param spacing the child spacing in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setSpacing(double spacing) {
         spacingProperty().set(M3Css.nonNegative(spacing, "spacing"));
     }
 
-    /// Returns the spacing property.
-    ///
-    /// @return the styleable child spacing property
     public final StyleableDoubleProperty spacingProperty() {
         if (spacing == null) {
             spacing = M3Css.nonNegativeStyleableDoubleProperty(
@@ -212,13 +210,11 @@ public final class M3IconToggleButtonGroup extends Control {
     /// Sets the icon toggle button selection mode.
     ///
     /// @param selectionMode the icon toggle button selection mode
+    /// @throws NullPointerException if any required argument is `null`
     public final void setSelectionMode(M3SelectionMode selectionMode) {
         this.selectionMode.set(Objects.requireNonNull(selectionMode, "selectionMode"));
     }
 
-    /// Returns the icon toggle button selection mode property.
-    ///
-    /// @return the icon toggle button selection mode property
     public final ObjectProperty<M3SelectionMode> selectionModeProperty() {
         return selectionMode;
     }
@@ -237,9 +233,6 @@ public final class M3IconToggleButtonGroup extends Control {
         return selectedButton.get();
     }
 
-    /// Returns the selected toggle icon button property.
-    ///
-    /// @return the selected toggle icon button property
     public final ReadOnlyObjectProperty<@Nullable M3IconToggleButton> selectedButtonProperty() {
         return selectedButton.getReadOnlyProperty();
     }
@@ -266,9 +259,6 @@ public final class M3IconToggleButtonGroup extends Control {
         this.allowEmptySelection.set(allowEmptySelection);
     }
 
-    /// Returns the empty-selection policy property.
-    ///
-    /// @return the empty-selection policy property
     public final BooleanProperty allowEmptySelectionProperty() {
         return allowEmptySelection;
     }
@@ -276,6 +266,7 @@ public final class M3IconToggleButtonGroup extends Control {
     /// Selects a toggle icon button that belongs to this group.
     ///
     /// @param button the toggle icon button to select
+    /// @throws NullPointerException if any required argument is `null`
     public final void select(M3IconToggleButton button) {
         Objects.requireNonNull(button, "button");
         if (!getItems().contains(button)) {
@@ -382,6 +373,8 @@ public final class M3IconToggleButtonGroup extends Control {
     }
 
     /// Returns accessibility attributes for toggle icon button group content and selection state.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -401,6 +394,8 @@ public final class M3IconToggleButtonGroup extends Control {
     }
 
     /// Executes accessibility selection actions for toggle icon buttons.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

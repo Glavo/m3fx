@@ -144,7 +144,7 @@ public final class M3TimePicker extends Control {
     /// The styleable clock dial center dot diameter.
     private @Nullable StyleableDoubleProperty dialCenterSizeStyleable;
 
-    // The selected time, or `null` when no time is selected.
+    /// The selected time, or `null` when no time is selected.
     private final ObjectProperty<@Nullable LocalTime> value =
             new SimpleObjectProperty<>(this, "value") {
                 /// Normalizes seconds and notifies accessibility clients.
@@ -164,7 +164,7 @@ public final class M3TimePicker extends Control {
                 }
             };
 
-    // Whether the picker displays 24-hour time.
+    /// Whether the picker displays 24-hour time.
     private final BooleanProperty use24HourClock =
             new SimpleBooleanProperty(this, "use24HourClock", false) {
                 /// Notifies accessibility clients when display formatting changes.
@@ -175,7 +175,7 @@ public final class M3TimePicker extends Control {
                 }
             };
 
-    // Whether the keyboard input variant is active.
+    /// Whether the keyboard input variant is active.
     private final BooleanProperty inputMode =
             new SimpleBooleanProperty(this, "inputMode", false) {
                 /// Updates variant pseudo-classes and accessibility when the mode changes.
@@ -186,7 +186,7 @@ public final class M3TimePicker extends Control {
                 }
             };
 
-    // The minute interval used by dial and keyboard adjustments.
+    /// The minute interval used by dial and keyboard adjustments.
     private final IntegerProperty minuteStep = new IntegerPropertyBase(DEFAULT_MINUTE_STEP) {
         /// Validates the minute step whenever it changes.
         @Override
@@ -208,7 +208,7 @@ public final class M3TimePicker extends Control {
         }
     };
 
-    // The earliest selectable time, or `null` when there is no lower bound.
+    /// The earliest selectable time, or `null` when there is no lower bound.
     private final ObjectProperty<@Nullable LocalTime> minTime =
             new SimpleObjectProperty<>(this, "minTime") {
                 /// Clears the selected value when it no longer satisfies the range.
@@ -219,7 +219,7 @@ public final class M3TimePicker extends Control {
                 }
             };
 
-    // The latest selectable time, or `null` when there is no upper bound.
+    /// The latest selectable time, or `null` when there is no upper bound.
     private final ObjectProperty<@Nullable LocalTime> maxTime =
             new SimpleObjectProperty<>(this, "maxTime") {
                 /// Clears the selected value when it no longer satisfies the range.
@@ -236,17 +236,29 @@ public final class M3TimePicker extends Control {
     }
 
     /// Creates a time picker initialized with a selected time.
+    ///
+    /// Seconds and nanoseconds are discarded.
+    ///
+    /// @param value the initial selected time
+    /// @throws NullPointerException if `value` is `null`
     public M3TimePicker(LocalTime value) {
         initialize();
-        setValue(value);
+        setValue(Objects.requireNonNull(value, "value"));
     }
 
     /// Returns the selected time, or `null` when no time is selected.
+    ///
+    /// @return the minute-precision selected time, or `null`
     public final @Nullable LocalTime getValue() {
         return value.get();
     }
 
     /// Sets the selected time, or clears selection when `null` is supplied.
+    ///
+    /// Seconds and nanoseconds are discarded before the value is stored. Both configured bounds are inclusive.
+    ///
+    /// @param value the time to select, or `null` to clear selection
+    /// @throws IllegalArgumentException if `value` is outside the configured selectable range
     public final void setValue(@Nullable LocalTime value) {
         if (value != null && isTimeDisabled(value)) {
             throw new IllegalArgumentException("value is outside the selectable range");
@@ -254,53 +266,67 @@ public final class M3TimePicker extends Control {
         this.value.set(value == null ? null : normalizeTime(value));
     }
 
-    /// Returns the selected time property.
     public final ObjectProperty<@Nullable LocalTime> valueProperty() {
         return value;
     }
 
     /// Returns whether the picker displays 24-hour time.
+    ///
+    /// @return whether the picker uses 24-hour labels; the default is `false`
     public final boolean isUse24HourClock() {
         return use24HourClock.get();
     }
 
     /// Sets whether the picker displays 24-hour time.
+    ///
+    /// This affects display and input interpretation without changing the selected [LocalTime].
+    ///
+    /// @param use24HourClock whether to use 24-hour labels
     public final void setUse24HourClock(boolean use24HourClock) {
         this.use24HourClock.set(use24HourClock);
     }
 
-    /// Returns the 24-hour display property.
     public final BooleanProperty use24HourClockProperty() {
         return use24HourClock;
     }
 
     /// Returns whether the keyboard input variant is active.
+    ///
+    /// @return `true` for keyboard input mode or `false` for dial mode
     public final boolean isInputMode() {
         return inputMode.get();
     }
 
     /// Sets whether the keyboard input variant is active.
+    ///
+    /// @param inputMode `true` for keyboard input mode or `false` for dial mode
     public final void setInputMode(boolean inputMode) {
         this.inputMode.set(inputMode);
     }
 
-    /// Returns the keyboard input variant property.
     public final BooleanProperty inputModeProperty() {
         return inputMode;
     }
 
     /// Returns the minute interval used by dial and keyboard adjustments.
+    ///
+    /// @return a positive divisor of 60 no greater than 30; the default is 5
     public final int getMinuteStep() {
         return minuteStep.get();
     }
 
     /// Sets the minute interval used by dial and keyboard adjustments.
+    ///
+    /// This value controls generated minute choices and adjustment steps. It does not rewrite an existing selected
+    /// value.
+    ///
+    /// @param minuteStep a positive divisor of 60 between 1 and 30, inclusive
+    /// @throws IllegalArgumentException if `minuteStep` is outside the supported range or does not divide 60
     public final void setMinuteStep(int minuteStep) {
         validateMinuteStep(minuteStep);
         this.minuteStep.set(minuteStep);
     }
 
-    /// Returns the minute step property.
     public final IntegerProperty minuteStepProperty() {
         return minuteStep;
     }
@@ -315,6 +341,7 @@ public final class M3TimePicker extends Control {
     /// Sets the spacing between major Time Picker regions.
     ///
     /// @param spacing the non-negative region spacing in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContainerSpacing(double spacing) {
         containerSpacingProperty().set(M3Css.nonNegative(spacing, "containerSpacing"));
     }
@@ -345,6 +372,7 @@ public final class M3TimePicker extends Control {
     /// Sets the clock dial selector handle diameter.
     ///
     /// @param size the non-negative handle diameter in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setDialHandleSize(double size) {
         dialHandleSizeProperty().set(M3Css.nonNegative(size, "dialHandleSize"));
     }
@@ -375,6 +403,7 @@ public final class M3TimePicker extends Control {
     /// Sets the clock dial center dot diameter.
     ///
     /// @param size the non-negative center dot diameter in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setDialCenterSize(double size) {
         dialCenterSizeProperty().set(M3Css.nonNegative(size, "dialCenterSize"));
     }
@@ -396,40 +425,59 @@ public final class M3TimePicker extends Control {
     }
 
     /// Returns the earliest selectable time, or `null` when there is no lower bound.
+    ///
+    /// @return the inclusive minute-precision lower bound, or `null`
     public final @Nullable LocalTime getMinTime() {
         return minTime.get();
     }
 
     /// Sets the earliest selectable time, or clears the lower bound when `null` is supplied.
+    ///
+    /// Seconds and nanoseconds are discarded. If the current selection falls outside the resulting range, it is
+    /// cleared.
+    ///
+    /// @param minTime the inclusive lower bound, or `null` for no lower bound
+    /// @throws IllegalArgumentException if the normalized lower bound is after the current upper bound
     public final void setMinTime(@Nullable LocalTime minTime) {
         @Nullable LocalTime normalizedMinTime = minTime == null ? null : normalizeTime(minTime);
         validateTimeRange(normalizedMinTime, getMaxTime());
         this.minTime.set(normalizedMinTime);
     }
 
-    /// Returns the minimum time property.
     public final ObjectProperty<@Nullable LocalTime> minTimeProperty() {
         return minTime;
     }
 
     /// Returns the latest selectable time, or `null` when there is no upper bound.
+    ///
+    /// @return the inclusive minute-precision upper bound, or `null`
     public final @Nullable LocalTime getMaxTime() {
         return maxTime.get();
     }
 
     /// Sets the latest selectable time, or clears the upper bound when `null` is supplied.
+    ///
+    /// Seconds and nanoseconds are discarded. If the current selection falls outside the resulting range, it is
+    /// cleared.
+    ///
+    /// @param maxTime the inclusive upper bound, or `null` for no upper bound
+    /// @throws IllegalArgumentException if the normalized upper bound is before the current lower bound
     public final void setMaxTime(@Nullable LocalTime maxTime) {
         @Nullable LocalTime normalizedMaxTime = maxTime == null ? null : normalizeTime(maxTime);
         validateTimeRange(getMinTime(), normalizedMaxTime);
         this.maxTime.set(normalizedMaxTime);
     }
 
-    /// Returns the maximum time property.
     public final ObjectProperty<@Nullable LocalTime> maxTimeProperty() {
         return maxTime;
     }
 
     /// Sets the selected time from hour and minute fields.
+    ///
+    /// @param hour the hour from 0 through 23
+    /// @param minute the minute from 0 through 59
+    /// @throws IllegalArgumentException if either field is outside its valid range or the resulting time is outside
+    ///         the configured selectable range
     public final void setTime(int hour, int minute) {
         validateHour(hour);
         validateMinute(minute);
@@ -442,11 +490,21 @@ public final class M3TimePicker extends Control {
     }
 
     /// Applies a labeled time preset.
+    ///
+    /// @param preset the preset whose time should be selected
+    /// @throws NullPointerException if `preset` is `null`
+    /// @throws IllegalArgumentException if the preset time is outside the configured selectable range
     public final void applyPreset(M3TimePreset preset) {
         setValue(Objects.requireNonNull(preset, "preset").time());
     }
 
     /// Returns whether the supplied time is outside the configured selectable range.
+    ///
+    /// Seconds and nanoseconds are ignored. Both bounds are inclusive.
+    ///
+    /// @param time the time to test
+    /// @return `true` when `time` is before the lower bound or after the upper bound
+    /// @throws NullPointerException if `time` is `null`
     public final boolean isTimeDisabled(LocalTime time) {
         Objects.requireNonNull(time, "time");
         LocalTime normalizedTime = normalizeTime(time);
@@ -477,6 +535,8 @@ public final class M3TimePicker extends Control {
     }
 
     /// Returns accessibility text for the selected time.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -491,6 +551,8 @@ public final class M3TimePicker extends Control {
     }
 
     /// Executes accessibility actions for time selection and focus.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

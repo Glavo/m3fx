@@ -63,7 +63,7 @@ public abstract sealed class M3Chip extends ButtonBase
     /// The default size for icon graphics.
     private static final double DEFAULT_ICON_SIZE = 18.0;
 
-    // The chip container style property.
+    /// The chip container style property.
     private final ObjectProperty<M3ChipStyle> chipStyle =
             new SimpleObjectProperty<>(this, "chipStyle", M3ChipStyle.FLAT) {
                 /// Updates chip style classes when the property changes.
@@ -77,22 +77,22 @@ public abstract sealed class M3Chip extends ButtonBase
                 }
             };
 
-    // The styleable container height token.
+    /// The styleable container height token.
     private @Nullable StyleableDoubleProperty containerHeight;
 
-    // The styleable container shape token.
+    /// The styleable container shape token.
     private @Nullable StyleableDoubleProperty containerShape;
 
-    // The styleable horizontal padding token.
+    /// The styleable horizontal padding token.
     private @Nullable StyleableDoubleProperty horizontalPadding;
 
-    // The styleable horizontal padding token used when a leading graphic is present.
+    /// The styleable horizontal padding token used when a leading graphic is present.
     private @Nullable StyleableDoubleProperty iconHorizontalPadding;
 
-    // The styleable icon size token.
+    /// The styleable icon size token.
     private @Nullable StyleableDoubleProperty iconSize;
 
-    // The optional logical trailing graphic property.
+    /// The optional logical trailing graphic property.
     private final ObjectProperty<@Nullable Node> trailingGraphic =
             new SimpleObjectProperty<>(this, "trailingGraphic") {
                 /// Recomputes content padding and layout when the trailing slot changes.
@@ -130,9 +130,6 @@ public abstract sealed class M3Chip extends ButtonBase
         this.trailingGraphic.set(trailingGraphic);
     }
 
-    /// Returns the logical trailing graphic property.
-    ///
-    /// @return the trailing graphic property
     public final ObjectProperty<@Nullable Node> trailingGraphicProperty() {
         return trailingGraphic;
     }
@@ -147,13 +144,11 @@ public abstract sealed class M3Chip extends ButtonBase
     /// Sets the chip container style.
     ///
     /// @param chipStyle the chip container style
+    /// @throws NullPointerException if any required argument is `null`
     public final void setChipStyle(M3ChipStyle chipStyle) {
         this.chipStyle.set(Objects.requireNonNull(chipStyle, "chipStyle"));
     }
 
-    /// Returns the chip container style property.
-    ///
-    /// @return the chip container style property
     public final ObjectProperty<M3ChipStyle> chipStyleProperty() {
         return chipStyle;
     }
@@ -168,13 +163,11 @@ public abstract sealed class M3Chip extends ButtonBase
     /// Sets the preferred container height token.
     ///
     /// @param containerHeight the preferred chip container height in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContainerHeight(double containerHeight) {
         containerHeightProperty().set(M3Css.nonNegative(containerHeight, "containerHeight"));
     }
 
-    /// Returns the preferred container height token property.
-    ///
-    /// @return the preferred container height property
     public final StyleableDoubleProperty containerHeightProperty() {
         if (containerHeight == null) {
             containerHeight = M3Css.nonNegativeStyleableDoubleProperty(
@@ -198,13 +191,11 @@ public abstract sealed class M3Chip extends ButtonBase
     /// Sets the container shape radius token.
     ///
     /// @param containerShape the chip container corner radius in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContainerShape(double containerShape) {
         containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
     }
 
-    /// Returns the container shape radius token property.
-    ///
-    /// @return the container shape property
     public final StyleableDoubleProperty containerShapeProperty() {
         if (containerShape == null) {
             containerShape = M3Css.nonNegativeStyleableDoubleProperty(
@@ -228,13 +219,11 @@ public abstract sealed class M3Chip extends ButtonBase
     /// Sets the horizontal content padding token.
     ///
     /// @param horizontalPadding the horizontal content padding in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setHorizontalPadding(double horizontalPadding) {
         horizontalPaddingProperty().set(M3Css.nonNegative(horizontalPadding, "horizontalPadding"));
     }
 
-    /// Returns the horizontal content padding token property.
-    ///
-    /// @return the horizontal content padding property
     public final StyleableDoubleProperty horizontalPaddingProperty() {
         if (horizontalPadding == null) {
             horizontalPadding = M3Css.nonNegativeStyleableDoubleProperty(
@@ -258,13 +247,11 @@ public abstract sealed class M3Chip extends ButtonBase
     /// Sets the horizontal content padding token used when a leading graphic is present.
     ///
     /// @param iconHorizontalPadding the horizontal content padding in pixels for chips with graphics
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setIconHorizontalPadding(double iconHorizontalPadding) {
         iconHorizontalPaddingProperty().set(M3Css.nonNegative(iconHorizontalPadding, "iconHorizontalPadding"));
     }
 
-    /// Returns the horizontal content padding token property used when a leading graphic is present.
-    ///
-    /// @return the horizontal content padding property for chips with graphics
     public final StyleableDoubleProperty iconHorizontalPaddingProperty() {
         if (iconHorizontalPadding == null) {
             iconHorizontalPadding = M3Css.nonNegativeStyleableDoubleProperty(
@@ -288,13 +275,11 @@ public abstract sealed class M3Chip extends ButtonBase
     /// Sets the icon size token applied to [M3Icon] graphics.
     ///
     /// @param iconSize the icon graphic size in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setIconSize(double iconSize) {
         iconSizeProperty().set(M3Css.nonNegative(iconSize, "iconSize"));
     }
 
-    /// Returns the icon size token property applied to [M3Icon] graphics.
-    ///
-    /// @return the icon size token property
     public final StyleableDoubleProperty iconSizeProperty() {
         if (iconSize == null) {
             iconSize = M3Css.nonNegativeStyleableDoubleProperty(

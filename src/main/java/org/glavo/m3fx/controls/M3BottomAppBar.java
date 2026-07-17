@@ -70,10 +70,10 @@ public final class M3BottomAppBar extends Control {
     /// The floating action slot style class.
     public static final String FLOATING_ACTION_STYLE_CLASS = "m3-bottom-app-bar-floating-action";
 
-    // The optional floating action node property.
+    /// The optional floating action node property.
     private final ObjectProperty<@Nullable Node> floatingAction = new SimpleObjectProperty<>(this, "floatingAction");
 
-    // The floating action node alignment property.
+    /// The floating action node alignment property.
     private final ObjectProperty<M3BottomAppBarFloatingActionAlignment> floatingActionAlignment =
             new SimpleObjectProperty<>(this, "floatingActionAlignment", M3BottomAppBarFloatingActionAlignment.END) {
                 /// Updates alignment style classes when the property changes.
@@ -91,16 +91,16 @@ public final class M3BottomAppBar extends Control {
     /// The mutable regular action node list.
     private final ObservableList<Node> actions = M3ObservableLists.nonNullElementList("action");
 
-    // The bottom app bar container height token.
+    /// The bottom app bar container height token.
     private @Nullable StyleableDoubleProperty containerHeight;
 
-    // The horizontal content padding token.
+    /// The horizontal content padding token.
     private @Nullable StyleableDoubleProperty horizontalPadding;
 
-    // The spacing token between content slots.
+    /// The spacing token between content slots.
     private @Nullable StyleableDoubleProperty contentSpacing;
 
-    // The spacing token between regular action nodes.
+    /// The spacing token between regular action nodes.
     private @Nullable StyleableDoubleProperty actionSpacing;
 
     /// Notifies accessibility clients when focus moves between action children.
@@ -138,7 +138,6 @@ public final class M3BottomAppBar extends Control {
         this.floatingAction.set(floatingAction);
     }
 
-    /// Returns the optional floating action node property.
     public final ObjectProperty<@Nullable Node> floatingActionProperty() {
         return floatingAction;
     }
@@ -153,11 +152,11 @@ public final class M3BottomAppBar extends Control {
     /// Sets the floating action node alignment.
     ///
     /// @param floatingActionAlignment the floating action alignment
+    /// @throws NullPointerException if any required argument is `null`
     public final void setFloatingActionAlignment(M3BottomAppBarFloatingActionAlignment floatingActionAlignment) {
         this.floatingActionAlignment.set(Objects.requireNonNull(floatingActionAlignment, "floatingActionAlignment"));
     }
 
-    /// Returns the floating action node alignment property.
     public final ObjectProperty<M3BottomAppBarFloatingActionAlignment> floatingActionAlignmentProperty() {
         return floatingActionAlignment;
     }
@@ -172,11 +171,11 @@ public final class M3BottomAppBar extends Control {
     /// Sets the bottom app bar container height token.
     ///
     /// @param containerHeight the bottom app bar container height in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContainerHeight(double containerHeight) {
         containerHeightProperty().set(M3Css.nonNegative(containerHeight, "containerHeight"));
     }
 
-    /// Returns the bottom app bar container height token property.
     public final StyleableDoubleProperty containerHeightProperty() {
         if (containerHeight == null) {
             containerHeight = createStyleableDoubleProperty(
@@ -198,11 +197,11 @@ public final class M3BottomAppBar extends Control {
     /// Sets the horizontal content padding token.
     ///
     /// @param horizontalPadding the horizontal content padding in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setHorizontalPadding(double horizontalPadding) {
         horizontalPaddingProperty().set(M3Css.nonNegative(horizontalPadding, "horizontalPadding"));
     }
 
-    /// Returns the horizontal content padding token property.
     public final StyleableDoubleProperty horizontalPaddingProperty() {
         if (horizontalPadding == null) {
             horizontalPadding = createStyleableDoubleProperty(
@@ -224,11 +223,11 @@ public final class M3BottomAppBar extends Control {
     /// Sets the spacing token between regular actions, flexible slots, and floating action content.
     ///
     /// @param contentSpacing the content slot spacing in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContentSpacing(double contentSpacing) {
         contentSpacingProperty().set(M3Css.nonNegative(contentSpacing, "contentSpacing"));
     }
 
-    /// Returns the spacing token property between regular actions, flexible slots, and floating action content.
     public final StyleableDoubleProperty contentSpacingProperty() {
         if (contentSpacing == null) {
             contentSpacing = createStyleableDoubleProperty(
@@ -250,11 +249,11 @@ public final class M3BottomAppBar extends Control {
     /// Sets the spacing token between generated regular action slots.
     ///
     /// @param actionSpacing the regular action slot spacing in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setActionSpacing(double actionSpacing) {
         actionSpacingProperty().set(M3Css.nonNegative(actionSpacing, "actionSpacing"));
     }
 
-    /// Returns the spacing token property between generated regular action slots.
     public final StyleableDoubleProperty actionSpacingProperty() {
         if (actionSpacing == null) {
             actionSpacing = createStyleableDoubleProperty(
@@ -311,6 +310,8 @@ public final class M3BottomAppBar extends Control {
     }
 
     /// Executes accessibility actions for indexed action and floating action children.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

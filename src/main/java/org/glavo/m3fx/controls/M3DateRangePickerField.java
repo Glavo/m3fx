@@ -92,7 +92,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// The initial popup picker offset used for enter and exit motion.
     private static final double POPUP_TRANSITION_OFFSET_Y = 6.0;
 
-    /// Internal storage for [startDateProperty].
+    /// The start date property.
     private final ObjectProperty<@Nullable LocalDate> startDate =
             new SimpleObjectProperty<>(this, "startDate") {
                 /// Validates direct property writes before applying them.
@@ -117,7 +117,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
                 }
             };
 
-    /// Internal storage for [endDateProperty].
+    /// The end date property.
     private final ObjectProperty<@Nullable LocalDate> endDate =
             new SimpleObjectProperty<>(this, "endDate") {
                 /// Validates direct property writes before applying them.
@@ -142,7 +142,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
                 }
             };
 
-    /// Internal storage for [formatterProperty].
+    /// The editor text formatter property.
     private final ObjectProperty<DateTimeFormatter> formatter =
             new SimpleObjectProperty<>(this, "formatter") {
                 /// Keeps formatter values non-null.
@@ -158,7 +158,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
                 }
             };
 
-    /// Internal storage for [invalidTextErrorTextProperty].
+    /// The parse error message property.
     private final StringProperty invalidTextErrorText =
             new SimpleStringProperty(this, "invalidTextErrorText") {
                 /// Keeps parse error text non-null.
@@ -168,7 +168,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
                 }
             };
 
-    /// Internal storage for [rangeErrorTextProperty].
+    /// The range error message property.
     private final StringProperty rangeErrorText =
             new SimpleStringProperty(this, "rangeErrorText") {
                 /// Keeps range error text non-null.
@@ -178,7 +178,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
                 }
             };
 
-    /// Internal storage for [startTextProperty].
+    /// The raw start-date editor text property.
     private final StringProperty startText = new SimpleStringProperty(this, "startText", "") {
         /// Keeps start editor text non-null.
         @Override
@@ -187,7 +187,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         }
     };
 
-    /// Internal storage for [endTextProperty].
+    /// The raw end-date editor text property.
     private final StringProperty endText = new SimpleStringProperty(this, "endText", "") {
         /// Keeps end editor text non-null.
         @Override
@@ -196,7 +196,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         }
     };
 
-    /// Internal storage for [startVariantProperty].
+    /// The start-date editor variant property.
     private final ObjectProperty<M3TextInputVariant> startVariant =
             new SimpleObjectProperty<>(this, "startVariant", M3TextInputVariant.FILLED) {
                 /// Keeps the start text input variant non-null.
@@ -206,7 +206,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
                 }
             };
 
-    /// Internal storage for [endVariantProperty].
+    /// The end-date editor variant property.
     private final ObjectProperty<M3TextInputVariant> endVariant =
             new SimpleObjectProperty<>(this, "endVariant", M3TextInputVariant.FILLED) {
                 /// Keeps the end text input variant non-null.
@@ -216,7 +216,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
                 }
             };
 
-    /// Internal storage for [startErrorTextProperty].
+    /// The start-date editor error text property.
     private final StringProperty startErrorText = new SimpleStringProperty(this, "startErrorText", "") {
         /// Keeps start error text non-null.
         @Override
@@ -225,7 +225,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         }
     };
 
-    /// Internal storage for [endErrorTextProperty].
+    /// The end-date editor error text property.
     private final StringProperty endErrorText = new SimpleStringProperty(this, "endErrorText", "") {
         /// Keeps end error text non-null.
         @Override
@@ -234,7 +234,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         }
     };
 
-    /// Internal storage for [startLabelTextProperty].
+    /// The start label text property.
     private final StringProperty startLabelText = new SimpleStringProperty(this, "startLabelText", "") {
         /// Keeps start label text non-null.
         @Override
@@ -243,7 +243,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         }
     };
 
-    /// Internal storage for [endLabelTextProperty].
+    /// The end label text property.
     private final StringProperty endLabelText = new SimpleStringProperty(this, "endLabelText", "") {
         /// Keeps end label text non-null.
         @Override
@@ -252,7 +252,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         }
     };
 
-    /// Internal storage for [startSupportingTextProperty].
+    /// The start supporting text property.
     private final StringProperty startSupportingText =
             new SimpleStringProperty(this, "startSupportingText", "") {
                 /// Keeps start supporting text non-null.
@@ -262,7 +262,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
                 }
             };
 
-    /// Internal storage for [endSupportingTextProperty].
+    /// The end supporting text property.
     private final StringProperty endSupportingText =
             new SimpleStringProperty(this, "endSupportingText", "") {
                 /// Keeps end supporting text non-null.
@@ -315,7 +315,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     private final M3PopupContextSynchronizer popupContextSynchronizer =
             new M3PopupContextSynchronizer(this, popupContent, M3Stylesheets.controlStylesheet("picker-field.css"));
 
-    /// Internal storage for [showingProperty].
+    /// The read-only popup showing property.
     private final ReadOnlyBooleanWrapper showing = new ReadOnlyBooleanWrapper(this, "showing");
 
     /// The reusable picker popup enter and exit animation.
@@ -390,9 +390,6 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         this.startDate.set(startDate);
     }
 
-    /// Returns the start date property.
-    ///
-    /// @return the start date property
     public ObjectProperty<@Nullable LocalDate> startDateProperty() {
         return startDate;
     }
@@ -411,9 +408,6 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         this.endDate.set(endDate);
     }
 
-    /// Returns the end date property.
-    ///
-    /// @return the end date property
     public ObjectProperty<@Nullable LocalDate> endDateProperty() {
         return endDate;
     }
@@ -439,6 +433,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// Sets both range endpoints from the supplied inclusive range.
     ///
     /// @param range the inclusive date range to select
+    /// @throws NullPointerException if any required argument is `null`
     public void setRange(M3DateRange range) {
         M3DateRange validatedRange = Objects.requireNonNull(range, "range");
         setRange(validatedRange.startDate(), validatedRange.endDate());
@@ -496,9 +491,6 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         this.startText.set(startText);
     }
 
-    /// Returns the raw start-date editor text property.
-    ///
-    /// @return the raw start-date editor text property
     public StringProperty startTextProperty() {
         return startText;
     }
@@ -522,9 +514,6 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         this.endText.set(endText);
     }
 
-    /// Returns the raw end-date editor text property.
-    ///
-    /// @return the raw end-date editor text property
     public StringProperty endTextProperty() {
         return endText;
     }
@@ -543,9 +532,6 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         startVariant.set(variant);
     }
 
-    /// Returns the start-date editor variant property.
-    ///
-    /// @return the start-date editor variant property
     public ObjectProperty<M3TextInputVariant> startVariantProperty() {
         return startVariant;
     }
@@ -564,9 +550,6 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         endVariant.set(variant);
     }
 
-    /// Returns the end-date editor variant property.
-    ///
-    /// @return the end-date editor variant property
     public ObjectProperty<M3TextInputVariant> endVariantProperty() {
         return endVariant;
     }
@@ -585,9 +568,6 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         startErrorText.set(errorText);
     }
 
-    /// Returns the start-date editor error text property.
-    ///
-    /// @return the start-date editor error text property
     public StringProperty startErrorTextProperty() {
         return startErrorText;
     }
@@ -606,9 +586,6 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         endErrorText.set(errorText);
     }
 
-    /// Returns the end-date editor error text property.
-    ///
-    /// @return the end-date editor error text property
     public StringProperty endErrorTextProperty() {
         return endErrorText;
     }
@@ -669,9 +646,6 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         this.formatter.set(formatter);
     }
 
-    /// Returns the editor text formatter property.
-    ///
-    /// @return the editor text formatter property
     public ObjectProperty<DateTimeFormatter> formatterProperty() {
         return formatter;
     }
@@ -690,9 +664,6 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         this.invalidTextErrorText.set(invalidTextErrorText);
     }
 
-    /// Returns the parse error message property.
-    ///
-    /// @return the parse error message property
     public StringProperty invalidTextErrorTextProperty() {
         return invalidTextErrorText;
     }
@@ -711,9 +682,6 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         this.rangeErrorText.set(rangeErrorText);
     }
 
-    /// Returns the range error message property.
-    ///
-    /// @return the range error message property
     public StringProperty rangeErrorTextProperty() {
         return rangeErrorText;
     }
@@ -732,9 +700,6 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         this.startLabelText.set(startLabelText);
     }
 
-    /// Returns the start label text property.
-    ///
-    /// @return the start label text property
     public StringProperty startLabelTextProperty() {
         return startLabelText;
     }
@@ -753,9 +718,6 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         this.endLabelText.set(endLabelText);
     }
 
-    /// Returns the end label text property.
-    ///
-    /// @return the end label text property
     public StringProperty endLabelTextProperty() {
         return endLabelText;
     }
@@ -774,9 +736,6 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         startSupportingText.set(supportingText);
     }
 
-    /// Returns the start supporting text property.
-    ///
-    /// @return the start supporting text property
     public StringProperty startSupportingTextProperty() {
         return startSupportingText;
     }
@@ -795,9 +754,6 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         endSupportingText.set(supportingText);
     }
 
-    /// Returns the end supporting text property.
-    ///
-    /// @return the end supporting text property
     public StringProperty endSupportingTextProperty() {
         return endSupportingText;
     }
@@ -809,9 +765,6 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         return showing.get();
     }
 
-    /// Returns the read-only popup showing property.
-    ///
-    /// @return the read-only popup showing property
     public ReadOnlyBooleanProperty showingProperty() {
         return showing.getReadOnlyProperty();
     }
@@ -908,6 +861,8 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     }
 
     /// Returns accessibility attributes for the embedded editors and popup picker.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -923,6 +878,8 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     }
 
     /// Executes editor and popup accessibility actions.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

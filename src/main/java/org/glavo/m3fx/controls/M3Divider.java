@@ -46,7 +46,7 @@ public final class M3Divider extends Control {
     /// The default trailing inset.
     private static final double DEFAULT_INSET_END = 0.0;
 
-    // The divider orientation property.
+    /// The divider orientation property.
     private final ObjectProperty<Orientation> orientation = new SimpleObjectProperty<>(this, "orientation", Orientation.HORIZONTAL) {
         /// Restores the default orientation when a null value is assigned.
         @Override
@@ -57,13 +57,13 @@ public final class M3Divider extends Control {
         }
     };
 
-    // The styleable divider thickness token.
+    /// The styleable divider thickness token.
     private @Nullable StyleableDoubleProperty thickness;
 
-    // The styleable leading inset token.
+    /// The styleable leading inset token.
     private @Nullable StyleableDoubleProperty insetStart;
 
-    // The styleable trailing inset token.
+    /// The styleable trailing inset token.
     private @Nullable StyleableDoubleProperty insetEnd;
 
     /// Creates a horizontal divider.
@@ -91,13 +91,11 @@ public final class M3Divider extends Control {
     /// Sets the divider orientation.
     ///
     /// @param orientation the divider orientation
+    /// @throws NullPointerException if any required argument is `null`
     public final void setOrientation(Orientation orientation) {
         this.orientation.set(Objects.requireNonNull(orientation, "orientation"));
     }
 
-    /// Returns the divider orientation property.
-    ///
-    /// @return the divider orientation property
     public final ObjectProperty<Orientation> orientationProperty() {
         return orientation;
     }
@@ -112,13 +110,11 @@ public final class M3Divider extends Control {
     /// Sets the divider thickness token.
     ///
     /// @param thickness the divider thickness token
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setThickness(double thickness) {
         thicknessProperty().set(M3Css.nonNegative(thickness, "thickness"));
     }
 
-    /// Returns the divider thickness token property.
-    ///
-    /// @return the divider thickness token property
     public final StyleableDoubleProperty thicknessProperty() {
         if (thickness == null) {
             thickness = M3Css.nonNegativeStyleableDoubleProperty(
@@ -142,13 +138,11 @@ public final class M3Divider extends Control {
     /// Sets the leading inset token.
     ///
     /// @param insetStart the leading inset token
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setInsetStart(double insetStart) {
         insetStartProperty().set(M3Css.nonNegative(insetStart, "insetStart"));
     }
 
-    /// Returns the leading inset token property.
-    ///
-    /// @return the leading inset token property
     public final StyleableDoubleProperty insetStartProperty() {
         if (insetStart == null) {
             insetStart = M3Css.nonNegativeStyleableDoubleProperty(
@@ -172,13 +166,11 @@ public final class M3Divider extends Control {
     /// Sets the trailing inset token.
     ///
     /// @param insetEnd the trailing inset token
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setInsetEnd(double insetEnd) {
         insetEndProperty().set(M3Css.nonNegative(insetEnd, "insetEnd"));
     }
 
-    /// Returns the trailing inset token property.
-    ///
-    /// @return the trailing inset token property
     public final StyleableDoubleProperty insetEndProperty() {
         if (insetEnd == null) {
             insetEnd = M3Css.nonNegativeStyleableDoubleProperty(

@@ -63,22 +63,22 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
     /// The default selected radio dot size.
     private static final double DEFAULT_SELECTED_DOT_SIZE = 10.0;
 
-    // The styleable touch target size token.
+    /// The styleable touch target size token.
     private @Nullable StyleableDoubleProperty touchTargetSize;
 
-    // The styleable state layer size token.
+    /// The styleable state layer size token.
     private @Nullable StyleableDoubleProperty stateLayerSize;
 
-    // The styleable radio indicator container size token.
+    /// The styleable radio indicator container size token.
     private @Nullable StyleableDoubleProperty containerSize;
 
-    // The styleable selected radio dot size token.
+    /// The styleable selected radio dot size token.
     private @Nullable StyleableDoubleProperty selectedDotSize;
 
-    // The selected state property.
+    /// The selected state property.
     private @Nullable BooleanProperty selected;
 
-    // The toggle group this radio button belongs to.
+    /// The toggle group this radio button belongs to.
     private @Nullable ObjectProperty<@Nullable ToggleGroup> toggleGroup;
 
     /// Creates an empty radio button.
@@ -110,9 +110,6 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
         return selected != null && selected.get();
     }
 
-    /// Returns the selected state property.
-    ///
-    /// @return the writable selected state property
     @Override
     public final BooleanProperty selectedProperty() {
         if (selected == null) {
@@ -167,15 +164,15 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
         return toggleGroup == null ? null : toggleGroup.get();
     }
 
-    /// Returns the toggle group property.
-    ///
-    /// @return the writable toggle group property
     @Override
     public final ObjectProperty<@Nullable ToggleGroup> toggleGroupProperty() {
         if (toggleGroup == null) {
             toggleGroup = new ObjectPropertyBase<>() {
-                private @Nullable ToggleGroup oldGroup;
-                private boolean updatingGroup;
+    /// The toggle group from which this control is currently being migrated.
+    private @Nullable ToggleGroup oldGroup;
+
+    /// Whether a toggle-group migration is currently updating both group models.
+    private boolean updatingGroup;
 
                 /// Keeps JavaFX ToggleGroup membership synchronized with this property.
                 @Override
@@ -230,13 +227,11 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
     /// Sets the preferred touch target size token.
     ///
     /// @param touchTargetSize the preferred touch target size in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setTouchTargetSize(double touchTargetSize) {
         touchTargetSizeProperty().set(M3Css.nonNegative(touchTargetSize, "touchTargetSize"));
     }
 
-    /// Returns the preferred touch target size token property.
-    ///
-    /// @return the styleable preferred touch target size property
     public final StyleableDoubleProperty touchTargetSizeProperty() {
         if (touchTargetSize == null) {
             touchTargetSize = M3Css.nonNegativeStyleableDoubleProperty(
@@ -260,13 +255,11 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
     /// Sets the bounded indicator state layer size token.
     ///
     /// @param stateLayerSize the state layer size in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setStateLayerSize(double stateLayerSize) {
         stateLayerSizeProperty().set(M3Css.nonNegative(stateLayerSize, "stateLayerSize"));
     }
 
-    /// Returns the bounded indicator state layer size token property.
-    ///
-    /// @return the state layer size property
     public final StyleableDoubleProperty stateLayerSizeProperty() {
         if (stateLayerSize == null) {
             stateLayerSize = M3Css.nonNegativeStyleableDoubleProperty(
@@ -290,13 +283,11 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
     /// Sets the radio indicator container size token.
     ///
     /// @param containerSize the radio indicator container size in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContainerSize(double containerSize) {
         containerSizeProperty().set(M3Css.nonNegative(containerSize, "containerSize"));
     }
 
-    /// Returns the radio indicator container size token property.
-    ///
-    /// @return the radio indicator container size property
     public final StyleableDoubleProperty containerSizeProperty() {
         if (containerSize == null) {
             containerSize = createSizeProperty(
@@ -318,13 +309,11 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
     /// Sets the selected radio dot size token.
     ///
     /// @param selectedDotSize the selected radio dot size in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setSelectedDotSize(double selectedDotSize) {
         selectedDotSizeProperty().set(M3Css.nonNegative(selectedDotSize, "selectedDotSize"));
     }
 
-    /// Returns the selected radio dot size token property.
-    ///
-    /// @return the selected radio dot size property
     public final StyleableDoubleProperty selectedDotSizeProperty() {
         if (selectedDotSize == null) {
             selectedDotSize = createSizeProperty(
@@ -377,6 +366,7 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
     /// @param attribute the requested accessibility attribute
     /// @param parameters optional attribute-specific parameters
     /// @return the requested accessibility value, or `null` when no value is available
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");

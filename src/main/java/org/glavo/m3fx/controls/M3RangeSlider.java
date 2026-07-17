@@ -105,34 +105,34 @@ public final class M3RangeSlider extends Control {
     /// The default distance between a handle and its value indicator.
     private static final double DEFAULT_VALUE_INDICATOR_BOTTOM_SPACE = 12.0;
 
-    // The minimum value property.
+    /// The minimum value property.
     private @Nullable DoubleProperty min;
 
-    // The maximum value property.
+    /// The maximum value property.
     private @Nullable DoubleProperty max;
 
-    // The lower selected value property.
+    /// The lower selected value property.
     private @Nullable DoubleProperty lowValue;
 
-    // The upper selected value property.
+    /// The upper selected value property.
     private @Nullable DoubleProperty highValue;
 
-    // The lower-handle direct-manipulation property.
+    /// The lower-handle direct-manipulation property.
     private @Nullable BooleanProperty lowValueChanging;
 
-    // The upper-handle direct-manipulation property.
+    /// The upper-handle direct-manipulation property.
     private @Nullable BooleanProperty highValueChanging;
 
-    // The orientation property.
+    /// The orientation property.
     private @Nullable ObjectProperty<Orientation> orientation;
 
-    // The keyboard block-increment property.
+    /// The keyboard block-increment property.
     private @Nullable DoubleProperty blockIncrement;
 
-    // The discrete step-size property.
+    /// The discrete step-size property.
     private @Nullable DoubleProperty stepSize;
 
-    // The Material slider size property.
+    /// The Material slider size property.
     private final ObjectProperty<M3SliderSize> size = new SimpleObjectProperty<>(this, "size", DEFAULT_SIZE) {
         /// Updates the size style class after a value change.
         @Override
@@ -146,43 +146,43 @@ public final class M3RangeSlider extends Control {
         }
     };
 
-    // Whether the active handle displays a value indicator during direct manipulation.
+    /// Whether the active handle displays a value indicator during direct manipulation.
     private @Nullable BooleanProperty showValueIndicator;
 
-    // The optional value-label formatter.
+    /// The optional value-label formatter.
     private @Nullable ObjectProperty<@Nullable StringConverter<Double>> labelFormatter;
 
-    // The styleable track-thickness token.
+    /// The styleable track-thickness token.
     private @Nullable StyleableDoubleProperty trackThickness;
 
-    // The styleable track-shape token.
+    /// The styleable track-shape token.
     private @Nullable StyleableDoubleProperty trackShape;
 
-    // The styleable stop-indicator-size token.
+    /// The styleable stop-indicator-size token.
     private @Nullable StyleableDoubleProperty stopIndicatorSize;
 
-    // The styleable stop-indicator trailing-space token.
+    /// The styleable stop-indicator trailing-space token.
     private @Nullable StyleableDoubleProperty stopIndicatorTrailingSpace;
 
-    // The styleable handle long-side token.
+    /// The styleable handle long-side token.
     private @Nullable StyleableDoubleProperty thumbSize;
 
-    // The styleable enabled handle short-side token.
+    /// The styleable enabled handle short-side token.
     private @Nullable StyleableDoubleProperty thumbWidth;
 
-    // The styleable focused handle short-side token.
+    /// The styleable focused handle short-side token.
     private @Nullable StyleableDoubleProperty focusedThumbWidth;
 
-    // The styleable pressed handle short-side token.
+    /// The styleable pressed handle short-side token.
     private @Nullable StyleableDoubleProperty pressedThumbWidth;
 
-    // The styleable handle-to-track-gap token.
+    /// The styleable handle-to-track-gap token.
     private @Nullable StyleableDoubleProperty thumbTrackGap;
 
-    // The styleable touch-target token.
+    /// The styleable touch-target token.
     private @Nullable StyleableDoubleProperty touchTargetSize;
 
-    // The styleable value-indicator spacing token.
+    /// The styleable value-indicator spacing token.
     private @Nullable StyleableDoubleProperty valueIndicatorBottomSpace;
 
     /// Prevents recursive value normalization while a range update is in progress.
@@ -224,9 +224,6 @@ public final class M3RangeSlider extends Control {
         minProperty().set(value);
     }
 
-    /// Returns the minimum-value property.
-    ///
-    /// @return the writable minimum-value property
     public final DoubleProperty minProperty() {
         if (min == null) {
             min = new DoublePropertyBase(DEFAULT_MIN) {
@@ -267,9 +264,6 @@ public final class M3RangeSlider extends Control {
         maxProperty().set(value);
     }
 
-    /// Returns the maximum-value property.
-    ///
-    /// @return the writable maximum-value property
     public final DoubleProperty maxProperty() {
         if (max == null) {
             max = new DoublePropertyBase(DEFAULT_MAX) {
@@ -313,9 +307,6 @@ public final class M3RangeSlider extends Control {
         lowValueProperty().set(value);
     }
 
-    /// Returns the lower selected-value property.
-    ///
-    /// @return the writable lower selected-value property
     public final DoubleProperty lowValueProperty() {
         if (lowValue == null) {
             lowValue = new DoublePropertyBase(DEFAULT_LOW_VALUE) {
@@ -366,9 +357,6 @@ public final class M3RangeSlider extends Control {
         highValueProperty().set(value);
     }
 
-    /// Returns the upper selected-value property.
-    ///
-    /// @return the writable upper selected-value property
     public final DoubleProperty highValueProperty() {
         if (highValue == null) {
             highValue = new DoublePropertyBase(DEFAULT_HIGH_VALUE) {
@@ -430,9 +418,6 @@ public final class M3RangeSlider extends Control {
         lowValueChangingProperty().set(changing);
     }
 
-    /// Returns the lower-value-changing property.
-    ///
-    /// @return the writable lower-value-changing property
     public final BooleanProperty lowValueChangingProperty() {
         if (lowValueChanging == null) {
             lowValueChanging = changingProperty("lowValueChanging");
@@ -454,9 +439,6 @@ public final class M3RangeSlider extends Control {
         highValueChangingProperty().set(changing);
     }
 
-    /// Returns the upper-value-changing property.
-    ///
-    /// @return the writable upper-value-changing property
     public final BooleanProperty highValueChangingProperty() {
         if (highValueChanging == null) {
             highValueChanging = changingProperty("highValueChanging");
@@ -476,13 +458,11 @@ public final class M3RangeSlider extends Control {
     /// Material Design recommends horizontal orientation for range sliders.
     ///
     /// @param value the new orientation
+    /// @throws NullPointerException if any required argument is `null`
     public final void setOrientation(Orientation value) {
         orientationProperty().set(Objects.requireNonNull(value, "value"));
     }
 
-    /// Returns the orientation property.
-    ///
-    /// @return the writable orientation property
     public final ObjectProperty<Orientation> orientationProperty() {
         if (orientation == null) {
             orientation = new ObjectPropertyBase<>(Orientation.HORIZONTAL) {
@@ -522,13 +502,11 @@ public final class M3RangeSlider extends Control {
     /// Sets the block increment.
     ///
     /// @param value the non-negative adjustment amount
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setBlockIncrement(double value) {
         blockIncrementProperty().set(M3Css.nonNegative(value, "value"));
     }
 
-    /// Returns the block-increment property.
-    ///
-    /// @return the writable block-increment property
     public final DoubleProperty blockIncrementProperty() {
         if (blockIncrement == null) {
             blockIncrement = new DoublePropertyBase(DEFAULT_BLOCK_INCREMENT) {
@@ -567,13 +545,11 @@ public final class M3RangeSlider extends Control {
     /// Sets the discrete interval.
     ///
     /// @param value the non-negative interval, where zero selects continuous behavior
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setStepSize(double value) {
         stepSizeProperty().set(M3Css.nonNegative(value, "value"));
     }
 
-    /// Returns the step-size property.
-    ///
-    /// @return the writable step-size property
     public final DoubleProperty stepSizeProperty() {
         if (stepSize == null) {
             stepSize = new DoublePropertyBase(DEFAULT_STEP_SIZE) {
@@ -615,13 +591,11 @@ public final class M3RangeSlider extends Control {
     /// Sets the Material slider size.
     ///
     /// @param value the size preset
+    /// @throws NullPointerException if any required argument is `null`
     public final void setSize(M3SliderSize value) {
         size.set(Objects.requireNonNull(value, "value"));
     }
 
-    /// Returns the size property.
-    ///
-    /// @return the writable size property
     public final ObjectProperty<M3SliderSize> sizeProperty() {
         return size;
     }
@@ -642,9 +616,6 @@ public final class M3RangeSlider extends Control {
         showValueIndicatorProperty().set(show);
     }
 
-    /// Returns the value-indicator property.
-    ///
-    /// @return the writable value-indicator property
     public final BooleanProperty showValueIndicatorProperty() {
         if (showValueIndicator == null) {
             showValueIndicator = new BooleanPropertyBase(false) {
@@ -684,9 +655,6 @@ public final class M3RangeSlider extends Control {
         labelFormatterProperty().set(formatter);
     }
 
-    /// Returns the value-label formatter property.
-    ///
-    /// @return the writable nullable formatter property
     public final ObjectProperty<@Nullable StringConverter<Double>> labelFormatterProperty() {
         if (labelFormatter == null) {
             labelFormatter = new ObjectPropertyBase<>() {
@@ -722,13 +690,11 @@ public final class M3RangeSlider extends Control {
     /// Sets the track thickness token.
     ///
     /// @param value the non-negative thickness in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setTrackThickness(double value) {
         trackThicknessProperty().set(M3Css.nonNegative(value, "value"));
     }
 
-    /// Returns the track-thickness property.
-    ///
-    /// @return the styleable track-thickness property
     public final StyleableDoubleProperty trackThicknessProperty() {
         if (trackThickness == null) {
             trackThickness = styleableMetric(
@@ -748,13 +714,11 @@ public final class M3RangeSlider extends Control {
     /// Sets the track outer-corner radius token.
     ///
     /// @param value the non-negative radius in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setTrackShape(double value) {
         trackShapeProperty().set(M3Css.nonNegative(value, "value"));
     }
 
-    /// Returns the track-shape property.
-    ///
-    /// @return the styleable track-shape property
     public final StyleableDoubleProperty trackShapeProperty() {
         if (trackShape == null) {
             trackShape = styleableMetric(DEFAULT_TRACK_SHAPE, "trackShape", StyleableProperties.TRACK_SHAPE);
@@ -772,13 +736,11 @@ public final class M3RangeSlider extends Control {
     /// Sets the stop-indicator diameter token.
     ///
     /// @param value the non-negative diameter in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setStopIndicatorSize(double value) {
         stopIndicatorSizeProperty().set(M3Css.nonNegative(value, "value"));
     }
 
-    /// Returns the stop-indicator-size property.
-    ///
-    /// @return the styleable stop-indicator-size property
     public final StyleableDoubleProperty stopIndicatorSizeProperty() {
         if (stopIndicatorSize == null) {
             stopIndicatorSize = styleableMetric(
@@ -803,13 +765,11 @@ public final class M3RangeSlider extends Control {
     /// Sets the distance between an inactive track's outer edge and its stop indicator.
     ///
     /// @param value the non-negative trailing space in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setStopIndicatorTrailingSpace(double value) {
         stopIndicatorTrailingSpaceProperty().set(M3Css.nonNegative(value, "value"));
     }
 
-    /// Returns the stop-indicator trailing-space property.
-    ///
-    /// @return the styleable stop-indicator trailing-space property
     public final StyleableDoubleProperty stopIndicatorTrailingSpaceProperty() {
         if (stopIndicatorTrailingSpace == null) {
             stopIndicatorTrailingSpace = styleableMetric(
@@ -831,13 +791,11 @@ public final class M3RangeSlider extends Control {
     /// Sets the handle long-side size token.
     ///
     /// @param value the non-negative size in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setThumbSize(double value) {
         thumbSizeProperty().set(M3Css.nonNegative(value, "value"));
     }
 
-    /// Returns the handle-size property.
-    ///
-    /// @return the styleable handle-size property
     public final StyleableDoubleProperty thumbSizeProperty() {
         if (thumbSize == null) {
             thumbSize = styleableMetric(DEFAULT_THUMB_SIZE, "thumbSize", StyleableProperties.THUMB_SIZE);
@@ -855,13 +813,11 @@ public final class M3RangeSlider extends Control {
     /// Sets the enabled handle short-side width token.
     ///
     /// @param value the non-negative width in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setThumbWidth(double value) {
         thumbWidthProperty().set(M3Css.nonNegative(value, "value"));
     }
 
-    /// Returns the enabled handle-width property.
-    ///
-    /// @return the styleable handle-width property
     public final StyleableDoubleProperty thumbWidthProperty() {
         if (thumbWidth == null) {
             thumbWidth = styleableMetric(DEFAULT_THUMB_WIDTH, "thumbWidth", StyleableProperties.THUMB_WIDTH);
@@ -879,13 +835,11 @@ public final class M3RangeSlider extends Control {
     /// Sets the keyboard-focused handle short-side width token.
     ///
     /// @param value the non-negative width in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setFocusedThumbWidth(double value) {
         focusedThumbWidthProperty().set(M3Css.nonNegative(value, "value"));
     }
 
-    /// Returns the focused handle-width property.
-    ///
-    /// @return the styleable focused handle-width property
     public final StyleableDoubleProperty focusedThumbWidthProperty() {
         if (focusedThumbWidth == null) {
             focusedThumbWidth = styleableMetric(
@@ -905,13 +859,11 @@ public final class M3RangeSlider extends Control {
     /// Sets the pressed handle short-side width token.
     ///
     /// @param value the non-negative width in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setPressedThumbWidth(double value) {
         pressedThumbWidthProperty().set(M3Css.nonNegative(value, "value"));
     }
 
-    /// Returns the pressed handle-width property.
-    ///
-    /// @return the styleable pressed handle-width property
     public final StyleableDoubleProperty pressedThumbWidthProperty() {
         if (pressedThumbWidth == null) {
             pressedThumbWidth = styleableMetric(
@@ -931,13 +883,11 @@ public final class M3RangeSlider extends Control {
     /// Sets the handle-to-track gap token.
     ///
     /// @param value the non-negative gap in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setThumbTrackGap(double value) {
         thumbTrackGapProperty().set(M3Css.nonNegative(value, "value"));
     }
 
-    /// Returns the handle-to-track-gap property.
-    ///
-    /// @return the styleable gap property
     public final StyleableDoubleProperty thumbTrackGapProperty() {
         if (thumbTrackGap == null) {
             thumbTrackGap = styleableMetric(
@@ -957,13 +907,11 @@ public final class M3RangeSlider extends Control {
     /// Sets the preferred touch-target size.
     ///
     /// @param value the non-negative size in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setTouchTargetSize(double value) {
         touchTargetSizeProperty().set(M3Css.nonNegative(value, "value"));
     }
 
-    /// Returns the touch-target-size property.
-    ///
-    /// @return the styleable touch-target-size property
     public final StyleableDoubleProperty touchTargetSizeProperty() {
         if (touchTargetSize == null) {
             touchTargetSize = styleableMetric(
@@ -985,13 +933,11 @@ public final class M3RangeSlider extends Control {
     /// Sets the value-indicator spacing token.
     ///
     /// @param value the non-negative spacing in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setValueIndicatorBottomSpace(double value) {
         valueIndicatorBottomSpaceProperty().set(M3Css.nonNegative(value, "value"));
     }
 
-    /// Returns the value-indicator-spacing property.
-    ///
-    /// @return the styleable spacing property
     public final StyleableDoubleProperty valueIndicatorBottomSpaceProperty() {
         if (valueIndicatorBottomSpace == null) {
             valueIndicatorBottomSpace = styleableMetric(

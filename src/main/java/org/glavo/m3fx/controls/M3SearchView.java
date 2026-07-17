@@ -94,11 +94,11 @@ public final class M3SearchView extends Control {
     /// The embedded search bar.
     private final M3SearchBar searchBar = new M3SearchBar();
 
-    /// Backing property for the public leading slot API.
+    /// The leading content node property.
     private final ObjectProperty<@Nullable Node> leading =
             new SimpleObjectProperty<>(this, "leading", searchBar.getLeading());
 
-    /// Backing property for the public search text API.
+    /// The search text property.
     private final StringProperty text = new SimpleStringProperty(this, "text", "") {
         /// Keeps search text non-null.
         @Override
@@ -107,7 +107,7 @@ public final class M3SearchView extends Control {
         }
     };
 
-    /// Backing property for the public prompt text API.
+    /// The prompt text property.
     private final StringProperty promptText = new SimpleStringProperty(this, "promptText", "") {
         /// Keeps prompt text non-null.
         @Override
@@ -116,7 +116,7 @@ public final class M3SearchView extends Control {
         }
     };
 
-    /// Backing property for the public action handler API.
+    /// The search submission handler property.
     private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
             new SimpleObjectProperty<>(this, "onAction") {
                 /// Updates the registered action event handler.
@@ -126,10 +126,10 @@ public final class M3SearchView extends Control {
                 }
             };
 
-    /// Backing property for the public active state API.
+    /// The active search result state property.
     private final BooleanProperty active = new SimpleBooleanProperty(this, "active");
 
-    /// Backing property for the public visual-treatment API.
+    /// The visual-treatment property.
     private final ObjectProperty<M3SearchViewStyle> viewStyle =
             new SimpleObjectProperty<>(this, "viewStyle", DEFAULT_VIEW_STYLE) {
                 /// Updates treatment pseudo-classes when the value changes.
@@ -144,7 +144,7 @@ public final class M3SearchView extends Control {
                 }
             };
 
-    /// Backing property for the public window-relative layout API.
+    /// The window-relative layout property.
     private final ObjectProperty<M3SearchViewLayout> viewLayout =
             new SimpleObjectProperty<>(this, "viewLayout", DEFAULT_VIEW_LAYOUT) {
                 /// Updates layout pseudo-classes when the value changes.
@@ -195,13 +195,11 @@ public final class M3SearchView extends Control {
     /// active state or search text.
     ///
     /// @param viewStyle the search view style
+    /// @throws NullPointerException if any required argument is `null`
     public final void setViewStyle(M3SearchViewStyle viewStyle) {
         this.viewStyle.set(Objects.requireNonNull(viewStyle, "viewStyle"));
     }
 
-    /// Returns the visual-treatment property.
-    ///
-    /// @return the search view style property
     public final ObjectProperty<M3SearchViewStyle> viewStyleProperty() {
         return viewStyle;
     }
@@ -219,13 +217,11 @@ public final class M3SearchView extends Control {
     /// layout restores the bounded Material size and shape constraints.
     ///
     /// @param viewLayout the search view layout
+    /// @throws NullPointerException if any required argument is `null`
     public final void setViewLayout(M3SearchViewLayout viewLayout) {
         this.viewLayout.set(Objects.requireNonNull(viewLayout, "viewLayout"));
     }
 
-    /// Returns the window-relative layout property.
-    ///
-    /// @return the search view layout property
     public final ObjectProperty<M3SearchViewLayout> viewLayoutProperty() {
         return viewLayout;
     }
@@ -253,9 +249,6 @@ public final class M3SearchView extends Control {
         this.leading.set(leading);
     }
 
-    /// Returns the leading content node property.
-    ///
-    /// @return the leading content node property
     public final ObjectProperty<@Nullable Node> leadingProperty() {
         return leading;
     }
@@ -281,9 +274,6 @@ public final class M3SearchView extends Control {
         this.text.set(text);
     }
 
-    /// Returns the search text property.
-    ///
-    /// @return the search text property
     public final StringProperty textProperty() {
         return text;
     }
@@ -302,9 +292,6 @@ public final class M3SearchView extends Control {
         this.promptText.set(promptText);
     }
 
-    /// Returns the prompt text property.
-    ///
-    /// @return the prompt text property
     public final StringProperty promptTextProperty() {
         return promptText;
     }
@@ -323,9 +310,6 @@ public final class M3SearchView extends Control {
         this.onAction.set(onAction);
     }
 
-    /// Returns the search submission handler property.
-    ///
-    /// @return the search submission handler property
     public final ObjectProperty<@Nullable EventHandler<ActionEvent>> onActionProperty() {
         return onAction;
     }
@@ -351,9 +335,6 @@ public final class M3SearchView extends Control {
         this.active.set(active);
     }
 
-    /// Returns the active search result state property.
-    ///
-    /// @return the active search result state property
     public final BooleanProperty activeProperty() {
         return active;
     }
@@ -392,6 +373,7 @@ public final class M3SearchView extends Control {
     /// @param attribute  the requested accessibility attribute
     /// @param parameters the optional attribute parameters
     /// @return the attribute value, or `null` when unavailable
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -409,6 +391,7 @@ public final class M3SearchView extends Control {
     ///
     /// @param action     the requested accessibility action
     /// @param parameters the optional action parameters
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

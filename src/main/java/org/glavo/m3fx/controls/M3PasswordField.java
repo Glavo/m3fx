@@ -49,6 +49,7 @@ public final class M3PasswordField extends PasswordField implements M3TextInput 
     /// Creates a filled password field with initial text.
     ///
     /// @param text the initial field text
+    /// @throws NullPointerException if any required argument is `null`
     public M3PasswordField(String text) {
         setText(Objects.requireNonNull(text, "text"));
         initialize();

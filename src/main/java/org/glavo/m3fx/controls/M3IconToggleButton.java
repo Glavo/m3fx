@@ -71,7 +71,7 @@ public final class M3IconToggleButton extends ButtonBase {
     /// The default toggle icon button glyph size.
     private static final double DEFAULT_ICON_SIZE = 24.0;
 
-    // The toggle icon button variant property.
+    /// The toggle icon button variant property.
     private final ObjectProperty<M3IconToggleButtonVariant> variant =
             new SimpleObjectProperty<>(this, "variant", M3IconToggleButtonVariant.STANDARD) {
                 /// Updates variant style classes when the property changes.
@@ -85,7 +85,7 @@ public final class M3IconToggleButton extends ButtonBase {
                 }
             };
 
-    // The toggle icon button size property.
+    /// The toggle icon button size property.
     private final ObjectProperty<M3ButtonSize> size =
             new SimpleObjectProperty<>(this, "size", DEFAULT_SIZE) {
                 /// Updates size style classes when the property changes.
@@ -99,7 +99,7 @@ public final class M3IconToggleButton extends ButtonBase {
                 }
             };
 
-    // The toggle icon button width role property.
+    /// The toggle icon button width role property.
     private final ObjectProperty<M3IconButtonWidth> widthRole =
             new SimpleObjectProperty<>(this, "widthRole", DEFAULT_WIDTH) {
                 /// Updates width style classes when the property changes.
@@ -113,7 +113,7 @@ public final class M3IconToggleButton extends ButtonBase {
                 }
             };
 
-    // The toggle icon button shape property.
+    /// The toggle icon button shape property.
     private final ObjectProperty<M3ButtonShape> buttonShape =
             new SimpleObjectProperty<>(this, "buttonShape", DEFAULT_SHAPE) {
                 /// Updates shape style classes when the property changes.
@@ -127,7 +127,7 @@ public final class M3IconToggleButton extends ButtonBase {
                 }
             };
 
-    // The selected state property.
+    /// The selected state property.
     private final BooleanProperty selected = new SimpleBooleanProperty(this, "selected") {
         /// Updates selected pseudo-class state.
         @Override
@@ -138,16 +138,16 @@ public final class M3IconToggleButton extends ButtonBase {
         }
     };
 
-    // The styleable container height token.
+    /// The styleable container height token.
     private @Nullable StyleableDoubleProperty containerHeight;
 
-    // The styleable container width token.
+    /// The styleable container width token.
     private @Nullable StyleableDoubleProperty containerWidth;
 
-    // The styleable container shape token.
+    /// The styleable container shape token.
     private @Nullable StyleableDoubleProperty containerShape;
 
-    // The styleable icon glyph size token.
+    /// The styleable icon glyph size token.
     private @Nullable StyleableDoubleProperty iconSize;
 
     /// The direct M3FX icon whose embedded color and size are managed by this button.
@@ -192,13 +192,11 @@ public final class M3IconToggleButton extends ButtonBase {
     /// Sets the toggle icon button variant.
     ///
     /// @param variant the toggle icon button variant
+    /// @throws NullPointerException if any required argument is `null`
     public final void setVariant(M3IconToggleButtonVariant variant) {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
 
-    /// Returns the toggle icon button variant property.
-    ///
-    /// @return the toggle icon button variant property
     public final ObjectProperty<M3IconToggleButtonVariant> variantProperty() {
         return variant;
     }
@@ -213,13 +211,11 @@ public final class M3IconToggleButton extends ButtonBase {
     /// Sets the toggle icon button size.
     ///
     /// @param size the toggle icon button size
+    /// @throws NullPointerException if any required argument is `null`
     public final void setSize(M3ButtonSize size) {
         this.size.set(Objects.requireNonNull(size, "size"));
     }
 
-    /// Returns the toggle icon button size property.
-    ///
-    /// @return the toggle icon button size property
     public final ObjectProperty<M3ButtonSize> sizeProperty() {
         return size;
     }
@@ -234,13 +230,11 @@ public final class M3IconToggleButton extends ButtonBase {
     /// Sets the toggle icon button width role.
     ///
     /// @param widthRole the toggle icon button width role
+    /// @throws NullPointerException if any required argument is `null`
     public final void setWidthRole(M3IconButtonWidth widthRole) {
         this.widthRole.set(Objects.requireNonNull(widthRole, "widthRole"));
     }
 
-    /// Returns the toggle icon button width role property.
-    ///
-    /// @return the toggle icon button width role property
     public final ObjectProperty<M3IconButtonWidth> widthRoleProperty() {
         return widthRole;
     }
@@ -255,13 +249,11 @@ public final class M3IconToggleButton extends ButtonBase {
     /// Sets the toggle icon button shape.
     ///
     /// @param shape the toggle icon button shape
+    /// @throws NullPointerException if any required argument is `null`
     public final void setButtonShape(M3ButtonShape shape) {
         this.buttonShape.set(Objects.requireNonNull(shape, "shape"));
     }
 
-    /// Returns the toggle icon button shape property.
-    ///
-    /// @return the toggle icon button shape property
     public final ObjectProperty<M3ButtonShape> buttonShapeProperty() {
         return buttonShape;
     }
@@ -280,9 +272,6 @@ public final class M3IconToggleButton extends ButtonBase {
         this.selected.set(selected);
     }
 
-    /// Returns the selected state property.
-    ///
-    /// @return the selected state property
     public final BooleanProperty selectedProperty() {
         return selected;
     }
@@ -297,13 +286,11 @@ public final class M3IconToggleButton extends ButtonBase {
     /// Sets the preferred container height token.
     ///
     /// @param containerHeight the preferred container height token
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContainerHeight(double containerHeight) {
         containerHeightProperty().set(M3Css.nonNegative(containerHeight, "containerHeight"));
     }
 
-    /// Returns the preferred container height token property.
-    ///
-    /// @return the preferred container height token property
     public final StyleableDoubleProperty containerHeightProperty() {
         if (containerHeight == null) {
             containerHeight = M3Css.nonNegativeStyleableDoubleProperty(
@@ -327,13 +314,11 @@ public final class M3IconToggleButton extends ButtonBase {
     /// Sets the preferred container width token.
     ///
     /// @param containerWidth the preferred container width token
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContainerWidth(double containerWidth) {
         containerWidthProperty().set(M3Css.nonNegative(containerWidth, "containerWidth"));
     }
 
-    /// Returns the preferred container width token property.
-    ///
-    /// @return the preferred container width token property
     public final StyleableDoubleProperty containerWidthProperty() {
         if (containerWidth == null) {
             containerWidth = M3Css.nonNegativeStyleableDoubleProperty(
@@ -357,13 +342,11 @@ public final class M3IconToggleButton extends ButtonBase {
     /// Sets the container shape radius token.
     ///
     /// @param containerShape the container shape radius token
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContainerShape(double containerShape) {
         containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
     }
 
-    /// Returns the container shape radius token property.
-    ///
-    /// @return the container shape radius token property
     public final StyleableDoubleProperty containerShapeProperty() {
         if (containerShape == null) {
             containerShape = M3Css.nonNegativeStyleableDoubleProperty(
@@ -387,13 +370,11 @@ public final class M3IconToggleButton extends ButtonBase {
     /// Sets the icon glyph size token.
     ///
     /// @param iconSize the icon glyph size in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setIconSize(double iconSize) {
         iconSizeProperty().set(M3Css.nonNegative(iconSize, "iconSize"));
     }
 
-    /// Returns the icon glyph size token property.
-    ///
-    /// @return the icon glyph size property
     public final StyleableDoubleProperty iconSizeProperty() {
         if (iconSize == null) {
             iconSize = M3Css.nonNegativeStyleableDoubleProperty(
@@ -442,6 +423,8 @@ public final class M3IconToggleButton extends ButtonBase {
     }
 
     /// Returns accessibility attributes for the toggle selection state.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");

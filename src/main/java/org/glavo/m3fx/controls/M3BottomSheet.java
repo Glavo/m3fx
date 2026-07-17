@@ -70,13 +70,13 @@ public final class M3BottomSheet extends Control {
     /// The drag handle style class.
     public static final String DRAG_HANDLE_STYLE_CLASS = "m3-bottom-sheet-drag-handle";
 
-    // The sheet headline text property.
+    /// The sheet headline text property.
     private final StringProperty headline = new SimpleStringProperty(this, "headline", "");
 
-    // The sheet content node property.
+    /// The sheet content node property.
     private final ObjectProperty<@Nullable Node> content = new SimpleObjectProperty<>(this, "content");
 
-    // The sheet variant property.
+    /// The sheet variant property.
     private final ObjectProperty<M3SheetVariant> variant =
             new SimpleObjectProperty<>(this, "variant", M3SheetVariant.STANDARD) {
                 /// Updates variant style classes when the property changes.
@@ -91,7 +91,7 @@ public final class M3BottomSheet extends Control {
                 }
             };
 
-    // Whether this sheet is shown.
+    /// Whether this sheet is shown.
     private final BooleanProperty shown = new SimpleBooleanProperty(this, "shown", true) {
         /// Updates the sheet visibility when the property changes.
         @Override
@@ -103,11 +103,11 @@ public final class M3BottomSheet extends Control {
         }
     };
 
-    // Whether focus returns to the previously focused node when a modal sheet hides.
+    /// Whether focus returns to the previously focused node when a modal sheet hides.
     private final BooleanProperty restoreFocusOnHide =
             new SimpleBooleanProperty(this, "restoreFocusOnHide", true);
 
-    // Whether the drag handle is visible.
+    /// Whether the drag handle is visible.
     private final BooleanProperty dragHandleVisible =
             new SimpleBooleanProperty(this, "dragHandleVisible", true) {
                 /// Requests skin layout when handle visibility changes.
@@ -190,13 +190,11 @@ public final class M3BottomSheet extends Control {
     /// Sets the sheet headline.
     ///
     /// @param headline the sheet headline text
+    /// @throws NullPointerException if any required argument is `null`
     public final void setHeadline(String headline) {
         this.headline.set(Objects.requireNonNull(headline, "headline"));
     }
 
-    /// Returns the sheet headline property.
-    ///
-    /// @return the sheet headline property
     public final StringProperty headlineProperty() {
         return headline;
     }
@@ -215,9 +213,6 @@ public final class M3BottomSheet extends Control {
         this.content.set(content);
     }
 
-    /// Returns the sheet content node property.
-    ///
-    /// @return the sheet content node property
     public final ObjectProperty<@Nullable Node> contentProperty() {
         return content;
     }
@@ -232,13 +227,11 @@ public final class M3BottomSheet extends Control {
     /// Sets the sheet variant.
     ///
     /// @param variant the sheet variant
+    /// @throws NullPointerException if any required argument is `null`
     public final void setVariant(M3SheetVariant variant) {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
 
-    /// Returns the sheet variant property.
-    ///
-    /// @return the sheet variant property
     public final ObjectProperty<M3SheetVariant> variantProperty() {
         return variant;
     }
@@ -257,9 +250,6 @@ public final class M3BottomSheet extends Control {
         this.shown.set(shown);
     }
 
-    /// Returns the shown property.
-    ///
-    /// @return the shown property
     public final BooleanProperty shownProperty() {
         return shown;
     }
@@ -278,9 +268,6 @@ public final class M3BottomSheet extends Control {
         this.restoreFocusOnHide.set(restoreFocusOnHide);
     }
 
-    /// Returns the focus restoration property.
-    ///
-    /// @return the focus restoration property
     public final BooleanProperty restoreFocusOnHideProperty() {
         return restoreFocusOnHide;
     }
@@ -299,9 +286,6 @@ public final class M3BottomSheet extends Control {
         this.dragHandleVisible.set(dragHandleVisible);
     }
 
-    /// Returns the drag handle visibility property.
-    ///
-    /// @return the drag handle visibility property
     public final BooleanProperty dragHandleVisibleProperty() {
         return dragHandleVisible;
     }
@@ -361,6 +345,8 @@ public final class M3BottomSheet extends Control {
     }
 
     /// Returns accessibility attributes for the sheet state and content.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -388,6 +374,8 @@ public final class M3BottomSheet extends Control {
     }
 
     /// Executes accessibility actions supported by bottom sheets.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

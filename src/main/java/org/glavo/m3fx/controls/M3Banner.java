@@ -77,28 +77,28 @@ public final class M3Banner extends Control {
     /// The default spacing between action nodes.
     private static final double DEFAULT_ACTION_SPACING = 8.0;
 
-    // The banner message text property.
+    /// The banner message text property.
     private final StringProperty text = new SimpleStringProperty(this, "text", "");
 
-    // The optional leading icon property.
+    /// The optional leading icon property.
     private final ObjectProperty<@Nullable Node> icon = new SimpleObjectProperty<>(this, "icon");
 
     /// The mutable trailing action node list.
     private final ObservableList<Node> actions = M3ObservableLists.nonNullElementList("action");
 
-    // The minimum banner container height token.
+    /// The minimum banner container height token.
     private @Nullable StyleableDoubleProperty containerMinHeight;
 
-    // The vertical banner content padding token.
+    /// The vertical banner content padding token.
     private @Nullable StyleableDoubleProperty verticalPadding;
 
-    // The horizontal banner content padding token.
+    /// The horizontal banner content padding token.
     private @Nullable StyleableDoubleProperty horizontalPadding;
 
-    // The spacing token between icon, text, and actions.
+    /// The spacing token between icon, text, and actions.
     private @Nullable StyleableDoubleProperty contentSpacing;
 
-    // The spacing token between action nodes.
+    /// The spacing token between action nodes.
     private @Nullable StyleableDoubleProperty actionSpacing;
 
     /// Notifies accessibility clients when focus moves between action children.
@@ -129,13 +129,11 @@ public final class M3Banner extends Control {
     /// Sets the banner message text.
     ///
     /// @param text the banner message text
+    /// @throws NullPointerException if any required argument is `null`
     public final void setText(String text) {
         this.text.set(Objects.requireNonNull(text, "text"));
     }
 
-    /// Returns the banner message text property.
-    ///
-    /// @return the banner message text property
     public final StringProperty textProperty() {
         return text;
     }
@@ -154,9 +152,6 @@ public final class M3Banner extends Control {
         this.icon.set(icon);
     }
 
-    /// Returns the optional leading icon property.
-    ///
-    /// @return the leading icon property
     public final ObjectProperty<@Nullable Node> iconProperty() {
         return icon;
     }
@@ -178,13 +173,11 @@ public final class M3Banner extends Control {
     /// Sets the minimum banner container height token.
     ///
     /// @param containerMinHeight the minimum banner container height in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContainerMinHeight(double containerMinHeight) {
         containerMinHeightProperty().set(M3Css.nonNegative(containerMinHeight, "containerMinHeight"));
     }
 
-    /// Returns the minimum banner container height token property.
-    ///
-    /// @return the minimum banner container height token property
     public final StyleableDoubleProperty containerMinHeightProperty() {
         if (containerMinHeight == null) {
             containerMinHeight = M3Css.nonNegativeStyleableDoubleProperty(
@@ -208,13 +201,11 @@ public final class M3Banner extends Control {
     /// Sets the vertical banner content padding token.
     ///
     /// @param verticalPadding the vertical banner content padding in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setVerticalPadding(double verticalPadding) {
         verticalPaddingProperty().set(M3Css.nonNegative(verticalPadding, "verticalPadding"));
     }
 
-    /// Returns the vertical banner content padding token property.
-    ///
-    /// @return the vertical banner content padding token property
     public final StyleableDoubleProperty verticalPaddingProperty() {
         if (verticalPadding == null) {
             verticalPadding = M3Css.nonNegativeStyleableDoubleProperty(
@@ -238,13 +229,11 @@ public final class M3Banner extends Control {
     /// Sets the horizontal banner content padding token.
     ///
     /// @param horizontalPadding the horizontal banner content padding in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setHorizontalPadding(double horizontalPadding) {
         horizontalPaddingProperty().set(M3Css.nonNegative(horizontalPadding, "horizontalPadding"));
     }
 
-    /// Returns the horizontal banner content padding token property.
-    ///
-    /// @return the horizontal banner content padding token property
     public final StyleableDoubleProperty horizontalPaddingProperty() {
         if (horizontalPadding == null) {
             horizontalPadding = M3Css.nonNegativeStyleableDoubleProperty(
@@ -268,13 +257,11 @@ public final class M3Banner extends Control {
     /// Sets the spacing token between icon, text, and actions.
     ///
     /// @param contentSpacing the spacing between icon, text, and actions in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContentSpacing(double contentSpacing) {
         contentSpacingProperty().set(M3Css.nonNegative(contentSpacing, "contentSpacing"));
     }
 
-    /// Returns the spacing token between icon, text, and actions property.
-    ///
-    /// @return the spacing token between icon, text, and actions property
     public final StyleableDoubleProperty contentSpacingProperty() {
         if (contentSpacing == null) {
             contentSpacing = M3Css.nonNegativeStyleableDoubleProperty(
@@ -298,13 +285,11 @@ public final class M3Banner extends Control {
     /// Sets the spacing token between action nodes.
     ///
     /// @param actionSpacing the spacing between action nodes in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setActionSpacing(double actionSpacing) {
         actionSpacingProperty().set(M3Css.nonNegative(actionSpacing, "actionSpacing"));
     }
 
-    /// Returns the spacing token between action nodes property.
-    ///
-    /// @return the spacing token between action nodes property
     public final StyleableDoubleProperty actionSpacingProperty() {
         if (actionSpacing == null) {
             actionSpacing = M3Css.nonNegativeStyleableDoubleProperty(
@@ -352,6 +337,8 @@ public final class M3Banner extends Control {
     }
 
     /// Executes accessibility actions for indexed icon and action children.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

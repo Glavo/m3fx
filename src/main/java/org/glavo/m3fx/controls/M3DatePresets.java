@@ -13,6 +13,9 @@ import java.util.Objects;
 
 /// Provides reusable [M3DatePreset] values for common date choices.
 ///
+/// These methods use English labels and receive an explicit anchor date so their results are deterministic.
+/// Applications that require localized labels can create [M3DatePreset] values directly.
+///
 /// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview).
 @NotNullByDefault
 public final class M3DatePresets {
@@ -24,6 +27,7 @@ public final class M3DatePresets {
     ///
     /// @param date the date selected by the preset
     /// @return a `Today` preset for the supplied date
+    /// @throws NullPointerException if `date` is `null`
     public static M3DatePreset today(LocalDate date) {
         return new M3DatePreset("Today", date);
     }
@@ -32,6 +36,7 @@ public final class M3DatePresets {
     ///
     /// @param date the anchor date
     /// @return a `Tomorrow` preset for the day after the supplied date
+    /// @throws NullPointerException if `date` is `null`
     public static M3DatePreset tomorrow(LocalDate date) {
         return new M3DatePreset("Tomorrow", Objects.requireNonNull(date, "date").plusDays(1));
     }
@@ -40,6 +45,7 @@ public final class M3DatePresets {
     ///
     /// @param date the anchor date
     /// @return a `Yesterday` preset for the day before the supplied date
+    /// @throws NullPointerException if `date` is `null`
     public static M3DatePreset yesterday(LocalDate date) {
         return new M3DatePreset("Yesterday", Objects.requireNonNull(date, "date").minusDays(1));
     }
@@ -49,6 +55,7 @@ public final class M3DatePresets {
     /// @param date the anchor date
     /// @param dayOffset the number of days to add to the anchor date
     /// @return a preset for the offset date
+    /// @throws NullPointerException if `date` is `null`
     public static M3DatePreset daysFrom(LocalDate date, int dayOffset) {
         LocalDate anchorDate = Objects.requireNonNull(date, "date");
         if (dayOffset == 0) {
@@ -70,6 +77,7 @@ public final class M3DatePresets {
     ///
     /// @param date the anchor date
     /// @return a preset for the first day of the anchor date's month
+    /// @throws NullPointerException if `date` is `null`
     public static M3DatePreset thisMonthStart(LocalDate date) {
         YearMonth month = YearMonth.from(Objects.requireNonNull(date, "date"));
         return new M3DatePreset("Start of month", month.atDay(1));
@@ -79,6 +87,7 @@ public final class M3DatePresets {
     ///
     /// @param date the anchor date
     /// @return a preset for the first day of the month after the anchor date's month
+    /// @throws NullPointerException if `date` is `null`
     public static M3DatePreset nextMonthStart(LocalDate date) {
         YearMonth month = YearMonth.from(Objects.requireNonNull(date, "date")).plusMonths(1);
         return new M3DatePreset("Next month", month.atDay(1));
@@ -88,6 +97,7 @@ public final class M3DatePresets {
     ///
     /// @param date the anchor date used to compute relative presets
     /// @return the immutable default single-date preset list
+    /// @throws NullPointerException if `date` is `null`
     public static @Unmodifiable List<M3DatePreset> common(LocalDate date) {
         LocalDate anchorDate = Objects.requireNonNull(date, "date");
         return List.of(

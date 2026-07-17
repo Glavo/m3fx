@@ -31,49 +31,87 @@ public sealed interface M3Theme permits M3ThemeImpl {
     Color DEFAULT_SEED_COLOR = Color.web("#6750a4");
 
     /// Returns the Material Design 3 token profile.
+    ///
+    /// @return the profile that determines the color specification and component token family
     default M3Profile profile() {
         return tokens().profile();
     }
 
     /// Returns the MonetFX color scheme.
+    ///
+    /// @return the immutable color scheme used by this theme
     default ColorScheme colorScheme() {
         return tokens().colorTokens().colorScheme();
     }
 
     /// Returns the brightness mode used by the color scheme.
+    ///
+    /// @return the light or dark brightness mode
     default Brightness brightness() {
         return colorScheme().getBrightness();
     }
 
     /// Returns the density applied to layout-sensitive component tokens.
+    ///
+    /// @return the density used when deriving this theme's component metrics
     default M3Density density() {
         return tokens().density();
     }
 
     /// Returns the complete token set for this theme.
+    ///
+    /// @return the immutable token set; never `null`
     M3TokenSet tokens();
 
     /// Creates the default light baseline theme.
+    ///
+    /// @return a new baseline theme using [DEFAULT_SEED_COLOR] and standard density
     static M3Theme defaultTheme() {
         return fromSeed(DEFAULT_SEED_COLOR, M3Profile.BASELINE_2021, Brightness.LIGHT, M3Density.standard());
     }
 
     /// Creates a baseline light theme from a seed color.
+    ///
+    /// @param seedColor the primary source color used to derive the dynamic color scheme
+    /// @return a new light baseline theme using standard density
+    /// @throws NullPointerException if `seedColor` is `null`
     static M3Theme fromSeed(Color seedColor) {
         return fromSeed(seedColor, M3Profile.BASELINE_2021, Brightness.LIGHT, M3Density.standard());
     }
 
     /// Creates a baseline theme from a seed color and brightness.
+    ///
+    /// @param seedColor the primary source color used to derive the dynamic color scheme
+    /// @param brightness the requested light or dark color scheme
+    /// @return a new baseline theme using standard density
+    /// @throws NullPointerException if `seedColor` or `brightness` is `null`
     static M3Theme fromSeed(Color seedColor, Brightness brightness) {
         return fromSeed(seedColor, M3Profile.BASELINE_2021, brightness, M3Density.standard());
     }
 
     /// Creates a theme from a seed color, profile, and brightness.
+    ///
+    /// @param seedColor the primary source color used to derive the dynamic color scheme
+    /// @param profile the token profile and MonetFX color specification to use
+    /// @param brightness the requested light or dark color scheme
+    /// @return a new theme using standard density
+    /// @throws NullPointerException if any argument is `null`
     static M3Theme fromSeed(Color seedColor, M3Profile profile, Brightness brightness) {
         return fromSeed(seedColor, profile, brightness, M3Density.standard());
     }
 
     /// Creates a theme from a seed color, profile, brightness, and density.
+    ///
+    /// The supplied [M3Profile] controls both the component token family and the MonetFX color specification used
+    /// to derive the color scheme. The resulting theme is immutable; subsequent changes to application state do
+    /// not alter it.
+    ///
+    /// @param seedColor the primary source color used to derive the dynamic color scheme
+    /// @param profile the token profile and MonetFX color specification to use
+    /// @param brightness the requested light or dark color scheme
+    /// @param density the density used for layout-sensitive component metrics
+    /// @return a new theme containing a fully derived token set
+    /// @throws NullPointerException if any argument is `null`
     static M3Theme fromSeed(Color seedColor, M3Profile profile, Brightness brightness, M3Density density) {
         Objects.requireNonNull(seedColor, "seedColor");
         Objects.requireNonNull(profile, "profile");
@@ -90,16 +128,34 @@ public sealed interface M3Theme permits M3ThemeImpl {
     }
 
     /// Creates a baseline theme from an existing MonetFX color scheme.
+    ///
+    /// @param colorScheme the immutable MonetFX color scheme to use without re-deriving its colors
+    /// @return a new baseline theme using standard density
+    /// @throws NullPointerException if `colorScheme` is `null`
     static M3Theme fromColorScheme(ColorScheme colorScheme) {
         return fromColorScheme(M3Profile.BASELINE_2021, colorScheme, M3Density.standard());
     }
 
     /// Creates a theme from an existing MonetFX color scheme and profile.
+    ///
+    /// @param profile the component token profile to use
+    /// @param colorScheme the immutable MonetFX color scheme to use without re-deriving its colors
+    /// @return a new theme using standard density
+    /// @throws NullPointerException if either argument is `null`
     static M3Theme fromColorScheme(M3Profile profile, ColorScheme colorScheme) {
         return fromColorScheme(profile, colorScheme, M3Density.standard());
     }
 
-    /// Creates a theme from an existing MonetFX color scheme.
+    /// Creates a theme from an existing MonetFX color scheme, profile, and density.
+    ///
+    /// The color scheme is retained as the source of color roles. It is not regenerated to match `profile`;
+    /// callers are responsible for supplying a scheme whose color specification is appropriate for that profile.
+    ///
+    /// @param profile the component token profile to use
+    /// @param colorScheme the immutable MonetFX color scheme to use
+    /// @param density the density used for layout-sensitive component metrics
+    /// @return a new theme containing tokens derived from the supplied values
+    /// @throws NullPointerException if any argument is `null`
     static M3Theme fromColorScheme(M3Profile profile, ColorScheme colorScheme, M3Density density) {
         Objects.requireNonNull(profile, "profile");
         Objects.requireNonNull(colorScheme, "colorScheme");
@@ -109,6 +165,10 @@ public sealed interface M3Theme permits M3ThemeImpl {
     }
 
     /// Creates a theme from an explicit token set.
+    ///
+    /// @param tokens the complete immutable token set exposed by the theme
+    /// @return a new theme backed by `tokens`
+    /// @throws NullPointerException if `tokens` is `null`
     static M3Theme fromTokenSet(M3TokenSet tokens) {
         return new M3ThemeImpl(tokens);
     }

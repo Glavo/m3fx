@@ -169,7 +169,7 @@ public final class M3TextInputLayout extends Control {
     /// The clear-button transition start scale.
     private static final double TRAILING_TRANSITION_START_SCALE = 0.86;
 
-    // The wrapped text input control.
+    /// The wrapped text input control.
     private final ObjectProperty<@Nullable TextInputControl> input =
             new SimpleObjectProperty<>(this, "input") {
                 /// Validates text input ownership before setting the value.
@@ -186,7 +186,7 @@ public final class M3TextInputLayout extends Control {
                 }
             };
 
-    // The field label displayed inside or above the wrapped input.
+    /// The field label displayed inside or above the wrapped input.
     private final StringProperty labelText = new SimpleStringProperty(this, "labelText", "") {
         /// Rejects null label text values.
         @Override
@@ -202,7 +202,7 @@ public final class M3TextInputLayout extends Control {
         }
     };
 
-    // The leading adornment node.
+    /// The leading adornment node.
     private final ObjectProperty<@Nullable Node> leading = new SimpleObjectProperty<>(this, "leading") {
         /// Updates the leading slot when the node changes.
         @Override
@@ -211,7 +211,7 @@ public final class M3TextInputLayout extends Control {
         }
     };
 
-    // The trailing adornment node.
+    /// The trailing adornment node.
     private final ObjectProperty<@Nullable Node> trailing = new SimpleObjectProperty<>(this, "trailing") {
         /// Updates the trailing slot when the node changes.
         @Override
@@ -220,7 +220,7 @@ public final class M3TextInputLayout extends Control {
         }
     };
 
-    // The supporting text displayed when no error is active.
+    /// The supporting text displayed when no error is active.
     private final StringProperty supportingText = new SimpleStringProperty(this, "supportingText", "") {
         /// Rejects null supporting text values.
         @Override
@@ -235,7 +235,7 @@ public final class M3TextInputLayout extends Control {
         }
     };
 
-    // The error text displayed above the supporting text when it is not blank.
+    /// The error text displayed above the supporting text when it is not blank.
     private final StringProperty errorText = new SimpleStringProperty(this, "errorText", "") {
         /// Rejects null error text values.
         @Override
@@ -251,7 +251,7 @@ public final class M3TextInputLayout extends Control {
         }
     };
 
-    // The validator that can derive error text from the wrapped input value.
+    /// The validator that can derive error text from the wrapped input value.
     private final ObjectProperty<@Nullable M3TextInputValidator> validator =
             new SimpleObjectProperty<>(this, "validator") {
                 /// Refreshes validation when a validator changes during an active validation cycle.
@@ -266,23 +266,23 @@ public final class M3TextInputLayout extends Control {
     /// The additional validators applied after the primary validator.
     private final ObservableList<M3TextInputValidator> validators = M3ObservableLists.nonNullElementList("validator");
 
-    // The last error text produced by the validator.
+    /// The last error text produced by the validator.
     private final ReadOnlyStringWrapper validationErrorText =
             new ReadOnlyStringWrapper(this, "validationErrorText", "");
 
-    // Whether validation has been explicitly run or activated by focus loss.
+    /// Whether validation has been explicitly run or activated by focus loss.
     private final ReadOnlyBooleanWrapper validationActive =
             new ReadOnlyBooleanWrapper(this, "validationActive");
 
-    // Whether validation runs after the wrapped input loses focus.
+    /// Whether validation runs after the wrapped input loses focus.
     private final BooleanProperty validateOnFocusLost =
             new SimpleBooleanProperty(this, "validateOnFocusLost", true);
 
-    // Whether validation refreshes on edits after validation has become active.
+    /// Whether validation refreshes on edits after validation has become active.
     private final BooleanProperty validateOnTextChange =
             new SimpleBooleanProperty(this, "validateOnTextChange", true);
 
-    // Whether the character counter label is visible.
+    /// Whether the character counter label is visible.
     private final BooleanProperty characterCounterVisible =
             new SimpleBooleanProperty(this, "characterCounterVisible") {
                 /// Updates the supporting row when counter visibility changes.
@@ -292,7 +292,7 @@ public final class M3TextInputLayout extends Control {
                 }
             };
 
-    // Whether text is truncated to the active character limit.
+    /// Whether text is truncated to the active character limit.
     private final BooleanProperty characterLimitEnforced =
             new SimpleBooleanProperty(this, "characterLimitEnforced") {
                 /// Enforces the active character limit when the policy changes.
@@ -304,7 +304,7 @@ public final class M3TextInputLayout extends Control {
                 }
             };
 
-    // Whether the built-in clear button may occupy the trailing slot.
+    /// Whether the built-in clear button may occupy the trailing slot.
     private final BooleanProperty clearButtonEnabled =
             new SimpleBooleanProperty(this, "clearButtonEnabled") {
                 /// Updates the trailing slot when clear-button enablement changes.
@@ -314,7 +314,7 @@ public final class M3TextInputLayout extends Control {
                 }
             };
 
-    // The maximum character count, or `-1` when no maximum is active.
+    /// The maximum character count, or `-1` when no maximum is active.
     private final IntegerProperty characterLimit = new SimpleIntegerProperty(this, "characterLimit", NO_CHARACTER_LIMIT) {
         /// Validates the character limit before setting it.
         @Override
@@ -424,7 +424,7 @@ public final class M3TextInputLayout extends Control {
     /// Whether the reusable outline path elements are currently attached to the path.
     private boolean outlinePathElementsAttached;
 
-    // The progress of the floating-label outline notch opening animation.
+    /// The progress of the floating-label outline notch opening animation.
     private final DoubleProperty outlineNotchProgress =
             new SimpleDoubleProperty(this, "outlineNotchProgress") {
                 /// Rebuilds the outlined border when the animated notch progress changes.
@@ -540,195 +540,270 @@ public final class M3TextInputLayout extends Control {
     }
 
     /// Creates a text input layout wrapping the supplied Material text input.
+    ///
+    /// @param input the text input to own; it must implement [M3TextInput]
+    /// @throws NullPointerException if `input` is `null`
+    /// @throws IllegalArgumentException if `input` does not implement [M3TextInput]
     public M3TextInputLayout(TextInputControl input) {
         this();
-        setInput(input);
+        setInput(Objects.requireNonNull(input, "input"));
     }
 
     /// Creates a text input layout wrapping the supplied input and showing supporting text.
+    ///
+    /// @param input the text input to own; it must implement [M3TextInput]
+    /// @param supportingText the supporting text displayed below the input, or an empty string for none
+    /// @throws NullPointerException if either argument is `null`
+    /// @throws IllegalArgumentException if `input` does not implement [M3TextInput]
     public M3TextInputLayout(TextInputControl input, String supportingText) {
         this(input);
         setSupportingText(supportingText);
     }
 
     /// Creates a text input layout wrapping the supplied input and showing label and supporting text.
+    ///
+    /// @param input the text input to own; it must implement [M3TextInput]
+    /// @param labelText the floating label text, or an empty string for no label
+    /// @param supportingText the supporting text displayed below the input, or an empty string for none
+    /// @throws NullPointerException if any argument is `null`
+    /// @throws IllegalArgumentException if `input` does not implement [M3TextInput]
     public M3TextInputLayout(TextInputControl input, String labelText, String supportingText) {
         this(input, supportingText);
         setLabelText(labelText);
     }
 
     /// Returns the wrapped text input control.
+    ///
+    /// @return the owned input, or `null` when this layout is empty
     public final @Nullable TextInputControl getInput() {
         return input.get();
     }
 
     /// Sets the wrapped text input control.
+    ///
+    /// A non-null input becomes a child of this layout and therefore must not already have a parent. Passing
+    /// `null` removes the current input and clears input-dependent presentation state.
+    ///
+    /// @param input the Material text input to own, or `null` to remove the current input
+    /// @throws IllegalArgumentException if `input` does not implement [M3TextInput]
     public final void setInput(@Nullable TextInputControl input) {
         this.input.set(input);
     }
 
-    /// Returns the wrapped text input control property.
     public final ObjectProperty<@Nullable TextInputControl> inputProperty() {
         return input;
     }
 
     /// Returns the wrapped input as the shared M3 text input API.
+    ///
+    /// @return the wrapped input's [M3TextInput] view, or `null` when no input is installed
     public final @Nullable M3TextInput getTextInput() {
         TextInputControl input = getInput();
         return input instanceof M3TextInput textInput ? textInput : null;
     }
 
     /// Returns the label text displayed inside or above the input.
+    ///
+    /// @return the label text; never `null`
     public final String getLabelText() {
         return labelText.get();
     }
 
     /// Sets the label text displayed inside or above the input.
+    ///
+    /// @param labelText the label text, or an empty string to suppress the label
+    /// @throws NullPointerException if `labelText` is `null`
     public final void setLabelText(String labelText) {
         this.labelText.set(Objects.requireNonNull(labelText, "labelText"));
     }
 
-    /// Returns the label text property.
     public final StringProperty labelTextProperty() {
         return labelText;
     }
 
     /// Returns whether the label is currently floating.
+    ///
+    /// This read-only presentation state is `true` while the input is focused or has content and a non-empty
+    /// label is configured.
+    ///
+    /// @return whether the label is rendered in its floating position
     public final boolean isLabelFloating() {
         return labelFloating;
     }
 
     /// Returns the leading adornment node.
+    ///
+    /// @return the leading node, or `null` when the slot is empty
     public final @Nullable Node getLeading() {
         return leading.get();
     }
 
     /// Sets the leading adornment node.
+    ///
+    /// @param leading the node to place before the editable text in logical reading order, or `null` to clear it
     public final void setLeading(@Nullable Node leading) {
         this.leading.set(leading);
     }
 
-    /// Returns the leading adornment node property.
     public final ObjectProperty<@Nullable Node> leadingProperty() {
         return leading;
     }
 
     /// Returns the trailing adornment node.
+    ///
+    /// @return the trailing node, or `null` when the slot is empty
     public final @Nullable Node getTrailing() {
         return trailing.get();
     }
 
     /// Sets the trailing adornment node.
+    ///
+    /// A custom trailing node takes precedence over the built-in clear button.
+    ///
+    /// @param trailing the node to place after the editable text in logical reading order, or `null` to clear it
     public final void setTrailing(@Nullable Node trailing) {
         this.trailing.set(trailing);
     }
 
-    /// Returns the trailing adornment node property.
     public final ObjectProperty<@Nullable Node> trailingProperty() {
         return trailing;
     }
 
     /// Returns the supporting text shown when no error is active.
+    ///
+    /// @return the supporting text; never `null`
     public final String getSupportingText() {
         return supportingText.get();
     }
 
     /// Sets the supporting text shown when no error is active.
+    ///
+    /// @param supportingText the supporting text, or an empty string to hide it
+    /// @throws NullPointerException if `supportingText` is `null`
     public final void setSupportingText(String supportingText) {
         this.supportingText.set(Objects.requireNonNull(supportingText, "supportingText"));
     }
 
-    /// Returns the supporting text property.
     public final StringProperty supportingTextProperty() {
         return supportingText;
     }
 
     /// Returns the error text shown in the supporting row.
+    ///
+    /// @return the explicit error text; never `null`
     public final String getErrorText() {
         return errorText.get();
     }
 
     /// Sets the error text shown in the supporting row.
+    ///
+    /// Non-empty explicit error text takes visual precedence over supporting text and validator output.
+    ///
+    /// @param errorText the explicit error text, or an empty string to clear it
+    /// @throws NullPointerException if `errorText` is `null`
     public final void setErrorText(String errorText) {
         this.errorText.set(Objects.requireNonNull(errorText, "errorText"));
     }
 
-    /// Returns the error text property.
     public final StringProperty errorTextProperty() {
         return errorText;
     }
 
     /// Returns the validator used to derive error text from the wrapped input value.
+    ///
+    /// @return the primary validator, or `null` when validation is not configured
     public final @Nullable M3TextInputValidator getValidator() {
         return validator.get();
     }
 
     /// Sets the validator used to derive error text from the wrapped input value.
+    ///
+    /// Changing the validator refreshes the validator-produced state only after validation has become active.
+    ///
+    /// @param validator the primary validator, or `null` to remove it
     public final void setValidator(@Nullable M3TextInputValidator validator) {
         this.validator.set(validator);
     }
 
-    /// Returns the validator property.
     public final ObjectProperty<@Nullable M3TextInputValidator> validatorProperty() {
         return validator;
     }
 
     /// Returns the mutable additional validator pipeline applied after the primary validator.
+    ///
+    /// Validators run in list order and evaluation stops at the first non-empty error. The list rejects
+    /// `null` elements. Mutations refresh validation immediately when validation is active.
+    ///
+    /// @return the live mutable validator list
     public final ObservableList<M3TextInputValidator> getValidators() {
         return validators;
     }
 
     /// Returns the last error text produced by the validator.
+    ///
+    /// @return the current validator-produced error text, or an empty string when validation succeeds or is inactive
     public final String getValidationErrorText() {
         return validationErrorText.get();
     }
 
-    /// Returns the validator-produced error text property.
     public final ReadOnlyStringProperty validationErrorTextProperty() {
         return validationErrorText.getReadOnlyProperty();
     }
 
     /// Returns whether validation has been explicitly run or activated by focus loss.
+    ///
+    /// @return whether validator output currently participates in the visual error state
     public final boolean isValidationActive() {
         return validationActive.get();
     }
 
-    /// Returns the validation active state property.
     public final ReadOnlyBooleanProperty validationActiveProperty() {
         return validationActive.getReadOnlyProperty();
     }
 
     /// Returns whether validation runs after the wrapped input loses focus.
+    ///
+    /// @return whether focus loss activates validation; the default is `true`
     public final boolean isValidateOnFocusLost() {
         return validateOnFocusLost.get();
     }
 
     /// Sets whether validation runs after the wrapped input loses focus.
+    ///
+    /// @param validateOnFocusLost whether focus loss should activate validation
     public final void setValidateOnFocusLost(boolean validateOnFocusLost) {
         this.validateOnFocusLost.set(validateOnFocusLost);
     }
 
-    /// Returns the focus-loss validation property.
     public final BooleanProperty validateOnFocusLostProperty() {
         return validateOnFocusLost;
     }
 
     /// Returns whether validation refreshes on edits after validation has become active.
+    ///
+    /// @return whether active validation is refreshed after text changes; the default is `true`
     public final boolean isValidateOnTextChange() {
         return validateOnTextChange.get();
     }
 
     /// Sets whether validation refreshes on edits after validation has become active.
+    ///
+    /// This setting does not activate validation by itself.
+    ///
+    /// @param validateOnTextChange whether edits should refresh already-active validation
     public final void setValidateOnTextChange(boolean validateOnTextChange) {
         this.validateOnTextChange.set(validateOnTextChange);
     }
 
-    /// Returns the active validation text-change refresh property.
     public final BooleanProperty validateOnTextChangeProperty() {
         return validateOnTextChange;
     }
 
     /// Runs the configured validator and returns whether the current input is valid.
+    ///
+    /// Calling this method activates validation. An empty layout and a layout without validators are valid.
+    ///
+    /// @return `true` when every configured validator accepts the current value; otherwise `false`
     public final boolean validate() {
         validationActive.set(true);
         return updateValidation();
@@ -744,51 +819,64 @@ public final class M3TextInputLayout extends Control {
     }
 
     /// Returns whether the configured validator currently contributes an error.
+    ///
+    /// @return whether active validator output is non-empty
     public final boolean isValidationError() {
         return !getValidationErrorText().isEmpty();
     }
 
     /// Returns whether the character counter is visible.
+    ///
+    /// @return whether the counter is enabled; the default is `false`
     public final boolean isCharacterCounterVisible() {
         return characterCounterVisible.get();
     }
 
     /// Sets whether the character counter is visible.
+    ///
+    /// @param characterCounterVisible whether to display the current count in the supporting row
     public final void setCharacterCounterVisible(boolean characterCounterVisible) {
         this.characterCounterVisible.set(characterCounterVisible);
     }
 
-    /// Returns the character counter visibility property.
     public final BooleanProperty characterCounterVisibleProperty() {
         return characterCounterVisible;
     }
 
     /// Returns whether text is truncated to the active character limit.
+    ///
+    /// @return whether character-limit enforcement is enabled; the default is `false`
     public final boolean isCharacterLimitEnforced() {
         return characterLimitEnforced.get();
     }
 
     /// Sets whether text is truncated to the active character limit.
+    ///
+    /// Enabling enforcement immediately truncates mutable input text that already exceeds the current limit.
+    ///
+    /// @param characterLimitEnforced whether mutable input text should be limited
     public final void setCharacterLimitEnforced(boolean characterLimitEnforced) {
         this.characterLimitEnforced.set(characterLimitEnforced);
     }
 
-    /// Returns the character limit enforcement property.
     public final BooleanProperty characterLimitEnforcedProperty() {
         return characterLimitEnforced;
     }
 
     /// Returns whether the built-in clear button may occupy an empty trailing slot.
+    ///
+    /// @return whether the clear button is enabled; the default is `false`
     public final boolean isClearButtonEnabled() {
         return clearButtonEnabled.get();
     }
 
     /// Sets whether the built-in clear button may occupy an empty trailing slot.
+    ///
+    /// @param clearButtonEnabled whether a clear button may be shown for non-empty writable input
     public final void setClearButtonEnabled(boolean clearButtonEnabled) {
         this.clearButtonEnabled.set(clearButtonEnabled);
     }
 
-    /// Returns the clear button enablement property.
     public final BooleanProperty clearButtonEnabledProperty() {
         return clearButtonEnabled;
     }
@@ -808,27 +896,37 @@ public final class M3TextInputLayout extends Control {
     }
 
     /// Returns the active character limit, or `-1` when no limit is active.
+    ///
+    /// @return the maximum character count, or `-1` when unlimited
     public final int getCharacterLimit() {
         return characterLimit.get();
     }
 
     /// Sets the active character limit, or `-1` to disable the limit.
+    ///
+    /// @param characterLimit the maximum number of UTF-16 code units, or `-1` for no limit
+    /// @throws IllegalArgumentException if `characterLimit` is less than `-1`
     public final void setCharacterLimit(int characterLimit) {
         this.characterLimit.set(characterLimit);
     }
 
-    /// Returns the character limit property.
     public final IntegerProperty characterLimitProperty() {
         return characterLimit;
     }
 
     /// Returns the current character count for the wrapped text input.
+    ///
+    /// The count uses the Java string length and therefore measures UTF-16 code units.
+    ///
+    /// @return the current count, or zero when no input is installed
     public final int getCharacterCount() {
         TextInputControl input = getInput();
         return input == null ? 0 : textLength(input);
     }
 
     /// Returns whether the wrapped input currently exceeds the active character limit.
+    ///
+    /// @return `true` when a limit is active and the current character count is greater than that limit
     public final boolean isCharacterLimitExceeded() {
         int limit = getCharacterLimit();
         return limit >= 0 && getCharacterCount() > limit;
@@ -842,6 +940,8 @@ public final class M3TextInputLayout extends Control {
 
 
     /// Returns accessibility attributes for the wrapped input and supporting text.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -855,6 +955,8 @@ public final class M3TextInputLayout extends Control {
     }
 
     /// Executes accessibility actions that can be forwarded to the wrapped input.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

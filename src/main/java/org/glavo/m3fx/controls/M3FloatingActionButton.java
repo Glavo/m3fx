@@ -56,7 +56,7 @@ public final class M3FloatingActionButton extends ButtonBase {
     /// The default logical trailing content padding for extended floating action buttons.
     private static final double DEFAULT_TRAILING_PADDING = 20.0;
 
-    // The floating action button color variant property.
+    /// The floating action button color variant property.
     private final ObjectProperty<M3FloatingActionButtonVariant> variant =
             new SimpleObjectProperty<>(this, "variant", M3FloatingActionButtonVariant.PRIMARY_CONTAINER) {
                 /// Updates variant style classes when the property changes.
@@ -70,7 +70,7 @@ public final class M3FloatingActionButton extends ButtonBase {
                 }
             };
 
-    // The floating action button size property.
+    /// The floating action button size property.
     private final ObjectProperty<M3FloatingActionButtonSize> size =
             new SimpleObjectProperty<>(this, "size", M3FloatingActionButtonSize.REGULAR) {
                 /// Updates size style classes when the property changes.
@@ -84,16 +84,16 @@ public final class M3FloatingActionButton extends ButtonBase {
                 }
             };
 
-    // The styleable container size token.
+    /// The styleable container size token.
     private @Nullable StyleableDoubleProperty containerSize;
 
-    // The styleable container shape token.
+    /// The styleable container shape token.
     private @Nullable StyleableDoubleProperty containerShape;
 
-    // The styleable horizontal padding token.
+    /// The styleable horizontal padding token.
     private @Nullable StyleableDoubleProperty horizontalPadding;
 
-    // The styleable logical trailing padding token.
+    /// The styleable logical trailing padding token.
     private @Nullable StyleableDoubleProperty trailingPadding;
 
     /// Creates an empty primary-container floating action button.
@@ -136,13 +136,11 @@ public final class M3FloatingActionButton extends ButtonBase {
     /// Sets the floating action button color variant.
     ///
     /// @param variant the floating action button color variant
+    /// @throws NullPointerException if any required argument is `null`
     public final void setVariant(M3FloatingActionButtonVariant variant) {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
 
-    /// Returns the floating action button color variant property.
-    ///
-    /// @return the floating action button color variant property
     public final ObjectProperty<M3FloatingActionButtonVariant> variantProperty() {
         return variant;
     }
@@ -157,13 +155,11 @@ public final class M3FloatingActionButton extends ButtonBase {
     /// Sets the floating action button size.
     ///
     /// @param size the floating action button size
+    /// @throws NullPointerException if any required argument is `null`
     public final void setSize(M3FloatingActionButtonSize size) {
         this.size.set(Objects.requireNonNull(size, "size"));
     }
 
-    /// Returns the floating action button size property.
-    ///
-    /// @return the floating action button size property
     public final ObjectProperty<M3FloatingActionButtonSize> sizeProperty() {
         return size;
     }
@@ -178,13 +174,11 @@ public final class M3FloatingActionButton extends ButtonBase {
     /// Sets the preferred square container size token.
     ///
     /// @param containerSize the preferred square container size token
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContainerSize(double containerSize) {
         containerSizeProperty().set(M3Css.nonNegative(containerSize, "containerSize"));
     }
 
-    /// Returns the preferred square container size token property.
-    ///
-    /// @return the preferred square container size token property
     public final StyleableDoubleProperty containerSizeProperty() {
         if (containerSize == null) {
             containerSize = M3Css.nonNegativeStyleableDoubleProperty(
@@ -208,13 +202,11 @@ public final class M3FloatingActionButton extends ButtonBase {
     /// Sets the container shape radius token.
     ///
     /// @param containerShape the container shape radius token
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContainerShape(double containerShape) {
         containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
     }
 
-    /// Returns the container shape radius token property.
-    ///
-    /// @return the container shape radius token property
     public final StyleableDoubleProperty containerShapeProperty() {
         if (containerShape == null) {
             containerShape = M3Css.nonNegativeStyleableDoubleProperty(
@@ -238,13 +230,11 @@ public final class M3FloatingActionButton extends ButtonBase {
     /// Sets the horizontal content padding token.
     ///
     /// @param horizontalPadding the horizontal content padding token
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setHorizontalPadding(double horizontalPadding) {
         horizontalPaddingProperty().set(M3Css.nonNegative(horizontalPadding, "horizontalPadding"));
     }
 
-    /// Returns the horizontal content padding token property.
-    ///
-    /// @return the horizontal content padding token property
     public final StyleableDoubleProperty horizontalPaddingProperty() {
         if (horizontalPadding == null) {
             horizontalPadding = M3Css.nonNegativeStyleableDoubleProperty(
@@ -271,13 +261,11 @@ public final class M3FloatingActionButton extends ButtonBase {
     /// Sets the logical trailing content padding token.
     ///
     /// @param trailingPadding the logical trailing content padding in pixels
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setTrailingPadding(double trailingPadding) {
         trailingPaddingProperty().set(M3Css.nonNegative(trailingPadding, "trailingPadding"));
     }
 
-    /// Returns the logical trailing content padding property.
-    ///
-    /// @return the logical trailing content padding property
     public final StyleableDoubleProperty trailingPaddingProperty() {
         if (trailingPadding == null) {
             trailingPadding = M3Css.nonNegativeStyleableDoubleProperty(

@@ -52,6 +52,7 @@ public class M3ListCell<T> extends IndexedCell<T> {
     /// Creates a reusable list view cell.
     ///
     /// @param listView the owning virtualized list view
+    /// @throws NullPointerException if any required argument is `null`
     public M3ListCell(M3ListView<T> listView) {
         this.listView = Objects.requireNonNull(listView, "listView");
         if (!getStyleClass().contains(STYLE_CLASS)) {
@@ -122,6 +123,7 @@ public class M3ListCell<T> extends IndexedCell<T> {
     /// @param attribute the requested accessibility attribute
     /// @param parameters optional attribute-specific parameters
     /// @return the requested accessibility value, or `null` when no value is available
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");

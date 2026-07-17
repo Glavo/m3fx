@@ -66,7 +66,7 @@ public final class M3Menu extends Control {
     /// The mutable menu content.
     private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
 
-    // The menu color style.
+    /// The menu color style.
     private final ObjectProperty<M3MenuColorStyle> colorStyle =
             new SimpleObjectProperty<>(this, "colorStyle", M3MenuColorStyle.STANDARD) {
                 /// Updates the color style pseudo-class when the property changes.
@@ -80,7 +80,7 @@ public final class M3Menu extends Control {
                 }
             };
 
-    // The menu selection mode.
+    /// The menu selection mode.
     private final ObjectProperty<M3SelectionMode> selectionMode =
             new SimpleObjectProperty<>(this, "selectionMode", M3SelectionMode.NONE) {
                 /// Enforces selection invariants when the mode changes.
@@ -94,7 +94,7 @@ public final class M3Menu extends Control {
                 }
             };
 
-    // Whether the menu allows all selectable menu items to be unselected.
+    /// Whether the menu allows all selectable menu items to be unselected.
     private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection", true) {
         /// Restores a selected item when empty selection is disabled.
         @Override
@@ -112,7 +112,7 @@ public final class M3Menu extends Control {
     private final @UnmodifiableView ObservableList<M3MenuItem> selectedItemsView =
             FXCollections.unmodifiableObservableList(selectedItems);
 
-    // The first selected menu item in child order.
+    /// The first selected menu item in child order.
     private final ReadOnlyObjectWrapper<@Nullable M3MenuItem> selectedItem =
             new ReadOnlyObjectWrapper<>(this, "selectedItem");
 
@@ -212,13 +212,11 @@ public final class M3Menu extends Control {
     /// Sets the menu color style.
     ///
     /// @param colorStyle the menu color style
+    /// @throws NullPointerException if any required argument is `null`
     public final void setColorStyle(M3MenuColorStyle colorStyle) {
         this.colorStyle.set(Objects.requireNonNull(colorStyle, "colorStyle"));
     }
 
-    /// Returns the menu color style property.
-    ///
-    /// @return the writable menu color style property
     public final ObjectProperty<M3MenuColorStyle> colorStyleProperty() {
         return colorStyle;
     }
@@ -280,13 +278,11 @@ public final class M3Menu extends Control {
     /// Sets the menu selection mode.
     ///
     /// @param selectionMode the active menu selection mode
+    /// @throws NullPointerException if any required argument is `null`
     public final void setSelectionMode(M3SelectionMode selectionMode) {
         this.selectionMode.set(Objects.requireNonNull(selectionMode, "selectionMode"));
     }
 
-    /// Returns the menu selection mode property.
-    ///
-    /// @return the writable menu selection mode property
     public final ObjectProperty<M3SelectionMode> selectionModeProperty() {
         return selectionMode;
     }
@@ -305,9 +301,6 @@ public final class M3Menu extends Control {
         this.allowEmptySelection.set(allowEmptySelection);
     }
 
-    /// Returns the empty-selection policy property.
-    ///
-    /// @return the writable empty-selection policy property
     public final BooleanProperty allowEmptySelectionProperty() {
         return allowEmptySelection;
     }
@@ -326,9 +319,6 @@ public final class M3Menu extends Control {
         return selectedItem.get();
     }
 
-    /// Returns the first selected menu item property.
-    ///
-    /// @return the read-only first selected menu item property
     public final ReadOnlyObjectProperty<@Nullable M3MenuItem> selectedItemProperty() {
         return selectedItem.getReadOnlyProperty();
     }
@@ -344,6 +334,7 @@ public final class M3Menu extends Control {
     /// Selects a menu item that belongs to this menu.
     ///
     /// @param item the selectable menu item to select
+    /// @throws NullPointerException if any required argument is `null`
     public final void select(M3MenuItem item) {
         Objects.requireNonNull(item, "item");
         if (!getItems().contains(item)) {
@@ -424,6 +415,7 @@ public final class M3Menu extends Control {
     /// @param attribute the requested accessibility attribute
     /// @param parameters optional attribute-specific parameters
     /// @return the requested accessibility value, or `null` when no value is available
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -441,6 +433,7 @@ public final class M3Menu extends Control {
     ///
     /// @param action the accessibility action to execute
     /// @param parameters optional action-specific parameters
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

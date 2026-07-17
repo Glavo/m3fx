@@ -215,10 +215,12 @@ tasks.withType<Javadoc> {
             monetFxJavadocLinkDirectory.get().asFile.absolutePath
         )
         it.addBooleanOption("html5", true)
+        it.addBooleanOption("javafx", true)
         it.addBooleanOption("Werror", true)
+        it.addStringOption("Xmaxwarns", "10000")
         it.addStringOption("-show-packages", "exported")
         it.addStringOption("exclude", "org.glavo.m3fx.internal:org.glavo.m3fx.internal.animation:org.glavo.m3fx.internal.shape:org.glavo.m3fx.internal.theme:org.glavo.m3fx.internal.tokens:org.glavo.m3fx.skins")
-        it.addStringOption("Xdoclint:none", "-quiet")
+        it.addStringOption("Xdoclint:all,-missing", "-quiet")
 
         it.tags!!.addAll(
             listOf(

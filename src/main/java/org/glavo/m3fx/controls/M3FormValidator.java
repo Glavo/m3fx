@@ -44,17 +44,17 @@ public final class M3FormValidator {
     private final @UnmodifiableView ObservableList<M3TextInputLayout> invalidInputsView =
             FXCollections.unmodifiableObservableList(invalidInputs);
 
-    // The first invalid input layout in registration order.
+    /// The first invalid input layout in registration order.
     private final ReadOnlyObjectWrapper<@Nullable M3TextInputLayout> firstInvalidInput =
             new ReadOnlyObjectWrapper<>(this, "firstInvalidInput");
 
-    // Whether all registered input layouts are valid.
+    /// Whether all registered input layouts are valid.
     private final ReadOnlyBooleanWrapper valid = new ReadOnlyBooleanWrapper(this, "valid", true);
 
-    // Whether at least one registered input layout has active validation.
+    /// Whether at least one registered input layout has active validation.
     private final ReadOnlyBooleanWrapper validationActive = new ReadOnlyBooleanWrapper(this, "validationActive");
 
-    // The number of currently invalid input layouts.
+    /// The number of currently invalid input layouts.
     private final ReadOnlyIntegerWrapper invalidInputCount = new ReadOnlyIntegerWrapper(this, "invalidInputCount");
 
     /// Updates group state when one registered layout changes its validator-produced error text.
@@ -121,9 +121,6 @@ public final class M3FormValidator {
         return firstInvalidInput.get();
     }
 
-    /// Returns the first invalid input layout property.
-    ///
-    /// @return the first invalid input layout property
     public ReadOnlyObjectProperty<@Nullable M3TextInputLayout> firstInvalidInputProperty() {
         return firstInvalidInput.getReadOnlyProperty();
     }
@@ -135,9 +132,6 @@ public final class M3FormValidator {
         return valid.get();
     }
 
-    /// Returns the valid state property.
-    ///
-    /// @return the valid state property
     public ReadOnlyBooleanProperty validProperty() {
         return valid.getReadOnlyProperty();
     }
@@ -149,9 +143,6 @@ public final class M3FormValidator {
         return validationActive.get();
     }
 
-    /// Returns the group validation-active state property.
-    ///
-    /// @return the group validation-active state property
     public ReadOnlyBooleanProperty validationActiveProperty() {
         return validationActive.getReadOnlyProperty();
     }
@@ -163,9 +154,6 @@ public final class M3FormValidator {
         return invalidInputCount.get();
     }
 
-    /// Returns the invalid input count property.
-    ///
-    /// @return the invalid input count property
     public ReadOnlyIntegerProperty invalidInputCountProperty() {
         return invalidInputCount.getReadOnlyProperty();
     }
@@ -234,6 +222,7 @@ public final class M3FormValidator {
     ///
     /// @param owner the node whose enclosing scroll pane should reveal the focused invalid input
     /// @return `true` when a reachable invalid input accepted keyboard focus
+    /// @throws NullPointerException if any required argument is `null`
     public boolean focusFirstInvalidInput(Node owner) {
         return focusFirstInvalidInputWithOwner(Objects.requireNonNull(owner, "owner"));
     }

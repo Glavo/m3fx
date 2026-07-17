@@ -12,7 +12,9 @@ import java.util.Objects;
 /// Builds immutable [M3MotionBehavior] values from independently configurable interaction timings.
 ///
 /// Builders are initialized from an existing behavior so applications can override only the timings that differ
-/// from a standard or expressive theme. All durations must be finite and non-negative.
+/// from a standard or expressive theme. All durations must be non-null, finite, non-negative, and neither unknown
+/// nor indefinite. Replacement methods validate eagerly and throw [NullPointerException] or
+/// [IllegalArgumentException] for invalid values. A builder can be reused after [build].
 ///
 /// See [Material Design motion](https://m3.material.io/styles/motion/overview).
 @NotNullByDefault

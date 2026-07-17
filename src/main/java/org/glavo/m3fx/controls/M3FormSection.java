@@ -60,7 +60,7 @@ public final class M3FormSection extends Control {
     /// The default vertical spacing between section content nodes.
     private static final double DEFAULT_CONTENT_SPACING = 12.0;
 
-    // The section title text.
+    /// The section title text.
     private final javafx.beans.property.StringProperty titleText =
             new javafx.beans.property.SimpleStringProperty(this, "titleText", "") {
                 /// Rejects null titles and notifies accessibility clients.
@@ -77,7 +77,7 @@ public final class M3FormSection extends Control {
                 }
             };
 
-    // The section supporting text.
+    /// The section supporting text.
     private final javafx.beans.property.StringProperty supportingText =
             new javafx.beans.property.SimpleStringProperty(this, "supportingText", "") {
                 /// Rejects null supporting text values.
@@ -103,7 +103,7 @@ public final class M3FormSection extends Control {
     private final M3AccessibleFocusNotifier focusNotifier =
             new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(this, getContent()));
 
-    // The styleable content spacing token.
+    /// The styleable content spacing token.
     private @Nullable StyleableDoubleProperty contentSpacing;
 
     /// Creates an empty form section.
@@ -142,9 +142,6 @@ public final class M3FormSection extends Control {
         this.titleText.set(titleText);
     }
 
-    /// Returns the section title property.
-    ///
-    /// @return the section title property
     public final javafx.beans.property.StringProperty titleTextProperty() {
         return titleText;
     }
@@ -163,9 +160,6 @@ public final class M3FormSection extends Control {
         this.supportingText.set(supportingText);
     }
 
-    /// Returns the section supporting text property.
-    ///
-    /// @return the section supporting text property
     public final javafx.beans.property.StringProperty supportingTextProperty() {
         return supportingText;
     }
@@ -191,13 +185,11 @@ public final class M3FormSection extends Control {
     /// Sets the vertical spacing between section content nodes.
     ///
     /// @param contentSpacing the vertical spacing between section content nodes
+    /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setContentSpacing(double contentSpacing) {
         contentSpacingProperty().set(M3Css.nonNegative(contentSpacing, "contentSpacing"));
     }
 
-    /// Returns the content spacing token property.
-    ///
-    /// @return the content spacing token property
     public final StyleableDoubleProperty contentSpacingProperty() {
         if (contentSpacing == null) {
             contentSpacing = M3Css.nonNegativeStyleableDoubleProperty(
@@ -253,6 +245,8 @@ public final class M3FormSection extends Control {
     }
 
     /// Returns accessibility attributes for the form section.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -266,6 +260,8 @@ public final class M3FormSection extends Control {
     }
 
     /// Executes accessibility actions for indexed section content.
+    ///
+    /// @throws NullPointerException if any required argument is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
