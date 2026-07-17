@@ -25,9 +25,26 @@ import java.util.Objects;
 
 /// A Material Design 3 date picker field that combines an editable text field with a popup calendar.
 ///
-/// `M3DatePickerField` lets users type a date or choose one from an embedded [M3DatePicker]. It exposes
-/// nullable selected-date state, parsing and formatting behavior, popup visibility, and optional preset actions
-/// so date entry can be used inline in forms.
+/// Users may type a date or choose one from the owned [picker][#getPicker()]. Editor text may be temporarily
+/// invalid and does not replace the selected value until [commitEditorText][M3PickerField#commitEditorText()]
+/// succeeds. Selecting a calendar date or preset updates the value and editor text; selecting a preset also closes
+/// the popup. The field initially uses [DateTimeFormatter#ISO_LOCAL_DATE].
+///
+/// The popup can be opened with the trailing button, Down, or F4 and dismissed with Escape. It is attached to the
+/// field's window only while showing and inherits the field's theme, stylesheets, and node orientation. Bounds and
+/// calendar presentation are configured through [getPicker()].
+///
+/// ```java
+/// private M3DatePickerField createDateField() {
+///     LocalDate today = LocalDate.now();
+///     M3DatePickerField field = new M3DatePickerField();
+///     field.setLabelText("Delivery date");
+///     field.getPicker().setMinDate(today);
+///     field.getPicker().setMaxDate(today.plusMonths(3));
+///     field.getPresets().addAll(M3DatePresets.common(today));
+///     return field;
+/// }
+/// ```
 ///
 /// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview).
 @NotNullByDefault
@@ -47,7 +64,10 @@ public final class M3DatePickerField extends M3PickerField<LocalDate, M3DatePick
     /// The style class applied to each popup preset action button.
     public static final String PRESET_BUTTON_STYLE_CLASS = "m3-date-picker-field-preset-button";
 
-    /// The mutable preset list rendered before the popup picker.
+    /// The live, mutable, ordered list of presets rendered before the popup picker.
+    ///
+    /// The list initially is empty, rejects `null` elements, permits duplicates, and observes additions, removals,
+    /// and reordering. Presets outside the current picker bounds remain visible but disabled.
     private final ObservableList<M3DatePreset> presets = M3ObservableLists.nonNullElementList("preset");
 
     /// The wrapper used when the popup renders preset actions next to the picker.
@@ -59,12 +79,12 @@ public final class M3DatePickerField extends M3PickerField<LocalDate, M3DatePick
     /// Rebuilds preset action buttons when the public preset list changes.
     private final ListChangeListener<M3DatePreset> presetsListener = change -> updatePresetContent();
 
-    /// Creates an empty date picker field.
+    /// Creates an empty date picker field using ISO local-date text and an unbounded calendar.
     public M3DatePickerField() {
         this(new M3DatePicker());
     }
 
-    /// Creates a date picker field initialized with the supplied value.
+    /// Creates a date picker field initialized with the specified selected value.
     ///
     /// @param value the initially selected date
     public M3DatePickerField(LocalDate value) {
@@ -97,9 +117,9 @@ public final class M3DatePickerField extends M3PickerField<LocalDate, M3DatePick
         return parameter instanceof LocalDate date && !getPicker().isDateDisabled(date);
     }
 
-    /// Returns the mutable date preset list rendered in the popup.
+    /// Returns the live, mutable date preset list rendered in the popup.
     ///
-    /// @return the mutable date preset list rendered in the popup
+    /// @return the live, mutable date preset list rendered in the popup
     public ObservableList<M3DatePreset> getPresets() {
         return presets;
     }

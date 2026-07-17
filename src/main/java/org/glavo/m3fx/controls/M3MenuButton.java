@@ -34,9 +34,21 @@ import java.util.Objects;
 
 /// A Material Design 3 menu button backed by an M3FX menu popup.
 ///
-/// `M3MenuButton` behaves like an [M3Button] that owns an [M3Menu] and a popup window. It manages menu show and
-/// hide state, theme propagation for popup content, focus return, keyboard dismissal, and Material popup motion.
-/// Add menu content through [getItems] or operate directly on [getMenu].
+/// `M3MenuButton` owns one [M3Menu] and presents it in an auto-hiding popup associated with the button's window.
+/// [getMenu] always returns the same menu instance; [getItems] is a convenience view of that menu's live content
+/// list. Firing an enabled button toggles the popup and also delivers the button's action event.
+///
+/// [showMenu] is non-blocking and has no effect until the button belongs to a showing window or when the popup is
+/// already visible. The popup hides when an item fires, the user dismisses it, the owner becomes unreachable, or
+/// [hideMenu] is called. Keyboard dismissal and item activation return focus to the button; a direct [hideMenu]
+/// call does not request focus.
+///
+/// ```java
+/// M3MenuButton menuButton = new M3MenuButton("File");
+/// M3MenuItem closeItem = new M3MenuItem("Close");
+/// closeItem.setOnAction(event -> System.out.println("Close"));
+/// menuButton.getItems().add(closeItem);
+/// ```
 ///
 /// See [Material Design menus](https://m3.material.io/components/menus/overview).
 @NotNullByDefault
@@ -95,12 +107,12 @@ public final class M3MenuButton extends M3ButtonBase {
     /// Whether the reusable popup animation is currently closing the menu.
     private boolean hidingPopup;
 
-    /// Creates an empty menu button.
+    /// Creates a menu button with empty text and an empty owned menu.
     public M3MenuButton() {
         this("");
     }
 
-    /// Creates a menu button with text.
+    /// Creates a menu button with the specified text and an empty owned menu.
     ///
     /// @param text the button text
     public M3MenuButton(String text) {
@@ -112,21 +124,25 @@ public final class M3MenuButton extends M3ButtonBase {
     ///
     /// @param text the button text
     /// @param items the initial non-null menu content nodes
+    /// @throws NullPointerException if `items` or any element of `items` is `null`
     public M3MenuButton(String text, Node... items) {
         this(text);
         getItems().addAll(items);
     }
 
-    /// Returns the menu displayed by this button.
+    /// Returns the menu owned and displayed by this button.
     ///
-    /// @return the menu displayed in this button's popup
+    /// @return the stable owned menu instance; never `null`
     public final M3Menu getMenu() {
         return menu;
     }
 
-    /// Returns the mutable item list shown by this button's menu.
+    /// Returns the live mutable content list of the owned menu.
     ///
-    /// @return the mutable menu content list
+    /// The returned object is [M3Menu#getItems] from the owned menu; its ordering, null, duplicate-node, observation,
+    /// and node-ownership contracts apply unchanged.
+    ///
+    /// @return the owned menu's live mutable content list
     public final ObservableList<Node> getItems() {
         return menu.getItems();
     }
@@ -149,7 +165,10 @@ public final class M3MenuButton extends M3ButtonBase {
         popupFocusNodeListener = Objects.requireNonNull(listener, "listener");
     }
 
-    /// Shows the menu popup below this button.
+    /// Shows the owned menu in a popup positioned relative to this button.
+    ///
+    /// This method is non-blocking and idempotent while the popup is visible. It has no effect if the button is not
+    /// reachable from a showing window or a popup position cannot be established.
     public final void showMenu() {
         if (!M3Accessible.canReach(this) || popup.isShowing() || !M3PopupWindows.canShow(this)) {
             return;
@@ -185,7 +204,10 @@ public final class M3MenuButton extends M3ButtonBase {
         playShowAnimation();
     }
 
-    /// Hides the menu popup.
+    /// Begins hiding the menu popup if it is visible.
+    ///
+    /// This method is non-blocking and idempotent while the popup is hidden or already closing. It does not request
+    /// focus for the owner button.
     public final void hideMenu() {
         hideMenu(false);
     }
@@ -214,7 +236,9 @@ public final class M3MenuButton extends M3ButtonBase {
         M3Animation.playFromStart(this, popupAnimation);
     }
 
-    /// Toggles the menu popup when the button fires.
+    /// Toggles the menu popup and fires this button's action event.
+    ///
+    /// A disabled button performs neither operation.
     @Override
     public void fire() {
         if (isDisabled()) {
@@ -234,7 +258,7 @@ public final class M3MenuButton extends M3ButtonBase {
     /// @param attribute the requested accessibility attribute
     /// @param parameters optional attribute-specific parameters
     /// @return the requested accessibility value, or `null` when no value is available
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -254,7 +278,7 @@ public final class M3MenuButton extends M3ButtonBase {
     ///
     /// @param action the accessibility action to execute
     /// @param parameters optional action-specific parameters
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

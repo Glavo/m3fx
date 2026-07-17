@@ -8,11 +8,11 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.Objects;
 
-/// Builds immutable [M3StateLayerTokens] by replacing named state-layer values.
+/// Builds immutable [M3StateLayerTokens] by replacing named interaction-state values.
 ///
-/// Replacement methods retain the supplied values. [build] requires opacity values in `[0.0, 1.0]`, a finite
-/// non-negative focus-indicator thickness, and finite focus-indicator offsets. It throws
-/// [IllegalArgumentException] when a value violates those constraints. A builder can be reused after building.
+/// Replacement methods retain supplied values without validation. [build] validates the complete set and leaves
+/// the builder unchanged if validation fails. A successful build creates an independent immutable snapshot.
+/// Builders may be reused but are not thread-safe.
 ///
 /// See [Material Design interaction states](https://m3.material.io/foundations/interaction/states/overview).
 @NotNullByDefault
@@ -141,10 +141,12 @@ public final class M3StateLayerTokensBuilder {
         return this;
     }
 
-    /// Creates an immutable token set from the current builder state.
+    /// Creates an immutable snapshot of the current interaction-state values.
     ///
-    /// @return the built token set
-    /// @throws IllegalArgumentException if any value violates the documented state-layer constraints
+    /// @return a new immutable state-layer token set; never `null`
+    /// @throws IllegalArgumentException if an opacity is not finite or outside `[0.0, 1.0]`, if
+    ///         `focusIndicatorThickness` is negative or not finite, or if either focus-indicator offset is not
+    ///         finite
     public M3StateLayerTokens build() {
         return new M3StateLayerTokensImpl(
                 hoverOpacity,

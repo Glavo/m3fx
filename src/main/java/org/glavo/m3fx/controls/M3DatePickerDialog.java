@@ -21,10 +21,27 @@ import org.jetbrains.annotations.Nullable;
 
 import java.time.LocalDate;
 
-/// A Material Design 3 dialog preset for selecting one date.
+/// A Material Design 3 dialog for selecting one date.
 ///
-/// The dialog installs an [M3DatePicker] as its content, wires OK and cancel actions, and keeps the selected
-/// [LocalDate] as the dialog result when the user accepts the choice.
+/// The embedded [picker][#getPicker()] and the dialog [value][#valueProperty()] stay synchronized. The OK button is
+/// disabled until a date is selected. Activating OK closes the dialog and produces that date through the standard
+/// [javafx.scene.control.Dialog] result APIs; Cancel or a window close produces `null`.
+///
+/// The picker is owned by this dialog and must not be reparented. Optional presets are exposed as a live ordered
+/// list and appear beside the calendar. Bounds, locale, and adjacent-month display are configured through the
+/// embedded picker.
+///
+/// ```java
+/// private void showDateDialog(Node owner) {
+///     LocalDate today = LocalDate.now();
+///     M3DatePickerDialog dialog = new M3DatePickerDialog(today);
+///     dialog.initOwner(owner);
+///     dialog.getPicker().setMinDate(today);
+///     dialog.getPicker().setMaxDate(today.plusMonths(3));
+///     dialog.getPresets().addAll(M3DatePresets.common(today));
+///     dialog.showAndWait().ifPresent(System.out::println);
+/// }
+/// ```
 ///
 /// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview).
 @NotNullByDefault
@@ -44,7 +61,12 @@ public final class M3DatePickerDialog extends M3Dialog<LocalDate> {
     /// The date picker displayed as dialog content.
     private final M3DatePicker picker = new M3DatePicker();
 
-    /// The selected date property.
+    /// The selected date, or `null` when no date is selected.
+    ///
+    /// The default value is `null`. This property is bidirectionally synchronized with the embedded picker. A
+    /// non-null assignment is validated against the picker's current inclusive bounds and displays its month.
+    ///
+    /// @defaultValue `null`
     private final ObjectProperty<@Nullable LocalDate> value =
             new SimpleObjectProperty<>(this, "value") {
                 /// Validates direct writes through the picker before committing the public value.
@@ -67,7 +89,10 @@ public final class M3DatePickerDialog extends M3Dialog<LocalDate> {
     /// Whether the dialog and embedded picker are currently synchronizing selected values.
     private boolean synchronizingValue;
 
-    /// The mutable date preset list rendered before the picker.
+    /// The live, mutable, ordered list of date presets rendered before the picker.
+    ///
+    /// The list initially is empty, rejects `null` elements, permits duplicates, and observes additions, removals,
+    /// and reordering. Presets outside the current picker bounds remain in the list but their actions are disabled.
     private final ObservableList<M3DatePreset> presets = M3ObservableLists.nonNullElementList("preset");
 
     /// The vertical preset action container.
@@ -102,12 +127,14 @@ public final class M3DatePickerDialog extends M3Dialog<LocalDate> {
     private final InvalidationListener presetBoundsInvalidation =
             observable -> presetController.refreshDisabledStates();
 
-    /// Creates an empty date picker dialog.
+    /// Creates a date picker dialog with no selected date, no presets, and no date bounds.
+    ///
+    /// The title and header text are initialized to `Select date`, and Cancel and OK buttons are installed.
     public M3DatePickerDialog() {
         initialize();
     }
 
-    /// Creates a date picker dialog initialized with the supplied selected date.
+    /// Creates a date picker dialog initialized with the specified selected date.
     ///
     /// @param value the initially selected date, or `null` for no selected date
     public M3DatePickerDialog(@Nullable LocalDate value) {
@@ -115,16 +142,16 @@ public final class M3DatePickerDialog extends M3Dialog<LocalDate> {
         setValue(value);
     }
 
-    /// Returns the date picker displayed by this dialog.
+    /// Returns the date picker owned and displayed by this dialog.
     ///
     /// @return the date picker displayed by this dialog
     public final M3DatePicker getPicker() {
         return picker;
     }
 
-    /// Returns the mutable date preset list.
+    /// Returns the live, mutable date preset list.
     ///
-    /// @return the mutable date preset list
+    /// @return the live, mutable date preset list
     public final ObservableList<M3DatePreset> getPresets() {
         return presets;
     }
@@ -136,9 +163,10 @@ public final class M3DatePickerDialog extends M3Dialog<LocalDate> {
         return value.get();
     }
 
-    /// Sets the selected date, or clears selection when `null` is supplied.
+    /// Sets the selected date in both this dialog and its embedded picker, or clears selection for `null`.
     ///
     /// @param value the selected date, or `null` to clear selection
+    /// @throws IllegalArgumentException if `value` is outside the picker's current inclusive bounds
     public final void setValue(@Nullable LocalDate value) {
         this.value.set(value);
     }

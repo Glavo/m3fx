@@ -23,9 +23,13 @@ import java.util.Objects;
 
 /// A reusable virtualized cell used by [M3ListView].
 ///
-/// A list view creates cells through its cell factory and reuses each cell for different data items while scrolling.
-/// Subclasses customize rows by overriding [createListItem()] and [updateListItem(M3ListItem, Object)] rather than
-/// creating a new scene-graph node for every item update.
+/// A list view creates cells through [M3ListView#cellFactoryProperty] and reuses each cell for different data items
+/// while scrolling. Each cell creates one [M3ListItem] on its first non-empty update and retains that row for the
+/// lifetime of the cell.
+///
+/// Subclasses customize rows by overriding [createListItem()] and [updateListItem(M3ListItem, Object)]. The update
+/// method must replace every item-dependent value because a later call may represent an unrelated data item.
+/// Applications normally customize the cell factory rather than creating cells outside an [M3ListView].
 ///
 /// See [Material Design lists](https://m3.material.io/components/lists/overview).
 ///
@@ -52,7 +56,7 @@ public class M3ListCell<T> extends IndexedCell<T> {
     /// Creates a reusable list view cell.
     ///
     /// @param listView the owning virtualized list view
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `listView` is `null`
     public M3ListCell(M3ListView<T> listView) {
         this.listView = Objects.requireNonNull(listView, "listView");
         if (!getStyleClass().contains(STYLE_CLASS)) {
@@ -78,7 +82,10 @@ public class M3ListCell<T> extends IndexedCell<T> {
         return listItem;
     }
 
-    /// Updates this cell's index and selected state.
+    /// Updates this cell's index, item, selection, and logical focus state.
+    ///
+    /// An index outside the current item list makes the cell empty. The method is intended for the owning list
+    /// view and virtualization infrastructure; applications normally scroll or focus through [M3ListView].
     ///
     /// @param index the virtualized row index
     @Override
@@ -92,10 +99,12 @@ public class M3ListCell<T> extends IndexedCell<T> {
         refreshFocus();
     }
 
-    /// Updates the rendered list item for the current virtualized item.
+    /// Updates the retained row for the current virtualized item.
     ///
     /// @param item the data item assigned to this cell, or `null` for an empty cell
     /// @param empty whether this cell is empty
+    /// @throws NullPointerException if `empty` is `false` and `item` is `null`, or if [createListItem] returns
+    ///         `null`
     @Override
     @SuppressWarnings("DataFlowIssue")
     protected void updateItem(@Nullable T item, boolean empty) {
@@ -123,7 +132,7 @@ public class M3ListCell<T> extends IndexedCell<T> {
     /// @param attribute the requested accessibility attribute
     /// @param parameters optional attribute-specific parameters
     /// @return the requested accessibility value, or `null` when no value is available
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -144,10 +153,10 @@ public class M3ListCell<T> extends IndexedCell<T> {
 
     /// Creates the row node retained by this cell across virtualized item updates.
     ///
-    /// Subclasses may override this method to create a configured [M3ListItem]. The method is called at most once for
-    /// each cell instance unless the subclass explicitly replaces the row through [setGraphic(Node)].
+    /// Subclasses may override this method to create a configured [M3ListItem]. The method is called at most once
+    /// for each cell instance. It must return a new row that is not attached to another parent.
     ///
-    /// @return the reusable row node
+    /// @return a non-null reusable row node
     protected M3ListItem createListItem() {
         return new M3ListItem();
     }
@@ -155,7 +164,8 @@ public class M3ListCell<T> extends IndexedCell<T> {
     /// Updates the reusable row node for a non-empty data item.
     ///
     /// The default implementation displays [String#valueOf(Object)] as the headline. Implementations must update all
-    /// item-dependent state because the same row is subsequently reused for unrelated items.
+    /// item-dependent state because the same row is subsequently reused for unrelated items. This method must not
+    /// replace or reparent `listItem`.
     ///
     /// @param listItem the reusable row node created by [createListItem()]
     /// @param item the current non-null data item

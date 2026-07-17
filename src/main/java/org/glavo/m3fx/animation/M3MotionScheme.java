@@ -6,11 +6,15 @@ package org.glavo.m3fx.animation;
 import org.glavo.m3fx.internal.animation.M3MotionSchemeImpl;
 import org.jetbrains.annotations.NotNullByDefault;
 
-/// Groups semantic Material Design 3 motion specs for a theme profile.
+/// Groups Material Design 3 motion specifications by semantic role.
 ///
-/// Effects specs are intended for opacity, color, and lightweight state feedback. Spatial specs are intended for
-/// movement, scale, size, and other transitions that change where a user perceives content to be. Themes expose a
-/// scheme so controls can select motion semantically and still switch between baseline and expressive profiles.
+/// Effects roles are intended for transitions such as opacity and color changes that do not move content through
+/// space. Spatial roles are intended for position, size, scale, and shape transitions. Within each family, the
+/// fast, default, and slow roles allow a control to select a duration according to the scope and prominence of the
+/// change without depending on profile-specific numeric values.
+///
+/// A scheme is immutable and may be shared. [standard] and [expressive] provide complete built-in schemes;
+/// [builder] creates a mutable copy for replacing individual roles.
 ///
 /// See [Material Design motion](https://m3.material.io/styles/motion/overview).
 @NotNullByDefault
@@ -45,14 +49,14 @@ public sealed interface M3MotionScheme permits M3MotionSchemeImpl {
     /// @return the slow spatial motion spec
     M3MotionSpec slowSpatial();
 
-    /// Creates a builder initialized with the standard motion scheme.
+    /// Creates a builder initialized with all roles from [standard].
     ///
     /// @return a mutable motion scheme builder
     static M3MotionSchemeBuilder builder() {
         return new M3MotionSchemeBuilder(standard());
     }
 
-    /// Creates a builder initialized from an existing scheme.
+    /// Creates a builder initialized with all roles from an existing scheme.
     ///
     /// @param scheme the scheme to copy
     /// @return a mutable motion scheme builder
@@ -61,7 +65,7 @@ public sealed interface M3MotionScheme permits M3MotionSchemeImpl {
         return new M3MotionSchemeBuilder(scheme);
     }
 
-    /// Returns the standard Material motion scheme for recurring utility interactions.
+    /// Returns a complete Standard Material motion scheme.
     ///
     /// @return the baseline M3FX motion scheme
     static M3MotionScheme standard() {
@@ -75,7 +79,7 @@ public sealed interface M3MotionScheme permits M3MotionSchemeImpl {
         );
     }
 
-    /// Returns the expressive Material motion scheme for prominent and spatial interactions.
+    /// Returns a complete Material Design 3 Expressive motion scheme.
     ///
     /// @return the expressive M3FX motion scheme
     static M3MotionScheme expressive() {

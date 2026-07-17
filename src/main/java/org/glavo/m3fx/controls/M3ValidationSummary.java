@@ -42,6 +42,17 @@ import java.util.Set;
 /// [M3TextInputLayout] controls. It can show an empty valid state, include field labels and error text, and move
 /// focus to the related field when an invalid entry is activated.
 ///
+/// The summary observes the form validator but does not initiate validation. Application code normally validates
+/// the form in its submission path:
+///
+/// ```java
+/// M3TextInputLayout name = new M3TextInputLayout(new M3TextField(), "Name", "");
+/// name.setValidator(M3TextInputValidators.required("Name is required"));
+/// M3FormValidator form = new M3FormValidator(name);
+/// M3ValidationSummary summary = new M3ValidationSummary(form);
+/// boolean valid = form.validate();
+/// ```
+///
 /// See [Material Design text fields](https://m3.material.io/components/text-fields/overview) for the error and
 /// supporting-text model that this summary complements.
 @NotNullByDefault
@@ -71,10 +82,19 @@ public final class M3ValidationSummary extends Control {
     private static final PseudoClass EMPTY_PSEUDO_CLASS = PseudoClass.getPseudoClass("empty");
 
     /// The form validator that supplies invalid input layouts.
+    ///
+    /// The default is `null`. Replacing the value detaches observation from the previous validator and immediately
+    /// reflects the replacement's current invalid-input list. It does not run validation.
+    ///
+    /// @defaultValue `null`
     private final ObjectProperty<@Nullable M3FormValidator> validator =
             new SimpleObjectProperty<>(this, "validator");
 
     /// The title displayed above invalid field entries.
+    ///
+    /// An empty string suppresses the title. The value cannot be `null`.
+    ///
+    /// @defaultValue `"Fix the following fields"`
     private final StringProperty titleText = new SimpleStringProperty(this, "titleText", "Fix the following fields") {
         /// Rejects null title text values.
         @Override
@@ -84,6 +104,10 @@ public final class M3ValidationSummary extends Control {
     };
 
     /// The text displayed when the summary is configured to render while valid.
+    ///
+    /// An empty string suppresses the valid-state message. The value cannot be `null`.
+    ///
+    /// @defaultValue `"No validation issues"`
     private final StringProperty emptyText = new SimpleStringProperty(this, "emptyText", "No validation issues") {
         /// Rejects null empty text values.
         @Override
@@ -93,6 +117,8 @@ public final class M3ValidationSummary extends Control {
     };
 
     /// Whether the summary renders an empty state when no invalid inputs exist.
+    ///
+    /// @defaultValue `false`
     private final BooleanProperty showWhenValid = new SimpleBooleanProperty(this, "showWhenValid", false);
 
     /// The number of invalid input layouts that currently have a visible and enabled ancestor chain.
@@ -134,6 +160,9 @@ public final class M3ValidationSummary extends Control {
             new M3AccessibleFocusNotifier(this, this::currentFocusNode);
 
     /// Creates a validation summary with no validator.
+    ///
+    /// The new summary uses the default title and valid-state text and remains visually empty until a validator with
+    /// invalid inputs is assigned, unless [#showWhenValidProperty()] is enabled.
     public M3ValidationSummary() {
         initialize();
     }
@@ -157,6 +186,7 @@ public final class M3ValidationSummary extends Control {
     /// Sets the form validator that supplies invalid fields.
     ///
     /// The summary stops observing the previous validator before observing the replacement.
+    /// Passing `null` detaches the summary and clears its rendered invalid rows.
     ///
     /// @param validator the validator to observe, or `null` to detach the summary
     public final void setValidator(@Nullable M3FormValidator validator) {
@@ -275,7 +305,7 @@ public final class M3ValidationSummary extends Control {
     ///
     /// @param input the invalid input layout to test
     /// @return `true` when the input should be rendered by this summary
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `input` is `null`
     public final boolean isInvalidInputShown(M3TextInputLayout input) {
         return isShownInvalidInput(Objects.requireNonNull(input, "input"));
     }
@@ -287,7 +317,7 @@ public final class M3ValidationSummary extends Control {
     ///
     /// @param input the invalid input layout to test
     /// @return `true` when the input is reachable from this summary
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `input` is `null`
     public final boolean isInvalidInputReachable(M3TextInputLayout input) {
         return isAccessibleInvalidInput(Objects.requireNonNull(input, "input"));
     }
@@ -328,7 +358,7 @@ public final class M3ValidationSummary extends Control {
 
     /// Returns accessibility attributes for the invalid input collection.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -343,7 +373,7 @@ public final class M3ValidationSummary extends Control {
 
     /// Executes accessibility actions for indexed invalid inputs.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

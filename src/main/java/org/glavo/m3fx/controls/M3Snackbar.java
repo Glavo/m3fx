@@ -39,10 +39,14 @@ import java.util.Objects;
 
 /// A Material Design 3 snackbar message.
 ///
-/// `M3Snackbar` displays a short message with an optional action. It is normally shown through
-/// [M3SnackbarHost], which handles queueing, timing, entrance motion, and dismissal. The snackbar exposes
-/// token-backed container shape, padding, width, line-height, and action-height properties for theme and density
-/// integration.
+/// `M3Snackbar` represents a short message with an optional action and close affordance. It is normally shown
+/// through [M3SnackbarHost], which owns queueing, timeout, entrance, and exit lifecycle. Action activation fires an
+/// [ActionEvent] but does not dismiss the snackbar automatically; the handler decides whether to call
+/// [M3SnackbarHost#dismiss()]. A visible close affordance emits [#DISMISS_REQUEST], which a host handles as a
+/// dismissal request.
+///
+/// Text and action text are empty by default, so a newly created snackbar has no action. Geometry properties expose
+/// stable Material defaults in JavaFX logical pixels and may be overridden directly or through CSS.
 ///
 /// See [Material Design snackbars](https://m3.material.io/components/snackbar/overview).
 @NotNullByDefault
@@ -74,13 +78,24 @@ public final class M3Snackbar extends Control {
 
     /// The default snackbar action button container height.
     private static final double DEFAULT_ACTION_CONTAINER_HEIGHT = 32.0;
-    /// The snackbar message text property.
+    /// The snackbar message text.
+    ///
+    /// @defaultValue `""`
     private final StringProperty text = new SimpleStringProperty(this, "text", "");
 
-    /// The action button text property.
+    /// The action button text.
+    ///
+    /// Blank text suppresses the action button even when an action handler is installed.
+    ///
+    /// @defaultValue `""`
     private final StringProperty actionText = new SimpleStringProperty(this, "actionText", "");
 
-    /// The action event handler property.
+    /// The handler invoked by [#fireAction()] and action-button activation.
+    ///
+    /// Installing a handler does not create an action button unless [#actionTextProperty()] is non-blank. The handler
+    /// is not invoked while the snackbar is disabled.
+    ///
+    /// @defaultValue `null`
     private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
             new SimpleObjectProperty<>(this, "onAction") {
                 /// Updates the registered action event handler.
@@ -90,32 +105,48 @@ public final class M3Snackbar extends Control {
                 }
             };
 
-    /// The close-affordance visibility property.
+    /// Whether the close affordance is visible.
+    ///
+    /// @defaultValue `false`
     private final BooleanProperty closeButtonVisible =
             new SimpleBooleanProperty(this, "closeButtonVisible");
 
-    /// The snackbar container shape radius token property.
+    /// The snackbar container corner radius in logical pixels.
+    ///
+    /// @defaultValue `4.0`
     private @Nullable StyleableDoubleProperty containerShape;
 
-    /// Backing property for the public content padding token API.
+    /// The snackbar content padding in logical pixels.
+    ///
+    /// @defaultValue `16.0`
     private @Nullable StyleableDoubleProperty contentPadding;
 
-    /// Backing property for the public minimum container width token API.
+    /// The minimum snackbar container width in logical pixels.
+    ///
+    /// @defaultValue `344.0`
     private @Nullable StyleableDoubleProperty containerMinWidth;
 
-    /// Backing property for the public maximum container width token API.
+    /// The maximum snackbar container width in logical pixels.
+    ///
+    /// @defaultValue `672.0`
     private @Nullable StyleableDoubleProperty containerMaxWidth;
 
-    /// Backing property for the public single-line container height token API.
+    /// The single-line snackbar container height in logical pixels.
+    ///
+    /// @defaultValue `48.0`
     private @Nullable StyleableDoubleProperty singleLineContainerHeight;
 
-    /// Backing property for the public two-line container height token API.
+    /// The two-line snackbar container height in logical pixels.
+    ///
+    /// @defaultValue `68.0`
     private @Nullable StyleableDoubleProperty twoLineContainerHeight;
 
-    /// Backing property for the public action button container height token API.
+    /// The action button container height in logical pixels.
+    ///
+    /// @defaultValue `32.0`
     private @Nullable StyleableDoubleProperty actionContainerHeight;
 
-    /// Creates an empty snackbar.
+    /// Creates a snackbar with empty message and action text, no action handler, and no close affordance.
     public M3Snackbar() {
         this("");
     }
@@ -123,6 +154,7 @@ public final class M3Snackbar extends Control {
     /// Creates a snackbar with message text.
     ///
     /// @param text the snackbar message text
+    /// @throws NullPointerException if `text` is `null`
     public M3Snackbar(String text) {
         M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TEXT);
@@ -146,6 +178,7 @@ public final class M3Snackbar extends Control {
     ///
     /// @param text the snackbar message text
     /// @param actionText the action button text
+    /// @throws NullPointerException if `text` or `actionText` is `null`
     public M3Snackbar(String text, String actionText) {
         this(text);
         setActionText(actionText);
@@ -161,7 +194,7 @@ public final class M3Snackbar extends Control {
     /// Sets the snackbar message text.
     ///
     /// @param text the snackbar message text
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `text` is `null`
     public final void setText(String text) {
         this.text.set(Objects.requireNonNull(text, "text"));
     }
@@ -180,7 +213,7 @@ public final class M3Snackbar extends Control {
     /// Sets the action button text.
     ///
     /// @param actionText the action button text
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `actionText` is `null`
     public final void setActionText(String actionText) {
         this.actionText.set(Objects.requireNonNull(actionText, "actionText"));
     }
@@ -197,6 +230,8 @@ public final class M3Snackbar extends Control {
     }
 
     /// Sets the action event handler.
+    ///
+    /// Changing this property does not change the action text or dismiss the snackbar.
     ///
     /// @param onAction the action event handler, or `null` to clear it
     public final void setOnAction(@Nullable EventHandler<ActionEvent> onAction) {
@@ -242,7 +277,10 @@ public final class M3Snackbar extends Control {
         setAccessibleText(action.isBlank() ? message : message + " " + action);
     }
 
-    /// Fires this snackbar's action event when it has an enabled action.
+    /// Fires this snackbar's action event when it has a visible, enabled action.
+    ///
+    /// The event is delivered synchronously. This method is a no-op when the snackbar is disabled or its action text
+    /// is blank, and it does not request dismissal from a host.
     public final void fireAction() {
         if (!isDisabled() && hasAction()) {
             Event.fireEvent(this, new ActionEvent(this, this));
@@ -254,7 +292,7 @@ public final class M3Snackbar extends Control {
     /// @param attribute the requested accessibility attribute
     /// @param parameters the optional attribute parameters
     /// @return the attribute value, or `null` when unavailable
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -271,7 +309,7 @@ public final class M3Snackbar extends Control {
     ///
     /// @param action the requested accessibility action
     /// @param parameters the optional action parameters
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

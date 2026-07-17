@@ -81,24 +81,55 @@ public final class M3ProgressIndicator extends Control {
             M3Accessible.attribute("VALUE_STRING");
 
     /// The current progress value.
+    ///
+    /// Values in the inclusive range `0.0` to `1.0` represent determinate completion. Values greater than `1.0`
+    /// are normalized to `1.0`; negative values and `NaN` are normalized to [INDETERMINATE_PROGRESS].
+    ///
+    /// @defaultValue [INDETERMINATE_PROGRESS]
     private @Nullable DoubleProperty progress;
 
-    /// The styleable circular indicator stroke thickness token.
+    /// The circular track and active-indicator stroke thickness, in logical pixels.
+    ///
+    /// The value must be finite and non-negative and is styleable through `-m3-track-thickness`.
+    ///
+    /// @defaultValue `4.0`
     private @Nullable StyleableDoubleProperty trackThickness;
 
-    /// The styleable indicator size token.
+    /// The diameter used by flat circular geometry, in logical pixels.
+    ///
+    /// The value must be finite and non-negative and is styleable through `-m3-indicator-size`.
+    ///
+    /// @defaultValue `40.0`
     private @Nullable StyleableDoubleProperty indicatorSize;
 
-    /// The styleable wavy indicator size token.
+    /// The diameter used by expressive wavy geometry, in logical pixels.
+    ///
+    /// This size applies while [waveAmplitude] is positive. The value must be finite and non-negative and is
+    /// styleable through `-m3-wave-indicator-size`.
+    ///
+    /// @defaultValue `48.0`
     private @Nullable StyleableDoubleProperty waveIndicatorSize;
 
-    /// The styleable wave amplitude token.
+    /// The expressive wave amplitude, in logical pixels.
+    ///
+    /// A value of `0.0` selects flat geometry. The value must be finite and non-negative and is styleable through
+    /// `-m3-wave-amplitude`.
+    ///
+    /// @defaultValue `0.0`
     private @Nullable StyleableDoubleProperty waveAmplitude;
 
-    /// The styleable wavelength token.
+    /// The circular wave length, in logical pixels.
+    ///
+    /// The value must be finite and non-negative and is styleable through `-m3-wavelength`.
+    ///
+    /// @defaultValue `15.0`
     private @Nullable StyleableDoubleProperty wavelength;
 
-    /// The styleable active-to-track gap token.
+    /// The visual gap between active progress and inactive track, in logical pixels.
+    ///
+    /// The value must be finite and non-negative and is styleable through `-m3-track-gap`.
+    ///
+    /// @defaultValue `4.0`
     private @Nullable StyleableDoubleProperty trackGap;
 
     /// Creates an indeterminate progress indicator.
@@ -108,7 +139,9 @@ public final class M3ProgressIndicator extends Control {
 
     /// Creates a progress indicator with an initial progress value.
     ///
-    /// @param progress the initial progress value, from `0.0` to `1.0`, or [INDETERMINATE_PROGRESS]
+    /// Values greater than `1.0` are normalized to `1.0`; negative values and `NaN` select indeterminate mode.
+    ///
+    /// @param progress the initial progress value
     public M3ProgressIndicator(double progress) {
         initialize();
         setProgress(progress);
@@ -123,7 +156,9 @@ public final class M3ProgressIndicator extends Control {
 
     /// Sets the current progress value.
     ///
-    /// @param progress the progress value, from `0.0` to `1.0`, or [INDETERMINATE_PROGRESS]
+    /// Values greater than `1.0` are normalized to `1.0`; negative values and `NaN` select indeterminate mode.
+    ///
+    /// @param progress the progress value
     public final void setProgress(double progress) {
         progressProperty().set(progress);
     }
@@ -171,15 +206,15 @@ public final class M3ProgressIndicator extends Control {
 
     /// Returns the circular indicator stroke thickness token.
     ///
-    /// @return the circular indicator stroke thickness in pixels
+    /// @return the circular indicator stroke thickness in logical pixels
     public final double getTrackThickness() {
         return trackThickness == null ? DEFAULT_TRACK_THICKNESS : trackThickness.get();
     }
 
     /// Sets the circular indicator stroke thickness token.
     ///
-    /// @param trackThickness the circular indicator stroke thickness in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param trackThickness the circular indicator stroke thickness in logical pixels
+    /// @throws IllegalArgumentException if `trackThickness` is negative or not finite
     public final void setTrackThickness(double trackThickness) {
         trackThicknessProperty().set(M3Css.nonNegative(trackThickness, "trackThickness"));
     }
@@ -199,15 +234,15 @@ public final class M3ProgressIndicator extends Control {
 
     /// Returns the circular indicator size token.
     ///
-    /// @return the circular indicator size in pixels
+    /// @return the circular indicator size in logical pixels
     public final double getIndicatorSize() {
         return indicatorSize == null ? DEFAULT_INDICATOR_SIZE : indicatorSize.get();
     }
 
     /// Sets the circular indicator size token.
     ///
-    /// @param indicatorSize the circular indicator size in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param indicatorSize the circular indicator size in logical pixels
+    /// @throws IllegalArgumentException if `indicatorSize` is negative or not finite
     public final void setIndicatorSize(double indicatorSize) {
         indicatorSizeProperty().set(M3Css.nonNegative(indicatorSize, "indicatorSize"));
     }
@@ -227,15 +262,15 @@ public final class M3ProgressIndicator extends Control {
 
     /// Returns the circular wavy indicator size token.
     ///
-    /// @return the circular wavy indicator size in pixels
+    /// @return the circular wavy indicator size in logical pixels
     public final double getWaveIndicatorSize() {
         return waveIndicatorSize == null ? DEFAULT_WAVE_INDICATOR_SIZE : waveIndicatorSize.get();
     }
 
     /// Sets the circular wavy indicator size token.
     ///
-    /// @param waveIndicatorSize the circular wavy indicator size in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param waveIndicatorSize the circular wavy indicator size in logical pixels
+    /// @throws IllegalArgumentException if `waveIndicatorSize` is negative or not finite
     public final void setWaveIndicatorSize(double waveIndicatorSize) {
         waveIndicatorSizeProperty().set(M3Css.nonNegative(waveIndicatorSize, "waveIndicatorSize"));
     }
@@ -255,15 +290,15 @@ public final class M3ProgressIndicator extends Control {
 
     /// Returns the wavy progress amplitude token.
     ///
-    /// @return the wavy progress amplitude in pixels
+    /// @return the wavy progress amplitude in logical pixels
     public final double getWaveAmplitude() {
         return waveAmplitude == null ? DEFAULT_WAVE_AMPLITUDE : waveAmplitude.get();
     }
 
     /// Sets the wavy progress amplitude token.
     ///
-    /// @param waveAmplitude the wavy progress amplitude in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param waveAmplitude the wavy progress amplitude in logical pixels
+    /// @throws IllegalArgumentException if `waveAmplitude` is negative or not finite
     public final void setWaveAmplitude(double waveAmplitude) {
         waveAmplitudeProperty().set(M3Css.nonNegative(waveAmplitude, "waveAmplitude"));
     }
@@ -283,15 +318,15 @@ public final class M3ProgressIndicator extends Control {
 
     /// Returns the wavy progress wavelength token.
     ///
-    /// @return the wavy progress wavelength in pixels
+    /// @return the wavy progress wavelength in logical pixels
     public final double getWavelength() {
         return wavelength == null ? DEFAULT_WAVELENGTH : wavelength.get();
     }
 
     /// Sets the wavy progress wavelength token.
     ///
-    /// @param wavelength the wavy progress wavelength in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param wavelength the wavy progress wavelength in logical pixels
+    /// @throws IllegalArgumentException if `wavelength` is negative or not finite
     public final void setWavelength(double wavelength) {
         wavelengthProperty().set(M3Css.nonNegative(wavelength, "wavelength"));
     }
@@ -311,15 +346,15 @@ public final class M3ProgressIndicator extends Control {
 
     /// Returns the gap token between active progress and track.
     ///
-    /// @return the gap between active progress and track in pixels
+    /// @return the gap between active progress and track in logical pixels
     public final double getTrackGap() {
         return trackGap == null ? DEFAULT_TRACK_GAP : trackGap.get();
     }
 
     /// Sets the gap token between active progress and track.
     ///
-    /// @param trackGap the gap between active progress and track in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param trackGap the gap between active progress and track in logical pixels
+    /// @throws IllegalArgumentException if `trackGap` is negative or not finite
     public final void setTrackGap(double trackGap) {
         trackGapProperty().set(M3Css.nonNegative(trackGap, "trackGap"));
     }
@@ -363,7 +398,7 @@ public final class M3ProgressIndicator extends Control {
     /// @param attribute the requested accessibility attribute
     /// @param parameters optional attribute-specific parameters
     /// @return the requested accessibility value, or `null` when no value is available
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");

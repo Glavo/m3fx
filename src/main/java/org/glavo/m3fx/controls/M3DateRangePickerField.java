@@ -55,9 +55,27 @@ import java.util.Objects;
 
 /// A Material Design 3 date range picker field with editable start and end date inputs.
 ///
-/// `M3DateRangePickerField` pairs two text inputs with an [M3DateRangePicker] popup so users can type or choose
-/// an inclusive range. It exposes nullable range state, parsing and formatting behavior, popup visibility, and
-/// optional preset actions for inline form use.
+/// The field maintains nullable start and end values and their independently editable text. A start without an end
+/// is an in-progress range; an end without a start is not permitted. Raw editor text does not replace the selected
+/// endpoints until [commitEditorText()] succeeds. A failed commit preserves the previous range and updates the
+/// relevant error text.
+///
+/// The owned [picker][#getPicker()] is synchronized with committed endpoints. Completing a range in the calendar
+/// updates both editors and closes the popup. The popup can be opened from either trailing button, Down, or F4 and
+/// dismissed with Escape. It inherits the field's theme, stylesheets, and node orientation while showing.
+///
+/// ```java
+/// private M3DateRangePickerField createRangeField() {
+///     LocalDate today = LocalDate.now();
+///     M3DateRangePickerField field = new M3DateRangePickerField();
+///     field.setStartLabelText("Check-in");
+///     field.setEndLabelText("Check-out");
+///     field.getPicker().setMinDate(today);
+///     field.getPicker().setMaxDate(today.plusYears(1));
+///     field.getPresets().add(M3DateRangePresets.nextDays(today, 7));
+///     return field;
+/// }
+/// ```
 ///
 /// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview).
 @NotNullByDefault
@@ -65,7 +83,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// The base style class for M3FX date range picker fields.
     public static final String STYLE_CLASS = "m3-date-range-picker-field";
 
-    /// The style class applied to the internal two-field container.
+    /// The style class applied to the two-field container.
     public static final String CONTAINER_STYLE_CLASS = "m3-date-range-picker-field-container";
 
     /// The style class applied to date range picker field popup surfaces.
@@ -92,7 +110,12 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// The initial popup picker offset used for enter and exit motion.
     private static final double POPUP_TRANSITION_OFFSET_Y = 6.0;
 
-    /// The start date property.
+    /// The selected start date, or `null` when the range is empty.
+    ///
+    /// The default value is `null`. Assignments are validated against the picker's inclusive bounds and current end
+    /// date. Clearing the start also clears a non-null end and updates both editors.
+    ///
+    /// @defaultValue `null`
     private final ObjectProperty<@Nullable LocalDate> startDate =
             new SimpleObjectProperty<>(this, "startDate") {
                 /// Validates direct property writes before applying them.
@@ -117,7 +140,12 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
                 }
             };
 
-    /// The end date property.
+    /// The selected end date, or `null` while the range is empty or incomplete.
+    ///
+    /// The default value is `null`. A non-null end requires a non-null start, must not precede it, and must be within
+    /// the picker's inclusive bounds. Assignments update both editors.
+    ///
+    /// @defaultValue `null`
     private final ObjectProperty<@Nullable LocalDate> endDate =
             new SimpleObjectProperty<>(this, "endDate") {
                 /// Validates direct property writes before applying them.
@@ -142,7 +170,11 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
                 }
             };
 
-    /// The editor text formatter property.
+    /// The formatter used to parse and format both date editors.
+    ///
+    /// Changing the formatter rewrites both editor texts from the committed endpoints. `null` is not permitted.
+    ///
+    /// @defaultValue [DateTimeFormatter#ISO_LOCAL_DATE]
     private final ObjectProperty<DateTimeFormatter> formatter =
             new SimpleObjectProperty<>(this, "formatter") {
                 /// Keeps formatter values non-null.
@@ -158,7 +190,11 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
                 }
             };
 
-    /// The parse error message property.
+    /// The error message used when an editor contains non-empty text that cannot be parsed.
+    ///
+    /// This value is non-null and may be changed while the control is in use.
+    ///
+    /// @defaultValue `Enter a valid date`
     private final StringProperty invalidTextErrorText =
             new SimpleStringProperty(this, "invalidTextErrorText") {
                 /// Keeps parse error text non-null.
@@ -168,7 +204,11 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
                 }
             };
 
-    /// The range error message property.
+    /// The error message used for reversed ranges and dates outside the picker bounds.
+    ///
+    /// This value is non-null and may be changed while the control is in use.
+    ///
+    /// @defaultValue `Date range is outside the selectable range`
     private final StringProperty rangeErrorText =
             new SimpleStringProperty(this, "rangeErrorText") {
                 /// Keeps range error text non-null.
@@ -178,7 +218,12 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
                 }
             };
 
-    /// The raw start-date editor text property.
+    /// The raw start-date editor text.
+    ///
+    /// The default value is the empty string. Text may be temporarily invalid and is not parsed until
+    /// [commitEditorText()] or an editor action commits it. `null` is not permitted.
+    ///
+    /// @defaultValue `""`
     private final StringProperty startText = new SimpleStringProperty(this, "startText", "") {
         /// Keeps start editor text non-null.
         @Override
@@ -187,7 +232,12 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         }
     };
 
-    /// The raw end-date editor text property.
+    /// The raw end-date editor text.
+    ///
+    /// The default value is the empty string. Text may be temporarily invalid and is not parsed until
+    /// [commitEditorText()] or an editor action commits it. `null` is not permitted.
+    ///
+    /// @defaultValue `""`
     private final StringProperty endText = new SimpleStringProperty(this, "endText", "") {
         /// Keeps end editor text non-null.
         @Override
@@ -196,7 +246,9 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         }
     };
 
-    /// The start-date editor variant property.
+    /// The Material text-input variant used by the start-date editor.
+    ///
+    /// @defaultValue [M3TextInputVariant#FILLED]
     private final ObjectProperty<M3TextInputVariant> startVariant =
             new SimpleObjectProperty<>(this, "startVariant", M3TextInputVariant.FILLED) {
                 /// Keeps the start text input variant non-null.
@@ -206,7 +258,9 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
                 }
             };
 
-    /// The end-date editor variant property.
+    /// The Material text-input variant used by the end-date editor.
+    ///
+    /// @defaultValue [M3TextInputVariant#FILLED]
     private final ObjectProperty<M3TextInputVariant> endVariant =
             new SimpleObjectProperty<>(this, "endVariant", M3TextInputVariant.FILLED) {
                 /// Keeps the end text input variant non-null.
@@ -216,7 +270,12 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
                 }
             };
 
-    /// The start-date editor error text property.
+    /// The error text currently displayed by the start-date input.
+    ///
+    /// The default value is empty. Validation may replace it with one of the configured generated error messages.
+    /// `null` is not permitted.
+    ///
+    /// @defaultValue `""`
     private final StringProperty startErrorText = new SimpleStringProperty(this, "startErrorText", "") {
         /// Keeps start error text non-null.
         @Override
@@ -225,7 +284,12 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         }
     };
 
-    /// The end-date editor error text property.
+    /// The error text currently displayed by the end-date input.
+    ///
+    /// The default value is empty. Validation may replace it with one of the configured generated error messages.
+    /// `null` is not permitted.
+    ///
+    /// @defaultValue `""`
     private final StringProperty endErrorText = new SimpleStringProperty(this, "endErrorText", "") {
         /// Keeps end error text non-null.
         @Override
@@ -234,7 +298,9 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         }
     };
 
-    /// The start label text property.
+    /// The label text displayed by the start-date input.
+    ///
+    /// @defaultValue `Start date`
     private final StringProperty startLabelText = new SimpleStringProperty(this, "startLabelText", "") {
         /// Keeps start label text non-null.
         @Override
@@ -243,7 +309,9 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         }
     };
 
-    /// The end label text property.
+    /// The label text displayed by the end-date input.
+    ///
+    /// @defaultValue `End date`
     private final StringProperty endLabelText = new SimpleStringProperty(this, "endLabelText", "") {
         /// Keeps end label text non-null.
         @Override
@@ -252,7 +320,9 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         }
     };
 
-    /// The start supporting text property.
+    /// The supporting text displayed below the start-date input.
+    ///
+    /// @defaultValue `""`
     private final StringProperty startSupportingText =
             new SimpleStringProperty(this, "startSupportingText", "") {
                 /// Keeps start supporting text non-null.
@@ -262,7 +332,9 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
                 }
             };
 
-    /// The end supporting text property.
+    /// The supporting text displayed below the end-date input.
+    ///
+    /// @defaultValue `""`
     private final StringProperty endSupportingText =
             new SimpleStringProperty(this, "endSupportingText", "") {
                 /// Keeps end supporting text non-null.
@@ -284,10 +356,13 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// The Material text input layout wrapping the end editor.
     private final M3TextInputLayout endInputLayout = new M3TextInputLayout(endEditor);
 
-    /// The popup date range picker.
+    /// The date range picker owned by this field and displayed in its popup.
     private final M3DateRangePicker picker = new M3DateRangePicker();
 
-    /// The mutable preset list rendered before the popup picker.
+    /// The live, mutable, ordered list of presets rendered before the popup picker.
+    ///
+    /// The list initially is empty, rejects `null` elements, permits duplicates, and observes additions, removals,
+    /// and reordering. Presets outside the current picker bounds remain visible but disabled.
     private final ObservableList<M3DateRangePreset> presets = M3ObservableLists.nonNullElementList("preset");
 
     /// The wrapper used when the popup renders preset actions next to the picker.
@@ -315,7 +390,10 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     private final M3PopupContextSynchronizer popupContextSynchronizer =
             new M3PopupContextSynchronizer(this, popupContent, M3Stylesheets.controlStylesheet("picker-field.css"));
 
-    /// The read-only popup showing property.
+    /// Whether the picker popup is currently visible.
+    ///
+    /// This read-only property is initially `false`. It becomes `true` after the popup is shown and returns to
+    /// `false` when hiding completes or the popup is otherwise dismissed.
     private final ReadOnlyBooleanWrapper showing = new ReadOnlyBooleanWrapper(this, "showing");
 
     /// The reusable picker popup enter and exit animation.
@@ -329,7 +407,8 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     private final M3ReachabilityObserver reachabilityObserver =
             new M3ReachabilityObserver(this, this::hidePopupIfOwnerUnreachable);
 
-    /// Whether both field endpoints are currently being assigned through [setRange].
+    /// Whether both field endpoints are currently being assigned through
+    /// [setRange][#setRange(LocalDate, LocalDate)].
     private boolean applyingRange;
 
     /// Whether field state is currently being pushed into the popup picker.
@@ -359,15 +438,17 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// The vertical offset used by the current popup hide animation.
     private double popupTransitionOffsetY = -POPUP_TRANSITION_OFFSET_Y;
 
-    /// Creates an empty date range picker field.
+    /// Creates an empty range field using ISO local-date text, default labels, and an unbounded picker.
     public M3DateRangePickerField() {
         this(null, null);
     }
 
-    /// Creates a date range picker field initialized with the supplied selected range.
+    /// Creates a range field initialized with the specified endpoints.
     ///
     /// @param startDate the first selected date, or `null` for no selected range
     /// @param endDate the last selected date, or `null` for an incomplete range
+    /// @throws IllegalArgumentException if `endDate` is non-null while `startDate` is null or if `startDate` is
+    ///         after `endDate`
     public M3DateRangePickerField(@Nullable LocalDate startDate, @Nullable LocalDate endDate) {
         formatter.set(DateTimeFormatter.ISO_LOCAL_DATE);
         invalidTextErrorText.set("Enter a valid date");
@@ -383,9 +464,10 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         return startDate.get();
     }
 
-    /// Sets the selected start date, or clears the range start when `null` is supplied.
+    /// Sets the selected start date, or clears the complete range when `null` is supplied.
     ///
     /// @param startDate the selected start date, or `null` to clear the range
+    /// @throws IllegalArgumentException if `startDate` is outside the current picker bounds or after the current end
     public void setStartDate(@Nullable LocalDate startDate) {
         this.startDate.set(startDate);
     }
@@ -404,6 +486,8 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// Sets the selected end date, or clears the range end when `null` is supplied.
     ///
     /// @param endDate the selected end date, or `null` to clear the range end
+    /// @throws IllegalArgumentException if `endDate` is outside the current picker bounds, no start is selected, or
+    ///         it precedes the current start
     public void setEndDate(@Nullable LocalDate endDate) {
         this.endDate.set(endDate);
     }
@@ -412,10 +496,15 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         return endDate;
     }
 
-    /// Sets both range endpoints atomically after validating ordering and selectable bounds.
+    /// Sets both range endpoints after validating ordering and selectable bounds.
+    ///
+    /// The start property is assigned before the end property. Property listeners may therefore observe the new
+    /// start together with the previous end; editor and popup synchronization occurs after both assignments.
     ///
     /// @param startDate the first selected date, or `null` to clear the range
     /// @param endDate the last selected date, or `null` for an incomplete range
+    /// @throws IllegalArgumentException if an endpoint is outside the current picker bounds, `endDate` is non-null
+    ///         while `startDate` is null, or the start is after the end
     public void setRange(@Nullable LocalDate startDate, @Nullable LocalDate endDate) {
         validateDate(startDate);
         validateDate(endDate);
@@ -433,13 +522,16 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// Sets both range endpoints from the supplied inclusive range.
     ///
     /// @param range the inclusive date range to select
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `range` is `null`
+    /// @throws IllegalArgumentException if either endpoint is outside the current picker bounds
     public void setRange(M3DateRange range) {
         M3DateRange validatedRange = Objects.requireNonNull(range, "range");
         setRange(validatedRange.startDate(), validatedRange.endDate());
     }
 
-    /// Clears both selected range endpoints.
+    /// Clears both selected range endpoints and editor texts.
+    ///
+    /// Calling this method while the range is empty has no effect on the selected state.
     public void clearRange() {
         setRange(null, null);
     }
@@ -482,11 +574,12 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         return startText.get();
     }
 
-    /// Sets the raw start-date editor text.
+    /// Sets the raw start-date editor text without committing it.
     ///
     /// The value is not parsed until [commitEditorText] is called or the editor action commits it.
     ///
     /// @param startText the raw start-date editor text
+    /// @throws NullPointerException if `startText` is `null`
     public void setStartText(String startText) {
         this.startText.set(startText);
     }
@@ -505,11 +598,12 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         return endText.get();
     }
 
-    /// Sets the raw end-date editor text.
+    /// Sets the raw end-date editor text without committing it.
     ///
     /// The value is not parsed until [commitEditorText] is called or the editor action commits it.
     ///
     /// @param endText the raw end-date editor text
+    /// @throws NullPointerException if `endText` is `null`
     public void setEndText(String endText) {
         this.endText.set(endText);
     }
@@ -528,6 +622,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// Sets the text input variant used by the start-date editor.
     ///
     /// @param variant the text input variant used by the start-date editor
+    /// @throws NullPointerException if `variant` is `null`
     public void setStartVariant(M3TextInputVariant variant) {
         startVariant.set(variant);
     }
@@ -546,6 +641,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// Sets the text input variant used by the end-date editor.
     ///
     /// @param variant the text input variant used by the end-date editor
+    /// @throws NullPointerException if `variant` is `null`
     public void setEndVariant(M3TextInputVariant variant) {
         endVariant.set(variant);
     }
@@ -564,6 +660,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// Sets the current error text shown for the start-date editor.
     ///
     /// @param errorText the current error text shown for the start-date editor
+    /// @throws NullPointerException if `errorText` is `null`
     public void setStartErrorText(String errorText) {
         startErrorText.set(errorText);
     }
@@ -582,6 +679,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// Sets the current error text shown for the end-date editor.
     ///
     /// @param errorText the current error text shown for the end-date editor
+    /// @throws NullPointerException if `errorText` is `null`
     public void setEndErrorText(String errorText) {
         endErrorText.set(errorText);
     }
@@ -618,16 +716,16 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         return endInputLayout;
     }
 
-    /// Returns the popup date range picker control.
+    /// Returns the date range picker owned by this field and displayed in its popup.
     ///
     /// @return the popup date range picker control
     public M3DateRangePicker getPicker() {
         return picker;
     }
 
-    /// Returns the mutable date range preset list rendered in the popup.
+    /// Returns the live, mutable date range preset list rendered in the popup.
     ///
-    /// @return the mutable date range preset list rendered in the popup
+    /// @return the live, mutable date range preset list rendered in the popup
     public ObservableList<M3DateRangePreset> getPresets() {
         return presets;
     }
@@ -639,9 +737,12 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         return formatter.get();
     }
 
-    /// Sets the formatter used for editor text.
+    /// Sets the formatter used to parse and format both editor texts.
+    ///
+    /// Existing editor text is rewritten from the committed endpoints.
     ///
     /// @param formatter the formatter used for editor text
+    /// @throws NullPointerException if `formatter` is `null`
     public void setFormatter(DateTimeFormatter formatter) {
         this.formatter.set(formatter);
     }
@@ -660,6 +761,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// Sets the parse error message used when editor text is invalid.
     ///
     /// @param invalidTextErrorText the parse error message used when editor text is invalid
+    /// @throws NullPointerException if `invalidTextErrorText` is `null`
     public void setInvalidTextErrorText(String invalidTextErrorText) {
         this.invalidTextErrorText.set(invalidTextErrorText);
     }
@@ -678,6 +780,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// Sets the range error message used when editor text is outside the selectable range.
     ///
     /// @param rangeErrorText the range error message used when editor text is outside the selectable range
+    /// @throws NullPointerException if `rangeErrorText` is `null`
     public void setRangeErrorText(String rangeErrorText) {
         this.rangeErrorText.set(rangeErrorText);
     }
@@ -696,6 +799,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// Sets the label text displayed by the start date input layout.
     ///
     /// @param startLabelText the label text displayed by the start date input layout
+    /// @throws NullPointerException if `startLabelText` is `null`
     public void setStartLabelText(String startLabelText) {
         this.startLabelText.set(startLabelText);
     }
@@ -714,6 +818,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// Sets the label text displayed by the end date input layout.
     ///
     /// @param endLabelText the label text displayed by the end date input layout
+    /// @throws NullPointerException if `endLabelText` is `null`
     public void setEndLabelText(String endLabelText) {
         this.endLabelText.set(endLabelText);
     }
@@ -732,6 +837,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// Sets the supporting text displayed by the start date input layout.
     ///
     /// @param supportingText the supporting text displayed by the start date input layout
+    /// @throws NullPointerException if `supportingText` is `null`
     public void setStartSupportingText(String supportingText) {
         startSupportingText.set(supportingText);
     }
@@ -750,6 +856,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
     /// Sets the supporting text displayed by the end date input layout.
     ///
     /// @param supportingText the supporting text displayed by the end date input layout
+    /// @throws NullPointerException if `supportingText` is `null`
     public void setEndSupportingText(String supportingText) {
         endSupportingText.set(supportingText);
     }
@@ -769,9 +876,13 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         return showing.getReadOnlyProperty();
     }
 
-    /// Parses both editor texts, updates selected endpoints, and returns whether the text is valid.
+    /// Attempts to parse and commit both editor texts as one range.
     ///
-    /// @return `true` when both editor texts can be committed as a valid range
+    /// Leading and trailing whitespace is ignored and an empty editor commits a `null` endpoint. If parsing,
+    /// ordering, or picker-bound validation fails, the previous committed range is preserved and the relevant
+    /// error text is updated.
+    ///
+    /// @return `true` if both texts were committed, or `false` if validation failed
     public boolean commitEditorText() {
         clearGeneratedErrorText();
         @Nullable LocalDate parsedStart = parseEditorDate(startEditor, startInputLayout);
@@ -798,7 +909,10 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         return true;
     }
 
-    /// Shows the picker popup when this field is attached to a window.
+    /// Shows the picker popup when this field is reachable from a visible window.
+    ///
+    /// Calling this method while the popup is showing, or while it cannot be positioned relative to this field,
+    /// has no effect. On success [showingProperty()] becomes `true` before the enter transition begins.
     public void showPicker() {
         if (!M3Accessible.canReach(this) || popup.isShowing() || !M3PopupWindows.canShow(this)) {
             return;
@@ -840,12 +954,15 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
         playShowAnimation();
     }
 
-    /// Hides the picker popup.
+    /// Begins hiding the picker popup.
+    ///
+    /// Calling this method while the popup is not showing has no effect. With motion enabled,
+    /// [showingProperty()] remains `true` until the exit transition completes.
     public void hidePicker() {
         hidePicker(false);
     }
 
-    /// Toggles the picker popup.
+    /// Hides the picker when it is showing; otherwise attempts to show it.
     public void togglePicker() {
         if (popup.isShowing()) {
             hidePicker();
@@ -862,7 +979,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
 
     /// Returns accessibility attributes for the embedded editors and popup picker.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -879,7 +996,7 @@ public final class M3DateRangePickerField extends javafx.scene.control.Control {
 
     /// Executes editor and popup accessibility actions.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

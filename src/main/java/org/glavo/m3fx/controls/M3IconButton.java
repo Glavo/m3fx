@@ -23,9 +23,14 @@ import java.util.Objects;
 
 /// A Material Design 3 icon button for compact icon-only actions.
 ///
-/// `M3IconButton` keeps the Material button action behavior while sizing its container around a graphic,
-/// usually an [M3Icon]. It uses the standard icon-button treatment by default and participates in the same
-/// state-layer, ripple, focus, and accessibility behavior as other buttons.
+/// An icon button presents one compact action using graphic content, normally an [M3Icon]. It inherits action
+/// dispatch, keyboard activation, focus traversal, and disabled-state behavior from [M3ButtonBase]. The default
+/// button has no graphic, uses the text-button color treatment, the small Material button size, the default width
+/// role, and a `40.0` logical-pixel visual container width.
+///
+/// The graphic is a JavaFX node and therefore may have only one parent. Supplying `null` leaves the button empty.
+/// Applications should provide accessible text or accessible help when the graphic alone does not convey the
+/// action to assistive technologies.
 ///
 /// See [Material Design icon buttons](https://m3.material.io/components/icon-buttons/overview).
 @NotNullByDefault
@@ -39,7 +44,11 @@ public final class M3IconButton extends M3ButtonBase {
     /// The default icon button container width.
     private static final double DEFAULT_CONTAINER_WIDTH = 40.0;
 
-    /// The icon button width role property.
+    /// The semantic width role used with the active button size.
+    ///
+    /// A direct assignment of `null` is replaced with the default role.
+    ///
+    /// @defaultValue [M3IconButtonWidth#DEFAULT]
     private final ObjectProperty<M3IconButtonWidth> widthRole =
             new SimpleObjectProperty<>(this, "widthRole", DEFAULT_WIDTH) {
                 /// Updates width style classes when the property changes.
@@ -53,10 +62,15 @@ public final class M3IconButton extends M3ButtonBase {
                 }
             };
 
-    /// The styleable visual container width token.
+    /// The preferred visual container width in logical pixels.
+    ///
+    /// The value must be finite and non-negative. This property updates the unbound minimum, preferred, and
+    /// maximum width; an application binding on those inherited size properties remains authoritative.
+    ///
+    /// @defaultValue `40.0`
     private @Nullable StyleableDoubleProperty containerWidth;
 
-    /// Creates an icon button without a graphic.
+    /// Creates an icon button with no graphic and the default icon-button metrics.
     public M3IconButton() {
         this(null);
     }
@@ -81,7 +95,7 @@ public final class M3IconButton extends M3ButtonBase {
     /// Sets the icon button width role.
     ///
     /// @param widthRole the icon button width role
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `widthRole` is `null`
     public final void setWidthRole(M3IconButtonWidth widthRole) {
         this.widthRole.set(Objects.requireNonNull(widthRole, "widthRole"));
     }
@@ -92,15 +106,15 @@ public final class M3IconButton extends M3ButtonBase {
 
     /// Returns the preferred visual container width token.
     ///
-    /// @return the preferred visual container width in pixels
+    /// @return the preferred visual container width in logical pixels
     public final double getContainerWidth() {
         return containerWidth == null ? DEFAULT_CONTAINER_WIDTH : containerWidth.get();
     }
 
     /// Sets the preferred visual container width token.
     ///
-    /// @param containerWidth the preferred visual container width in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param containerWidth the preferred visual container width in logical pixels
+    /// @throws IllegalArgumentException if `containerWidth` is negative or not finite
     public final void setContainerWidth(double containerWidth) {
         containerWidthProperty().set(M3Css.nonNegative(containerWidth, "containerWidth"));
     }

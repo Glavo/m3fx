@@ -17,19 +17,19 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// [Material Design button groups](https://m3.material.io/components/button-groups/specs).
 @NotNullByDefault
 public enum M3ButtonSize {
-    /// Extra-small action controls with 32dp containers.
+    /// Extra-small action controls with 32-logical-pixel containers.
     EXTRA_SMALL("extra-small"),
 
-    /// Small action controls with 40dp containers.
+    /// Small action controls with 40-logical-pixel containers.
     SMALL("small"),
 
-    /// Medium action controls with 56dp containers.
+    /// Medium action controls with 56-logical-pixel containers.
     MEDIUM("medium"),
 
-    /// Large action controls with 96dp containers.
+    /// Large action controls with 96-logical-pixel containers.
     LARGE("large"),
 
-    /// Extra-large action controls with 136dp containers.
+    /// Extra-large action controls with 136-logical-pixel containers.
     EXTRA_LARGE("extra-large");
 
     /// The suffix used to form control-specific size style classes.

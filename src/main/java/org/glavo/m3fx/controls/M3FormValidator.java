@@ -28,33 +28,58 @@ import java.util.Objects;
 
 /// Coordinates validation across multiple [M3TextInputLayout] controls.
 ///
-/// `M3FormValidator` keeps a validation-ordered list of text input layouts, runs each layout's validator,
-/// tracks invalid layouts, and exposes read-only aggregate state for submit buttons and error summaries.
+/// Input layouts are registered in validation order through a live mutable list. [validate()] invokes every
+/// registered layout synchronously in that order and publishes aggregate invalid state after the pass completes.
+/// Validator exceptions are propagated. Removing an input stops observing it but does not clear that layout's own
+/// validation state.
+///
+/// Aggregate properties also track validation subsequently triggered by an input layout, such as focus-loss or
+/// text-change validation. [validProperty()] reports whether the current validator-produced error set is empty; it
+/// does not imply that validation has been activated. The invalid-input view is live, ordered, and read-only.
+///
+/// ```java
+/// private M3FormValidator configureValidation(
+///         M3FormPane form,
+///         M3Button submit,
+///         M3TextInputLayout email,
+///         M3TextInputLayout password) {
+///     M3FormValidator validator = new M3FormValidator(email, password);
+///     submit.setOnAction(event -> {
+///         if (validator.validateAndFocusFirstInvalidInput(form)) {
+///             System.out.println("Form accepted");
+///         }
+///     });
+///     return validator;
+/// }
+/// ```
 ///
 /// See [Material Design text fields](https://m3.material.io/components/text-fields/overview).
 @NotNullByDefault
 public final class M3FormValidator {
-    /// The registered text input layouts.
+    /// The live, mutable list of registered text input layouts in validation order.
+    ///
+    /// The list initially is empty. It rejects `null` and duplicate layout instances. Mutations are observable and
+    /// immediately update listener ownership and aggregate state; layouts are not reparented.
     private final ObservableList<M3TextInputLayout> inputs = new InputList();
 
-    /// The currently invalid input layouts.
+    /// The currently invalid registered inputs in validation order.
     private final ObservableList<M3TextInputLayout> invalidInputs = FXCollections.observableArrayList();
 
     /// The unmodifiable invalid input list exposed to callers.
     private final @UnmodifiableView ObservableList<M3TextInputLayout> invalidInputsView =
             FXCollections.unmodifiableObservableList(invalidInputs);
 
-    /// The first invalid input layout in registration order.
+    /// The first invalid registered input, or `null` when none is currently invalid.
     private final ReadOnlyObjectWrapper<@Nullable M3TextInputLayout> firstInvalidInput =
             new ReadOnlyObjectWrapper<>(this, "firstInvalidInput");
 
-    /// Whether all registered input layouts are valid.
+    /// Whether no registered input currently contributes a validator-produced error.
     private final ReadOnlyBooleanWrapper valid = new ReadOnlyBooleanWrapper(this, "valid", true);
 
-    /// Whether at least one registered input layout has active validation.
+    /// Whether at least one registered input currently has active validation.
     private final ReadOnlyBooleanWrapper validationActive = new ReadOnlyBooleanWrapper(this, "validationActive");
 
-    /// The number of currently invalid input layouts.
+    /// The number of registered inputs currently contributing validator-produced errors.
     private final ReadOnlyIntegerWrapper invalidInputCount = new ReadOnlyIntegerWrapper(this, "invalidInputCount");
 
     /// Updates group state when one registered layout changes its validator-produced error text.
@@ -86,30 +111,35 @@ public final class M3FormValidator {
     /// Whether a deferred operation changed aggregate validation activation.
     private boolean validationActiveRefreshPending;
 
-    /// Creates an empty form validator.
+    /// Creates a validator with no registered inputs and no active validation.
     public M3FormValidator() {
     }
 
-    /// Creates a form validator with the supplied input layouts.
+    /// Creates a validator with the specified input layouts in array order.
     ///
     /// @param inputs the input layouts to validate in order
+    /// @throws NullPointerException if `inputs` or an element of `inputs` is `null`
+    /// @throws IllegalArgumentException if `inputs` contains the same layout instance more than once
     public M3FormValidator(M3TextInputLayout... inputs) {
         this.inputs.addAll(inputs);
     }
 
     /// Returns the mutable registered input list in validation order.
     ///
-    /// Mutating this list installs and removes validation listeners, rejects `null` layouts, rejects duplicate
-    /// layout instances, and refreshes aggregate validation state.
+    /// Mutating this list installs and removes validation observation, rejects `null` and duplicate layout
+    /// instances, and refreshes aggregate state. The list does not take scene-graph ownership of its elements.
     ///
     /// @return the registered input layouts in validation order
     public ObservableList<M3TextInputLayout> getInputs() {
         return inputs;
     }
 
-    /// Returns the currently invalid input layouts in validation order.
+    /// Returns an unmodifiable live view of the currently invalid inputs in validation order.
     ///
-    /// @return the currently invalid input layouts in validation order
+    /// The view changes when registered input validation state or registration order changes. Mutation operations
+    /// are unsupported.
+    ///
+    /// @return the unmodifiable live invalid-input view
     public @UnmodifiableView ObservableList<M3TextInputLayout> getInvalidInputs() {
         return invalidInputsView;
     }
@@ -158,9 +188,13 @@ public final class M3FormValidator {
         return invalidInputCount.getReadOnlyProperty();
     }
 
-    /// Runs validation on all registered input layouts and returns whether all are valid.
+    /// Runs validation on every registered input and returns whether all accept their current values.
     ///
-    /// @return `true` when all registered input layouts validate successfully
+    /// Inputs are evaluated synchronously in registration order, including inputs after an earlier failure.
+    /// Aggregate properties are refreshed once after the pass. Exceptions from an input validator are propagated.
+    /// Calling this method with no registered inputs returns `true`.
+    ///
+    /// @return `true` if every registered input validates successfully
     public boolean validate() {
         boolean valid = true;
         beginAggregateUpdate();
@@ -178,6 +212,8 @@ public final class M3FormValidator {
     ///
     /// @param input the registered input layout to validate
     /// @return `true` when the input layout validates successfully
+    /// @throws NullPointerException if `input` is `null`
+    /// @throws IllegalArgumentException if `input` is not registered with this validator
     public boolean validateInput(M3TextInputLayout input) {
         beginAggregateUpdate();
         try {
@@ -187,7 +223,10 @@ public final class M3FormValidator {
         }
     }
 
-    /// Clears validator-produced error state on all registered input layouts.
+    /// Clears validator-produced error state on all registered inputs in registration order.
+    ///
+    /// Validators and explicit error text are not changed. Aggregate state is published after every input has been
+    /// cleared. Calling this method with no registered inputs has no effect.
     public void clearValidation() {
         beginAggregateUpdate();
         try {
@@ -202,6 +241,8 @@ public final class M3FormValidator {
     /// Clears validator-produced error state on one registered input layout.
     ///
     /// @param input the registered input layout whose validation state is cleared
+    /// @throws NullPointerException if `input` is `null`
+    /// @throws IllegalArgumentException if `input` is not registered with this validator
     public void clearValidation(M3TextInputLayout input) {
         beginAggregateUpdate();
         try {
@@ -211,23 +252,23 @@ public final class M3FormValidator {
         }
     }
 
-    /// Requests focus on the first reachable invalid input layout.
+    /// Requests focus on the first reachable invalid input in registration order.
     ///
     /// @return `true` when a reachable invalid input accepted keyboard focus
     public boolean focusFirstInvalidInput() {
         return focusFirstInvalidInputWithOwner(null);
     }
 
-    /// Requests focus on the first reachable invalid input layout and reveals it through the supplied owner.
+    /// Requests focus on the first reachable invalid input and asks the supplied owner hierarchy to reveal it.
     ///
     /// @param owner the node whose enclosing scroll pane should reveal the focused invalid input
     /// @return `true` when a reachable invalid input accepted keyboard focus
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `owner` is `null`
     public boolean focusFirstInvalidInput(Node owner) {
         return focusFirstInvalidInputWithOwner(Objects.requireNonNull(owner, "owner"));
     }
 
-    /// Runs validation, focuses the first invalid input layout, and returns whether all inputs are valid.
+    /// Runs validation and, on failure, attempts to focus the first reachable invalid input.
     ///
     /// @return `true` when all registered input layouts validate successfully
     public boolean validateAndFocusFirstInvalidInput() {
@@ -238,7 +279,7 @@ public final class M3FormValidator {
         return valid;
     }
 
-    /// Runs validation, focuses the first invalid input layout, reveals it through the owner, and returns validity.
+    /// Runs validation and, on failure, attempts to reveal and focus the first reachable invalid input.
     ///
     /// @param owner the node whose enclosing scroll pane should reveal the focused invalid input
     /// @return `true` when all registered input layouts validate successfully

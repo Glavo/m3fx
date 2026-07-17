@@ -41,11 +41,15 @@ import java.util.Objects;
 
 /// A Material Design 3 side sheet container.
 ///
-/// `M3SideSheet` presents supporting content from a side edge of a view. It supports standard and modal sheet
-/// variants, docked and detached container shapes, headline text, header icon actions, bottom action buttons, scrim
-/// handling, keyboard dismissal,
-/// and Material entrance and exit motion. The parent layout owns the sheet's edge placement and the 16-pixel outer
-/// margin required by the detached configuration.
+/// `M3SideSheet` presents supporting content from a side edge of a view. A standard sheet participates in the parent
+/// layout; a modal sheet traps keyboard traversal while shown and responds to Escape by hiding. This control does
+/// not create or own the surrounding scrim. The parent layout also owns edge placement and the 16-pixel outer margin
+/// required by a detached sheet.
+///
+/// The sheet is shown by default. [#show()] and [#hide()] update [#shownProperty()] and are idempotent. Hiding a
+/// modal sheet restores focus to the node that owned it before the sheet was shown when
+/// [#restoreFocusOnHideProperty()] is enabled. Content, header actions, and bottom actions become children of the
+/// sheet and must satisfy normal JavaFX node ownership rules.
 ///
 /// See [Material Design side sheets](https://m3.material.io/components/side-sheets/overview).
 @NotNullByDefault
@@ -74,13 +78,26 @@ public final class M3SideSheet extends Control {
     /// The shared sheet content slot style class.
     public static final String CONTENT_STYLE_CLASS = "m3-sheet-content";
 
-    /// The sheet headline property.
+    /// The sheet headline text.
+    ///
+    /// An empty string suppresses the headline.
+    ///
+    /// @defaultValue `""`
     private final StringProperty headline = new SimpleStringProperty(this, "headline", "");
 
-    /// The sheet content node property.
+    /// The sheet content node.
+    ///
+    /// A non-null node is owned by this sheet and must be available for it to parent.
+    ///
+    /// @defaultValue `null`
     private final ObjectProperty<@Nullable Node> content = new SimpleObjectProperty<>(this, "content");
 
-    /// The sheet variant property.
+    /// The sheet variant.
+    ///
+    /// Assigning `null` restores [M3SheetVariant#STANDARD]. Changing from modal to standard releases the modal focus
+    /// trap without changing the shown state.
+    ///
+    /// @defaultValue `STANDARD`
     private final ObjectProperty<M3SheetVariant> variant =
             new SimpleObjectProperty<>(this, "variant", M3SheetVariant.STANDARD) {
                 /// Updates variant style classes when the property changes.
@@ -95,7 +112,11 @@ public final class M3SideSheet extends Control {
                 }
             };
 
-    /// The shown property.
+    /// Whether the sheet is shown.
+    ///
+    /// Changing this property runs the same visibility and focus lifecycle as [#show()] and [#hide()].
+    ///
+    /// @defaultValue `true`
     private final BooleanProperty shown = new SimpleBooleanProperty(this, "shown", true) {
         /// Updates the sheet visibility when the property changes.
         @Override
@@ -107,11 +128,19 @@ public final class M3SideSheet extends Control {
         }
     };
 
-    /// The focus restoration property.
+    /// Whether hiding a modal sheet restores the focus owner captured when it was shown.
+    ///
+    /// The setting has no effect for a standard sheet or when the previous focus owner is no longer reachable.
+    ///
+    /// @defaultValue `true`
     private final BooleanProperty restoreFocusOnHide =
             new SimpleBooleanProperty(this, "restoreFocusOnHide", true);
 
     /// Whether the sheet uses the detached container shape.
+    ///
+    /// This property affects presentation only; it does not add the surrounding layout margin.
+    ///
+    /// @defaultValue `false`
     private final BooleanProperty detachedState = new SimpleBooleanProperty(this, "detached") {
         /// Synchronizes the detached container pseudo-class.
         @Override
@@ -152,7 +181,7 @@ public final class M3SideSheet extends Control {
     /// The last processed shown state.
     private boolean lastShown = true;
 
-    /// Creates an empty side sheet.
+    /// Creates an empty, shown, standard side sheet with no headline, content, or actions.
     public M3SideSheet() {
         this("", null);
     }
@@ -160,6 +189,7 @@ public final class M3SideSheet extends Control {
     /// Creates a side sheet with headline text.
     ///
     /// @param headline the sheet headline text
+    /// @throws NullPointerException if `headline` is `null`
     public M3SideSheet(String headline) {
         this(headline, null);
     }
@@ -168,6 +198,7 @@ public final class M3SideSheet extends Control {
     ///
     /// @param headline the sheet headline text
     /// @param content the sheet content node, or `null` for none
+    /// @throws NullPointerException if `headline` is `null`
     public M3SideSheet(String headline, @Nullable Node content) {
         initialize();
         setHeadline(headline);
@@ -184,7 +215,7 @@ public final class M3SideSheet extends Control {
     /// Sets the sheet headline.
     ///
     /// @param headline the sheet headline text
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `headline` is `null`
     public final void setHeadline(String headline) {
         this.headline.set(Objects.requireNonNull(headline, "headline"));
     }
@@ -201,6 +232,9 @@ public final class M3SideSheet extends Control {
     }
 
     /// Sets the sheet content node.
+    ///
+    /// Replacing or clearing the value removes the old content from the sheet. A non-null value becomes a child of
+    /// this control and must satisfy normal JavaFX parent ownership rules.
     ///
     /// @param content the sheet content node, or `null` to clear it
     public final void setContent(@Nullable Node content) {
@@ -221,7 +255,7 @@ public final class M3SideSheet extends Control {
     /// Sets the sheet variant.
     ///
     /// @param variant the sheet variant
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `variant` is `null`
     public final void setVariant(M3SheetVariant variant) {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
@@ -296,27 +330,38 @@ public final class M3SideSheet extends Control {
     /// Header actions are rendered beside the headline. Use this slot for the optional back and close icon buttons
     /// from the Material side-sheet anatomy. Bottom action buttons belong in [getActions].
     ///
-    /// @return the mutable header icon action list
+    /// The returned list is live, mutable, and ordered in logical start-to-end order. It rejects `null` elements.
+    /// Mutations update layout, focus traversal, and accessibility immediately. Nodes must be available for this
+    /// sheet to own, and duplicate node references are not permitted by JavaFX parent ownership.
+    ///
+    /// @return the live mutable header icon action list
     public final ObservableList<Node> getHeaderActions() {
         return headerActions;
     }
 
     /// Returns the mutable bottom action button list.
     ///
-    /// The skin places these actions in the 72-pixel bottom action area and aligns them to the logical start edge.
-    /// This list must not contain `null` elements.
+    /// The returned list is live, mutable, and ordered in logical start-to-end order. It rejects `null` elements.
+    /// Mutations update layout, focus traversal, and accessibility immediately. Nodes must be available for this
+    /// sheet to own, and duplicate node references are not permitted by JavaFX parent ownership.
     ///
-    /// @return the mutable bottom action button list
+    /// @return the live mutable bottom action button list
     public final ObservableList<Node> getActions() {
         return actions;
     }
 
     /// Shows this side sheet using the Material visibility motion.
+    ///
+    /// Calling this method while the sheet is already shown preserves the current state. For a modal sheet, focus
+    /// traversal is confined to reachable sheet content and actions while it remains shown.
     public final void show() {
         setShown(true);
     }
 
     /// Hides this side sheet using the Material visibility motion.
+    ///
+    /// Calling this method while the sheet is already hidden is a no-op. A modal sheet releases its focus trap and
+    /// may restore the previously captured focus owner according to [#restoreFocusOnHideProperty()].
     public final void hide() {
         setShown(false);
     }
@@ -334,7 +379,7 @@ public final class M3SideSheet extends Control {
     /// @param attribute the requested accessibility attribute
     /// @param parameters the optional attribute parameters
     /// @return the attribute value, or `null` when unavailable
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -353,7 +398,7 @@ public final class M3SideSheet extends Control {
     ///
     /// @param action the requested accessibility action
     /// @param parameters the optional action parameters
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

@@ -6,11 +6,11 @@ package org.glavo.m3fx.tokens;
 import org.glavo.m3fx.internal.tokens.M3ShapeTokensImpl;
 import org.jetbrains.annotations.NotNullByDefault;
 
-/// Holds Material Design 3 shape system tokens.
+/// Defines the immutable Material Design 3 corner-radius scale.
 ///
-/// Shape tokens define the corner radius scale used by surfaces, cards, buttons, text fields, sheets, and other
-/// controls. The scale follows the Material 3 ten-step corner radius model so component tokens can choose the
-/// exact roundedness expected by Material specs.
+/// Values are finite, non-negative radii in JavaFX logical pixels. Component tokens select values from this scale
+/// when deriving their default shapes. A radius does not dynamically affect an existing component token set;
+/// component tokens must be derived again after replacing the shape scale.
 ///
 /// See [Material Design shape](https://m3.material.io/styles/shape/overview).
 @NotNullByDefault
@@ -65,7 +65,7 @@ public sealed interface M3ShapeTokens permits M3ShapeTokensImpl {
     /// @return the full corner radius used for pills, in pixels
     double full();
 
-    /// Creates a builder initialized with baseline shape tokens.
+    /// Creates a builder initialized with all values from [baseline].
     ///
     /// @return a mutable shape-token builder
     static M3ShapeTokensBuilder builder() {
@@ -140,14 +140,14 @@ public sealed interface M3ShapeTokens permits M3ShapeTokensImpl {
         );
     }
 
-    /// Returns baseline Material Design 3 shape tokens.
+    /// Returns the baseline Material Design 3 shape scale.
     ///
     /// @return baseline Material Design 3 shape tokens
     static M3ShapeTokens baseline() {
         return create(0.0, 4.0, 8.0, 12.0, 16.0, 20.0, 28.0, 32.0, 48.0, 999.0);
     }
 
-    /// Returns expressive Material Design 3 shape tokens.
+    /// Returns the Material Design 3 Expressive shape scale.
     ///
     /// @return expressive Material Design 3 shape tokens
     static M3ShapeTokens expressive() {

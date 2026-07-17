@@ -47,7 +47,12 @@ import java.util.Objects;
 ///
 /// `M3SplitButton` combines an [M3Button] for the primary command with an [M3MenuButton] that reveals related
 /// secondary commands. The control keeps both parts visually joined, forwards the configured button variant, and
-/// exposes the menu items through the embedded menu button.
+/// exposes the menu items through the embedded menu button. Activating the primary part fires this control's
+/// [ActionEvent] without opening the menu; activating the trailing part opens the attached non-modal menu without
+/// firing the primary action.
+///
+/// The default is an empty, small tonal split button with a two-pixel gap. Its attached menu and item list are stable
+/// for the control lifetime. Use [#showMenu()] and [#hideMenu()] for non-blocking popup control.
 ///
 /// See [Material Design split buttons](https://m3.material.io/components/split-button/overview).
 @NotNullByDefault
@@ -97,7 +102,11 @@ public final class M3SplitButton extends Control {
     /// The disclosure icon displayed by the menu button side.
     private final M3DisclosureIcon menuIndicator = new M3DisclosureIcon();
 
-    /// The primary action text property.
+    /// The primary action text.
+    ///
+    /// Assigning `null` through the property is normalized to an empty string.
+    ///
+    /// @defaultValue `""`
     private final StringProperty text = new SimpleStringProperty(this, "text", "") {
         /// Keeps text non-null and synchronizes the primary button.
         @Override
@@ -110,7 +119,11 @@ public final class M3SplitButton extends Control {
         }
     };
 
-    /// The primary action graphic property.
+    /// The primary action graphic.
+    ///
+    /// A non-null node is owned by the primary button and must be available for it to parent.
+    ///
+    /// @defaultValue `null`
     private final ObjectProperty<@Nullable Node> graphic =
             new SimpleObjectProperty<>(this, "graphic") {
                 /// Synchronizes the primary button graphic.
@@ -120,7 +133,9 @@ public final class M3SplitButton extends Control {
                 }
             };
 
-    /// The primary action handler property.
+    /// The primary action handler.
+    ///
+    /// @defaultValue `null`
     private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
             new SimpleObjectProperty<>(this, "onAction") {
                 /// Updates the registered primary action event handler.
@@ -144,7 +159,11 @@ public final class M3SplitButton extends Control {
     private final M3AccessibleFocusNotifier popupFocusNotifier =
             new M3AccessibleFocusNotifier(this, menuButton.getMenu(), this::focusNode);
 
-    /// Backing property for the public shared button variant API.
+    /// The button variant shared by both parts.
+    ///
+    /// Assigning `null` through the property restores [M3ButtonVariant#TONAL].
+    ///
+    /// @defaultValue `TONAL`
     private final ObjectProperty<M3ButtonVariant> variant =
             new SimpleObjectProperty<>(this, "variant", M3ButtonVariant.TONAL) {
                 /// Updates both child buttons when the variant changes.
@@ -158,7 +177,11 @@ public final class M3SplitButton extends Control {
                 }
             };
 
-    /// The Material Expressive split button size property.
+    /// The Material Expressive split button size.
+    ///
+    /// Assigning `null` through the property restores [M3ButtonSize#SMALL].
+    ///
+    /// @defaultValue `SMALL`
     private final ObjectProperty<M3ButtonSize> size =
             new SimpleObjectProperty<>(this, "size", DEFAULT_SIZE) {
                 /// Updates size style classes when the property changes.
@@ -173,22 +196,36 @@ public final class M3SplitButton extends Control {
                 }
             };
 
-    /// The styleable spacing between the action and menu parts.
+    /// The spacing between the action and menu parts in logical pixels.
+    ///
+    /// Negative values are permitted; non-finite values are rejected.
+    ///
+    /// @defaultValue `2.0`
     private @Nullable StyleableDoubleProperty spacing;
 
-    /// The styleable outer-corner radius shared by both button parts.
+    /// The outer-corner radius shared by both button parts in logical pixels.
+    ///
+    /// @defaultValue `20.0`
     private @Nullable StyleableDoubleProperty outerCorner;
 
-    /// The styleable resting inner-corner radius shared by both button parts.
+    /// The resting inner-corner radius shared by both button parts in logical pixels.
+    ///
+    /// @defaultValue `4.0`
     private @Nullable StyleableDoubleProperty innerCorner;
 
-    /// The styleable hovered inner-corner radius shared by both button parts.
+    /// The hovered inner-corner radius shared by both button parts in logical pixels.
+    ///
+    /// @defaultValue `12.0`
     private @Nullable StyleableDoubleProperty hoveredInnerCorner;
 
-    /// The styleable pressed inner-corner radius shared by both button parts.
+    /// The pressed inner-corner radius shared by both button parts in logical pixels.
+    ///
+    /// @defaultValue `12.0`
     private @Nullable StyleableDoubleProperty pressedInnerCorner;
 
-    /// The styleable selected trailing-button inner-corner radius.
+    /// The selected trailing-button inner-corner radius in logical pixels.
+    ///
+    /// @defaultValue `20.0`
     private @Nullable StyleableDoubleProperty selectedInnerCorner;
 
     /// Creates an empty split button.
@@ -199,6 +236,7 @@ public final class M3SplitButton extends Control {
     /// Creates a split button with primary action text.
     ///
     /// @param text the primary action text
+    /// @throws NullPointerException if `text` is `null`
     public M3SplitButton(String text) {
         initialize();
         setText(text);
@@ -214,7 +252,7 @@ public final class M3SplitButton extends Control {
     /// Sets the primary action text.
     ///
     /// @param text the primary action text
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `text` is `null`
     public final void setText(String text) {
         this.text.set(Objects.requireNonNull(text, "text"));
     }
@@ -231,6 +269,9 @@ public final class M3SplitButton extends Control {
     }
 
     /// Sets the primary action graphic.
+    ///
+    /// A non-null graphic becomes a child of the primary button and must satisfy normal JavaFX parent ownership
+    /// rules.
     ///
     /// @param graphic the primary action graphic, or `null` to clear it
     public final void setGraphic(@Nullable Node graphic) {
@@ -260,6 +301,9 @@ public final class M3SplitButton extends Control {
     }
 
     /// Fires the primary action.
+    ///
+    /// The event is delivered synchronously when this control is enabled. This method does not open or close the
+    /// attached menu and is a no-op while disabled.
     public final void fire() {
         if (!isDisabled()) {
             fireEvent(new ActionEvent(this, this));
@@ -276,7 +320,7 @@ public final class M3SplitButton extends Control {
     /// Sets the button variant shared by both split button parts.
     ///
     /// @param variant the button variant shared by both split button parts
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `variant` is `null`
     public final void setVariant(M3ButtonVariant variant) {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
@@ -295,7 +339,7 @@ public final class M3SplitButton extends Control {
     /// Sets the Material Expressive split button size.
     ///
     /// @param size the Material Expressive split button size
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `size` is `null`
     public final void setSize(M3ButtonSize size) {
         this.size.set(Objects.requireNonNull(size, "size"));
     }
@@ -314,6 +358,7 @@ public final class M3SplitButton extends Control {
     /// Sets the spacing between the primary action and menu button parts.
     ///
     /// @param spacing the part spacing in pixels
+    /// @throws IllegalArgumentException if `spacing` is not finite
     public final void setSpacing(double spacing) {
         spacingProperty().set(M3Css.finite(spacing, "spacing"));
     }
@@ -485,18 +530,25 @@ public final class M3SplitButton extends Control {
 
     /// Returns the mutable item list shown by the menu side.
     ///
-    /// @return the mutable item list shown by the menu side
+    /// The returned list is the attached menu's live, mutable, ordered content list. It rejects `null` elements.
+    /// Nodes become children of the menu and must satisfy normal JavaFX parent ownership rules.
+    ///
+    /// @return the live mutable attached-menu content list
     public final ObservableList<Node> getItems() {
         return menuButton.getItems();
     }
 
     /// Shows the attached menu.
+    ///
+    /// This method is non-blocking and has no effect until the control can own a popup in a showing window.
     public final void showMenu() {
         ensureButtonPartsInitialized();
         menuButton.showMenu();
     }
 
     /// Hides the attached menu.
+    ///
+    /// This method is non-blocking and is a no-op when the menu is not showing.
     public final void hideMenu() {
         menuButton.hideMenu();
     }
@@ -540,7 +592,7 @@ public final class M3SplitButton extends Control {
     /// @param attribute the requested accessibility attribute
     /// @param parameters the optional attribute parameters
     /// @return the attribute value, or `null` when unavailable
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -560,7 +612,7 @@ public final class M3SplitButton extends Control {
     ///
     /// @param action the requested accessibility action
     /// @param parameters the optional action parameters
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

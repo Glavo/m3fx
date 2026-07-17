@@ -39,12 +39,17 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Objects;
 
-/// A Material Design 3 bottom sheet container.
+/// A Material Design 3 surface that presents supporting content from the bottom edge of a view.
 ///
-/// `M3BottomSheet` presents supporting content from the bottom edge of a view. It supports standard and modal
-/// sheet variants, headline text, action nodes, an optional actionable drag handle, scrim handling, keyboard
-/// dismissal, and Material entrance and exit motion. Sheet height remains owned by the surrounding layout; an
-/// application that exposes multiple heights should use the drag-handle action to cycle those positions.
+/// A bottom sheet is an ordinary scene-graph control rather than a popup. The application places it in a layout
+/// and controls presentation through [shown][#shownProperty()]. A shown modal sheet traps keyboard focus within
+/// its reachable content, drag handle, and actions; Escape hides it. When configured, hiding a modal sheet returns
+/// focus to the node that owned focus before it was shown. A standard sheet does not trap focus.
+///
+/// Sheet height remains the responsibility of the surrounding layout. The optional drag-handle action can be used
+/// by an application to move between supported heights. The default sheet is shown, uses the standard variant,
+/// has a visible non-actionable drag handle, restores focus when a modal presentation hides, and has no content or
+/// actions.
 ///
 /// See [Material Design bottom sheets](https://m3.material.io/components/bottom-sheets/overview).
 @NotNullByDefault
@@ -70,13 +75,26 @@ public final class M3BottomSheet extends Control {
     /// The drag handle style class.
     public static final String DRAG_HANDLE_STYLE_CLASS = "m3-bottom-sheet-drag-handle";
 
-    /// The sheet headline text property.
+    /// The headline displayed by the sheet.
+    ///
+    /// The default value is the empty string. This property does not accept `null`.
+    ///
+    /// @defaultValue `""`
     private final StringProperty headline = new SimpleStringProperty(this, "headline", "");
 
-    /// The sheet content node property.
+    /// The primary content node displayed by the sheet.
+    ///
+    /// The default value is `null`. The node cannot simultaneously be a child of another parent.
+    ///
+    /// @defaultValue `null`
     private final ObjectProperty<@Nullable Node> content = new SimpleObjectProperty<>(this, "content");
 
-    /// The sheet variant property.
+    /// The interaction and presentation variant of the sheet.
+    ///
+    /// The default value is [M3SheetVariant#STANDARD]. The property never reports `null`; a direct `null`
+    /// assignment restores the default.
+    ///
+    /// @defaultValue [M3SheetVariant#STANDARD]
     private final ObjectProperty<M3SheetVariant> variant =
             new SimpleObjectProperty<>(this, "variant", M3SheetVariant.STANDARD) {
                 /// Updates variant style classes when the property changes.
@@ -91,7 +109,12 @@ public final class M3BottomSheet extends Control {
                 }
             };
 
-    /// Whether this sheet is shown.
+    /// Whether this sheet is shown and participates in layout.
+    ///
+    /// Changing the value updates `visible` and `managed` as presentation completes. Showing a modal sheet
+    /// establishes its focus scope; hiding it releases that scope. The default value is `true`.
+    ///
+    /// @defaultValue `true`
     private final BooleanProperty shown = new SimpleBooleanProperty(this, "shown", true) {
         /// Updates the sheet visibility when the property changes.
         @Override
@@ -103,11 +126,21 @@ public final class M3BottomSheet extends Control {
         }
     };
 
-    /// Whether focus returns to the previously focused node when a modal sheet hides.
+    /// Whether hiding a modal sheet attempts to restore its previous external focus owner.
+    ///
+    /// This property has no effect for the standard variant. Restoration is attempted only while the remembered
+    /// node remains reachable. The default value is `true`.
+    ///
+    /// @defaultValue `true`
     private final BooleanProperty restoreFocusOnHide =
             new SimpleBooleanProperty(this, "restoreFocusOnHide", true);
 
     /// Whether the drag handle is visible.
+    ///
+    /// A visible handle becomes focus traversable only when [onDragHandleAction][#onDragHandleActionProperty()] is
+    /// non-null. The default value is `true`.
+    ///
+    /// @defaultValue `true`
     private final BooleanProperty dragHandleVisible =
             new SimpleBooleanProperty(this, "dragHandleVisible", true) {
                 /// Requests skin layout when handle visibility changes.
@@ -117,7 +150,12 @@ public final class M3BottomSheet extends Control {
                 }
             };
 
-    /// The action invoked when the user selects the drag handle.
+    /// The action invoked when the user activates the visible drag handle.
+    ///
+    /// The default value is `null`. A non-null handler makes the handle actionable by pointer, keyboard, and
+    /// accessibility clients; the handler is responsible for changing sheet height or state.
+    ///
+    /// @defaultValue `null`
     private final ObjectProperty<@Nullable EventHandler<ActionEvent>> dragHandleActionHandler =
             new SimpleObjectProperty<>(this, "onDragHandleAction") {
                 /// Updates the registered drag-handle event handler.
@@ -127,7 +165,10 @@ public final class M3BottomSheet extends Control {
                 }
             };
 
-    /// The mutable trailing action node list.
+    /// The live, mutable list of trailing action nodes.
+    ///
+    /// The list preserves insertion order, rejects `null`, and is observed for subsequent changes. Nodes in the
+    /// list cannot simultaneously be children of another parent.
     private final ObservableList<Node> actions = M3ObservableLists.nonNullElementList("action");
 
     /// Notifies accessibility clients when focus moves between sheet content and action children.
@@ -158,22 +199,24 @@ public final class M3BottomSheet extends Control {
     /// The last processed shown state.
     private boolean lastShown = true;
 
-    /// Creates an empty bottom sheet.
+    /// Creates a shown standard sheet with empty headline text and no content or actions.
     public M3BottomSheet() {
         this("", null);
     }
 
-    /// Creates a bottom sheet with headline text.
+    /// Creates a shown standard sheet with the specified headline and no content or actions.
     ///
     /// @param headline the sheet headline text
+    /// @throws NullPointerException if `headline` is `null`
     public M3BottomSheet(String headline) {
         this(headline, null);
     }
 
-    /// Creates a bottom sheet with headline text and content.
+    /// Creates a shown standard sheet with the specified headline and content.
     ///
     /// @param headline the sheet headline text
     /// @param content the sheet content node, or `null` for no content
+    /// @throws NullPointerException if `headline` is `null`
     public M3BottomSheet(String headline, @Nullable Node content) {
         initialize();
         setHeadline(headline);
@@ -190,7 +233,7 @@ public final class M3BottomSheet extends Control {
     /// Sets the sheet headline.
     ///
     /// @param headline the sheet headline text
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `headline` is `null`
     public final void setHeadline(String headline) {
         this.headline.set(Objects.requireNonNull(headline, "headline"));
     }
@@ -227,7 +270,7 @@ public final class M3BottomSheet extends Control {
     /// Sets the sheet variant.
     ///
     /// @param variant the sheet variant
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `variant` is `null`
     public final void setVariant(M3SheetVariant variant) {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
@@ -314,26 +357,37 @@ public final class M3BottomSheet extends Control {
         return dragHandleActionHandler;
     }
 
-    /// Invokes the drag-handle action when the sheet and handle are enabled and visible.
+    /// Fires the drag-handle action if the sheet can currently accept it.
+    ///
+    /// No event is fired when this control is disabled, the handle is hidden, or no handler is installed. The
+    /// generated [ActionEvent] uses this sheet as both source and target.
     public final void fireDragHandleAction() {
         if (!isDisabled() && isDragHandleVisible() && getOnDragHandleAction() != null) {
             fireEvent(new ActionEvent(this, this));
         }
     }
 
-    /// Returns the mutable trailing action node list.
+    /// Returns the live list of trailing action nodes.
     ///
-    /// @return the mutable trailing action node list
+    /// Changes to the returned list are reflected immediately by this sheet. The list preserves insertion order
+    /// and rejects `null` elements.
+    ///
+    /// @return the live, mutable action list
     public final ObservableList<Node> getActions() {
         return actions;
     }
 
-    /// Shows this bottom sheet using the Material visibility motion.
+    /// Shows this bottom sheet.
+    ///
+    /// This method is equivalent to `setShown(true)`. Calling it while the sheet is already shown has no effect.
     public final void show() {
         setShown(true);
     }
 
-    /// Hides this bottom sheet using the Material visibility motion.
+    /// Hides this bottom sheet.
+    ///
+    /// This method is equivalent to `setShown(false)`. Calling it while the sheet is already hidden has no
+    /// effect.
     public final void hide() {
         setShown(false);
     }
@@ -346,7 +400,7 @@ public final class M3BottomSheet extends Control {
 
     /// Returns accessibility attributes for the sheet state and content.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -375,7 +429,7 @@ public final class M3BottomSheet extends Control {
 
     /// Executes accessibility actions supported by bottom sheets.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

@@ -26,10 +26,15 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
-/// A container that overlays a Material Design 3 badge on content.
+/// A container that overlays a badge on another node.
 ///
-/// `M3BadgedBox` positions an optional [M3Badge] relative to an optional content node. It is intended for
-/// navigation icons, buttons, avatars, and other compact affordances that need a count or attention marker.
+/// The [content][#contentProperty()] and [badge][#badgeProperty()] are independent optional scene-graph nodes.
+/// The badge is positioned relative to the content according to [badgeAlignment][#badgeAlignmentProperty()] and
+/// then translated by the X and Y offsets. Horizontal alignment follows the effective node orientation.
+///
+/// A badged box is non-focus-traversable; focus remains with focusable content or badge children. Nodes assigned
+/// to either slot cannot simultaneously be children of another parent. The no-argument constructor creates an
+/// empty box with top-end alignment and zero offsets.
 ///
 /// See [Material Design badges](https://m3.material.io/components/badges/overview).
 @NotNullByDefault
@@ -37,13 +42,27 @@ public final class M3BadgedBox extends Control {
     /// The base style class for M3FX badged boxes.
     public static final String STYLE_CLASS = "m3-badged-box";
 
-    /// The optional content node property.
+    /// The node over which the badge is positioned.
+    ///
+    /// The default value is `null`. Replacing or clearing the content updates layout and accessibility children.
+    ///
+    /// @defaultValue `null`
     private final ObjectProperty<@Nullable Node> content = new SimpleObjectProperty<>(this, "content");
 
-    /// The optional badge property.
+    /// The badge positioned over the content.
+    ///
+    /// The default value is `null`. Replacing or clearing the badge updates layout and accessibility children.
+    ///
+    /// @defaultValue `null`
     private final ObjectProperty<@Nullable M3Badge> badge = new SimpleObjectProperty<>(this, "badge");
 
-    /// The badge alignment inside this container, resolved horizontally against the effective node orientation.
+    /// The alignment of the badge within this container.
+    ///
+    /// The default value is [Pos#TOP_RIGHT]. Horizontal left and right positions are interpreted as logical start
+    /// and end and therefore mirror with the effective node orientation. The property never reports `null`; a
+    /// direct `null` assignment restores the default.
+    ///
+    /// @defaultValue [Pos#TOP_RIGHT]
     private final ObjectProperty<Pos> badgeAlignment = new SimpleObjectProperty<>(this, "badgeAlignment", Pos.TOP_RIGHT) {
         /// Restores the default badge alignment when the property is set to null.
         @Override
@@ -56,7 +75,11 @@ public final class M3BadgedBox extends Control {
         }
     };
 
-    /// The horizontal badge translation after alignment is applied.
+    /// The horizontal translation applied after badge alignment, in logical pixels.
+    ///
+    /// The default value is `0.0`. Positive values move the badge toward increasing local X coordinates.
+    ///
+    /// @defaultValue `0.0`
     private final DoubleProperty badgeOffsetX = new SimpleDoubleProperty(this, "badgeOffsetX") {
         /// Updates badge placement after the offset changes.
         @Override
@@ -65,7 +88,11 @@ public final class M3BadgedBox extends Control {
         }
     };
 
-    /// The vertical badge translation after alignment is applied.
+    /// The vertical translation applied after badge alignment, in logical pixels.
+    ///
+    /// The default value is `0.0`. Positive values move the badge toward increasing local Y coordinates.
+    ///
+    /// @defaultValue `0.0`
     private final DoubleProperty badgeOffsetY = new SimpleDoubleProperty(this, "badgeOffsetY") {
         /// Updates badge placement after the offset changes.
         @Override
@@ -82,19 +109,19 @@ public final class M3BadgedBox extends Control {
                     getBadge()
             ));
 
-    /// Creates an empty badged box.
+    /// Creates an empty badged box with top-end alignment and zero offsets.
     public M3BadgedBox() {
         this(null, null);
     }
 
-    /// Creates a badged box with content.
+    /// Creates a badged box with the specified content and no badge.
     ///
     /// @param content the content node, or `null` for no content
     public M3BadgedBox(@Nullable Node content) {
         this(content, null);
     }
 
-    /// Creates a badged box with content and badge.
+    /// Creates a badged box with the specified content and badge.
     ///
     /// @param content the content node, or `null` for no content
     /// @param badge the badge node, or `null` for no badge
@@ -142,8 +169,8 @@ public final class M3BadgedBox extends Control {
 
     /// Returns the badge alignment inside this container.
     ///
-    /// Horizontal left and right alignments are interpreted as logical start and end and are resolved by the skin
-    /// against the control's effective node orientation.
+    /// Horizontal left and right alignments are interpreted as logical start and end and are resolved against the
+    /// control's effective node orientation.
     ///
     /// @return the badge alignment
     public final Pos getBadgeAlignment() {
@@ -152,11 +179,11 @@ public final class M3BadgedBox extends Control {
 
     /// Sets the badge alignment inside this container.
     ///
-    /// Horizontal left and right alignments are interpreted as logical start and end and are resolved by the skin
-    /// against the control's effective node orientation.
+    /// Horizontal left and right alignments are interpreted as logical start and end and are resolved against the
+    /// control's effective node orientation.
     ///
     /// @param badgeAlignment the badge alignment
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `badgeAlignment` is `null`
     public final void setBadgeAlignment(Pos badgeAlignment) {
         this.badgeAlignment.set(Objects.requireNonNull(badgeAlignment, "badgeAlignment"));
     }
@@ -167,14 +194,14 @@ public final class M3BadgedBox extends Control {
 
     /// Returns the horizontal badge translation after alignment is applied.
     ///
-    /// @return the horizontal badge offset in pixels
+    /// @return the horizontal badge offset in logical pixels
     public final double getBadgeOffsetX() {
         return badgeOffsetX.get();
     }
 
     /// Sets the horizontal badge translation after alignment is applied.
     ///
-    /// @param badgeOffsetX the horizontal badge offset in pixels
+    /// @param badgeOffsetX the horizontal badge offset in logical pixels
     public final void setBadgeOffsetX(double badgeOffsetX) {
         this.badgeOffsetX.set(badgeOffsetX);
     }
@@ -185,14 +212,14 @@ public final class M3BadgedBox extends Control {
 
     /// Returns the vertical badge translation after alignment is applied.
     ///
-    /// @return the vertical badge offset in pixels
+    /// @return the vertical badge offset in logical pixels
     public final double getBadgeOffsetY() {
         return badgeOffsetY.get();
     }
 
     /// Sets the vertical badge translation after alignment is applied.
     ///
-    /// @param badgeOffsetY the vertical badge offset in pixels
+    /// @param badgeOffsetY the vertical badge offset in logical pixels
     public final void setBadgeOffsetY(double badgeOffsetY) {
         this.badgeOffsetY.set(badgeOffsetY);
     }
@@ -227,7 +254,7 @@ public final class M3BadgedBox extends Control {
 
     /// Executes accessibility actions for content and badge children.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

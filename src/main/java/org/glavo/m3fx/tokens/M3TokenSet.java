@@ -7,17 +7,18 @@ import org.glavo.m3fx.internal.tokens.M3TokenSetImpl;
 import org.glavo.monetfx.ColorScheme;
 import org.jetbrains.annotations.NotNullByDefault;
 
-/// Aggregates all Material Design 3 tokens used by a theme.
+/// Aggregates the complete immutable token state used by an M3FX theme.
 ///
-/// A token set is the structured source of truth that M3FX turns into JavaFX CSS declarations. It contains the
-/// color roles, type scale, shape scale, elevation shadows, motion values, state layer opacities, and
-/// component-specific metrics used by controls. Applications usually obtain a token set through
+/// A token set contains color roles, typography, shape, elevation, motion, state-layer, and component-specific
+/// values. Applications usually obtain one through
 /// [M3Theme][org.glavo.m3fx.theme.M3Theme], but custom integrations can create one explicitly when they need to
-/// bridge another design-token pipeline.
+/// replace complete token groups.
 ///
-/// The model mirrors the token-based approach documented by [Material Design](https://m3.material.io/) and is
-/// intentionally independent from any single stylesheet so themes can switch between baseline and expressive
-/// profiles.
+/// Token groups are retained as immutable values and are not copied. A token set is therefore safe to share after
+/// construction. Its [profile] and [density] describe how defaults were selected; replacing other groups does not
+/// implicitly change either value.
+///
+/// See [Material Design styles](https://m3.material.io/styles).
 @NotNullByDefault
 public sealed interface M3TokenSet permits M3TokenSetImpl {
     /// Returns the profile that produced this token set.
@@ -71,7 +72,7 @@ public sealed interface M3TokenSet permits M3TokenSetImpl {
     /// @param colorScheme the MonetFX color scheme
     /// @param density the density used for component metrics
     /// @return a mutable token-set builder
-    /// @throws NullPointerException if any argument is `null`
+    /// @throws NullPointerException if `profile`, `colorScheme`, or `density` is `null`
     static M3TokenSetBuilder builder(M3Profile profile, ColorScheme colorScheme, M3Density density) {
         return new M3TokenSetBuilder(profile, colorScheme, density);
     }

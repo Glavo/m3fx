@@ -36,6 +36,10 @@ import java.util.Objects;
 /// metrics. Use [M3TabBar] to manage a set of tabs, selected state, keyboard navigation, and accessibility
 /// selection attributes.
 ///
+/// Activating a tab selects it and fires an [ActionEvent]. When the tab belongs to an `M3TabBar`, the bar clears
+/// the previous selection and applies its empty-selection policy. A standalone tab is unselected by default and can
+/// be selected directly through [#selectedProperty()].
+///
 /// See [Material Design tabs](https://m3.material.io/components/tabs/overview).
 @NotNullByDefault
 public final class M3Tab extends ButtonBase {
@@ -90,7 +94,11 @@ public final class M3Tab extends ButtonBase {
     /// The primary active-indicator horizontal-inset property.
     private @Nullable StyleableDoubleProperty activeIndicatorHorizontalInset;
 
-    /// The selected state property.
+    /// Whether this tab is selected.
+    ///
+    /// Direct changes are observed by a containing [M3TabBar], which enforces single selection synchronously.
+    ///
+    /// @defaultValue `false`
     private final BooleanProperty selected = new SimpleBooleanProperty(this, "selected") {
         /// Updates selected pseudo-class state.
         @Override
@@ -100,12 +108,12 @@ public final class M3Tab extends ButtonBase {
         }
     };
 
-    /// Creates an empty tab.
+    /// Creates an unselected tab with an empty label and no graphic.
     public M3Tab() {
         this("", null);
     }
 
-    /// Creates a tab with text.
+    /// Creates an unselected tab with the specified label and no graphic.
     ///
     /// @param text the tab label
     /// @throws NullPointerException if `text` is `null`
@@ -113,7 +121,7 @@ public final class M3Tab extends ButtonBase {
         this(text, null);
     }
 
-    /// Creates a tab with text and graphic content.
+    /// Creates an unselected tab with the specified label and graphic.
     ///
     /// @param text the tab label
     /// @param graphic the graphic displayed with the label, or `null` for none
@@ -361,7 +369,7 @@ public final class M3Tab extends ButtonBase {
 
     /// Returns accessibility attributes for the tab selection state.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");

@@ -7,28 +7,32 @@ import javafx.animation.Interpolator;
 import javafx.util.Duration;
 import org.jetbrains.annotations.NotNullByDefault;
 
-/// Material Design 3 motion easing and duration constants for JavaFX animations.
+/// Provides the named easing curves and duration values defined by the Material Design 3 motion system.
 ///
-/// Duration constants are immutable [Duration] values. Easing constants map normalized input progress to
-/// normalized output progress and can be supplied directly to JavaFX transitions. Component code should normally
-/// consume semantic [M3MotionSpec] roles from the active theme so Standard and Expressive profiles can differ.
+/// The easing constants are JavaFX [Interpolator] instances and can be assigned directly to a transition or key
+/// value. They map an input fraction in the usual JavaFX interpolation range from `0.0` through `1.0` to an eased
+/// output fraction. The duration constants are immutable [Duration] values expressed in milliseconds.
+///
+/// These constants describe the primitive Material motion scale. Controls and applications that need a semantic
+/// choice such as a fast effects transition or a default spatial transition should use [M3MotionScheme] instead;
+/// doing so allows the active Standard or Expressive profile to select the appropriate duration and easing pair.
 ///
 /// See [Material Design motion](https://m3.material.io/styles/motion/overview).
 @NotNullByDefault
 public final class M3Motion {
-    /// A linear animation curve.
+    /// A linear animation curve with no acceleration or deceleration.
     public static final Interpolator LINEAR = Interpolator.LINEAR;
 
-    /// The Material Design 3 standard easing curve.
+    /// The Material Design 3 standard easing curve for transitions that remain on screen.
     public static final Interpolator STANDARD = new CubicInterpolator(0.2, 0.0, 0.0, 1.0);
 
-    /// The Material Design 3 standard accelerate easing curve.
+    /// The Material Design 3 standard accelerate easing curve, which ends faster than it starts.
     public static final Interpolator STANDARD_ACCELERATE = new CubicInterpolator(0.3, 0.0, 1.0, 1.0);
 
-    /// The Material Design 3 standard decelerate easing curve.
+    /// The Material Design 3 standard decelerate easing curve, which begins faster than it ends.
     public static final Interpolator STANDARD_DECELERATE = new CubicInterpolator(0.0, 0.0, 0.0, 1.0);
 
-    /// The Material Design 3 emphasized easing curve for larger transitions.
+    /// The Material Design 3 emphasized easing curve for prominent or spatial transitions.
     public static final Interpolator EMPHASIZED = new ThreePointCubicInterpolator(
             new Offset(0.05, 0.0),
             new Offset(0.133333, 0.06),
@@ -43,52 +47,52 @@ public final class M3Motion {
     /// The Material Design 3 emphasized decelerate easing curve.
     public static final Interpolator EMPHASIZED_DECELERATE = new CubicInterpolator(0.05, 0.7, 0.1, 1.0);
 
-    /// The short1 duration token.
+    /// The short1 duration token, equal to 50 milliseconds.
     public static final Duration SHORT1 = Duration.millis(50.0);
 
-    /// The short2 duration token.
+    /// The short2 duration token, equal to 100 milliseconds.
     public static final Duration SHORT2 = Duration.millis(100.0);
 
-    /// The short3 duration token.
+    /// The short3 duration token, equal to 150 milliseconds.
     public static final Duration SHORT3 = Duration.millis(150.0);
 
-    /// The short4 duration token.
+    /// The short4 duration token, equal to 200 milliseconds.
     public static final Duration SHORT4 = Duration.millis(200.0);
 
-    /// The medium1 duration token.
+    /// The medium1 duration token, equal to 250 milliseconds.
     public static final Duration MEDIUM1 = Duration.millis(250.0);
 
-    /// The medium2 duration token.
+    /// The medium2 duration token, equal to 300 milliseconds.
     public static final Duration MEDIUM2 = Duration.millis(300.0);
 
-    /// The medium3 duration token.
+    /// The medium3 duration token, equal to 350 milliseconds.
     public static final Duration MEDIUM3 = Duration.millis(350.0);
 
-    /// The medium4 duration token.
+    /// The medium4 duration token, equal to 400 milliseconds.
     public static final Duration MEDIUM4 = Duration.millis(400.0);
 
-    /// The long1 duration token.
+    /// The long1 duration token, equal to 450 milliseconds.
     public static final Duration LONG1 = Duration.millis(450.0);
 
-    /// The long2 duration token.
+    /// The long2 duration token, equal to 500 milliseconds.
     public static final Duration LONG2 = Duration.millis(500.0);
 
-    /// The long3 duration token.
+    /// The long3 duration token, equal to 550 milliseconds.
     public static final Duration LONG3 = Duration.millis(550.0);
 
-    /// The long4 duration token.
+    /// The long4 duration token, equal to 600 milliseconds.
     public static final Duration LONG4 = Duration.millis(600.0);
 
-    /// The extraLong1 duration token.
+    /// The extraLong1 duration token, equal to 700 milliseconds.
     public static final Duration EXTRA_LONG1 = Duration.millis(700.0);
 
-    /// The extraLong2 duration token.
+    /// The extraLong2 duration token, equal to 800 milliseconds.
     public static final Duration EXTRA_LONG2 = Duration.millis(800.0);
 
-    /// The extraLong3 duration token.
+    /// The extraLong3 duration token, equal to 900 milliseconds.
     public static final Duration EXTRA_LONG3 = Duration.millis(900.0);
 
-    /// The extraLong4 duration token.
+    /// The extraLong4 duration token, equal to 1000 milliseconds.
     public static final Duration EXTRA_LONG4 = Duration.millis(1000.0);
 
     /// Prevents instantiation.

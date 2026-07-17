@@ -37,25 +37,30 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-/// A Material Design 3 bottom app bar.
+/// A Material Design 3 bar for screen-level actions at the bottom edge of a view.
 ///
-/// `M3BottomAppBar` hosts horizontal action nodes and an optional floating action slot aligned according to
-/// [M3BottomAppBarFloatingActionAlignment]. Use it for screen-level actions at the bottom edge of an
-/// application, especially when paired with a [M3FloatingActionButton].
+/// The bar lays out an ordered, live list of regular [actions][#getActions()] and an optional
+/// [floating action][#floatingActionProperty()]. The floating action has a dedicated slot and is not part of the
+/// regular action list. Its alignment can be changed independently with
+/// [floatingActionAlignment][#floatingActionAlignmentProperty()].
+///
+/// The bar itself is not focus traversable. Focus remains with focusable action children, and horizontal
+/// traversal follows their visual order and the effective node orientation. The no-argument constructor creates
+/// an empty bar with no floating action and end alignment.
 ///
 /// See [Material Design bottom app bars](https://m3.material.io/components/bottom-app-bar/overview).
 @NotNullByDefault
 public final class M3BottomAppBar extends Control {
-    /// The default bottom app bar container height in pixels.
+    /// The default bottom app bar container height in logical pixels.
     private static final double DEFAULT_CONTAINER_HEIGHT = 80.0;
 
-    /// The default horizontal content padding in pixels.
+    /// The default horizontal content padding in logical pixels.
     private static final double DEFAULT_HORIZONTAL_PADDING = 16.0;
 
-    /// The default spacing between regular actions, flexible slots, and floating action content in pixels.
+    /// The default spacing between regular actions, flexible slots, and floating action content in logical pixels.
     private static final double DEFAULT_CONTENT_SPACING = 16.0;
 
-    /// The default spacing between generated regular action slots in pixels.
+    /// The default spacing between generated regular action slots in logical pixels.
     private static final double DEFAULT_ACTION_SPACING = 0.0;
 
     /// The base style class for M3FX bottom app bars.
@@ -70,10 +75,19 @@ public final class M3BottomAppBar extends Control {
     /// The floating action slot style class.
     public static final String FLOATING_ACTION_STYLE_CLASS = "m3-bottom-app-bar-floating-action";
 
-    /// The optional floating action node property.
+    /// The node displayed in the dedicated floating-action slot.
+    ///
+    /// The default value is `null`. The node cannot simultaneously be a child of another parent.
+    ///
+    /// @defaultValue `null`
     private final ObjectProperty<@Nullable Node> floatingAction = new SimpleObjectProperty<>(this, "floatingAction");
 
-    /// The floating action node alignment property.
+    /// The alignment of the floating-action slot within the bar.
+    ///
+    /// The default value is [M3BottomAppBarFloatingActionAlignment#END]. The property never reports `null`; a
+    /// direct `null` assignment restores the default.
+    ///
+    /// @defaultValue [M3BottomAppBarFloatingActionAlignment#END]
     private final ObjectProperty<M3BottomAppBarFloatingActionAlignment> floatingActionAlignment =
             new SimpleObjectProperty<>(this, "floatingActionAlignment", M3BottomAppBarFloatingActionAlignment.END) {
                 /// Updates alignment style classes when the property changes.
@@ -88,19 +102,38 @@ public final class M3BottomAppBar extends Control {
                 }
             };
 
-    /// The mutable regular action node list.
+    /// The live, mutable list of regular action nodes.
+    ///
+    /// The list preserves insertion order, rejects `null`, and is observed for subsequent changes. Nodes in the
+    /// list cannot simultaneously be children of another parent.
     private final ObservableList<Node> actions = M3ObservableLists.nonNullElementList("action");
 
-    /// The bottom app bar container height token.
+    /// The preferred bar height, in logical pixels.
+    ///
+    /// The default value is `80.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `80.0`
     private @Nullable StyleableDoubleProperty containerHeight;
 
-    /// The horizontal content padding token.
+    /// The padding at the logical start and end of the bar, in logical pixels.
+    ///
+    /// The default value is `16.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `16.0`
     private @Nullable StyleableDoubleProperty horizontalPadding;
 
-    /// The spacing token between content slots.
+    /// The spacing between regular actions, flexible space, and the floating-action slot, in logical pixels.
+    ///
+    /// The default value is `16.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `16.0`
     private @Nullable StyleableDoubleProperty contentSpacing;
 
-    /// The spacing token between regular action nodes.
+    /// The spacing between adjacent regular action slots, in logical pixels.
+    ///
+    /// The default value is `0.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `0.0`
     private @Nullable StyleableDoubleProperty actionSpacing;
 
     /// Notifies accessibility clients when focus moves between action children.
@@ -111,15 +144,18 @@ public final class M3BottomAppBar extends Control {
                     getFloatingAction()
             ));
 
-    /// Creates an empty bottom app bar.
+    /// Creates an empty bottom app bar with no floating action and end alignment.
     public M3BottomAppBar() {
         initialize();
     }
 
 
-    /// Returns the mutable action node list.
+    /// Returns the live list of regular action nodes.
     ///
-    /// @return the mutable regular action node list
+    /// Changes to the returned list are reflected immediately by this bar. The list preserves insertion order and
+    /// rejects `null` elements.
+    ///
+    /// @return the live, mutable regular action list
     public final ObservableList<Node> getActions() {
         return actions;
     }
@@ -152,7 +188,7 @@ public final class M3BottomAppBar extends Control {
     /// Sets the floating action node alignment.
     ///
     /// @param floatingActionAlignment the floating action alignment
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `floatingActionAlignment` is `null`
     public final void setFloatingActionAlignment(M3BottomAppBarFloatingActionAlignment floatingActionAlignment) {
         this.floatingActionAlignment.set(Objects.requireNonNull(floatingActionAlignment, "floatingActionAlignment"));
     }
@@ -163,15 +199,15 @@ public final class M3BottomAppBar extends Control {
 
     /// Returns the bottom app bar container height token.
     ///
-    /// @return the bottom app bar container height in pixels
+    /// @return the bottom app bar height in logical pixels
     public final double getContainerHeight() {
         return containerHeight == null ? DEFAULT_CONTAINER_HEIGHT : containerHeight.get();
     }
 
     /// Sets the bottom app bar container height token.
     ///
-    /// @param containerHeight the bottom app bar container height in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param containerHeight the bottom app bar height in logical pixels
+    /// @throws IllegalArgumentException if `containerHeight` is negative or not finite
     public final void setContainerHeight(double containerHeight) {
         containerHeightProperty().set(M3Css.nonNegative(containerHeight, "containerHeight"));
     }
@@ -189,15 +225,15 @@ public final class M3BottomAppBar extends Control {
 
     /// Returns the horizontal content padding token.
     ///
-    /// @return the horizontal content padding in pixels
+    /// @return the horizontal content padding in logical pixels
     public final double getHorizontalPadding() {
         return horizontalPadding == null ? DEFAULT_HORIZONTAL_PADDING : horizontalPadding.get();
     }
 
     /// Sets the horizontal content padding token.
     ///
-    /// @param horizontalPadding the horizontal content padding in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param horizontalPadding the horizontal content padding in logical pixels
+    /// @throws IllegalArgumentException if `horizontalPadding` is negative or not finite
     public final void setHorizontalPadding(double horizontalPadding) {
         horizontalPaddingProperty().set(M3Css.nonNegative(horizontalPadding, "horizontalPadding"));
     }
@@ -215,15 +251,15 @@ public final class M3BottomAppBar extends Control {
 
     /// Returns the spacing token between regular actions, flexible slots, and floating action content.
     ///
-    /// @return the content slot spacing in pixels
+    /// @return the content slot spacing in logical pixels
     public final double getContentSpacing() {
         return contentSpacing == null ? DEFAULT_CONTENT_SPACING : contentSpacing.get();
     }
 
     /// Sets the spacing token between regular actions, flexible slots, and floating action content.
     ///
-    /// @param contentSpacing the content slot spacing in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param contentSpacing the content slot spacing in logical pixels
+    /// @throws IllegalArgumentException if `contentSpacing` is negative or not finite
     public final void setContentSpacing(double contentSpacing) {
         contentSpacingProperty().set(M3Css.nonNegative(contentSpacing, "contentSpacing"));
     }
@@ -241,15 +277,15 @@ public final class M3BottomAppBar extends Control {
 
     /// Returns the spacing token between generated regular action slots.
     ///
-    /// @return the regular action slot spacing in pixels
+    /// @return the regular action slot spacing in logical pixels
     public final double getActionSpacing() {
         return actionSpacing == null ? DEFAULT_ACTION_SPACING : actionSpacing.get();
     }
 
     /// Sets the spacing token between generated regular action slots.
     ///
-    /// @param actionSpacing the regular action slot spacing in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param actionSpacing the regular action slot spacing in logical pixels
+    /// @throws IllegalArgumentException if `actionSpacing` is negative or not finite
     public final void setActionSpacing(double actionSpacing) {
         actionSpacingProperty().set(M3Css.nonNegative(actionSpacing, "actionSpacing"));
     }
@@ -311,7 +347,7 @@ public final class M3BottomAppBar extends Control {
 
     /// Executes accessibility actions for indexed action and floating action children.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

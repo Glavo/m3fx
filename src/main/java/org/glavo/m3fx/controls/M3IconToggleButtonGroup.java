@@ -46,9 +46,21 @@ import java.util.Objects;
 
 /// A Material Design 3 toggle icon button group.
 ///
-/// The group manages selected state for child [M3IconToggleButton] controls, applies
-/// [M3SelectionMode], exposes selected-button views, and supports keyboard traversal. Use it
-/// when a row or cluster of icon buttons represents one logical choice set.
+/// The group displays an ordered, live list of [M3IconToggleButton] controls and coordinates their selection.
+/// The default [selectionModeProperty] is [M3SelectionMode#SINGLE], but empty selection is initially allowed.
+/// Arrow keys move through reachable buttons, while activation remains owned by each button.
+///
+/// [getSelectedButtons] is an unmodifiable observable view in item order. [selectedButtonProperty] identifies the
+/// first selected button, and is `null` when selection is empty. Removing a button clears its selected state.
+/// Item nodes are displayed by this control and consequently must not simultaneously belong to another parent.
+///
+/// ```java
+/// M3IconToggleButtonGroup group = new M3IconToggleButtonGroup();
+/// M3IconToggleButton gridButton = new M3IconToggleButton("G");
+/// M3IconToggleButton listButton = new M3IconToggleButton("L");
+/// group.getItems().addAll(gridButton, listButton);
+/// group.select(gridButton);
+/// ```
 ///
 /// See [Material Design icon buttons](https://m3.material.io/components/icon-buttons/overview).
 @NotNullByDefault
@@ -59,7 +71,11 @@ public final class M3IconToggleButtonGroup extends Control {
     /// The default spacing between toggle icon buttons.
     private static final double DEFAULT_SPACING = 8.0;
 
-    /// The mutable toggle icon button group content.
+    /// The live, mutable, ordered list of buttons displayed by this group.
+    ///
+    /// The list rejects `null` elements and reports mutations through the `ObservableList` change API. Adding,
+    /// removing, or reordering buttons immediately updates selection and keyboard traversal. A button node may
+    /// occur only once because a JavaFX node can occupy only one position in a parent.
     private final ObservableList<M3IconToggleButton> items = M3ObservableLists.nonNullElementList("item");
 
     /// Notifies accessibility clients when focus moves between toggle icon buttons.
@@ -72,10 +88,20 @@ public final class M3IconToggleButtonGroup extends Control {
                             M3IconToggleButton.class
                     ));
 
-    /// The styleable spacing between toggle icon buttons.
+    /// The horizontal spacing between adjacent buttons in logical pixels.
+    ///
+    /// Values must be finite and non-negative.
+    ///
+    /// @defaultValue `8.0`
     private @Nullable StyleableDoubleProperty spacing;
 
-    /// The icon toggle button selection mode.
+    /// The policy used to coordinate selected buttons.
+    ///
+    /// [M3SelectionMode#NONE] clears managed selection, [M3SelectionMode#SINGLE] retains at most one selected
+    /// button, and [M3SelectionMode#MULTIPLE] permits any number. A direct assignment of `null` is replaced with
+    /// [M3SelectionMode#SINGLE].
+    ///
+    /// @defaultValue [M3SelectionMode#SINGLE]
     private final ObjectProperty<M3SelectionMode> selectionMode =
             new SimpleObjectProperty<>(this, "selectionMode", M3SelectionMode.SINGLE) {
                 /// Enforces selection invariants when the mode changes.
@@ -100,7 +126,12 @@ public final class M3IconToggleButtonGroup extends Control {
     private final ReadOnlyObjectWrapper<@Nullable M3IconToggleButton> selectedButton =
             new ReadOnlyObjectWrapper<>(this, "selectedButton");
 
-    /// Whether the group allows all buttons to be unselected.
+    /// Whether the managed selection may be empty.
+    ///
+    /// Setting the value to `false` immediately selects the first enabled, visible button when the selection mode
+    /// is not [M3SelectionMode#NONE] and no button is selected.
+    ///
+    /// @defaultValue `true`
     private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection", true) {
         /// Restores a selected button when empty selection is disabled.
         @Override
@@ -155,29 +186,34 @@ public final class M3IconToggleButtonGroup extends Control {
     /// Whether the group is currently synchronizing selected states.
     private boolean updatingSelection;
 
-    /// Creates an empty toggle icon button group.
+    /// Creates an empty group using single selection, allowing an empty selection, with `8.0` logical pixels of
+    /// spacing.
     public M3IconToggleButtonGroup() {
         initialize();
     }
 
-    /// Returns the mutable child list used as toggle icon button group content.
+    /// Returns the live mutable list of buttons displayed by this group.
     ///
-    /// @return the mutable child list used as toggle icon button group content
+    /// Mutations are observed immediately and insertion order determines layout and keyboard traversal. The list
+    /// rejects `null`. It does not perform an explicit duplicate check, but each button is a JavaFX node and must
+    /// occur only once and must not simultaneously belong to another parent.
+    ///
+    /// @return the live mutable item list
     public final ObservableList<M3IconToggleButton> getItems() {
         return items;
     }
 
     /// Returns the spacing between toggle icon buttons.
     ///
-    /// @return the child spacing in pixels
+    /// @return the child spacing in logical pixels
     public final double getSpacing() {
         return spacing == null ? DEFAULT_SPACING : spacing.get();
     }
 
     /// Sets the spacing between toggle icon buttons.
     ///
-    /// @param spacing the child spacing in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param spacing the child spacing in logical pixels
+    /// @throws IllegalArgumentException if `spacing` is negative or not finite
     public final void setSpacing(double spacing) {
         spacingProperty().set(M3Css.nonNegative(spacing, "spacing"));
     }
@@ -210,7 +246,7 @@ public final class M3IconToggleButtonGroup extends Control {
     /// Sets the icon toggle button selection mode.
     ///
     /// @param selectionMode the icon toggle button selection mode
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `selectionMode` is `null`
     public final void setSelectionMode(M3SelectionMode selectionMode) {
         this.selectionMode.set(Objects.requireNonNull(selectionMode, "selectionMode"));
     }
@@ -219,9 +255,11 @@ public final class M3IconToggleButtonGroup extends Control {
         return selectionMode;
     }
 
-    /// Returns the selected icon toggle buttons in child order.
+    /// Returns an unmodifiable observable view of the selected buttons in item order.
     ///
-    /// @return the selected icon toggle buttons in child order
+    /// The returned list is live: listeners are notified when item selection or item order changes.
+    ///
+    /// @return the live unmodifiable selected-button view
     public final @UnmodifiableView ObservableList<M3IconToggleButton> getSelectedButtons() {
         return selectedButtonsView;
     }
@@ -266,7 +304,8 @@ public final class M3IconToggleButtonGroup extends Control {
     /// Selects a toggle icon button that belongs to this group.
     ///
     /// @param button the toggle icon button to select
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `button` is `null`
+    /// @throws IllegalArgumentException if `button` is not an effectively reachable member of this group
     public final void select(M3IconToggleButton button) {
         Objects.requireNonNull(button, "button");
         if (!getItems().contains(button)) {
@@ -287,7 +326,9 @@ public final class M3IconToggleButtonGroup extends Control {
 
     /// Selects the toggle icon button at the given child index.
     ///
-    /// @param index the child index to select
+    /// @param index the item index to select
+    /// @throws IndexOutOfBoundsException if `index` is outside the item list
+    /// @throws IllegalArgumentException if the indexed button is not selectable
     public final void selectIndex(int index) {
         Node child = getItems().get(index);
         if (child instanceof M3IconToggleButton button) {
@@ -344,7 +385,10 @@ public final class M3IconToggleButtonGroup extends Control {
         }
     }
 
-    /// Clears the current selection when empty selection is allowed.
+    /// Clears the current selection if the active policy allows it.
+    ///
+    /// If empty selection is disallowed, this method preserves the current selection or selects the first
+    /// selectable button. In [M3SelectionMode#NONE], the selection is always cleared.
     public final void clearSelection() {
         if (!isAllowEmptySelection() && getSelectionMode() != M3SelectionMode.NONE) {
             selectFirstButtonIfNeeded();
@@ -374,7 +418,10 @@ public final class M3IconToggleButtonGroup extends Control {
 
     /// Returns accessibility attributes for toggle icon button group content and selection state.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @param attribute the requested accessibility attribute
+    /// @param parameters optional attribute-specific parameters
+    /// @return the requested accessibility value, or `null` if the attribute is not supported
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -395,7 +442,9 @@ public final class M3IconToggleButtonGroup extends Control {
 
     /// Executes accessibility selection actions for toggle icon buttons.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @param action the accessibility action to execute
+    /// @param parameters optional action-specific parameters
+    /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

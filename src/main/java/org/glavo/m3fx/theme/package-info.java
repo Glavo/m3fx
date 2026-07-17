@@ -1,13 +1,12 @@
 // Copyright (c) 2026 Glavo
 // SPDX-License-Identifier: Apache-2.0
 
-/// Defines themes and installation helpers for applying Material Design 3 tokens to JavaFX scenes.
+/// Defines immutable themes and scene-graph installation services for M3FX.
 ///
-/// A theme combines a Material color scheme, a component token profile, density settings, and motion tokens.
-/// [M3Theme] creates immutable theme descriptions, while [M3ThemeManager] installs the generated CSS
-/// declarations and style classes on a [javafx.scene.Scene] or root [javafx.scene.Parent]. Installing a theme
-/// is the normal entry point for applications that want M3FX controls to share one color system and component
-/// token set.
+/// [M3Theme] combines a Material color scheme, token profile, density, and complete token set.
+/// [M3ThemeManager] installs that immutable description on a [javafx.scene.Scene] or a local
+/// [javafx.scene.Parent] subtree. Scene installations follow root replacement; parent installations define a
+/// nested theme scope.
 ///
 /// Theme descriptions are immutable and can be shared between scenes. Installing or removing a theme mutates
 /// JavaFX scene-graph state and must be performed on the JavaFX Application Thread once the scene graph is live.

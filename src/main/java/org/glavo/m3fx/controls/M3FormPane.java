@@ -35,9 +35,27 @@ import java.util.Objects;
 
 /// A Material Design 3 form container that stacks form rows, sections, and other content nodes.
 ///
-/// `M3FormPane` is an M3FX composition control for building forms from [M3FormRow], [M3FormSection],
-/// [M3TextInputLayout], and arbitrary JavaFX nodes. It exposes token-backed content padding and row spacing and
-/// updates accessibility child information as form content changes.
+/// Top-level nodes are stored in a live ordered [items][#getItems()] list and laid out vertically. Typical items are
+/// [M3FormRow], [M3FormSection], and [M3TextInputLayout], although any JavaFX node may be used. The pane is not
+/// itself focus traversable; Up and Down move focus among reachable descendants of its items.
+///
+/// Nodes in the items list become children of this control. Each node must occur at most once and must not be kept
+/// in another parent while displayed here. Layout spacing and padding are styleable properties and may be set from
+/// Java or CSS.
+///
+/// ```java
+/// private M3FormPane createProfileForm() {
+///     M3TextInputLayout name = new M3TextInputLayout(new M3TextField());
+///     M3TextInputLayout email = new M3TextInputLayout(new M3TextField());
+///     M3FormSection account = new M3FormSection("Account");
+///     account.getContent().addAll(
+///             new M3FormRow("Name", name),
+///             new M3FormRow("Email", email));
+///     M3FormPane form = new M3FormPane();
+///     form.getItems().add(account);
+///     return form;
+/// }
+/// ```
 ///
 /// See [Material Design text fields](https://m3.material.io/components/text-fields/overview) and
 /// [Material Design](https://m3.material.io/) for the form controls commonly used inside this pane.
@@ -46,7 +64,7 @@ public final class M3FormPane extends Control {
     /// The base style class for M3FX form panes.
     public static final String STYLE_CLASS = "m3-form-pane";
 
-    /// The style class applied to the internal form content container.
+    /// The style class applied to the form content container.
     public static final String CONTENT_STYLE_CLASS = "m3-form-pane-content";
 
     /// The default uniform content padding.
@@ -55,7 +73,11 @@ public final class M3FormPane extends Control {
     /// The default vertical spacing between top-level form items.
     private static final double DEFAULT_ROW_SPACING = 16.0;
 
-    /// The mutable top-level form item list.
+    /// The live, mutable, ordered list of top-level form items.
+    ///
+    /// The list initially is empty, rejects `null`, and observes additions, removals, replacements, and reordering.
+    /// Nodes are parented by this control while displayed. Duplicate node instances and nodes retained by another
+    /// parent do not satisfy the scene-graph ownership contract.
     private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
 
     /// The listener used to refresh accessibility state when form items change.
@@ -65,20 +87,28 @@ public final class M3FormPane extends Control {
     private final M3AccessibleFocusNotifier focusNotifier =
             new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(this, getItems()));
 
-    /// The styleable content padding token.
+    /// The uniform content padding in logical pixels.
+    ///
+    /// The value is styleable, finite, and non-negative.
+    ///
+    /// @defaultValue `0.0`
     private @Nullable StyleableDoubleProperty contentPadding;
 
-    /// The styleable row spacing token.
+    /// The vertical spacing between top-level items in logical pixels.
+    ///
+    /// The value is styleable, finite, and non-negative.
+    ///
+    /// @defaultValue `16.0`
     private @Nullable StyleableDoubleProperty rowSpacing;
 
-    /// Creates an empty form pane.
+    /// Creates an empty form pane with default padding and item spacing.
     public M3FormPane() {
         initialize();
     }
 
-    /// Returns the mutable top-level form item list.
+    /// Returns the live, mutable list of top-level form items in layout order.
     ///
-    /// @return the mutable top-level form item list
+    /// @return the live, mutable top-level form item list
     public final ObservableList<Node> getItems() {
         return items;
     }
@@ -87,17 +117,17 @@ public final class M3FormPane extends Control {
 
 
 
-    /// Returns the uniform content padding used by the default skin.
+    /// Returns the uniform content padding in logical pixels.
     ///
-    /// @return the uniform content padding used by the default skin
+    /// @return the uniform content padding in logical pixels
     public final double getContentPadding() {
         return contentPadding == null ? DEFAULT_CONTENT_PADDING : contentPadding.get();
     }
 
-    /// Sets the uniform content padding used by the default skin.
+    /// Sets the uniform content padding in logical pixels.
     ///
-    /// @param contentPadding the uniform content padding used by the default skin
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param contentPadding the uniform content padding in logical pixels
+    /// @throws IllegalArgumentException if `contentPadding` is negative or not finite
     public final void setContentPadding(double contentPadding) {
         contentPaddingProperty().set(M3Css.nonNegative(contentPadding, "contentPadding"));
     }
@@ -115,17 +145,17 @@ public final class M3FormPane extends Control {
         return contentPadding;
     }
 
-    /// Returns the vertical spacing between top-level form items.
+    /// Returns the vertical spacing between top-level form items in logical pixels.
     ///
     /// @return the vertical spacing between top-level form items
     public final double getRowSpacing() {
         return rowSpacing == null ? DEFAULT_ROW_SPACING : rowSpacing.get();
     }
 
-    /// Sets the vertical spacing between top-level form items.
+    /// Sets the vertical spacing between top-level form items in logical pixels.
     ///
     /// @param rowSpacing the vertical spacing between top-level form items
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @throws IllegalArgumentException if `rowSpacing` is negative or not finite
     public final void setRowSpacing(double rowSpacing) {
         rowSpacingProperty().set(M3Css.nonNegative(rowSpacing, "rowSpacing"));
     }
@@ -186,7 +216,7 @@ public final class M3FormPane extends Control {
 
     /// Returns accessibility attributes for the form item collection.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -200,7 +230,7 @@ public final class M3FormPane extends Control {
 
     /// Executes accessibility actions for indexed form items.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

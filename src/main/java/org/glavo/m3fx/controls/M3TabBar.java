@@ -41,8 +41,13 @@ import java.util.Objects;
 /// A Material Design 3 tab bar.
 ///
 /// `M3TabBar` manages a list of [M3Tab] nodes, keeps selected tabs synchronized, exposes read-only selected-tab
-/// views, and supports keyboard traversal. It is intended for navigation between peer pages or views at the same
-/// hierarchy level. Use [M3TabBarVariant#PRIMARY] for the principal peer views in a content region and
+/// views, and supports keyboard traversal. Selection is always single: selecting one reachable tab clears the
+/// previous selection, regardless of whether the change is made through the bar or the tab itself. When empty
+/// selection is disallowed, the first reachable tab is selected whenever possible. Disabled, invisible, removed,
+/// or otherwise unreachable tabs cannot remain selected.
+///
+/// The bar is intended for navigation between peer pages or views at the same hierarchy level. Use
+/// [M3TabBarVariant#PRIMARY] for the principal peer views in a content region and
 /// [M3TabBarVariant#SECONDARY] for a subordinate level placed below primary tabs. [M3TabBarLayout#FIXED] keeps a
 /// small tab set visible in equal-width cells, while [M3TabBarLayout#SCROLLABLE] preserves content-derived widths
 /// for longer labels and larger sets.
@@ -65,7 +70,11 @@ public final class M3TabBar extends Control {
     /// The pseudo-class applied while the tab row uses scrollable layout.
     private static final PseudoClass SCROLLABLE_PSEUDO_CLASS = PseudoClass.getPseudoClass("scrollable");
 
-    /// The tab bar variant property.
+    /// The visual and hierarchical role of this tab bar.
+    ///
+    /// Assigning `null` directly to the property restores [M3TabBarVariant#PRIMARY].
+    ///
+    /// @defaultValue [M3TabBarVariant#PRIMARY]
     private final ObjectProperty<M3TabBarVariant> variant =
             new SimpleObjectProperty<>(this, "variant", M3TabBarVariant.PRIMARY) {
                 /// Updates the visual role of this bar and its installed tabs.
@@ -79,7 +88,11 @@ public final class M3TabBar extends Control {
                 }
             };
 
-    /// The tab layout property.
+    /// The strategy used to distribute tabs in this bar.
+    ///
+    /// Assigning `null` directly to the property restores [M3TabBarLayout#FIXED].
+    ///
+    /// @defaultValue [M3TabBarLayout#FIXED]
     private final ObjectProperty<M3TabBarLayout> tabLayout =
             new SimpleObjectProperty<>(this, "tabLayout", M3TabBarLayout.FIXED) {
                 /// Normalizes null assignments and refreshes layout state.
@@ -94,7 +107,10 @@ public final class M3TabBar extends Control {
                 }
             };
 
-    /// The mutable tab content.
+    /// The live, mutable, ordered tab list.
+    ///
+    /// The list rejects `null`. Each tab must occur at most once and must satisfy the JavaFX single-parent rule when
+    /// displayed. Changes immediately update selection, keyboard traversal, and accessibility.
     private final ObservableList<M3Tab> tabs = M3ObservableLists.nonNullElementList("tab");
 
     /// Notifies accessibility clients when focus moves between tabs.
@@ -113,7 +129,11 @@ public final class M3TabBar extends Control {
     private final @UnmodifiableView ObservableList<M3Tab> selectedTabsView =
             FXCollections.unmodifiableObservableList(selectedTabs);
 
-    /// The empty-selection policy property.
+    /// Whether the tab bar may have no selected reachable tab.
+    ///
+    /// Changing this property to `false` selects the first reachable tab when selection is empty.
+    ///
+    /// @defaultValue `false`
     private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection") {
         /// Restores a selected tab when empty selection is disabled.
         @Override
@@ -166,7 +186,7 @@ public final class M3TabBar extends Control {
     /// Whether the tab bar is currently synchronizing selected states.
     private boolean updatingSelection;
 
-    /// Creates an empty tab bar.
+    /// Creates an empty primary, fixed tab bar that requires selection when a reachable tab is present.
     public M3TabBar() {
         initialize();
     }
@@ -193,7 +213,7 @@ public final class M3TabBar extends Control {
     /// Changing the variant preserves the selected tab and all keyboard and accessibility state.
     ///
     /// @param variant the tab bar variant
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `variant` is `null`
     public final void setVariant(M3TabBarVariant variant) {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
@@ -215,7 +235,7 @@ public final class M3TabBar extends Control {
     /// tab when keyboard, pointer, or accessibility interaction moves to an item outside the viewport.
     ///
     /// @param tabLayout the tab layout
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `tabLayout` is `null`
     public final void setTabLayout(M3TabBarLayout tabLayout) {
         this.tabLayout.set(Objects.requireNonNull(tabLayout, "tabLayout"));
     }
@@ -225,6 +245,9 @@ public final class M3TabBar extends Control {
     }
 
     /// Returns the selected tabs in child order.
+    ///
+    /// The returned list is an unmodifiable, live, observable view. Because this bar uses single selection, it
+    /// contains either zero or one tab.
     ///
     /// @return an unmodifiable live view of selected, reachable tabs
     public final @UnmodifiableView ObservableList<M3Tab> getSelectedTabs() {
@@ -347,6 +370,8 @@ public final class M3TabBar extends Control {
     }
 
     /// Clears the current selection when empty selection is allowed.
+    ///
+    /// If empty selection is disallowed, the first reachable tab remains or becomes selected.
     public final void clearSelection() {
         if (!isAllowEmptySelection()) {
             selectFirstTabIfNeeded();
@@ -363,7 +388,7 @@ public final class M3TabBar extends Control {
 
     /// Returns accessibility attributes for tab bar content and selection state.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -384,7 +409,7 @@ public final class M3TabBar extends Control {
 
     /// Executes accessibility selection actions for tabs.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

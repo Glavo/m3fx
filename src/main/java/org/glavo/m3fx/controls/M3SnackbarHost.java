@@ -51,6 +51,18 @@ import java.util.Objects;
 /// one host near the root of an application scene and call its show methods from feature code that needs
 /// non-modal feedback.
 ///
+/// The following example installs a host in an overlay pane and queues an actionable snackbar:
+///
+/// ```java
+/// StackPane root = new StackPane();
+/// M3SnackbarHost host = new M3SnackbarHost();
+/// root.getChildren().add(host);
+///
+/// M3Snackbar snackbar = new M3Snackbar("Draft saved", "Undo");
+/// snackbar.setOnAction(event -> host.dismiss());
+/// host.enqueue(snackbar);
+/// ```
+///
 /// See [Material Design snackbars](https://m3.material.io/components/snackbar/overview).
 @NotNullByDefault
 public final class M3SnackbarHost extends Control {
@@ -71,7 +83,12 @@ public final class M3SnackbarHost extends Control {
     private final @UnmodifiableView ObservableList<M3Snackbar> queueView =
             FXCollections.unmodifiableObservableList(queue);
 
-    /// Backing property for the public display duration API.
+    /// The display duration used for automatic dismissal.
+    ///
+    /// `null` selects the duration from the effective motion behavior. Finite negative values are normalized to
+    /// zero. Zero, unknown, and indefinite durations disable automatic dismissal. The timer applies only while a
+    /// non-actionable snackbar without a close affordance is visible in a showing window. Changing this property
+    /// reschedules or cancels the current timer.
     private final ObjectProperty<@Nullable Duration> displayDuration =
             new SimpleObjectProperty<>(this, "displayDuration") {
                 /// Keeps explicit display durations non-negative.
@@ -121,6 +138,9 @@ public final class M3SnackbarHost extends Control {
     };
 
     /// Creates an empty snackbar host.
+    ///
+    /// The new host has no current snackbar and an empty queue. Its display duration follows the effective motion
+    /// behavior until [#setDisplayDuration(Duration)] is called or [#displayDurationProperty()] is assigned.
     public M3SnackbarHost() {
         M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
@@ -162,7 +182,10 @@ public final class M3SnackbarHost extends Control {
 
     /// Returns the pending snackbars waiting to be shown.
     ///
-    /// @return the pending snackbars waiting to be shown
+    /// The returned list is an unmodifiable, live, observable view in FIFO order. It excludes the current snackbar.
+    /// Use [#enqueue(M3Snackbar)] to append an item and [#clearQueue()] to remove pending items.
+    ///
+    /// @return the unmodifiable live queue of pending snackbars
     public final @UnmodifiableView ObservableList<M3Snackbar> getQueue() {
         return queueView;
     }
@@ -174,7 +197,8 @@ public final class M3SnackbarHost extends Control {
     /// resolves from the active [org.glavo.m3fx.animation.M3MotionBehavior]. A zero, unknown, or indefinite duration
     /// disables automatic dismissal.
     ///
-    /// @return the display duration before automatic dismissal
+    /// @return the explicitly configured duration, or the duration supplied by the effective motion behavior when
+    ///     the property contains `null`
     public final Duration getDisplayDuration() {
         @Nullable Duration duration = displayDuration.get();
         return duration == null ? M3Animation.motionBehavior(this).snackbarDisplayDuration() : duration;
@@ -183,11 +207,11 @@ public final class M3SnackbarHost extends Control {
     /// Sets the display duration before automatic dismissal.
     ///
     /// The duration applies only to snackbars without an action or close affordance. A zero, unknown, or indefinite
-    /// duration disables automatic dismissal. Set [displayDurationProperty] to null to restore motion-behavior
+    /// duration disables automatic dismissal. Set [#displayDurationProperty()] to `null` to restore motion-behavior
     /// defaults.
     ///
     /// @param displayDuration the display duration before automatic dismissal
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `displayDuration` is `null`
     public final void setDisplayDuration(Duration displayDuration) {
         this.displayDuration.set(Objects.requireNonNull(displayDuration, "displayDuration"));
     }
@@ -198,8 +222,12 @@ public final class M3SnackbarHost extends Control {
 
     /// Adds the supplied snackbar to the end of the display queue.
     ///
+    /// If the host is idle, the snackbar becomes current immediately instead of being retained in [#getQueue()].
+    /// Otherwise it is appended after all pending snackbars. The same snackbar instance may be queued more than
+    /// once; each occurrence is processed in insertion order.
+    ///
     /// @param snackbar the snackbar to enqueue
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `snackbar` is `null`
     public final void enqueue(M3Snackbar snackbar) {
         Objects.requireNonNull(snackbar, "snackbar");
         if (getSnackbar() == null && !showing.get()) {
@@ -209,14 +237,19 @@ public final class M3SnackbarHost extends Control {
         }
     }
 
-    /// Clears pending snackbars without dismissing the currently shown snackbar.
+    /// Clears pending snackbars without dismissing or otherwise modifying the currently hosted snackbar.
     public final void clearQueue() {
         queue.clear();
     }
 
     /// Shows the supplied snackbar.
     ///
+    /// This operation replaces the current snackbar immediately and does not modify the pending queue. Calling it
+    /// with the current snackbar restarts its visible phase. Use [#enqueue(M3Snackbar)] when existing messages must
+    /// retain FIFO ordering.
+    ///
     /// @param snackbar the snackbar to show
+    /// @throws NullPointerException if `snackbar` is `null`
     public final void show(M3Snackbar snackbar) {
         @Nullable M3Snackbar currentSnackbar = getSnackbar();
         show(snackbar, currentSnackbar != null && snackbarFocusNodeOwnsFocus(currentSnackbar));
@@ -263,6 +296,9 @@ public final class M3SnackbarHost extends Control {
     }
 
     /// Dismisses the currently hosted snackbar.
+    ///
+    /// The operation is a no-op while the host is idle or the current snackbar is already leaving. After dismissal
+    /// completes, the first pending snackbar becomes current.
     public final void dismiss() {
         @Nullable M3Snackbar currentSnackbar = getSnackbar();
         if (currentSnackbar == null || !showing.get()) {
@@ -276,6 +312,8 @@ public final class M3SnackbarHost extends Control {
     }
 
     /// Clears pending snackbars and dismisses the currently hosted snackbar when one is visible.
+    ///
+    /// This method is idempotent when the host and queue are already empty.
     public final void dismissAll() {
         clearQueue();
         dismiss();
@@ -302,7 +340,7 @@ public final class M3SnackbarHost extends Control {
     /// @param attribute the requested accessibility attribute
     /// @param parameters the optional attribute parameters
     /// @return the attribute value, or `null` when unavailable
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -321,7 +359,7 @@ public final class M3SnackbarHost extends Control {
     ///
     /// @param action the requested accessibility action
     /// @param parameters the optional action parameters
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

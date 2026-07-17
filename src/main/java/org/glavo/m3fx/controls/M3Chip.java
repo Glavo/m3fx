@@ -28,12 +28,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-/// Base class for Material Design 3 chips.
+/// Base class for Material Design 3 compact action and selection controls.
 ///
-/// This class defines the common text, graphic, trailing-graphic, sizing, shape, and action contracts shared by
-/// [M3AssistChip], [M3FilterChip], [M3InputChip], and [M3SuggestionChip]. Use one of those concrete classes so the
-/// chip's interaction semantics are fixed for its lifetime. Selectable chips additionally derive from
-/// [M3SelectableChip].
+/// A chip has inherited text and a logical leading [graphic][ButtonBase#graphicProperty()], plus an optional
+/// [trailing graphic][#trailingGraphicProperty()]. Concrete chip classes determine whether activation is a command
+/// or a selection transition. All chip activations emit action events after any concrete selection transition.
+///
+/// The default container treatment is flat. Direct [M3Icon] graphics follow [iconSize][#iconSizeProperty()]; other
+/// node types retain their own dimensions. Graphic nodes cannot simultaneously be children of another parent.
 ///
 /// See [Material Design chips](https://m3.material.io/components/chips/overview).
 @NotNullByDefault
@@ -63,7 +65,12 @@ public abstract sealed class M3Chip extends ButtonBase
     /// The default size for icon graphics.
     private static final double DEFAULT_ICON_SIZE = 18.0;
 
-    /// The chip container style property.
+    /// The visual container treatment of this chip.
+    ///
+    /// The default value is [M3ChipStyle#FLAT]. The property never reports `null`; a direct `null` assignment
+    /// restores the default.
+    ///
+    /// @defaultValue [M3ChipStyle#FLAT]
     private final ObjectProperty<M3ChipStyle> chipStyle =
             new SimpleObjectProperty<>(this, "chipStyle", M3ChipStyle.FLAT) {
                 /// Updates chip style classes when the property changes.
@@ -77,22 +84,47 @@ public abstract sealed class M3Chip extends ButtonBase
                 }
             };
 
-    /// The styleable container height token.
+    /// The preferred chip container height, in logical pixels.
+    ///
+    /// The default value is `32.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `32.0`
     private @Nullable StyleableDoubleProperty containerHeight;
 
-    /// The styleable container shape token.
+    /// The chip container corner radius, in logical pixels.
+    ///
+    /// The default value is `8.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `8.0`
     private @Nullable StyleableDoubleProperty containerShape;
 
-    /// The styleable horizontal padding token.
+    /// The horizontal content padding used without a leading graphic, in logical pixels.
+    ///
+    /// The default value is `16.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `16.0`
     private @Nullable StyleableDoubleProperty horizontalPadding;
 
-    /// The styleable horizontal padding token used when a leading graphic is present.
+    /// The horizontal content padding used when a leading graphic is present, in logical pixels.
+    ///
+    /// The default value is `8.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `8.0`
     private @Nullable StyleableDoubleProperty iconHorizontalPadding;
 
-    /// The styleable icon size token.
+    /// The requested width and height of direct [M3Icon] graphics, in logical pixels.
+    ///
+    /// The default value is `18.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `18.0`
     private @Nullable StyleableDoubleProperty iconSize;
 
-    /// The optional logical trailing graphic property.
+    /// The node displayed at the logical trailing edge of the chip.
+    ///
+    /// The default value is `null`. This slot does not automatically receive independent action semantics; use an
+    /// actionable node when a separate trailing action is required.
+    ///
+    /// @defaultValue `null`
     private final ObjectProperty<@Nullable Node> trailingGraphic =
             new SimpleObjectProperty<>(this, "trailingGraphic") {
                 /// Recomputes content padding and layout when the trailing slot changes.
@@ -144,7 +176,7 @@ public abstract sealed class M3Chip extends ButtonBase
     /// Sets the chip container style.
     ///
     /// @param chipStyle the chip container style
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `chipStyle` is `null`
     public final void setChipStyle(M3ChipStyle chipStyle) {
         this.chipStyle.set(Objects.requireNonNull(chipStyle, "chipStyle"));
     }
@@ -155,15 +187,15 @@ public abstract sealed class M3Chip extends ButtonBase
 
     /// Returns the preferred container height token.
     ///
-    /// @return the preferred chip container height in pixels
+    /// @return the preferred chip container height in logical pixels
     public final double getContainerHeight() {
         return containerHeight == null ? DEFAULT_CONTAINER_HEIGHT : containerHeight.get();
     }
 
     /// Sets the preferred container height token.
     ///
-    /// @param containerHeight the preferred chip container height in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param containerHeight the preferred chip container height in logical pixels
+    /// @throws IllegalArgumentException if `containerHeight` is negative or not finite
     public final void setContainerHeight(double containerHeight) {
         containerHeightProperty().set(M3Css.nonNegative(containerHeight, "containerHeight"));
     }
@@ -183,15 +215,15 @@ public abstract sealed class M3Chip extends ButtonBase
 
     /// Returns the container shape radius token.
     ///
-    /// @return the chip container corner radius in pixels
+    /// @return the chip container corner radius in logical pixels
     public final double getContainerShape() {
         return containerShape == null ? DEFAULT_CONTAINER_SHAPE : containerShape.get();
     }
 
     /// Sets the container shape radius token.
     ///
-    /// @param containerShape the chip container corner radius in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param containerShape the chip container corner radius in logical pixels
+    /// @throws IllegalArgumentException if `containerShape` is negative or not finite
     public final void setContainerShape(double containerShape) {
         containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
     }
@@ -211,15 +243,15 @@ public abstract sealed class M3Chip extends ButtonBase
 
     /// Returns the horizontal content padding token.
     ///
-    /// @return the horizontal content padding in pixels
+    /// @return the horizontal content padding in logical pixels
     public final double getHorizontalPadding() {
         return horizontalPadding == null ? DEFAULT_HORIZONTAL_PADDING : horizontalPadding.get();
     }
 
     /// Sets the horizontal content padding token.
     ///
-    /// @param horizontalPadding the horizontal content padding in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param horizontalPadding the horizontal content padding in logical pixels
+    /// @throws IllegalArgumentException if `horizontalPadding` is negative or not finite
     public final void setHorizontalPadding(double horizontalPadding) {
         horizontalPaddingProperty().set(M3Css.nonNegative(horizontalPadding, "horizontalPadding"));
     }
@@ -239,15 +271,15 @@ public abstract sealed class M3Chip extends ButtonBase
 
     /// Returns the horizontal content padding token used when a leading graphic is present.
     ///
-    /// @return the horizontal content padding in pixels for chips with graphics
+    /// @return the horizontal content padding in logical pixels for chips with leading graphics
     public final double getIconHorizontalPadding() {
         return iconHorizontalPadding == null ? DEFAULT_ICON_HORIZONTAL_PADDING : iconHorizontalPadding.get();
     }
 
     /// Sets the horizontal content padding token used when a leading graphic is present.
     ///
-    /// @param iconHorizontalPadding the horizontal content padding in pixels for chips with graphics
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param iconHorizontalPadding the horizontal content padding in logical pixels for chips with leading graphics
+    /// @throws IllegalArgumentException if `iconHorizontalPadding` is negative or not finite
     public final void setIconHorizontalPadding(double iconHorizontalPadding) {
         iconHorizontalPaddingProperty().set(M3Css.nonNegative(iconHorizontalPadding, "iconHorizontalPadding"));
     }
@@ -267,15 +299,15 @@ public abstract sealed class M3Chip extends ButtonBase
 
     /// Returns the icon size token applied to [M3Icon] graphics.
     ///
-    /// @return the icon graphic size in pixels
+    /// @return the icon graphic size in logical pixels
     public final double getIconSize() {
         return iconSize == null ? DEFAULT_ICON_SIZE : iconSize.get();
     }
 
     /// Sets the icon size token applied to [M3Icon] graphics.
     ///
-    /// @param iconSize the icon graphic size in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param iconSize the icon graphic size in logical pixels
+    /// @throws IllegalArgumentException if `iconSize` is negative or not finite
     public final void setIconSize(double iconSize) {
         iconSizeProperty().set(M3Css.nonNegative(iconSize, "iconSize"));
     }
@@ -306,7 +338,9 @@ public abstract sealed class M3Chip extends ButtonBase
         return getClassCssMetaData();
     }
 
-    /// Fires this chip's action event.
+    /// Fires an action event unless this chip is disabled.
+    ///
+    /// Concrete selectable chips may override this method to update selection before dispatching the event.
     @Override
     public void fire() {
         if (!isDisabled()) {

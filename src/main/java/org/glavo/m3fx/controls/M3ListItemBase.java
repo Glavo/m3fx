@@ -42,12 +42,17 @@ import java.util.Objects;
 
 /// The common base class for Material Design 3 list and menu items.
 ///
-/// `M3ListItemBase` supplies the shared row content, metrics, selection state, action dispatch, and keyboard
-/// activation used by [M3ListItem] and [M3MenuItem]. Applications create one of those concrete controls rather
-/// than extending this class. It supports
-/// overline, headline, supporting, and trailing supporting text, leading and trailing slots, one-line through
-/// three-line metrics. Container controls manage selection and navigation for their corresponding concrete item
-/// type.
+/// `M3ListItemBase` supplies the content, selection state, and action contract shared by [M3ListItem] and
+/// [M3MenuItem]. Applications create one of those permitted concrete controls rather than extending this class.
+///
+/// A row has a required headline and optional overline, supporting text, trailing supporting text, leading node,
+/// and trailing node. Its line count is derived from the populated text slots and selects the corresponding
+/// one-, two-, or three-line height. Leading and trailing nodes are owned by the row while displayed and therefore
+/// must not belong to another parent.
+///
+/// Calling [fire] on an enabled row delivers an [ActionEvent] to [onActionProperty] and other registered handlers.
+/// Selection is independent of action dispatch: [selectedProperty] may be set directly, while containers such as
+/// [M3ListPane] and [M3Menu] apply their configured selection policy when they handle an item action.
 ///
 /// See [Material Design lists](https://m3.material.io/components/lists/overview).
 @NotNullByDefault
@@ -88,20 +93,41 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
     /// The default spacing between list item content regions.
     private static final double DEFAULT_CONTENT_SPACING = 16.0;
 
-    /// The overline text property.
+    /// The optional text displayed above the headline.
+    ///
+    /// Both `null` and an empty string leave the slot visually empty and do not contribute to [lineCountProperty].
+    ///
+    /// @defaultValue `""`
     private final StringProperty overlineText = new SimpleStringProperty(this, "overlineText", "");
 
-    /// The headline text property.
+    /// The primary text of this row.
+    ///
+    /// The property does not accept `null` through [setHeadlineText]. The initial value is an empty string.
+    ///
+    /// @defaultValue `""`
     private final StringProperty headlineText = new SimpleStringProperty(this, "headlineText", "");
 
-    /// The supporting text property.
+    /// The optional supporting text displayed below the headline.
+    ///
+    /// Both `null` and an empty string leave the slot visually empty and do not contribute to [lineCountProperty].
+    ///
+    /// @defaultValue `""`
     private final StringProperty supportingText = new SimpleStringProperty(this, "supportingText", "");
 
-    /// The trailing supporting text property.
+    /// The optional supporting text displayed at the logical trailing edge.
+    ///
+    /// Both `null` and an empty string leave the slot visually empty. Populated text contributes to
+    /// [lineCountProperty].
+    ///
+    /// @defaultValue `""`
     private final StringProperty trailingSupportingText =
             new SimpleStringProperty(this, "trailingSupportingText", "");
 
-    /// The leading content node property.
+    /// The optional node displayed at the logical leading edge.
+    ///
+    /// The node is owned by this row while displayed and may have only one parent.
+    ///
+    /// @defaultValue `null`
     private final ObjectProperty<@Nullable Node> leading = new SimpleObjectProperty<>(this, "leading") {
         /// Updates accessibility slots when leading content changes.
         @Override
@@ -110,7 +136,11 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
         }
     };
 
-    /// The trailing content node property.
+    /// The optional node displayed at the logical trailing edge.
+    ///
+    /// The node is owned by this row while displayed and may have only one parent.
+    ///
+    /// @defaultValue `null`
     private final ObjectProperty<@Nullable Node> trailing = new SimpleObjectProperty<>(this, "trailing") {
         /// Updates accessibility slots when trailing content changes.
         @Override
@@ -123,7 +153,12 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
     private final M3AccessibleFocusNotifier focusNotifier =
             new M3AccessibleFocusNotifier(this, this::accessibleFocusNode);
 
-    /// The leading content slot size.
+    /// The measurement role for [leadingProperty].
+    ///
+    /// [M3ListItemSlotSize#AUTO] measures arbitrary content without applying a fixed Material media slot. A direct
+    /// assignment of `null` is replaced with [M3ListItemSlotSize#AUTO].
+    ///
+    /// @defaultValue [M3ListItemSlotSize#AUTO]
     private final ObjectProperty<M3ListItemSlotSize> leadingSlotSize =
             new SimpleObjectProperty<>(this, "leadingSlotSize", M3ListItemSlotSize.AUTO) {
                 /// Restores the default slot size when a null value is assigned through the property.
@@ -135,7 +170,12 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
                 }
             };
 
-    /// The trailing content slot size.
+    /// The measurement role for [trailingProperty].
+    ///
+    /// [M3ListItemSlotSize#AUTO] measures arbitrary content without applying a fixed Material media slot. A direct
+    /// assignment of `null` is replaced with [M3ListItemSlotSize#AUTO].
+    ///
+    /// @defaultValue [M3ListItemSlotSize#AUTO]
     private final ObjectProperty<M3ListItemSlotSize> trailingSlotSize =
             new SimpleObjectProperty<>(this, "trailingSlotSize", M3ListItemSlotSize.AUTO) {
                 /// Restores the default slot size when a null value is assigned through the property.
@@ -147,7 +187,12 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
                 }
             };
 
-    /// The action handler property.
+    /// The action handler invoked for [ActionEvent#ACTION].
+    ///
+    /// Setting a new value replaces the handler previously installed through this property. Additional handlers
+    /// registered with [addEventHandler] remain installed.
+    ///
+    /// @defaultValue `null`
     private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
             new SimpleObjectProperty<>(this, "onAction") {
                 /// Updates the registered action event handler.
@@ -157,7 +202,12 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
                 }
             };
 
-    /// The selected state property.
+    /// Whether this row is selected.
+    ///
+    /// Changing the property updates visual and accessibility state but does not fire an action event. A containing
+    /// selection control may change the value again to maintain its selection policy.
+    ///
+    /// @defaultValue `false`
     private final BooleanProperty selected = new SimpleBooleanProperty(this, "selected") {
         /// Updates selected pseudo-class state.
         @Override
@@ -171,25 +221,53 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
     private final ReadOnlyObjectWrapper<M3ListItemLineCount> lineCount =
             new ReadOnlyObjectWrapper<>(this, "lineCount", M3ListItemLineCount.ONE_LINE);
 
-    /// The styleable one-line height token.
+    /// The preferred height of a one-line row in logical pixels.
+    ///
+    /// Values must be finite and non-negative.
+    ///
+    /// @defaultValue `56.0`
     private @Nullable StyleableDoubleProperty oneLineHeight;
 
-    /// The styleable two-line height token.
+    /// The preferred height of a two-line row in logical pixels.
+    ///
+    /// Values must be finite and non-negative.
+    ///
+    /// @defaultValue `72.0`
     private @Nullable StyleableDoubleProperty twoLineHeight;
 
-    /// The styleable three-line height token.
+    /// The preferred height of a three-line row in logical pixels.
+    ///
+    /// Values must be finite and non-negative.
+    ///
+    /// @defaultValue `88.0`
     private @Nullable StyleableDoubleProperty threeLineHeight;
 
-    /// The styleable container shape token.
+    /// The resting container corner radius in logical pixels.
+    ///
+    /// Values must be finite and non-negative.
+    ///
+    /// @defaultValue `0.0`
     private @Nullable StyleableDoubleProperty containerShape;
 
-    /// The styleable horizontal padding token.
+    /// The padding at the logical leading and trailing edges in logical pixels.
+    ///
+    /// Values must be finite and non-negative.
+    ///
+    /// @defaultValue `16.0`
     private @Nullable StyleableDoubleProperty horizontalPadding;
 
-    /// The styleable vertical padding token.
+    /// The padding at the top and bottom edges in logical pixels.
+    ///
+    /// Values must be finite and non-negative.
+    ///
+    /// @defaultValue `8.0`
     private @Nullable StyleableDoubleProperty verticalPadding;
 
-    /// The styleable content spacing token.
+    /// The spacing between the leading, text, and trailing content regions in logical pixels.
+    ///
+    /// Values must be finite and non-negative.
+    ///
+    /// @defaultValue `16.0`
     private @Nullable StyleableDoubleProperty contentSpacing;
 
     /// Creates an empty list item.
@@ -200,6 +278,7 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
     /// Creates a one-line list item with headline text.
     ///
     /// @param headlineText the headline text displayed by the list item
+    /// @throws NullPointerException if `headlineText` is `null`
     protected M3ListItemBase(String headlineText) {
         installLineCountListeners();
         M3ControlStyles.initialize(this, STYLE_CLASS);
@@ -241,7 +320,7 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
     /// Sets the headline text.
     ///
     /// @param headlineText the headline text
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `headlineText` is `null`
     public final void setHeadlineText(String headlineText) {
         this.headlineText.set(Objects.requireNonNull(headlineText, "headlineText"));
     }
@@ -308,6 +387,7 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
     ///
     /// @param leading the leading content node, or `null`
     /// @param slotSize the leading content slot size
+    /// @throws NullPointerException if `slotSize` is `null`
     public final void setLeadingMedia(@Nullable Node leading, M3ListItemSlotSize slotSize) {
         setLeading(leading);
         setLeadingSlotSize(slotSize);
@@ -317,6 +397,7 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
     ///
     /// @param iconText the glyph text rendered by the leading icon
     /// @return the created leading icon
+    /// @throws NullPointerException if `iconText` is `null`
     public final M3Icon setLeadingIcon(String iconText) {
         M3Icon icon = new M3Icon(iconText, M3IconSize.MEDIUM, M3IconVariant.ON_SURFACE_VARIANT);
         setLeadingMedia(icon, M3ListItemSlotSize.ICON);
@@ -327,6 +408,7 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
     ///
     /// @param text the avatar text
     /// @return the created leading avatar
+    /// @throws NullPointerException if `text` is `null`
     public final M3Avatar setLeadingAvatar(String text) {
         M3Avatar avatar = new M3Avatar(text);
         setLeadingMedia(avatar, M3ListItemSlotSize.AVATAR);
@@ -336,7 +418,7 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
     /// Sets a square thumbnail as leading content.
     ///
     /// @param thumbnail the square thumbnail node
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `thumbnail` is `null`
     public final void setLeadingThumbnail(Node thumbnail) {
         setLeadingMedia(Objects.requireNonNull(thumbnail, "thumbnail"), M3ListItemSlotSize.THUMBNAIL);
     }
@@ -344,7 +426,7 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
     /// Sets a wide thumbnail as leading content.
     ///
     /// @param thumbnail the wide thumbnail node
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `thumbnail` is `null`
     public final void setLeadingWideThumbnail(Node thumbnail) {
         setLeadingMedia(Objects.requireNonNull(thumbnail, "thumbnail"), M3ListItemSlotSize.WIDE_THUMBNAIL);
     }
@@ -371,6 +453,7 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
     ///
     /// @param trailing the trailing content node, or `null`
     /// @param slotSize the trailing content slot size
+    /// @throws NullPointerException if `slotSize` is `null`
     public final void setTrailingMedia(@Nullable Node trailing, M3ListItemSlotSize slotSize) {
         setTrailing(trailing);
         setTrailingSlotSize(slotSize);
@@ -380,6 +463,7 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
     ///
     /// @param iconText the glyph text rendered by the trailing icon
     /// @return the created trailing icon
+    /// @throws NullPointerException if `iconText` is `null`
     public final M3Icon setTrailingIcon(String iconText) {
         M3Icon icon = new M3Icon(iconText, M3IconSize.MEDIUM, M3IconVariant.ON_SURFACE_VARIANT);
         setTrailingMedia(icon, M3ListItemSlotSize.ICON);
@@ -396,7 +480,7 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
     /// Sets the leading content slot size.
     ///
     /// @param leadingSlotSize the leading content slot size
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `leadingSlotSize` is `null`
     public final void setLeadingSlotSize(M3ListItemSlotSize leadingSlotSize) {
         this.leadingSlotSize.set(Objects.requireNonNull(leadingSlotSize, "leadingSlotSize"));
     }
@@ -415,7 +499,7 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
     /// Sets the trailing content slot size.
     ///
     /// @param trailingSlotSize the trailing content slot size
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `trailingSlotSize` is `null`
     public final void setTrailingSlotSize(M3ListItemSlotSize trailingSlotSize) {
         this.trailingSlotSize.set(Objects.requireNonNull(trailingSlotSize, "trailingSlotSize"));
     }
@@ -471,7 +555,10 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
         return lineCount.getReadOnlyProperty();
     }
 
-    /// Fires this list item's action event.
+    /// Fires this row's action event if it is enabled.
+    ///
+    /// The event is delivered through the normal JavaFX event dispatch chain. No event is created or delivered
+    /// while the row is disabled. This method does not directly change [selectedProperty].
     public final void fire() {
         if (!isDisabled()) {
             Event.fireEvent(this, new ActionEvent(this, this));
@@ -480,7 +567,10 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
 
     /// Returns accessibility attributes for list item selection and position.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @param attribute the requested accessibility attribute
+    /// @param parameters optional attribute-specific parameters
+    /// @return the requested accessibility value, or `null` if the attribute is not supported
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -496,7 +586,9 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
 
     /// Executes accessibility actions supported by list items.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @param action the accessibility action to execute
+    /// @param parameters optional action-specific parameters
+    /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
@@ -571,7 +663,7 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
     /// Sets the one-line item height token.
     ///
     /// @param oneLineHeight the one-line item height token
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @throws IllegalArgumentException if `oneLineHeight` is negative or not finite
     public final void setOneLineHeight(double oneLineHeight) {
         oneLineHeightProperty().set(M3Css.nonNegative(oneLineHeight, "oneLineHeight"));
     }
@@ -597,7 +689,7 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
     /// Sets the two-line item height token.
     ///
     /// @param twoLineHeight the two-line item height token
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @throws IllegalArgumentException if `twoLineHeight` is negative or not finite
     public final void setTwoLineHeight(double twoLineHeight) {
         twoLineHeightProperty().set(M3Css.nonNegative(twoLineHeight, "twoLineHeight"));
     }
@@ -623,7 +715,7 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
     /// Sets the three-line item height token.
     ///
     /// @param threeLineHeight the three-line item height token
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @throws IllegalArgumentException if `threeLineHeight` is negative or not finite
     public final void setThreeLineHeight(double threeLineHeight) {
         threeLineHeightProperty().set(M3Css.nonNegative(threeLineHeight, "threeLineHeight"));
     }
@@ -649,7 +741,7 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
     /// Sets the container shape radius token.
     ///
     /// @param containerShape the container shape radius token
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @throws IllegalArgumentException if `containerShape` is negative or not finite
     public final void setContainerShape(double containerShape) {
         containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
     }
@@ -675,7 +767,7 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
     /// Sets the horizontal content padding token.
     ///
     /// @param horizontalPadding the horizontal content padding token
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @throws IllegalArgumentException if `horizontalPadding` is negative or not finite
     public final void setHorizontalPadding(double horizontalPadding) {
         horizontalPaddingProperty().set(M3Css.nonNegative(horizontalPadding, "horizontalPadding"));
     }
@@ -701,7 +793,7 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
     /// Sets the vertical content padding token.
     ///
     /// @param verticalPadding the vertical content padding token
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @throws IllegalArgumentException if `verticalPadding` is negative or not finite
     public final void setVerticalPadding(double verticalPadding) {
         verticalPaddingProperty().set(M3Css.nonNegative(verticalPadding, "verticalPadding"));
     }
@@ -727,7 +819,7 @@ public abstract sealed class M3ListItemBase extends Control permits M3ListItem, 
     /// Sets the content spacing token.
     ///
     /// @param contentSpacing the content spacing token
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @throws IllegalArgumentException if `contentSpacing` is negative or not finite
     public final void setContentSpacing(double contentSpacing) {
         contentSpacingProperty().set(M3Css.nonNegative(contentSpacing, "contentSpacing"));
     }

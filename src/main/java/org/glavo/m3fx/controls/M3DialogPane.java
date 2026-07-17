@@ -45,10 +45,17 @@ import java.util.Objects;
 
 /// A Material Design 3 dialog pane.
 ///
-/// `M3DialogPane` is the content container used by [M3Dialog]. It keeps JavaFX [DialogPane] button management,
-/// content, header, and expandable-content behavior while applying Material container shape, content padding,
-/// button styling, and accessibility defaults. The pane can also be installed on a standard JavaFX dialog when
-/// the application needs to preserve a custom dialog subclass.
+/// This pane preserves the [DialogPane] header, graphic, content, expandable-content, and button-type APIs while
+/// creating Material action buttons and applying Material dialog geometry. It is the default pane for [M3Dialog]
+/// and may also be installed on another JavaFX dialog.
+///
+/// The inherited [buttonTypes][DialogPane#getButtonTypes()] list remains live and ordered. Buttons created for its
+/// entries preserve JavaFX default, cancel, result-conversion, event-filter, and closing behavior. In a modal
+/// window, keyboard traversal remains within reachable content and action controls. The pane itself is not focus
+/// traversable.
+///
+/// Geometry properties are expressed in logical pixels and are styleable. Java assignments take precedence over
+/// user-agent defaults, and CSS cannot replace a bound styleable property.
 ///
 /// See [Material Design dialogs](https://m3.material.io/components/dialogs/overview).
 @NotNullByDefault
@@ -99,22 +106,39 @@ public class M3DialogPane extends DialogPane {
     /// Whether the managed container shape style must be synchronized before the next layout pass.
     private boolean containerShapeStyleDirty;
 
-    /// The styleable dialog container shape token.
+    /// The dialog container corner radius in logical pixels.
+    ///
+    /// @defaultValue `28.0`
     private @Nullable StyleableDoubleProperty containerShape;
 
-    /// The styleable dialog content padding token.
+    /// The uniform dialog content padding in logical pixels.
+    ///
+    /// @defaultValue `24.0`
     private @Nullable StyleableDoubleProperty contentPadding;
 
-    /// The styleable minimum dialog container width token.
+    /// The minimum dialog surface width in logical pixels.
+    ///
+    /// @defaultValue `280.0`
     private @Nullable StyleableDoubleProperty containerMinWidth;
 
-    /// The styleable maximum dialog container width token.
+    /// The preferred maximum dialog surface width in logical pixels.
+    ///
+    /// If this value is less than [containerMinWidth][#containerMinWidthProperty()], effective layout still permits
+    /// at least the configured minimum width.
+    ///
+    /// @defaultValue `560.0`
     private @Nullable StyleableDoubleProperty containerMaxWidth;
 
-    /// The styleable spacing between dialog action buttons.
+    /// The spacing between dialog action buttons in logical pixels.
+    ///
+    /// @defaultValue `8.0`
     private @Nullable StyleableDoubleProperty actionSpacing;
 
-    /// The styleable dialog graphic icon size token.
+    /// The preferred size of an [M3Icon] used as the dialog graphic, in logical pixels.
+    ///
+    /// Other graphic node types are not resized by this property. A bound icon-size property is not replaced.
+    ///
+    /// @defaultValue `24.0`
     private @Nullable StyleableDoubleProperty iconSize;
 
     /// The internal dialog action button bar.
@@ -132,7 +156,9 @@ public class M3DialogPane extends DialogPane {
             null
     );
 
-    /// Creates a dialog pane.
+    /// Creates an empty dialog pane with Material geometry and no button types.
+    ///
+    /// Header, content, graphic, and expandable content retain their inherited defaults.
     public M3DialogPane() {
         M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.DIALOG);
@@ -156,17 +182,17 @@ public class M3DialogPane extends DialogPane {
         updateAccessibleText();
     }
 
-    /// Returns the dialog container shape radius token.
+    /// Returns the dialog container corner radius in logical pixels.
     ///
     /// @return the dialog container shape radius token
     public final double getContainerShape() {
         return containerShape == null ? DEFAULT_CONTAINER_SHAPE : containerShape.get();
     }
 
-    /// Sets the dialog container shape radius token.
+    /// Sets the dialog container corner radius in logical pixels.
     ///
     /// @param containerShape the dialog container shape radius token
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @throws IllegalArgumentException if `containerShape` is negative or not finite
     public final void setContainerShape(double containerShape) {
         containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
     }
@@ -184,17 +210,17 @@ public class M3DialogPane extends DialogPane {
         return containerShape;
     }
 
-    /// Returns the dialog content padding token.
+    /// Returns the uniform dialog content padding in logical pixels.
     ///
     /// @return the dialog content padding token
     public final double getContentPadding() {
         return contentPadding == null ? DEFAULT_CONTENT_PADDING : contentPadding.get();
     }
 
-    /// Sets the dialog content padding token.
+    /// Sets the uniform dialog content padding in logical pixels.
     ///
     /// @param contentPadding the dialog content padding token
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @throws IllegalArgumentException if `contentPadding` is negative or not finite
     public final void setContentPadding(double contentPadding) {
         contentPaddingProperty().set(M3Css.nonNegative(contentPadding, "contentPadding"));
     }
@@ -212,17 +238,17 @@ public class M3DialogPane extends DialogPane {
         return contentPadding;
     }
 
-    /// Returns the minimum dialog container width token.
+    /// Returns the minimum dialog surface width in logical pixels.
     ///
     /// @return the minimum dialog container width token
     public final double getContainerMinWidth() {
         return containerMinWidth == null ? DEFAULT_CONTAINER_MIN_WIDTH : containerMinWidth.get();
     }
 
-    /// Sets the minimum dialog container width token.
+    /// Sets the minimum dialog surface width in logical pixels.
     ///
     /// @param containerMinWidth the minimum dialog container width token
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @throws IllegalArgumentException if `containerMinWidth` is negative or not finite
     public final void setContainerMinWidth(double containerMinWidth) {
         containerMinWidthProperty().set(M3Css.nonNegative(containerMinWidth, "containerMinWidth"));
     }
@@ -240,17 +266,17 @@ public class M3DialogPane extends DialogPane {
         return containerMinWidth;
     }
 
-    /// Returns the maximum dialog container width token.
+    /// Returns the preferred maximum dialog surface width in logical pixels.
     ///
     /// @return the maximum dialog container width token
     public final double getContainerMaxWidth() {
         return containerMaxWidth == null ? DEFAULT_CONTAINER_MAX_WIDTH : containerMaxWidth.get();
     }
 
-    /// Sets the maximum dialog container width token.
+    /// Sets the preferred maximum dialog surface width in logical pixels.
     ///
     /// @param containerMaxWidth the maximum dialog container width token
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @throws IllegalArgumentException if `containerMaxWidth` is negative or not finite
     public final void setContainerMaxWidth(double containerMaxWidth) {
         containerMaxWidthProperty().set(M3Css.nonNegative(containerMaxWidth, "containerMaxWidth"));
     }
@@ -268,17 +294,17 @@ public class M3DialogPane extends DialogPane {
         return containerMaxWidth;
     }
 
-    /// Returns the spacing between dialog action buttons.
+    /// Returns the spacing between dialog action buttons in logical pixels.
     ///
     /// @return the spacing between dialog action buttons
     public final double getActionSpacing() {
         return actionSpacing == null ? DEFAULT_ACTION_SPACING : actionSpacing.get();
     }
 
-    /// Sets the spacing between dialog action buttons.
+    /// Sets the spacing between dialog action buttons in logical pixels.
     ///
     /// @param actionSpacing the spacing between dialog action buttons
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @throws IllegalArgumentException if `actionSpacing` is negative or not finite
     public final void setActionSpacing(double actionSpacing) {
         actionSpacingProperty().set(M3Css.nonNegative(actionSpacing, "actionSpacing"));
     }
@@ -296,17 +322,17 @@ public class M3DialogPane extends DialogPane {
         return actionSpacing;
     }
 
-    /// Returns the dialog graphic icon size token.
+    /// Returns the preferred Material dialog graphic icon size in logical pixels.
     ///
     /// @return the dialog graphic icon size token
     public final double getIconSize() {
         return iconSize == null ? DEFAULT_ICON_SIZE : iconSize.get();
     }
 
-    /// Sets the dialog graphic icon size token.
+    /// Sets the preferred size of an [M3Icon] used as the dialog graphic, in logical pixels.
     ///
     /// @param iconSize the dialog graphic icon size token
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @throws IllegalArgumentException if `iconSize` is negative or not finite
     public final void setIconSize(double iconSize) {
         iconSizeProperty().set(M3Css.nonNegative(iconSize, "iconSize"));
     }
@@ -339,7 +365,7 @@ public class M3DialogPane extends DialogPane {
 
     /// Returns accessibility attributes for the dialog text.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -358,7 +384,7 @@ public class M3DialogPane extends DialogPane {
 
     /// Executes accessibility actions for dialog content and action buttons.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");
@@ -388,7 +414,13 @@ public class M3DialogPane extends DialogPane {
         return buttonBar;
     }
 
-    /// Creates a Material action button for a dialog button type.
+    /// Creates the Material action node associated with a dialog button type.
+    ///
+    /// The returned node forwards unconsumed action events to the JavaFX dialog button machinery, preserving event
+    /// filters, result conversion, and close-on-action behavior.
+    ///
+    /// @param buttonType the button type for the new action node
+    /// @return the action node associated with `buttonType`
     @Override
     protected Node createButton(ButtonType buttonType) {
         Node sourceNode = super.createButton(buttonType);

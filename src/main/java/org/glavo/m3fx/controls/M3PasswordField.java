@@ -20,9 +20,11 @@ import java.util.Objects;
 
 /// A Material Design 3 single-line password field.
 ///
-/// This control keeps JavaFX's [PasswordField] editing and masking implementation while exposing Material state
-/// and token APIs through [M3TextInput]. Use it directly for compact password entry, or wrap it in
-/// [M3TextInputLayout] to add a label, supporting text, validation messages, or a trailing visibility action.
+/// The field follows the editing, selection, clipboard, undo, and action-event contracts of JavaFX's
+/// [PasswordField] while exposing Material state and token APIs through [M3TextInput]. Its text is masked for
+/// display but remains available through the inherited text property. Use it directly for compact password entry,
+/// or wrap it in [M3TextInputLayout] to add a label, supporting text, validation messages, or a trailing visibility
+/// action.
 ///
 /// See [Material Design text fields](https://m3.material.io/components/text-fields/overview).
 @NotNullByDefault
@@ -41,15 +43,15 @@ public final class M3PasswordField extends PasswordField implements M3TextInput 
             StyleableProperties.VERTICAL_PADDING
     );
 
-    /// Creates an empty filled password field.
+    /// Creates an empty password field using the filled variant.
     public M3PasswordField() {
         initialize();
     }
 
-    /// Creates a filled password field with initial text.
+    /// Creates a password field with the supplied initial text and the filled variant.
     ///
     /// @param text the initial field text
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `text` is `null`
     public M3PasswordField(String text) {
         setText(Objects.requireNonNull(text, "text"));
         initialize();

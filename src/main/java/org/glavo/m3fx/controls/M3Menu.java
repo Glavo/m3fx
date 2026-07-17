@@ -46,10 +46,23 @@ import java.util.Objects;
 
 /// A Material Design 3 menu surface.
 ///
-/// `M3Menu` hosts [M3MenuItem], [M3SubMenuItem], section headers, dividers, and other menu content. It manages
-/// optional single or multiple selection, selected-item views, keyboard traversal, submenu disclosure, and action
-/// dispatch for selectable menu items. The control itself is the menu surface; [M3MenuButton] and popup helpers
-/// decide where and when the surface is shown.
+/// `M3Menu` is a menu surface with a live ordered content list. The list may contain [M3MenuItem],
+/// [M3SubMenuItem], section headers, dividers, and other structural nodes. Only enabled and visible menu items
+/// participate in focus navigation and managed selection.
+///
+/// The control does not create or own a window. Add it to a scene graph for an inline menu, or use [M3MenuButton]
+/// to present it in an auto-hiding popup. The default menu is empty, uses [M3MenuColorStyle#STANDARD], disables
+/// managed selection, and permits an empty selection. Item nodes are owned by the menu while displayed and must
+/// not belong to another parent.
+///
+/// A menu with two actions can be created as follows:
+///
+/// ```java
+/// M3Menu menu = new M3Menu();
+/// M3MenuItem openItem = new M3MenuItem("Open");
+/// openItem.setOnAction(event -> System.out.println("Open"));
+/// menu.getItems().addAll(openItem, new M3MenuItem("Save"));
+/// ```
 ///
 /// See [Material Design menus](https://m3.material.io/components/menus/overview).
 @NotNullByDefault
@@ -63,10 +76,18 @@ public final class M3Menu extends Control {
     /// The style class for the internal item container used by menu skins.
     public static final String CONTAINER_STYLE_CLASS = "m3-menu-container";
 
-    /// The mutable menu content.
+    /// The live, mutable, ordered content displayed by this menu.
+    ///
+    /// The list rejects `null` elements and reports mutations through the `ObservableList` change API. Removing a
+    /// selected item clears its selected state; removing a submenu owner also hides its open submenu.
     private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
 
-    /// The menu color style.
+    /// The Material color mapping used by the menu and its direct content.
+    ///
+    /// A direct assignment of `null` is replaced with [M3MenuColorStyle#STANDARD]. The color style is propagated
+    /// to nested submenus.
+    ///
+    /// @defaultValue [M3MenuColorStyle#STANDARD]
     private final ObjectProperty<M3MenuColorStyle> colorStyle =
             new SimpleObjectProperty<>(this, "colorStyle", M3MenuColorStyle.STANDARD) {
                 /// Updates the color style pseudo-class when the property changes.
@@ -80,7 +101,13 @@ public final class M3Menu extends Control {
                 }
             };
 
-    /// The menu selection mode.
+    /// The policy applied when a reachable menu item is activated.
+    ///
+    /// [M3SelectionMode#NONE] leaves actions independent of selection, [M3SelectionMode#SINGLE] retains at most one
+    /// selected item, and [M3SelectionMode#MULTIPLE] permits multiple selections. Changing the mode reconciles the
+    /// current selection. A direct assignment of `null` is replaced with [M3SelectionMode#NONE].
+    ///
+    /// @defaultValue [M3SelectionMode#NONE]
     private final ObjectProperty<M3SelectionMode> selectionMode =
             new SimpleObjectProperty<>(this, "selectionMode", M3SelectionMode.NONE) {
                 /// Enforces selection invariants when the mode changes.
@@ -94,7 +121,12 @@ public final class M3Menu extends Control {
                 }
             };
 
-    /// Whether the menu allows all selectable menu items to be unselected.
+    /// Whether the managed selection may be empty.
+    ///
+    /// Setting the value to `false` selects the first enabled, visible menu item when managed selection is active
+    /// and currently empty.
+    ///
+    /// @defaultValue `true`
     private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection", true) {
         /// Restores a selected item when empty selection is disabled.
         @Override
@@ -178,7 +210,7 @@ public final class M3Menu extends Control {
     /// Whether the menu is currently synchronizing selected states.
     private boolean updatingSelection;
 
-    /// Creates an empty menu.
+    /// Creates an empty standard-color menu with selection disabled and empty selection allowed.
     public M3Menu() {
         initialize();
     }
@@ -186,14 +218,20 @@ public final class M3Menu extends Control {
     /// Creates a menu containing the supplied items.
     ///
     /// @param items the initial non-null menu content nodes
+    /// @throws NullPointerException if `items` or any element of `items` is `null`
     public M3Menu(Node... items) {
         initialize();
         getItems().addAll(items);
     }
 
-    /// Returns the mutable child list used as menu content.
+    /// Returns the live mutable list of nodes displayed by this menu.
     ///
-    /// @return the mutable menu content list
+    /// Mutations are observed immediately and insertion order determines layout and keyboard traversal. The list
+    /// rejects `null`. It does not perform an explicit duplicate check, but each entry is a JavaFX node and must
+    /// occur only once and must not simultaneously belong to another parent. Structural nodes are displayed but do
+    /// not participate in managed selection.
+    ///
+    /// @return the live mutable menu content list
     public final ObservableList<Node> getItems() {
         return items;
     }
@@ -212,7 +250,7 @@ public final class M3Menu extends Control {
     /// Sets the menu color style.
     ///
     /// @param colorStyle the menu color style
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `colorStyle` is `null`
     public final void setColorStyle(M3MenuColorStyle colorStyle) {
         this.colorStyle.set(Objects.requireNonNull(colorStyle, "colorStyle"));
     }
@@ -278,7 +316,7 @@ public final class M3Menu extends Control {
     /// Sets the menu selection mode.
     ///
     /// @param selectionMode the active menu selection mode
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `selectionMode` is `null`
     public final void setSelectionMode(M3SelectionMode selectionMode) {
         this.selectionMode.set(Objects.requireNonNull(selectionMode, "selectionMode"));
     }
@@ -305,9 +343,11 @@ public final class M3Menu extends Control {
         return allowEmptySelection;
     }
 
-    /// Returns the selected menu items in child order.
+    /// Returns an unmodifiable observable view of selected menu items in content order.
     ///
-    /// @return an unmodifiable observable view of selected menu items
+    /// The returned view is live and reports item, reachability, and selection-policy changes.
+    ///
+    /// @return the live unmodifiable selected-item view
     public final @UnmodifiableView ObservableList<M3MenuItem> getSelectedItems() {
         return selectedItemsView;
     }
@@ -334,7 +374,8 @@ public final class M3Menu extends Control {
     /// Selects a menu item that belongs to this menu.
     ///
     /// @param item the selectable menu item to select
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `item` is `null`
+    /// @throws IllegalArgumentException if `item` is not an effectively reachable, non-submenu member of this menu
     public final void select(M3MenuItem item) {
         Objects.requireNonNull(item, "item");
         if (!getItems().contains(item)) {
@@ -354,6 +395,8 @@ public final class M3Menu extends Control {
     /// Selects the selectable menu item at the given child index.
     ///
     /// @param index the child index of the selectable menu item
+    /// @throws IndexOutOfBoundsException if `index` is outside the content list
+    /// @throws IllegalArgumentException if the indexed node is not a selectable [M3MenuItem]
     public final void selectIndex(int index) {
         Node child = getItems().get(index);
         if (child instanceof M3MenuItem item && isReachableSelectableMenuItem(item)) {
@@ -395,7 +438,10 @@ public final class M3Menu extends Control {
         }
     }
 
-    /// Clears the current selection when empty selection is allowed.
+    /// Clears the current selection if the active policy allows it.
+    ///
+    /// If empty selection is disallowed while managed selection is active, this method preserves or restores the
+    /// first selectable item instead.
     public final void clearSelection() {
         if (!isAllowEmptySelection() && getSelectionMode() != M3SelectionMode.NONE) {
             selectFirstItemIfNeeded();
@@ -415,7 +461,7 @@ public final class M3Menu extends Control {
     /// @param attribute the requested accessibility attribute
     /// @param parameters optional attribute-specific parameters
     /// @return the requested accessibility value, or `null` when no value is available
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -433,7 +479,7 @@ public final class M3Menu extends Control {
     ///
     /// @param action the accessibility action to execute
     /// @param parameters optional action-specific parameters
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

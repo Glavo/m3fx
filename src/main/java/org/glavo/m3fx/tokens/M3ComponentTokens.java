@@ -8,11 +8,16 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.Objects;
 
-/// Holds component-level Material Design 3 tokens used by M3FX controls.
+/// Defines the immutable component-level Material Design 3 token groups used by M3FX controls.
 ///
-/// Component tokens collect the shape, size, padding, and metric defaults that individual controls consume.
-/// They keep component geometry separate from hard-coded CSS values and allow a theme profile, such as baseline
-/// or expressive, to change component behavior consistently.
+/// Component tokens collect the shape, size, padding, spacing, and other geometry associated with individual
+/// controls. Unless a record component states otherwise, numeric geometry is expressed in JavaFX logical pixels;
+/// opacity values are dimensionless. Each nested record is an immutable value object and validates the constraints
+/// documented by its canonical constructor.
+///
+/// [builder(M3Profile,M3ShapeTokens,M3Density)] creates a complete snapshot derived from a profile, shape scale,
+/// and density. [builder(M3ComponentTokens)] copies an existing snapshot for selective replacement. Derived token
+/// groups do not retain a live relationship with the profile, shape scale, or density supplied to the builder.
 ///
 /// See [Material Design components](https://m3.material.io/components) and
 /// [Material Design](https://m3.material.io/).
@@ -254,6 +259,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     /// @param shapeTokens the shape scale used by generated component tokens
     /// @param density the density adjustment applied to component metrics
     /// @return a mutable component-token builder
+    /// @throws NullPointerException if `profile`, `shapeTokens`, or `density` is `null`
     static M3ComponentTokensBuilder builder(M3Profile profile, M3ShapeTokens shapeTokens, M3Density density) {
         return new M3ComponentTokensBuilder(defaultsForProfile(profile, shapeTokens, density));
     }
@@ -262,6 +268,7 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     ///
     /// @param tokens the component tokens to copy
     /// @return a mutable component-token builder
+    /// @throws NullPointerException if `tokens` is `null`
     static M3ComponentTokensBuilder builder(M3ComponentTokens tokens) {
         return new M3ComponentTokensBuilder(tokens);
     }
@@ -1429,6 +1436,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double horizontalPadding
     ) {
         /// Creates button tokens.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `height`, `containerShape`, `horizontalPadding`
         public ButtonTokens {
             validateNonNegative(height, "height");
             validateNonNegative(containerShape, "containerShape");
@@ -1452,6 +1462,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             ButtonSizeTokens extraLarge
     ) {
         /// Creates a five-step button size token scale.
+        ///
+        /// @throws NullPointerException if one of the following values is `null`:
+        ///         `extraSmall`, `small`, `medium`, `large`,
+        ///         `extraLarge`
         public ButtonSizingTokens {
             Objects.requireNonNull(extraSmall, "extraSmall");
             Objects.requireNonNull(small, "small");
@@ -1485,6 +1499,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double outlineWidth
     ) {
         /// Creates tokens for one Material button size.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `containerHeight`, `iconSize`, `roundContainerShape`, `squareContainerShape`,
+        ///         `pressedContainerShape`, `horizontalPadding`, `textHorizontalPadding`, `iconLabelSpace`,
+        ///         `outlineWidth`
         public ButtonSizeTokens {
             validateNonNegative(containerHeight, "containerHeight");
             validateNonNegative(iconSize, "iconSize");
@@ -1514,6 +1533,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             IconButtonSizeTokens extraLarge
     ) {
         /// Creates icon button tokens.
+        ///
+        /// @throws NullPointerException if one of the following values is `null`:
+        ///         `extraSmall`, `small`, `medium`, `large`,
+        ///         `extraLarge`
         public IconButtonTokens {
             Objects.requireNonNull(extraSmall, "extraSmall");
             Objects.requireNonNull(small, "small");
@@ -1551,6 +1574,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double outlineWidth
     ) {
         /// Creates icon button size tokens.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `containerHeight`, `iconSize`, `narrowWidth`, `defaultWidth`,
+        ///         `wideWidth`, `roundContainerShape`, `squareContainerShape`, `pressedContainerShape`,
+        ///         `selectedRoundContainerShape`, `selectedSquareContainerShape`, `outlineWidth`
         public IconButtonSizeTokens {
             validateNonNegative(containerHeight, "containerHeight");
             validateNonNegative(iconSize, "iconSize");
@@ -1588,6 +1616,12 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double menuCloseSpacing
     ) {
         /// Creates floating action button tokens.
+        ///
+        /// @throws NullPointerException if one of the following values is `null`:
+        ///         `small`, `regular`, `medium`, `large`,
+        ///         `menuItem`, `menuCloseButton`
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `menuActionSpacing`, `menuCloseSpacing`
         public FabTokens {
             Objects.requireNonNull(small, "small");
             Objects.requireNonNull(regular, "regular");
@@ -1618,6 +1652,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double trailingSpace
     ) {
         /// Creates a floating action button size token set.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `containerSize`, `containerShape`, `iconSize`, `leadingSpace`,
+        ///         `iconLabelSpace`, `trailingSpace`
         public FabSizeTokens {
             validateNonNegative(containerSize, "containerSize");
             validateNonNegative(containerShape, "containerShape");
@@ -1642,6 +1680,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double extraLargeSize
     ) {
         /// Creates icon tokens.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `smallSize`, `mediumSize`, `largeSize`, `extraLargeSize`
         public IconTokens {
             validateNonNegative(smallSize, "smallSize");
             validateNonNegative(mediumSize, "mediumSize");
@@ -1670,6 +1711,12 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double iconToggleGroupSpacing
     ) {
         /// Creates a complete button-group token scale.
+        ///
+        /// @throws NullPointerException if one of the following values is `null`:
+        ///         `extraSmall`, `small`, `medium`, `large`,
+        ///         `extraLarge`
+        /// @throws IllegalArgumentException if `iconToggleGroupSpacing` is negative
+        /// @throws IllegalArgumentException if `segmentedGroupSpacing` is not finite
         public ButtonGroupTokens {
             Objects.requireNonNull(extraSmall, "extraSmall");
             Objects.requireNonNull(small, "small");
@@ -1701,6 +1748,12 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double connectedSelectedInnerCorner
     ) {
         /// Creates button-group tokens for one size role.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `containerHeight`, `standardPressedWidthMultiplier`, `connectedInnerCorner`, `connectedPressedInnerCorner`,
+        ///         `connectedSelectedInnerCorner`
+        /// @throws IllegalArgumentException if one of the following values is not finite:
+        ///         `standardSpacing`, `connectedSpacing`
         public ButtonGroupSizeTokens {
             validateNonNegative(containerHeight, "containerHeight");
             validateFinite(standardSpacing, "standardSpacing");
@@ -1728,6 +1781,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             SplitButtonSizeTokens extraLarge
     ) {
         /// Creates a complete split-button size token scale.
+        ///
+        /// @throws NullPointerException if one of the following values is `null`:
+        ///         `extraSmall`, `small`, `medium`, `large`,
+        ///         `extraLarge`
         public SplitButtonTokens {
             Objects.requireNonNull(extraSmall, "extraSmall");
             Objects.requireNonNull(small, "small");
@@ -1767,6 +1824,12 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double selectedInnerCorner
     ) {
         /// Validates split-button metrics for one size role.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `containerHeight`, `innerCorner`, `hoveredInnerCorner`, `pressedInnerCorner`,
+        ///         `actionLeadingSpace`, `actionTrailingSpace`, `menuIconSize`, `menuIconOffset`,
+        ///         `menuLeadingSpace`, `menuTrailingSpace`, `selectedInnerCorner`
+        /// @throws IllegalArgumentException if `spacing` is not finite
         public SplitButtonSizeTokens {
             validateNonNegative(containerHeight, "containerHeight");
             validateFinite(spacing, "spacing");
@@ -1805,6 +1868,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double activeIndicatorHorizontalInset
     ) {
         /// Creates tab tokens.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `containerHeight`, `tabMinWidth`, `horizontalPadding`, `activeIndicatorHeight`,
+        ///         `secondaryActiveIndicatorHeight`, `activeIndicatorShape`, `activeIndicatorMinWidth`, `activeIndicatorHorizontalInset`
         public TabTokens {
             validateNonNegative(containerHeight, "containerHeight");
             validateNonNegative(tabMinWidth, "tabMinWidth");
@@ -1829,6 +1896,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double horizontalPadding
     ) {
         /// Creates field tokens.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `height`, `containerShape`, `horizontalPadding`
         public FieldTokens {
             validateNonNegative(height, "height");
             validateNonNegative(containerShape, "containerShape");
@@ -1850,6 +1920,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double verticalPadding
     ) {
         /// Validates text area tokens.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `height`, `containerShape`, `horizontalPadding`, `verticalPadding`
         public TextAreaTokens {
             validateNonNegative(height, "height");
             validateNonNegative(containerShape, "containerShape");
@@ -1882,6 +1955,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double rowTextSpacing
     ) {
         /// Validates form tokens.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `contentPadding`, `rowSpacing`, `sectionContentSpacing`, `sectionHeaderSpacing`,
+        ///         `sectionHeaderBottomPadding`, `rowLabelWidth`, `rowColumnSpacing`, `rowMinHeight`,
+        ///         `rowTextSpacing`
         public FormTokens {
             validateNonNegative(contentPadding, "contentPadding");
             validateNonNegative(rowSpacing, "rowSpacing");
@@ -1913,6 +1991,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double itemHorizontalPadding
     ) {
         /// Validates validation summary tokens.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `containerShape`, `contentPadding`, `itemsSpacing`, `itemShape`,
+        ///         `itemVerticalPadding`, `itemHorizontalPadding`
         public ValidationSummaryTokens {
             validateNonNegative(containerShape, "containerShape");
             validateNonNegative(contentPadding, "contentPadding");
@@ -1953,6 +2035,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double itemSpacing
     ) {
         /// Validates menu tokens.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `containerShape`, `containerPadding`, `itemHeight`, `itemContainerShape`,
+        ///         `selectedItemContainerShape`, `activeItemContainerShape`, `innerCornerShape`, `firstItemContainerShape`,
+        ///         `lastItemContainerShape`, `itemHorizontalPadding`, `itemContentSpacing`, `itemSpacing`
         public MenuTokens {
             validateNonNegative(containerShape, "containerShape");
             validateNonNegative(containerPadding, "containerPadding");
@@ -2013,6 +2100,13 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double viewFullScreenDividedHeaderHeight
     ) {
         /// Validates search tokens.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `barHeight`, `barContainerShape`, `barHorizontalPadding`, `barContentSpacing`,
+        ///         `containedBarHorizontalPadding`, `containedBarContentSpacing`, `dividedBarHorizontalPadding`, `dividedBarContentSpacing`,
+        ///         `barTrailingActionsGap`, `viewContainerShape`, `viewHorizontalPadding`, `viewBarResultsGap`,
+        ///         `viewResultsShape`, `viewDockedBottomPadding`, `viewFullScreenBottomPadding`, `viewMinWidth`,
+        ///         `viewMaxWidth`, `viewDockedMinHeight`, `viewFullScreenDividedHeaderHeight`
         public SearchTokens {
             validateNonNegative(barHeight, "barHeight");
             validateNonNegative(barContainerShape, "barContainerShape");
@@ -2058,6 +2152,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double presetButtonHorizontalPadding
     ) {
         /// Validates picker field tokens.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `openButtonSize`, `openButtonShape`, `popupShape`, `popupPadding`,
+        ///         `popupSpacing`, `presetListWidth`, `presetListSpacing`, `presetButtonHorizontalPadding`
         public PickerFieldTokens {
             validateNonNegative(openButtonSize, "openButtonSize");
             validateNonNegative(openButtonShape, "openButtonShape");
@@ -2104,6 +2202,12 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double gridGap
     ) {
         /// Validates date picker tokens.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `containerWidth`, `dockedContainerShape`, `modalContainerShape`, `horizontalPadding`,
+        ///         `containerSpacing`, `headerHeight`, `headerSpacing`, `navigationButtonSize`,
+        ///         `navigationButtonShape`, `menuButtonHeight`, `dayCellSize`, `dayStateLayerSize`,
+        ///         `dayCellShape`, `gridGap`
         public DatePickerTokens {
             validateNonNegative(containerWidth, "containerWidth");
             validateNonNegative(dockedContainerShape, "dockedContainerShape");
@@ -2164,6 +2268,13 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double inputFieldHeight
     ) {
         /// Validates time picker tokens.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `containerShape`, `containerPadding`, `containerSpacing`, `displaySpacing`,
+        ///         `displayCellShape`, `displayCellWidth`, `display24HourCellWidth`, `displayCellHeight`,
+        ///         `periodVerticalWidth`, `periodVerticalHeight`, `periodHorizontalWidth`, `periodHorizontalHeight`,
+        ///         `dialSize`, `dialHandleSize`, `dialCenterSize`, `dialTrackWidth`,
+        ///         `inputFieldWidth`, `inputFieldHeight`
         public TimePickerTokens {
             validateNonNegative(containerShape, "containerShape");
             validateNonNegative(containerPadding, "containerPadding");
@@ -2214,6 +2325,13 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double dragHandleHeight
     ) {
         /// Validates sheet tokens.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `sideContainerWidth`, `sideContainerMaxWidth`, `sideContainerShape`, `bottomContainerMaxWidth`,
+        ///         `bottomContainerShape`, `contentPadding`, `headerPadding`, `headerContentSpacing`,
+        ///         `dragHandleVerticalPadding`, `dragHandleWidth`, `dragHandleHeight`
+        /// @throws IllegalArgumentException if `sideContainerMaxWidth` is less than
+        ///         `sideContainerWidth`
         public SheetTokens {
             validateNonNegative(sideContainerWidth, "sideContainerWidth");
             validateNonNegative(sideContainerMaxWidth, "sideContainerMaxWidth");
@@ -2240,6 +2358,8 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
     @NotNullByDefault
     record ScrimTokens(double containerOpacity) {
         /// Validates scrim tokens.
+        ///
+        /// @throws IllegalArgumentException if `containerOpacity` is less than `0.0` or greater than `1.0`
         public ScrimTokens {
             validateOpacity(containerOpacity);
         }
@@ -2289,6 +2409,13 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double switchIconSize
     ) {
         /// Creates selection tokens.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `touchTargetSize`, `stateLayerSize`, `checkboxContainerSize`, `checkboxSelectedMarkWidth`,
+        ///         `checkboxSelectedMarkHeight`, `checkboxIndeterminateMarkWidth`, `checkboxIndeterminateMarkHeight`, `radioContainerSize`,
+        ///         `radioSelectedDotSize`, `trackShape`, `switchTouchTargetSize`, `switchTrackWidth`,
+        ///         `switchTrackHeight`, `switchStateLayerSize`, `switchUnselectedHandleSize`, `switchWithIconHandleSize`,
+        ///         `switchSelectedHandleSize`, `switchPressedHandleSize`, `switchIconSize`
         public SelectionTokens {
             validateNonNegative(touchTargetSize, "touchTargetSize");
             validateNonNegative(stateLayerSize, "stateLayerSize");
@@ -2328,6 +2455,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             SliderSizeTokens extraLarge
     ) {
         /// Creates slider sizing tokens.
+        ///
+        /// @throws NullPointerException if one of the following values is `null`:
+        ///         `extraSmall`, `small`, `medium`, `large`,
+        ///         `extraLarge`
         public SliderSizingTokens {
             Objects.requireNonNull(extraSmall, "extraSmall");
             Objects.requireNonNull(small, "small");
@@ -2353,6 +2484,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double iconPadding
     ) {
         /// Creates tokens for one slider size.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `trackThickness`, `trackShape`, `thumbSize`, `iconSize`,
+        ///         `iconPadding`
         public SliderSizeTokens {
             validateNonNegative(trackThickness, "trackThickness");
             validateNonNegative(trackShape, "trackShape");
@@ -2384,6 +2519,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double touchTargetSize
     ) {
         /// Creates slider tokens.
+        ///
+        /// @throws NullPointerException if `sizing` is `null`
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `stopIndicatorSize`, `stopIndicatorTrailingSpace`, `thumbWidth`, `focusedThumbWidth`,
+        ///         `pressedThumbWidth`, `thumbTrackGap`, `touchTargetSize`
         public SliderTokens {
             Objects.requireNonNull(sizing, "sizing");
             validateNonNegative(stopIndicatorSize, "stopIndicatorSize");
@@ -2424,6 +2564,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double groupVerticalGap
     ) {
         /// Creates chip tokens.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `height`, `containerShape`, `horizontalPadding`, `iconHorizontalPadding`,
+        ///         `elementSpacing`, `iconSize`, `avatarSize`, `avatarShape`,
+        ///         `outlineWidth`, `groupHorizontalGap`, `groupVerticalGap`
         public ChipTokens {
             validateNonNegative(height, "height");
             validateNonNegative(containerShape, "containerShape");
@@ -2469,6 +2614,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double circularTrackGap
     ) {
         /// Creates progress tokens.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `thickness`, `shape`, `indicatorSize`, `waveIndicatorSize`,
+        ///         `linearWaveAmplitude`, `linearWavelength`, `linearIndeterminateWavelength`, `linearTrackGap`,
+        ///         `linearStopSize`, `circularWaveAmplitude`, `circularWavelength`, `circularTrackGap`
         public ProgressTokens {
             validateNonNegative(thickness, "thickness");
             validateNonNegative(shape, "shape");
@@ -2495,6 +2645,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double indicatorSize
     ) {
         /// Creates loading indicator tokens.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `containerSize`, `indicatorSize`
         public LoadingIndicatorTokens {
             validateNonNegative(containerSize, "containerSize");
             validateNonNegative(indicatorSize, "indicatorSize");
@@ -2511,6 +2664,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double contentPadding
     ) {
         /// Creates surface tokens.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `containerShape`, `contentPadding`
         public SurfaceTokens {
             validateNonNegative(containerShape, "containerShape");
             validateNonNegative(contentPadding, "contentPadding");
@@ -2537,6 +2693,12 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double largeItemMaxWidth
     ) {
         /// Creates carousel tokens.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `trackHorizontalPadding`, `trackVerticalPadding`, `itemSpacing`, `itemShape`,
+        ///         `smallItemMinWidth`, `smallItemMaxWidth`, `largeItemMaxWidth`
+        /// @throws IllegalArgumentException if `smallItemMaxWidth` is less than `smallItemMinWidth`,
+        ///         or if `largeItemMaxWidth` is less than `smallItemMaxWidth`
         public CarouselTokens {
             validateNonNegative(trackHorizontalPadding, "trackHorizontalPadding");
             validateNonNegative(trackVerticalPadding, "trackVerticalPadding");
@@ -2566,6 +2728,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double outlineWidth
     ) {
         /// Creates card tokens.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `containerShape`, `contentPadding`, `outlineWidth`
         public CardTokens {
             validateNonNegative(containerShape, "containerShape");
             validateNonNegative(contentPadding, "contentPadding");
@@ -2591,6 +2756,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double iconSize
     ) {
         /// Creates dialog tokens.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `containerShape`, `contentPadding`, `containerMinWidth`, `containerMaxWidth`,
+        ///         `actionSpacing`, `iconSize`
+        /// @throws IllegalArgumentException if `containerMaxWidth` is less than `containerMinWidth`
         public DialogTokens {
             validateNonNegative(containerShape, "containerShape");
             validateNonNegative(contentPadding, "contentPadding");
@@ -2626,6 +2796,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double actionContainerHeight
     ) {
         /// Creates snackbar tokens.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `containerShape`, `contentPadding`, `containerMinWidth`, `containerMaxWidth`,
+        ///         `singleLineContainerHeight`, `twoLineContainerHeight`, `actionContainerHeight`
+        /// @throws IllegalArgumentException if `containerMaxWidth` is less than `containerMinWidth`
         public SnackbarTokens {
             validateNonNegative(containerShape, "containerShape");
             validateNonNegative(contentPadding, "contentPadding");
@@ -2658,6 +2833,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double actionSpacing
     ) {
         /// Creates banner tokens.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `containerMinHeight`, `verticalPadding`, `horizontalPadding`, `contentSpacing`,
+        ///         `actionSpacing`
         public BannerTokens {
             validateNonNegative(containerMinHeight, "containerMinHeight");
             validateNonNegative(verticalPadding, "verticalPadding");
@@ -2697,6 +2876,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double richActionButtonHorizontalPadding
     ) {
         /// Creates tooltip tokens.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `plainContainerShape`, `plainVerticalPadding`, `plainHorizontalPadding`, `richContainerShape`,
+        ///         `richTopPadding`, `richHorizontalPadding`, `richBottomPadding`, `richContentSpacing`,
+        ///         `richPreferredWidth`, `richActionSpacing`, `richActionButtonHeight`, `richActionButtonHorizontalPadding`
         public TooltipTokens {
             validateNonNegative(plainContainerShape, "plainContainerShape");
             validateNonNegative(plainVerticalPadding, "plainVerticalPadding");
@@ -2725,6 +2909,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double insetEnd
     ) {
         /// Creates divider tokens.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `thickness`, `insetStart`, `insetEnd`
         public DividerTokens {
             validateNonNegative(thickness, "thickness");
             validateNonNegative(insetStart, "insetStart");
@@ -2748,6 +2935,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double horizontalPadding
     ) {
         /// Creates badge tokens.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `smallSize`, `largeHeight`, `largeMinWidth`, `containerShape`,
+        ///         `horizontalPadding`
         public BadgeTokens {
             validateNonNegative(smallSize, "smallSize");
             validateNonNegative(largeHeight, "largeHeight");
@@ -2767,6 +2958,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double containerShape
     ) {
         /// Creates avatar tokens.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `containerSize`, `containerShape`
         public AvatarTokens {
             validateNonNegative(containerSize, "containerSize");
             validateNonNegative(containerShape, "containerShape");
@@ -2807,6 +3001,12 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double actionSpacing
     ) {
         /// Creates top app bar tokens.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `containerHeight`, `mediumContainerHeight`, `largeContainerHeight`, `mediumFlexibleContainerHeight`,
+        ///         `mediumFlexibleSubtitleContainerHeight`, `largeFlexibleContainerHeight`, `largeFlexibleSubtitleContainerHeight`, `edgePadding`,
+        ///         `horizontalPadding`, `mediumBottomPadding`, `largeBottomPadding`, `flexibleBottomPadding`,
+        ///         `contentSpacing`, `actionSpacing`
         public TopAppBarTokens {
             validateNonNegative(containerHeight, "containerHeight");
             validateNonNegative(mediumContainerHeight, "mediumContainerHeight");
@@ -2841,6 +3041,9 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double actionSpacing
     ) {
         /// Creates bottom app bar tokens.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `containerHeight`, `horizontalPadding`, `contentSpacing`, `actionSpacing`
         public BottomAppBarTokens {
             validateNonNegative(containerHeight, "containerHeight");
             validateNonNegative(horizontalPadding, "horizontalPadding");
@@ -2871,6 +3074,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double dockedMaxItemSpacing
     ) {
         /// Creates toolbar tokens.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `containerHeight`, `containerWidth`, `containerShape`, `itemSlotSize`,
+        ///         `contentPadding`, `dockedContentPadding`, `itemSpacing`, `dockedMaxItemSpacing`
         public ToolbarTokens {
             validateNonNegative(containerHeight, "containerHeight");
             validateNonNegative(containerWidth, "containerWidth");
@@ -2905,6 +3112,10 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double itemSpacing
     ) {
         /// Creates navigation bar tokens.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `containerHeight`, `itemWidth`, `indicatorWidth`, `indicatorHeight`,
+        ///         `indicatorShape`, `contentSpacing`, `horizontalPadding`, `itemSpacing`
         public NavigationBarTokens {
             validateNonNegative(containerHeight, "containerHeight");
             validateNonNegative(itemWidth, "itemWidth");
@@ -2961,6 +3172,15 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double modalContainerShape
     ) {
         /// Creates navigation rail tokens.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `collapsedContainerWidth`, `narrowCollapsedContainerWidth`, `expandedMinimumContainerWidth`, `expandedContainerWidth`,
+        ///         `expandedMaximumContainerWidth`, `itemHeight`, `itemWidth`, `indicatorWidth`,
+        ///         `indicatorHeight`, `indicatorShape`, `contentSpacing`, `collapsedTopPadding`,
+        ///         `collapsedBottomPadding`, `horizontalPadding`, `itemSpacing`, `expandedTopPadding`,
+        ///         `expandedBottomPadding`, `headerSpacing`, `modalContainerShape`
+        /// @throws IllegalArgumentException unless the expanded widths satisfy
+        ///         `expandedMinimumContainerWidth <= expandedContainerWidth <= expandedMaximumContainerWidth`
         public NavigationRailTokens {
             validateNonNegative(collapsedContainerWidth, "collapsedContainerWidth");
             validateNonNegative(narrowCollapsedContainerWidth, "narrowCollapsedContainerWidth");
@@ -3022,6 +3242,12 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double groupChildItemHorizontalPadding
     ) {
         /// Creates navigation drawer tokens.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `containerWidth`, `oneLineItemHeight`, `twoLineItemHeight`, `threeLineItemHeight`,
+        ///         `itemContainerShape`, `containerPadding`, `itemHorizontalPadding`, `itemVerticalPadding`,
+        ///         `itemContentSpacing`, `itemSpacing`, `groupChildItemHeight`, `groupChildItemContainerShape`,
+        ///         `groupChildItemHorizontalPadding`
         public NavigationDrawerTokens {
             validateNonNegative(containerWidth, "containerWidth");
             validateNonNegative(oneLineItemHeight, "oneLineItemHeight");
@@ -3065,6 +3291,11 @@ public sealed interface M3ComponentTokens permits M3ComponentTokensImpl {
             double sectionHeaderHorizontalPadding
     ) {
         /// Creates list item tokens.
+        ///
+        /// @throws IllegalArgumentException if one of the following values is negative:
+        ///         `oneLineHeight`, `twoLineHeight`, `threeLineHeight`, `containerShape`,
+        ///         `horizontalPadding`, `verticalPadding`, `contentSpacing`, `segmentedGap`,
+        ///         `sectionHeaderHeight`, `sectionHeaderHorizontalPadding`
         public ListItemTokens {
             validateNonNegative(oneLineHeight, "oneLineHeight");
             validateNonNegative(twoLineHeight, "twoLineHeight");

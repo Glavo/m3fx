@@ -26,8 +26,25 @@ import java.util.Objects;
 /// A Material Design 3 rich tooltip with title, supporting text, and optional actions.
 ///
 /// `M3RichTooltip` builds on [M3Tooltip] and supplies the structured content used by rich Material tooltips:
-/// title text, supporting text, and an optional row of action nodes. It inherits popup timing, accessibility,
-/// owner-window tracking, theme propagation, and motion from the base tooltip.
+/// title text, supporting text, and an optional row of action nodes. Empty title or supporting text is omitted from
+/// layout. The concatenated visible text is exposed as accessible help for the owner node.
+///
+/// Rich tooltips are interactive: the pointer may move from the owner into the popup without immediately hiding it,
+/// and reachable action nodes participate in keyboard traversal. When [#isPersistent()] is `false`, installation
+/// through [M3Tooltip#install(Node,M3Tooltip)] uses hover and focus activation. Persistent tooltips instead open from
+/// explicit mouse or keyboard activation and remain visible until auto-hide, Escape, or a second owner activation.
+///
+/// The following example installs an interactive rich tooltip and closes it from an action:
+///
+/// ```java
+/// M3Button helpButton = new M3Button("Help");
+/// M3RichTooltip tooltip = new M3RichTooltip(
+///         "Keyboard shortcuts", "Review the available keyboard commands.");
+/// M3Button dismissButton = new M3Button("Dismiss");
+/// dismissButton.setOnAction(event -> tooltip.hide());
+/// tooltip.getActions().add(dismissButton);
+/// M3Tooltip.install(helpButton, tooltip);
+/// ```
 ///
 /// See [Material Design tooltips](https://m3.material.io/components/tooltips/overview).
 @NotNullByDefault
@@ -47,13 +64,27 @@ public final class M3RichTooltip extends M3Tooltip {
     /// The action row style class.
     public static final String ACTIONS_STYLE_CLASS = "m3-rich-tooltip-actions";
 
-    /// The rich tooltip title property.
+    /// The non-null title displayed above the supporting text.
+    ///
+    /// An empty or blank value omits the title from layout. The property must not be set or bound to `null`.
+    ///
+    /// @defaultValue `""`
     private final StringProperty title = new SimpleStringProperty(this, "title", "");
 
-    /// The rich tooltip supporting text property.
+    /// The non-null supporting text displayed below the title.
+    ///
+    /// An empty or blank value omits the supporting text from layout. The property must not be set or bound to
+    /// `null`.
+    ///
+    /// @defaultValue `""`
     private final StringProperty supportingText = new SimpleStringProperty(this, "supportingText", "");
 
-    /// The persistent interaction property.
+    /// Whether installation uses explicit persistent activation rather than hover and focus activation.
+    ///
+    /// This property affects installed activation semantics; it does not prevent an application from calling
+    /// [#show(Node,double,double)] or [#hide()] directly.
+    ///
+    /// @defaultValue `false`
     private final BooleanProperty persistent = new SimpleBooleanProperty(this, "persistent");
 
     /// The title label.
@@ -65,18 +96,19 @@ public final class M3RichTooltip extends M3Tooltip {
     /// The action node row.
     private final HBox actions = new HBox();
 
-    /// The root graphic node rendered by the tooltip skin.
+    /// The root node containing the rich tooltip content.
     private final VBox container = new VBox();
 
-    /// Creates an empty rich tooltip.
+    /// Creates a non-persistent rich tooltip with no title, supporting text, or actions.
     public M3RichTooltip() {
         this("", "");
     }
 
-    /// Creates a rich tooltip with title and supporting text.
+    /// Creates a non-persistent rich tooltip with the specified title and supporting text.
     ///
     /// @param title the title displayed at the top of the tooltip
     /// @param supportingText the supporting text displayed below the title
+    /// @throws NullPointerException if `title` or `supportingText` is `null`
     public M3RichTooltip(String title, String supportingText) {
         initializeRichTooltip();
         setTitle(title);
@@ -94,7 +126,7 @@ public final class M3RichTooltip extends M3Tooltip {
     /// Sets the rich tooltip title.
     ///
     /// @param title the title displayed at the top of the tooltip
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `title` is `null`
     public final void setTitle(String title) {
         this.title.set(Objects.requireNonNull(title, "title"));
     }
@@ -113,7 +145,7 @@ public final class M3RichTooltip extends M3Tooltip {
     /// Sets the rich tooltip supporting text.
     ///
     /// @param supportingText the supporting text displayed below the title
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `supportingText` is `null`
     public final void setSupportingText(String supportingText) {
         this.supportingText.set(Objects.requireNonNull(supportingText, "supportingText"));
     }
@@ -146,8 +178,10 @@ public final class M3RichTooltip extends M3Tooltip {
 
     /// Returns the mutable action node list.
     ///
-    /// Material rich tooltips support at most two brief text-button actions. Callers are responsible for preserving
-    /// that content constraint when mutating this list.
+    /// The returned list is live, mutable, and ordered. Changes are reflected immediately while the tooltip is
+    /// showing. `null` elements and duplicate node instances are not permitted. Each action node must be available
+    /// for this tooltip to own; JavaFX rejects incompatible parent ownership. Material rich tooltips support at most
+    /// two brief text-button actions, but this list does not enforce that content recommendation.
     ///
     /// @return the mutable action node list displayed in the tooltip action row
     public final ObservableList<Node> getActions() {

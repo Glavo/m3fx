@@ -30,6 +30,17 @@ import java.time.LocalTime;
 /// [LocalTime] as the dialog result when the user accepts the choice. Its Dial/Input mode switch shares the
 /// specification's bottom action row with the dialog actions.
 ///
+/// The inherited [#show()] method is non-blocking and [#showAndWait()] blocks through JavaFX's nested event loop.
+/// Cancel closes the dialog with a `null` result; OK is disabled until a value is selected and closes with the
+/// selected minute-precision time. Configure owner and modality before showing the dialog:
+///
+/// ```java
+/// M3TimePickerDialog dialog = new M3TimePickerDialog(LocalTime.of(9, 30));
+/// dialog.initOwner(ownerNode);
+/// dialog.showAndWait();
+/// LocalTime acceptedTime = dialog.getResult();
+/// ```
+///
 /// See [Material Design time pickers](https://m3.material.io/components/time-pickers/overview).
 @NotNullByDefault
 public final class M3TimePickerDialog extends M3Dialog<LocalTime> {
@@ -62,7 +73,11 @@ public final class M3TimePickerDialog extends M3Dialog<LocalTime> {
     /// The time picker displayed as dialog content.
     private final M3TimePicker picker;
 
-    /// The selected time property.
+    /// The selected time synchronized with the embedded picker.
+    ///
+    /// Values are normalized and range-checked by the picker. `null` clears selection and disables the OK action.
+    ///
+    /// @defaultValue `null`
     private final ObjectProperty<@Nullable LocalTime> value;
 
     /// Whether the dialog and embedded picker are currently synchronizing selected values.
@@ -83,7 +98,10 @@ public final class M3TimePickerDialog extends M3Dialog<LocalTime> {
     /// Refreshes existing button disabled states after picker bounds change.
     private final InvalidationListener presetBoundsInvalidation;
 
-    /// Creates an empty time picker dialog.
+    /// Creates a time picker dialog with no selected time.
+    ///
+    /// The dialog title and header are `Select time`, the OK action is disabled, and no owner is configured. The
+    /// embedded picker uses its standard defaults.
     public M3TimePickerDialog() {
         this(new TimePickerDialogPane(), null);
     }
@@ -134,7 +152,11 @@ public final class M3TimePickerDialog extends M3Dialog<LocalTime> {
 
     /// Returns the mutable time preset list.
     ///
-    /// @return the mutable time preset list
+    /// The returned list is live, mutable, ordered, and rejects `null` elements. Mutations update the dialog action
+    /// column immediately. Duplicate presets are retained as separate actions in list order. Presets outside the
+    /// picker's current bounds remain in the list but are disabled.
+    ///
+    /// @return the live mutable time preset list
     public final ObservableList<M3TimePreset> getPresets() {
         return presets;
     }
@@ -148,7 +170,11 @@ public final class M3TimePickerDialog extends M3Dialog<LocalTime> {
 
     /// Sets the selected time, or clears selection when `null` is supplied.
     ///
+    /// The embedded picker normalizes seconds and nanoseconds and rejects values outside its current bounds. A
+    /// successful change updates the OK action immediately.
+    ///
     /// @param value the selected time, or `null` to clear selection
+    /// @throws IllegalArgumentException if `value` is outside the embedded picker's selectable range
     public final void setValue(@Nullable LocalTime value) {
         this.value.set(value);
     }

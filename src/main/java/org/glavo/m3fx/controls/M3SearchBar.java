@@ -44,10 +44,14 @@ import java.util.Objects;
 
 /// A Material Design 3 search bar for entering or activating search.
 ///
-/// `M3SearchBar` contains a text editor, leading slot, trailing action list, prompt text, and active state. It
-/// can be used as a standalone search field or as the primary input inside [M3SearchView]. The control exposes
-/// action events, input forwarding methods, and accessibility text while the skin renders Material container,
-/// state-layer, focus, and motion feedback.
+/// `M3SearchBar` combines an editable text value with leading and trailing content slots. It can be used as a
+/// standalone search entry or as the primary input of [M3SearchView]. Activating the bar focuses its editor;
+/// focusing the editor also makes the bar active. Deactivation changes the visual and accessibility state but does
+/// not clear the entered text.
+///
+/// Pressing Enter in the editor, invoking [#fire()], or using the accessibility fire action emits an [ActionEvent].
+/// Disabled search bars do not fire. The default leading content is a search indicator, the trailing action list is
+/// empty, and the bar is inactive with empty text and prompt text.
 ///
 /// See [Material Design search](https://m3.material.io/components/search/overview).
 @NotNullByDefault
@@ -76,7 +80,9 @@ public final class M3SearchBar extends Control {
     /// The default horizontal padding.
     private static final double DEFAULT_HORIZONTAL_PADDING = 16.0;
 
-    /// The leading content node property.
+    /// The node displayed before the editable text.
+    ///
+    /// The default is a search indicator supplied by the control. A `null` value leaves the leading slot empty.
     private final ObjectProperty<@Nullable Node> leading = new SimpleObjectProperty<>(this, "leading") {
         /// Updates accessibility state when the leading slot changes.
         @Override
@@ -85,7 +91,12 @@ public final class M3SearchBar extends Control {
         }
     };
 
-    /// The text property.
+    /// The non-null search text edited by the user.
+    ///
+    /// The property is bidirectionally synchronized with the embedded editor. Assigning or binding a `null` value
+    /// throws [NullPointerException].
+    ///
+    /// @defaultValue `""`
     private final StringProperty text = new SimpleStringProperty(this, "text", "") {
         /// Keeps search text non-null.
         @Override
@@ -94,7 +105,11 @@ public final class M3SearchBar extends Control {
         }
     };
 
-    /// The prompt text property.
+    /// The non-null prompt displayed when [#getText()] is empty.
+    ///
+    /// Assigning or binding a `null` value throws [NullPointerException].
+    ///
+    /// @defaultValue `""`
     private final StringProperty promptText = new SimpleStringProperty(this, "promptText", "") {
         /// Keeps prompt text non-null.
         @Override
@@ -103,7 +118,9 @@ public final class M3SearchBar extends Control {
         }
     };
 
-    /// The action handler property.
+    /// The handler invoked for search action events.
+    ///
+    /// @defaultValue `null`
     private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
             new SimpleObjectProperty<>(this, "onAction") {
                 /// Updates the registered action event handler.
@@ -113,7 +130,12 @@ public final class M3SearchBar extends Control {
                 }
             };
 
-    /// The active input state property.
+    /// Whether this bar is in its active input state.
+    ///
+    /// Changing the value to `true` requests focus for the editor when the control is reachable. Changing it to
+    /// `false` does not clear the text or forcibly move focus.
+    ///
+    /// @defaultValue `false`
     private final BooleanProperty active = new SimpleBooleanProperty(this, "active") {
         /// Updates active pseudo-class state and input focus.
         @Override
@@ -141,14 +163,15 @@ public final class M3SearchBar extends Control {
     private final M3AccessibleFocusNotifier focusNotifier =
             new M3AccessibleFocusNotifier(this, this::currentFocusNode);
 
-    /// Creates an empty search bar.
+    /// Creates an inactive search bar with empty text and prompt text.
     public M3SearchBar() {
         this("");
     }
 
-    /// Creates a search bar with prompt text.
+    /// Creates an inactive search bar with the specified prompt and empty search text.
     ///
     /// @param promptText the prompt text displayed when the search text is empty
+    /// @throws NullPointerException if `promptText` is `null`
     public M3SearchBar(String promptText) {
         initialize();
         setPromptText(promptText);
@@ -164,6 +187,7 @@ public final class M3SearchBar extends Control {
     /// Sets the text entered in this search bar.
     ///
     /// @param text the text entered in this search bar
+    /// @throws NullPointerException if `text` is `null`
     public final void setText(String text) {
         this.text.set(text);
     }
@@ -182,6 +206,7 @@ public final class M3SearchBar extends Control {
     /// Sets the prompt text displayed when the search text is empty.
     ///
     /// @param promptText the prompt text displayed when the search text is empty
+    /// @throws NullPointerException if `promptText` is `null`
     public final void setPromptText(String promptText) {
         this.promptText.set(promptText);
     }
@@ -235,7 +260,11 @@ public final class M3SearchBar extends Control {
 
     /// Returns the mutable trailing action list.
     ///
-    /// @return the mutable trailing action list
+    /// The returned list is live, mutable, and ordered. Changes update the visible action row immediately. `null`
+    /// elements are rejected. Each node must satisfy the normal JavaFX single-parent rule when the control displays
+    /// it, and the same node must not be inserted more than once.
+    ///
+    /// @return the live trailing action list
     public final ObservableList<Node> getTrailingActions() {
         return trailingActions;
     }
@@ -266,24 +295,26 @@ public final class M3SearchBar extends Control {
         return M3Stylesheets.controlStylesheet("search.css");
     }
 
-    /// Fires this search bar's action event.
+    /// Fires this search bar's action event unless the control is disabled.
+    ///
+    /// Firing does not activate, deactivate, or clear the search bar.
     public final void fire() {
         if (!isDisabled()) {
             Event.fireEvent(this, new ActionEvent(this, this));
         }
     }
 
-    /// Moves the search bar into its active input state.
+    /// Moves the search bar into its active input state and requests focus for its editor when reachable.
     public final void activate() {
         setActive(true);
     }
 
-    /// Moves the search bar out of its active input state.
+    /// Moves the search bar out of its active input state without changing its text.
     public final void deactivate() {
         setActive(false);
     }
 
-    /// Clears the current search text.
+    /// Replaces the current search text with an empty string without changing the active state.
     public final void clear() {
         setText("");
     }
@@ -299,7 +330,7 @@ public final class M3SearchBar extends Control {
     /// @param attribute  the requested accessibility attribute
     /// @param parameters the optional attribute parameters
     /// @return the attribute value, or `null` when unavailable
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -318,7 +349,7 @@ public final class M3SearchBar extends Control {
     ///
     /// @param action     the requested accessibility action
     /// @param parameters the optional action parameters
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

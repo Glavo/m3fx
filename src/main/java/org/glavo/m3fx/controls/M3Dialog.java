@@ -33,14 +33,30 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-/// A JavaFX dialog that uses an [M3DialogPane] by default.
+/// A JavaFX dialog with a Material Design 3 dialog pane.
 ///
-/// `M3Dialog` keeps the standard JavaFX [Dialog] lifecycle, result conversion, modality, ownership, and button
-/// handling while installing a Material Design 3 dialog pane. Its host window is transparent so the pane's
-/// Material container shape and elevation are not obscured by native window decorations or an opaque rectangular
-/// scene background. It can inherit the theme from an owner window or accept an explicit
-/// [org.glavo.m3fx.theme.M3Theme] so dialogs opened from popups or secondary windows retain the same color and
-/// typography context.
+/// This class retains the [Dialog] result, event, ownership, and modality contracts while using an
+/// [M3DialogPane]. [show()][Dialog#show()] displays the dialog without blocking; [showAndWait()][Dialog#showAndWait()]
+/// enters a nested event loop until the dialog is hidden. Button actions use the standard JavaFX dialog closing
+/// rules and the configured result converter.
+///
+/// A dialog may be owned by a [Window] through the inherited API or by a [Node] through [initOwner(Node)]. The node
+/// overload is useful for controls inside a locally themed subtree: while the dialog is showing, it inherits that
+/// subtree's theme, stylesheets, and effective node orientation. An explicit [theme][#themeProperty()] overrides
+/// inherited theme values. The default modality and all restrictions on initializing owner and modality are those
+/// defined by [Dialog].
+///
+/// ```java
+/// private void showDeleteDialog(Node owner) {
+///     M3Dialog<String> dialog = new M3Dialog<>();
+///     dialog.initOwner(owner);
+///     dialog.getM3DialogPane().setHeaderText("Delete item?");
+///     dialog.getM3DialogPane().setContentText("This action cannot be undone.");
+///     dialog.getM3DialogPane().getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
+///     dialog.setResultConverter(type -> type == ButtonType.OK ? "delete" : null);
+///     dialog.showAndWait();
+/// }
+/// ```
 ///
 /// See [Material Design dialogs](https://m3.material.io/components/dialogs/overview).
 ///
@@ -54,7 +70,12 @@ public class M3Dialog<R> extends Dialog<R> {
     private static final String THEME_STYLESHEET_PROPERTY_KEY =
             M3Dialog.class.getName() + ".themeStylesheet";
 
-    /// The explicit theme applied directly to the dialog pane.
+    /// The explicit theme applied to this dialog, or `null` to inherit an owner theme.
+    ///
+    /// The default value is `null`. Changing this property while the dialog is showing updates its Material theme.
+    /// When no explicit value is present, the dialog resolves the theme from its owner node or owner window.
+    ///
+    /// @defaultValue `null`
     private final ObjectProperty<@Nullable M3Theme> theme = new SimpleObjectProperty<>(this, "theme") {
         /// Applies theme declarations to the Material dialog pane.
         @Override
@@ -133,7 +154,9 @@ public class M3Dialog<R> extends Dialog<R> {
     /// Whether the dialog pane currently contains a mirrored owner orientation value.
     private boolean inheritedNodeOrientationApplied;
 
-    /// Creates a Material Design 3 dialog.
+    /// Creates an empty Material Design 3 dialog with a new [M3DialogPane].
+    ///
+    /// No title, content, buttons, owner, or explicit theme is configured by this constructor.
     public M3Dialog() {
         this(new M3DialogPane());
     }
@@ -159,22 +182,26 @@ public class M3Dialog<R> extends Dialog<R> {
         addEventFilter(DialogEvent.DIALOG_HIDDEN, event -> stopInheritedThemeContextObservation());
     }
 
-    /// Creates a Material Design 3 dialog with a title.
+    /// Creates an otherwise empty Material Design 3 dialog with the specified window title.
     ///
     /// @param title the dialog window title
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `title` is `null`
     public M3Dialog(String title) {
         this();
         setTitle(Objects.requireNonNull(title, "title"));
     }
 
-    /// Creates a Material Design 3 dialog with title, header text, content text, and button types.
+    /// Creates a Material Design 3 dialog with text content and the specified button types.
+    ///
+    /// Button types are added in array order. The supplied array and every element must be non-null. A result
+    /// converter may still be required when the result type is not [ButtonType].
     ///
     /// @param title the dialog window title
     /// @param headerText the dialog pane header text
     /// @param contentText the dialog pane content text
     /// @param buttonTypes the button types installed in the dialog pane
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `title`, `headerText`, `contentText`, `buttonTypes`, or an element of
+    ///         `buttonTypes` is `null`
     public M3Dialog(
             String title,
             String headerText,
@@ -193,9 +220,11 @@ public class M3Dialog<R> extends Dialog<R> {
         pane.getButtonTypes().addAll(buttonTypes);
     }
 
-    /// Returns the Material Design 3 dialog pane.
+    /// Returns the Material Design 3 dialog pane currently installed on this dialog.
     ///
     /// @return the Material Design 3 dialog pane
+    /// @throws IllegalStateException if the inherited [dialogPane][Dialog#dialogPaneProperty()] has been replaced
+    ///         with a pane that is not an [M3DialogPane]
     public final M3DialogPane getM3DialogPane() {
         DialogPane pane = getDialogPane();
         if (pane instanceof M3DialogPane materialPane) {
@@ -206,8 +235,6 @@ public class M3Dialog<R> extends Dialog<R> {
 
     /// Returns the explicit theme applied directly to this dialog.
     ///
-    /// When this value is null, the dialog inherits the owner scene theme when it is shown.
-    ///
     /// @return the explicit theme applied to this dialog, or `null` to inherit from the owner scene
     public final @Nullable M3Theme getTheme() {
         return theme.get();
@@ -215,7 +242,8 @@ public class M3Dialog<R> extends Dialog<R> {
 
     /// Sets the explicit theme applied directly to this dialog.
     ///
-    /// Passing null clears the explicit override and allows owner scene theme inheritance.
+    /// Passing `null` clears the explicit override and immediately restores owner-theme inheritance when the
+    /// dialog is showing.
     ///
     /// @param theme the explicit theme to apply, or `null` to inherit from the owner scene
     public final void setTheme(@Nullable M3Theme theme) {
@@ -226,13 +254,15 @@ public class M3Dialog<R> extends Dialog<R> {
         return theme;
     }
 
-    /// Initializes this dialog with a node owner and inherits local theme context from that node.
+    /// Records a node as this dialog's ownership and inherited-theme context.
     ///
-    /// This overload is useful when a dialog is launched from a subtree with a locally installed M3FX theme. If
-    /// the node is already attached to a window, the JavaFX window owner is initialized from the node scene.
+    /// If the node is attached to a window and the JavaFX window owner has not already been initialized, that
+    /// window becomes the dialog owner. Otherwise this method leaves the existing window owner unchanged. The node
+    /// remains the source for inherited theme and orientation while the dialog is showing. Calling this method
+    /// again replaces the previously recorded node context.
     ///
     /// @param owner the node that owns this dialog
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `owner` is `null`
     public final void initOwner(Node owner) {
         @Nullable Node previousOwnerNode = ownerNode;
         if (observingInheritedThemeContext && previousOwnerNode != null) {

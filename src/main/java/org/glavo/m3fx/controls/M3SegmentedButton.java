@@ -34,7 +34,11 @@ import java.util.Objects;
 ///
 /// `M3SegmentedButton` is a selectable [ButtonBase] with token-backed height, outline shape, and horizontal
 /// padding. It can be used directly for custom layouts, but [M3SegmentedButtonGroup] should be used when
-/// adjacent segments need shared borders, single or multiple selection policy, and keyboard navigation.
+/// adjacent segments need shared borders, a single- or multiple-selection policy, and keyboard navigation.
+///
+/// Activating the button toggles [#selectedProperty()] and then fires an [ActionEvent]. A containing
+/// `M3SegmentedButtonGroup` may immediately adjust that state to satisfy its selection mode and empty-selection
+/// policy. A standalone segmented button is unselected by default and may be toggled independently.
 ///
 /// See [Material Design segmented buttons](https://m3.material.io/components/segmented-buttons/overview).
 @NotNullByDefault
@@ -54,16 +58,27 @@ public final class M3SegmentedButton extends ButtonBase {
     /// The default horizontal content padding.
     private static final double DEFAULT_HORIZONTAL_PADDING = 12.0;
 
-    /// Backing property for the public container height token API.
+    /// The preferred container height in logical pixels.
+    ///
+    /// @defaultValue `40.0`
     private @Nullable StyleableDoubleProperty containerHeight;
 
-    /// Backing property for the public container shape token API.
+    /// The container corner radius in logical pixels.
+    ///
+    /// @defaultValue `999.0`
     private @Nullable StyleableDoubleProperty containerShape;
 
-    /// Backing property for the public horizontal padding token API.
+    /// The padding on each horizontal side of the content, in logical pixels.
+    ///
+    /// @defaultValue `12.0`
     private @Nullable StyleableDoubleProperty horizontalPadding;
 
-    /// Backing property for the public selected state API.
+    /// Whether this segment is selected.
+    ///
+    /// Direct property changes are observed by a containing [M3SegmentedButtonGroup], which may update this or
+    /// other segments to restore its selection invariant.
+    ///
+    /// @defaultValue `false`
     private final BooleanProperty selected = new SimpleBooleanProperty(this, "selected") {
         /// Updates selected pseudo-class state.
         @Override
@@ -74,12 +89,12 @@ public final class M3SegmentedButton extends ButtonBase {
         }
     };
 
-    /// Creates an empty segmented button.
+    /// Creates an unselected segmented button with an empty label and no graphic.
     public M3SegmentedButton() {
         this("");
     }
 
-    /// Creates a segmented button with text.
+    /// Creates an unselected segmented button with the specified label and no graphic.
     ///
     /// @param text the text displayed by the segmented button
     public M3SegmentedButton(String text) {
@@ -87,7 +102,7 @@ public final class M3SegmentedButton extends ButtonBase {
         initialize();
     }
 
-    /// Creates a segmented button with text and graphic content.
+    /// Creates an unselected segmented button with the specified label and graphic.
     ///
     /// @param text the text displayed by the segmented button
     /// @param graphic the graphic displayed by the segmented button, or `null` for none
@@ -218,7 +233,7 @@ public final class M3SegmentedButton extends ButtonBase {
     /// @param attribute the requested accessibility attribute
     /// @param parameters the optional attribute parameters
     /// @return the attribute value, or `null` when unavailable
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");

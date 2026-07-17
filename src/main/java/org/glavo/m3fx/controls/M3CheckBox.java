@@ -31,14 +31,16 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
-/// A Material Design 3 checkbox for selecting one or more independent options.
+/// A Material Design 3 checkbox for an independent binary or tri-state option.
 ///
-/// `M3CheckBox` is built on JavaFX [ButtonBase] and exposes selected and indeterminate properties instead of
-/// extending the JavaFX concrete `CheckBox` class. It supports two-state and three-state selection depending on
-/// [allowIndeterminateProperty], supports the Material error presentation through [errorProperty], updates
-/// JavaFX accessibility toggle attributes, and renders Material state layers and ripple feedback around the
-/// selection indicator.
+/// The [selected][#selectedProperty()] and [indeterminate][#indeterminateProperty()] properties represent its
+/// state. They are independently writable, although an indeterminate state takes precedence in accessibility
+/// reporting. With [allowIndeterminate][#allowIndeterminateProperty()] disabled, activation toggles selected and
+/// clears indeterminate. With it enabled, activation cycles unchecked, indeterminate, checked, and unchecked,
+/// emitting one [ActionEvent] after each state transition.
 ///
+/// The error property changes presentation only; it does not perform validation or change selection. New checkboxes
+/// are unchecked, determinate, allow two-state user interaction, and are focus traversable with mnemonic parsing.
 /// Use checkboxes for independent choices or bulk-selection affordances. See
 /// [Material Design checkboxes](https://m3.material.io/components/checkbox/overview).
 @NotNullByDefault
@@ -79,45 +81,91 @@ public final class M3CheckBox extends ButtonBase {
     /// The default indeterminate mark height.
     private static final double DEFAULT_INDETERMINATE_MARK_HEIGHT = 2.0;
 
-    /// The styleable touch target size token.
+    /// The preferred square pointer target size, in logical pixels.
+    ///
+    /// The default value is `48.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `48.0`
     private @Nullable StyleableDoubleProperty touchTargetSize;
 
-    /// The styleable state layer size token.
+    /// The square interaction-state layer size, in logical pixels.
+    ///
+    /// The default value is `40.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `40.0`
     private @Nullable StyleableDoubleProperty stateLayerSize;
 
-    /// The styleable checkbox container size token.
+    /// The width and height of the checkbox indicator, in logical pixels.
+    ///
+    /// The default value is `18.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `18.0`
     private @Nullable StyleableDoubleProperty containerSize;
 
-    /// The styleable selected mark width token.
+    /// The width of the selected check mark, in logical pixels.
+    ///
+    /// The default value is `12.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `12.0`
     private @Nullable StyleableDoubleProperty selectedMarkWidth;
 
-    /// The styleable selected mark height token.
+    /// The height of the selected check mark, in logical pixels.
+    ///
+    /// The default value is `10.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `10.0`
     private @Nullable StyleableDoubleProperty selectedMarkHeight;
 
-    /// The styleable indeterminate mark width token.
+    /// The width of the indeterminate mark, in logical pixels.
+    ///
+    /// The default value is `12.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `12.0`
     private @Nullable StyleableDoubleProperty indeterminateMarkWidth;
 
-    /// The styleable indeterminate mark height token.
+    /// The height of the indeterminate mark, in logical pixels.
+    ///
+    /// The default value is `2.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `2.0`
     private @Nullable StyleableDoubleProperty indeterminateMarkHeight;
 
-    /// The selected state property.
+    /// Whether this checkbox is selected.
+    ///
+    /// The default value is `false`. This property may be set independently of [indeterminate][#indeterminateProperty()].
+    ///
+    /// @defaultValue `false`
     private @Nullable BooleanProperty selected;
 
-    /// The indeterminate state property.
+    /// Whether this checkbox is in the indeterminate state.
+    ///
+    /// The default value is `false`. Programmatic changes are allowed regardless of
+    /// [allowIndeterminate][#allowIndeterminateProperty()].
+    ///
+    /// @defaultValue `false`
     private @Nullable BooleanProperty indeterminate;
 
-    /// Whether user activation cycles through the indeterminate state.
+    /// Whether user activation includes the indeterminate state in its cycle.
+    ///
+    /// The default value is `false`. This property affects activation only and does not clear an existing
+    /// indeterminate state when changed.
+    ///
+    /// @defaultValue `false`
     private @Nullable BooleanProperty allowIndeterminate;
 
-    /// Whether the checkbox renders its error state.
+    /// Whether this checkbox uses its error presentation.
+    ///
+    /// The default value is `false`. This property does not validate input or change selection.
+    ///
+    /// @defaultValue `false`
     private @Nullable BooleanProperty error;
 
-    /// Creates an empty checkbox.
+    /// Creates an unchecked, determinate checkbox with empty text.
     public M3CheckBox() {
         initialize();
     }
 
-    /// Creates a checkbox with text.
+    /// Creates an unchecked, determinate checkbox with the specified text.
     ///
     /// @param text the text displayed by the checkbox
     public M3CheckBox(String text) {
@@ -276,15 +324,15 @@ public final class M3CheckBox extends ButtonBase {
 
     /// Returns the preferred touch target size token.
     ///
-    /// @return the preferred touch target size in pixels
+    /// @return the preferred touch target size in logical pixels
     public final double getTouchTargetSize() {
         return touchTargetSize == null ? DEFAULT_TOUCH_TARGET_SIZE : touchTargetSize.get();
     }
 
     /// Sets the preferred touch target size token.
     ///
-    /// @param touchTargetSize the preferred touch target size in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param touchTargetSize the preferred touch target size in logical pixels
+    /// @throws IllegalArgumentException if `touchTargetSize` is negative or not finite
     public final void setTouchTargetSize(double touchTargetSize) {
         touchTargetSizeProperty().set(M3Css.nonNegative(touchTargetSize, "touchTargetSize"));
     }
@@ -304,15 +352,15 @@ public final class M3CheckBox extends ButtonBase {
 
     /// Returns the bounded indicator state layer size token.
     ///
-    /// @return the state layer size in pixels
+    /// @return the state layer size in logical pixels
     public final double getStateLayerSize() {
         return stateLayerSize == null ? DEFAULT_STATE_LAYER_SIZE : stateLayerSize.get();
     }
 
     /// Sets the bounded indicator state layer size token.
     ///
-    /// @param stateLayerSize the state layer size in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param stateLayerSize the state layer size in logical pixels
+    /// @throws IllegalArgumentException if `stateLayerSize` is negative or not finite
     public final void setStateLayerSize(double stateLayerSize) {
         stateLayerSizeProperty().set(M3Css.nonNegative(stateLayerSize, "stateLayerSize"));
     }
@@ -332,15 +380,15 @@ public final class M3CheckBox extends ButtonBase {
 
     /// Returns the checkbox container size token.
     ///
-    /// @return the checkbox container size in pixels
+    /// @return the checkbox container size in logical pixels
     public final double getContainerSize() {
         return containerSize == null ? DEFAULT_CONTAINER_SIZE : containerSize.get();
     }
 
     /// Sets the checkbox container size token.
     ///
-    /// @param containerSize the checkbox container size in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param containerSize the checkbox container size in logical pixels
+    /// @throws IllegalArgumentException if `containerSize` is negative or not finite
     public final void setContainerSize(double containerSize) {
         containerSizeProperty().set(M3Css.nonNegative(containerSize, "containerSize"));
     }
@@ -358,15 +406,15 @@ public final class M3CheckBox extends ButtonBase {
 
     /// Returns the selected check mark width token.
     ///
-    /// @return the selected check mark width in pixels
+    /// @return the selected check mark width in logical pixels
     public final double getSelectedMarkWidth() {
         return selectedMarkWidth == null ? DEFAULT_SELECTED_MARK_WIDTH : selectedMarkWidth.get();
     }
 
     /// Sets the selected check mark width token.
     ///
-    /// @param selectedMarkWidth the selected check mark width in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param selectedMarkWidth the selected check mark width in logical pixels
+    /// @throws IllegalArgumentException if `selectedMarkWidth` is negative or not finite
     public final void setSelectedMarkWidth(double selectedMarkWidth) {
         selectedMarkWidthProperty().set(M3Css.nonNegative(selectedMarkWidth, "selectedMarkWidth"));
     }
@@ -384,15 +432,15 @@ public final class M3CheckBox extends ButtonBase {
 
     /// Returns the selected check mark height token.
     ///
-    /// @return the selected check mark height in pixels
+    /// @return the selected check mark height in logical pixels
     public final double getSelectedMarkHeight() {
         return selectedMarkHeight == null ? DEFAULT_SELECTED_MARK_HEIGHT : selectedMarkHeight.get();
     }
 
     /// Sets the selected check mark height token.
     ///
-    /// @param selectedMarkHeight the selected check mark height in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param selectedMarkHeight the selected check mark height in logical pixels
+    /// @throws IllegalArgumentException if `selectedMarkHeight` is negative or not finite
     public final void setSelectedMarkHeight(double selectedMarkHeight) {
         selectedMarkHeightProperty().set(M3Css.nonNegative(selectedMarkHeight, "selectedMarkHeight"));
     }
@@ -410,15 +458,15 @@ public final class M3CheckBox extends ButtonBase {
 
     /// Returns the indeterminate dash mark width token.
     ///
-    /// @return the indeterminate dash mark width in pixels
+    /// @return the indeterminate mark width in logical pixels
     public final double getIndeterminateMarkWidth() {
         return indeterminateMarkWidth == null ? DEFAULT_INDETERMINATE_MARK_WIDTH : indeterminateMarkWidth.get();
     }
 
     /// Sets the indeterminate dash mark width token.
     ///
-    /// @param indeterminateMarkWidth the indeterminate dash mark width in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param indeterminateMarkWidth the indeterminate mark width in logical pixels
+    /// @throws IllegalArgumentException if `indeterminateMarkWidth` is negative or not finite
     public final void setIndeterminateMarkWidth(double indeterminateMarkWidth) {
         indeterminateMarkWidthProperty().set(M3Css.nonNegative(indeterminateMarkWidth, "indeterminateMarkWidth"));
     }
@@ -436,15 +484,15 @@ public final class M3CheckBox extends ButtonBase {
 
     /// Returns the indeterminate dash mark height token.
     ///
-    /// @return the indeterminate dash mark height in pixels
+    /// @return the indeterminate mark height in logical pixels
     public final double getIndeterminateMarkHeight() {
         return indeterminateMarkHeight == null ? DEFAULT_INDETERMINATE_MARK_HEIGHT : indeterminateMarkHeight.get();
     }
 
     /// Sets the indeterminate dash mark height token.
     ///
-    /// @param indeterminateMarkHeight the indeterminate dash mark height in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param indeterminateMarkHeight the indeterminate mark height in logical pixels
+    /// @throws IllegalArgumentException if `indeterminateMarkHeight` is negative or not finite
     public final void setIndeterminateMarkHeight(double indeterminateMarkHeight) {
         indeterminateMarkHeightProperty().set(M3Css.nonNegative(indeterminateMarkHeight, "indeterminateMarkHeight"));
     }
@@ -473,7 +521,11 @@ public final class M3CheckBox extends ButtonBase {
         return getClassCssMetaData();
     }
 
-    /// Toggles this checkbox and fires its action handler.
+    /// Advances the selection state and fires an action event unless this checkbox is disabled.
+    ///
+    /// With indeterminate interaction disabled, this method toggles selected and clears indeterminate. With it
+    /// enabled, the transition order is unchecked to indeterminate, indeterminate to checked, and checked to
+    /// unchecked. The event is dispatched after the state properties have changed.
     @Override
     public void fire() {
         if (isDisabled()) {
@@ -510,7 +562,7 @@ public final class M3CheckBox extends ButtonBase {
 
     /// Returns accessibility attributes for checkbox selection state.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");

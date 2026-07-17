@@ -19,10 +19,27 @@ import org.jetbrains.annotations.Nullable;
 
 import java.time.LocalDate;
 
-/// A Material Design 3 dialog preset for selecting an inclusive date range.
+/// A Material Design 3 dialog for selecting an inclusive date range.
 ///
-/// The dialog installs an [M3DateRangePicker] as its content, wires OK and cancel actions, and keeps the
-/// selected [M3DateRange] as the dialog result when the user accepts the range.
+/// The OK button is disabled until the embedded [picker][#getPicker()] contains both endpoints. Activating OK
+/// closes the dialog and produces an [M3DateRange] through the standard [javafx.scene.control.Dialog] result APIs;
+/// Cancel or a window close produces `null`. An incomplete start-only range remains visible but cannot be accepted.
+///
+/// The picker is owned by this dialog and must not be reparented. Optional presets are exposed as a live ordered
+/// list and appear beside the calendar.
+///
+/// ```java
+/// private void showRangeDialog(Node owner) {
+///     LocalDate today = LocalDate.now();
+///     M3DateRangePickerDialog dialog = new M3DateRangePickerDialog();
+///     dialog.initOwner(owner);
+///     dialog.getPicker().setMinDate(today.minusMonths(1));
+///     dialog.getPicker().setMaxDate(today.plusMonths(6));
+///     dialog.getPresets().addAll(M3DateRangePresets.common(
+///             today, dialog.getPicker().getFirstDayOfWeek()));
+///     dialog.showAndWait().ifPresent(System.out::println);
+/// }
+/// ```
 ///
 /// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview).
 @NotNullByDefault
@@ -42,7 +59,10 @@ public final class M3DateRangePickerDialog extends M3Dialog<M3DateRange> {
     /// The date range picker displayed as dialog content.
     private final M3DateRangePicker picker = new M3DateRangePicker();
 
-    /// The mutable preset list rendered before the picker.
+    /// The live, mutable, ordered list of date-range presets rendered before the picker.
+    ///
+    /// The list initially is empty, rejects `null` elements, permits duplicates, and observes additions, removals,
+    /// and reordering. Presets with an endpoint outside the current picker bounds remain visible but disabled.
     private final ObservableList<M3DateRangePreset> presets = M3ObservableLists.nonNullElementList("preset");
 
     /// The vertical preset action container.
@@ -77,37 +97,41 @@ public final class M3DateRangePickerDialog extends M3Dialog<M3DateRange> {
     private final InvalidationListener presetBoundsInvalidation =
             observable -> presetController.refreshDisabledStates();
 
-    /// Creates an empty date range picker dialog.
+    /// Creates a date range picker dialog with no selected endpoints, presets, or date bounds.
+    ///
+    /// The title and header text are initialized to `Select date range`, and Cancel and OK buttons are installed.
     public M3DateRangePickerDialog() {
         initialize();
     }
 
-    /// Creates a date range picker dialog initialized with the supplied range.
+    /// Creates a date range picker dialog initialized with the specified complete range.
     ///
     /// @param range the initial selected date range
+    /// @throws NullPointerException if `range` is `null`
     public M3DateRangePickerDialog(M3DateRange range) {
         this(range.startDate(), range.endDate());
     }
 
-    /// Creates a date range picker dialog initialized with the supplied endpoints.
+    /// Creates a date range picker dialog initialized with the specified endpoints.
     ///
     /// @param startDate the first selected date, or `null` for no selected range
     /// @param endDate the last selected date, or `null` for an incomplete range
+    /// @throws IllegalArgumentException if `startDate` is after `endDate`
     public M3DateRangePickerDialog(@Nullable LocalDate startDate, @Nullable LocalDate endDate) {
         initialize();
         picker.setRange(startDate, endDate);
     }
 
-    /// Returns the date range picker displayed by this dialog.
+    /// Returns the date range picker owned and displayed by this dialog.
     ///
     /// @return the date range picker displayed by this dialog
     public final M3DateRangePicker getPicker() {
         return picker;
     }
 
-    /// Returns the mutable date range preset list.
+    /// Returns the live, mutable date range preset list.
     ///
-    /// @return the mutable date range preset list
+    /// @return the live, mutable date range preset list
     public final ObservableList<M3DateRangePreset> getPresets() {
         return presets;
     }

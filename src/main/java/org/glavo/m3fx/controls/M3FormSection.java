@@ -35,8 +35,10 @@ import java.util.Objects;
 
 /// A Material Design 3 form section with a heading, supporting text, and stacked content.
 ///
-/// `M3FormSection` groups related form rows or controls under a heading. It provides a section-level title,
-/// optional supporting text, configurable spacing, and an observable item list for composing larger forms.
+/// A section provides heading and supporting text followed by a live ordered content list. It is not focus
+/// traversable; Up and Down move focus among reachable descendants of its content. Content nodes are parented by
+/// this control while displayed, so each node must occur at most once and must not simultaneously belong to another
+/// parent.
 ///
 /// See [Material Design](https://m3.material.io/) for the layout and hierarchy principles reflected by this
 /// helper control.
@@ -61,6 +63,10 @@ public final class M3FormSection extends Control {
     private static final double DEFAULT_CONTENT_SPACING = 12.0;
 
     /// The section title text.
+    ///
+    /// `null` is not permitted.
+    ///
+    /// @defaultValue `""`
     private final javafx.beans.property.StringProperty titleText =
             new javafx.beans.property.SimpleStringProperty(this, "titleText", "") {
                 /// Rejects null titles and notifies accessibility clients.
@@ -78,6 +84,10 @@ public final class M3FormSection extends Control {
             };
 
     /// The section supporting text.
+    ///
+    /// `null` is not permitted.
+    ///
+    /// @defaultValue `""`
     private final javafx.beans.property.StringProperty supportingText =
             new javafx.beans.property.SimpleStringProperty(this, "supportingText", "") {
                 /// Rejects null supporting text values.
@@ -93,7 +103,11 @@ public final class M3FormSection extends Control {
                 }
             };
 
-    /// The mutable section content list.
+    /// The live, mutable, ordered section content list.
+    ///
+    /// The list initially is empty, rejects `null`, and observes additions, removals, replacements, and reordering.
+    /// Nodes are parented by this control while displayed. Duplicate node instances and nodes retained by another
+    /// parent do not satisfy the scene-graph ownership contract.
     private final ObservableList<Node> content = M3ObservableLists.nonNullElementList("content");
 
     /// The listener used to refresh accessibility state when section content changes.
@@ -103,10 +117,12 @@ public final class M3FormSection extends Control {
     private final M3AccessibleFocusNotifier focusNotifier =
             new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(this, getContent()));
 
-    /// The styleable content spacing token.
+    /// The vertical spacing between section content nodes in logical pixels.
+    ///
+    /// @defaultValue `12.0`
     private @Nullable StyleableDoubleProperty contentSpacing;
 
-    /// Creates an empty form section.
+    /// Creates an empty form section with empty title and supporting text.
     public M3FormSection() {
         initialize();
     }
@@ -114,6 +130,7 @@ public final class M3FormSection extends Control {
     /// Creates a form section with a title.
     ///
     /// @param titleText the section title text
+    /// @throws NullPointerException if `titleText` is `null`
     public M3FormSection(String titleText) {
         initialize();
         setTitleText(titleText);
@@ -123,6 +140,7 @@ public final class M3FormSection extends Control {
     ///
     /// @param titleText the section title text
     /// @param supportingText the supporting text displayed below the title
+    /// @throws NullPointerException if `titleText` or `supportingText` is `null`
     public M3FormSection(String titleText, String supportingText) {
         this(titleText);
         setSupportingText(supportingText);
@@ -138,6 +156,7 @@ public final class M3FormSection extends Control {
     /// Sets the section title.
     ///
     /// @param titleText the section title
+    /// @throws NullPointerException if `titleText` is `null`
     public final void setTitleText(String titleText) {
         this.titleText.set(titleText);
     }
@@ -156,6 +175,7 @@ public final class M3FormSection extends Control {
     /// Sets the section supporting text.
     ///
     /// @param supportingText the section supporting text
+    /// @throws NullPointerException if `supportingText` is `null`
     public final void setSupportingText(String supportingText) {
         this.supportingText.set(supportingText);
     }
@@ -164,9 +184,9 @@ public final class M3FormSection extends Control {
         return supportingText;
     }
 
-    /// Returns the mutable section content list.
+    /// Returns the live, mutable section content list in layout order.
     ///
-    /// @return the mutable section content list
+    /// @return the live, mutable section content list
     public final ObservableList<Node> getContent() {
         return content;
     }
@@ -175,17 +195,17 @@ public final class M3FormSection extends Control {
 
 
 
-    /// Returns the vertical spacing between section content nodes.
+    /// Returns the vertical spacing between section content nodes in logical pixels.
     ///
     /// @return the vertical spacing between section content nodes
     public final double getContentSpacing() {
         return contentSpacing == null ? DEFAULT_CONTENT_SPACING : contentSpacing.get();
     }
 
-    /// Sets the vertical spacing between section content nodes.
+    /// Sets the vertical spacing between section content nodes in logical pixels.
     ///
     /// @param contentSpacing the vertical spacing between section content nodes
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @throws IllegalArgumentException if `contentSpacing` is negative or not finite
     public final void setContentSpacing(double contentSpacing) {
         contentSpacingProperty().set(M3Css.nonNegative(contentSpacing, "contentSpacing"));
     }
@@ -246,7 +266,7 @@ public final class M3FormSection extends Control {
 
     /// Returns accessibility attributes for the form section.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -261,7 +281,7 @@ public final class M3FormSection extends Control {
 
     /// Executes accessibility actions for indexed section content.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

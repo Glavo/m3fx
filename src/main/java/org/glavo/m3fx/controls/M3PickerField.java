@@ -47,8 +47,23 @@ import java.util.Objects;
 
 /// A base control for Material Design 3 text fields that edit values through a picker popup.
 ///
-/// [M3DatePickerField] and [M3TimePickerField] provide value parsing, formatting, and range checks while this base
-/// class owns their shared text field, popup placement, popup motion, accessibility state, and validation handoff.
+/// [M3DatePickerField] and [M3TimePickerField] combine editable text with a non-modal picker popup. The raw editor
+/// text and committed value are deliberately separate: changing [textProperty] does not change [valueProperty]
+/// until [commitEditorText] succeeds, while changing the value immediately rewrites the text with the current
+/// [formatterProperty]. An empty committed string clears the value.
+///
+/// The popup has no independent owner property; [showPicker] uses the window containing this control and has no
+/// effect until that window can show popups. It is auto-hiding, closes after a picker selection, and is also closed
+/// when this control becomes unreachable. [showingProperty] is read-only and remains `true` until a requested hide
+/// has completed. Showing and hiding are non-blocking.
+///
+/// ```java
+/// M3DatePickerField field = new M3DatePickerField();
+/// field.setLabelText("Start date");
+/// field.setValue(java.time.LocalDate.of(2026, 7, 17));
+/// field.valueProperty().addListener((observable, oldDate, newDate) ->
+///         System.out.println("Selected date: " + newDate));
+/// ```
 ///
 /// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview),
 /// [Material Design time pickers](https://m3.material.io/components/time-pickers/overview), and
@@ -77,7 +92,13 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     /// The initial popup picker offset used for enter and exit motion.
     private static final double POPUP_TRANSITION_OFFSET_Y = 6.0;
 
-    /// The selected value property.
+    /// The selected and committed picker value.
+    ///
+    /// A `null` value represents an empty field. Non-null values are normalized to the precision supported by the
+    /// concrete picker and must fall within its selectable range. Changing the value rewrites [text] using the
+    /// current formatter and synchronizes the popup picker.
+    ///
+    /// @defaultValue `null`
     private final ObjectProperty<@Nullable T> value =
             new SimpleObjectProperty<>(this, "value") {
                 /// Normalizes and validates values assigned through the property.
@@ -95,7 +116,12 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
                 }
             };
 
-    /// The raw editor text property.
+    /// The non-null raw editor text.
+    ///
+    /// Text may be incomplete or invalid while the user edits it. Assigning text does not update [value] until
+    /// [commitEditorText] succeeds.
+    ///
+    /// @defaultValue `""`
     private final StringProperty text = new SimpleStringProperty(this, "text", "") {
         /// Keeps editor text non-null.
         @Override
@@ -104,7 +130,11 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         }
     };
 
-    /// The text input variant property.
+    /// The visual variant of the editable text field.
+    ///
+    /// The value is never `null`.
+    ///
+    /// @defaultValue [M3TextInputVariant#FILLED]
     private final ObjectProperty<M3TextInputVariant> variant =
             new SimpleObjectProperty<>(this, "variant", M3TextInputVariant.FILLED) {
                 /// Keeps the text input variant non-null.
@@ -114,15 +144,29 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
                 }
             };
 
-    /// The character counter visibility property.
+    /// Whether the character counter is shown below the editor.
+    ///
+    /// This property does not enforce [characterLimit]; enforcement is controlled independently by
+    /// [characterLimitEnforced].
+    ///
+    /// @defaultValue `false`
     private final BooleanProperty characterCounterVisible =
             new SimpleBooleanProperty(this, "characterCounterVisible");
 
-    /// The character limit enforcement property.
+    /// Whether input longer than [characterLimit] is rejected by the editor.
+    ///
+    /// This property has no effect while the character limit is `-1`.
+    ///
+    /// @defaultValue `false`
     private final BooleanProperty characterLimitEnforced =
             new SimpleBooleanProperty(this, "characterLimitEnforced");
 
-    /// The character limit property.
+    /// The maximum editor-text length, or `-1` for no limit.
+    ///
+    /// Values less than `-1` are rejected. The limit is measured using the same character-count semantics as
+    /// [M3TextInputLayout]. It may be displayed or enforced independently.
+    ///
+    /// @defaultValue `-1`
     private final IntegerProperty characterLimit = new SimpleIntegerProperty(this, "characterLimit", -1) {
         /// Accepts `-1` for no limit or a non-negative character count.
         @Override
@@ -134,7 +178,11 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         }
     };
 
-    /// The label text property.
+    /// The non-null floating label text.
+    ///
+    /// An empty string suppresses the label.
+    ///
+    /// @defaultValue `""`
     private final StringProperty labelText = new SimpleStringProperty(this, "labelText", "") {
         /// Keeps label text non-null.
         @Override
@@ -143,7 +191,11 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         }
     };
 
-    /// The supporting text property.
+    /// The non-null supporting text displayed when no error message is active.
+    ///
+    /// An empty string suppresses supporting text.
+    ///
+    /// @defaultValue `""`
     private final StringProperty supportingText = new SimpleStringProperty(this, "supportingText", "") {
         /// Keeps supporting text non-null.
         @Override
@@ -152,7 +204,12 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         }
     };
 
-    /// The error text property.
+    /// The non-null error message currently displayed by the field.
+    ///
+    /// An empty string clears the error presentation. A failed [commitEditorText] replaces this value with either
+    /// [invalidTextErrorText] or [rangeErrorText]; subsequent user edits clear such generated messages.
+    ///
+    /// @defaultValue `""`
     private final StringProperty errorText = new SimpleStringProperty(this, "errorText", "") {
         /// Keeps error text non-null.
         @Override
@@ -161,7 +218,10 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         }
     };
 
-    /// The editor text formatter property.
+    /// The non-null formatter used to parse and display values.
+    ///
+    /// Changing the formatter immediately rewrites the editor when a value is selected. Concrete picker fields
+    /// provide their documented default formatter.
     private final ObjectProperty<DateTimeFormatter> formatter =
             new SimpleObjectProperty<>(this, "formatter") {
                 /// Keeps formatter values non-null.
@@ -177,7 +237,9 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
                 }
             };
 
-    /// The parse error message property.
+    /// The non-null message used when editor text cannot be parsed.
+    ///
+    /// Concrete picker fields provide their documented default message.
     private final StringProperty invalidTextErrorText =
             new SimpleStringProperty(this, "invalidTextErrorText") {
                 /// Keeps parse error text non-null.
@@ -187,7 +249,9 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
                 }
             };
 
-    /// The range error message property.
+    /// The non-null message used when parsed text is outside the selectable range.
+    ///
+    /// Concrete picker fields provide their documented default message.
     private final StringProperty rangeErrorText =
             new SimpleStringProperty(this, "rangeErrorText") {
                 /// Keeps range error text non-null.
@@ -222,7 +286,10 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     private final M3PopupContextSynchronizer popupContextSynchronizer =
             new M3PopupContextSynchronizer(this, popupContent, M3Stylesheets.controlStylesheet("picker-field.css"));
 
-    /// The read-only popup showing property.
+    /// Whether the picker popup is currently visible or completing its hide transition.
+    ///
+    /// This is derived read-only state. It becomes `true` only after the popup is shown successfully and returns to
+    /// `false` when the popup has actually hidden.
     private final ReadOnlyBooleanWrapper showing = new ReadOnlyBooleanWrapper(this, "showing");
 
     /// The reusable picker popup enter and exit animation.
@@ -262,6 +329,8 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     /// @param openButtonAccessibleText the accessible text for the trailing open button
     /// @param invalidTextErrorText the error text shown when editor text cannot be parsed
     /// @param rangeErrorText the error text shown when editor text parses outside the selectable range
+    /// @throws NullPointerException if `picker`, `pickerValue`, `formatter`, `styleClass`, `popupStyleClass`,
+    ///         `pickerIconGraphic`, `openButtonAccessibleText`, `invalidTextErrorText`, or `rangeErrorText` is `null`
     M3PickerField(
             P picker,
             ObjectProperty<@Nullable T> pickerValue,
@@ -304,6 +373,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     /// Sets the selected value, or clears the field when `null` is supplied.
     ///
     /// @param value the selected value, or `null` to clear the field
+    /// @throws IllegalArgumentException if `value` is outside the concrete picker's selectable range
     public final void setValue(@Nullable T value) {
         this.value.set(value);
     }
@@ -327,6 +397,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     /// The value is not parsed until [commitEditorText] is called or the editor action commits it.
     ///
     /// @param text the raw editor text
+    /// @throws NullPointerException if `text` is `null`
     public final void setText(String text) {
         this.text.set(text);
     }
@@ -345,6 +416,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     /// Sets the text input variant used by the embedded editor.
     ///
     /// @param variant the text input variant used by the embedded editor
+    /// @throws NullPointerException if `variant` is `null`
     public final void setVariant(M3TextInputVariant variant) {
         this.variant.set(variant);
     }
@@ -399,6 +471,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     /// Sets the active character limit, or `-1` to disable the limit.
     ///
     /// @param characterLimit the active character limit, or `-1` to disable the limit
+    /// @throws IllegalArgumentException if `characterLimit` is less than `-1`
     public final void setCharacterLimit(int characterLimit) {
         this.characterLimit.set(characterLimit);
     }
@@ -435,7 +508,10 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         return inputLayout;
     }
 
-    /// Returns the concrete popup picker control.
+    /// Returns the popup picker owned by this field.
+    ///
+    /// The same control instance is returned on every call. Applications may configure its range and presentation,
+    /// but must not add it to another parent because this field owns its popup presentation.
     ///
     /// @return the concrete popup picker control
     public final P getPicker() {
@@ -452,6 +528,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     /// Sets the formatter used for editor text.
     ///
     /// @param formatter the formatter used for editor text
+    /// @throws NullPointerException if `formatter` is `null`
     public final void setFormatter(DateTimeFormatter formatter) {
         this.formatter.set(formatter);
     }
@@ -470,6 +547,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     /// Sets the label text displayed by the wrapped input layout.
     ///
     /// @param labelText the label text displayed by the wrapped input layout
+    /// @throws NullPointerException if `labelText` is `null`
     public final void setLabelText(String labelText) {
         this.labelText.set(labelText);
     }
@@ -488,6 +566,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     /// Sets the supporting text shown when no error is active.
     ///
     /// @param supportingText the supporting text shown when no error is active
+    /// @throws NullPointerException if `supportingText` is `null`
     public final void setSupportingText(String supportingText) {
         this.supportingText.set(supportingText);
     }
@@ -506,6 +585,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     /// Sets the current error text shown by the wrapped input layout.
     ///
     /// @param errorText the current error text shown by the wrapped input layout
+    /// @throws NullPointerException if `errorText` is `null`
     public final void setErrorText(String errorText) {
         this.errorText.set(errorText);
     }
@@ -524,6 +604,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     /// Sets the parse error message used when editor text is invalid.
     ///
     /// @param invalidTextErrorText the parse error message used when editor text is invalid
+    /// @throws NullPointerException if `invalidTextErrorText` is `null`
     public final void setInvalidTextErrorText(String invalidTextErrorText) {
         this.invalidTextErrorText.set(invalidTextErrorText);
     }
@@ -542,6 +623,7 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
     /// Sets the range error message used when editor text is outside the selectable range.
     ///
     /// @param rangeErrorText the range error message used when editor text is outside the selectable range
+    /// @throws NullPointerException if `rangeErrorText` is `null`
     public final void setRangeErrorText(String rangeErrorText) {
         this.rangeErrorText.set(rangeErrorText);
     }
@@ -561,7 +643,11 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         return showing.getReadOnlyProperty();
     }
 
-    /// Parses the current editor text, updates the selected value, and returns whether the text is valid.
+    /// Parses and commits the current editor text.
+    ///
+    /// Leading and trailing whitespace is ignored. Empty text clears the selected value. Valid text is normalized,
+    /// checked against the concrete picker's selectable range, assigned to [valueProperty], and reformatted for
+    /// display. Invalid text leaves the previous value unchanged and displays the configured parse or range error.
     ///
     /// @return `true` when the editor text was committed as a valid value
     public final boolean commitEditorText() {
@@ -588,7 +674,11 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         }
     }
 
-    /// Shows the picker popup when this field is attached to a window.
+    /// Shows the picker popup when this field has a reachable owner window.
+    ///
+    /// The call is non-blocking. It has no effect if the popup is already showing, this field is not effectively
+    /// reachable, or popup placement cannot be resolved. Focus remains managed by the current field and picker
+    /// interaction rather than being requested unconditionally by this method.
     public final void showPicker() {
         if (!M3Accessible.canReach(this) || popup.isShowing() || !M3PopupWindows.canShow(this)) {
             return;
@@ -626,12 +716,17 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
         playShowAnimation();
     }
 
-    /// Hides the picker popup.
+    /// Requests that the picker popup hide.
+    ///
+    /// The call is non-blocking and idempotent. [showingProperty] becomes `false` after the popup has actually
+    /// hidden.
     public final void hidePicker() {
         hidePicker(false);
     }
 
-    /// Toggles the picker popup.
+    /// Shows or hides the picker popup according to its current window state.
+    ///
+    /// This method has the same owner and reachability restrictions as [showPicker].
     public final void togglePicker() {
         if (popup.isShowing()) {
             hidePicker();
@@ -642,7 +737,10 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
 
     /// Returns accessibility attributes for the embedded editor and popup picker.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @param attribute the requested accessibility attribute
+    /// @param parameters optional attribute-specific parameters
+    /// @return the requested accessibility value, or `null` when no value is available
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -659,7 +757,9 @@ public abstract sealed class M3PickerField<T, P extends Control> extends Control
 
     /// Executes editor and popup accessibility actions.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @param action the accessibility action to execute
+    /// @param parameters optional action-specific parameters
+    /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

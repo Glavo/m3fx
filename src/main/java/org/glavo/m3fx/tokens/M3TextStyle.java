@@ -6,18 +6,19 @@ package org.glavo.m3fx.tokens;
 import org.glavo.m3fx.internal.tokens.M3TextStyleImpl;
 import org.jetbrains.annotations.NotNullByDefault;
 
-/// Describes a Material Design 3 text style token.
+/// Describes one immutable Material Design 3 text style token.
 ///
-/// A style is an immutable collection of JavaFX font-family, font-size, line-height, numeric weight, and tracking
-/// values. Length values use JavaFX logical pixels. This type describes typography only; controls remain
-/// responsible for applying role-specific color and alignment.
+/// A style contains a JavaFX font-family name, font size, line height, numeric weight, and letter tracking. Length
+/// values use JavaFX logical pixels. The font family may name a family that is not currently installed; JavaFX
+/// performs any platform font fallback when the style is rendered. This type describes typography only and does
+/// not define text color, alignment, wrapping, or truncation.
 ///
 /// See [Material Design typography](https://m3.material.io/styles/typography/overview).
 @NotNullByDefault
 public sealed interface M3TextStyle permits M3TextStyleImpl {
     /// Returns the font family name.
     ///
-    /// @return the JavaFX font family name; never `null`
+    /// @return the retained JavaFX font family name; never `null`
     String fontFamily();
 
     /// Returns the font size in pixels.
@@ -43,7 +44,7 @@ public sealed interface M3TextStyle permits M3TextStyleImpl {
     /// @return a finite absolute tracking value
     double tracking();
 
-    /// Creates a text style token with zero tracking.
+    /// Creates a text style token with letter tracking of `0.0`.
     ///
     /// @param fontFamily the JavaFX font family name
     /// @param size the finite, non-negative font size in pixels

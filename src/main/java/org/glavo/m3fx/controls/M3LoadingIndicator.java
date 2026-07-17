@@ -29,9 +29,10 @@ import java.util.Objects;
 
 /// A Material Design 3 loading indicator.
 ///
-/// `M3LoadingIndicator` displays one active shape that continuously rotates and morphs between seven Material
-/// shape states. It is intended for short operations whose progress cannot be measured. Use [M3ProgressBar] or
-/// [M3ProgressIndicator] when determinate progress must be communicated.
+/// `M3LoadingIndicator` displays an indeterminate active shape for operations whose progress cannot be measured.
+/// The default variant draws the active shape alone; [M3LoadingIndicatorVariant#CONTAINED] places it in a
+/// contrasting container. The control does not accept or infer a progress value. Use [M3ProgressBar] or
+/// [M3ProgressIndicator] when progress can be measured.
 ///
 /// The indeterminate animation follows [org.glavo.m3fx.animation.M3MotionSettings]. When reduced motion is
 /// requested, the control keeps a simpler rotating affordance so an indeterminate operation still communicates
@@ -52,16 +53,30 @@ public final class M3LoadingIndicator extends Control {
     /// The default active indicator shape size.
     private static final double DEFAULT_INDICATOR_SIZE = 38.0;
 
-    /// The styleable loading indicator container size token.
+    /// The square container size, in logical pixels.
+    ///
+    /// The value must be finite and non-negative. It determines the control's minimum and preferred dimensions and
+    /// is styleable through `-m3-container-size`.
+    ///
+    /// @defaultValue `48.0`
     private @Nullable StyleableDoubleProperty containerSize;
 
-    /// The styleable active indicator size token.
+    /// The maximum active-shape size, in logical pixels.
+    ///
+    /// The value must be finite and non-negative and is styleable through `-m3-indicator-size`. Values larger than
+    /// the container are permitted and may draw outside the nominal container bounds.
+    ///
+    /// @defaultValue `38.0`
     private @Nullable StyleableDoubleProperty indicatorSize;
 
-    /// The visual variant used by this loading indicator.
+    /// The non-null visual variant used by this loading indicator.
+    ///
+    /// A `null` value written through the property is normalized to [M3LoadingIndicatorVariant#DEFAULT].
+    ///
+    /// @defaultValue [M3LoadingIndicatorVariant#DEFAULT]
     private @Nullable ObjectProperty<M3LoadingIndicatorVariant> variant;
 
-    /// Creates a loading indicator.
+    /// Creates a default loading indicator using the standard container and indicator sizes.
     public M3LoadingIndicator() {
         initialize();
     }
@@ -76,7 +91,7 @@ public final class M3LoadingIndicator extends Control {
     /// Sets the visual variant used by this loading indicator.
     ///
     /// @param variant the visual variant
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `variant` is `null`
     public final void setVariant(M3LoadingIndicatorVariant variant) {
         variantProperty().set(Objects.requireNonNull(variant, "variant"));
     }
@@ -101,15 +116,15 @@ public final class M3LoadingIndicator extends Control {
 
     /// Returns the loading indicator container size token.
     ///
-    /// @return the container size in pixels
+    /// @return the container size in logical pixels
     public final double getContainerSize() {
         return containerSize == null ? DEFAULT_CONTAINER_SIZE : containerSize.get();
     }
 
     /// Sets the loading indicator container size token.
     ///
-    /// @param containerSize the container size in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param containerSize the container size in logical pixels
+    /// @throws IllegalArgumentException if `containerSize` is negative or not finite
     public final void setContainerSize(double containerSize) {
         containerSizeProperty().set(M3Css.nonNegative(containerSize, "containerSize"));
     }
@@ -129,15 +144,15 @@ public final class M3LoadingIndicator extends Control {
 
     /// Returns the active indicator shape size token.
     ///
-    /// @return the active indicator shape size in pixels
+    /// @return the active indicator shape size in logical pixels
     public final double getIndicatorSize() {
         return indicatorSize == null ? DEFAULT_INDICATOR_SIZE : indicatorSize.get();
     }
 
     /// Sets the active indicator shape size token.
     ///
-    /// @param indicatorSize the active indicator shape size in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param indicatorSize the active indicator shape size in logical pixels
+    /// @throws IllegalArgumentException if `indicatorSize` is negative or not finite
     public final void setIndicatorSize(double indicatorSize) {
         indicatorSizeProperty().set(M3Css.nonNegative(indicatorSize, "indicatorSize"));
     }
@@ -181,7 +196,7 @@ public final class M3LoadingIndicator extends Control {
     /// @param attribute the requested accessibility attribute
     /// @param parameters optional attribute-specific parameters
     /// @return the requested accessibility value, or `null` when no value is available
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");

@@ -55,12 +55,27 @@ import java.util.Objects;
 
 /// A Material Design 3 navigation drawer for persistent or modal destination lists.
 ///
-/// `M3NavigationDrawer` hosts [M3ListItem] entries and [M3NavigationDrawerGroup] sections, tracks selected
-/// items, and applies a drawer-specific selection policy across nested groups. It supports keyboard traversal,
-/// empty-selection control, and JavaFX accessibility selection attributes. When its allocated height is smaller
-/// than its content, the drawer scrolls its destinations vertically without moving adjacent application content.
-/// The surrounding application remains responsible for positioning permanent drawers and for presenting modal
-/// drawers with a scrim and enter or exit transition.
+/// `M3NavigationDrawer` hosts top-level [M3ListItem] destinations, collapsible [M3NavigationDrawerGroup] sections,
+/// and structural nodes. It maintains single selection across both direct and grouped destinations. Keyboard and
+/// accessibility traversal use the currently visible order; destinations in a collapsed group remain part of the
+/// model but are not reachable until the group expands.
+///
+/// The default drawer is empty, uses [M3NavigationDrawerVariant#STANDARD], and requires one selected destination
+/// whenever a reachable item exists. [getItems] is a live mutable top-level list, while [getSelectedItems] is a live,
+/// unmodifiable observable view. When content exceeds the available height, it can be scrolled vertically.
+///
+/// The surrounding application is responsible for positioning a standard drawer. For a modal drawer, it is also
+/// responsible for presenting a scrim, establishing modality for the application content, and controlling the
+/// drawer's enter and exit lifecycle.
+///
+/// ```java
+/// M3NavigationDrawer drawer = new M3NavigationDrawer();
+/// M3ListItem homeItem = new M3ListItem("Home");
+/// M3NavigationDrawerGroup libraryGroup = new M3NavigationDrawerGroup("Library");
+/// libraryGroup.getItems().addAll(new M3ListItem("Albums"), new M3ListItem("Artists"));
+/// drawer.getItems().addAll(homeItem, libraryGroup);
+/// drawer.select(homeItem);
+/// ```
 ///
 /// Material Design 3 Expressive no longer recommends navigation drawers. Applications using the Expressive profile
 /// should normally use an expanded [M3NavigationRail] for the same destination hierarchy.
@@ -88,7 +103,11 @@ public final class M3NavigationDrawer extends Control {
     /// The default spacing between top-level drawer items.
     private static final double DEFAULT_ITEM_SPACING = 0.0;
 
-    /// The mutable navigation drawer content.
+    /// The live, mutable, ordered top-level drawer content.
+    ///
+    /// The list rejects `null` elements and reports mutations through the `ObservableList` change API. Direct
+    /// list items and drawer groups participate in navigation; other nodes are structural content. Nodes are owned
+    /// by the drawer while displayed and must not belong to another parent.
     private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
 
     /// Notifies accessibility clients when focus moves between visible drawer rows.
@@ -106,10 +125,19 @@ public final class M3NavigationDrawer extends Control {
     private final @UnmodifiableView ObservableList<M3ListItem> selectedItemsView =
             FXCollections.unmodifiableObservableList(selectedItems);
 
-    /// The styleable spacing between top-level drawer items.
+    /// The spacing between adjacent top-level drawer entries in logical pixels.
+    ///
+    /// Values must be finite and non-negative. This spacing does not alter the child spacing inside a
+    /// [M3NavigationDrawerGroup].
+    ///
+    /// @defaultValue `0.0`
     private @Nullable StyleableDoubleProperty itemSpacing;
 
-    /// Backing property for the public drawer variant API.
+    /// The drawer presentation and color treatment.
+    ///
+    /// A direct assignment of `null` is replaced with [M3NavigationDrawerVariant#STANDARD].
+    ///
+    /// @defaultValue [M3NavigationDrawerVariant#STANDARD]
     private final ObjectProperty<M3NavigationDrawerVariant> drawerVariant =
             new SimpleObjectProperty<>(this, "variant", M3NavigationDrawerVariant.STANDARD) {
                 /// Updates variant pseudo-classes when the variant changes.
@@ -123,7 +151,11 @@ public final class M3NavigationDrawer extends Control {
                 }
             };
 
-    /// Whether the drawer allows all list items to be unselected.
+    /// Whether selection may be empty while a reachable destination exists.
+    ///
+    /// Setting the value to `false` selects the first reachable destination if selection is empty.
+    ///
+    /// @defaultValue `false`
     private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection") {
         /// Restores a selected item when empty selection is disabled.
         @Override
@@ -193,14 +225,19 @@ public final class M3NavigationDrawer extends Control {
     /// Whether the drawer is currently synchronizing selected states.
     private boolean updatingSelection;
 
-    /// Creates an empty navigation drawer.
+    /// Creates an empty standard drawer that requires selection when a reachable destination is added.
     public M3NavigationDrawer() {
         initialize();
     }
 
-    /// Returns the mutable child list used as drawer content.
+    /// Returns the live mutable top-level drawer content.
     ///
-    /// @return the mutable drawer content list
+    /// Mutations are observed immediately and insertion order determines top-level layout and traversal. The list
+    /// rejects `null`. It does not perform an explicit duplicate check, but each entry is a JavaFX node and must
+    /// occur only once and must not simultaneously belong to another parent. Child destinations of a
+    /// [M3NavigationDrawerGroup] are ordered at the position of their group.
+    ///
+    /// @return the live mutable top-level content list
     public final ObservableList<Node> getItems() {
         return items;
     }
@@ -215,7 +252,7 @@ public final class M3NavigationDrawer extends Control {
     /// Sets the navigation drawer presentation variant.
     ///
     /// @param variant the drawer variant
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `variant` is `null`
     public final void setVariant(M3NavigationDrawerVariant variant) {
         drawerVariant.set(Objects.requireNonNull(variant, "variant"));
     }
@@ -228,9 +265,11 @@ public final class M3NavigationDrawer extends Control {
     }
 
 
-    /// Returns the selected drawer list items in child order.
+    /// Returns an unmodifiable observable view of selected destinations in hierarchy order.
     ///
-    /// @return an unmodifiable observable view of selected drawer list items
+    /// The returned view is live and contains zero or one item.
+    ///
+    /// @return the live unmodifiable selected-item view
     public final @UnmodifiableView ObservableList<M3ListItem> getSelectedItems() {
         return selectedItemsView;
     }
@@ -275,7 +314,8 @@ public final class M3NavigationDrawer extends Control {
     /// Selects a drawer list item that belongs to this drawer.
     ///
     /// @param item the drawer list item to select
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `item` is `null`
+    /// @throws IllegalArgumentException if `item` is not a reachable member of this drawer
     public final void select(M3ListItem item) {
         Objects.requireNonNull(item, "item");
         if (!containsListItem(item)) {
@@ -290,6 +330,8 @@ public final class M3NavigationDrawer extends Control {
     /// Selects the drawer list item at the given child index.
     ///
     /// @param index the flattened child index of the drawer list item
+    /// @throws IndexOutOfBoundsException if `index` is outside the visible flattened content
+    /// @throws IllegalArgumentException if the indexed node is not a selectable [M3ListItem]
     public final void selectIndex(int index) {
         Node child = flattenedContent().get(index);
         if (child instanceof M3ListItem item) {
@@ -347,15 +389,15 @@ public final class M3NavigationDrawer extends Control {
 
     /// Returns the spacing between top-level drawer items.
     ///
-    /// @return the spacing between top-level drawer items in pixels
+    /// @return the spacing between top-level drawer items in logical pixels
     public final double getItemSpacing() {
         return itemSpacing == null ? DEFAULT_ITEM_SPACING : itemSpacing.get();
     }
 
     /// Sets the spacing between top-level drawer items.
     ///
-    /// @param itemSpacing the spacing between top-level drawer items in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param itemSpacing the spacing between top-level drawer items in logical pixels
+    /// @throws IllegalArgumentException if `itemSpacing` is negative or not finite
     public final void setItemSpacing(double itemSpacing) {
         itemSpacingProperty().set(M3Css.nonNegative(itemSpacing, "itemSpacing"));
     }
@@ -373,7 +415,9 @@ public final class M3NavigationDrawer extends Control {
         return itemSpacing;
     }
 
-    /// Clears the current selection when empty selection is allowed.
+    /// Clears the current selection if empty selection is allowed.
+    ///
+    /// Otherwise, this method preserves or restores the first reachable destination.
     public final void clearSelection() {
         if (!isAllowEmptySelection()) {
             selectFirstItemIfNeeded();
@@ -408,7 +452,7 @@ public final class M3NavigationDrawer extends Control {
     /// @param attribute  the requested accessibility attribute
     /// @param parameters optional attribute-specific parameters
     /// @return the requested accessibility value, or `null` when no value is available
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -427,7 +471,7 @@ public final class M3NavigationDrawer extends Control {
     ///
     /// @param action     the accessibility action to execute
     /// @param parameters optional action-specific parameters
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

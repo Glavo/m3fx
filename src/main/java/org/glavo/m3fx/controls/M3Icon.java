@@ -33,11 +33,15 @@ import java.util.Objects;
 
 /// A token-aware icon label for Material Design 3 controls.
 ///
-/// `M3Icon` is an M3FX utility control rather than a standalone Material component. It renders text glyphs
-/// through a configurable icon font family, size role, font weight, and color variant so buttons, navigation
-/// items, list items, and other controls can share the same icon metrics and color tokens.
-/// Icons are not focus-traversable by default because interaction should be owned by the surrounding component
-/// such as an icon button, navigation item, menu item, or list item.
+/// `M3Icon` is an M3FX utility control rather than a standalone interactive component. Its [textProperty]
+/// contains the glyph text to render, while [sizeProperty], [variantProperty], and the styleable font properties
+/// select the Material metrics and color role. The default icon is empty, medium sized, uses the system font at
+/// medium weight, and uses the on-surface-variant color role.
+///
+/// An icon is centered and is not focus traversable by default. Place it in an action-owning control such as
+/// [M3IconButton], [M3NavigationItem], or [M3MenuItem] when the icon is interactive. Applications that use a
+/// dedicated symbol font may set [iconFontFamilyProperty] on an individual icon or override the corresponding
+/// CSS property for a subtree.
 ///
 /// See [Material Design icons](https://m3.material.io/styles/icons/overview) and
 /// [Material Design](https://m3.material.io/).
@@ -58,7 +62,12 @@ public final class M3Icon extends Labeled {
     /// The layout line box multiplier used to keep fallback font glyphs from being clipped.
     private static final double ICON_LINE_BOX_SCALE = 1.5;
 
-    /// The icon size role property.
+    /// The semantic icon size role.
+    ///
+    /// A direct assignment of `null` is replaced with the default role. The role supplies the effective size until
+    /// [iconSizeProperty] is explicitly initialized or styled.
+    ///
+    /// @defaultValue [M3IconSize#MEDIUM]
     private final ObjectProperty<M3IconSize> size =
             new SimpleObjectProperty<>(this, "size", M3IconSize.MEDIUM) {
                 /// Updates icon size style classes when the property changes.
@@ -72,7 +81,11 @@ public final class M3Icon extends Labeled {
                 }
             };
 
-    /// The icon color variant property.
+    /// The Material color role used to paint the glyph.
+    ///
+    /// A direct assignment of `null` is replaced with the default variant.
+    ///
+    /// @defaultValue [M3IconVariant#ON_SURFACE_VARIANT]
     private final ObjectProperty<M3IconVariant> variant =
             new SimpleObjectProperty<>(this, "variant", M3IconVariant.ON_SURFACE_VARIANT) {
                 /// Updates icon color style classes when the property changes.
@@ -86,16 +99,28 @@ public final class M3Icon extends Labeled {
                 }
             };
 
-    /// The styleable icon font family token.
+    /// The styleable font family used to resolve the glyph.
+    ///
+    /// The property does not retain a directly assigned `null` value.
+    ///
+    /// @defaultValue `System`
     private @Nullable StyleableObjectProperty<@Nullable String> iconFontFamily;
 
-    /// The styleable icon size token.
+    /// The styleable glyph size in logical pixels.
+    ///
+    /// The value must be finite and non-negative. Before this property is initialized, the effective value is
+    /// supplied by [sizeProperty]; once initialized, this property is the explicit size override.
     private @Nullable StyleableDoubleProperty iconSize;
 
-    /// The styleable icon font weight token.
+    /// The styleable glyph font weight.
+    ///
+    /// Values assigned through [setIconFontWeight] are rounded to the nearest supported JavaFX font weight. The
+    /// property does not retain a directly assigned `null` value.
+    ///
+    /// @defaultValue `500`
     private @Nullable StyleableObjectProperty<@Nullable FontWeight> iconFontWeight;
 
-    /// Creates an empty medium icon.
+    /// Creates an empty icon with the default medium size and on-surface-variant color role.
     public M3Icon() {
         this("");
     }
@@ -103,7 +128,7 @@ public final class M3Icon extends Labeled {
     /// Creates a medium icon with text content.
     ///
     /// @param text the glyph text rendered by this icon
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `text` is `null`
     public M3Icon(String text) {
         initialize();
         setText(Objects.requireNonNull(text, "text"));
@@ -114,7 +139,7 @@ public final class M3Icon extends Labeled {
     /// @param text the glyph text rendered by this icon
     /// @param size the icon size role
     /// @param variant the icon color variant
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `text`, `size`, or `variant` is `null`
     public M3Icon(String text, M3IconSize size, M3IconVariant variant) {
         initialize();
         setText(Objects.requireNonNull(text, "text"));
@@ -132,7 +157,7 @@ public final class M3Icon extends Labeled {
     /// Sets the icon size role.
     ///
     /// @param size the icon size role
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `size` is `null`
     public final void setSize(M3IconSize size) {
         this.size.set(Objects.requireNonNull(size, "size"));
     }
@@ -151,7 +176,7 @@ public final class M3Icon extends Labeled {
     /// Sets the icon color variant.
     ///
     /// @param variant the icon color variant
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `variant` is `null`
     public final void setVariant(M3IconVariant variant) {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
@@ -172,7 +197,7 @@ public final class M3Icon extends Labeled {
     /// Sets the icon font family token.
     ///
     /// @param iconFontFamily the icon font family token
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `iconFontFamily` is `null`
     public final void setIconFontFamily(String iconFontFamily) {
         iconFontFamilyProperty().set(Objects.requireNonNull(iconFontFamily, "iconFontFamily"));
     }
@@ -196,17 +221,17 @@ public final class M3Icon extends Labeled {
         return iconFontFamily;
     }
 
-    /// Returns the icon size token.
+    /// Returns the effective glyph size.
     ///
-    /// @return the icon size token
+    /// @return the glyph size in logical pixels
     public final double getIconSize() {
         return iconSize == null ? getSize().defaultSize() : iconSize.get();
     }
 
-    /// Sets the icon size token.
+    /// Sets an explicit glyph size, overriding the size supplied by [sizeProperty].
     ///
-    /// @param iconSize the icon size token
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param iconSize the glyph size in logical pixels
+    /// @throws IllegalArgumentException if `iconSize` is negative or not finite
     public final void setIconSize(double iconSize) {
         iconSizeProperty().set(M3Css.nonNegative(iconSize, "iconSize"));
     }
@@ -227,16 +252,17 @@ public final class M3Icon extends Labeled {
         return iconSize;
     }
 
-    /// Returns the icon font weight token.
+    /// Returns the effective numeric font weight.
     ///
     /// @return the icon font weight token
     public final double getIconFontWeight() {
         return getIconFontWeightValue().getWeight();
     }
 
-    /// Sets the icon font weight token.
+    /// Sets the numeric font weight used to resolve the glyph font.
     ///
-    /// @param iconFontWeight the icon font weight token
+    /// @param iconFontWeight the font weight in the inclusive range `1.0` through `1000.0`
+    /// @throws IllegalArgumentException if `iconFontWeight` is less than `1.0` or greater than `1000.0`
     public final void setIconFontWeight(double iconFontWeight) {
         iconFontWeightProperty().set(validateFontWeight(iconFontWeight));
     }

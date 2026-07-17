@@ -33,9 +33,13 @@ import java.util.Objects;
 
 /// A Material Design 3 floating action button for a prominent primary action.
 ///
-/// `M3FloatingActionButton` is built on JavaFX [ButtonBase] and exposes Material color variants, size variants,
-/// container shape, container size, and extended-label padding. The skin renders the elevated container, icon or
-/// text content, state layers, ripple feedback, focus indication, and expressive shape tokens.
+/// The control follows [ButtonBase] action, focus, mnemonic, disabled, text, and graphic semantics. An icon-only
+/// button uses a square container; non-blank text creates an extended FAB whose width is determined by its content
+/// and logical padding. Graphic nodes are owned through the inherited [graphic][javafx.scene.control.Labeled#graphicProperty()]
+/// property and must not be parented elsewhere while installed.
+///
+/// Variant and size choose semantic Material token families. The styleable geometry properties provide local
+/// overrides in logical pixels; CSS cannot replace a bound styleable property.
 ///
 /// Use one floating action button for the most important screen-level action. See
 /// [Material Design floating action buttons](https://m3.material.io/components/floating-action-button/overview).
@@ -56,7 +60,11 @@ public final class M3FloatingActionButton extends ButtonBase {
     /// The default logical trailing content padding for extended floating action buttons.
     private static final double DEFAULT_TRAILING_PADDING = 20.0;
 
-    /// The floating action button color variant property.
+    /// The floating action button color variant.
+    ///
+    /// A direct `null` assignment restores the default.
+    ///
+    /// @defaultValue [M3FloatingActionButtonVariant#PRIMARY_CONTAINER]
     private final ObjectProperty<M3FloatingActionButtonVariant> variant =
             new SimpleObjectProperty<>(this, "variant", M3FloatingActionButtonVariant.PRIMARY_CONTAINER) {
                 /// Updates variant style classes when the property changes.
@@ -70,7 +78,11 @@ public final class M3FloatingActionButton extends ButtonBase {
                 }
             };
 
-    /// The floating action button size property.
+    /// The floating action button size variant.
+    ///
+    /// A direct `null` assignment restores the default.
+    ///
+    /// @defaultValue [M3FloatingActionButtonSize#REGULAR]
     private final ObjectProperty<M3FloatingActionButtonSize> size =
             new SimpleObjectProperty<>(this, "size", M3FloatingActionButtonSize.REGULAR) {
                 /// Updates size style classes when the property changes.
@@ -84,24 +96,32 @@ public final class M3FloatingActionButton extends ButtonBase {
                 }
             };
 
-    /// The styleable container size token.
+    /// The preferred square container size in logical pixels.
+    ///
+    /// @defaultValue `56.0`
     private @Nullable StyleableDoubleProperty containerSize;
 
-    /// The styleable container shape token.
+    /// The container corner radius in logical pixels.
+    ///
+    /// @defaultValue `16.0`
     private @Nullable StyleableDoubleProperty containerShape;
 
-    /// The styleable horizontal padding token.
+    /// The logical leading content padding for an extended FAB, in logical pixels.
+    ///
+    /// @defaultValue `16.0`
     private @Nullable StyleableDoubleProperty horizontalPadding;
 
-    /// The styleable logical trailing padding token.
+    /// The logical trailing content padding for an extended FAB, in logical pixels.
+    ///
+    /// @defaultValue `20.0`
     private @Nullable StyleableDoubleProperty trailingPadding;
 
-    /// Creates an empty primary-container floating action button.
+    /// Creates an iconless, unlabeled regular primary-container floating action button.
     public M3FloatingActionButton() {
         this("");
     }
 
-    /// Creates a primary-container floating action button with text.
+    /// Creates a regular primary-container floating action button with the specified text.
     ///
     /// @param text the text displayed by the floating action button
     public M3FloatingActionButton(String text) {
@@ -109,7 +129,7 @@ public final class M3FloatingActionButton extends ButtonBase {
         initialize();
     }
 
-    /// Creates a primary-container floating action button with graphic content.
+    /// Creates a regular primary-container floating action button with the specified graphic.
     ///
     /// @param graphic the graphic displayed by the floating action button, or `null`
     public M3FloatingActionButton(@Nullable Node graphic) {
@@ -117,7 +137,7 @@ public final class M3FloatingActionButton extends ButtonBase {
         initialize();
     }
 
-    /// Creates a primary-container floating action button with text and graphic content.
+    /// Creates a regular primary-container floating action button with the specified text and graphic.
     ///
     /// @param text the text displayed by the floating action button
     /// @param graphic the graphic displayed by the floating action button, or `null`
@@ -136,7 +156,7 @@ public final class M3FloatingActionButton extends ButtonBase {
     /// Sets the floating action button color variant.
     ///
     /// @param variant the floating action button color variant
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `variant` is `null`
     public final void setVariant(M3FloatingActionButtonVariant variant) {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
@@ -155,7 +175,7 @@ public final class M3FloatingActionButton extends ButtonBase {
     /// Sets the floating action button size.
     ///
     /// @param size the floating action button size
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `size` is `null`
     public final void setSize(M3FloatingActionButtonSize size) {
         this.size.set(Objects.requireNonNull(size, "size"));
     }
@@ -164,17 +184,17 @@ public final class M3FloatingActionButton extends ButtonBase {
         return size;
     }
 
-    /// Returns the preferred square container size token.
+    /// Returns the preferred square container size in logical pixels.
     ///
     /// @return the preferred square container size token
     public final double getContainerSize() {
         return containerSize == null ? DEFAULT_CONTAINER_SIZE : containerSize.get();
     }
 
-    /// Sets the preferred square container size token.
+    /// Sets the preferred square container size in logical pixels.
     ///
     /// @param containerSize the preferred square container size token
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @throws IllegalArgumentException if `containerSize` is negative or not finite
     public final void setContainerSize(double containerSize) {
         containerSizeProperty().set(M3Css.nonNegative(containerSize, "containerSize"));
     }
@@ -192,17 +212,17 @@ public final class M3FloatingActionButton extends ButtonBase {
         return containerSize;
     }
 
-    /// Returns the container shape radius token.
+    /// Returns the container corner radius in logical pixels.
     ///
     /// @return the container shape radius token
     public final double getContainerShape() {
         return containerShape == null ? DEFAULT_CONTAINER_SHAPE : containerShape.get();
     }
 
-    /// Sets the container shape radius token.
+    /// Sets the container corner radius in logical pixels.
     ///
     /// @param containerShape the container shape radius token
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @throws IllegalArgumentException if `containerShape` is negative or not finite
     public final void setContainerShape(double containerShape) {
         containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
     }
@@ -220,17 +240,17 @@ public final class M3FloatingActionButton extends ButtonBase {
         return containerShape;
     }
 
-    /// Returns the horizontal content padding token.
+    /// Returns the logical leading content padding for an extended FAB, in logical pixels.
     ///
     /// @return the horizontal content padding token
     public final double getHorizontalPadding() {
         return horizontalPadding == null ? DEFAULT_HORIZONTAL_PADDING : horizontalPadding.get();
     }
 
-    /// Sets the horizontal content padding token.
+    /// Sets the logical leading content padding for an extended FAB, in logical pixels.
     ///
     /// @param horizontalPadding the horizontal content padding token
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @throws IllegalArgumentException if `horizontalPadding` is negative or not finite
     public final void setHorizontalPadding(double horizontalPadding) {
         horizontalPaddingProperty().set(M3Css.nonNegative(horizontalPadding, "horizontalPadding"));
     }
@@ -253,15 +273,15 @@ public final class M3FloatingActionButton extends ButtonBase {
     /// The value is used only when the button has a non-empty label. It follows the effective node orientation,
     /// so a right-to-left button applies the value to its physical left edge.
     ///
-    /// @return the logical trailing content padding in pixels
+    /// @return the logical trailing content padding in logical pixels
     public final double getTrailingPadding() {
         return trailingPadding == null ? DEFAULT_TRAILING_PADDING : trailingPadding.get();
     }
 
     /// Sets the logical trailing content padding token.
     ///
-    /// @param trailingPadding the logical trailing content padding in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param trailingPadding the logical trailing content padding in logical pixels
+    /// @throws IllegalArgumentException if `trailingPadding` is negative or not finite
     public final void setTrailingPadding(double trailingPadding) {
         trailingPaddingProperty().set(M3Css.nonNegative(trailingPadding, "trailingPadding"));
     }
@@ -279,7 +299,9 @@ public final class M3FloatingActionButton extends ButtonBase {
         return trailingPadding;
     }
 
-    /// Fires this floating action button's action handler.
+    /// Fires an [ActionEvent] from this button unless it is disabled.
+    ///
+    /// The event is dispatched even when no action handler is installed and may bubble to ancestors.
     @Override
     public void fire() {
         if (!isDisabled()) {

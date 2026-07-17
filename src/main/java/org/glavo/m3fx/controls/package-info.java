@@ -10,6 +10,11 @@
 /// such as variants, surface elevation, navigation selection, supporting text, validation, and token-backed
 /// sizing properties instead of requiring applications to copy Material CSS snippets into every control.
 ///
+/// The package contains both leaf controls, such as [M3Button], [M3Switch], and [M3TextField], and composite
+/// controls, such as [M3NavigationDrawer], [M3DatePicker], and [M3Dialog]. Nodes assigned to content slots remain
+/// subject to the JavaFX single-parent rule and cannot simultaneously appear in another parent. Individual controls
+/// document whether a slot accepts `null` and when an assigned node becomes part of the scene graph.
+///
 /// As with the standard JavaFX scene graph, controls and their live observable collections are not thread-safe.
 /// Applications must construct or mutate controls on the JavaFX Application Thread after they become part of a
 /// live scene graph. Unless a declaration is annotated with
@@ -19,7 +24,9 @@
 ///
 /// Public component dimensions use JavaFX logical pixels. Setters for non-negative styleable dimensions reject
 /// negative and non-finite values with [IllegalArgumentException]. Node lists returned by controls are live,
-/// mutable views unless documented otherwise; inserted nodes must satisfy the normal JavaFX single-parent rule.
+/// mutable views unless documented otherwise. Changes to a live list are observed immediately and preserve list
+/// order in the rendered control; individual APIs document whether they reject `null`, duplicates, or nonselectable
+/// entries. Read-only observable views remain observable but reject structural modification.
 ///
 /// A typical application installs a theme through [org.glavo.m3fx.theme.M3ThemeManager] and then creates
 /// controls such as [M3Button], [M3TextInputLayout], [M3NavigationDrawer], [M3SnackbarHost],

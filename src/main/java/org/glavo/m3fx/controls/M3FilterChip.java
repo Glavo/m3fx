@@ -7,9 +7,12 @@ import javafx.scene.Node;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
-/// A Material Design 3 filter chip representing a selectable filtering option.
+/// A Material Design 3 chip that represents a selectable filtering option.
 ///
-/// Filter chips toggle their persistent selected state when fired and can participate in an [M3ChipGroup].
+/// Activating a filter chip toggles its persistent [selected][M3SelectableChip#selectedProperty()] state and
+/// emits an action event. A filter chip can be managed by an [M3ChipGroup] when exclusive or constrained
+/// selection is required. Text, leading and trailing graphics, container treatment, and sizing are inherited
+/// from [M3Chip]. The default constructors create a flat, unselected chip.
 ///
 /// See [Material Design filter chips](https://m3.material.io/components/chips/specs#filter-chip).
 @NotNullByDefault
@@ -17,22 +20,24 @@ public final class M3FilterChip extends M3SelectableChip {
     /// The style class identifying filter chips.
     public static final String STYLE_CLASS = "m3-filter-chip";
 
-    /// Creates an empty filter chip.
+    /// Creates a flat, unselected filter chip with empty text and no graphics.
     public M3FilterChip() {
         this("", null);
     }
 
-    /// Creates a filter chip with text.
+    /// Creates a flat, unselected filter chip with the specified text and no graphics.
     ///
     /// @param text the text displayed by the chip
+    /// @throws NullPointerException if `text` is `null`
     public M3FilterChip(String text) {
         this(text, null);
     }
 
-    /// Creates a filter chip with text and graphic content.
+    /// Creates a flat, unselected filter chip with the specified text and leading graphic.
     ///
     /// @param text the text displayed by the chip
-    /// @param graphic the optional graphic displayed with the text
+    /// @param graphic the leading graphic, or `null` for no leading graphic
+    /// @throws NullPointerException if `text` is `null`
     public M3FilterChip(String text, @Nullable Node graphic) {
         super(text, graphic, STYLE_CLASS);
     }

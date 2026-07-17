@@ -29,11 +29,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-/// A Material Design 3 avatar for initials, icons, or small images.
+/// A compact visual representation of a person, entity, or object.
 ///
-/// `M3Avatar` displays compact identity or entity imagery using text, a graphic node, or generated initials.
-/// The control exposes color variants and token-backed container size so it can be used in lists, app bars,
-/// cards, and menus without hard-coded dimensions.
+/// An avatar displays its [graphic][#graphicProperty()] when one is present; otherwise it displays its
+/// [text][#textProperty()]. Applications may use the text for initials or a short fallback label. The control is
+/// non-focus-traversable and does not provide selection or action behavior.
+///
+/// The default avatar has empty text, no graphic, the [primary][M3AvatarVariant#PRIMARY] color variant, and a
+/// 40-logical-pixel square container. The [variant][#variantProperty()] and styleable
+/// [container size][#containerSizeProperty()] are the primary customization points. A graphic is a scene-graph
+/// node and therefore cannot simultaneously be a child of another parent.
 ///
 /// See [Material Design](https://m3.material.io/) for the visual system that defines the color, shape, and
 /// typography roles used by avatars.
@@ -48,13 +53,29 @@ public final class M3Avatar extends Control {
     /// The default avatar container size.
     private static final double DEFAULT_CONTAINER_SIZE = 40.0;
 
-    /// The avatar text property.
+    /// The text displayed when [graphic][#graphicProperty()] is `null`.
+    ///
+    /// The default value is the empty string. This property does not accept `null`; [setText][#setText(String)]
+    /// throws when passed `null`.
+    ///
+    /// @defaultValue `""`
     private final StringProperty text = new SimpleStringProperty(this, "text", "");
 
-    /// The optional graphic node property.
+    /// The graphic displayed in place of [text][#textProperty()].
+    ///
+    /// The default value is `null`. A non-null graphic takes precedence over text and supplies the accessible
+    /// text when its own accessible text is non-blank.
+    ///
+    /// @defaultValue `null`
     private final ObjectProperty<@Nullable Node> graphic = new SimpleObjectProperty<>(this, "graphic");
 
-    /// The avatar color variant property.
+    /// The Material color role used by the avatar container and content.
+    ///
+    /// The default value is [M3AvatarVariant#PRIMARY]. The property never reports `null`; a direct `null`
+    /// assignment is replaced with the default value. [setVariant][#setVariant(M3AvatarVariant)] rejects
+    /// `null`.
+    ///
+    /// @defaultValue [M3AvatarVariant#PRIMARY]
     private final ObjectProperty<M3AvatarVariant> variant =
             new SimpleObjectProperty<>(this, "variant", M3AvatarVariant.PRIMARY) {
                 /// Updates avatar variant style classes when the property changes.
@@ -68,25 +89,31 @@ public final class M3Avatar extends Control {
                 }
             };
 
-    /// The styleable avatar container size token.
+    /// The width and height of the avatar container, in logical pixels.
+    ///
+    /// The default value is `40.0`. Values must be finite and non-negative. This styleable property is exposed
+    /// to CSS as `-m3-container-size`.
+    ///
+    /// @defaultValue `40.0`
     private @Nullable StyleableDoubleProperty containerSize;
 
-    /// Creates an empty avatar.
+    /// Creates an avatar with empty text, no graphic, the primary variant, and the default container size.
     public M3Avatar() {
         this("");
     }
 
-    /// Creates an avatar with text.
+    /// Creates an avatar with the specified fallback text and no graphic.
     ///
     /// @param text the text displayed when no graphic is set
+    /// @throws NullPointerException if `text` is `null`
     public M3Avatar(String text) {
         initialize();
         setText(text);
     }
 
-    /// Creates an avatar with a graphic node.
+    /// Creates an avatar with the specified graphic and empty fallback text.
     ///
-    /// @param graphic the graphic node displayed by the avatar, or `null` for no graphic
+    /// @param graphic the graphic displayed by the avatar, or `null` for no graphic
     public M3Avatar(@Nullable Node graphic) {
         initialize();
         setGraphic(graphic);
@@ -102,7 +129,7 @@ public final class M3Avatar extends Control {
     /// Sets the avatar text.
     ///
     /// @param text the text displayed when no graphic is set
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `text` is `null`
     public final void setText(String text) {
         this.text.set(Objects.requireNonNull(text, "text"));
     }
@@ -139,7 +166,7 @@ public final class M3Avatar extends Control {
     /// Sets the avatar color variant.
     ///
     /// @param variant the avatar color variant
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `variant` is `null`
     public final void setVariant(M3AvatarVariant variant) {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
@@ -150,15 +177,15 @@ public final class M3Avatar extends Control {
 
     /// Returns the avatar container size token.
     ///
-    /// @return the avatar container size in pixels
+    /// @return the avatar container size in logical pixels
     public final double getContainerSize() {
         return containerSize == null ? DEFAULT_CONTAINER_SIZE : containerSize.get();
     }
 
     /// Sets the avatar container size token.
     ///
-    /// @param containerSize the avatar container size in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param containerSize the avatar container size in logical pixels
+    /// @throws IllegalArgumentException if `containerSize` is negative or not finite
     public final void setContainerSize(double containerSize) {
         containerSizeProperty().set(M3Css.nonNegative(containerSize, "containerSize"));
     }
@@ -183,13 +210,17 @@ public final class M3Avatar extends Control {
         return StyleableProperties.STYLEABLES;
     }
 
-    /// Returns the CSS metadata for this node.
+    /// Returns the immutable CSS metadata for this control instance.
+    ///
+    /// @return the CSS metadata supported by this control
     @Override
     public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
         return getClassCssMetaData();
     }
 
-    /// Returns the user-agent stylesheet for M3FX avatars.
+    /// Returns the user-agent stylesheet used by avatars.
+    ///
+    /// @return the external-form URL of the avatar stylesheet
     @Override
     public String getUserAgentStylesheet() {
         return M3Stylesheets.controlStylesheet("avatar.css");

@@ -12,11 +12,10 @@ import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.List;
 
-/// Wraps MonetFX color scheme output as M3FX color tokens.
+/// Exposes the color roles of an immutable MonetFX [ColorScheme] as M3FX tokens.
 ///
-/// Color tokens expose the Material Design 3 color roles generated from a MonetFX [ColorScheme]. They provide
-/// the same dynamic color roles to controls, themes, and application code without coupling the token model
-/// to a particular rendering backend.
+/// The supplied color scheme is retained, not copied or regenerated. Role lookup therefore returns exactly the
+/// JavaFX [Color] values defined by that scheme. The token object itself is immutable and may be shared.
 ///
 /// See [Material Design color](https://m3.material.io/styles/color/overview) and
 /// [Material Design](https://m3.material.io/).
@@ -24,13 +23,14 @@ import java.util.List;
 public sealed interface M3ColorTokens permits M3ColorTokensImpl {
     /// Returns the MonetFX color scheme used by this token set.
     ///
-    /// @return the MonetFX color scheme backing this token set
+    /// @return the immutable MonetFX color scheme retained by this token set; never `null`
     ColorScheme colorScheme();
 
-    /// Creates color tokens from a MonetFX color scheme.
+    /// Creates color tokens backed by a MonetFX color scheme.
     ///
     /// @param colorScheme the MonetFX color scheme backing the created token set
     /// @return a color token set backed by the supplied color scheme
+    /// @throws NullPointerException if `colorScheme` is `null`
     static M3ColorTokens fromColorScheme(ColorScheme colorScheme) {
         return new M3ColorTokensImpl(colorScheme);
     }
@@ -39,13 +39,17 @@ public sealed interface M3ColorTokens permits M3ColorTokensImpl {
     ///
     /// @param role the MonetFX color role to resolve
     /// @return the JavaFX color for the supplied role
+    /// @throws NullPointerException if `role` is `null`
     default Color get(ColorRole role) {
         return colorScheme().getColor(role);
     }
 
-    /// Returns all MonetFX color roles used by this token set.
+    /// Returns all MonetFX color roles supported by [get].
     ///
-    /// @return the immutable list of supported MonetFX color roles
+    /// The returned list is the shared immutable role list defined by MonetFX. It is ordered by
+    /// the declaration order of [ColorRole], contains no `null` elements, and is not a live view of this token object.
+    ///
+    /// @return the immutable, ordered list of supported MonetFX color roles
     default @Unmodifiable List<ColorRole> roles() {
         return ColorRole.ALL;
     }

@@ -11,11 +11,14 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.Objects;
 
-/// Holds Material Design 3 motion duration tokens in milliseconds.
+/// Defines the immutable Material Design 3 duration scale and semantic motion configuration.
 ///
-/// Motion tokens provide the duration ladder, semantic [M3MotionScheme], and [M3MotionBehavior] used by M3FX
-/// controls for state feedback, popup transitions, smooth scrolling, and progress animation. Baseline and
-/// expressive profiles can provide different durations and curves while sharing the same public API.
+/// The sixteen duration values are non-negative integer milliseconds. The [scheme] assigns [M3MotionSpec] values
+/// to semantic effects and spatial roles, while [behavior] supplies control delays and repeating cycle periods.
+/// The convenience role methods delegate to the current scheme and return the same specification instances.
+///
+/// [baseline] and [expressive] use the same duration ladder but different semantic schemes and selected behavior
+/// timings. Token sets are immutable and may be shared.
 ///
 /// See [Material Design motion](https://m3.material.io/styles/motion/overview).
 @NotNullByDefault
@@ -152,7 +155,7 @@ public sealed interface M3MotionTokens permits M3MotionTokensImpl {
         return scheme().slowSpatial();
     }
 
-    /// Creates a builder initialized with baseline motion tokens.
+    /// Creates a builder initialized with all values from [baseline].
     ///
     /// @return a mutable motion-token builder
     static M3MotionTokensBuilder builder() {
@@ -201,14 +204,14 @@ public sealed interface M3MotionTokens permits M3MotionTokensImpl {
         );
     }
 
-    /// Returns baseline Material Design 3 motion tokens.
+    /// Returns the complete baseline Material Design 3 motion token set.
     ///
     /// @return baseline Material Design 3 motion tokens
     static M3MotionTokens baseline() {
         return defaultTokens(M3MotionScheme.standard(), M3MotionBehavior.standard());
     }
 
-    /// Returns expressive Material Design 3 motion tokens.
+    /// Returns the complete Material Design 3 Expressive motion token set.
     ///
     /// @return expressive Material Design 3 motion tokens
     static M3MotionTokens expressive() {

@@ -50,10 +50,26 @@ import java.util.Objects;
 
 /// A Material Design 3 floating action button menu.
 ///
-/// `M3FabMenu` transforms an entry [M3FloatingActionButton] into a 56-pixel close button and reveals a vertical
-/// set of labeled floating actions. The menu owns the close affordance, preserves the caller-supplied entry button,
-/// and aligns both controls to the logical trailing edge. It also manages keyboard dismissal, accessible child
-/// traversal, and Material expand and collapse motion.
+/// The menu displays a toggle [M3FloatingActionButton] while collapsed and a close button plus an ordered column of
+/// action nodes while expanded. Activating the toggle expands the menu; activating the close button or a direct
+/// action item collapses it. Escape also collapses an expanded menu. Up and Down traverse the visible actions and
+/// activator.
+///
+/// A custom toggle button and all item nodes become children of this control and must not be kept in another parent.
+/// Expansion transfers focus from the toggle to the close button; collapsing while focus is in the menu restores
+/// focus to the toggle when reachable. Motion follows the effective M3FX motion settings.
+///
+/// ```java
+/// private M3FabMenu createFabMenu() {
+///     M3FabMenu menu = new M3FabMenu(new M3FloatingActionButton("Create"));
+///     M3FloatingActionButton document = new M3FloatingActionButton("Document");
+///     M3FloatingActionButton folder = new M3FloatingActionButton("Folder");
+///     document.setOnAction(event -> System.out.println("Document"));
+///     folder.setOnAction(event -> System.out.println("Folder"));
+///     menu.getItems().addAll(document, folder);
+///     return menu;
+/// }
+/// ```
 ///
 /// See [Material Design FAB menus](https://m3.material.io/components/fab-menu/overview).
 @NotNullByDefault
@@ -91,19 +107,28 @@ public final class M3FabMenu extends Control {
     /// The action item container.
     private final VBox actions = new VBox();
 
-    /// The styleable spacing between expanded action items.
+    /// The spacing between expanded action items in logical pixels.
+    ///
+    /// @defaultValue `4.0`
     private @Nullable StyleableDoubleProperty actionSpacing;
 
-    /// The styleable spacing between the last action and close button.
+    /// The spacing between the last action and close button in logical pixels.
+    ///
+    /// @defaultValue `8.0`
     private @Nullable StyleableDoubleProperty closeSpacing;
 
-    /// The toggle floating action button.
+    /// The toggle floating action button owned by this menu.
     private final M3FloatingActionButton toggleButton;
 
     /// The close floating action button shown while expanded.
     private final M3FloatingActionButton closeButton = createCloseButton();
 
-    /// Whether the action items are currently expanded.
+    /// Whether the action items are expanded.
+    ///
+    /// Changing this property updates visibility and focus immediately and animates the visual transition when the
+    /// control is attached to a scene and motion is enabled.
+    ///
+    /// @defaultValue `false`
     private final BooleanProperty expanded = new SimpleBooleanProperty(this, "expanded") {
         /// Applies expanded state when changed.
         @Override
@@ -115,7 +140,7 @@ public final class M3FabMenu extends Control {
     /// The reusable expand and collapse animation for every action item.
     private final ActionItemsTransition animation = new ActionItemsTransition();
 
-    /// Handles detached action item activation before the default skin attaches the item.
+    /// Collapses the menu when an action item is activated.
     private final EventHandler<ActionEvent> actionItemActionHandler = this::handleActionItemAction;
 
     /// Handles keyboard navigation from the menu root and action items.
@@ -147,15 +172,18 @@ public final class M3FabMenu extends Control {
     private final M3AccessibleFocusNotifier focusNotifier =
             new M3AccessibleFocusNotifier(this, this::accessibleFocusNode);
 
-    /// Creates a floating action button menu with a default toggle button.
+    /// Creates a collapsed menu with a default regular primary-container toggle button and no action items.
     public M3FabMenu() {
         this(createDefaultToggleButton());
     }
 
-    /// Creates a floating action button menu with a custom toggle button.
+    /// Creates a collapsed menu using the specified toggle button.
+    ///
+    /// The button becomes owned by this control. Its existing action handlers remain installed; the menu also
+    /// installs an action handler that expands the menu.
     ///
     /// @param toggleButton the floating action button used to expand or collapse the menu
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `toggleButton` is `null`
     public M3FabMenu(M3FloatingActionButton toggleButton) {
         this.toggleButton = Objects.requireNonNull(toggleButton, "toggleButton");
         initialize();
@@ -177,15 +205,15 @@ public final class M3FabMenu extends Control {
 
     /// Returns the spacing between expanded action items.
     ///
-    /// @return the action item spacing in pixels
+    /// @return the action item spacing in logical pixels
     public final double getActionSpacing() {
         return actionSpacing == null ? DEFAULT_ACTION_SPACING : actionSpacing.get();
     }
 
     /// Sets the spacing between expanded action items.
     ///
-    /// @param actionSpacing the action item spacing in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param actionSpacing the action item spacing in logical pixels
+    /// @throws IllegalArgumentException if `actionSpacing` is negative or not finite
     public final void setActionSpacing(double actionSpacing) {
         actionSpacingProperty().set(M3Css.nonNegative(actionSpacing, "actionSpacing"));
     }
@@ -205,15 +233,15 @@ public final class M3FabMenu extends Control {
 
     /// Returns the spacing between the last expanded action and close button.
     ///
-    /// @return the close button spacing in pixels
+    /// @return the close button spacing in logical pixels
     public final double getCloseSpacing() {
         return closeSpacing == null ? DEFAULT_CLOSE_SPACING : closeSpacing.get();
     }
 
     /// Sets the spacing between the last expanded action and close button.
     ///
-    /// @param closeSpacing the close button spacing in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param closeSpacing the close button spacing in logical pixels
+    /// @throws IllegalArgumentException if `closeSpacing` is negative or not finite
     public final void setCloseSpacing(double closeSpacing) {
         closeSpacingProperty().set(M3Css.nonNegative(closeSpacing, "closeSpacing"));
     }
@@ -231,9 +259,13 @@ public final class M3FabMenu extends Control {
         return closeSpacing;
     }
 
-    /// Returns the mutable action item list.
+    /// Returns the live, mutable list of direct action item nodes in display order.
     ///
-    /// @return the mutable action item list
+    /// The list initially is empty and enforces JavaFX parent-child constraints, including non-null elements and no
+    /// duplicate node instances. Items are parented by this control while present. An action event whose source is a
+    /// direct item collapses the menu without consuming that event.
+    ///
+    /// @return the live, mutable action item list
     public final ObservableList<Node> getItems() {
         return actions.getChildren();
     }
@@ -261,11 +293,15 @@ public final class M3FabMenu extends Control {
     }
 
     /// Expands the action items.
+    ///
+    /// Calling this method while expanded has no effect.
     public final void show() {
         setExpanded(true);
     }
 
     /// Collapses the action items.
+    ///
+    /// Calling this method while collapsed has no effect.
     public final void hide() {
         setExpanded(false);
     }
@@ -296,7 +332,7 @@ public final class M3FabMenu extends Control {
 
     /// Returns accessibility attributes for the menu and action items.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -311,7 +347,7 @@ public final class M3FabMenu extends Control {
 
     /// Executes accessibility actions for expanding, collapsing, and toggling the menu.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

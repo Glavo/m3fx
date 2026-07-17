@@ -38,6 +38,15 @@ import java.util.Objects;
 /// indexing. The header is managed by the group and is available through [getHeaderItem] for presentation
 /// customization, but it must not be reparented.
 ///
+/// A new group has an empty title, no child destinations, and is collapsed. Collapsing a group while one of its
+/// children owns focus transfers focus to the header. The child model remains unchanged while collapsed.
+///
+/// ```java
+/// M3NavigationDrawerGroup group = new M3NavigationDrawerGroup("Library");
+/// group.getItems().addAll(new M3ListItem("Albums"), new M3ListItem("Artists"));
+/// group.setExpanded(true);
+/// ```
+///
 /// See [Material Design navigation drawer](https://m3.material.io/components/navigation-drawer/overview).
 @NotNullByDefault
 public final class M3NavigationDrawerGroup extends Control {
@@ -53,10 +62,14 @@ public final class M3NavigationDrawerGroup extends Control {
     /// The expanded pseudo-class used by navigation drawer groups.
     private static final PseudoClass EXPANDED_PSEUDO_CLASS = PseudoClass.getPseudoClass("expanded");
 
-    /// The group title displayed by the header list item.
+    /// The non-null text displayed by the owned header item.
+    ///
+    /// @defaultValue `""`
     private final StringProperty title = new SimpleStringProperty(this, "title", "");
 
-    /// Whether child destination items are visible.
+    /// Whether child destinations participate in layout, focus traversal, and accessibility indexing.
+    ///
+    /// @defaultValue `false`
     private final BooleanProperty expanded = new SimpleBooleanProperty(this, "expanded") {
         /// Updates expanded pseudo-class state.
         @Override
@@ -72,7 +85,10 @@ public final class M3NavigationDrawerGroup extends Control {
         }
     };
 
-    /// The child destination items shown when the group is expanded.
+    /// The live, mutable, ordered child destination list.
+    ///
+    /// The list rejects `null` elements and reports mutations through the `ObservableList` change API. Child nodes
+    /// are owned by this group while displayed and may occur only once.
     private final ObservableList<M3ListItem> items = M3ObservableLists.nonNullElementList("item");
 
     /// The header list item that toggles the group.
@@ -104,7 +120,7 @@ public final class M3NavigationDrawerGroup extends Control {
                     accessibleContent()
             ));
 
-    /// Creates an empty navigation drawer group.
+    /// Creates a collapsed group with an empty title and no child destinations.
     public M3NavigationDrawerGroup() {
         this("");
     }
@@ -155,10 +171,11 @@ public final class M3NavigationDrawerGroup extends Control {
         return expanded;
     }
 
-    /// Returns the mutable child destination list.
+    /// Returns the live mutable child destination list.
     ///
-    /// Changes to the returned list are observed immediately. The list rejects `null` elements. Items must not
-    /// simultaneously belong to another parent.
+    /// Changes are observed immediately and insertion order determines layout and traversal while the group is
+    /// expanded. The list rejects `null`. It does not perform an explicit duplicate check, but each item is a
+    /// JavaFX node and must occur only once and must not simultaneously belong to another parent.
     ///
     /// @return the live, mutable child destination list
     public ObservableList<M3ListItem> getItems() {

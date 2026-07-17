@@ -20,6 +20,10 @@ import org.jetbrains.annotations.Nullable;
 public interface M3TextInputValidator {
     /// Returns an error message for invalid input, or `null` when the input is valid.
     ///
+    /// The layout supplies its current input and a non-null snapshot of the input text. The validator must not retain
+    /// either value as an ownership claim. This method may be invoked repeatedly as the user edits after validation
+    /// has become active.
+    ///
     /// @param input the text input control being validated
     /// @param text the current text value to validate
     /// @return a non-empty error message for invalid input, or `null` or an empty string when the input is valid

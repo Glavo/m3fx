@@ -48,8 +48,12 @@ import java.util.Objects;
 ///
 /// `M3TopAppBar` provides navigation, title, optional subtitle, and trailing action slots for the top edge of an
 /// application view. The variant property selects a small, centered, baseline tall, or flexible layout. Flexible
-/// variants can transform into the small arrangement from either [scrolledUnderProperty] or a directly bound
-/// [collapseProgressProperty]. The action list accepts arbitrary JavaFX nodes such as [M3IconButton] instances.
+/// variants can transform into the small arrangement from either [#scrolledUnderProperty()] or a directly bound
+/// [#collapseProgressProperty()]. The action list accepts arbitrary JavaFX nodes such as [M3IconButton] instances.
+/// Navigation and action nodes participate in logical-order keyboard traversal.
+///
+/// A new app bar uses the small variant with empty title and subtitle, no custom title content or navigation node,
+/// and no trailing actions. Flexible collapse progress is zero and scroll-under state is false.
 ///
 /// See [Material Design app bars](https://m3.material.io/components/app-bars/overview).
 @NotNullByDefault
@@ -141,7 +145,9 @@ public final class M3TopAppBar extends Control {
     /// The app bar title property.
     ///
     /// The property never exposes a `null` value. Assigning `null` through the property API normalizes the value to
-    /// an empty string; [setTitle] rejects `null` so ordinary setter misuse is reported immediately.
+    /// an empty string; [#setTitle(String)] rejects `null` so ordinary setter misuse is reported immediately.
+    ///
+    /// @defaultValue `""`
     private final StringProperty title = new SimpleStringProperty(this, "title", "") {
         /// Normalizes direct property assignments to the non-null title contract.
         @Override
@@ -152,7 +158,12 @@ public final class M3TopAppBar extends Control {
         }
     };
 
-    /// The app bar subtitle property.
+    /// The app bar subtitle.
+    ///
+    /// Assigning `null` through the property normalizes the value to an empty string. An empty subtitle selects the
+    /// shorter flexible-container metrics.
+    ///
+    /// @defaultValue `""`
     private final StringProperty subtitle = new SimpleStringProperty(this, "subtitle", "") {
         /// Updates subtitle state and height metrics when the text changes.
         @Override
@@ -167,10 +178,18 @@ public final class M3TopAppBar extends Control {
         }
     };
 
-    /// The custom title-content property.
+    /// The optional custom title-content node.
+    ///
+    /// A non-null node replaces the expanded title label and is owned by this app bar.
+    ///
+    /// @defaultValue `null`
     private final ObjectProperty<@Nullable Node> titleContent = new SimpleObjectProperty<>(this, "titleContent");
 
-    /// The top app bar variant property.
+    /// The top app bar layout variant.
+    ///
+    /// Assigning `null` through the property restores [M3TopAppBarVariant#SMALL].
+    ///
+    /// @defaultValue `SMALL`
     private final ObjectProperty<M3TopAppBarVariant> variant =
             new SimpleObjectProperty<>(this, "variant", M3TopAppBarVariant.SMALL) {
                 /// Updates variant style classes and layout metrics when the property changes.
@@ -185,7 +204,11 @@ public final class M3TopAppBar extends Control {
                 }
             };
 
-    /// The scroll-under state property.
+    /// Whether content is currently scrolled beneath the app bar.
+    ///
+    /// For an unbound flexible app bar, changing this state drives its collapse transition.
+    ///
+    /// @defaultValue `false`
     private final BooleanProperty scrolledUnder = new SimpleBooleanProperty(this, "scrolledUnder") {
         /// Updates the scroll-under pseudo-class when the property changes.
         @Override
@@ -194,7 +217,12 @@ public final class M3TopAppBar extends Control {
         }
     };
 
-    /// The flexible app bar collapse-progress property.
+    /// The flexible app bar collapse progress.
+    ///
+    /// The effective value is in the closed interval `0.0..1.0`. [#setCollapseProgress(double)] rejects values
+    /// outside that interval; direct property writes are accepted and clamped by [#getCollapseProgress()].
+    ///
+    /// @defaultValue `0.0`
     private final DoubleProperty collapseProgress = new SimpleDoubleProperty(this, "collapseProgress", 0.0) {
         /// Updates height and layout as direct scrolling or the built-in transition changes progress.
         @Override
@@ -204,52 +232,84 @@ public final class M3TopAppBar extends Control {
         }
     };
 
-    /// The optional leading navigation node property.
+    /// The optional leading navigation node.
+    ///
+    /// A non-null node is owned by this app bar and must be available for it to parent.
+    ///
+    /// @defaultValue `null`
     private final ObjectProperty<@Nullable Node> navigation = new SimpleObjectProperty<>(this, "navigation");
 
     /// The mutable trailing action node list.
     private final ObservableList<Node> actions = M3ObservableLists.nonNullElementList("action");
 
-    /// The small and centered top app bar container height token property.
+    /// The small and center-aligned container height in logical pixels.
+    ///
+    /// @defaultValue `64.0`
     private @Nullable StyleableDoubleProperty containerHeight;
 
-    /// The medium top app bar container height token property.
+    /// The baseline medium container height in logical pixels.
+    ///
+    /// @defaultValue `112.0`
     private @Nullable StyleableDoubleProperty mediumContainerHeight;
 
-    /// The large top app bar container height token property.
+    /// The baseline large container height in logical pixels.
+    ///
+    /// @defaultValue `152.0`
     private @Nullable StyleableDoubleProperty largeContainerHeight;
 
-    /// The medium flexible container-height property.
+    /// The medium flexible container height without a subtitle in logical pixels.
+    ///
+    /// @defaultValue `112.0`
     private @Nullable StyleableDoubleProperty mediumFlexibleContainerHeight;
 
-    /// The medium flexible subtitle container-height property.
+    /// The medium flexible container height with a subtitle in logical pixels.
+    ///
+    /// @defaultValue `136.0`
     private @Nullable StyleableDoubleProperty mediumFlexibleSubtitleContainerHeight;
 
-    /// The large flexible container-height property.
+    /// The large flexible container height without a subtitle in logical pixels.
+    ///
+    /// @defaultValue `120.0`
     private @Nullable StyleableDoubleProperty largeFlexibleContainerHeight;
 
-    /// The large flexible subtitle container-height property.
+    /// The large flexible container height with a subtitle in logical pixels.
+    ///
+    /// @defaultValue `152.0`
     private @Nullable StyleableDoubleProperty largeFlexibleSubtitleContainerHeight;
 
-    /// The action-slot edge-padding property.
+    /// The outer space before the leading and after the trailing action slots in logical pixels.
+    ///
+    /// @defaultValue `4.0`
     private @Nullable StyleableDoubleProperty edgePadding;
 
-    /// The horizontal content padding token property.
+    /// The horizontal content padding in logical pixels.
+    ///
+    /// @defaultValue `16.0`
     private @Nullable StyleableDoubleProperty horizontalPadding;
 
-    /// The medium top app bar bottom padding token property.
+    /// The baseline medium bottom content padding in logical pixels.
+    ///
+    /// @defaultValue `20.0`
     private @Nullable StyleableDoubleProperty mediumBottomPadding;
 
-    /// The large top app bar bottom padding token property.
+    /// The baseline large bottom content padding in logical pixels.
+    ///
+    /// @defaultValue `28.0`
     private @Nullable StyleableDoubleProperty largeBottomPadding;
 
-    /// The flexible title bottom-padding property.
+    /// The flexible title bottom padding in logical pixels.
+    ///
+    /// @defaultValue `12.0`
     private @Nullable StyleableDoubleProperty flexibleBottomPadding;
 
-    /// The spacing token property between leading, title, and trailing content slots.
+    /// The spacing between leading, title, and trailing content slots in logical pixels.
+    ///
+    /// @defaultValue `0.0`
     private @Nullable StyleableDoubleProperty contentSpacing;
 
-    /// The spacing token property between trailing action nodes.
+    /// The spacing between trailing action nodes in logical pixels.
+    ///
+    /// @defaultValue `0.0`
     private @Nullable StyleableDoubleProperty actionSpacing;
 
     /// Notifies accessibility clients when focus moves between navigation and action children.
@@ -308,7 +368,7 @@ public final class M3TopAppBar extends Control {
     /// Sets the app bar subtitle.
     ///
     /// @param subtitle the subtitle text, or an empty string to remove it
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `subtitle` is `null`
     public final void setSubtitle(String subtitle) {
         this.subtitle.set(Objects.requireNonNull(subtitle, "subtitle"));
     }
@@ -384,7 +444,7 @@ public final class M3TopAppBar extends Control {
     /// Zero represents the fully expanded flexible arrangement and one represents the small arrangement. Values
     /// between those endpoints are used during Material spatial motion. Applications may bind this property to a
     /// continuous scroll offset; while it is unbound, the default skin animates it in response to
-    /// [scrolledUnderProperty]. Baseline variants ignore this value.
+    /// [#scrolledUnderProperty()]. Baseline variants ignore this value.
     ///
     /// @return the collapse progress in the closed interval from zero to one
     public final double getCollapseProgress() {
@@ -871,7 +931,7 @@ public final class M3TopAppBar extends Control {
 
     /// Executes accessibility actions for indexed navigation and action children.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

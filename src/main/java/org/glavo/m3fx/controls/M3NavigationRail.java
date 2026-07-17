@@ -48,10 +48,28 @@ import java.util.Objects;
 
 /// A Material Design 3 navigation rail for primary destinations in medium-width layouts.
 ///
-/// `M3NavigationRail` arranges [M3NavigationItem] children vertically and manages their selected state. It
-/// supports empty-selection control, read-only selected-item views, keyboard navigation, and JavaFX accessibility
-/// selection attributes. Use a rail when there is enough horizontal space for persistent navigation but a full
-/// drawer would be too wide.
+/// `M3NavigationRail` arranges [M3NavigationItem] destinations vertically and maintains a single selection. Use a
+/// rail when there is enough horizontal space for persistent primary navigation but not enough for a navigation
+/// drawer. The collapsed presentation shows compact destinations; setting [expandedProperty] reveals their labels
+/// using the surface treatment selected by [variantProperty].
+///
+/// Destinations are supplied through the live [getItems()] list. The list preserves insertion order, rejects
+/// `null`, and is observed by the control. Removing the selected destination clears its selected state. By default,
+/// the rail selects the first reachable destination and does not permit an empty selection; set
+/// [allowEmptySelectionProperty] when an application needs to clear the selection explicitly. Arrow keys move
+/// selection between reachable destinations and wrap at either end.
+///
+/// The optional [headerProperty] accepts application-provided controls, such as a menu button or floating action
+/// button. Header content is not part of destination selection or keyboard traversal.
+///
+/// ```java
+/// M3NavigationRail rail = new M3NavigationRail();
+/// M3NavigationItem inbox = new M3NavigationItem("Inbox");
+/// M3NavigationItem settings = new M3NavigationItem("Settings");
+/// rail.getItems().addAll(inbox, settings);
+/// rail.select(inbox);
+/// rail.setExpanded(true);
+/// ```
 ///
 /// See [Material Design navigation rails](https://m3.material.io/components/navigation-rail/overview).
 @NotNullByDefault
@@ -103,7 +121,10 @@ public final class M3NavigationRail extends Control {
     /// The default minimum distance between the rail header and destination items.
     private static final double DEFAULT_HEADER_SPACING = 40.0;
 
-    /// The mutable navigation rail content.
+    /// The live navigation destination list.
+    ///
+    /// The list is mutable and observable, preserves insertion order, permits duplicate object references, and
+    /// rejects `null`. Each item is a JavaFX node and therefore must not simultaneously belong to another parent.
     private final ObservableList<M3NavigationItem> items = M3ObservableLists.nonNullElementList("item");
 
     /// Notifies accessibility clients when focus moves between navigation items.
@@ -127,25 +148,58 @@ public final class M3NavigationRail extends Control {
     private final @UnmodifiableView ObservableList<M3NavigationItem> selectedItemsView =
             FXCollections.unmodifiableObservableList(selectedItems);
 
-    /// The styleable spacing between navigation item rows.
+    /// The spacing between adjacent navigation destinations, in logical pixels.
+    ///
+    /// The value must be finite and non-negative. It is styleable through `-m3-navigation-rail-item-spacing`.
+    ///
+    /// @defaultValue `8.0`
     private @Nullable StyleableDoubleProperty itemSpacing;
 
-    /// The styleable collapsed navigation rail width.
+    /// The preferred width of a collapsed rail, in logical pixels.
+    ///
+    /// The value must be finite and non-negative and is independent of [narrowProperty]. It is styleable through
+    /// `-m3-navigation-rail-collapsed-container-width`.
+    ///
+    /// @defaultValue `80.0`
     private @Nullable StyleableDoubleProperty collapsedContainerWidthStyleable;
 
-    /// The styleable expanded navigation rail width.
+    /// The preferred width of an expanded rail, in logical pixels.
+    ///
+    /// The value must be finite and non-negative. Layout constrains the effective width to the configured expanded
+    /// minimum and maximum. It is styleable through `-m3-navigation-rail-expanded-container-width`.
+    ///
+    /// @defaultValue `280.0`
     private @Nullable StyleableDoubleProperty expandedContainerWidthStyleable;
 
-    /// The styleable minimum expanded navigation rail width.
+    /// The minimum width of an expanded rail, in logical pixels.
+    ///
+    /// The value must be finite and non-negative. If it exceeds the configured maximum, this minimum takes
+    /// precedence. It is styleable through `-m3-navigation-rail-expanded-minimum-container-width`.
+    ///
+    /// @defaultValue `220.0`
     private @Nullable StyleableDoubleProperty expandedMinimumContainerWidthStyleable;
 
-    /// The styleable maximum expanded navigation rail width.
+    /// The maximum width of an expanded rail, in logical pixels.
+    ///
+    /// The value must be finite and non-negative. A configured minimum greater than this value takes precedence.
+    /// It is styleable through `-m3-navigation-rail-expanded-maximum-container-width`.
+    ///
+    /// @defaultValue `360.0`
     private @Nullable StyleableDoubleProperty expandedMaximumContainerWidthStyleable;
 
-    /// The styleable spacing between the optional header and destination items.
+    /// The minimum spacing between the optional header and the destination group, in logical pixels.
+    ///
+    /// The value must be finite and non-negative. It is styleable through `-m3-navigation-rail-header-spacing`.
+    ///
+    /// @defaultValue `40.0`
     private @Nullable StyleableDoubleProperty headerSpacingStyleable;
 
-    /// The optional menu and action area rendered above destination items.
+    /// The optional application-provided header displayed before destinations.
+    ///
+    /// A `null` value removes the header. The header is excluded from destination selection and arrow-key
+    /// navigation. As a JavaFX node, a non-null header must not simultaneously belong to another parent.
+    ///
+    /// @defaultValue `null`
     private final ObjectProperty<@Nullable Node> headerState = new SimpleObjectProperty<>(this, "header") {
         /// Requests a new skin layout when the header changes.
         @Override
@@ -156,6 +210,8 @@ public final class M3NavigationRail extends Control {
     };
 
     /// Whether expanded active indicators fill the available destination row width.
+    ///
+    /// @defaultValue `false`
     private final BooleanProperty fullWidthIndicatorState = new SimpleBooleanProperty(this, "fullWidthIndicator") {
         /// Updates indicator geometry and the corresponding CSS pseudo-class.
         @Override
@@ -165,7 +221,11 @@ public final class M3NavigationRail extends Control {
         }
     };
 
-    /// Whether the collapsed rail uses the 80-pixel narrow configuration.
+    /// Whether the collapsed rail uses its narrow presentation.
+    ///
+    /// This property selects layout styling; [collapsedContainerWidthStyleable] remains independently configurable.
+    ///
+    /// @defaultValue `false`
     private final BooleanProperty narrowState = new SimpleBooleanProperty(this, "narrow") {
         /// Updates the width token selector when the collapsed configuration changes.
         @Override
@@ -175,7 +235,9 @@ public final class M3NavigationRail extends Control {
         }
     };
 
-    /// Whether an immersive expanded rail disappears instead of becoming a collapsed rail.
+    /// Whether clearing [expandedProperty] hides the rail instead of retaining its collapsed presentation.
+    ///
+    /// @defaultValue `false`
     private final BooleanProperty hideWhenCollapsedState = new SimpleBooleanProperty(this, "hideWhenCollapsed") {
         /// Updates the collapse target and CSS state.
         @Override
@@ -185,7 +247,9 @@ public final class M3NavigationRail extends Control {
         }
     };
 
-    /// Whether destination rows are centered in the space below the header.
+    /// Whether destinations are centered vertically in the space below the header.
+    ///
+    /// @defaultValue `false`
     private final BooleanProperty itemsCenteredState = new SimpleBooleanProperty(this, "itemsCentered") {
         /// Updates destination-group alignment.
         @Override
@@ -196,6 +260,10 @@ public final class M3NavigationRail extends Control {
     };
 
     /// Whether the rail presents expanded horizontal destination rows.
+    ///
+    /// Changing this property updates presentation only; it does not change items or selection.
+    ///
+    /// @defaultValue `false`
     private final BooleanProperty expandedState = new SimpleBooleanProperty(this, "expanded") {
         /// Updates the visual state and child item layouts.
         @Override
@@ -207,7 +275,12 @@ public final class M3NavigationRail extends Control {
         }
     };
 
-    /// Backing property for the expanded rail presentation variant.
+    /// The expanded rail presentation variant.
+    ///
+    /// The value is never `null`; a `null` value written through the property is normalized to
+    /// [M3NavigationRailVariant.STANDARD]. The variant affects only the expanded presentation.
+    ///
+    /// @defaultValue [M3NavigationRailVariant#STANDARD]
     private final ObjectProperty<M3NavigationRailVariant> railVariant =
             new SimpleObjectProperty<>(this, "variant", M3NavigationRailVariant.STANDARD) {
                 /// Updates variant pseudo-classes when the variant changes.
@@ -221,7 +294,12 @@ public final class M3NavigationRail extends Control {
                 }
             };
 
-    /// Whether the rail allows all navigation items to be unselected.
+    /// Whether the rail permits all destinations to be unselected.
+    ///
+    /// Changing this property to `false` selects the first reachable destination when necessary. Calling
+    /// [clearSelection] while it is `false` likewise restores a selection when possible.
+    ///
+    /// @defaultValue `false`
     private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection") {
         /// Restores a selected item when empty selection is disabled.
         @Override
@@ -276,14 +354,22 @@ public final class M3NavigationRail extends Control {
     /// Whether the navigation rail is currently synchronizing selected states.
     private boolean updatingSelection;
 
-    /// Creates an empty navigation rail.
+    /// Creates an empty, collapsed navigation rail using the standard variant.
+    ///
+    /// Empty selection is initially disallowed. The first reachable destination added to [getItems()] is selected
+    /// automatically. No header is installed.
     public M3NavigationRail() {
         initialize();
     }
 
-    /// Returns the mutable child list used as navigation rail items.
+    /// Returns the live list of navigation destinations.
     ///
-    /// @return the mutable navigation rail content list
+    /// Changes are observed immediately and insertion order determines layout and keyboard traversal. The list
+    /// rejects `null`. It does not perform an explicit duplicate check, but each item is a JavaFX node and must
+    /// occur only once and must not simultaneously belong to another parent. Removing an item clears its selected
+    /// state.
+    ///
+    /// @return the mutable observable destination list
     public final ObservableList<M3NavigationItem> getItems() {
         return items;
     }
@@ -447,7 +533,7 @@ public final class M3NavigationRail extends Control {
     /// navigation rail surface.
     ///
     /// @param variant the expanded rail variant
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `variant` is `null`
     public final void setVariant(M3NavigationRailVariant variant) {
         railVariant.set(Objects.requireNonNull(variant, "variant"));
     }
@@ -459,9 +545,12 @@ public final class M3NavigationRail extends Control {
         return railVariant;
     }
 
-    /// Returns the selected navigation items in child order.
+    /// Returns the selected destinations in item-list order.
     ///
-    /// @return an unmodifiable observable view of selected navigation items
+    /// The returned list is an unmodifiable observable view. Because the rail is single-select, it contains either
+    /// zero or one item. The same view instance is returned on each call.
+    ///
+    /// @return the unmodifiable observable selected-item view
     public final @UnmodifiableView ObservableList<M3NavigationItem> getSelectedItems() {
         return selectedItemsView;
     }
@@ -506,7 +595,8 @@ public final class M3NavigationRail extends Control {
     /// Selects a navigation item that belongs to this rail.
     ///
     /// @param item the navigation item to select
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `item` is `null`
+    /// @throws IllegalArgumentException if `item` is not a reachable destination in this rail
     public final void select(M3NavigationItem item) {
         Objects.requireNonNull(item, "item");
         if (!getItems().contains(item)) {
@@ -520,7 +610,8 @@ public final class M3NavigationRail extends Control {
 
     /// Selects the navigation item at the given child index.
     ///
-    /// @param index the child index of the navigation item
+    /// @param index the index in [getItems()]
+    /// @throws IndexOutOfBoundsException if `index` is outside the item list
     public final void selectIndex(int index) {
         Node child = getItems().get(index);
         if (child instanceof M3NavigationItem item) {
@@ -530,7 +621,9 @@ public final class M3NavigationRail extends Control {
         throw new IllegalArgumentException("child at index is not an M3NavigationItem");
     }
 
-    /// Selects the first navigation item when one exists.
+    /// Selects the first reachable destination when one exists.
+    ///
+    /// This method has no effect while the rail itself is not effectively reachable.
     public final void selectFirst() {
         if (!M3Accessible.isEffectivelyReachable(this)) {
             return;
@@ -541,7 +634,9 @@ public final class M3NavigationRail extends Control {
         }
     }
 
-    /// Selects the last navigation item when one exists.
+    /// Selects the last reachable destination when one exists.
+    ///
+    /// This method has no effect while the rail itself is not effectively reachable.
     public final void selectLast() {
         if (!M3Accessible.isEffectivelyReachable(this)) {
             return;
@@ -553,7 +648,10 @@ public final class M3NavigationRail extends Control {
         }
     }
 
-    /// Selects the next navigation item after the current selected item, wrapping at the end.
+    /// Selects the next reachable destination, wrapping at the end.
+    ///
+    /// This method has no effect while the rail itself is not effectively reachable or has no reachable
+    /// destinations.
     public final void selectNext() {
         if (!M3Accessible.isEffectivelyReachable(this)) {
             return;
@@ -565,7 +663,10 @@ public final class M3NavigationRail extends Control {
         }
     }
 
-    /// Selects the previous navigation item before the current selected item, wrapping at the start.
+    /// Selects the previous reachable destination, wrapping at the start.
+    ///
+    /// This method has no effect while the rail itself is not effectively reachable or has no reachable
+    /// destinations.
     public final void selectPrevious() {
         if (!M3Accessible.isEffectivelyReachable(this)) {
             return;
@@ -579,15 +680,15 @@ public final class M3NavigationRail extends Control {
 
     /// Returns the spacing between navigation rail items.
     ///
-    /// @return the spacing between navigation rail items in pixels
+    /// @return the spacing between navigation rail items in logical pixels
     public final double getItemSpacing() {
         return itemSpacing == null ? DEFAULT_ITEM_SPACING : itemSpacing.get();
     }
 
     /// Sets the spacing between navigation rail items.
     ///
-    /// @param itemSpacing the spacing between navigation rail items in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param itemSpacing the spacing between navigation rail items in logical pixels
+    /// @throws IllegalArgumentException if `itemSpacing` is negative or not finite
     public final void setItemSpacing(double itemSpacing) {
         itemSpacingProperty().set(M3Css.nonNegative(itemSpacing, "itemSpacing"));
     }
@@ -607,7 +708,7 @@ public final class M3NavigationRail extends Control {
 
     /// Returns the collapsed navigation rail width.
     ///
-    /// @return the collapsed container width in pixels
+    /// @return the collapsed container width in logical pixels
     public final double getCollapsedContainerWidth() {
         return collapsedContainerWidthStyleable == null
                 ? DEFAULT_COLLAPSED_CONTAINER_WIDTH
@@ -616,8 +717,8 @@ public final class M3NavigationRail extends Control {
 
     /// Sets the collapsed navigation rail width.
     ///
-    /// @param collapsedContainerWidth the collapsed container width in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param collapsedContainerWidth the collapsed container width in logical pixels
+    /// @throws IllegalArgumentException if `collapsedContainerWidth` is negative or not finite
     public final void setCollapsedContainerWidth(double collapsedContainerWidth) {
         collapsedContainerWidthProperty().set(
                 M3Css.nonNegative(collapsedContainerWidth, "collapsedContainerWidth")
@@ -646,7 +747,7 @@ public final class M3NavigationRail extends Control {
     /// between this value and [#getExpandedMaximumContainerWidth()]. If the configured minimum exceeds the
     /// maximum, the minimum takes precedence until the properties become consistent again.
     ///
-    /// @return the expanded minimum container width in pixels
+    /// @return the expanded minimum container width in logical pixels
     public final double getExpandedMinimumContainerWidth() {
         return expandedMinimumContainerWidthStyleable == null
                 ? DEFAULT_EXPANDED_MINIMUM_CONTAINER_WIDTH
@@ -655,8 +756,8 @@ public final class M3NavigationRail extends Control {
 
     /// Sets the minimum width accepted by the expanded rail.
     ///
-    /// @param expandedMinimumContainerWidth the non-negative expanded minimum width in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param expandedMinimumContainerWidth the non-negative expanded minimum width in logical pixels
+    /// @throws IllegalArgumentException if `expandedMinimumContainerWidth` is negative or not finite
     public final void setExpandedMinimumContainerWidth(double expandedMinimumContainerWidth) {
         expandedMinimumContainerWidthProperty().set(
                 M3Css.nonNegative(expandedMinimumContainerWidth, "expandedMinimumContainerWidth")
@@ -681,10 +782,10 @@ public final class M3NavigationRail extends Control {
 
     /// Returns the expanded navigation rail width.
     ///
-    /// This is the preferred expanded width. The skin clamps it to the resolved minimum and maximum widths when
-    /// computing layout bounds.
+    /// This is the preferred expanded width. The effective layout width is constrained to the resolved minimum and
+    /// maximum widths.
     ///
-    /// @return the preferred expanded container width in pixels
+    /// @return the preferred expanded container width in logical pixels
     public final double getExpandedContainerWidth() {
         return expandedContainerWidthStyleable == null
                 ? DEFAULT_EXPANDED_CONTAINER_WIDTH
@@ -693,8 +794,8 @@ public final class M3NavigationRail extends Control {
 
     /// Sets the expanded navigation rail width.
     ///
-    /// @param expandedContainerWidth the expanded container width in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param expandedContainerWidth the expanded container width in logical pixels
+    /// @throws IllegalArgumentException if `expandedContainerWidth` is negative or not finite
     public final void setExpandedContainerWidth(double expandedContainerWidth) {
         expandedContainerWidthProperty().set(
                 M3Css.nonNegative(expandedContainerWidth, "expandedContainerWidth")
@@ -722,7 +823,7 @@ public final class M3NavigationRail extends Control {
     /// The Material Design 3 Expressive default is 360 pixels. When this value is less than the resolved minimum,
     /// the minimum width takes precedence.
     ///
-    /// @return the expanded maximum container width in pixels
+    /// @return the expanded maximum container width in logical pixels
     public final double getExpandedMaximumContainerWidth() {
         return expandedMaximumContainerWidthStyleable == null
                 ? DEFAULT_EXPANDED_MAXIMUM_CONTAINER_WIDTH
@@ -731,8 +832,8 @@ public final class M3NavigationRail extends Control {
 
     /// Sets the maximum width accepted by the expanded rail.
     ///
-    /// @param expandedMaximumContainerWidth the non-negative expanded maximum width in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param expandedMaximumContainerWidth the non-negative expanded maximum width in logical pixels
+    /// @throws IllegalArgumentException if `expandedMaximumContainerWidth` is negative or not finite
     public final void setExpandedMaximumContainerWidth(double expandedMaximumContainerWidth) {
         expandedMaximumContainerWidthProperty().set(
                 M3Css.nonNegative(expandedMaximumContainerWidth, "expandedMaximumContainerWidth")
@@ -757,15 +858,15 @@ public final class M3NavigationRail extends Control {
 
     /// Returns the minimum spacing between the optional header and destination items.
     ///
-    /// @return the header spacing in pixels
+    /// @return the header spacing in logical pixels
     public final double getHeaderSpacing() {
         return headerSpacingStyleable == null ? DEFAULT_HEADER_SPACING : headerSpacingStyleable.get();
     }
 
     /// Sets the minimum spacing between the optional header and destination items.
     ///
-    /// @param headerSpacing the non-negative header spacing in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param headerSpacing the non-negative header spacing in logical pixels
+    /// @throws IllegalArgumentException if `headerSpacing` is negative or not finite
     public final void setHeaderSpacing(double headerSpacing) {
         headerSpacingProperty().set(M3Css.nonNegative(headerSpacing, "headerSpacing"));
     }
@@ -787,6 +888,9 @@ public final class M3NavigationRail extends Control {
     }
 
     /// Clears the current selection when empty selection is allowed.
+    ///
+    /// If empty selection is disallowed, this method instead selects the first reachable destination when one is
+    /// available. Calling it repeatedly is otherwise harmless.
     public final void clearSelection() {
         if (!isAllowEmptySelection()) {
             selectFirstItemIfNeeded();
@@ -821,7 +925,7 @@ public final class M3NavigationRail extends Control {
     /// @param attribute  the requested accessibility attribute
     /// @param parameters optional attribute-specific parameters
     /// @return the requested accessibility value, or `null` when no value is available
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -845,7 +949,7 @@ public final class M3NavigationRail extends Control {
     ///
     /// @param action     the accessibility action to execute
     /// @param parameters optional action-specific parameters
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

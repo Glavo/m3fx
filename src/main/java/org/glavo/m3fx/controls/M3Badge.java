@@ -27,11 +27,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-/// A Material Design 3 badge for small status, count, or attention indicators.
+/// A small status, count, or attention indicator.
 ///
-/// `M3Badge` displays either a small dot or a text badge depending on whether the text property is empty. It
-/// exposes token-backed size, shape, minimum width, and horizontal padding properties and can be positioned over
-/// another node with [M3BadgedBox].
+/// A badge with empty [text][#textProperty()] is rendered as a dot. Non-empty text creates a larger badge whose
+/// displayed value is shortened according to [maxCharacterCount][#maxCharacterCountProperty()]. The raw text is
+/// retained even when its displayed representation is shortened. Badges are non-focus-traversable and do not
+/// provide action behavior.
+///
+/// The no-argument constructor creates a dot badge. Use [M3BadgedBox] to overlay a badge on another node. Size,
+/// shape, and padding properties are styleable and use logical-pixel units.
 ///
 /// See [Material Design badges](https://m3.material.io/components/badges/overview).
 @NotNullByDefault
@@ -54,10 +58,20 @@ public final class M3Badge extends Control {
     /// The default horizontal content padding.
     private static final double DEFAULT_HORIZONTAL_PADDING = 4.0;
 
-    /// The badge text property.
+    /// The raw badge text before overflow handling.
+    ///
+    /// The default value is the empty string, which selects the dot presentation. This property does not accept
+    /// `null`; [setText][#setText(String)] throws when passed `null`.
+    ///
+    /// @defaultValue `""`
     private final StringProperty text = new SimpleStringProperty(this, "text", "");
 
-    /// The maximum display text length before the badge uses an overflow suffix.
+    /// The maximum number of UTF-16 code units retained before an overflow suffix is appended.
+    ///
+    /// The default value is `3`. The value is always at least `1`. The setter rejects non-positive values;
+    /// a non-positive value assigned directly to the property is normalized to `1`.
+    ///
+    /// @defaultValue `3`
     private final IntegerProperty maxCharacterCount = new SimpleIntegerProperty(this, "maxCharacterCount", 3) {
         /// Validates assigned maximum character counts.
         @Override
@@ -68,29 +82,50 @@ public final class M3Badge extends Control {
         }
     };
 
-    /// The styleable small dot badge size token.
+    /// The width and height of a dot badge, in logical pixels.
+    ///
+    /// The default value is `6.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `6.0`
     private @Nullable StyleableDoubleProperty smallSize;
 
-    /// The styleable large badge height token.
+    /// The height of a text badge, in logical pixels.
+    ///
+    /// The default value is `16.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `16.0`
     private @Nullable StyleableDoubleProperty largeHeight;
 
-    /// The styleable large badge minimum width token.
+    /// The minimum width of a text badge, in logical pixels.
+    ///
+    /// The default value is `16.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `16.0`
     private @Nullable StyleableDoubleProperty largeMinWidth;
 
-    /// The styleable container shape token.
+    /// The corner radius of a text badge, in logical pixels.
+    ///
+    /// The default value is `8.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `8.0`
     private @Nullable StyleableDoubleProperty containerShape;
 
-    /// The styleable horizontal padding token.
+    /// The horizontal padding on each side of text badge content, in logical pixels.
+    ///
+    /// The default value is `4.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `4.0`
     private @Nullable StyleableDoubleProperty horizontalPadding;
 
-    /// Creates a small dot badge.
+    /// Creates a dot badge with empty text and the default size tokens.
     public M3Badge() {
         this("");
     }
 
-    /// Creates a badge with text.
+    /// Creates a badge with the specified raw text.
     ///
     /// @param text the badge text, or an empty string for a dot badge
+    /// @throws NullPointerException if `text` is `null`
     public M3Badge(String text) {
         M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TEXT);
@@ -104,6 +139,7 @@ public final class M3Badge extends Control {
     /// Creates a badge that displays a non-negative count.
     ///
     /// @param count the non-negative count displayed by the badge
+    /// @throws IllegalArgumentException if `count` is negative
     public M3Badge(int count) {
         this(countText(count));
     }
@@ -118,7 +154,7 @@ public final class M3Badge extends Control {
     /// Sets the badge text.
     ///
     /// @param text the raw badge text before overflow handling
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `text` is `null`
     public final void setText(String text) {
         this.text.set(Objects.requireNonNull(text, "text"));
     }
@@ -137,14 +173,15 @@ public final class M3Badge extends Control {
 
     /// Returns the maximum display text length before an overflow suffix is used.
     ///
-    /// @return the maximum number of text characters displayed before `+` is appended
+    /// @return the maximum number of UTF-16 code units retained before `+` is appended
     public final int getMaxCharacterCount() {
         return maxCharacterCount.get();
     }
 
     /// Sets the maximum display text length before an overflow suffix is used.
     ///
-    /// @param maxCharacterCount the maximum number of text characters displayed before `+` is appended
+    /// @param maxCharacterCount the maximum number of UTF-16 code units retained before `+` is appended
+    /// @throws IllegalArgumentException if `maxCharacterCount` is less than `1`
     public final void setMaxCharacterCount(int maxCharacterCount) {
         if (maxCharacterCount < 1) {
             throw new IllegalArgumentException("maxCharacterCount must be positive");
@@ -157,6 +194,9 @@ public final class M3Badge extends Control {
     }
 
     /// Returns the text rendered by this badge after overflow handling.
+    ///
+    /// If the raw text is longer than [maxCharacterCount][#maxCharacterCountProperty()], the returned value
+    /// consists of the retained prefix followed by `+`. This method does not modify [text][#textProperty()].
     ///
     /// @return the display text shown by the badge
     public final String getDisplayText() {
@@ -175,15 +215,15 @@ public final class M3Badge extends Control {
 
     /// Returns the small dot badge size token.
     ///
-    /// @return the small dot badge size in pixels
+    /// @return the dot badge size in logical pixels
     public final double getSmallSize() {
         return smallSize == null ? DEFAULT_SMALL_SIZE : smallSize.get();
     }
 
     /// Sets the small dot badge size token.
     ///
-    /// @param smallSize the small dot badge size in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param smallSize the dot badge size in logical pixels
+    /// @throws IllegalArgumentException if `smallSize` is negative or not finite
     public final void setSmallSize(double smallSize) {
         smallSizeProperty().set(M3Css.nonNegative(smallSize, "smallSize"));
     }
@@ -203,15 +243,15 @@ public final class M3Badge extends Control {
 
     /// Returns the large badge height token.
     ///
-    /// @return the text badge height in pixels
+    /// @return the text badge height in logical pixels
     public final double getLargeHeight() {
         return largeHeight == null ? DEFAULT_LARGE_HEIGHT : largeHeight.get();
     }
 
     /// Sets the large badge height token.
     ///
-    /// @param largeHeight the text badge height in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param largeHeight the text badge height in logical pixels
+    /// @throws IllegalArgumentException if `largeHeight` is negative or not finite
     public final void setLargeHeight(double largeHeight) {
         largeHeightProperty().set(M3Css.nonNegative(largeHeight, "largeHeight"));
     }
@@ -231,15 +271,15 @@ public final class M3Badge extends Control {
 
     /// Returns the large badge minimum width token.
     ///
-    /// @return the text badge minimum width in pixels
+    /// @return the text badge minimum width in logical pixels
     public final double getLargeMinWidth() {
         return largeMinWidth == null ? DEFAULT_LARGE_MIN_WIDTH : largeMinWidth.get();
     }
 
     /// Sets the large badge minimum width token.
     ///
-    /// @param largeMinWidth the text badge minimum width in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param largeMinWidth the text badge minimum width in logical pixels
+    /// @throws IllegalArgumentException if `largeMinWidth` is negative or not finite
     public final void setLargeMinWidth(double largeMinWidth) {
         largeMinWidthProperty().set(M3Css.nonNegative(largeMinWidth, "largeMinWidth"));
     }
@@ -259,15 +299,15 @@ public final class M3Badge extends Control {
 
     /// Returns the container shape radius token.
     ///
-    /// @return the badge container corner radius in pixels
+    /// @return the badge container corner radius in logical pixels
     public final double getContainerShape() {
         return containerShape == null ? DEFAULT_CONTAINER_SHAPE : containerShape.get();
     }
 
     /// Sets the container shape radius token.
     ///
-    /// @param containerShape the badge container corner radius in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param containerShape the badge container corner radius in logical pixels
+    /// @throws IllegalArgumentException if `containerShape` is negative or not finite
     public final void setContainerShape(double containerShape) {
         containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
     }
@@ -295,7 +335,7 @@ public final class M3Badge extends Control {
     /// Sets the horizontal content padding token.
     ///
     /// @param horizontalPadding the horizontal padding used by text badges
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @throws IllegalArgumentException if `horizontalPadding` is negative or not finite
     public final void setHorizontalPadding(double horizontalPadding) {
         horizontalPaddingProperty().set(M3Css.nonNegative(horizontalPadding, "horizontalPadding"));
     }

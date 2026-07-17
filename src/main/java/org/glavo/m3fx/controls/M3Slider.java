@@ -112,31 +112,67 @@ public final class M3Slider extends Control {
     private static final @Nullable AccessibleAttribute VALUE_STRING_ATTRIBUTE =
             M3Accessible.attribute("VALUE_STRING");
 
-    /// Backing property for the public minimum value API.
+    /// The minimum slider value.
+    ///
+    /// Changing the minimum immediately normalizes the current value against the resulting range.
+    ///
+    /// @defaultValue `0.0`
     private @Nullable DoubleProperty min;
 
-    /// Backing property for the public maximum value API.
+    /// The maximum slider value.
+    ///
+    /// Changing the maximum immediately normalizes the current value against the resulting range.
+    ///
+    /// @defaultValue `100.0`
     private @Nullable DoubleProperty max;
 
-    /// Backing property for the public current value API.
+    /// The current slider value.
+    ///
+    /// Values are clamped to the range and, for a discrete slider, snapped to the nearest step measured from the
+    /// minimum. `NaN` and an inverted range normalize to the minimum.
+    ///
+    /// @defaultValue `0.0`
     private @Nullable DoubleProperty value;
 
-    /// Backing property for the public orientation API.
+    /// The slider orientation.
+    ///
+    /// Assigning `null` restores [Orientation#HORIZONTAL].
+    ///
+    /// @defaultValue `HORIZONTAL`
     private @Nullable ObjectProperty<Orientation> orientation;
 
-    /// Backing property for the public value-changing API.
+    /// Whether a direct pointer interaction is changing the value.
+    ///
+    /// The control sets this property for the duration of a drag. Applications may also set or bind it to coordinate
+    /// commit behavior.
+    ///
+    /// @defaultValue `false`
     private @Nullable BooleanProperty valueChanging;
 
-    /// Backing property for the public block increment API.
+    /// The amount used for page navigation and continuous-slider single-step adjustment.
+    ///
+    /// The value must be finite and non-negative.
+    ///
+    /// @defaultValue `10.0`
     private @Nullable DoubleProperty blockIncrement;
 
-    /// Backing property for the public discrete step API.
+    /// The discrete step size, or zero for a continuous slider.
+    ///
+    /// The value must be finite and non-negative. Changing it immediately re-normalizes the current value.
+    ///
+    /// @defaultValue `0.0`
     private @Nullable DoubleProperty stepSize;
 
-    /// Backing property for the public centered-track API.
+    /// Whether the active track begins at the range midpoint instead of the minimum.
+    ///
+    /// @defaultValue `false`
     private @Nullable BooleanProperty centered;
 
-    /// The Material slider size property.
+    /// The Material slider size.
+    ///
+    /// Assigning `null` restores [M3SliderSize#EXTRA_SMALL].
+    ///
+    /// @defaultValue `EXTRA_SMALL`
     private final ObjectProperty<M3SliderSize> size = new SimpleObjectProperty<>(this, "size", DEFAULT_SIZE) {
         /// Updates the component token style class when the size changes.
         @Override
@@ -151,56 +187,95 @@ public final class M3Slider extends Control {
     };
 
     /// The optional graphic inset into the active track.
+    ///
+    /// A non-null node is owned by this slider and must be available for it to parent.
+    ///
+    /// @defaultValue `null`
     private @Nullable ObjectProperty<@Nullable Node> activeTrackGraphic;
 
     /// The optional graphic inset into the inactive track.
+    ///
+    /// A non-null node is owned by this slider and must be available for it to parent.
+    ///
+    /// @defaultValue `null`
     private @Nullable ObjectProperty<@Nullable Node> inactiveTrackGraphic;
 
-    /// Whether the value indicator is displayed during direct manipulation.
+    /// Whether the value indicator is available during direct pointer manipulation.
+    ///
+    /// @defaultValue `false`
     private @Nullable BooleanProperty showValueIndicator;
 
     /// The optional formatter used by the value indicator and accessibility value string.
+    ///
+    /// `null` selects the built-in compact decimal representation.
+    ///
+    /// @defaultValue `null`
     private @Nullable ObjectProperty<@Nullable StringConverter<Double>> labelFormatter;
 
-    /// Backing property for the public track thickness token API.
+    /// The track thickness in logical pixels.
+    ///
+    /// @defaultValue `16.0`
     private @Nullable StyleableDoubleProperty trackThickness;
 
-    /// Backing property for the public track shape token API.
+    /// The track corner radius in logical pixels.
+    ///
+    /// @defaultValue `999.0`
     private @Nullable StyleableDoubleProperty trackShape;
 
-    /// Backing property for the public stop indicator size token API.
+    /// The stop-indicator diameter in logical pixels.
+    ///
+    /// @defaultValue `4.0`
     private @Nullable StyleableDoubleProperty stopIndicatorSize;
 
-    /// Backing property for the public stop indicator trailing-space token API.
+    /// The distance between the inactive-track outer edge and stop indicator in logical pixels.
+    ///
+    /// @defaultValue `4.0`
     private @Nullable StyleableDoubleProperty stopIndicatorTrailingSpace;
 
-    /// Backing property for the public thumb size token API.
+    /// The thumb long-side size in logical pixels.
+    ///
+    /// @defaultValue `44.0`
     private @Nullable StyleableDoubleProperty thumbSize;
 
-    /// Backing property for the public thumb width token API.
+    /// The thumb short-side width in logical pixels.
+    ///
+    /// @defaultValue `4.0`
     private @Nullable StyleableDoubleProperty thumbWidth;
 
-    /// Backing property for the public thumb track-gap token API.
+    /// The gap between the thumb and each adjacent track segment in logical pixels.
+    ///
+    /// @defaultValue `6.0`
     private @Nullable StyleableDoubleProperty thumbTrackGap;
 
-    /// Backing property for the public touch target size token API.
+    /// The preferred square touch-target size in logical pixels.
+    ///
+    /// @defaultValue `48.0`
     private @Nullable StyleableDoubleProperty touchTargetSize;
 
-    /// The styleable inset-icon size token.
+    /// The inset-icon size in logical pixels.
+    ///
+    /// @defaultValue `0.0`
     private @Nullable StyleableDoubleProperty iconSize;
 
-    /// The styleable inset-icon outer padding token.
+    /// The inset-icon outer padding in logical pixels.
+    ///
+    /// @defaultValue `0.0`
     private @Nullable StyleableDoubleProperty iconPadding;
 
-    /// The styleable value-indicator bottom-space token.
+    /// The distance between the thumb and value indicator in logical pixels.
+    ///
+    /// @defaultValue `12.0`
     private @Nullable StyleableDoubleProperty valueIndicatorBottomSpace;
 
-    /// Creates a slider with the JavaFX default range.
+    /// Creates a horizontal, continuous slider with range `0.0..100.0` and value `0.0`.
     public M3Slider() {
         initialize();
     }
 
     /// Creates a slider with a range and initial value.
+    ///
+    /// The initial value is normalized after both bounds are assigned. If `max` is less than `min`, the resulting
+    /// value is `min`.
     ///
     /// @param min   the minimum slider value
     /// @param max   the maximum slider value
@@ -228,7 +303,7 @@ public final class M3Slider extends Control {
     /// individual styleable metric properties after CSS resolution when a custom configuration is required.
     ///
     /// @param size the Material slider size
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `size` is `null`
     public final void setSize(M3SliderSize size) {
         this.size.set(Objects.requireNonNull(size, "size"));
     }
@@ -1125,7 +1200,7 @@ public final class M3Slider extends Control {
     /// @param attribute  the requested accessibility attribute
     /// @param parameters the optional attribute parameters
     /// @return the attribute value, or `null` when unavailable
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -1151,7 +1226,7 @@ public final class M3Slider extends Control {
     ///
     /// @param action     the requested accessibility action
     /// @param parameters the optional action parameters
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

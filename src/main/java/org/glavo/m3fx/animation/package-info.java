@@ -1,15 +1,15 @@
 // Copyright (c) 2026 Glavo
 // SPDX-License-Identifier: Apache-2.0
 
-/// Defines runtime motion settings and semantic motion specs for M3FX controls.
+/// Defines Material Design 3 motion primitives, semantic specifications, and reduced-motion settings.
 ///
-/// The animation package exposes the duration and easing model used by interaction feedback, state changes,
-/// popup transitions, progress indicators, and Material Design 3 Expressive motion variants. Applications can
-/// request reduced motion globally or for a subtree. Motion schemes and behavior timings belong to theme tokens,
-/// so Standard and Expressive profiles remain the single source of design motion.
+/// [M3Motion] exposes the primitive duration and easing scale. [M3MotionSpec] combines those primitives, while
+/// [M3MotionScheme] assigns specifications to effects and spatial roles. [M3MotionBehavior] contains related
+/// control delays and repeating cycle periods. Applications normally consume these values through the active
+/// theme rather than selecting constants directly.
 ///
-/// Reduced-motion settings are resolved by walking the JavaFX parent chain, so a container can request reduced
-/// motion for an entire feature area without changing each control individually.
+/// [M3MotionSettings] can request reduced motion globally or for a node subtree. Effective node settings are
+/// inherited through the JavaFX parent chain; a descendant cannot cancel an ancestor request.
 ///
 /// Motion specs and schemes are immutable and can be shared. Their builders are mutable, reusable, and not
 /// thread-safe. Runtime settings that observe or mutate live nodes follow JavaFX scene-graph threading rules.

@@ -6,30 +6,33 @@ package org.glavo.m3fx.tokens;
 import org.glavo.m3fx.internal.tokens.M3DensityImpl;
 import org.jetbrains.annotations.NotNullByDefault;
 
-/// Describes the density scale applied to layout-sensitive component tokens.
+/// Describes an immutable density scale for layout-sensitive component tokens.
 ///
-/// Density adjusts component metrics that are safe to compact or expand, such as heights, padding, and touch
-/// targets. A scale of `0.0` represents the baseline Material Design 3 density, and each step changes
-/// applicable dimensions by four device-independent pixels. Supported scales are finite values in the closed
-/// interval from `-4.0` through `4.0`.
+/// Density adjusts metrics that are safe to compact or expand, such as heights and padding. A scale of `0.0`
+/// represents the baseline Material Design 3 density. Each scale unit adds four JavaFX logical pixels to a metric;
+/// negative scales subtract the same amount. Supported scales are finite values in the closed interval
+/// `[-4.0, 4.0]`.
+///
+/// Density is applied when component tokens are derived. Changing the density object used to construct a theme
+/// does not dynamically resize an existing token set.
 ///
 /// See [Material Design layout](https://m3.material.io/foundations/layout/overview) and
 /// [Material Design](https://m3.material.io/).
 @NotNullByDefault
 public sealed interface M3Density permits M3DensityImpl {
-    /// Returns the density scale where zero is the baseline Material density.
+    /// Returns the density scale.
     ///
-    /// @return the density scale where zero is the baseline Material density
+    /// @return a finite scale in `[-4.0, 4.0]`, where zero is the baseline density
     double scale();
 
-    /// Returns the baseline density.
+    /// Returns a density whose scale is `0.0`.
     ///
-    /// @return the baseline density
+    /// @return the immutable baseline density
     static M3Density standard() {
         return new M3DensityImpl(0.0);
     }
 
-    /// Creates a density value after validating its supported range.
+    /// Creates a density with the specified scale.
     ///
     /// @param scale the density scale where zero is the baseline Material density
     /// @return a density value for the supplied scale
@@ -38,10 +41,13 @@ public sealed interface M3Density permits M3DensityImpl {
         return new M3DensityImpl(scale);
     }
 
-    /// Applies this density to a baseline size.
+    /// Applies this density to a baseline metric.
+    ///
+    /// The result is `max(0.0, value + scale() * 4.0)`. Negative input values are accepted but may therefore be
+    /// clamped to zero.
     ///
     /// @param value the baseline size to adjust
-    /// @return the density-adjusted size, never less than zero
+    /// @return the density-adjusted metric, never less than zero
     /// @throws IllegalArgumentException if `value` is not finite
     default double apply(double value) {
         if (!Double.isFinite(value)) {

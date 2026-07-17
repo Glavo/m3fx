@@ -51,10 +51,22 @@ import java.util.Objects;
 
 /// A Material Design 3 static list container for a small number of already-created nodes.
 ///
-/// `M3ListPane` is useful when the application already owns the exact [M3ListItem] nodes that should be shown
-/// and the list is small enough that virtualization is unnecessary. It manages selection across child list
-/// items, supports keyboard traversal, and exposes read-only selected-item views. For large data sets, prefer
-/// [M3ListView].
+/// `M3ListPane` is useful when the application creates the exact nodes to display and the list is small enough
+/// that virtualization is unnecessary. [getItems] is a live, ordered list that may contain [M3ListItem], section
+/// headers, dividers, and other structural nodes. Only enabled and visible `M3ListItem` entries participate in
+/// selection and keyboard traversal. For large or data-driven lists, prefer [M3ListView].
+///
+/// The default pane is empty, uses [M3ListStyle#STANDARD], has no managed selection, and permits an empty
+/// selection. The selected-item list is a live, unmodifiable observable view in child order. Nodes in the item
+/// list are owned by this control while displayed and must not belong to another parent.
+///
+/// ```java
+/// M3ListPane listPane = new M3ListPane();
+/// M3ListItem inboxItem = new M3ListItem("Inbox");
+/// listPane.getItems().addAll(inboxItem, new M3ListItem("Archive"));
+/// listPane.setSelectionMode(M3SelectionMode.SINGLE);
+/// listPane.select(inboxItem);
+/// ```
 ///
 /// See [Material Design lists](https://m3.material.io/components/lists/overview).
 @NotNullByDefault
@@ -68,10 +80,19 @@ public final class M3ListPane extends Control {
     /// The default item spacing used by standard lists.
     private static final double DEFAULT_ITEM_SPACING = 0.0;
 
-    /// The mutable list content.
+    /// The live, mutable, ordered content displayed by this pane.
+    ///
+    /// The list rejects `null` elements and reports mutations through the `ObservableList` change API. Structural
+    /// nodes are displayed but do not participate in selection. Removing a selected list item clears its selected
+    /// state.
     private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
 
-    /// The list containment style property.
+    /// The visual containment style used for list items.
+    ///
+    /// A direct assignment of `null` is replaced with [M3ListStyle#STANDARD]. This property changes presentation
+    /// only; it does not alter item order or selection.
+    ///
+    /// @defaultValue [M3ListStyle#STANDARD]
     private final ObjectProperty<M3ListStyle> listStyle =
             new SimpleObjectProperty<>(this, "listStyle", DEFAULT_LIST_STYLE) {
                 /// Updates the list style class after the containment style changes.
@@ -85,7 +106,10 @@ public final class M3ListPane extends Control {
                 }
             };
 
-    /// The styleable item spacing property.
+    /// The gap between directly adjacent [M3ListItem] nodes in logical pixels.
+    ///
+    /// Values must be finite and non-negative. The effective default is supplied by the active list style and
+    /// theme; section headers, dividers, and other structural content do not receive this gap.
     private @Nullable StyleableDoubleProperty itemSpacing;
 
     /// Notifies accessibility clients when focus moves between list items.
@@ -93,7 +117,13 @@ public final class M3ListPane extends Control {
             new M3AccessibleFocusNotifier(this, () ->
                     M3Accessible.currentOrSelectionFocusTarget(this, getItems(), getSelectedItem(), M3ListItem.class));
 
-    /// The list item selection mode.
+    /// The policy applied when a reachable list item is activated.
+    ///
+    /// [M3SelectionMode#NONE] leaves item activation independent of selection, [M3SelectionMode#SINGLE] retains at
+    /// most one selected item, and [M3SelectionMode#MULTIPLE] permits multiple selected items. A direct assignment
+    /// of `null` is replaced with [M3SelectionMode#NONE].
+    ///
+    /// @defaultValue [M3SelectionMode#NONE]
     private final ObjectProperty<M3SelectionMode> selectionMode =
             new SimpleObjectProperty<>(this, "selectionMode", M3SelectionMode.NONE) {
                 /// Enforces selection invariants when the mode changes.
@@ -107,7 +137,12 @@ public final class M3ListPane extends Control {
                 }
             };
 
-    /// Whether this list allows all selectable items to be unselected.
+    /// Whether the managed selection may be empty.
+    ///
+    /// Setting the value to `false` selects the first enabled, visible list item when managed selection is active
+    /// and currently empty.
+    ///
+    /// @defaultValue `true`
     private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection", true) {
         /// Restores a selected item when empty selection is disabled.
         @Override
@@ -178,14 +213,19 @@ public final class M3ListPane extends Control {
     /// Whether the list is currently synchronizing selected states.
     private boolean updatingSelection;
 
-    /// Creates an empty list pane.
+    /// Creates an empty standard list pane with selection disabled and empty selection allowed.
     public M3ListPane() {
         initialize();
     }
 
-    /// Returns the mutable child list used as list content.
+    /// Returns the live mutable list of nodes displayed by this pane.
     ///
-    /// @return the mutable child list used as list content
+    /// Mutations are observed immediately and insertion order determines layout, selection order, and keyboard
+    /// traversal. The list rejects `null`. It does not perform an explicit duplicate check, but each entry is a
+    /// JavaFX node and must occur only once and must not simultaneously belong to another parent. Structural nodes
+    /// are displayed but do not participate in managed selection.
+    ///
+    /// @return the live mutable item list
     public final ObservableList<Node> getItems() {
         return items;
     }
@@ -200,7 +240,7 @@ public final class M3ListPane extends Control {
     /// Sets the list containment style.
     ///
     /// @param listStyle the standard or segmented list style
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `listStyle` is `null`
     public final void setListStyle(M3ListStyle listStyle) {
         this.listStyle.set(Objects.requireNonNull(listStyle, "listStyle"));
     }
@@ -213,7 +253,7 @@ public final class M3ListPane extends Control {
     ///
     /// Section headers, dividers, and other content nodes do not receive this gap.
     ///
-    /// @return the item spacing in pixels
+    /// @return the item spacing in logical pixels
     public final double getItemSpacing() {
         return itemSpacing == null ? DEFAULT_ITEM_SPACING : itemSpacing.get();
     }
@@ -223,8 +263,8 @@ public final class M3ListPane extends Control {
     /// An explicit Java value overrides the style default selected by [listStyleProperty()]. Section headers,
     /// dividers, and other content nodes remain contiguous with their neighbors.
     ///
-    /// @param itemSpacing the non-negative item spacing in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param itemSpacing the non-negative item spacing in logical pixels
+    /// @throws IllegalArgumentException if `itemSpacing` is negative or not finite
     public final void setItemSpacing(double itemSpacing) {
         itemSpacingProperty().set(M3Css.nonNegative(itemSpacing, "itemSpacing"));
     }
@@ -252,7 +292,7 @@ public final class M3ListPane extends Control {
     /// Sets the list item selection mode.
     ///
     /// @param selectionMode the list item selection mode
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `selectionMode` is `null`
     public final void setSelectionMode(M3SelectionMode selectionMode) {
         this.selectionMode.set(Objects.requireNonNull(selectionMode, "selectionMode"));
     }
@@ -279,9 +319,11 @@ public final class M3ListPane extends Control {
         return allowEmptySelection;
     }
 
-    /// Returns the selected list items in child order.
+    /// Returns an unmodifiable observable view of selected list items in child order.
     ///
-    /// @return the selected list items in child order
+    /// The returned list is live and reports changes caused by item mutation, item reachability, or selection policy.
+    ///
+    /// @return the live unmodifiable selected-item view
     public final @UnmodifiableView ObservableList<M3ListItem> getSelectedItems() {
         return selectedItemsView;
     }
@@ -308,7 +350,8 @@ public final class M3ListPane extends Control {
     /// Selects a list item that belongs to this list.
     ///
     /// @param item the list item to select
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `item` is `null`
+    /// @throws IllegalArgumentException if `item` is not an effectively reachable member of this pane
     public final void select(M3ListItem item) {
         Objects.requireNonNull(item, "item");
         if (!getItems().contains(item)) {
@@ -328,6 +371,8 @@ public final class M3ListPane extends Control {
     /// Selects the list item at the given child index.
     ///
     /// @param index the child index to select
+    /// @throws IndexOutOfBoundsException if `index` is outside the item list
+    /// @throws IllegalArgumentException if the indexed node is not a selectable [M3ListItem]
     public final void selectIndex(int index) {
         Node child = getItems().get(index);
         if (child instanceof M3ListItem item) {
@@ -383,7 +428,10 @@ public final class M3ListPane extends Control {
         }
     }
 
-    /// Clears the current selection when empty selection is allowed.
+    /// Clears the current selection if the active policy allows it.
+    ///
+    /// If empty selection is disallowed while managed selection is active, this method preserves or restores the
+    /// first selectable item instead.
     public final void clearSelection() {
         if (!isAllowEmptySelection() && getSelectionMode() != M3SelectionMode.NONE) {
             selectFirstItemIfNeeded();
@@ -400,7 +448,10 @@ public final class M3ListPane extends Control {
 
     /// Returns accessibility attributes for list content and selection state.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @param attribute the requested accessibility attribute
+    /// @param parameters optional attribute-specific parameters
+    /// @return the requested accessibility value, or `null` if the attribute is not supported
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -421,7 +472,9 @@ public final class M3ListPane extends Control {
 
     /// Executes accessibility selection actions for list items.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @param action the accessibility action to execute
+    /// @param parameters optional action-specific parameters
+    /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

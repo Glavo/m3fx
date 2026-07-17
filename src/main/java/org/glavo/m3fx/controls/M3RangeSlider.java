@@ -34,11 +34,16 @@ import java.util.Objects;
 
 /// A Material Design 3 range slider for selecting two ordered values from one numeric range.
 ///
-/// M3RangeSlider renders two independently focusable handles. The active track spans from [#getLowValue()] to
+/// `M3RangeSlider` presents two independently focusable handles. The active track spans from [#getLowValue()] to
 /// [#getHighValue()], while the track outside that interval remains inactive. Pointer, keyboard, and accessibility
 /// changes are clamped to the configured range and preserve the invariant lowValue <= highValue. A positive
 /// [#getStepSize()] turns the control into a discrete range slider and snaps both handles to values measured from
 /// [#getMin()].
+///
+/// The default range is `0` through `100`, with both endpoints selected. The lower and upper values are writable
+/// JavaFX properties; direct assignments are normalized in the same way as values supplied through the setters.
+/// The `lowValueChanging` and `highValueChanging` properties identify direct manipulation and are intended for
+/// coordinating application work that should be deferred until a drag completes.
 ///
 /// Range sliders are normally horizontal. Vertical orientation is supported for application-specific layouts, but
 /// Material Design recommends a horizontal range slider because two vertically arranged values impose additional
@@ -105,34 +110,76 @@ public final class M3RangeSlider extends Control {
     /// The default distance between a handle and its value indicator.
     private static final double DEFAULT_VALUE_INDICATOR_BOTTOM_SPACE = 12.0;
 
-    /// The minimum value property.
+    /// The minimum value represented by this slider.
+    ///
+    /// Selected values are clamped again whenever this property changes. If `min` is greater than `max`, the
+    /// selected interval collapses to `min` until valid bounds are restored.
+    ///
+    /// @defaultValue `0.0`
     private @Nullable DoubleProperty min;
 
-    /// The maximum value property.
+    /// The maximum value represented by this slider.
+    ///
+    /// Selected values are clamped again whenever this property changes. If `max` is less than `min`, the selected
+    /// interval collapses to `min` until valid bounds are restored.
+    ///
+    /// @defaultValue `100.0`
     private @Nullable DoubleProperty max;
 
-    /// The lower selected value property.
+    /// The lower endpoint of the selected interval.
+    ///
+    /// Assignments are clamped to the configured bounds, snapped to [#getStepSize()] when discrete, and limited so
+    /// the value cannot exceed [#getHighValue()].
+    ///
+    /// @defaultValue `0.0`
     private @Nullable DoubleProperty lowValue;
 
-    /// The upper selected value property.
+    /// The upper endpoint of the selected interval.
+    ///
+    /// Assignments are clamped to the configured bounds, snapped to [#getStepSize()] when discrete, and limited so
+    /// the value cannot fall below [#getLowValue()].
+    ///
+    /// @defaultValue `100.0`
     private @Nullable DoubleProperty highValue;
 
-    /// The lower-handle direct-manipulation property.
+    /// Whether the user is currently changing the lower endpoint by direct manipulation.
+    ///
+    /// @defaultValue `false`
     private @Nullable BooleanProperty lowValueChanging;
 
-    /// The upper-handle direct-manipulation property.
+    /// Whether the user is currently changing the upper endpoint by direct manipulation.
+    ///
+    /// @defaultValue `false`
     private @Nullable BooleanProperty highValueChanging;
 
-    /// The orientation property.
+    /// The orientation of the track and handles.
+    ///
+    /// Assigning `null` directly to the property restores `HORIZONTAL`.
+    ///
+    /// @defaultValue [Orientation#HORIZONTAL]
     private @Nullable ObjectProperty<Orientation> orientation;
 
-    /// The keyboard block-increment property.
+    /// The non-negative amount used for block adjustments and continuous keyboard adjustments.
+    ///
+    /// The value must be finite. Invalid values assigned directly to the property are rejected by the same
+    /// validation used by [#setBlockIncrement(double)].
+    ///
+    /// @defaultValue `10.0`
     private @Nullable DoubleProperty blockIncrement;
 
-    /// The discrete step-size property.
+    /// The interval between selectable values, measured from [#getMin()].
+    ///
+    /// A value of zero makes the slider continuous. A positive finite value enables discrete snapping. Changing the
+    /// interval immediately re-snaps both selected endpoints.
+    ///
+    /// @defaultValue `0.0`
     private @Nullable DoubleProperty stepSize;
 
-    /// The Material slider size property.
+    /// The Material size preset used for the slider's default metrics.
+    ///
+    /// Assigning `null` directly to the property restores [M3SliderSize#EXTRA_SMALL].
+    ///
+    /// @defaultValue [M3SliderSize#EXTRA_SMALL]
     private final ObjectProperty<M3SliderSize> size = new SimpleObjectProperty<>(this, "size", DEFAULT_SIZE) {
         /// Updates the size style class after a value change.
         @Override
@@ -147,9 +194,15 @@ public final class M3RangeSlider extends Control {
     };
 
     /// Whether the active handle displays a value indicator during direct manipulation.
+    ///
+    /// @defaultValue `false`
     private @Nullable BooleanProperty showValueIndicator;
 
-    /// The optional value-label formatter.
+    /// The optional formatter used for value indicators and accessible value text.
+    ///
+    /// A `null` formatter selects the built-in compact decimal representation.
+    ///
+    /// @defaultValue `null`
     private @Nullable ObjectProperty<@Nullable StringConverter<Double>> labelFormatter;
 
     /// The styleable track-thickness token.
@@ -188,15 +241,16 @@ public final class M3RangeSlider extends Control {
     /// Prevents recursive value normalization while a range update is in progress.
     private boolean normalizingValues;
 
-    /// Creates a range slider with the default range from 0 through 100.
+    /// Creates a horizontal, continuous range slider with the range `0` through `100` fully selected.
     public M3RangeSlider() {
         initialize();
     }
 
-    /// Creates a range slider with explicit bounds and selected values.
+    /// Creates a horizontal, continuous range slider with explicit bounds and selected values.
     ///
-    /// Values outside the supplied range are clamped. If the selected values are reversed after clamping,
-    /// lowValue is reduced to highValue.
+    /// Values outside the supplied range are clamped. If the selected values are reversed after normalization,
+    /// `lowValue` is reduced to `highValue`. The constructor does not require `min` to be less than or equal to
+    /// `max`; an inverted range collapses both selected values to `min` until the bounds become valid.
     ///
     /// @param min       the minimum selectable value
     /// @param max       the maximum selectable value
@@ -390,14 +444,20 @@ public final class M3RangeSlider extends Control {
         return highValue;
     }
 
-    /// Applies a lower value after clamping and discrete snapping.
+    /// Adjusts the lower value after clamping and discrete snapping.
+    ///
+    /// This method has the same normalization semantics as [#setLowValue(double)] and never changes the upper
+    /// value.
     ///
     /// @param value the requested lower selected value
     public final void adjustLowValue(double value) {
         setLowValue(Math.min(normalizeValue(value), getHighValue()));
     }
 
-    /// Applies an upper value after clamping and discrete snapping.
+    /// Adjusts the upper value after clamping and discrete snapping.
+    ///
+    /// This method has the same normalization semantics as [#setHighValue(double)] and never changes the lower
+    /// value.
     ///
     /// @param value the requested upper selected value
     public final void adjustHighValue(double value) {
@@ -458,7 +518,7 @@ public final class M3RangeSlider extends Control {
     /// Material Design recommends horizontal orientation for range sliders.
     ///
     /// @param value the new orientation
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `value` is `null`
     public final void setOrientation(Orientation value) {
         orientationProperty().set(Objects.requireNonNull(value, "value"));
     }
@@ -591,7 +651,7 @@ public final class M3RangeSlider extends Control {
     /// Sets the Material slider size.
     ///
     /// @param value the size preset
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `value` is `null`
     public final void setSize(M3SliderSize value) {
         size.set(Objects.requireNonNull(value, "value"));
     }

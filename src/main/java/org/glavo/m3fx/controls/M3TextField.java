@@ -23,6 +23,9 @@ import java.util.List;
 /// Use it directly when a plain single-line field is enough, or place it inside [M3TextInputLayout] when the
 /// field needs a floating label, supporting text, character counter, clear button, or adornment slots.
 ///
+/// A new text field uses the filled variant and is not in error state. Text, selection, editing, action events,
+/// prompt text, and preferred column count retain the inherited [TextField] contracts.
+///
 /// See [Material Design text fields](https://m3.material.io/components/text-fields/overview).
 @NotNullByDefault
 public final class M3TextField extends TextField implements M3TextInput {
@@ -40,12 +43,12 @@ public final class M3TextField extends TextField implements M3TextInput {
             StyleableProperties.VERTICAL_PADDING
     );
 
-    /// Creates an empty filled text field.
+    /// Creates an empty filled text field that is not in error state.
     public M3TextField() {
         initialize();
     }
 
-    /// Creates a filled text field with initial text.
+    /// Creates a filled text field with initial text and no error state.
     ///
     /// As with [TextField], a `null` value is represented as empty content by the inherited text property.
     ///

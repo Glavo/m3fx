@@ -43,8 +43,12 @@ import java.util.Objects;
 /// A Material Design 3 search view with a search bar and result content.
 ///
 /// `M3SearchView` combines an embedded [M3SearchBar] with a result container that can animate into and out of
-/// view as search becomes active. Applications add arbitrary JavaFX nodes to the results list and can listen to
-/// the search bar action to submit or update search queries.
+/// view as search becomes active. The search text, prompt, leading node, trailing actions, active state, and action
+/// event are exposed directly by this control; applications do not need access to the embedded bar.
+///
+/// A newly created search view is active and shows an empty ordered result list. Deactivation hides the results and
+/// returns focus from a focused result to the search bar. It does not clear the query. Keyboard traversal moves from
+/// the search field through reachable result nodes, and Escape deactivates the view.
 ///
 /// See [Material Design search](https://m3.material.io/components/search/overview).
 @NotNullByDefault
@@ -94,11 +98,17 @@ public final class M3SearchView extends Control {
     /// The embedded search bar.
     private final M3SearchBar searchBar = new M3SearchBar();
 
-    /// The leading content node property.
+    /// The node displayed before the search text.
+    ///
+    /// The default is a back action that deactivates the search view. A `null` value leaves the slot empty.
     private final ObjectProperty<@Nullable Node> leading =
             new SimpleObjectProperty<>(this, "leading", searchBar.getLeading());
 
-    /// The search text property.
+    /// The non-null search text edited by the user.
+    ///
+    /// Assigning or binding a `null` value throws [NullPointerException].
+    ///
+    /// @defaultValue `""`
     private final StringProperty text = new SimpleStringProperty(this, "text", "") {
         /// Keeps search text non-null.
         @Override
@@ -107,7 +117,11 @@ public final class M3SearchView extends Control {
         }
     };
 
-    /// The prompt text property.
+    /// The non-null prompt displayed when [#getText()] is empty.
+    ///
+    /// Assigning or binding a `null` value throws [NullPointerException].
+    ///
+    /// @defaultValue `""`
     private final StringProperty promptText = new SimpleStringProperty(this, "promptText", "") {
         /// Keeps prompt text non-null.
         @Override
@@ -116,7 +130,9 @@ public final class M3SearchView extends Control {
         }
     };
 
-    /// The search submission handler property.
+    /// The handler invoked for search action events.
+    ///
+    /// @defaultValue `null`
     private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
             new SimpleObjectProperty<>(this, "onAction") {
                 /// Updates the registered action event handler.
@@ -126,10 +142,16 @@ public final class M3SearchView extends Control {
                 }
             };
 
-    /// The active search result state property.
+    /// Whether the search result content is active and shown.
+    ///
+    /// @defaultValue `true`
     private final BooleanProperty active = new SimpleBooleanProperty(this, "active");
 
-    /// The visual-treatment property.
+    /// The visual treatment used by this search view.
+    ///
+    /// Assigning `null` directly to the property restores [M3SearchViewStyle#CONTAINED].
+    ///
+    /// @defaultValue [M3SearchViewStyle#CONTAINED]
     private final ObjectProperty<M3SearchViewStyle> viewStyle =
             new SimpleObjectProperty<>(this, "viewStyle", DEFAULT_VIEW_STYLE) {
                 /// Updates treatment pseudo-classes when the value changes.
@@ -144,7 +166,11 @@ public final class M3SearchView extends Control {
                 }
             };
 
-    /// The window-relative layout property.
+    /// The window-relative layout used by this search view.
+    ///
+    /// Assigning `null` directly to the property restores [M3SearchViewLayout#DOCKED].
+    ///
+    /// @defaultValue [M3SearchViewLayout#DOCKED]
     private final ObjectProperty<M3SearchViewLayout> viewLayout =
             new SimpleObjectProperty<>(this, "viewLayout", DEFAULT_VIEW_LAYOUT) {
                 /// Updates layout pseudo-classes when the value changes.
@@ -169,14 +195,15 @@ public final class M3SearchView extends Control {
     private final M3AccessibleFocusNotifier focusNotifier =
             new M3AccessibleFocusNotifier(this, this::currentFocusNode);
 
-    /// Creates an empty search view.
+    /// Creates an active, contained, docked search view with empty text, prompt, and results.
     public M3SearchView() {
         initialize();
     }
 
-    /// Creates a search view with prompt text.
+    /// Creates an active, contained, docked search view with the specified prompt and no results.
     ///
     /// @param promptText the prompt text displayed by the embedded search bar
+    /// @throws NullPointerException if `promptText` is `null`
     public M3SearchView(String promptText) {
         initialize();
         setPromptText(promptText);
@@ -195,7 +222,7 @@ public final class M3SearchView extends Control {
     /// active state or search text.
     ///
     /// @param viewStyle the search view style
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `viewStyle` is `null`
     public final void setViewStyle(M3SearchViewStyle viewStyle) {
         this.viewStyle.set(Objects.requireNonNull(viewStyle, "viewStyle"));
     }
@@ -217,7 +244,7 @@ public final class M3SearchView extends Control {
     /// layout restores the bounded Material size and shape constraints.
     ///
     /// @param viewLayout the search view layout
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `viewLayout` is `null`
     public final void setViewLayout(M3SearchViewLayout viewLayout) {
         this.viewLayout.set(Objects.requireNonNull(viewLayout, "viewLayout"));
     }
@@ -229,7 +256,11 @@ public final class M3SearchView extends Control {
 
     /// Returns the mutable result node list.
     ///
-    /// @return the mutable result node list displayed below the search bar
+    /// The returned list is live, mutable, and ordered. Changes are immediately reflected in layout, accessibility,
+    /// and keyboard traversal. `null` and duplicate node instances are rejected by the JavaFX children list, and a
+    /// node must not already belong to another parent.
+    ///
+    /// @return the live result node list displayed below the search bar
     public final ObservableList<Node> getResults() {
         return resultsBox.getChildren();
     }
@@ -255,7 +286,10 @@ public final class M3SearchView extends Control {
 
     /// Returns the mutable trailing action list from the embedded search bar.
     ///
-    /// @return the mutable trailing action list from the embedded search bar
+    /// The returned list is live, mutable, ordered, and rejects `null` elements. Each node is subject to the normal
+    /// JavaFX single-parent rule when displayed.
+    ///
+    /// @return the live trailing action list
     public final ObservableList<Node> getTrailingActions() {
         return searchBar.getTrailingActions();
     }
@@ -270,6 +304,7 @@ public final class M3SearchView extends Control {
     /// Sets the entered search text.
     ///
     /// @param text the text entered in the embedded search bar
+    /// @throws NullPointerException if `text` is `null`
     public final void setText(String text) {
         this.text.set(text);
     }
@@ -288,6 +323,7 @@ public final class M3SearchView extends Control {
     /// Sets the prompt text displayed by the embedded search bar.
     ///
     /// @param promptText the prompt text displayed by the embedded search bar
+    /// @throws NullPointerException if `promptText` is `null`
     public final void setPromptText(String promptText) {
         this.promptText.set(promptText);
     }
@@ -314,7 +350,9 @@ public final class M3SearchView extends Control {
         return onAction;
     }
 
-    /// Fires this search view's action event.
+    /// Fires this search view's action event unless the control is disabled.
+    ///
+    /// Firing does not change the query, active state, or result list.
     public final void fire() {
         if (!isDisabled()) {
             Event.fireEvent(this, new ActionEvent(this, this));
@@ -340,16 +378,18 @@ public final class M3SearchView extends Control {
     }
 
     /// Moves the search view into its active result state.
+    ///
+    /// Calling this method while already active has no effect.
     public final void activate() {
         setActive(true);
     }
 
-    /// Moves the search view out of its active result state.
+    /// Moves the search view out of its active result state without clearing the query.
     public final void deactivate() {
         setActive(false);
     }
 
-    /// Clears the embedded search bar text.
+    /// Replaces the query with an empty string without changing the active state or result list.
     public final void clear() {
         setText("");
     }
@@ -373,7 +413,7 @@ public final class M3SearchView extends Control {
     /// @param attribute  the requested accessibility attribute
     /// @param parameters the optional attribute parameters
     /// @return the attribute value, or `null` when unavailable
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -391,7 +431,7 @@ public final class M3SearchView extends Control {
     ///
     /// @param action     the requested accessibility action
     /// @param parameters the optional action parameters
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

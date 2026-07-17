@@ -73,8 +73,9 @@ public final class M3TextInputValidators {
     /// @param tooShortErrorText the error message returned for text shorter than `minLength`
     /// @param tooLongErrorText the error message returned for text longer than `maxLength`
     /// @return a validator that rejects text outside the inclusive length range
-    /// @throws NullPointerException if either error message is `null`
-    /// @throws IllegalArgumentException if either length is negative or `minLength` is greater than `maxLength`
+    /// @throws NullPointerException if `tooShortErrorText` or `tooLongErrorText` is `null`
+    /// @throws IllegalArgumentException if `minLength` or `maxLength` is negative, or `minLength` is greater than
+    ///     `maxLength`
     public static M3TextInputValidator lengthBetween(
             int minLength,
             int maxLength,
@@ -126,6 +127,9 @@ public final class M3TextInputValidators {
     }
 
     /// Returns a validator that evaluates validators in order and reports the first error.
+    ///
+    /// The supplied array is defensively copied. Later changes to the caller's array do not affect the returned
+    /// validator. An empty array produces a validator that always accepts input.
     ///
     /// @param validators the validators to evaluate in order
     /// @return a validator that returns the first non-empty error message from `validators`

@@ -51,7 +51,12 @@ import java.util.Objects;
 ///
 /// `M3SubMenuItem` extends [M3MenuItem] with a child [M3Menu] and popup positioning behavior. It can open its
 /// submenu from pointer hover, keyboard navigation, or explicit API calls, and it inherits theme context for the
-/// nested popup surface.
+/// nested popup surface. The submenu popup is non-modal and auto-hides. It also closes when this item becomes
+/// unreachable or its owning menu closes.
+///
+/// The item owns one stable submenu for its lifetime. [#getItems()] exposes that menu's content directly;
+/// applications configure selection behavior through [#getSubMenu()]. [#showSubMenu()] and [#hideSubMenu()] are
+/// non-blocking and the read-only [#subMenuShowingProperty()] remains true until an animated hide completes.
 ///
 /// See [Material Design menus](https://m3.material.io/components/menus/overview).
 @NotNullByDefault
@@ -157,7 +162,7 @@ public final class M3SubMenuItem extends M3MenuItem {
     /// The horizontal transition offset used by the current popup side.
     private double currentTransitionOffsetX = SUB_MENU_TRANSITION_OFFSET_X;
 
-    /// Creates an empty submenu item.
+    /// Creates an empty submenu item with empty text and an empty submenu.
     public M3SubMenuItem() {
         this("");
     }
@@ -165,6 +170,7 @@ public final class M3SubMenuItem extends M3MenuItem {
     /// Creates a submenu item with text.
     ///
     /// @param text the submenu item text
+    /// @throws NullPointerException if `text` is `null`
     public M3SubMenuItem(String text) {
         super(text);
         initialize();
@@ -174,6 +180,7 @@ public final class M3SubMenuItem extends M3MenuItem {
     ///
     /// @param text  the submenu item text
     /// @param items the submenu item nodes
+    /// @throws NullPointerException if `text`, `items`, or an element of `items` is `null`
     public M3SubMenuItem(String text, Node... items) {
         this(text);
         getItems().addAll(items);
@@ -188,7 +195,11 @@ public final class M3SubMenuItem extends M3MenuItem {
 
     /// Returns the mutable item list shown by this item's submenu.
     ///
-    /// @return the mutable item list shown by this item's submenu
+    /// The returned list is the live, mutable, ordered content list of [#getSubMenu()]. It rejects `null` elements.
+    /// Mutations update an open popup immediately. Nodes become children of the submenu and must satisfy normal
+    /// JavaFX parent ownership rules.
+    ///
+    /// @return the live mutable submenu content list
     public final ObservableList<Node> getItems() {
         return subMenu.getItems();
     }
@@ -211,6 +222,9 @@ public final class M3SubMenuItem extends M3MenuItem {
     }
 
     /// Shows the submenu popup beside this item.
+    ///
+    /// The operation has no effect until this item is reachable in a showing window. Opening this submenu closes
+    /// sibling submenus owned by the same menu. If already showing, the submenu remains current.
     public final void showSubMenu() {
         if (!M3Accessible.canReach(this) || !M3PopupWindows.canShow(this)) {
             return;
@@ -282,6 +296,9 @@ public final class M3SubMenuItem extends M3MenuItem {
     }
 
     /// Hides the submenu popup.
+    ///
+    /// The operation is a no-op when no popup is showing. Programmatic hiding does not request focus for this item;
+    /// keyboard collapse behavior may restore focus after the popup closes.
     public final void hideSubMenu() {
         hideSubMenu(false);
     }
@@ -320,7 +337,7 @@ public final class M3SubMenuItem extends M3MenuItem {
     /// @param attribute  the requested accessibility attribute
     /// @param parameters the optional attribute parameters
     /// @return the attribute value, or `null` when unavailable
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -340,7 +357,7 @@ public final class M3SubMenuItem extends M3MenuItem {
     ///
     /// @param action     the requested accessibility action
     /// @param parameters the optional action parameters
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

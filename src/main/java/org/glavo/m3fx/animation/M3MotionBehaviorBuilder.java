@@ -9,12 +9,15 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.Objects;
 
-/// Builds immutable [M3MotionBehavior] values from independently configurable interaction timings.
+/// Builds an immutable [M3MotionBehavior] by replacing individual interaction timings.
 ///
-/// Builders are initialized from an existing behavior so applications can override only the timings that differ
-/// from a standard or expressive theme. All durations must be non-null, finite, non-negative, and neither unknown
-/// nor indefinite. Replacement methods validate eagerly and throw [NullPointerException] or
-/// [IllegalArgumentException] for invalid values. A builder can be reused after [build].
+/// A builder is initialized from a complete behavior so applications can replace only the timings that differ
+/// from the selected profile. Every duration must be non-null, finite, and non-negative; [Duration#UNKNOWN] and
+/// [Duration#INDEFINITE] are rejected. Replacement methods validate before changing the builder and return this
+/// builder for method chaining.
+///
+/// [build] creates an independent immutable snapshot. Later builder changes do not affect previously built
+/// values. A builder may be reused but is not thread-safe.
 ///
 /// See [Material Design motion](https://m3.material.io/styles/motion/overview).
 @NotNullByDefault
@@ -78,6 +81,8 @@ public final class M3MotionBehaviorBuilder {
     ///
     /// @param duration the replacement duration
     /// @return this builder
+    /// @throws NullPointerException if `duration` is `null`
+    /// @throws IllegalArgumentException if `duration` is negative, indefinite, or unknown
     public M3MotionBehaviorBuilder tooltipShowDelay(Duration duration) {
         tooltipShowDelay = validDuration(duration, "tooltipShowDelay");
         return this;
@@ -87,6 +92,8 @@ public final class M3MotionBehaviorBuilder {
     ///
     /// @param duration the replacement duration
     /// @return this builder
+    /// @throws NullPointerException if `duration` is `null`
+    /// @throws IllegalArgumentException if `duration` is negative, indefinite, or unknown
     public M3MotionBehaviorBuilder tooltipHideDelay(Duration duration) {
         tooltipHideDelay = validDuration(duration, "tooltipHideDelay");
         return this;
@@ -96,6 +103,8 @@ public final class M3MotionBehaviorBuilder {
     ///
     /// @param duration the replacement duration
     /// @return this builder
+    /// @throws NullPointerException if `duration` is `null`
+    /// @throws IllegalArgumentException if `duration` is negative, indefinite, or unknown
     public M3MotionBehaviorBuilder tooltipShowDuration(Duration duration) {
         tooltipShowDuration = validDuration(duration, "tooltipShowDuration");
         return this;
@@ -105,6 +114,8 @@ public final class M3MotionBehaviorBuilder {
     ///
     /// @param duration the replacement duration
     /// @return this builder
+    /// @throws NullPointerException if `duration` is `null`
+    /// @throws IllegalArgumentException if `duration` is negative, indefinite, or unknown
     public M3MotionBehaviorBuilder richTooltipShowDuration(Duration duration) {
         richTooltipShowDuration = validDuration(duration, "richTooltipShowDuration");
         return this;
@@ -114,6 +125,8 @@ public final class M3MotionBehaviorBuilder {
     ///
     /// @param duration the replacement duration
     /// @return this builder
+    /// @throws NullPointerException if `duration` is `null`
+    /// @throws IllegalArgumentException if `duration` is negative, indefinite, or unknown
     public M3MotionBehaviorBuilder snackbarDisplayDuration(Duration duration) {
         snackbarDisplayDuration = validDuration(duration, "snackbarDisplayDuration");
         return this;
@@ -123,6 +136,8 @@ public final class M3MotionBehaviorBuilder {
     ///
     /// @param duration the replacement duration
     /// @return this builder
+    /// @throws NullPointerException if `duration` is `null`
+    /// @throws IllegalArgumentException if `duration` is negative, indefinite, or unknown
     public M3MotionBehaviorBuilder subMenuHoverOpenDelay(Duration duration) {
         subMenuHoverOpenDelay = validDuration(duration, "subMenuHoverOpenDelay");
         return this;
@@ -132,6 +147,8 @@ public final class M3MotionBehaviorBuilder {
     ///
     /// @param duration the replacement duration
     /// @return this builder
+    /// @throws NullPointerException if `duration` is `null`
+    /// @throws IllegalArgumentException if `duration` is negative, indefinite, or unknown
     public M3MotionBehaviorBuilder typeAheadResetDelay(Duration duration) {
         typeAheadResetDelay = validDuration(duration, "typeAheadResetDelay");
         return this;
@@ -141,6 +158,8 @@ public final class M3MotionBehaviorBuilder {
     ///
     /// @param duration the replacement duration
     /// @return this builder
+    /// @throws NullPointerException if `duration` is `null`
+    /// @throws IllegalArgumentException if `duration` is negative, indefinite, or unknown
     public M3MotionBehaviorBuilder subMenuHoverCloseDelay(Duration duration) {
         subMenuHoverCloseDelay = validDuration(duration, "subMenuHoverCloseDelay");
         return this;
@@ -150,6 +169,8 @@ public final class M3MotionBehaviorBuilder {
     ///
     /// @param duration the replacement duration
     /// @return this builder
+    /// @throws NullPointerException if `duration` is `null`
+    /// @throws IllegalArgumentException if `duration` is negative, indefinite, or unknown
     public M3MotionBehaviorBuilder linearProgressIndeterminateCycleDuration(Duration duration) {
         linearProgressIndeterminateCycleDuration = validDuration(
                 duration,
@@ -162,6 +183,8 @@ public final class M3MotionBehaviorBuilder {
     ///
     /// @param duration the replacement duration
     /// @return this builder
+    /// @throws NullPointerException if `duration` is `null`
+    /// @throws IllegalArgumentException if `duration` is negative, indefinite, or unknown
     public M3MotionBehaviorBuilder circularProgressIndeterminateCycleDuration(Duration duration) {
         circularProgressIndeterminateCycleDuration = validDuration(
                 duration,
@@ -174,6 +197,8 @@ public final class M3MotionBehaviorBuilder {
     ///
     /// @param duration the replacement duration
     /// @return this builder
+    /// @throws NullPointerException if `duration` is `null`
+    /// @throws IllegalArgumentException if `duration` is negative, indefinite, or unknown
     public M3MotionBehaviorBuilder loadingIndicatorMorphInterval(Duration duration) {
         loadingIndicatorMorphInterval = validDuration(duration, "loadingIndicatorMorphInterval");
         return this;
@@ -183,6 +208,8 @@ public final class M3MotionBehaviorBuilder {
     ///
     /// @param duration the replacement duration
     /// @return this builder
+    /// @throws NullPointerException if `duration` is `null`
+    /// @throws IllegalArgumentException if `duration` is negative, indefinite, or unknown
     public M3MotionBehaviorBuilder loadingIndicatorGlobalRotationDuration(Duration duration) {
         loadingIndicatorGlobalRotationDuration = validDuration(
                 duration,
@@ -191,9 +218,9 @@ public final class M3MotionBehaviorBuilder {
         return this;
     }
 
-    /// Creates an immutable behavior from the current timings.
+    /// Creates an immutable snapshot of the current timings.
     ///
-    /// @return the built motion behavior
+    /// @return a new immutable motion behavior; never `null`
     public M3MotionBehavior build() {
         return new M3MotionBehaviorImpl(
                 tooltipShowDelay,

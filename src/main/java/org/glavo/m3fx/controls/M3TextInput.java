@@ -12,7 +12,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 ///
 /// Implementations expose Material visual state independently from the editable text API inherited from the
 /// corresponding JavaFX control. The variant and geometry properties are writable and styleable. Geometry values
-/// use JavaFX logical pixels and must be finite and non-negative. Setting [errorProperty] changes presentation
+/// use JavaFX logical pixels and must be finite and non-negative. Setting [#errorProperty()] changes presentation
 /// only; validation and error-message ownership belong to [M3TextInputLayout].
 ///
 /// See [Material Design text fields](https://m3.material.io/components/text-fields/overview).

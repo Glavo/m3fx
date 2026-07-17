@@ -43,15 +43,17 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Objects;
 
-/// A Material Design 3 carousel for browsing arbitrary item nodes.
+/// A Material Design 3 control for browsing an ordered sequence of item nodes.
 ///
-/// `M3Carousel` manages an ordered item list, one of the six Material carousel layouts, selected index, keyboard
-/// navigation, pointer selection, and animated movement through the visible item track. Multi-browse, uncontained,
-/// and hero layouts scroll horizontally; the full-screen layout scrolls vertically and gives each item one complete
-/// viewport page. It can host any JavaFX node, allowing cards, media previews, or custom content to use Material
-/// carousel selection behavior. The carousel skin supplies keyline masking, interaction-state feedback, and focus
-/// indication, while each item remains responsible for its own activation semantics. Installed items participate
-/// directly in keyboard focus traversal; their previous `focusTraversable` values are restored when they are removed.
+/// A carousel owns a live, ordered list of arbitrary JavaFX nodes and maintains at most one selected item.
+/// Selection can be changed by pointer, keyboard, accessibility action, or the selection methods. Selecting an item
+/// does not activate application-specific behavior within that item; nested controls retain their own action
+/// semantics.
+///
+/// Items installed in the carousel become focus traversable so keyboard traversal operates on items rather than
+/// the container. Their previous focus-traversable values are restored when they are removed. Invisible, unmanaged,
+/// or disabled items are not selectable. The no-argument constructor creates an empty uncontained carousel with no
+/// selection, wrapping disabled, and animated programmatic scrolling enabled.
 ///
 /// See [Material Design carousel](https://m3.material.io/components/carousel/overview).
 @NotNullByDefault
@@ -62,10 +64,10 @@ public final class M3Carousel extends Control {
     /// The base style class for M3FX carousels.
     public static final String STYLE_CLASS = "m3-carousel";
 
-    /// The style class applied to the internal scroll viewport.
+    /// The style class applied to the carousel scroll viewport.
     public static final String VIEWPORT_STYLE_CLASS = "m3-carousel-viewport";
 
-    /// The style class applied to the internal item track.
+    /// The style class applied to the carousel item track.
     public static final String TRACK_STYLE_CLASS = "m3-carousel-track";
 
     /// The style class applied to each carousel item node.
@@ -77,13 +79,21 @@ public final class M3Carousel extends Control {
     /// The pseudo-class applied to the selected carousel item node.
     private static final PseudoClass SELECTED_PSEUDO_CLASS = PseudoClass.getPseudoClass("selected");
 
-    /// The mutable carousel item list.
+    /// The live, mutable item list in visual order.
+    ///
+    /// The list rejects `null`, preserves insertion order, and is observed for subsequent changes. An item is a
+    /// scene-graph node and cannot simultaneously be a child of another parent.
     private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
 
     /// The focus-traversable value restored when an application-owned item leaves this carousel.
     private final Map<Node, Boolean> originalItemFocusTraversable = new IdentityHashMap<>();
 
-    /// The Material layout strategy used to size and position carousel items.
+    /// The Material layout strategy used to size and position items.
+    ///
+    /// The default value is [M3CarouselLayout#UNCONTAINED]. The property never reports `null`; assigning `null`
+    /// restores the default.
+    ///
+    /// @defaultValue [M3CarouselLayout#UNCONTAINED]
     private final ObjectProperty<M3CarouselLayout> carouselLayout =
             new SimpleObjectProperty<>(this, "carouselLayout", DEFAULT_CAROUSEL_LAYOUT) {
                 /// Normalizes null assignments and refreshes layout-specific styles.
@@ -98,7 +108,13 @@ public final class M3Carousel extends Control {
                 }
             };
 
-    /// The selected item index, or `-1` when no item is selected.
+    /// The selected item index, or `-1` when selection is empty.
+    ///
+    /// The default value is `-1`. Negative assignments clear selection. Values beyond the end of the list are
+    /// bounded to the last item; if that item cannot be selected, the nearest reachable item is selected instead.
+    /// The value is also normalized when items are added, removed, hidden, unmanaged, or disabled.
+    ///
+    /// @defaultValue `-1`
     private final IntegerProperty selectedIndex = new SimpleIntegerProperty(this, "selectedIndex", -1) {
         /// Applies selection changes and keeps the index inside the current item range.
         @Override
@@ -110,10 +126,18 @@ public final class M3Carousel extends Control {
         }
     };
 
-    /// Whether keyboard previous and next navigation wraps around list edges.
+    /// Whether relative keyboard and method-based navigation wraps around the first and last selectable items.
+    ///
+    /// The default value is `false`.
+    ///
+    /// @defaultValue `false`
     private final BooleanProperty wrapAround = new SimpleBooleanProperty(this, "wrapAround", false);
 
-    /// Whether programmatic selection changes animate viewport scrolling.
+    /// Whether selection changes request animated scrolling to the selected item.
+    ///
+    /// The default value is `true`. Global or inherited reduced-motion settings may still suppress animation.
+    ///
+    /// @defaultValue `true`
     private final BooleanProperty animatedScroll = new SimpleBooleanProperty(this, "animatedScroll", true);
 
     /// The currently selected item.
@@ -164,17 +188,19 @@ public final class M3Carousel extends Control {
     /// Whether the selection property is being updated from normalization logic.
     private boolean updatingSelection;
 
-    /// Creates an empty carousel.
+    /// Creates an empty uncontained carousel with no selection.
     public M3Carousel() {
         initialize();
     }
 
-    /// Returns the mutable carousel item list.
+    /// Returns the live list of carousel items.
     ///
     /// Each installed item becomes focus traversable so Tab and arrow-key navigation operate on items rather than the
     /// carousel container. Removing an item restores the focus-traversable value it had when installed.
     ///
-    /// @return the mutable carousel item list
+    /// The list preserves insertion order and rejects `null` elements. Changes update selection immediately.
+    ///
+    /// @return the live, mutable item list
     public final ObservableList<Node> getItems() {
         return items;
     }
@@ -206,9 +232,13 @@ public final class M3Carousel extends Control {
         return selectedIndex.get();
     }
 
-    /// Sets the selected item index, or `-1` to clear selection.
+    /// Requests selection of the item at the specified index.
     ///
-    /// @param selectedIndex the selected item index, or `-1` to clear selection
+    /// A negative value clears selection. A value beyond the last item is bounded to the current list, and an
+    /// unreachable target is replaced with the nearest reachable item. Use [selectIndex][#selectIndex(int)] when
+    /// invalid indices or unreachable targets should be reported instead of normalized.
+    ///
+    /// @param selectedIndex the requested selected index, or a negative value to clear selection
     public final void setSelectedIndex(int selectedIndex) {
         this.selectedIndex.set(selectedIndex);
     }
@@ -228,9 +258,12 @@ public final class M3Carousel extends Control {
         return selectedItem.getReadOnlyProperty();
     }
 
-    /// Returns the selected item as an immutable observable list.
+    /// Returns the selected item as a read-only observable list.
     ///
-    /// @return an immutable observable list containing the selected item, or empty when selection is empty
+    /// The returned live view contains either zero or one element and updates whenever selection changes. Attempts
+    /// to mutate it fail with [UnsupportedOperationException].
+    ///
+    /// @return the live, read-only selected-item view
     public final @UnmodifiableView ObservableList<Node> getSelectedItems() {
         return selectedItemsView;
     }
@@ -274,7 +307,8 @@ public final class M3Carousel extends Control {
     /// Selects the supplied item node.
     ///
     /// @param item the item node to select
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `item` is `null`
+    /// @throws IllegalArgumentException if `item` is not in [items][#getItems()]
     public final void select(Node item) {
         Objects.requireNonNull(item, "item");
         int index = getItems().indexOf(item);
@@ -287,6 +321,7 @@ public final class M3Carousel extends Control {
     /// Selects the item at the supplied index.
     ///
     /// @param index the item index to select
+    /// @throws IndexOutOfBoundsException if `index` is outside the item list
     /// @throws IllegalArgumentException if the item at the index is not reachable for selection
     public final void selectIndex(int index) {
         Node item = getItems().get(index);
@@ -296,7 +331,7 @@ public final class M3Carousel extends Control {
         setSelectedIndex(index);
     }
 
-    /// Selects the first item when one exists.
+    /// Selects the first reachable item, if one exists.
     public final void selectFirst() {
         int index = firstSelectableIndex();
         if (index >= 0) {
@@ -304,7 +339,7 @@ public final class M3Carousel extends Control {
         }
     }
 
-    /// Selects the last item when one exists.
+    /// Selects the last reachable item, if one exists.
     public final void selectLast() {
         int index = lastSelectableIndex();
         if (index >= 0) {
@@ -312,7 +347,7 @@ public final class M3Carousel extends Control {
         }
     }
 
-    /// Selects the next enabled and visible item.
+    /// Selects the next reachable item according to [wrapAround][#wrapAroundProperty()].
     public final void selectNext() {
         int index = relativeSelectableIndex(1);
         if (index >= 0) {
@@ -320,7 +355,7 @@ public final class M3Carousel extends Control {
         }
     }
 
-    /// Selects the previous enabled and visible item.
+    /// Selects the previous reachable item according to [wrapAround][#wrapAroundProperty()].
     public final void selectPrevious() {
         int index = relativeSelectableIndex(-1);
         if (index >= 0) {
@@ -329,16 +364,20 @@ public final class M3Carousel extends Control {
     }
 
     /// Clears the current selection.
+    ///
+    /// Calling this method when selection is already empty has no effect.
     public final void clearSelection() {
         setSelectedIndex(-1);
     }
 
-    /// Scrolls the selected item into view using the configured animation policy.
+    /// Requests that the selected item be scrolled into view using the configured animation policy.
+    ///
+    /// This method has no effect when selection is empty or the control is not ready to present a viewport.
     public final void scrollSelectedItemIntoView() {
         scrollSelectedItemIntoView(isAnimatedScroll());
     }
 
-    /// Scrolls the selected item into view.
+    /// Requests that the selected item be scrolled into view.
     ///
     /// @param animated whether the viewport scroll should animate
     public final void scrollSelectedItemIntoView(boolean animated) {
@@ -356,7 +395,7 @@ public final class M3Carousel extends Control {
 
     /// Returns accessibility attributes for carousel items and selection.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -372,7 +411,7 @@ public final class M3Carousel extends Control {
 
     /// Executes accessibility selection and reveal actions.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

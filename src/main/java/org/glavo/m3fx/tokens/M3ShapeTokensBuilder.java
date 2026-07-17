@@ -8,11 +8,11 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.Objects;
 
-/// Builds immutable [M3ShapeTokens] by replacing named corner-radius token values.
+/// Builds immutable [M3ShapeTokens] by replacing named corner-radius values.
 ///
-/// Values use JavaFX logical pixels. Replacement methods retain the supplied values; [build] validates that every
-/// radius is finite and non-negative and throws [IllegalArgumentException] otherwise. A builder can be reused
-/// after building.
+/// Values use JavaFX logical pixels. Replacement methods retain the supplied value without validation. [build]
+/// validates the complete scale and leaves the builder unchanged if validation fails. A successful build creates
+/// an independent immutable snapshot. Builders may be reused but are not thread-safe.
 ///
 /// See [Material Design shape](https://m3.material.io/styles/shape/overview).
 @NotNullByDefault
@@ -154,10 +154,12 @@ public final class M3ShapeTokensBuilder {
         return this;
     }
 
-    /// Creates an immutable token set from the current builder state.
+    /// Creates an immutable snapshot of the current shape scale.
     ///
-    /// @return the built token set
-    /// @throws IllegalArgumentException if any radius is negative or not finite
+    /// @return a new immutable shape token set; never `null`
+    /// @throws IllegalArgumentException if `none`, `extraSmall`, `small`, `medium`, `large`,
+    ///         `largeIncreased`, `extraLarge`, `extraLargeIncreased`, `extraExtraLarge`, or `full` is
+    ///         negative or not finite
     public M3ShapeTokens build() {
         return new M3ShapeTokensImpl(
                 none,

@@ -25,6 +25,7 @@ public final class M3SuggestionChip extends M3Chip {
     /// Creates a suggestion chip with text.
     ///
     /// @param text the text displayed by the chip
+    /// @throws NullPointerException if `text` is `null`
     public M3SuggestionChip(String text) {
         this(text, null);
     }
@@ -33,6 +34,7 @@ public final class M3SuggestionChip extends M3Chip {
     ///
     /// @param text the text displayed by the chip
     /// @param graphic the optional graphic displayed with the text
+    /// @throws NullPointerException if `text` is `null`
     public M3SuggestionChip(String text, @Nullable Node graphic) {
         super(text, graphic, STYLE_CLASS);
     }

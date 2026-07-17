@@ -39,8 +39,13 @@ import java.util.Objects;
 /// A Material Design 3 surface container for arbitrary content.
 ///
 /// `M3Surface` is a general-purpose themed container that applies Material surface color roles, elevation, shape,
-/// and padding to a list of child nodes. It is useful for composing custom controls or demo content that should
-/// still align with the active M3FX token set.
+/// and padding to a list of child nodes. It is useful for composing application content that should remain aligned
+/// with the active M3FX token set. Content children are laid out within a shared padded container and participate in
+/// directional keyboard traversal in list order.
+///
+/// A new surface uses the container color role, elevation level zero, a 12-pixel shape radius, and 16-pixel content
+/// padding. Color role and elevation are semantic properties; shape and padding are styleable logical-pixel
+/// properties.
 ///
 /// See [Material Design](https://m3.material.io/) and
 /// [Material color roles](https://m3.material.io/styles/color/roles).
@@ -62,7 +67,11 @@ public final class M3Surface extends Control {
     private final M3AccessibleFocusNotifier focusNotifier =
             new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(this, getContent()));
 
-    /// Backing property for the public surface color variant API.
+    /// The semantic surface color variant.
+    ///
+    /// Assigning `null` through the property restores [M3SurfaceVariant#CONTAINER].
+    ///
+    /// @defaultValue `CONTAINER`
     private final ObjectProperty<M3SurfaceVariant> variant =
             new SimpleObjectProperty<>(this, "variant", M3SurfaceVariant.CONTAINER) {
                 /// Updates variant style classes when the property changes.
@@ -76,7 +85,11 @@ public final class M3Surface extends Control {
                 }
             };
 
-    /// Backing property for the public surface elevation API.
+    /// The surface elevation level.
+    ///
+    /// Assigning `null` through the property restores [M3SurfaceElevation#LEVEL0].
+    ///
+    /// @defaultValue `LEVEL0`
     private final ObjectProperty<M3SurfaceElevation> elevation =
             new SimpleObjectProperty<>(this, "elevation", M3SurfaceElevation.LEVEL0) {
                 /// Updates elevation style classes when the property changes.
@@ -90,20 +103,28 @@ public final class M3Surface extends Control {
                 }
             };
 
-    /// Backing property for the public container shape token API.
+    /// The surface container corner radius in logical pixels.
+    ///
+    /// @defaultValue `12.0`
     private @Nullable StyleableDoubleProperty containerShape;
 
-    /// Backing property for the public content padding token API.
+    /// The uniform surface content padding in logical pixels.
+    ///
+    /// @defaultValue `16.0`
     private @Nullable StyleableDoubleProperty contentPadding;
 
-    /// Creates an empty surface.
+    /// Creates an empty surface with the container color role and elevation level zero.
     public M3Surface() {
         initialize();
     }
 
     /// Returns the mutable content nodes displayed inside the surface.
     ///
-    /// @return the mutable content nodes displayed inside the surface
+    /// The returned list is live, mutable, ordered, and rejects `null` elements. Mutations update layout, keyboard
+    /// traversal, and accessibility immediately. Nodes become children of this surface and must satisfy normal
+    /// JavaFX parent ownership rules; duplicate node references are not permitted by that ownership model.
+    ///
+    /// @return the live mutable ordered content list
     public final ObservableList<Node> getContent() {
         return content;
     }
@@ -118,7 +139,7 @@ public final class M3Surface extends Control {
     /// Sets the surface color variant.
     ///
     /// @param variant the surface color variant
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `variant` is `null`
     public final void setVariant(M3SurfaceVariant variant) {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
@@ -137,7 +158,7 @@ public final class M3Surface extends Control {
     /// Sets the surface elevation level.
     ///
     /// @param elevation the surface elevation level
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `elevation` is `null`
     public final void setElevation(M3SurfaceElevation elevation) {
         this.elevation.set(Objects.requireNonNull(elevation, "elevation"));
     }
@@ -252,6 +273,7 @@ public final class M3Surface extends Control {
     /// @param attribute the requested accessibility attribute
     /// @param parameters the optional attribute parameters
     /// @return the attribute value, or `null` when unavailable
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         return switch (attribute) {
@@ -267,7 +289,7 @@ public final class M3Surface extends Control {
     ///
     /// @param action the requested accessibility action
     /// @param parameters the optional action parameters
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

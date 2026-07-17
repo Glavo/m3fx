@@ -36,9 +36,12 @@ import java.util.Objects;
 
 /// A Material Design 3 form row with label text, supporting text, content, and optional trailing content.
 ///
-/// `M3FormRow` is an M3FX layout helper for aligning one form control with its label, explanatory text, and
-/// trailing affordance. It is designed for use inside [M3FormPane] and can host any JavaFX node as the main
-/// content.
+/// The row aligns a label column, one primary content node, and an optional trailing node. It is intended for use
+/// in an [M3FormPane] or [M3FormSection], but may be used independently. The row is not focus traversable; Left and
+/// Right move focus between reachable content and trailing descendants using logical direction in RTL layouts.
+///
+/// Content and trailing nodes are parented by this control while displayed. The same node instance cannot occupy
+/// both slots, and a displayed slot node must not simultaneously belong to another parent.
 ///
 /// See [Material Design text fields](https://m3.material.io/components/text-fields/overview) and
 /// [Material Design](https://m3.material.io/) for related form guidance.
@@ -47,7 +50,7 @@ public final class M3FormRow extends Control {
     /// The base style class for M3FX form rows.
     public static final String STYLE_CLASS = "m3-form-row";
 
-    /// The style class applied to the internal row container.
+    /// The style class applied to the row container.
     public static final String CONTAINER_STYLE_CLASS = "m3-form-row-container";
 
     /// The style class applied to the label text column.
@@ -75,6 +78,10 @@ public final class M3FormRow extends Control {
     private static final double DEFAULT_ROW_MIN_HEIGHT = 64.0;
 
     /// The row label text.
+    ///
+    /// `null` is not permitted.
+    ///
+    /// @defaultValue `""`
     private final StringProperty labelText = new SimpleStringProperty(this, "labelText", "") {
         /// Rejects null label text values.
         @Override
@@ -90,7 +97,11 @@ public final class M3FormRow extends Control {
         }
     };
 
-    /// The row supporting text.
+    /// The explanatory text displayed below the row label.
+    ///
+    /// `null` is not permitted.
+    ///
+    /// @defaultValue `""`
     private final StringProperty supportingText = new SimpleStringProperty(this, "supportingText", "") {
         /// Rejects null supporting text values.
         @Override
@@ -105,7 +116,11 @@ public final class M3FormRow extends Control {
         }
     };
 
-    /// The primary row content node.
+    /// The primary row content node, or `null` for an empty slot.
+    ///
+    /// The node must be distinct from [trailing][#trailingProperty()] and is parented by this control while shown.
+    ///
+    /// @defaultValue `null`
     private final ObjectProperty<@Nullable Node> content = new SimpleObjectProperty<>(this, "content") {
         /// Validates content ownership before setting the node.
         @Override
@@ -125,7 +140,11 @@ public final class M3FormRow extends Control {
         }
     };
 
-    /// The optional trailing row content node.
+    /// The trailing row content node, or `null` for no trailing content.
+    ///
+    /// The node must be distinct from [content][#contentProperty()] and is parented by this control while shown.
+    ///
+    /// @defaultValue `null`
     private final ObjectProperty<@Nullable Node> trailing = new SimpleObjectProperty<>(this, "trailing") {
         /// Validates trailing ownership before setting the node.
         @Override
@@ -153,16 +172,22 @@ public final class M3FormRow extends Control {
                     getTrailing()
             ));
 
-    /// The styleable label width token.
+    /// The width reserved for the label column in logical pixels.
+    ///
+    /// @defaultValue `180.0`
     private @Nullable StyleableDoubleProperty labelWidth;
 
-    /// The styleable column spacing token.
+    /// The horizontal spacing between row columns in logical pixels.
+    ///
+    /// @defaultValue `24.0`
     private @Nullable StyleableDoubleProperty columnSpacing;
 
-    /// The styleable row minimum height token.
+    /// The minimum row height in logical pixels.
+    ///
+    /// @defaultValue `64.0`
     private @Nullable StyleableDoubleProperty rowMinHeight;
 
-    /// Creates an empty form row.
+    /// Creates a form row with empty text and unoccupied content slots.
     public M3FormRow() {
         initialize();
     }
@@ -171,6 +196,7 @@ public final class M3FormRow extends Control {
     ///
     /// @param labelText the label text displayed by the row
     /// @param content the primary row content node
+    /// @throws NullPointerException if `labelText` is `null`
     public M3FormRow(String labelText, Node content) {
         initialize();
         setLabelText(labelText);
@@ -182,6 +208,7 @@ public final class M3FormRow extends Control {
     /// @param labelText the label text displayed by the row
     /// @param supportingText the supporting text displayed below the label
     /// @param content the primary row content node
+    /// @throws NullPointerException if `labelText` or `supportingText` is `null`
     public M3FormRow(String labelText, String supportingText, Node content) {
         initialize();
         setLabelText(labelText);
@@ -195,6 +222,8 @@ public final class M3FormRow extends Control {
     /// @param supportingText the supporting text displayed below the label
     /// @param content the primary row content node
     /// @param trailing the optional trailing content node, or `null`
+    /// @throws NullPointerException if `labelText` or `supportingText` is `null`
+    /// @throws IllegalArgumentException if `content` and `trailing` are the same node instance
     public M3FormRow(String labelText, String supportingText, Node content, @Nullable Node trailing) {
         initialize();
         setLabelText(labelText);
@@ -213,6 +242,7 @@ public final class M3FormRow extends Control {
     /// Sets the row label text.
     ///
     /// @param labelText the row label text
+    /// @throws NullPointerException if `labelText` is `null`
     public final void setLabelText(String labelText) {
         this.labelText.set(labelText);
     }
@@ -231,6 +261,7 @@ public final class M3FormRow extends Control {
     /// Sets the row supporting text.
     ///
     /// @param supportingText the row supporting text
+    /// @throws NullPointerException if `supportingText` is `null`
     public final void setSupportingText(String supportingText) {
         this.supportingText.set(supportingText);
     }
@@ -249,6 +280,7 @@ public final class M3FormRow extends Control {
     /// Sets the primary row content node.
     ///
     /// @param content the primary row content node, or `null`
+    /// @throws IllegalArgumentException if `content` is also the current trailing node
     public final void setContent(@Nullable Node content) {
         this.content.set(content);
     }
@@ -267,6 +299,7 @@ public final class M3FormRow extends Control {
     /// Sets the optional trailing row content node.
     ///
     /// @param trailing the optional trailing row content node, or `null`
+    /// @throws IllegalArgumentException if `trailing` is also the current content node
     public final void setTrailing(@Nullable Node trailing) {
         this.trailing.set(trailing);
     }
@@ -275,17 +308,17 @@ public final class M3FormRow extends Control {
         return trailing;
     }
 
-    /// Returns the width reserved for the label text column.
+    /// Returns the width reserved for the label text column in logical pixels.
     ///
     /// @return the width reserved for the label text column
     public final double getLabelWidth() {
         return labelWidth == null ? DEFAULT_LABEL_WIDTH : labelWidth.get();
     }
 
-    /// Sets the width reserved for the label text column.
+    /// Sets the width reserved for the label text column in logical pixels.
     ///
     /// @param labelWidth the width reserved for the label text column
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @throws IllegalArgumentException if `labelWidth` is negative or not finite
     public final void setLabelWidth(double labelWidth) {
         labelWidthProperty().set(M3Css.nonNegative(labelWidth, "labelWidth"));
     }
@@ -303,17 +336,17 @@ public final class M3FormRow extends Control {
         return labelWidth;
     }
 
-    /// Returns the horizontal spacing between row columns.
+    /// Returns the horizontal spacing between row columns in logical pixels.
     ///
     /// @return the horizontal spacing between row columns
     public final double getColumnSpacing() {
         return columnSpacing == null ? DEFAULT_COLUMN_SPACING : columnSpacing.get();
     }
 
-    /// Sets the horizontal spacing between row columns.
+    /// Sets the horizontal spacing between row columns in logical pixels.
     ///
     /// @param columnSpacing the horizontal spacing between row columns
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @throws IllegalArgumentException if `columnSpacing` is negative or not finite
     public final void setColumnSpacing(double columnSpacing) {
         columnSpacingProperty().set(M3Css.nonNegative(columnSpacing, "columnSpacing"));
     }
@@ -331,17 +364,17 @@ public final class M3FormRow extends Control {
         return columnSpacing;
     }
 
-    /// Returns the minimum row height used by the default skin.
+    /// Returns the minimum row height in logical pixels.
     ///
-    /// @return the minimum row height used by the default skin
+    /// @return the minimum row height in logical pixels
     public final double getRowMinHeight() {
         return rowMinHeight == null ? DEFAULT_ROW_MIN_HEIGHT : rowMinHeight.get();
     }
 
-    /// Sets the minimum row height used by the default skin.
+    /// Sets the minimum row height in logical pixels.
     ///
-    /// @param rowMinHeight the minimum row height used by the default skin
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param rowMinHeight the minimum row height in logical pixels
+    /// @throws IllegalArgumentException if `rowMinHeight` is negative or not finite
     public final void setRowMinHeight(double rowMinHeight) {
         rowMinHeightProperty().set(M3Css.nonNegative(rowMinHeight, "rowMinHeight"));
     }
@@ -402,7 +435,7 @@ public final class M3FormRow extends Control {
 
     /// Returns accessibility attributes for the form row.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -418,7 +451,7 @@ public final class M3FormRow extends Control {
 
     /// Executes accessibility actions for form row content.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

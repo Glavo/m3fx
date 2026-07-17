@@ -58,7 +58,11 @@ public class M3Text extends Labeled {
     /// The default typography font weight.
     private static final FontWeight DEFAULT_TYPOGRAPHY_FONT_WEIGHT = FontWeight.NORMAL;
 
-    /// The typography role property.
+    /// The semantic Material typography role.
+    ///
+    /// Assigning `null` through the property restores [M3TextRole#BODY_LARGE].
+    ///
+    /// @defaultValue `BODY_LARGE`
     private final ObjectProperty<M3TextRole> role =
             new SimpleObjectProperty<>(this, "role", M3TextRole.BODY_LARGE) {
                 /// Updates typography role style classes when the property changes.
@@ -72,16 +76,28 @@ public class M3Text extends Labeled {
                 }
             };
 
-    /// The styleable typography font family token.
+    /// The styleable typography font-family token.
+    ///
+    /// Assigning `null` through the property restores `System`.
+    ///
+    /// @defaultValue `"System"`
     private @Nullable StyleableObjectProperty<@Nullable String> typographyFontFamily;
 
-    /// The styleable typography font size token.
+    /// The styleable typography font size in logical pixels.
+    ///
+    /// @defaultValue `16.0`
     private @Nullable StyleableDoubleProperty typographyFontSize;
 
-    /// The styleable typography line height token.
+    /// The styleable typography line height in logical pixels.
+    ///
+    /// @defaultValue `24.0`
     private @Nullable StyleableDoubleProperty typographyLineHeight;
 
-    /// The styleable typography font weight token.
+    /// The styleable typography font weight.
+    ///
+    /// Assigning `null` through the property restores [FontWeight#NORMAL].
+    ///
+    /// @defaultValue `NORMAL`
     private @Nullable StyleableObjectProperty<@Nullable FontWeight> typographyFontWeight;
 
     /// Creates an empty body-large text label.
@@ -101,6 +117,7 @@ public class M3Text extends Labeled {
     ///
     /// @param text the initial text content
     /// @param role the typography role used to resolve type scale tokens
+    /// @throws NullPointerException if `role` is `null`
     public M3Text(String text, M3TextRole role) {
         initialize();
         setText(text);
@@ -117,7 +134,7 @@ public class M3Text extends Labeled {
     /// Sets the typography role.
     ///
     /// @param role the typography role used to resolve type scale tokens
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `role` is `null`
     public final void setRole(M3TextRole role) {
         this.role.set(Objects.requireNonNull(role, "role"));
     }
@@ -138,7 +155,7 @@ public class M3Text extends Labeled {
     /// Sets the typography font family token.
     ///
     /// @param typographyFontFamily the font family used by this text label
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `typographyFontFamily` is `null`
     public final void setTypographyFontFamily(String typographyFontFamily) {
         typographyFontFamilyProperty().set(Objects.requireNonNull(typographyFontFamily, "typographyFontFamily"));
     }
@@ -226,6 +243,7 @@ public class M3Text extends Labeled {
     /// Sets the typography font weight token.
     ///
     /// @param typographyFontWeight the numeric CSS font weight, from `1` through `1000`
+    /// @throws IllegalArgumentException if `typographyFontWeight` is less than `1` or greater than `1000`
     public final void setTypographyFontWeight(double typographyFontWeight) {
         typographyFontWeightProperty().set(validateFontWeight(typographyFontWeight));
     }

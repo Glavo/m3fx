@@ -7,7 +7,7 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 /// Identifies an M3FX icon size role.
 ///
-/// Size roles provide stable icon metrics for [M3Icon] and icon-only controls. The default pixel values can be
+/// Size roles provide stable icon metrics for [M3Icon] and icon-only controls. The default logical-pixel values can be
 /// overridden by theme CSS, but the role names allow APIs and demos to describe icon scale semantically.
 ///
 /// See [Material Design icons](https://m3.material.io/styles/icons/overview).
@@ -44,9 +44,9 @@ public enum M3IconSize {
         return styleClass;
     }
 
-    /// Returns the default pixel size for this icon size.
+    /// Returns the default logical-pixel size for this icon size.
     ///
-    /// @return the default icon size in pixels
+    /// @return the default icon size in logical pixels
     double defaultSize() {
         return defaultSize;
     }

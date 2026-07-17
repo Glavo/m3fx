@@ -27,6 +27,10 @@ import java.util.List;
 /// multi-line editor, or place it inside [M3TextInputLayout] to add a label, supporting text, error text,
 /// character counter, and adornment slots.
 ///
+/// A new text area uses the filled variant, is not in error state, wraps text, and styles the scroll bars owned by
+/// its JavaFX text-area viewport. Text, selection, editing, preferred row count, and scroll position retain the
+/// inherited [TextArea] contracts.
+///
 /// See [Material Design text fields](https://m3.material.io/components/text-fields/overview).
 @NotNullByDefault
 public final class M3TextArea extends TextArea implements M3TextInput {
@@ -47,12 +51,12 @@ public final class M3TextArea extends TextArea implements M3TextInput {
             StyleableProperties.VERTICAL_PADDING
     );
 
-    /// Creates an empty filled text area.
+    /// Creates an empty, wrapping, filled text area that is not in error state.
     public M3TextArea() {
         initialize();
     }
 
-    /// Creates a filled text area with initial text.
+    /// Creates a wrapping, filled text area with initial text and no error state.
     ///
     /// As with [TextArea], a `null` value is represented as empty content by the inherited text property.
     ///

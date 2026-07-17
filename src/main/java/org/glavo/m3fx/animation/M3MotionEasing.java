@@ -8,10 +8,12 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.Objects;
 
-/// Identifies a named Material Design 3 motion easing curve.
+/// Identifies a named Material Design 3 easing curve.
 ///
-/// Each value provides a stable token name and the JavaFX [Interpolator] used by M3FX animations. Controls use
-/// easing roles through [M3MotionSpec] and [M3MotionScheme] rather than hard-coding interpolators in skins.
+/// Each enum constant associates the token name written to generated theme CSS with the JavaFX [Interpolator]
+/// that evaluates the curve. The returned interpolators are shared, immutable values. Applications normally use
+/// an easing as part of an [M3MotionSpec] rather than selecting a curve independently, because a motion scheme
+/// keeps duration and easing choices consistent.
 ///
 /// See [Material Design motion](https://m3.material.io/styles/motion/overview).
 @NotNullByDefault
@@ -49,16 +51,16 @@ public enum M3MotionEasing {
         this.interpolator = Objects.requireNonNull(interpolator, "interpolator");
     }
 
-    /// Returns the stable CSS token name for this easing curve.
+    /// Returns the stable, lowercase token name for this easing curve.
     ///
-    /// @return the stable CSS token name
+    /// @return the token name used by generated M3FX theme CSS
     public String tokenName() {
         return tokenName;
     }
 
-    /// Returns the JavaFX interpolator used by this easing curve.
+    /// Returns the shared JavaFX interpolator that evaluates this easing curve.
     ///
-    /// @return the JavaFX interpolator used by this easing curve
+    /// @return the interpolator for this easing; never `null`
     public Interpolator interpolator() {
         return interpolator;
     }

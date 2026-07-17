@@ -21,7 +21,7 @@ import java.util.Objects;
 public record M3DateRange(LocalDate startDate, LocalDate endDate) {
     /// Creates a validated inclusive date range.
     ///
-    /// @throws NullPointerException if either endpoint is `null`
+    /// @throws NullPointerException if `startDate` or `endDate` is `null`
     /// @throws IllegalArgumentException if `endDate` is before `startDate`
     public M3DateRange {
         Objects.requireNonNull(startDate, "startDate");

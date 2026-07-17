@@ -224,6 +224,7 @@ tasks.withType<Javadoc> {
 
         it.tags!!.addAll(
             listOf(
+                "defaultValue:a:Default Value:",
                 "apiNote:a:API Note:",
                 "implNote:a:Implementation Note:",
                 "implSpec:a:Implementation Specification:",

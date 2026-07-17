@@ -23,6 +23,7 @@ public final class M3ListItem extends M3ListItemBase {
     /// Creates a one-line list item with headline text.
     ///
     /// @param headlineText the headline text displayed by the list item
+    /// @throws NullPointerException if `headlineText` is `null`
     public M3ListItem(String headlineText) {
         super(headlineText);
     }

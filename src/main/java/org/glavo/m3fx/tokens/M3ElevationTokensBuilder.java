@@ -8,10 +8,11 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.Objects;
 
-/// Builds immutable [M3ElevationTokens] by overriding named elevation levels.
+/// Builds immutable [M3ElevationTokens] by replacing named elevation levels.
 ///
-/// Replacement values must be finite and non-negative. Each replacement method validates eagerly and throws
-/// [IllegalArgumentException] for an invalid value. A builder can be reused after [build].
+/// Replacement values are expressed in JavaFX logical pixels and must be finite and non-negative. Each replacement
+/// method validates before changing the builder. [build] creates an independent immutable snapshot; later changes
+/// do not affect previously built token sets. Builders may be reused but are not thread-safe.
 ///
 /// See [Material Design elevation](https://m3.material.io/styles/elevation/overview).
 @NotNullByDefault
@@ -51,6 +52,7 @@ public final class M3ElevationTokensBuilder {
     ///
     /// @param value the replacement elevation
     /// @return this builder
+    /// @throws IllegalArgumentException if `value` is negative or not finite
     public M3ElevationTokensBuilder level0(double value) {
         level0 = validElevation(value, "level0");
         return this;
@@ -60,6 +62,7 @@ public final class M3ElevationTokensBuilder {
     ///
     /// @param value the replacement elevation
     /// @return this builder
+    /// @throws IllegalArgumentException if `value` is negative or not finite
     public M3ElevationTokensBuilder level1(double value) {
         level1 = validElevation(value, "level1");
         return this;
@@ -69,6 +72,7 @@ public final class M3ElevationTokensBuilder {
     ///
     /// @param value the replacement elevation
     /// @return this builder
+    /// @throws IllegalArgumentException if `value` is negative or not finite
     public M3ElevationTokensBuilder level2(double value) {
         level2 = validElevation(value, "level2");
         return this;
@@ -78,6 +82,7 @@ public final class M3ElevationTokensBuilder {
     ///
     /// @param value the replacement elevation
     /// @return this builder
+    /// @throws IllegalArgumentException if `value` is negative or not finite
     public M3ElevationTokensBuilder level3(double value) {
         level3 = validElevation(value, "level3");
         return this;
@@ -87,6 +92,7 @@ public final class M3ElevationTokensBuilder {
     ///
     /// @param value the replacement elevation
     /// @return this builder
+    /// @throws IllegalArgumentException if `value` is negative or not finite
     public M3ElevationTokensBuilder level4(double value) {
         level4 = validElevation(value, "level4");
         return this;
@@ -96,14 +102,15 @@ public final class M3ElevationTokensBuilder {
     ///
     /// @param value the replacement elevation
     /// @return this builder
+    /// @throws IllegalArgumentException if `value` is negative or not finite
     public M3ElevationTokensBuilder level5(double value) {
         level5 = validElevation(value, "level5");
         return this;
     }
 
-    /// Creates immutable elevation tokens from the current values.
+    /// Creates an immutable snapshot of the current elevation values.
     ///
-    /// @return the built elevation tokens
+    /// @return a new immutable elevation token set; never `null`
     public M3ElevationTokens build() {
         return new M3ElevationTokensImpl(level0, level1, level2, level3, level4, level5);
     }

@@ -10,11 +10,14 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.Objects;
 
-/// Builds immutable [M3MotionTokens] from named duration, scheme, and behavior values.
+/// Builds immutable [M3MotionTokens] from duration, semantic scheme, and behavior values.
 ///
-/// Durations are expressed in milliseconds and must be non-negative. Duration replacement methods validate
-/// eagerly and throw [IllegalArgumentException] for negative values. Scheme and behavior replacements reject
-/// `null`. A builder can be reused after [build].
+/// Durations are expressed in integer milliseconds and may be zero. Duration replacement methods reject negative
+/// values before changing the builder. Scheme and behavior replacements similarly reject `null` before changing
+/// the builder. All replacement methods return this builder for method chaining.
+///
+/// [build] creates an independent immutable snapshot. Later builder changes do not affect previously built token
+/// sets. Builders may be reused but are not thread-safe.
 ///
 /// See [Material Design motion](https://m3.material.io/styles/motion/overview).
 @NotNullByDefault
@@ -102,6 +105,7 @@ public final class M3MotionTokensBuilder {
     ///
     /// @param short1 the duration in milliseconds
     /// @return this builder
+    /// @throws IllegalArgumentException if `short1` is negative
     public M3MotionTokensBuilder short1(int short1) {
         this.short1 = nonNegativeDuration(short1, "short1");
         return this;
@@ -111,6 +115,7 @@ public final class M3MotionTokensBuilder {
     ///
     /// @param short2 the duration in milliseconds
     /// @return this builder
+    /// @throws IllegalArgumentException if `short2` is negative
     public M3MotionTokensBuilder short2(int short2) {
         this.short2 = nonNegativeDuration(short2, "short2");
         return this;
@@ -120,6 +125,7 @@ public final class M3MotionTokensBuilder {
     ///
     /// @param short3 the duration in milliseconds
     /// @return this builder
+    /// @throws IllegalArgumentException if `short3` is negative
     public M3MotionTokensBuilder short3(int short3) {
         this.short3 = nonNegativeDuration(short3, "short3");
         return this;
@@ -129,6 +135,7 @@ public final class M3MotionTokensBuilder {
     ///
     /// @param short4 the duration in milliseconds
     /// @return this builder
+    /// @throws IllegalArgumentException if `short4` is negative
     public M3MotionTokensBuilder short4(int short4) {
         this.short4 = nonNegativeDuration(short4, "short4");
         return this;
@@ -138,6 +145,7 @@ public final class M3MotionTokensBuilder {
     ///
     /// @param duration the replacement duration in milliseconds
     /// @return this builder
+    /// @throws IllegalArgumentException if `duration` is negative
     public M3MotionTokensBuilder shortDurations(int duration) {
         int value = nonNegativeDuration(duration, "duration");
         short1 = value;
@@ -151,6 +159,7 @@ public final class M3MotionTokensBuilder {
     ///
     /// @param medium1 the duration in milliseconds
     /// @return this builder
+    /// @throws IllegalArgumentException if `medium1` is negative
     public M3MotionTokensBuilder medium1(int medium1) {
         this.medium1 = nonNegativeDuration(medium1, "medium1");
         return this;
@@ -160,6 +169,7 @@ public final class M3MotionTokensBuilder {
     ///
     /// @param medium2 the duration in milliseconds
     /// @return this builder
+    /// @throws IllegalArgumentException if `medium2` is negative
     public M3MotionTokensBuilder medium2(int medium2) {
         this.medium2 = nonNegativeDuration(medium2, "medium2");
         return this;
@@ -169,6 +179,7 @@ public final class M3MotionTokensBuilder {
     ///
     /// @param medium3 the duration in milliseconds
     /// @return this builder
+    /// @throws IllegalArgumentException if `medium3` is negative
     public M3MotionTokensBuilder medium3(int medium3) {
         this.medium3 = nonNegativeDuration(medium3, "medium3");
         return this;
@@ -178,6 +189,7 @@ public final class M3MotionTokensBuilder {
     ///
     /// @param medium4 the duration in milliseconds
     /// @return this builder
+    /// @throws IllegalArgumentException if `medium4` is negative
     public M3MotionTokensBuilder medium4(int medium4) {
         this.medium4 = nonNegativeDuration(medium4, "medium4");
         return this;
@@ -187,6 +199,7 @@ public final class M3MotionTokensBuilder {
     ///
     /// @param duration the replacement duration in milliseconds
     /// @return this builder
+    /// @throws IllegalArgumentException if `duration` is negative
     public M3MotionTokensBuilder mediumDurations(int duration) {
         int value = nonNegativeDuration(duration, "duration");
         medium1 = value;
@@ -200,6 +213,7 @@ public final class M3MotionTokensBuilder {
     ///
     /// @param long1 the duration in milliseconds
     /// @return this builder
+    /// @throws IllegalArgumentException if `long1` is negative
     public M3MotionTokensBuilder long1(int long1) {
         this.long1 = nonNegativeDuration(long1, "long1");
         return this;
@@ -209,6 +223,7 @@ public final class M3MotionTokensBuilder {
     ///
     /// @param long2 the duration in milliseconds
     /// @return this builder
+    /// @throws IllegalArgumentException if `long2` is negative
     public M3MotionTokensBuilder long2(int long2) {
         this.long2 = nonNegativeDuration(long2, "long2");
         return this;
@@ -218,6 +233,7 @@ public final class M3MotionTokensBuilder {
     ///
     /// @param long3 the duration in milliseconds
     /// @return this builder
+    /// @throws IllegalArgumentException if `long3` is negative
     public M3MotionTokensBuilder long3(int long3) {
         this.long3 = nonNegativeDuration(long3, "long3");
         return this;
@@ -227,6 +243,7 @@ public final class M3MotionTokensBuilder {
     ///
     /// @param long4 the duration in milliseconds
     /// @return this builder
+    /// @throws IllegalArgumentException if `long4` is negative
     public M3MotionTokensBuilder long4(int long4) {
         this.long4 = nonNegativeDuration(long4, "long4");
         return this;
@@ -236,6 +253,7 @@ public final class M3MotionTokensBuilder {
     ///
     /// @param extraLong1 the duration in milliseconds
     /// @return this builder
+    /// @throws IllegalArgumentException if `extraLong1` is negative
     public M3MotionTokensBuilder extraLong1(int extraLong1) {
         this.extraLong1 = nonNegativeDuration(extraLong1, "extraLong1");
         return this;
@@ -245,6 +263,7 @@ public final class M3MotionTokensBuilder {
     ///
     /// @param extraLong2 the duration in milliseconds
     /// @return this builder
+    /// @throws IllegalArgumentException if `extraLong2` is negative
     public M3MotionTokensBuilder extraLong2(int extraLong2) {
         this.extraLong2 = nonNegativeDuration(extraLong2, "extraLong2");
         return this;
@@ -254,6 +273,7 @@ public final class M3MotionTokensBuilder {
     ///
     /// @param extraLong3 the duration in milliseconds
     /// @return this builder
+    /// @throws IllegalArgumentException if `extraLong3` is negative
     public M3MotionTokensBuilder extraLong3(int extraLong3) {
         this.extraLong3 = nonNegativeDuration(extraLong3, "extraLong3");
         return this;
@@ -263,6 +283,7 @@ public final class M3MotionTokensBuilder {
     ///
     /// @param extraLong4 the duration in milliseconds
     /// @return this builder
+    /// @throws IllegalArgumentException if `extraLong4` is negative
     public M3MotionTokensBuilder extraLong4(int extraLong4) {
         this.extraLong4 = nonNegativeDuration(extraLong4, "extraLong4");
         return this;
@@ -272,6 +293,7 @@ public final class M3MotionTokensBuilder {
     ///
     /// @param duration the replacement duration in milliseconds
     /// @return this builder
+    /// @throws IllegalArgumentException if `duration` is negative
     public M3MotionTokensBuilder longDurations(int duration) {
         int value = nonNegativeDuration(duration, "duration");
         long1 = value;
@@ -285,6 +307,7 @@ public final class M3MotionTokensBuilder {
     ///
     /// @param duration the replacement duration in milliseconds
     /// @return this builder
+    /// @throws IllegalArgumentException if `duration` is negative
     public M3MotionTokensBuilder extraLongDurations(int duration) {
         int value = nonNegativeDuration(duration, "duration");
         extraLong1 = value;
@@ -298,7 +321,7 @@ public final class M3MotionTokensBuilder {
     ///
     /// @param scheme the replacement scheme
     /// @return this builder
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `scheme` is `null`
     public M3MotionTokensBuilder scheme(M3MotionScheme scheme) {
         this.scheme = Objects.requireNonNull(scheme, "scheme");
         return this;
@@ -308,15 +331,15 @@ public final class M3MotionTokensBuilder {
     ///
     /// @param behavior the replacement behavior timings
     /// @return this builder
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `behavior` is `null`
     public M3MotionTokensBuilder behavior(M3MotionBehavior behavior) {
         this.behavior = Objects.requireNonNull(behavior, "behavior");
         return this;
     }
 
-    /// Creates an immutable motion token set from the current builder state.
+    /// Creates an immutable snapshot of the current motion values.
     ///
-    /// @return the built motion tokens
+    /// @return a new immutable motion token set; never `null`
     public M3MotionTokens build() {
         return new M3MotionTokensImpl(
                 short1,

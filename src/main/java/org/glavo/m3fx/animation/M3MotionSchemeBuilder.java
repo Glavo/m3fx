@@ -8,10 +8,12 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 import java.util.Objects;
 
-/// Builds immutable [M3MotionScheme] values from independently configurable semantic motion specs.
+/// Builds an immutable [M3MotionScheme] by replacing semantic motion roles.
 ///
-/// A builder is initialized from a complete scheme and can be reused after [build]. Replacement specs must not be
-/// `null`; each replacement method throws [NullPointerException] when that contract is violated.
+/// A builder is always initialized from a complete scheme. Each replacement method validates its argument before
+/// changing the builder and returns this builder for method chaining. [build] creates an independent immutable
+/// snapshot; subsequent changes to the builder do not modify previously built schemes. Builders may be reused but
+/// are not thread-safe.
 ///
 /// See [Material Design motion](https://m3.material.io/styles/motion/overview).
 @NotNullByDefault
@@ -51,7 +53,7 @@ public final class M3MotionSchemeBuilder {
     ///
     /// @param spec the replacement spec
     /// @return this builder
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `spec` is `null`
     public M3MotionSchemeBuilder fastEffects(M3MotionSpec spec) {
         fastEffects = Objects.requireNonNull(spec, "spec");
         return this;
@@ -61,7 +63,7 @@ public final class M3MotionSchemeBuilder {
     ///
     /// @param spec the replacement spec
     /// @return this builder
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `spec` is `null`
     public M3MotionSchemeBuilder defaultEffects(M3MotionSpec spec) {
         defaultEffects = Objects.requireNonNull(spec, "spec");
         return this;
@@ -71,7 +73,7 @@ public final class M3MotionSchemeBuilder {
     ///
     /// @param spec the replacement spec
     /// @return this builder
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `spec` is `null`
     public M3MotionSchemeBuilder slowEffects(M3MotionSpec spec) {
         slowEffects = Objects.requireNonNull(spec, "spec");
         return this;
@@ -81,7 +83,7 @@ public final class M3MotionSchemeBuilder {
     ///
     /// @param spec the replacement spec
     /// @return this builder
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `spec` is `null`
     public M3MotionSchemeBuilder fastSpatial(M3MotionSpec spec) {
         fastSpatial = Objects.requireNonNull(spec, "spec");
         return this;
@@ -91,7 +93,7 @@ public final class M3MotionSchemeBuilder {
     ///
     /// @param spec the replacement spec
     /// @return this builder
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `spec` is `null`
     public M3MotionSchemeBuilder defaultSpatial(M3MotionSpec spec) {
         defaultSpatial = Objects.requireNonNull(spec, "spec");
         return this;
@@ -101,15 +103,15 @@ public final class M3MotionSchemeBuilder {
     ///
     /// @param spec the replacement spec
     /// @return this builder
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `spec` is `null`
     public M3MotionSchemeBuilder slowSpatial(M3MotionSpec spec) {
         slowSpatial = Objects.requireNonNull(spec, "spec");
         return this;
     }
 
-    /// Creates an immutable scheme from the current specs.
+    /// Creates an immutable snapshot of the current role assignments.
     ///
-    /// @return the built motion scheme
+    /// @return a new immutable motion scheme; never `null`
     public M3MotionScheme build() {
         return new M3MotionSchemeImpl(
                 fastEffects,

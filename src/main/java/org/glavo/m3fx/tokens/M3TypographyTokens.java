@@ -6,11 +6,12 @@ package org.glavo.m3fx.tokens;
 import org.glavo.m3fx.internal.tokens.M3TypographyTokensImpl;
 import org.jetbrains.annotations.NotNullByDefault;
 
-/// Holds Material Design 3 typography system tokens.
+/// Defines the immutable Material Design 3 type scale.
 ///
-/// Typography tokens describe the Material type scale roles used by controls and by
-/// [M3Text][org.glavo.m3fx.controls.M3Text]. Each role maps to an immutable [M3TextStyle] containing font
-/// family, size, line height, weight, and tracking values that are converted into JavaFX CSS declarations.
+/// The fifteen roles combine display, headline, title, label, and body families with large, medium, and small
+/// sizes. Each role returns an immutable [M3TextStyle] containing font family, size, line height, weight, and
+/// tracking values for controls and [M3Text][org.glavo.m3fx.controls.M3Text]. Reusing a style in more than one
+/// role is permitted.
 ///
 /// See [Material Design typography](https://m3.material.io/styles/typography/overview).
 @NotNullByDefault
@@ -90,7 +91,7 @@ public sealed interface M3TypographyTokens permits M3TypographyTokensImpl {
     /// @return the body small text style
     M3TextStyle bodySmall();
 
-    /// Creates a builder initialized with baseline typography tokens.
+    /// Creates a builder initialized with all roles from [baseline].
     ///
     /// @return a mutable typography-token builder
     static M3TypographyTokensBuilder builder() {
@@ -143,7 +144,7 @@ public sealed interface M3TypographyTokens permits M3TypographyTokensImpl {
         );
     }
 
-    /// Returns the baseline Material Design 3 typography tokens.
+    /// Returns the baseline Material Design 3 type scale.
     ///
     /// @return an immutable baseline type scale using the JavaFX system font family
     static M3TypographyTokens baseline() {
@@ -166,7 +167,7 @@ public sealed interface M3TypographyTokens permits M3TypographyTokensImpl {
         );
     }
 
-    /// Returns expressive Material Design 3 typography tokens.
+    /// Returns the Material Design 3 Expressive type scale.
     ///
     /// @return an immutable expressive type scale using the JavaFX system font family
     static M3TypographyTokens expressive() {

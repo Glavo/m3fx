@@ -32,7 +32,7 @@ public record M3DateRangePreset(String text, M3DateRange range) {
     /// @param text the text shown for the preset action
     /// @param startDate the first date included in the range
     /// @param endDate the last date included in the range
-    /// @throws NullPointerException if any argument is `null`
+    /// @throws NullPointerException if `text`, `startDate`, or `endDate` is `null`
     /// @throws IllegalArgumentException if `endDate` is before `startDate`
     public M3DateRangePreset(String text, LocalDate startDate, LocalDate endDate) {
         this(text, new M3DateRange(startDate, endDate));

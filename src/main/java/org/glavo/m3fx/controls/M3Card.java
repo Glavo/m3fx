@@ -71,7 +71,11 @@ public final class M3Card extends Control {
     /// The pseudo-class applied while the card participates in a drag operation.
     private static final PseudoClass DRAGGED_PSEUDO_CLASS = PseudoClass.getPseudoClass("dragged");
 
-    /// The card content node property.
+    /// The single content node displayed by this card.
+    ///
+    /// The default value is `null`. The node cannot simultaneously be a child of another parent.
+    ///
+    /// @defaultValue `null`
     private final ObjectProperty<@Nullable Node> content = new SimpleObjectProperty<>(this, "content") {
         /// Updates accessibility semantics when content changes.
         @Override
@@ -84,7 +88,13 @@ public final class M3Card extends Control {
     private final M3AccessibleFocusNotifier focusNotifier =
             new M3AccessibleFocusNotifier(this, this::accessibleFocusNode);
 
-    /// The action handler property.
+    /// The handler for action events fired directly by this card.
+    ///
+    /// The default value is `null`, making the card passive. A non-null handler makes the card a focusable,
+    /// directly actionable surface. Action events originating from controls inside the content are not forwarded
+    /// to this handler.
+    ///
+    /// @defaultValue `null`
     private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
             new SimpleObjectProperty<>(this, "onAction") {
                 /// Updates accessibility semantics when action behavior changes.
@@ -95,7 +105,12 @@ public final class M3Card extends Control {
                 }
             };
 
-    /// Whether the card is currently represented in the Material dragged state.
+    /// Whether the card is represented in the Material dragged state.
+    ///
+    /// The default value is `false`. This state is visual only and does not initiate or manage a JavaFX
+    /// drag-and-drop gesture.
+    ///
+    /// @defaultValue `false`
     private final BooleanProperty draggedState = new SimpleBooleanProperty(this, "dragged", false) {
         /// Updates the dragged pseudo-class after the state changes.
         @Override
@@ -104,7 +119,12 @@ public final class M3Card extends Control {
         }
     };
 
-    /// The card variant property.
+    /// The visual treatment of this card.
+    ///
+    /// The default value is [M3CardVariant#FILLED]. The property never reports `null`; a direct `null` assignment
+    /// restores the default.
+    ///
+    /// @defaultValue [M3CardVariant#FILLED]
     private final ObjectProperty<M3CardVariant> variant = new SimpleObjectProperty<>(this, "variant", M3CardVariant.FILLED) {
         /// Updates variant style classes when the property changes.
         @Override
@@ -117,13 +137,25 @@ public final class M3Card extends Control {
         }
     };
 
-    /// The styleable container shape token.
+    /// The card corner radius, in logical pixels.
+    ///
+    /// The default value is `12.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `12.0`
     private @Nullable StyleableDoubleProperty containerShape;
 
-    /// The styleable content padding token.
+    /// The padding on each side of card content, in logical pixels.
+    ///
+    /// The default value is `16.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `16.0`
     private @Nullable StyleableDoubleProperty contentPadding;
 
-    /// The styleable outline width token.
+    /// The outline width used by outlined cards, in logical pixels.
+    ///
+    /// The default value is `1.0`. Values must be finite and non-negative.
+    ///
+    /// @defaultValue `1.0`
     private @Nullable StyleableDoubleProperty outlineWidth;
 
     /// Whether focus traversal was enabled automatically because the card became actionable.
@@ -155,6 +187,7 @@ public final class M3Card extends Control {
     ///
     /// @param content the card content node, or `null` for no content
     /// @param variant the Material card variant
+    /// @throws NullPointerException if `variant` is `null`
     public M3Card(@Nullable Node content, M3CardVariant variant) {
         this(content);
         setVariant(variant);
@@ -235,7 +268,7 @@ public final class M3Card extends Control {
     /// Sets the card variant.
     ///
     /// @param variant the Material card variant
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `variant` is `null`
     public final void setVariant(M3CardVariant variant) {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
@@ -246,15 +279,15 @@ public final class M3Card extends Control {
 
     /// Returns the card container shape radius token.
     ///
-    /// @return the card container corner radius in pixels
+    /// @return the card container corner radius in logical pixels
     public final double getContainerShape() {
         return containerShape == null ? DEFAULT_CONTAINER_SHAPE : containerShape.get();
     }
 
     /// Sets the card container shape radius token.
     ///
-    /// @param containerShape the card container corner radius in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param containerShape the card container corner radius in logical pixels
+    /// @throws IllegalArgumentException if `containerShape` is negative or not finite
     public final void setContainerShape(double containerShape) {
         containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
     }
@@ -274,15 +307,15 @@ public final class M3Card extends Control {
 
     /// Returns the card content padding token.
     ///
-    /// @return the card content padding in pixels
+    /// @return the card content padding in logical pixels
     public final double getContentPadding() {
         return contentPadding == null ? DEFAULT_CONTENT_PADDING : contentPadding.get();
     }
 
     /// Sets the card content padding token.
     ///
-    /// @param contentPadding the card content padding in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param contentPadding the card content padding in logical pixels
+    /// @throws IllegalArgumentException if `contentPadding` is negative or not finite
     public final void setContentPadding(double contentPadding) {
         contentPaddingProperty().set(M3Css.nonNegative(contentPadding, "contentPadding"));
     }
@@ -302,15 +335,15 @@ public final class M3Card extends Control {
 
     /// Returns the outlined card border width token.
     ///
-    /// @return the outlined card border width in pixels
+    /// @return the outlined card border width in logical pixels
     public final double getOutlineWidth() {
         return outlineWidth == null ? DEFAULT_OUTLINE_WIDTH : outlineWidth.get();
     }
 
     /// Sets the outlined card border width token.
     ///
-    /// @param outlineWidth the outlined card border width in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @param outlineWidth the outlined card border width in logical pixels
+    /// @throws IllegalArgumentException if `outlineWidth` is negative or not finite
     public final void setOutlineWidth(double outlineWidth) {
         outlineWidthProperty().set(M3Css.nonNegative(outlineWidth, "outlineWidth"));
     }
@@ -353,7 +386,11 @@ public final class M3Card extends Control {
         return M3Stylesheets.controlStylesheet("card.css");
     }
 
-    /// Fires this card's action event.
+    /// Fires an action event unless this card is disabled.
+    ///
+    /// The event is dispatched even when [onAction][#onActionProperty()] is `null`, allowing handlers registered
+    /// through the JavaFX event API or on parent nodes to observe it. The event uses this card as both source and
+    /// target.
     public final void fire() {
         if (!isDisabled()) {
             Event.fireEvent(this, new ActionEvent(this, this));
@@ -373,7 +410,7 @@ public final class M3Card extends Control {
 
     /// Executes assistive-technology actions supported by this card.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

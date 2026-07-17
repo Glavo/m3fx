@@ -43,7 +43,11 @@ import java.util.Objects;
 ///
 /// `M3Toolbar` hosts a row or column of action nodes and applies Material container, padding, spacing, shape, and
 /// elevation tokens. It is intended for compact tool palettes, contextual editing actions, and docked tool areas
-/// where the actions should be navigable as one toolbar.
+/// where the actions should be navigable as one toolbar. Keyboard traversal follows item order and adapts to the
+/// configured orientation.
+///
+/// A new toolbar is horizontal, floating, and uses the standard color mapping. Items are owned by the toolbar and
+/// may be changed through the live [#getItems()] list.
 ///
 /// See [Material Design toolbars](https://m3.material.io/components/toolbars/overview).
 @NotNullByDefault
@@ -93,7 +97,11 @@ public final class M3Toolbar extends Control {
     /// The mutable toolbar item list.
     private final ObservableList<Node> items = M3ObservableLists.nonNullElementList("item");
 
-    /// The toolbar visual variant property.
+    /// The toolbar visual variant.
+    ///
+    /// Assigning `null` through the property restores [M3ToolbarVariant#FLOATING].
+    ///
+    /// @defaultValue `FLOATING`
     private final ObjectProperty<M3ToolbarVariant> variant =
             new SimpleObjectProperty<>(this, "variant", DEFAULT_VARIANT) {
                 /// Updates variant style classes when the property changes.
@@ -108,7 +116,11 @@ public final class M3Toolbar extends Control {
                 }
             };
 
-    /// The toolbar color-style property.
+    /// The toolbar color mapping.
+    ///
+    /// Assigning `null` through the property restores [M3ToolbarColorStyle#STANDARD].
+    ///
+    /// @defaultValue `STANDARD`
     private final ObjectProperty<M3ToolbarColorStyle> colorStyle =
             new SimpleObjectProperty<>(this, "colorStyle", DEFAULT_COLOR_STYLE) {
                 /// Updates the color-style pseudo-class when the property changes.
@@ -122,7 +134,11 @@ public final class M3Toolbar extends Control {
                 }
             };
 
-    /// The toolbar layout orientation property.
+    /// The toolbar layout orientation.
+    ///
+    /// Assigning `null` through the property restores [Orientation#HORIZONTAL].
+    ///
+    /// @defaultValue `HORIZONTAL`
     private final ObjectProperty<Orientation> orientation =
             new SimpleObjectProperty<>(this, "orientation", DEFAULT_ORIENTATION) {
                 /// Updates orientation style classes and layout metrics when the property changes.
@@ -137,25 +153,39 @@ public final class M3Toolbar extends Control {
                 }
             };
 
-    /// The horizontal toolbar container height token property.
+    /// The horizontal toolbar container height in logical pixels.
+    ///
+    /// @defaultValue `64.0`
     private @Nullable StyleableDoubleProperty containerHeight;
 
-    /// The vertical toolbar container width token property.
+    /// The vertical toolbar container width in logical pixels.
+    ///
+    /// @defaultValue `64.0`
     private @Nullable StyleableDoubleProperty containerWidth;
 
-    /// The toolbar item slot size token property.
+    /// The square toolbar item-slot size in logical pixels.
+    ///
+    /// @defaultValue `48.0`
     private @Nullable StyleableDoubleProperty itemSlotSize;
 
-    /// The toolbar content padding token property.
+    /// The floating toolbar content padding in logical pixels.
+    ///
+    /// @defaultValue `8.0`
     private @Nullable StyleableDoubleProperty contentPadding;
 
-    /// The docked toolbar leading and trailing padding token property.
+    /// The docked toolbar leading and trailing padding in logical pixels.
+    ///
+    /// @defaultValue `16.0`
     private @Nullable StyleableDoubleProperty dockedContentPadding;
 
-    /// The toolbar item spacing token property.
+    /// The floating toolbar item spacing in logical pixels.
+    ///
+    /// @defaultValue `4.0`
     private @Nullable StyleableDoubleProperty itemSpacing;
 
-    /// The preferred docked toolbar item-spacing token property.
+    /// The preferred maximum docked-toolbar item spacing in logical pixels.
+    ///
+    /// @defaultValue `32.0`
     private @Nullable StyleableDoubleProperty dockedMaxItemSpacing;
 
     /// Notifies accessibility clients when focus moves between toolbar actions.
@@ -165,14 +195,18 @@ public final class M3Toolbar extends Control {
     /// Updates accessibility and layout after toolbar item changes.
     private final ListChangeListener<Node> itemsListener = this::handleItemsChanged;
 
-    /// Creates an empty toolbar.
+    /// Creates an empty horizontal floating toolbar with the standard color mapping.
     public M3Toolbar() {
         initialize();
     }
 
     /// Returns the mutable toolbar item list.
     ///
-    /// @return the mutable toolbar item list
+    /// The returned list is live, mutable, ordered, and rejects `null` elements. Mutations update layout, keyboard
+    /// traversal, and accessibility immediately. Nodes become children of the toolbar and must satisfy normal
+    /// JavaFX parent ownership rules; duplicate node references are not permitted by that ownership model.
+    ///
+    /// @return the live mutable toolbar item list
     public final ObservableList<Node> getItems() {
         return items;
     }
@@ -191,7 +225,7 @@ public final class M3Toolbar extends Control {
     /// Sets the toolbar visual variant.
     ///
     /// @param variant the toolbar visual variant
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `variant` is `null`
     public final void setVariant(M3ToolbarVariant variant) {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
@@ -210,7 +244,7 @@ public final class M3Toolbar extends Control {
     /// Sets the toolbar color style.
     ///
     /// @param colorStyle the toolbar color style
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `colorStyle` is `null`
     public final void setColorStyle(M3ToolbarColorStyle colorStyle) {
         this.colorStyle.set(Objects.requireNonNull(colorStyle, "colorStyle"));
     }
@@ -229,7 +263,7 @@ public final class M3Toolbar extends Control {
     /// Sets the toolbar layout orientation.
     ///
     /// @param orientation the toolbar layout orientation
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `orientation` is `null`
     public final void setOrientation(Orientation orientation) {
         this.orientation.set(Objects.requireNonNull(orientation, "orientation"));
     }
@@ -447,7 +481,7 @@ public final class M3Toolbar extends Control {
 
     /// Returns accessibility attributes for toolbar items.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -461,7 +495,7 @@ public final class M3Toolbar extends Control {
 
     /// Executes accessibility actions for toolbar item children.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

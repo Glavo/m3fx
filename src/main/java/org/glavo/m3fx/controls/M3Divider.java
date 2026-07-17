@@ -28,8 +28,9 @@ import java.util.Objects;
 
 /// A Material Design 3 divider.
 ///
-/// `M3Divider` renders a horizontal or vertical separator with token-backed thickness and start or end insets.
-/// Use it to separate related sections, list groups, or panel regions without adding interactive semantics.
+/// A divider is noninteractive and not focus traversable. Horizontal dividers use logical start and end insets that
+/// follow node orientation; vertical dividers use start at the top and end at the bottom. Thickness and insets are
+/// styleable logical-pixel values, and CSS cannot replace a bound styleable property.
 ///
 /// See [Material Design dividers](https://m3.material.io/components/divider/overview).
 @NotNullByDefault
@@ -46,7 +47,11 @@ public final class M3Divider extends Control {
     /// The default trailing inset.
     private static final double DEFAULT_INSET_END = 0.0;
 
-    /// The divider orientation property.
+    /// The divider orientation.
+    ///
+    /// A direct `null` assignment restores [Orientation#HORIZONTAL].
+    ///
+    /// @defaultValue [Orientation#HORIZONTAL]
     private final ObjectProperty<Orientation> orientation = new SimpleObjectProperty<>(this, "orientation", Orientation.HORIZONTAL) {
         /// Restores the default orientation when a null value is assigned.
         @Override
@@ -57,13 +62,19 @@ public final class M3Divider extends Control {
         }
     };
 
-    /// The styleable divider thickness token.
+    /// The visible divider thickness in logical pixels.
+    ///
+    /// @defaultValue `1.0`
     private @Nullable StyleableDoubleProperty thickness;
 
-    /// The styleable leading inset token.
+    /// The logical leading inset in logical pixels.
+    ///
+    /// @defaultValue `0.0`
     private @Nullable StyleableDoubleProperty insetStart;
 
-    /// The styleable trailing inset token.
+    /// The logical trailing inset in logical pixels.
+    ///
+    /// @defaultValue `0.0`
     private @Nullable StyleableDoubleProperty insetEnd;
 
     /// Creates a horizontal divider.
@@ -91,7 +102,7 @@ public final class M3Divider extends Control {
     /// Sets the divider orientation.
     ///
     /// @param orientation the divider orientation
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `orientation` is `null`
     public final void setOrientation(Orientation orientation) {
         this.orientation.set(Objects.requireNonNull(orientation, "orientation"));
     }
@@ -100,17 +111,17 @@ public final class M3Divider extends Control {
         return orientation;
     }
 
-    /// Returns the divider thickness token.
+    /// Returns the divider thickness in logical pixels.
     ///
     /// @return the divider thickness token
     public final double getThickness() {
         return thickness == null ? DEFAULT_THICKNESS : thickness.get();
     }
 
-    /// Sets the divider thickness token.
+    /// Sets the divider thickness in logical pixels.
     ///
     /// @param thickness the divider thickness token
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @throws IllegalArgumentException if `thickness` is negative or not finite
     public final void setThickness(double thickness) {
         thicknessProperty().set(M3Css.nonNegative(thickness, "thickness"));
     }
@@ -128,17 +139,17 @@ public final class M3Divider extends Control {
         return thickness;
     }
 
-    /// Returns the leading inset token.
+    /// Returns the logical leading inset in logical pixels.
     ///
     /// @return the leading inset token
     public final double getInsetStart() {
         return insetStart == null ? DEFAULT_INSET_START : insetStart.get();
     }
 
-    /// Sets the leading inset token.
+    /// Sets the logical leading inset in logical pixels.
     ///
     /// @param insetStart the leading inset token
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @throws IllegalArgumentException if `insetStart` is negative or not finite
     public final void setInsetStart(double insetStart) {
         insetStartProperty().set(M3Css.nonNegative(insetStart, "insetStart"));
     }
@@ -156,17 +167,17 @@ public final class M3Divider extends Control {
         return insetStart;
     }
 
-    /// Returns the trailing inset token.
+    /// Returns the logical trailing inset in logical pixels.
     ///
     /// @return the trailing inset token
     public final double getInsetEnd() {
         return insetEnd == null ? DEFAULT_INSET_END : insetEnd.get();
     }
 
-    /// Sets the trailing inset token.
+    /// Sets the logical trailing inset in logical pixels.
     ///
     /// @param insetEnd the trailing inset token
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @throws IllegalArgumentException if `insetEnd` is negative or not finite
     public final void setInsetEnd(double insetEnd) {
         insetEndProperty().set(M3Css.nonNegative(insetEnd, "insetEnd"));
     }

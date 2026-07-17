@@ -10,15 +10,42 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
-/// Builds an immutable [M3TokenSet] from profile defaults and explicit token-group overrides.
+/// Builds an immutable [M3TokenSet] from profile defaults and complete token-group replacements.
 ///
-/// A builder starts with a complete baseline or expressive token set. Setters replace whole semantic token groups,
-/// which avoids positional factory methods with many unrelated arguments and keeps custom themes internally
-/// consistent. Unless [componentTokens(M3ComponentTokens)] is called, component tokens are derived at build time
-/// from the current profile, shape tokens, and density.
+/// A builder created from a profile starts with complete Standard or Expressive defaults. A builder copied from an
+/// existing token set retains every group, including that set's component tokens. Setters replace whole semantic
+/// groups and return this builder for method chaining.
 ///
-/// Replacement token groups must not be `null`; replacement methods throw [NullPointerException] when that
-/// contract is violated. A builder can be reused after [build].
+/// Component tokens require special attention. [componentTokens(M3ComponentTokens)] installs an explicit group,
+/// while [deriveComponentTokens] requests derivation from the immutable [profile], current shape tokens, and
+/// immutable [density] on each subsequent [build]. Replacing shape tokens on a builder copied from an existing
+/// token set does not rederive component tokens until [deriveComponentTokens] is called.
+///
+/// [build] creates an independent immutable snapshot. Later builder changes do not affect previously built token
+/// sets. Builders may be reused but are not thread-safe.
+///
+/// The following example customizes the shape scale of an existing theme and requests matching component metrics:
+///
+/// ```java
+/// import javafx.scene.paint.Color;
+/// import org.glavo.m3fx.theme.M3Theme;
+/// import org.glavo.m3fx.tokens.M3ShapeTokens;
+/// import org.glavo.m3fx.tokens.M3TokenSet;
+///
+/// public final class CustomThemeFactory {
+///     public static M3Theme createTheme() {
+///         M3Theme baseTheme = M3Theme.fromSeed(Color.web("#006A6A"));
+///         M3ShapeTokens shapes = M3ShapeTokens.builder(baseTheme.tokens().shapeTokens())
+///                 .large(20.0)
+///                 .build();
+///         M3TokenSet tokens = M3TokenSet.builder(baseTheme.tokens())
+///                 .shapeTokens(shapes)
+///                 .deriveComponentTokens()
+///                 .build();
+///         return M3Theme.fromTokenSet(tokens);
+///     }
+/// }
+/// ```
 ///
 /// See [Material Design styles](https://m3.material.io/styles).
 @NotNullByDefault
@@ -101,7 +128,7 @@ public final class M3TokenSetBuilder {
     ///
     /// @param colorTokens the replacement color tokens
     /// @return this builder
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `colorTokens` is `null`
     public M3TokenSetBuilder colorTokens(M3ColorTokens colorTokens) {
         this.colorTokens = Objects.requireNonNull(colorTokens, "colorTokens");
         return this;
@@ -111,7 +138,7 @@ public final class M3TokenSetBuilder {
     ///
     /// @param typographyTokens the replacement typography tokens
     /// @return this builder
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `typographyTokens` is `null`
     public M3TokenSetBuilder typographyTokens(M3TypographyTokens typographyTokens) {
         this.typographyTokens = Objects.requireNonNull(typographyTokens, "typographyTokens");
         return this;
@@ -123,7 +150,7 @@ public final class M3TokenSetBuilder {
     ///
     /// @param shapeTokens the replacement shape tokens
     /// @return this builder
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `shapeTokens` is `null`
     public M3TokenSetBuilder shapeTokens(M3ShapeTokens shapeTokens) {
         this.shapeTokens = Objects.requireNonNull(shapeTokens, "shapeTokens");
         return this;
@@ -133,7 +160,7 @@ public final class M3TokenSetBuilder {
     ///
     /// @param elevationTokens the replacement elevation tokens
     /// @return this builder
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `elevationTokens` is `null`
     public M3TokenSetBuilder elevationTokens(M3ElevationTokens elevationTokens) {
         this.elevationTokens = Objects.requireNonNull(elevationTokens, "elevationTokens");
         return this;
@@ -143,7 +170,7 @@ public final class M3TokenSetBuilder {
     ///
     /// @param motionTokens the replacement motion tokens
     /// @return this builder
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `motionTokens` is `null`
     public M3TokenSetBuilder motionTokens(M3MotionTokens motionTokens) {
         this.motionTokens = Objects.requireNonNull(motionTokens, "motionTokens");
         return this;
@@ -153,7 +180,7 @@ public final class M3TokenSetBuilder {
     ///
     /// @param stateLayerTokens the replacement state-layer tokens
     /// @return this builder
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `stateLayerTokens` is `null`
     public M3TokenSetBuilder stateLayerTokens(M3StateLayerTokens stateLayerTokens) {
         this.stateLayerTokens = Objects.requireNonNull(stateLayerTokens, "stateLayerTokens");
         return this;
@@ -163,13 +190,15 @@ public final class M3TokenSetBuilder {
     ///
     /// @param componentTokens the replacement component tokens
     /// @return this builder
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `componentTokens` is `null`
     public M3TokenSetBuilder componentTokens(M3ComponentTokens componentTokens) {
         this.componentTokens = Objects.requireNonNull(componentTokens, "componentTokens");
         return this;
     }
 
-    /// Clears an explicit component-token override so it is derived at build time.
+    /// Clears the explicit component-token group so component tokens are derived by [build].
+    ///
+    /// Calling this method repeatedly has no additional effect.
     ///
     /// @return this builder
     public M3TokenSetBuilder deriveComponentTokens() {
@@ -177,9 +206,12 @@ public final class M3TokenSetBuilder {
         return this;
     }
 
-    /// Creates an immutable token set from the current builder state.
+    /// Creates an immutable snapshot of the current builder state.
     ///
-    /// @return the built token set
+    /// If component-token derivation is enabled, a new component token group is derived for this build. Otherwise
+    /// the explicit component token group is retained.
+    ///
+    /// @return a new immutable token set; never `null`
     public M3TokenSet build() {
         M3ComponentTokens resolvedComponentTokens = componentTokens == null
                 ? M3ComponentTokens.builder(profile, shapeTokens, density).build()

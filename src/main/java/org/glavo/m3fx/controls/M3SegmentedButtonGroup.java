@@ -49,9 +49,14 @@ import java.util.Objects;
 /// A Material Design 3 segmented button group that lays out adjacent segments.
 ///
 /// The group manages the selected state of child [M3SegmentedButton] instances, applies the configured
-/// [M3SelectionMode], and renders the shared outline geometry expected by Material segmented
-/// buttons. It also provides keyboard traversal and empty-selection control for groups that require at least one
-/// selected segment.
+/// [M3SelectionMode], and presents the shared outline geometry expected by Material segmented buttons. `SINGLE`
+/// permits at most one selected reachable segment, `MULTIPLE` permits any number, and `NONE` clears and disables
+/// selection. When empty selection is disallowed, the first reachable segment is selected whenever possible.
+///
+/// Selection can be changed through this group or directly through a child segment. In either case, the group
+/// restores its invariant synchronously and publishes selected segments in child order. Disabled, invisible, or
+/// otherwise unreachable segments cannot remain selected. Arrow-key navigation follows effective node orientation
+/// and wraps at the group boundary.
 ///
 /// See [Material Design segmented buttons](https://m3.material.io/components/segmented-buttons/overview).
 @NotNullByDefault
@@ -74,7 +79,11 @@ public final class M3SegmentedButtonGroup extends Control {
     /// The default spacing that lets adjacent segmented button borders overlap.
     private static final double DEFAULT_SPACING = -1.0;
 
-    /// The mutable segmented button group content.
+    /// The live, mutable, ordered segment list.
+    ///
+    /// The list rejects `null`. Each segment must occur at most once and must satisfy the JavaFX single-parent rule
+    /// when displayed. Adding and removing segments immediately updates selection, accessibility, and positional
+    /// styling.
     private final ObservableList<M3SegmentedButton> items = M3ObservableLists.nonNullElementList("item");
 
     /// Notifies accessibility clients when focus moves between segmented buttons.
@@ -87,10 +96,19 @@ public final class M3SegmentedButtonGroup extends Control {
                             M3SegmentedButton.class
                     ));
 
-    /// Backing property for the styleable segment spacing token.
+    /// The spacing between adjacent segments in logical pixels.
+    ///
+    /// Negative spacing is supported so adjacent outlines can overlap. The value must be finite.
+    ///
+    /// @defaultValue `-1.0`
     private @Nullable StyleableDoubleProperty spacing;
 
-    /// Backing property for the public segmented button selection mode API.
+    /// The selection policy applied to the segments.
+    ///
+    /// Assigning `null` directly to the property restores [M3SelectionMode#SINGLE]. Changing the mode immediately
+    /// normalizes the current selection.
+    ///
+    /// @defaultValue [M3SelectionMode#SINGLE]
     private final ObjectProperty<M3SelectionMode> selectionMode =
             new SimpleObjectProperty<>(this, "selectionMode", M3SelectionMode.SINGLE) {
                 /// Enforces selection invariants when the mode changes.
@@ -115,7 +133,12 @@ public final class M3SegmentedButtonGroup extends Control {
     private final ReadOnlyObjectWrapper<@Nullable M3SegmentedButton> selectedButton =
             new ReadOnlyObjectWrapper<>(this, "selectedButton");
 
-    /// Backing property for the public empty-selection policy API.
+    /// Whether a selectable group may have no selected segment.
+    ///
+    /// Changing this property to `false` selects the first reachable segment when selection is empty. The property
+    /// has no effect while [#getSelectionMode()] is [M3SelectionMode#NONE].
+    ///
+    /// @defaultValue `true`
     private final BooleanProperty allowEmptySelection = new SimpleBooleanProperty(this, "allowEmptySelection", true) {
         /// Restores a selected button when empty selection is disabled.
         @Override
@@ -176,14 +199,14 @@ public final class M3SegmentedButtonGroup extends Control {
     /// Whether the group is currently synchronizing selected states.
     private boolean updatingSelection;
 
-    /// Creates an empty segmented button group.
+    /// Creates an empty single-selection group that permits empty selection.
     public M3SegmentedButtonGroup() {
         initialize();
     }
 
     /// Returns the mutable child list used as segmented button group content.
     ///
-    /// @return the mutable child list used as segmented button group content
+    /// @return the live, mutable segment list in display order
     public final ObservableList<M3SegmentedButton> getItems() {
         return items;
     }
@@ -197,7 +220,8 @@ public final class M3SegmentedButtonGroup extends Control {
 
     /// Sets the spacing between segmented buttons.
     ///
-    /// @param spacing the child spacing in pixels
+    /// @param spacing the finite child spacing in logical pixels; negative values overlap adjacent segments
+    /// @throws IllegalArgumentException if `spacing` is not finite
     public final void setSpacing(double spacing) {
         spacingProperty().set(M3Css.finite(spacing, "spacing"));
     }
@@ -225,8 +249,11 @@ public final class M3SegmentedButtonGroup extends Control {
 
     /// Sets the segmented button selection mode.
     ///
+    /// Existing selection is normalized synchronously. `NONE` clears all segments; `SINGLE` retains the first
+    /// selected reachable segment; `MULTIPLE` retains every selected reachable segment.
+    ///
     /// @param selectionMode the segmented button selection mode
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `selectionMode` is `null`
     public final void setSelectionMode(M3SelectionMode selectionMode) {
         this.selectionMode.set(Objects.requireNonNull(selectionMode, "selectionMode"));
     }
@@ -236,6 +263,9 @@ public final class M3SegmentedButtonGroup extends Control {
     }
 
     /// Returns the selected segmented buttons in child order.
+    ///
+    /// The returned list is an unmodifiable, live, observable view. It never contains disabled, invisible, removed,
+    /// or otherwise unreachable segments.
     ///
     /// @return the selected segmented buttons in child order
     public final @UnmodifiableView ObservableList<M3SegmentedButton> getSelectedButtons() {
@@ -283,7 +313,7 @@ public final class M3SegmentedButtonGroup extends Control {
     ///
     /// @param button the segmented button to select
     /// @throws IllegalArgumentException if the button does not belong to this group
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `button` is `null`
     public final void select(M3SegmentedButton button) {
         Objects.requireNonNull(button, "button");
         if (!getItems().contains(button)) {
@@ -305,7 +335,8 @@ public final class M3SegmentedButtonGroup extends Control {
     /// Selects the segmented button at the given child index.
     ///
     /// @param index the child index to select
-    /// @throws IllegalArgumentException if the child at the index is not a segmented button
+    /// @throws IndexOutOfBoundsException if `index` is outside the segment list
+    /// @throws IllegalArgumentException if the indexed segment is not currently selectable
     public final void selectIndex(int index) {
         Node child = getItems().get(index);
         if (child instanceof M3SegmentedButton button) {
@@ -362,7 +393,10 @@ public final class M3SegmentedButtonGroup extends Control {
         }
     }
 
-    /// Clears the current selection when empty selection is allowed.
+    /// Clears the current selection when permitted by the group policy.
+    ///
+    /// If empty selection is disallowed, this method selects the first reachable segment instead. In `NONE` mode,
+    /// selection remains empty regardless of [#isAllowEmptySelection()].
     public final void clearSelection() {
         if (!isAllowEmptySelection() && getSelectionMode() != M3SelectionMode.NONE) {
             selectFirstButtonIfNeeded();
@@ -397,7 +431,7 @@ public final class M3SegmentedButtonGroup extends Control {
     /// @param attribute the requested accessibility attribute
     /// @param parameters the optional attribute parameters
     /// @return the attribute value, or `null` when unavailable
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -420,7 +454,7 @@ public final class M3SegmentedButtonGroup extends Control {
     ///
     /// @param action the requested accessibility action
     /// @param parameters the optional action parameters
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

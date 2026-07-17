@@ -35,10 +35,14 @@ import java.util.function.Function;
 
 /// A Material Design 3 switch for turning a single setting on or off.
 ///
-/// `M3Switch` is built on JavaFX [ButtonBase] and exposes a selected property rather than extending JavaFX's
-/// concrete toggle controls. The skin renders the Material track, handle, selected state, hover and focus state
-/// layers, ripple feedback, and token-backed touch target. Pressing and dragging the track moves the handle
-/// directly; releasing after a drag commits the state nearest to the handle.
+/// `M3Switch` is built on JavaFX [ButtonBase] and exposes a selected property rather than extending a concrete JavaFX
+/// toggle control. Activation toggles [#selectedProperty()] before firing an [ActionEvent]. Direct property changes
+/// update state without firing an action event. Pointer dragging previews the handle position and commits the state
+/// nearest the handle when released.
+///
+/// A new switch is unselected and has no handle icons. Selected and unselected icons are optional child nodes owned
+/// by the control. Geometry properties use JavaFX logical pixels and are styleable through the control's CSS
+/// metadata.
 ///
 /// Use a switch for a setting whose change takes effect immediately. For selection from multiple choices, use
 /// radio buttons or segmented buttons. See [Material Design switches](https://m3.material.io/components/switch/overview).
@@ -80,46 +84,78 @@ public final class M3Switch extends ButtonBase {
     /// The default selected or unselected handle icon size.
     private static final double DEFAULT_ICON_SIZE = 16.0;
 
-    /// The styleable touch target size token.
+    /// The preferred square touch-target size in logical pixels.
+    ///
+    /// @defaultValue `48.0`
     private @Nullable StyleableDoubleProperty touchTargetSize;
 
-    /// The styleable switch track shape token.
+    /// The switch track corner radius in logical pixels.
+    ///
+    /// @defaultValue `999.0`
     private @Nullable StyleableDoubleProperty trackShape;
 
-    /// The styleable switch track width token.
+    /// The switch track width in logical pixels.
+    ///
+    /// @defaultValue `52.0`
     private @Nullable StyleableDoubleProperty trackWidth;
 
-    /// The styleable switch track height token.
+    /// The switch track height in logical pixels.
+    ///
+    /// @defaultValue `32.0`
     private @Nullable StyleableDoubleProperty trackHeight;
 
-    /// The styleable switch state layer size token.
+    /// The circular handle state-layer diameter in logical pixels.
+    ///
+    /// @defaultValue `40.0`
     private @Nullable StyleableDoubleProperty stateLayerSize;
 
-    /// The styleable unselected switch handle size token.
+    /// The unselected handle diameter in logical pixels when no icon is present.
+    ///
+    /// @defaultValue `16.0`
     private @Nullable StyleableDoubleProperty unselectedHandleSize;
 
-    /// The styleable switch handle size used when an icon is shown.
+    /// The handle diameter in logical pixels when the current state has an icon.
+    ///
+    /// @defaultValue `24.0`
     private @Nullable StyleableDoubleProperty withIconHandleSize;
 
-    /// The styleable selected switch handle size token.
+    /// The selected handle diameter in logical pixels when no icon-specific size applies.
+    ///
+    /// @defaultValue `24.0`
     private @Nullable StyleableDoubleProperty selectedHandleSize;
 
-    /// The styleable pressed switch handle size token.
+    /// The pressed handle diameter in logical pixels.
+    ///
+    /// @defaultValue `28.0`
     private @Nullable StyleableDoubleProperty pressedHandleSize;
 
-    /// The styleable switch handle icon size token.
+    /// The selected and unselected handle icon size in logical pixels.
+    ///
+    /// @defaultValue `16.0`
     private @Nullable StyleableDoubleProperty iconSize;
 
-    /// The selected state property.
+    /// Whether the switch is selected.
+    ///
+    /// Direct changes do not fire an action event.
+    ///
+    /// @defaultValue `false`
     private @Nullable BooleanProperty selected;
 
     /// The optional icon shown inside the selected handle.
+    ///
+    /// A non-null node is owned by this switch and must be available for it to parent.
+    ///
+    /// @defaultValue `null`
     private @Nullable ObjectProperty<@Nullable Node> selectedIcon;
 
     /// The optional icon shown inside the unselected handle.
+    ///
+    /// A non-null node is owned by this switch and must be available for it to parent.
+    ///
+    /// @defaultValue `null`
     private @Nullable ObjectProperty<@Nullable Node> unselectedIcon;
 
-    /// Creates an empty switch.
+    /// Creates an unselected switch with empty text and no handle icons.
     public M3Switch() {
         initialize();
     }
@@ -182,7 +218,8 @@ public final class M3Switch extends ButtonBase {
 
     /// Sets the icon shown inside the handle while this switch is selected.
     ///
-    /// The icon should fit the current [iconSizeProperty] value. A node cannot be shared with another parent.
+    /// The icon should fit [#iconSizeProperty()]. A non-null node becomes a child of this control and must satisfy
+    /// normal JavaFX parent ownership rules.
     ///
     /// @param selectedIcon the selected handle icon, or `null` for no icon
     public final void setSelectedIcon(@Nullable Node selectedIcon) {
@@ -211,7 +248,8 @@ public final class M3Switch extends ButtonBase {
 
     /// Sets the icon shown inside the handle while this switch is unselected.
     ///
-    /// The icon should fit the current [iconSizeProperty] value. A node cannot be shared with another parent.
+    /// The icon should fit [#iconSizeProperty()]. A non-null node becomes a child of this control and must satisfy
+    /// normal JavaFX parent ownership rules.
     ///
     /// @param unselectedIcon the unselected handle icon, or `null` for no icon
     public final void setUnselectedIcon(@Nullable Node unselectedIcon) {
@@ -499,7 +537,9 @@ public final class M3Switch extends ButtonBase {
         return getClassCssMetaData();
     }
 
-    /// Toggles this switch and fires its action handler.
+    /// Toggles this switch and fires its action event.
+    ///
+    /// Selection changes before synchronous event delivery. This method is a no-op while the control is disabled.
     @Override
     public void fire() {
         if (!isDisabled()) {
@@ -522,7 +562,7 @@ public final class M3Switch extends ButtonBase {
 
     /// Returns accessibility attributes for switch selection state.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");

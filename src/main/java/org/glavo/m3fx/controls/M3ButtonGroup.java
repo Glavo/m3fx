@@ -40,16 +40,17 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-/// A Material Design 3 button group for adjacent related action buttons.
+/// A Material Design 3 group of adjacent, related action buttons.
 ///
-/// `M3ButtonGroup` lays out Material [ButtonBase] children as a standard separated group or as a connected group with
-/// coordinated outer and inner corners. The [variant][M3ButtonGroupVariant] controls whether grouped buttons keep
-/// their own rounded containers or join into a single visual set, and the [size][M3ButtonSize] controls
-/// container height and group spacing through CSS tokens. In a standard group, a selected or armed button expands
-/// by the configured [width multiplier][standardPressedWidthMultiplierProperty] while its immediate neighbors yield
-/// the same total width. Standard groups hug their content. Connected groups may expand to the width offered by
-/// their parent and distribute the additional space evenly among managed buttons; extra-small and small connected
-/// items retain a minimum 48-pixel target width.
+/// A group owns an ordered, live list of JavaFX [ButtonBase] nodes. The [variant][#variantProperty()] selects
+/// separated or connected presentation, while [size][#sizeProperty()] applies a common Material size to compatible
+/// M3FX buttons. Standard groups may redistribute width around an armed or selected item according to
+/// [standardPressedWidthMultiplier][#standardPressedWidthMultiplierProperty()]; connected groups coordinate the
+/// outer and inner shapes of adjacent buttons.
+///
+/// The group itself is not focus traversable. Arrow-key traversal and accessibility navigation operate on
+/// reachable buttons in visual order and respect node orientation. A button can belong to only one scene-graph
+/// parent and therefore cannot simultaneously be displayed in another container.
 ///
 /// See [Material Design button groups](https://m3.material.io/components/button-groups/overview).
 @NotNullByDefault
@@ -88,14 +89,22 @@ public final class M3ButtonGroup extends Control {
     private static final PseudoClass CONNECTED_GROUP_PSEUDO_CLASS =
             PseudoClass.getPseudoClass("connected-group");
 
-    /// The mutable button group content.
+    /// The live, mutable list of buttons in visual order.
+    ///
+    /// The list rejects `null`, preserves insertion order, and is observed for subsequent changes. Removing a
+    /// button also removes grouping-specific state from that button.
     private final ObservableList<ButtonBase> items = M3ObservableLists.nonNullElementList("item");
 
     /// Notifies accessibility clients when focus moves between grouped buttons.
     private final M3AccessibleFocusNotifier focusNotifier =
             new M3AccessibleFocusNotifier(this, () -> M3Accessible.currentOrFirstFocusTarget(this, getItems()));
 
-    /// The button group visual variant property.
+    /// The visual grouping model used for the items.
+    ///
+    /// The default value is [M3ButtonGroupVariant#CONNECTED]. The property never reports `null`; a direct `null`
+    /// assignment restores the default.
+    ///
+    /// @defaultValue [M3ButtonGroupVariant#CONNECTED]
     private final ObjectProperty<M3ButtonGroupVariant> variant =
             new SimpleObjectProperty<>(this, "variant", DEFAULT_VARIANT) {
                 /// Updates variant style classes when the property changes.
@@ -111,7 +120,12 @@ public final class M3ButtonGroup extends Control {
                 }
             };
 
-    /// The button group size property.
+    /// The common Material size applied to compatible grouped buttons.
+    ///
+    /// The default value is [M3ButtonSize#SMALL]. The property never reports `null`; a direct `null` assignment
+    /// restores the default.
+    ///
+    /// @defaultValue [M3ButtonSize#SMALL]
     private final ObjectProperty<M3ButtonSize> size =
             new SimpleObjectProperty<>(this, "size", DEFAULT_SIZE) {
                 /// Updates size style classes when the property changes.
@@ -127,10 +141,20 @@ public final class M3ButtonGroup extends Control {
                 }
             };
 
-    /// The styleable spacing between grouped buttons.
+    /// The spacing between adjacent button bounds, in logical pixels.
+    ///
+    /// The default value is `-1.0`, allowing adjacent borders to overlap. Any finite value is accepted, including
+    /// negative values.
+    ///
+    /// @defaultValue `-1.0`
     private @Nullable StyleableDoubleProperty spacing;
 
-    /// The styleable standard-group pressed width multiplier.
+    /// The proportional width increase assigned to the active item in a standard group.
+    ///
+    /// The default value is `0.15`. Values must be finite and non-negative. This property has no effect on a
+    /// connected group.
+    ///
+    /// @defaultValue `0.15`
     private @Nullable StyleableDoubleProperty standardPressedWidthMultiplierStyleable;
 
     /// Updates grouped button position style classes when children change.
@@ -153,14 +177,17 @@ public final class M3ButtonGroup extends Control {
     private final ChangeListener<NodeOrientation> effectiveNodeOrientationListener =
             (observable, oldValue, newValue) -> updateButtonStyles();
 
-    /// Creates an empty button group.
+    /// Creates an empty, connected, small button group.
     public M3ButtonGroup() {
         initialize();
     }
 
-    /// Returns the mutable child list used as button group content.
+    /// Returns the live list of buttons displayed by this group.
     ///
-    /// @return the mutable child list used as button group content
+    /// Changes to the returned list are reflected immediately. The list preserves insertion order and rejects
+    /// `null` elements.
+    ///
+    /// @return the live, mutable button list
     public final ObservableList<ButtonBase> getItems() {
         return items;
     }
@@ -175,7 +202,7 @@ public final class M3ButtonGroup extends Control {
     /// Sets the visual button group variant.
     ///
     /// @param variant the visual button group variant
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `variant` is `null`
     public final void setVariant(M3ButtonGroupVariant variant) {
         this.variant.set(Objects.requireNonNull(variant, "variant"));
     }
@@ -194,7 +221,7 @@ public final class M3ButtonGroup extends Control {
     /// Sets the Material Expressive button group size.
     ///
     /// @param size the Material Expressive button group size
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `size` is `null`
     public final void setSize(M3ButtonSize size) {
         this.size.set(Objects.requireNonNull(size, "size"));
     }
@@ -205,14 +232,15 @@ public final class M3ButtonGroup extends Control {
 
     /// Returns the spacing between grouped buttons.
     ///
-    /// @return the child spacing in pixels
+    /// @return the child spacing in logical pixels
     public final double getSpacing() {
         return spacing == null ? DEFAULT_SPACING : spacing.get();
     }
 
     /// Sets the spacing between grouped buttons.
     ///
-    /// @param spacing the child spacing in pixels
+    /// @param spacing the child spacing in logical pixels
+    /// @throws IllegalArgumentException if `spacing` is not finite
     public final void setSpacing(double spacing) {
         spacingProperty().set(M3Css.finite(spacing, "spacing"));
     }
@@ -243,7 +271,7 @@ public final class M3ButtonGroup extends Control {
     /// Sets the proportional width increase applied to an activated button in a standard group.
     ///
     /// @param multiplier the non-negative pressed width multiplier
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @throws IllegalArgumentException if `multiplier` is negative or not finite
     public final void setStandardPressedWidthMultiplier(double multiplier) {
         standardPressedWidthMultiplierProperty().set(
                 M3Css.nonNegative(multiplier, "standardPressedWidthMultiplier")
@@ -298,7 +326,7 @@ public final class M3ButtonGroup extends Control {
 
     /// Returns accessibility attributes for grouped button content.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -312,7 +340,7 @@ public final class M3ButtonGroup extends Control {
 
     /// Executes accessibility actions for grouped button content.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `action` is `null`
     @Override
     public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
         Objects.requireNonNull(action, "action");

@@ -22,10 +22,12 @@ import java.util.List;
 
 /// A Material Design 3 menu item.
 ///
-/// `M3MenuItem` is the concrete action-item type used inside [M3Menu]. It provides menu-item accessibility
-/// semantics, optional leading and trailing slots, action dispatch, and selection state when the containing menu
-/// uses a selectable mode. It shares row content APIs with [M3ListItem] through [M3ListItemBase], but it is not a
-/// list item and therefore cannot be inserted into list-only containers.
+/// `M3MenuItem` is the concrete action row used inside [M3Menu]. Calling [fire] on an enabled item delivers its
+/// action event. A containing menu may additionally change [selectedProperty] according to its selection mode.
+/// Leading and trailing nodes use the slot and ownership contract defined by [M3ListItemBase].
+///
+/// A menu item is focus traversable as part of menu keyboard navigation. It is not an [M3ListItem] and cannot be
+/// selected through list-only containers.
 ///
 /// See [Material Design menus](https://m3.material.io/components/menus/overview).
 @NotNullByDefault
@@ -36,7 +38,12 @@ public sealed class M3MenuItem extends M3ListItemBase permits M3SubMenuItem {
     /// The fallback radius used by inner corners at a grouped-menu boundary.
     private static final double DEFAULT_INNER_CORNER_SHAPE = 4.0;
 
-    /// The styleable radius used by the inner corners of a first or last grouped-menu item.
+    /// The corner radius used at the inner edge of the first or last item in a contiguous menu group.
+    ///
+    /// Values must be finite and non-negative. The value is ignored for middle items and states that use one
+    /// uniform container shape.
+    ///
+    /// @defaultValue `4.0`
     private @Nullable StyleableDoubleProperty innerCornerShapeValue;
 
     /// Creates an empty menu item.
@@ -47,6 +54,7 @@ public sealed class M3MenuItem extends M3ListItemBase permits M3SubMenuItem {
     /// Creates a menu item with text.
     ///
     /// @param text the item text
+    /// @throws NullPointerException if `text` is `null`
     public M3MenuItem(String text) {
         super(text);
         M3ControlStyles.add(this, STYLE_CLASS);
@@ -57,6 +65,7 @@ public sealed class M3MenuItem extends M3ListItemBase permits M3SubMenuItem {
     ///
     /// @param text    the item text
     /// @param leading the leading slot node, or `null` for no leading content
+    /// @throws NullPointerException if `text` is `null`
     public M3MenuItem(String text, @Nullable Node leading) {
         this(text);
         setLeading(leading);
@@ -67,6 +76,7 @@ public sealed class M3MenuItem extends M3ListItemBase permits M3SubMenuItem {
     /// @param text     the item text
     /// @param leading  the leading slot node, or `null` for no leading content
     /// @param trailing the trailing slot node, or `null` for no trailing content
+    /// @throws NullPointerException if `text` is `null`
     public M3MenuItem(String text, @Nullable Node leading, @Nullable Node trailing) {
         this(text, leading);
         setTrailing(trailing);
@@ -86,7 +96,7 @@ public sealed class M3MenuItem extends M3ListItemBase permits M3SubMenuItem {
     /// Sets the radius used by the inner corners of a first or last item in a visual menu group.
     ///
     /// @param innerCornerShape the non-negative inner-corner radius
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
+    /// @throws IllegalArgumentException if `innerCornerShape` is negative or not finite
     public final void setInnerCornerShape(double innerCornerShape) {
         innerCornerShapeProperty().set(M3Css.nonNegative(innerCornerShape, "innerCornerShape"));
     }

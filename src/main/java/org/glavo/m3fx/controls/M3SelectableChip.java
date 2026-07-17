@@ -27,6 +27,10 @@ public abstract sealed class M3SelectableChip extends M3Chip permits M3FilterChi
     private static final PseudoClass SELECTED_PSEUDO_CLASS = PseudoClass.getPseudoClass("selected");
 
     /// The persistent selected state.
+    ///
+    /// Direct property changes update presentation and accessibility without firing an action event.
+    ///
+    /// @defaultValue `false`
     private final BooleanProperty selected = new SimpleBooleanProperty(this, "selected") {
         /// Updates visual and accessibility state when selection changes.
         @Override
@@ -67,7 +71,7 @@ public abstract sealed class M3SelectableChip extends M3Chip permits M3FilterChi
 
     /// Returns accessibility attributes for the selected state.
     ///
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
@@ -81,6 +85,8 @@ public abstract sealed class M3SelectableChip extends M3Chip permits M3FilterChi
     }
 
     /// Toggles this chip and fires its action event.
+    ///
+    /// Selection changes before synchronous event delivery. This method is a no-op while the chip is disabled.
     @Override
     public void fire() {
         if (!isDisabled()) {

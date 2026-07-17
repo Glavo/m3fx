@@ -36,10 +36,15 @@ import java.util.function.Function;
 
 /// A Material Design 3 radio button for selecting one option from a set.
 ///
-/// `M3RadioButton` implements JavaFX [Toggle] so it can be grouped with a standard [ToggleGroup] while keeping
-/// an M3FX skin and API surface. Activating a selected radio button keeps it selected, matching the usual radio
-/// group behavior. The control updates JavaFX accessibility toggle attributes and renders Material state layers,
-/// focus indication, and ripple feedback.
+/// A radio button has a selected and an unselected state. When it belongs to a [ToggleGroup], selecting it clears
+/// the previously selected toggle in that group. Activating an already selected radio button in a group has no
+/// effect, so a group normally retains one selection. An ungrouped radio button may be selected and cleared by
+/// repeated activation.
+///
+/// An [ActionEvent] is fired after a successful user or programmatic activation. The [#selectedProperty()] and
+/// [#toggleGroupProperty()] properties also implement the standard JavaFX [Toggle] contract, allowing this control to
+/// participate in a group containing other `Toggle` implementations. By default, the radio button is unselected
+/// and is not assigned to a group.
 ///
 /// Use radio buttons when all available options should remain visible. See
 /// [Material Design radio buttons](https://m3.material.io/components/radio-button/overview).
@@ -75,18 +80,30 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
     /// The styleable selected radio dot size token.
     private @Nullable StyleableDoubleProperty selectedDotSize;
 
-    /// The selected state property.
+    /// Whether this radio button is selected.
+    ///
+    /// Setting this property to `true` selects this toggle in [#getToggleGroup()], if present, and clears the
+    /// group's previous selection. Setting it to `false` clears the group's selection when this button is the
+    /// selected toggle. Direct property mutation and binding participate in the same group synchronization.
+    ///
+    /// @defaultValue `false`
     private @Nullable BooleanProperty selected;
 
-    /// The toggle group this radio button belongs to.
+    /// The toggle group that coordinates this radio button's selection.
+    ///
+    /// A `null` value leaves the radio button independent. Changing the property removes the button from the old
+    /// group and adds it to the new group. The property remains synchronized when group membership is changed
+    /// through [ToggleGroup#getToggles()].
+    ///
+    /// @defaultValue `null`
     private @Nullable ObjectProperty<@Nullable ToggleGroup> toggleGroup;
 
-    /// Creates an empty radio button.
+    /// Creates an unselected radio button with an empty label and no toggle group.
     public M3RadioButton() {
         initialize();
     }
 
-    /// Creates a radio button with text.
+    /// Creates an unselected radio button with the specified label and no toggle group.
     ///
     /// @param text the radio button text
     public M3RadioButton(String text) {
@@ -95,6 +112,9 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
     }
 
     /// Sets whether this radio button is selected.
+    ///
+    /// If the button belongs to a toggle group, selecting it updates the group's selected toggle. Clearing the
+    /// selected button also clears the group's selected-toggle property.
     ///
     /// @param selected whether this radio button is selected
     @Override
@@ -149,6 +169,9 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
     }
 
     /// Sets the toggle group that manages this radio button.
+    ///
+    /// Assigning a new group updates membership in both the old and new groups. Passing `null` removes the radio
+    /// button from its current group without changing its selected state.
     ///
     /// @param toggleGroup the toggle group that manages this radio button, or `null`
     @Override
@@ -217,16 +240,16 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
         return toggleGroup;
     }
 
-    /// Returns the preferred touch target size token.
+    /// Returns the preferred square touch-target size.
     ///
-    /// @return the preferred touch target size in pixels
+    /// @return the touch-target size in logical pixels
     public final double getTouchTargetSize() {
         return touchTargetSize == null ? DEFAULT_TOUCH_TARGET_SIZE : touchTargetSize.get();
     }
 
-    /// Sets the preferred touch target size token.
+    /// Sets the preferred square touch-target size.
     ///
-    /// @param touchTargetSize the preferred touch target size in pixels
+    /// @param touchTargetSize the touch-target size in logical pixels
     /// @throws IllegalArgumentException if the supplied value is negative or not finite
     public final void setTouchTargetSize(double touchTargetSize) {
         touchTargetSizeProperty().set(M3Css.nonNegative(touchTargetSize, "touchTargetSize"));
@@ -366,7 +389,7 @@ public final class M3RadioButton extends ButtonBase implements Toggle {
     /// @param attribute the requested accessibility attribute
     /// @param parameters optional attribute-specific parameters
     /// @return the requested accessibility value, or `null` when no value is available
-    /// @throws NullPointerException if any required argument is `null`
+    /// @throws NullPointerException if `attribute` is `null`
     @Override
     public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         Objects.requireNonNull(attribute, "attribute");
