@@ -185,7 +185,12 @@ public final class M3ThemeRuntime {
         scene.getStylesheets().remove(stylesheetUrl());
     }
 
-    /// Copies the installed theme context from a scene root to a detached root such as popup content.
+    /// Copies installed theme metadata and managed style classes to another root.
+    ///
+    /// Arbitrary inline declarations from `sourceRoot` are intentionally not copied. Popup infrastructure adds the
+    /// generated stylesheet for the copied [M3Theme], while attached descendants continue to inherit lookup values
+    /// from their normal ancestor chain. Excluding unrelated inline declarations prevents visual properties such as
+    /// root backgrounds and padding from leaking into popup or virtualized component roots.
     public static void copyThemeContext(Parent sourceRoot, Parent targetRoot) {
         Objects.requireNonNull(sourceRoot, "sourceRoot");
         Objects.requireNonNull(targetRoot, "targetRoot");
@@ -224,10 +229,6 @@ public final class M3ThemeRuntime {
             M3ThemeMetadata.clearTheme(targetRoot);
         }
 
-        String sourceStyle = sourceRoot.getStyle();
-        if (!Objects.equals(targetRoot.getStyle(), sourceStyle)) {
-            targetRoot.setStyle(sourceStyle);
-        }
     }
 
     /// Applies root, profile, and brightness style classes for a theme without mutating inline token styles.

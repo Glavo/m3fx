@@ -238,6 +238,7 @@ final class M3SheetKeyboardTest {
             M3DialogPane dialogPane = new M3DialogPane();
             dialogPane.setContent(dialogContent);
             dialogPane.getButtonTypes().setAll(ButtonType.OK);
+            dialogPane.setModalActive(true);
 
             M3TextField sheetContent = new M3TextField("Sheet content");
             M3Button sheetAction = new M3Button("Sheet action");
@@ -289,6 +290,7 @@ final class M3SheetKeyboardTest {
             M3DialogPane dialogPane = new M3DialogPane();
             dialogPane.setContent(dialogContent);
             dialogPane.getButtonTypes().setAll(ButtonType.OK);
+            dialogPane.setModalActive(true);
             dialogPane.setVisible(false);
 
             VBox root = new VBox(sheet, dialogPane);
@@ -326,6 +328,7 @@ final class M3SheetKeyboardTest {
             M3DialogPane dialogPane = new M3DialogPane();
             dialogPane.setContent(dialogContent);
             dialogPane.getButtonTypes().setAll(ButtonType.OK);
+            dialogPane.setModalActive(true);
 
             M3TextField sheetContent = new M3TextField("Sheet content");
             M3Button sheetAction = new M3Button("Sheet action");
@@ -375,6 +378,7 @@ final class M3SheetKeyboardTest {
             M3DialogPane dialogPane = new M3DialogPane();
             dialogPane.setContent(dialogContent);
             dialogPane.getButtonTypes().setAll(ButtonType.OK);
+            dialogPane.setModalActive(true);
             dialogPane.setVisible(false);
 
             VBox root = new VBox(sheet, dialogPane);

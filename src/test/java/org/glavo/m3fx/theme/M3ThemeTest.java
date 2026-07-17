@@ -809,6 +809,8 @@ final class M3ThemeTest {
     void copiesThemeContextToDetachedRoots() {
         Pane root = new Pane();
         Pane popupRoot = new Pane();
+        root.setStyle("-fx-background-color: red;");
+        popupRoot.setStyle("-fx-padding: 3px;");
         popupRoot.getStyleClass().add("popup-root");
         Scene scene = new Scene(root);
         M3Theme theme = M3Theme.fromSeed(
@@ -826,7 +828,7 @@ final class M3ThemeTest {
         assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
         assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
         assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
-        assertEquals(root.getStyle(), popupRoot.getStyle());
+        assertEquals("-fx-padding: 3px;", popupRoot.getStyle());
         assertSame(theme, M3ThemeManager.getTheme(popupRoot));
 
         AtomicInteger styleClassChanges = new AtomicInteger();

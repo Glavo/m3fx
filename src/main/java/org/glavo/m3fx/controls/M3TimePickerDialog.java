@@ -30,21 +30,21 @@ import java.time.LocalTime;
 /// [LocalTime] as the dialog result when the user accepts the choice. Its Dial/Input mode switch shares the
 /// specification's bottom action row with the dialog actions.
 ///
-/// The inherited [#show()] method is non-blocking and [#showAndWait()] blocks through JavaFX's nested event loop.
+/// The inherited [#show()] method is non-blocking and [#showAndWait()] waits through a JavaFX nested event loop.
 /// Cancel closes the dialog with a `null` result; OK is disabled until a value is selected and closes with the
-/// selected minute-precision time. Configure owner and modality before showing the dialog:
+/// selected minute-precision time. The dialog is rendered inside its owner scene, so configure an owner node before
+/// showing it:
 ///
 /// ```java
 /// M3TimePickerDialog dialog = new M3TimePickerDialog(LocalTime.of(9, 30));
-/// dialog.initOwner(ownerNode);
-/// dialog.showAndWait();
-/// LocalTime acceptedTime = dialog.getResult();
+/// dialog.setOwner(ownerNode);
+/// LocalTime acceptedTime = dialog.showAndWait();
 /// ```
 ///
 /// See [Material Design time pickers](https://m3.material.io/components/time-pickers/overview).
 @NotNullByDefault
 public final class M3TimePickerDialog extends M3Dialog<LocalTime> {
-    /// The default title and header text for time picker dialogs.
+    /// The default headline text for time picker dialogs.
     private static final String DEFAULT_TITLE = "Select time";
 
     /// The style class applied to dialog content when preset actions are visible.
@@ -75,7 +75,9 @@ public final class M3TimePickerDialog extends M3Dialog<LocalTime> {
 
     /// The selected time synchronized with the embedded picker.
     ///
-    /// Values are normalized and range-checked by the picker. `null` clears selection and disables the OK action.
+    /// Non-null assignments discard seconds and nanoseconds, then validate the normalized time against the picker's
+    /// inclusive bounds. Assigning `null` clears selection and disables the OK action. Changes made through the
+    /// embedded picker update this property as well.
     ///
     /// @defaultValue `null`
     private final ObjectProperty<@Nullable LocalTime> value;
@@ -100,7 +102,7 @@ public final class M3TimePickerDialog extends M3Dialog<LocalTime> {
 
     /// Creates a time picker dialog with no selected time.
     ///
-    /// The dialog title and header are `Select time`, the OK action is disabled, and no owner is configured. The
+    /// The dialog headline is `Select time`, the OK action is disabled, and no owner is configured. The
     /// embedded picker uses its standard defaults.
     public M3TimePickerDialog() {
         this(new TimePickerDialogPane(), null);
@@ -184,15 +186,13 @@ public final class M3TimePickerDialog extends M3Dialog<LocalTime> {
     }
 
     /// Configures dialog content, buttons, result conversion, and button state.
-    @SuppressWarnings("DataFlowIssue")
     private void initialize() {
         picker.valueProperty().addListener((observable, oldValue, newValue) -> {
             if (!synchronizingValue) {
                 value.set(newValue);
             }
         });
-        setTitle(DEFAULT_TITLE);
-        M3DialogPane pane = getM3DialogPane();
+        M3DialogPane pane = getDialogPane();
         pane.setHeaderText(DEFAULT_TITLE);
         pane.setContent(presetContent);
         picker.nodeOrientationProperty().bind(pane.effectiveNodeOrientationProperty());
@@ -239,7 +239,7 @@ public final class M3TimePickerDialog extends M3Dialog<LocalTime> {
 
     /// Enables the OK button only when a selected time exists.
     private void updateOkButtonState() {
-        @Nullable Node okButton = getM3DialogPane().lookupButton(ButtonType.OK);
+        @Nullable Node okButton = getDialogPane().lookupButton(ButtonType.OK);
         if (okButton != null) {
             okButton.setDisable(getValue() == null);
         }
@@ -260,9 +260,6 @@ public final class M3TimePickerDialog extends M3Dialog<LocalTime> {
         /// The mode switch placed by ButtonBar at logical start.
         private final M3IconButton modeButton = new M3IconButton(modeIcon);
 
-        /// Synchronizes mode-switch icon and accessible text after programmatic mode changes.
-        private final InvalidationListener inputModeInvalidation = observable -> updateModeButton();
-
         /// Creates the specialized pane and its retained mode switch.
         private TimePickerDialogPane() {
             picker.getStyleClass().add(M3TimePicker.DIALOG_CONTENT_STYLE_CLASS);
@@ -272,19 +269,17 @@ public final class M3TimePickerDialog extends M3Dialog<LocalTime> {
                 picker.setInputMode(!picker.isInputMode());
                 event.consume();
             });
-            picker.inputModeProperty().addListener(inputModeInvalidation);
+            picker.inputModeProperty().addListener(observable -> updateModeButton());
             updateModeButton();
         }
 
 
         /// Creates the action row with a flexible gap between the mode switch and text actions.
         @Override
-        protected Node createButtonBar() {
-            Node node = super.createButtonBar();
-            if (node instanceof ButtonBar buttonBar) {
-                buttonBar.setButtonOrder(BUTTON_ORDER);
-            }
-            return node;
+        protected ButtonBar createButtonBar() {
+            ButtonBar buttonBar = super.createButtonBar();
+            buttonBar.setButtonOrder(BUTTON_ORDER);
+            return buttonBar;
         }
 
         /// Creates the retained mode switch for its private button type.

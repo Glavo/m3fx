@@ -36,8 +36,6 @@ import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Control;
-import javafx.scene.control.DialogEvent;
-import javafx.scene.control.DialogPane;
 import javafx.scene.control.Label;
 import javafx.scene.control.Labeled;
 import javafx.scene.control.ScrollBar;
@@ -78,7 +76,6 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.stage.StageStyle;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
 import org.glavo.m3fx.internal.M3SelectionNavigation;
@@ -193,6 +190,7 @@ import static org.glavo.m3fx.M3TestControls.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -4342,6 +4340,11 @@ final class M3ControlContractMatrixTest {
                     new M3Toolbar().getItems(),
                     new M3Button("Toolbar one"),
                     new M3Button("Toolbar two")
+            );
+            assertMutableListRejectsNull(
+                    new M3DialogPane().getButtonTypes(),
+                    ButtonType.OK,
+                    ButtonType.CANCEL
             );
             assertMutableListRejectsNull(
                     topAppBar().getActions(),
@@ -8732,8 +8735,7 @@ final class M3ControlContractMatrixTest {
         assertEquals(544.0, dialogPane.getMaxWidth(), 0.0001);
         assertEquals(28.0, graphic.getIconSize(), 0.0001);
         assertEquals(M3IconVariant.ON_SURFACE_VARIANT, graphic.getVariant());
-        assertTrue(graphic.getStyle().contains("-fx-text-fill: -m3-color-secondary;"));
-        assertTrue(graphic.getStyle().contains("-fx-opacity: 0.75;"));
+        assertEquals("-fx-opacity: 0.75;", graphic.getStyle());
         assertEquals(M3Theme.defaultTheme().colorScheme().getColor(org.glavo.monetfx.ColorRole.SECONDARY),
                 graphic.getTextFill());
         Node buttonBarContainer = Objects.requireNonNull(dialogPane.lookup(".container"),
@@ -8795,6 +8797,19 @@ final class M3ControlContractMatrixTest {
         okButton.setDisable(true);
 
         assertTrue(okButton.isDisabled());
+
+        ButtonType repeated = new ButtonType("Repeat", ButtonBar.ButtonData.OTHER);
+        dialogPane.getButtonTypes().setAll(repeated, repeated);
+        root.applyCss();
+        root.layout();
+        dialogPane.layout();
+
+        List<Node> repeatedButtons = List.copyOf(buttonBar.getButtons());
+        assertEquals(2, repeatedButtons.size());
+        assertNotSame(repeatedButtons.get(0), repeatedButtons.get(1));
+        assertSame(repeatedButtons.get(0), dialogPane.lookupButton(repeated));
+        assertEquals("Repeat", assertInstanceOf(M3Button.class, repeatedButtons.get(0)).getText());
+        assertEquals("Repeat", assertInstanceOf(M3Button.class, repeatedButtons.get(1)).getText());
     }
 
     /// Verifies that dialog pane subnodes keep Material typography and colors.
@@ -8818,7 +8833,8 @@ final class M3ControlContractMatrixTest {
         assertInstanceOf(ButtonBar.class, dialogPane.lookup("." + M3DialogPane.BUTTON_BAR_STYLE_CLASS));
         Region content = lookupRegion(dialogPane, ".content");
         assertRegionFill(content, Color.TRANSPARENT);
-        assertEquals(Color.rgb(40, 41, 42), ((Labeled) content).getTextFill());
+        Labeled contentLabel = assertInstanceOf(Labeled.class, dialogPane.lookup(".content-label"));
+        assertEquals(Color.rgb(40, 41, 42), contentLabel.getTextFill());
         assertEquals("Dialog title Dialog body", dialogPane.getAccessibleText());
         assertEquals("Dialog title Dialog body", dialogPane.queryAccessibleAttribute(AccessibleAttribute.TEXT));
     }
@@ -8957,83 +8973,6 @@ final class M3ControlContractMatrixTest {
         });
     }
 
-    /// Verifies that modal dialog panes keep Tab and F6 traversal inside content and actions.
-    @Test
-    void modalDialogPaneFocusTraversalCyclesThroughContentAndActions() {
-        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> FxTestUtils.assertNoCssWarnings(() -> {
-            M3TextField content = new M3TextField("Editable content");
-            ButtonType cancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
-            ButtonType ok = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
-            M3Dialog<Void> dialog = new M3Dialog<>();
-            M3DialogPane dialogPane = dialog.getM3DialogPane();
-            dialogPane.setContent(content);
-            dialogPane.getButtonTypes().setAll(cancel, ok);
-            try {
-                dialog.show();
-                dialogPane.applyCss();
-                dialogPane.layout();
-
-                Node cancelButton = Objects.requireNonNull(dialogPane.lookupButton(cancel));
-                Node okButton = Objects.requireNonNull(dialogPane.lookupButton(ok));
-
-                content.requestFocus();
-                assertTrue(content.isFocused(), "dialog content should accept initial focus");
-
-                content.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.TAB));
-                assertTrue(cancelButton.isFocused(), "Tab should move from dialog content to the first action");
-
-                cancelButton.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.TAB));
-                assertTrue(okButton.isFocused(), "Tab should move between dialog actions");
-
-                okButton.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.TAB));
-                assertTrue(content.isFocused(), "Tab should wrap from the last dialog action to content");
-
-                content.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.TAB, true));
-                assertTrue(okButton.isFocused(), "Shift+Tab should wrap from content to the last dialog action");
-
-                okButton.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.F6));
-                assertTrue(content.isFocused(), "F6 should use the same dialog cycle as Tab");
-
-                content.fireEvent(keyEvent(KeyEvent.KEY_PRESSED, KeyCode.F6, true));
-                assertTrue(okButton.isFocused(), "Shift+F6 should cycle backward inside the dialog pane");
-            } finally {
-                dialog.close();
-            }
-        }));
-    }
-
-    /// Verifies that modal dialog focus trapping leaves modified traversal shortcuts available.
-    @Test
-    void modalDialogPaneFocusTraversalLeavesModifiedShortcutsAvailable() {
-        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> FxTestUtils.assertNoCssWarnings(() -> {
-            M3TextField content = new M3TextField("Editable content");
-            ButtonType cancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
-            ButtonType ok = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
-            M3Dialog<Void> dialog = new M3Dialog<>();
-            M3DialogPane dialogPane = dialog.getM3DialogPane();
-            dialogPane.setContent(content);
-            dialogPane.getButtonTypes().setAll(cancel, ok);
-            try {
-                dialog.show();
-                dialogPane.applyCss();
-                dialogPane.layout();
-
-                content.requestFocus();
-                assertTrue(content.isFocused(), "dialog content should accept initial focus");
-
-                KeyEvent controlTab = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.TAB, false, true, false, false);
-                content.fireEvent(controlTab);
-                assertFalse(controlTab.isConsumed(), "Ctrl+Tab should remain available to application shortcuts");
-
-                KeyEvent altF6 = keyEvent(KeyEvent.KEY_PRESSED, KeyCode.F6, false, false, true, false);
-                content.fireEvent(altF6);
-                assertFalse(altF6.isConsumed(), "Alt+F6 should remain available to platform or application shortcuts");
-            } finally {
-                dialog.close();
-            }
-        }));
-    }
-
     /// Verifies that hidden modal dialog panes release the scene focus trap to visible panes.
     @Test
     void hiddenModalDialogPaneReleasesFocusTrapToVisibleDialogPane() {
@@ -9042,11 +8981,13 @@ final class M3ControlContractMatrixTest {
             M3DialogPane firstPane = new M3DialogPane();
             firstPane.setContent(firstContent);
             firstPane.getButtonTypes().setAll(ButtonType.OK);
+            firstPane.setModalActive(true);
 
             M3TextField hiddenContent = new M3TextField("Hidden content");
             M3DialogPane hiddenPane = new M3DialogPane();
             hiddenPane.setContent(hiddenContent);
             hiddenPane.getButtonTypes().setAll(ButtonType.OK);
+            hiddenPane.setModalActive(true);
 
             VBox root = new VBox(firstPane, hiddenPane);
             Stage stage = new Stage();
@@ -9194,634 +9135,31 @@ final class M3ControlContractMatrixTest {
         });
     }
 
-    /// Verifies that Material dialogs install a Material dialog pane and stylesheet.
+    /// Verifies that a dialog retains one Material pane and exposes its controller properties.
     @Test
-    void dialogInstallsMaterialPaneAndStylesheet() {
+    void dialogOwnsFixedMaterialPaneAndResultConfiguration() {
         FxTestUtils.runOnFxThread(() -> {
-            M3Dialog<ButtonType> dialog = new M3Dialog<>(
-                    "Title",
-                    "Header",
-                    "Body",
-                    ButtonType.CANCEL,
-                    ButtonType.OK
-            );
-            M3DialogPane pane = dialog.getM3DialogPane();
+            M3Dialog<ButtonType> dialog = new M3Dialog<>();
+            M3DialogPane pane = dialog.getDialogPane();
+            pane.setHeaderText("Header");
+            pane.setContentText("Body");
+            pane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
+            dialog.setResultConverter(buttonType -> buttonType);
 
-            assertEquals("Title", dialog.getTitle());
-            assertEquals(pane, dialog.getDialogPane());
+            assertSame(pane, dialog.getDialogPane());
             assertEquals("Header", pane.getHeaderText());
             assertEquals("Body", pane.getContentText());
-            assertEquals(java.util.List.of(ButtonType.CANCEL, ButtonType.OK), pane.getButtonTypes());
+            assertEquals(List.of(ButtonType.CANCEL, ButtonType.OK), pane.getButtonTypes());
+            assertSame(ButtonType.OK, dialog.getResultConverter().call(ButtonType.OK));
+            assertFalse(dialog.isShowing());
+            assertNull(dialog.getOwner());
             assertTrue(pane.getStyleClass().contains(M3DialogPane.STYLE_CLASS));
-            assertTrue(pane.getStyleClass().contains("root"));
-            assertTrue(pane.getStylesheets().contains(M3ThemeRuntime.stylesheetUrl()));
+            assertTrue(Objects.requireNonNull(pane.getUserAgentStylesheet(), "dialog stylesheet")
+                    .endsWith("/styles/controls/dialog.css"));
 
             applyCss(pane);
 
             assertInstanceOf(M3Button.class, pane.lookupButton(ButtonType.OK));
-        });
-    }
-
-    /// Verifies that Material dialogs use a transparent host for their shaped container and elevation.
-    @Test
-    void dialogUsesTransparentHostWindow() {
-        FxTestUtils.runOnFxThread(() -> {
-            M3Dialog<Void> dialog = new M3Dialog<>();
-            try {
-                dialog.show();
-
-                Scene scene = Objects.requireNonNull(dialog.getDialogPane().getScene(), "dialog scene");
-                Stage stage = assertInstanceOf(Stage.class, scene.getWindow());
-
-                assertEquals(StageStyle.TRANSPARENT, stage.getStyle());
-                assertEquals(Color.TRANSPARENT, scene.getFill());
-            } finally {
-                dialog.close();
-            }
-        });
-    }
-
-    /// Verifies that Material dialog actions preserve JavaFX result conversion and close the host window.
-    @Test
-    void dialogActionsSetResultAndCloseWindow() {
-        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
-            for (ButtonType buttonType : List.of(ButtonType.OK, ButtonType.CANCEL)) {
-                M3Dialog<ButtonType> dialog = new M3Dialog<>(
-                        "Action dialog",
-                        "Confirm action",
-                        "Choose an action.",
-                        ButtonType.CANCEL,
-                        ButtonType.OK
-                );
-                try {
-                    dialog.show();
-                    M3Button button = assertInstanceOf(
-                            M3Button.class,
-                            dialog.getDialogPane().lookupButton(buttonType)
-                    );
-                    dialog.getDialogPane().applyCss();
-                    dialog.getDialogPane().layout();
-                    double x = button.getWidth() * 0.5;
-                    double y = button.getHeight() * 0.5;
-
-                    button.fireEvent(primaryMouseEvent(button, MouseEvent.MOUSE_PRESSED, x, y, true));
-                    button.fireEvent(primaryMouseEvent(button, MouseEvent.MOUSE_RELEASED, x, y, false));
-
-                    assertFalse(dialog.isShowing(), () -> buttonType + " should close the dialog");
-                    assertSame(buttonType, dialog.getResult());
-                } finally {
-                    dialog.close();
-                }
-            }
-        });
-    }
-
-    /// Verifies that Material dialogs can apply and clear inline theme declarations.
-    @Test
-    void dialogAppliesAndClearsTheme() {
-        FxTestUtils.runOnFxThread(() -> {
-            M3Dialog<Void> dialog = new M3Dialog<>();
-            M3DialogPane pane = dialog.getM3DialogPane();
-            M3Theme theme = M3Theme.defaultTheme();
-
-            pane.setStyle("-fx-opacity: 0.9;");
-            dialog.setTheme(theme);
-
-            assertEquals(theme, dialog.getTheme());
-            assertTrue(pane.getStyle().contains("-fx-opacity: 0.9;"));
-            assertTrue(pane.getStyle().contains("-m3-color-primary"));
-            assertEquals(M3ThemeRuntime.stylesheetUrl(), pane.getStylesheets().get(0));
-            assertEquals(M3ThemeRuntime.themeStylesheetUrl(theme), pane.getStylesheets().get(1));
-
-            dialog.setTheme(null);
-
-            assertNull(dialog.getTheme());
-            assertEquals("-fx-opacity: 0.9;", pane.getStyle());
-            assertEquals(java.util.List.of(M3ThemeRuntime.stylesheetUrl()), pane.getStylesheets());
-        });
-    }
-
-    /// Verifies that Material dialogs inherit the owner scene theme when they are shown.
-    @Test
-    void dialogInheritsOwnerSceneTheme() {
-        FxTestUtils.runOnFxThread(() -> {
-            Stage owner = new Stage();
-            try {
-                Pane root = new Pane();
-                Scene scene = new Scene(root);
-                M3Theme theme = M3Theme.defaultTheme();
-                M3Dialog<Void> dialog = new M3Dialog<>();
-                M3DialogPane pane = dialog.getM3DialogPane();
-
-                M3ThemeManager.install(scene, theme);
-                owner.setScene(scene);
-                dialog.initOwner(owner);
-                Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_SHOWING));
-
-                assertNull(dialog.getTheme());
-                assertTrue(pane.getStyle().contains("-m3-color-primary"));
-                assertEquals(M3ThemeRuntime.themeStylesheetUrl(theme), pane.getStylesheets().get(1));
-            } finally {
-                owner.close();
-            }
-        });
-    }
-
-    /// Verifies that Material dialogs inherit a local owner node theme when they are shown.
-    @Test
-    void dialogInheritsOwnerNodeLocalTheme() {
-        FxTestUtils.runOnFxThread(() -> {
-            Label ownerNode = new Label("Open dialog");
-            Pane localRoot = new Pane(ownerNode);
-            Pane root = new Pane(localRoot);
-            new Scene(root);
-            M3Theme localTheme = M3Theme.defaultTheme();
-            M3Dialog<Void> dialog = new M3Dialog<>();
-            M3DialogPane pane = dialog.getM3DialogPane();
-
-            M3ThemeManager.install(localRoot, localTheme);
-            dialog.initOwner(ownerNode);
-            Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_SHOWING));
-
-            assertNull(dialog.getTheme());
-            assertTrue(pane.getStyle().contains("-m3-color-primary"));
-            assertSame(localTheme, M3ThemeManager.getTheme(localRoot));
-            assertEquals(M3ThemeRuntime.themeStylesheetUrl(localTheme), pane.getStylesheets().get(1));
-        });
-    }
-
-    /// Verifies that shown dialogs follow runtime owner scene theme changes.
-    @Test
-    void dialogFollowsRuntimeOwnerSceneThemeChanges() {
-        FxTestUtils.runOnFxThread(() -> {
-            Stage owner = new Stage();
-            try {
-                Pane root = new Pane();
-                Scene scene = new Scene(root);
-                M3Theme baselineTheme = M3Theme.defaultTheme();
-                M3Theme expressiveDarkTheme = M3Theme.fromSeed(
-                        Color.web("#006a6a"),
-                        M3Profile.EXPRESSIVE_2025,
-                        Brightness.DARK
-                );
-                M3Dialog<Void> dialog = new M3Dialog<>();
-                M3DialogPane pane = dialog.getM3DialogPane();
-
-                M3ThemeManager.install(scene, baselineTheme);
-                owner.setScene(scene);
-                dialog.initOwner(owner);
-                Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_SHOWING));
-
-                assertDialogPaneUsesTheme(pane, baselineTheme);
-
-                M3ThemeManager.install(scene, expressiveDarkTheme);
-
-                assertDialogPaneUsesTheme(pane, expressiveDarkTheme);
-
-                M3ThemeManager.uninstall(scene);
-
-                assertDialogPaneHasNoCopiedTheme(pane);
-
-                Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_HIDDEN));
-            } finally {
-                owner.close();
-            }
-        });
-    }
-
-    /// Verifies that shown dialogs mirror owner-node orientation changes.
-    @Test
-    void dialogInheritsOwnerNodeOrientationAndTracksRuntimeChanges() {
-        FxTestUtils.runOnFxThread(() -> {
-            Label ownerNode = new Label("Open dialog");
-            Pane root = new Pane(ownerNode);
-            new Scene(root);
-            M3Dialog<Void> dialog = new M3Dialog<>();
-            M3DialogPane pane = dialog.getM3DialogPane();
-
-            pane.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
-            root.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
-            dialog.initOwner(ownerNode);
-            Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_SHOWING));
-
-            assertEquals(NodeOrientation.RIGHT_TO_LEFT, pane.getNodeOrientation());
-            assertEquals(NodeOrientation.RIGHT_TO_LEFT, pane.getEffectiveNodeOrientation());
-
-            root.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
-
-            assertEquals(NodeOrientation.LEFT_TO_RIGHT, pane.getNodeOrientation());
-            assertEquals(NodeOrientation.LEFT_TO_RIGHT, pane.getEffectiveNodeOrientation());
-
-            ownerNode.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
-
-            assertEquals(NodeOrientation.RIGHT_TO_LEFT, pane.getNodeOrientation());
-            assertEquals(NodeOrientation.RIGHT_TO_LEFT, pane.getEffectiveNodeOrientation());
-
-            Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_HIDDEN));
-
-            assertEquals(NodeOrientation.LEFT_TO_RIGHT, pane.getNodeOrientation());
-        });
-    }
-
-    /// Verifies that shown dialogs mirror owner-window scene-root orientation changes.
-    @Test
-    void dialogInheritsOwnerWindowSceneRootOrientationAndTracksRuntimeChanges() {
-        FxTestUtils.runOnFxThread(() -> {
-            Stage owner = new Stage();
-            try {
-                Pane firstRoot = new Pane();
-                Pane secondRoot = new Pane();
-                Scene scene = new Scene(firstRoot);
-                M3Dialog<Void> dialog = new M3Dialog<>();
-                M3DialogPane pane = dialog.getM3DialogPane();
-
-                firstRoot.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
-                secondRoot.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
-                owner.setScene(scene);
-                dialog.initOwner(owner);
-                Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_SHOWING));
-
-                assertEquals(NodeOrientation.RIGHT_TO_LEFT, pane.getNodeOrientation());
-                assertEquals(NodeOrientation.RIGHT_TO_LEFT, pane.getEffectiveNodeOrientation());
-
-                firstRoot.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
-
-                assertEquals(NodeOrientation.LEFT_TO_RIGHT, pane.getNodeOrientation());
-                assertEquals(NodeOrientation.LEFT_TO_RIGHT, pane.getEffectiveNodeOrientation());
-
-                scene.setRoot(secondRoot);
-
-                assertEquals(NodeOrientation.RIGHT_TO_LEFT, pane.getNodeOrientation());
-                assertEquals(NodeOrientation.RIGHT_TO_LEFT, pane.getEffectiveNodeOrientation());
-
-                secondRoot.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
-
-                assertEquals(NodeOrientation.LEFT_TO_RIGHT, pane.getNodeOrientation());
-                assertEquals(NodeOrientation.LEFT_TO_RIGHT, pane.getEffectiveNodeOrientation());
-
-                Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_HIDDEN));
-
-                assertEquals(NodeOrientation.INHERIT, pane.getNodeOrientation());
-            } finally {
-                owner.close();
-            }
-        });
-    }
-
-    /// Verifies that shown dialogs mirror runtime owner scene stylesheet changes.
-    @Test
-    void dialogFollowsRuntimeOwnerSceneStylesheetChanges() {
-        FxTestUtils.runOnFxThread(() -> {
-            Stage owner = new Stage();
-            try {
-                Pane root = new Pane();
-                Scene scene = new Scene(root);
-                M3Theme theme = M3Theme.defaultTheme();
-                String firstStylesheet = M3Stylesheets.controlStylesheet("button.css");
-                String secondStylesheet = M3Stylesheets.controlStylesheet("menu.css");
-                M3Dialog<Void> dialog = new M3Dialog<>();
-                M3DialogPane pane = dialog.getM3DialogPane();
-
-                M3ThemeManager.install(scene, theme);
-                scene.getStylesheets().add(firstStylesheet);
-                owner.setScene(scene);
-                dialog.initOwner(owner);
-                Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_SHOWING));
-
-                assertDialogPaneUsesTheme(pane, theme);
-                assertTrue(pane.getStylesheets().contains(firstStylesheet));
-
-                scene.getStylesheets().remove(firstStylesheet);
-                scene.getStylesheets().add(secondStylesheet);
-
-                assertFalse(pane.getStylesheets().contains(firstStylesheet));
-                assertTrue(pane.getStylesheets().contains(secondStylesheet));
-                assertDialogPaneUsesTheme(pane, theme);
-
-                M3ThemeManager.uninstall(scene);
-
-                assertFalse(pane.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
-                assertFalse(pane.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
-                assertFalse(pane.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
-                assertTrue(pane.getStylesheets().contains(M3ThemeRuntime.stylesheetUrl()));
-                assertTrue(pane.getStylesheets().contains(secondStylesheet));
-
-                Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_HIDDEN));
-            } finally {
-                owner.close();
-            }
-        });
-    }
-
-    /// Verifies that reused dialogs clear stale owner scene stylesheets when no owner scene is available.
-    @Test
-    void dialogClearsStaleOwnerStylesheetsWhenOwnerSceneIsRemoved() {
-        FxTestUtils.runOnFxThread(() -> {
-            Stage owner = new Stage();
-            try {
-                Pane root = new Pane();
-                Scene scene = new Scene(root);
-                M3Theme theme = M3Theme.defaultTheme();
-                String extraStylesheet = M3Stylesheets.controlStylesheet("button.css");
-                M3Dialog<Void> dialog = new M3Dialog<>();
-                M3DialogPane pane = dialog.getM3DialogPane();
-
-                M3ThemeManager.install(scene, theme);
-                scene.getStylesheets().add(extraStylesheet);
-                owner.setScene(scene);
-                dialog.initOwner(owner);
-                Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_SHOWING));
-
-                assertDialogPaneUsesTheme(pane, theme);
-                assertTrue(pane.getStylesheets().contains(extraStylesheet));
-
-                Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_HIDDEN));
-                owner.setScene(null);
-                Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_SHOWING));
-
-                assertDialogPaneHasNoCopiedTheme(pane);
-                assertFalse(pane.getStylesheets().contains(extraStylesheet));
-
-                Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_HIDDEN));
-            } finally {
-                owner.close();
-            }
-        });
-    }
-
-    /// Verifies that explicitly themed dialogs still mirror owner scene stylesheets.
-    @Test
-    void dialogExplicitThemeMirrorsRuntimeOwnerSceneStylesheets() {
-        FxTestUtils.runOnFxThread(() -> {
-            Stage owner = new Stage();
-            try {
-                Pane firstRoot = new Pane();
-                Scene firstScene = new Scene(firstRoot);
-                Pane secondRoot = new Pane();
-                Scene secondScene = new Scene(secondRoot);
-                M3Theme firstOwnerTheme = M3Theme.defaultTheme();
-                M3Theme secondOwnerTheme = M3Theme.fromSeed(
-                        Color.web("#ba1a1a"),
-                        M3Profile.BASELINE_2021,
-                        Brightness.LIGHT
-                );
-                M3Theme explicitTheme = M3Theme.fromSeed(
-                        Color.web("#006a6a"),
-                        M3Profile.EXPRESSIVE_2025,
-                        Brightness.DARK
-                );
-                String firstStylesheet = M3Stylesheets.controlStylesheet("button.css");
-                String secondStylesheet = M3Stylesheets.controlStylesheet("menu.css");
-                M3Dialog<Void> dialog = new M3Dialog<>();
-                M3DialogPane pane = dialog.getM3DialogPane();
-
-                M3ThemeManager.install(firstScene, firstOwnerTheme);
-                M3ThemeManager.install(secondScene, secondOwnerTheme);
-                firstScene.getStylesheets().add(firstStylesheet);
-                secondScene.getStylesheets().add(secondStylesheet);
-                owner.setScene(firstScene);
-                dialog.initOwner(owner);
-                dialog.setTheme(explicitTheme);
-                Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_SHOWING));
-
-                assertDialogPaneUsesTheme(pane, explicitTheme);
-                assertTrue(pane.getStylesheets().contains(firstStylesheet));
-                assertFalse(pane.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(firstOwnerTheme)));
-
-                owner.setScene(secondScene);
-
-                assertDialogPaneUsesTheme(pane, explicitTheme);
-                assertFalse(pane.getStylesheets().contains(firstStylesheet));
-                assertTrue(pane.getStylesheets().contains(secondStylesheet));
-                assertFalse(pane.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(firstOwnerTheme)));
-                assertFalse(pane.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(secondOwnerTheme)));
-
-                Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_HIDDEN));
-            } finally {
-                owner.close();
-            }
-        });
-    }
-
-    /// Verifies that shown dialogs follow owner-scene root replacement.
-    @Test
-    void dialogFollowsRuntimeOwnerSceneRootReplacement() {
-        FxTestUtils.runOnFxThread(() -> {
-            Stage owner = new Stage();
-            try {
-                Pane firstRoot = new Pane();
-                Pane secondRoot = new Pane();
-                Pane unthemedRoot = new Pane();
-                Scene scene = new Scene(firstRoot);
-                M3Theme baselineTheme = M3Theme.defaultTheme();
-                M3Theme expressiveDarkTheme = M3Theme.fromSeed(
-                        Color.web("#006a6a"),
-                        M3Profile.EXPRESSIVE_2025,
-                        Brightness.DARK
-                );
-                M3Dialog<Void> dialog = new M3Dialog<>();
-                M3DialogPane pane = dialog.getM3DialogPane();
-
-                M3ThemeManager.install(scene, baselineTheme);
-                owner.setScene(scene);
-                dialog.initOwner(owner);
-                Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_SHOWING));
-
-                assertDialogPaneUsesTheme(pane, baselineTheme);
-
-                scene.setRoot(secondRoot);
-
-                assertDialogPaneUsesTheme(pane, baselineTheme);
-
-                M3ThemeManager.install(scene, expressiveDarkTheme);
-
-                assertDialogPaneUsesTheme(pane, expressiveDarkTheme);
-
-                M3ThemeManager.uninstall(scene);
-
-                assertDialogPaneHasNoCopiedTheme(pane);
-
-                scene.setRoot(unthemedRoot);
-
-                assertDialogPaneHasNoCopiedTheme(pane);
-
-                Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_HIDDEN));
-            } finally {
-                owner.close();
-            }
-        });
-    }
-
-    /// Verifies that shown dialogs follow runtime local owner-node theme changes.
-    @Test
-    void dialogFollowsRuntimeOwnerNodeLocalThemeChanges() {
-        FxTestUtils.runOnFxThread(() -> {
-            Label ownerNode = new Label("Open dialog");
-            Pane localRoot = new Pane(ownerNode);
-            Pane root = new Pane(localRoot);
-            new Scene(root);
-            M3Theme baselineTheme = M3Theme.defaultTheme();
-            M3Theme expressiveDarkTheme = M3Theme.fromSeed(
-                    Color.web("#006a6a"),
-                    M3Profile.EXPRESSIVE_2025,
-                    Brightness.DARK
-            );
-            M3Dialog<Void> dialog = new M3Dialog<>();
-            M3DialogPane pane = dialog.getM3DialogPane();
-
-            M3ThemeManager.install(localRoot, baselineTheme);
-            dialog.initOwner(ownerNode);
-            Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_SHOWING));
-
-            assertDialogPaneUsesTheme(pane, baselineTheme);
-
-            M3ThemeManager.install(localRoot, expressiveDarkTheme);
-
-            assertDialogPaneUsesTheme(pane, expressiveDarkTheme);
-
-            M3ThemeManager.uninstall(localRoot);
-
-            assertDialogPaneHasNoCopiedTheme(pane);
-
-            Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_HIDDEN));
-        });
-    }
-
-    /// Verifies that shown dialogs follow owner-node reparenting to a different local theme root.
-    @Test
-    void dialogFollowsRuntimeOwnerNodeReparentingToLocalTheme() {
-        FxTestUtils.runOnFxThread(() -> {
-            Label ownerNode = new Label("Open dialog");
-            Pane firstLocalRoot = new Pane(ownerNode);
-            Pane secondLocalRoot = new Pane();
-            Pane root = new Pane(firstLocalRoot, secondLocalRoot);
-            new Scene(root);
-            M3Theme baselineTheme = M3Theme.defaultTheme();
-            M3Theme expressiveDarkTheme = M3Theme.fromSeed(
-                    Color.web("#006a6a"),
-                    M3Profile.EXPRESSIVE_2025,
-                    Brightness.DARK
-            );
-            M3Dialog<Void> dialog = new M3Dialog<>();
-            M3DialogPane pane = dialog.getM3DialogPane();
-
-            M3ThemeManager.install(firstLocalRoot, baselineTheme);
-            M3ThemeManager.install(secondLocalRoot, expressiveDarkTheme);
-            dialog.initOwner(ownerNode);
-            Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_SHOWING));
-
-            assertDialogPaneUsesTheme(pane, baselineTheme);
-
-            firstLocalRoot.getChildren().remove(ownerNode);
-            secondLocalRoot.getChildren().add(ownerNode);
-
-            assertDialogPaneUsesTheme(pane, expressiveDarkTheme);
-
-            Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_HIDDEN));
-        });
-    }
-
-    /// Verifies that shown dialogs follow runtime owner-window scene changes.
-    @Test
-    void dialogFollowsRuntimeOwnerWindowSceneChanges() {
-        FxTestUtils.runOnFxThread(() -> {
-            Stage owner = new Stage();
-            try {
-                Pane firstRoot = new Pane();
-                Scene firstScene = new Scene(firstRoot);
-                Pane secondRoot = new Pane();
-                Scene secondScene = new Scene(secondRoot);
-                Pane unthemedRoot = new Pane();
-                Scene unthemedScene = new Scene(unthemedRoot);
-                M3Theme baselineTheme = M3Theme.defaultTheme();
-                M3Theme expressiveDarkTheme = M3Theme.fromSeed(
-                        Color.web("#006a6a"),
-                        M3Profile.EXPRESSIVE_2025,
-                        Brightness.DARK
-                );
-                M3Dialog<Void> dialog = new M3Dialog<>();
-                M3DialogPane pane = dialog.getM3DialogPane();
-
-                M3ThemeManager.install(firstScene, baselineTheme);
-                M3ThemeManager.install(secondScene, expressiveDarkTheme);
-                owner.setScene(firstScene);
-                dialog.initOwner(owner);
-                Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_SHOWING));
-
-                assertDialogPaneUsesTheme(pane, baselineTheme);
-
-                owner.setScene(secondScene);
-
-                assertDialogPaneUsesTheme(pane, expressiveDarkTheme);
-
-                owner.setScene(unthemedScene);
-
-                assertDialogPaneHasNoCopiedTheme(pane);
-
-                Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_HIDDEN));
-            } finally {
-                owner.close();
-            }
-        });
-    }
-
-    /// Asserts that a Material dialog pane has copied a specific theme.
-    private static void assertDialogPaneUsesTheme(M3DialogPane pane, M3Theme theme) {
-        assertTrue(pane.getStyle().contains("-m3-color-primary"));
-        assertTrue(pane.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
-        assertTrue(pane.getStyleClass().contains(theme.profile() == M3Profile.EXPRESSIVE_2025
-                ? M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS
-                : M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
-        assertTrue(pane.getStyleClass().contains(theme.brightness() == Brightness.DARK
-                ? M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS
-                : M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
-        assertEquals(M3ThemeRuntime.themeStylesheetUrl(theme), pane.getStylesheets().get(1));
-    }
-
-    /// Asserts that a Material dialog pane has cleared copied theme context.
-    private static void assertDialogPaneHasNoCopiedTheme(M3DialogPane pane) {
-        assertFalse(pane.getStyle().contains("-m3-color-primary"));
-        assertFalse(pane.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
-        assertFalse(pane.getStyleClass().contains(M3ThemeManager.BASELINE_PROFILE_STYLE_CLASS));
-        assertFalse(pane.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
-        assertFalse(pane.getStyleClass().contains(M3ThemeManager.LIGHT_BRIGHTNESS_STYLE_CLASS));
-        assertFalse(pane.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
-        assertEquals(List.of(M3ThemeRuntime.stylesheetUrl()), pane.getStylesheets());
-    }
-
-    /// Verifies that dialogs initialized from detached owner nodes resolve the window owner before showing.
-    @Test
-    void dialogRefreshesDetachedOwnerNodeWindowBeforeShowing() {
-        FxTestUtils.runOnFxThread(() -> {
-            Stage owner = new Stage();
-            try {
-                Label ownerNode = new Label("Open dialog");
-                Pane root = new Pane(ownerNode);
-                M3Dialog<Void> dialog = new M3Dialog<>();
-
-                dialog.initOwner(ownerNode);
-
-                assertNull(dialog.getOwner());
-
-                owner.setScene(new Scene(root));
-                Event.fireEvent(dialog, new DialogEvent(dialog, DialogEvent.DIALOG_SHOWING));
-
-                assertSame(owner, dialog.getOwner());
-            } finally {
-                owner.close();
-            }
-        });
-    }
-
-    /// Verifies that Material dialog pane access rejects a replaced plain pane.
-    @Test
-    void dialogRejectsReplacedPlainPane() {
-        FxTestUtils.runOnFxThread(() -> {
-            M3Dialog<Void> dialog = new M3Dialog<>();
-
-            dialog.setDialogPane(new DialogPane());
-
-            assertThrows(IllegalStateException.class, dialog::getM3DialogPane);
         });
     }
 
@@ -15742,6 +15080,7 @@ final class M3ControlContractMatrixTest {
             Label owner = new Label("Owner");
             Pane ownerContainer = new Pane(owner);
             Pane popupRoot = new Pane();
+            popupRoot.setStyle("-fx-padding: 7px;");
             M3PopupContextSynchronizer synchronizer = new M3PopupContextSynchronizer(owner, popupRoot);
             M3Theme baselineTheme = M3Theme.defaultTheme();
             M3Theme expressiveDarkTheme = M3Theme.fromSeed(
@@ -15760,6 +15099,10 @@ final class M3ControlContractMatrixTest {
                 synchronizer.start();
 
                 assertSame(baselineTheme, M3ThemeManager.getTheme(popupRoot));
+                assertEquals(
+                        "-fx-padding: 7px;",
+                        popupRoot.getStyle()
+                );
                 assertTrue(popupRoot.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(baselineTheme)));
 
                 Pane secondRoot = new Pane();
@@ -15805,6 +15148,7 @@ final class M3ControlContractMatrixTest {
             Label owner = new Label("Owner");
             Pane ownerContainer = new Pane(owner);
             Pane popupRoot = new Pane();
+            popupRoot.setStyle("-fx-padding: 7px;");
             M3PopupContextSynchronizer synchronizer = new M3PopupContextSynchronizer(owner, popupRoot);
             M3Theme baselineTheme = M3Theme.defaultTheme();
             M3Theme expressiveDarkTheme = M3Theme.fromSeed(
@@ -15830,7 +15174,10 @@ final class M3ControlContractMatrixTest {
                 secondLocalRoot.getChildren().add(ownerContainer);
 
                 assertSame(expressiveDarkTheme, M3ThemeManager.getTheme(popupRoot));
-                assertTrue(popupRoot.getStyle().contains("-m3-color-primary"));
+                assertEquals("-fx-padding: 7px;", popupRoot.getStyle());
+                assertTrue(popupRoot.getStylesheets().contains(
+                        M3ThemeRuntime.themeStylesheetUrl(expressiveDarkTheme)
+                ));
                 assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
                 assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
 
@@ -15841,6 +15188,10 @@ final class M3ControlContractMatrixTest {
                 assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
                 assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
                 assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+                assertFalse(popupRoot.getStylesheets().contains(
+                        M3ThemeRuntime.themeStylesheetUrl(expressiveDarkTheme)
+                ));
+                assertEquals("-fx-padding: 7px;", popupRoot.getStyle());
             } finally {
                 synchronizer.stop();
             }
@@ -15855,6 +15206,7 @@ final class M3ControlContractMatrixTest {
             Pane ownerContainer = new Pane(owner);
             Pane root = new Pane(ownerContainer);
             Pane popupRoot = new Pane();
+            popupRoot.setStyle("-fx-padding: 9px;");
             M3PopupContextSynchronizer synchronizer = new M3PopupContextSynchronizer(owner, popupRoot);
             M3Theme localTheme = M3Theme.fromSeed(
                     Color.web("#006a6a"),
@@ -15871,11 +15223,13 @@ final class M3ControlContractMatrixTest {
 
                 assertNull(M3ThemeManager.getTheme(popupRoot));
                 assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
+                assertEquals("-fx-padding: 9px;", popupRoot.getStyle());
 
                 M3ThemeManager.install(ownerContainer, localTheme);
 
                 assertSame(localTheme, M3ThemeManager.getTheme(popupRoot));
-                assertTrue(popupRoot.getStyle().contains("-m3-color-primary"));
+                assertEquals("-fx-padding: 9px;", popupRoot.getStyle());
+                assertTrue(popupRoot.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(localTheme)));
                 assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
                 assertTrue(popupRoot.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
 
@@ -15885,6 +15239,8 @@ final class M3ControlContractMatrixTest {
                 assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.ROOT_STYLE_CLASS));
                 assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
                 assertFalse(popupRoot.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
+                assertFalse(popupRoot.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(localTheme)));
+                assertEquals("-fx-padding: 9px;", popupRoot.getStyle());
             } finally {
                 synchronizer.stop();
             }
@@ -35990,7 +35346,7 @@ final class M3ControlContractMatrixTest {
                     LocalDate.of(2026, 5, 19),
                     dialog.getPicker().getFirstDayOfWeek()
             ));
-            M3DialogPane pane = dialog.getM3DialogPane();
+            M3DialogPane pane = dialog.getDialogPane();
             pane.setPrefWidth(660.0);
 
             StackPane root = new StackPane(pane);
@@ -36027,7 +35383,7 @@ final class M3ControlContractMatrixTest {
         FxTestUtils.runOnFxThread(() -> {
             M3DatePickerDialog dialog = new M3DatePickerDialog();
             dialog.getPresets().setAll(M3DatePresets.common(LocalDate.of(2026, 5, 19)));
-            M3DialogPane pane = dialog.getM3DialogPane();
+            M3DialogPane pane = dialog.getDialogPane();
             pane.setPrefWidth(620.0);
 
             StackPane root = new StackPane(pane);
@@ -36066,7 +35422,7 @@ final class M3ControlContractMatrixTest {
             dialog.getPicker().setUse24HourClock(true);
             dialog.getPicker().setMinuteStep(15);
             dialog.getPresets().setAll(M3TimePresets.common(LocalTime.of(10, 30)));
-            M3DialogPane pane = dialog.getM3DialogPane();
+            M3DialogPane pane = dialog.getDialogPane();
             pane.setPrefWidth(720.0);
 
             StackPane root = new StackPane(pane);
@@ -36103,7 +35459,7 @@ final class M3ControlContractMatrixTest {
         FxTestUtils.runOnFxThread(() -> {
             M3DatePickerDialog dateDialog = new M3DatePickerDialog(LocalDate.of(2026, 5, 19));
             dateDialog.getPresets().setAll(M3DatePresets.common(LocalDate.of(2026, 5, 19)));
-            M3DialogPane datePane = dateDialog.getM3DialogPane();
+            M3DialogPane datePane = dateDialog.getDialogPane();
             datePane.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
 
             M3DateRangePickerDialog rangeDialog = new M3DateRangePickerDialog(
@@ -36111,14 +35467,14 @@ final class M3ControlContractMatrixTest {
                     LocalDate.of(2026, 5, 24)
             );
             rangeDialog.getPresets().setAll(M3DateRangePresets.common(LocalDate.of(2026, 5, 19), rangeDialog.getPicker().getFirstDayOfWeek()));
-            M3DialogPane rangePane = rangeDialog.getM3DialogPane();
+            M3DialogPane rangePane = rangeDialog.getDialogPane();
             rangePane.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
 
             M3TimePickerDialog timeDialog = new M3TimePickerDialog(LocalTime.of(10, 30));
             timeDialog.getPicker().setUse24HourClock(true);
             timeDialog.getPicker().setMinuteStep(15);
             timeDialog.getPresets().setAll(M3TimePresets.common(LocalTime.of(10, 30)));
-            M3DialogPane timePane = timeDialog.getM3DialogPane();
+            M3DialogPane timePane = timeDialog.getDialogPane();
             timePane.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
 
             Pane root = new Pane(datePane, rangePane, timePane);
@@ -37525,7 +36881,7 @@ final class M3ControlContractMatrixTest {
             );
             Label dialogContent = assertInstanceOf(
                     Label.class,
-                    dialogPane.lookup(".content"),
+                    dialogPane.lookup(".content-label"),
                     "embedded dialog content label"
             );
             assertDarkThemeLabelFill(dialogHeader, "embedded dialog header label");
@@ -37699,7 +37055,7 @@ final class M3ControlContractMatrixTest {
                         assertTrue(menu.getStyleClass().contains(M3ThemeManager.EXPRESSIVE_PROFILE_STYLE_CLASS));
                         assertTrue(menu.getStyleClass().contains(M3ThemeManager.DARK_BRIGHTNESS_STYLE_CLASS));
                         assertSame(theme, M3ThemeManager.getTheme(menu));
-                        assertTrue(menu.getStyle().contains("-m3-color-primary"));
+                        assertTrue(menu.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(theme)));
 
                         WritableImage menuImage = snapshotImageOnFxThread(menu);
                         assertSnapshotHasColorVariety(menuImage, 4);
@@ -37759,10 +37115,10 @@ final class M3ControlContractMatrixTest {
         }
     }
 
-    /// Verifies that real Material dialog popups inherit dark expressive owner theme tokens.
+    /// Verifies that real Material dialog overlays inherit dark expressive owner theme tokens.
     @Tier2Test
     @Test
-    void darkExpressiveDialogPopupInheritsOwnerThemeContext() throws InterruptedException {
+    void darkExpressiveDialogOverlayInheritsOwnerThemeContext() throws InterruptedException {
         AtomicReference<@Nullable Stage> ownerStageReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Dialog<ButtonType>> dialogReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Theme> themeReference = new AtomicReference<>();
@@ -37789,14 +37145,11 @@ final class M3ControlContractMatrixTest {
                         root.resize(360.0, 180.0);
                         root.layout();
 
-                        M3Dialog<ButtonType> dialog = new M3Dialog<>(
-                                "Dialog",
-                                "Dark expressive dialog",
-                                "Dark popup body",
-                                ButtonType.CANCEL,
-                                ButtonType.OK
-                        );
-                        dialog.initOwner(owner);
+                        M3Dialog<ButtonType> dialog = new M3Dialog<>();
+                        dialog.setOwner(owner);
+                        dialog.getDialogPane().setHeaderText("Dark expressive dialog");
+                        dialog.getDialogPane().setContentText("Dark overlay body");
+                        dialog.getDialogPane().getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
                         ownerStageReference.set(ownerStage);
                         dialogReference.set(dialog);
                         themeReference.set(theme);
@@ -37805,13 +37158,20 @@ final class M3ControlContractMatrixTest {
                     () -> {
                         M3Theme theme = Objects.requireNonNull(themeReference.get(), "theme");
                         M3Dialog<ButtonType> dialog = Objects.requireNonNull(dialogReference.get(), "dialog");
-                        M3DialogPane pane = dialog.getM3DialogPane();
+                        M3DialogPane pane = dialog.getDialogPane();
                         pane.applyCss();
                         pane.layout();
 
-                        assertDialogPaneUsesTheme(pane, theme);
-                        assertTrue(pane.getStyleClass().contains(M3PopupStyles.FALLBACK_ROOT_STYLE_CLASS),
-                                () -> "dialog pane should keep fallback root class: " + pane.getStyleClass());
+                        Parent contextRoot = assertInstanceOf(
+                                Parent.class,
+                                pane.getParent(),
+                                "dialog presentation context root"
+                        );
+                        assertPopupRootUsesThemeClasses(contextRoot, theme);
+                        assertSame(theme, M3ThemeManager.getTheme(contextRoot));
+                        assertTrue(contextRoot.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(theme)));
+                        assertTrue(contextRoot.getStyleClass().contains(M3PopupStyles.FALLBACK_ROOT_STYLE_CLASS),
+                                () -> "dialog context should keep fallback root class: " + contextRoot.getStyleClass());
                         Label header = assertInstanceOf(
                                 Label.class,
                                 pane.lookup(".header-panel .label"),
@@ -37819,8 +37179,8 @@ final class M3ControlContractMatrixTest {
                         );
                         Label content = assertInstanceOf(
                                 Label.class,
-                                pane.lookup(".content"),
-                                "dialog popup content label"
+                                pane.lookup(".content-label"),
+                                "dialog overlay content label"
                         );
                         assertDarkThemeLabelFill(header, "dialog popup header label");
                         assertDarkThemeLabelFill(content, "dialog popup content label");
@@ -37834,7 +37194,9 @@ final class M3ControlContractMatrixTest {
                                 "m3fx-visual",
                                 "visual-dark-expressive-dialog-popup.png"
                         ));
-                        assertMaterialTargetGeometryIsStable(pane);
+                        assertMaterialTargetGeometryIsStable(
+                                Objects.requireNonNull(pane.getScene(), "dialog scene").getRoot()
+                        );
                     }
             );
         } finally {
@@ -41888,14 +41250,14 @@ final class M3ControlContractMatrixTest {
                 && popupSurfaceIsSettled(menuButton.getMenu());
     }
 
-    /// Returns whether a dialog popup pane has reached a renderable styled state.
+    /// Returns whether a dialog overlay pane has reached a renderable styled state.
     private static boolean dialogPopupReady(AtomicReference<@Nullable M3Dialog<ButtonType>> dialogReference) {
         @Nullable M3Dialog<ButtonType> dialog = dialogReference.get();
         if (dialog == null || !dialog.isShowing()) {
             return false;
         }
 
-        M3DialogPane pane = dialog.getM3DialogPane();
+        M3DialogPane pane = dialog.getDialogPane();
         pane.applyCss();
         pane.layout();
         @Nullable Scene scene = pane.getScene();
@@ -41903,8 +41265,9 @@ final class M3ControlContractMatrixTest {
                 && scene.getWindow() != null
                 && scene.getWindow().isShowing()
                 && hasRenderableBounds(pane)
+                && pane.getOpacity() >= 0.999
                 && pane.lookup(".header-panel .label") instanceof Label
-                && pane.lookup(".content") instanceof Label
+                && pane.lookup(".content-label") instanceof Label
                 && pane.lookupButton(ButtonType.OK) != null;
     }
 

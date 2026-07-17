@@ -24,29 +24,31 @@ import java.time.LocalDate;
 /// A Material Design 3 dialog for selecting one date.
 ///
 /// The embedded [picker][#getPicker()] and the dialog [value][#valueProperty()] stay synchronized. The OK button is
-/// disabled until a date is selected. Activating OK closes the dialog and produces that date through the standard
-/// [javafx.scene.control.Dialog] result APIs; Cancel or a window close produces `null`.
+/// disabled until a date is selected. Activating OK requests dialog closure and converts the current date into the
+/// result; Cancel or a programmatic close produces `null`. Close requests remain subject to the inherited
+/// [cancellable lifecycle][M3Dialog#onCloseRequestProperty()].
 ///
 /// The picker is owned by this dialog and must not be reparented. Optional presets are exposed as a live ordered
 /// list and appear beside the calendar. Bounds, locale, and adjacent-month display are configured through the
-/// embedded picker.
+/// embedded picker. Presentation occurs inside the owner scene and therefore requires [#setOwner(Node)] before
+/// [#show()] or [#showAndWait()].
 ///
 /// ```java
 /// private void showDateDialog(Node owner) {
 ///     LocalDate today = LocalDate.now();
 ///     M3DatePickerDialog dialog = new M3DatePickerDialog(today);
-///     dialog.initOwner(owner);
+///     dialog.setOwner(owner);
 ///     dialog.getPicker().setMinDate(today);
 ///     dialog.getPicker().setMaxDate(today.plusMonths(3));
 ///     dialog.getPresets().addAll(M3DatePresets.common(today));
-///     dialog.showAndWait().ifPresent(System.out::println);
+///     LocalDate selectedDate = dialog.showAndWait();
 /// }
 /// ```
 ///
 /// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview).
 @NotNullByDefault
 public final class M3DatePickerDialog extends M3Dialog<LocalDate> {
-    /// The default title and header text for date picker dialogs.
+    /// The default headline text for date picker dialogs.
     private static final String DEFAULT_TITLE = "Select date";
 
     /// The style class applied to dialog content when preset actions are visible.
@@ -65,6 +67,8 @@ public final class M3DatePickerDialog extends M3Dialog<LocalDate> {
     ///
     /// The default value is `null`. This property is bidirectionally synchronized with the embedded picker. A
     /// non-null assignment is validated against the picker's current inclusive bounds and displays its month.
+    /// Assigning `null` clears selection and disables the OK action. Changes made through the embedded picker update
+    /// this property as well.
     ///
     /// @defaultValue `null`
     private final ObjectProperty<@Nullable LocalDate> value =
@@ -129,7 +133,7 @@ public final class M3DatePickerDialog extends M3Dialog<LocalDate> {
 
     /// Creates a date picker dialog with no selected date, no presets, and no date bounds.
     ///
-    /// The title and header text are initialized to `Select date`, and Cancel and OK buttons are installed.
+    /// The headline is initialized to `Select date`, and Cancel and OK buttons are installed.
     public M3DatePickerDialog() {
         initialize();
     }
@@ -150,6 +154,10 @@ public final class M3DatePickerDialog extends M3Dialog<LocalDate> {
     }
 
     /// Returns the live, mutable date preset list.
+    ///
+    /// The list is initially empty, preserves insertion order and duplicates, and rejects `null` elements before
+    /// mutation. Each entry creates a distinct preset action. A preset outside the picker's current bounds remains
+    /// present but is disabled.
     ///
     /// @return the live, mutable date preset list
     public final ObservableList<M3DatePreset> getPresets() {
@@ -176,15 +184,13 @@ public final class M3DatePickerDialog extends M3Dialog<LocalDate> {
     }
 
     /// Configures dialog content, buttons, result conversion, and button state.
-    @SuppressWarnings("DataFlowIssue")
     private void initialize() {
         picker.valueProperty().addListener((observable, oldValue, newValue) -> {
             if (!synchronizingValue) {
                 value.set(newValue);
             }
         });
-        setTitle(DEFAULT_TITLE);
-        M3DialogPane pane = getM3DialogPane();
+        M3DialogPane pane = getDialogPane();
         picker.pseudoClassStateChanged(M3DatePicker.MODAL_PSEUDO_CLASS, true);
         pane.setHeaderText(DEFAULT_TITLE);
         pane.setContent(presetContent);
@@ -207,7 +213,7 @@ public final class M3DatePickerDialog extends M3Dialog<LocalDate> {
 
     /// Enables the OK button only when a selected date exists.
     private void updateOkButtonState() {
-        @Nullable Node okButton = getM3DialogPane().lookupButton(ButtonType.OK);
+        @Nullable Node okButton = getDialogPane().lookupButton(ButtonType.OK);
         if (okButton != null) {
             okButton.setDisable(getValue() == null);
         }

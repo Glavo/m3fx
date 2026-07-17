@@ -3,794 +3,809 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.ReadOnlyBooleanProperty;
+import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.value.ChangeListener;
-import javafx.collections.ListChangeListener;
-import javafx.collections.MapChangeListener;
 import javafx.collections.ObservableList;
-import javafx.geometry.NodeOrientation;
+import javafx.event.EventHandler;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.ButtonType;
-import javafx.scene.control.Dialog;
-import javafx.scene.control.DialogEvent;
-import javafx.scene.control.DialogPane;
-import javafx.scene.paint.Color;
-import javafx.stage.StageStyle;
-import javafx.stage.Stage;
 import javafx.stage.Window;
+import javafx.stage.WindowEvent;
+import javafx.util.Callback;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
-import org.glavo.m3fx.internal.M3DialogScrimPresenter;
+import org.glavo.m3fx.internal.M3DialogPresenter;
 import org.glavo.m3fx.internal.M3NodeTransition;
+import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
 import org.glavo.m3fx.internal.M3PopupStyles;
 import org.glavo.m3fx.internal.M3ThemeResolver;
-import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.internal.theme.M3ThemeCssCompiler;
 import org.glavo.m3fx.internal.theme.M3ThemeMetadata;
 import org.glavo.m3fx.internal.theme.M3ThemeRuntime;
+import org.glavo.m3fx.theme.M3Theme;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-/// A JavaFX dialog with a Material Design 3 dialog pane.
+/// Controls a Material Design 3 modal dialog rendered inside an owner scene.
 ///
-/// This class retains the [Dialog] result, event, ownership, and modality contracts while using an
-/// [M3DialogPane]. [show()][Dialog#show()] displays the dialog without blocking; [showAndWait()][Dialog#showAndWait()]
-/// enters a nested event loop until the dialog is hidden. Button actions use the standard JavaFX dialog closing
-/// rules and the configured result converter.
+/// `M3Dialog` does not create a native window and does not use JavaFX [javafx.scene.control.Dialog] modality. Its
+/// pane and scrim are installed above the owner scene content, so the owner window retains normal window-manager
+/// behavior while application content remains blocked by the scrim and focus trap. Closing the final dialog
+/// restores the exact scene root and focus owner that preceded presentation.
 ///
-/// An owned dialog dims its owner's scene with a Material scrim. The scrim and dialog container fade in when the
-/// dialog is shown and fade out before a successful close. When reduced motion is requested for the dialog, these
-/// transitions settle immediately. A dialog without an attached, visible owner scene has no surface to scrim.
-/// With motion enabled, [close()][Dialog#close()] and [hide()][Dialog#hide()] begin the exit transition and the
-/// dialog remains showing until it completes; a close-request handler may still consume the final close request.
+/// [#show()] is non-blocking. [#showAndWait()] enters a JavaFX nested event loop and returns the nullable result after
+/// the dialog has closed. An action button first bubbles its ordinary action event; consuming that event prevents
+/// dialog closing. Otherwise the dialog emits a cancellable [M3DialogEvent#CLOSE_REQUEST], converts the button type
+/// to a result, and runs its exit transition. Reduced-motion requests settle presentation immediately.
 ///
-/// A dialog may be owned by a [Window] through the inherited API or by a [Node] through [initOwner(Node)]. The node
-/// overload is useful for controls inside a locally themed subtree: while the dialog is showing, it inherits that
-/// subtree's theme, stylesheets, and effective node orientation. An explicit [theme][#themeProperty()] overrides
-/// inherited theme values. The default modality and all restrictions on initializing owner and modality are those
-/// defined by [Dialog].
+/// A dialog must have an attached [owner][#setOwner(Node)] before it is shown. The owner also supplies inherited
+/// stylesheets, node orientation, motion settings, and the nearest local Material theme. An explicit
+/// [theme][#themeProperty()] overrides that inherited theme while preserving the owner's remaining context. Hiding
+/// the owner window forcibly removes the overlay and completes the hiding lifecycle without emitting a cancellable
+/// close request.
 ///
 /// ```java
-/// private void showDeleteDialog(Node owner) {
-///     M3Dialog<String> dialog = new M3Dialog<>();
-///     dialog.initOwner(owner);
-///     dialog.getM3DialogPane().setHeaderText("Delete item?");
-///     dialog.getM3DialogPane().setContentText("This action cannot be undone.");
-///     dialog.getM3DialogPane().getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
-///     dialog.setResultConverter(type -> type == ButtonType.OK ? "delete" : null);
-///     dialog.showAndWait();
-/// }
+/// M3Dialog<String> dialog = new M3Dialog<>();
+/// dialog.setOwner(ownerNode);
+/// dialog.getDialogPane().setHeaderText("Delete item?");
+/// dialog.getDialogPane().setContentText("This action cannot be undone.");
+/// dialog.getDialogPane().getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
+/// dialog.setResultConverter(type -> type == ButtonType.OK ? "delete" : null);
+/// dialog.show();
 /// ```
 ///
 /// See [Material Design dialogs](https://m3.material.io/components/dialogs/overview).
 ///
 /// @param <R> the dialog result type
 @NotNullByDefault
-public class M3Dialog<R> extends Dialog<R> {
-    /// The property key that stores the dialog pane style before theme declarations were added.
+public class M3Dialog<R> {
+    /// The property key that stores the presentation context style before explicit theme declarations are added.
     private static final String BASE_STYLE_PROPERTY_KEY = M3Dialog.class.getName() + ".baseStyle";
 
-    /// The property key that stores the generated theme stylesheet installed on the dialog pane.
-    private static final String THEME_STYLESHEET_PROPERTY_KEY =
-            M3Dialog.class.getName() + ".themeStylesheet";
+    /// The property key that stores the generated explicit-theme stylesheet installed on the presentation context.
+    private static final String THEME_STYLESHEET_PROPERTY_KEY = M3Dialog.class.getName() + ".themeStylesheet";
 
-    /// The explicit theme applied to this dialog, or `null` to inherit an owner theme.
+    /// The retained Material pane rendered by this dialog.
+    private final M3DialogPane dialogPane;
+
+    /// Installs the pane and scrim into the configured owner scene.
+    private final M3DialogPresenter presenter;
+
+    /// Animates pane opacity during dialog entrance and exit.
+    private final M3NodeTransition presentationAnimation;
+
+    /// The explicit Material theme for this dialog.
     ///
-    /// The default value is `null`. Changing this property while the dialog is showing updates its Material theme.
-    /// When no explicit value is present, the dialog resolves the theme from its owner node or owner window.
+    /// A `null` value inherits the nearest theme controlling the owner. Changes made while the dialog is visible
+    /// are applied to the existing overlay without recreating its pane or action nodes.
     ///
     /// @defaultValue `null`
     private final ObjectProperty<@Nullable M3Theme> theme = new SimpleObjectProperty<>(this, "theme") {
-        /// Applies theme declarations to the Material dialog pane.
+        /// Applies an updated explicit or inherited theme context.
         @Override
         protected void invalidated() {
             applyEffectiveTheme();
         }
     };
 
-    /// Presents and synchronizes the modal scrim over the owner scene.
-    private final M3DialogScrimPresenter scrimPresenter = new M3DialogScrimPresenter();
+    /// The latest completed dialog result.
+    ///
+    /// [#show()] resets this property to `null`. An accepted action commits its converted result only after the exit
+    /// transition has completed; a consumed close request leaves the property unchanged.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable R> result = new SimpleObjectProperty<>(this, "result");
 
-    /// Animates the dialog container opacity during show and close transitions.
-    private final M3NodeTransition presentationAnimation;
+    /// The callback used to convert an accepted [ButtonType] into the dialog result type.
+    ///
+    /// When this property is `null`, the initiating button type is used as the result. Callers whose result type
+    /// does not accept [ButtonType] should install a converter before presenting the dialog.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable Callback<ButtonType, @Nullable R>> resultConverter =
+            new SimpleObjectProperty<>(this, "resultConverter");
 
-    /// The dialog pane opacity restored after presentation transitions.
-    private double restingOpacity = 1.0;
+    /// Reports whether this dialog currently owns an overlay layer in its owner's scene.
+    ///
+    /// The property becomes `true` after the layer is installed and becomes `false` after accepted exit motion and
+    /// cleanup have completed. It is read-only to callers.
+    ///
+    /// @defaultValue `false`
+    private final ReadOnlyBooleanWrapper showing = new ReadOnlyBooleanWrapper(this, "showing");
 
-    /// Whether the presentation animation is currently executing an exit transition.
-    private boolean exitAnimationRunning;
+    /// The handler invoked immediately before this dialog begins presentation.
+    ///
+    /// Throwing from this handler aborts presentation before the owner scene is modified.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable EventHandler<M3DialogEvent>> onShowing =
+            new SimpleObjectProperty<>(this, "onShowing");
 
-    /// Whether a close request was issued internally after the exit transition.
-    private boolean closeAfterExitAnimation;
+    /// The handler invoked after this dialog's overlay layer has been installed.
+    ///
+    /// Throwing from this handler removes the partially presented layer and restores the original scene root.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable EventHandler<M3DialogEvent>> onShown =
+            new SimpleObjectProperty<>(this, "onShown");
 
-    /// The node whose local hierarchy supplies inherited theme context.
-    private @Nullable Node ownerNode;
+    /// The handler invoked after a close request is accepted but before exit motion begins.
+    ///
+    /// Throwing from this handler cancels the pending transition, keeps the dialog visible, and leaves its completed
+    /// result unchanged during an ordinary close. If the owner window has already hidden, presentation cleanup cannot
+    /// be cancelled; the exception is rethrown after the overlay is removed.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable EventHandler<M3DialogEvent>> onHiding =
+            new SimpleObjectProperty<>(this, "onHiding");
 
-    /// Handles owner-node scene changes while this dialog is observing inherited theme context.
-    private final ChangeListener<@Nullable Scene> ownerNodeSceneListener =
-            (observable, oldScene, newScene) -> refreshInheritedThemeContextAndApplyTheme();
+    /// The handler invoked after this dialog's layer has been removed and its result has been committed.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable EventHandler<M3DialogEvent>> onHidden =
+            new SimpleObjectProperty<>(this, "onHidden");
 
-    /// Handles owner-node direct parent changes while this dialog is observing inherited theme context.
-    private final ChangeListener<@Nullable Parent> ownerNodeParentListener =
-            (observable, oldParent, newParent) -> refreshInheritedThemeContextAndApplyTheme();
+    /// The handler invoked whenever code or an action button requests that the dialog close.
+    ///
+    /// Calling [M3DialogEvent#consume()] from this handler rejects the request before result conversion, lifecycle
+    /// mutation, scrim motion, or pane exit motion begins.
+    ///
+    /// @defaultValue `null`
+    private final ObjectProperty<@Nullable EventHandler<M3DialogEvent>> onCloseRequest =
+            new SimpleObjectProperty<>(this, "onCloseRequest");
 
-    /// Handles owner-node effective orientation changes while this dialog is showing.
-    private final ChangeListener<NodeOrientation> ownerNodeOrientationListener =
-            (observable, oldValue, newValue) -> syncOwnerNodeOrientation();
+    /// The node whose scene and local context own this dialog.
+    private @Nullable Node owner;
 
-    /// Handles owner-window scene changes while this dialog is observing inherited theme context.
-    private final ChangeListener<@Nullable Scene> ownerWindowSceneListener =
-            (observable, oldScene, newScene) -> refreshInheritedThemeContextAndApplyTheme();
+    /// Synchronizes inherited stylesheets, orientation, theme metadata, and motion context while showing.
+    private @Nullable M3PopupContextSynchronizer contextSynchronizer;
 
-    /// Handles root changes on the currently observed owner scene.
-    private final ChangeListener<Parent> ownerSceneRootListener =
-            (observable, oldRoot, newRoot) -> refreshInheritedThemeContextAndApplyTheme();
+    /// Handles owner-window disappearance while this dialog owns an in-scene overlay.
+    private final EventHandler<WindowEvent> ownerWindowHiddenHandler = event -> handleOwnerWindowHidden();
 
-    /// Handles owner scene root effective orientation changes while this dialog is showing.
-    private final ChangeListener<NodeOrientation> ownerSceneRootOrientationListener =
-            (observable, oldValue, newValue) -> syncOwnerNodeOrientation();
-
-    /// Handles owner scene stylesheet mutations while the dialog is showing.
-    private final ListChangeListener<String> ownerSceneStylesheetsListener =
-            change -> applyEffectiveTheme();
-
-    /// Handles theme metadata changes on the owner scene root.
-    private final MapChangeListener<Object, Object> sceneRootPropertiesListener =
-            this::handleThemeRootPropertiesChanged;
-
-    /// Handles parent-chain changes on observed owner ancestors.
-    private final ChangeListener<@Nullable Parent> ancestorParentListener =
-            (observable, oldParent, newParent) -> refreshInheritedThemeContextAndApplyTheme();
-
-    /// Handles theme metadata changes on owner ancestors.
-    private final MapChangeListener<Object, Object> ancestorThemeRootPropertiesListener =
-            this::handleThemeRootPropertiesChanged;
-
-    /// The owner window currently observed for scene changes.
+    /// The owner window currently observed for forced presentation cleanup.
     private @Nullable Window observedOwnerWindow;
 
-    /// The owner scene currently observed for root changes.
-    private @Nullable Scene observedOwnerScene;
+    /// Whether a show operation is currently dispatching lifecycle callbacks or installing its overlay.
+    private boolean presenting;
 
-    /// The owner scene root currently observed for theme metadata changes.
-    private @Nullable Parent observedSceneRoot;
+    /// The pane opacity restored after presentation transitions.
+    private double restingOpacity = 1.0;
 
-    /// The owner scene stylesheet list currently observed for dialog stylesheet mirroring.
-    private @Nullable ObservableList<String> observedOwnerStylesheets;
+    /// Whether an accepted close is currently running its exit transition.
+    private boolean closing;
 
-    /// Owner ancestors currently observed for local theme metadata and parent-chain changes.
-    private ArrayList<Parent> observedAncestorThemeRoots = new ArrayList<>();
+    /// The result committed after the current exit transition completes.
+    private @Nullable R pendingResult;
 
-    /// Reusable storage for collecting the current owner ancestor theme roots.
-    private ArrayList<Parent> ancestorThemeRootsScratch = new ArrayList<>();
+    /// The action associated with the accepted close transition.
+    private @Nullable ButtonType pendingButtonType;
 
-    /// Whether inherited theme context listeners are currently registered.
-    private boolean observingInheritedThemeContext;
+    /// Whether [#showAndWait()] currently owns a nested event loop for this dialog.
+    private boolean nestedEventLoopRunning;
 
-    /// The dialog pane orientation value before owner orientation mirroring began.
-    private NodeOrientation baseNodeOrientationBeforeInheritance = NodeOrientation.INHERIT;
-
-    /// Whether the dialog pane currently contains a mirrored owner orientation value.
-    private boolean inheritedNodeOrientationApplied;
-
-    /// Creates an empty Material Design 3 dialog with a new [M3DialogPane].
-    ///
-    /// No title, content, buttons, owner, or explicit theme is configured by this constructor.
+    /// Creates an empty Material dialog with a new [M3DialogPane].
     public M3Dialog() {
         this(new M3DialogPane());
     }
 
-    /// Creates a Material dialog with a specialized package-owned pane.
+    /// Creates a Material dialog around a specialized package-owned pane.
     ///
-    /// @param pane the Material dialog pane installed before lifecycle handlers are registered
-    M3Dialog(M3DialogPane pane) {
-        M3DialogPane materialPane = Objects.requireNonNull(pane, "pane");
-        initStyle(StageStyle.TRANSPARENT);
-        installStylesheet(materialPane);
-        setDialogPane(materialPane);
-        presentationAnimation = new M3NodeTransition(materialPane);
+    /// @param dialogPane the pane retained for the lifetime of this dialog
+    /// @throws NullPointerException if `dialogPane` is `null`
+    M3Dialog(M3DialogPane dialogPane) {
+        this.dialogPane = Objects.requireNonNull(dialogPane, "dialogPane");
+        presenter = new M3DialogPresenter(dialogPane);
+        presentationAnimation = new M3NodeTransition(dialogPane);
         presentationAnimation.setOnFinished(event -> handlePresentationAnimationFinished());
-        addEventFilter(DialogEvent.DIALOG_SHOWING, this::handleDialogShowing);
-        addEventFilter(DialogEvent.DIALOG_SHOWN, this::handleDialogShown);
-        addEventFilter(DialogEvent.DIALOG_HIDING, this::handleDialogHiding);
-        addEventFilter(DialogEvent.DIALOG_CLOSE_REQUEST, this::handleDialogCloseRequest);
-        addEventFilter(DialogEvent.DIALOG_HIDDEN, this::handleDialogHidden);
+        dialogPane.setButtonAction(this::handleButtonAction);
+        installStylesheet(presenter.contextRoot());
     }
 
-    /// Prepares inherited context, scrim presentation, and the dialog's initial visual state.
-    private void handleDialogShowing(DialogEvent event) {
-        presentationAnimation.stop();
-        exitAnimationRunning = false;
-        closeAfterExitAnimation = false;
-
-        M3DialogPane pane = getM3DialogPane();
-        @Nullable Scene scene = pane.getScene();
-        if (scene != null) {
-            scene.setFill(Color.TRANSPARENT);
-        }
-
-        refreshOwnerWindowFromNode();
-        startInheritedThemeContextObservation();
-        syncOwnerNodeOrientation();
-        applyEffectiveTheme();
-        pane.applyCss();
-        restingOpacity = pane.getOpacity();
-        showScrim();
-        if (canAnimatePresentation()) {
-            pane.setOpacity(0.0);
-        }
-    }
-
-    /// Starts the dialog container entrance transition after the dialog has been presented.
-    private void handleDialogShown(DialogEvent event) {
-        @Nullable Scene scene = getM3DialogPane().getScene();
-        if (scene != null) {
-            @Nullable Window window = scene.getWindow();
-            if (window instanceof Stage stage) {
-                stage.toFront();
-            }
-        }
-        if (canAnimatePresentation()) {
-            playEntranceAnimation();
-        } else {
-            restorePaneOpacity();
-        }
-    }
-
-    /// Suppresses the provisional hiding event used to start an animated close.
-    private void handleDialogHiding(DialogEvent event) {
-        if (shouldDelayClose()) {
-            event.consume();
-        }
-    }
-
-    /// Converts the first close request into an exit transition and permits the final request.
-    private void handleDialogCloseRequest(DialogEvent event) {
-        if (closeAfterExitAnimation) {
-            return;
-        }
-        if (exitAnimationRunning) {
-            event.consume();
-            return;
-        }
-        if (!shouldDelayClose()) {
-            return;
-        }
-
-        event.consume();
-        playExitAnimation();
-    }
-
-    /// Releases presentation resources and restores caller-configured pane state after hiding.
-    private void handleDialogHidden(DialogEvent event) {
-        presentationAnimation.stop();
-        exitAnimationRunning = false;
-        closeAfterExitAnimation = false;
-        restorePaneOpacity();
-        scrimPresenter.dispose();
-        stopInheritedThemeContextObservation();
-    }
-
-    /// Shows a scrim over the attached owner scene when one is available.
-    private void showScrim() {
-        @Nullable Scene scene = ownerThemeScene();
-        if (scene == null) {
-            return;
-        }
-
-        Parent sceneRoot = scene.getRoot();
-        @Nullable Node node = ownerNode;
-        Node popupOwner = node != null && node.getScene() == scene ? node : sceneRoot;
-        M3DialogPane pane = getM3DialogPane();
-        scrimPresenter.show(popupOwner, pane, scene, pane);
-    }
-
-    /// Starts or reverses the dialog container entrance fade.
-    private void playEntranceAnimation() {
-        M3DialogPane pane = getM3DialogPane();
-        exitAnimationRunning = false;
-        M3MotionSpec spec = M3Animation.defaultEffects(pane);
-        presentationAnimation.configure(
-                spec,
-                restingOpacity,
-                pane.getScaleX(),
-                pane.getScaleY(),
-                pane.getTranslateX(),
-                pane.getTranslateY()
-        );
-        M3Animation.playFromStart(pane, presentationAnimation);
-    }
-
-    /// Starts the dialog container and scrim exit fades.
-    private void playExitAnimation() {
-        M3DialogPane pane = getM3DialogPane();
-        exitAnimationRunning = true;
-        scrimPresenter.hide();
-        M3MotionSpec spec = M3Animation.fastEffects(pane);
-        presentationAnimation.configure(
-                spec,
-                0.0,
-                pane.getScaleX(),
-                pane.getScaleY(),
-                pane.getTranslateX(),
-                pane.getTranslateY()
-        );
-        M3Animation.playFromStart(pane, presentationAnimation);
-    }
-
-    /// Completes an animated close or leaves a finished entrance transition in place.
-    private void handlePresentationAnimationFinished() {
-        if (!exitAnimationRunning) {
-            return;
-        }
-
-        exitAnimationRunning = false;
-        closeAfterExitAnimation = true;
-        try {
-            close();
-        } finally {
-            if (isShowing()) {
-                closeAfterExitAnimation = false;
-                scrimPresenter.restore();
-                playEntranceAnimation();
-            }
-        }
-    }
-
-    /// Returns whether the current close request should wait for an exit transition.
-    private boolean shouldDelayClose() {
-        return isShowing() && !closeAfterExitAnimation && canAnimatePresentation();
-    }
-
-    /// Returns whether the dialog pane can participate in presentation motion.
-    private boolean canAnimatePresentation() {
-        M3DialogPane pane = getM3DialogPane();
-        return !pane.opacityProperty().isBound() && M3Animation.areAnimationsEnabled(pane);
-    }
-
-    /// Restores the pane opacity captured before the dialog was shown.
-    private void restorePaneOpacity() {
-        M3DialogPane pane = getM3DialogPane();
-        if (!pane.opacityProperty().isBound()) {
-            pane.setOpacity(restingOpacity);
-        }
-    }
-
-    /// Creates an otherwise empty Material Design 3 dialog with the specified window title.
+    /// Returns this dialog's retained Material pane.
     ///
-    /// @param title the dialog window title
-    /// @throws NullPointerException if `title` is `null`
-    public M3Dialog(String title) {
-        this();
-        setTitle(Objects.requireNonNull(title, "title"));
+    /// @return the non-null dialog pane
+    public final M3DialogPane getDialogPane() {
+        return dialogPane;
     }
 
-    /// Creates a Material Design 3 dialog with text content and the specified button types.
+    /// Returns the node that owns this dialog's scene presentation and inherited context.
     ///
-    /// Button types are added in array order. The supplied array and every element must be non-null. A result
-    /// converter may still be required when the result type is not [ButtonType].
+    /// @return the owner node, or `null` before one is configured
+    public final @Nullable Node getOwner() {
+        return owner;
+    }
+
+    /// Sets the owner node used for subsequent presentations.
     ///
-    /// @param title       the dialog window title
-    /// @param headerText  the dialog pane header text
-    /// @param contentText the dialog pane content text
-    /// @param buttonTypes the button types installed in the dialog pane
-    /// @throws NullPointerException if `title`, `headerText`, `contentText`, `buttonTypes`, or an element of
-    ///         `buttonTypes` is `null`
-    public M3Dialog(
-            String title,
-            String headerText,
-            String contentText,
-            ButtonType... buttonTypes
-    ) {
-        this(title);
-        Objects.requireNonNull(buttonTypes, "buttonTypes");
-        for (ButtonType buttonType : buttonTypes) {
-            Objects.requireNonNull(buttonType, "buttonType");
+    /// The owner may be replaced while the dialog is fully hidden. It must be attached to a showing window when
+    /// [#show()] is called.
+    ///
+    /// @param owner the owner node
+    /// @throws IllegalStateException if this dialog is showing or beginning presentation
+    /// @throws NullPointerException if `owner` is `null`
+    public final void setOwner(Node owner) {
+        if (isShowing() || presenting) {
+            throw new IllegalStateException("owner cannot change while the dialog is showing or presenting");
         }
-
-        M3DialogPane pane = getM3DialogPane();
-        pane.setHeaderText(Objects.requireNonNull(headerText, "headerText"));
-        pane.setContentText(Objects.requireNonNull(contentText, "contentText"));
-        pane.getButtonTypes().addAll(buttonTypes);
+        this.owner = Objects.requireNonNull(owner, "owner");
     }
 
-    /// Returns the Material Design 3 dialog pane currently installed on this dialog.
+    /// Returns the explicit theme applied to this dialog.
     ///
-    /// @return the Material Design 3 dialog pane
-    /// @throws IllegalStateException if the inherited [dialogPane][Dialog#dialogPaneProperty()] has been replaced
-    ///         with a pane that is not an [M3DialogPane]
-    public final M3DialogPane getM3DialogPane() {
-        DialogPane pane = getDialogPane();
-        if (pane instanceof M3DialogPane materialPane) {
-            return materialPane;
-        }
-        throw new IllegalStateException("dialog pane is not an M3DialogPane");
-    }
-
-    /// Returns the explicit theme applied directly to this dialog.
-    ///
-    /// @return the explicit theme applied to this dialog, or `null` to inherit from the owner scene
+    /// @return the explicit theme, or `null` to inherit from the owner hierarchy
     public final @Nullable M3Theme getTheme() {
         return theme.get();
     }
 
-    /// Sets the explicit theme applied directly to this dialog.
+    /// Sets the explicit theme applied to this dialog.
     ///
-    /// Passing `null` clears the explicit override and immediately restores owner-theme inheritance when the
-    /// dialog is showing.
-    ///
-    /// @param theme the explicit theme to apply, or `null` to inherit from the owner scene
+    /// @param theme the explicit theme, or `null` to restore owner-theme inheritance
     public final void setTheme(@Nullable M3Theme theme) {
         this.theme.set(theme);
     }
 
-    /// Returns the property that stores the dialog's explicit Material theme.
-    ///
-    /// @return the explicit theme property; a `null` value requests owner-theme inheritance
     public final ObjectProperty<@Nullable M3Theme> themeProperty() {
         return theme;
     }
 
-    /// Records a node as this dialog's ownership and inherited-theme context.
+    /// Returns the latest completed dialog result.
     ///
-    /// If the node is attached to a window and the JavaFX window owner has not already been initialized, that
-    /// window becomes the dialog owner. Otherwise this method leaves the existing window owner unchanged. The node
-    /// remains the source for inherited theme and orientation while the dialog is showing. Calling this method
-    /// again replaces the previously recorded node context.
-    ///
-    /// @param owner the node that owns this dialog
-    /// @throws NullPointerException if `owner` is `null`
-    public final void initOwner(Node owner) {
-        @Nullable Node previousOwnerNode = ownerNode;
-        if (observingInheritedThemeContext && previousOwnerNode != null) {
-            previousOwnerNode.sceneProperty().removeListener(ownerNodeSceneListener);
-            previousOwnerNode.parentProperty().removeListener(ownerNodeParentListener);
-            previousOwnerNode.effectiveNodeOrientationProperty().removeListener(ownerNodeOrientationListener);
-        }
-
-        ownerNode = Objects.requireNonNull(owner, "owner");
-        refreshOwnerWindowFromNode();
-        if (observingInheritedThemeContext) {
-            owner.sceneProperty().addListener(ownerNodeSceneListener);
-            owner.parentProperty().addListener(ownerNodeParentListener);
-            owner.effectiveNodeOrientationProperty().addListener(ownerNodeOrientationListener);
-            refreshInheritedThemeContextAndApplyTheme();
-        }
+    /// @return the result, or `null` when no result has been produced
+    public final @Nullable R getResult() {
+        return result.get();
     }
 
-    /// Initializes the JavaFX window owner from the recorded owner node when possible.
-    private void refreshOwnerWindowFromNode() {
-        if (getOwner() != null || isShowing()) {
+    /// Sets the stored result without changing dialog visibility.
+    ///
+    /// @param result the result value, or `null`
+    public final void setResult(@Nullable R result) {
+        this.result.set(result);
+    }
+
+    public final ObjectProperty<@Nullable R> resultProperty() {
+        return result;
+    }
+
+    /// Returns the callback that converts an accepted action button to a result.
+    ///
+    /// @return the result converter, or `null` to use the button type itself
+    public final @Nullable Callback<ButtonType, @Nullable R> getResultConverter() {
+        return resultConverter.get();
+    }
+
+    /// Sets the callback that converts an accepted action button to a result.
+    ///
+    /// @param converter the converter, or `null` to use the button type itself
+    public final void setResultConverter(@Nullable Callback<ButtonType, @Nullable R> converter) {
+        resultConverter.set(converter);
+    }
+
+    public final ObjectProperty<@Nullable Callback<ButtonType, @Nullable R>> resultConverterProperty() {
+        return resultConverter;
+    }
+
+    /// Returns whether this dialog currently owns an installed overlay layer.
+    ///
+    /// @return `true` between completed show and hide transitions
+    public final boolean isShowing() {
+        return showing.get();
+    }
+
+    public final ReadOnlyBooleanProperty showingProperty() {
+        return showing.getReadOnlyProperty();
+    }
+
+    /// Displays this dialog without blocking the calling JavaFX event handler.
+    ///
+    /// Repeated calls while showing or beginning presentation have no effect. The method must run on the JavaFX
+    /// application thread.
+    ///
+    /// @throws IllegalStateException if called off the JavaFX application thread, if no owner is configured, if the
+    ///         owner is detached, or if the dialog pane already belongs to another scene-graph parent
+    public final void show() {
+        checkFxThread();
+        if (isShowing() || presenting) {
             return;
         }
 
-        @Nullable Node node = ownerNode;
-        if (node == null) {
+        Node activeOwner = requireShowingOwner();
+        if (dialogPane.getParent() != null) {
+            throw new IllegalStateException("dialog pane already belongs to a scene-graph parent");
+        }
+
+        presenting = true;
+        boolean presented = false;
+        try {
+            fireLifecycle(M3DialogEvent.SHOWING, getOnShowing(), null);
+            result.set(null);
+            pendingResult = null;
+            pendingButtonType = null;
+            closing = false;
+            presentationAnimation.stop();
+            startContextSynchronization(activeOwner);
+            applyEffectiveTheme();
+            dialogPane.applyCss();
+            restingOpacity = dialogPane.getOpacity();
+            if (canAnimatePresentation()) {
+                dialogPane.setOpacity(0.0);
+            }
+            dialogPane.setModalActive(true);
+            startOwnerWindowObservation(activeOwner);
+            presenter.show(activeOwner);
+            showing.set(true);
+            fireLifecycle(M3DialogEvent.SHOWN, getOnShown(), null);
+            presented = true;
+            Platform.runLater(() -> {
+                if (isShowing() && !closing) {
+                    dialogPane.requestInitialFocus();
+                }
+            });
+            if (isShowing() && !closing && canAnimatePresentation()) {
+                playEntranceAnimation();
+            } else if (isShowing() && !closing) {
+                restorePaneOpacity();
+            }
+        } finally {
+            if (!presented) {
+                dialogPane.setModalActive(false);
+                presenter.dispose();
+                stopContextSynchronization();
+                stopOwnerWindowObservation();
+                restorePaneOpacity();
+                showing.set(false);
+            }
+            presenting = false;
+        }
+    }
+
+    /// Displays this dialog and enters a nested JavaFX event loop until it closes.
+    ///
+    /// @return the completed result, or `null`
+    /// @throws IllegalStateException if called off the JavaFX application thread, while already showing or beginning
+    ///         presentation, while a nested wait for this dialog is already active, if no showing owner is configured,
+    ///         or if the dialog pane already belongs to another scene-graph parent
+    public final @Nullable R showAndWait() {
+        checkFxThread();
+        if (isShowing() || presenting || nestedEventLoopRunning) {
+            throw new IllegalStateException("dialog is already showing, presenting, or waiting");
+        }
+
+        show();
+        if (!isShowing()) {
+            return getResult();
+        }
+        nestedEventLoopRunning = true;
+        try {
+            Platform.enterNestedEventLoop(this);
+        } finally {
+            nestedEventLoopRunning = false;
+        }
+        return getResult();
+    }
+
+    /// Requests that this dialog close without selecting an action button.
+    ///
+    /// The request has no effect while the dialog is hidden or already closing. A configured
+    /// [#onCloseRequestProperty()] handler may consume the request and keep the dialog visible. This method must run
+    /// on the JavaFX application thread.
+    ///
+    /// @throws IllegalStateException if called off the JavaFX application thread
+    public final void close() {
+        checkFxThread();
+        requestClose(null);
+    }
+
+    /// Requests that this dialog hide without selecting an action button.
+    ///
+    /// This method is equivalent to [#close()] and therefore participates in the same cancellable close lifecycle.
+    ///
+    /// @throws IllegalStateException if called off the JavaFX application thread
+    public final void hide() {
+        close();
+    }
+
+    /// Handles an unconsumed action from one of the pane's action buttons.
+    private void handleButtonAction(ButtonType buttonType) {
+        requestClose(Objects.requireNonNull(buttonType, "buttonType"));
+    }
+
+    /// Emits a cancellable close request and starts an accepted exit transition.
+    private void requestClose(@Nullable ButtonType buttonType) {
+        if (!isShowing() || closing) {
             return;
         }
 
-        @Nullable Scene scene = node.getScene();
-        if (scene != null && scene.getWindow() != null) {
-            initOwner(scene.getWindow());
+        M3DialogEvent closeEvent = fireLifecycle(
+                M3DialogEvent.CLOSE_REQUEST,
+                getOnCloseRequest(),
+                buttonType
+        );
+        if (closeEvent.isConsumed()) {
+            return;
+        }
+
+        @Nullable R nextResult = buttonType == null ? getResult() : convertResult(buttonType);
+        closing = true;
+        pendingResult = nextResult;
+        pendingButtonType = buttonType;
+        try {
+            fireLifecycle(M3DialogEvent.HIDING, getOnHiding(), buttonType);
+        } catch (RuntimeException | Error exception) {
+            closing = false;
+            pendingResult = null;
+            pendingButtonType = null;
+            throw exception;
+        }
+
+        if (canAnimatePresentation()) {
+            presenter.hideScrim();
+            playExitAnimation();
+        } else {
+            completeHide(buttonType);
         }
     }
 
-    /// Applies the explicit theme or the current owner scene theme to the dialog pane.
-    private void applyEffectiveTheme() {
-        M3Theme effectiveTheme = getTheme();
-        if (effectiveTheme == null) {
-            effectiveTheme = getOwnerTheme();
-        }
-        M3DialogPane pane = getM3DialogPane();
-        syncOwnerStylesheets(pane, effectiveTheme);
-        applyTheme(pane, effectiveTheme);
-        scrimPresenter.sync();
+    /// Converts one action button through the configured callback or the default button-type result.
+    @SuppressWarnings("unchecked")
+    private @Nullable R convertResult(ButtonType buttonType) {
+        @Nullable Callback<ButtonType, @Nullable R> converter = getResultConverter();
+        return converter == null ? (R) buttonType : converter.call(buttonType);
     }
 
-    /// Returns the theme installed on the owner scene when one is available.
-    private @Nullable M3Theme getOwnerTheme() {
-        @Nullable Node node = ownerNode;
-        if (node != null) {
-            @Nullable M3Theme nodeTheme = M3ThemeResolver.findTheme(node);
-            if (nodeTheme != null) {
-                return nodeTheme;
+    /// Starts the pane entrance fade from its current opacity.
+    private void playEntranceAnimation() {
+        M3MotionSpec spec = M3Animation.defaultEffects(dialogPane);
+        presentationAnimation.configure(
+                spec,
+                restingOpacity,
+                dialogPane.getScaleX(),
+                dialogPane.getScaleY(),
+                dialogPane.getTranslateX(),
+                dialogPane.getTranslateY()
+        );
+        M3Animation.playFromStart(dialogPane, presentationAnimation);
+    }
+
+    /// Starts the pane exit fade while retaining its overlay layer.
+    private void playExitAnimation() {
+        M3MotionSpec spec = M3Animation.fastEffects(dialogPane);
+        presentationAnimation.configure(
+                spec,
+                0.0,
+                dialogPane.getScaleX(),
+                dialogPane.getScaleY(),
+                dialogPane.getTranslateX(),
+                dialogPane.getTranslateY()
+        );
+        M3Animation.playFromStart(dialogPane, presentationAnimation);
+    }
+
+    /// Completes an exit animation when one is active.
+    private void handlePresentationAnimationFinished() {
+        if (closing) {
+            completeHide(pendingButtonType);
+        }
+    }
+
+    /// Removes the overlay and commits the result after an accepted close.
+    private void completeHide(@Nullable ButtonType buttonType) {
+        presentationAnimation.stop();
+        dialogPane.setModalActive(false);
+        presenter.dispose();
+        restorePaneOpacity();
+        stopContextSynchronization();
+        stopOwnerWindowObservation();
+        result.set(pendingResult);
+        pendingResult = null;
+        pendingButtonType = null;
+        closing = false;
+        showing.set(false);
+        try {
+            fireLifecycle(M3DialogEvent.HIDDEN, getOnHidden(), buttonType);
+        } finally {
+            if (nestedEventLoopRunning) {
+                Platform.exitNestedEventLoop(this, null);
+            }
+        }
+    }
+
+    /// Forces presentation cleanup after the owner window has disappeared.
+    private void handleOwnerWindowHidden() {
+        if (!isShowing()) {
+            return;
+        }
+
+        presentationAnimation.stop();
+        @Nullable ButtonType buttonType = pendingButtonType;
+        boolean fireHiding = !closing;
+        if (fireHiding) {
+            closing = true;
+            pendingResult = getResult();
+            pendingButtonType = null;
+        }
+
+        @Nullable Throwable failure = null;
+        if (fireHiding) {
+            try {
+                fireLifecycle(M3DialogEvent.HIDING, getOnHiding(), null);
+            } catch (RuntimeException | Error exception) {
+                failure = exception;
+            }
+        }
+        try {
+            completeHide(buttonType);
+        } catch (RuntimeException | Error exception) {
+            if (failure == null) {
+                failure = exception;
+            } else if (failure != exception) {
+                failure.addSuppressed(exception);
             }
         }
 
-        Window owner = getOwner();
-        if (owner == null) {
-            return null;
+        if (failure instanceof RuntimeException runtimeException) {
+            throw runtimeException;
         }
-
-        @Nullable Scene ownerScene = owner.getScene();
-        return ownerScene == null ? null : M3ThemeResolver.findTheme(ownerScene);
-    }
-
-    /// Starts observing inherited owner theme sources for runtime changes.
-    private void startInheritedThemeContextObservation() {
-        if (observingInheritedThemeContext) {
-            refreshInheritedThemeContextSources();
-            return;
-        }
-
-        observingInheritedThemeContext = true;
-        @Nullable Node node = ownerNode;
-        if (node != null) {
-            node.sceneProperty().addListener(ownerNodeSceneListener);
-            node.parentProperty().addListener(ownerNodeParentListener);
-            node.effectiveNodeOrientationProperty().addListener(ownerNodeOrientationListener);
-        }
-        refreshInheritedThemeContextSources();
-    }
-
-    /// Stops observing inherited owner theme sources.
-    private void stopInheritedThemeContextObservation() {
-        if (!observingInheritedThemeContext) {
-            return;
-        }
-
-        observingInheritedThemeContext = false;
-        @Nullable Node node = ownerNode;
-        if (node != null) {
-            node.sceneProperty().removeListener(ownerNodeSceneListener);
-            node.parentProperty().removeListener(ownerNodeParentListener);
-            node.effectiveNodeOrientationProperty().removeListener(ownerNodeOrientationListener);
-        }
-        restoreBaseNodeOrientation();
-        updateObservedOwnerWindow(null);
-        updateObservedOwnerScene(null);
-        updateObservedSceneRoot(null);
-        updateObservedOwnerStylesheets(null);
-        clearObservedAncestorThemeRoots();
-    }
-
-    /// Refreshes all owner roots that may provide inherited theme context.
-    private void refreshInheritedThemeContextSources() {
-        updateObservedOwnerWindow(getOwner());
-        @Nullable Scene ownerScene = ownerThemeScene();
-        updateObservedOwnerScene(ownerScene);
-        updateObservedSceneRoot(ownerScene == null ? null : ownerScene.getRoot());
-        updateObservedOwnerStylesheets(ownerScene == null ? null : ownerScene.getStylesheets());
-        updateObservedAncestorThemeRoots();
-    }
-
-    /// Returns the scene whose root can provide inherited scene-level theme context.
-    private @Nullable Scene ownerThemeScene() {
-        @Nullable Node node = ownerNode;
-        if (node != null && node.getScene() != null) {
-            return node.getScene();
-        }
-
-        @Nullable Window window = observedOwnerWindow;
-        return window == null ? null : window.getScene();
-    }
-
-    /// Handles installed-theme metadata changes on observed owner roots.
-    private void handleThemeRootPropertiesChanged(MapChangeListener.Change<?, ?> change) {
-        if (M3ThemeMetadata.isThemePropertyKey(change.getKey())) {
-            refreshInheritedThemeContextAndApplyTheme();
+        if (failure instanceof Error error) {
+            throw error;
         }
     }
 
-    /// Refreshes inherited owner context sources, orientation, and effective dialog theme.
-    private void refreshInheritedThemeContextAndApplyTheme() {
-        refreshInheritedThemeContextSources();
-        syncOwnerNodeOrientation();
-        applyEffectiveTheme();
+    /// Returns whether pane opacity can participate in presentation motion.
+    private boolean canAnimatePresentation() {
+        return !dialogPane.opacityProperty().isBound() && M3Animation.areAnimationsEnabled(dialogPane);
     }
 
-    /// Updates the observed owner window.
-    private void updateObservedOwnerWindow(@Nullable Window window) {
-        if (observedOwnerWindow == window) {
-            return;
+    /// Restores the pane opacity captured before its latest show transition.
+    private void restorePaneOpacity() {
+        if (!dialogPane.opacityProperty().isBound()) {
+            dialogPane.setOpacity(restingOpacity);
         }
-        if (observedOwnerWindow != null) {
-            observedOwnerWindow.sceneProperty().removeListener(ownerWindowSceneListener);
+    }
+
+    /// Starts inherited owner-context synchronization for a presentation.
+    private void startContextSynchronization(Node activeOwner) {
+        stopContextSynchronization();
+        contextSynchronizer = new M3PopupContextSynchronizer(
+                activeOwner,
+                presenter.contextRoot(),
+                () -> {
+                    @Nullable Scene scene = activeOwner.getScene();
+                    return scene == null ? null : scene.getStylesheets();
+                },
+                () -> getTheme() == null ? M3ThemeResolver.findThemeRoot(activeOwner) : presenter.contextRoot()
+        );
+        contextSynchronizer.start();
+    }
+
+    /// Stops inherited context listeners after presentation ends or fails.
+    private void stopContextSynchronization() {
+        @Nullable M3PopupContextSynchronizer synchronizer = contextSynchronizer;
+        contextSynchronizer = null;
+        if (synchronizer != null) {
+            synchronizer.stop();
         }
+    }
+
+    /// Observes the window that owns the current in-scene presentation.
+    private void startOwnerWindowObservation(Node activeOwner) {
+        stopOwnerWindowObservation();
+        Scene scene = Objects.requireNonNull(activeOwner.getScene(), "owner scene");
+        Window window = Objects.requireNonNull(scene.getWindow(), "owner window");
         observedOwnerWindow = window;
-        if (observedOwnerWindow != null) {
-            observedOwnerWindow.sceneProperty().addListener(ownerWindowSceneListener);
+        window.addEventHandler(WindowEvent.WINDOW_HIDDEN, ownerWindowHiddenHandler);
+    }
+
+    /// Releases the current owner-window observation.
+    private void stopOwnerWindowObservation() {
+        @Nullable Window window = observedOwnerWindow;
+        observedOwnerWindow = null;
+        if (window != null) {
+            window.removeEventHandler(WindowEvent.WINDOW_HIDDEN, ownerWindowHiddenHandler);
         }
     }
 
-    /// Updates the observed owner scene.
-    private void updateObservedOwnerScene(@Nullable Scene scene) {
-        if (observedOwnerScene == scene) {
-            return;
+    /// Applies the explicit theme or refreshes inherited owner theme context.
+    private void applyEffectiveTheme() {
+        Parent contextRoot = presenter.contextRoot();
+        @Nullable M3Theme explicitTheme = getTheme();
+        if (explicitTheme == null) {
+            clearExplicitTheme(contextRoot);
+        } else {
+            applyTheme(contextRoot, explicitTheme);
         }
-        if (observedOwnerScene != null) {
-            observedOwnerScene.rootProperty().removeListener(ownerSceneRootListener);
+
+        @Nullable M3PopupContextSynchronizer synchronizer = contextSynchronizer;
+        if (synchronizer != null) {
+            synchronizer.sync();
         }
-        observedOwnerScene = scene;
-        if (observedOwnerScene != null) {
-            observedOwnerScene.rootProperty().addListener(ownerSceneRootListener);
+        if (presenter.isShowing()) {
+            presenter.sync();
         }
     }
 
-    /// Updates the observed owner scene root.
-    private void updateObservedSceneRoot(@Nullable Parent sceneRoot) {
-        if (observedSceneRoot == sceneRoot) {
-            return;
+    /// Returns the attached owner or throws a presentation-state exception.
+    private Node requireShowingOwner() {
+        @Nullable Node activeOwner = owner;
+        @Nullable Scene scene = activeOwner == null ? null : activeOwner.getScene();
+        if (activeOwner == null || scene == null || scene.getWindow() == null || !scene.getWindow().isShowing()) {
+            throw new IllegalStateException("dialog owner must be attached to a showing window");
         }
-        if (observedSceneRoot != null) {
-            observedSceneRoot.getProperties().removeListener(sceneRootPropertiesListener);
-            observedSceneRoot.effectiveNodeOrientationProperty().removeListener(ownerSceneRootOrientationListener);
-        }
-        observedSceneRoot = sceneRoot;
-        if (observedSceneRoot != null) {
-            observedSceneRoot.getProperties().addListener(sceneRootPropertiesListener);
-            observedSceneRoot.effectiveNodeOrientationProperty().addListener(ownerSceneRootOrientationListener);
+        return activeOwner;
+    }
+
+    /// Rejects lifecycle calls made outside the JavaFX application thread.
+    private static void checkFxThread() {
+        if (!Platform.isFxApplicationThread()) {
+            throw new IllegalStateException("dialog lifecycle methods must run on the JavaFX application thread");
         }
     }
 
-    /// Updates the observed owner stylesheet list.
-    private void updateObservedOwnerStylesheets(@Nullable ObservableList<String> stylesheets) {
-        if (observedOwnerStylesheets == stylesheets) {
-            return;
+    /// Creates and dispatches one lifecycle event to its configured property handler.
+    private M3DialogEvent fireLifecycle(
+            javafx.event.EventType<M3DialogEvent> eventType,
+            @Nullable EventHandler<M3DialogEvent> handler,
+            @Nullable ButtonType buttonType
+    ) {
+        M3DialogEvent event = new M3DialogEvent(this, dialogPane, eventType, buttonType);
+        if (handler != null) {
+            handler.handle(event);
         }
-        if (observedOwnerStylesheets != null) {
-            observedOwnerStylesheets.removeListener(ownerSceneStylesheetsListener);
-        }
-        observedOwnerStylesheets = stylesheets;
-        if (observedOwnerStylesheets != null) {
-            observedOwnerStylesheets.addListener(ownerSceneStylesheetsListener);
-        }
+        return event;
     }
 
-    /// Updates observed owner ancestors that can receive or lose local themes.
-    private void updateObservedAncestorThemeRoots() {
-        ancestorThemeRootsScratch.clear();
-        @Nullable Node current = ownerNode;
-        while (current != null) {
-            if (current instanceof Parent parent && parent != observedSceneRoot) {
-                ancestorThemeRootsScratch.add(parent);
-            }
-            current = current.getParent();
-        }
-
-        boolean unchanged = observedAncestorThemeRoots.size() == ancestorThemeRootsScratch.size();
-        for (int index = 0; unchanged && index < observedAncestorThemeRoots.size(); index++) {
-            unchanged = observedAncestorThemeRoots.get(index) == ancestorThemeRootsScratch.get(index);
-        }
-        if (unchanged) {
-            ancestorThemeRootsScratch.clear();
-            return;
-        }
-
-        for (Parent parent : observedAncestorThemeRoots) {
-            parent.getProperties().removeListener(ancestorThemeRootPropertiesListener);
-            parent.parentProperty().removeListener(ancestorParentListener);
-        }
-        for (Parent parent : ancestorThemeRootsScratch) {
-            parent.getProperties().addListener(ancestorThemeRootPropertiesListener);
-            parent.parentProperty().addListener(ancestorParentListener);
-        }
-
-        ArrayList<Parent> previousRoots = observedAncestorThemeRoots;
-        observedAncestorThemeRoots = ancestorThemeRootsScratch;
-        ancestorThemeRootsScratch = previousRoots;
-        ancestorThemeRootsScratch.clear();
+    /// Returns the handler invoked immediately before this dialog begins presentation.
+    ///
+    /// @return the showing handler, or `null` when none is installed
+    public final @Nullable EventHandler<M3DialogEvent> getOnShowing() {
+        return onShowing.get();
     }
 
-    /// Removes local-theme listeners from all observed owner ancestors.
-    private void clearObservedAncestorThemeRoots() {
-        for (Parent parent : observedAncestorThemeRoots) {
-            parent.getProperties().removeListener(ancestorThemeRootPropertiesListener);
-            parent.parentProperty().removeListener(ancestorParentListener);
-        }
-        observedAncestorThemeRoots.clear();
+    /// Sets the handler invoked immediately before this dialog begins presentation.
+    ///
+    /// @param handler the showing handler, or `null` to remove it
+    public final void setOnShowing(@Nullable EventHandler<M3DialogEvent> handler) {
+        onShowing.set(handler);
     }
 
-    /// Mirrors owner node or owner scene root orientation into the detached dialog pane.
-    private void syncOwnerNodeOrientation() {
-        @Nullable Node node = ownerNode;
-        @Nullable Node source = node != null && node.getScene() != null ? node : observedSceneRoot;
-        if (source == null) {
-            restoreBaseNodeOrientation();
-            return;
-        }
-
-        M3DialogPane pane = getM3DialogPane();
-        if (!inheritedNodeOrientationApplied) {
-            baseNodeOrientationBeforeInheritance = pane.getNodeOrientation();
-            inheritedNodeOrientationApplied = true;
-        }
-        pane.setNodeOrientation(source.getEffectiveNodeOrientation());
+    public final ObjectProperty<@Nullable EventHandler<M3DialogEvent>> onShowingProperty() {
+        return onShowing;
     }
 
-    /// Restores the dialog pane orientation value that existed before owner orientation mirroring began.
-    private void restoreBaseNodeOrientation() {
-        if (!inheritedNodeOrientationApplied) {
-            return;
-        }
-        getM3DialogPane().setNodeOrientation(baseNodeOrientationBeforeInheritance);
-        baseNodeOrientationBeforeInheritance = NodeOrientation.INHERIT;
-        inheritedNodeOrientationApplied = false;
+    /// Returns the handler invoked after this dialog's overlay layer has been installed.
+    ///
+    /// @return the shown handler, or `null` when none is installed
+    public final @Nullable EventHandler<M3DialogEvent> getOnShown() {
+        return onShown.get();
     }
 
-    /// Mirrors owner scene stylesheets into the dialog pane while keeping M3FX base styles available.
-    private void syncOwnerStylesheets(M3DialogPane pane, @Nullable M3Theme effectiveTheme) {
-        @Nullable ObservableList<String> ownerStylesheets = observedOwnerStylesheets;
-        ObservableList<String> stylesheets = pane.getStylesheets();
-        if (ownerStylesheets == null) {
-            stylesheets.setAll(M3ThemeRuntime.stylesheetUrl());
-            return;
-        }
-
-        stylesheets.setAll(ownerStylesheets);
-        removeSupersededOwnerThemeStylesheet(stylesheets, effectiveTheme);
-        installStylesheet(pane);
+    /// Sets the handler invoked after this dialog's overlay layer has been installed.
+    ///
+    /// @param handler the shown handler, or `null` to remove it
+    public final void setOnShown(@Nullable EventHandler<M3DialogEvent> handler) {
+        onShown.set(handler);
     }
 
-    /// Removes an owner-scene theme stylesheet when an explicit dialog theme should have priority.
-    private void removeSupersededOwnerThemeStylesheet(List<String> stylesheets, @Nullable M3Theme effectiveTheme) {
-        @Nullable Scene ownerScene = ownerThemeScene();
-        @Nullable M3Theme ownerSceneTheme = ownerScene == null ? null : M3ThemeResolver.findTheme(ownerScene);
-        if (ownerSceneTheme != null && ownerSceneTheme != effectiveTheme) {
-            stylesheets.remove(M3ThemeRuntime.themeStylesheetUrl(ownerSceneTheme));
-        }
+    public final ObjectProperty<@Nullable EventHandler<M3DialogEvent>> onShownProperty() {
+        return onShown;
     }
 
-    /// Adds the shared M3FX stylesheet to the dialog pane.
-    private static void installStylesheet(M3DialogPane pane) {
-        M3PopupStyles.addFallbackRootStyleClass(pane);
+    /// Returns the handler invoked before an accepted close transition.
+    ///
+    /// @return the hiding handler, or `null` when none is installed
+    public final @Nullable EventHandler<M3DialogEvent> getOnHiding() {
+        return onHiding.get();
+    }
+
+    /// Sets the handler invoked before an accepted close transition.
+    ///
+    /// @param handler the hiding handler, or `null` to remove it
+    public final void setOnHiding(@Nullable EventHandler<M3DialogEvent> handler) {
+        onHiding.set(handler);
+    }
+
+    public final ObjectProperty<@Nullable EventHandler<M3DialogEvent>> onHidingProperty() {
+        return onHiding;
+    }
+
+    /// Returns the handler invoked after this dialog's layer has been removed.
+    ///
+    /// @return the hidden handler, or `null` when none is installed
+    public final @Nullable EventHandler<M3DialogEvent> getOnHidden() {
+        return onHidden.get();
+    }
+
+    /// Sets the handler invoked after this dialog's layer has been removed.
+    ///
+    /// @param handler the hidden handler, or `null` to remove it
+    public final void setOnHidden(@Nullable EventHandler<M3DialogEvent> handler) {
+        onHidden.set(handler);
+    }
+
+    public final ObjectProperty<@Nullable EventHandler<M3DialogEvent>> onHiddenProperty() {
+        return onHidden;
+    }
+
+    /// Returns the handler invoked for cancellable close requests.
+    ///
+    /// @return the close-request handler, or `null` when none is installed
+    public final @Nullable EventHandler<M3DialogEvent> getOnCloseRequest() {
+        return onCloseRequest.get();
+    }
+
+    /// Sets the handler invoked for cancellable close requests.
+    ///
+    /// @param handler the close-request handler, or `null` to remove it
+    public final void setOnCloseRequest(@Nullable EventHandler<M3DialogEvent> handler) {
+        onCloseRequest.set(handler);
+    }
+
+    public final ObjectProperty<@Nullable EventHandler<M3DialogEvent>> onCloseRequestProperty() {
+        return onCloseRequest;
+    }
+
+    /// Adds the shared M3FX stylesheet and fallback token class to a presentation context root.
+    private static void installStylesheet(Parent root) {
+        M3PopupStyles.addFallbackRootStyleClass(root);
         String stylesheet = M3ThemeRuntime.stylesheetUrl();
-        moveOrAdd(pane.getStylesheets(), stylesheet, 0);
+        moveOrAdd(root.getStylesheets(), stylesheet, 0);
     }
 
-    /// Applies or clears theme declarations on the dialog pane.
-    private static void applyTheme(M3DialogPane pane, @Nullable M3Theme theme) {
-        if (theme == null) {
-            uninstallThemeStylesheet(pane);
-            M3ThemeRuntime.clearThemeStyleClasses(pane);
-            M3ThemeMetadata.clearTheme(pane);
-            Object baseStyleValue = pane.getProperties().remove(BASE_STYLE_PROPERTY_KEY);
-            pane.setStyle(baseStyleValue instanceof String baseStyle ? baseStyle : "");
-            return;
+    /// Applies an explicit theme and its generated stylesheet to a presentation context root.
+    private static void applyTheme(Parent root, M3Theme theme) {
+        installStylesheet(root);
+        M3ThemeMetadata.setTheme(root, theme);
+        M3ThemeRuntime.applyThemeStyleClasses(root, theme);
+        installThemeStylesheet(root, theme);
+        if (!root.getProperties().containsKey(BASE_STYLE_PROPERTY_KEY)) {
+            root.getProperties().put(BASE_STYLE_PROPERTY_KEY, root.getStyle());
         }
 
-        installStylesheet(pane);
-        M3ThemeMetadata.setTheme(pane, theme);
-        M3ThemeRuntime.applyThemeStyleClasses(pane, theme);
-        installThemeStylesheet(pane, theme);
-
-        if (!pane.getProperties().containsKey(BASE_STYLE_PROPERTY_KEY)) {
-            pane.getProperties().put(BASE_STYLE_PROPERTY_KEY, pane.getStyle());
-        }
-
-        Object baseStyleValue = pane.getProperties().get(BASE_STYLE_PROPERTY_KEY);
-        String baseStyle = baseStyleValue instanceof String ? (String) baseStyleValue : "";
-        pane.setStyle(mergeStyles(baseStyle, M3ThemeCssCompiler.rootStyleDeclarations(theme)));
+        Object baseStyleValue = root.getProperties().get(BASE_STYLE_PROPERTY_KEY);
+        String baseStyle = baseStyleValue instanceof String style ? style : "";
+        root.setStyle(mergeStyles(baseStyle, M3ThemeCssCompiler.rootStyleDeclarations(theme)));
     }
 
-    /// Adds the generated theme stylesheet for the supplied theme.
-    private static void installThemeStylesheet(M3DialogPane pane, M3Theme theme) {
+    /// Clears explicit theme state so inherited owner context can be copied onto a presentation context root.
+    private static void clearExplicitTheme(Parent root) {
+        uninstallThemeStylesheet(root);
+        M3ThemeRuntime.clearThemeStyleClasses(root);
+        M3ThemeMetadata.clearTheme(root);
+        Object baseStyleValue = root.getProperties().remove(BASE_STYLE_PROPERTY_KEY);
+        if (baseStyleValue instanceof String baseStyle) {
+            root.setStyle(baseStyle);
+        }
+    }
+
+    /// Adds the generated stylesheet for an explicit theme to a presentation context root.
+    private static void installThemeStylesheet(Parent root, M3Theme theme) {
         String stylesheet = M3ThemeRuntime.themeStylesheetUrl(theme);
-        Object previousStylesheet = pane.getProperties().put(THEME_STYLESHEET_PROPERTY_KEY, stylesheet);
+        Object previousStylesheet = root.getProperties().put(THEME_STYLESHEET_PROPERTY_KEY, stylesheet);
         if (previousStylesheet instanceof String previous && !previous.equals(stylesheet)) {
-            pane.getStylesheets().remove(previous);
+            root.getStylesheets().remove(previous);
         }
-        ObservableList<String> stylesheets = pane.getStylesheets();
+        ObservableList<String> stylesheets = root.getStylesheets();
         int baseStylesheetIndex = stylesheets.indexOf(M3ThemeRuntime.stylesheetUrl());
         moveOrAdd(stylesheets, stylesheet, baseStylesheetIndex >= 0 ? baseStylesheetIndex + 1 : 0);
     }
 
-    /// Removes the generated theme stylesheet from the dialog pane.
-    private static void uninstallThemeStylesheet(M3DialogPane pane) {
-        Object previousStylesheet = pane.getProperties().remove(THEME_STYLESHEET_PROPERTY_KEY);
+    /// Removes the generated explicit-theme stylesheet from a presentation context root.
+    private static void uninstallThemeStylesheet(Parent root) {
+        Object previousStylesheet = root.getProperties().remove(THEME_STYLESHEET_PROPERTY_KEY);
         if (previousStylesheet instanceof String previous) {
-            pane.getStylesheets().remove(previous);
+            root.getStylesheets().remove(previous);
         }
     }
 
-    /// Moves an existing stylesheet or adds a new stylesheet at the requested index.
+    /// Moves an existing stylesheet or inserts it at a requested bounded index.
     private static void moveOrAdd(List<String> stylesheets, String stylesheet, int index) {
         int targetIndex = Math.min(Math.max(0, index), stylesheets.size());
         int currentIndex = stylesheets.indexOf(stylesheet);

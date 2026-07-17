@@ -58,6 +58,10 @@
     -m3-icon-color: -m3-color-inverse-on-surface;
 }
 
+.m3-icon.m3-dialog-graphic-icon {
+    -m3-icon-color: -m3-color-secondary;
+}
+
 .m3-icon:disabled {
     -fx-opacity: 0.38;
 }

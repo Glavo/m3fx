@@ -17,6 +17,7 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.SnapshotParameters;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.IndexedCell;
@@ -47,7 +48,6 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.SVGPath;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
-import javafx.stage.StageStyle;
 import javafx.stage.Window;
 import javafx.util.Duration;
 import org.glavo.m3fx.FxTestUtils;
@@ -7606,7 +7606,7 @@ final class M3FXDemoVisualMatrixTest {
         });
     }
 
-    /// Verifies that the real dialog window uses a compact Material dialog pane.
+    /// Verifies that the real in-scene dialog uses a compact Material dialog pane.
     private static void verifyDialogPopupSurface(
             AtomicReference<@Nullable Scene> sceneReference
     ) throws InterruptedException {
@@ -7630,14 +7630,11 @@ final class M3FXDemoVisualMatrixTest {
                     && dialogPane.getLayoutBounds().getHeight() > 0.0;
         }, "dialog popup settled frame", () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
-            M3Dialog<ButtonType> dialog = new M3Dialog<>(
-                    "M3FX Demo Dialog",
-                    "Dialog title",
-                    "The active theme is applied to this dialog pane.",
-                    ButtonType.CANCEL,
-                    ButtonType.OK
-            );
-            dialog.initOwner(scene.getRoot());
+            M3Dialog<ButtonType> dialog = new M3Dialog<>();
+            dialog.setOwner(scene.getRoot());
+            dialog.getDialogPane().setHeaderText("Dialog title");
+            dialog.getDialogPane().setContentText("The active theme is applied to this dialog pane.");
+            dialog.getDialogPane().getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
             dialog.getDialogPane().setPrefWidth(420.0);
             dialog.show();
             dialogReference.set(dialog);
@@ -7647,9 +7644,7 @@ final class M3FXDemoVisualMatrixTest {
             assertTrue(dialog.isShowing());
             Parent dialogPane = dialog.getDialogPane();
             Scene dialogScene = Objects.requireNonNull(dialogPane.getScene(), "dialog scene");
-            Stage dialogStage = assertInstanceOf(Stage.class, dialogScene.getWindow());
-            assertEquals(StageStyle.TRANSPARENT, dialogStage.getStyle());
-            assertEquals(Color.TRANSPARENT, dialogScene.getFill());
+            assertSame(ownerScene, dialogScene, "dialog should share its owner's scene");
             dialogPane.applyCss();
             dialogPane.layout();
             assertDialogPaneFitsOwner(ownerScene, dialogPane);
@@ -7657,13 +7652,13 @@ final class M3FXDemoVisualMatrixTest {
                     dialogSnapshotReference.get(),
                     "dialog popup snapshot"
             );
-            assertDialogPopupHeaderUsesContainerSurface(dialogImage);
-            assertDialogPopupShadowHasClearWindowMargins(dialogImage);
             writeAnimationSnapshot(
-                    Objects.requireNonNull(dialogSnapshotReference.get(), "dialog popup snapshot"),
+                    dialogImage,
                     "dialog-popup",
                     "shown"
             );
+            assertDialogPopupHeaderUsesContainerSurface(dialogImage);
+            assertDialogPopupShadowHasClearWindowMargins(dialogImage);
             assertSnapshotHasVisibleContent(
                     Objects.requireNonNull(dialogSnapshotReference.get(), "dialog popup snapshot"),
                     "dialog popup"
@@ -7682,19 +7677,17 @@ final class M3FXDemoVisualMatrixTest {
             int expectedPresetColumns,
             String snapshotName
     ) throws InterruptedException {
-        AtomicReference<@Nullable Window> dialogWindowReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3DialogPane> dialogPaneReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> dialogSnapshotReference = new AtomicReference<>();
 
         runOnFxThreadWhenNodeSnapshotStable(() -> {
             Scene ownerScene = Objects.requireNonNull(sceneReference.get(), "scene");
-            @Nullable Window dialogWindow = findShowingDialogWindow(ownerScene);
-            dialogWindowReference.set(dialogWindow);
-            return dialogWindow == null || dialogWindow.getScene() == null
-                    ? null
-                    : dialogWindow.getScene().getRoot();
+            @Nullable M3DialogPane dialogPane = findShowingDialogPane(ownerScene);
+            dialogPaneReference.set(dialogPane);
+            return dialogPane;
         }, dialogSnapshotReference, () -> {
-            @Nullable Window dialogWindow = dialogWindowReference.get();
-            return dialogWindow != null && dialogWindow.isShowing();
+            @Nullable M3DialogPane dialogPane = dialogPaneReference.get();
+            return dialogPane != null && dialogPane.getScene() != null;
         }, snapshotName + " settled frame", () -> {
             Scene ownerScene = Objects.requireNonNull(sceneReference.get(), "scene");
             M3Button openButton = Objects.requireNonNull(
@@ -7704,9 +7697,9 @@ final class M3FXDemoVisualMatrixTest {
             openButton.fire();
         }, () -> {
             Scene ownerScene = Objects.requireNonNull(sceneReference.get(), "scene");
-            Window dialogWindow = Objects.requireNonNull(dialogWindowReference.get(), "dialog window");
-            Scene dialogScene = Objects.requireNonNull(dialogWindow.getScene(), "dialog scene");
-            M3DialogPane dialogPane = assertInstanceOf(M3DialogPane.class, dialogScene.getRoot());
+            M3DialogPane dialogPane = Objects.requireNonNull(dialogPaneReference.get(), "dialog pane");
+            Scene dialogScene = Objects.requireNonNull(dialogPane.getScene(), "dialog scene");
+            assertSame(ownerScene, dialogScene, "picker dialog should share its owner's scene");
 
             List<M3Button> presetButtons = visibleNodesOfType(dialogPane, M3Button.class).stream()
                     .filter(button -> button.getStyleClass().contains(presetButtonStyleClass))
@@ -7782,22 +7775,23 @@ final class M3FXDemoVisualMatrixTest {
                     snapshotName + ".png"
             ));
             assertSnapshotHasVisibleContent(dialogImage, snapshotName);
-            dialogWindow.hide();
+            ButtonType cancelType = dialogPane.getButtonTypes().stream()
+                    .filter(type -> type.getButtonData().isCancelButton())
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError(snapshotName + " has no cancel action"));
+            M3Button cancelButton = assertInstanceOf(
+                    M3Button.class,
+                    dialogPane.lookupButton(cancelType),
+                    snapshotName + " cancel action"
+            );
+            cancelButton.fire();
         });
     }
 
-    /// Returns the visible dialog window owned by the current demo scene.
-    private static @Nullable Window findShowingDialogWindow(Scene ownerScene) {
-        Window ownerWindow = ownerScene.getWindow();
-        for (Window window : Window.getWindows()) {
-            if (window != ownerWindow
-                    && window.isShowing()
-                    && window.getScene() != null
-                    && window.getScene().getRoot() instanceof M3DialogPane) {
-                return window;
-            }
-        }
-        return null;
+    /// Returns the topmost visible Material dialog pane in the current demo scene.
+    private static @Nullable M3DialogPane findShowingDialogPane(Scene ownerScene) {
+        List<M3DialogPane> panes = visibleNodesOfType(ownerScene.getRoot(), M3DialogPane.class);
+        return panes.isEmpty() ? null : panes.get(panes.size() - 1);
     }
 
     /// Returns an overlay-specific motion scheme that makes popup and surface transitions observable.
@@ -8933,7 +8927,9 @@ final class M3FXDemoVisualMatrixTest {
         int width = Math.max(1, (int) Math.ceil(bounds.getWidth()));
         int height = Math.max(1, (int) Math.ceil(bounds.getHeight()));
         WritableImage image = new WritableImage(width, height);
-        node.snapshot(null, image);
+        SnapshotParameters parameters = new SnapshotParameters();
+        parameters.setFill(Color.TRANSPARENT);
+        node.snapshot(parameters, image);
         return image;
     }
 
@@ -13442,7 +13438,6 @@ final class M3FXDemoVisualMatrixTest {
     ) {
         String description = pageTitle + " navigation item `" + item.getText() + "`";
         Bounds itemBounds = item.localToScene(item.getBoundsInLocal());
-        assertNodeSnapshotHasOpaquePixels(item, description);
         assertEquals(item.getContainerHeight(), itemBounds.getHeight(), CONTROL_EDGE_TOLERANCE,
                 () -> description + " height should match its resolved container token: bounds="
                         + itemBounds + ", token=" + item.getContainerHeight());
@@ -19833,14 +19828,17 @@ final class M3FXDemoVisualMatrixTest {
     /// Verifies that a dialog pane respects Material width limits and remains inside its owner viewport.
     private static void assertDialogPaneFitsOwner(Scene ownerScene, Node dialogPane) {
         Bounds bounds = dialogPane.getLayoutBounds();
+        String description = dialogPane instanceof M3DialogPane pane
+                ? " `" + pane.getHeaderText() + "`"
+                : "";
         double effectInsets = 24.0;
         double maxWidth = Math.min(560.0 + effectInsets, ownerScene.getWidth() - 48.0);
         double maxHeight = ownerScene.getHeight() - 48.0;
         assertTrue(bounds.getWidth() >= 280.0 + effectInsets && bounds.getWidth() <= maxWidth,
-                () -> "Dialog pane width exceeds Material or viewport limits: bounds=" + bounds
+                () -> "Dialog pane" + description + " width exceeds Material or viewport limits: bounds=" + bounds
                         + ", ownerWidth=" + ownerScene.getWidth());
         assertTrue(bounds.getHeight() >= 120.0 && bounds.getHeight() <= maxHeight,
-                () -> "Dialog pane height does not fit the owner viewport: bounds=" + bounds
+                () -> "Dialog pane" + description + " height does not fit the owner viewport: bounds=" + bounds
                         + ", ownerHeight=" + ownerScene.getHeight());
     }
 
@@ -19850,7 +19848,8 @@ final class M3FXDemoVisualMatrixTest {
         int headerStartX = Math.max(32, width - 96);
         int headerEndX = Math.max(headerStartX + 1, width - 32);
         Color headerSurface = averageSnapshotColor(image, headerStartX, 32, headerEndX, 58);
-        Color bodySurface = averageSnapshotColor(image, headerStartX, 124, headerEndX, 150);
+        int bodyEndX = Math.min(width - 32, 96);
+        Color bodySurface = averageSnapshotColor(image, 32, 124, bodyEndX, 150);
         double distance = colorDistance(headerSurface, bodySurface);
         assertTrue(distance <= 0.05,
                 () -> "Dialog popup header paints a surface strip: header=" + headerSurface

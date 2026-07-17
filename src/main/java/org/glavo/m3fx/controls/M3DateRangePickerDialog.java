@@ -22,29 +22,31 @@ import java.time.LocalDate;
 /// A Material Design 3 dialog for selecting an inclusive date range.
 ///
 /// The OK button is disabled until the embedded [picker][#getPicker()] contains both endpoints. Activating OK
-/// closes the dialog and produces an [M3DateRange] through the standard [javafx.scene.control.Dialog] result APIs;
-/// Cancel or a window close produces `null`. An incomplete start-only range remains visible but cannot be accepted.
+/// requests dialog closure and converts the current endpoints into an [M3DateRange]; Cancel or a programmatic close
+/// produces `null`. An incomplete start-only range remains visible but cannot be accepted. Close requests remain
+/// subject to the inherited [cancellable lifecycle][M3Dialog#onCloseRequestProperty()].
 ///
 /// The picker is owned by this dialog and must not be reparented. Optional presets are exposed as a live ordered
-/// list and appear beside the calendar.
+/// list and appear beside the calendar. Presentation occurs inside the owner scene and therefore requires
+/// [#setOwner(Node)] before [#show()] or [#showAndWait()].
 ///
 /// ```java
 /// private void showRangeDialog(Node owner) {
 ///     LocalDate today = LocalDate.now();
 ///     M3DateRangePickerDialog dialog = new M3DateRangePickerDialog();
-///     dialog.initOwner(owner);
+///     dialog.setOwner(owner);
 ///     dialog.getPicker().setMinDate(today.minusMonths(1));
 ///     dialog.getPicker().setMaxDate(today.plusMonths(6));
 ///     dialog.getPresets().addAll(M3DateRangePresets.common(
 ///             today, dialog.getPicker().getFirstDayOfWeek()));
-///     dialog.showAndWait().ifPresent(System.out::println);
+///     M3DateRange selectedRange = dialog.showAndWait();
 /// }
 /// ```
 ///
 /// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview).
 @NotNullByDefault
 public final class M3DateRangePickerDialog extends M3Dialog<M3DateRange> {
-    /// The default title and header text for date range picker dialogs.
+    /// The default headline text for date range picker dialogs.
     private static final String DEFAULT_TITLE = "Select date range";
 
     /// The style class applied to dialog content when preset actions are visible.
@@ -99,7 +101,7 @@ public final class M3DateRangePickerDialog extends M3Dialog<M3DateRange> {
 
     /// Creates a date range picker dialog with no selected endpoints, presets, or date bounds.
     ///
-    /// The title and header text are initialized to `Select date range`, and Cancel and OK buttons are installed.
+    /// The headline is initialized to `Select date range`, and Cancel and OK buttons are installed.
     public M3DateRangePickerDialog() {
         initialize();
     }
@@ -131,16 +133,18 @@ public final class M3DateRangePickerDialog extends M3Dialog<M3DateRange> {
 
     /// Returns the live, mutable date range preset list.
     ///
+    /// The list is initially empty, preserves insertion order and duplicates, and rejects `null` elements before
+    /// mutation. Each entry creates a distinct preset action. A preset with an endpoint outside the picker's current
+    /// bounds remains present but is disabled.
+    ///
     /// @return the live, mutable date range preset list
     public final ObservableList<M3DateRangePreset> getPresets() {
         return presets;
     }
 
     /// Configures dialog content, buttons, result conversion, and button state.
-    @SuppressWarnings("DataFlowIssue")
     private void initialize() {
-        setTitle(DEFAULT_TITLE);
-        M3DialogPane pane = getM3DialogPane();
+        M3DialogPane pane = getDialogPane();
         pane.setHeaderText(DEFAULT_TITLE);
         pane.setContent(presetContent);
         picker.nodeOrientationProperty().bind(pane.effectiveNodeOrientationProperty());
@@ -169,7 +173,7 @@ public final class M3DateRangePickerDialog extends M3Dialog<M3DateRange> {
 
     /// Enables the OK button only when both range endpoints are selected.
     private void updateOkButtonState() {
-        @Nullable Node okButton = getM3DialogPane().lookupButton(ButtonType.OK);
+        @Nullable Node okButton = getDialogPane().lookupButton(ButtonType.OK);
         if (okButton != null) {
             okButton.setDisable(!picker.isRangeComplete());
         }

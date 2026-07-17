@@ -499,8 +499,6 @@ final class ProjectContractTest {
     /// Direct concrete JavaFX superclass exceptions intentionally kept in the exported controls package.
     private static final @Unmodifiable Map<String, String> ALLOWED_EXPORTED_CONTROL_DIRECT_JAVA_FX_SUPERCLASSES =
             Map.of(
-                    "org.glavo.m3fx.controls.M3Dialog", "javafx.scene.control.Dialog",
-                    "org.glavo.m3fx.controls.M3DialogPane", "javafx.scene.control.DialogPane",
                     "org.glavo.m3fx.controls.M3ListCell", "javafx.scene.control.IndexedCell",
                     "org.glavo.m3fx.controls.M3PasswordField", "javafx.scene.control.PasswordField",
                     "org.glavo.m3fx.controls.M3TextArea", "javafx.scene.control.TextArea",
@@ -1972,7 +1970,19 @@ final class ProjectContractTest {
     /// Returns whether a public method is an intentional callback property setter.
     private static boolean isAllowedBehaviorCallbackMethod(Method method) {
         String name = method.getName();
-        return name.startsWith("setOn") || name.equals("setCellFactory");
+        if (!name.startsWith("set") || name.length() <= 3 || method.getParameterCount() != 1) {
+            return false;
+        }
+
+        String propertyMethodName = Character.toLowerCase(name.charAt(3))
+                + name.substring(4)
+                + "Property";
+        try {
+            Method propertyMethod = method.getDeclaringClass().getMethod(propertyMethodName);
+            return javafx.beans.value.ObservableValue.class.isAssignableFrom(propertyMethod.getReturnType());
+        } catch (NoSuchMethodException ignored) {
+            return false;
+        }
     }
 
     /// Returns whether one constructor parameter is a batch collection input.

@@ -4,511 +4,683 @@
 package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
-import javafx.geometry.Bounds;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.image.WritableImage;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
-import javafx.scene.robot.Robot;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import javafx.stage.Window;
-import javafx.util.Duration;
 import org.glavo.m3fx.FxTestUtils;
-import org.glavo.m3fx.animation.M3MotionEasing;
-import org.glavo.m3fx.animation.M3MotionScheme;
-import org.glavo.m3fx.animation.M3MotionSettings;
-import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.testing.Tier2Test;
-import org.glavo.m3fx.testing.Tier3Test;
+import org.glavo.monetfx.ColorRole;
+import org.glavo.monetfx.Brightness;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
-import org.jetbrains.annotations.Nullable;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-/// Verifies the real-window scrim and presentation lifecycle of Material dialogs.
+/// Verifies the public lifecycle, rendering, modality, and stacking contracts of in-scene Material dialogs.
 @NotNullByDefault
 final class M3DialogPresentationTest {
-    /// Starts JavaFX before presentation tests create windows.
+    /// Starts the JavaFX toolkit once before dialog lifecycle tests use the application thread.
     @BeforeAll
     static void startToolkit() throws InterruptedException {
         FxTestUtils.startToolkit();
-        Platform.setImplicitExit(false);
     }
 
-    /// Closes windows left behind after a failed presentation assertion.
-    @AfterEach
-    void closeWindows() {
+    /// Verifies that showing requires a configured owner attached to a visible window.
+    @Test
+    void showRejectsMissingOrDetachedOwner() {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
-            for (Window window : List.copyOf(Window.getWindows())) {
-                window.hide();
+            M3Dialog<Void> dialog = new M3Dialog<>();
+
+            assertThrows(IllegalStateException.class, dialog::show);
+
+            StackPane detachedRoot = new StackPane();
+            dialog.setOwner(detachedRoot);
+
+            assertThrows(IllegalStateException.class, dialog::show);
+            assertFalse(dialog.isShowing());
+            assertNull(dialog.getResult());
+        });
+    }
+
+    /// Verifies unconstrained height measurement keeps JavaFX's natural-width sentinel semantics.
+    @Test
+    void unconstrainedPreferredHeightDoesNotMeasureTextAtZeroWidth() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3DialogPane pane = new M3DialogPane();
+            pane.setHeaderText("Dialog title");
+            pane.setContentText("A short supporting sentence should occupy its natural number of lines.");
+            pane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
+            StackPane root = new StackPane(pane);
+            new Scene(root, 520.0, 340.0);
+            root.applyCss();
+
+            double preferredHeight = pane.prefHeight(-1.0);
+
+            assertTrue(preferredHeight >= 120.0 && preferredHeight < 300.0,
+                    () -> "unconstrained dialog height should remain compact: " + preferredHeight);
+        });
+    }
+
+    /// Verifies the showing callback cannot recursively present the dialog or replace its active owner.
+    @Tier2Test
+    @Test
+    void showingLifecycleLocksPresentationAndOwnerState() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            Stage stage = new Stage();
+            StackPane alternateOwner = new StackPane();
+            StackPane ownerRoot = new StackPane(new M3Button("Owner"), alternateOwner);
+            Scene scene = new Scene(ownerRoot, 520.0, 340.0);
+            stage.setScene(scene);
+            stage.show();
+
+            M3Dialog<Void> dialog = new M3Dialog<>();
+            dialog.setOwner(ownerRoot);
+            AtomicInteger showingCalls = new AtomicInteger();
+            dialog.setOnShowing(event -> {
+                showingCalls.incrementAndGet();
+                dialog.show();
+                assertThrows(IllegalStateException.class, () -> dialog.setOwner(alternateOwner));
+                assertThrows(IllegalStateException.class, dialog::showAndWait);
+            });
+
+            try {
+                dialog.show();
+
+                assertTrue(dialog.isShowing());
+                assertEquals(1, showingCalls.get());
+                assertSame(ownerRoot, dialog.getOwner());
+                assertSame(scene, dialog.getDialogPane().getScene());
+            } finally {
+                dialog.setOnShowing(null);
+                dialog.close();
+                stage.close();
             }
         });
     }
 
-    /// Verifies owner coverage, rendered scrim content, and synchronous reduced-motion cleanup.
+    /// Verifies action-event cancellation, close-request cancellation, result conversion, and lifecycle order.
+    @Test
+    void actionButtonsDriveCancellableLifecycleAndResultConversion() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            Stage stage = new Stage();
+            StackPane ownerRoot = new StackPane(new M3Button("Owner"));
+            Scene scene = new Scene(ownerRoot, 520.0, 340.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            stage.setScene(scene);
+            stage.show();
+
+            ButtonType cancelType = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+            ButtonType acceptType = new ButtonType("Accept", ButtonBar.ButtonData.OK_DONE);
+            M3Dialog<String> dialog = new M3Dialog<>();
+            dialog.setOwner(ownerRoot);
+            dialog.getDialogPane().setHeaderText("Confirm action");
+            dialog.getDialogPane().getButtonTypes().setAll(cancelType, acceptType);
+            dialog.setResultConverter(type -> type == acceptType ? "accepted" : null);
+            List<String> lifecycle = new ArrayList<>();
+            AtomicInteger closeRequests = new AtomicInteger();
+            dialog.setOnShowing(event -> lifecycle.add("showing"));
+            dialog.setOnShown(event -> lifecycle.add("shown"));
+            dialog.setOnCloseRequest(event -> {
+                lifecycle.add("close-request");
+                if (closeRequests.getAndIncrement() == 0) {
+                    event.consume();
+                }
+            });
+            dialog.setOnHiding(event -> lifecycle.add("hiding"));
+            dialog.setOnHidden(event -> lifecycle.add("hidden"));
+
+            try {
+                dialog.show();
+                M3Button accept = (M3Button) Objects.requireNonNull(
+                        dialog.getDialogPane().lookupButton(acceptType),
+                        "accept button"
+                );
+                EventHandler<ActionEvent> consumeAction = ActionEvent::consume;
+                accept.addEventFilter(ActionEvent.ACTION, consumeAction);
+                accept.fire();
+
+                assertTrue(dialog.isShowing());
+                assertEquals(List.of("showing", "shown"), lifecycle);
+
+                accept.removeEventFilter(ActionEvent.ACTION, consumeAction);
+                accept.fire();
+
+                assertTrue(dialog.isShowing());
+                assertNull(dialog.getResult());
+                assertEquals(List.of("showing", "shown", "close-request"), lifecycle);
+
+                accept.fire();
+
+                assertFalse(dialog.isShowing());
+                assertEquals("accepted", dialog.getResult());
+                assertEquals(
+                        List.of("showing", "shown", "close-request", "close-request", "hiding", "hidden"),
+                        lifecycle
+                );
+                assertSame(ownerRoot, scene.getRoot());
+            } finally {
+                dialog.close();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that blocking presentation returns a converted action result and restores the exact scene root.
     @Tier2Test
     @Test
-    void ownedDialogShowsRenderedScrimAndReducedMotionClosesImmediately() {
-        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> FxTestUtils.assertNoCssWarnings(() -> {
-            Stage ownerStage = new Stage();
-            M3Dialog<ButtonType> dialog = new M3Dialog<>(
-                    "Dialog",
-                    "Confirm operation",
-                    "The owner should be dimmed while this dialog is visible.",
-                    ButtonType.CANCEL,
-                    ButtonType.OK
-            );
-            try {
-                StackPane ownerRoot = new StackPane(new M3Button("Open dialog"));
-                Scene ownerScene = new Scene(ownerRoot, 420.0, 260.0);
-                M3Theme theme = M3Theme.defaultTheme();
-                M3ThemeManager.install(ownerScene, theme);
-                ownerStage.setScene(ownerScene);
-                ownerStage.show();
-                ownerRoot.applyCss();
-                ownerRoot.layout();
+    void showAndWaitReturnsConvertedResultAndRestoresScene() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            Stage stage = new Stage();
+            StackPane ownerRoot = new StackPane(new M3Button("Owner"));
+            Scene scene = new Scene(ownerRoot, 520.0, 340.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            stage.setScene(scene);
+            stage.show();
 
-                dialog.initOwner(ownerRoot);
+            ButtonType acceptType = new ButtonType("Accept", ButtonBar.ButtonData.OK_DONE);
+            M3Dialog<String> dialog = new M3Dialog<>();
+            dialog.setOwner(ownerRoot);
+            dialog.getDialogPane().getButtonTypes().setAll(ButtonType.CANCEL, acceptType);
+            dialog.setResultConverter(type -> type == acceptType ? "accepted" : null);
+            dialog.setOnShown(event -> Platform.runLater(() -> {
+                M3Button accept = assertInstanceOf(
+                        M3Button.class,
+                        Objects.requireNonNull(dialog.getDialogPane().lookupButton(acceptType), "accept button")
+                );
+                accept.fire();
+            }));
+
+            try {
+                assertEquals("accepted", dialog.showAndWait());
+                assertEquals("accepted", dialog.getResult());
+                assertFalse(dialog.isShowing());
+                assertNull(dialog.getDialogPane().getParent());
+                assertSame(ownerRoot, scene.getRoot());
+            } finally {
+                dialog.close();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies lifecycle-handler failures leave either an untouched scene or a usable visible dialog.
+    @Tier2Test
+    @Test
+    void lifecycleFailuresRollbackPresentationState() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            Stage stage = new Stage();
+            StackPane ownerRoot = new StackPane(new M3Button("Owner"));
+            Scene scene = new Scene(ownerRoot, 520.0, 340.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            stage.setScene(scene);
+            stage.show();
+
+            ButtonType acceptType = new ButtonType("Accept", ButtonBar.ButtonData.OK_DONE);
+            M3Dialog<String> dialog = new M3Dialog<>();
+            dialog.setOwner(ownerRoot);
+            dialog.getDialogPane().getButtonTypes().setAll(ButtonType.CANCEL, acceptType);
+            dialog.setResultConverter(type -> type == acceptType ? "accepted" : null);
+            RuntimeException showingFailure = new RuntimeException("showing failure");
+            RuntimeException shownFailure = new RuntimeException("shown failure");
+            RuntimeException hidingFailure = new RuntimeException("hiding failure");
+            RuntimeException hiddenFailure = new RuntimeException("hidden failure");
+
+            try {
+                dialog.setOnShowing(event -> {
+                    throw showingFailure;
+                });
+                assertSame(showingFailure, assertThrows(RuntimeException.class, dialog::show));
+                assertHiddenWithOriginalRoot(dialog, scene, ownerRoot);
+
+                dialog.setOnShowing(null);
+                dialog.setOnShown(event -> {
+                    throw shownFailure;
+                });
+                assertSame(shownFailure, assertThrows(RuntimeException.class, dialog::show));
+                assertHiddenWithOriginalRoot(dialog, scene, ownerRoot);
+
+                dialog.setOnShown(null);
+                dialog.show();
+                dialog.setResult("previous");
+                dialog.setOnHiding(event -> {
+                    throw hidingFailure;
+                });
+                M3Button accept = assertInstanceOf(
+                        M3Button.class,
+                        Objects.requireNonNull(dialog.getDialogPane().lookupButton(acceptType), "accept button")
+                );
+                assertSame(hidingFailure, assertThrows(RuntimeException.class, accept::fire));
+                assertTrue(dialog.isShowing());
+                assertEquals("previous", dialog.getResult());
+                assertNotSame(ownerRoot, scene.getRoot());
+                assertSame(scene, dialog.getDialogPane().getScene());
+
+                dialog.setOnHiding(null);
+                dialog.setOnHidden(event -> {
+                    throw hiddenFailure;
+                });
+                assertSame(hiddenFailure, assertThrows(RuntimeException.class, accept::fire));
+                assertEquals("accepted", dialog.getResult());
+                assertHiddenWithOriginalRoot(dialog, scene, ownerRoot);
+            } finally {
+                dialog.setOnShowing(null);
+                dialog.setOnShown(null);
+                dialog.setOnHiding(null);
+                dialog.setOnHidden(null);
+                dialog.close();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies explicit and inherited theme changes restyle a visible dialog without replacing its pane.
+    @Tier2Test
+    @Test
+    void dialogThemeContextUpdatesWithoutRecreatingPane() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            Stage stage = new Stage();
+            StackPane ownerRoot = new StackPane(new M3Button("Owner"));
+            Scene scene = new Scene(ownerRoot, 520.0, 340.0);
+            M3Theme inheritedTheme = M3Theme.defaultTheme();
+            M3Theme explicitDarkTheme = M3Theme.fromSeed(Color.web("#006a6a"), Brightness.DARK);
+            M3Theme explicitLightTheme = M3Theme.fromSeed(Color.web("#7d5260"));
+            M3ThemeManager.install(scene, inheritedTheme);
+            stage.setScene(scene);
+            stage.show();
+
+            M3Dialog<Void> dialog = new M3Dialog<>();
+            M3DialogPane pane = dialog.getDialogPane();
+            dialog.setOwner(ownerRoot);
+            dialog.setTheme(explicitDarkTheme);
+            pane.setHeaderText("Themed dialog");
+            pane.getButtonTypes().setAll(ButtonType.OK);
+            try {
                 dialog.show();
 
-                assertNotSame(ownerRoot, ownerScene.getRoot());
-                M3Scrim scrim = Objects.requireNonNull(findShowingScrim(ownerStage), "dialog scrim");
-                scrim.applyCss();
-                scrim.layout();
-                Scene scrimScene = Objects.requireNonNull(scrim.getScene(), "scrim scene");
+                assertSame(pane, dialog.getDialogPane());
+                assertEquals(dialogSurfaceColor(explicitDarkTheme), renderedDialogSurface(dialog));
 
-                assertSame(ownerScene, scrimScene);
-                assertSame(ownerStage, scrimScene.getWindow());
-                assertTrue(scrim.isShown());
-                assertTrue(scrim.isVisible());
-                assertEquals(ownerScene.getWidth(), scrim.getWidth(), 0.5);
-                assertEquals(ownerScene.getHeight(), scrim.getHeight(), 0.5);
+                dialog.setTheme(explicitLightTheme);
+
+                assertSame(pane, dialog.getDialogPane());
+                assertEquals(dialogSurfaceColor(explicitLightTheme), renderedDialogSurface(dialog));
+
+                dialog.setTheme(null);
+
+                assertSame(pane, dialog.getDialogPane());
+                assertEquals(dialogSurfaceColor(inheritedTheme), renderedDialogSurface(dialog));
+            } finally {
+                dialog.close();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies physical composition uses one window and preserves visible owner content below a translucent scrim.
+    @Tier2Test
+    @Test
+    void dialogUsesTranslucentInSceneScrimWithoutDisablingOwnerWindow() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            Stage stage = new Stage();
+            Rectangle marker = new Rectangle(80.0, 80.0, Color.RED);
+            StackPane ownerRoot = new StackPane(marker);
+            StackPane.setAlignment(marker, Pos.TOP_LEFT);
+            ownerRoot.setStyle("-fx-background-color: white;");
+            Scene scene = new Scene(ownerRoot, 640.0, 420.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            stage.setScene(scene);
+            stage.show();
+            long showingWindowCount = Window.getWindows().stream().filter(Window::isShowing).count();
+
+            M3Dialog<ButtonType> dialog = new M3Dialog<>();
+            dialog.setOwner(ownerRoot);
+            dialog.getDialogPane().setHeaderText("Visible dialog");
+            dialog.getDialogPane().setContentText("Owner content remains visible below a Material scrim.");
+            dialog.getDialogPane().getButtonTypes().setAll(ButtonType.OK);
+            try {
+                dialog.show();
+                Parent overlayRoot = scene.getRoot();
+                overlayRoot.applyCss();
+                overlayRoot.layout();
+
+                assertNotSame(ownerRoot, overlayRoot);
+                assertSame(scene, dialog.getDialogPane().getScene());
+                assertEquals(showingWindowCount, Window.getWindows().stream().filter(Window::isShowing).count());
+                assertFalse(dialog.getDialogPane().getBackground().getFills().isEmpty());
                 assertEquals(
-                        theme.tokens().componentTokens().scrim().containerOpacity(),
-                        scrim.getOpacity(),
-                        0.001
+                        M3Theme.defaultTheme().colorScheme().getColor(ColorRole.SURFACE_CONTAINER_HIGH),
+                        dialog.getDialogPane().getBackground().getFills().get(0).getFill(),
+                        () -> "dialog container should use the active Material surface-container-high color: style="
+                                + dialog.getDialogPane().getStyle()
+                                + ", classes=" + dialog.getDialogPane().getStyleClass()
+                                + ", stylesheets=" + dialog.getDialogPane().getStylesheets()
+                                + ", parentStyle=" + Objects.requireNonNull(
+                                        dialog.getDialogPane().getParent(),
+                                        "dialog parent"
+                                ).getStyle()
                 );
-                Color scrimFill = assertInstanceOf(
-                        Color.class,
-                        scrim.getBackground().getFills().get(0).getFill()
-                );
-                assertEquals(Color.BLACK, scrimFill);
+                List<M3Scrim> scrims = descendantScrims(overlayRoot);
+                assertEquals(1, scrims.size());
+                M3Scrim scrim = scrims.get(0);
+                assertEquals(0.32, scrim.getVisibleOpacity(), 0.001);
+                assertEquals(0.32, scrim.getOpacity(), 0.001);
 
-                WritableImage image = scrim.snapshot(null, null);
-                Color center = image.getPixelReader().getColor(
-                        Math.max(0, (int) image.getWidth() / 2),
-                        Math.max(0, (int) image.getHeight() / 2)
-                );
-                assertEquals(1.0, center.getOpacity(), 0.04);
-                double expectedComposite = 1.0 - scrim.getOpacity();
-                assertEquals(expectedComposite, center.getRed(), 0.04);
-                assertEquals(expectedComposite, center.getGreen(), 0.04);
-                assertEquals(expectedComposite, center.getBlue(), 0.04);
+                WritableImage image = overlayRoot.snapshot(null, null);
+                Color markerPixel = image.getPixelReader().getColor(20, 20);
+                assertTrue(markerPixel.getRed() > 0.55, () -> "owner marker is hidden: " + markerPixel);
+                assertTrue(markerPixel.getGreen() < 0.08, () -> "scrim did not preserve marker color: " + markerPixel);
+                assertTrue(markerPixel.getBlue() < 0.08, () -> "scrim did not preserve marker color: " + markerPixel);
 
+                dialog.close();
+
+                assertSame(ownerRoot, scene.getRoot());
+                assertSame(scene, ownerRoot.getScene());
+                assertFalse(dialog.isShowing());
+            } finally {
+                dialog.close();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies that hiding the owner window forcibly removes its overlay without a cancellable close request.
+    @Tier2Test
+    @Test
+    void ownerWindowHidingForcesPresentationCleanup() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            Stage stage = new Stage();
+            StackPane ownerRoot = new StackPane(new M3Button("Owner"));
+            Scene scene = new Scene(ownerRoot, 520.0, 340.0);
+            stage.setScene(scene);
+            stage.show();
+
+            AtomicInteger closeRequests = new AtomicInteger();
+            List<String> lifecycle = new ArrayList<>();
+            M3Dialog<Void> dialog = new M3Dialog<>();
+            dialog.setOwner(ownerRoot);
+            dialog.getDialogPane().setHeaderText("Owned dialog");
+            dialog.setOnCloseRequest(event -> {
+                closeRequests.incrementAndGet();
+                event.consume();
+            });
+            dialog.setOnHiding(event -> lifecycle.add("hiding"));
+            dialog.setOnHidden(event -> lifecycle.add("hidden"));
+            try {
+                dialog.show();
+
+                assertTrue(dialog.isShowing());
+                assertNotSame(ownerRoot, scene.getRoot());
+
+                stage.hide();
+
+                assertFalse(dialog.isShowing());
+                assertNull(dialog.getDialogPane().getParent());
+                assertSame(ownerRoot, scene.getRoot());
+                assertEquals(0, closeRequests.get());
+                assertEquals(List.of("hiding", "hidden"), lifecycle);
+
+                stage.show();
+                dialog.show();
+
+                assertTrue(dialog.isShowing());
+
+                dialog.setOnCloseRequest(null);
                 dialog.close();
 
                 assertFalse(dialog.isShowing());
-                assertSame(ownerRoot, ownerScene.getRoot());
-                assertNull(findShowingScrim(ownerStage));
+                assertSame(ownerRoot, scene.getRoot());
             } finally {
+                dialog.setOnCloseRequest(null);
                 dialog.close();
-                ownerStage.close();
+                stage.close();
             }
-        }));
+        });
     }
 
-    /// Verifies the physical window composition keeps the dialog above its owner scrim.
+    /// Verifies nested dialogs stack in one scene and restore the root only after the final layer closes.
     @Tier2Test
     @Test
-    void dialogRemainsVisibleAbovePhysicalScrim() throws InterruptedException {
-        AtomicReference<@Nullable Stage> ownerStageReference = new AtomicReference<>();
-        AtomicReference<@Nullable M3Dialog<ButtonType>> dialogReference = new AtomicReference<>();
-        boolean previousReducedMotion = M3MotionSettings.isGlobalReducedMotionRequested();
+    void nestedDialogsShareOneOverlayHostAndCloseInStackOrder() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            Stage stage = new Stage();
+            StackPane ownerRoot = new StackPane(new M3Button("Owner"));
+            StackPane.setAlignment(ownerRoot, Pos.BOTTOM_RIGHT);
+            Scene scene = new Scene(ownerRoot, 600.0, 400.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            stage.setScene(scene);
+            stage.show();
 
-        FxTestUtils.runOnFxThread(() -> M3MotionSettings.setGlobalReducedMotionRequested(true));
-        try {
-            FxTestUtils.runOnFxThreadWhenStable(
-                    () -> {
-                        @Nullable Stage ownerStage = ownerStageReference.get();
-                        @Nullable M3Dialog<ButtonType> dialog = dialogReference.get();
-                        return ownerStage != null
-                                && dialog != null
-                                && dialog.isShowing()
-                                && dialog.getM3DialogPane().localToScreen(
-                                dialog.getM3DialogPane().getBoundsInLocal()
-                        ) != null
-                                && findShowingScrim(ownerStage) != null;
-                    },
-                    3,
-                    () -> {
-                        Stage ownerStage = new Stage();
-                        StackPane ownerRoot = new StackPane(new M3Button("Owner content"));
-                        Scene ownerScene = new Scene(ownerRoot, 520.0, 340.0);
-                        M3ThemeManager.install(ownerScene, M3Theme.defaultTheme());
-                        ownerStage.setScene(ownerScene);
-                        ownerStage.show();
+            M3Dialog<Void> first = new M3Dialog<>();
+            first.setOwner(ownerRoot);
+            first.getDialogPane().setHeaderText("First");
+            M3Dialog<Void> second = new M3Dialog<>();
+            second.setOwner(ownerRoot);
+            second.getDialogPane().setHeaderText("Second");
+            try {
+                first.show();
+                Parent overlayRoot = scene.getRoot();
+                second.show();
 
-                        M3Dialog<ButtonType> dialog = new M3Dialog<>(
-                                "Visible dialog",
-                                "Dialog above scrim",
-                                "The dialog surface must remain visible above the modal scrim.",
-                                ButtonType.CANCEL,
-                                ButtonType.OK
-                        );
-                        dialog.initOwner(ownerRoot);
-                        dialog.getM3DialogPane().setPrefWidth(420.0);
+                assertSame(overlayRoot, scene.getRoot());
+                assertEquals(2, descendantScrims(overlayRoot).size());
+                assertSame(scene, first.getDialogPane().getScene());
+                assertSame(scene, second.getDialogPane().getScene());
 
-                        ownerStageReference.set(ownerStage);
-                        dialogReference.set(dialog);
-                        dialog.show();
-                    },
-                    () -> {
-                        M3Dialog<ButtonType> dialog = Objects.requireNonNull(dialogReference.get(), "dialog");
-                        Stage ownerStage = Objects.requireNonNull(ownerStageReference.get(), "owner stage");
-                        M3Scrim scrim = Objects.requireNonNull(findShowingScrim(ownerStage), "dialog scrim");
-                        assertSame(ownerStage.getScene(), scrim.getScene());
-                        assertNotSame(ownerStage.getScene(), dialog.getM3DialogPane().getScene());
-                        assertDialogVisibleOnScreen(dialog.getM3DialogPane());
-                    }
-            );
-        } finally {
-            FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
-                @Nullable M3Dialog<ButtonType> dialog = dialogReference.get();
-                if (dialog != null) {
-                    dialog.close();
-                }
-                @Nullable Stage ownerStage = ownerStageReference.get();
-                if (ownerStage != null) {
-                    ownerStage.close();
-                }
-                M3MotionSettings.setGlobalReducedMotionRequested(previousReducedMotion);
-            });
-        }
+                second.close();
+
+                assertTrue(first.isShowing());
+                assertFalse(second.isShowing());
+                assertSame(overlayRoot, scene.getRoot());
+                assertEquals(1, descendantScrims(overlayRoot).size());
+
+                first.close();
+
+                assertSame(ownerRoot, scene.getRoot());
+                assertEquals(Pos.BOTTOM_RIGHT, StackPane.getAlignment(ownerRoot));
+            } finally {
+                second.close();
+                first.close();
+                stage.close();
+            }
+        });
     }
 
-    /// Verifies observable enter and exit frames, cancelled-close recovery, and final scrim disposal.
-    @Tier3Test
+    /// Verifies that closing a lower dialog leaves focus inside the dialog that remains above it.
+    @Tier2Test
     @Test
-    void dialogPresentationAnimatesAndRecoversFromCancelledClose() throws InterruptedException {
-        AtomicReference<@Nullable Stage> ownerStageReference = new AtomicReference<>();
-        AtomicReference<@Nullable StackPane> ownerRootReference = new AtomicReference<>();
-        AtomicReference<@Nullable M3Dialog<ButtonType>> dialogReference = new AtomicReference<>();
-        AtomicReference<@Nullable M3Scrim> scrimReference = new AtomicReference<>();
-        AtomicInteger closeRequestCount = new AtomicInteger();
-        AtomicInteger hidingCount = new AtomicInteger();
-        boolean previousReducedMotion = M3MotionSettings.isGlobalReducedMotionRequested();
+    void closingLowerDialogDoesNotStealFocusFromTopDialog() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            Stage stage = new Stage();
+            M3Button owner = new M3Button("Owner");
+            StackPane ownerRoot = new StackPane(owner);
+            Scene scene = new Scene(ownerRoot, 600.0, 400.0);
+            stage.setScene(scene);
+            stage.show();
+            owner.requestFocus();
 
-        FxTestUtils.runOnFxThread(() -> M3MotionSettings.setGlobalReducedMotionRequested(false));
-        try {
-            FxTestUtils.runOnFxThreadWhenStable(
-                    () -> isIntermediateOpacity(dialogReference),
-                    1,
-                    () -> {
-                        Stage ownerStage = new Stage();
-                        StackPane ownerRoot = new StackPane(new M3Button("Open dialog"));
-                        Scene ownerScene = new Scene(ownerRoot, 420.0, 260.0);
-                        M3ThemeManager.install(ownerScene, M3Theme.defaultTheme());
-                        ownerStage.setScene(ownerScene);
-                        ownerStage.show();
-                        ownerRoot.applyCss();
-                        ownerRoot.layout();
+            M3TextField firstContent = new M3TextField("First content");
+            M3Dialog<Void> first = new M3Dialog<>();
+            first.setOwner(ownerRoot);
+            first.getDialogPane().setContent(firstContent);
+            M3TextField secondContent = new M3TextField("Second content");
+            M3Dialog<Void> second = new M3Dialog<>();
+            second.setOwner(ownerRoot);
+            second.getDialogPane().setContent(secondContent);
+            try {
+                first.show();
+                firstContent.requestFocus();
+                second.show();
+                secondContent.requestFocus();
+                Parent overlayRoot = scene.getRoot();
 
-                        M3MotionSpec observableSpec = M3MotionSpec.of(
-                                Duration.millis(400.0),
-                                M3MotionEasing.STANDARD
-                        );
-                        M3MotionScheme motionScheme = M3MotionScheme.builder(M3MotionScheme.standard())
-                                .fastEffects(observableSpec)
-                                .defaultEffects(observableSpec)
-                                .build();
-                        FxTestUtils.setMotionScheme(ownerRoot, motionScheme);
+                assertTrue(secondContent.isFocused());
 
-                        M3Dialog<ButtonType> dialog = new M3Dialog<>(
-                                "Animated dialog",
-                                "Confirm operation",
-                                "This dialog exercises presentation motion.",
-                                ButtonType.CANCEL,
-                                ButtonType.OK
-                        );
-                        dialog.initOwner(ownerRoot);
-                        dialog.setOnHiding(event -> hidingCount.incrementAndGet());
-                        dialog.setOnCloseRequest(event -> {
-                            if (closeRequestCount.incrementAndGet() == 1) {
-                                event.consume();
-                            }
-                        });
+                first.close();
 
-                        ownerStageReference.set(ownerStage);
-                        ownerRootReference.set(ownerRoot);
-                        dialogReference.set(dialog);
-                        dialog.show();
+                assertFalse(first.isShowing());
+                assertTrue(second.isShowing());
+                assertSame(overlayRoot, scene.getRoot());
+                assertTrue(secondContent.isFocused());
+                assertEquals(1, descendantScrims(overlayRoot).size());
 
-                        M3DialogPane pane = dialog.getM3DialogPane();
-                        M3Scrim scrim = Objects.requireNonNull(findShowingScrim(ownerStage), "dialog scrim");
-                        scrimReference.set(scrim);
-                        assertTrue(dialog.isShowing());
-                        assertEquals(0.0, pane.getOpacity(), 0.001);
-                        assertEquals(0.0, scrim.getOpacity(), 0.001);
-                    },
-                    () -> {
-                        M3Dialog<ButtonType> dialog = requiredDialog(dialogReference);
-                        M3Scrim scrim = Objects.requireNonNull(scrimReference.get(), "dialog scrim");
-                        assertTrue(isIntermediate(dialog.getM3DialogPane().getOpacity()));
-                        assertTrue(isIntermediateScrimOpacity(scrim));
-                    }
-            );
+                second.close();
 
-            FxTestUtils.runOnFxThreadWhenStable(
-                    () -> isFullyShown(dialogReference, scrimReference),
-                    2,
-                    () -> {
-                    },
-                    () -> {
-                        M3Dialog<ButtonType> dialog = requiredDialog(dialogReference);
-                        dialog.close();
-
-                        assertTrue(dialog.isShowing(), "exit motion should retain the dialog window");
-                        assertEquals(0, closeRequestCount.get(), "the provisional close request is internal");
-                        assertEquals(0, hidingCount.get(), "the provisional hiding event is internal");
-                    }
-            );
-
-            FxTestUtils.runOnFxThreadWhenStable(
-                    () -> isIntermediateOpacity(dialogReference),
-                    1,
-                    () -> {
-                    },
-                    () -> {
-                        M3Scrim scrim = Objects.requireNonNull(scrimReference.get(), "dialog scrim");
-                        assertTrue(isIntermediateScrimOpacity(scrim));
-                    }
-            );
-
-            FxTestUtils.runOnFxThreadWhenStable(
-                    () -> closeRequestCount.get() == 1 && isFullyShown(dialogReference, scrimReference),
-                    2,
-                    () -> {
-                    },
-                    () -> {
-                        M3Dialog<ButtonType> dialog = requiredDialog(dialogReference);
-                        assertEquals(1, hidingCount.get());
-                        dialog.close();
-
-                        assertTrue(dialog.isShowing(), "the second close should also play exit motion");
-                        assertEquals(1, closeRequestCount.get());
-                    }
-            );
-
-            FxTestUtils.runOnFxThreadWhenStable(
-                    () -> {
-                        @Nullable M3Dialog<ButtonType> dialog = dialogReference.get();
-                        @Nullable Stage ownerStage = ownerStageReference.get();
-                        return dialog != null
-                                && ownerStage != null
-                                && !dialog.isShowing()
-                                && findShowingScrim(ownerStage) == null;
-                    },
-                    2,
-                    () -> {
-                    },
-                    () -> {
-                        M3Dialog<ButtonType> dialog = requiredDialog(dialogReference);
-                        M3Scrim scrim = Objects.requireNonNull(scrimReference.get(), "dialog scrim");
-                        Stage ownerStage = Objects.requireNonNull(ownerStageReference.get(), "owner stage");
-                        StackPane ownerRoot = Objects.requireNonNull(ownerRootReference.get(), "owner root");
-                        assertEquals(2, closeRequestCount.get());
-                        assertEquals(2, hidingCount.get());
-                        assertEquals(1.0, dialog.getM3DialogPane().getOpacity(), 0.001);
-                        assertFalse(scrim.isShown());
-                        assertSame(ownerRoot, Objects.requireNonNull(ownerStage.getScene(), "owner scene").getRoot());
-                    }
-            );
-        } finally {
-            FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
-                @Nullable M3Dialog<ButtonType> dialog = dialogReference.get();
-                if (dialog != null) {
-                    dialog.setOnCloseRequest(null);
-                    dialog.close();
-                }
-                @Nullable StackPane ownerRoot = ownerRootReference.get();
-                if (ownerRoot != null) {
-                    FxTestUtils.clearMotionScheme(ownerRoot);
-                }
-                @Nullable Stage ownerStage = ownerStageReference.get();
-                if (ownerStage != null) {
-                    ownerStage.close();
-                }
-                M3MotionSettings.setGlobalReducedMotionRequested(previousReducedMotion);
-            });
-        }
+                assertSame(ownerRoot, scene.getRoot());
+            } finally {
+                second.close();
+                first.close();
+                stage.close();
+            }
+        });
     }
 
-    /// Returns the current dialog or fails with a useful null-contract message.
-    private static M3Dialog<ButtonType> requiredDialog(
-            AtomicReference<@Nullable M3Dialog<ButtonType>> dialogReference
-    ) {
-        return Objects.requireNonNull(dialogReference.get(), "dialog");
+    /// Verifies Escape chooses the cancel action and Tab remains inside the active dialog surface.
+    @Tier2Test
+    @Test
+    void keyboardFocusIsTrappedAndEscapeUsesCancelAction() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            Stage stage = new Stage();
+            M3Button outside = new M3Button("Outside");
+            StackPane ownerRoot = new StackPane(outside);
+            Scene scene = new Scene(ownerRoot, 520.0, 340.0);
+            stage.setScene(scene);
+            stage.show();
+            outside.requestFocus();
+
+            M3TextField content = new M3TextField("Editable");
+            ButtonType cancelType = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+            ButtonType acceptType = new ButtonType("Accept", ButtonBar.ButtonData.OK_DONE);
+            M3Dialog<ButtonType> dialog = new M3Dialog<>();
+            dialog.setOwner(ownerRoot);
+            dialog.getDialogPane().setContent(content);
+            dialog.getDialogPane().getButtonTypes().setAll(cancelType, acceptType);
+            try {
+                dialog.show();
+                dialog.getDialogPane().requestInitialFocus();
+                Node cancel = Objects.requireNonNull(dialog.getDialogPane().lookupButton(cancelType), "cancel button");
+                Node accept = Objects.requireNonNull(dialog.getDialogPane().lookupButton(acceptType), "accept button");
+
+                content.requestFocus();
+                content.fireEvent(keyPressed(KeyCode.TAB));
+                assertTrue(cancel.isFocused());
+
+                cancel.fireEvent(keyPressed(KeyCode.TAB));
+                assertTrue(accept.isFocused());
+
+                accept.fireEvent(keyPressed(KeyCode.TAB));
+                assertTrue(content.isFocused());
+                assertFalse(outside.isFocused());
+
+                KeyEvent controlTab = new KeyEvent(
+                        KeyEvent.KEY_PRESSED,
+                        "",
+                        "",
+                        KeyCode.TAB,
+                        false,
+                        true,
+                        false,
+                        false
+                );
+                content.fireEvent(controlTab);
+                assertFalse(controlTab.isConsumed(), "Ctrl+Tab should remain available to application shortcuts");
+
+                KeyEvent altF6 = new KeyEvent(
+                        KeyEvent.KEY_PRESSED,
+                        "",
+                        "",
+                        KeyCode.F6,
+                        false,
+                        false,
+                        true,
+                        false
+                );
+                content.fireEvent(altF6);
+                assertFalse(altF6.isConsumed(), "Alt+F6 should remain available to platform shortcuts");
+
+                content.fireEvent(keyPressed(KeyCode.ESCAPE));
+
+                assertFalse(dialog.isShowing());
+                assertSame(cancelType, dialog.getResult());
+            } finally {
+                dialog.close();
+                stage.close();
+            }
+        });
     }
 
-    /// Returns whether the dialog pane currently has a visible intermediate opacity.
-    private static boolean isIntermediateOpacity(
-            AtomicReference<@Nullable M3Dialog<ButtonType>> dialogReference
-    ) {
-        @Nullable M3Dialog<ButtonType> dialog = dialogReference.get();
-        return dialog != null && dialog.isShowing() && isIntermediate(dialog.getM3DialogPane().getOpacity());
+    /// Creates an unmodified key-press event for keyboard lifecycle tests.
+    private static KeyEvent keyPressed(KeyCode code) {
+        return new KeyEvent(KeyEvent.KEY_PRESSED, "", "", code, false, false, false, false);
     }
 
-    /// Returns whether both dialog and scrim have reached their shown state.
-    private static boolean isFullyShown(
-            AtomicReference<@Nullable M3Dialog<ButtonType>> dialogReference,
-            AtomicReference<@Nullable M3Scrim> scrimReference
-    ) {
-        @Nullable M3Dialog<ButtonType> dialog = dialogReference.get();
-        @Nullable M3Scrim scrim = scrimReference.get();
-        return dialog != null
-                && scrim != null
-                && dialog.isShowing()
-                && dialog.getM3DialogPane().getOpacity() >= 0.99
-                && scrim.isShown()
-                && scrim.getOpacity() >= scrim.getVisibleOpacity() - 0.005;
+    /// Verifies a dialog is detached and the exact owner root is active after presentation cleanup.
+    private static void assertHiddenWithOriginalRoot(M3Dialog<?> dialog, Scene scene, Parent ownerRoot) {
+        assertFalse(dialog.isShowing());
+        assertNull(dialog.getDialogPane().getParent());
+        assertSame(ownerRoot, scene.getRoot());
     }
 
-    /// Returns whether a normalized opacity is away from both settled endpoints.
-    private static boolean isIntermediate(double opacity) {
-        return opacity > 0.05 && opacity < 0.95;
-    }
-
-    /// Returns whether a scrim is between hidden and fully visible opacity.
-    private static boolean isIntermediateScrimOpacity(M3Scrim scrim) {
-        return scrim.getOpacity() > 0.01 && scrim.getOpacity() < scrim.getVisibleOpacity() - 0.01;
-    }
-
-    /// Verifies that physical screen pixels in the dialog bounds match the rendered dialog pane.
-    private static void assertDialogVisibleOnScreen(M3DialogPane pane) {
+    /// Returns the rendered Material container color of a visible dialog.
+    private static Color renderedDialogSurface(M3Dialog<?> dialog) {
+        M3DialogPane pane = dialog.getDialogPane();
+        Parent sceneRoot = Objects.requireNonNull(pane.getScene(), "dialog scene").getRoot();
+        sceneRoot.applyCss();
+        sceneRoot.layout();
         pane.applyCss();
         pane.layout();
-        @Nullable Bounds screenBounds = pane.localToScreen(pane.getBoundsInLocal());
-        assertNotNull(screenBounds, "dialog pane screen bounds");
-
-        int width = Math.max(1, (int) Math.ceil(screenBounds.getWidth()));
-        int height = Math.max(1, (int) Math.ceil(screenBounds.getHeight()));
-        WritableImage expected = pane.snapshot(null, null);
-        WritableImage actual = new Robot().getScreenCapture(
-                new WritableImage(width, height),
-                screenBounds.getMinX(),
-                screenBounds.getMinY(),
-                screenBounds.getWidth(),
-                screenBounds.getHeight(),
-                true
-        );
-        assumeTrue(
-                screenCaptureHasContent(actual),
-                "the platform returned an all-black Robot screen capture"
-        );
-
-        int sampleStep = Math.max(2, Math.min(width, height) / 80);
-        int comparableSamples = 0;
-        int matchingSamples = 0;
-        int sampleWidth = Math.min(width, (int) expected.getWidth());
-        int sampleHeight = Math.min(height, (int) expected.getHeight());
-        for (int y = sampleStep / 2; y < sampleHeight; y += sampleStep) {
-            for (int x = sampleStep / 2; x < sampleWidth; x += sampleStep) {
-                Color expectedColor = expected.getPixelReader().getColor(x, y);
-                if (expectedColor.getOpacity() < 0.95) {
-                    continue;
-                }
-                Color actualColor = actual.getPixelReader().getColor(x, y);
-                comparableSamples++;
-                if (colorDistance(expectedColor, actualColor) <= 0.18) {
-                    matchingSamples++;
-                }
-            }
-        }
-
-        assertTrue(comparableSamples > 0, "dialog screen comparison has no opaque samples");
-        double matchingRatio = (double) matchingSamples / comparableSamples;
-        int centerX = Math.min(sampleWidth - 1, Math.max(0, sampleWidth / 2));
-        int centerY = Math.min(sampleHeight - 1, Math.max(0, sampleHeight / 2));
-        Color expectedCenter = expected.getPixelReader().getColor(centerX, centerY);
-        Color actualCenter = actual.getPixelReader().getColor(centerX, centerY);
-        assertTrue(
-                matchingRatio >= 0.70,
-                () -> "dialog is obscured in the physical window composition: matchingRatio=" + matchingRatio
-                        + ", expectedCenter=" + expectedCenter
-                        + ", actualCenter=" + actualCenter
-                        + ", screenBounds=" + screenBounds
-        );
+        assertFalse(pane.getBackground().getFills().isEmpty());
+        return assertInstanceOf(Color.class, pane.getBackground().getFills().get(0).getFill());
     }
 
-    /// Returns the maximum normalized RGB channel distance between two colors.
-    private static double colorDistance(Color first, Color second) {
-        return Math.max(
-                Math.abs(first.getRed() - second.getRed()),
-                Math.max(
-                        Math.abs(first.getGreen() - second.getGreen()),
-                        Math.abs(first.getBlue() - second.getBlue())
-                )
-        );
+    /// Returns the Material dialog container color generated by a theme.
+    private static Color dialogSurfaceColor(M3Theme theme) {
+        return theme.colorScheme().getColor(ColorRole.SURFACE_CONTAINER_HIGH);
     }
 
-    /// Returns whether a physical screen capture contains any non-black screen content.
-    private static boolean screenCaptureHasContent(WritableImage image) {
-        int sampleStep = Math.max(1, Math.min((int) image.getWidth(), (int) image.getHeight()) / 80);
-        for (int y = sampleStep / 2; y < image.getHeight(); y += sampleStep) {
-            for (int x = sampleStep / 2; x < image.getWidth(); x += sampleStep) {
-                Color color = image.getPixelReader().getColor(x, y);
-                if (Math.max(color.getRed(), Math.max(color.getGreen(), color.getBlue())) > 0.05) {
-                    return true;
-                }
-            }
-        }
-        return false;
+    /// Returns all scrim descendants, including a supplied scrim root.
+    private static List<M3Scrim> descendantScrims(Node root) {
+        ArrayList<M3Scrim> matches = new ArrayList<>();
+        collectDescendantScrims(root, matches);
+        return matches;
     }
 
-    /// Returns the shown dialog scrim owned by a specific window.
-    private static @Nullable M3Scrim findShowingScrim(Window ownerWindow) {
-        @Nullable Scene scene = ownerWindow.getScene();
-        if (scene == null) {
-            return null;
-        }
-        @Nullable M3Scrim scrim = findScrim(scene.getRoot());
-        return scrim != null && scrim.isShown() ? scrim : null;
-    }
-
-    /// Searches an owner scene graph for its Material scrim.
-    private static @Nullable M3Scrim findScrim(Node node) {
+    /// Collects scrim descendants recursively in scene-graph order.
+    private static void collectDescendantScrims(Node node, List<M3Scrim> matches) {
         if (node instanceof M3Scrim scrim) {
-            return scrim;
+            matches.add(scrim);
         }
         if (node instanceof Parent parent) {
             for (Node child : parent.getChildrenUnmodifiable()) {
-                @Nullable M3Scrim scrim = findScrim(child);
-                if (scrim != null) {
-                    return scrim;
-                }
+                collectDescendantScrims(child, matches);
             }
         }
-        return null;
     }
 }

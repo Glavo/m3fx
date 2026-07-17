@@ -95,7 +95,6 @@ import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListCell;
 import org.glavo.m3fx.controls.M3ListSectionHeader;
 import org.glavo.m3fx.controls.M3ListStyle;
-import org.glavo.m3fx.controls.M3SelectionMode;
 import org.glavo.m3fx.controls.M3ListItemSlotSize;
 import org.glavo.m3fx.controls.M3ListView;
 import org.glavo.m3fx.controls.M3LoadingIndicator;
@@ -105,7 +104,6 @@ import org.glavo.m3fx.controls.M3MenuButton;
 import org.glavo.m3fx.controls.M3MenuColorStyle;
 import org.glavo.m3fx.controls.M3MenuItem;
 import org.glavo.m3fx.controls.M3MenuSectionHeader;
-import org.glavo.m3fx.controls.M3SelectionMode;
 import org.glavo.m3fx.controls.M3NavigationBar;
 import org.glavo.m3fx.controls.M3NavigationDrawer;
 import org.glavo.m3fx.controls.M3NavigationDrawerGroup;
@@ -128,7 +126,6 @@ import org.glavo.m3fx.controls.M3SearchViewStyle;
 import org.glavo.m3fx.controls.M3ScrollPanes;
 import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
-import org.glavo.m3fx.controls.M3SelectionMode;
 import org.glavo.m3fx.controls.M3SheetVariant;
 import org.glavo.m3fx.controls.M3SideSheet;
 import org.glavo.m3fx.controls.M3Slider;
@@ -2898,8 +2895,11 @@ public final class M3FXDemoApp extends Application {
     ) {
         M3DialogPane pane = new M3DialogPane();
         pane.getStyleClass().add("demo-dialog-pane");
+        pane.setMaxHeight(Region.USE_PREF_SIZE);
         pane.setHeaderText(headerText);
-        pane.setContentText(contentText);
+        if (contentText != null) {
+            pane.setContentText(contentText);
+        }
         pane.getButtonTypes().addAll(buttonTypes);
         return pane;
     }
@@ -2944,6 +2944,7 @@ public final class M3FXDemoApp extends Application {
         scrollPane.getStyleClass().add("demo-dialog-scroll-pane");
         scrollPane.setFitToWidth(true);
         scrollPane.setPrefViewportHeight(132.0);
+        scrollPane.setMaxHeight(Region.USE_PREF_SIZE);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         M3ScrollPanes.style(scrollPane);
         M3ScrollPanes.enableSmoothScrolling(scrollPane);
@@ -4536,7 +4537,6 @@ public final class M3FXDemoApp extends Application {
     /// Opens the demo dialog.
     private void showDemoDialog() {
         M3Dialog<ButtonType> dialog = createDemoDialog(
-                "M3 Dialog",
                 "Dialog title",
                 "This dialog uses the M3FX dialog pane style and active theme tokens.",
                 new ButtonType("OK", ButtonBar.ButtonData.OK_DONE)
@@ -4547,14 +4547,13 @@ public final class M3FXDemoApp extends Application {
     /// Opens a demo dialog with form-like content.
     private void showSettingsDialog() {
         M3Dialog<ButtonType> dialog = createDemoDialog(
-                "Project Settings",
                 "Project settings",
                 null,
                 new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE),
                 new ButtonType("Apply", ButtonBar.ButtonData.APPLY)
         );
-        dialog.getM3DialogPane().setContent(createDialogSettingsContent(true));
-        dialog.getM3DialogPane().setPrefWidth(460.0);
+        dialog.getDialogPane().setContent(createDialogSettingsContent(true));
+        dialog.getDialogPane().setPrefWidth(460.0);
         dialog.show();
     }
 
@@ -4562,27 +4561,25 @@ public final class M3FXDemoApp extends Application {
     private void showDestructiveDialog() {
         ButtonType delete = new ButtonType("Delete", ButtonBar.ButtonData.OK_DONE);
         M3Dialog<ButtonType> dialog = createDemoDialog(
-                "Delete Draft",
                 "Delete draft?",
                 "Deleting this local draft cannot be undone. Published project files are not affected.",
                 new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE),
                 delete
         );
-        dialog.getM3DialogPane().setGraphic(createErrorIcon("warning"));
+        dialog.getDialogPane().setGraphic(createErrorIcon("warning"));
         dialog.show();
     }
 
     /// Creates a demo dialog and initializes its owner from the active scene.
     private M3Dialog<ButtonType> createDemoDialog(
-            String title,
             String headerText,
             @Nullable String contentText,
             ButtonType... buttonTypes
     ) {
-        M3Dialog<ButtonType> dialog = new M3Dialog<>(title);
-        M3DialogPane pane = dialog.getM3DialogPane();
+        M3Dialog<ButtonType> dialog = new M3Dialog<>();
+        M3DialogPane pane = dialog.getDialogPane();
         pane.setHeaderText(headerText);
-        pane.setContentText(contentText);
+        pane.setContentText(contentText == null ? "" : contentText);
         pane.getButtonTypes().addAll(buttonTypes);
         initDialogOwner(dialog);
         return dialog;
@@ -4651,7 +4648,7 @@ public final class M3FXDemoApp extends Application {
     private void initDialogOwner(M3Dialog<?> dialog) {
         Scene activeScene = scene;
         if (activeScene != null) {
-            dialog.initOwner(activeScene.getWindow());
+            dialog.setOwner(activeScene.getRoot());
         }
     }
 

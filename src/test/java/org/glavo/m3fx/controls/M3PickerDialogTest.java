@@ -14,7 +14,6 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
-import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.FxTestUtils;
@@ -54,15 +53,14 @@ final class M3PickerDialogTest {
         FxTestUtils.runOnFxThread(() -> {
             LocalDate value = LocalDate.of(2026, 5, 19);
             M3DatePickerDialog dialog = new M3DatePickerDialog();
-            M3DialogPane pane = dialog.getM3DialogPane();
+            M3DialogPane pane = dialog.getDialogPane();
 
             applyCss(pane);
             HBox content = assertInstanceOf(HBox.class, pane.getContent());
             assertSame(dialog.getPicker(), content.getChildren().get(1));
             assertSame(content, dialog.getPicker().getParent());
             assertFalse(content.getChildren().get(0).isManaged());
-            assertEquals("Select date", dialog.getTitle());
-            assertEquals(dialog.getTitle(), pane.getHeaderText());
+            assertEquals("Select date", pane.getHeaderText());
             assertTrue(pane.lookupButton(ButtonType.OK).isDisabled());
 
             dialog.setValue(value);
@@ -139,7 +137,7 @@ final class M3PickerDialogTest {
         FxTestUtils.runOnFxThread(() -> {
             LocalDate anchor = LocalDate.of(2026, 5, 19);
             M3DatePickerDialog dialog = new M3DatePickerDialog();
-            M3DialogPane pane = dialog.getM3DialogPane();
+            M3DialogPane pane = dialog.getDialogPane();
 
             applyCss(pane);
             HBox content = assertInstanceOf(HBox.class, pane.getContent());
@@ -251,15 +249,14 @@ final class M3PickerDialogTest {
             LocalDate start = LocalDate.of(2026, 5, 19);
             LocalDate end = LocalDate.of(2026, 5, 23);
             M3DateRangePickerDialog dialog = new M3DateRangePickerDialog();
-            M3DialogPane pane = dialog.getM3DialogPane();
+            M3DialogPane pane = dialog.getDialogPane();
 
             applyCss(pane);
             HBox content = assertInstanceOf(HBox.class, pane.getContent());
             assertSame(dialog.getPicker(), content.getChildren().get(1));
             assertSame(content, dialog.getPicker().getParent());
             assertFalse(content.getChildren().get(0).isManaged());
-            assertEquals("Select date range", dialog.getTitle());
-            assertEquals(dialog.getTitle(), pane.getHeaderText());
+            assertEquals("Select date range", pane.getHeaderText());
             assertTrue(pane.lookupButton(ButtonType.OK).isDisabled());
 
             dialog.getPicker().setStartDate(start);
@@ -308,7 +305,7 @@ final class M3PickerDialogTest {
         FxTestUtils.runOnFxThread(() -> {
             LocalDate anchor = LocalDate.of(2026, 5, 19);
             M3DateRangePickerDialog dialog = new M3DateRangePickerDialog();
-            M3DialogPane pane = dialog.getM3DialogPane();
+            M3DialogPane pane = dialog.getDialogPane();
 
             applyCss(pane);
             HBox content = assertInstanceOf(HBox.class, pane.getContent());
@@ -361,7 +358,7 @@ final class M3PickerDialogTest {
         FxTestUtils.runOnFxThread(() -> {
             LocalDate anchor = LocalDate.of(2026, 5, 19);
             M3DateRangePickerDialog dialog = new M3DateRangePickerDialog();
-            M3DialogPane pane = dialog.getM3DialogPane();
+            M3DialogPane pane = dialog.getDialogPane();
 
             dialog.getPresets().setAll(
                     M3DateRangePresets.today(anchor),
@@ -417,9 +414,9 @@ final class M3PickerDialogTest {
                     M3TimePresets.evening()
             );
 
-            M3DialogPane datePane = dateDialog.getM3DialogPane();
-            M3DialogPane rangePane = rangeDialog.getM3DialogPane();
-            M3DialogPane timePane = timeDialog.getM3DialogPane();
+            M3DialogPane datePane = dateDialog.getDialogPane();
+            M3DialogPane rangePane = rangeDialog.getDialogPane();
+            M3DialogPane timePane = timeDialog.getDialogPane();
             Pane root = new Pane(datePane, rangePane, timePane);
             Scene scene = new Scene(root, 960.0, 920.0);
             Stage stage = new Stage();
@@ -552,7 +549,7 @@ final class M3PickerDialogTest {
         FxTestUtils.runOnFxThread(() -> {
             LocalTime value = LocalTime.of(10, 30);
             M3TimePickerDialog dialog = new M3TimePickerDialog();
-            M3DialogPane pane = dialog.getM3DialogPane();
+            M3DialogPane pane = dialog.getDialogPane();
 
             applyCss(pane);
             HBox content = assertInstanceOf(HBox.class, pane.getContent());
@@ -564,8 +561,7 @@ final class M3PickerDialogTest {
                     dialog.getPicker().lookup("." + M3TimePicker.CONTAINER_STYLE_CLASS)
             );
             assertEquals(0.0, pickerContainer.getPadding().getTop(), 0.0001);
-            assertEquals("Select time", dialog.getTitle());
-            assertEquals(dialog.getTitle(), pane.getHeaderText());
+            assertEquals("Select time", pane.getHeaderText());
             assertTrue(pane.lookupButton(ButtonType.OK).isDisabled());
             assertEquals(1, pane.lookupAll("." + M3TimePicker.MODE_BUTTON_STYLE_CLASS).size());
             M3IconButton modeButton = assertInstanceOf(
@@ -648,7 +644,7 @@ final class M3PickerDialogTest {
         FxTestUtils.runOnFxThread(() -> {
             LocalTime anchor = LocalTime.of(10, 30);
             M3TimePickerDialog dialog = new M3TimePickerDialog();
-            M3DialogPane pane = dialog.getM3DialogPane();
+            M3DialogPane pane = dialog.getDialogPane();
 
             applyCss(pane);
             HBox content = assertInstanceOf(HBox.class, pane.getContent());
@@ -734,9 +730,9 @@ final class M3PickerDialogTest {
             rangeDialog.getPresets().setAll(M3DateRangePresets.common(dateAnchor, rangeDialog.getPicker().getFirstDayOfWeek()));
             timeDialog.getPresets().setAll(M3TimePresets.common(timeAnchor));
 
-            M3DialogPane datePane = dateDialog.getM3DialogPane();
-            M3DialogPane rangePane = rangeDialog.getM3DialogPane();
-            M3DialogPane timePane = timeDialog.getM3DialogPane();
+            M3DialogPane datePane = dateDialog.getDialogPane();
+            M3DialogPane rangePane = rangeDialog.getDialogPane();
+            M3DialogPane timePane = timeDialog.getDialogPane();
             rangePane.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
             Pane root = new Pane(datePane, rangePane, timePane);
             Scene scene = new Scene(root, 920.0, 860.0);
