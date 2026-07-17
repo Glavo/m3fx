@@ -19,6 +19,7 @@ import javafx.scene.control.DialogEvent;
 import javafx.scene.control.DialogPane;
 import javafx.scene.paint.Color;
 import javafx.stage.StageStyle;
+import javafx.stage.Stage;
 import javafx.stage.Window;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
@@ -229,6 +230,13 @@ public class M3Dialog<R> extends Dialog<R> {
 
     /// Starts the dialog container entrance transition after the dialog has been presented.
     private void handleDialogShown(DialogEvent event) {
+        @Nullable Scene scene = getM3DialogPane().getScene();
+        if (scene != null) {
+            @Nullable Window window = scene.getWindow();
+            if (window instanceof Stage stage) {
+                stage.toFront();
+            }
+        }
         if (canAnimatePresentation()) {
             playEntranceAnimation();
         } else {
