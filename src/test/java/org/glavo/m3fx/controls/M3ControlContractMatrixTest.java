@@ -9244,7 +9244,7 @@ final class M3ControlContractMatrixTest {
     /// Verifies that Material dialog actions preserve JavaFX result conversion and close the host window.
     @Test
     void dialogActionsSetResultAndCloseWindow() {
-        FxTestUtils.runOnFxThread(() -> {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             for (ButtonType buttonType : List.of(ButtonType.OK, ButtonType.CANCEL)) {
                 M3Dialog<ButtonType> dialog = new M3Dialog<>(
                         "Action dialog",
