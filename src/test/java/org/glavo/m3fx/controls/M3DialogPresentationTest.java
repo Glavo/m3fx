@@ -4,6 +4,7 @@
 package org.glavo.m3fx.controls;
 
 import javafx.event.ActionEvent;
+import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
@@ -57,6 +58,63 @@ final class M3DialogPresentationTest {
     @BeforeAll
     static void startToolkit() throws InterruptedException {
         FxTestUtils.startToolkit();
+    }
+
+    /// Verifies that dialog lifecycle events use the ordinary JavaFX capture and bubble dispatch phases.
+    @Test
+    void lifecycleEventsUseJavaFxEventDispatchChain() {
+        M3Dialog dialog = new M3Dialog();
+        List<String> order = new ArrayList<>();
+        AtomicReference<@Nullable M3DialogEvent> observedEvent = new AtomicReference<>();
+
+        EventHandler<M3DialogEvent> showingFilter = event -> {
+            order.add("showing-filter");
+            observedEvent.set(event);
+        };
+        EventHandler<M3DialogEvent> anyFilter = event -> order.add("any-filter");
+        EventHandler<M3DialogEvent> showingHandler = event -> order.add("showing-handler");
+        EventHandler<M3DialogEvent> anyHandler = event -> order.add("any-handler");
+
+        dialog.addEventFilter(M3DialogEvent.SHOWING, showingFilter);
+        dialog.addEventFilter(M3DialogEvent.ANY, anyFilter);
+        dialog.addEventHandler(M3DialogEvent.SHOWING, showingHandler);
+        dialog.addEventHandler(M3DialogEvent.SHOWING, showingHandler);
+        dialog.addEventHandler(M3DialogEvent.ANY, anyHandler);
+        dialog.setOnShowing(event -> order.add("showing-property"));
+
+        M3DialogEvent showingEvent = new M3DialogEvent(dialog, M3DialogEvent.SHOWING, null);
+        Event.fireEvent(dialog, showingEvent);
+
+        assertSame(showingEvent, observedEvent.get());
+        assertSame(dialog, showingEvent.getSource());
+        assertSame(dialog, showingEvent.getTarget());
+        assertSame(dialog, showingEvent.getDialog());
+        assertEquals(
+                List.of("showing-filter", "any-filter", "showing-handler", "showing-property", "any-handler"),
+                order
+        );
+
+        dialog.removeEventFilter(M3DialogEvent.SHOWING, showingFilter);
+        dialog.removeEventFilter(M3DialogEvent.ANY, anyFilter);
+        dialog.removeEventHandler(M3DialogEvent.SHOWING, showingHandler);
+        dialog.removeEventHandler(M3DialogEvent.ANY, anyHandler);
+        dialog.setOnShowing(null);
+        order.clear();
+
+        Event.fireEvent(dialog, new M3DialogEvent(dialog, M3DialogEvent.SHOWING, null));
+
+        assertTrue(order.isEmpty());
+
+        dialog.addEventFilter(M3DialogEvent.CLOSE_REQUEST, Event::consume);
+        dialog.addEventHandler(M3DialogEvent.CLOSE_REQUEST, event -> order.add("close-handler"));
+        dialog.setOnCloseRequest(event -> order.add("close-property"));
+        M3DialogEvent closeEvent =
+                new M3DialogEvent(dialog, M3DialogEvent.CLOSE_REQUEST, ButtonType.CANCEL);
+
+        Event.fireEvent(dialog, closeEvent);
+
+        assertTrue(closeEvent.isConsumed());
+        assertTrue(order.isEmpty());
     }
 
     /// Verifies that showing requires a configured owner attached to a visible window and hosted by an overlay pane.

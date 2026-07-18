@@ -14,6 +14,9 @@ import java.util.Objects;
 
 /// Describes a lifecycle transition or close request from an [M3Dialog].
 ///
+/// The event's source and target are the dialog that emitted it. Filters, registered handlers, and the dialog's
+/// singleton `onXxx` handler properties therefore participate in the ordinary JavaFX event dispatch chain.
+///
 /// Only a [#CLOSE_REQUEST] event is cancellable by contract. Calling [#consume()] on that event keeps the dialog
 /// visible and prevents its exit transition. Other lifecycle handlers may observe their event but consumption has no
 /// effect on the already established transition.
@@ -48,16 +51,15 @@ public final class M3DialogEvent extends Event {
     /// hidden events. Showing events, [M3Dialog#close()], scrim dismissal, and forced owner-window cleanup use `null`.
     private final @Nullable ButtonType buttonType;
 
-    /// Creates a lifecycle event for one dialog and its pane.
+    /// Creates a lifecycle event for one dialog target.
     M3DialogEvent(
             M3Dialog dialog,
-            M3DialogPane pane,
             EventType<M3DialogEvent> eventType,
             @Nullable ButtonType buttonType
     ) {
         super(
                 Objects.requireNonNull(dialog, "dialog"),
-                Objects.requireNonNull(pane, "pane"),
+                dialog,
                 Objects.requireNonNull(eventType, "eventType")
         );
         this.buttonType = buttonType;

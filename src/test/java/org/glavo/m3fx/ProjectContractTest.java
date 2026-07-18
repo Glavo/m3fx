@@ -575,7 +575,6 @@ final class ProjectContractTest {
     }
 
 
-
     /// Verifies that public nested record API types remain immutable data carriers.
     @Test
     void exportedPublicNestedRecordsExposeOnlyRecordAccessors() throws Exception {
@@ -929,8 +928,6 @@ final class ProjectContractTest {
     }
 
 
-
-
     /// Verifies that preset records remain immutable data carriers instead of publishing convenience actions.
     @Test
     void publicPresetRecordsExposeOnlyRecordAccessors() throws Exception {
@@ -1138,7 +1135,6 @@ final class ProjectContractTest {
                 () -> "Menu host controls must expose popup-host APIs and keep selection on getMenu(): "
                         + duplicateMethods);
     }
-
 
 
     /// Verifies that controls do not expose implementation nodes as public API shortcuts for skins or tests.
@@ -1967,8 +1963,12 @@ final class ProjectContractTest {
                 || packageName.equals("javafx.beans.value");
     }
 
-    /// Returns whether a public method is an intentional callback property setter.
+    /// Returns whether a public method is a property setter or a standard JavaFX event-target registration method.
     private static boolean isAllowedBehaviorCallbackMethod(Method method) {
+        if (isEventTargetRegistrationMethod(method)) {
+            return true;
+        }
+
         String name = method.getName();
         if (!name.startsWith("set") || name.length() <= 3 || method.getParameterCount() != 1) {
             return false;
@@ -1983,6 +1983,25 @@ final class ProjectContractTest {
         } catch (NoSuchMethodException ignored) {
             return false;
         }
+    }
+
+    /// Returns whether a method implements one of the four callback registrations defined by [javafx.event.EventTarget].
+    private static boolean isEventTargetRegistrationMethod(Method method) {
+        if (!javafx.event.EventTarget.class.isAssignableFrom(method.getDeclaringClass())) {
+            return false;
+        }
+
+        Class<?>[] parameterTypes = method.getParameterTypes();
+        if (parameterTypes.length != 2
+                || parameterTypes[0] != javafx.event.EventType.class
+                || parameterTypes[1] != javafx.event.EventHandler.class) {
+            return false;
+        }
+
+        return switch (method.getName()) {
+            case "addEventHandler", "removeEventHandler", "addEventFilter", "removeEventFilter" -> true;
+            default -> false;
+        };
     }
 
     /// Returns whether one constructor parameter is a batch collection input.
