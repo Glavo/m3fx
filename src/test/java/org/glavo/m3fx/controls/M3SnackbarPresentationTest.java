@@ -44,17 +44,17 @@ final class M3SnackbarPresentationTest {
         Platform.setImplicitExit(false);
     }
 
-    /// Verifies that one presenter and one surface are reused while immutable messages change.
+    /// Verifies that one presenter and one surface are reused while observable messages change.
     @Test
     void onePresenterReusesItsSurfaceAcrossMessages() {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3OverlayPane overlayPane = overlayPane();
-            M3Snackbar first = new M3Snackbar(
-                    "Saved",
-                    new M3Snackbar.Action("Undo", () -> {
-                    })
-            );
-            M3Snackbar second = new M3Snackbar("Offline", null, true);
+            M3Snackbar first = new M3Snackbar("Saved");
+            first.setActionText("Undo");
+            first.setAction(() -> {
+            });
+            M3Snackbar second = new M3Snackbar("Offline");
+            second.setCloseButtonVisible(true);
 
             overlayPane.showSnackbar(first);
             overlayPane.applyCss();
@@ -91,10 +91,9 @@ final class M3SnackbarPresentationTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             AtomicInteger invocations = new AtomicInteger();
             M3OverlayPane overlayPane = overlayPane();
-            M3Snackbar first = new M3Snackbar(
-                    "Deleted",
-                    new M3Snackbar.Action("Restore", invocations::incrementAndGet)
-            );
+            M3Snackbar first = new M3Snackbar("Deleted");
+            first.setActionText("Restore");
+            first.setAction(invocations::incrementAndGet);
             M3Snackbar second = new M3Snackbar("Restored");
             overlayPane.showSnackbar(first);
             overlayPane.enqueueSnackbar(second);
@@ -123,11 +122,10 @@ final class M3SnackbarPresentationTest {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             AtomicInteger invocations = new AtomicInteger();
             M3OverlayPane overlayPane = overlayPane();
-            M3Snackbar snackbar = new M3Snackbar(
-                    "Connection lost",
-                    new M3Snackbar.Action("Retry", invocations::incrementAndGet),
-                    true
-            );
+            M3Snackbar snackbar = new M3Snackbar("Connection lost");
+            snackbar.setActionText("Retry");
+            snackbar.setAction(invocations::incrementAndGet);
+            snackbar.setCloseButtonVisible(true);
             overlayPane.showSnackbar(snackbar);
             overlayPane.applyCss();
             overlayPane.layout();
@@ -146,12 +144,11 @@ final class M3SnackbarPresentationTest {
     void accessibilityExposesCurrentSurfaceAndAffordancesOnly() {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3OverlayPane overlayPane = overlayPane();
-            M3Snackbar current = new M3Snackbar(
-                    "Saved",
-                    new M3Snackbar.Action("Undo", () -> {
-                    }),
-                    true
-            );
+            M3Snackbar current = new M3Snackbar("Saved");
+            current.setActionText("Undo");
+            current.setAction(() -> {
+            });
+            current.setCloseButtonVisible(true);
             M3Snackbar queued = new M3Snackbar("Queued");
             overlayPane.showSnackbar(current);
             overlayPane.enqueueSnackbar(queued);
@@ -179,11 +176,11 @@ final class M3SnackbarPresentationTest {
     void modalPresentationTemporarilySuppressesSnackbarAccessibility() {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             M3OverlayPane overlayPane = overlayPane();
-            overlayPane.showSnackbar(new M3Snackbar(
-                    "Saved",
-                    new M3Snackbar.Action("Undo", () -> {
-                    })
-            ));
+            M3Snackbar snackbar = new M3Snackbar("Saved");
+            snackbar.setActionText("Undo");
+            snackbar.setAction(() -> {
+            });
+            overlayPane.showSnackbar(snackbar);
             overlayPane.applyCss();
             overlayPane.layout();
             Node presenter = snackbarPresenter(overlayPane);
@@ -218,11 +215,12 @@ final class M3SnackbarPresentationTest {
                 M3ThemeManager.install(scene, M3Theme.defaultTheme());
                 stage.setScene(scene);
                 stage.show();
-                overlayPane.showSnackbar(new M3Snackbar(
-                        "Saved",
-                        new M3Snackbar.Action("Undo", () -> {
-                        })
-                ));
+                M3Snackbar snackbar = new M3Snackbar("Saved");
+                snackbar.setActionText("Undo");
+                snackbar.setAction(() -> {
+                });
+                snackbar.setCloseButtonVisible(true);
+                overlayPane.showSnackbar(snackbar);
                 overlayPane.applyCss();
                 overlayPane.layout();
                 Node presenter = snackbarPresenter(overlayPane);
@@ -233,12 +231,56 @@ final class M3SnackbarPresentationTest {
 
                 assertTrue(M3Accessible.requestAccessibleFocus(overlayPane, presenter));
                 assertTrue(action.isFocused());
+                snackbar.setActionText("");
+                overlayPane.applyCss();
+                overlayPane.layout();
+                Node close = Objects.requireNonNull(
+                        (Node) presenter.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE),
+                        "close"
+                );
+                assertTrue(close.isFocused());
                 presenter.executeAccessibleAction(AccessibleAction.COLLAPSE);
                 assertNull(overlayPane.getSnackbar());
                 assertFalse(overlayPane.isSnackbarShowing());
             } finally {
                 stage.close();
             }
+        });
+    }
+
+    /// Verifies current property changes update rendering, accessibility, and nullable action behavior in place.
+    @Test
+    void currentMessagePropertiesUpdateTheExistingSurface() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3OverlayPane overlayPane = overlayPane();
+            M3Snackbar snackbar = new M3Snackbar("Saved");
+            overlayPane.showSnackbar(snackbar);
+            overlayPane.applyCss();
+            overlayPane.layout();
+            Node presenter = snackbarPresenter(overlayPane);
+            Region surface = snackbarSurface(presenter);
+            Label text = assertInstanceOf(Label.class, presenter.lookup(".m3-snackbar-text"));
+            M3Button action = assertInstanceOf(M3Button.class, presenter.lookup(".m3-snackbar-action"));
+            M3IconButton close = assertInstanceOf(M3IconButton.class, presenter.lookup(".m3-snackbar-close"));
+
+            snackbar.setText("Projekt gespeichert");
+            snackbar.setActionText("Schließen");
+            snackbar.setAction(null);
+            snackbar.setCloseButtonVisible(true);
+            overlayPane.applyCss();
+            overlayPane.layout();
+
+            assertSame(surface, snackbarSurface(presenter));
+            assertEquals("Projekt gespeichert", text.getText());
+            assertEquals("Schließen", action.getText());
+            assertTrue(action.isManaged());
+            assertTrue(close.isManaged());
+            assertEquals("Projekt gespeichert", presenter.queryAccessibleAttribute(AccessibleAttribute.TEXT));
+            assertEquals(2, presenter.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+
+            action.fire();
+            assertNull(overlayPane.getSnackbar());
+            assertFalse(overlayPane.isSnackbarShowing());
         });
     }
 

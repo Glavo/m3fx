@@ -349,16 +349,14 @@ final class M3MixedPopupFocusTest {
             M3OverlayPane overlayPane = new M3OverlayPane();
             overlayPane.setContent(content);
             overlayPane.setSnackbarDisplayDuration(javafx.util.Duration.INDEFINITE);
-            M3Snackbar firstSnackbar = new M3Snackbar(
-                    "Saved",
-                    new M3Snackbar.Action("Undo", () -> {
-                    })
-            );
-            M3Snackbar secondSnackbar = new M3Snackbar(
-                    "Deleted",
-                    new M3Snackbar.Action("Restore", () -> {
-                    })
-            );
+            M3Snackbar firstSnackbar = new M3Snackbar("Saved");
+            firstSnackbar.setActionText("Undo");
+            firstSnackbar.setAction(() -> {
+            });
+            M3Snackbar secondSnackbar = new M3Snackbar("Deleted");
+            secondSnackbar.setActionText("Restore");
+            secondSnackbar.setAction(() -> {
+            });
             M3Button modalAction = new M3Button("Modal action");
             Pane modalLayer = new Pane(modalAction);
             Stage stage = new Stage();

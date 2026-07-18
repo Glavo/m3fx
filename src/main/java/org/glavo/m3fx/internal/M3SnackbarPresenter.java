@@ -5,6 +5,8 @@ package org.glavo.m3fx.internal;
 
 import javafx.animation.Animation;
 import javafx.animation.PauseTransition;
+import javafx.beans.InvalidationListener;
+import javafx.beans.WeakInvalidationListener;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
@@ -40,9 +42,9 @@ import java.util.Objects;
 
 /// Internal renderer and lifecycle owner for snackbar messages in one overlay pane.
 ///
-/// The presenter owns exactly one reusable snackbar node tree. Public [M3Snackbar] instances are immutable message
-/// descriptions and never enter the JavaFX scene graph. Queueing, automatic timeout, motion, focus routing, and
-/// accessibility therefore remain stable while messages change.
+/// The presenter owns exactly one reusable snackbar node tree. Public [M3Snackbar] instances are observable message
+/// models and never enter the JavaFX scene graph. Queueing, automatic timeout, motion, focus routing, and
+/// accessibility therefore remain stable while the current model or its properties change.
 @NotNullByDefault
 public final class M3SnackbarPresenter extends Control {
     /// The base style class for the internal snackbar presenter.
@@ -99,6 +101,25 @@ public final class M3SnackbarPresenter extends Control {
 
     /// Message associated with the current automatic-dismissal callback.
     private @Nullable M3Snackbar displayTimerTarget;
+
+    /// Message whose observable content is currently connected to this presenter.
+    private @Nullable M3Snackbar observedSnackbar;
+
+    /// Applies supporting-text changes from the current observable message.
+    private final InvalidationListener currentTextInvalidation =
+            observable -> handleCurrentTextChanged();
+
+    /// Weak wrapper installed on the current message's supporting-text property.
+    private final WeakInvalidationListener weakCurrentTextInvalidation =
+            new WeakInvalidationListener(currentTextInvalidation);
+
+    /// Applies action-label and close-affordance changes from the current observable message.
+    private final InvalidationListener currentAffordanceInvalidation =
+            observable -> handleCurrentAffordancesChanged();
+
+    /// Weak wrapper installed on the current message's affordance properties.
+    private final WeakInvalidationListener weakCurrentAffordanceInvalidation =
+            new WeakInvalidationListener(currentAffordanceInvalidation);
 
     /// Whether focus should remain on an action when the queue advances after exit.
     private boolean transferFocusAfterHide;
@@ -166,6 +187,8 @@ public final class M3SnackbarPresenter extends Control {
 
         // The stable node tree must exist before the first message is animated, including while detached.
         setSkin(createDefaultSkin());
+        this.snackbar.addListener((observable, oldSnackbar, newSnackbar) ->
+                observeSnackbar(oldSnackbar, newSnackbar));
         focusNotifier.start();
     }
 
@@ -219,7 +242,8 @@ public final class M3SnackbarPresenter extends Control {
 
     /// Appends a message to the FIFO queue or shows it immediately while idle.
     ///
-    /// The same immutable message instance may occur more than once in the queue.
+    /// The same observable message instance may occur more than once in the queue. Property changes made while a
+    /// message is pending are reflected if and when that instance becomes current.
     ///
     /// @param snackbar the message to enqueue
     /// @throws NullPointerException if `snackbar` is `null`
@@ -256,7 +280,6 @@ public final class M3SnackbarPresenter extends Control {
         Node node = presentationNode();
         boolean wasIdle = getSnackbar() == null;
         this.snackbar.set(checkedSnackbar);
-        setAccessibleText(checkedSnackbar.text());
         if (wasIdle) {
             node.setOpacity(0.0);
             node.setTranslateY(TRANSITION_OFFSET_Y);
@@ -296,15 +319,14 @@ public final class M3SnackbarPresenter extends Control {
     /// attempted in a `finally` block so an application exception cannot leave the acted-on message stuck onscreen.
     public void fireCurrentAction() {
         @Nullable M3Snackbar target = getSnackbar();
-        if (target == null || !showing.get() || modalBlocked || isDisabled()) {
+        if (target == null || !target.hasAction() || !showing.get() || modalBlocked || isDisabled()) {
             return;
         }
-        @Nullable M3Snackbar.Action action = target.action();
-        if (action == null) {
-            return;
-        }
+        @Nullable Runnable action = target.getAction();
         try {
-            action.handler().run();
+            if (action != null) {
+                action.run();
+            }
         } finally {
             if (getSnackbar() == target) {
                 dismiss();
@@ -619,7 +641,7 @@ public final class M3SnackbarPresenter extends Control {
                 || modalBlocked
                 || isWindowUnavailable()
                 || target.hasAction()
-                || target.closeButtonVisible()
+                || target.isCloseButtonVisible()
                 || duration.isUnknown()
                 || duration.isIndefinite()
                 || duration.lessThanOrEqualTo(Duration.ZERO)) {
@@ -650,7 +672,9 @@ public final class M3SnackbarPresenter extends Control {
         @Nullable M3Snackbar target = displayTimerTarget;
         displayTimerTarget = null;
         if (target != null && getSnackbar() == target && showing.get()) {
-            dismiss();
+            if (!target.hasAction() && !target.isCloseButtonVisible()) {
+                dismiss();
+            }
         }
     }
 
@@ -707,8 +731,70 @@ public final class M3SnackbarPresenter extends Control {
         notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
         notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
         notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_AT_INDEX);
         notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_NODE);
         focusNotifier.refresh();
+    }
+
+    /// Moves observable-content listeners from the previous current message to the replacement.
+    private void observeSnackbar(
+            @Nullable M3Snackbar oldSnackbar,
+            @Nullable M3Snackbar newSnackbar
+    ) {
+        if (oldSnackbar != null) {
+            oldSnackbar.textProperty().removeListener(weakCurrentTextInvalidation);
+            oldSnackbar.actionTextProperty().removeListener(weakCurrentAffordanceInvalidation);
+            oldSnackbar.closeButtonVisibleProperty().removeListener(weakCurrentAffordanceInvalidation);
+        }
+        observedSnackbar = newSnackbar;
+        if (newSnackbar != null) {
+            newSnackbar.textProperty().addListener(weakCurrentTextInvalidation);
+            newSnackbar.actionTextProperty().addListener(weakCurrentAffordanceInvalidation);
+            newSnackbar.closeButtonVisibleProperty().addListener(weakCurrentAffordanceInvalidation);
+            setAccessibleText(newSnackbar.getText());
+        } else {
+            setAccessibleText(null);
+        }
+    }
+
+    /// Refreshes layout and accessibility after the current supporting text changes.
+    private void handleCurrentTextChanged() {
+        @Nullable M3Snackbar current = observedSnackbar;
+        if (current == null || current != getSnackbar()) {
+            return;
+        }
+        setAccessibleText(current.getText());
+        requestLayout();
+        notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
+    }
+
+    /// Refreshes timeout, layout, focus, and accessibility after visible affordances change.
+    private void handleCurrentAffordancesChanged() {
+        @Nullable M3Snackbar current = observedSnackbar;
+        if (current == null || current != getSnackbar()) {
+            return;
+        }
+        presenterSkin().updateAffordanceVisibility();
+        refreshDisplayTimer();
+        requestLayout();
+        notifyAccessibleAttributeChanged(AccessibleAttribute.CONTENTS);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
+        notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_AT_INDEX);
+        transferFocusFromHiddenAffordance();
+        notifyFocusNodeChanged();
+    }
+
+    /// Moves focus from a newly hidden snackbar action to the remaining reachable affordance.
+    private void transferFocusFromHiddenAffordance() {
+        @Nullable Scene scene = getScene();
+        @Nullable Node focusOwner = scene == null ? null : scene.getFocusOwner();
+        Node presentation = presentationNode();
+        if (focusOwner != null
+                && M3Accessible.containsNode(presentation, focusOwner)
+                && !M3Accessible.canReach(focusOwner)) {
+            focusCurrentAccessibleNode();
+        }
     }
 
     /// Returns the stable presentation node from the eagerly installed skin.
@@ -787,7 +873,7 @@ public final class M3SnackbarPresenter extends Control {
     /// Returns the current text exposed through accessibility.
     private String currentSnackbarText() {
         @Nullable M3Snackbar currentSnackbar = getSnackbar();
-        return currentSnackbar == null ? "" : currentSnackbar.text();
+        return currentSnackbar == null ? "" : currentSnackbar.getText();
     }
 
     /// Reuses one primitive transition for entrance or exit without allocating key frames.

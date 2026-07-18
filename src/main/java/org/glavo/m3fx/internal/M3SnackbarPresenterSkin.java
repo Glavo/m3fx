@@ -37,6 +37,9 @@ final class M3SnackbarPresenterSkin extends SkinBase<M3SnackbarPresenter> {
             M3InternalIcon.ColorRole.INVERSE_ON_SURFACE
     ));
 
+    /// The observable message currently bound to the reusable node tree.
+    private @Nullable M3Snackbar renderedSnackbar;
+
     /// Replaces rendered content when the current message changes.
     private final ChangeListener<@Nullable M3Snackbar> snackbarListener =
             (observable, oldValue, newValue) -> updateSnackbar(newValue);
@@ -146,7 +149,9 @@ final class M3SnackbarPresenterSkin extends SkinBase<M3SnackbarPresenter> {
         container.nodeOrientationProperty().unbind();
         actionButton.setOnAction(null);
         closeButton.setOnAction(null);
+        detachRenderedSnackbar();
         textLabel.setText("");
+        actionButton.setText("");
         getChildren().clear();
         super.dispose();
     }
@@ -228,8 +233,10 @@ final class M3SnackbarPresenterSkin extends SkinBase<M3SnackbarPresenter> {
         );
     }
 
-    /// Replaces the reusable nodes' content from one immutable message.
+    /// Replaces the reusable nodes' bindings with one observable message.
     private void updateSnackbar(@Nullable M3Snackbar snackbar) {
+        detachRenderedSnackbar();
+        renderedSnackbar = snackbar;
         boolean present = snackbar != null;
         getSkinnable().setMouseTransparent(!present);
         container.setManaged(present);
@@ -245,14 +252,27 @@ final class M3SnackbarPresenterSkin extends SkinBase<M3SnackbarPresenter> {
             return;
         }
 
-        textLabel.setText(snackbar.text());
-        @Nullable M3Snackbar.Action action = snackbar.action();
-        boolean actionVisible = action != null;
-        actionButton.setText(actionVisible ? action.text() : "");
+        textLabel.textProperty().bind(snackbar.textProperty());
+        actionButton.textProperty().bind(snackbar.actionTextProperty());
+        updateAffordanceVisibility();
+    }
+
+    /// Disconnects the reusable nodes from the previously rendered message.
+    private void detachRenderedSnackbar() {
+        renderedSnackbar = null;
+        textLabel.textProperty().unbind();
+        actionButton.textProperty().unbind();
+    }
+
+    /// Applies action-label and close-button visibility from the current observable message.
+    void updateAffordanceVisibility() {
+        @Nullable M3Snackbar snackbar = renderedSnackbar;
+        boolean actionVisible = snackbar != null && snackbar.hasAction();
+        boolean closeVisible = snackbar != null && snackbar.isCloseButtonVisible();
         actionButton.setManaged(actionVisible);
         actionButton.setVisible(actionVisible);
-        closeButton.setManaged(snackbar.closeButtonVisible());
-        closeButton.setVisible(snackbar.closeButtonVisible());
+        closeButton.setManaged(closeVisible);
+        closeButton.setVisible(closeVisible);
         updateTokenStyles();
         getSkinnable().requestLayout();
     }

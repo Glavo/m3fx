@@ -7,6 +7,7 @@ import javafx.application.Platform;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.control.Label;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.PickResult;
@@ -198,6 +199,67 @@ final class M3OverlayPaneTest {
             assertTrue(overlayPane.getSnackbarQueue().isEmpty());
             overlayPane.setSnackbarDisplayDuration(null);
             assertNull(overlayPane.getSnackbarDisplayDuration());
+        });
+    }
+
+    /// Verifies current messages update in place while pending messages expose their latest state after promotion.
+    @Test
+    void snackbarPropertiesRemainIsolatedUntilQueuedMessagesArePromoted() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            M3OverlayPane overlayPane = new M3OverlayPane();
+            M3Snackbar current = new M3Snackbar("Current");
+            current.setActionText("Undo");
+            M3Snackbar pending = new M3Snackbar("Queued");
+            overlayPane.setSnackbarDisplayDuration(Duration.INDEFINITE);
+            new Scene(overlayPane, 640.0, 360.0);
+
+            overlayPane.showSnackbar(current);
+            overlayPane.enqueueSnackbar(pending);
+            overlayPane.applyCss();
+            overlayPane.resize(640.0, 360.0);
+            overlayPane.layout();
+
+            Region presenter = assertInstanceOf(Region.class, overlayPane.lookup(".m3-snackbar-presenter"));
+            Label text = assertInstanceOf(Label.class, presenter.lookup(".m3-snackbar-text"));
+            M3Button action = assertInstanceOf(M3Button.class, presenter.lookup(".m3-snackbar-action"));
+            M3IconButton close = assertInstanceOf(M3IconButton.class, presenter.lookup(".m3-snackbar-close"));
+
+            pending.setText("Queued latest");
+            pending.setActionText("Open");
+            pending.setAction(null);
+            pending.setCloseButtonVisible(true);
+            assertEquals("Current", text.getText());
+            assertEquals("Undo", action.getText());
+            assertTrue(action.isManaged());
+            assertFalse(close.isManaged());
+
+            current.setText("Current latest");
+            current.setActionText("");
+            current.setCloseButtonVisible(true);
+            overlayPane.applyCss();
+            overlayPane.layout();
+            assertEquals("Current latest", text.getText());
+            assertFalse(action.isManaged());
+            assertTrue(close.isManaged());
+            assertEquals("Current latest", presenter.queryAccessibleAttribute(AccessibleAttribute.TEXT));
+            assertEquals(1, presenter.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
+
+            current.setActionText("Dismiss");
+            current.setCloseButtonVisible(false);
+            overlayPane.applyCss();
+            overlayPane.layout();
+            assertTrue(action.isManaged());
+            assertFalse(close.isManaged());
+            action.fire();
+            overlayPane.applyCss();
+            overlayPane.layout();
+
+            assertSame(pending, overlayPane.getSnackbar());
+            assertEquals("Queued latest", text.getText());
+            assertEquals("Open", action.getText());
+            assertTrue(action.isManaged());
+            assertTrue(close.isManaged());
+            assertEquals(2, presenter.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
         });
     }
 

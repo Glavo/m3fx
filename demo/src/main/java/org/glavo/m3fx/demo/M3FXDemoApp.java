@@ -3124,7 +3124,9 @@ public final class M3FXDemoApp extends Application {
             if (activeOverlay == null) {
                 return;
             }
-            activeOverlay.showSnackbar(new M3Snackbar("Dismiss this message", null, true));
+            M3Snackbar snackbar = new M3Snackbar("Dismiss this message");
+            snackbar.setCloseButtonVisible(true);
+            activeOverlay.showSnackbar(snackbar);
         });
 
         return createGallery(createShowcaseGroup(
@@ -4770,13 +4772,10 @@ public final class M3FXDemoApp extends Application {
             return;
         }
 
-        activeOverlay.showSnackbar(new M3Snackbar(
-                "Theme-aware snackbar",
-                new M3Snackbar.Action(
-                        "Action",
-                        () -> activeOverlay.enqueueSnackbar(new M3Snackbar("Action pressed"))
-                )
-        ));
+        M3Snackbar snackbar = new M3Snackbar("Theme-aware snackbar");
+        snackbar.setActionText("Action");
+        snackbar.setAction(() -> activeOverlay.enqueueSnackbar(new M3Snackbar("Action pressed")));
+        activeOverlay.showSnackbar(snackbar);
     }
 
     /// Shows multiple demo snackbars through the host queue.
@@ -4787,13 +4786,10 @@ public final class M3FXDemoApp extends Application {
         }
 
         activeOverlay.enqueueSnackbar(new M3Snackbar("First queued message"));
-        activeOverlay.enqueueSnackbar(new M3Snackbar(
-                "Second queued message",
-                new M3Snackbar.Action(
-                        "Undo",
-                        () -> activeOverlay.enqueueSnackbar(new M3Snackbar("Undo pressed"))
-                )
-        ));
+        M3Snackbar second = new M3Snackbar("Second queued message");
+        second.setActionText("Undo");
+        second.setAction(() -> activeOverlay.enqueueSnackbar(new M3Snackbar("Undo pressed")));
+        activeOverlay.enqueueSnackbar(second);
         activeOverlay.enqueueSnackbar(new M3Snackbar("Third queued message"));
     }
 

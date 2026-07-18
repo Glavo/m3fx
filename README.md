@@ -88,20 +88,20 @@ public final class DemoApp extends Application {
 }
 ```
 
-Snackbar messages are immutable. Supply an action when the message is created; the presenter dismisses the current
-message after invoking the action. Queue any follow-up feedback instead of dismissing the active message from the
-callback:
+Snackbar messages are observable non-node models. Their text, action text, callback, and close-button visibility
+are JavaFX properties, so visible or queued messages can follow localization bindings. A non-blank action label
+shows the action button even when its callback is `null`; the presenter dismisses the current message after action
+activation. Queue any follow-up feedback instead of dismissing the active message from the callback:
 
 ```java
-root.showSnackbar(new M3Snackbar(
-        "Project archived",
-        new M3Snackbar.Action(
-                "Undo",
-                () -> root.enqueueSnackbar(new M3Snackbar("Project restored"))
-        )
-));
+M3Snackbar archived = new M3Snackbar("Project archived");
+archived.setActionText("Undo");
+archived.setAction(() -> root.enqueueSnackbar(new M3Snackbar("Project restored")));
+root.showSnackbar(archived);
 
-root.showSnackbar(new M3Snackbar("Connection lost", null, true));
+M3Snackbar connectionLost = new M3Snackbar("Connection lost");
+connectionLost.setCloseButtonVisible(true);
+root.showSnackbar(connectionLost);
 ```
 
 Use one `M3OverlayPane` as the stable root of each application scene. It owns transient snackbar presentation and

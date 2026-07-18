@@ -1151,11 +1151,11 @@ final class M3ThemeTest {
         M3Card card = new M3Card();
         M3DialogPane dialogPane = new M3DialogPane();
         M3OverlayPane snackbarOverlay = new M3OverlayPane();
-        snackbarOverlay.showSnackbar(new M3Snackbar(
-                "Saved",
-                new M3Snackbar.Action("Undo", () -> {
-                })
-        ));
+        M3Snackbar snackbar = new M3Snackbar("Saved");
+        snackbar.setActionText("Undo");
+        snackbar.setAction(() -> {
+        });
+        snackbarOverlay.showSnackbar(snackbar);
         M3Banner banner = new M3Banner("Message");
         M3TopAppBar topAppBar = new M3TopAppBar("Inbox");
         M3BottomAppBar bottomAppBar = new M3BottomAppBar();

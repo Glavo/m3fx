@@ -619,13 +619,12 @@ final class CatalogSamples {
         M3OverlayPane overlayPane = new M3OverlayPane();
         overlayPane.setPrefSize(420.0, 120.0);
         M3Button show = new M3Button("Show snackbar", M3ButtonVariant.FILLED);
-        show.setOnAction(event -> overlayPane.showSnackbar(new M3Snackbar(
-                "Message archived",
-                new M3Snackbar.Action(
-                        "Undo",
-                        () -> overlayPane.enqueueSnackbar(new M3Snackbar("Archive restored"))
-                )
-        )));
+        show.setOnAction(event -> {
+            M3Snackbar snackbar = new M3Snackbar("Message archived");
+            snackbar.setActionText("Undo");
+            snackbar.setAction(() -> overlayPane.enqueueSnackbar(new M3Snackbar("Archive restored")));
+            overlayPane.showSnackbar(snackbar);
+        });
         overlayPane.setContent(column(show));
         return overlayPane;
     }

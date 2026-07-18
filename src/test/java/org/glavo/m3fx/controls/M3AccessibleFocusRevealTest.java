@@ -64,7 +64,6 @@ final class M3AccessibleFocusRevealTest {
     }
 
 
-
     /// Verifies containment across Parent links, logical list-item content, and cyclic logical edges.
     @Test
     void containmentHandlesParentAndCyclicLogicalContent() {
@@ -89,6 +88,7 @@ final class M3AccessibleFocusRevealTest {
                 List.of(unrelated, logicalTarget)
         ));
     }
+
     /// Verifies direct accessibility focus reports success only when focus moves and reveals the target.
     @Test
     void directAccessibleFocusReportsSuccessAndRevealsTarget() {
@@ -212,11 +212,11 @@ final class M3AccessibleFocusRevealTest {
             Stage stage = new Stage();
             stage.setScene(new Scene(overlayPane, 220.0, 120.0));
             stage.show();
-            overlayPane.showSnackbar(new M3Snackbar(
-                    "Saved",
-                    new M3Snackbar.Action("Undo", () -> {
-                    })
-            ));
+            M3Snackbar snackbar = new M3Snackbar("Saved");
+            snackbar.setActionText("Undo");
+            snackbar.setAction(() -> {
+            });
+            overlayPane.showSnackbar(snackbar);
             overlayPane.applyCss();
             overlayPane.layout();
             Node presenter = java.util.Objects.requireNonNull(
@@ -603,6 +603,7 @@ final class M3AccessibleFocusRevealTest {
             assertTrue(scrollPane.getVvalue() > 0.0, () -> "vvalue=" + scrollPane.getVvalue());
         });
     }
+
     /// Verifies search view default show-item focus scrolls the embedded editor into view.
     @Test
     void searchViewDefaultShowItemRevealsEditor() {
@@ -1035,6 +1036,7 @@ final class M3AccessibleFocusRevealTest {
             assertTrue(routeTarget.isFocused());
         });
     }
+
     /// Verifies installed reveal route target matchers handle non-node targets before JavaFX action fallback.
     @Test
     void installedAccessibleRevealRouteHandlesNonNodeTarget() {
@@ -1090,7 +1092,7 @@ final class M3AccessibleFocusRevealTest {
             owner.layout();
             routeTarget.layout();
 
-            Object nestedTarget = new Object[] {List.of(owner.valueTarget)};
+            Object nestedTarget = new Object[]{List.of(owner.valueTarget)};
             assertTrue(M3Accessible.showAccessibleActionTarget(content, owner, nestedTarget));
 
             assertTrue(owner.showTargetMatcherCalled);
@@ -1133,6 +1135,7 @@ final class M3AccessibleFocusRevealTest {
             assertFalse(routeTarget.isFocused());
         });
     }
+
     /// Verifies shared reveal delegation rejects hidden or disabled descendant node targets before scrolling.
     @Test
     void accessibleRevealRejectsUnrevealableDescendantNodeTargetsBeforeRouting() {
@@ -1226,6 +1229,7 @@ final class M3AccessibleFocusRevealTest {
             assertTrue(scrollPane.getVvalue() <= 0.0, () -> "vvalue=" + scrollPane.getVvalue());
         });
     }
+
     /// Verifies composite reveal behavior rejects unreachable descendants before direct focus or sibling routes.
     @Test
     void compositeAccessibleRevealRejectsUnrevealableDescendantBeforeDirectFocusOrSiblingRoutes() {
@@ -1289,6 +1293,7 @@ final class M3AccessibleFocusRevealTest {
             assertFalse(slotRouteTarget.isFocused());
         });
     }
+
     /// Verifies removing an installed accessibility route restores JavaFX action fallback dispatch.
     @Test
     void installedAccessibleActionRouteCanBeCleared() {
@@ -1415,6 +1420,7 @@ final class M3AccessibleFocusRevealTest {
         assertTrue(node instanceof M3SearchBar, () -> "search bar=" + node);
         return (M3SearchBar) node;
     }
+
     /// Shows the supplied scroll pane in a real JavaFX window and performs an initial layout pass.
     private static Scene show(ScrollPane scrollPane, double width, double height) {
         Stage stage = new Stage();
@@ -1548,6 +1554,7 @@ final class M3AccessibleFocusRevealTest {
             super.executeAccessibleAction(action, parameters);
         }
     }
+
     /// Test node whose reveal route accepts any target so preflight failures are observable.
     @NotNullByDefault
     private static final class BroadRouteAccessibleOwner extends Pane {
@@ -1569,6 +1576,7 @@ final class M3AccessibleFocusRevealTest {
             return M3Accessible.showDirectItem(this, routeTarget);
         }
     }
+
     /// Test node that exposes installed accessibility action routes for an external indexed child.
     @NotNullByDefault
     private static final class RouteAccessibleOwner extends Pane {

@@ -231,7 +231,8 @@ public final class M3OverlayPane extends Pane {
 
     /// Returns pending snackbars in FIFO order.
     ///
-    /// The returned list is live, observable, and unmodifiable. It excludes the current snackbar.
+    /// The returned list is live, observable, and unmodifiable. It excludes the current snackbar. Changes to a
+    /// pending message's own properties do not constitute list changes.
     ///
     /// @return the pending snackbar queue
     public @UnmodifiableView ObservableList<M3Snackbar> getSnackbarQueue() {
@@ -264,7 +265,9 @@ public final class M3OverlayPane extends Pane {
 
     /// Appends a snackbar to the FIFO presentation queue.
     ///
-    /// If the snackbar layer is idle, the supplied snackbar becomes current immediately.
+    /// If the snackbar layer is idle, the supplied snackbar becomes current immediately. The message is retained by
+    /// identity; property changes made on the JavaFX Application Thread are shown immediately while current, or read
+    /// when a pending message is promoted.
     ///
     /// @param snackbar the snackbar to enqueue
     /// @throws NullPointerException if `snackbar` is `null`
@@ -274,8 +277,9 @@ public final class M3OverlayPane extends Pane {
 
     /// Shows a snackbar immediately without changing the pending queue.
     ///
-    /// Any current snackbar is replaced. Use [#enqueueSnackbar(M3Snackbar)] when existing FIFO order must be
-    /// preserved.
+    /// Any current snackbar is replaced. The supplied message remains observable, so subsequent property changes on
+    /// the JavaFX Application Thread update the existing surface. Use [#enqueueSnackbar(M3Snackbar)] when existing
+    /// FIFO order must be preserved.
     ///
     /// @param snackbar the snackbar to show
     /// @throws NullPointerException if `snackbar` is `null`

@@ -5110,11 +5110,11 @@ final class M3FXDemoVisualMatrixTest {
             );
             FxTestUtils.setMotionScheme(overlay, visualOverlayMotionScheme());
             overlay.setSnackbarDisplayDuration(Duration.INDEFINITE);
-            overlay.showSnackbar(new M3Snackbar(
-                    "Theme-aware snackbar",
-                    new M3Snackbar.Action("Action", () -> {
-                    })
-            ));
+            M3Snackbar snackbar = new M3Snackbar("Theme-aware snackbar");
+            snackbar.setActionText("Action");
+            snackbar.setAction(() -> {
+            });
+            overlay.showSnackbar(snackbar);
             overlayReference.set(overlay);
         }, () -> {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
@@ -7249,11 +7249,11 @@ final class M3FXDemoVisualMatrixTest {
                     overlay.setSnackbarDisplayDuration(Duration.INDEFINITE);
                     overlayReference.set(overlay);
                     hiddenBaselineReference.set(snapshot(scene));
-                    overlay.showSnackbar(new M3Snackbar(
-                            "Theme-aware snackbar",
-                            new M3Snackbar.Action("Action", () -> {
-                            })
-                    ));
+                    M3Snackbar snackbar = new M3Snackbar("Theme-aware snackbar");
+                    snackbar.setActionText("Action");
+                    snackbar.setAction(() -> {
+                    });
+                    overlay.showSnackbar(snackbar);
                     scene.getRoot().applyCss();
                     scene.getRoot().layout();
                     surfaceReference.set(requireSnackbarSurface(overlay, "opening snackbar surface"));
@@ -7261,7 +7261,7 @@ final class M3FXDemoVisualMatrixTest {
                     Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
                     M3OverlayPane overlay = Objects.requireNonNull(overlayReference.get(), "overlay pane");
                     Node surface = Objects.requireNonNull(surfaceReference.get(), "opening snackbar surface");
-                    assertNotNull(overlay.getSnackbar(), "opening snackbar descriptor");
+                    assertNotNull(overlay.getSnackbar(), "opening snackbar model");
                     scene.getRoot().applyCss();
                     scene.getRoot().layout();
                     assertSnackbarStaysCompact(scene, surface);
@@ -7279,7 +7279,7 @@ final class M3FXDemoVisualMatrixTest {
             Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
             M3OverlayPane overlay = Objects.requireNonNull(overlayReference.get(), "overlay pane");
             Node surface = Objects.requireNonNull(surfaceReference.get(), "settled snackbar surface");
-            assertNotNull(overlay.getSnackbar(), "settled snackbar descriptor");
+            assertNotNull(overlay.getSnackbar(), "settled snackbar model");
             assertTrue(overlay.isSnackbarShowing());
             scene.getRoot().applyCss();
             scene.getRoot().layout();
@@ -10446,10 +10446,10 @@ final class M3FXDemoVisualMatrixTest {
         double expectedItemShape = !expressiveTheme
                 ? 4.0
                 : active
-                  ? 24.0
-                  : item.isSelected() || firstGroupItem || lastGroupItem
-                    ? 16.0
-                    : 6.0;
+                ? 24.0
+                : item.isSelected() || firstGroupItem || lastGroupItem
+                ? 16.0
+                : 6.0;
         assertEquals(expectedItemShape, item.getContainerShape(), CONTROL_EDGE_TOLERANCE,
                 () -> description + " menu item container shape should match the active profile and selection token: item="
                         + item.getHeadlineText());
@@ -15408,7 +15408,7 @@ final class M3FXDemoVisualMatrixTest {
     ) {
         assertTrue(snackbarSettled(overlay), () -> "snackbar should be settled for message: " + message);
         M3Snackbar snackbar = Objects.requireNonNull(overlay.getSnackbar(), "snackbar");
-        assertEquals(message, snackbar.text(), "current snackbar descriptor text");
+        assertEquals(message, snackbar.getText(), "current snackbar model text");
         Node surface = requireSnackbarSurface(overlay, "snackbar " + message + " surface");
         assertVisibleText(surface, message, "Snackbars");
         assertSnackbarStaysCompact(scene, surface);
@@ -17896,10 +17896,10 @@ final class M3FXDemoVisualMatrixTest {
             double expectedThumbSize = switchControl.isArmed()
                     ? switchControl.getPressedHandleSize()
                     : hasCurrentIcon
-                      ? switchControl.getWithIconHandleSize()
-                      : switchControl.isSelected()
-                        ? switchControl.getSelectedHandleSize()
-                        : switchControl.getUnselectedHandleSize();
+                    ? switchControl.getWithIconHandleSize()
+                    : switchControl.isSelected()
+                    ? switchControl.getSelectedHandleSize()
+                    : switchControl.getUnselectedHandleSize();
             assertEquals(expectedThumbSize, thumbBounds.getWidth(), 0.75,
                     () -> pageTitle + " switch thumb width should match state token: " + thumbBounds);
             assertEquals(expectedThumbSize, thumbBounds.getHeight(), 0.75,
