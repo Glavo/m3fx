@@ -16,7 +16,7 @@
 .catalog-top-action .catalog-icon,
 .catalog-component-card .catalog-icon,
 .catalog-example-card .catalog-icon {
-    -fx-fill: -m3-color-on-surface-variant;
+    -fx-text-fill: -m3-color-on-surface-variant;
 }
 
 .catalog-component-grid {
@@ -30,7 +30,7 @@
 
 .catalog-component-card-icon,
 .catalog-component-page-icon {
-    -fx-fill: -m3-color-primary;
+    -fx-text-fill: -m3-color-primary;
 }
 
 .catalog-component-card-name,
@@ -97,12 +97,24 @@
 }
 
 .catalog-example-card-arrow {
-    -fx-fill: -m3-color-on-surface-variant;
+    -fx-text-fill: -m3-color-on-surface-variant;
 }
 
 .catalog-example-page {
     -fx-padding: 32px;
     -fx-alignment: center;
+}
+
+.catalog-side-sheet-preview {
+    -fx-background-color: -m3-color-surface-container-low;
+    -fx-background-radius: 28px;
+    -fx-border-color: -m3-color-outline-variant;
+    -fx-border-radius: 28px;
+    -fx-border-width: 1px;
+}
+
+.catalog-side-sheet-preview-content {
+    -fx-padding: 32px;
 }
 
 .catalog-settings-scrim {

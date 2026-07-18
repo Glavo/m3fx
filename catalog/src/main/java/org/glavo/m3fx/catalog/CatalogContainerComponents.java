@@ -99,16 +99,54 @@ final class CatalogContainerComponents {
                         )
                 ),
                 CatalogComponents.component(
+                        "Dividers",
+                        "Dividers group related content with a subtle horizontal or vertical boundary.",
+                        CatalogIcons.DIVIDER,
+                        "divider",
+                        "M3Divider",
+                        CatalogComponents.example(
+                                "Divider variants",
+                                "Full-width, inset, middle-inset, and vertical dividers.",
+                                false,
+                                CatalogSamples::dividers
+                        )
+                ),
+                CatalogComponents.component(
                         "Lists",
                         "Lists present vertically arranged rows of related content and actions.",
                         CatalogIcons.LIST,
                         "lists",
                         "M3ListPane",
                         CatalogComponents.example(
+                                "Standard list",
+                                "A continuous list with supporting and trailing content.",
+                                false,
+                                CatalogSamples::standardList
+                        ),
+                        CatalogComponents.example(
                                 "Segmented list",
-                                "List rows with leading and trailing content.",
+                                "Contained list rows separated by the Material segmented gap.",
                                 true,
-                                CatalogSamples::lists
+                                CatalogSamples::segmentedList
+                        )
+                ),
+                CatalogComponents.component(
+                        "Side sheets",
+                        "Side sheets present supplementary content from a side edge without replacing the page.",
+                        CatalogIcons.SIDE_SHEET,
+                        "side-sheets",
+                        "M3SideSheet",
+                        CatalogComponents.example(
+                                "Standard side sheet",
+                                "A persistent supplementary surface with actions.",
+                                false,
+                                CatalogSamples::standardSideSheet
+                        ),
+                        CatalogComponents.example(
+                                "Modal side sheet",
+                                "A dismissible modal sheet coordinated with a scrim.",
+                                false,
+                                CatalogSamples::modalSideSheet
                         )
                 )
         );

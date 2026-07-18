@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/// Produces stable visual reports for the four defining Catalog surfaces.
+/// Produces stable visual reports for the defining Catalog surfaces and expanded component examples.
 ///
 /// These reports supplement structural assertions in [M3FXCatalogVisualTest]. Each image comes from a showing
 /// JavaFX Stage after CSS and layout, and is rejected when it lacks enough color variation to represent a rendered
@@ -46,7 +46,7 @@ final class M3FXCatalogSnapshotTest {
         FxTestUtils.startToolkit();
     }
 
-    /// Captures Home, Component, Example, and theme-settings surfaces.
+    /// Captures navigation, theme-settings, search, date-range, and modal side-sheet surfaces.
     @Test
     void writesCatalogNavigationSnapshots() throws InterruptedException {
         AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
@@ -73,6 +73,19 @@ final class M3FXCatalogSnapshotTest {
 
                 app.showSettings();
                 writeSnapshot(scene, "theme-settings.png");
+                app.hideSettings();
+
+                CatalogComponent search = componentNamed(app, "Search");
+                app.navigate(new CatalogRoute.Example(search, search.examples().get(1)));
+                writeSnapshot(scene, "search-view.png");
+
+                CatalogComponent datePickers = componentNamed(app, "Date pickers");
+                app.navigate(new CatalogRoute.Example(datePickers, datePickers.examples().get(1)));
+                writeSnapshot(scene, "date-range-picker.png");
+
+                CatalogComponent sideSheets = componentNamed(app, "Side sheets");
+                app.navigate(new CatalogRoute.Example(sideSheets, sideSheets.examples().get(1)));
+                writeSnapshot(scene, "modal-side-sheet.png");
             }));
         } finally {
             FxTestUtils.runOnFxThread(() -> {
@@ -84,9 +97,21 @@ final class M3FXCatalogSnapshotTest {
         }
     }
 
+    /// Finds a registered component by its display name.
+    ///
+    /// @param app  the running Catalog application
+    /// @param name the component display name
+    /// @return the matching component
+    private static CatalogComponent componentNamed(M3FXCatalogApp app, String name) {
+        return app.components().stream()
+                .filter(component -> component.name().equals(name))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("missing Catalog component: " + name));
+    }
+
     /// Captures, validates, and writes one scene image.
     ///
-    /// @param scene the showing Catalog scene
+    /// @param scene    the showing Catalog scene
     /// @param fileName the report file name
     private static void writeSnapshot(Scene scene, String fileName) {
         scene.getRoot().applyCss();
@@ -108,7 +133,7 @@ final class M3FXCatalogSnapshotTest {
 
     /// Verifies that a report contains a non-trivial set of rendered colors.
     ///
-    /// @param image the captured image
+    /// @param image       the captured image
     /// @param description the report description used by assertion output
     private static void assertVisualRange(WritableImage image, String description) {
         Set<Integer> colors = new HashSet<>();

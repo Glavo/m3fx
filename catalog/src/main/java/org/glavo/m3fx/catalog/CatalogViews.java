@@ -14,10 +14,10 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.TilePane;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Rectangle;
-import javafx.scene.shape.SVGPath;
 import org.glavo.m3fx.controls.M3Card;
 import org.glavo.m3fx.controls.M3CardVariant;
 import org.glavo.m3fx.controls.M3ScrollPanes;
+import org.glavo.m3fx.controls.M3SVGIcon;
 import org.glavo.m3fx.controls.M3Text;
 import org.glavo.m3fx.controls.M3TextRole;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -61,9 +61,6 @@ final class CatalogViews {
     /// The standard Material card corner radius, in logical pixels.
     private static final double CARD_CORNER_RADIUS = 12.0;
 
-    /// The coordinate size expected by the Material SVG paths used by the Catalog.
-    private static final double MATERIAL_ICON_VIEWPORT_SIZE = 24.0;
-
     /// Prevents utility class instantiation.
     private CatalogViews() {
     }
@@ -75,8 +72,8 @@ final class CatalogViews {
     /// The returned scroll pane fits its content to the viewport width, allowing the tile pane to recompute its
     /// column count as the available width changes.
     ///
-    /// @param components the components available to the Catalog
-    /// @param navigate the consumer that handles route changes
+    /// @param components     the components available to the Catalog
+    /// @param navigate       the consumer that handles route changes
     /// @param expressiveOnly whether only components with Expressive examples are shown
     /// @param markExpressive whether components with Expressive examples display a corner marker
     /// @return a new scrollable home view
@@ -140,8 +137,8 @@ final class CatalogViews {
     /// The page contains the component icon, a description section, and one full-width outlined card for each
     /// example. Activating an example card reports a [CatalogRoute.Example] through `navigate`.
     ///
-    /// @param component the component described by the page
-    /// @param navigate the consumer that handles route changes
+    /// @param component      the component described by the page
+    /// @param navigate       the consumer that handles route changes
     /// @param markExpressive whether Expressive examples display a marker
     /// @return a new scrollable component detail view
     /// @throws NullPointerException if `component` or `navigate` is `null`
@@ -199,9 +196,9 @@ final class CatalogViews {
     /// exists only to provide centering and a stable route-level style hook.
     ///
     /// @param component the component that owns `example`
-    /// @param example the example to instantiate
+    /// @param example   the example to instantiate
     /// @return a new centered example view
-    /// @throws NullPointerException if `component` or `example` is `null`, or if the example factory returns `null`
+    /// @throws NullPointerException     if `component` or `example` is `null`, or if the example factory returns `null`
     /// @throws IllegalArgumentException if `example` does not belong to `component`
     static Node createExample(CatalogComponent component, CatalogExample example) {
         CatalogComponent owner = Objects.requireNonNull(component, "component");
@@ -218,8 +215,8 @@ final class CatalogViews {
 
     /// Creates one adaptive-grid cell containing an actionable component card.
     ///
-    /// @param component the component represented by the card
-    /// @param navigate the consumer that handles route changes
+    /// @param component      the component represented by the card
+    /// @param navigate       the consumer that handles route changes
     /// @param markExpressive whether an Expressive marker may be shown
     /// @return a resizable grid cell containing a new outlined card
     private static StackPane createComponentCard(
@@ -277,9 +274,9 @@ final class CatalogViews {
 
     /// Creates one full-width example card for a component detail page.
     ///
-    /// @param component the component that owns the example
-    /// @param example the example represented by the card
-    /// @param navigate the consumer that handles route changes
+    /// @param component      the component that owns the example
+    /// @param example        the example represented by the card
+    /// @param navigate       the consumer that handles route changes
     /// @param markExpressive whether an Expressive marker may be shown
     /// @return a new actionable outlined card
     private static M3Card createExampleCard(
@@ -299,7 +296,7 @@ final class CatalogViews {
         labels.getStyleClass().add("catalog-example-card-labels");
         labels.setMaxWidth(Double.MAX_VALUE);
 
-        SVGPath arrow = CatalogIcons.create(CatalogIcons.ARROW_FORWARD);
+        M3SVGIcon arrow = CatalogIcons.createDirectional(CatalogIcons.ARROW_FORWARD);
         arrow.getStyleClass().add("catalog-example-card-arrow");
 
         HBox trailing = new HBox(arrow);
@@ -335,18 +332,16 @@ final class CatalogViews {
         return card;
     }
 
-    /// Creates a centered icon holder with a Material SVG path scaled to the requested size.
+    /// Creates a centered icon holder with a Material SVG icon rendered at the requested size.
     ///
-    /// @param path the SVG path content
-    /// @param size the width and height of the icon and its holder
+    /// @param path       the SVG path content
+    /// @param size       the width and height of the icon and its holder
     /// @param styleClass the view-specific style class added to the icon
     /// @return a fixed-size icon holder
     private static StackPane createSizedIcon(String path, double size, String styleClass) {
-        SVGPath icon = CatalogIcons.create(path);
+        M3SVGIcon icon = CatalogIcons.create(path);
         icon.getStyleClass().add(styleClass);
-        double scale = size / MATERIAL_ICON_VIEWPORT_SIZE;
-        icon.setScaleX(scale);
-        icon.setScaleY(scale);
+        icon.setIconSize(size);
 
         StackPane holder = new StackPane(icon);
         holder.getStyleClass().add(styleClass + "-holder");
@@ -359,7 +354,7 @@ final class CatalogViews {
 
     /// Creates the diagonal corner banner used to identify Expressive content.
     ///
-    /// @param size the square banner size before rotation
+    /// @param size              the square banner size before rotation
     /// @param contextStyleClass the location-specific style class added to the banner
     /// @return a new mouse-transparent Expressive banner
     private static StackPane createExpressiveMarker(double size, String contextStyleClass) {

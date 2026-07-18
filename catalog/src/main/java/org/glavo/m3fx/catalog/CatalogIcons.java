@@ -3,8 +3,9 @@
 
 package org.glavo.m3fx.catalog;
 
+import javafx.geometry.Rectangle2D;
 import javafx.scene.shape.FillRule;
-import javafx.scene.shape.SVGPath;
+import org.glavo.m3fx.controls.M3SVGIcon;
 import org.jetbrains.annotations.NotNullByDefault;
 
 /// Creates the small vector icon set used exclusively by the M3FX Catalog application.
@@ -13,6 +14,9 @@ import org.jetbrains.annotations.NotNullByDefault;
 /// distinguish component families and exercise graphic slots without adding an icon dependency to the core module.
 @NotNullByDefault
 final class CatalogIcons {
+    /// The source viewport shared by the Material-style paths bundled with the Catalog.
+    private static final Rectangle2D MATERIAL_VIEW_BOX = new Rectangle2D(0.0, 0.0, 24.0, 24.0);
+
     /// The home icon path.
     static final String HOME = "M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z";
 
@@ -33,6 +37,9 @@ final class CatalogIcons {
 
     /// The add icon path.
     static final String ADD = "M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z";
+
+    /// The close icon path.
+    static final String CLOSE = "M6.4 5 5 6.4l5.6 5.6L5 17.6 6.4 19l5.6-5.6 5.6 5.6 1.4-1.4-5.6-5.6L19 6.4 17.6 5 12 10.6z";
 
     /// The favorite icon path.
     static final String FAVORITE =
@@ -77,6 +84,12 @@ final class CatalogIcons {
     /// The list icon path.
     static final String LIST =
             "M4 5h2v2H4zm4 0h12v2H8zM4 11h2v2H4zm4 0h12v2H8zM4 17h2v2H4zm4 0h12v2H8z";
+
+    /// The divider icon path.
+    static final String DIVIDER = "M3 11h18v2H3z";
+
+    /// The side-sheet icon path.
+    static final String SIDE_SHEET = "M3 3h18v18H3zm2 2v14h8V5zm10 0v14h4V5z";
 
     /// The connected button-group icon path.
     static final String BUTTON_GROUP =
@@ -186,12 +199,21 @@ final class CatalogIcons {
     ///
     /// @param path the SVG path content
     /// @return a mouse-transparent vector icon
-    static SVGPath create(String path) {
-        SVGPath icon = new SVGPath();
-        icon.setContent(path);
+    static M3SVGIcon create(String path) {
+        M3SVGIcon icon = new M3SVGIcon(path, MATERIAL_VIEW_BOX);
         icon.setFillRule(FillRule.EVEN_ODD);
         icon.getStyleClass().add("catalog-icon");
         icon.setMouseTransparent(true);
+        return icon;
+    }
+
+    /// Creates a catalog SVG icon that mirrors in right-to-left orientation.
+    ///
+    /// @param path the SVG path content
+    /// @return a mouse-transparent, automatically mirrored vector icon
+    static M3SVGIcon createDirectional(String path) {
+        M3SVGIcon icon = create(path);
+        icon.setAutoMirrored(true);
         return icon;
     }
 }

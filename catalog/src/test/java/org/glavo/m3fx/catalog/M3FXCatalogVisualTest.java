@@ -3,6 +3,8 @@
 
 package org.glavo.m3fx.catalog;
 
+import javafx.geometry.NodeOrientation;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.layout.TilePane;
@@ -10,7 +12,12 @@ import javafx.stage.Stage;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.controls.M3BottomSheet;
 import org.glavo.m3fx.controls.M3Card;
+import org.glavo.m3fx.controls.M3DateRangePicker;
+import org.glavo.m3fx.controls.M3Divider;
 import org.glavo.m3fx.controls.M3Scrim;
+import org.glavo.m3fx.controls.M3SearchView;
+import org.glavo.m3fx.controls.M3SideSheet;
+import org.glavo.m3fx.controls.M3SVGIcon;
 import org.glavo.m3fx.testing.Tier2Test;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -75,6 +82,7 @@ final class M3FXCatalogVisualTest {
                 assertAdaptiveGrid(scene, stage);
                 assertComponentAndExampleNavigation(scene, app);
                 assertThemeSettings(scene, app);
+                assertExpandedComponentCoverage(scene, app);
                 assertEveryExampleRenders(scene, app);
             });
         } finally {
@@ -91,7 +99,7 @@ final class M3FXCatalogVisualTest {
     ///
     /// @param components the Catalog registry
     private static void assertRegistry(List<CatalogComponent> components) {
-        assertEquals(36, components.size());
+        assertEquals(38, components.size());
         Set<String> names = new HashSet<>();
         String previous = "";
         for (CatalogComponent component : components) {
@@ -103,12 +111,17 @@ final class M3FXCatalogVisualTest {
             assertFalse(component.examples().isEmpty());
             previous = component.name();
         }
+        assertTrue(names.containsAll(Set.of("Dividers", "Side sheets", "Search", "Date pickers")));
+        assertEquals(2, componentNamed(components, "Date pickers").examples().size());
+        assertEquals(2, componentNamed(components, "Lists").examples().size());
+        assertEquals(2, componentNamed(components, "Search").examples().size());
+        assertEquals(2, componentNamed(components, "Side sheets").examples().size());
     }
 
     /// Verifies the alphabetical grid and absence of the former destination shell.
     ///
     /// @param scene the Catalog scene
-    /// @param app the running Catalog application
+    /// @param app   the running Catalog application
     private static void assertHome(Scene scene, M3FXCatalogApp app) throws InterruptedException {
         FxTestUtils.runOnFxThread(() -> {
             app.navigateHome();
@@ -129,6 +142,14 @@ final class M3FXCatalogVisualTest {
             assertEquals(firstCell.getLayoutBounds().getWidth() - 8.0, firstCard.getWidth(), 0.5);
             assertEquals(172.0, firstCard.getHeight(), 0.5);
             assertEquals(firstCard.getWidth(), cardSurface.getLayoutBounds().getWidth(), 0.5);
+            M3SVGIcon firstIcon = assertInstanceOf(
+                    M3SVGIcon.class,
+                    Objects.requireNonNull(firstCard.lookup(".catalog-component-card-icon"), "component icon")
+            );
+            assertEquals(new Rectangle2D(0.0, 0.0, 24.0, 24.0), firstIcon.getViewBox());
+            assertEquals(80.0, firstIcon.getIconSize(), 0.01);
+            assertTrue(scene.getRoot().lookupAll(".catalog-icon").stream()
+                    .allMatch(M3SVGIcon.class::isInstance));
             assertNotNull(scene.lookup(".catalog-top-app-bar"));
             assertNull(scene.lookup(".catalog-navigation-drawer"));
             assertNull(scene.lookup(".catalog-navigation-rail"));
@@ -162,7 +183,7 @@ final class M3FXCatalogVisualTest {
     /// Verifies component-card navigation, example-card navigation, and back behavior.
     ///
     /// @param scene the Catalog scene
-    /// @param app the running Catalog application
+    /// @param app   the running Catalog application
     private static void assertComponentAndExampleNavigation(
             Scene scene,
             M3FXCatalogApp app
@@ -201,7 +222,7 @@ final class M3FXCatalogVisualTest {
     /// Verifies the coordinated modal sheet and scrim lifecycle.
     ///
     /// @param scene the Catalog scene
-    /// @param app the running Catalog application
+    /// @param app   the running Catalog application
     private static void assertThemeSettings(Scene scene, M3FXCatalogApp app) throws InterruptedException {
         FxTestUtils.runOnFxThread(() -> {
             M3BottomSheet sheet = assertInstanceOf(
@@ -226,10 +247,83 @@ final class M3FXCatalogVisualTest {
         });
     }
 
+    /// Verifies the controls and layout boundaries added to the expanded Catalog registry.
+    ///
+    /// @param scene the Catalog scene
+    /// @param app   the running Catalog application
+    private static void assertExpandedComponentCoverage(
+            Scene scene,
+            M3FXCatalogApp app
+    ) throws InterruptedException {
+        FxTestUtils.runOnFxThread(() -> {
+            CatalogComponent dividers = componentNamed(app.components(), "Dividers");
+            app.navigate(new CatalogRoute.Example(dividers, dividers.examples().get(0)));
+            layout(scene);
+            assertFalse(scene.getRoot().lookupAll(".m3-divider").isEmpty());
+            assertTrue(scene.getRoot().lookupAll(".m3-divider").stream()
+                    .allMatch(M3Divider.class::isInstance));
+
+            CatalogComponent datePickers = componentNamed(app.components(), "Date pickers");
+            app.navigate(new CatalogRoute.Example(datePickers, datePickers.examples().get(1)));
+            layout(scene);
+            M3DateRangePicker dateRangePicker = assertInstanceOf(
+                    M3DateRangePicker.class,
+                    Objects.requireNonNull(scene.lookup(".m3-date-range-picker"), "date range picker")
+            );
+            assertTrue(dateRangePicker.getWidth() <= 420.5);
+            assertTrue(dateRangePicker.getHeight() < scene.getHeight() - 160.0);
+
+            CatalogComponent search = componentNamed(app.components(), "Search");
+            app.navigate(new CatalogRoute.Example(search, search.examples().get(1)));
+            layout(scene);
+            M3SearchView searchView = assertInstanceOf(
+                    M3SearchView.class,
+                    Objects.requireNonNull(scene.lookup(".m3-search-view"), "search view")
+            );
+            assertEquals(3, searchView.getResults().size());
+            Node styleSelector = Objects.requireNonNull(
+                    scene.lookup(".m3-segmented-button-group"),
+                    "search-view style selector"
+            );
+            assertEquals(
+                    searchView.localToScene(searchView.getBoundsInLocal()).getCenterX(),
+                    styleSelector.localToScene(styleSelector.getBoundsInLocal()).getCenterX(),
+                    0.5
+            );
+
+            CatalogComponent sideSheets = componentNamed(app.components(), "Side sheets");
+            app.navigate(new CatalogRoute.Example(sideSheets, sideSheets.examples().get(1)));
+            layout(scene);
+            Node preview = Objects.requireNonNull(
+                    scene.lookup(".catalog-side-sheet-preview"),
+                    "side-sheet preview"
+            );
+            M3SideSheet sideSheet = assertInstanceOf(
+                    M3SideSheet.class,
+                    Objects.requireNonNull(preview.lookup(".m3-side-sheet"), "side sheet")
+            );
+            M3Scrim scrim = assertInstanceOf(
+                    M3Scrim.class,
+                    Objects.requireNonNull(preview.lookup(".m3-scrim"), "side-sheet scrim")
+            );
+            assertTrue(sideSheet.isShown());
+            assertTrue(scrim.isShown());
+            assertTrue(sideSheet.localToScene(sideSheet.getBoundsInLocal()).getMaxX()
+                    <= preview.localToScene(preview.getBoundsInLocal()).getMaxX() + 0.5);
+            preview.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            layout(scene);
+            assertEquals(
+                    preview.localToScene(preview.getBoundsInLocal()).getMinX(),
+                    sideSheet.localToScene(sideSheet.getBoundsInLocal()).getMinX(),
+                    0.5
+            );
+        });
+    }
+
     /// Creates and lays out every registered example in the running application.
     ///
     /// @param scene the Catalog scene
-    /// @param app the running Catalog application
+    /// @param app   the running Catalog application
     private static void assertEveryExampleRenders(Scene scene, M3FXCatalogApp app) throws InterruptedException {
         FxTestUtils.runOnFxThread(() -> {
             for (CatalogComponent component : app.components()) {
@@ -287,6 +381,18 @@ final class M3FXCatalogVisualTest {
             columns++;
         }
         return columns;
+    }
+
+    /// Finds a registered component by its display name.
+    ///
+    /// @param components the Catalog registry
+    /// @param name       the component display name
+    /// @return the matching component
+    private static CatalogComponent componentNamed(List<CatalogComponent> components, String name) {
+        return components.stream()
+                .filter(component -> component.name().equals(name))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("missing Catalog component: " + name));
     }
 
     /// Completes CSS and layout before querying scene-graph geometry.

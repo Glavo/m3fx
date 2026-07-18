@@ -43,12 +43,12 @@ final class CatalogComponents {
 
     /// Creates a component descriptor with links derived from the Material slug and M3FX class.
     ///
-    /// @param name the component name
-    /// @param description the component description
-    /// @param iconPath the component icon path
+    /// @param name         the component name
+    /// @param description  the component description
+    /// @param iconPath     the component icon path
     /// @param materialSlug the Material Design documentation slug
-    /// @param className the primary M3FX class name
-    /// @param examples the component examples
+    /// @param className    the primary M3FX class name
+    /// @param examples     the component examples
     /// @return the component descriptor
     static CatalogComponent component(
             String name,
@@ -71,10 +71,10 @@ final class CatalogComponents {
 
     /// Creates an example descriptor whose source link points to the Catalog sample factory.
     ///
-    /// @param name the example name
+    /// @param name        the example name
     /// @param description the example description
-    /// @param expressive whether the example demonstrates Expressive behavior
-    /// @param factory the example content factory
+    /// @param expressive  whether the example demonstrates Expressive behavior
+    /// @param factory     the example content factory
     /// @return the example descriptor
     static CatalogExample example(
             String name,
@@ -96,7 +96,7 @@ final class CatalogComponents {
     ///
     /// @return the immutable component registry
     private static @Unmodifiable List<CatalogComponent> createComponents() {
-        ArrayList<CatalogComponent> components = new ArrayList<>(36);
+        ArrayList<CatalogComponent> components = new ArrayList<>(38);
         components.addAll(CatalogContainerComponents.create());
         components.addAll(CatalogActionComponents.create());
         components.addAll(CatalogInputComponents.create());

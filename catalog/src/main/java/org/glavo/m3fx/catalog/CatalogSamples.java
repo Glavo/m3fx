@@ -4,13 +4,14 @@
 package org.glavo.m3fx.catalog;
 
 import javafx.geometry.Insets;
+import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.ButtonType;
-import javafx.scene.control.Label;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.*;
 import org.jetbrains.annotations.NotNullByDefault;
@@ -210,6 +211,22 @@ final class CatalogSamples {
     static Node datePicker() {
         M3DatePicker picker = new M3DatePicker(LocalDate.now());
         picker.setPrefWidth(420.0);
+        picker.setMaxWidth(420.0);
+        picker.setMaxHeight(Region.USE_PREF_SIZE);
+        return picker;
+    }
+
+    /// Creates an inline date range picker with bounded representative dates.
+    ///
+    /// @return the date range picker example
+    static Node dateRangePicker() {
+        LocalDate today = LocalDate.now();
+        M3DateRangePicker picker = new M3DateRangePicker(today.plusDays(2), today.plusDays(8));
+        picker.setMinDate(today.minusWeeks(1));
+        picker.setMaxDate(today.plusMonths(2));
+        picker.setPrefWidth(420.0);
+        picker.setMaxWidth(420.0);
+        picker.setMaxHeight(Region.USE_PREF_SIZE);
         return picker;
     }
 
@@ -222,6 +239,30 @@ final class CatalogSamples {
         pane.setContentText("This action cannot be undone.");
         pane.getButtonTypes().addAll(ButtonType.CANCEL, ButtonType.OK);
         return pane;
+    }
+
+    /// Creates horizontal full-width and inset dividers together with a vertical divider.
+    ///
+    /// @return the divider example
+    static Node dividers() {
+        M3Divider full = new M3Divider();
+        M3Divider inset = new M3Divider();
+        inset.setInsetStart(40.0);
+        M3Divider middleInset = new M3Divider();
+        middleInset.setInsetStart(40.0);
+        middleInset.setInsetEnd(40.0);
+
+        VBox horizontal = new VBox(28.0, full, inset, middleInset);
+        horizontal.setPrefWidth(420.0);
+
+        M3Divider vertical = new M3Divider(Orientation.VERTICAL);
+        vertical.setPrefHeight(72.0);
+        HBox verticalExample = row(
+                new M3Text("Before", M3TextRole.BODY_MEDIUM),
+                vertical,
+                new M3Text("After", M3TextRole.BODY_MEDIUM)
+        );
+        return column(horizontal, verticalExample);
     }
 
     /// Creates extended floating action buttons with icon and label content.
@@ -289,18 +330,108 @@ final class CatalogSamples {
         );
     }
 
-    /// Creates a selectable list with one- and two-line items.
+    /// Creates a continuous selectable list with one- and two-line items.
     ///
-    /// @return the list example
-    static Node lists() {
+    /// @return the standard list example
+    static Node standardList() {
+        return createList(M3ListStyle.STANDARD);
+    }
+
+    /// Creates a segmented selectable list with one- and two-line items.
+    ///
+    /// @return the segmented list example
+    static Node segmentedList() {
+        return createList(M3ListStyle.SEGMENTED);
+    }
+
+    /// Creates standard side-sheet content with local show and hide actions.
+    ///
+    /// @return the standard side-sheet example
+    static Node standardSideSheet() {
+        M3SideSheet sheet = new M3SideSheet("Details", sideSheetContent());
+        sheet.setPrefSize(360.0, 360.0);
+        sheet.setMaxSize(360.0, 360.0);
+
+        M3IconButton close = iconButton(CatalogIcons.CLOSE, "Close details");
+        close.setOnAction(event -> sheet.hide());
+        sheet.getHeaderActions().add(close);
+        sheet.getActions().add(new M3Button("Save", M3ButtonVariant.FILLED));
+
+        M3Button show = new M3Button("Show side sheet", M3ButtonVariant.TONAL);
+        show.setOnAction(event -> sheet.show());
+        return column(show, sheet);
+    }
+
+    /// Creates a modal side sheet coordinated with a dismissible scrim.
+    ///
+    /// @return the modal side-sheet example
+    static Node modalSideSheet() {
+        M3SideSheet sheet = new M3SideSheet("Filters", sideSheetContent());
+        sheet.setVariant(M3SheetVariant.MODAL);
+        sheet.setPrefSize(320.0, 380.0);
+        sheet.setMaxSize(320.0, 380.0);
+
+        M3Scrim scrim = new M3Scrim();
+        M3Button show = new M3Button("Show modal sheet", M3ButtonVariant.FILLED);
+        M3Text backgroundMessage = new M3Text(
+                "The modal sheet blocks this content until dismissed.",
+                M3TextRole.BODY_MEDIUM
+        );
+        backgroundMessage.setWrapText(true);
+        VBox background = new VBox(
+                12.0,
+                new M3Text("Catalog content", M3TextRole.TITLE_MEDIUM),
+                backgroundMessage,
+                show
+        );
+        background.getStyleClass().add("catalog-side-sheet-preview-content");
+        background.setAlignment(Pos.CENTER);
+        background.setMaxWidth(240.0);
+
+        Runnable hide = () -> {
+            sheet.hide();
+            scrim.hide();
+        };
+        M3IconButton close = iconButton(CatalogIcons.CLOSE, "Close filters");
+        close.setOnAction(event -> hide.run());
+        sheet.getHeaderActions().add(close);
+        M3Button cancel = new M3Button("Cancel", M3ButtonVariant.TEXT);
+        cancel.setOnAction(event -> hide.run());
+        M3Button apply = new M3Button("Apply", M3ButtonVariant.FILLED);
+        apply.setOnAction(event -> hide.run());
+        sheet.getActions().addAll(cancel, apply);
+        scrim.setOnAction(event -> hide.run());
+        show.setOnAction(event -> {
+            scrim.show();
+            sheet.show();
+        });
+
+        StackPane preview = new StackPane(background, scrim, sheet);
+        preview.getStyleClass().add("catalog-side-sheet-preview");
+        preview.setPrefSize(640.0, 380.0);
+        preview.setMaxSize(640.0, 380.0);
+        StackPane.setAlignment(sheet, Pos.CENTER_RIGHT);
+        StackPane.setAlignment(background, Pos.CENTER_LEFT);
+        StackPane.setMargin(background, new Insets(32.0));
+        return preview;
+    }
+
+    /// Creates a selectable list using the requested Material containment style.
+    ///
+    /// @param listStyle the Material list style
+    /// @return the configured list
+    private static M3ListPane createList(M3ListStyle listStyle) {
         M3ListPane list = new M3ListPane();
+        list.setListStyle(listStyle);
         list.setSelectionMode(M3SelectionMode.SINGLE);
         M3ListItem inbox = new M3ListItem("Inbox");
         inbox.setSupportingText("12 unread messages");
         inbox.setLeadingIcon("I");
+        inbox.setTrailingSupportingText("12");
         M3ListItem drafts = new M3ListItem("Drafts");
         drafts.setSupportingText("3 saved drafts");
         drafts.setLeadingIcon("D");
+        drafts.setTrailingSupportingText("3");
         M3ListItem archive = new M3ListItem("Archive");
         archive.setLeadingIcon("A");
         list.getItems().addAll(inbox, drafts, archive);
@@ -429,6 +560,31 @@ final class CatalogSamples {
         ));
         search.setPrefWidth(420.0);
         return column(search, result);
+    }
+
+    /// Creates an active docked search view with switchable contained and divided treatments.
+    ///
+    /// @return the search-view example
+    static Node searchView() {
+        M3SearchView search = new M3SearchView("Search components");
+        search.setPrefWidth(520.0);
+        search.setMaxWidth(520.0);
+        search.getResults().addAll(
+                searchResult("Buttons", "Filled, tonal, outlined, text, and elevated actions"),
+                searchResult("Menus", "Menu surfaces, submenus, and selection"),
+                searchResult("Navigation", "Bars, rails, drawers, and destinations")
+        );
+
+        M3SegmentedButtonGroup styles = new M3SegmentedButtonGroup();
+        styles.setSelectionMode(M3SelectionMode.SINGLE);
+        M3SegmentedButton contained = new M3SegmentedButton("Contained");
+        contained.setSelected(true);
+        contained.setOnAction(event -> search.setViewStyle(M3SearchViewStyle.CONTAINED));
+        M3SegmentedButton divided = new M3SegmentedButton("Divided");
+        divided.setOnAction(event -> search.setViewStyle(M3SearchViewStyle.DIVIDED));
+        styles.getItems().addAll(contained, divided);
+        styles.setMaxWidth(Region.USE_PREF_SIZE);
+        return column(styles, search);
     }
 
     /// Creates a single-select segmented button group.
@@ -574,9 +730,9 @@ final class CatalogSamples {
 
     /// Creates a button that reports its variant when activated.
     ///
-    /// @param text the button label
+    /// @param text    the button label
     /// @param variant the Material button variant
-    /// @param result the text node that receives the action result
+    /// @param result  the text node that receives the action result
     /// @return the configured button
     private static M3Button actionButton(String text, M3ButtonVariant variant, M3Text result) {
         M3Button button = new M3Button(text, variant);
@@ -586,9 +742,9 @@ final class CatalogSamples {
 
     /// Creates a fixed-size content card for card and carousel examples.
     ///
-    /// @param title the card title
+    /// @param title          the card title
     /// @param supportingText the card supporting text
-    /// @param variant the Material card variant
+    /// @param variant        the Material card variant
     /// @return the configured card
     private static M3Card sampleCard(String title, String supportingText, M3CardVariant variant) {
         VBox content = new VBox(
@@ -602,9 +758,35 @@ final class CatalogSamples {
         return card;
     }
 
+    /// Creates the content shared by side-sheet examples.
+    ///
+    /// @return a fresh side-sheet content node
+    private static Node sideSheetContent() {
+        M3CheckBox notifications = new M3CheckBox("Notifications");
+        notifications.setSelected(true);
+        M3CheckBox activity = new M3CheckBox("Recent activity");
+        return new VBox(
+                12.0,
+                new M3Text("Choose which information appears in this panel.", M3TextRole.BODY_MEDIUM),
+                notifications,
+                activity
+        );
+    }
+
+    /// Creates a two-line result row for a search view.
+    ///
+    /// @param title          the result title
+    /// @param supportingText the result supporting text
+    /// @return the configured result item
+    private static M3ListItem searchResult(String title, String supportingText) {
+        M3ListItem item = new M3ListItem(title);
+        item.setSupportingText(supportingText);
+        return item;
+    }
+
     /// Creates an icon button with accessible text.
     ///
-    /// @param path the SVG path content
+    /// @param path           the SVG path content
     /// @param accessibleText the accessible action description
     /// @return the configured icon button
     private static M3IconButton iconButton(String path, String accessibleText) {

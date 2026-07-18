@@ -75,6 +75,12 @@ final class CatalogInputComponents {
                                 "An inline single-date picker.",
                                 false,
                                 CatalogSamples::datePicker
+                        ),
+                        CatalogComponents.example(
+                                "Date range picker",
+                                "An inline picker with an inclusive selected range.",
+                                false,
+                                CatalogSamples::dateRangePicker
                         )
                 ),
                 CatalogComponents.component(
@@ -91,8 +97,8 @@ final class CatalogInputComponents {
                         )
                 ),
                 CatalogComponents.component(
-                        "Search bars",
-                        "Search bars accept queries and can coordinate expanded search results.",
+                        "Search",
+                        "Search combines a query entry bar with optional suggestion and result content.",
                         CatalogIcons.SEARCH,
                         "search",
                         "M3SearchBar",
@@ -101,6 +107,12 @@ final class CatalogInputComponents {
                                 "A populated search input with actions.",
                                 false,
                                 CatalogSamples::searchBar
+                        ),
+                        CatalogComponents.example(
+                                "Search view",
+                                "An active docked search view with contained and divided treatments.",
+                                true,
+                                CatalogSamples::searchView
                         )
                 ),
                 CatalogComponents.component(

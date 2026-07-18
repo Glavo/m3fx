@@ -400,7 +400,7 @@ public final class M3FXCatalogApp extends Application {
     ///
     /// @return the configured icon button
     private M3IconButton createBackButton() {
-        M3IconButton button = new M3IconButton(CatalogIcons.create(CatalogIcons.ARROW_BACK));
+        M3IconButton button = new M3IconButton(CatalogIcons.createDirectional(CatalogIcons.ARROW_BACK));
         button.getStyleClass().add("catalog-top-action");
         button.setAccessibleText("Back");
         button.setOnAction(event -> navigateBack());
@@ -475,7 +475,7 @@ public final class M3FXCatalogApp extends Application {
     /// Creates an overflow-menu item that opens an external URL.
     ///
     /// @param text the menu-item label
-    /// @param url the absolute destination URL
+    /// @param url  the absolute destination URL
     /// @return the configured menu item
     private M3MenuItem externalMenuItem(String text, String url) {
         M3MenuItem item = new M3MenuItem(text);
@@ -557,7 +557,8 @@ public final class M3FXCatalogApp extends Application {
     /// Returns the immutable component registry for package-level verification.
     ///
     /// @return the Catalog components
-    @Unmodifiable List<CatalogComponent> components() {
+    @Unmodifiable
+    List<CatalogComponent> components() {
         return components;
     }
 
