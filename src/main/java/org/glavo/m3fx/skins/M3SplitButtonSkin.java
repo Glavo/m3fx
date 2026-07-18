@@ -11,12 +11,6 @@ import javafx.scene.AccessibleAttribute;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.SkinBase;
 import javafx.scene.layout.Pane;
-import javafx.scene.paint.Color;
-import javafx.scene.shape.ArcTo;
-import javafx.scene.shape.ClosePath;
-import javafx.scene.shape.LineTo;
-import javafx.scene.shape.MoveTo;
-import javafx.scene.shape.Path;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3Button;
 import org.glavo.m3fx.controls.M3ButtonBase;
@@ -57,10 +51,10 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
     private final M3MenuButton menuButton;
 
     /// The reusable action-part surface shape.
-    private final SplitPartShape actionShape = new SplitPartShape();
+    private final M3RoundedRectangleShape actionShape = new M3RoundedRectangleShape();
 
     /// The reusable menu-part surface shape.
-    private final SplitPartShape menuShape = new SplitPartShape();
+    private final M3RoundedRectangleShape menuShape = new M3RoundedRectangleShape();
 
     /// The action-part inner-corner transition.
     private final PartShapeTransition actionShapeTransition;
@@ -119,7 +113,7 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
     }
 
     /// Configures one internal region to render its background and outline through a mutable shape.
-    private static void configurePartShape(M3ButtonBase button, SplitPartShape surfaceShape) {
+    private static void configurePartShape(M3ButtonBase button, M3RoundedRectangleShape surfaceShape) {
         button.setShape(surfaceShape);
         button.setScaleShape(false);
         button.setCenterShape(false);
@@ -127,7 +121,7 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
     }
 
     /// Removes the mutable shape installed by this skin.
-    private static void resetPartShape(M3ButtonBase button, SplitPartShape surfaceShape) {
+    private static void resetPartShape(M3ButtonBase button, M3RoundedRectangleShape surfaceShape) {
         if (button.getShape() == surfaceShape) {
             button.setShape(null);
             button.setScaleShape(true);
@@ -395,7 +389,7 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
         private final M3ButtonBase button;
 
         /// The mutable shape installed on the button surface.
-        private final SplitPartShape shape;
+        private final M3RoundedRectangleShape shape;
 
         /// Whether this transition controls the trailing menu part.
         private final boolean menuPart;
@@ -412,7 +406,7 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
         /// Creates a reusable inner-corner transition.
         private PartShapeTransition(
                 M3ButtonBase button,
-                SplitPartShape shape,
+                M3RoundedRectangleShape shape,
                 boolean menuPart
         ) {
             this.button = button;
@@ -455,7 +449,25 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
             double width = button.getWidth();
             double height = button.getHeight();
             double outerCorner = getSkinnable().getOuterCorner();
-            shape.update(width, height, outerCorner, currentInnerCorner, menuPart);
+            if (menuPart) {
+                shape.update(
+                        width,
+                        height,
+                        currentInnerCorner,
+                        outerCorner,
+                        outerCorner,
+                        currentInnerCorner
+                );
+            } else {
+                shape.update(
+                        width,
+                        height,
+                        outerCorner,
+                        currentInnerCorner,
+                        currentInnerCorner,
+                        outerCorner
+                );
+            }
         }
 
         /// Applies the eased inner-corner radius without allocating pulse-local objects.
@@ -468,139 +480,4 @@ public final class M3SplitButtonSkin extends SkinBase<M3SplitButton> {
         }
     }
 
-    /// A reusable asymmetric rounded rectangle used as a JavaFX region shape.
-    @NotNullByDefault
-    private static final class SplitPartShape extends Path {
-        /// The path starting point.
-        private final MoveTo start = new MoveTo();
-
-        /// The top edge.
-        private final LineTo topEdge = new LineTo();
-
-        /// The rounded top-right corner.
-        private final ArcTo topRightArc = new ArcTo();
-
-        /// The right edge.
-        private final LineTo rightEdge = new LineTo();
-
-        /// The rounded bottom-right corner.
-        private final ArcTo bottomRightArc = new ArcTo();
-
-        /// The bottom edge.
-        private final LineTo bottomEdge = new LineTo();
-
-        /// The rounded bottom-left corner.
-        private final ArcTo bottomLeftArc = new ArcTo();
-
-        /// The left edge.
-        private final LineTo leftEdge = new LineTo();
-
-        /// The rounded top-left corner.
-        private final ArcTo topLeftArc = new ArcTo();
-
-        /// The width represented by the current path.
-        private double width = Double.NaN;
-
-        /// The height represented by the current path.
-        private double height = Double.NaN;
-
-        /// The current top-left radius.
-        private double topLeftRadius = Double.NaN;
-
-        /// The current top-right radius.
-        private double topRightRadius = Double.NaN;
-
-        /// The current bottom-right radius.
-        private double bottomRightRadius = Double.NaN;
-
-        /// The current bottom-left radius.
-        private double bottomLeftRadius = Double.NaN;
-
-        /// Creates an empty reusable rounded rectangle.
-        private SplitPartShape() {
-            setFill(Color.BLACK);
-            setStroke(null);
-            getElements().addAll(
-                    start,
-                    topEdge,
-                    topRightArc,
-                    rightEdge,
-                    bottomRightArc,
-                    bottomEdge,
-                    bottomLeftArc,
-                    leftEdge,
-                    topLeftArc,
-                    new ClosePath()
-            );
-        }
-
-        /// Updates the rounded rectangle to the supplied part bounds and logical corners.
-        private void update(
-                double width,
-                double height,
-                double outerCorner,
-                double innerCorner,
-                boolean menuPart
-        ) {
-            double maximumRadius = Math.max(0.0, Math.min(width, height) / 2.0);
-            double outer = Math.min(maximumRadius, Math.max(0.0, outerCorner));
-            double inner = Math.min(maximumRadius, Math.max(0.0, innerCorner));
-            double topLeft = menuPart ? inner : outer;
-            double topRight = menuPart ? outer : inner;
-            if (Double.compare(this.width, width) == 0
-                    && Double.compare(this.height, height) == 0
-                    && Double.compare(topLeftRadius, topLeft) == 0
-                    && Double.compare(topRightRadius, topRight) == 0
-                    && Double.compare(bottomRightRadius, topRight) == 0
-                    && Double.compare(bottomLeftRadius, topLeft) == 0) {
-                return;
-            }
-
-            this.width = width;
-            this.height = height;
-            topLeftRadius = topLeft;
-            topRightRadius = topRight;
-            bottomRightRadius = topRight;
-            bottomLeftRadius = topLeft;
-
-            start.setX(topLeft);
-            start.setY(0.0);
-            topEdge.setX(width - topRight);
-            topEdge.setY(0.0);
-            updateCorner(topRightArc, topRight, width, topRight);
-            rightEdge.setX(width);
-            rightEdge.setY(height - topRight);
-            updateCorner(
-                    bottomRightArc,
-                    topRight,
-                    width - topRight,
-                    height
-            );
-            bottomEdge.setX(topLeft);
-            bottomEdge.setY(height);
-            updateCorner(
-                    bottomLeftArc,
-                    topLeft,
-                    0.0,
-                    height - topLeft
-            );
-            leftEdge.setX(0.0);
-            leftEdge.setY(topLeft);
-            updateCorner(topLeftArc, topLeft, topLeft, 0.0);
-        }
-
-        /// Updates one corner without replacing path elements during shape animation.
-        private void updateCorner(
-                ArcTo arc,
-                double radius,
-                double x,
-                double y
-        ) {
-            arc.setRadiusX(radius);
-            arc.setRadiusY(radius);
-            arc.setX(x);
-            arc.setY(y);
-            arc.setSweepFlag(true);
-        }
-    }
 }

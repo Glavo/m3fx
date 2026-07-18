@@ -3,12 +3,14 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.animation.Animation;
 import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.event.EventHandler;
 import javafx.geometry.Bounds;
 import javafx.scene.Node;
 import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.skin.LabeledSkinBase;
@@ -56,6 +58,15 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
     /// Animates CSS-resolved elevation changes.
     private final M3CssEffectTransition effectTransition;
 
+    /// The last CSS corner target observed by this skin.
+    private @Nullable CornerRadii containerShapeTarget;
+
+    /// The reusable corner transition, allocated only after the first animated shape change.
+    private @Nullable ContainerShapeTransition containerShapeTransition;
+
+    /// Retargets shape motion after CSS changes a background or border radius.
+    private final InvalidationListener containerShapeTargetInvalidation = observable -> updateContainerShapeTarget();
+
     /// Handles primary mouse presses.
     private final EventHandler<MouseEvent> mousePressedHandler = this::handleMousePressed;
 
@@ -75,7 +86,13 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
     private final EventHandler<KeyEvent> keyReleasedHandler = this::handleKeyReleased;
 
     /// Keeps the state layer sized when controls are resized outside a layout pass.
-    private final InvalidationListener stateLayerLayoutInvalidation = observable -> layoutStateLayer();
+    private final InvalidationListener stateLayerLayoutInvalidation = observable -> {
+        @Nullable ContainerShapeTransition transition = containerShapeTransition;
+        if (transition != null) {
+            transition.refreshGeometry();
+        }
+        layoutStateLayer();
+    };
 
     /// Whether the current interaction was started by a primary mouse press.
     private boolean mousePressed;
@@ -109,8 +126,11 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         control.layoutBoundsProperty().addListener(stateLayerLayoutInvalidation);
         control.backgroundProperty().addListener(stateLayerLayoutInvalidation);
         control.borderProperty().addListener(stateLayerLayoutInvalidation);
+        control.backgroundProperty().addListener(containerShapeTargetInvalidation);
+        control.borderProperty().addListener(containerShapeTargetInvalidation);
         control.armedProperty().addListener(armedListener);
         control.disabledProperty().addListener(disabledListener);
+        updateContainerShapeTarget();
         layoutStateLayer();
     }
 
@@ -127,8 +147,16 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         getSkinnable().layoutBoundsProperty().removeListener(stateLayerLayoutInvalidation);
         getSkinnable().backgroundProperty().removeListener(stateLayerLayoutInvalidation);
         getSkinnable().borderProperty().removeListener(stateLayerLayoutInvalidation);
+        getSkinnable().backgroundProperty().removeListener(containerShapeTargetInvalidation);
+        getSkinnable().borderProperty().removeListener(containerShapeTargetInvalidation);
         getSkinnable().armedProperty().removeListener(armedListener);
         getSkinnable().disabledProperty().removeListener(disabledListener);
+        @Nullable ContainerShapeTransition transition = containerShapeTransition;
+        if (transition != null) {
+            transition.dispose();
+            containerShapeTransition = null;
+        }
+        containerShapeTarget = null;
         resetInteractionState();
         stateLayer.uninstallStateTransitions();
         effectTransition.uninstall();
@@ -141,6 +169,10 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
     protected void layoutChildren(double x, double y, double width, double height) {
         super.layoutChildren(x, y, width, height);
         centerFixedTargetContent(x, y, width, height);
+        @Nullable ContainerShapeTransition transition = containerShapeTransition;
+        if (transition != null) {
+            transition.refreshGeometry();
+        }
         layoutStateLayer();
     }
 
@@ -398,6 +430,46 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         control.setScaleY(1.0);
     }
 
+    /// Retargets the rendered button outline after CSS resolves a different corner shape.
+    private void updateContainerShapeTarget() {
+        C button = getSkinnable();
+        @Nullable CornerRadii targetRadii = resolvedCornerRadii(button);
+        @Nullable CornerRadii previousTarget = containerShapeTarget;
+        if (targetRadii == null || targetRadii.equals(previousTarget)) {
+            return;
+        }
+        containerShapeTarget = targetRadii;
+        if (previousTarget == null) {
+            return;
+        }
+
+        @Nullable Scene scene = button.getScene();
+        @Nullable ContainerShapeTransition transition = containerShapeTransition;
+        boolean canAnimate = scene != null
+                && scene.getWindow() != null
+                && scene.getWindow().isShowing()
+                && M3Animation.areAnimationsEnabled(button)
+                && (button.getShape() == null
+                || transition != null && transition.isSurfaceShapeActive());
+        if (!canAnimate) {
+            if (transition != null) {
+                transition.snapTo(targetRadii);
+            }
+            return;
+        }
+
+        if (transition == null) {
+            transition = new ContainerShapeTransition(previousTarget);
+            containerShapeTransition = transition;
+        }
+        if (!transition.installSurfaceShape()) {
+            transition.snapTo(targetRadii);
+            return;
+        }
+        transition.configure(M3Animation.fastSpatial(button), targetRadii);
+        M3Animation.playFromStart(button, transition);
+    }
+
     /// Lays out the state layer to cover the full control surface.
     private void layoutStateLayer() {
         C control = getSkinnable();
@@ -480,6 +552,20 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         }
 
         @Nullable CornerRadii resolvedRadii = resolvedCornerRadii(button);
+        @Nullable ContainerShapeTransition activeShapeTransition = activeContainerShapeTransition();
+        if (activeShapeTransition != null) {
+            stateLayer.layoutLayer(
+                    0.0,
+                    0.0,
+                    width,
+                    height,
+                    activeShapeTransition.currentTopLeftRadius(),
+                    activeShapeTransition.currentTopRightRadius(),
+                    activeShapeTransition.currentBottomRightRadius(),
+                    activeShapeTransition.currentBottomLeftRadius()
+            );
+            return true;
+        }
         if (resolvedRadii != null) {
             stateLayer.layoutLayer(
                     0.0,
@@ -542,6 +628,10 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
     /// Returns the shape radius used to clip state layer feedback.
     private double stateLayerShapeRadius() {
         C button = getSkinnable();
+        @Nullable ContainerShapeTransition activeShapeTransition = activeContainerShapeTransition();
+        if (activeShapeTransition != null) {
+            return activeShapeTransition.currentTopLeftRadius();
+        }
         if (button instanceof M3FloatingActionButton floatingActionButton) {
             return floatingActionButton.getContainerShape();
         }
@@ -555,5 +645,305 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
             return chip.getContainerShape();
         }
         return Math.min(button.getWidth(), button.getHeight()) / 2.0;
+    }
+
+    /// Returns the active shape transition, or `null` while CSS owns the rendered outline.
+    private @Nullable ContainerShapeTransition activeContainerShapeTransition() {
+        @Nullable ContainerShapeTransition transition = containerShapeTransition;
+        return transition != null && transition.isSurfaceShapeActive() ? transition : null;
+    }
+
+    /// Animates the effective CSS corner radii through one retained region shape.
+    @NotNullByDefault
+    private final class ContainerShapeTransition extends org.glavo.m3fx.internal.M3FiniteTransition {
+        /// The index of the top-left horizontal radius.
+        private static final int TOP_LEFT_HORIZONTAL = 0;
+
+        /// The index of the top-left vertical radius.
+        private static final int TOP_LEFT_VERTICAL = 1;
+
+        /// The index of the top-right horizontal radius.
+        private static final int TOP_RIGHT_HORIZONTAL = 2;
+
+        /// The index of the top-right vertical radius.
+        private static final int TOP_RIGHT_VERTICAL = 3;
+
+        /// The index of the bottom-right horizontal radius.
+        private static final int BOTTOM_RIGHT_HORIZONTAL = 4;
+
+        /// The index of the bottom-right vertical radius.
+        private static final int BOTTOM_RIGHT_VERTICAL = 5;
+
+        /// The index of the bottom-left horizontal radius.
+        private static final int BOTTOM_LEFT_HORIZONTAL = 6;
+
+        /// The index of the bottom-left vertical radius.
+        private static final int BOTTOM_LEFT_VERTICAL = 7;
+
+        /// The number of independently interpolated corner coordinates.
+        private static final int RADIUS_COUNT = 8;
+
+        /// The effective radii currently rendered by the surface shape.
+        private final double[] currentRadii = new double[RADIUS_COUNT];
+
+        /// The effective radii captured at the beginning of the current run.
+        private final double[] startRadii = new double[RADIUS_COUNT];
+
+        /// The effective radii requested at the end of the current run.
+        private final double[] targetRadii = new double[RADIUS_COUNT];
+
+        /// The CSS radii represented by the current target.
+        private @Nullable CornerRadii cssTarget;
+
+        /// The lazily allocated shape installed only while a morph is active.
+        private @Nullable M3RoundedRectangleShape surfaceShape;
+
+        /// The scale-shape value restored after a morph.
+        private boolean previousScaleShape;
+
+        /// The center-shape value restored after a morph.
+        private boolean previousCenterShape;
+
+        /// The cache-shape value restored after a morph.
+        private boolean previousCacheShape;
+
+        /// Creates a reusable container-shape transition at the supplied resting CSS radii.
+        ///
+        /// @param initialRadii the CSS radii rendered before the first animated shape change
+        private ContainerShapeTransition(CornerRadii initialRadii) {
+            setOnFinished(event -> releaseSurfaceShape());
+            cssTarget = initialRadii;
+            resolveRadii(initialRadii, controlWidth(), controlHeight(), currentRadii);
+            System.arraycopy(currentRadii, 0, startRadii, 0, RADIUS_COUNT);
+            System.arraycopy(currentRadii, 0, targetRadii, 0, RADIUS_COUNT);
+        }
+
+        /// Returns whether this transition currently owns the skinnable region shape.
+        private boolean isSurfaceShapeActive() {
+            @Nullable M3RoundedRectangleShape shape = surfaceShape;
+            return shape != null && getSkinnable().getShape() == shape;
+        }
+
+        /// Installs the retained shape without replacing an application- or owner-provided shape.
+        private boolean installSurfaceShape() {
+            if (isSurfaceShapeActive()) {
+                return true;
+            }
+
+            C button = getSkinnable();
+            if (button.getShape() != null) {
+                return false;
+            }
+
+            M3RoundedRectangleShape shape = surfaceShape;
+            if (shape == null) {
+                shape = new M3RoundedRectangleShape();
+                surfaceShape = shape;
+            }
+            previousScaleShape = button.isScaleShape();
+            previousCenterShape = button.isCenterShape();
+            previousCacheShape = button.isCacheShape();
+            button.setShape(shape);
+            button.setScaleShape(false);
+            button.setCenterShape(false);
+            button.setCacheShape(false);
+            refreshGeometry();
+            return true;
+        }
+
+        /// Removes this transition's temporary shape and restores region-shape flags.
+        private void releaseSurfaceShape() {
+            @Nullable M3RoundedRectangleShape shape = surfaceShape;
+            C button = getSkinnable();
+            if (shape == null || button.getShape() != shape) {
+                return;
+            }
+            button.setShape(null);
+            button.setScaleShape(previousScaleShape);
+            button.setCenterShape(previousCenterShape);
+            button.setCacheShape(previousCacheShape);
+            button.requestLayout();
+        }
+
+        /// Settles immediately at the effective form of the supplied CSS radii.
+        private void snapTo(CornerRadii radii) {
+            stop();
+            cssTarget = radii;
+            resolveRadii(radii, controlWidth(), controlHeight(), currentRadii);
+            System.arraycopy(currentRadii, 0, startRadii, 0, RADIUS_COUNT);
+            System.arraycopy(currentRadii, 0, targetRadii, 0, RADIUS_COUNT);
+            refreshGeometry();
+            releaseSurfaceShape();
+            layoutStateLayer();
+        }
+
+        /// Configures a run from the currently rendered radii to a new CSS target.
+        private void configure(M3MotionSpec spec, CornerRadii radii) {
+            stop();
+            setCycleDuration(spec.duration());
+            setInterpolator(spec.interpolator());
+            System.arraycopy(currentRadii, 0, startRadii, 0, RADIUS_COUNT);
+            cssTarget = radii;
+            resolveRadii(radii, controlWidth(), controlHeight(), targetRadii);
+            refreshGeometry();
+        }
+
+        /// Updates the retained path after a layout or animation change.
+        private void refreshGeometry() {
+            @Nullable CornerRadii radii = cssTarget;
+            if (radii == null) {
+                return;
+            }
+
+            if (!isSurfaceShapeActive() && getStatus() != Animation.Status.RUNNING) {
+                resolveRadii(radii, controlWidth(), controlHeight(), currentRadii);
+            }
+            @Nullable M3RoundedRectangleShape shape = surfaceShape;
+            if (shape != null && getSkinnable().getShape() == shape) {
+                shape.update(
+                        controlWidth(),
+                        controlHeight(),
+                        currentRadii[TOP_LEFT_HORIZONTAL],
+                        currentRadii[TOP_LEFT_VERTICAL],
+                        currentRadii[TOP_RIGHT_HORIZONTAL],
+                        currentRadii[TOP_RIGHT_VERTICAL],
+                        currentRadii[BOTTOM_RIGHT_HORIZONTAL],
+                        currentRadii[BOTTOM_RIGHT_VERTICAL],
+                        currentRadii[BOTTOM_LEFT_HORIZONTAL],
+                        currentRadii[BOTTOM_LEFT_VERTICAL]
+                );
+            }
+        }
+
+        /// Returns the effective control width used to resolve percentage and pill radii.
+        private double controlWidth() {
+            C button = getSkinnable();
+            double width = button.getWidth();
+            return width > 0.0 ? width : Math.max(0.0, button.getLayoutBounds().getWidth());
+        }
+
+        /// Returns the effective control height used to resolve percentage and pill radii.
+        private double controlHeight() {
+            C button = getSkinnable();
+            double height = button.getHeight();
+            return height > 0.0 ? height : Math.max(0.0, button.getLayoutBounds().getHeight());
+        }
+
+        /// Returns the circular radius used by the state layer at the top-left corner.
+        private double currentTopLeftRadius() {
+            return Math.min(currentRadii[TOP_LEFT_HORIZONTAL], currentRadii[TOP_LEFT_VERTICAL]);
+        }
+
+        /// Returns the circular radius used by the state layer at the top-right corner.
+        private double currentTopRightRadius() {
+            return Math.min(currentRadii[TOP_RIGHT_HORIZONTAL], currentRadii[TOP_RIGHT_VERTICAL]);
+        }
+
+        /// Returns the circular radius used by the state layer at the bottom-right corner.
+        private double currentBottomRightRadius() {
+            return Math.min(currentRadii[BOTTOM_RIGHT_HORIZONTAL], currentRadii[BOTTOM_RIGHT_VERTICAL]);
+        }
+
+        /// Returns the circular radius used by the state layer at the bottom-left corner.
+        private double currentBottomLeftRadius() {
+            return Math.min(currentRadii[BOTTOM_LEFT_HORIZONTAL], currentRadii[BOTTOM_LEFT_VERTICAL]);
+        }
+
+        /// Stops motion and releases the temporary region shape.
+        private void dispose() {
+            stop();
+            releaseSurfaceShape();
+            surfaceShape = null;
+            cssTarget = null;
+        }
+
+        /// Applies one eased interpolation step without allocating geometry objects.
+        @Override
+        protected void interpolate(double fraction) {
+            for (int index = 0; index < RADIUS_COUNT; index++) {
+                currentRadii[index] = startRadii[index]
+                        + (targetRadii[index] - startRadii[index]) * fraction;
+            }
+            refreshGeometry();
+            getSkinnable().requestLayout();
+        }
+
+        /// Resolves JavaFX percentage radii and scales over-constrained corners to the supplied bounds.
+        private static void resolveRadii(
+                CornerRadii radii,
+                double width,
+                double height,
+                double[] resolved
+        ) {
+            resolved[TOP_LEFT_HORIZONTAL] = resolveRadius(
+                    radii.getTopLeftHorizontalRadius(),
+                    radii.isTopLeftHorizontalRadiusAsPercentage(),
+                    width
+            );
+            resolved[TOP_LEFT_VERTICAL] = resolveRadius(
+                    radii.getTopLeftVerticalRadius(),
+                    radii.isTopLeftVerticalRadiusAsPercentage(),
+                    height
+            );
+            resolved[TOP_RIGHT_HORIZONTAL] = resolveRadius(
+                    radii.getTopRightHorizontalRadius(),
+                    radii.isTopRightHorizontalRadiusAsPercentage(),
+                    width
+            );
+            resolved[TOP_RIGHT_VERTICAL] = resolveRadius(
+                    radii.getTopRightVerticalRadius(),
+                    radii.isTopRightVerticalRadiusAsPercentage(),
+                    height
+            );
+            resolved[BOTTOM_RIGHT_HORIZONTAL] = resolveRadius(
+                    radii.getBottomRightHorizontalRadius(),
+                    radii.isBottomRightHorizontalRadiusAsPercentage(),
+                    width
+            );
+            resolved[BOTTOM_RIGHT_VERTICAL] = resolveRadius(
+                    radii.getBottomRightVerticalRadius(),
+                    radii.isBottomRightVerticalRadiusAsPercentage(),
+                    height
+            );
+            resolved[BOTTOM_LEFT_HORIZONTAL] = resolveRadius(
+                    radii.getBottomLeftHorizontalRadius(),
+                    radii.isBottomLeftHorizontalRadiusAsPercentage(),
+                    width
+            );
+            resolved[BOTTOM_LEFT_VERTICAL] = resolveRadius(
+                    radii.getBottomLeftVerticalRadius(),
+                    radii.isBottomLeftVerticalRadiusAsPercentage(),
+                    height
+            );
+
+            double scale = 1.0;
+            scale = constrainedScale(scale, width,
+                    resolved[TOP_LEFT_HORIZONTAL] + resolved[TOP_RIGHT_HORIZONTAL]);
+            scale = constrainedScale(scale, width,
+                    resolved[BOTTOM_LEFT_HORIZONTAL] + resolved[BOTTOM_RIGHT_HORIZONTAL]);
+            scale = constrainedScale(scale, height,
+                    resolved[TOP_LEFT_VERTICAL] + resolved[BOTTOM_LEFT_VERTICAL]);
+            scale = constrainedScale(scale, height,
+                    resolved[TOP_RIGHT_VERTICAL] + resolved[BOTTOM_RIGHT_VERTICAL]);
+            if (scale < 1.0) {
+                for (int index = 0; index < RADIUS_COUNT; index++) {
+                    resolved[index] *= scale;
+                }
+            }
+        }
+
+        /// Resolves one absolute or percentage radius to a finite non-negative pixel value.
+        private static double resolveRadius(double value, boolean percentage, double dimension) {
+            double resolved = percentage ? value * dimension : value;
+            return Double.isFinite(resolved) ? Math.max(0.0, resolved) : 0.0;
+        }
+
+        /// Narrows a shared corner scale when one pair exceeds its available dimension.
+        private static double constrainedScale(double currentScale, double dimension, double radiusSum) {
+            if (radiusSum <= 0.0 || radiusSum <= dimension) {
+                return currentScale;
+            }
+            return Math.min(currentScale, Math.max(0.0, dimension) / radiusSum);
+        }
     }
 }
