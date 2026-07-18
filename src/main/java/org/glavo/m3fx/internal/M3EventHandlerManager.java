@@ -3,6 +3,8 @@
 
 package org.glavo.m3fx.internal;
 
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.ObjectPropertyBase;
 import javafx.event.Event;
 import javafx.event.EventDispatchChain;
 import javafx.event.EventDispatcher;
@@ -122,9 +124,10 @@ public final class M3EventHandlerManager implements EventDispatcher {
     /// @param handler   the new handler, or `null` to clear it
     /// @param <E>       the event class accepted by the handler
     /// @throws NullPointerException if `eventType` is `null`
+    /// @throws RuntimeException     if the event-handler property has been created and is currently bound
     public <E extends Event> void setEventHandler(
             EventType<E> eventType,
-            @Nullable EventHandler<? super E> handler
+            @Nullable EventHandler<E> handler
     ) {
         requireEventType(eventType);
         @Nullable HandlerBucket<E> bucket = getBucket(eventType);
@@ -136,6 +139,42 @@ public final class M3EventHandlerManager implements EventDispatcher {
         }
         bucket.setSingletonHandler(handler);
         removeEmptyBucket(eventType, bucket);
+    }
+
+    /// Returns the singleton bubbling handler associated with an event type.
+    ///
+    /// This method reads the same storage exposed by [#eventHandlerProperty(EventType, String)]. It does not create
+    /// the property when callers have only used [#setEventHandler(EventType, EventHandler)].
+    ///
+    /// @param eventType the event type associated with the singleton handler
+    /// @param <E>       the event class accepted by the handler
+    /// @return the installed singleton handler, or `null` when none is installed
+    /// @throws NullPointerException if `eventType` is `null`
+    public <E extends Event> @Nullable EventHandler<E> getEventHandler(EventType<E> eventType) {
+        requireEventType(eventType);
+        @Nullable HandlerBucket<E> bucket = getBucket(eventType);
+        return bucket == null ? null : bucket.getSingletonHandler();
+    }
+
+    /// Returns the lazily created property for an event type's singleton bubbling handler.
+    ///
+    /// Creating the property preserves any handler previously installed through
+    /// [#setEventHandler(EventType, EventHandler)]. Subsequent setter calls, property writes, bindings, listeners, and
+    /// event dispatch all observe the same value.
+    ///
+    /// @param eventType the event type associated with the property
+    /// @param name      the JavaFX property name
+    /// @param <E>       the event class accepted by the handler
+    /// @return the stable event-handler property for the supplied type
+    /// @throws NullPointerException     if `eventType` or `name` is `null`
+    /// @throws IllegalArgumentException if the property already exists with a different name
+    public <E extends Event> ObjectProperty<@Nullable EventHandler<E>> eventHandlerProperty(
+            EventType<E> eventType,
+            String name
+    ) {
+        requireEventType(eventType);
+        Objects.requireNonNull(name, "name");
+        return getOrCreateBucket(eventType).eventHandlerProperty(eventSource, name);
     }
 
     /// Dispatches one event through capture, the remaining chain, and bubble phases.
@@ -249,8 +288,11 @@ public final class M3EventHandlerManager implements EventDispatcher {
         /// The last registered bubbling handler.
         private @Nullable HandlerNode<E> lastHandler;
 
-        /// The singleton bubbling handler owned by a convenience property.
-        private @Nullable EventHandler<? super E> singletonHandler;
+        /// The singleton bubbling handler used before its property is requested.
+        private @Nullable EventHandler<E> singletonHandler;
+
+        /// The lazily created property that takes ownership of the singleton handler value.
+        private @Nullable EventHandlerProperty<E> singletonProperty;
 
         /// Registers one bubbling handler by identity.
         private void addHandler(EventHandler<? super E> handler) {
@@ -298,9 +340,35 @@ public final class M3EventHandlerManager implements EventDispatcher {
             }
         }
 
-        /// Replaces the singleton property handler.
-        private void setSingletonHandler(@Nullable EventHandler<? super E> handler) {
-            singletonHandler = handler;
+        /// Replaces the singleton handler through its direct or property-backed storage.
+        private void setSingletonHandler(@Nullable EventHandler<E> handler) {
+            @Nullable EventHandlerProperty<E> property = singletonProperty;
+            if (property == null) {
+                singletonHandler = handler;
+            } else {
+                property.set(handler);
+            }
+        }
+
+        /// Returns the singleton handler without forcing property creation.
+        private @Nullable EventHandler<E> getSingletonHandler() {
+            @Nullable EventHandlerProperty<E> property = singletonProperty;
+            return property == null ? singletonHandler : property.get();
+        }
+
+        /// Returns the stable property that owns this bucket's singleton handler.
+        private ObjectProperty<@Nullable EventHandler<E>> eventHandlerProperty(Object bean, String name) {
+            @Nullable EventHandlerProperty<E> property = singletonProperty;
+            if (property == null) {
+                property = new EventHandlerProperty<>(bean, name, singletonHandler);
+                singletonHandler = null;
+                singletonProperty = property;
+            } else if (!property.getName().equals(name)) {
+                throw new IllegalArgumentException(
+                        "Property name mismatch: " + name + " != " + property.getName()
+                );
+            }
+            return property;
         }
 
         /// Returns whether at least one active capturing filter is registered.
@@ -312,7 +380,7 @@ public final class M3EventHandlerManager implements EventDispatcher {
         /// Returns whether at least one active bubbling handler is registered.
         private boolean hasHandlers() {
             pruneDisconnectedHandlers();
-            return firstHandler != null || singletonHandler != null;
+            return firstHandler != null || getSingletonHandler() != null;
         }
 
         /// Dispatches all capturing filters in registration order.
@@ -348,7 +416,7 @@ public final class M3EventHandlerManager implements EventDispatcher {
                 }
             }
 
-            @Nullable EventHandler<? super E> propertyHandler = singletonHandler;
+            @Nullable EventHandler<E> propertyHandler = getSingletonHandler();
             if (propertyHandler != null) {
                 propertyHandler.handle(typedEvent);
             }
@@ -428,7 +496,48 @@ public final class M3EventHandlerManager implements EventDispatcher {
 
         /// Returns whether this bucket retains no filters or handlers.
         private boolean isEmpty() {
-            return firstFilter == null && firstHandler == null && singletonHandler == null;
+            return firstFilter == null
+                    && firstHandler == null
+                    && singletonHandler == null
+                    && singletonProperty == null;
+        }
+    }
+
+    /// A JavaFX property that owns one bucket's singleton handler after explicit property access.
+    @NotNullByDefault
+    private static final class EventHandlerProperty<E extends Event>
+            extends ObjectPropertyBase<@Nullable EventHandler<E>> {
+        /// The property bean exposed to JavaFX bindings and diagnostics.
+        private final Object bean;
+
+        /// The stable JavaFX property name.
+        private final String name;
+
+        /// Creates a property initialized from the bucket's previously direct handler value.
+        private EventHandlerProperty(
+                Object bean,
+                String name,
+                @Nullable EventHandler<E> initialValue
+        ) {
+            super(initialValue);
+            this.bean = bean;
+            this.name = name;
+        }
+
+        /// Returns the event target that owns this property.
+        ///
+        /// @return the non-null event target
+        @Override
+        public Object getBean() {
+            return bean;
+        }
+
+        /// Returns the name supplied when this event-handler property was first requested.
+        ///
+        /// @return the non-null property name
+        @Override
+        public String getName() {
+            return name;
         }
     }
 

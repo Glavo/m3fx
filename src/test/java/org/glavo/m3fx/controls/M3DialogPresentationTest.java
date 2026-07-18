@@ -3,6 +3,8 @@
 
 package org.glavo.m3fx.controls;
 
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
@@ -115,6 +117,53 @@ final class M3DialogPresentationTest {
 
         assertTrue(closeEvent.isConsumed());
         assertTrue(order.isEmpty());
+    }
+
+    /// Verifies that singleton lifecycle setters and their lazily created properties share one manager-owned value.
+    @Test
+    void lifecycleHandlerPropertiesShareEventManagerStorage() {
+        M3Dialog dialog = new M3Dialog();
+        AtomicInteger firstCalls = new AtomicInteger();
+        AtomicInteger secondCalls = new AtomicInteger();
+        AtomicInteger propertyChanges = new AtomicInteger();
+        EventHandler<M3DialogEvent> firstHandler = event -> firstCalls.incrementAndGet();
+        EventHandler<M3DialogEvent> secondHandler = event -> secondCalls.incrementAndGet();
+
+        assertNull(dialog.getOnShowing());
+        dialog.setOnShowing(firstHandler);
+        assertSame(firstHandler, dialog.getOnShowing());
+
+        ObjectProperty<@Nullable EventHandler<M3DialogEvent>> property = dialog.onShowingProperty();
+        assertSame(dialog, property.getBean());
+        assertEquals("onShowing", property.getName());
+        assertSame(firstHandler, property.get());
+        assertSame(property, dialog.onShowingProperty());
+        property.addListener((observable, oldHandler, newHandler) -> propertyChanges.incrementAndGet());
+
+        dialog.setOnShowing(secondHandler);
+        assertSame(secondHandler, property.get());
+        Event.fireEvent(dialog, new M3DialogEvent(dialog, M3DialogEvent.SHOWING, null));
+        assertEquals(0, firstCalls.get());
+        assertEquals(1, secondCalls.get());
+
+        SimpleObjectProperty<@Nullable EventHandler<M3DialogEvent>> source =
+                new SimpleObjectProperty<>(firstHandler);
+        property.bind(source);
+        assertSame(firstHandler, dialog.getOnShowing());
+        assertThrows(RuntimeException.class, () -> dialog.setOnShowing(secondHandler));
+        Event.fireEvent(dialog, new M3DialogEvent(dialog, M3DialogEvent.SHOWING, null));
+        assertEquals(1, firstCalls.get());
+
+        source.set(secondHandler);
+        assertSame(secondHandler, dialog.getOnShowing());
+        Event.fireEvent(dialog, new M3DialogEvent(dialog, M3DialogEvent.SHOWING, null));
+        assertEquals(2, secondCalls.get());
+
+        property.unbind();
+        dialog.setOnShowing(null);
+        assertNull(dialog.getOnShowing());
+        assertNull(property.get());
+        assertTrue(propertyChanges.get() >= 3);
     }
 
     /// Verifies that showing requires a configured owner attached to a visible window and hosted by an overlay pane.
