@@ -8,6 +8,7 @@ import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.event.EventHandler;
 import javafx.geometry.Bounds;
+import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -167,13 +168,143 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
     /// Lays out labeled content and the bounded state layer.
     @Override
     protected void layoutChildren(double x, double y, double width, double height) {
-        super.layoutChildren(x, y, width, height);
-        centerFixedTargetContent(x, y, width, height);
+        @Nullable Insets stableInsets = stableContainerInsets();
+        double contentX = stableInsets == null ? x : stableInsets.getLeft();
+        double contentY = stableInsets == null ? y : stableInsets.getTop();
+        double contentWidth = stableInsets == null
+                ? width
+                : Math.max(0.0, getSkinnable().getWidth()
+                - stableInsets.getLeft()
+                - stableInsets.getRight());
+        double contentHeight = stableInsets == null
+                ? height
+                : Math.max(0.0, getSkinnable().getHeight()
+                - stableInsets.getTop()
+                - stableInsets.getBottom());
+        super.layoutChildren(contentX, contentY, contentWidth, contentHeight);
+        centerFixedTargetContent(contentX, contentY, contentWidth, contentHeight);
         @Nullable ContainerShapeTransition transition = containerShapeTransition;
         if (transition != null) {
             transition.refreshGeometry();
         }
         layoutStateLayer();
+    }
+
+    /// Computes the minimum width without allowing a temporary Region shape to remove border insets.
+    @Override
+    protected double computeMinWidth(
+            double height,
+            double topInset,
+            double rightInset,
+            double bottomInset,
+            double leftInset
+    ) {
+        @Nullable Insets stableInsets = stableContainerInsets();
+        if (stableInsets == null) {
+            return super.computeMinWidth(height, topInset, rightInset, bottomInset, leftInset);
+        }
+        return super.computeMinWidth(
+                height,
+                stableInsets.getTop(),
+                stableInsets.getRight(),
+                stableInsets.getBottom(),
+                stableInsets.getLeft()
+        );
+    }
+
+    /// Computes the minimum height without allowing a temporary Region shape to remove border insets.
+    @Override
+    protected double computeMinHeight(
+            double width,
+            double topInset,
+            double rightInset,
+            double bottomInset,
+            double leftInset
+    ) {
+        @Nullable Insets stableInsets = stableContainerInsets();
+        if (stableInsets == null) {
+            return super.computeMinHeight(width, topInset, rightInset, bottomInset, leftInset);
+        }
+        return super.computeMinHeight(
+                width,
+                stableInsets.getTop(),
+                stableInsets.getRight(),
+                stableInsets.getBottom(),
+                stableInsets.getLeft()
+        );
+    }
+
+    /// Computes the preferred width without allowing a temporary Region shape to remove border insets.
+    @Override
+    protected double computePrefWidth(
+            double height,
+            double topInset,
+            double rightInset,
+            double bottomInset,
+            double leftInset
+    ) {
+        @Nullable Insets stableInsets = stableContainerInsets();
+        if (stableInsets == null) {
+            return super.computePrefWidth(height, topInset, rightInset, bottomInset, leftInset);
+        }
+        return super.computePrefWidth(
+                height,
+                stableInsets.getTop(),
+                stableInsets.getRight(),
+                stableInsets.getBottom(),
+                stableInsets.getLeft()
+        );
+    }
+
+    /// Computes the preferred height without allowing a temporary Region shape to remove border insets.
+    @Override
+    protected double computePrefHeight(
+            double width,
+            double topInset,
+            double rightInset,
+            double bottomInset,
+            double leftInset
+    ) {
+        @Nullable Insets stableInsets = stableContainerInsets();
+        if (stableInsets == null) {
+            return super.computePrefHeight(width, topInset, rightInset, bottomInset, leftInset);
+        }
+        return super.computePrefHeight(
+                width,
+                stableInsets.getTop(),
+                stableInsets.getRight(),
+                stableInsets.getBottom(),
+                stableInsets.getLeft()
+        );
+    }
+
+    /// Computes the baseline without allowing a temporary Region shape to remove border insets.
+    @Override
+    public double computeBaselineOffset(
+            double topInset,
+            double rightInset,
+            double bottomInset,
+            double leftInset
+    ) {
+        @Nullable Insets stableInsets = stableContainerInsets();
+        if (stableInsets == null) {
+            return super.computeBaselineOffset(topInset, rightInset, bottomInset, leftInset);
+        }
+        return super.computeBaselineOffset(
+                stableInsets.getTop(),
+                stableInsets.getRight(),
+                stableInsets.getBottom(),
+                stableInsets.getLeft()
+        );
+    }
+
+    /// Returns the snapped padding and border insets preserved across temporary Region-shape ownership.
+    private @Nullable Insets stableContainerInsets() {
+        @Nullable ContainerShapeTransition transition = containerShapeTransition;
+        if (transition == null || !transition.stabilizesRegionInsets()) {
+            return null;
+        }
+        return transition.stableRegionInsets();
     }
 
     /// Installs mouse and keyboard behavior handlers.
@@ -698,6 +829,9 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         /// The lazily allocated shape installed only while a morph is active.
         private @Nullable M3RoundedRectangleShape surfaceShape;
 
+        /// The cached snapped insets that keep measurement independent of temporary Region-shape ownership.
+        private @Nullable Insets stableInsets;
+
         /// The scale-shape value restored after a morph.
         private boolean previousScaleShape;
 
@@ -722,6 +856,36 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
         private boolean isSurfaceShapeActive() {
             @Nullable M3RoundedRectangleShape shape = surfaceShape;
             return shape != null && getSkinnable().getShape() == shape;
+        }
+
+        /// Returns whether measurements should preserve the insets used before this transition installed a shape.
+        private boolean stabilizesRegionInsets() {
+            @Nullable M3RoundedRectangleShape shape = surfaceShape;
+            return shape != null
+                    && (getSkinnable().getShape() == null || getSkinnable().getShape() == shape);
+        }
+
+        /// Returns cached snapped padding and border insets, rebuilding them only when their values change.
+        private Insets stableRegionInsets() {
+            C button = getSkinnable();
+            Insets padding = button.getPadding();
+            @Nullable Border border = button.getBorder();
+            Insets borderInsets = border == null ? Insets.EMPTY : border.getInsets();
+            double top = button.snapSpaceY(padding.getTop() + borderInsets.getTop());
+            double right = button.snapSpaceX(padding.getRight() + borderInsets.getRight());
+            double bottom = button.snapSpaceY(padding.getBottom() + borderInsets.getBottom());
+            double left = button.snapSpaceX(padding.getLeft() + borderInsets.getLeft());
+
+            @Nullable Insets cached = stableInsets;
+            if (cached == null
+                    || Double.compare(cached.getTop(), top) != 0
+                    || Double.compare(cached.getRight(), right) != 0
+                    || Double.compare(cached.getBottom(), bottom) != 0
+                    || Double.compare(cached.getLeft(), left) != 0) {
+                cached = new Insets(top, right, bottom, left);
+                stableInsets = cached;
+            }
+            return cached;
         }
 
         /// Installs the retained shape without replacing an application- or owner-provided shape.
@@ -762,7 +926,6 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
             button.setScaleShape(previousScaleShape);
             button.setCenterShape(previousCenterShape);
             button.setCacheShape(previousCacheShape);
-            button.requestLayout();
         }
 
         /// Settles immediately at the effective form of the supplied CSS radii.
@@ -854,6 +1017,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
             stop();
             releaseSurfaceShape();
             surfaceShape = null;
+            stableInsets = null;
             cssTarget = null;
         }
 
@@ -865,7 +1029,7 @@ abstract class M3LabeledButtonSkinBase<C extends ButtonBase> extends LabeledSkin
                         + (targetRadii[index] - startRadii[index]) * fraction;
             }
             refreshGeometry();
-            getSkinnable().requestLayout();
+            layoutStateLayer();
         }
 
         /// Resolves JavaFX percentage radii and scales over-constrained corners to the supplied bounds.
