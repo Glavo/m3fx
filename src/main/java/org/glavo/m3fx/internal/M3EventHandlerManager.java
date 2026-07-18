@@ -296,7 +296,7 @@ public final class M3EventHandlerManager implements EventDispatcher {
 
         /// Registers one bubbling handler by identity.
         private void addHandler(EventHandler<? super E> handler) {
-            if (find(firstHandler, handler) != null) {
+            if (findHandler(handler) != null) {
                 return;
             }
             HandlerNode<E> node = new HandlerNode<>(handler);
@@ -311,7 +311,7 @@ public final class M3EventHandlerManager implements EventDispatcher {
 
         /// Removes one bubbling handler by identity.
         private void removeHandler(EventHandler<? super E> handler) {
-            @Nullable HandlerNode<E> node = find(firstHandler, handler);
+            @Nullable HandlerNode<E> node = findHandler(handler);
             if (node != null) {
                 unlinkHandler(node);
             }
@@ -319,7 +319,7 @@ public final class M3EventHandlerManager implements EventDispatcher {
 
         /// Registers one capturing filter by identity.
         private void addFilter(EventHandler<? super E> filter) {
-            if (find(firstFilter, filter) != null) {
+            if (findFilter(filter) != null) {
                 return;
             }
             HandlerNode<E> node = new HandlerNode<>(filter);
@@ -334,7 +334,7 @@ public final class M3EventHandlerManager implements EventDispatcher {
 
         /// Removes one capturing filter by identity.
         private void removeFilter(EventHandler<? super E> filter) {
-            @Nullable HandlerNode<E> node = find(firstFilter, filter);
+            @Nullable HandlerNode<E> node = findFilter(filter);
             if (node != null) {
                 unlinkFilter(node);
             }
@@ -373,14 +373,21 @@ public final class M3EventHandlerManager implements EventDispatcher {
 
         /// Returns whether at least one active capturing filter is registered.
         private boolean hasFilters() {
-            pruneDisconnectedFilters();
+            while (firstFilter != null && isDisconnected(firstFilter.handler)) {
+                unlinkFilter(firstFilter);
+            }
             return firstFilter != null;
         }
 
         /// Returns whether at least one active bubbling handler is registered.
         private boolean hasHandlers() {
-            pruneDisconnectedHandlers();
-            return firstHandler != null || getSingletonHandler() != null;
+            if (getSingletonHandler() != null) {
+                return true;
+            }
+            while (firstHandler != null && isDisconnected(firstHandler.handler)) {
+                unlinkHandler(firstHandler);
+            }
+            return firstHandler != null;
         }
 
         /// Dispatches all capturing filters in registration order.
@@ -422,30 +429,6 @@ public final class M3EventHandlerManager implements EventDispatcher {
             }
         }
 
-        /// Removes disconnected weak filters without dispatching an event.
-        private void pruneDisconnectedFilters() {
-            @Nullable HandlerNode<E> node = firstFilter;
-            while (node != null) {
-                @Nullable HandlerNode<E> next = node.next;
-                if (isDisconnected(node.handler)) {
-                    unlinkFilter(node);
-                }
-                node = next;
-            }
-        }
-
-        /// Removes disconnected weak handlers without dispatching an event.
-        private void pruneDisconnectedHandlers() {
-            @Nullable HandlerNode<E> node = firstHandler;
-            while (node != null) {
-                @Nullable HandlerNode<E> next = node.next;
-                if (isDisconnected(node.handler)) {
-                    unlinkHandler(node);
-                }
-                node = next;
-            }
-        }
-
         /// Unlinks one filter while retaining its next pointer for mutation-safe dispatch.
         private void unlinkFilter(HandlerNode<E> node) {
             if (node.previous == null) {
@@ -474,17 +457,32 @@ public final class M3EventHandlerManager implements EventDispatcher {
             }
         }
 
-        /// Finds a registered handler by identity.
-        private static <E extends Event> @Nullable HandlerNode<E> find(
-                @Nullable HandlerNode<E> first,
-                EventHandler<? super E> handler
-        ) {
-            @Nullable HandlerNode<E> node = first;
+        /// Finds a live bubbling handler by identity and removes disconnected weak registrations encountered first.
+        private @Nullable HandlerNode<E> findHandler(EventHandler<? super E> handler) {
+            @Nullable HandlerNode<E> node = firstHandler;
             while (node != null) {
-                if (node.handler == handler) {
+                @Nullable HandlerNode<E> next = node.next;
+                if (isDisconnected(node.handler)) {
+                    unlinkHandler(node);
+                } else if (node.handler == handler) {
                     return node;
                 }
-                node = node.next;
+                node = next;
+            }
+            return null;
+        }
+
+        /// Finds a live capturing filter by identity and removes disconnected weak registrations encountered first.
+        private @Nullable HandlerNode<E> findFilter(EventHandler<? super E> filter) {
+            @Nullable HandlerNode<E> node = firstFilter;
+            while (node != null) {
+                @Nullable HandlerNode<E> next = node.next;
+                if (isDisconnected(node.handler)) {
+                    unlinkFilter(node);
+                } else if (node.handler == filter) {
+                    return node;
+                }
+                node = next;
             }
             return null;
         }
