@@ -31,14 +31,12 @@ import java.time.LocalDate;
 ///
 /// The picker is owned by this dialog and must not be reparented. Optional presets are exposed as a live ordered
 /// list and appear beside the calendar. Bounds, locale, and adjacent-month display are configured through the
-/// embedded picker. Presentation occurs inside the owner scene and therefore requires [#setOwner(Node)] before
-/// [#show()].
+/// embedded picker. Present the configured dialog with [M3OverlayPane#showDialog(M3Dialog)].
 ///
 /// ```java
-/// private void showDateDialog(Node owner) {
+/// private void showDateDialog(M3OverlayPane overlayPane) {
 ///     LocalDate today = LocalDate.now();
 ///     M3DatePickerDialog dialog = new M3DatePickerDialog(today);
-///     dialog.setOwner(owner);
 ///     dialog.getPicker().setMinDate(today);
 ///     dialog.getPicker().setMaxDate(today.plusMonths(3));
 ///     dialog.getPresets().addAll(M3DatePresets.common(today));
@@ -47,7 +45,7 @@ import java.time.LocalDate;
 ///             LocalDate selectedDate = dialog.getValue();
 ///         }
 ///     });
-///     dialog.show();
+///     overlayPane.showDialog(dialog);
 /// }
 /// ```
 ///

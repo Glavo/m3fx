@@ -28,14 +28,13 @@ import java.time.LocalDate;
 /// [cancellable lifecycle][M3Dialog#onCloseRequestProperty()].
 ///
 /// The picker is owned by this dialog and must not be reparented. Optional presets are exposed as a live ordered
-/// list and appear beside the calendar. Presentation occurs inside the owner scene and therefore requires
-/// [#setOwner(Node)] before [#show()].
+/// list and appear beside the calendar. Present the configured dialog with
+/// [M3OverlayPane#showDialog(M3Dialog)].
 ///
 /// ```java
-/// private void showRangeDialog(Node owner) {
+/// private void showRangeDialog(M3OverlayPane overlayPane) {
 ///     LocalDate today = LocalDate.now();
 ///     M3DateRangePickerDialog dialog = new M3DateRangePickerDialog();
-///     dialog.setOwner(owner);
 ///     dialog.getPicker().setMinDate(today.minusMonths(1));
 ///     dialog.getPicker().setMaxDate(today.plusMonths(6));
 ///     dialog.getPresets().addAll(M3DateRangePresets.common(
@@ -45,7 +44,7 @@ import java.time.LocalDate;
 ///             M3DateRange selectedRange = dialog.getPicker().getRange();
 ///         }
 ///     });
-///     dialog.show();
+///     overlayPane.showDialog(dialog);
 /// }
 /// ```
 ///

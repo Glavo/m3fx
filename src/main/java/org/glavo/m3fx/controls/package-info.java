@@ -33,7 +33,7 @@
 /// [org.glavo.m3fx.theme.M3ThemeManager]. Controls such as [M3Button], [M3TextInputLayout], [M3NavigationDrawer],
 /// [M3DatePicker], and [M3ProgressIndicator] resolve color, shape, typography, elevation, density, and motion
 /// through the active M3FX theme while still allowing
-/// per-control CSS overrides. [M3Dialog] and [M3Snackbar] presentations use the containing overlay pane without
+/// per-control CSS overrides. [M3Dialog] and [M3Snackbar] presentations are owned by an [M3OverlayPane] without
 /// replacing the scene root.
 ///
 /// The implementation follows the public Material Design 3 component guidance where it maps cleanly to

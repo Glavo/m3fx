@@ -602,9 +602,6 @@ final class M3PickerDialogTest {
             M3DatePickerDialog dateDialog = new M3DatePickerDialog(date);
             M3DateRangePickerDialog rangeDialog = new M3DateRangePickerDialog(range);
             M3TimePickerDialog timeDialog = new M3TimePickerDialog(time);
-            dateDialog.setOwner(owner);
-            rangeDialog.setOwner(owner);
-            timeDialog.setOwner(owner);
 
             List<M3DialogEvent> hiddenEvents = new ArrayList<>();
             AtomicReference<@Nullable LocalDate> confirmedDate = new AtomicReference<>();
@@ -630,7 +627,7 @@ final class M3PickerDialogTest {
             });
 
             try {
-                dateDialog.show();
+                overlay.showDialog(dateDialog);
                 assertInstanceOf(M3Button.class, dateDialog.getDialogPane().lookupButton(ButtonType.OK)).fire();
 
                 assertEquals(1, hiddenEvents.size());
@@ -639,7 +636,7 @@ final class M3PickerDialogTest {
                 assertEquals(date, dateDialog.getValue());
 
                 hiddenEvents.clear();
-                rangeDialog.show();
+                overlay.showDialog(rangeDialog);
                 assertInstanceOf(
                         M3Button.class,
                         rangeDialog.getDialogPane().lookupButton(ButtonType.CANCEL)
@@ -651,17 +648,14 @@ final class M3PickerDialogTest {
                 assertEquals(range, rangeDialog.getPicker().getRange());
 
                 hiddenEvents.clear();
-                timeDialog.show();
-                timeDialog.close();
+                M3DialogHandle timeHandle = overlay.showDialog(timeDialog);
+                assertTrue(timeHandle.requestClose());
 
                 assertEquals(1, hiddenEvents.size());
                 assertNull(hiddenEvents.get(0).getButtonType());
                 assertNull(confirmedTime.get());
                 assertEquals(time, timeDialog.getValue());
             } finally {
-                dateDialog.close();
-                rangeDialog.close();
-                timeDialog.close();
                 stage.close();
             }
         });

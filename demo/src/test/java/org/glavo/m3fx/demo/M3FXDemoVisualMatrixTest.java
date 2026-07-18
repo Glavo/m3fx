@@ -91,6 +91,7 @@ import org.glavo.m3fx.controls.M3DateRangePicker;
 import org.glavo.m3fx.controls.M3DateRangePickerDialog;
 import org.glavo.m3fx.controls.M3DateRangePickerField;
 import org.glavo.m3fx.controls.M3Dialog;
+import org.glavo.m3fx.controls.M3DialogHandle;
 import org.glavo.m3fx.controls.M3DialogPane;
 import org.glavo.m3fx.controls.M3Divider;
 import org.glavo.m3fx.controls.M3FabMenu;
@@ -7683,20 +7684,20 @@ final class M3FXDemoVisualMatrixTest {
     private static void verifyDialogPopupSurface(
             AtomicReference<@Nullable Scene> sceneReference
     ) throws InterruptedException {
-        AtomicReference<@Nullable M3Dialog> dialogReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3DialogHandle> dialogHandleReference = new AtomicReference<>();
         AtomicReference<@Nullable M3OverlayPane> overlayReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> dialogSnapshotReference = new AtomicReference<>();
 
         runOnFxThreadWhenNodeSnapshotStable(() -> {
-            @Nullable M3Dialog dialog = dialogReference.get();
-            return dialog == null ? null : dialog.getDialogPane();
+            @Nullable M3DialogHandle dialogHandle = dialogHandleReference.get();
+            return dialogHandle == null ? null : dialogHandle.getDialog().getDialogPane();
         }, dialogSnapshotReference, () -> {
-            @Nullable M3Dialog dialog = dialogReference.get();
-            if (dialog == null || !dialog.isShowing()) {
+            @Nullable M3DialogHandle dialogHandle = dialogHandleReference.get();
+            if (dialogHandle == null || !dialogHandle.isShowing()) {
                 return false;
             }
 
-            Parent dialogPane = dialog.getDialogPane();
+            Parent dialogPane = dialogHandle.getDialog().getDialogPane();
             return dialogPane.getScene() != null
                     && dialogPane.getScene().getWindow() != null
                     && dialogPane.getScene().getWindow().isShowing()
@@ -7711,20 +7712,20 @@ final class M3FXDemoVisualMatrixTest {
             );
             overlayReference.set(overlay);
             M3Dialog dialog = new M3Dialog();
-            dialog.setOwner(overlay);
             dialog.getDialogPane().setHeaderText("Dialog title");
             dialog.getDialogPane().setContentText("The active theme is applied to this dialog pane.");
             dialog.getDialogPane().getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
             dialog.getDialogPane().setPrefWidth(420.0);
-            dialog.show();
+            dialogHandleReference.set(overlay.showDialog(dialog));
             assertSame(overlay, scene.getRoot(), "showing a dialog must not replace the demo scene root");
-            dialogReference.set(dialog);
         }, () -> {
             Scene ownerScene = Objects.requireNonNull(sceneReference.get(), "scene");
             M3OverlayPane overlay = Objects.requireNonNull(overlayReference.get(), "overlay pane");
-            M3Dialog dialog = Objects.requireNonNull(dialogReference.get(), "dialog");
+            M3DialogHandle dialogHandle =
+                    Objects.requireNonNull(dialogHandleReference.get(), "dialog handle");
+            M3Dialog dialog = dialogHandle.getDialog();
             assertSame(overlay, ownerScene.getRoot(), "shown dialog must keep the demo scene root stable");
-            assertTrue(dialog.isShowing());
+            assertTrue(dialogHandle.isShowing());
             Parent dialogPane = dialog.getDialogPane();
             assertNotNull(dialogPane.getParent(), "shown dialog pane should have a presentation parent");
             assertTrue(isNodeOrDescendant(overlay, dialogPane),
@@ -7749,7 +7750,7 @@ final class M3FXDemoVisualMatrixTest {
                     Objects.requireNonNull(dialogSnapshotReference.get(), "dialog popup snapshot"),
                     "dialog popup"
             );
-            dialog.close();
+            assertTrue(dialogHandle.requestClose());
             assertSame(overlay, ownerScene.getRoot(), "closing a dialog must not replace the demo scene root");
         });
     }

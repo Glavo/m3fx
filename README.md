@@ -105,8 +105,14 @@ root.showSnackbar(connectionLost);
 ```
 
 Use one `M3OverlayPane` as the stable root of each application scene. It owns transient snackbar presentation and
-the in-scene layers used by `M3Dialog`; neither feature replaces `Scene.root`. A dialog owner must be the overlay
-pane or one of its descendants.
+the in-scene layers used by `M3Dialog`; neither feature replaces `Scene.root`. Present a dialog directly through the
+overlay pane and retain the returned handle when programmatic dismissal or presentation-state observation is needed:
+
+```java
+M3Dialog dialog = new M3Dialog();
+M3DialogHandle handle = root.showDialog(dialog);
+handle.requestClose();
+```
 
 Custom floating surfaces use a retained lifecycle handle instead of mutating an exposed overlay list:
 

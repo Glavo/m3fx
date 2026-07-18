@@ -30,20 +30,18 @@ import java.time.LocalTime;
 /// [LocalTime] through [#valueProperty()]. Its Dial/Input mode switch shares the specification's bottom action row
 /// with the dialog actions.
 ///
-/// The inherited [#show()] method is non-blocking. OK is disabled until a value is selected. Callers can inspect
-/// [M3DialogEvent#getButtonType()] from the hidden event to distinguish confirmation from dismissal; cancellation
-/// retains the current value. The dialog is rendered inside its owner scene, so configure an owner node before
-/// showing it:
+/// [M3OverlayPane#showDialog(M3Dialog)] presents the dialog without blocking. OK is disabled until a value is
+/// selected. Callers can inspect [M3DialogEvent#getButtonType()] from the hidden event to distinguish confirmation
+/// from dismissal; cancellation retains the current value.
 ///
 /// ```java
 /// M3TimePickerDialog dialog = new M3TimePickerDialog(LocalTime.of(9, 30));
-/// dialog.setOwner(ownerNode);
 /// dialog.setOnHidden(event -> {
 ///     if (event.getButtonType() == ButtonType.OK) {
 ///         LocalTime acceptedTime = dialog.getValue();
 ///     }
 /// });
-/// dialog.show();
+/// overlayPane.showDialog(dialog);
 /// ```
 ///
 /// See [Material Design time pickers](https://m3.material.io/components/time-pickers/overview).
@@ -107,7 +105,7 @@ public final class M3TimePickerDialog extends M3Dialog {
 
     /// Creates a time picker dialog with no selected time.
     ///
-    /// The dialog headline is `Select time`, the OK action is disabled, and no owner is configured. The
+    /// The dialog headline is `Select time`, the OK action is disabled, and the dialog is initially detached. The
     /// embedded picker uses its standard defaults.
     public M3TimePickerDialog() {
         this(new TimePickerDialogPane(), null);

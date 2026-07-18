@@ -3,35 +3,30 @@
 
 package org.glavo.m3fx.internal;
 
-import javafx.beans.value.ChangeListener;
-import javafx.geometry.NodeOrientation;
-import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
-import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.controls.M3DialogPane;
 import org.glavo.m3fx.controls.M3OverlayPane;
 import org.glavo.m3fx.controls.M3Scrim;
 import org.glavo.m3fx.internal.theme.M3ThemeMetadata;
-import org.glavo.m3fx.internal.theme.M3ThemeRuntime;
 import org.glavo.m3fx.theme.M3Theme;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
-/// Presents one Material dialog as an in-scene overlay above its owner content.
+/// Presents one Material dialog as an in-scene overlay above application content.
 ///
 /// The presenter never creates a native window or replaces a scene root. Each dialog contributes one layer to the
-/// stable [M3OverlayPane] found in its owner hierarchy. This preserves native window chrome interaction and gives
-/// nested dialogs deterministic stacking without changing application scene-graph ownership.
+/// [M3OverlayPane] selected by the caller. This preserves native window chrome interaction and gives nested dialogs
+/// deterministic stacking without changing application scene-graph ownership.
 @NotNullByDefault
 public final class M3DialogPresenter {
     /// The fallback scrim opacity used without an installed Material theme.
     private static final double FALLBACK_SCRIM_OPACITY = 0.32;
 
-    /// The minimum logical inset between a dialog and the owner scene edge.
+    /// The minimum logical inset between a dialog and the host edge.
     private static final double DIALOG_EDGE_INSET = 24.0;
 
     /// The Material scrim placed immediately below this dialog pane.
@@ -40,24 +35,11 @@ public final class M3DialogPresenter {
     /// The retained overlay layer containing the scrim and dialog pane.
     private final DialogLayer layer;
 
-    /// Mirrors effective motion settings while this presenter is attached to an owner.
-    private @Nullable M3MotionSettingsObserver motionSettingsObserver;
+    /// Observes host token-context changes while this presenter is attached.
+    private @Nullable M3MotionSettingsObserver contextObserver;
 
-    /// The owner whose local context currently controls this presentation.
-    private @Nullable Node contextOwner;
-
-    /// The theme currently used to resolve scrim component tokens.
-    private @Nullable M3Theme effectiveTheme;
-
-    /// The theme installed directly on the layer because ordinary ancestry cannot provide it.
-    private @Nullable M3Theme installedLayerTheme;
-
-    /// The generated stylesheet associated with [installedLayerTheme].
-    private @Nullable String installedLayerThemeStylesheet;
-
-    /// Mirrors owner orientation changes into the sibling overlay layer.
-    private final ChangeListener<NodeOrientation> ownerOrientationListener =
-            (observable, oldOrientation, newOrientation) -> syncOrientation();
+    /// The overlay pane whose effective theme controls the scrim token.
+    private @Nullable M3OverlayPane contextHost;
 
     /// The action completed after the active scrim exit transition, or `null` when no exit is pending.
     private @Nullable Runnable pendingScrimHiddenAction;
@@ -85,30 +67,24 @@ public final class M3DialogPresenter {
         layer = new DialogLayer(scrim, nonNullPane);
     }
 
-    /// Installs this dialog layer in the overlay pane containing an attached owner node.
+    /// Installs this dialog layer in an overlay pane.
     ///
-    /// @param owner the node whose hierarchy contains the target overlay pane
-    /// @throws IllegalStateException if the owner hierarchy does not contain an [M3OverlayPane] or this presenter is
-    ///                               already showing
-    /// @throws NullPointerException  if `owner` is `null`
-    public void show(Node owner) {
-        Objects.requireNonNull(owner, "owner");
+    /// @param host the overlay pane that owns this presentation and its inherited context
+    /// @throws IllegalStateException if this presenter is already showing
+    /// @throws NullPointerException  if `host` is `null`
+    public void show(M3OverlayPane host) {
+        M3OverlayPane nonNullHost = Objects.requireNonNull(host, "host");
         if (overlayHandle != null) {
             throw new IllegalStateException("dialog is already presented");
-        }
-
-        @Nullable M3OverlayPane currentHost = findHost(owner);
-        if (currentHost == null) {
-            throw new IllegalStateException("dialog owner must belong to an M3OverlayPane");
         }
 
         @Nullable M3OverlayPane.OverlayHandle shownHandle = null;
         boolean completed = false;
         try {
             layer.attach();
-            shownHandle = currentHost.showModalOverlay(layer);
+            shownHandle = nonNullHost.showModalOverlay(layer);
             overlayHandle = shownHandle;
-            startContextSynchronization(owner);
+            startContextSynchronization(nonNullHost);
             layer.applyCss();
             layer.layout();
             scrim.setOpacity(0.0);
@@ -176,18 +152,19 @@ public final class M3DialogPresenter {
         }
     }
 
-    /// Starts synchronization of owner-local context that cannot flow through the overlay sibling relationship.
-    private void startContextSynchronization(Node owner) {
+    /// Starts observation of host theme-token changes needed by non-CSS scrim geometry.
+    ///
+    /// @param host the presentation host whose effective theme supplies the scrim token
+    private void startContextSynchronization(M3OverlayPane host) {
         stopContextSynchronization();
-        contextOwner = owner;
-        owner.effectiveNodeOrientationProperty().addListener(ownerOrientationListener);
+        contextHost = host;
 
-        M3MotionSettingsObserver observer = new M3MotionSettingsObserver(owner, this::syncContext, false);
-        motionSettingsObserver = observer;
+        M3MotionSettingsObserver observer = new M3MotionSettingsObserver(host, this::syncScrimOpacity, false);
+        contextObserver = observer;
         boolean completed = false;
         try {
             observer.start();
-            syncContext();
+            syncScrimOpacity();
             completed = true;
         } finally {
             if (!completed) {
@@ -196,122 +173,30 @@ public final class M3DialogPresenter {
         }
     }
 
-    /// Releases owner listeners and direct layer state after presentation ends or fails.
+    /// Releases host token observation after presentation ends or fails.
     private void stopContextSynchronization() {
-        @Nullable Node owner = contextOwner;
-        contextOwner = null;
-        effectiveTheme = null;
+        contextHost = null;
         scrim.setVisibleOpacity(FALLBACK_SCRIM_OPACITY);
-        if (owner != null) {
-            owner.effectiveNodeOrientationProperty().removeListener(ownerOrientationListener);
-        }
 
-        @Nullable M3MotionSettingsObserver observer = motionSettingsObserver;
-        motionSettingsObserver = null;
+        @Nullable M3MotionSettingsObserver observer = contextObserver;
+        contextObserver = null;
         if (observer != null) {
             observer.dispose();
         }
-
-        M3MotionSettings.setReducedMotionRequested(layer, false);
-        layer.setNodeOrientation(NodeOrientation.INHERIT);
-        setDirectLayerTheme(null);
     }
 
-    /// Refreshes theme, orientation, and motion settings from the active owner context.
-    private void syncContext() {
-        syncOrientation();
-        @Nullable Node owner = contextOwner;
-        if (owner != null) {
-            M3MotionSettings.setReducedMotionRequested(layer, M3MotionSettings.shouldReduceMotion(owner));
-        }
-        syncThemeContext();
-    }
-
-    /// Mirrors the owner's effective node orientation into the overlay layer.
-    private void syncOrientation() {
-        @Nullable Node owner = contextOwner;
-        if (owner != null) {
-            layer.setNodeOrientation(owner.getEffectiveNodeOrientation());
-        }
-    }
-
-    /// Resolves the effective theme and installs it locally only when normal ancestry cannot supply it.
-    private void syncThemeContext() {
-        @Nullable Node owner = contextOwner;
-        if (owner == null) {
+    /// Resolves and applies the effective Material scrim opacity token.
+    private void syncScrimOpacity() {
+        @Nullable M3OverlayPane host = contextHost;
+        if (host == null) {
             return;
         }
 
-        @Nullable Parent themeRoot = M3ThemeResolver.findThemeRoot(owner);
+        @Nullable Parent themeRoot = M3ThemeResolver.findThemeRoot(host);
         @Nullable M3Theme nextEffectiveTheme = themeRoot == null ? null : M3ThemeMetadata.getTheme(themeRoot);
-        @Nullable M3Theme nextDirectTheme =
-                themeRoot != null && !contains(themeRoot, layer) ? nextEffectiveTheme : null;
-
-        boolean effectiveThemeChanged = !Objects.equals(effectiveTheme, nextEffectiveTheme);
-        effectiveTheme = nextEffectiveTheme;
-        boolean directThemeChanged = setDirectLayerTheme(nextDirectTheme);
-        if (effectiveThemeChanged) {
-            scrim.setVisibleOpacity(nextEffectiveTheme == null
-                    ? FALLBACK_SCRIM_OPACITY
-                    : nextEffectiveTheme.tokens().componentTokens().scrim().containerOpacity());
-        }
-        if (effectiveThemeChanged || directThemeChanged) {
-            layer.applyCss();
-            layer.requestLayout();
-        }
-    }
-
-    /// Installs or clears one direct theme without retaining copied owner stylesheets.
-    ///
-    /// @return `true` when the direct layer theme changed
-    private boolean setDirectLayerTheme(@Nullable M3Theme theme) {
-        if (Objects.equals(installedLayerTheme, theme)) {
-            return false;
-        }
-
-        @Nullable String previousStylesheet = installedLayerThemeStylesheet;
-        installedLayerThemeStylesheet = null;
-        if (previousStylesheet != null) {
-            layer.getStylesheets().remove(previousStylesheet);
-        }
-
-        if (theme == null) {
-            M3ThemeRuntime.uninstall(layer);
-            installedLayerTheme = null;
-            return true;
-        }
-
-        M3ThemeRuntime.install(layer, theme);
-        String stylesheet = M3ThemeRuntime.themeStylesheetUrl(theme);
-        layer.getStylesheets().remove(stylesheet);
-        layer.getStylesheets().add(stylesheet);
-        installedLayerTheme = theme;
-        installedLayerThemeStylesheet = stylesheet;
-        return true;
-    }
-
-    /// Returns whether one parent is the supplied node or appears in its current parent chain.
-    private static boolean contains(Parent ancestor, Node node) {
-        @Nullable Node current = node;
-        while (current != null) {
-            if (current == ancestor) {
-                return true;
-            }
-            current = current.getParent();
-        }
-        return false;
-    }
-
-    /// Finds the nearest overlay pane containing an owner node.
-    private static @Nullable M3OverlayPane findHost(Node owner) {
-        @Nullable Node current = owner;
-        while (current != null) {
-            if (current instanceof M3OverlayPane overlayPane) {
-                return overlayPane;
-            }
-            current = current.getParent();
-        }
-        return null;
+        scrim.setVisibleOpacity(nextEffectiveTheme == null
+                ? FALLBACK_SCRIM_OPACITY
+                : nextEffectiveTheme.tokens().componentTokens().scrim().containerOpacity());
     }
 
     /// A lightweight layer that fills its scene and centers one bounded dialog pane above a full scrim.

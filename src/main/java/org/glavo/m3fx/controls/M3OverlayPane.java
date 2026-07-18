@@ -43,9 +43,9 @@ import java.util.Objects;
 /// layers fill the same client area without affecting those measurements.
 ///
 /// Applications normally install one `M3OverlayPane` as the stable [javafx.scene.Scene] root and assign their
-/// ordinary application scaffold with [#setContent(Node)]. Material dialogs locate this pane through their owner
-/// hierarchy and never replace the scene root. Custom in-scene surfaces retain the [OverlayHandle] returned by
-/// [#showOverlay(Node)] or [#showModalOverlay(Node)] and close only that presentation through
+/// ordinary application scaffold with [#setContent(Node)]. Material dialogs are presented directly with
+/// [#showDialog(M3Dialog)] and never replace the scene root. Custom in-scene surfaces retain the [OverlayHandle]
+/// returned by [#showOverlay(Node)] or [#showModalOverlay(Node)] and close only that presentation through
 /// [OverlayHandle#hide()].
 ///
 /// Modal overlays block pointer and keyboard input directed at lower layers, restrict the root accessibility view
@@ -199,6 +199,34 @@ public final class M3OverlayPane extends Pane {
     /// @throws NullPointerException     if `overlay` is `null`
     public OverlayHandle showModalOverlay(Node overlay) {
         return showOverlay(overlay, true);
+    }
+
+    /// Presents a Material dialog as a modal in-scene layer.
+    ///
+    /// The returned handle owns this specific presentation and remains valid while its accepted exit transition is
+    /// running. Retain it to request programmatic closure or observe presentation state. The same dialog instance
+    /// cannot be presented more than once concurrently. This method must run on the JavaFX Application Thread, and
+    /// this pane must be attached to a showing window.
+    ///
+    /// @param dialog the dialog to present
+    /// @return the unique handle controlling this presentation
+    /// @throws IllegalStateException if called off the JavaFX Application Thread, if this pane is not attached to a
+    ///                               showing window, if the dialog is already presented, or if its pane already has
+    ///                               a scene-graph parent
+    /// @throws NullPointerException  if `dialog` is `null`
+    public M3DialogHandle showDialog(M3Dialog dialog) {
+        M3Dialog nonNullDialog = Objects.requireNonNull(dialog, "dialog");
+        M3DialogHandle handle = new M3DialogHandle(this, nonNullDialog);
+        boolean completed = false;
+        try {
+            nonNullDialog.present(this, handle);
+            completed = true;
+            return handle;
+        } finally {
+            if (!completed) {
+                handle.detach();
+            }
+        }
     }
 
     /// Returns the snackbar currently presented by this pane.

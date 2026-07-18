@@ -4645,7 +4645,7 @@ public final class M3FXDemoApp extends Application {
                 "This dialog uses the M3FX dialog pane style and active theme tokens.",
                 new ButtonType("OK", ButtonBar.ButtonData.OK_DONE)
         );
-        dialog.show();
+        showDialog(dialog);
     }
 
     /// Opens a demo dialog with form-like content.
@@ -4658,7 +4658,7 @@ public final class M3FXDemoApp extends Application {
         );
         dialog.getDialogPane().setContent(createDialogSettingsContent(true));
         dialog.getDialogPane().setPrefWidth(460.0);
-        dialog.show();
+        showDialog(dialog);
     }
 
     /// Opens a demo dialog for a destructive confirmation flow.
@@ -4671,10 +4671,10 @@ public final class M3FXDemoApp extends Application {
                 delete
         );
         dialog.getDialogPane().setGraphic(createErrorIcon("warning"));
-        dialog.show();
+        showDialog(dialog);
     }
 
-    /// Creates a demo dialog and initializes its owner from the active scene.
+    /// Creates a configured demo dialog.
     private M3Dialog createDemoDialog(
             String headerText,
             @Nullable String contentText,
@@ -4685,7 +4685,6 @@ public final class M3FXDemoApp extends Application {
         pane.setHeaderText(headerText);
         pane.setContentText(contentText == null ? "" : contentText);
         pane.getButtonTypes().addAll(buttonTypes);
-        initDialogOwner(dialog);
         return dialog;
     }
 
@@ -4693,7 +4692,6 @@ public final class M3FXDemoApp extends Application {
     private void showDatePickerDialog(LocalDate initialDate) {
         M3DatePickerDialog dialog = new M3DatePickerDialog(initialDate);
         dialog.getPresets().setAll(M3DatePresets.common(initialDate));
-        initDialogOwner(dialog);
         dialog.setOnHidden(event -> {
             if (event.getButtonType() == ButtonType.OK) {
                 @Nullable LocalDate value = dialog.getValue();
@@ -4702,13 +4700,12 @@ public final class M3FXDemoApp extends Application {
                 }
             }
         });
-        dialog.show();
+        showDialog(dialog);
     }
 
     /// Opens a date range picker dialog and reports the accepted range.
     private void showDateRangePickerDialog(LocalDate startDate, LocalDate endDate) {
         M3DateRangePickerDialog dialog = new M3DateRangePickerDialog(startDate, endDate);
-        initDialogOwner(dialog);
         dialog.setOnHidden(event -> {
             if (event.getButtonType() == ButtonType.OK) {
                 @Nullable M3DateRange range = dialog.getPicker().getRange();
@@ -4717,7 +4714,7 @@ public final class M3FXDemoApp extends Application {
                 }
             }
         });
-        dialog.show();
+        showDialog(dialog);
     }
 
     /// Opens a date range picker dialog with common range presets.
@@ -4726,7 +4723,6 @@ public final class M3FXDemoApp extends Application {
         dialog.getPicker().setMinDate(anchorDate.minusMonths(1));
         dialog.getPicker().setMaxDate(anchorDate.plusMonths(3));
         dialog.getPresets().setAll(M3DateRangePresets.common(anchorDate, dialog.getPicker().getFirstDayOfWeek()));
-        initDialogOwner(dialog);
         dialog.setOnHidden(event -> {
             if (event.getButtonType() == ButtonType.OK) {
                 @Nullable M3DateRange range = dialog.getPicker().getRange();
@@ -4735,7 +4731,7 @@ public final class M3FXDemoApp extends Application {
                 }
             }
         });
-        dialog.show();
+        showDialog(dialog);
     }
 
     /// Opens a time picker dialog and reports the accepted time.
@@ -4744,7 +4740,6 @@ public final class M3FXDemoApp extends Application {
         dialog.getPicker().setUse24HourClock(true);
         dialog.getPicker().setMinuteStep(15);
         dialog.getPresets().setAll(M3TimePresets.common(initialTime));
-        initDialogOwner(dialog);
         dialog.setOnHidden(event -> {
             if (event.getButtonType() == ButtonType.OK) {
                 @Nullable LocalTime value = dialog.getValue();
@@ -4753,14 +4748,14 @@ public final class M3FXDemoApp extends Application {
                 }
             }
         });
-        dialog.show();
+        showDialog(dialog);
     }
 
-    /// Initializes a dialog owner from the active demo scene.
-    private void initDialogOwner(M3Dialog dialog) {
-        Scene activeScene = scene;
-        if (activeScene != null) {
-            dialog.setOwner(activeScene.getRoot());
+    /// Presents a dialog in the demo's stable overlay host.
+    private void showDialog(M3Dialog dialog) {
+        M3OverlayPane activeOverlay = overlayPane;
+        if (activeOverlay != null) {
+            activeOverlay.showDialog(dialog);
         }
     }
 
