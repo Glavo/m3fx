@@ -4,9 +4,11 @@
 package org.glavo.m3fx.controls;
 
 import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
@@ -45,6 +47,8 @@ import java.util.Objects;
 /// the dialog has closed. An action button first bubbles its ordinary action event; consuming that event prevents
 /// dialog closing. Otherwise the dialog emits a cancellable [M3DialogEvent#CLOSE_REQUEST], converts the button type
 /// to a result, and runs its exit transition. Reduced-motion requests settle presentation immediately.
+/// Activating the surrounding scrim requests the same cancellable close by default and produces no button type;
+/// [#dismissOnScrimClickProperty()] disables only that pointer-dismissal behavior while retaining modality.
 ///
 /// A dialog must have an attached [owner][#setOwner(Node)] before it is shown. The owner also supplies inherited
 /// stylesheets, node orientation, motion settings, and the nearest local Material theme. An explicit
@@ -112,6 +116,16 @@ public class M3Dialog<R> {
     /// @defaultValue `null`
     private final ObjectProperty<@Nullable Callback<ButtonType, @Nullable R>> resultConverter =
             new SimpleObjectProperty<>(this, "resultConverter");
+
+    /// Whether a primary click on the surrounding scrim requests that this dialog close.
+    ///
+    /// A scrim dismissal follows the ordinary cancellable close lifecycle and produces no button type. Setting this
+    /// property to `false` keeps the scrim modal but prevents pointer dismissal. Escape and action buttons are not
+    /// affected.
+    ///
+    /// @defaultValue `true`
+    private final BooleanProperty dismissOnScrimClick =
+            new SimpleBooleanProperty(this, "dismissOnScrimClick", true);
 
     /// Reports whether this dialog currently owns an overlay layer in its owner's scene.
     ///
@@ -189,6 +203,12 @@ public class M3Dialog<R> {
     /// The action associated with the accepted close transition.
     private @Nullable ButtonType pendingButtonType;
 
+    /// Whether the pane has completed the active exit transition.
+    private boolean paneExitFinished;
+
+    /// Whether the scrim has completed the active exit transition.
+    private boolean scrimExitFinished;
+
     /// Whether [#showAndWait()] currently owns a nested event loop for this dialog.
     private boolean nestedEventLoopRunning;
 
@@ -203,7 +223,10 @@ public class M3Dialog<R> {
     /// @throws NullPointerException if `dialogPane` is `null`
     M3Dialog(M3DialogPane dialogPane) {
         this.dialogPane = Objects.requireNonNull(dialogPane, "dialogPane");
-        presenter = new M3DialogPresenter(dialogPane);
+        presenter = new M3DialogPresenter(dialogPane, this::handleScrimAction);
+        presenter.setDismissOnScrimClick(isDismissOnScrimClick());
+        dismissOnScrimClick.addListener((observable, oldValue, enabled) ->
+                presenter.setDismissOnScrimClick(enabled));
         presentationAnimation = new M3NodeTransition(dialogPane);
         presentationAnimation.setOnFinished(event -> handlePresentationAnimationFinished());
         dialogPane.setButtonAction(this::handleButtonAction);
@@ -231,7 +254,7 @@ public class M3Dialog<R> {
     ///
     /// @param owner the owner node
     /// @throws IllegalStateException if this dialog is showing or beginning presentation
-    /// @throws NullPointerException if `owner` is `null`
+    /// @throws NullPointerException  if `owner` is `null`
     public final void setOwner(Node owner) {
         if (isShowing() || presenting) {
             throw new IllegalStateException("owner cannot change while the dialog is showing or presenting");
@@ -293,6 +316,30 @@ public class M3Dialog<R> {
         return resultConverter;
     }
 
+    /// Returns whether a primary click on the surrounding scrim requests that this dialog close.
+    ///
+    /// @return `true` when pointer activation of the scrim requests dismissal
+    public final boolean isDismissOnScrimClick() {
+        return dismissOnScrimClick.get();
+    }
+
+    /// Sets whether a primary click on the surrounding scrim requests that this dialog close.
+    ///
+    /// Disabling this property does not make the scrim mouse-transparent; owner content remains blocked while the
+    /// dialog is showing.
+    ///
+    /// @param dismissOnScrimClick whether pointer activation of the scrim requests dismissal
+    public final void setDismissOnScrimClick(boolean dismissOnScrimClick) {
+        this.dismissOnScrimClick.set(dismissOnScrimClick);
+    }
+
+    /// Returns the property controlling pointer dismissal through the surrounding scrim.
+    ///
+    /// @return the scrim pointer-dismissal property
+    public final BooleanProperty dismissOnScrimClickProperty() {
+        return dismissOnScrimClick;
+    }
+
     /// Returns whether this dialog currently owns an installed overlay layer.
     ///
     /// @return `true` between completed show and hide transitions
@@ -329,6 +376,8 @@ public class M3Dialog<R> {
             result.set(null);
             pendingResult = null;
             pendingButtonType = null;
+            paneExitFinished = false;
+            scrimExitFinished = false;
             closing = false;
             presentationAnimation.stop();
             startContextSynchronization(activeOwner);
@@ -418,6 +467,11 @@ public class M3Dialog<R> {
         requestClose(Objects.requireNonNull(buttonType, "buttonType"));
     }
 
+    /// Handles activation of the surrounding scrim through the ordinary cancellable close lifecycle.
+    private void handleScrimAction() {
+        requestClose(null);
+    }
+
     /// Emits a cancellable close request and starts an accepted exit transition.
     private void requestClose(@Nullable ButtonType buttonType) {
         if (!isShowing() || closing) {
@@ -447,7 +501,9 @@ public class M3Dialog<R> {
         }
 
         if (canAnimatePresentation()) {
-            presenter.hideScrim();
+            paneExitFinished = false;
+            scrimExitFinished = false;
+            presenter.hideScrim(this::handleScrimExitFinished);
             playExitAnimation();
         } else {
             completeHide(buttonType);
@@ -492,6 +548,22 @@ public class M3Dialog<R> {
     /// Completes an exit animation when one is active.
     private void handlePresentationAnimationFinished() {
         if (closing) {
+            paneExitFinished = true;
+            completeHideWhenExitFinished();
+        }
+    }
+
+    /// Records completion of the scrim exit transition.
+    private void handleScrimExitFinished() {
+        if (closing) {
+            scrimExitFinished = true;
+            completeHideWhenExitFinished();
+        }
+    }
+
+    /// Removes the overlay after both independently animated dialog layers have settled.
+    private void completeHideWhenExitFinished() {
+        if (closing && paneExitFinished && scrimExitFinished) {
             completeHide(pendingButtonType);
         }
     }
@@ -507,6 +579,8 @@ public class M3Dialog<R> {
         result.set(pendingResult);
         pendingResult = null;
         pendingButtonType = null;
+        paneExitFinished = false;
+        scrimExitFinished = false;
         closing = false;
         showing.set(false);
         try {

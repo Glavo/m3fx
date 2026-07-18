@@ -15,6 +15,8 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
@@ -27,13 +29,16 @@ import org.glavo.monetfx.Brightness;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.jetbrains.annotations.NotNullByDefault;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -191,6 +196,145 @@ final class M3DialogPresentationTest {
                 stage.close();
             }
         });
+    }
+
+    /// Verifies scrim clicks use the cancellable dialog lifecycle and can be disabled without unblocking the owner.
+    @Test
+    void scrimClickRequestsCancellableDismissalWhenEnabled() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            Stage stage = new Stage();
+            StackPane ownerRoot = new StackPane(new M3Button("Owner"));
+            Scene scene = new Scene(ownerRoot, 520.0, 340.0);
+            stage.setScene(scene);
+            stage.show();
+
+            AtomicInteger closeRequests = new AtomicInteger();
+            M3Dialog<Void> dialog = new M3Dialog<>();
+            dialog.setOwner(ownerRoot);
+            dialog.setOnCloseRequest(event -> {
+                if (closeRequests.incrementAndGet() == 1) {
+                    event.consume();
+                }
+            });
+            try {
+                assertTrue(dialog.isDismissOnScrimClick());
+                dialog.show();
+                M3Scrim scrim = descendantScrims(scene.getRoot()).get(0);
+
+                dialog.dismissOnScrimClickProperty().set(false);
+                scrim.fireEvent(primaryMouseClick());
+
+                assertTrue(dialog.isShowing());
+                assertEquals(0, closeRequests.get());
+                assertFalse(scrim.isMouseTransparent());
+
+                dialog.setDismissOnScrimClick(true);
+                scrim.fireEvent(primaryMouseClick());
+
+                assertTrue(dialog.isShowing());
+                assertEquals(1, closeRequests.get());
+
+                scrim.fireEvent(primaryMouseClick());
+
+                assertFalse(dialog.isShowing());
+                assertEquals(2, closeRequests.get());
+                assertSame(ownerRoot, scene.getRoot());
+            } finally {
+                dialog.setOnCloseRequest(null);
+                dialog.close();
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies animated dismissal retains the overlay until the scrim has completed its opacity transition.
+    @Tier2Test
+    @Test
+    void dialogWaitsForScrimFadeBeforeRemovingOverlay() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable StackPane> ownerRootReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Dialog<Void>> dialogReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Scrim> scrimReference = new AtomicReference<>();
+        AtomicBoolean observedIntermediateOpacity = new AtomicBoolean();
+        AtomicReference<Double> minimumAttachedOpacity = new AtomicReference<>(Double.POSITIVE_INFINITY);
+
+        try {
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> {
+                        M3Scrim scrim = scrimReference.get();
+                        return scrim != null && scrim.getOpacity() >= scrim.getVisibleOpacity() - 0.001;
+                    },
+                    () -> {
+                        Stage stage = new Stage();
+                        StackPane ownerRoot = new StackPane(new M3Button("Owner"));
+                        Scene scene = new Scene(ownerRoot, 520.0, 340.0);
+                        M3ThemeManager.install(scene, M3Theme.defaultTheme());
+                        stage.setScene(scene);
+                        stage.show();
+
+                        M3Dialog<Void> dialog = new M3Dialog<>();
+                        dialog.setOwner(ownerRoot);
+                        dialog.getDialogPane().setHeaderText("Animated dialog");
+                        dialog.show();
+
+                        stageReference.set(stage);
+                        ownerRootReference.set(ownerRoot);
+                        dialogReference.set(dialog);
+                        scrimReference.set(descendantScrims(scene.getRoot()).get(0));
+                    },
+                    () -> {
+                        M3Dialog<Void> dialog = Objects.requireNonNull(dialogReference.get(), "dialog");
+                        M3Scrim scrim = Objects.requireNonNull(scrimReference.get(), "scrim");
+                        scrim.opacityProperty().addListener((observable, oldOpacity, opacity) -> {
+                            if (dialog.getDialogPane().getParent() == null) {
+                                return;
+                            }
+                            double value = opacity.doubleValue();
+                            minimumAttachedOpacity.accumulateAndGet(value, Math::min);
+                            if (value > 0.001 && value < scrim.getVisibleOpacity() - 0.001) {
+                                observedIntermediateOpacity.set(true);
+                            }
+                        });
+
+                        dialog.close();
+
+                        assertTrue(dialog.isShowing(), "animated close should retain the overlay until motion settles");
+                    }
+            );
+
+            FxTestUtils.runOnFxThreadWhen(
+                    () -> {
+                        M3Dialog<Void> dialog = dialogReference.get();
+                        return dialog != null && !dialog.isShowing();
+                    },
+                    () -> {
+                    },
+                    () -> {
+                        Stage stage = Objects.requireNonNull(stageReference.get(), "stage");
+                        StackPane ownerRoot = Objects.requireNonNull(ownerRootReference.get(), "owner root");
+                        M3Dialog<Void> dialog = Objects.requireNonNull(dialogReference.get(), "dialog");
+
+                        assertTrue(observedIntermediateOpacity.get(),
+                                "scrim exit should include at least one intermediate opacity");
+                        assertTrue(minimumAttachedOpacity.get() <= 0.001,
+                                () -> "overlay detached before scrim reached zero opacity: "
+                                        + minimumAttachedOpacity.get());
+                        assertNull(dialog.getDialogPane().getParent());
+                        assertSame(ownerRoot, stage.getScene().getRoot());
+                    }
+            );
+        } finally {
+            FxTestUtils.runOnFxThread(() -> {
+                M3Dialog<Void> dialog = dialogReference.get();
+                if (dialog != null) {
+                    dialog.close();
+                }
+                Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
+        }
     }
 
     /// Verifies that blocking presentation returns a converted action result and restores the exact scene root.
@@ -383,9 +527,9 @@ final class M3DialogPresentationTest {
                                 + ", classes=" + dialog.getDialogPane().getStyleClass()
                                 + ", stylesheets=" + dialog.getDialogPane().getStylesheets()
                                 + ", parentStyle=" + Objects.requireNonNull(
-                                        dialog.getDialogPane().getParent(),
-                                        "dialog parent"
-                                ).getStyle()
+                                dialog.getDialogPane().getParent(),
+                                "dialog parent"
+                        ).getStyle()
                 );
                 List<M3Scrim> scrims = descendantScrims(overlayRoot);
                 assertEquals(1, scrims.size());
@@ -639,6 +783,30 @@ final class M3DialogPresentationTest {
     /// Creates an unmodified key-press event for keyboard lifecycle tests.
     private static KeyEvent keyPressed(KeyCode code) {
         return new KeyEvent(KeyEvent.KEY_PRESSED, "", "", code, false, false, false, false);
+    }
+
+    /// Creates a primary mouse-click event for scrim dismissal tests.
+    private static MouseEvent primaryMouseClick() {
+        return new MouseEvent(
+                MouseEvent.MOUSE_CLICKED,
+                10.0,
+                10.0,
+                10.0,
+                10.0,
+                MouseButton.PRIMARY,
+                1,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                null
+        );
     }
 
     /// Verifies a dialog is detached and the exact owner root is active after presentation cleanup.

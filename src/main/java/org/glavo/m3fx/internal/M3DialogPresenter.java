@@ -44,6 +44,9 @@ public final class M3DialogPresenter {
     /// The retained overlay layer containing the scrim and dialog pane.
     private final DialogLayer layer;
 
+    /// The action completed after the active scrim exit transition, or `null` when no exit is pending.
+    private @Nullable Runnable pendingScrimHiddenAction;
+
     /// The host currently containing this presenter's layer.
     private @Nullable DialogHost host;
 
@@ -52,12 +55,20 @@ public final class M3DialogPresenter {
 
     /// Creates a detached presenter for one dialog pane.
     ///
-    /// @param pane the pane rendered above this presenter's scrim
+    /// @param pane           the pane rendered above this presenter's scrim
+    /// @param dismissRequest the action invoked when the user activates the scrim
     /// @throws NullPointerException if `pane` is `null`
-    public M3DialogPresenter(M3DialogPane pane) {
+    /// @throws NullPointerException if `dismissRequest` is `null`
+    public M3DialogPresenter(M3DialogPane pane, Runnable dismissRequest) {
         M3DialogPane nonNullPane = Objects.requireNonNull(pane, "pane");
-        scrim.setDismissOnClick(false);
+        Runnable nonNullDismissRequest = Objects.requireNonNull(dismissRequest, "dismissRequest");
+        scrim.setOnAction(event -> nonNullDismissRequest.run());
         scrim.setFocusTraversable(false);
+        scrim.visibleProperty().addListener((observable, oldVisible, visible) -> {
+            if (!visible) {
+                completeScrimHide();
+            }
+        });
         scrim.hide();
         layer = new DialogLayer(scrim, nonNullPane);
     }
@@ -66,7 +77,7 @@ public final class M3DialogPresenter {
     ///
     /// @param owner the node whose scene receives the dialog overlay
     /// @throws IllegalStateException if the owner is detached or its window is not showing
-    /// @throws NullPointerException if `owner` is `null`
+    /// @throws NullPointerException  if `owner` is `null`
     public void show(Node owner) {
         Objects.requireNonNull(owner, "owner");
         @Nullable Scene scene = owner.getScene();
@@ -116,10 +127,32 @@ public final class M3DialogPresenter {
         return layer;
     }
 
-    /// Starts the scrim exit transition while retaining the layer for the pane exit transition.
-    public void hideScrim() {
-        if (host != null) {
-            scrim.hide();
+    /// Sets whether a primary click on the scrim requests dialog dismissal.
+    ///
+    /// @param dismissOnClick whether primary clicks activate the scrim
+    public void setDismissOnScrimClick(boolean dismissOnClick) {
+        scrim.setDismissOnClick(dismissOnClick);
+    }
+
+    /// Starts the scrim exit transition while retaining the layer until both dialog transitions have completed.
+    ///
+    /// @param onHidden the action invoked after the scrim becomes fully hidden
+    /// @throws IllegalStateException if another scrim exit callback is already pending
+    /// @throws NullPointerException  if `onHidden` is `null`
+    public void hideScrim(Runnable onHidden) {
+        Runnable nonNullOnHidden = Objects.requireNonNull(onHidden, "onHidden");
+        if (pendingScrimHiddenAction != null) {
+            throw new IllegalStateException("scrim exit is already pending");
+        }
+        if (host == null || !scrim.isVisible()) {
+            nonNullOnHidden.run();
+            return;
+        }
+
+        pendingScrimHiddenAction = nonNullOnHidden;
+        scrim.hide();
+        if (!scrim.isVisible()) {
+            completeScrimHide();
         }
     }
 
@@ -129,6 +162,7 @@ public final class M3DialogPresenter {
         @Nullable Node focusOwner = restoreFocusOwner;
         host = null;
         restoreFocusOwner = null;
+        pendingScrimHiddenAction = null;
         scrim.hide();
         if (currentHost == null) {
             return;
@@ -166,6 +200,15 @@ public final class M3DialogPresenter {
     /// @return `true` while the layer belongs to a scene host
     public boolean isShowing() {
         return host != null;
+    }
+
+    /// Runs and clears the callback retained for the active scrim exit transition.
+    private void completeScrimHide() {
+        @Nullable Runnable action = pendingScrimHiddenAction;
+        pendingScrimHiddenAction = null;
+        if (action != null) {
+            action.run();
+        }
     }
 
     /// A scene-wide host that retains original content below all active dialog layers.
