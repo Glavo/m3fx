@@ -212,20 +212,27 @@ final class M3AccessibleFocusRevealTest {
             Stage stage = new Stage();
             stage.setScene(new Scene(overlayPane, 220.0, 120.0));
             stage.show();
-            overlayPane.showSnackbar(new M3Snackbar("Saved", "Undo"));
+            overlayPane.showSnackbar(new M3Snackbar(
+                    "Saved",
+                    new M3Snackbar.Action("Undo", () -> {
+                    })
+            ));
             overlayPane.applyCss();
             overlayPane.layout();
-            M3Snackbar snackbar = java.util.Objects.requireNonNull(overlayPane.getSnackbar(), "snackbar");
+            Node presenter = java.util.Objects.requireNonNull(
+                    overlayPane.lookup(".m3-snackbar-presenter"),
+                    "snackbar presenter"
+            );
             Node actionNode = java.util.Objects.requireNonNull(
-                    (Node) snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE),
+                    (Node) presenter.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE),
                     "actionNode"
             );
 
             assertFalse(overlayPane.isFocusTraversable());
-            assertTrue(M3Accessible.requestAccessibleFocus(overlayPane, snackbar));
+            assertTrue(M3Accessible.requestAccessibleFocus(overlayPane, presenter));
 
             assertTrue(actionNode.isFocused());
-            assertSame(actionNode, snackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
+            assertSame(actionNode, presenter.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
             Bounds actionBounds = actionNode.localToScene(actionNode.getBoundsInLocal());
             Bounds overlayBounds = overlayPane.localToScene(overlayPane.getBoundsInLocal());
             assertTrue(overlayBounds.contains(actionBounds));

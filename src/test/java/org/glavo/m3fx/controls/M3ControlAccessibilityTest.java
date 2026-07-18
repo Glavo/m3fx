@@ -46,7 +46,6 @@ final class M3ControlAccessibilityTest {
     @Test
     void controlsExposeAccessibilityRoles() {
         M3Badge badge = new M3Badge(1234);
-        M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
         M3Card passiveCard = new M3Card(new Label("Card"));
         M3Card actionCard = new M3Card(new Label("Action"));
         actionCard.setOnAction(event -> {
@@ -96,8 +95,6 @@ final class M3ControlAccessibilityTest {
         assertEquals(AccessibleRole.BUTTON, actionCard.getAccessibleRole());
         assertTrue(actionCard.isFocusTraversable());
         assertEquals(AccessibleRole.PARENT, new M3Banner().getAccessibleRole());
-        assertEquals(AccessibleRole.TEXT, snackbar.getAccessibleRole());
-        assertEquals("Saved Undo", snackbar.getAccessibleText());
         assertEquals(AccessibleRole.PARENT, new M3OverlayPane().getAccessibleRole());
         assertEquals(AccessibleRole.DIALOG, new M3SideSheet().getAccessibleRole());
         assertEquals(AccessibleRole.PARENT, new M3BottomSheet().getAccessibleRole());
@@ -206,7 +203,6 @@ final class M3ControlAccessibilityTest {
                 new M3DialogPane(),
                 passiveCard,
                 new M3Banner(),
-                new M3Snackbar(),
                 new M3OverlayPane(),
                 new M3SideSheet(),
                 new M3BottomSheet(),
@@ -245,9 +241,6 @@ final class M3ControlAccessibilityTest {
 
         M3Scrim scrim = new M3Scrim();
         assertAccessibleFireInvokesAction(scrim, scrim::setOnAction);
-
-        M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
-        assertAccessibleFireInvokesAction(snackbar, snackbar::setOnAction);
 
         M3SearchBar searchBar = new M3SearchBar();
         assertAccessibleFireInvokesAction(searchBar, searchBar::setOnAction);
@@ -316,9 +309,6 @@ final class M3ControlAccessibilityTest {
 
         M3Scrim scrim = new M3Scrim();
         assertDisabledAccessibleFireDoesNotInvokeAction(scrim, scrim::setOnAction);
-
-        M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
-        assertDisabledAccessibleFireDoesNotInvokeAction(snackbar, snackbar::setOnAction);
 
         M3SearchBar searchBar = new M3SearchBar();
         assertDisabledAccessibleFireDoesNotInvokeAction(searchBar, searchBar::setOnAction);

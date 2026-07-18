@@ -2732,7 +2732,7 @@ public final class M3ComponentTokenCssCompiler {
 
     /// Appends a snackbar token CSS rule.
     private static void appendSnackbarRule(StringBuilder builder, SnackbarTokens tokens) {
-        beginRule(builder, ".m3-snackbar");
+        beginRule(builder, ".m3-snackbar-presenter");
         appendDeclaration(builder, "-m3-container-shape", pixels(tokens.containerShape()));
         appendDeclaration(builder, "-m3-content-padding", pixels(tokens.contentPadding()));
         appendDeclaration(builder, "-m3-container-min-width", pixels(tokens.containerMinWidth()));
@@ -2750,7 +2750,7 @@ public final class M3ComponentTokenCssCompiler {
         appendDeclaration(builder, "-m3-action-container-height", pixels(tokens.actionContainerHeight()));
         endRule(builder);
 
-        beginRule(builder, ".m3-snackbar .m3-snackbar-action");
+        beginRule(builder, ".m3-snackbar-presenter .m3-snackbar-action");
         appendDeclaration(builder, "-m3-container-height", "-m3-action-container-height");
         endRule(builder);
     }

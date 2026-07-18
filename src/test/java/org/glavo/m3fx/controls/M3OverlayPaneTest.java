@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -197,6 +198,41 @@ final class M3OverlayPaneTest {
             assertTrue(overlayPane.getSnackbarQueue().isEmpty());
             overlayPane.setSnackbarDisplayDuration(null);
             assertNull(overlayPane.getSnackbarDisplayDuration());
+        });
+    }
+
+    /// Verifies the built-in snackbar layer never turns its full-window layout bounds into an input shield.
+    @Test
+    void snackbarLayerOnlyPicksItsVisibleSurface() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3Button contentAction = new M3Button("Content action");
+            M3OverlayPane overlayPane = new M3OverlayPane();
+            overlayPane.setContent(new StackPane(contentAction));
+            new Scene(overlayPane, 640.0, 360.0);
+            overlayPane.applyCss();
+            overlayPane.resize(640.0, 360.0);
+            overlayPane.layout();
+
+            Region presenter = assertInstanceOf(
+                    Region.class,
+                    overlayPane.lookup(".m3-snackbar-presenter")
+            );
+            assertTrue(presenter.isMouseTransparent());
+            assertTrue(presenter.getBackground() == null || presenter.getBackground().isEmpty());
+
+            overlayPane.showSnackbar(new M3Snackbar("Message"));
+            overlayPane.applyCss();
+            overlayPane.layout();
+
+            assertFalse(presenter.isMouseTransparent());
+            assertTrue(presenter.getBackground() == null || presenter.getBackground().isEmpty());
+            assertFalse(presenter.contains(8.0, 8.0));
+            Region surface = assertInstanceOf(
+                    Region.class,
+                    presenter.lookup(".m3-snackbar-container")
+            );
+            assertFalse(surface.isMouseTransparent());
+            assertTrue(surface.contains(surface.getWidth() / 2.0, surface.getHeight() / 2.0));
         });
     }
 

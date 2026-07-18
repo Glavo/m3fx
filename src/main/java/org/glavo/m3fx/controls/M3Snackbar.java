@@ -3,846 +3,143 @@
 
 package org.glavo.m3fx.controls;
 
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
-import javafx.css.CssMetaData;
-import javafx.css.Styleable;
-import javafx.css.StyleableDoubleProperty;
-import javafx.css.StyleableProperty;
-import javafx.css.converter.SizeConverter;
-import javafx.event.ActionEvent;
-import javafx.event.Event;
-import javafx.event.EventHandler;
-import javafx.event.EventType;
-import javafx.scene.AccessibleAction;
-import javafx.scene.AccessibleAttribute;
-import javafx.scene.AccessibleRole;
-import javafx.scene.Node;
-import javafx.scene.control.Control;
-import javafx.scene.control.Skin;
-import org.glavo.m3fx.internal.M3Accessible;
-import org.glavo.m3fx.internal.M3ControlStyles;
-import org.glavo.m3fx.internal.M3Css;
-import org.glavo.m3fx.internal.M3Stylesheets;
-import org.glavo.m3fx.skins.M3SnackbarSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 
-/// A Material Design 3 snackbar message.
+/// Describes one Material Design 3 snackbar message.
 ///
-/// `M3Snackbar` represents a short message with an optional action and close affordance. It is normally shown
-/// through [M3OverlayPane], which owns queueing, timeout, entrance, and exit lifecycle. Action activation fires an
-/// [ActionEvent] but does not dismiss the snackbar automatically; the handler decides whether to call
-/// [M3OverlayPane#dismissSnackbar()]. A visible close affordance emits [#DISMISS_REQUEST], which the overlay pane
-/// handles as a dismissal request.
+/// A snackbar contains required supporting text, at most one optional text action, and an optional close button.
+/// It is presentation data rather than a scene-graph node. [M3OverlayPane] queues messages and installs each current
+/// message into its single reusable snackbar presenter.
 ///
-/// Text and action text are empty by default, so a newly created snackbar has no action. Geometry properties expose
-/// stable Material defaults in JavaFX logical pixels and may be overridden directly or through CSS.
+/// The text and action label must not be blank. Activating an action runs its handler and then dismisses the current
+/// snackbar. A close button dismisses the current snackbar without invoking the action. Messages with an action or
+/// close button remain visible until explicitly dismissed; plain messages use the overlay pane's configured display
+/// duration.
+///
+/// Material Design does not define leading graphics or arbitrary trailing content for snackbars. Applications that
+/// need richer transient surfaces should present a custom non-modal overlay through
+/// [M3OverlayPane#showOverlay(javafx.scene.Node)].
 ///
 /// See [Material Design snackbars](https://m3.material.io/components/snackbar/overview).
+///
+/// @param text the non-blank supporting text
+/// @param action the optional text action
+/// @param closeButtonVisible whether the presenter renders the standard close affordance
 @NotNullByDefault
-public final class M3Snackbar extends Control {
-    /// The base style class for M3FX snackbars.
-    public static final String STYLE_CLASS = "m3-snackbar";
-
-    /// The event fired when the optional close affordance requests dismissal.
-    public static final EventType<Event> DISMISS_REQUEST =
-            new EventType<>(Event.ANY, "M3_SNACKBAR_DISMISS_REQUEST");
-
-    /// The default snackbar container shape radius.
-    private static final double DEFAULT_CONTAINER_SHAPE = 4.0;
-
-    /// The default snackbar content padding.
-    private static final double DEFAULT_CONTENT_PADDING = 16.0;
-
-    /// The default minimum snackbar container width.
-    private static final double DEFAULT_CONTAINER_MIN_WIDTH = 344.0;
-
-    /// The default maximum snackbar container width.
-    private static final double DEFAULT_CONTAINER_MAX_WIDTH = 672.0;
-
-    /// The default single-line snackbar container height.
-    private static final double DEFAULT_SINGLE_LINE_CONTAINER_HEIGHT = 48.0;
-
-    /// The default two-line snackbar container height.
-    private static final double DEFAULT_TWO_LINE_CONTAINER_HEIGHT = 68.0;
-
-    /// The default snackbar action button container height.
-    private static final double DEFAULT_ACTION_CONTAINER_HEIGHT = 32.0;
-    /// The snackbar message text.
+public record M3Snackbar(String text, @Nullable Action action, boolean closeButtonVisible) {
+    /// Creates a plain snackbar message without an action or close button.
     ///
-    /// @defaultValue `""`
-    private final StringProperty text = new SimpleStringProperty(this, "text", "");
-
-    /// The action button text.
-    ///
-    /// Blank text suppresses the action button even when an action handler is installed.
-    ///
-    /// @defaultValue `""`
-    private final StringProperty actionText = new SimpleStringProperty(this, "actionText", "");
-
-    /// The handler invoked by [#fireAction()] and action-button activation.
-    ///
-    /// Installing a handler does not create an action button unless [#actionTextProperty()] is non-blank. The handler
-    /// is not invoked while the snackbar is disabled.
-    ///
-    /// @defaultValue `null`
-    private final ObjectProperty<@Nullable EventHandler<ActionEvent>> onAction =
-            new SimpleObjectProperty<>(this, "onAction") {
-                /// Updates the registered action event handler.
-                @Override
-                protected void invalidated() {
-                    setEventHandler(ActionEvent.ACTION, get());
-                }
-            };
-
-    /// Whether the close affordance is visible.
-    ///
-    /// @defaultValue `false`
-    private final BooleanProperty closeButtonVisible =
-            new SimpleBooleanProperty(this, "closeButtonVisible");
-
-    /// The snackbar container corner radius in logical pixels.
-    ///
-    /// @defaultValue `4.0`
-    private @Nullable StyleableDoubleProperty containerShape;
-
-    /// The snackbar content padding in logical pixels.
-    ///
-    /// @defaultValue `16.0`
-    private @Nullable StyleableDoubleProperty contentPadding;
-
-    /// The minimum snackbar container width in logical pixels.
-    ///
-    /// @defaultValue `344.0`
-    private @Nullable StyleableDoubleProperty containerMinWidth;
-
-    /// The maximum snackbar container width in logical pixels.
-    ///
-    /// @defaultValue `672.0`
-    private @Nullable StyleableDoubleProperty containerMaxWidth;
-
-    /// The single-line snackbar container height in logical pixels.
-    ///
-    /// @defaultValue `48.0`
-    private @Nullable StyleableDoubleProperty singleLineContainerHeight;
-
-    /// The two-line snackbar container height in logical pixels.
-    ///
-    /// @defaultValue `68.0`
-    private @Nullable StyleableDoubleProperty twoLineContainerHeight;
-
-    /// The action button container height in logical pixels.
-    ///
-    /// @defaultValue `32.0`
-    private @Nullable StyleableDoubleProperty actionContainerHeight;
-
-    /// Creates a snackbar with empty message and action text, no action handler, and no close affordance.
-    public M3Snackbar() {
-        this("");
-    }
-
-    /// Creates a snackbar with message text.
-    ///
-    /// @param text the snackbar message text
-    /// @throws NullPointerException if `text` is `null`
+    /// @param text the non-blank supporting text
+    /// @throws IllegalArgumentException if `text` is blank
+    /// @throws NullPointerException     if `text` is `null`
     public M3Snackbar(String text) {
-        M3ControlStyles.initialize(this, STYLE_CLASS);
-        setAccessibleRole(AccessibleRole.TEXT);
-        setFocusTraversable(false);
-        M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
-        this.text.addListener((observable, oldValue, newValue) -> {
-            updateAccessibleText();
-            notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
-        });
-        actionText.addListener((observable, oldValue, newValue) -> {
-            updateAccessibleText();
-            notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
-            notifyAccessibleItemsChanged();
-        });
-        closeButtonVisible.addListener((observable, oldValue, newValue) -> notifyAccessibleItemsChanged());
-        setText(text);
-        updateAccessibleText();
+        this(text, null, false);
     }
 
-    /// Creates a snackbar with message text and action button text.
+    /// Creates a snackbar message with one text action and no close button.
     ///
-    /// @param text       the snackbar message text
-    /// @param actionText the action button text
-    /// @throws NullPointerException if `text` or `actionText` is `null`
-    public M3Snackbar(String text, String actionText) {
-        this(text);
-        setActionText(actionText);
+    /// @param text   the non-blank supporting text
+    /// @param action the action presented after the supporting text
+    /// @throws IllegalArgumentException if `text` is blank
+    /// @throws NullPointerException     if `text` or `action` is `null`
+    public M3Snackbar(String text, Action action) {
+        this(text, Objects.requireNonNull(action, "action"), false);
     }
 
-    /// Returns the snackbar message text.
+    /// Creates a snackbar message with an optional text action and optional close button.
     ///
-    /// @return the snackbar message text
-    public final String getText() {
-        return text.get();
+    /// @param text               the non-blank supporting text
+    /// @param action             the optional text action
+    /// @param closeButtonVisible whether the standard close affordance is shown
+    /// @throws IllegalArgumentException if `text` is blank
+    /// @throws NullPointerException     if `text` is `null`
+    public M3Snackbar {
+        text = requireNonBlank(text, "text");
     }
 
-    /// Sets the snackbar message text.
+    /// Returns the supporting text.
     ///
-    /// @param text the snackbar message text
-    /// @throws NullPointerException if `text` is `null`
-    public final void setText(String text) {
-        this.text.set(Objects.requireNonNull(text, "text"));
-    }
-
-    public final StringProperty textProperty() {
+    /// @return the non-blank supporting text
+    @Override
+    public String text() {
         return text;
     }
 
-    /// Returns the action button text.
+    /// Returns the optional text action.
     ///
-    /// @return the action button text
-    public final String getActionText() {
-        return actionText.get();
+    /// @return the action, or `null` when the message is not actionable
+    @Override
+    public @Nullable Action action() {
+        return action;
     }
 
-    /// Sets the action button text.
+    /// Returns whether this message has a text action.
     ///
-    /// @param actionText the action button text
-    /// @throws NullPointerException if `actionText` is `null`
-    public final void setActionText(String actionText) {
-        this.actionText.set(Objects.requireNonNull(actionText, "actionText"));
+    /// @return `true` when an action is present
+    public boolean hasAction() {
+        return action != null;
     }
 
-    public final StringProperty actionTextProperty() {
-        return actionText;
-    }
-
-    /// Returns the action event handler.
+    /// Returns whether the standard close affordance is visible.
     ///
-    /// @return the action event handler, or `null` if none is set
-    public final @Nullable EventHandler<ActionEvent> getOnAction() {
-        return onAction.get();
-    }
-
-    /// Sets the action event handler.
-    ///
-    /// Changing this property does not change the action text or dismiss the snackbar.
-    ///
-    /// @param onAction the action event handler, or `null` to clear it
-    public final void setOnAction(@Nullable EventHandler<ActionEvent> onAction) {
-        this.onAction.set(onAction);
-    }
-
-    public final ObjectProperty<@Nullable EventHandler<ActionEvent>> onActionProperty() {
-        return onAction;
-    }
-
-    /// Returns whether this snackbar currently exposes an action button.
-    ///
-    /// @return `true` if this snackbar currently exposes an action button
-    public final boolean hasAction() {
-        return !getActionText().isBlank();
-    }
-
-    /// Returns whether the optional close affordance is visible.
-    ///
-    /// @return `true` if the snackbar exposes a close affordance
-    public final boolean isCloseButtonVisible() {
-        return closeButtonVisible.get();
-    }
-
-    /// Sets whether the optional close affordance is visible.
-    ///
-    /// When this snackbar is presented by an [M3OverlayPane], activating the close affordance dismisses the current
-    /// snackbar and advances the overlay pane's queue.
-    ///
-    /// @param closeButtonVisible whether the close affordance is visible
-    public final void setCloseButtonVisible(boolean closeButtonVisible) {
-        this.closeButtonVisible.set(closeButtonVisible);
-    }
-
-    public final BooleanProperty closeButtonVisibleProperty() {
+    /// @return `true` when the presenter renders a close button
+    @Override
+    public boolean closeButtonVisible() {
         return closeButtonVisible;
     }
 
-    /// Updates the text exposed to assistive technologies.
-    private void updateAccessibleText() {
-        String message = getText();
-        String action = getActionText();
-        setAccessibleText(action.isBlank() ? message : message + " " + action);
-    }
-
-    /// Fires this snackbar's action event when it has a visible, enabled action.
+    /// Validates and returns one required non-blank string.
     ///
-    /// The event is delivered synchronously. This method is a no-op when the snackbar is disabled or its action text
-    /// is blank, and it does not request dismissal from a host.
-    public final void fireAction() {
-        if (!isDisabled() && hasAction()) {
-            Event.fireEvent(this, new ActionEvent(this, this));
+    /// @param value the value to validate
+    /// @param name the parameter name used in validation failures
+    /// @return the validated value
+    /// @throws IllegalArgumentException if `value` is blank
+    /// @throws NullPointerException     if `value` is `null`
+    private static String requireNonBlank(String value, String name) {
+        String nonNullValue = Objects.requireNonNull(value, name);
+        if (nonNullValue.isBlank()) {
+            throw new IllegalArgumentException(name + " must not be blank");
         }
+        return nonNullValue;
     }
 
-    /// Returns accessibility attributes for snackbar text and action content.
+    /// Describes the single optional text action of a snackbar message.
     ///
-    /// @param attribute  the requested accessibility attribute
-    /// @param parameters the optional attribute parameters
-    /// @return the attribute value, or `null` when unavailable
-    /// @throws NullPointerException if `attribute` is `null`
-    @Override
-    public @Nullable Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
-        Objects.requireNonNull(attribute, "attribute");
-        return switch (attribute) {
-            case FOCUS_NODE -> accessibleFocusNode();
-            case ITEM_COUNT -> interactiveItemCount();
-            case ITEM_AT_INDEX -> interactiveItemAt(parameters);
-            case TEXT -> accessibleText();
-            default -> super.queryAccessibleAttribute(attribute, parameters);
-        };
-    }
-
-    /// Executes accessibility actions supported by snackbars with action text.
+    /// The handler runs on the JavaFX Application Thread after the presenter's action button is activated. The
+    /// presenter dismisses the current snackbar after the handler returns.
     ///
-    /// @param action     the requested accessibility action
-    /// @param parameters the optional action parameters
-    /// @throws NullPointerException if `action` is `null`
-    @Override
-    public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
-        Objects.requireNonNull(action, "action");
-        if (isDisabled()) {
-            super.executeAccessibleAction(action, parameters);
-            return;
-        }
-
-        switch (action) {
-            case FIRE -> fireAction();
-            case REQUEST_FOCUS -> focusAccessibleNode();
-            case SHOW_ITEM -> showAccessibleItem(parameters);
-            default -> super.executeAccessibleAction(action, parameters);
-        }
-    }
-
-    /// Returns the snackbar container shape radius token.
-    ///
-    /// @return the snackbar container shape radius token in pixels
-    public final double getContainerShape() {
-        return containerShape == null ? DEFAULT_CONTAINER_SHAPE : containerShape.get();
-    }
-
-    /// Sets the snackbar container shape radius token.
-    ///
-    /// @param containerShape the snackbar container shape radius token in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
-    public final void setContainerShape(double containerShape) {
-        containerShapeProperty().set(M3Css.nonNegative(containerShape, "containerShape"));
-    }
-
-    public final StyleableDoubleProperty containerShapeProperty() {
-        if (containerShape == null) {
-            containerShape = M3Css.nonNegativeStyleableDoubleProperty(
-                    DEFAULT_CONTAINER_SHAPE,
-                    this,
-                    "containerShape",
-                    StyleableProperties.CONTAINER_SHAPE,
-                    this::requestLayout
-            );
-        }
-        return containerShape;
-    }
-
-    /// Returns the snackbar content padding token.
-    ///
-    /// @return the snackbar content padding token in pixels
-    public final double getContentPadding() {
-        return contentPadding == null ? DEFAULT_CONTENT_PADDING : contentPadding.get();
-    }
-
-    /// Sets the snackbar content padding token.
-    ///
-    /// @param contentPadding the snackbar content padding token in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
-    public final void setContentPadding(double contentPadding) {
-        contentPaddingProperty().set(M3Css.nonNegative(contentPadding, "contentPadding"));
-    }
-
-    public final StyleableDoubleProperty contentPaddingProperty() {
-        if (contentPadding == null) {
-            contentPadding = M3Css.nonNegativeStyleableDoubleProperty(
-                    DEFAULT_CONTENT_PADDING,
-                    this,
-                    "contentPadding",
-                    StyleableProperties.CONTENT_PADDING,
-                    this::requestLayout
-            );
-        }
-        return contentPadding;
-    }
-
-    /// Returns the minimum snackbar container width token.
-    ///
-    /// @return the minimum snackbar container width token in pixels
-    public final double getContainerMinWidth() {
-        return containerMinWidth == null ? DEFAULT_CONTAINER_MIN_WIDTH : containerMinWidth.get();
-    }
-
-    /// Sets the minimum snackbar container width token.
-    ///
-    /// @param containerMinWidth the minimum snackbar container width token in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
-    public final void setContainerMinWidth(double containerMinWidth) {
-        containerMinWidthProperty().set(M3Css.nonNegative(containerMinWidth, "containerMinWidth"));
-    }
-
-    public final StyleableDoubleProperty containerMinWidthProperty() {
-        if (containerMinWidth == null) {
-            containerMinWidth = M3Css.nonNegativeStyleableDoubleProperty(
-                    DEFAULT_CONTAINER_MIN_WIDTH,
-                    this,
-                    "containerMinWidth",
-                    StyleableProperties.CONTAINER_MIN_WIDTH,
-                    this::requestLayout
-            );
-        }
-        return containerMinWidth;
-    }
-
-    /// Returns the maximum snackbar container width token.
-    ///
-    /// @return the maximum snackbar container width token in pixels
-    public final double getContainerMaxWidth() {
-        return containerMaxWidth == null ? DEFAULT_CONTAINER_MAX_WIDTH : containerMaxWidth.get();
-    }
-
-    /// Sets the maximum snackbar container width token.
-    ///
-    /// @param containerMaxWidth the maximum snackbar container width token in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
-    public final void setContainerMaxWidth(double containerMaxWidth) {
-        containerMaxWidthProperty().set(M3Css.nonNegative(containerMaxWidth, "containerMaxWidth"));
-    }
-
-    public final StyleableDoubleProperty containerMaxWidthProperty() {
-        if (containerMaxWidth == null) {
-            containerMaxWidth = M3Css.nonNegativeStyleableDoubleProperty(
-                    DEFAULT_CONTAINER_MAX_WIDTH,
-                    this,
-                    "containerMaxWidth",
-                    StyleableProperties.CONTAINER_MAX_WIDTH,
-                    this::requestLayout
-            );
-        }
-        return containerMaxWidth;
-    }
-
-    /// Returns the single-line snackbar container height token.
-    ///
-    /// @return the single-line snackbar container height token in pixels
-    public final double getSingleLineContainerHeight() {
-        return singleLineContainerHeight == null
-                ? DEFAULT_SINGLE_LINE_CONTAINER_HEIGHT
-                : singleLineContainerHeight.get();
-    }
-
-    /// Sets the single-line snackbar container height token.
-    ///
-    /// @param singleLineContainerHeight the single-line snackbar container height token in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
-    public final void setSingleLineContainerHeight(double singleLineContainerHeight) {
-        singleLineContainerHeightProperty().set(M3Css.nonNegative(
-                singleLineContainerHeight,
-                "singleLineContainerHeight"
-        ));
-    }
-
-    public final StyleableDoubleProperty singleLineContainerHeightProperty() {
-        if (singleLineContainerHeight == null) {
-            singleLineContainerHeight = M3Css.nonNegativeStyleableDoubleProperty(
-                    DEFAULT_SINGLE_LINE_CONTAINER_HEIGHT,
-                    this,
-                    "singleLineContainerHeight",
-                    StyleableProperties.SINGLE_LINE_CONTAINER_HEIGHT,
-                    this::requestLayout
-            );
-        }
-        return singleLineContainerHeight;
-    }
-
-    /// Returns the two-line snackbar container height token.
-    ///
-    /// @return the two-line snackbar container height token in pixels
-    public final double getTwoLineContainerHeight() {
-        return twoLineContainerHeight == null
-                ? DEFAULT_TWO_LINE_CONTAINER_HEIGHT
-                : twoLineContainerHeight.get();
-    }
-
-    /// Sets the two-line snackbar container height token.
-    ///
-    /// @param twoLineContainerHeight the two-line snackbar container height token in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
-    public final void setTwoLineContainerHeight(double twoLineContainerHeight) {
-        twoLineContainerHeightProperty().set(M3Css.nonNegative(
-                twoLineContainerHeight,
-                "twoLineContainerHeight"
-        ));
-    }
-
-    public final StyleableDoubleProperty twoLineContainerHeightProperty() {
-        if (twoLineContainerHeight == null) {
-            twoLineContainerHeight = M3Css.nonNegativeStyleableDoubleProperty(
-                    DEFAULT_TWO_LINE_CONTAINER_HEIGHT,
-                    this,
-                    "twoLineContainerHeight",
-                    StyleableProperties.TWO_LINE_CONTAINER_HEIGHT,
-                    this::requestLayout
-            );
-        }
-        return twoLineContainerHeight;
-    }
-
-    /// Returns the action button container height token.
-    ///
-    /// @return the action button container height token in pixels
-    public final double getActionContainerHeight() {
-        return actionContainerHeight == null ? DEFAULT_ACTION_CONTAINER_HEIGHT : actionContainerHeight.get();
-    }
-
-    /// Sets the action button container height token.
-    ///
-    /// @param actionContainerHeight the action button container height token in pixels
-    /// @throws IllegalArgumentException if the supplied value is negative or not finite
-    public final void setActionContainerHeight(double actionContainerHeight) {
-        actionContainerHeightProperty().set(M3Css.nonNegative(actionContainerHeight, "actionContainerHeight"));
-    }
-
-    public final StyleableDoubleProperty actionContainerHeightProperty() {
-        if (actionContainerHeight == null) {
-            actionContainerHeight = M3Css.nonNegativeStyleableDoubleProperty(
-                    DEFAULT_ACTION_CONTAINER_HEIGHT,
-                    this,
-                    "actionContainerHeight",
-                    StyleableProperties.ACTION_CONTAINER_HEIGHT,
-                    this::requestLayout
-            );
-        }
-        return actionContainerHeight;
-    }
-
-    /// Creates the default snackbar skin.
-    ///
-    /// @return the default snackbar skin
-    @Override
-    protected Skin<?> createDefaultSkin() {
-        return new M3SnackbarSkin(this);
-    }
-
-    /// Returns the CSS metadata for this control class.
-    ///
-    /// @return the CSS metadata for this control class
-    public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData() {
-        return StyleableProperties.STYLEABLES;
-    }
-
-    /// Returns the CSS metadata for this control.
-    ///
-    /// @return the CSS metadata for this control
-    @Override
-    public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
-        return getClassCssMetaData();
-    }
-
-    /// Returns the user-agent stylesheet for M3FX snackbars.
-    ///
-    /// @return the snackbar user-agent stylesheet URL
-    @Override
-    public String getUserAgentStylesheet() {
-        return M3Stylesheets.controlStylesheet("snackbar.css");
-    }
-
-    /// Returns the snackbar text exposed through accessibility queries.
-    private String accessibleText() {
-        @Nullable String accessibleText = getAccessibleText();
-        return accessibleText == null ? "" : accessibleText;
-    }
-
-    /// Returns the preferred interactive focus node when one is rendered.
-    private @Nullable Node accessibleFocusNode() {
-        @Nullable Node interactiveItem = renderedActionButton();
-        if (interactiveItem == null) {
-            interactiveItem = renderedCloseButton();
-        }
-        if (interactiveItem == null) {
-            return null;
-        }
-
-        @Nullable Node externalTarget = M3Accessible.activeExternalFocusTarget(this, interactiveItem);
-        return externalTarget == null ? interactiveItem : externalTarget;
-    }
-
-    /// Returns the rendered action button when one is visible.
-    private @Nullable Node renderedActionButton() {
-        @Nullable Node actionButton = lookup(".m3-snackbar-action");
-        return actionButton != null && actionButton.isManaged() ? actionButton : null;
-    }
-
-    /// Returns the rendered close button when it is visible.
-    private @Nullable Node renderedCloseButton() {
-        @Nullable Node closeButton = lookup(".m3-snackbar-close");
-        return closeButton != null && closeButton.isManaged() ? closeButton : null;
-    }
-
-    /// Focuses the snackbar's first interactive item when one exists.
-    ///
-    /// @return `true` when the action button accepted focus
-    final boolean focusAccessibleNode() {
-        if (M3Accessible.showItem(this, accessibleFocusNode())) {
-            M3Accessible.notifyFocusNodeChanged(this);
-            return true;
-        }
-        return false;
-    }
-
-    /// Returns the number of rendered interactive snackbar items.
-    private int interactiveItemCount() {
-        return (renderedActionButton() == null ? 0 : 1) + (renderedCloseButton() == null ? 0 : 1);
-    }
-
-    /// Returns an interactive snackbar item for an accessibility item index.
-    private @Nullable Node interactiveItemAt(Object... parameters) {
-        int index = M3Accessible.indexParameter(parameters);
-        if (index < 0) {
-            return null;
-        }
-        @Nullable Node actionButton = renderedActionButton();
-        if (actionButton != null) {
-            if (index == 0) {
-                return actionButton;
-            }
-            index--;
-        }
-        return index == 0 ? renderedCloseButton() : null;
-    }
-
-    /// Returns the interactive item referenced by accessibility action parameters.
-    private @Nullable Node accessibleInteractiveItem(Object... parameters) {
-        Objects.requireNonNull(parameters, "parameters");
-        if (parameters.length == 0) {
-            return accessibleFocusNode();
-        }
-        if (parameters[0] instanceof Number) {
-            return interactiveItemAt(parameters);
-        }
-
-        @Nullable Node actionButton = renderedActionButton();
-        if (actionButton != null) {
-            @Nullable Node target = M3Accessible.actionItem(actionButton, parameters);
-            if (target != null) {
-                return target;
-            }
-        }
-        @Nullable Node closeButton = renderedCloseButton();
-        return closeButton == null ? null : M3Accessible.actionItem(closeButton, parameters);
-    }
-
-    /// Focuses the snackbar action or delegates to nested action-owned popup targets.
-    ///
-    /// @param parameters optional accessibility target parameters
-    /// @return `true` when focus moved to the action or requested nested target
-    final boolean showAccessibleItem(Object... parameters) {
-        @Nullable Node interactiveItem = accessibleInteractiveItem(parameters);
-        if (interactiveItem != null) {
-            Object[] targetParameters = actionTargetParameters(parameters);
-            if (targetParameters.length > 0
-                    && M3Accessible.showAccessibleActionTarget(this, interactiveItem, targetParameters)) {
-                M3Accessible.notifyFocusNodeChanged(this);
-                return true;
-            }
-            if (targetParameters.length > 0
-                    && !M3Accessible.parametersContainDirectTarget(
-                    parameter -> parameter == interactiveItem,
-                    targetParameters
-            )) {
-                return false;
-            }
-            if (M3Accessible.showItem(this, interactiveItem)) {
-                M3Accessible.notifyFocusNodeChanged(this);
-                return true;
-            }
-        }
-
-        @Nullable Node focusNode = accessibleFocusNode();
-        if (parameters.length > 0
-                && focusNode != null
-                && M3Accessible.showAccessibleActionTarget(this, focusNode, parameters)) {
-            M3Accessible.notifyFocusNodeChanged(this);
-            return true;
-        }
-        return false;
-    }
-
-    /// Returns nested accessibility target parameters after the action button index is resolved.
-    private static Object[] actionTargetParameters(Object... parameters) {
-        Objects.requireNonNull(parameters, "parameters");
-        if (parameters.length <= 1 || !(parameters[0] instanceof Number)) {
-            return parameters;
-        }
-
-        Object[] targetParameters = new Object[parameters.length - 1];
-        System.arraycopy(parameters, 1, targetParameters, 0, targetParameters.length);
-        return targetParameters;
-    }
-
-    /// Notifies accessibility clients that the action item changed.
-    private void notifyAccessibleItemsChanged() {
-        notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
-        M3Accessible.notifyFocusNodeChanged(this);
-        notifyAccessibleAttributeChanged(AccessibleAttribute.ITEM_COUNT);
-    }
-
-    /// CSS metadata for M3FX snackbar component tokens.
+    /// @param text the non-blank action label
+    /// @param handler the callback invoked by action activation
     @NotNullByDefault
-    private static final class StyleableProperties {
-        /// CSS metadata for the container shape token.
-        private static final CssMetaData<M3Snackbar, Number> CONTAINER_SHAPE =
-                new CssMetaData<>("-m3-container-shape", SizeConverter.getInstance(), DEFAULT_CONTAINER_SHAPE) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Snackbar control) {
-                        return M3Css.isSettable(control.containerShapeProperty());
-                    }
+    public record Action(String text, Runnable handler) {
+        /// Creates a text action.
+        ///
+        /// @param text    the non-blank action label
+        /// @param handler the callback invoked by action activation
+        /// @throws IllegalArgumentException if `text` is blank
+        /// @throws NullPointerException     if `text` or `handler` is `null`
+        public Action {
+            text = requireNonBlank(text, "action text");
+            Objects.requireNonNull(handler, "handler");
+        }
 
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Snackbar control) {
-                        return control.containerShapeProperty();
-                    }
-                };
+        /// Returns the action button label.
+        ///
+        /// @return the non-blank action label
+        @Override
+        public String text() {
+            return text;
+        }
 
-        /// CSS metadata for the content padding token.
-        private static final CssMetaData<M3Snackbar, Number> CONTENT_PADDING =
-                new CssMetaData<>("-m3-content-padding", SizeConverter.getInstance(), DEFAULT_CONTENT_PADDING) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Snackbar control) {
-                        return M3Css.isSettable(control.contentPaddingProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Snackbar control) {
-                        return control.contentPaddingProperty();
-                    }
-                };
-
-        /// CSS metadata for the minimum container width token.
-        private static final CssMetaData<M3Snackbar, Number> CONTAINER_MIN_WIDTH =
-                new CssMetaData<>("-m3-container-min-width", SizeConverter.getInstance(), DEFAULT_CONTAINER_MIN_WIDTH) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Snackbar control) {
-                        return M3Css.isSettable(control.containerMinWidthProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Snackbar control) {
-                        return control.containerMinWidthProperty();
-                    }
-                };
-
-        /// CSS metadata for the maximum container width token.
-        private static final CssMetaData<M3Snackbar, Number> CONTAINER_MAX_WIDTH =
-                new CssMetaData<>("-m3-container-max-width", SizeConverter.getInstance(), DEFAULT_CONTAINER_MAX_WIDTH) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Snackbar control) {
-                        return M3Css.isSettable(control.containerMaxWidthProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Snackbar control) {
-                        return control.containerMaxWidthProperty();
-                    }
-                };
-
-        /// CSS metadata for the single-line container height token.
-        private static final CssMetaData<M3Snackbar, Number> SINGLE_LINE_CONTAINER_HEIGHT =
-                new CssMetaData<>(
-                        "-m3-single-line-container-height",
-                        SizeConverter.getInstance(),
-                        DEFAULT_SINGLE_LINE_CONTAINER_HEIGHT
-                ) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Snackbar control) {
-                        return M3Css.isSettable(control.singleLineContainerHeightProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Snackbar control) {
-                        return control.singleLineContainerHeightProperty();
-                    }
-                };
-
-        /// CSS metadata for the two-line container height token.
-        private static final CssMetaData<M3Snackbar, Number> TWO_LINE_CONTAINER_HEIGHT =
-                new CssMetaData<>(
-                        "-m3-two-line-container-height",
-                        SizeConverter.getInstance(),
-                        DEFAULT_TWO_LINE_CONTAINER_HEIGHT
-                ) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Snackbar control) {
-                        return M3Css.isSettable(control.twoLineContainerHeightProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Snackbar control) {
-                        return control.twoLineContainerHeightProperty();
-                    }
-                };
-
-        /// CSS metadata for the action button container height token.
-        private static final CssMetaData<M3Snackbar, Number> ACTION_CONTAINER_HEIGHT =
-                new CssMetaData<>(
-                        "-m3-action-container-height",
-                        SizeConverter.getInstance(),
-                        DEFAULT_ACTION_CONTAINER_HEIGHT
-                ) {
-                    /// Returns whether this property can be set by CSS.
-                    @Override
-                    public boolean isSettable(M3Snackbar control) {
-                        return M3Css.isSettable(control.actionContainerHeightProperty());
-                    }
-
-                    /// Returns the styleable property for a control.
-                    @Override
-                    public StyleableProperty<Number> getStyleableProperty(M3Snackbar control) {
-                        return control.actionContainerHeightProperty();
-                    }
-                };
-
-        /// The complete immutable CSS metadata list.
-        private static final List<CssMetaData<? extends Styleable, ?>> STYLEABLES;
-
-        static {
-            List<CssMetaData<? extends Styleable, ?>> styleables = new ArrayList<>(Control.getClassCssMetaData());
-            styleables.add(CONTAINER_SHAPE);
-            styleables.add(CONTENT_PADDING);
-            styleables.add(CONTAINER_MIN_WIDTH);
-            styleables.add(CONTAINER_MAX_WIDTH);
-            styleables.add(SINGLE_LINE_CONTAINER_HEIGHT);
-            styleables.add(TWO_LINE_CONTAINER_HEIGHT);
-            styleables.add(ACTION_CONTAINER_HEIGHT);
-            STYLEABLES = Collections.unmodifiableList(styleables);
+        /// Returns the callback invoked by action activation.
+        ///
+        /// @return the action callback
+        @Override
+        public Runnable handler() {
+            return handler;
         }
     }
 }

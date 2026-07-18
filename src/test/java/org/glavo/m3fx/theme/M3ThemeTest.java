@@ -63,6 +63,7 @@ import org.glavo.m3fx.controls.M3NavigationDrawer;
 import org.glavo.m3fx.controls.M3NavigationDrawerGroup;
 import org.glavo.m3fx.controls.M3NavigationItem;
 import org.glavo.m3fx.controls.M3NavigationRail;
+import org.glavo.m3fx.controls.M3OverlayPane;
 import org.glavo.m3fx.controls.M3ProgressBar;
 import org.glavo.m3fx.controls.M3ProgressIndicator;
 import org.glavo.m3fx.controls.M3RadioButton;
@@ -1149,7 +1150,12 @@ final class M3ThemeTest {
         M3BottomSheet bottomSheet = new M3BottomSheet();
         M3Card card = new M3Card();
         M3DialogPane dialogPane = new M3DialogPane();
-        M3Snackbar snackbar = new M3Snackbar("Saved", "Undo");
+        M3OverlayPane snackbarOverlay = new M3OverlayPane();
+        snackbarOverlay.showSnackbar(new M3Snackbar(
+                "Saved",
+                new M3Snackbar.Action("Undo", () -> {
+                })
+        ));
         M3Banner banner = new M3Banner("Message");
         M3TopAppBar topAppBar = new M3TopAppBar("Inbox");
         M3BottomAppBar bottomAppBar = new M3BottomAppBar();
@@ -1198,7 +1204,7 @@ final class M3ThemeTest {
                 bottomSheet,
                 card,
                 dialogPane,
-                snackbar,
+                snackbarOverlay,
                 banner,
                 topAppBar,
                 bottomAppBar,
@@ -1226,6 +1232,14 @@ final class M3ThemeTest {
         root.applyCss();
         root.layout();
         root.applyCss();
+        Region snackbarSurface = assertInstanceOf(
+                Region.class,
+                snackbarOverlay.lookup(".m3-snackbar-container")
+        );
+        M3Button snackbarAction = assertInstanceOf(
+                M3Button.class,
+                snackbarOverlay.lookup(".m3-snackbar-action")
+        );
 
         assertEquals(40.0, button.getContainerHeight(), 0.0001);
         assertEquals(16.0, button.getHorizontalPadding(), 0.0001);
@@ -1368,18 +1382,13 @@ final class M3ThemeTest {
         assertEquals(304.0, dialogPane.getMinWidth(), 0.0001);
         assertEquals(584.0, dialogPane.getMaxWidth(), 0.0001);
         assertEquals(36.0, dialogPane.getPadding().getTop(), 0.0001);
-        assertEquals(6.0, snackbar.getContainerShape(), 0.0001);
-        assertEquals(16.0, snackbar.getContentPadding(), 0.0001);
-        assertEquals(344.0, snackbar.getContainerMinWidth(), 0.0001);
-        assertEquals(672.0, snackbar.getContainerMaxWidth(), 0.0001);
-        assertEquals(48.0, snackbar.getSingleLineContainerHeight(), 0.0001);
-        assertEquals(68.0, snackbar.getTwoLineContainerHeight(), 0.0001);
-        assertEquals(32.0, snackbar.getActionContainerHeight(), 0.0001);
+        assertEquals(16.0, snackbarSurface.getPadding().getLeft(), 0.0001);
         assertEquals(
-                32.0,
-                ((M3Button) snackbar.lookup(".m3-snackbar-action")).getContainerHeight(),
+                6.0,
+                snackbarSurface.getBackground().getFills().get(0).getRadii().getTopLeftHorizontalRadius(),
                 0.0001
         );
+        assertEquals(32.0, snackbarAction.getContainerHeight(), 0.0001);
         assertEquals(80.0, banner.getMinHeight(), 0.0001);
         assertEquals(24.0, banner.getPadding().getLeft(), 0.0001);
         assertEquals(64.0, topAppBar.getPrefHeight(), 0.0001);
@@ -1539,18 +1548,13 @@ final class M3ThemeTest {
         assertEquals(24.0, dialogPane.getContentPadding(), 0.0001);
         assertEquals(280.0, dialogPane.getContainerMinWidth(), 0.0001);
         assertEquals(560.0, dialogPane.getContainerMaxWidth(), 0.0001);
-        assertEquals(4.0, snackbar.getContainerShape(), 0.0001);
-        assertEquals(16.0, snackbar.getContentPadding(), 0.0001);
-        assertEquals(344.0, snackbar.getContainerMinWidth(), 0.0001);
-        assertEquals(672.0, snackbar.getContainerMaxWidth(), 0.0001);
-        assertEquals(48.0, snackbar.getSingleLineContainerHeight(), 0.0001);
-        assertEquals(68.0, snackbar.getTwoLineContainerHeight(), 0.0001);
-        assertEquals(32.0, snackbar.getActionContainerHeight(), 0.0001);
+        assertEquals(16.0, snackbarSurface.getPadding().getLeft(), 0.0001);
         assertEquals(
-                32.0,
-                ((M3Button) snackbar.lookup(".m3-snackbar-action")).getContainerHeight(),
+                4.0,
+                snackbarSurface.getBackground().getFills().get(0).getRadii().getTopLeftHorizontalRadius(),
                 0.0001
         );
+        assertEquals(32.0, snackbarAction.getContainerHeight(), 0.0001);
         assertEquals(80.0, banner.getMinHeight(), 0.0001);
         assertEquals(24.0, banner.getPadding().getLeft(), 0.0001);
         assertEquals(64.0, topAppBar.getPrefHeight(), 0.0001);

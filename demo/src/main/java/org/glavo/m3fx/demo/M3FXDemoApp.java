@@ -3124,9 +3124,7 @@ public final class M3FXDemoApp extends Application {
             if (activeOverlay == null) {
                 return;
             }
-            M3Snackbar snackbar = new M3Snackbar("Dismiss this message");
-            snackbar.setCloseButtonVisible(true);
-            activeOverlay.showSnackbar(snackbar);
+            activeOverlay.showSnackbar(new M3Snackbar("Dismiss this message", null, true));
         });
 
         return createGallery(createShowcaseGroup(
@@ -4772,12 +4770,13 @@ public final class M3FXDemoApp extends Application {
             return;
         }
 
-        M3Snackbar snackbar = new M3Snackbar("Theme-aware snackbar", "Action");
-        snackbar.setOnAction(event -> {
-            activeOverlay.dismissSnackbar();
-            activeOverlay.showSnackbar(new M3Snackbar("Action pressed"));
-        });
-        activeOverlay.showSnackbar(snackbar);
+        activeOverlay.showSnackbar(new M3Snackbar(
+                "Theme-aware snackbar",
+                new M3Snackbar.Action(
+                        "Action",
+                        () -> activeOverlay.enqueueSnackbar(new M3Snackbar("Action pressed"))
+                )
+        ));
     }
 
     /// Shows multiple demo snackbars through the host queue.
@@ -4787,13 +4786,14 @@ public final class M3FXDemoApp extends Application {
             return;
         }
 
-        M3Snackbar secondSnackbar = new M3Snackbar("Second queued message", "Undo");
-        secondSnackbar.setOnAction(event -> {
-            activeOverlay.dismissSnackbar();
-            activeOverlay.enqueueSnackbar(new M3Snackbar("Undo pressed"));
-        });
         activeOverlay.enqueueSnackbar(new M3Snackbar("First queued message"));
-        activeOverlay.enqueueSnackbar(secondSnackbar);
+        activeOverlay.enqueueSnackbar(new M3Snackbar(
+                "Second queued message",
+                new M3Snackbar.Action(
+                        "Undo",
+                        () -> activeOverlay.enqueueSnackbar(new M3Snackbar("Undo pressed"))
+                )
+        ));
         activeOverlay.enqueueSnackbar(new M3Snackbar("Third queued message"));
     }
 

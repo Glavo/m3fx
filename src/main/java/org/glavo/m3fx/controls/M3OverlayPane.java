@@ -26,7 +26,7 @@ import javafx.util.Duration;
 import org.glavo.m3fx.internal.M3Accessible;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3FocusTraversal;
-import org.glavo.m3fx.internal.M3SnackbarHostImpl;
+import org.glavo.m3fx.internal.M3SnackbarPresenter;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
@@ -86,8 +86,8 @@ public final class M3OverlayPane extends Pane {
             };
 
     /// The built-in snackbar presentation layer.
-    private final M3SnackbarHostImpl snackbarHost =
-            new M3SnackbarHostImpl(snackbarValue, snackbarShowingValue, snackbarDisplayDurationValue);
+    private final M3SnackbarPresenter snackbarPresenter =
+            new M3SnackbarPresenter(snackbarValue, snackbarShowingValue, snackbarDisplayDurationValue);
 
     /// Regular overlays ordered from bottom to top below the snackbar layer.
     private final ArrayList<OverlayHandle> regularOverlays = new ArrayList<>();
@@ -119,8 +119,8 @@ public final class M3OverlayPane extends Pane {
         M3ControlStyles.initialize(this, STYLE_CLASS);
         setAccessibleRole(AccessibleRole.PARENT);
         setPickOnBounds(false);
-        snackbarHost.setPickOnBounds(false);
-        getChildren().add(snackbarHost);
+        snackbarPresenter.setPickOnBounds(false);
+        getChildren().add(snackbarPresenter);
         sceneProperty().addListener((observable, oldScene, newScene) -> observeFocusScene(newScene));
         observeFocusScene(getScene());
         addEventFilter(InputEvent.ANY, this::filterModalInput);
@@ -235,7 +235,7 @@ public final class M3OverlayPane extends Pane {
     ///
     /// @return the pending snackbar queue
     public @UnmodifiableView ObservableList<M3Snackbar> getSnackbarQueue() {
-        return snackbarHost.getQueue();
+        return snackbarPresenter.getQueue();
     }
 
     /// Returns the explicitly configured automatic snackbar dismissal duration.
@@ -267,10 +267,9 @@ public final class M3OverlayPane extends Pane {
     /// If the snackbar layer is idle, the supplied snackbar becomes current immediately.
     ///
     /// @param snackbar the snackbar to enqueue
-    /// @throws IllegalArgumentException if the snackbar belongs to another presenter or unrelated scene-graph parent
-    /// @throws NullPointerException     if `snackbar` is `null`
+    /// @throws NullPointerException if `snackbar` is `null`
     public void enqueueSnackbar(M3Snackbar snackbar) {
-        snackbarHost.enqueue(Objects.requireNonNull(snackbar, "snackbar"));
+        snackbarPresenter.enqueue(Objects.requireNonNull(snackbar, "snackbar"));
     }
 
     /// Shows a snackbar immediately without changing the pending queue.
@@ -279,27 +278,26 @@ public final class M3OverlayPane extends Pane {
     /// preserved.
     ///
     /// @param snackbar the snackbar to show
-    /// @throws IllegalArgumentException if the snackbar belongs to another presenter or unrelated scene-graph parent
-    /// @throws NullPointerException     if `snackbar` is `null`
+    /// @throws NullPointerException if `snackbar` is `null`
     public void showSnackbar(M3Snackbar snackbar) {
-        snackbarHost.show(Objects.requireNonNull(snackbar, "snackbar"));
+        snackbarPresenter.show(Objects.requireNonNull(snackbar, "snackbar"));
     }
 
     /// Dismisses the current snackbar and then promotes the first queued snackbar.
     ///
     /// The operation has no effect while the snackbar layer is idle or already leaving.
     public void dismissSnackbar() {
-        snackbarHost.dismiss();
+        snackbarPresenter.dismiss();
     }
 
     /// Removes every pending snackbar without changing the current snackbar.
     public void clearSnackbarQueue() {
-        snackbarHost.clearQueue();
+        snackbarPresenter.clearQueue();
     }
 
     /// Clears the pending queue and dismisses the current snackbar.
     public void dismissAllSnackbars() {
-        snackbarHost.dismissAll();
+        snackbarPresenter.dismissAll();
     }
 
     /// Returns accessibility attributes for ordinary or modal presentation state.
@@ -339,7 +337,7 @@ public final class M3OverlayPane extends Pane {
         for (OverlayHandle overlay : regularOverlays) {
             layoutLayer(overlay.node(), x, y, width, height);
         }
-        layoutLayer(snackbarHost, x, y, width, height);
+        layoutLayer(snackbarPresenter, x, y, width, height);
         for (OverlayHandle overlay : modalOverlays) {
             layoutLayer(overlay.node(), x, y, width, height);
         }
@@ -390,7 +388,7 @@ public final class M3OverlayPane extends Pane {
         if (candidate == null) {
             return;
         }
-        if (candidate == this || candidate == snackbarHost || containsOverlayNode(candidate)) {
+        if (candidate == this || candidate == snackbarPresenter || containsOverlayNode(candidate)) {
             throw new IllegalArgumentException("content cannot also be a presentation layer or this pane");
         }
         rejectAncestor(candidate, "content");
@@ -401,7 +399,7 @@ public final class M3OverlayPane extends Pane {
 
     /// Validates a prospective overlay node before this pane mutates its scene graph.
     private void validateOverlay(Node candidate) {
-        if (candidate == this || candidate == snackbarHost || candidate == getContent()) {
+        if (candidate == this || candidate == snackbarPresenter || candidate == getContent()) {
             throw new IllegalArgumentException("content, snackbar, and overlay pane nodes cannot be shown as overlays");
         }
         if (containsOverlayNode(candidate)) {
@@ -446,13 +444,13 @@ public final class M3OverlayPane extends Pane {
         OverlayHandle handle = new OverlayHandle(this, nonNullOverlay, modal, previousFocusOwner);
 
         ArrayList<OverlayHandle> targetList = modal ? modalOverlays : regularOverlays;
-        int childIndex = modal ? getChildren().size() : getChildren().indexOf(snackbarHost);
+        int childIndex = modal ? getChildren().size() : getChildren().indexOf(snackbarPresenter);
         getChildren().add(childIndex, nonNullOverlay);
         boolean completed = false;
         try {
             targetList.add(handle);
             if (modal) {
-                snackbarHost.setModalBlocked(true);
+                snackbarPresenter.setModalBlocked(true);
                 notifyModalAccessibilityChanged();
                 requestModalFocusLater(null);
             }
@@ -464,7 +462,7 @@ public final class M3OverlayPane extends Pane {
                 targetList.remove(handle);
                 getChildren().remove(nonNullOverlay);
                 handle.detach();
-                snackbarHost.setModalBlocked(!modalOverlays.isEmpty());
+                snackbarPresenter.setModalBlocked(!modalOverlays.isEmpty());
                 notifyModalAccessibilityChanged();
             }
         }
@@ -487,7 +485,7 @@ public final class M3OverlayPane extends Pane {
         handle.detach();
 
         if (handle.modal) {
-            snackbarHost.setModalBlocked(!modalOverlays.isEmpty());
+            snackbarPresenter.setModalBlocked(!modalOverlays.isEmpty());
             notifyModalAccessibilityChanged();
             if (wasTopModal) {
                 if (modalOverlays.isEmpty()) {

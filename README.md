@@ -88,6 +88,22 @@ public final class DemoApp extends Application {
 }
 ```
 
+Snackbar messages are immutable. Supply an action when the message is created; the presenter dismisses the current
+message after invoking the action. Queue any follow-up feedback instead of dismissing the active message from the
+callback:
+
+```java
+root.showSnackbar(new M3Snackbar(
+        "Project archived",
+        new M3Snackbar.Action(
+                "Undo",
+                () -> root.enqueueSnackbar(new M3Snackbar("Project restored"))
+        )
+));
+
+root.showSnackbar(new M3Snackbar("Connection lost", null, true));
+```
+
 Use one `M3OverlayPane` as the stable root of each application scene. It owns transient snackbar presentation and
 the in-scene layers used by `M3Dialog`; neither feature replaces `Scene.root`. A dialog owner must be the overlay
 pane or one of its descendants.

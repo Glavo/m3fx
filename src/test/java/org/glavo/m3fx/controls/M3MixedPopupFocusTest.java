@@ -349,8 +349,16 @@ final class M3MixedPopupFocusTest {
             M3OverlayPane overlayPane = new M3OverlayPane();
             overlayPane.setContent(content);
             overlayPane.setSnackbarDisplayDuration(javafx.util.Duration.INDEFINITE);
-            M3Snackbar firstSnackbar = new M3Snackbar("Saved", "Undo");
-            M3Snackbar secondSnackbar = new M3Snackbar("Deleted", "Restore");
+            M3Snackbar firstSnackbar = new M3Snackbar(
+                    "Saved",
+                    new M3Snackbar.Action("Undo", () -> {
+                    })
+            );
+            M3Snackbar secondSnackbar = new M3Snackbar(
+                    "Deleted",
+                    new M3Snackbar.Action("Restore", () -> {
+                    })
+            );
             M3Button modalAction = new M3Button("Modal action");
             Pane modalLayer = new Pane(modalAction);
             Stage stage = new Stage();
@@ -365,10 +373,14 @@ final class M3MixedPopupFocusTest {
                 overlayPane.enqueueSnackbar(secondSnackbar);
                 overlayPane.applyCss();
                 overlayPane.layout();
-                Node firstAction = Objects.requireNonNull(assertInstanceOf(
-                        Node.class,
-                        firstSnackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
-                ));
+                Node presenter = Objects.requireNonNull(
+                        overlayPane.lookup(".m3-snackbar-presenter"),
+                        "snackbar presenter"
+                );
+                Node firstAction = Objects.requireNonNull(
+                        (Node) presenter.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE),
+                        "first snackbar action"
+                );
                 firstAction.requestFocus();
                 assertTrue(firstAction.isFocused());
 
@@ -381,17 +393,17 @@ final class M3MixedPopupFocusTest {
                 overlayPane.applyCss();
                 overlayPane.layout();
 
-                Node secondAction = Objects.requireNonNull(assertInstanceOf(
-                        Node.class,
-                        secondSnackbar.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE)
-                ));
+                Node secondAction = Objects.requireNonNull(
+                        presenter.lookup(".m3-snackbar-action"),
+                        "second snackbar action"
+                );
                 assertSame(secondSnackbar, overlayPane.getSnackbar());
                 assertTrue(overlayPane.getSnackbarQueue().isEmpty());
                 assertTrue(modalAction.isFocused());
                 assertFalse(secondAction.isFocused());
 
                 assertTrue(modalHandle.hide());
-                assertTrue(M3Accessible.requestAccessibleFocus(overlayPane, secondSnackbar));
+                assertTrue(M3Accessible.requestAccessibleFocus(overlayPane, presenter));
                 assertTrue(secondAction.isFocused());
             } finally {
                 overlayPane.dismissAllSnackbars();
