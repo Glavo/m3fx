@@ -49,7 +49,8 @@ import java.util.function.Consumer;
 /// A Material Design 3 dialog pane.
 ///
 /// The pane owns a headline, optional graphic, text or node content, and an ordered set of Material action buttons.
-/// It is designed for an [M3Dialog] overlay and does not create a native window or depend on JavaFX dialog skins.
+/// It is designed as the retained surface of an [M3Dialog] and does not itself create a native window or depend on
+/// JavaFX dialog skins. [M3OverlayPane] and [M3DialogWindow] provide in-scene and native-window presentation.
 ///
 /// The [buttonTypes][#getButtonTypes()] list is live, ordered, and rejects `null` elements before mutation. Each
 /// entry creates one [M3Button], including repeated entries; [#lookupButton(ButtonType)] returns the first matching

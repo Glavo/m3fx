@@ -43,8 +43,9 @@ import java.util.Objects;
 /// layers fill the same client area without affecting those measurements.
 ///
 /// Applications normally install one `M3OverlayPane` as the stable [javafx.scene.Scene] root and assign their
-/// ordinary application scaffold with [#setContent(Node)]. Material dialogs are presented directly with
-/// [#showDialog(M3Dialog)] and never replace the scene root. Custom in-scene surfaces retain the [OverlayHandle]
+/// ordinary application scaffold with [#setContent(Node)]. In-scene Material dialogs are presented directly with
+/// [#showDialog(M3Dialog)] and never replace the scene root; [M3DialogWindow] provides independent native-window
+/// presentation when no scene overlay is available. Custom in-scene surfaces retain the [OverlayHandle]
 /// returned by [#showOverlay(Node)] or [#showModalOverlay(Node)] and close only that presentation through
 /// [OverlayHandle#hide()].
 ///
@@ -215,18 +216,7 @@ public final class M3OverlayPane extends Pane {
     ///                               a scene-graph parent
     /// @throws NullPointerException  if `dialog` is `null`
     public M3DialogHandle showDialog(M3Dialog dialog) {
-        M3Dialog nonNullDialog = Objects.requireNonNull(dialog, "dialog");
-        M3DialogHandle handle = new M3DialogHandle(this, nonNullDialog);
-        boolean completed = false;
-        try {
-            nonNullDialog.present(this, handle);
-            completed = true;
-            return handle;
-        } finally {
-            if (!completed) {
-                handle.detach();
-            }
-        }
+        return Objects.requireNonNull(dialog, "dialog").present(this);
     }
 
     /// Returns the snackbar currently presented by this pane.

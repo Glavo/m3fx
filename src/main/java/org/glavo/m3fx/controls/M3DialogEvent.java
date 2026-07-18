@@ -31,16 +31,16 @@ public final class M3DialogEvent extends Event {
     /// The root event type for all M3FX dialog lifecycle events.
     public static final EventType<M3DialogEvent> ANY = new EventType<>(Event.ANY, "M3_DIALOG");
 
-    /// Fired immediately before a dialog layer is installed; its handle is not yet showing.
+    /// Fired immediately before a dialog surface is installed; its handle is not yet showing.
     public static final EventType<M3DialogEvent> SHOWING = new EventType<>(ANY, "M3_DIALOG_SHOWING");
 
-    /// Fired after a dialog layer has been installed and its handle is showing.
+    /// Fired after a dialog surface has been installed and its handle is showing.
     public static final EventType<M3DialogEvent> SHOWN = new EventType<>(ANY, "M3_DIALOG_SHOWN");
 
     /// Fired before an accepted close begins its exit transition while the handle remains showing.
     public static final EventType<M3DialogEvent> HIDING = new EventType<>(ANY, "M3_DIALOG_HIDING");
 
-    /// Fired after a dialog layer has been removed, its handle has detached, and any applicable focus restoration has
+    /// Fired after a dialog surface has been removed, its handle has detached, and any applicable focus restoration has
     /// been scheduled.
     public static final EventType<M3DialogEvent> HIDDEN = new EventType<>(ANY, "M3_DIALOG_HIDDEN");
 

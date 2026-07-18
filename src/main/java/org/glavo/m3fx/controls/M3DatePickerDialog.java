@@ -31,7 +31,9 @@ import java.time.LocalDate;
 ///
 /// The picker is owned by this dialog and must not be reparented. Optional presets are exposed as a live ordered
 /// list and appear beside the calendar. Bounds, locale, and adjacent-month display are configured through the
-/// embedded picker. Present the configured dialog with [M3OverlayPane#showDialog(M3Dialog)].
+/// embedded picker. Present the configured dialog in an existing scene with
+/// [M3OverlayPane#showDialog(M3Dialog)] or in a dedicated native window with
+/// [M3DialogWindow#showDialog(M3Dialog)].
 ///
 /// ```java
 /// private void showDateDialog(M3OverlayPane overlayPane) {

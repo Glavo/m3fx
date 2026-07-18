@@ -72,6 +72,7 @@ import org.glavo.m3fx.controls.M3DateRangePickerField;
 import org.glavo.m3fx.controls.M3DateRangePresets;
 import org.glavo.m3fx.controls.M3Dialog;
 import org.glavo.m3fx.controls.M3DialogPane;
+import org.glavo.m3fx.controls.M3DialogWindow;
 import org.glavo.m3fx.controls.M3Divider;
 import org.glavo.m3fx.controls.M3FabMenu;
 import org.glavo.m3fx.controls.M3FloatingActionButton;
@@ -2949,6 +2950,8 @@ public final class M3FXDemoApp extends Application {
         settingsButton.setOnAction(event -> showSettingsDialog());
         M3Button destructiveButton = new M3Button("Open destructive", M3ButtonVariant.OUTLINED);
         destructiveButton.setOnAction(event -> showDestructiveDialog());
+        M3Button standaloneButton = new M3Button("Open standalone window", M3ButtonVariant.OUTLINED);
+        standaloneButton.setOnAction(event -> showStandaloneDialog());
 
         M3DialogPane basicPane = createDialogPreviewPane(
                 "Dialog title",
@@ -2976,7 +2979,13 @@ public final class M3FXDemoApp extends Application {
         longPane.setPrefWidth(520.0);
 
         return createGallery(
-                createShowcaseGroup("Launchers", basicButton, settingsButton, destructiveButton),
+                createShowcaseGroup(
+                        "Launchers",
+                        basicButton,
+                        settingsButton,
+                        destructiveButton,
+                        standaloneButton
+                ),
                 createShowcaseGroup("Inline Panes", basicPane, settingsPane),
                 createShowcaseGroup("Scrollable Content", longPane)
         );
@@ -4672,6 +4681,24 @@ public final class M3FXDemoApp extends Application {
         );
         dialog.getDialogPane().setGraphic(createErrorIcon("warning"));
         showDialog(dialog);
+    }
+
+    /// Opens a Material dialog in an ownerless native window.
+    private void showStandaloneDialog() {
+        M3Dialog dialog = createDemoDialog(
+                "Standalone dialog",
+                "This presentation owns a native Stage and does not require an application overlay pane.",
+                new ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE)
+        );
+        M3DialogWindow window = new M3DialogWindow();
+        window.setTitle("M3FX Standalone Dialog");
+        window.setTheme(M3Theme.fromSeed(
+                seedColor,
+                profile,
+                brightness,
+                M3Density.of(densityScale)
+        ));
+        window.showDialog(dialog);
     }
 
     /// Creates a configured demo dialog.

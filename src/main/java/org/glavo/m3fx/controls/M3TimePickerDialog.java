@@ -30,9 +30,9 @@ import java.time.LocalTime;
 /// [LocalTime] through [#valueProperty()]. Its Dial/Input mode switch shares the specification's bottom action row
 /// with the dialog actions.
 ///
-/// [M3OverlayPane#showDialog(M3Dialog)] presents the dialog without blocking. OK is disabled until a value is
-/// selected. Callers can inspect [M3DialogEvent#getButtonType()] from the hidden event to distinguish confirmation
-/// from dismissal; cancellation retains the current value.
+/// [M3OverlayPane#showDialog(M3Dialog)] and [M3DialogWindow#showDialog(M3Dialog)] present the dialog without
+/// blocking. OK is disabled until a value is selected. Callers can inspect [M3DialogEvent#getButtonType()] from the
+/// hidden event to distinguish confirmation from dismissal; cancellation retains the current value.
 ///
 /// ```java
 /// M3TimePickerDialog dialog = new M3TimePickerDialog(LocalTime.of(9, 30));

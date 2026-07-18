@@ -27,6 +27,7 @@ import javafx.stage.Stage;
 import javafx.stage.Window;
 import org.glavo.m3fx.FxTestUtils;
 import org.glavo.m3fx.animation.M3MotionSettings;
+import org.glavo.m3fx.internal.M3OverlayDialogPresentation;
 import org.glavo.m3fx.testing.Tier2Test;
 import org.glavo.monetfx.ColorRole;
 import org.glavo.monetfx.Brightness;
@@ -66,7 +67,7 @@ final class M3DialogPresentationTest {
     @Test
     void lifecycleEventsUseJavaFxEventDispatchChain() {
         M3Dialog dialog = new M3Dialog();
-        M3DialogHandle handle = new M3DialogHandle(new M3OverlayPane(), dialog);
+        M3DialogHandle handle = detachedHandle(dialog);
         List<String> order = new ArrayList<>();
         AtomicReference<@Nullable M3DialogEvent> observedEvent = new AtomicReference<>();
 
@@ -125,7 +126,7 @@ final class M3DialogPresentationTest {
     @Test
     void lifecycleHandlerPropertiesShareEventManagerStorage() {
         M3Dialog dialog = new M3Dialog();
-        M3DialogHandle handle = new M3DialogHandle(new M3OverlayPane(), dialog);
+        M3DialogHandle handle = detachedHandle(dialog);
         AtomicInteger firstCalls = new AtomicInteger();
         AtomicInteger secondCalls = new AtomicInteger();
         AtomicInteger propertyChanges = new AtomicInteger();
@@ -1225,6 +1226,20 @@ final class M3DialogPresentationTest {
         M3OverlayPane overlayRoot = new M3OverlayPane();
         overlayRoot.setContent(Objects.requireNonNull(content, "content"));
         return overlayRoot;
+    }
+
+    /// Creates a detached handle for event-dispatch tests that do not install a visible presentation.
+    private static M3DialogHandle detachedHandle(M3Dialog dialog) {
+        M3Dialog nonNullDialog = Objects.requireNonNull(dialog, "dialog");
+        return new M3DialogHandle(
+                nonNullDialog,
+                new M3OverlayDialogPresentation(
+                        new M3OverlayPane(),
+                        nonNullDialog.getDialogPane(),
+                        () -> {
+                        }
+                )
+        );
     }
 
     /// Verifies a dialog is detached while its stable overlay root and ordinary content remain installed.

@@ -22,7 +22,7 @@ import java.util.Objects;
 /// [M3OverlayPane] selected by the caller. This preserves native window chrome interaction and gives nested dialogs
 /// deterministic stacking without changing application scene-graph ownership.
 @NotNullByDefault
-public final class M3DialogPresenter {
+public final class M3OverlayDialogPresentation implements M3DialogPresentation {
     /// The fallback scrim opacity used without an installed Material theme.
     private static final double FALLBACK_SCRIM_OPACITY = 0.32;
 
@@ -35,11 +35,11 @@ public final class M3DialogPresenter {
     /// The retained overlay layer containing the scrim and dialog pane.
     private final DialogLayer layer;
 
+    /// The overlay pane that owns this presentation and supplies its inherited context.
+    private final M3OverlayPane host;
+
     /// Observes host token-context changes while this presenter is attached.
     private @Nullable M3MotionSettingsObserver contextObserver;
-
-    /// The overlay pane whose effective theme controls the scrim token.
-    private @Nullable M3OverlayPane contextHost;
 
     /// The action completed after the active scrim exit transition, or `null` when no exit is pending.
     private @Nullable Runnable pendingScrimHiddenAction;
@@ -49,11 +49,13 @@ public final class M3DialogPresenter {
 
     /// Creates a detached presenter for one dialog pane.
     ///
+    /// @param host           the overlay pane that will own this presentation
     /// @param pane           the pane rendered above this presenter's scrim
     /// @param dismissRequest the action invoked when the user activates the scrim
     /// @throws NullPointerException if `pane` is `null`
     /// @throws NullPointerException if `dismissRequest` is `null`
-    public M3DialogPresenter(M3DialogPane pane, Runnable dismissRequest) {
+    public M3OverlayDialogPresentation(M3OverlayPane host, M3DialogPane pane, Runnable dismissRequest) {
+        this.host = Objects.requireNonNull(host, "host");
         M3DialogPane nonNullPane = Objects.requireNonNull(pane, "pane");
         Runnable nonNullDismissRequest = Objects.requireNonNull(dismissRequest, "dismissRequest");
         scrim.setOnAction(event -> nonNullDismissRequest.run());
@@ -67,13 +69,29 @@ public final class M3DialogPresenter {
         layer = new DialogLayer(scrim, nonNullPane);
     }
 
-    /// Installs this dialog layer in an overlay pane.
+    /// Returns the overlay pane that supplies this presentation's inherited context.
     ///
-    /// @param host the overlay pane that owns this presentation and its inherited context
+    /// @return the non-null overlay pane
+    @Override
+    public Parent getContextRoot() {
+        return host;
+    }
+
+    /// Verifies that the overlay pane belongs to a showing window.
+    @Override
+    public void prepare() {
+        if (host.getScene() == null
+                || host.getScene().getWindow() == null
+                || !host.getScene().getWindow().isShowing()) {
+            throw new IllegalStateException("dialog host must be attached to a showing window");
+        }
+    }
+
+    /// Installs this dialog layer in the retained overlay pane.
+    ///
     /// @throws IllegalStateException if this presenter is already showing
-    /// @throws NullPointerException  if `host` is `null`
-    public void show(M3OverlayPane host) {
-        M3OverlayPane nonNullHost = Objects.requireNonNull(host, "host");
+    @Override
+    public void install() {
         if (overlayHandle != null) {
             throw new IllegalStateException("dialog is already presented");
         }
@@ -82,9 +100,9 @@ public final class M3DialogPresenter {
         boolean completed = false;
         try {
             layer.attach();
-            shownHandle = nonNullHost.showModalOverlay(layer);
+            shownHandle = host.showModalOverlay(layer);
             overlayHandle = shownHandle;
-            startContextSynchronization(nonNullHost);
+            startContextSynchronization();
             layer.applyCss();
             layer.layout();
             scrim.setOpacity(0.0);
@@ -106,6 +124,7 @@ public final class M3DialogPresenter {
     /// Sets whether a primary click on the scrim requests dialog dismissal.
     ///
     /// @param dismissOnClick whether primary clicks activate the scrim
+    @Override
     public void setDismissOnScrimClick(boolean dismissOnClick) {
         scrim.setDismissOnClick(dismissOnClick);
     }
@@ -115,7 +134,8 @@ public final class M3DialogPresenter {
     /// @param onHidden the action invoked after the scrim becomes fully hidden
     /// @throws IllegalStateException if another scrim exit callback is already pending
     /// @throws NullPointerException  if `onHidden` is `null`
-    public void hideScrim(Runnable onHidden) {
+    @Override
+    public void startBackgroundExit(Runnable onHidden) {
         Runnable nonNullOnHidden = Objects.requireNonNull(onHidden, "onHidden");
         if (pendingScrimHiddenAction != null) {
             throw new IllegalStateException("scrim exit is already pending");
@@ -130,6 +150,7 @@ public final class M3DialogPresenter {
     }
 
     /// Removes the layer from its stable host and lets the overlay pane restore the appropriate prior focus owner.
+    @Override
     public void dispose() {
         @Nullable M3OverlayPane.OverlayHandle currentHandle = overlayHandle;
         overlayHandle = null;
@@ -154,10 +175,8 @@ public final class M3DialogPresenter {
 
     /// Starts observation of host theme-token changes needed by non-CSS scrim geometry.
     ///
-    /// @param host the presentation host whose effective theme supplies the scrim token
-    private void startContextSynchronization(M3OverlayPane host) {
+    private void startContextSynchronization() {
         stopContextSynchronization();
-        contextHost = host;
 
         M3MotionSettingsObserver observer = new M3MotionSettingsObserver(host, this::syncScrimOpacity, false);
         contextObserver = observer;
@@ -175,7 +194,6 @@ public final class M3DialogPresenter {
 
     /// Releases host token observation after presentation ends or fails.
     private void stopContextSynchronization() {
-        contextHost = null;
         scrim.setVisibleOpacity(FALLBACK_SCRIM_OPACITY);
 
         @Nullable M3MotionSettingsObserver observer = contextObserver;
@@ -187,11 +205,6 @@ public final class M3DialogPresenter {
 
     /// Resolves and applies the effective Material scrim opacity token.
     private void syncScrimOpacity() {
-        @Nullable M3OverlayPane host = contextHost;
-        if (host == null) {
-            return;
-        }
-
         @Nullable Parent themeRoot = M3ThemeResolver.findThemeRoot(host);
         @Nullable M3Theme nextEffectiveTheme = themeRoot == null ? null : M3ThemeMetadata.getTheme(themeRoot);
         scrim.setVisibleOpacity(nextEffectiveTheme == null

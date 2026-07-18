@@ -5,38 +5,39 @@ package org.glavo.m3fx.controls;
 
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
+import org.glavo.m3fx.internal.M3DialogPresentation;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
-/// Controls one presentation of an [M3Dialog] in an [M3OverlayPane].
+/// Controls one presentation of an [M3Dialog].
 ///
-/// A handle is created only by [M3OverlayPane#showDialog(M3Dialog)]. It remains associated with the dialog after the
-/// presentation ends, but releases its overlay pane reference when the dialog is fully hidden. Retaining an old
-/// handle therefore cannot close a later presentation of the same dialog.
+/// A handle is created by [M3OverlayPane#showDialog(M3Dialog)] or [M3DialogWindow#showDialog(M3Dialog)]. It remains
+/// associated with the dialog after the presentation ends, but releases its presentation backend when the dialog is
+/// fully hidden. Retaining an old handle therefore cannot close a later presentation of the same dialog.
 @NotNullByDefault
 public final class M3DialogHandle {
     /// The dialog represented by this presentation.
     private final M3Dialog dialog;
 
-    /// Whether this presentation still occupies its overlay layer.
+    /// Whether this presentation still occupies its host surface.
     private boolean showing;
 
     /// Lazily created observable view of the showing state.
     private @Nullable ReadOnlyBooleanWrapper showingProperty;
 
-    /// The overlay pane currently hosting this presentation, or `null` after it is hidden.
-    private @Nullable M3OverlayPane host;
+    /// The backend currently hosting this presentation, or `null` after it is hidden.
+    private @Nullable M3DialogPresentation presentation;
 
-    /// Creates a detached-state handle allocated by one overlay pane before presentation begins.
+    /// Creates a detached-state handle allocated for one presentation backend before installation begins.
     ///
-    /// @param host   the pane that will host the presentation
-    /// @param dialog the dialog represented by this handle
-    /// @throws NullPointerException if `host` or `dialog` is `null`
-    M3DialogHandle(M3OverlayPane host, M3Dialog dialog) {
-        this.host = Objects.requireNonNull(host, "host");
+    /// @param dialog       the dialog represented by this handle
+    /// @param presentation the backend represented by this handle
+    /// @throws NullPointerException if `dialog` or `presentation` is `null`
+    M3DialogHandle(M3Dialog dialog, M3DialogPresentation presentation) {
         this.dialog = Objects.requireNonNull(dialog, "dialog");
+        this.presentation = Objects.requireNonNull(presentation, "presentation");
     }
 
     /// Returns the dialog represented by this presentation.
@@ -46,7 +47,7 @@ public final class M3DialogHandle {
         return dialog;
     }
 
-    /// Returns whether this presentation still occupies an overlay layer.
+    /// Returns whether this presentation still occupies its host surface.
     ///
     /// The value remains `true` while an accepted exit transition is running and becomes `false` immediately before
     /// the dialog's hidden lifecycle event is dispatched.
@@ -80,22 +81,22 @@ public final class M3DialogHandle {
         return dialog.requestClose(this);
     }
 
-    /// Returns whether this handle was allocated by an overlay pane and has not detached.
+    /// Returns whether this handle belongs to an exact presentation backend and has not detached.
     ///
-    /// @param candidate the pane to compare by identity
-    /// @return `true` when `candidate` is this presentation's current host
-    boolean belongsTo(M3OverlayPane candidate) {
-        return host == candidate;
+    /// @param candidate the backend to compare by identity
+    /// @return `true` when `candidate` is this handle's current backend
+    boolean belongsTo(M3DialogPresentation candidate) {
+        return presentation == candidate;
     }
 
-    /// Marks this handle as occupying its installed overlay layer.
+    /// Marks this handle as occupying its installed host surface.
     void markShowing() {
         setShowing(true);
     }
 
-    /// Detaches this handle from its host after failed presentation or completed hiding.
+    /// Detaches this handle from its backend after failed presentation or completed hiding.
     void detach() {
-        host = null;
+        presentation = null;
         setShowing(false);
     }
 

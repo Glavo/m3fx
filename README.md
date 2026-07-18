@@ -114,6 +114,20 @@ M3DialogHandle handle = root.showDialog(dialog);
 handle.requestClose();
 ```
 
+When no application scene or overlay host exists, `M3DialogWindow` presents the same dialog in a dedicated native
+Stage. The window host owns native owner, modality, style, title, and theme configuration while `M3Dialog` remains a
+host-independent description:
+
+```java
+M3DialogWindow window = new M3DialogWindow();
+window.setTitle("Settings");
+window.initModality(Modality.NONE);
+window.showDialog(dialog);
+```
+
+Standalone windows use native modality and do not draw a cross-window Material scrim. Both presentation modes return
+`M3DialogHandle` and use the same cancellable close and lifecycle-event contract.
+
 Custom floating surfaces use a retained lifecycle handle instead of mutating an exposed overlay list:
 
 ```java

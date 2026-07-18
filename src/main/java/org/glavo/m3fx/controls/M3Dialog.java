@@ -13,41 +13,43 @@ import javafx.event.EventDispatchChain;
 import javafx.event.EventHandler;
 import javafx.event.EventTarget;
 import javafx.event.EventType;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.ButtonType;
 import javafx.stage.Window;
 import javafx.stage.WindowEvent;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
-import org.glavo.m3fx.internal.M3DialogPresenter;
+import org.glavo.m3fx.internal.M3DialogPresentation;
 import org.glavo.m3fx.internal.M3EventHandlerManager;
 import org.glavo.m3fx.internal.M3NodeTransition;
+import org.glavo.m3fx.internal.M3OverlayDialogPresentation;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
-/// Describes a Material Design 3 modal dialog that can be presented by an [M3OverlayPane].
+/// Describes a Material Design 3 dialog independently of its presentation host.
 ///
-/// `M3Dialog` does not create a native window and does not use JavaFX [javafx.scene.control.Dialog] modality. Its
-/// pane and scrim are installed in the overlay pane that presents it, so the application window retains normal
-/// window-manager behavior while lower application content remains blocked by the scrim and focus trap.
-/// Presentation never replaces the scene root.
+/// `M3Dialog` does not create or own a native window. [M3OverlayPane#showDialog(M3Dialog)] installs its pane and a
+/// Material scrim in an existing scene, while [M3DialogWindow#showDialog(M3Dialog)] presents the same pane in a
+/// dedicated native Stage without a cross-window scrim. Neither mode replaces an application scene root.
 ///
-/// [M3OverlayPane#showDialog(M3Dialog)] is non-blocking and returns an [M3DialogHandle] for that specific
-/// presentation. An action button first bubbles its ordinary action event; consuming that event prevents dialog
+/// Both presentation methods are non-blocking and return an [M3DialogHandle] for that specific presentation. An
+/// action button first bubbles its ordinary action event; consuming that event prevents dialog
 /// closing. Otherwise the dialog emits a cancellable [M3DialogEvent#CLOSE_REQUEST] and runs its exit transition.
 /// Lifecycle events expose the initiating [ButtonType], while application results remain in caller-owned state. They
 /// are dispatched through this dialog's JavaFX [EventTarget] chain, so callers may register multiple filters and
 /// handlers in addition to the singleton `onXxx` properties. Reduced-motion requests settle presentation
 /// immediately.
-/// Activating the surrounding scrim requests the same cancellable close by default and produces no button type;
-/// [#dismissOnScrimClickProperty()] disables only that pointer-dismissal behavior while retaining modality.
+/// In overlay mode, activating the surrounding scrim requests the same cancellable close by default and produces no
+/// button type; [#dismissOnScrimClickProperty()] disables only that pointer-dismissal behavior while retaining
+/// modality. The property has no effect in native-window mode because that mode has no Material scrim.
 ///
-/// The presenting overlay pane supplies scene stylesheets, node orientation, motion settings, and its effective
-/// Material theme. Hiding its window forcibly removes the presentation and completes the hiding lifecycle without
+/// The selected host supplies stylesheets, node orientation, motion settings, and the effective Material theme.
+/// Hiding or detaching its window forcibly removes the presentation and completes the hiding lifecycle without
 /// emitting a cancellable close request. One dialog instance cannot be presented concurrently; after it is fully
-/// hidden, it may be presented again by the same or another overlay pane.
+/// hidden, it may be presented again by either host type.
 ///
 /// ```java
 /// M3Dialog dialog = new M3Dialog();
@@ -70,9 +72,6 @@ public class M3Dialog implements EventTarget {
     /// The retained Material pane rendered by this dialog.
     private final M3DialogPane dialogPane;
 
-    /// Installs the pane and scrim into the active presentation host.
-    private final M3DialogPresenter presenter;
-
     /// Animates pane opacity during dialog entrance and exit.
     private final M3NodeTransition presentationAnimation;
 
@@ -83,7 +82,7 @@ public class M3Dialog implements EventTarget {
     ///
     /// A scrim dismissal follows the ordinary cancellable close lifecycle and produces no button type. Setting this
     /// property to `false` keeps the scrim modal but prevents pointer dismissal. Escape and action buttons are not
-    /// affected.
+    /// affected. Native-window presentations do not have a scrim and ignore this value.
     ///
     /// @defaultValue `true`
     private final BooleanProperty dismissOnScrimClickValue =
@@ -92,7 +91,10 @@ public class M3Dialog implements EventTarget {
     /// The handle for the current presentation, or `null` while this dialog is detached.
     private @Nullable M3DialogHandle activeHandle;
 
-    /// Handles host-window disappearance while this dialog owns an in-scene overlay.
+    /// The backend for the current presentation, or `null` while this dialog is detached.
+    private @Nullable M3DialogPresentation activePresentation;
+
+    /// Handles host-window disappearance while this dialog owns a presentation surface.
     private final EventHandler<WindowEvent> hostWindowHiddenHandler = event -> handleHostUnavailable();
 
     /// Handles removal of the active host from its presentation scene.
@@ -103,8 +105,8 @@ public class M3Dialog implements EventTarget {
     private final ChangeListener<@Nullable Window> hostWindowListener =
             (observable, oldWindow, newWindow) -> handleHostUnavailable();
 
-    /// The overlay pane currently observed for forced presentation cleanup.
-    private @Nullable M3OverlayPane observedHost;
+    /// The presentation context root currently observed for forced cleanup.
+    private @Nullable Parent observedContextRoot;
 
     /// The scene currently observed for forced presentation cleanup.
     private @Nullable Scene observedHostScene;
@@ -130,8 +132,8 @@ public class M3Dialog implements EventTarget {
     /// Whether the pane has completed the active exit transition.
     private boolean paneExitFinished;
 
-    /// Whether the scrim has completed the active exit transition.
-    private boolean scrimExitFinished;
+    /// Whether the presentation background has completed the active exit transition.
+    private boolean backgroundExitFinished;
 
     /// Creates an empty Material dialog with a new [M3DialogPane].
     public M3Dialog() {
@@ -144,10 +146,12 @@ public class M3Dialog implements EventTarget {
     /// @throws NullPointerException if `dialogPane` is `null`
     M3Dialog(M3DialogPane dialogPane) {
         this.dialogPane = Objects.requireNonNull(dialogPane, "dialogPane");
-        presenter = new M3DialogPresenter(dialogPane, this::handleScrimAction);
-        presenter.setDismissOnScrimClick(isDismissOnScrimClick());
-        dismissOnScrimClickValue.addListener((observable, oldValue, enabled) ->
-                presenter.setDismissOnScrimClick(enabled));
+        dismissOnScrimClickValue.addListener((observable, oldValue, enabled) -> {
+            @Nullable M3DialogPresentation presentation = activePresentation;
+            if (presentation != null) {
+                presentation.setDismissOnScrimClick(enabled);
+            }
+        });
         presentationAnimation = new M3NodeTransition(dialogPane);
         presentationAnimation.setOnFinished(event -> handlePresentationAnimationFinished());
         dialogPane.setButtonAction(this::handleButtonAction);
@@ -162,6 +166,8 @@ public class M3Dialog implements EventTarget {
 
     /// Returns whether a primary click on the surrounding scrim requests that this dialog close.
     ///
+    /// The value is retained independently of the current host and has no effect in [M3DialogWindow] mode.
+    ///
     /// @return `true` when pointer activation of the scrim requests dismissal
     public final boolean isDismissOnScrimClick() {
         return dismissOnScrimClickValue.get();
@@ -170,7 +176,7 @@ public class M3Dialog implements EventTarget {
     /// Sets whether a primary click on the surrounding scrim requests that this dialog close.
     ///
     /// Disabling this property does not make the scrim mouse-transparent; lower content remains blocked while the
-    /// dialog is showing.
+    /// dialog is showing in an overlay. Native-window presentations have no scrim and ignore this value.
     ///
     /// @param dismissOnScrimClick whether pointer activation of the scrim requests dismissal
     public final void setDismissOnScrimClick(boolean dismissOnScrimClick) {
@@ -179,58 +185,82 @@ public class M3Dialog implements EventTarget {
 
     /// Returns the property controlling pointer dismissal through the surrounding scrim.
     ///
+    /// The property may be changed while an overlay presentation is showing. Native-window presentations retain but
+    /// do not act on its value.
+    ///
     /// @return the scrim pointer-dismissal property
     public final BooleanProperty dismissOnScrimClickProperty() {
         return dismissOnScrimClickValue;
     }
 
-    /// Presents this dialog in an overlay pane for the handle created by that pane.
+    /// Creates and presents an in-scene overlay presentation.
     ///
-    /// @param host   the pane that owns the presentation
-    /// @param handle the unique handle allocated for this presentation
-    /// @throws IllegalArgumentException if `handle` was not allocated for this dialog and host
-    /// @throws IllegalStateException if called off the JavaFX Application Thread, if the host is not attached to a
-    ///                               showing window, if this dialog is already presented, or if its pane already has
-    ///                               a scene-graph parent
-    /// @throws NullPointerException if `host` or `handle` is `null`
-    final void present(M3OverlayPane host, M3DialogHandle handle) {
+    /// @param host the overlay pane that owns the presentation
+    /// @return the exact handle allocated for this presentation
+    /// @throws IllegalStateException if presentation preconditions are not satisfied
+    /// @throws NullPointerException  if `host` is `null`
+    final M3DialogHandle present(M3OverlayPane host) {
         checkFxThread();
         M3OverlayPane nonNullHost = Objects.requireNonNull(host, "host");
-        M3DialogHandle nonNullHandle = Objects.requireNonNull(handle, "handle");
-        if (nonNullHandle.getDialog() != this || !nonNullHandle.belongsTo(nonNullHost)) {
-            throw new IllegalArgumentException("handle does not belong to this dialog presentation");
-        }
-        if (activeHandle != null || presenting) {
-            throw new IllegalStateException("dialog is already presented");
-        }
+        return present(new M3OverlayDialogPresentation(nonNullHost, dialogPane, this::handleScrimAction));
+    }
 
-        requireShowingHost(nonNullHost);
-        if (dialogPane.getParent() != null) {
-            throw new IllegalStateException("dialog pane already belongs to a scene-graph parent");
-        }
+    /// Creates and presents a dedicated native-window presentation.
+    ///
+    /// @param host the native window host that owns the presentation
+    /// @return the exact handle allocated for this presentation
+    /// @throws IllegalStateException if presentation preconditions are not satisfied
+    /// @throws NullPointerException  if `host` is `null`
+    final M3DialogHandle present(M3DialogWindow host) {
+        checkFxThread();
+        M3DialogWindow nonNullHost = Objects.requireNonNull(host, "host");
+        return present(nonNullHost.createPresentation(dialogPane, this::handleWindowCloseRequest));
+    }
 
-        presenting = true;
-        activeHandle = nonNullHandle;
+    /// Runs the host-neutral showing lifecycle for one detached presentation backend.
+    ///
+    /// @param presentation the detached backend to install
+    /// @return the exact handle allocated for this presentation
+    /// @throws IllegalStateException if this dialog is already presented, its pane already has a parent, or the
+    ///                               backend cannot currently be installed
+    /// @throws NullPointerException  if `presentation` is `null`
+    private M3DialogHandle present(M3DialogPresentation presentation) {
+        M3DialogPresentation nonNullPresentation = Objects.requireNonNull(presentation, "presentation");
+        M3DialogHandle handle = new M3DialogHandle(this, nonNullPresentation);
+        boolean ownsPresentingState = false;
         boolean presented = false;
         try {
+            if (activeHandle != null || activePresentation != null || presenting) {
+                throw new IllegalStateException("dialog is already presented");
+            }
+            if (dialogPane.getParent() != null) {
+                throw new IllegalStateException("dialog pane already belongs to a scene-graph parent");
+            }
+
+            nonNullPresentation.prepare();
+            presenting = true;
+            ownsPresentingState = true;
+            activeHandle = handle;
+            activePresentation = nonNullPresentation;
+            nonNullPresentation.setDismissOnScrimClick(isDismissOnScrimClick());
             fireLifecycle(M3DialogEvent.SHOWING, null);
             pendingButtonType = null;
             paneExitFinished = false;
-            scrimExitFinished = false;
+            backgroundExitFinished = false;
             closing = false;
             presentationAnimation.stop();
             restingOpacity = dialogPane.getOpacity();
-            if (canAnimatePresentation(nonNullHost)) {
+            if (canAnimatePresentation(nonNullPresentation.getContextRoot())) {
                 dialogPane.setOpacity(0.0);
             }
             dialogPane.setModalActive(true);
-            startHostWindowObservation(nonNullHost);
-            presenter.show(nonNullHost);
-            nonNullHandle.markShowing();
+            nonNullPresentation.install();
+            startHostWindowObservation(nonNullPresentation.getContextRoot());
+            handle.markShowing();
             fireLifecycle(M3DialogEvent.SHOWN, null);
             presented = true;
             Platform.runLater(() -> {
-                if (activeHandle == nonNullHandle && nonNullHandle.isShowing() && !closing) {
+                if (activeHandle == handle && handle.isShowing() && !closing) {
                     dialogPane.requestInitialFocus();
                 }
             });
@@ -239,24 +269,33 @@ public class M3Dialog implements EventTarget {
             } else if (isPresented() && !closing) {
                 restorePaneOpacity();
             }
+            return handle;
         } finally {
             if (!presented) {
-                presentationAnimation.stop();
-                dialogPane.setModalActive(false);
-                presenter.dispose();
-                stopHostWindowObservation();
-                restorePaneOpacity();
-                pendingButtonType = null;
-                paneExitFinished = false;
-                scrimExitFinished = false;
-                closing = false;
-                closeRequestPending = false;
-                if (activeHandle == nonNullHandle) {
+                boolean ownsDialogState = activeHandle == handle || activePresentation == nonNullPresentation;
+                if (ownsDialogState) {
+                    presentationAnimation.stop();
+                    dialogPane.setModalActive(false);
+                    stopHostWindowObservation();
+                    restorePaneOpacity();
+                    pendingButtonType = null;
+                    paneExitFinished = false;
+                    backgroundExitFinished = false;
+                    closing = false;
+                    closeRequestPending = false;
+                }
+                nonNullPresentation.dispose();
+                if (activeHandle == handle) {
                     activeHandle = null;
                 }
-                nonNullHandle.detach();
+                if (activePresentation == nonNullPresentation) {
+                    activePresentation = null;
+                }
+                handle.detach();
             }
-            presenting = false;
+            if (ownsPresentingState) {
+                presenting = false;
+            }
         }
     }
 
@@ -266,11 +305,14 @@ public class M3Dialog implements EventTarget {
     /// @return `true` if this request started an accepted close transition; `false` if the handle is stale, the
     ///         request was consumed, or this presentation is already closing
     /// @throws IllegalStateException if called off the JavaFX Application Thread
-    /// @throws NullPointerException if `handle` is `null`
+    /// @throws NullPointerException  if `handle` is `null`
     final boolean requestClose(M3DialogHandle handle) {
         checkFxThread();
         M3DialogHandle nonNullHandle = Objects.requireNonNull(handle, "handle");
-        if (activeHandle != nonNullHandle) {
+        @Nullable M3DialogPresentation presentation = activePresentation;
+        if (activeHandle != nonNullHandle
+                || presentation == null
+                || !nonNullHandle.belongsTo(presentation)) {
             return false;
         }
         return requestCloseInternal(null);
@@ -278,10 +320,10 @@ public class M3Dialog implements EventTarget {
 
     /// Returns whether this dialog currently has an installed presentation.
     ///
-    /// @return `true` while the active handle occupies its overlay layer
+    /// @return `true` while the active handle occupies its host surface
     private boolean isPresented() {
         @Nullable M3DialogHandle handle = activeHandle;
-        return handle != null && handle.isShowing();
+        return handle != null && activePresentation != null && handle.isShowing();
     }
 
     /// Handles an unconsumed action from one of the pane's action buttons.
@@ -291,6 +333,11 @@ public class M3Dialog implements EventTarget {
 
     /// Handles activation of the surrounding scrim through the ordinary cancellable close lifecycle.
     private void handleScrimAction() {
+        requestCloseInternal(null);
+    }
+
+    /// Handles a native window-manager close request through the ordinary cancellable lifecycle.
+    private void handleWindowCloseRequest() {
         requestCloseInternal(null);
     }
 
@@ -321,8 +368,10 @@ public class M3Dialog implements EventTarget {
 
             if (canAnimatePresentation()) {
                 paneExitFinished = false;
-                scrimExitFinished = false;
-                presenter.hideScrim(this::handleScrimExitFinished);
+                backgroundExitFinished = false;
+                M3DialogPresentation presentation =
+                        Objects.requireNonNull(activePresentation, "active dialog presentation");
+                presentation.startBackgroundExit(this::handleBackgroundExitFinished);
                 playExitAnimation();
             } else {
                 completeHide(buttonType);
@@ -347,7 +396,7 @@ public class M3Dialog implements EventTarget {
         M3Animation.playFromStart(dialogPane, presentationAnimation);
     }
 
-    /// Starts the pane exit fade while retaining its overlay layer.
+    /// Starts the pane exit fade while retaining its host surface.
     private void playExitAnimation() {
         M3MotionSpec spec = M3Animation.fastEffects(dialogPane);
         presentationAnimation.configure(
@@ -369,33 +418,36 @@ public class M3Dialog implements EventTarget {
         }
     }
 
-    /// Records completion of the scrim exit transition.
-    private void handleScrimExitFinished() {
+    /// Records completion of the presentation background exit transition.
+    private void handleBackgroundExitFinished() {
         if (closing) {
-            scrimExitFinished = true;
+            backgroundExitFinished = true;
             completeHideWhenExitFinished();
         }
     }
 
-    /// Removes the overlay after both independently animated dialog layers have settled.
+    /// Removes the presentation after the pane and background transitions have settled.
     private void completeHideWhenExitFinished() {
-        if (closing && paneExitFinished && scrimExitFinished) {
+        if (closing && paneExitFinished && backgroundExitFinished) {
             completeHide(pendingButtonType);
         }
     }
 
-    /// Removes the overlay and completes the accepted close lifecycle.
+    /// Removes the presentation surface and completes the accepted close lifecycle.
     private void completeHide(@Nullable ButtonType buttonType) {
         M3DialogHandle handle = Objects.requireNonNull(activeHandle, "active dialog handle");
+        M3DialogPresentation presentation =
+                Objects.requireNonNull(activePresentation, "active dialog presentation");
         activeHandle = null;
+        activePresentation = null;
         presentationAnimation.stop();
         dialogPane.setModalActive(false);
-        presenter.dispose();
+        presentation.dispose();
         restorePaneOpacity();
         stopHostWindowObservation();
         pendingButtonType = null;
         paneExitFinished = false;
-        scrimExitFinished = false;
+        backgroundExitFinished = false;
         closing = false;
         closeRequestPending = false;
         handle.detach();
@@ -448,8 +500,8 @@ public class M3Dialog implements EventTarget {
     }
 
     /// Returns whether entrance opacity can animate using the host context available before attachment.
-    private boolean canAnimatePresentation(M3OverlayPane host) {
-        return !dialogPane.opacityProperty().isBound() && M3Animation.areAnimationsEnabled(host);
+    private boolean canAnimatePresentation(Parent contextRoot) {
+        return !dialogPane.opacityProperty().isBound() && M3Animation.areAnimationsEnabled(contextRoot);
     }
 
     /// Restores the pane opacity captured before its latest show transition.
@@ -459,25 +511,25 @@ public class M3Dialog implements EventTarget {
         }
     }
 
-    /// Observes the window that owns the current in-scene presentation.
-    private void startHostWindowObservation(M3OverlayPane host) {
+    /// Observes the context root and window that own the current presentation.
+    private void startHostWindowObservation(Parent contextRoot) {
         stopHostWindowObservation();
-        Scene scene = Objects.requireNonNull(host.getScene(), "host scene");
+        Scene scene = Objects.requireNonNull(contextRoot.getScene(), "host scene");
         Window window = Objects.requireNonNull(scene.getWindow(), "host window");
-        observedHost = host;
+        observedContextRoot = contextRoot;
         observedHostScene = scene;
         observedHostWindow = window;
-        host.sceneProperty().addListener(hostSceneListener);
+        contextRoot.sceneProperty().addListener(hostSceneListener);
         scene.windowProperty().addListener(hostWindowListener);
         window.addEventHandler(WindowEvent.WINDOW_HIDDEN, hostWindowHiddenHandler);
     }
 
     /// Releases the current host-window observation.
     private void stopHostWindowObservation() {
-        @Nullable M3OverlayPane host = observedHost;
-        observedHost = null;
-        if (host != null) {
-            host.sceneProperty().removeListener(hostSceneListener);
+        @Nullable Parent contextRoot = observedContextRoot;
+        observedContextRoot = null;
+        if (contextRoot != null) {
+            contextRoot.sceneProperty().removeListener(hostSceneListener);
         }
 
         @Nullable Scene scene = observedHostScene;
@@ -490,17 +542,6 @@ public class M3Dialog implements EventTarget {
         observedHostWindow = null;
         if (window != null) {
             window.removeEventHandler(WindowEvent.WINDOW_HIDDEN, hostWindowHiddenHandler);
-        }
-    }
-
-    /// Verifies that a presentation host belongs to a showing window.
-    ///
-    /// @param host the host to verify
-    /// @throws IllegalStateException if `host` is detached or its window is not showing
-    private static void requireShowingHost(M3OverlayPane host) {
-        @Nullable Scene scene = host.getScene();
-        if (scene == null || scene.getWindow() == null || !scene.getWindow().isShowing()) {
-            throw new IllegalStateException("dialog host must be attached to a showing window");
         }
     }
 
@@ -635,14 +676,14 @@ public class M3Dialog implements EventTarget {
         return eventHandlerManager.eventHandlerProperty(M3DialogEvent.SHOWING, "onShowing");
     }
 
-    /// Returns the singleton handler invoked after this dialog's overlay layer has been installed.
+    /// Returns the singleton handler invoked after this dialog's presentation surface has been installed.
     ///
     /// @return the shown handler, or `null` when none is installed
     public final @Nullable EventHandler<M3DialogEvent> getOnShown() {
         return eventHandlerManager.getEventHandler(M3DialogEvent.SHOWN);
     }
 
-    /// Sets the singleton handler invoked after this dialog's overlay layer has been installed.
+    /// Sets the singleton handler invoked after this dialog's presentation surface has been installed.
     ///
     /// @param handler the shown handler, or `null` to remove it
     /// @throws RuntimeException if [#onShownProperty()] is bound
@@ -650,7 +691,7 @@ public class M3Dialog implements EventTarget {
         eventHandlerManager.setEventHandler(M3DialogEvent.SHOWN, handler);
     }
 
-    /// Returns the property holding the singleton handler invoked after the overlay layer is installed.
+    /// Returns the property holding the singleton handler invoked after the presentation surface is installed.
     ///
     /// @return the shown-handler property
     public final ObjectProperty<@Nullable EventHandler<M3DialogEvent>> onShownProperty() {
@@ -694,7 +735,7 @@ public class M3Dialog implements EventTarget {
         eventHandlerManager.setEventHandler(M3DialogEvent.HIDDEN, handler);
     }
 
-    /// Returns the property holding the singleton handler invoked after the overlay layer is removed.
+    /// Returns the property holding the singleton handler invoked after the presentation surface is removed.
     ///
     /// @return the hidden-handler property
     public final ObjectProperty<@Nullable EventHandler<M3DialogEvent>> onHiddenProperty() {

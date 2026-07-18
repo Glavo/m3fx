@@ -29,7 +29,7 @@ import java.time.LocalDate;
 ///
 /// The picker is owned by this dialog and must not be reparented. Optional presets are exposed as a live ordered
 /// list and appear beside the calendar. Present the configured dialog with
-/// [M3OverlayPane#showDialog(M3Dialog)].
+/// [M3OverlayPane#showDialog(M3Dialog)] or [M3DialogWindow#showDialog(M3Dialog)].
 ///
 /// ```java
 /// private void showRangeDialog(M3OverlayPane overlayPane) {
