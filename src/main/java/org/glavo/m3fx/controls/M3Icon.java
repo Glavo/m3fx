@@ -50,7 +50,7 @@ import java.util.Objects;
 /// See [Material Design icons](https://m3.material.io/styles/icons/overview) and
 /// [Material Design](https://m3.material.io/).
 @NotNullByDefault
-public final class M3Icon extends Control {
+public final class M3Icon extends Control implements M3IconGraphic {
     /// The base style class for M3FX icons.
     public static final String STYLE_CLASS = "m3-icon";
 
@@ -392,6 +392,7 @@ public final class M3Icon extends Control {
     /// Initializes style classes, accessibility, and resolved token state.
     private void initialize() {
         M3ControlStyles.initialize(this, STYLE_CLASS);
+        getStyleClass().add(M3IconGraphic.STYLE_CLASS);
         setAccessibleRole(AccessibleRole.TEXT);
         setFocusTraversable(false);
         updateSizeStyle();

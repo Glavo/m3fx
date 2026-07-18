@@ -63,7 +63,7 @@
     -fx-text-fill: -m3-color-on-primary-container;
 }
 
-.m3-button.m3-text-button:toolbar-action .m3-icon {
+.m3-button.m3-text-button:toolbar-action .m3-icon-graphic {
     -fx-text-fill: -m3-color-on-surface-variant;
 }
 
@@ -72,7 +72,7 @@
     -fx-background-color: -m3-color-on-surface-variant;
 }
 
-.m3-button.m3-text-button:toolbar-action:vibrant .m3-icon {
+.m3-button.m3-text-button:toolbar-action:vibrant .m3-icon-graphic {
     -fx-text-fill: -m3-color-on-primary-container;
 }
 
@@ -83,8 +83,8 @@
 
 .m3-button.m3-text-button:toolbar-action:disabled,
 .m3-button.m3-text-button:toolbar-action:vibrant:disabled,
-.m3-button.m3-text-button:toolbar-action:disabled .m3-icon,
-.m3-button.m3-text-button:toolbar-action:vibrant:disabled .m3-icon {
+.m3-button.m3-text-button:toolbar-action:disabled .m3-icon-graphic,
+.m3-button.m3-text-button:toolbar-action:vibrant:disabled .m3-icon-graphic {
     -m3-button-icon-color: -m3-color-on-surface;
     -fx-text-fill: -m3-color-on-surface;
 }
@@ -213,7 +213,7 @@
     -fx-text-fill: -m3-color-inverse-on-surface;
 }
 
-.m3-icon-button.m3-text-button.m3-snackbar-close .m3-icon,
+.m3-icon-button.m3-text-button.m3-snackbar-close .m3-icon-graphic,
 .m3-icon-button.m3-text-button.m3-snackbar-close .m3-state-layer,
 .m3-icon-button.m3-text-button.m3-snackbar-close .m3-ripple {
     -fx-text-fill: -m3-color-inverse-on-surface;
@@ -401,29 +401,29 @@
     -fx-content-display: graphic-only;
 }
 
-.m3-icon-button .m3-icon {
+.m3-icon-button .m3-icon-graphic {
     -m3-icon-size: -m3-icon-button-icon-size;
     -fx-text-fill: -m3-color-on-surface-variant;
 }
 
-.m3-icon-button.m3-filled-button .m3-icon,
+.m3-icon-button.m3-filled-button .m3-icon-graphic,
 .m3-icon-button.m3-filled-button .m3-state-layer,
 .m3-icon-button.m3-filled-button .m3-ripple {
     -fx-text-fill: -m3-color-on-primary;
     -fx-background-color: -m3-color-on-primary;
 }
 
-.m3-icon-button.m3-tonal-button .m3-icon,
+.m3-icon-button.m3-tonal-button .m3-icon-graphic,
 .m3-icon-button.m3-tonal-button .m3-state-layer,
 .m3-icon-button.m3-tonal-button .m3-ripple {
     -fx-text-fill: -m3-color-on-secondary-container;
     -fx-background-color: -m3-color-on-secondary-container;
 }
 
-.m3-icon-button.m3-outlined-button .m3-icon,
+.m3-icon-button.m3-outlined-button .m3-icon-graphic,
 .m3-icon-button.m3-outlined-button .m3-state-layer,
 .m3-icon-button.m3-outlined-button .m3-ripple,
-.m3-icon-button.m3-text-button .m3-icon,
+.m3-icon-button.m3-text-button .m3-icon-graphic,
 .m3-icon-button.m3-text-button .m3-state-layer,
 .m3-icon-button.m3-text-button .m3-ripple {
     -fx-text-fill: -m3-color-on-surface-variant;
@@ -626,8 +626,8 @@
     -fx-background-color: transparent;
 }
 
-.m3-button:disabled .m3-icon,
-.m3-icon-button:disabled .m3-icon {
+.m3-button:disabled .m3-icon-graphic,
+.m3-icon-button:disabled .m3-icon-graphic {
     -fx-text-fill: -m3-color-on-surface;
 }
 

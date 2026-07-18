@@ -106,6 +106,7 @@ import org.glavo.m3fx.controls.M3IconButtonWidth;
 import org.glavo.m3fx.controls.M3IconToggleButton;
 import org.glavo.m3fx.controls.M3IconToggleButtonGroup;
 import org.glavo.m3fx.controls.M3IconToggleButtonVariant;
+import org.glavo.m3fx.controls.M3SVGIcon;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListItemBase;
 import org.glavo.m3fx.controls.M3ListItemSlotSize;
@@ -10506,6 +10507,14 @@ final class M3FXDemoVisualMatrixTest {
     private static void assertDemoVectorIcons(Node root, String pageTitle, int minimumIconCount) {
         int[] iconCount = {0};
         visitVisibleNodes(root, node -> {
+            if (node instanceof M3SVGIcon svgIcon) {
+                iconCount[0]++;
+                Node path = svgIcon.lookup("." + M3SVGIcon.PATH_STYLE_CLASS);
+                assertInstanceOf(SVGPath.class, path,
+                        () -> pageTitle + " M3SVGIcon does not expose a rendered SVGPath: " + svgIcon);
+                assertTrue(hasRenderableBounds(path),
+                        () -> pageTitle + " M3SVGIcon path has no renderable bounds: " + svgIcon);
+            }
             if (node.getStyleClass().contains(DemoIcons.STYLE_CLASS)) {
                 iconCount[0]++;
                 assertInstanceOf(SVGPath.class, node,
@@ -16406,10 +16415,12 @@ final class M3FXDemoVisualMatrixTest {
         assertCurrentPageTitle(scene, "Icons");
         assertVisibleText(root, "Sizes", "Icons");
         assertVisibleText(root, "Color Variants", "Icons");
+        assertVisibleText(root, "Source Viewports", "Icons");
         assertVisibleText(root, "Button Usage", "Icons");
         assertDemoVectorIcons(page, "Icons", 12);
 
-        List<Node> icons = visibleNodesWithStyle(page, DemoIcons.STYLE_CLASS);
+        List<Node> icons = new ArrayList<>(visibleNodesWithStyle(page, DemoIcons.STYLE_CLASS));
+        icons.addAll(visibleNodesOfType(page, M3SVGIcon.class));
         assertTrue(icons.size() >= 12, () -> "Icons page should render at least 12 vector icons, found " + icons.size());
         for (Node icon : icons) {
             Bounds iconBounds = icon.localToScene(icon.getBoundsInLocal());
@@ -20883,7 +20894,11 @@ final class M3FXDemoVisualMatrixTest {
     /// Returns the first visible Material SVG icon below a target node.
     private static @Nullable Node firstVisibleMaterialVectorIcon(Node node) {
         @Nullable Node demoIcon = firstVisibleDemoVectorIcon(node);
-        return demoIcon == null ? firstVisibleVectorIconWithStyle(node, "m3-internal-icon-path") : demoIcon;
+        if (demoIcon != null) {
+            return demoIcon;
+        }
+        @Nullable Node svgIcon = firstVisibleVectorIconWithStyle(node, M3SVGIcon.PATH_STYLE_CLASS);
+        return svgIcon == null ? firstVisibleVectorIconWithStyle(node, "m3-internal-icon-path") : svgIcon;
     }
 
     /// Returns the first visible SVG icon below a target node with the requested style class.

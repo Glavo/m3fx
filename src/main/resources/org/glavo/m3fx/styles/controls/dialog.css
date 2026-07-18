@@ -42,6 +42,10 @@
     -fx-padding: 0 0 0 24px;
 }
 
+.m3-dialog-pane .m3-dialog-graphic-icon {
+    -m3-icon-size: -m3-dialog-icon-size;
+}
+
 .m3-dialog-pane .m3-dialog-button-bar {
     -fx-padding: 24px 0 0 0;
 }

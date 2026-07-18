@@ -56,39 +56,39 @@
     -fx-font-weight: 500;
 }
 
-.m3-menu-item .m3-list-item-leading .m3-icon,
-.m3-menu-item .m3-list-item-trailing .m3-icon {
+.m3-menu-item .m3-list-item-leading .m3-icon-graphic,
+.m3-menu-item .m3-list-item-trailing .m3-icon-graphic {
     -fx-text-fill: -m3-menu-item-icon-color;
 }
 
-.m3-profile-expressive .m3-menu-item .m3-list-item-leading .m3-icon,
-.m3-profile-expressive .m3-menu-item .m3-list-item-trailing .m3-icon {
+.m3-profile-expressive .m3-menu-item .m3-list-item-leading .m3-icon-graphic,
+.m3-profile-expressive .m3-menu-item .m3-list-item-trailing .m3-icon-graphic {
     -m3-icon-size: 20px;
 }
 
-.m3-menu-item:vibrant .m3-list-item-leading .m3-icon,
-.m3-menu-item:vibrant .m3-list-item-trailing .m3-icon {
+.m3-menu-item:vibrant .m3-list-item-leading .m3-icon-graphic,
+.m3-menu-item:vibrant .m3-list-item-trailing .m3-icon-graphic {
     -fx-text-fill: -m3-menu-vibrant-item-content-color;
 }
 
-.m3-profile-expressive .m3-menu-item:vibrant:hover .m3-list-item-leading .m3-icon,
-.m3-profile-expressive .m3-menu-item:vibrant:hover .m3-list-item-trailing .m3-icon,
-.m3-profile-expressive .m3-menu-item:vibrant:focus-visible .m3-list-item-leading .m3-icon,
-.m3-profile-expressive .m3-menu-item:vibrant:focus-visible .m3-list-item-trailing .m3-icon,
-.m3-profile-expressive .m3-menu-item:vibrant:pressed .m3-list-item-leading .m3-icon,
-.m3-profile-expressive .m3-menu-item:vibrant:pressed .m3-list-item-trailing .m3-icon,
-.m3-profile-expressive .m3-menu-item:vibrant:armed .m3-list-item-leading .m3-icon,
-.m3-profile-expressive .m3-menu-item:vibrant:armed .m3-list-item-trailing .m3-icon {
+.m3-profile-expressive .m3-menu-item:vibrant:hover .m3-list-item-leading .m3-icon-graphic,
+.m3-profile-expressive .m3-menu-item:vibrant:hover .m3-list-item-trailing .m3-icon-graphic,
+.m3-profile-expressive .m3-menu-item:vibrant:focus-visible .m3-list-item-leading .m3-icon-graphic,
+.m3-profile-expressive .m3-menu-item:vibrant:focus-visible .m3-list-item-trailing .m3-icon-graphic,
+.m3-profile-expressive .m3-menu-item:vibrant:pressed .m3-list-item-leading .m3-icon-graphic,
+.m3-profile-expressive .m3-menu-item:vibrant:pressed .m3-list-item-trailing .m3-icon-graphic,
+.m3-profile-expressive .m3-menu-item:vibrant:armed .m3-list-item-leading .m3-icon-graphic,
+.m3-profile-expressive .m3-menu-item:vibrant:armed .m3-list-item-trailing .m3-icon-graphic {
     -fx-text-fill: -m3-color-tertiary;
 }
 
-.m3-menu-item:selected .m3-list-item-leading .m3-icon,
-.m3-menu-item:selected .m3-list-item-trailing .m3-icon {
+.m3-menu-item:selected .m3-list-item-leading .m3-icon-graphic,
+.m3-menu-item:selected .m3-list-item-trailing .m3-icon-graphic {
     -fx-text-fill: -m3-menu-selected-item-content-color;
 }
 
-.m3-menu-item:selected:vibrant .m3-list-item-leading .m3-icon,
-.m3-menu-item:selected:vibrant .m3-list-item-trailing .m3-icon {
+.m3-menu-item:selected:vibrant .m3-list-item-leading .m3-icon-graphic,
+.m3-menu-item:selected:vibrant .m3-list-item-trailing .m3-icon-graphic {
     -fx-text-fill: -m3-menu-vibrant-selected-item-content-color;
 }
 
@@ -109,26 +109,26 @@
     -fx-text-fill: -m3-color-on-surface;
 }
 
-.m3-menu-item:disabled .m3-list-item-leading .m3-icon,
-.m3-menu-item:disabled .m3-list-item-trailing .m3-icon {
+.m3-menu-item:disabled .m3-list-item-leading .m3-icon-graphic,
+.m3-menu-item:disabled .m3-list-item-trailing .m3-icon-graphic {
     -fx-text-fill: -m3-color-on-surface;
 }
 
 .m3-menu-item:disabled:vibrant .m3-menu-item-text,
-.m3-menu-item:disabled:vibrant .m3-list-item-leading .m3-icon,
-.m3-menu-item:disabled:vibrant .m3-list-item-trailing .m3-icon {
+.m3-menu-item:disabled:vibrant .m3-list-item-leading .m3-icon-graphic,
+.m3-menu-item:disabled:vibrant .m3-list-item-trailing .m3-icon-graphic {
     -fx-text-fill: -m3-menu-vibrant-item-content-color;
 }
 
 .m3-menu-item:selected:disabled .m3-menu-item-text,
-.m3-menu-item:selected:disabled .m3-list-item-leading .m3-icon,
-.m3-menu-item:selected:disabled .m3-list-item-trailing .m3-icon {
+.m3-menu-item:selected:disabled .m3-list-item-leading .m3-icon-graphic,
+.m3-menu-item:selected:disabled .m3-list-item-trailing .m3-icon-graphic {
     -fx-text-fill: -m3-menu-selected-item-content-color;
 }
 
 .m3-menu-item:selected:disabled:vibrant .m3-menu-item-text,
-.m3-menu-item:selected:disabled:vibrant .m3-list-item-leading .m3-icon,
-.m3-menu-item:selected:disabled:vibrant .m3-list-item-trailing .m3-icon {
+.m3-menu-item:selected:disabled:vibrant .m3-list-item-leading .m3-icon-graphic,
+.m3-menu-item:selected:disabled:vibrant .m3-list-item-trailing .m3-icon-graphic {
     -fx-text-fill: -m3-menu-vibrant-selected-item-content-color;
 }
 

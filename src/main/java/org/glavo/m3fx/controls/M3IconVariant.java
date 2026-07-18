@@ -7,8 +7,8 @@ import org.jetbrains.annotations.NotNullByDefault;
 
 /// Identifies an M3FX icon color variant.
 ///
-/// Icon variants map [M3Icon] content to Material color roles. They are useful when an icon is used outside a
-/// higher-level control and needs to opt into a specific semantic color without writing CSS.
+/// Icon variants map [M3Icon] and [M3SVGIcon] content to Material color roles. They are useful when an icon is used
+/// outside a higher-level control and needs to opt into a specific semantic color without writing CSS.
 ///
 /// See [Material Design icons](https://m3.material.io/styles/icons/overview) and
 /// [Material Design color roles](https://m3.material.io/styles/color/roles).

@@ -10,7 +10,6 @@ import javafx.beans.property.StringProperty;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.css.CssMetaData;
-import javafx.css.StyleOrigin;
 import javafx.css.Styleable;
 import javafx.css.StyleableDoubleProperty;
 import javafx.css.StyleableProperty;
@@ -781,29 +780,29 @@ public class M3DialogPane extends Control {
 
     /// Applies dialog graphic tokens to a Material icon graphic.
     private void updateGraphicMetrics(@Nullable Node oldGraphic, @Nullable Node newGraphic) {
-        if (oldGraphic instanceof M3Icon oldIcon) {
-            restoreGraphicIconStyle(oldIcon);
+        if (oldGraphic instanceof M3IconGraphic) {
+            restoreGraphicIconStyle(oldGraphic);
         }
-        if (!(newGraphic instanceof M3Icon icon)) {
+        if (!(newGraphic instanceof M3IconGraphic icon)) {
             return;
         }
 
-        applyGraphicIconStyle(icon);
+        applyGraphicIconStyle(newGraphic);
         double targetSize = getIconSize();
         if (M3Css.isSettable(icon.iconSizeProperty()) && Double.compare(icon.getIconSize(), targetSize) != 0) {
-            icon.iconSizeProperty().applyStyle(StyleOrigin.USER_AGENT, targetSize);
+            icon.setIconSize(targetSize);
         }
     }
 
     /// Applies the dialog-specific style class to a graphic icon.
-    private static void applyGraphicIconStyle(M3Icon icon) {
+    private static void applyGraphicIconStyle(Node icon) {
         if (!icon.getStyleClass().contains(GRAPHIC_ICON_STYLE_CLASS)) {
             icon.getStyleClass().add(GRAPHIC_ICON_STYLE_CLASS);
         }
     }
 
     /// Removes dialog-specific styling after an icon leaves the graphic slot.
-    private static void restoreGraphicIconStyle(M3Icon icon) {
+    private static void restoreGraphicIconStyle(Node icon) {
         icon.getStyleClass().remove(GRAPHIC_ICON_STYLE_CLASS);
     }
 

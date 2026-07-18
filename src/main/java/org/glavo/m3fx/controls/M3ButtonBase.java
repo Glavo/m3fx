@@ -158,16 +158,16 @@ public abstract sealed class M3ButtonBase extends ButtonBase
     /// @defaultValue `24.0`
     private @Nullable StyleableDoubleProperty horizontalPadding;
 
-    /// The requested width and height of a direct [M3Icon] graphic, in logical pixels.
+    /// The requested width and height of a direct M3FX icon graphic, in logical pixels.
     ///
-    /// The default value is `20.0`. Values must be finite and non-negative. Non-`M3Icon` graphics are not
-    /// resized by this property.
+    /// The default value is `20.0`. Values must be finite and non-negative. Other graphics are not resized by this
+    /// property.
     ///
     /// @defaultValue `20.0`
     private @Nullable StyleableDoubleProperty iconSize;
 
     /// The direct M3FX icon whose embedded color and size are managed by this button.
-    private @Nullable M3Icon managedIconGraphic;
+    private @Nullable Node managedIconGraphic;
 
     /// Whether this button is marked as the default action in its containing context.
     ///
@@ -613,14 +613,17 @@ public abstract sealed class M3ButtonBase extends ButtonBase
 
     /// Applies the resolved button icon token to a direct M3FX icon graphic.
     private void updateM3IconGraphicSize() {
-        @Nullable M3Icon currentIcon = getGraphic() instanceof M3Icon icon ? icon : null;
-        if (managedIconGraphic != currentIcon) {
+        @Nullable Node graphic = getGraphic();
+        @Nullable M3IconGraphic currentIcon =
+                graphic instanceof M3IconGraphic icon ? icon : null;
+        @Nullable Node currentIconNode = currentIcon == null ? null : graphic;
+        if (managedIconGraphic != currentIconNode) {
             if (managedIconGraphic != null) {
                 managedIconGraphic.pseudoClassStateChanged(BUTTON_GRAPHIC_PSEUDO_CLASS, false);
             }
-            managedIconGraphic = currentIcon;
-            if (currentIcon != null) {
-                currentIcon.pseudoClassStateChanged(BUTTON_GRAPHIC_PSEUDO_CLASS, true);
+            managedIconGraphic = currentIconNode;
+            if (currentIconNode != null) {
+                currentIconNode.pseudoClassStateChanged(BUTTON_GRAPHIC_PSEUDO_CLASS, true);
             }
         }
         if (currentIcon != null) {

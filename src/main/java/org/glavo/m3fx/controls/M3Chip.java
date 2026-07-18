@@ -396,10 +396,10 @@ public abstract sealed class M3Chip extends ButtonBase
 
     /// Applies graphic-specific component tokens to supported graphic nodes.
     private void updateGraphicMetrics() {
-        if (getGraphic() instanceof M3Icon icon) {
+        if (getGraphic() instanceof M3IconGraphic icon) {
             icon.setIconSize(getIconSize());
         }
-        if (getTrailingGraphic() instanceof M3Icon icon) {
+        if (getTrailingGraphic() instanceof M3IconGraphic icon) {
             icon.setIconSize(getIconSize());
         }
     }

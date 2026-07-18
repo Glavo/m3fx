@@ -88,6 +88,7 @@ public final class M3ThemeCssCompiler {
     ) {
         Color onSurface = colorTokens.get(ColorRole.ON_SURFACE);
         Color onSurfaceVariant = colorTokens.get(ColorRole.ON_SURFACE_VARIANT);
+        Color primary = colorTokens.get(ColorRole.PRIMARY);
         Color surface = colorTokens.get(ColorRole.SURFACE);
         @SuppressWarnings("deprecation")
         Color surfaceVariant = colorTokens.get(ColorRole.SURFACE_VARIANT);
@@ -101,6 +102,8 @@ public final class M3ThemeCssCompiler {
         return "-m3-state-disabled-container-color: "
                 + toRgba(onSurface, stateLayerTokens.disabledContainerOpacity()) + "; "
                 + "-m3-button-icon-color: " + toRgba(onSurfaceVariant, 1.0) + "; "
+                + "-m3-chip-leading-icon-color: " + toRgba(primary, 1.0) + "; "
+                + "-m3-chip-trailing-icon-color: " + toRgba(onSurfaceVariant, 1.0) + "; "
                 + "-m3-disclosure-icon-color: " + toRgba(onSurfaceVariant, 1.0) + "; "
                 + "-m3-state-disabled-content-color: "
                 + toRgba(onSurface, stateLayerTokens.disabledContentOpacity()) + "; "

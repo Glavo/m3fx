@@ -114,6 +114,7 @@ import org.glavo.m3fx.skins.M3DisclosureIconSkin;
 import org.glavo.m3fx.skins.M3FabMenuSkin;
 import org.glavo.m3fx.skins.M3FloatingActionButtonSkin;
 import org.glavo.m3fx.skins.M3IconSkin;
+import org.glavo.m3fx.skins.M3SVGIconSkin;
 import org.glavo.m3fx.skins.M3IconToggleButtonGroupSkin;
 import org.glavo.m3fx.skins.M3IconToggleButtonSkin;
 import org.glavo.m3fx.skins.M3ListItemSkin;
@@ -13003,6 +13004,172 @@ final class M3ControlContractMatrixTest {
 
         assertEquals(32.0, icon.getIconSize(), 0.0001);
         assertEquals(32.0, icon.getIconFont().getSize(), 0.0001);
+    }
+
+    /// Verifies that SVG icons accept source viewports independently of their rendered logical-pixel size.
+    @Test
+    void svgIconSupportsArbitraryViewBoxAndTokenRoles() {
+        Rectangle2D materialSymbolViewBox = new Rectangle2D(0.0, -960.0, 960.0, 960.0);
+        M3SVGIcon icon = new M3SVGIcon(
+                "M440-120v-320H120v-80h320v-320h80v320h320v80H520v320h-80Z",
+                materialSymbolViewBox
+        );
+
+        assertEquals(Control.class, M3SVGIcon.class.getSuperclass());
+        assertEquals(materialSymbolViewBox, icon.getViewBox());
+        assertEquals(FillRule.NON_ZERO, icon.getFillRule());
+        assertEquals(M3IconSize.MEDIUM, icon.getSize());
+        assertEquals(M3IconVariant.ON_SURFACE_VARIANT, icon.getVariant());
+        assertFalse(icon.isAutoMirrored());
+        assertFalse(icon.isFocusTraversable());
+        assertTrue(icon.getStyleClass().contains(M3SVGIcon.STYLE_CLASS));
+        assertTrue(icon.getStyleClass().contains("m3-icon-graphic"));
+
+        icon.setSize(M3IconSize.LARGE);
+        icon.setVariant(M3IconVariant.PRIMARY);
+        icon.setFillRule(FillRule.EVEN_ODD);
+        icon.setAutoMirrored(true);
+        applyCss(icon);
+
+        assertInstanceOf(M3SVGIconSkin.class, icon.getSkin());
+        assertEquals(32.0, icon.getIconSize(), 0.0001);
+        assertEquals(32.0, icon.prefWidth(-1.0), 0.0001);
+        assertEquals(32.0, icon.prefHeight(-1.0), 0.0001);
+        assertEquals(FillRule.EVEN_ODD, icon.getFillRule());
+        assertTrue(icon.isAutoMirrored());
+        assertTrue(icon.getStyleClass().contains(M3IconSize.LARGE.styleClass()));
+        assertTrue(icon.getStyleClass().contains(M3IconVariant.PRIMARY.styleClass()));
+
+        icon.setViewBox(null);
+        assertNull(icon.getViewBox());
+        assertThrows(IllegalArgumentException.class,
+                () -> icon.setViewBox(new Rectangle2D(0.0, 0.0, 0.0, 960.0)));
+        assertThrows(NullPointerException.class, () -> icon.setContent(null));
+        assertThrows(NullPointerException.class, () -> icon.setFillRule(null));
+    }
+
+    /// Verifies explicit view boxes preserve authored padding and directional icons mirror inside that viewport.
+    @Tier2Test
+    @Test
+    void svgIconPreservesViewportGeometryAndMirrorsForRtl() {
+        FxTestUtils.runOnFxThread(() -> {
+            String halfWidthPath = "M0-960H480L0 0Z";
+            Rectangle2D sourceViewBox = new Rectangle2D(0.0, -960.0, 960.0, 960.0);
+            M3SVGIcon explicit = new M3SVGIcon(halfWidthPath, sourceViewBox);
+            M3SVGIcon automatic = new M3SVGIcon(halfWidthPath);
+            M3SVGIcon mirrored = new M3SVGIcon(halfWidthPath, sourceViewBox);
+            explicit.setIconSize(40.0);
+            automatic.setIconSize(40.0);
+            mirrored.setIconSize(40.0);
+            mirrored.setAutoMirrored(true);
+            mirrored.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+
+            HBox root = new HBox(20.0, explicit, automatic, mirrored);
+            root.setStyle("-fx-background-color: white; -fx-padding: 20px; " + visualTestColors());
+            Scene scene = new Scene(root, 220.0, 80.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.resize(220.0, 80.0);
+            root.layout();
+            explicit.layout();
+            automatic.layout();
+            mirrored.layout();
+
+            SVGPath explicitPath = assertInstanceOf(
+                    SVGPath.class,
+                    explicit.lookup("." + M3SVGIcon.PATH_STYLE_CLASS)
+            );
+            SVGPath automaticPath = assertInstanceOf(
+                    SVGPath.class,
+                    automatic.lookup("." + M3SVGIcon.PATH_STYLE_CLASS)
+            );
+            SVGPath mirroredPath = assertInstanceOf(
+                    SVGPath.class,
+                    mirrored.lookup("." + M3SVGIcon.PATH_STYLE_CLASS)
+            );
+            Bounds explicitBounds = explicitPath.getBoundsInParent();
+            Bounds automaticBounds = automaticPath.getBoundsInParent();
+            Bounds mirroredBounds = mirroredPath.getBoundsInParent();
+
+            assertEquals(0.0, explicitBounds.getMinX(), 0.75);
+            assertEquals(20.0, explicitBounds.getMaxX(), 0.75);
+            assertEquals(10.0, automaticBounds.getMinX(), 0.75);
+            assertEquals(30.0, automaticBounds.getMaxX(), 0.75);
+            assertEquals(20.0, mirroredBounds.getMinX(), 0.75);
+            assertEquals(40.0, mirroredBounds.getMaxX(), 0.75);
+            assertEquals(40.0, explicitBounds.getHeight(), 0.75);
+            assertEquals(40.0, automaticBounds.getHeight(), 0.75);
+            assertEquals(40.0, mirroredBounds.getHeight(), 0.75);
+
+            WritableImage image = snapshotImageOnFxThread(root);
+            assertSnapshotNodeContainsContrast(image, explicit, Color.WHITE, 0.05);
+            assertSnapshotNodeContainsContrast(image, automatic, Color.WHITE, 0.05);
+            assertSnapshotNodeContainsContrast(image, mirrored, Color.WHITE, 0.05);
+            writeVisualSnapshot(image, java.nio.file.Path.of(
+                    "build",
+                    "reports",
+                    "m3fx-visual",
+                    "visual-svg-icon-viewports.png"
+            ));
+        });
+    }
+
+    /// Verifies component graphic slots apply their icon-size and contextual style contracts to SVG icons.
+    @Test
+    void svgIconParticipatesInComponentGraphicSlots() {
+        M3SVGIcon buttonIcon = svgTestIcon();
+        M3Button button = new M3Button("Save", buttonIcon, M3ButtonVariant.FILLED);
+        button.setIconSize(28.0);
+        button.setStyle(buttonStateTestColors());
+        applyCss(button);
+
+        assertEquals(28.0, buttonIcon.getIconSize(), 0.0001);
+        assertTrue(buttonIcon.getPseudoClassStates().contains(PseudoClass.getPseudoClass("button-graphic")));
+        assertEquals(
+                Color.rgb(4, 5, 6),
+                assertInstanceOf(SVGPath.class, buttonIcon.lookup("." + M3SVGIcon.PATH_STYLE_CLASS)).getFill()
+        );
+
+        M3SVGIcon toggleIcon = svgTestIcon();
+        M3IconToggleButton toggleButton = new M3IconToggleButton(toggleIcon);
+        toggleButton.setVariant(M3IconToggleButtonVariant.TONAL);
+        toggleButton.setSelected(true);
+        toggleButton.setIconSize(30.0);
+        toggleButton.setStyle(buttonStateTestColors());
+        applyCss(toggleButton);
+
+        assertEquals(30.0, toggleIcon.getIconSize(), 0.0001);
+        assertTrue(toggleIcon.getPseudoClassStates().contains(PseudoClass.getPseudoClass("button-graphic")));
+        assertEquals(
+                Color.rgb(49, 50, 51),
+                assertInstanceOf(SVGPath.class, toggleIcon.lookup("." + M3SVGIcon.PATH_STYLE_CLASS)).getFill()
+        );
+
+        M3SVGIcon chipIcon = svgTestIcon();
+        M3AssistChip chip = new M3AssistChip("Schedule", chipIcon);
+        chip.setIconSize(22.0);
+        chip.setStyle(buttonStateTestColors());
+        applyCss(chip);
+
+        assertEquals(22.0, chipIcon.getIconSize(), 0.0001);
+        assertEquals(
+                Color.rgb(1, 2, 3),
+                assertInstanceOf(SVGPath.class, chipIcon.lookup("." + M3SVGIcon.PATH_STYLE_CLASS)).getFill()
+        );
+
+        M3SVGIcon dialogIcon = svgTestIcon();
+        M3DialogPane dialogPane = new M3DialogPane();
+        dialogPane.setGraphic(dialogIcon);
+        dialogPane.setIconSize(36.0);
+        dialogPane.setStyle(buttonStateTestColors());
+        applyCss(dialogPane);
+
+        assertEquals(36.0, dialogIcon.getIconSize(), 0.0001);
+        assertTrue(dialogIcon.getStyleClass().contains("m3-dialog-graphic-icon"));
+        assertEquals(
+                Color.rgb(46, 47, 48),
+                assertInstanceOf(SVGPath.class, dialogIcon.lookup("." + M3SVGIcon.PATH_STYLE_CLASS)).getFill()
+        );
     }
 
     /// Verifies that disclosure icons expose expanded state and animate their arrow rotation.
@@ -38854,6 +39021,7 @@ final class M3ControlContractMatrixTest {
         assertUserAgentStylesheet(new M3Avatar(), "/styles/controls/avatar.css");
         assertUserAgentStylesheet(new M3DisclosureIcon(), "/styles/controls/disclosure-icon.css");
         assertUserAgentStylesheet(new M3Icon(), "/styles/controls/icon.css");
+        assertUserAgentStylesheet(new M3SVGIcon(), "/styles/controls/svg-icon.css");
         assertUserAgentStylesheet(new M3Text(), "/styles/controls/text.css");
         assertUserAgentStylesheet(new M3Surface(), "/styles/controls/surface.css");
         assertUserAgentStylesheet(new M3FormPane(), "/styles/controls/form.css");
@@ -38910,6 +39078,13 @@ final class M3ControlContractMatrixTest {
         Scene scene = new Scene(root);
         M3ThemeManager.install(scene, M3Theme.defaultTheme());
         root.applyCss();
+    }
+
+    /// Creates a compact SVG icon used by component graphic-slot contract tests.
+    ///
+    /// @return a 24-unit SVG icon
+    private static M3SVGIcon svgTestIcon() {
+        return new M3SVGIcon("M4 4H20V20H4Z", new Rectangle2D(0.0, 0.0, 24.0, 24.0));
     }
 
     /// Returns deterministic color tokens used by button state style tests.

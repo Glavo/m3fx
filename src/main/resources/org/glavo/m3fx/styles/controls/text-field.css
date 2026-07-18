@@ -336,7 +336,7 @@
 }
 
 .m3-text-input-trailing:error,
-.m3-text-input-trailing:error .m3-icon {
+.m3-text-input-trailing:error .m3-icon-graphic {
     -m3-text-input-trailing-icon-color: -m3-color-error;
     -fx-text-fill: -m3-color-error;
 }
@@ -346,7 +346,7 @@
 }
 
 .m3-text-input-layout:hover .m3-text-input-trailing:error,
-.m3-text-input-layout:hover .m3-text-input-trailing:error .m3-icon {
+.m3-text-input-layout:hover .m3-text-input-trailing:error .m3-icon-graphic {
     -m3-text-input-trailing-icon-color: -m3-color-on-error-container;
     -fx-text-fill: -m3-color-on-error-container;
 }
@@ -356,7 +356,7 @@
 }
 
 .m3-text-input-layout:hover .m3-text-input-trailing:error:focused,
-.m3-text-input-layout:hover .m3-text-input-trailing:error:focused .m3-icon {
+.m3-text-input-layout:hover .m3-text-input-trailing:error:focused .m3-icon-graphic {
     -m3-text-input-trailing-icon-color: -m3-color-error;
     -fx-text-fill: -m3-color-error;
 }
@@ -408,8 +408,8 @@
     -fx-opacity: 1;
 }
 
-.m3-text-input-leading:disabled .m3-icon,
-.m3-text-input-trailing:disabled .m3-icon {
+.m3-text-input-leading:disabled .m3-icon-graphic,
+.m3-text-input-trailing:disabled .m3-icon-graphic {
     -fx-text-fill: -m3-color-on-surface;
 }
 

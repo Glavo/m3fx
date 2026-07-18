@@ -96,6 +96,6 @@
     -fx-text-fill: -m3-color-on-surface;
 }
 
-.m3-segmented-button:disabled .m3-icon {
+.m3-segmented-button:disabled .m3-icon-graphic {
     -fx-text-fill: -m3-color-on-surface;
 }

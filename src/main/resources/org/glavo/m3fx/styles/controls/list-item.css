@@ -170,24 +170,24 @@
     -fx-font-weight: 700;
 }
 
-.m3-list-item:navigation-drawer .m3-list-item-leading .m3-icon,
-.m3-list-item:navigation-drawer .m3-list-item-trailing .m3-icon {
+.m3-list-item:navigation-drawer .m3-list-item-leading .m3-icon-graphic,
+.m3-list-item:navigation-drawer .m3-list-item-trailing .m3-icon-graphic {
     -fx-text-fill: -m3-color-on-surface-variant;
 }
 
-.m3-list-item:navigation-drawer:hover .m3-list-item-leading .m3-icon,
-.m3-list-item:navigation-drawer:hover .m3-list-item-trailing .m3-icon,
-.m3-list-item:navigation-drawer:focus-visible .m3-list-item-leading .m3-icon,
-.m3-list-item:navigation-drawer:focus-visible .m3-list-item-trailing .m3-icon,
-.m3-list-item:navigation-drawer:pressed .m3-list-item-leading .m3-icon,
-.m3-list-item:navigation-drawer:pressed .m3-list-item-trailing .m3-icon,
-.m3-list-item:navigation-drawer:armed .m3-list-item-leading .m3-icon,
-.m3-list-item:navigation-drawer:armed .m3-list-item-trailing .m3-icon {
+.m3-list-item:navigation-drawer:hover .m3-list-item-leading .m3-icon-graphic,
+.m3-list-item:navigation-drawer:hover .m3-list-item-trailing .m3-icon-graphic,
+.m3-list-item:navigation-drawer:focus-visible .m3-list-item-leading .m3-icon-graphic,
+.m3-list-item:navigation-drawer:focus-visible .m3-list-item-trailing .m3-icon-graphic,
+.m3-list-item:navigation-drawer:pressed .m3-list-item-leading .m3-icon-graphic,
+.m3-list-item:navigation-drawer:pressed .m3-list-item-trailing .m3-icon-graphic,
+.m3-list-item:navigation-drawer:armed .m3-list-item-leading .m3-icon-graphic,
+.m3-list-item:navigation-drawer:armed .m3-list-item-trailing .m3-icon-graphic {
     -fx-text-fill: -m3-color-on-surface;
 }
 
-.m3-list-item:navigation-drawer:selected .m3-list-item-leading .m3-icon,
-.m3-list-item:navigation-drawer:selected .m3-list-item-trailing .m3-icon {
+.m3-list-item:navigation-drawer:selected .m3-list-item-leading .m3-icon-graphic,
+.m3-list-item:navigation-drawer:selected .m3-list-item-trailing .m3-icon-graphic {
     -fx-text-fill: -m3-color-on-secondary-container;
 }
 
@@ -237,7 +237,7 @@
     -fx-opacity: 1;
 }
 
-.m3-list-item:disabled .m3-list-item-leading .m3-icon,
-.m3-list-item:disabled .m3-list-item-trailing .m3-icon {
+.m3-list-item:disabled .m3-list-item-leading .m3-icon-graphic,
+.m3-list-item:disabled .m3-list-item-trailing .m3-icon-graphic {
     -fx-text-fill: -m3-color-on-surface;
 }

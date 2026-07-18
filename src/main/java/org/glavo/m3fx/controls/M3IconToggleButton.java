@@ -196,7 +196,7 @@ public final class M3IconToggleButton extends ButtonBase {
     private @Nullable StyleableDoubleProperty iconSize;
 
     /// The direct M3FX icon whose embedded color and size are managed by this button.
-    private @Nullable M3Icon managedIconGraphic;
+    private @Nullable Node managedIconGraphic;
 
     /// Creates an unselected standard toggle icon button with no graphic.
     public M3IconToggleButton() {
@@ -582,14 +582,17 @@ public final class M3IconToggleButton extends ButtonBase {
 
     /// Applies the resolved icon button size token to direct M3FX icon graphics.
     private void updateM3IconGraphicSize() {
-        @Nullable M3Icon currentIcon = getGraphic() instanceof M3Icon icon ? icon : null;
-        if (managedIconGraphic != currentIcon) {
+        @Nullable Node graphic = getGraphic();
+        @Nullable M3IconGraphic currentIcon =
+                graphic instanceof M3IconGraphic icon ? icon : null;
+        @Nullable Node currentIconNode = currentIcon == null ? null : graphic;
+        if (managedIconGraphic != currentIconNode) {
             if (managedIconGraphic != null) {
                 managedIconGraphic.pseudoClassStateChanged(BUTTON_GRAPHIC_PSEUDO_CLASS, false);
             }
-            managedIconGraphic = currentIcon;
-            if (currentIcon != null) {
-                currentIcon.pseudoClassStateChanged(BUTTON_GRAPHIC_PSEUDO_CLASS, true);
+            managedIconGraphic = currentIconNode;
+            if (currentIconNode != null) {
+                currentIconNode.pseudoClassStateChanged(BUTTON_GRAPHIC_PSEUDO_CLASS, true);
             }
         }
         if (currentIcon != null) {

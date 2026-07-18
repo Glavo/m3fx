@@ -13,7 +13,7 @@
     -fx-cursor: hand;
 }
 
-.m3-fab .m3-icon {
+.m3-fab .m3-icon-graphic {
     -m3-icon-size: -m3-fab-icon-size;
 }
 
@@ -250,6 +250,6 @@
     -fx-opacity: -m3-state-disabled-content-opacity;
 }
 
-.m3-fab:disabled .m3-icon {
+.m3-fab:disabled .m3-icon-graphic {
     -fx-text-fill: -m3-color-on-surface;
 }

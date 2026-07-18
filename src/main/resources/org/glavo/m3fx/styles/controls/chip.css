@@ -12,6 +12,8 @@
     -m3-chip-avatar-size: 24px;
     -m3-chip-avatar-shape: 12px;
     -m3-chip-outline-width: 1px;
+    -m3-chip-leading-icon-color: -m3-color-primary;
+    -m3-chip-trailing-icon-color: -m3-color-on-surface-variant;
     -fx-background-insets: 0;
     -fx-background-radius: 8px;
     -fx-border-insets: 0;
@@ -23,7 +25,7 @@
     -fx-cursor: hand;
 }
 
-.m3-chip .m3-icon {
+.m3-chip .m3-icon-graphic {
     -m3-icon-size: -m3-chip-icon-size;
 }
 
@@ -112,9 +114,9 @@
 }
 
 .m3-chip.m3-filter-chip .m3-chip-trailing-graphic,
-.m3-chip.m3-filter-chip .m3-chip-trailing-graphic .m3-icon,
+.m3-chip.m3-filter-chip .m3-chip-trailing-graphic .m3-icon-graphic,
 .m3-chip.m3-input-chip .m3-chip-trailing-graphic,
-.m3-chip.m3-input-chip .m3-chip-trailing-graphic .m3-icon {
+.m3-chip.m3-input-chip .m3-chip-trailing-graphic .m3-icon-graphic {
     -fx-text-fill: -m3-color-on-surface-variant;
 }
 
@@ -142,6 +144,8 @@
 .m3-chip.m3-input-chip:selected:focused,
 .m3-chip.m3-input-chip:selected:armed,
 .m3-chip.m3-input-chip:selected:pressed {
+    -m3-chip-leading-icon-color: -m3-color-on-secondary-container;
+    -m3-chip-trailing-icon-color: -m3-color-on-secondary-container;
     -fx-background-color: -m3-color-secondary-container;
     -fx-background-insets: 0;
     -fx-border-color: transparent;
@@ -152,13 +156,15 @@
 
 .m3-chip.m3-filter-chip:selected .m3-chip-leading-graphic,
 .m3-chip.m3-filter-chip:selected .m3-chip-trailing-graphic,
-.m3-chip.m3-filter-chip:selected .m3-chip-trailing-graphic .m3-icon,
+.m3-chip.m3-filter-chip:selected .m3-chip-trailing-graphic .m3-icon-graphic,
 .m3-chip.m3-input-chip:selected .m3-chip-trailing-graphic,
-.m3-chip.m3-input-chip:selected .m3-chip-trailing-graphic .m3-icon {
+.m3-chip.m3-input-chip:selected .m3-chip-trailing-graphic .m3-icon-graphic {
     -fx-text-fill: -m3-color-on-secondary-container;
 }
 
-.m3-chip.m3-input-chip:selected .m3-chip-leading-graphic {
+.m3-chip.m3-input-chip:selected .m3-chip-leading-graphic,
+.m3-chip.m3-input-chip:selected .m3-chip-leading-graphic .m3-icon-graphic {
+    -m3-chip-leading-icon-color: -m3-color-primary;
     -fx-text-fill: -m3-color-primary;
 }
 
@@ -175,6 +181,8 @@
 }
 
 .m3-chip:disabled {
+    -m3-chip-leading-icon-color: -m3-color-on-surface;
+    -m3-chip-trailing-icon-color: -m3-color-on-surface;
     -fx-cursor: default;
     -fx-opacity: 1;
     -fx-text-fill: -m3-color-on-surface;
@@ -199,6 +207,6 @@
     -fx-text-fill: -m3-color-on-surface;
 }
 
-.m3-chip:disabled .m3-icon {
+.m3-chip:disabled .m3-icon-graphic {
     -fx-text-fill: -m3-color-on-surface;
 }

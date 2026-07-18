@@ -78,6 +78,7 @@ final class M3ControlAccessibilityTest {
         assertEquals(AccessibleRole.PARENT, new M3TextInputLayout().getAccessibleRole());
         assertEquals(AccessibleRole.TEXT, new M3Text("Text").getAccessibleRole());
         assertEquals(AccessibleRole.TEXT, new M3Icon("info").getAccessibleRole());
+        assertEquals(AccessibleRole.NODE, new M3SVGIcon("M0 0H24V24H0Z").getAccessibleRole());
         assertEquals(AccessibleRole.IMAGE_VIEW, new M3Avatar("A").getAccessibleRole());
         assertEquals(AccessibleRole.PARENT, new M3BadgedBox().getAccessibleRole());
         assertEquals(AccessibleRole.TEXT, badge.getAccessibleRole());
@@ -192,6 +193,7 @@ final class M3ControlAccessibilityTest {
                 new M3TextInputLayout(),
                 new M3Text(),
                 new M3Icon(),
+                new M3SVGIcon(),
                 new M3Avatar(),
                 new M3BadgedBox(),
                 new M3Badge(),

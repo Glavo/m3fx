@@ -12,6 +12,7 @@ import javafx.geometry.Bounds;
 import javafx.geometry.NodeOrientation;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -90,6 +91,7 @@ import org.glavo.m3fx.controls.M3IconToggleButtonGroup;
 import org.glavo.m3fx.controls.M3SelectionMode;
 import org.glavo.m3fx.controls.M3IconToggleButtonVariant;
 import org.glavo.m3fx.controls.M3IconVariant;
+import org.glavo.m3fx.controls.M3SVGIcon;
 import org.glavo.m3fx.controls.M3ListPane;
 import org.glavo.m3fx.controls.M3ListItem;
 import org.glavo.m3fx.controls.M3ListCell;
@@ -236,6 +238,17 @@ public final class M3FXDemoApp extends Application {
 
     /// The fixed icon viewport style used by interactive SVG icon samples.
     private static final String DEMO_VECTOR_ICON_VIEWPORT_STYLE_CLASS = "demo-vector-icon-viewport";
+
+    /// The authored viewport used by the demo's compact SVG path set.
+    private static final Rectangle2D DEMO_ICON_VIEW_BOX = new Rectangle2D(0.0, 0.0, 24.0, 24.0);
+
+    /// A Material Symbols add path using the coordinates published by the official SVG asset.
+    private static final String MATERIAL_SYMBOL_ADD_PATH =
+            "M440-120v-320H120v-80h320v-320h80v320h320v80H520v320h-80Z";
+
+    /// The viewport published with the Material Symbols add path.
+    private static final Rectangle2D MATERIAL_SYMBOL_VIEW_BOX =
+            new Rectangle2D(0.0, -960.0, 960.0, 960.0);
 
     /// The current seed color used by the demo theme.
     private Color seedColor = M3Theme.DEFAULT_SEED_COLOR;
@@ -1371,6 +1384,14 @@ public final class M3FXDemoApp extends Application {
     private Node createIconsPage() {
         Node disabledIcon = createDemoIcon("notifications", M3IconSize.MEDIUM, M3IconVariant.ON_SURFACE_VARIANT);
         disabledIcon.setDisable(true);
+        M3IconButton svgIconButton = new M3IconButton(
+                createMaterialSymbolIcon(M3IconSize.MEDIUM, M3IconVariant.ON_SURFACE_VARIANT)
+        );
+        M3IconToggleButton svgToggleButton = new M3IconToggleButton(
+                createDemoIcon("favorite", M3IconSize.MEDIUM, M3IconVariant.ON_SURFACE_VARIANT)
+        );
+        svgToggleButton.setVariant(M3IconToggleButtonVariant.TONAL);
+        svgToggleButton.setSelected(true);
 
         return createGallery(
                 createShowcaseGroup(
@@ -1390,10 +1411,15 @@ public final class M3FXDemoApp extends Application {
                         disabledIcon
                 ),
                 createShowcaseGroup(
+                        "Source Viewports",
+                        createDemoIcon("search", M3IconSize.LARGE, M3IconVariant.PRIMARY),
+                        createMaterialSymbolIcon(M3IconSize.LARGE, M3IconVariant.PRIMARY)
+                ),
+                createShowcaseGroup(
                         "Button Usage",
                         createIconButton("info"),
-                        createIconButton("add"),
-                        createIconToggleButton("bold", M3IconToggleButtonVariant.TONAL, true),
+                        svgIconButton,
+                        svgToggleButton,
                         createFab("add", M3FloatingActionButtonVariant.PRIMARY, M3FloatingActionButtonSize.SMALL),
                         createFab("spark", M3FloatingActionButtonVariant.TERTIARY, M3FloatingActionButtonSize.REGULAR)
                 )
@@ -4350,28 +4376,29 @@ public final class M3FXDemoApp extends Application {
     }
 
     /// Creates a sample standalone icon.
-    private static StackPane createDemoIcon(String iconName, M3IconSize size, M3IconVariant variant) {
-        SVGPath icon = switch (variant) {
-            case PRIMARY -> DemoIcons.primary(iconName);
-            case SECONDARY -> DemoIcons.secondary(iconName);
-            case TERTIARY -> DemoIcons.tertiary(iconName);
-            case ERROR -> DemoIcons.error(iconName);
-            case ON_SURFACE -> DemoIcons.onSurface(iconName);
-            case ON_SURFACE_VARIANT -> DemoIcons.onSurfaceVariant(iconName);
-            case INVERSE_ON_SURFACE -> DemoIcons.inverseOnSurface(iconName);
-        };
-        double iconSize = defaultIconGlyphSize(size);
-        double scale = iconSize / defaultIconGlyphSize(M3IconSize.MEDIUM);
-        icon.setScaleX(scale);
-        icon.setScaleY(scale);
+    private static M3SVGIcon createDemoIcon(String iconName, M3IconSize size, M3IconVariant variant) {
+        M3SVGIcon icon = new M3SVGIcon(DemoIcons.path(iconName), DEMO_ICON_VIEW_BOX);
+        icon.setSize(size);
+        icon.setVariant(variant);
+        icon.getProperties().put(DemoIcons.ICON_NAME_PROPERTY, iconName);
+        icon.getStyleClass().add("demo-sample-icon");
+        icon.setMouseTransparent(true);
+        return icon;
+    }
 
-        StackPane viewport = new StackPane(icon);
-        viewport.getStyleClass().add("demo-sample-icon");
-        viewport.setMinSize(iconSize, iconSize);
-        viewport.setPrefSize(iconSize, iconSize);
-        viewport.setMaxSize(iconSize, iconSize);
-        viewport.setMouseTransparent(true);
-        return viewport;
+    /// Creates an SVG icon from an official Material Symbols 960-unit source viewport.
+    ///
+    /// @param size the semantic rendered size
+    /// @param variant the semantic color role
+    /// @return the configured Material Symbols icon
+    private static M3SVGIcon createMaterialSymbolIcon(M3IconSize size, M3IconVariant variant) {
+        M3SVGIcon icon = new M3SVGIcon(MATERIAL_SYMBOL_ADD_PATH, MATERIAL_SYMBOL_VIEW_BOX);
+        icon.setSize(size);
+        icon.setVariant(variant);
+        icon.getProperties().put(DemoIcons.ICON_NAME_PROPERTY, "add");
+        icon.getStyleClass().add("demo-sample-icon");
+        icon.setMouseTransparent(true);
+        return icon;
     }
 
     /// Returns the default demo glyph size for an icon size role.
