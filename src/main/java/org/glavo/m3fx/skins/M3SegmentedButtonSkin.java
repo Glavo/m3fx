@@ -3,11 +3,16 @@
 
 package org.glavo.m3fx.skins;
 
+import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
+import javafx.geometry.Bounds;
+import javafx.scene.Node;
 import javafx.scene.layout.Border;
 import javafx.scene.layout.BorderWidths;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
+import javafx.scene.text.Text;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.controls.M3SegmentedButton;
 import org.glavo.m3fx.controls.M3SegmentedButtonGroup;
@@ -22,14 +27,43 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
     /// The selected container style class.
     public static final String SELECTION_CONTAINER_STYLE_CLASS = "m3-segmented-button-selection-container";
 
+    /// The built-in selected-state check indicator style class.
+    public static final String SELECTION_INDICATOR_STYLE_CLASS = "m3-segmented-button-selection-indicator";
+
+    /// The backing layer that visually replaces an application icon in the selected state.
+    private static final String SELECTION_INDICATOR_BACKDROP_STYLE_CLASS =
+            "m3-segmented-button-selection-indicator-backdrop";
+
+    /// The checkmark layer inside the selected-state indicator.
+    private static final String SELECTION_INDICATOR_MARK_STYLE_CLASS =
+            "m3-segmented-button-selection-indicator-mark";
+
     /// The hidden selected container scale.
     private static final double HIDDEN_SELECTION_SCALE = 0.96;
+
+    /// The hidden selected-state indicator scale.
+    private static final double HIDDEN_INDICATOR_SCALE = 0.8;
+
+    /// The Material segmented-button icon size.
+    private static final double INDICATOR_SIZE = 18.0;
+
+    /// The Material spacing between an icon and label.
+    private static final double INDICATOR_GAP = 8.0;
 
     /// The selected container background layer.
     private final Region selectionContainer = new Region();
 
     /// The selected container appearance animation.
     private final M3NodeTransition selectionAnimation = new M3NodeTransition(selectionContainer);
+
+    /// The built-in selected-state check indicator.
+    private final StackPane selectionIndicator = new StackPane();
+
+    /// The selected-state check indicator appearance animation.
+    private final M3NodeTransition selectionIndicatorAnimation = new M3NodeTransition(selectionIndicator);
+
+    /// Whether the built-in indicator currently participates in the centered content row.
+    private boolean selectionIndicatorOccupiesContentSlot;
 
     /// The last top-left radius applied to the selected container.
     private double selectionTopLeftRadius = Double.NaN;
@@ -45,7 +79,10 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
 
     /// Animates the selected container when selection changes.
     private final ChangeListener<Boolean> selectedListener =
-            (observable, oldValue, newValue) -> animateSelectionContainer(newValue);
+            (observable, oldValue, newValue) -> animateSelection(newValue);
+
+    /// Refreshes the built-in indicator when its eligibility changes.
+    private final InvalidationListener selectionIndicatorInvalidation = observable -> refreshSelectionIndicator();
 
     /// Requests layout when group position style classes change.
     private final ListChangeListener<String> styleClassListener = change -> getSkinnable().requestLayout();
@@ -60,8 +97,22 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
         selectionContainer.setMouseTransparent(true);
         getChildren().add(0, selectionContainer);
 
+        selectionIndicator.getStyleClass().add(SELECTION_INDICATOR_STYLE_CLASS);
+        Region selectionIndicatorBackdrop = new Region();
+        Region selectionIndicatorMark = new Region();
+        selectionIndicatorBackdrop.getStyleClass().add(SELECTION_INDICATOR_BACKDROP_STYLE_CLASS);
+        selectionIndicatorMark.getStyleClass().add(SELECTION_INDICATOR_MARK_STYLE_CLASS);
+        selectionIndicator.getChildren().setAll(selectionIndicatorBackdrop, selectionIndicatorMark);
+        selectionIndicator.setManaged(false);
+        selectionIndicator.setMouseTransparent(true);
+        getChildren().add(selectionIndicator);
+        selectionIndicatorAnimation.setOnFinished(event -> finishSelectionIndicatorAnimation());
+
         updateSelectionContainerImmediate(control.isSelected());
+        updateSelectionIndicatorImmediate();
         control.selectedProperty().addListener(selectedListener);
+        control.selectionIndicatorEnabledProperty().addListener(selectionIndicatorInvalidation);
+        control.graphicProperty().addListener(selectionIndicatorInvalidation);
         control.getStyleClass().addListener(styleClassListener);
     }
 
@@ -70,9 +121,38 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
     public void dispose() {
         M3SegmentedButton button = getSkinnable();
         selectionAnimation.stop();
+        selectionIndicatorAnimation.stop();
         button.selectedProperty().removeListener(selectedListener);
+        button.selectionIndicatorEnabledProperty().removeListener(selectionIndicatorInvalidation);
+        button.graphicProperty().removeListener(selectionIndicatorInvalidation);
         button.getStyleClass().removeListener(styleClassListener);
         super.dispose();
+    }
+
+    /// Adds the optional selected-state indicator slot to the minimum width without changing it on selection.
+    @Override
+    protected double computeMinWidth(
+            double height,
+            double topInset,
+            double rightInset,
+            double bottomInset,
+            double leftInset
+    ) {
+        return super.computeMinWidth(height, topInset, rightInset, bottomInset, leftInset)
+                + reservedSelectionIndicatorWidth();
+    }
+
+    /// Adds the optional selected-state indicator slot to the preferred width without changing it on selection.
+    @Override
+    protected double computePrefWidth(
+            double height,
+            double topInset,
+            double rightInset,
+            double bottomInset,
+            double leftInset
+    ) {
+        return super.computePrefWidth(height, topInset, rightInset, bottomInset, leftInset)
+                + reservedSelectionIndicatorWidth();
     }
 
     /// Lays out labeled content and the selected container.
@@ -80,6 +160,65 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
     protected void layoutChildren(double x, double y, double width, double height) {
         super.layoutChildren(x, y, width, height);
         layoutSelectionContainer();
+        layoutSelectionIndicator();
+    }
+
+    /// Lays out the built-in check and the inherited label as one centered logical content row.
+    private void layoutSelectionIndicator() {
+        M3SegmentedButton button = getSkinnable();
+        double controlWidth = button.getWidth();
+        double controlHeight = button.getHeight();
+        if (controlWidth <= 0.0) {
+            controlWidth = button.getLayoutBounds().getWidth();
+        }
+        if (controlHeight <= 0.0) {
+            controlHeight = button.getLayoutBounds().getHeight();
+        }
+
+        double iconY = snapPositionY((controlHeight - INDICATOR_SIZE) / 2.0);
+        @Nullable Text label = labelTextNode();
+        if (label != null) {
+            label.setTranslateX(0.0);
+        }
+        @Nullable Node graphic = button.getGraphic();
+        if (selectionIndicatorOccupiesContentSlot && graphic != null) {
+            Bounds graphicBounds = graphic.getBoundsInParent();
+            double iconX = snapPositionX(graphicBounds.getCenterX() - INDICATOR_SIZE / 2.0);
+            double graphicIconY = snapPositionY(graphicBounds.getCenterY() - INDICATOR_SIZE / 2.0);
+            selectionIndicator.resizeRelocate(iconX, graphicIconY, INDICATOR_SIZE, INDICATOR_SIZE);
+            return;
+        }
+        if (!selectionIndicatorOccupiesContentSlot || label == null || label.getText().isEmpty()) {
+            double iconX = snapPositionX((controlWidth - INDICATOR_SIZE) / 2.0);
+            selectionIndicator.resizeRelocate(iconX, iconY, INDICATOR_SIZE, INDICATOR_SIZE);
+            return;
+        }
+
+        Bounds labelBounds = label.getBoundsInParent();
+        double labelShift = (INDICATOR_SIZE + INDICATOR_GAP) / 2.0;
+        label.setTranslateX(labelShift);
+        double iconX = snapPositionX(labelBounds.getMinX() + labelShift - INDICATOR_GAP - INDICATOR_SIZE);
+        selectionIndicator.resizeRelocate(iconX, iconY, INDICATOR_SIZE, INDICATOR_SIZE);
+    }
+
+    /// Returns the label text node installed by the labeled skin foundation.
+    private @Nullable Text labelTextNode() {
+        for (Node child : getChildren()) {
+            if (child instanceof Text text) {
+                return text;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the stable width reserved for a possible built-in selection indicator.
+    private double reservedSelectionIndicatorWidth() {
+        M3SegmentedButton button = getSkinnable();
+        if (!button.isSelectionIndicatorEnabled() || button.getGraphic() != null) {
+            return 0.0;
+        }
+        @Nullable String text = button.getText();
+        return INDICATOR_SIZE + (text == null || text.isEmpty() ? 0.0 : INDICATOR_GAP);
     }
 
     /// Lays out the selected container inside the outline border.
@@ -176,10 +315,71 @@ public class M3SegmentedButtonSkin extends M3LabeledButtonSkinBase<M3SegmentedBu
         M3Animation.playFromStart(getSkinnable(), selectionAnimation);
     }
 
+    /// Animates all selected-state visuals and keeps content measurement stable.
+    private void animateSelection(boolean selected) {
+        animateSelectionContainer(selected);
+        animateSelectionIndicator(shouldDisplaySelectionIndicator(selected));
+        getSkinnable().requestLayout();
+    }
+
+    /// Animates the built-in check indicator to the requested visibility.
+    private void animateSelectionIndicator(boolean visible) {
+        double targetOpacity = visible ? 1.0 : 0.0;
+        double targetScale = visible ? 1.0 : HIDDEN_INDICATOR_SCALE;
+        selectionIndicatorAnimation.stop();
+        if (visible) {
+            selectionIndicatorOccupiesContentSlot = true;
+        }
+        selectionIndicatorAnimation.configure(
+                M3Animation.defaultEffects(getSkinnable()),
+                targetOpacity,
+                targetScale,
+                targetScale,
+                selectionIndicator.getTranslateX(),
+                selectionIndicator.getTranslateY()
+        );
+        M3Animation.playFromStart(getSkinnable(), selectionIndicatorAnimation);
+    }
+
+    /// Releases the indicator's content slot after its exit transition has completed.
+    private void finishSelectionIndicatorAnimation() {
+        if (!shouldDisplaySelectionIndicator()) {
+            selectionIndicatorOccupiesContentSlot = false;
+            getSkinnable().requestLayout();
+        }
+    }
+
+    /// Refreshes indicator visibility after its configuration or application graphic changes.
+    private void refreshSelectionIndicator() {
+        M3SegmentedButton button = getSkinnable();
+        animateSelectionIndicator(shouldDisplaySelectionIndicator());
+        button.requestLayout();
+    }
+
     /// Updates the selected container without animation.
     private void updateSelectionContainerImmediate(boolean selected) {
         selectionContainer.setOpacity(selected ? 1.0 : 0.0);
         selectionContainer.setScaleX(selected ? 1.0 : HIDDEN_SELECTION_SCALE);
+    }
+
+    /// Updates the built-in selection indicator without animation.
+    private void updateSelectionIndicatorImmediate() {
+        boolean visible = shouldDisplaySelectionIndicator();
+        selectionIndicatorOccupiesContentSlot = visible;
+        selectionIndicator.setOpacity(visible ? 1.0 : 0.0);
+        selectionIndicator.setScaleX(visible ? 1.0 : HIDDEN_INDICATOR_SCALE);
+        selectionIndicator.setScaleY(visible ? 1.0 : HIDDEN_INDICATOR_SCALE);
+    }
+
+    /// Returns whether the built-in selected-state indicator should currently be displayed.
+    private boolean shouldDisplaySelectionIndicator() {
+        return shouldDisplaySelectionIndicator(getSkinnable().isSelected());
+    }
+
+    /// Returns whether the built-in selected-state indicator should be displayed for a selection state.
+    private boolean shouldDisplaySelectionIndicator(boolean selected) {
+        M3SegmentedButton button = getSkinnable();
+        return selected && button.isSelectionIndicatorEnabled();
     }
 
     /// Returns whether the current segment has a rounded top-left corner.

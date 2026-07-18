@@ -20,6 +20,9 @@
     -fx-text-fill: -m3-color-on-surface;
     -fx-font-size: 14px;
     -fx-font-weight: 500;
+    -fx-alignment: center;
+    -fx-content-display: left;
+    -fx-graphic-text-gap: 8px;
     -fx-cursor: hand;
 }
 
@@ -38,6 +41,35 @@
 .m3-segmented-button-selection-container {
     -fx-background-color: -m3-color-secondary-container;
     -fx-background-insets: 0;
+}
+
+.m3-segmented-button-selection-indicator {
+    -fx-min-width: 18px;
+    -fx-min-height: 18px;
+    -fx-pref-width: 18px;
+    -fx-pref-height: 18px;
+    -fx-max-width: 18px;
+    -fx-max-height: 18px;
+}
+
+.m3-segmented-button-selection-indicator-backdrop {
+    -fx-background-color: -m3-color-secondary-container;
+    -fx-background-insets: 0;
+}
+
+.m3-segmented-button-selection-indicator-mark {
+    -fx-background-color: -m3-color-on-secondary-container;
+    -fx-shape: "M9 16.2 4.8 12 3.4 13.4 9 19 21 7 19.6 5.6z";
+    -fx-scale-shape: true;
+}
+
+.m3-segmented-button .m3-icon-graphic {
+    -m3-icon-size: 18px;
+    -fx-text-fill: -m3-color-on-surface;
+}
+
+.m3-segmented-button:selected .m3-icon-graphic {
+    -fx-text-fill: -m3-color-on-secondary-container;
 }
 
 .m3-segmented-button .m3-state-layer,
@@ -82,6 +114,10 @@
     -fx-opacity: -m3-state-disabled-content-opacity;
 }
 
+.m3-segmented-button:disabled > .m3-segmented-button-selection-indicator {
+    -fx-opacity: 1;
+}
+
 .m3-segmented-button:disabled > .m3-segmented-button-selection-container,
 .m3-segmented-button:disabled > .m3-state-layer {
     -fx-opacity: 0;
@@ -90,6 +126,15 @@
 .m3-segmented-button:selected:disabled .m3-segmented-button-selection-container {
     -fx-background-color: -m3-state-disabled-container-color;
     -fx-opacity: 1;
+}
+
+.m3-segmented-button:selected:disabled .m3-segmented-button-selection-indicator-backdrop {
+    -fx-background-color: -m3-state-disabled-container-color;
+}
+
+.m3-segmented-button:selected:disabled .m3-segmented-button-selection-indicator-mark {
+    -fx-background-color: -m3-color-on-surface;
+    -fx-opacity: -m3-state-disabled-content-opacity;
 }
 
 .m3-segmented-button:selected:disabled {

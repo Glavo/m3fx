@@ -40,6 +40,11 @@ import java.util.Objects;
 /// `M3SegmentedButtonGroup` may immediately adjust that state to satisfy its selection mode and empty-selection
 /// policy. A standalone segmented button is unselected by default and may be toggled independently.
 ///
+/// The inherited [#graphicProperty()] is the optional icon slot described by Material Design. The default skin
+/// displays a check indicator for the selected state. When a graphic is present, the check visually replaces that
+/// graphic while selected and the graphic reappears when unselected. Applications may suppress this behavior through
+/// [#selectionIndicatorEnabledProperty()] when selection is already communicated by custom content.
+///
 /// See [Material Design segmented buttons](https://m3.material.io/components/segmented-buttons/overview).
 @NotNullByDefault
 public final class M3SegmentedButton extends ButtonBase {
@@ -89,6 +94,16 @@ public final class M3SegmentedButton extends ButtonBase {
         }
     };
 
+    /// Whether the default skin may display its built-in selected-state check indicator.
+    ///
+    /// The indicator is rendered only while this button is selected. With an application-provided graphic, the
+    /// indicator visually replaces the graphic without changing [#graphicProperty()]. Setting this property to
+    /// `false` does not affect selection behavior, accessibility state, or the supplied graphic.
+    ///
+    /// @defaultValue `true`
+    private final BooleanProperty selectionIndicatorEnabled =
+            new SimpleBooleanProperty(this, "selectionIndicatorEnabled", true);
+
     /// Creates an unselected segmented button with an empty label and no graphic.
     public M3SegmentedButton() {
         this("");
@@ -104,7 +119,7 @@ public final class M3SegmentedButton extends ButtonBase {
 
     /// Creates an unselected segmented button with the specified label and graphic.
     ///
-    /// @param text the text displayed by the segmented button
+    /// @param text    the text displayed by the segmented button
     /// @param graphic the graphic displayed by the segmented button, or `null` for none
     public M3SegmentedButton(String text, @Nullable Node graphic) {
         super(text, graphic);
@@ -125,8 +140,35 @@ public final class M3SegmentedButton extends ButtonBase {
         this.selected.set(selected);
     }
 
+    /// Returns the property containing this segmented button's selected state.
+    ///
+    /// @return the selected-state property
     public final BooleanProperty selectedProperty() {
         return selected;
+    }
+
+    /// Returns whether the default selected-state check indicator is enabled.
+    ///
+    /// @return `true` if the default skin may display its selection indicator
+    public final boolean isSelectionIndicatorEnabled() {
+        return selectionIndicatorEnabled.get();
+    }
+
+    /// Enables or disables the default selected-state check indicator.
+    ///
+    /// The indicator is only eligible for display while this button is selected. If this button has a graphic, the
+    /// indicator replaces it visually for the duration of the selected state.
+    ///
+    /// @param enabled whether the default selection indicator is enabled
+    public final void setSelectionIndicatorEnabled(boolean enabled) {
+        selectionIndicatorEnabled.set(enabled);
+    }
+
+    /// Returns the property controlling the default selected-state check indicator.
+    ///
+    /// @return the selection-indicator-enabled property
+    public final BooleanProperty selectionIndicatorEnabledProperty() {
+        return selectionIndicatorEnabled;
     }
 
     /// Returns the preferred container height token.
@@ -230,7 +272,7 @@ public final class M3SegmentedButton extends ButtonBase {
 
     /// Returns accessibility attributes for the segment selection state.
     ///
-    /// @param attribute the requested accessibility attribute
+    /// @param attribute  the requested accessibility attribute
     /// @param parameters the optional attribute parameters
     /// @return the attribute value, or `null` when unavailable
     /// @throws NullPointerException if `attribute` is `null`

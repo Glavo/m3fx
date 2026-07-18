@@ -2109,18 +2109,29 @@ public final class M3FXDemoApp extends Application {
     /// Creates the segmented button component page.
     private Node createSegmentedButtonsPage() {
         M3SegmentedButtonGroup dateRange = createSegmentedGroup("Day", "Week", "Month");
-        M3SegmentedButtonGroup priority = createSegmentedGroup("Low", "Medium", "High");
+
+        M3SegmentedButton lowPriority = createSegmentedButton("Low", "task");
+        M3SegmentedButton mediumPriority = createSegmentedButton("Medium", "schedule");
+        mediumPriority.setSelected(true);
+        M3SegmentedButton highPriority = createSegmentedButton("High", "warning");
+        M3SegmentedButtonGroup priority =
+                createSegmentedButtonGroup(lowPriority, mediumPriority, highPriority);
         priority.getItems().get(2).setDisable(true);
-        M3SegmentedButtonGroup channels = createSegmentedGroup("Email", "Chat", "Push");
+
+        M3SegmentedButtonGroup channels = createSegmentedButtonGroup(
+                createSegmentedButton("Email", "email"),
+                createSegmentedButton("Chat", "group"),
+                createSegmentedButton("Push", "notifications")
+        );
         channels.clearSelection();
         channels.setSelectionMode(M3SelectionMode.MULTIPLE);
         channels.selectIndex(0);
         channels.selectIndex(2);
 
         return createGallery(
-                createShowcaseGroup("Date Range", dateRange),
-                createShowcaseGroup("Availability", priority),
-                createShowcaseGroup("Multi Select", channels)
+                createShowcaseGroup("Text With Selection Indicator", dateRange),
+                createShowcaseGroup("Icon And Label", priority),
+                createShowcaseGroup("Icon Multi Select", channels)
         );
     }
 
@@ -3712,6 +3723,14 @@ public final class M3FXDemoApp extends Application {
         secondButton.setSelected(true);
         M3SegmentedButton thirdButton = new M3SegmentedButton(third);
         return createSegmentedButtonGroup(firstButton, secondButton, thirdButton);
+    }
+
+    /// Creates a segmented button sample with an 18dp leading SVG icon.
+    private static M3SegmentedButton createSegmentedButton(String text, String iconName) {
+        return new M3SegmentedButton(
+                text,
+                createDemoIcon(iconName, M3IconSize.SMALL, M3IconVariant.ON_SURFACE)
+        );
     }
 
     /// Creates a tab bar sample.

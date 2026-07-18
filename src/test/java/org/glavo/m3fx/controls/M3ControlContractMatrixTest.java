@@ -20096,6 +20096,124 @@ final class M3ControlContractMatrixTest {
         assertInstanceOf(M3SegmentedButtonSkin.class, button.getSkin());
     }
 
+    /// Verifies that text-only selected segments expose the default indicator without changing intrinsic width.
+    @Test
+    void segmentedButtonProvidesStableOptionalSelectionIndicator() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3SegmentedButton button = new M3SegmentedButton("Week");
+            button.setSelected(true);
+            StackPane root = new StackPane(button);
+            Scene scene = new Scene(root, 180.0, 80.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.layout();
+            button.layout();
+
+            Region indicator = segmentedButtonSelectionIndicator(button);
+            double selectedPrefWidth = button.prefWidth(-1.0);
+            assertTrue(button.isSelectionIndicatorEnabled());
+            assertEquals(1.0, indicator.getOpacity(), 0.0001);
+            assertEquals(18.0, indicator.getWidth(), 0.0001);
+            assertEquals(18.0, indicator.getHeight(), 0.0001);
+
+            button.setSelected(false);
+
+            assertEquals(selectedPrefWidth, button.prefWidth(-1.0), 0.0001,
+                    "selection indicator must not change intrinsic segment width");
+        });
+    }
+
+    /// Verifies that applications can suppress the indicator and that selected checks replace supplied graphics.
+    @Test
+    void segmentedButtonSelectionIndicatorRespectsConfigurationAndReplacesGraphic() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3SegmentedButton indicatorDisabled = new M3SegmentedButton("Day");
+            indicatorDisabled.setSelectionIndicatorEnabled(false);
+            indicatorDisabled.setSelected(true);
+
+            Region graphic = new Region();
+            graphic.setPrefSize(18.0, 18.0);
+            M3SegmentedButton graphicButton = new M3SegmentedButton("Month", graphic);
+            graphicButton.setSelected(true);
+
+            HBox root = new HBox(indicatorDisabled, graphicButton);
+            Scene scene = new Scene(root, 320.0, 80.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.layout();
+            indicatorDisabled.layout();
+            graphicButton.layout();
+
+            Region disabledIndicator = segmentedButtonSelectionIndicator(indicatorDisabled);
+            Region graphicIndicator = segmentedButtonSelectionIndicator(graphicButton);
+            Bounds graphicBounds = graphic.getBoundsInParent();
+            Bounds indicatorBounds = graphicIndicator.getBoundsInParent();
+
+            assertEquals(0.0, disabledIndicator.getOpacity(), 0.0001);
+            assertEquals(1.0, graphicIndicator.getOpacity(), 0.0001);
+            assertEquals(graphicBounds.getCenterX(), indicatorBounds.getCenterX(), 0.0001);
+            assertEquals(graphicBounds.getCenterY(), indicatorBounds.getCenterY(), 0.0001);
+            assertSame(graphic, graphicButton.getGraphic());
+        });
+    }
+
+    /// Verifies that the built-in selected icon follows logical leading placement in both layout directions.
+    @Test
+    void segmentedButtonSelectionIndicatorFollowsNodeOrientation() {
+        FxTestUtils.runOnFxThread(() -> {
+            M3SegmentedButton button = new M3SegmentedButton("Day");
+            button.setSelected(true);
+            M3SegmentedButtonGroup group = segmentedButtonGroup(button);
+            StackPane root = new StackPane(group);
+            Scene scene = new Scene(root, 180.0, 80.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            root.applyCss();
+            root.layout();
+            group.layout();
+            button.layout();
+
+            Region leftToRightIndicatorNode = segmentedButtonSelectionIndicator(button);
+            Node leftToRightLabelNode = Objects.requireNonNull(button.lookup(".text"), "LTR label");
+            Bounds leftToRightIndicator = leftToRightIndicatorNode.localToScene(
+                    leftToRightIndicatorNode.getBoundsInLocal()
+            );
+            Bounds leftToRightLabel = leftToRightLabelNode.localToScene(leftToRightLabelNode.getBoundsInLocal());
+            assertTrue(leftToRightIndicator.getMaxX() < leftToRightLabel.getMinX(),
+                    "LTR indicator should precede its label");
+
+            root.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            root.applyCss();
+            root.layout();
+            group.layout();
+            button.layout();
+
+            Region rightToLeftIndicatorNode = segmentedButtonSelectionIndicator(button);
+            Node rightToLeftLabelNode = Objects.requireNonNull(button.lookup(".text"), "RTL label");
+            Bounds rightToLeftIndicator = rightToLeftIndicatorNode.localToScene(
+                    rightToLeftIndicatorNode.getBoundsInLocal()
+            );
+            Bounds rightToLeftLabel = rightToLeftLabelNode.localToScene(rightToLeftLabelNode.getBoundsInLocal());
+            assertTrue(rightToLeftIndicator.getMinX() > rightToLeftLabel.getMaxX(),
+                    "an inherited RTL change should move the indicator after its label physically");
+
+            M3SegmentedButton attachedButton = new M3SegmentedButton("Week");
+            attachedButton.setSelected(true);
+            M3SegmentedButtonGroup attachedGroup = segmentedButtonGroup(attachedButton);
+            root.getChildren().setAll(attachedGroup);
+            root.applyCss();
+            root.layout();
+            attachedGroup.layout();
+            attachedButton.layout();
+
+            Region attachedIndicatorNode = segmentedButtonSelectionIndicator(attachedButton);
+            Node attachedLabelNode = Objects.requireNonNull(attachedButton.lookup(".text"), "attached RTL label");
+            Bounds attachedIndicator = attachedIndicatorNode.localToScene(attachedIndicatorNode.getBoundsInLocal());
+            Bounds attachedLabel = attachedLabelNode.localToScene(attachedLabelNode.getBoundsInLocal());
+            assertTrue(attachedIndicator.getMinX() > attachedLabel.getMaxX(),
+                    "a segment attached directly to an RTL hierarchy should place its indicator after the label");
+        });
+    }
+
     /// Verifies that selected segmented button states keep Material colors.
     @Test
     void segmentedButtonStateStylesPreserveSelectedColors() {
@@ -20276,10 +20394,16 @@ final class M3ControlContractMatrixTest {
                         M3SegmentedButton month = Objects.requireNonNull(monthReference.get(), "month");
                         Region outgoingSelection = segmentedButtonSelectionContainer(day);
                         Region incomingSelection = segmentedButtonSelectionContainer(month);
+                        Region outgoingIndicator = segmentedButtonSelectionIndicator(day);
+                        Region incomingIndicator = segmentedButtonSelectionIndicator(month);
 
                         assertBetween(outgoingSelection.getOpacity(), 0.0, 1.0, "outgoing segment selection opacity");
                         assertBetween(incomingSelection.getOpacity(), 0.25, 1.0, "incoming segment selection opacity");
                         assertBetween(incomingSelection.getScaleX(), 0.96, 1.0, "incoming segment selection scale");
+                        assertBetween(outgoingIndicator.getOpacity(), 0.0, 1.0, "outgoing selection icon opacity");
+                        assertBetween(outgoingIndicator.getScaleX(), 0.8, 1.0, "outgoing selection icon scale");
+                        assertBetween(incomingIndicator.getOpacity(), 0.0, 1.0, "incoming selection icon opacity");
+                        assertBetween(incomingIndicator.getScaleX(), 0.8, 1.0, "incoming selection icon scale");
                         assertRegionRadii(outgoingSelection, 19.0, 0.0, 0.0, 19.0);
                         assertRegionRadii(incomingSelection, 0.0, 19.0, 19.0, 0.0);
 
@@ -20304,11 +20428,17 @@ final class M3ControlContractMatrixTest {
                         M3SegmentedButton month = Objects.requireNonNull(monthReference.get(), "month");
                         Region outgoingSelection = segmentedButtonSelectionContainer(day);
                         Region incomingSelection = segmentedButtonSelectionContainer(month);
+                        Region outgoingIndicator = segmentedButtonSelectionIndicator(day);
+                        Region incomingIndicator = segmentedButtonSelectionIndicator(month);
 
                         assertEquals(0.0, outgoingSelection.getOpacity(), 0.0001);
                         assertEquals(1.0, incomingSelection.getOpacity(), 0.0001);
                         assertEquals(0.96, outgoingSelection.getScaleX(), 0.0001);
                         assertEquals(1.0, incomingSelection.getScaleX(), 0.0001);
+                        assertEquals(0.0, outgoingIndicator.getOpacity(), 0.0001);
+                        assertEquals(0.8, outgoingIndicator.getScaleX(), 0.0001);
+                        assertEquals(1.0, incomingIndicator.getOpacity(), 0.0001);
+                        assertEquals(1.0, incomingIndicator.getScaleX(), 0.0001);
                     }
             );
         } finally {
@@ -40771,9 +40901,15 @@ final class M3ControlContractMatrixTest {
 
         Region outgoingSelection = segmentedButtonSelectionContainer(outgoing);
         Region incomingSelection = segmentedButtonSelectionContainer(incoming);
+        Region outgoingIndicator = segmentedButtonSelectionIndicator(outgoing);
+        Region incomingIndicator = segmentedButtonSelectionIndicator(incoming);
         return isBetweenExclusive(outgoingSelection.getOpacity(), 0.0, 1.0)
                 && isBetweenExclusive(incomingSelection.getOpacity(), 0.25, 1.0)
-                && isBetweenExclusive(incomingSelection.getScaleX(), 0.96, 1.0);
+                && isBetweenExclusive(incomingSelection.getScaleX(), 0.96, 1.0)
+                && isBetweenExclusive(outgoingIndicator.getOpacity(), 0.0, 1.0)
+                && isBetweenExclusive(outgoingIndicator.getScaleX(), 0.8, 1.0)
+                && isBetweenExclusive(incomingIndicator.getOpacity(), 0.0, 1.0)
+                && isBetweenExclusive(incomingIndicator.getScaleX(), 0.8, 1.0);
     }
 
     /// Returns whether a segmented button selection has settled after a selection change.
@@ -40790,10 +40926,16 @@ final class M3ControlContractMatrixTest {
 
         Region outgoingSelection = segmentedButtonSelectionContainer(outgoing);
         Region incomingSelection = segmentedButtonSelectionContainer(incoming);
+        Region outgoingIndicator = segmentedButtonSelectionIndicator(outgoing);
+        Region incomingIndicator = segmentedButtonSelectionIndicator(incoming);
         return Math.abs(outgoingSelection.getOpacity()) < 0.0001
                 && Math.abs(incomingSelection.getOpacity() - 1.0) < 0.0001
                 && Math.abs(outgoingSelection.getScaleX() - 0.96) < 0.0001
-                && Math.abs(incomingSelection.getScaleX() - 1.0) < 0.0001;
+                && Math.abs(incomingSelection.getScaleX() - 1.0) < 0.0001
+                && Math.abs(outgoingIndicator.getOpacity()) < 0.0001
+                && Math.abs(outgoingIndicator.getScaleX() - 0.8) < 0.0001
+                && Math.abs(incomingIndicator.getOpacity() - 1.0) < 0.0001
+                && Math.abs(incomingIndicator.getScaleX() - 1.0) < 0.0001;
     }
 
     /// Returns whether list and drawer selected containers are rendering intermediate transitions.
@@ -42679,6 +42821,13 @@ final class M3ControlContractMatrixTest {
         javafx.scene.Node container = button.lookup("." + M3SegmentedButtonSkin.SELECTION_CONTAINER_STYLE_CLASS);
         assertInstanceOf(javafx.scene.layout.Region.class, container);
         return (javafx.scene.layout.Region) container;
+    }
+
+    /// Returns the segmented button built-in selected-state indicator region.
+    private static javafx.scene.layout.Region segmentedButtonSelectionIndicator(M3SegmentedButton button) {
+        javafx.scene.Node indicator = button.lookup("." + M3SegmentedButtonSkin.SELECTION_INDICATOR_STYLE_CLASS);
+        assertInstanceOf(javafx.scene.layout.Region.class, indicator);
+        return (javafx.scene.layout.Region) indicator;
     }
 
     /// Verifies that a badged box badge is anchored to logical end and top of its content.

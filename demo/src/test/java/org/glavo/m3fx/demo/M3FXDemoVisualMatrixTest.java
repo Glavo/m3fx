@@ -176,6 +176,7 @@ import org.glavo.m3fx.controls.M3ToolbarVariant;
 import org.glavo.m3fx.controls.M3TopAppBar;
 import org.glavo.m3fx.controls.M3TopAppBarVariant;
 import org.glavo.m3fx.controls.M3ValidationSummary;
+import org.glavo.m3fx.skins.M3SegmentedButtonSkin;
 import org.glavo.m3fx.theme.M3Theme;
 import org.glavo.m3fx.theme.M3ThemeManager;
 import org.glavo.m3fx.tokens.M3ComponentTokens;
@@ -365,8 +366,7 @@ final class M3FXDemoVisualMatrixTest {
             M3DatePicker.DAY_CELL_STYLE_CLASS,
             M3TimePicker.CELL_STYLE_CLASS,
             M3IconButton.STYLE_CLASS,
-            M3IconToggleButton.STYLE_CLASS,
-            M3SegmentedButton.STYLE_CLASS
+            M3IconToggleButton.STYLE_CLASS
     );
 
     /// Demo pages that should use SVG icons instead of text-only icon controls in interactive slots.
@@ -388,6 +388,7 @@ final class M3FXDemoVisualMatrixTest {
             Map.entry("Navigation Drawer", 12),
             Map.entry("Navigation Rail", 10),
             Map.entry("Search", 5),
+            Map.entry("Segmented Buttons", 6),
             Map.entry("Side Sheets", 3),
             Map.entry("Text Fields", 5),
             Map.entry("Toolbars", 9),
@@ -1049,6 +1050,56 @@ final class M3FXDemoVisualMatrixTest {
     void demoPagesRenderAcrossReleaseVisualMatrix() throws InterruptedException {
         for (DemoVisualMode mode : DEMO_VISUAL_MODES) {
             assertDemoPagesRenderInVisualMode(mode);
+        }
+    }
+
+    /// Verifies segmented-button icon replacement and logical ordering in the right-to-left demo hierarchy.
+    @Test
+    void segmentedButtonsRenderWithLogicalIconOrderInRightToLeftDemo() throws InterruptedException {
+        AtomicReference<@Nullable Stage> stageReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3FXDemoApp> appReference = new AtomicReference<>();
+        AtomicReference<@Nullable Scene> sceneReference = new AtomicReference<>();
+
+        FxTestUtils.runOnFxThread(() -> {
+            Stage stage = new Stage();
+            M3FXDemoApp app = new M3FXDemoApp();
+            app.start(stage);
+            stage.setWidth(1366.0);
+            stage.setHeight(900.0);
+
+            Scene scene = Objects.requireNonNull(app.activeScene(), "scene");
+            scene.getRoot().setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            stageReference.set(stage);
+            appReference.set(app);
+            sceneReference.set(scene);
+        });
+
+        try {
+            FxTestUtils.assertNoCssWarningsInterruptibly(() -> showPageWhenSidebarSelectionSettled(
+                    appReference,
+                    sceneReference,
+                    "Segmented Buttons",
+                    scene -> {
+                        scene.getRoot().setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+                        resetDemoPageScroll(scene);
+                    },
+                    () -> {
+                        Scene scene = Objects.requireNonNull(sceneReference.get(), "scene");
+                        WritableImage image = snapshot(scene);
+                        writeVisualSnapshot(
+                                image,
+                                VISUAL_REPORT_DIRECTORY.resolve("demo-rtl-segmented-buttons-focused.png")
+                        );
+                        assertSegmentedButtonsPageVisualState(scene);
+                    }
+            ));
+        } finally {
+            FxTestUtils.runOnFxThread(() -> {
+                @Nullable Stage stage = stageReference.get();
+                if (stage != null) {
+                    stage.close();
+                }
+            });
         }
     }
 
@@ -12037,9 +12088,9 @@ final class M3FXDemoVisualMatrixTest {
         Parent root = scene.getRoot();
         Node page = currentDemoPage(scene, "Segmented Buttons");
         assertCurrentPageTitle(scene, "Segmented Buttons");
-        assertVisibleText(root, "Date Range", "Segmented Buttons");
-        assertVisibleText(root, "Availability", "Segmented Buttons");
-        assertVisibleText(root, "Multi Select", "Segmented Buttons");
+        assertVisibleText(root, "Text With Selection Indicator", "Segmented Buttons");
+        assertVisibleText(root, "Icon And Label", "Segmented Buttons");
+        assertVisibleText(root, "Icon Multi Select", "Segmented Buttons");
 
         List<M3SegmentedButtonGroup> groups = visibleNodesOfType(page, M3SegmentedButtonGroup.class);
         assertEquals(3, groups.size(), () -> "Segmented Buttons page should render three groups: " + groups);
@@ -12061,6 +12112,22 @@ final class M3FXDemoVisualMatrixTest {
                 "Segmented Buttons page should render four selected segments");
         assertEquals(1, buttons.stream().filter(Node::isDisabled).count(),
                 "Segmented Buttons page should render one disabled segment");
+        assertTrue(groups.get(0).getItems().stream().allMatch(button -> button.getGraphic() == null),
+                "text-only segmented group should rely on the built-in selected icon");
+        assertTrue(groups.get(1).getItems().stream().allMatch(button -> button.getGraphic() instanceof M3SVGIcon),
+                "icon-and-label segmented group should render SVG icons");
+        assertTrue(groups.get(2).getItems().stream().allMatch(button -> button.getGraphic() instanceof M3SVGIcon),
+                "multi-select segmented group should render SVG icons");
+        assertEquals(4, buttons.stream()
+                        .map(button -> firstVisibleStyledDescendant(
+                                button,
+                                M3SegmentedButtonSkin.SELECTION_INDICATOR_STYLE_CLASS
+                        ))
+                        .filter(Objects::nonNull)
+                        .filter(indicator -> indicator.getOpacity() >= 0.95)
+                        .count(),
+                "every selected segment should render a check indicator");
+        assertDemoVectorIcons(page, "Segmented Buttons", 6);
         M3SegmentedButton disabledButton = buttons.stream()
                 .filter(Node::isDisabled)
                 .findFirst()
@@ -12225,6 +12292,7 @@ final class M3FXDemoVisualMatrixTest {
         assertSegmentedButtonSelectionContainerGeometry(button, buttonBounds, description);
         assertSegmentedButtonInteriorFillState(image, button, buttonBounds, surroundingColor, description);
         assertSegmentedButtonTextInkGeometry(image, button, buttonBounds, description);
+        assertSegmentedButtonContentRowGeometry(button, buttonBounds, description);
     }
 
     /// Verifies that a selected segmented button keeps its selected container inside the outline stroke.
@@ -12307,6 +12375,62 @@ final class M3FXDemoVisualMatrixTest {
         assertTrue(deltaY <= LABELED_TEXT_INK_VERTICAL_CENTER_TOLERANCE,
                 () -> description + " rendered text ink is vertically off-center: deltaY="
                         + deltaY + ", button=" + buttonBounds + ", ink=" + inkBounds);
+    }
+
+    /// Verifies that the optional icon and label form one centered row with the specified Material gap.
+    private static void assertSegmentedButtonContentRowGeometry(
+            M3SegmentedButton button,
+            Bounds buttonBounds,
+            String description
+    ) {
+        Text text = Objects.requireNonNull(firstVisibleText(button), description + " text node");
+        Bounds textBounds = text.localToScene(text.getLayoutBounds());
+        @Nullable Node icon = button.getGraphic();
+        @Nullable Node indicator = firstVisibleStyledDescendant(
+                button,
+                M3SegmentedButtonSkin.SELECTION_INDICATOR_STYLE_CLASS
+        );
+        if (button.isSelected()) {
+            assertNotNull(indicator, description + " selected check indicator");
+            assertTrue(Objects.requireNonNull(indicator).getOpacity() >= 0.95,
+                    description + " selected check indicator should be visible");
+        }
+        if (icon == null) {
+            if (indicator != null && indicator.getOpacity() >= 0.95) {
+                icon = indicator;
+            }
+        } else if (button.isSelected()) {
+            Bounds graphicBounds = icon.localToScene(icon.getLayoutBounds());
+            Bounds indicatorBounds = Objects.requireNonNull(indicator).localToScene(indicator.getLayoutBounds());
+            assertEquals(graphicBounds.getCenterX(), indicatorBounds.getCenterX(), 1.0,
+                    description + " selected check should replace the supplied icon horizontally");
+            assertEquals(graphicBounds.getCenterY(), indicatorBounds.getCenterY(), 1.0,
+                    description + " selected check should replace the supplied icon vertically");
+        }
+
+        if (icon == null) {
+            assertEquals(buttonBounds.getCenterX(), textBounds.getCenterX(), 3.0,
+                    description + " text-only label should be horizontally centered");
+            return;
+        }
+
+        Bounds iconBounds = icon.localToScene(icon.getLayoutBounds());
+        double rowMinX = Math.min(iconBounds.getMinX(), textBounds.getMinX());
+        double rowMaxX = Math.max(iconBounds.getMaxX(), textBounds.getMaxX());
+        assertEquals(buttonBounds.getCenterX(), (rowMinX + rowMaxX) / 2.0, 1.5,
+                description + " icon-and-label row should be horizontally centered");
+
+        boolean rightToLeft = button.getEffectiveNodeOrientation() == NodeOrientation.RIGHT_TO_LEFT;
+        double gap = rightToLeft
+                ? iconBounds.getMinX() - textBounds.getMaxX()
+                : textBounds.getMinX() - iconBounds.getMaxX();
+        Node resolvedIcon = icon;
+        assertEquals(8.0, gap, 1.5, () -> description + " icon-to-label gap: orientation="
+                + button.getEffectiveNodeOrientation()
+                + ", iconScene=" + iconBounds
+                + ", textScene=" + textBounds
+                + ", iconLocal=" + resolvedIcon.getBoundsInParent()
+                + ", textLocal=" + text.getBoundsInParent());
     }
 
     /// Verifies the real Cards demo page variants, media rows, and actionable states.
