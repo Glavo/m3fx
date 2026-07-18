@@ -16,12 +16,10 @@ import javafx.scene.Scene;
 import javafx.scene.control.ButtonType;
 import javafx.stage.Window;
 import javafx.stage.WindowEvent;
-import javafx.util.Callback;
 import org.glavo.m3fx.animation.M3MotionSpec;
 import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3DialogPresenter;
 import org.glavo.m3fx.internal.M3NodeTransition;
-import org.glavo.m3fx.theme.M3Theme;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,35 +33,36 @@ import java.util.Objects;
 /// never replaces the scene root. Closing the dialog removes only its overlay layer and restores prior focus when
 /// no newer overlay has superseded it.
 ///
-/// [#show()] is non-blocking. [#showAndWait()] enters a JavaFX nested event loop and returns the nullable result after
-/// the dialog has closed. An action button first bubbles its ordinary action event; consuming that event prevents
-/// dialog closing. Otherwise the dialog emits a cancellable [M3DialogEvent#CLOSE_REQUEST], converts the button type
-/// to a result, and runs its exit transition. Reduced-motion requests settle presentation immediately.
+/// [#show()] is non-blocking. An action button first bubbles its ordinary action event; consuming that event prevents
+/// dialog closing. Otherwise the dialog emits a cancellable [M3DialogEvent#CLOSE_REQUEST] and runs its exit
+/// transition. Lifecycle events expose the initiating [ButtonType], while application results remain in caller-owned
+/// state. Reduced-motion requests settle presentation immediately.
 /// Activating the surrounding scrim requests the same cancellable close by default and produces no button type;
 /// [#dismissOnScrimClickProperty()] disables only that pointer-dismissal behavior while retaining modality.
 ///
 /// A dialog must have an attached [owner][#setOwner(Node)] inside an [M3OverlayPane] before it is shown. The owner
 /// also supplies scene stylesheets, node orientation, motion settings, and its effective Material theme. A theme
 /// installed on the owner scene is authoritative; without one, the nearest locally themed owner ancestor is used.
-/// An explicit [theme][#themeProperty()] overrides that inherited theme while preserving the owner's remaining
-/// context. Hiding the owner window forcibly removes the overlay and completes the hiding lifecycle without emitting
-/// a cancellable close request.
+/// Hiding the owner window forcibly removes the overlay and completes the hiding lifecycle without emitting a
+/// cancellable close request.
 ///
 /// ```java
-/// M3Dialog<String> dialog = new M3Dialog<>();
+/// M3Dialog dialog = new M3Dialog();
 /// dialog.setOwner(ownerNode);
 /// dialog.getDialogPane().setHeaderText("Delete item?");
 /// dialog.getDialogPane().setContentText("This action cannot be undone.");
 /// dialog.getDialogPane().getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
-/// dialog.setResultConverter(type -> type == ButtonType.OK ? "delete" : null);
+/// dialog.setOnHidden(event -> {
+///     if (event.getButtonType() == ButtonType.OK) {
+///         deleteItem();
+///     }
+/// });
 /// dialog.show();
 /// ```
 ///
 /// See [Material Design dialogs](https://m3.material.io/components/dialogs/overview).
-///
-/// @param <R> the dialog result type
 @NotNullByDefault
-public class M3Dialog<R> {
+public class M3Dialog {
     /// The retained Material pane rendered by this dialog.
     private final M3DialogPane dialogPane;
 
@@ -72,37 +71,6 @@ public class M3Dialog<R> {
 
     /// Animates pane opacity during dialog entrance and exit.
     private final M3NodeTransition presentationAnimation;
-
-    /// The explicit Material theme for this dialog.
-    ///
-    /// A `null` value inherits the nearest theme controlling the owner. Changes made while the dialog is visible
-    /// are applied to the existing overlay without recreating its pane or action nodes.
-    ///
-    /// @defaultValue `null`
-    private final ObjectProperty<@Nullable M3Theme> theme = new SimpleObjectProperty<>(this, "theme") {
-        /// Applies an updated explicit or inherited theme context.
-        @Override
-        protected void invalidated() {
-            presenter.setExplicitTheme(get());
-        }
-    };
-
-    /// The latest completed dialog result.
-    ///
-    /// [#show()] resets this property to `null`. An accepted action commits its converted result only after the exit
-    /// transition has completed; a consumed close request leaves the property unchanged.
-    ///
-    /// @defaultValue `null`
-    private final ObjectProperty<@Nullable R> result = new SimpleObjectProperty<>(this, "result");
-
-    /// The callback used to convert an accepted [ButtonType] into the dialog result type.
-    ///
-    /// When this property is `null`, the initiating button type is used as the result. Callers whose result type
-    /// does not accept [ButtonType] should install a converter before presenting the dialog.
-    ///
-    /// @defaultValue `null`
-    private final ObjectProperty<@Nullable Callback<ButtonType, @Nullable R>> resultConverter =
-            new SimpleObjectProperty<>(this, "resultConverter");
 
     /// Whether a primary click on the surrounding scrim requests that this dialog close.
     ///
@@ -140,15 +108,15 @@ public class M3Dialog<R> {
 
     /// The handler invoked after a close request is accepted but before exit motion begins.
     ///
-    /// Throwing from this handler cancels the pending transition, keeps the dialog visible, and leaves its completed
-    /// result unchanged during an ordinary close. If the owner window has already hidden, presentation cleanup cannot
-    /// be cancelled; the exception is rethrown after the overlay is removed.
+    /// Throwing from this handler cancels the pending transition and keeps the dialog visible during an ordinary
+    /// close. If the owner window has already hidden, presentation cleanup cannot be cancelled; the exception is
+    /// rethrown after the overlay is removed.
     ///
     /// @defaultValue `null`
     private final ObjectProperty<@Nullable EventHandler<M3DialogEvent>> onHiding =
             new SimpleObjectProperty<>(this, "onHiding");
 
-    /// The handler invoked after this dialog's layer has been removed and its result has been committed.
+    /// The handler invoked after this dialog's layer has been removed.
     ///
     /// @defaultValue `null`
     private final ObjectProperty<@Nullable EventHandler<M3DialogEvent>> onHidden =
@@ -156,8 +124,8 @@ public class M3Dialog<R> {
 
     /// The handler invoked whenever code or an action button requests that the dialog close.
     ///
-    /// Calling [M3DialogEvent#consume()] from this handler rejects the request before result conversion, lifecycle
-    /// mutation, scrim motion, or pane exit motion begins.
+    /// Calling [M3DialogEvent#consume()] from this handler rejects the request before lifecycle mutation, scrim
+    /// motion, or pane exit motion begins.
     ///
     /// @defaultValue `null`
     private final ObjectProperty<@Nullable EventHandler<M3DialogEvent>> onCloseRequest =
@@ -181,9 +149,6 @@ public class M3Dialog<R> {
     /// Whether an accepted close is currently running its exit transition.
     private boolean closing;
 
-    /// The result committed after the current exit transition completes.
-    private @Nullable R pendingResult;
-
     /// The action associated with the accepted close transition.
     private @Nullable ButtonType pendingButtonType;
 
@@ -192,9 +157,6 @@ public class M3Dialog<R> {
 
     /// Whether the scrim has completed the active exit transition.
     private boolean scrimExitFinished;
-
-    /// Whether [#showAndWait()] currently owns a nested event loop for this dialog.
-    private boolean nestedEventLoopRunning;
 
     /// Creates an empty Material dialog with a new [M3DialogPane].
     public M3Dialog() {
@@ -245,60 +207,6 @@ public class M3Dialog<R> {
         this.owner = Objects.requireNonNull(owner, "owner");
     }
 
-    /// Returns the explicit theme applied to this dialog.
-    ///
-    /// @return the explicit theme, or `null` to inherit from the owner hierarchy
-    public final @Nullable M3Theme getTheme() {
-        return theme.get();
-    }
-
-    /// Sets the explicit theme applied to this dialog.
-    ///
-    /// @param theme the explicit theme, or `null` to restore owner-theme inheritance
-    public final void setTheme(@Nullable M3Theme theme) {
-        this.theme.set(theme);
-    }
-
-    public final ObjectProperty<@Nullable M3Theme> themeProperty() {
-        return theme;
-    }
-
-    /// Returns the latest completed dialog result.
-    ///
-    /// @return the result, or `null` when no result has been produced
-    public final @Nullable R getResult() {
-        return result.get();
-    }
-
-    /// Sets the stored result without changing dialog visibility.
-    ///
-    /// @param result the result value, or `null`
-    public final void setResult(@Nullable R result) {
-        this.result.set(result);
-    }
-
-    public final ObjectProperty<@Nullable R> resultProperty() {
-        return result;
-    }
-
-    /// Returns the callback that converts an accepted action button to a result.
-    ///
-    /// @return the result converter, or `null` to use the button type itself
-    public final @Nullable Callback<ButtonType, @Nullable R> getResultConverter() {
-        return resultConverter.get();
-    }
-
-    /// Sets the callback that converts an accepted action button to a result.
-    ///
-    /// @param converter the converter, or `null` to use the button type itself
-    public final void setResultConverter(@Nullable Callback<ButtonType, @Nullable R> converter) {
-        resultConverter.set(converter);
-    }
-
-    public final ObjectProperty<@Nullable Callback<ButtonType, @Nullable R>> resultConverterProperty() {
-        return resultConverter;
-    }
-
     /// Returns whether a primary click on the surrounding scrim requests that this dialog close.
     ///
     /// @return `true` when pointer activation of the scrim requests dismissal
@@ -330,6 +238,9 @@ public class M3Dialog<R> {
         return showing.get();
     }
 
+    /// Returns the read-only property reporting whether this dialog owns an installed overlay layer.
+    ///
+    /// @return the read-only showing property
     public final ReadOnlyBooleanProperty showingProperty() {
         return showing.getReadOnlyProperty();
     }
@@ -357,8 +268,6 @@ public class M3Dialog<R> {
         boolean presented = false;
         try {
             fireLifecycle(M3DialogEvent.SHOWING, getOnShowing(), null);
-            result.set(null);
-            pendingResult = null;
             pendingButtonType = null;
             paneExitFinished = false;
             scrimExitFinished = false;
@@ -370,7 +279,7 @@ public class M3Dialog<R> {
             }
             dialogPane.setModalActive(true);
             startOwnerWindowObservation(activeOwner);
-            presenter.show(activeOwner, getTheme());
+            presenter.show(activeOwner);
             showing.set(true);
             fireLifecycle(M3DialogEvent.SHOWN, getOnShown(), null);
             presented = true;
@@ -396,31 +305,6 @@ public class M3Dialog<R> {
         }
     }
 
-    /// Displays this dialog and enters a nested JavaFX event loop until it closes.
-    ///
-    /// @return the completed result, or `null`
-    /// @throws IllegalStateException if called off the JavaFX application thread, while already showing or beginning
-    ///         presentation, while a nested wait for this dialog is already active, if no showing owner inside an
-    ///         [M3OverlayPane] is configured, or if the dialog pane already belongs to another scene-graph parent
-    public final @Nullable R showAndWait() {
-        checkFxThread();
-        if (isShowing() || presenting || nestedEventLoopRunning) {
-            throw new IllegalStateException("dialog is already showing, presenting, or waiting");
-        }
-
-        show();
-        if (!isShowing()) {
-            return getResult();
-        }
-        nestedEventLoopRunning = true;
-        try {
-            Platform.enterNestedEventLoop(this);
-        } finally {
-            nestedEventLoopRunning = false;
-        }
-        return getResult();
-    }
-
     /// Requests that this dialog close without selecting an action button.
     ///
     /// The request has no effect while the dialog is hidden or already closing. A configured
@@ -431,15 +315,6 @@ public class M3Dialog<R> {
     public final void close() {
         checkFxThread();
         requestClose(null);
-    }
-
-    /// Requests that this dialog hide without selecting an action button.
-    ///
-    /// This method is equivalent to [#close()] and therefore participates in the same cancellable close lifecycle.
-    ///
-    /// @throws IllegalStateException if called off the JavaFX application thread
-    public final void hide() {
-        close();
     }
 
     /// Handles an unconsumed action from one of the pane's action buttons.
@@ -467,15 +342,12 @@ public class M3Dialog<R> {
             return;
         }
 
-        @Nullable R nextResult = buttonType == null ? getResult() : convertResult(buttonType);
         closing = true;
-        pendingResult = nextResult;
         pendingButtonType = buttonType;
         try {
             fireLifecycle(M3DialogEvent.HIDING, getOnHiding(), buttonType);
         } catch (RuntimeException | Error exception) {
             closing = false;
-            pendingResult = null;
             pendingButtonType = null;
             throw exception;
         }
@@ -488,13 +360,6 @@ public class M3Dialog<R> {
         } else {
             completeHide(buttonType);
         }
-    }
-
-    /// Converts one action button through the configured callback or the default button-type result.
-    @SuppressWarnings("unchecked")
-    private @Nullable R convertResult(ButtonType buttonType) {
-        @Nullable Callback<ButtonType, @Nullable R> converter = getResultConverter();
-        return converter == null ? (R) buttonType : converter.call(buttonType);
     }
 
     /// Starts the pane entrance fade from its current opacity.
@@ -548,27 +413,19 @@ public class M3Dialog<R> {
         }
     }
 
-    /// Removes the overlay and commits the result after an accepted close.
+    /// Removes the overlay and completes the accepted close lifecycle.
     private void completeHide(@Nullable ButtonType buttonType) {
         presentationAnimation.stop();
         dialogPane.setModalActive(false);
         presenter.dispose();
         restorePaneOpacity();
         stopOwnerWindowObservation();
-        result.set(pendingResult);
-        pendingResult = null;
         pendingButtonType = null;
         paneExitFinished = false;
         scrimExitFinished = false;
         closing = false;
         showing.set(false);
-        try {
-            fireLifecycle(M3DialogEvent.HIDDEN, getOnHidden(), buttonType);
-        } finally {
-            if (nestedEventLoopRunning) {
-                Platform.exitNestedEventLoop(this, null);
-            }
-        }
+        fireLifecycle(M3DialogEvent.HIDDEN, getOnHidden(), buttonType);
     }
 
     /// Forces presentation cleanup after the owner window has disappeared.
@@ -582,7 +439,6 @@ public class M3Dialog<R> {
         boolean fireHiding = !closing;
         if (fireHiding) {
             closing = true;
-            pendingResult = getResult();
             pendingButtonType = null;
         }
 
@@ -691,6 +547,9 @@ public class M3Dialog<R> {
         onShowing.set(handler);
     }
 
+    /// Returns the property holding the handler invoked immediately before presentation.
+    ///
+    /// @return the showing-handler property
     public final ObjectProperty<@Nullable EventHandler<M3DialogEvent>> onShowingProperty() {
         return onShowing;
     }
@@ -709,6 +568,9 @@ public class M3Dialog<R> {
         onShown.set(handler);
     }
 
+    /// Returns the property holding the handler invoked after the overlay layer is installed.
+    ///
+    /// @return the shown-handler property
     public final ObjectProperty<@Nullable EventHandler<M3DialogEvent>> onShownProperty() {
         return onShown;
     }
@@ -727,6 +589,9 @@ public class M3Dialog<R> {
         onHiding.set(handler);
     }
 
+    /// Returns the property holding the handler invoked before an accepted close transition.
+    ///
+    /// @return the hiding-handler property
     public final ObjectProperty<@Nullable EventHandler<M3DialogEvent>> onHidingProperty() {
         return onHiding;
     }
@@ -745,6 +610,9 @@ public class M3Dialog<R> {
         onHidden.set(handler);
     }
 
+    /// Returns the property holding the handler invoked after the overlay layer is removed.
+    ///
+    /// @return the hidden-handler property
     public final ObjectProperty<@Nullable EventHandler<M3DialogEvent>> onHiddenProperty() {
         return onHidden;
     }
@@ -763,6 +631,9 @@ public class M3Dialog<R> {
         onCloseRequest.set(handler);
     }
 
+    /// Returns the property holding the handler invoked for cancellable close requests.
+    ///
+    /// @return the close-request-handler property
     public final ObjectProperty<@Nullable EventHandler<M3DialogEvent>> onCloseRequestProperty() {
         return onCloseRequest;
     }

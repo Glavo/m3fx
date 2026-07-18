@@ -22,13 +22,14 @@ import java.time.LocalDate;
 /// A Material Design 3 dialog for selecting an inclusive date range.
 ///
 /// The OK button is disabled until the embedded [picker][#getPicker()] contains both endpoints. Activating OK
-/// requests dialog closure and converts the current endpoints into an [M3DateRange]; Cancel or a programmatic close
-/// produces `null`. An incomplete start-only range remains visible but cannot be accepted. Close requests remain
-/// subject to the inherited [cancellable lifecycle][M3Dialog#onCloseRequestProperty()].
+/// requests dialog closure. The complete range remains available from the embedded picker after every dismissal;
+/// callers must inspect [M3DialogEvent#getButtonType()] from the hidden event before treating it as confirmed. An
+/// incomplete start-only range remains visible but cannot be accepted. Close requests remain subject to the inherited
+/// [cancellable lifecycle][M3Dialog#onCloseRequestProperty()].
 ///
 /// The picker is owned by this dialog and must not be reparented. Optional presets are exposed as a live ordered
 /// list and appear beside the calendar. Presentation occurs inside the owner scene and therefore requires
-/// [#setOwner(Node)] before [#show()] or [#showAndWait()].
+/// [#setOwner(Node)] before [#show()].
 ///
 /// ```java
 /// private void showRangeDialog(Node owner) {
@@ -39,13 +40,18 @@ import java.time.LocalDate;
 ///     dialog.getPicker().setMaxDate(today.plusMonths(6));
 ///     dialog.getPresets().addAll(M3DateRangePresets.common(
 ///             today, dialog.getPicker().getFirstDayOfWeek()));
-///     M3DateRange selectedRange = dialog.showAndWait();
+///     dialog.setOnHidden(event -> {
+///         if (event.getButtonType() == ButtonType.OK) {
+///             M3DateRange selectedRange = dialog.getPicker().getRange();
+///         }
+///     });
+///     dialog.show();
 /// }
 /// ```
 ///
 /// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview).
 @NotNullByDefault
-public final class M3DateRangePickerDialog extends M3Dialog<M3DateRange> {
+public final class M3DateRangePickerDialog extends M3Dialog {
     /// The default headline text for date range picker dialogs.
     private static final String DEFAULT_TITLE = "Select date range";
 
@@ -117,7 +123,7 @@ public final class M3DateRangePickerDialog extends M3Dialog<M3DateRange> {
     /// Creates a date range picker dialog initialized with the specified endpoints.
     ///
     /// @param startDate the first selected date, or `null` for no selected range
-    /// @param endDate the last selected date, or `null` for an incomplete range
+    /// @param endDate   the last selected date, or `null` for an incomplete range
     /// @throws IllegalArgumentException if `startDate` is after `endDate`
     public M3DateRangePickerDialog(@Nullable LocalDate startDate, @Nullable LocalDate endDate) {
         initialize();
@@ -127,7 +133,7 @@ public final class M3DateRangePickerDialog extends M3Dialog<M3DateRange> {
     /// Returns the date range picker owned and displayed by this dialog.
     ///
     /// @return the date range picker displayed by this dialog
-    public final M3DateRangePicker getPicker() {
+    public M3DateRangePicker getPicker() {
         return picker;
     }
 
@@ -138,11 +144,11 @@ public final class M3DateRangePickerDialog extends M3Dialog<M3DateRange> {
     /// bounds remains present but is disabled.
     ///
     /// @return the live, mutable date range preset list
-    public final ObservableList<M3DateRangePreset> getPresets() {
+    public ObservableList<M3DateRangePreset> getPresets() {
         return presets;
     }
 
-    /// Configures dialog content, buttons, result conversion, and button state.
+    /// Configures dialog content, buttons, picker state, and button state.
     private void initialize() {
         M3DialogPane pane = getDialogPane();
         pane.setHeaderText(DEFAULT_TITLE);
@@ -156,7 +162,6 @@ public final class M3DateRangePickerDialog extends M3Dialog<M3DateRange> {
         presetList.alignmentProperty().bind(M3NodeLayout.createLogicalStartTopAlignmentBinding(pane));
         M3PresetNavigation.installColumn(presetList, pane, () -> M3Accessible.requestAccessibleFocus(pane, picker));
         pane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
-        setResultConverter(buttonType -> buttonType == ButtonType.OK ? picker.getRange() : null);
         picker.startDateProperty().addListener((observable, oldValue, newValue) -> updateOkButtonState());
         picker.endDateProperty().addListener((observable, oldValue, newValue) -> updateOkButtonState());
         picker.minDateProperty().addListener(presetBoundsInvalidation);

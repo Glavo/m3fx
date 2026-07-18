@@ -7683,15 +7683,15 @@ final class M3FXDemoVisualMatrixTest {
     private static void verifyDialogPopupSurface(
             AtomicReference<@Nullable Scene> sceneReference
     ) throws InterruptedException {
-        AtomicReference<@Nullable M3Dialog<ButtonType>> dialogReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Dialog> dialogReference = new AtomicReference<>();
         AtomicReference<@Nullable M3OverlayPane> overlayReference = new AtomicReference<>();
         AtomicReference<@Nullable WritableImage> dialogSnapshotReference = new AtomicReference<>();
 
         runOnFxThreadWhenNodeSnapshotStable(() -> {
-            @Nullable M3Dialog<ButtonType> dialog = dialogReference.get();
+            @Nullable M3Dialog dialog = dialogReference.get();
             return dialog == null ? null : dialog.getDialogPane();
         }, dialogSnapshotReference, () -> {
-            @Nullable M3Dialog<ButtonType> dialog = dialogReference.get();
+            @Nullable M3Dialog dialog = dialogReference.get();
             if (dialog == null || !dialog.isShowing()) {
                 return false;
             }
@@ -7710,7 +7710,7 @@ final class M3FXDemoVisualMatrixTest {
                     "demo scene root"
             );
             overlayReference.set(overlay);
-            M3Dialog<ButtonType> dialog = new M3Dialog<>();
+            M3Dialog dialog = new M3Dialog();
             dialog.setOwner(overlay);
             dialog.getDialogPane().setHeaderText("Dialog title");
             dialog.getDialogPane().setContentText("The active theme is applied to this dialog pane.");
@@ -7722,7 +7722,7 @@ final class M3FXDemoVisualMatrixTest {
         }, () -> {
             Scene ownerScene = Objects.requireNonNull(sceneReference.get(), "scene");
             M3OverlayPane overlay = Objects.requireNonNull(overlayReference.get(), "overlay pane");
-            M3Dialog<ButtonType> dialog = Objects.requireNonNull(dialogReference.get(), "dialog");
+            M3Dialog dialog = Objects.requireNonNull(dialogReference.get(), "dialog");
             assertSame(overlay, ownerScene.getRoot(), "shown dialog must keep the demo scene root stable");
             assertTrue(dialog.isShowing());
             Parent dialogPane = dialog.getDialogPane();

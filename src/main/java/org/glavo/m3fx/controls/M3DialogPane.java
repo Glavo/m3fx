@@ -53,9 +53,9 @@ import java.util.function.Consumer;
 ///
 /// The [buttonTypes][#getButtonTypes()] list is live, ordered, and rejects `null` elements before mutation. Each
 /// entry creates one [M3Button], including repeated entries; [#lookupButton(ButtonType)] returns the first matching
-/// action. Unconsumed action events are reported to the containing [M3Dialog], which performs result conversion and
-/// closing. While the pane is presented modally, keyboard traversal remains within reachable content and action
-/// controls. The pane itself is not focus traversable.
+/// action. Unconsumed action events are reported to the containing [M3Dialog], which emits its cancellable close
+/// lifecycle with the initiating button type. While the pane is presented modally, keyboard traversal remains within
+/// reachable content and action controls. The pane itself is not focus traversable.
 ///
 /// Geometry properties are expressed in logical pixels and are styleable. Java assignments take precedence over
 /// user-agent defaults, and CSS cannot replace a bound styleable property.

@@ -15,7 +15,7 @@ import java.util.Objects;
 /// Describes a lifecycle transition or close request from an [M3Dialog].
 ///
 /// Only a [#CLOSE_REQUEST] event is cancellable by contract. Calling [#consume()] on that event keeps the dialog
-/// visible and leaves its result unchanged. Other lifecycle handlers may observe their event but consumption has no
+/// visible and prevents its exit transition. Other lifecycle handlers may observe their event but consumption has no
 /// effect on the already established transition.
 @NotNullByDefault
 public final class M3DialogEvent extends Event {
@@ -42,12 +42,15 @@ public final class M3DialogEvent extends Event {
     public static final EventType<M3DialogEvent> CLOSE_REQUEST =
             new EventType<>(ANY, "M3_DIALOG_CLOSE_REQUEST");
 
-    /// The button type that initiated this event, or `null` for programmatic lifecycle events.
+    /// The button type that initiated this event, or `null` when no action button initiated the lifecycle step.
+    ///
+    /// Action-button activation and Escape cancellation retain their button type through close request, hiding, and
+    /// hidden events. Showing events, [M3Dialog#close()], scrim dismissal, and forced owner-window cleanup use `null`.
     private final @Nullable ButtonType buttonType;
 
     /// Creates a lifecycle event for one dialog and its pane.
     M3DialogEvent(
-            M3Dialog<?> dialog,
+            M3Dialog dialog,
             M3DialogPane pane,
             EventType<M3DialogEvent> eventType,
             @Nullable ButtonType buttonType
@@ -63,13 +66,13 @@ public final class M3DialogEvent extends Event {
     /// Returns the dialog that emitted this event.
     ///
     /// @return the non-null dialog source
-    public M3Dialog<?> getDialog() {
-        return (M3Dialog<?>) getSource();
+    public M3Dialog getDialog() {
+        return (M3Dialog) getSource();
     }
 
     /// Returns the action button that initiated this event.
     ///
-    /// @return the initiating button type, or `null` for programmatic lifecycle events
+    /// @return the initiating button type, or `null` when the event was not initiated by an action button
     public @Nullable ButtonType getButtonType() {
         return buttonType;
     }

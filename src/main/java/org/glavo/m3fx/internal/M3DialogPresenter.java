@@ -46,9 +46,6 @@ public final class M3DialogPresenter {
     /// The owner whose local context currently controls this presentation.
     private @Nullable Node contextOwner;
 
-    /// The explicit dialog theme, or `null` to resolve the owner's effective theme.
-    private @Nullable M3Theme explicitTheme;
-
     /// The theme currently used to resolve scrim component tokens.
     private @Nullable M3Theme effectiveTheme;
 
@@ -90,12 +87,11 @@ public final class M3DialogPresenter {
 
     /// Installs this dialog layer in the overlay pane containing an attached owner node.
     ///
-    /// @param owner         the node whose hierarchy contains the target overlay pane
-    /// @param explicitTheme the explicit dialog theme, or `null` to inherit from the owner
+    /// @param owner the node whose hierarchy contains the target overlay pane
     /// @throws IllegalStateException if the owner hierarchy does not contain an [M3OverlayPane] or this presenter is
     ///                               already showing
     /// @throws NullPointerException  if `owner` is `null`
-    public void show(Node owner, @Nullable M3Theme explicitTheme) {
+    public void show(Node owner) {
         Objects.requireNonNull(owner, "owner");
         if (overlayHandle != null) {
             throw new IllegalStateException("dialog is already presented");
@@ -112,7 +108,7 @@ public final class M3DialogPresenter {
             layer.attach();
             shownHandle = currentHost.showModalOverlay(layer);
             overlayHandle = shownHandle;
-            startContextSynchronization(owner, explicitTheme);
+            startContextSynchronization(owner);
             layer.applyCss();
             layer.layout();
             scrim.setOpacity(0.0);
@@ -129,17 +125,6 @@ public final class M3DialogPresenter {
                 layer.detach();
             }
         }
-    }
-
-    /// Applies a changed explicit theme while this presenter remains attached.
-    ///
-    /// @param theme the explicit theme, or `null` to restore owner-theme inheritance
-    public void setExplicitTheme(@Nullable M3Theme theme) {
-        if (contextOwner == null) {
-            return;
-        }
-        explicitTheme = theme;
-        syncThemeContext();
     }
 
     /// Sets whether a primary click on the scrim requests dialog dismissal.
@@ -182,14 +167,6 @@ public final class M3DialogPresenter {
         layer.detach();
     }
 
-    /// Returns whether this presenter currently owns an installed dialog layer.
-    ///
-    /// @return `true` while the layer belongs to a scene host
-    public boolean isShowing() {
-        @Nullable M3OverlayPane.OverlayHandle currentHandle = overlayHandle;
-        return currentHandle != null && currentHandle.isShowing();
-    }
-
     /// Runs and clears the callback retained for the active scrim exit transition.
     private void completeScrimHide() {
         @Nullable Runnable action = pendingScrimHiddenAction;
@@ -200,10 +177,9 @@ public final class M3DialogPresenter {
     }
 
     /// Starts synchronization of owner-local context that cannot flow through the overlay sibling relationship.
-    private void startContextSynchronization(Node owner, @Nullable M3Theme theme) {
+    private void startContextSynchronization(Node owner) {
         stopContextSynchronization();
         contextOwner = owner;
-        explicitTheme = theme;
         owner.effectiveNodeOrientationProperty().addListener(ownerOrientationListener);
 
         M3MotionSettingsObserver observer = new M3MotionSettingsObserver(owner, this::syncContext, false);
@@ -224,7 +200,6 @@ public final class M3DialogPresenter {
     private void stopContextSynchronization() {
         @Nullable Node owner = contextOwner;
         contextOwner = null;
-        explicitTheme = null;
         effectiveTheme = null;
         scrim.setVisibleOpacity(FALLBACK_SCRIM_OPACITY);
         if (owner != null) {
@@ -267,13 +242,10 @@ public final class M3DialogPresenter {
             return;
         }
 
-        @Nullable M3Theme nextEffectiveTheme = explicitTheme;
-        @Nullable M3Theme nextDirectTheme = explicitTheme;
-        if (nextEffectiveTheme == null) {
-            @Nullable Parent themeRoot = M3ThemeResolver.findThemeRoot(owner);
-            nextEffectiveTheme = themeRoot == null ? null : M3ThemeMetadata.getTheme(themeRoot);
-            nextDirectTheme = themeRoot != null && !contains(themeRoot, layer) ? nextEffectiveTheme : null;
-        }
+        @Nullable Parent themeRoot = M3ThemeResolver.findThemeRoot(owner);
+        @Nullable M3Theme nextEffectiveTheme = themeRoot == null ? null : M3ThemeMetadata.getTheme(themeRoot);
+        @Nullable M3Theme nextDirectTheme =
+                themeRoot != null && !contains(themeRoot, layer) ? nextEffectiveTheme : null;
 
         boolean effectiveThemeChanged = !Objects.equals(effectiveTheme, nextEffectiveTheme);
         effectiveTheme = nextEffectiveTheme;

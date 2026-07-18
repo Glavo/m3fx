@@ -7051,24 +7051,23 @@ final class M3ControlContractMatrixTest {
         });
     }
 
-    /// Verifies that a dialog retains one Material pane and exposes its controller properties.
+    /// Verifies that a dialog retains one Material pane and exposes its presentation state.
     @Test
-    void dialogOwnsFixedMaterialPaneAndResultConfiguration() {
+    void dialogOwnsFixedMaterialPaneAndPresentationState() {
         FxTestUtils.runOnFxThread(() -> {
-            M3Dialog<ButtonType> dialog = new M3Dialog<>();
+            M3Dialog dialog = new M3Dialog();
             M3DialogPane pane = dialog.getDialogPane();
             pane.setHeaderText("Header");
             pane.setContentText("Body");
             pane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
-            dialog.setResultConverter(buttonType -> buttonType);
 
             assertSame(pane, dialog.getDialogPane());
             assertEquals("Header", pane.getHeaderText());
             assertEquals("Body", pane.getContentText());
             assertEquals(List.of(ButtonType.CANCEL, ButtonType.OK), pane.getButtonTypes());
-            assertSame(ButtonType.OK, dialog.getResultConverter().call(ButtonType.OK));
             assertFalse(dialog.isShowing());
             assertNull(dialog.getOwner());
+            assertTrue(dialog.isDismissOnScrimClick());
             assertTrue(pane.getStyleClass().contains(M3DialogPane.STYLE_CLASS));
             assertTrue(Objects.requireNonNull(pane.getUserAgentStylesheet(), "dialog stylesheet")
                     .endsWith("/styles/controls/dialog.css"));
@@ -35267,7 +35266,7 @@ final class M3ControlContractMatrixTest {
     void darkExpressiveDialogOverlayInheritsOwnerThemeContext() throws InterruptedException {
         AtomicReference<@Nullable Stage> ownerStageReference = new AtomicReference<>();
         AtomicReference<@Nullable M3OverlayPane> overlayPaneReference = new AtomicReference<>();
-        AtomicReference<@Nullable M3Dialog<ButtonType>> dialogReference = new AtomicReference<>();
+        AtomicReference<@Nullable M3Dialog> dialogReference = new AtomicReference<>();
 
         try {
             FxTestUtils.runOnFxThreadWhenStable(
@@ -35294,7 +35293,7 @@ final class M3ControlContractMatrixTest {
                         overlayPane.resize(360.0, 180.0);
                         overlayPane.layout();
 
-                        M3Dialog<ButtonType> dialog = new M3Dialog<>();
+                        M3Dialog dialog = new M3Dialog();
                         dialog.setOwner(owner);
                         dialog.getDialogPane().setHeaderText("Dark expressive dialog");
                         dialog.getDialogPane().setContentText("Dark overlay body");
@@ -35305,7 +35304,7 @@ final class M3ControlContractMatrixTest {
                         dialog.show();
                     },
                     () -> {
-                        M3Dialog<ButtonType> dialog = Objects.requireNonNull(dialogReference.get(), "dialog");
+                        M3Dialog dialog = Objects.requireNonNull(dialogReference.get(), "dialog");
                         M3OverlayPane overlayPane =
                                 Objects.requireNonNull(overlayPaneReference.get(), "overlayPane");
                         M3DialogPane pane = dialog.getDialogPane();
@@ -35355,7 +35354,7 @@ final class M3ControlContractMatrixTest {
             );
         } finally {
             FxTestUtils.runOnFxThread(() -> {
-                @Nullable M3Dialog<ButtonType> dialog = dialogReference.get();
+                @Nullable M3Dialog dialog = dialogReference.get();
                 if (dialog != null) {
                     dialog.close();
                 }
@@ -39303,8 +39302,8 @@ final class M3ControlContractMatrixTest {
     }
 
     /// Returns whether a dialog overlay pane has reached a renderable styled state.
-    private static boolean dialogOverlayReady(AtomicReference<@Nullable M3Dialog<ButtonType>> dialogReference) {
-        @Nullable M3Dialog<ButtonType> dialog = dialogReference.get();
+    private static boolean dialogOverlayReady(AtomicReference<@Nullable M3Dialog> dialogReference) {
+        @Nullable M3Dialog dialog = dialogReference.get();
         if (dialog == null || !dialog.isShowing()) {
             return false;
         }

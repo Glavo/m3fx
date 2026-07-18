@@ -26,24 +26,29 @@ import java.time.LocalTime;
 
 /// A Material Design 3 dialog preset for selecting one time.
 ///
-/// The dialog installs an [M3TimePicker] as its content, wires OK and cancel actions, and keeps the selected
-/// [LocalTime] as the dialog result when the user accepts the choice. Its Dial/Input mode switch shares the
-/// specification's bottom action row with the dialog actions.
+/// The dialog installs an [M3TimePicker] as its content, wires OK and cancel actions, and exposes the selected
+/// [LocalTime] through [#valueProperty()]. Its Dial/Input mode switch shares the specification's bottom action row
+/// with the dialog actions.
 ///
-/// The inherited [#show()] method is non-blocking and [#showAndWait()] waits through a JavaFX nested event loop.
-/// Cancel closes the dialog with a `null` result; OK is disabled until a value is selected and closes with the
-/// selected minute-precision time. The dialog is rendered inside its owner scene, so configure an owner node before
+/// The inherited [#show()] method is non-blocking. OK is disabled until a value is selected. Callers can inspect
+/// [M3DialogEvent#getButtonType()] from the hidden event to distinguish confirmation from dismissal; cancellation
+/// retains the current value. The dialog is rendered inside its owner scene, so configure an owner node before
 /// showing it:
 ///
 /// ```java
 /// M3TimePickerDialog dialog = new M3TimePickerDialog(LocalTime.of(9, 30));
 /// dialog.setOwner(ownerNode);
-/// LocalTime acceptedTime = dialog.showAndWait();
+/// dialog.setOnHidden(event -> {
+///     if (event.getButtonType() == ButtonType.OK) {
+///         LocalTime acceptedTime = dialog.getValue();
+///     }
+/// });
+/// dialog.show();
 /// ```
 ///
 /// See [Material Design time pickers](https://m3.material.io/components/time-pickers/overview).
 @NotNullByDefault
-public final class M3TimePickerDialog extends M3Dialog<LocalTime> {
+public final class M3TimePickerDialog extends M3Dialog {
     /// The default headline text for time picker dialogs.
     private static final String DEFAULT_TITLE = "Select time";
 
@@ -148,7 +153,7 @@ public final class M3TimePickerDialog extends M3Dialog<LocalTime> {
     /// Returns the time picker displayed by this dialog.
     ///
     /// @return the time picker displayed by this dialog
-    public final M3TimePicker getPicker() {
+    public M3TimePicker getPicker() {
         return picker;
     }
 
@@ -159,14 +164,14 @@ public final class M3TimePickerDialog extends M3Dialog<LocalTime> {
     /// picker's current bounds remain in the list but are disabled.
     ///
     /// @return the live mutable time preset list
-    public final ObservableList<M3TimePreset> getPresets() {
+    public ObservableList<M3TimePreset> getPresets() {
         return presets;
     }
 
     /// Returns the selected time, or `null` when no time is selected.
     ///
     /// @return the selected time, or `null` when no time is selected
-    public final @Nullable LocalTime getValue() {
+    public @Nullable LocalTime getValue() {
         return value.get();
     }
 
@@ -177,15 +182,18 @@ public final class M3TimePickerDialog extends M3Dialog<LocalTime> {
     ///
     /// @param value the selected time, or `null` to clear selection
     /// @throws IllegalArgumentException if `value` is outside the embedded picker's selectable range
-    public final void setValue(@Nullable LocalTime value) {
+    public void setValue(@Nullable LocalTime value) {
         this.value.set(value);
     }
 
-    public final ObjectProperty<@Nullable LocalTime> valueProperty() {
+    /// Returns the property synchronized with the selected minute-precision time of the embedded picker.
+    ///
+    /// @return the selected-time property
+    public ObjectProperty<@Nullable LocalTime> valueProperty() {
         return value;
     }
 
-    /// Configures dialog content, buttons, result conversion, and button state.
+    /// Configures dialog content, buttons, value synchronization, and button state.
     private void initialize() {
         picker.valueProperty().addListener((observable, oldValue, newValue) -> {
             if (!synchronizingValue) {
@@ -208,7 +216,6 @@ public final class M3TimePickerDialog extends M3Dialog<LocalTime> {
                 () -> M3Accessible.requestAccessibleFocus(pane, picker)
         );
         pane.getButtonTypes().setAll(MODE_SWITCH_BUTTON_TYPE, ButtonType.CANCEL, ButtonType.OK);
-        setResultConverter(buttonType -> buttonType == ButtonType.OK ? getValue() : null);
         value.addListener((observable, oldValue, newValue) -> updateOkButtonState());
         picker.minTimeProperty().addListener(presetBoundsInvalidation);
         picker.maxTimeProperty().addListener(presetBoundsInvalidation);

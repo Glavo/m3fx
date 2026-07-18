@@ -28,6 +28,9 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.YearMonth;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -37,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/// Tests Material picker dialog presets and their result conversion.
+/// Tests Material picker dialog presets, state, and action lifecycle contracts.
 @NotNullByDefault
 final class M3PickerDialogTest {
     /// Starts the JavaFX toolkit before tests create controls and scenes.
@@ -47,9 +50,9 @@ final class M3PickerDialogTest {
         Platform.setImplicitExit(false);
     }
 
-    /// Verifies single-date dialog content, OK state, and result conversion.
+    /// Verifies single-date dialog content and acceptance state.
     @Test
-    void datePickerDialogConvertsAcceptedDate() {
+    void datePickerDialogConfiguresContentAndAcceptance() {
         FxTestUtils.runOnFxThread(() -> {
             LocalDate value = LocalDate.of(2026, 5, 19);
             M3DatePickerDialog dialog = new M3DatePickerDialog();
@@ -66,8 +69,6 @@ final class M3PickerDialogTest {
             dialog.setValue(value);
 
             assertFalse(pane.lookupButton(ButtonType.OK).isDisabled());
-            assertEquals(value, dialog.getResultConverter().call(ButtonType.OK));
-            assertNull(dialog.getResultConverter().call(ButtonType.CANCEL));
 
             dialog.setValue(null);
 
@@ -242,12 +243,13 @@ final class M3PickerDialogTest {
                         .add(M3DateRangePresets.today(anchor)));
     }
 
-    /// Verifies range dialog content, OK state, and result conversion.
+    /// Verifies date-range dialog content and acceptance state.
     @Test
-    void dateRangePickerDialogConvertsCompleteRange() {
+    void dateRangePickerDialogConfiguresContentAndAcceptance() {
         FxTestUtils.runOnFxThread(() -> {
             LocalDate start = LocalDate.of(2026, 5, 19);
             LocalDate end = LocalDate.of(2026, 5, 23);
+            M3DateRange range = new M3DateRange(start, end);
             M3DateRangePickerDialog dialog = new M3DateRangePickerDialog();
             M3DialogPane pane = dialog.getDialogPane();
 
@@ -266,9 +268,7 @@ final class M3PickerDialogTest {
             dialog.getPicker().setEndDate(end);
 
             assertFalse(pane.lookupButton(ButtonType.OK).isDisabled());
-            assertEquals(new M3DateRange(start, end), dialog.getPicker().getRange());
-            assertEquals(new M3DateRange(start, end), dialog.getResultConverter().call(ButtonType.OK));
-            assertNull(dialog.getResultConverter().call(ButtonType.CANCEL));
+            assertEquals(range, dialog.getPicker().getRange());
         });
     }
 
@@ -543,9 +543,9 @@ final class M3PickerDialogTest {
         });
     }
 
-    /// Verifies time dialog content, OK state, and result conversion.
+    /// Verifies time dialog content and acceptance state.
     @Test
-    void timePickerDialogConvertsAcceptedTime() {
+    void timePickerDialogConfiguresContentAndAcceptance() {
         FxTestUtils.runOnFxThread(() -> {
             LocalTime value = LocalTime.of(10, 30);
             M3TimePickerDialog dialog = new M3TimePickerDialog();
@@ -576,12 +576,94 @@ final class M3PickerDialogTest {
             dialog.setValue(value);
 
             assertFalse(pane.lookupButton(ButtonType.OK).isDisabled());
-            assertEquals(value, dialog.getResultConverter().call(ButtonType.OK));
-            assertNull(dialog.getResultConverter().call(ButtonType.CANCEL));
 
             dialog.setValue(null);
 
             assertTrue(pane.lookupButton(ButtonType.OK).isDisabled());
+        });
+    }
+
+    /// Verifies that picker dialogs distinguish confirmation from cancellation and programmatic dismissal.
+    @Test
+    void pickerDialogHiddenEventsExposeActionsAndCurrentState() {
+        FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
+            LocalDate date = LocalDate.of(2026, 5, 19);
+            M3DateRange range = new M3DateRange(date, date.plusDays(4));
+            LocalTime time = LocalTime.of(10, 30);
+            Stage stage = new Stage();
+            Pane owner = new Pane();
+            M3OverlayPane overlay = new M3OverlayPane();
+            overlay.setContent(owner);
+            Scene scene = new Scene(overlay, 720.0, 520.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            stage.setScene(scene);
+            stage.show();
+
+            M3DatePickerDialog dateDialog = new M3DatePickerDialog(date);
+            M3DateRangePickerDialog rangeDialog = new M3DateRangePickerDialog(range);
+            M3TimePickerDialog timeDialog = new M3TimePickerDialog(time);
+            dateDialog.setOwner(owner);
+            rangeDialog.setOwner(owner);
+            timeDialog.setOwner(owner);
+
+            List<M3DialogEvent> hiddenEvents = new ArrayList<>();
+            AtomicReference<@Nullable LocalDate> confirmedDate = new AtomicReference<>();
+            AtomicReference<@Nullable M3DateRange> confirmedRange = new AtomicReference<>();
+            AtomicReference<@Nullable LocalTime> confirmedTime = new AtomicReference<>();
+            dateDialog.setOnHidden(event -> {
+                hiddenEvents.add(event);
+                if (event.getButtonType() == ButtonType.OK) {
+                    confirmedDate.set(dateDialog.getValue());
+                }
+            });
+            rangeDialog.setOnHidden(event -> {
+                hiddenEvents.add(event);
+                if (event.getButtonType() == ButtonType.OK) {
+                    confirmedRange.set(rangeDialog.getPicker().getRange());
+                }
+            });
+            timeDialog.setOnHidden(event -> {
+                hiddenEvents.add(event);
+                if (event.getButtonType() == ButtonType.OK) {
+                    confirmedTime.set(timeDialog.getValue());
+                }
+            });
+
+            try {
+                dateDialog.show();
+                assertInstanceOf(M3Button.class, dateDialog.getDialogPane().lookupButton(ButtonType.OK)).fire();
+
+                assertEquals(1, hiddenEvents.size());
+                assertSame(ButtonType.OK, hiddenEvents.get(0).getButtonType());
+                assertEquals(date, confirmedDate.get());
+                assertEquals(date, dateDialog.getValue());
+
+                hiddenEvents.clear();
+                rangeDialog.show();
+                assertInstanceOf(
+                        M3Button.class,
+                        rangeDialog.getDialogPane().lookupButton(ButtonType.CANCEL)
+                ).fire();
+
+                assertEquals(1, hiddenEvents.size());
+                assertSame(ButtonType.CANCEL, hiddenEvents.get(0).getButtonType());
+                assertNull(confirmedRange.get());
+                assertEquals(range, rangeDialog.getPicker().getRange());
+
+                hiddenEvents.clear();
+                timeDialog.show();
+                timeDialog.close();
+
+                assertEquals(1, hiddenEvents.size());
+                assertNull(hiddenEvents.get(0).getButtonType());
+                assertNull(confirmedTime.get());
+                assertEquals(time, timeDialog.getValue());
+            } finally {
+                dateDialog.close();
+                rangeDialog.close();
+                timeDialog.close();
+                stage.close();
+            }
         });
     }
 

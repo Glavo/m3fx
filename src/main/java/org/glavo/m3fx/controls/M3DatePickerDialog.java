@@ -24,14 +24,15 @@ import java.time.LocalDate;
 /// A Material Design 3 dialog for selecting one date.
 ///
 /// The embedded [picker][#getPicker()] and the dialog [value][#valueProperty()] stay synchronized. The OK button is
-/// disabled until a date is selected. Activating OK requests dialog closure and converts the current date into the
-/// result; Cancel or a programmatic close produces `null`. Close requests remain subject to the inherited
-/// [cancellable lifecycle][M3Dialog#onCloseRequestProperty()].
+/// disabled until a date is selected. Activating OK requests dialog closure, and the current date remains available
+/// through [#valueProperty()]. Cancel and other dismissal paths retain that state, so callers must inspect
+/// [M3DialogEvent#getButtonType()] from the hidden event before treating it as confirmed. Close requests remain
+/// subject to the inherited [cancellable lifecycle][M3Dialog#onCloseRequestProperty()].
 ///
 /// The picker is owned by this dialog and must not be reparented. Optional presets are exposed as a live ordered
 /// list and appear beside the calendar. Bounds, locale, and adjacent-month display are configured through the
 /// embedded picker. Presentation occurs inside the owner scene and therefore requires [#setOwner(Node)] before
-/// [#show()] or [#showAndWait()].
+/// [#show()].
 ///
 /// ```java
 /// private void showDateDialog(Node owner) {
@@ -41,13 +42,18 @@ import java.time.LocalDate;
 ///     dialog.getPicker().setMinDate(today);
 ///     dialog.getPicker().setMaxDate(today.plusMonths(3));
 ///     dialog.getPresets().addAll(M3DatePresets.common(today));
-///     LocalDate selectedDate = dialog.showAndWait();
+///     dialog.setOnHidden(event -> {
+///         if (event.getButtonType() == ButtonType.OK) {
+///             LocalDate selectedDate = dialog.getValue();
+///         }
+///     });
+///     dialog.show();
 /// }
 /// ```
 ///
 /// See [Material Design date pickers](https://m3.material.io/components/date-pickers/overview).
 @NotNullByDefault
-public final class M3DatePickerDialog extends M3Dialog<LocalDate> {
+public final class M3DatePickerDialog extends M3Dialog {
     /// The default headline text for date picker dialogs.
     private static final String DEFAULT_TITLE = "Select date";
 
@@ -149,7 +155,7 @@ public final class M3DatePickerDialog extends M3Dialog<LocalDate> {
     /// Returns the date picker owned and displayed by this dialog.
     ///
     /// @return the date picker displayed by this dialog
-    public final M3DatePicker getPicker() {
+    public M3DatePicker getPicker() {
         return picker;
     }
 
@@ -160,14 +166,14 @@ public final class M3DatePickerDialog extends M3Dialog<LocalDate> {
     /// present but is disabled.
     ///
     /// @return the live, mutable date preset list
-    public final ObservableList<M3DatePreset> getPresets() {
+    public ObservableList<M3DatePreset> getPresets() {
         return presets;
     }
 
     /// Returns the selected date, or `null` when no date is selected.
     ///
     /// @return the selected date, or `null` when no date is selected
-    public final @Nullable LocalDate getValue() {
+    public @Nullable LocalDate getValue() {
         return value.get();
     }
 
@@ -175,15 +181,18 @@ public final class M3DatePickerDialog extends M3Dialog<LocalDate> {
     ///
     /// @param value the selected date, or `null` to clear selection
     /// @throws IllegalArgumentException if `value` is outside the picker's current inclusive bounds
-    public final void setValue(@Nullable LocalDate value) {
+    public void setValue(@Nullable LocalDate value) {
         this.value.set(value);
     }
 
-    public final ObjectProperty<@Nullable LocalDate> valueProperty() {
+    /// Returns the property synchronized with the selected date of the embedded picker.
+    ///
+    /// @return the selected-date property
+    public ObjectProperty<@Nullable LocalDate> valueProperty() {
         return value;
     }
 
-    /// Configures dialog content, buttons, result conversion, and button state.
+    /// Configures dialog content, buttons, value synchronization, and button state.
     private void initialize() {
         picker.valueProperty().addListener((observable, oldValue, newValue) -> {
             if (!synchronizingValue) {
@@ -203,7 +212,6 @@ public final class M3DatePickerDialog extends M3Dialog<LocalDate> {
         presetList.alignmentProperty().bind(M3NodeLayout.createLogicalStartTopAlignmentBinding(pane));
         M3PresetNavigation.installColumn(presetList, pane, () -> M3Accessible.requestAccessibleFocus(pane, picker));
         pane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
-        setResultConverter(buttonType -> buttonType == ButtonType.OK ? getValue() : null);
         value.addListener((observable, oldValue, newValue) -> updateOkButtonState());
         picker.minDateProperty().addListener(presetBoundsInvalidation);
         picker.maxDateProperty().addListener(presetBoundsInvalidation);
