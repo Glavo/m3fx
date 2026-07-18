@@ -8,9 +8,6 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.ObservableList;
 import javafx.css.PseudoClass;
-import javafx.scene.Node;
-import javafx.scene.control.ButtonBar;
-import javafx.scene.control.ButtonType;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.internal.M3Accessible;
@@ -31,13 +28,13 @@ import java.time.LocalTime;
 /// with the dialog actions.
 ///
 /// [M3OverlayPane#showDialog(M3Dialog)] and [M3DialogWindow#showDialog(M3Dialog)] present the dialog without
-/// blocking. OK is disabled until a value is selected. Callers can inspect [M3DialogEvent#getButtonType()] from the
+/// blocking. OK is disabled until a value is selected. Callers can inspect [M3DialogEvent#getAction()] from the
 /// hidden event to distinguish confirmation from dismissal; cancellation retains the current value.
 ///
 /// ```java
 /// M3TimePickerDialog dialog = new M3TimePickerDialog(LocalTime.of(9, 30));
 /// dialog.setOnHidden(event -> {
-///     if (event.getButtonType() == ButtonType.OK) {
+///     if (event.getAction() == dialog.getDialogPane().getDefaultAction()) {
 ///         LocalTime acceptedTime = dialog.getValue();
 ///     }
 /// });
@@ -63,18 +60,14 @@ public final class M3TimePickerDialog extends M3Dialog {
     private static final PseudoClass DIALOG_EMBEDDED_PSEUDO_CLASS =
             PseudoClass.getPseudoClass("dialog-embedded");
 
-    /// The private button type used to place the mode switch at the logical start of the action row.
-    private static final ButtonType MODE_SWITCH_BUTTON_TYPE =
-            new ButtonType("", ButtonBar.ButtonData.LEFT);
-
-    /// The Material action order: mode switch, flexible gap, cancel, and confirmation.
-    private static final String BUTTON_ORDER = ButtonBar.ButtonData.LEFT.getTypeCode()
-            + ButtonBar.ButtonData.BIG_GAP.getTypeCode()
-            + ButtonBar.ButtonData.CANCEL_CLOSE.getTypeCode()
-            + ButtonBar.ButtonData.OK_DONE.getTypeCode();
-
     /// The time picker displayed as dialog content.
     private final M3TimePicker picker;
+
+    /// The retained cancel action shown at the logical end of the action row.
+    private final M3Button cancelAction = new M3Button("Cancel", M3ButtonVariant.TEXT);
+
+    /// The retained confirmation action shown at the logical end of the action row.
+    private final M3Button confirmAction = new M3Button("OK", M3ButtonVariant.TEXT);
 
     /// The selected time synchronized with the embedded picker.
     ///
@@ -213,7 +206,9 @@ public final class M3TimePickerDialog extends M3Dialog {
                 pane,
                 () -> M3Accessible.requestAccessibleFocus(pane, picker)
         );
-        pane.getButtonTypes().setAll(MODE_SWITCH_BUTTON_TYPE, ButtonType.CANCEL, ButtonType.OK);
+        cancelAction.setCancelButton(true);
+        confirmAction.setDefaultButton(true);
+        pane.getActions().setAll(cancelAction, confirmAction);
         value.addListener((observable, oldValue, newValue) -> updateOkButtonState());
         picker.minTimeProperty().addListener(presetBoundsInvalidation);
         picker.maxTimeProperty().addListener(presetBoundsInvalidation);
@@ -244,10 +239,7 @@ public final class M3TimePickerDialog extends M3Dialog {
 
     /// Enables the OK button only when a selected time exists.
     private void updateOkButtonState() {
-        @Nullable Node okButton = getDialogPane().lookupButton(ButtonType.OK);
-        if (okButton != null) {
-            okButton.setDisable(getValue() == null);
-        }
+        confirmAction.setDisable(getValue() == null);
     }
 
     /// Dialog pane that owns the specification's bottom-row mode switch.
@@ -262,7 +254,7 @@ public final class M3TimePickerDialog extends M3Dialog {
                 M3InternalIcon.ColorRole.ON_SURFACE_VARIANT
         );
 
-        /// The mode switch placed by ButtonBar at logical start.
+        /// The mode switch placed at the logical start of the dialog action row.
         private final M3IconButton modeButton = new M3IconButton(modeIcon);
 
         /// Creates the specialized pane and its retained mode switch.
@@ -274,28 +266,9 @@ public final class M3TimePickerDialog extends M3Dialog {
                 picker.setInputMode(!picker.isInputMode());
                 event.consume();
             });
+            setLeadingAction(modeButton);
             picker.inputModeProperty().addListener(observable -> updateModeButton());
             updateModeButton();
-        }
-
-
-        /// Creates the action row with a flexible gap between the mode switch and text actions.
-        @Override
-        protected ButtonBar createButtonBar() {
-            ButtonBar buttonBar = super.createButtonBar();
-            buttonBar.setButtonOrder(BUTTON_ORDER);
-            return buttonBar;
-        }
-
-        /// Creates the retained mode switch for its private button type.
-        @Override
-        protected Node createButton(ButtonType buttonType) {
-            if (buttonType == MODE_SWITCH_BUTTON_TYPE) {
-                ButtonBar.setButtonData(modeButton, ButtonBar.ButtonData.LEFT);
-                ButtonBar.setButtonUniformSize(modeButton, false);
-                return modeButton;
-            }
-            return super.createButton(buttonType);
         }
 
         /// Updates the retained mode icon and accessibility label.

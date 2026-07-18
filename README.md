@@ -110,9 +110,25 @@ overlay pane and retain the returned handle when programmatic dismissal or prese
 
 ```java
 M3Dialog dialog = new M3Dialog();
+M3Button cancel = new M3Button("Cancel", M3ButtonVariant.TEXT);
+cancel.setCancelButton(true);
+M3Button save = new M3Button("Save", M3ButtonVariant.TEXT);
+save.setDefaultButton(true);
+dialog.getDialogPane().getActions().addAll(cancel, save);
+dialog.setOnHidden(event -> {
+    if (event.getAction() == save) {
+        System.out.println("Settings saved");
+    }
+});
+
 M3DialogHandle handle = root.showDialog(dialog);
 handle.requestClose();
 ```
+
+Dialog actions are retained `M3Button` instances rather than immutable button descriptors. Their observable text,
+graphic, disable state, and action properties can therefore follow runtime localization and application state. Use
+object identity with `M3DialogEvent.getAction()` to distinguish the action that closed a dialog; the value is `null`
+when no action initiated the close.
 
 When no application scene or overlay host exists, `M3DialogWindow` presents the same dialog in a dedicated native
 Stage. The window host owns native owner, modality, style, title, and theme configuration while `M3Dialog` remains a

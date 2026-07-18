@@ -19,7 +19,6 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.SnapshotParameters;
 import javafx.scene.control.ButtonBase;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.IndexedCell;
 import javafx.scene.control.Label;
 import javafx.scene.control.Labeled;
@@ -7714,7 +7713,11 @@ final class M3FXDemoVisualMatrixTest {
             M3Dialog dialog = new M3Dialog();
             dialog.getDialogPane().setHeaderText("Dialog title");
             dialog.getDialogPane().setContentText("The active theme is applied to this dialog pane.");
-            dialog.getDialogPane().getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
+            M3Button cancel = new M3Button("Cancel", M3ButtonVariant.TEXT);
+            cancel.setCancelButton(true);
+            M3Button confirm = new M3Button("OK", M3ButtonVariant.TEXT);
+            confirm.setDefaultButton(true);
+            dialog.getDialogPane().getActions().setAll(cancel, confirm);
             dialog.getDialogPane().setPrefWidth(420.0);
             dialogHandleReference.set(overlay.showDialog(dialog));
             assertSame(overlay, scene.getRoot(), "showing a dialog must not replace the demo scene root");
@@ -7879,13 +7882,8 @@ final class M3FXDemoVisualMatrixTest {
                     snapshotName + ".png"
             ));
             assertSnapshotHasVisibleContent(dialogImage, snapshotName);
-            ButtonType cancelType = dialogPane.getButtonTypes().stream()
-                    .filter(type -> type.getButtonData().isCancelButton())
-                    .findFirst()
-                    .orElseThrow(() -> new AssertionError(snapshotName + " has no cancel action"));
-            M3Button cancelButton = assertInstanceOf(
-                    M3Button.class,
-                    dialogPane.lookupButton(cancelType),
+            M3Button cancelButton = Objects.requireNonNull(
+                    dialogPane.getCancelAction(),
                     snapshotName + " cancel action"
             );
             cancelButton.fire();
@@ -18617,24 +18615,20 @@ final class M3FXDemoVisualMatrixTest {
         assertNotNull(pane.getBackground(), "dialog pane should resolve a Material background");
         assertFalse(pane.getBackground().getFills().isEmpty(),
                 "dialog pane should resolve a visible Material background fill");
-        assertFalse(pane.getButtonTypes().isEmpty(), "demo dialog panes should expose action buttons");
+        assertFalse(pane.getActions().isEmpty(), "demo dialog panes should expose action buttons");
 
         Bounds paneBounds = pane.localToScene(pane.getBoundsInLocal());
-        Node buttonBar = requireVisibleStyledDescendant(
+        Node actionRow = requireVisibleStyledDescendant(
                 pane,
-                M3DialogPane.BUTTON_BAR_STYLE_CLASS,
-                "dialog button bar"
+                M3DialogPane.ACTIONS_STYLE_CLASS,
+                "dialog action row"
         );
-        Bounds buttonBarBounds = buttonBar.localToScene(buttonBar.getBoundsInLocal());
-        assertTrue(containsBoundsWithTolerance(paneBounds, buttonBarBounds, CONTROL_EDGE_TOLERANCE),
-                () -> "dialog button bar should stay inside the pane: pane="
-                        + paneBounds + ", buttonBar=" + buttonBarBounds);
+        Bounds actionRowBounds = actionRow.localToScene(actionRow.getBoundsInLocal());
+        assertTrue(containsBoundsWithTolerance(paneBounds, actionRowBounds, CONTROL_EDGE_TOLERANCE),
+                () -> "dialog action row should stay inside the pane: pane="
+                        + paneBounds + ", actionRow=" + actionRowBounds);
 
-        for (ButtonType buttonType : pane.getButtonTypes()) {
-            Node action = Objects.requireNonNull(pane.lookupButton(buttonType), "dialog action button");
-            M3Button materialAction = assertInstanceOf(M3Button.class, action);
-            assertTrue(materialAction.getStyleClass().contains(M3DialogPane.BUTTON_STYLE_CLASS),
-                    "dialog action should use the Material dialog button style class");
+        for (M3Button materialAction : pane.getActions()) {
             Bounds actionBounds = materialAction.localToScene(materialAction.getBoundsInLocal());
             assertTrue(containsBoundsWithTolerance(paneBounds, actionBounds, CONTROL_EDGE_TOLERANCE),
                     () -> "dialog action button should stay inside the pane: pane="
@@ -19401,9 +19395,10 @@ final class M3FXDemoVisualMatrixTest {
     /// Returns the first visible dialog pane action with the requested text.
     private static @Nullable M3Button firstVisibleDialogActionWithText(Node root, String text) {
         for (M3Button button : visibleNodesOfType(root, M3Button.class)) {
+            @Nullable M3DialogPane pane = nearestAncestorOfType(button, M3DialogPane.class);
             if (text.equals(button.getText())
-                    && button.getStyleClass().contains(M3DialogPane.BUTTON_STYLE_CLASS)
-                    && nearestAncestorOfType(button, M3DialogPane.class) != null
+                    && pane != null
+                    && pane.getActions().contains(button)
                     && button.isVisible()
                     && hasRenderableBounds(button)) {
                 return button;

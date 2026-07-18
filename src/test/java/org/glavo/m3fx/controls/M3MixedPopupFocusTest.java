@@ -9,7 +9,6 @@ import javafx.scene.AccessibleAction;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.control.ButtonType;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Pane;
@@ -251,7 +250,9 @@ final class M3MixedPopupFocusTest {
             M3MenuButton menuButton = new M3MenuButton("Open menu", firstItem, secondItem);
             M3DialogPane dialogPane = new M3DialogPane();
             dialogPane.setContent(menuButton);
-            dialogPane.getButtonTypes().setAll(ButtonType.OK);
+            M3Button okAction = new M3Button("OK", M3ButtonVariant.TEXT);
+            okAction.setDefaultButton(true);
+            dialogPane.getActions().setAll(okAction);
             Stage stage = new Stage();
 
             try {

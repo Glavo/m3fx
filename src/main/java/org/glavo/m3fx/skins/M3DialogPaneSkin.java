@@ -6,12 +6,15 @@ package org.glavo.m3fx.skins;
 import javafx.beans.InvalidationListener;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.control.ButtonBar;
 import javafx.scene.control.Label;
 import javafx.scene.control.SkinBase;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.controls.M3DialogPane;
+import org.glavo.m3fx.internal.M3NodeLayout;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,20 +44,32 @@ public final class M3DialogPaneSkin extends SkinBase<M3DialogPane> {
     /// The fallback body label bound to the pane's content-text property.
     private final Label contentLabel = new Label();
 
-    /// The action bar created and configured by the dialog pane.
-    private final ButtonBar actionBar;
+    /// The horizontal row containing the retained dialog actions.
+    private final HBox actionBar = new HBox();
+
+    /// The optional package-owned action placed at the logical start of the action row.
+    private final @Nullable Node leadingAction;
+
+    /// The flexible space separating a leading action from trailing dialog actions.
+    private final Region actionSpacer = new Region();
 
     /// Rebuilds visible sections after a slot or text-presence change.
     private final InvalidationListener structureInvalidation = observable -> rebuildSections();
 
-    /// Creates a skin around an action bar owned by the supplied pane.
+    /// Synchronizes retained action nodes after the action list changes.
+    private final InvalidationListener actionsInvalidation = observable -> {
+        rebuildActions();
+        rebuildSections();
+    };
+
+    /// Creates a skin around the retained actions owned by the supplied pane.
     ///
-    /// @param control the dialog pane being skinned
-    /// @param actionBar the pane-created action bar
-    /// @throws NullPointerException if `control` or `actionBar` is `null`
-    public M3DialogPaneSkin(M3DialogPane control, ButtonBar actionBar) {
+    /// @param control       the dialog pane being skinned
+    /// @param leadingAction the optional package-owned logical-start action
+    /// @throws NullPointerException if `control` is `null`
+    public M3DialogPaneSkin(M3DialogPane control, @Nullable Node leadingAction) {
         super(Objects.requireNonNull(control, "control"));
-        this.actionBar = Objects.requireNonNull(actionBar, "actionBar");
+        this.leadingAction = leadingAction;
 
         layout.getStyleClass().add("m3-dialog-layout");
         layout.setFillWidth(true);
@@ -67,6 +82,10 @@ public final class M3DialogPaneSkin extends SkinBase<M3DialogPane> {
         contentContainer.setAlignment(Pos.TOP_LEFT);
         contentLabel.getStyleClass().add("content-label");
         contentLabel.setWrapText(true);
+        actionBar.getStyleClass().add(M3DialogPane.ACTIONS_STYLE_CLASS);
+        actionBar.alignmentProperty().bind(M3NodeLayout.createLogicalEndCenterAlignmentBinding(control));
+        actionBar.spacingProperty().bind(control.actionSpacingProperty());
+        HBox.setHgrow(actionSpacer, Priority.ALWAYS);
 
         headerLabel.textProperty().bind(control.headerTextProperty());
         contentLabel.textProperty().bind(control.contentTextProperty());
@@ -74,9 +93,10 @@ public final class M3DialogPaneSkin extends SkinBase<M3DialogPane> {
         control.headerTextProperty().addListener(structureInvalidation);
         control.contentProperty().addListener(structureInvalidation);
         control.contentTextProperty().addListener(structureInvalidation);
-        control.getButtonTypes().addListener(structureInvalidation);
+        control.getActions().addListener(actionsInvalidation);
 
         getChildren().add(layout);
+        rebuildActions();
         rebuildSections();
     }
 
@@ -88,11 +108,23 @@ public final class M3DialogPaneSkin extends SkinBase<M3DialogPane> {
         control.headerTextProperty().removeListener(structureInvalidation);
         control.contentProperty().removeListener(structureInvalidation);
         control.contentTextProperty().removeListener(structureInvalidation);
-        control.getButtonTypes().removeListener(structureInvalidation);
+        control.getActions().removeListener(actionsInvalidation);
         headerLabel.textProperty().unbind();
         contentLabel.textProperty().unbind();
+        actionBar.alignmentProperty().unbind();
+        actionBar.spacingProperty().unbind();
+        actionBar.getChildren().clear();
         layout.getChildren().clear();
         super.dispose();
+    }
+
+    /// Rebuilds the action row from the stable leading slot and current action list.
+    private void rebuildActions() {
+        actionBar.getChildren().clear();
+        if (leadingAction != null) {
+            actionBar.getChildren().addAll(leadingAction, actionSpacer);
+        }
+        actionBar.getChildren().addAll(getSkinnable().getActions());
     }
 
     /// Rebuilds the small fixed set of dialog sections from current slot values.
@@ -123,7 +155,7 @@ public final class M3DialogPaneSkin extends SkinBase<M3DialogPane> {
             layout.getChildren().add(contentContainer);
         }
 
-        if (!control.getButtonTypes().isEmpty()) {
+        if (leadingAction != null || !control.getActions().isEmpty()) {
             layout.getChildren().add(actionBar);
         }
         control.requestLayout();

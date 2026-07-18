@@ -13,8 +13,6 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.ButtonBar;
-import javafx.scene.control.ButtonType;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -113,8 +111,10 @@ final class M3DialogPresentationTest {
         dialog.addEventFilter(M3DialogEvent.CLOSE_REQUEST, Event::consume);
         dialog.addEventHandler(M3DialogEvent.CLOSE_REQUEST, event -> order.add("close-handler"));
         dialog.setOnCloseRequest(event -> order.add("close-property"));
+        M3Button cancelAction = new M3Button("Cancel", M3ButtonVariant.TEXT);
+        cancelAction.setCancelButton(true);
         M3DialogEvent closeEvent =
-                new M3DialogEvent(dialog, handle, M3DialogEvent.CLOSE_REQUEST, ButtonType.CANCEL);
+                new M3DialogEvent(dialog, handle, M3DialogEvent.CLOSE_REQUEST, cancelAction);
 
         Event.fireEvent(dialog, closeEvent);
 
@@ -205,7 +205,11 @@ final class M3DialogPresentationTest {
             M3DialogPane pane = new M3DialogPane();
             pane.setHeaderText("Dialog title");
             pane.setContentText("A short supporting sentence should occupy its natural number of lines.");
-            pane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
+            M3Button cancelAction = new M3Button("Cancel", M3ButtonVariant.TEXT);
+            cancelAction.setCancelButton(true);
+            M3Button okAction = new M3Button("OK", M3ButtonVariant.TEXT);
+            okAction.setDefaultButton(true);
+            pane.getActions().setAll(cancelAction, okAction);
             StackPane contentRoot = new StackPane(pane);
             M3OverlayPane overlayRoot = createOverlayRoot(contentRoot);
             new Scene(overlayRoot, 520.0, 340.0);
@@ -239,7 +243,7 @@ final class M3DialogPresentationTest {
             AtomicInteger showingCalls = new AtomicInteger();
             dialog.setOnShowing(event -> {
                 showingCalls.incrementAndGet();
-                assertNull(event.getButtonType());
+                assertNull(event.getAction());
                 assertThrows(IllegalStateException.class, () -> overlayRoot.showDialog(dialog));
                 assertThrows(IllegalStateException.class, () -> alternateOverlay.showDialog(dialog));
             });
@@ -269,9 +273,9 @@ final class M3DialogPresentationTest {
         });
     }
 
-    /// Verifies action cancellation and the initiating button type throughout the cancellable close lifecycle.
+    /// Verifies action cancellation and the initiating button throughout the cancellable close lifecycle.
     @Test
-    void actionButtonsDriveCancellableLifecycleWithButtonType() {
+    void actionButtonsDriveCancellableLifecycle() {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
             Stage stage = new Stage();
             StackPane ownerContent = new StackPane(new M3Button("Owner"));
@@ -281,57 +285,55 @@ final class M3DialogPresentationTest {
             stage.setScene(scene);
             stage.show();
 
-            ButtonType cancelType = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
-            ButtonType acceptType = new ButtonType("Accept", ButtonBar.ButtonData.OK_DONE);
+            M3Button cancelAction = new M3Button("Cancel", M3ButtonVariant.TEXT);
+            cancelAction.setCancelButton(true);
+            M3Button acceptAction = new M3Button("Accept", M3ButtonVariant.TEXT);
+            acceptAction.setDefaultButton(true);
             M3Dialog dialog = new M3Dialog();
             dialog.getDialogPane().setHeaderText("Confirm action");
-            dialog.getDialogPane().getButtonTypes().setAll(cancelType, acceptType);
+            dialog.getDialogPane().getActions().setAll(cancelAction, acceptAction);
             List<String> lifecycle = new ArrayList<>();
             AtomicInteger closeRequests = new AtomicInteger();
             dialog.setOnShowing(event -> {
-                assertNull(event.getButtonType());
+                assertNull(event.getAction());
                 lifecycle.add("showing");
             });
             dialog.setOnShown(event -> {
-                assertNull(event.getButtonType());
+                assertNull(event.getAction());
                 lifecycle.add("shown");
             });
             dialog.setOnCloseRequest(event -> {
-                assertSame(acceptType, event.getButtonType());
+                assertSame(acceptAction, event.getAction());
                 lifecycle.add("close-request");
                 if (closeRequests.getAndIncrement() == 0) {
                     event.consume();
                 }
             });
             dialog.setOnHiding(event -> {
-                assertSame(acceptType, event.getButtonType());
+                assertSame(acceptAction, event.getAction());
                 lifecycle.add("hiding");
             });
             dialog.setOnHidden(event -> {
-                assertSame(acceptType, event.getButtonType());
+                assertSame(acceptAction, event.getAction());
                 lifecycle.add("hidden");
             });
 
             M3DialogHandle handle = overlayRoot.showDialog(dialog);
             try {
-                M3Button accept = (M3Button) Objects.requireNonNull(
-                        dialog.getDialogPane().lookupButton(acceptType),
-                        "accept button"
-                );
                 EventHandler<ActionEvent> consumeAction = ActionEvent::consume;
-                accept.addEventFilter(ActionEvent.ACTION, consumeAction);
-                accept.fire();
+                acceptAction.addEventFilter(ActionEvent.ACTION, consumeAction);
+                acceptAction.fire();
 
                 assertTrue(handle.isShowing());
                 assertEquals(List.of("showing", "shown"), lifecycle);
 
-                accept.removeEventFilter(ActionEvent.ACTION, consumeAction);
-                accept.fire();
+                acceptAction.removeEventFilter(ActionEvent.ACTION, consumeAction);
+                acceptAction.fire();
 
                 assertTrue(handle.isShowing());
                 assertEquals(List.of("showing", "shown", "close-request"), lifecycle);
 
-                accept.fire();
+                acceptAction.fire();
 
                 assertFalse(handle.isShowing());
                 assertEquals(
@@ -360,12 +362,12 @@ final class M3DialogPresentationTest {
             AtomicInteger closeRequests = new AtomicInteger();
             M3Dialog dialog = new M3Dialog();
             dialog.setOnCloseRequest(event -> {
-                assertNull(event.getButtonType());
+                assertNull(event.getAction());
                 if (closeRequests.incrementAndGet() == 1) {
                     event.consume();
                 }
             });
-            dialog.setOnHidden(event -> assertNull(event.getButtonType()));
+            dialog.setOnHidden(event -> assertNull(event.getAction()));
             assertTrue(dialog.isDismissOnScrimClick());
             M3DialogHandle handle = overlayRoot.showDialog(dialog);
             try {
@@ -528,9 +530,12 @@ final class M3DialogPresentationTest {
             stage.setScene(scene);
             stage.show();
 
-            ButtonType acceptType = new ButtonType("Accept", ButtonBar.ButtonData.OK_DONE);
+            M3Button cancelAction = new M3Button("Cancel", M3ButtonVariant.TEXT);
+            cancelAction.setCancelButton(true);
+            M3Button acceptAction = new M3Button("Accept", M3ButtonVariant.TEXT);
+            acceptAction.setDefaultButton(true);
             M3Dialog dialog = new M3Dialog();
-            dialog.getDialogPane().getButtonTypes().setAll(ButtonType.CANCEL, acceptType);
+            dialog.getDialogPane().getActions().setAll(cancelAction, acceptAction);
             RuntimeException showingFailure = new RuntimeException("showing failure");
             RuntimeException shownFailure = new RuntimeException("shown failure");
             RuntimeException hidingFailure = new RuntimeException("hiding failure");
@@ -539,7 +544,7 @@ final class M3DialogPresentationTest {
             @Nullable M3DialogHandle handle = null;
             try {
                 dialog.setOnShowing(event -> {
-                    assertNull(event.getButtonType());
+                    assertNull(event.getAction());
                     throw showingFailure;
                 });
                 assertSame(showingFailure,
@@ -548,7 +553,7 @@ final class M3DialogPresentationTest {
 
                 dialog.setOnShowing(null);
                 dialog.setOnShown(event -> {
-                    assertNull(event.getButtonType());
+                    assertNull(event.getAction());
                     throw shownFailure;
                 });
                 assertSame(shownFailure,
@@ -558,24 +563,20 @@ final class M3DialogPresentationTest {
                 dialog.setOnShown(null);
                 handle = overlayRoot.showDialog(dialog);
                 dialog.setOnHiding(event -> {
-                    assertSame(acceptType, event.getButtonType());
+                    assertSame(acceptAction, event.getAction());
                     throw hidingFailure;
                 });
-                M3Button accept = assertInstanceOf(
-                        M3Button.class,
-                        Objects.requireNonNull(dialog.getDialogPane().lookupButton(acceptType), "accept button")
-                );
-                assertSame(hidingFailure, assertThrows(RuntimeException.class, accept::fire));
+                assertSame(hidingFailure, assertThrows(RuntimeException.class, acceptAction::fire));
                 assertTrue(handle.isShowing());
                 assertSame(overlayRoot, scene.getRoot());
                 assertDialogAttached(handle, dialog, scene, overlayRoot);
 
-                dialog.setOnHiding(event -> assertSame(acceptType, event.getButtonType()));
+                dialog.setOnHiding(event -> assertSame(acceptAction, event.getAction()));
                 dialog.setOnHidden(event -> {
-                    assertSame(acceptType, event.getButtonType());
+                    assertSame(acceptAction, event.getAction());
                     throw hiddenFailure;
                 });
-                assertSame(hiddenFailure, assertThrows(RuntimeException.class, accept::fire));
+                assertSame(hiddenFailure, assertThrows(RuntimeException.class, acceptAction::fire));
                 assertStableEmptyOverlay(handle, dialog, scene, overlayRoot, ownerContent);
             } finally {
                 dialog.setOnShowing(null);
@@ -609,7 +610,9 @@ final class M3DialogPresentationTest {
             M3Dialog dialog = new M3Dialog();
             M3DialogPane pane = dialog.getDialogPane();
             pane.setHeaderText("Themed dialog");
-            pane.getButtonTypes().setAll(ButtonType.OK);
+            M3Button okAction = new M3Button("OK", M3ButtonVariant.TEXT);
+            okAction.setDefaultButton(true);
+            pane.getActions().setAll(okAction);
             M3DialogHandle handle = overlayRoot.showDialog(dialog);
             try {
                 assertSame(pane, dialog.getDialogPane());
@@ -660,7 +663,9 @@ final class M3DialogPresentationTest {
 
             M3Dialog dialog = new M3Dialog();
             dialog.getDialogPane().setHeaderText("Context dialog");
-            dialog.getDialogPane().getButtonTypes().setAll(ButtonType.OK);
+            M3Button okAction = new M3Button("OK", M3ButtonVariant.TEXT);
+            okAction.setDefaultButton(true);
+            dialog.getDialogPane().getActions().setAll(okAction);
             M3DialogHandle handle = overlayRoot.showDialog(dialog);
             try {
                 Parent layer = Objects.requireNonNull(dialog.getDialogPane().getParent(), "dialog layer");
@@ -710,7 +715,9 @@ final class M3DialogPresentationTest {
             M3Dialog dialog = new M3Dialog();
             dialog.getDialogPane().setHeaderText("Visible dialog");
             dialog.getDialogPane().setContentText("Owner content remains visible below a Material scrim.");
-            dialog.getDialogPane().getButtonTypes().setAll(ButtonType.OK);
+            M3Button okAction = new M3Button("OK", M3ButtonVariant.TEXT);
+            okAction.setDefaultButton(true);
+            dialog.getDialogPane().getActions().setAll(okAction);
             M3DialogHandle handle = overlayRoot.showDialog(dialog);
             try {
                 overlayRoot.applyCss();
@@ -773,16 +780,16 @@ final class M3DialogPresentationTest {
             M3Dialog dialog = new M3Dialog();
             dialog.getDialogPane().setHeaderText("Owned dialog");
             dialog.setOnCloseRequest(event -> {
-                assertNull(event.getButtonType());
+                assertNull(event.getAction());
                 closeRequests.incrementAndGet();
                 event.consume();
             });
             dialog.setOnHiding(event -> {
-                assertNull(event.getButtonType());
+                assertNull(event.getAction());
                 lifecycle.add("hiding");
             });
             dialog.setOnHidden(event -> {
-                assertNull(event.getButtonType());
+                assertNull(event.getAction());
                 lifecycle.add("hidden");
             });
             @Nullable M3DialogHandle activeHandle = null;
@@ -1130,27 +1137,27 @@ final class M3DialogPresentationTest {
             outside.requestFocus();
 
             M3TextField content = new M3TextField("Editable");
-            ButtonType cancelType = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
-            ButtonType acceptType = new ButtonType("Accept", ButtonBar.ButtonData.OK_DONE);
+            M3Button cancelAction = new M3Button("Cancel", M3ButtonVariant.TEXT);
+            cancelAction.setCancelButton(true);
+            M3Button acceptAction = new M3Button("Accept", M3ButtonVariant.TEXT);
+            acceptAction.setDefaultButton(true);
             M3Dialog dialog = new M3Dialog();
             dialog.getDialogPane().setContent(content);
-            dialog.getDialogPane().getButtonTypes().setAll(cancelType, acceptType);
-            AtomicReference<@Nullable ButtonType> hiddenButtonType = new AtomicReference<>();
-            dialog.setOnHidden(event -> hiddenButtonType.set(event.getButtonType()));
+            dialog.getDialogPane().getActions().setAll(cancelAction, acceptAction);
+            AtomicReference<@Nullable M3Button> hiddenAction = new AtomicReference<>();
+            dialog.setOnHidden(event -> hiddenAction.set(event.getAction()));
             M3DialogHandle handle = overlayRoot.showDialog(dialog);
             try {
                 dialog.getDialogPane().requestInitialFocus();
-                Node cancel = Objects.requireNonNull(dialog.getDialogPane().lookupButton(cancelType), "cancel button");
-                Node accept = Objects.requireNonNull(dialog.getDialogPane().lookupButton(acceptType), "accept button");
 
                 content.requestFocus();
                 content.fireEvent(keyPressed(KeyCode.TAB));
-                assertTrue(cancel.isFocused());
+                assertTrue(cancelAction.isFocused());
 
-                cancel.fireEvent(keyPressed(KeyCode.TAB));
-                assertTrue(accept.isFocused());
+                cancelAction.fireEvent(keyPressed(KeyCode.TAB));
+                assertTrue(acceptAction.isFocused());
 
-                accept.fireEvent(keyPressed(KeyCode.TAB));
+                acceptAction.fireEvent(keyPressed(KeyCode.TAB));
                 assertTrue(content.isFocused());
                 assertFalse(outside.isFocused());
 
@@ -1183,7 +1190,7 @@ final class M3DialogPresentationTest {
                 content.fireEvent(keyPressed(KeyCode.ESCAPE));
 
                 assertFalse(handle.isShowing());
-                assertSame(cancelType, hiddenButtonType.get());
+                assertSame(cancelAction, hiddenAction.get());
                 assertStableEmptyOverlay(handle, dialog, scene, overlayRoot, ownerContent);
             } finally {
                 handle.requestClose();

@@ -16,9 +16,7 @@ import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonBase;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextInputControl;
@@ -2953,27 +2951,37 @@ public final class M3FXDemoApp extends Application {
         M3Button standaloneButton = new M3Button("Open standalone window", M3ButtonVariant.OUTLINED);
         standaloneButton.setOnAction(event -> showStandaloneDialog());
 
+        M3Button basicCancel = new M3Button("Cancel", M3ButtonVariant.TEXT);
+        basicCancel.setCancelButton(true);
+        M3Button basicConfirm = new M3Button("OK", M3ButtonVariant.TEXT);
+        basicConfirm.setDefaultButton(true);
         M3DialogPane basicPane = createDialogPreviewPane(
                 "Dialog title",
                 "The active theme is applied to this dialog pane.",
-                new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE),
-                new ButtonType("OK", ButtonBar.ButtonData.OK_DONE)
+                basicCancel,
+                basicConfirm
         );
         basicPane.setPrefWidth(420.0);
 
+        M3Button settingsCancel = new M3Button("Cancel", M3ButtonVariant.TEXT);
+        settingsCancel.setCancelButton(true);
+        M3Button settingsApply = new M3Button("Apply", M3ButtonVariant.TEXT);
+        settingsApply.setDefaultButton(true);
         M3DialogPane settingsPane = createDialogPreviewPane(
                 "Project settings",
                 null,
-                new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE),
-                new ButtonType("Apply", ButtonBar.ButtonData.APPLY)
+                settingsCancel,
+                settingsApply
         );
         settingsPane.setContent(createDialogSettingsContent(false));
         settingsPane.setPrefWidth(520.0);
 
+        M3Button close = new M3Button("Close", M3ButtonVariant.TEXT);
+        close.setCancelButton(true);
         M3DialogPane longPane = createDialogPreviewPane(
                 "Release notes",
                 null,
-                new ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE)
+                close
         );
         longPane.setContent(createScrollableDialogContent());
         longPane.setPrefWidth(520.0);
@@ -2995,7 +3003,7 @@ public final class M3FXDemoApp extends Application {
     private static M3DialogPane createDialogPreviewPane(
             String headerText,
             @Nullable String contentText,
-            ButtonType... buttonTypes
+            M3Button... actions
     ) {
         M3DialogPane pane = new M3DialogPane();
         pane.getStyleClass().add("demo-dialog-pane");
@@ -3004,7 +3012,7 @@ public final class M3FXDemoApp extends Application {
         if (contentText != null) {
             pane.setContentText(contentText);
         }
-        pane.getButtonTypes().addAll(buttonTypes);
+        pane.getActions().addAll(actions);
         return pane;
     }
 
@@ -4649,21 +4657,27 @@ public final class M3FXDemoApp extends Application {
 
     /// Opens the demo dialog.
     private void showDemoDialog() {
+        M3Button confirm = new M3Button("OK", M3ButtonVariant.TEXT);
+        confirm.setDefaultButton(true);
         M3Dialog dialog = createDemoDialog(
                 "Dialog title",
                 "This dialog uses the M3FX dialog pane style and active theme tokens.",
-                new ButtonType("OK", ButtonBar.ButtonData.OK_DONE)
+                confirm
         );
         showDialog(dialog);
     }
 
     /// Opens a demo dialog with form-like content.
     private void showSettingsDialog() {
+        M3Button cancel = new M3Button("Cancel", M3ButtonVariant.TEXT);
+        cancel.setCancelButton(true);
+        M3Button apply = new M3Button("Apply", M3ButtonVariant.TEXT);
+        apply.setDefaultButton(true);
         M3Dialog dialog = createDemoDialog(
                 "Project settings",
                 null,
-                new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE),
-                new ButtonType("Apply", ButtonBar.ButtonData.APPLY)
+                cancel,
+                apply
         );
         dialog.getDialogPane().setContent(createDialogSettingsContent(true));
         dialog.getDialogPane().setPrefWidth(460.0);
@@ -4672,11 +4686,14 @@ public final class M3FXDemoApp extends Application {
 
     /// Opens a demo dialog for a destructive confirmation flow.
     private void showDestructiveDialog() {
-        ButtonType delete = new ButtonType("Delete", ButtonBar.ButtonData.OK_DONE);
+        M3Button cancel = new M3Button("Cancel", M3ButtonVariant.TEXT);
+        cancel.setCancelButton(true);
+        M3Button delete = new M3Button("Delete", M3ButtonVariant.TEXT);
+        delete.setDefaultButton(true);
         M3Dialog dialog = createDemoDialog(
                 "Delete draft?",
                 "Deleting this local draft cannot be undone. Published project files are not affected.",
-                new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE),
+                cancel,
                 delete
         );
         dialog.getDialogPane().setGraphic(createErrorIcon("warning"));
@@ -4685,10 +4702,12 @@ public final class M3FXDemoApp extends Application {
 
     /// Opens a Material dialog in an ownerless native window.
     private void showStandaloneDialog() {
+        M3Button close = new M3Button("Close", M3ButtonVariant.TEXT);
+        close.setCancelButton(true);
         M3Dialog dialog = createDemoDialog(
                 "Standalone dialog",
                 "This presentation owns a native Stage and does not require an application overlay pane.",
-                new ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE)
+                close
         );
         M3DialogWindow window = new M3DialogWindow();
         window.setTitle("M3FX Standalone Dialog");
@@ -4705,13 +4724,13 @@ public final class M3FXDemoApp extends Application {
     private M3Dialog createDemoDialog(
             String headerText,
             @Nullable String contentText,
-            ButtonType... buttonTypes
+            M3Button... actions
     ) {
         M3Dialog dialog = new M3Dialog();
         M3DialogPane pane = dialog.getDialogPane();
         pane.setHeaderText(headerText);
         pane.setContentText(contentText == null ? "" : contentText);
-        pane.getButtonTypes().addAll(buttonTypes);
+        pane.getActions().addAll(actions);
         return dialog;
     }
 
@@ -4719,8 +4738,12 @@ public final class M3FXDemoApp extends Application {
     private void showDatePickerDialog(LocalDate initialDate) {
         M3DatePickerDialog dialog = new M3DatePickerDialog(initialDate);
         dialog.getPresets().setAll(M3DatePresets.common(initialDate));
+        M3Button confirmAction = Objects.requireNonNull(
+                dialog.getDialogPane().getDefaultAction(),
+                "date dialog default action"
+        );
         dialog.setOnHidden(event -> {
-            if (event.getButtonType() == ButtonType.OK) {
+            if (event.getAction() == confirmAction) {
                 @Nullable LocalDate value = dialog.getValue();
                 if (value != null) {
                     showSnackbar("Selected date " + value);
@@ -4733,8 +4756,12 @@ public final class M3FXDemoApp extends Application {
     /// Opens a date range picker dialog and reports the accepted range.
     private void showDateRangePickerDialog(LocalDate startDate, LocalDate endDate) {
         M3DateRangePickerDialog dialog = new M3DateRangePickerDialog(startDate, endDate);
+        M3Button confirmAction = Objects.requireNonNull(
+                dialog.getDialogPane().getDefaultAction(),
+                "date range dialog default action"
+        );
         dialog.setOnHidden(event -> {
-            if (event.getButtonType() == ButtonType.OK) {
+            if (event.getAction() == confirmAction) {
                 @Nullable M3DateRange range = dialog.getPicker().getRange();
                 if (range != null) {
                     showSnackbar("Selected range " + range.startDate() + " to " + range.endDate());
@@ -4750,8 +4777,12 @@ public final class M3FXDemoApp extends Application {
         dialog.getPicker().setMinDate(anchorDate.minusMonths(1));
         dialog.getPicker().setMaxDate(anchorDate.plusMonths(3));
         dialog.getPresets().setAll(M3DateRangePresets.common(anchorDate, dialog.getPicker().getFirstDayOfWeek()));
+        M3Button confirmAction = Objects.requireNonNull(
+                dialog.getDialogPane().getDefaultAction(),
+                "date range dialog default action"
+        );
         dialog.setOnHidden(event -> {
-            if (event.getButtonType() == ButtonType.OK) {
+            if (event.getAction() == confirmAction) {
                 @Nullable M3DateRange range = dialog.getPicker().getRange();
                 if (range != null) {
                     showSnackbar("Selected preset range " + range.startDate() + " to " + range.endDate());
@@ -4767,8 +4798,12 @@ public final class M3FXDemoApp extends Application {
         dialog.getPicker().setUse24HourClock(true);
         dialog.getPicker().setMinuteStep(15);
         dialog.getPresets().setAll(M3TimePresets.common(initialTime));
+        M3Button confirmAction = Objects.requireNonNull(
+                dialog.getDialogPane().getDefaultAction(),
+                "time dialog default action"
+        );
         dialog.setOnHidden(event -> {
-            if (event.getButtonType() == ButtonType.OK) {
+            if (event.getAction() == confirmAction) {
                 @Nullable LocalTime value = dialog.getValue();
                 if (value != null) {
                     showSnackbar("Selected time " + value);

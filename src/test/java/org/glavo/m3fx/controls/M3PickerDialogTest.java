@@ -8,7 +8,6 @@ import javafx.geometry.NodeOrientation;
 import javafx.scene.AccessibleAction;
 import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.control.ButtonType;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
@@ -30,6 +29,7 @@ import java.time.LocalTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -64,15 +64,15 @@ final class M3PickerDialogTest {
             assertSame(content, dialog.getPicker().getParent());
             assertFalse(content.getChildren().get(0).isManaged());
             assertEquals("Select date", pane.getHeaderText());
-            assertTrue(pane.lookupButton(ButtonType.OK).isDisabled());
+            assertTrue(Objects.requireNonNull(pane.getDefaultAction(), "default action").isDisabled());
 
             dialog.setValue(value);
 
-            assertFalse(pane.lookupButton(ButtonType.OK).isDisabled());
+            assertFalse(Objects.requireNonNull(pane.getDefaultAction(), "default action").isDisabled());
 
             dialog.setValue(null);
 
-            assertTrue(pane.lookupButton(ButtonType.OK).isDisabled());
+            assertTrue(Objects.requireNonNull(pane.getDefaultAction(), "default action").isDisabled());
         });
     }
 
@@ -163,7 +163,7 @@ final class M3PickerDialogTest {
 
             assertEquals(anchor.plusDays(7), dialog.getValue());
             assertEquals(YearMonth.from(anchor), dialog.getPicker().getDisplayedMonth());
-            assertFalse(pane.lookupButton(ButtonType.OK).isDisabled());
+            assertFalse(Objects.requireNonNull(pane.getDefaultAction(), "default action").isDisabled());
 
             M3DatePreset custom = new M3DatePreset("Release", LocalDate.of(2026, 6, 15));
             dialog.getPicker().applyPreset(custom);
@@ -259,15 +259,15 @@ final class M3PickerDialogTest {
             assertSame(content, dialog.getPicker().getParent());
             assertFalse(content.getChildren().get(0).isManaged());
             assertEquals("Select date range", pane.getHeaderText());
-            assertTrue(pane.lookupButton(ButtonType.OK).isDisabled());
+            assertTrue(Objects.requireNonNull(pane.getDefaultAction(), "default action").isDisabled());
 
             dialog.getPicker().setStartDate(start);
 
-            assertTrue(pane.lookupButton(ButtonType.OK).isDisabled());
+            assertTrue(Objects.requireNonNull(pane.getDefaultAction(), "default action").isDisabled());
 
             dialog.getPicker().setEndDate(end);
 
-            assertFalse(pane.lookupButton(ButtonType.OK).isDisabled());
+            assertFalse(Objects.requireNonNull(pane.getDefaultAction(), "default action").isDisabled());
             assertEquals(range, dialog.getPicker().getRange());
         });
     }
@@ -331,7 +331,7 @@ final class M3PickerDialogTest {
 
             assertEquals(new M3DateRange(anchor, anchor.plusDays(6)), dialog.getPicker().getRange());
             assertEquals(YearMonth.from(anchor), dialog.getPicker().getDisplayedMonth());
-            assertFalse(pane.lookupButton(ButtonType.OK).isDisabled());
+            assertFalse(Objects.requireNonNull(pane.getDefaultAction(), "default action").isDisabled());
 
             M3DateRangePreset custom = new M3DateRangePreset(
                     "Sprint",
@@ -562,7 +562,7 @@ final class M3PickerDialogTest {
             );
             assertEquals(0.0, pickerContainer.getPadding().getTop(), 0.0001);
             assertEquals("Select time", pane.getHeaderText());
-            assertTrue(pane.lookupButton(ButtonType.OK).isDisabled());
+            assertTrue(Objects.requireNonNull(pane.getDefaultAction(), "default action").isDisabled());
             assertEquals(1, pane.lookupAll("." + M3TimePicker.MODE_BUTTON_STYLE_CLASS).size());
             M3IconButton modeButton = assertInstanceOf(
                     M3IconButton.class,
@@ -575,11 +575,11 @@ final class M3PickerDialogTest {
 
             dialog.setValue(value);
 
-            assertFalse(pane.lookupButton(ButtonType.OK).isDisabled());
+            assertFalse(Objects.requireNonNull(pane.getDefaultAction(), "default action").isDisabled());
 
             dialog.setValue(null);
 
-            assertTrue(pane.lookupButton(ButtonType.OK).isDisabled());
+            assertTrue(Objects.requireNonNull(pane.getDefaultAction(), "default action").isDisabled());
         });
     }
 
@@ -602,6 +602,22 @@ final class M3PickerDialogTest {
             M3DatePickerDialog dateDialog = new M3DatePickerDialog(date);
             M3DateRangePickerDialog rangeDialog = new M3DateRangePickerDialog(range);
             M3TimePickerDialog timeDialog = new M3TimePickerDialog(time);
+            M3Button dateConfirmAction = Objects.requireNonNull(
+                    dateDialog.getDialogPane().getDefaultAction(),
+                    "date confirmation action"
+            );
+            M3Button rangeConfirmAction = Objects.requireNonNull(
+                    rangeDialog.getDialogPane().getDefaultAction(),
+                    "range confirmation action"
+            );
+            M3Button rangeCancelAction = Objects.requireNonNull(
+                    rangeDialog.getDialogPane().getCancelAction(),
+                    "range cancel action"
+            );
+            M3Button timeConfirmAction = Objects.requireNonNull(
+                    timeDialog.getDialogPane().getDefaultAction(),
+                    "time confirmation action"
+            );
 
             List<M3DialogEvent> hiddenEvents = new ArrayList<>();
             AtomicReference<@Nullable LocalDate> confirmedDate = new AtomicReference<>();
@@ -609,41 +625,38 @@ final class M3PickerDialogTest {
             AtomicReference<@Nullable LocalTime> confirmedTime = new AtomicReference<>();
             dateDialog.setOnHidden(event -> {
                 hiddenEvents.add(event);
-                if (event.getButtonType() == ButtonType.OK) {
+                if (event.getAction() == dateConfirmAction) {
                     confirmedDate.set(dateDialog.getValue());
                 }
             });
             rangeDialog.setOnHidden(event -> {
                 hiddenEvents.add(event);
-                if (event.getButtonType() == ButtonType.OK) {
+                if (event.getAction() == rangeConfirmAction) {
                     confirmedRange.set(rangeDialog.getPicker().getRange());
                 }
             });
             timeDialog.setOnHidden(event -> {
                 hiddenEvents.add(event);
-                if (event.getButtonType() == ButtonType.OK) {
+                if (event.getAction() == timeConfirmAction) {
                     confirmedTime.set(timeDialog.getValue());
                 }
             });
 
             try {
                 overlay.showDialog(dateDialog);
-                assertInstanceOf(M3Button.class, dateDialog.getDialogPane().lookupButton(ButtonType.OK)).fire();
+                dateConfirmAction.fire();
 
                 assertEquals(1, hiddenEvents.size());
-                assertSame(ButtonType.OK, hiddenEvents.get(0).getButtonType());
+                assertSame(dateConfirmAction, hiddenEvents.get(0).getAction());
                 assertEquals(date, confirmedDate.get());
                 assertEquals(date, dateDialog.getValue());
 
                 hiddenEvents.clear();
                 overlay.showDialog(rangeDialog);
-                assertInstanceOf(
-                        M3Button.class,
-                        rangeDialog.getDialogPane().lookupButton(ButtonType.CANCEL)
-                ).fire();
+                rangeCancelAction.fire();
 
                 assertEquals(1, hiddenEvents.size());
-                assertSame(ButtonType.CANCEL, hiddenEvents.get(0).getButtonType());
+                assertSame(rangeCancelAction, hiddenEvents.get(0).getAction());
                 assertNull(confirmedRange.get());
                 assertEquals(range, rangeDialog.getPicker().getRange());
 
@@ -652,7 +665,7 @@ final class M3PickerDialogTest {
                 assertTrue(timeHandle.requestClose());
 
                 assertEquals(1, hiddenEvents.size());
-                assertNull(hiddenEvents.get(0).getButtonType());
+                assertNull(hiddenEvents.get(0).getAction());
                 assertNull(confirmedTime.get());
                 assertEquals(time, timeDialog.getValue());
             } finally {
@@ -744,7 +757,7 @@ final class M3PickerDialogTest {
             presetButton(pane, M3TimePickerDialog.PRESET_BUTTON_STYLE_CLASS, "In 15 min").fire();
 
             assertEquals(LocalTime.of(10, 45), dialog.getValue());
-            assertFalse(pane.lookupButton(ButtonType.OK).isDisabled());
+            assertFalse(Objects.requireNonNull(pane.getDefaultAction(), "default action").isDisabled());
 
             M3TimePreset custom = new M3TimePreset("Release", LocalTime.of(16, 30));
             dialog.getPicker().applyPreset(custom);

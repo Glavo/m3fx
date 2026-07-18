@@ -5,7 +5,6 @@ package org.glavo.m3fx.controls;
 
 import javafx.event.Event;
 import javafx.event.EventType;
-import javafx.scene.control.ButtonType;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
 
@@ -51,25 +50,25 @@ public final class M3DialogEvent extends Event {
     /// The presentation that emitted this lifecycle event.
     private final M3DialogHandle handle;
 
-    /// The button type that initiated this event, or `null` when no action button initiated the lifecycle step.
+    /// The retained action button that initiated this event, or `null` when no action initiated the lifecycle step.
     ///
-    /// Action-button activation and Escape cancellation retain their button type through close request, hiding, and
-    /// hidden events. Showing events, [M3DialogHandle#requestClose()], scrim dismissal, and forced host-window cleanup
-    /// use `null`.
-    private final @Nullable ButtonType buttonType;
+    /// Action-button activation and Escape cancellation retain the exact button instance through close request,
+    /// hiding, and hidden events. Showing events, [M3DialogHandle#requestClose()], scrim dismissal, and forced
+    /// host-window cleanup use `null`.
+    private final @Nullable M3Button action;
 
     /// Creates a lifecycle event for one dialog presentation.
     ///
-    /// @param dialog     the dialog used as this event's source and target
-    /// @param handle     the presentation that emitted the event
-    /// @param eventType  the lifecycle event type
-    /// @param buttonType the initiating action button, or `null` when no action button initiated the event
+    /// @param dialog    the dialog used as this event's source and target
+    /// @param handle    the presentation that emitted the event
+    /// @param eventType the lifecycle event type
+    /// @param action    the initiating action button, or `null` when no action button initiated the event
     /// @throws NullPointerException if `dialog`, `handle`, or `eventType` is `null`
     M3DialogEvent(
             M3Dialog dialog,
             M3DialogHandle handle,
             EventType<M3DialogEvent> eventType,
-            @Nullable ButtonType buttonType
+            @Nullable M3Button action
     ) {
         super(
                 Objects.requireNonNull(dialog, "dialog"),
@@ -77,7 +76,7 @@ public final class M3DialogEvent extends Event {
                 Objects.requireNonNull(eventType, "eventType")
         );
         this.handle = Objects.requireNonNull(handle, "handle");
-        this.buttonType = buttonType;
+        this.action = action;
     }
 
     /// Returns the dialog that emitted this event.
@@ -97,10 +96,14 @@ public final class M3DialogEvent extends Event {
         return handle;
     }
 
-    /// Returns the action button that initiated this event.
+    /// Returns the retained action button that initiated this event.
     ///
-    /// @return the initiating button type, or `null` when the event was not initiated by an action button
-    public @Nullable ButtonType getButtonType() {
-        return buttonType;
+    /// The returned object is the same instance contained by [M3DialogPane#getActions()]. It remains valid after the
+    /// presentation closes and may be compared by identity to distinguish confirmation, cancellation, or another
+    /// application-defined action.
+    ///
+    /// @return the initiating action button, or `null` when no action button initiated the event
+    public @Nullable M3Button getAction() {
+        return action;
     }
 }

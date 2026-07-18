@@ -7,7 +7,6 @@ import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -237,7 +236,9 @@ final class M3SheetKeyboardTest {
             M3TextField dialogContent = new M3TextField("Dialog content");
             M3DialogPane dialogPane = new M3DialogPane();
             dialogPane.setContent(dialogContent);
-            dialogPane.getButtonTypes().setAll(ButtonType.OK);
+            M3Button okButton = new M3Button("OK", M3ButtonVariant.TEXT);
+            okButton.setDefaultButton(true);
+            dialogPane.getActions().setAll(okButton);
             dialogPane.setModalActive(true);
 
             M3TextField sheetContent = new M3TextField("Sheet content");
@@ -249,7 +250,6 @@ final class M3SheetKeyboardTest {
 
             VBox root = new VBox(dialogPane, sheet);
             showModal(root, 520.0, 360.0);
-            Node okButton = Objects.requireNonNull(dialogPane.lookupButton(ButtonType.OK), "okButton");
             dialogContent.requestFocus();
             assertTrue(dialogContent.isFocused(), "dialog content should own focus before the sheet opens");
 
@@ -289,7 +289,9 @@ final class M3SheetKeyboardTest {
             M3TextField dialogContent = new M3TextField("Dialog content");
             M3DialogPane dialogPane = new M3DialogPane();
             dialogPane.setContent(dialogContent);
-            dialogPane.getButtonTypes().setAll(ButtonType.OK);
+            M3Button okButton = new M3Button("OK", M3ButtonVariant.TEXT);
+            okButton.setDefaultButton(true);
+            dialogPane.getActions().setAll(okButton);
             dialogPane.setModalActive(true);
             dialogPane.setVisible(false);
 
@@ -327,7 +329,9 @@ final class M3SheetKeyboardTest {
             M3TextField dialogContent = new M3TextField("Dialog content");
             M3DialogPane dialogPane = new M3DialogPane();
             dialogPane.setContent(dialogContent);
-            dialogPane.getButtonTypes().setAll(ButtonType.OK);
+            M3Button okButton = new M3Button("OK", M3ButtonVariant.TEXT);
+            okButton.setDefaultButton(true);
+            dialogPane.getActions().setAll(okButton);
             dialogPane.setModalActive(true);
 
             M3TextField sheetContent = new M3TextField("Sheet content");
@@ -339,7 +343,6 @@ final class M3SheetKeyboardTest {
 
             VBox root = new VBox(dialogPane, sheet);
             showModal(root, 520.0, 360.0);
-            Node okButton = Objects.requireNonNull(dialogPane.lookupButton(ButtonType.OK), "okButton");
             dialogContent.requestFocus();
             assertTrue(dialogContent.isFocused(), "dialog content should own focus before the side sheet opens");
 
@@ -377,7 +380,9 @@ final class M3SheetKeyboardTest {
             M3TextField dialogContent = new M3TextField("Dialog content");
             M3DialogPane dialogPane = new M3DialogPane();
             dialogPane.setContent(dialogContent);
-            dialogPane.getButtonTypes().setAll(ButtonType.OK);
+            M3Button okButton = new M3Button("OK", M3ButtonVariant.TEXT);
+            okButton.setDefaultButton(true);
+            dialogPane.getActions().setAll(okButton);
             dialogPane.setModalActive(true);
             dialogPane.setVisible(false);
 
@@ -405,6 +410,7 @@ final class M3SheetKeyboardTest {
             assertTrue(sheetContent.isFocused(), "F6 should wrap from the side sheet action back to side sheet content");
         }));
     }
+
     /// Verifies that modified Tab and F6 shortcuts remain available while a modal sheet is shown.
     @Test
     void modalSheetFocusTrapDoesNotConsumeModifiedTraversalShortcuts() {

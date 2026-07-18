@@ -5,8 +5,6 @@ package org.glavo.m3fx.controls;
 
 import javafx.beans.InvalidationListener;
 import javafx.collections.ObservableList;
-import javafx.scene.Node;
-import javafx.scene.control.ButtonType;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.internal.M3PresetNavigation;
@@ -23,7 +21,7 @@ import java.time.LocalDate;
 ///
 /// The OK button is disabled until the embedded [picker][#getPicker()] contains both endpoints. Activating OK
 /// requests dialog closure. The complete range remains available from the embedded picker after every dismissal;
-/// callers must inspect [M3DialogEvent#getButtonType()] from the hidden event before treating it as confirmed. An
+/// callers must inspect [M3DialogEvent#getAction()] from the hidden event before treating it as confirmed. An
 /// incomplete start-only range remains visible but cannot be accepted. Close requests remain subject to the inherited
 /// [cancellable lifecycle][M3Dialog#onCloseRequestProperty()].
 ///
@@ -40,7 +38,7 @@ import java.time.LocalDate;
 ///     dialog.getPresets().addAll(M3DateRangePresets.common(
 ///             today, dialog.getPicker().getFirstDayOfWeek()));
 ///     dialog.setOnHidden(event -> {
-///         if (event.getButtonType() == ButtonType.OK) {
+///         if (event.getAction() == dialog.getDialogPane().getDefaultAction()) {
 ///             M3DateRange selectedRange = dialog.getPicker().getRange();
 ///         }
 ///     });
@@ -65,6 +63,12 @@ public final class M3DateRangePickerDialog extends M3Dialog {
 
     /// The date range picker displayed as dialog content.
     private final M3DateRangePicker picker = new M3DateRangePicker();
+
+    /// The retained cancel action shown in the dialog action row.
+    private final M3Button cancelAction = new M3Button("Cancel", M3ButtonVariant.TEXT);
+
+    /// The retained confirmation action shown in the dialog action row.
+    private final M3Button confirmAction = new M3Button("OK", M3ButtonVariant.TEXT);
 
     /// The live, mutable, ordered list of date-range presets rendered before the picker.
     ///
@@ -160,7 +164,9 @@ public final class M3DateRangePickerDialog extends M3Dialog {
         presetList.nodeOrientationProperty().bind(pane.effectiveNodeOrientationProperty());
         presetList.alignmentProperty().bind(M3NodeLayout.createLogicalStartTopAlignmentBinding(pane));
         M3PresetNavigation.installColumn(presetList, pane, () -> M3Accessible.requestAccessibleFocus(pane, picker));
-        pane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
+        cancelAction.setCancelButton(true);
+        confirmAction.setDefaultButton(true);
+        pane.getActions().setAll(cancelAction, confirmAction);
         picker.startDateProperty().addListener((observable, oldValue, newValue) -> updateOkButtonState());
         picker.endDateProperty().addListener((observable, oldValue, newValue) -> updateOkButtonState());
         picker.minDateProperty().addListener(presetBoundsInvalidation);
@@ -177,10 +183,7 @@ public final class M3DateRangePickerDialog extends M3Dialog {
 
     /// Enables the OK button only when both range endpoints are selected.
     private void updateOkButtonState() {
-        @Nullable Node okButton = getDialogPane().lookupButton(ButtonType.OK);
-        if (okButton != null) {
-            okButton.setDisable(!picker.isRangeComplete());
-        }
+        confirmAction.setDisable(!picker.isRangeComplete());
     }
 
 }

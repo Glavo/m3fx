@@ -22,20 +22,17 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.ButtonBar;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.HBox;
-import org.glavo.m3fx.internal.M3FocusTraversal;
-import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
 import org.glavo.m3fx.internal.M3Accessible;
+import org.glavo.m3fx.internal.M3AccessibleFocusNotifier;
 import org.glavo.m3fx.internal.M3ControlStyles;
 import org.glavo.m3fx.internal.M3Css;
-import org.glavo.m3fx.internal.M3Stylesheets;
+import org.glavo.m3fx.internal.M3FocusTraversal;
 import org.glavo.m3fx.internal.M3ModalFocusTrap;
 import org.glavo.m3fx.internal.M3ObservableLists;
+import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.skins.M3DialogPaneSkin;
 import org.jetbrains.annotations.NotNullByDefault;
 import org.jetbrains.annotations.Nullable;
@@ -52,11 +49,12 @@ import java.util.function.Consumer;
 /// It is designed as the retained surface of an [M3Dialog] and does not itself create a native window or depend on
 /// JavaFX dialog skins. [M3OverlayPane] and [M3DialogWindow] provide in-scene and native-window presentation.
 ///
-/// The [buttonTypes][#getButtonTypes()] list is live, ordered, and rejects `null` elements before mutation. Each
-/// entry creates one [M3Button], including repeated entries; [#lookupButton(ButtonType)] returns the first matching
-/// action. Unconsumed action events are reported to the containing [M3Dialog], which emits its cancellable close
-/// lifecycle with the initiating button type. While the pane is presented modally, keyboard traversal remains within
-/// reachable content and action controls. The pane itself is not focus traversable.
+/// The [actions][#getActions()] list is live, ordered, and rejects `null` elements before mutation. Each action is
+/// the actual [M3Button] rendered by the pane, so its text, graphic, disabled state, role, and event handlers remain
+/// observable and configurable without a parallel descriptor object. An unconsumed action event is reported to the
+/// containing [M3Dialog], which emits its cancellable close lifecycle with that exact button. While the pane is
+/// presented modally, keyboard traversal remains within reachable content and action controls. The pane itself is
+/// not focus traversable.
 ///
 /// Geometry properties are expressed in logical pixels and are styleable. Java assignments take precedence over
 /// user-agent defaults, and CSS cannot replace a bound styleable property.
@@ -67,11 +65,8 @@ public class M3DialogPane extends Control {
     /// The base style class for M3FX dialog panes.
     public static final String STYLE_CLASS = "m3-dialog-pane";
 
-    /// The style class applied to the dialog action button bar.
-    public static final String BUTTON_BAR_STYLE_CLASS = "m3-dialog-button-bar";
-
-    /// The style class applied to dialog action buttons.
-    public static final String BUTTON_STYLE_CLASS = "m3-dialog-button";
+    /// The style class applied to the dialog action row.
+    public static final String ACTIONS_STYLE_CLASS = "m3-dialog-actions";
 
     /// The default dialog container shape radius.
     private static final double DEFAULT_CONTAINER_SHAPE = 28.0;
@@ -141,14 +136,17 @@ public class M3DialogPane extends Control {
     /// @defaultValue `null`
     private final ObjectProperty<@Nullable Node> content = new SimpleObjectProperty<>(this, "content");
 
-    /// The live ordered list of dialog action definitions.
-    private final ObservableList<ButtonType> buttonTypes = M3ObservableLists.nonNullElementList("buttonType");
+    /// The live ordered list of retained Material dialog actions.
+    private final ObservableList<M3Button> actions = M3ObservableLists.nonNullElementList("action");
 
-    /// Material action nodes stored in exact button-type list order.
-    private final ArrayList<Node> actionButtons = new ArrayList<>();
+    /// An optional package-owned action shown at the logical start of the action row.
+    ///
+    /// This slot supports specification-defined picker affordances without broadening the public dialog action list
+    /// beyond text-capable [M3Button] instances.
+    private @Nullable Node leadingAction;
 
     /// Receives unconsumed action-button activations while this pane belongs to a dialog.
-    private @Nullable Consumer<ButtonType> buttonAction;
+    private @Nullable Consumer<M3Button> buttonAction;
 
     /// Whether this pane currently forms the active modal surface of a dialog overlay.
     private boolean modalActive;
@@ -207,9 +205,6 @@ public class M3DialogPane extends Control {
     /// @defaultValue `24.0`
     private @Nullable StyleableDoubleProperty iconSize;
 
-    /// The internal dialog action button bar created for the current skin.
-    private @Nullable ButtonBar buttonBar;
-
     /// Reports focused dialog content or action changes to accessibility clients.
     private final M3AccessibleFocusNotifier focusNotifier =
             new M3AccessibleFocusNotifier(this, this::currentOrFirstFocusableItem);
@@ -222,7 +217,7 @@ public class M3DialogPane extends Control {
             this::fireCancelButton
     );
 
-    /// Creates an empty dialog pane with Material geometry and no button types.
+    /// Creates an empty dialog pane with Material geometry and no actions.
     ///
     /// Header and content text default to empty strings; graphic and content nodes default to `null`.
     public M3DialogPane() {
@@ -232,10 +227,7 @@ public class M3DialogPane extends Control {
         M3Accessible.installAccessibleActionRoute(this, this::focusAccessibleNode, this::showAccessibleItem);
         contentProperty().addListener((observable, oldValue, newValue) -> notifyAccessibleItemsChanged());
         graphicProperty().addListener((observable, oldValue, newValue) -> updateGraphicMetrics(oldValue, newValue));
-        getButtonTypes().addListener((ListChangeListener<ButtonType>) change -> {
-            rebuildActionButtons();
-            notifyAccessibleItemsChanged();
-        });
+        getActions().addListener((ListChangeListener<M3Button>) change -> notifyAccessibleItemsChanged());
         styleProperty().addListener((observable, oldValue, newValue) -> {
             if (!updatingManagedStyle && managedContainerShapeStyle != null) {
                 requestContainerShapeStyleSync();
@@ -324,27 +316,51 @@ public class M3DialogPane extends Control {
         return content;
     }
 
-    /// Returns the live ordered list of dialog action definitions.
+    /// Returns the live ordered list of Material dialog actions.
     ///
-    /// The list rejects `null` elements atomically. Repeated button types are permitted and create repeated action
-    /// nodes in the same order.
+    /// The list rejects `null` elements atomically. Each button is retained directly and therefore exposes its
+    /// ordinary JavaFX properties and event lifecycle without a parallel descriptor object. Buttons normally use
+    /// [M3ButtonVariant#TEXT] to conform to the Material dialog specification. A button marked with
+    /// [M3ButtonBase#setDefaultButton(boolean)] receives preferred initial focus after dialog content; a button
+    /// marked with [M3ButtonBase#setCancelButton(boolean)] is fired by the dialog's cancel-key behavior.
     ///
-    /// @return the mutable button-type list
-    public final ObservableList<ButtonType> getButtonTypes() {
-        return buttonTypes;
+    /// Mutations are observed immediately and insertion order determines layout, keyboard traversal, and action-role
+    /// resolution. The list does not perform an explicit duplicate check, but each button is a JavaFX node and must
+    /// occur only once and must not simultaneously belong to another parent.
+    ///
+    /// @return the mutable action-button list
+    public final ObservableList<M3Button> getActions() {
+        return actions;
     }
 
-    /// Returns the action node created for a button type.
+    /// Returns the first action marked as this dialog's default action.
     ///
-    /// When the same button type occurs more than once, this method returns the action created for its first
-    /// occurrence. The returned node is owned by this pane and is replaced when the button-type list changes.
+    /// The result is resolved from the current action-list order each time this method is called. Marking more than
+    /// one action as default is permitted, but only the first is used for preferred initial focus.
     ///
-    /// @param buttonType the button type to locate
-    /// @return the corresponding action node, or `null` when the type is not present
-    /// @throws NullPointerException if `buttonType` is `null`
-    public final @Nullable Node lookupButton(ButtonType buttonType) {
-        int index = buttonTypes.indexOf(Objects.requireNonNull(buttonType, "buttonType"));
-        return index < 0 ? null : actionButtons.get(index);
+    /// @return the first default action, or `null` when no action has that role
+    public final @Nullable M3Button getDefaultAction() {
+        for (M3Button action : actions) {
+            if (action.isDefaultButton()) {
+                return action;
+            }
+        }
+        return null;
+    }
+
+    /// Returns the first action marked as this dialog's cancel action.
+    ///
+    /// The result is resolved from the current action-list order each time this method is called. The dialog's
+    /// cancel-key behavior fires this action when it is reachable.
+    ///
+    /// @return the first cancel action, or `null` when no action has that role
+    public final @Nullable M3Button getCancelAction() {
+        for (M3Button action : actions) {
+            if (action.isCancelButton()) {
+                return action;
+            }
+        }
+        return null;
     }
 
     /// Returns the dialog container corner radius in logical pixels.
@@ -572,67 +588,12 @@ public class M3DialogPane extends Control {
         }
     }
 
-    /// Creates the dialog action button bar used by the default skin.
-    ///
-    /// Subclasses may override this method to configure button ordering before the bar is installed. The returned
-    /// bar must be a new instance and must not already belong to another scene-graph parent.
-    ///
-    /// @return a new button bar for this pane
-    protected ButtonBar createButtonBar() {
-        ButtonBar materialButtonBar = new ButtonBar();
-        materialButtonBar.getStyleClass().add(BUTTON_BAR_STYLE_CLASS);
-        materialButtonBar.setButtonMinWidth(0.0);
-        materialButtonBar.setButtonOrder(ButtonBar.BUTTON_ORDER_NONE);
-        return materialButtonBar;
-    }
-
-    /// Creates the Material action node associated with a dialog button type.
-    ///
-    /// Unconsumed action events from the returned node bubble to this pane and are forwarded to its owning
-    /// [M3Dialog].
-    ///
-    /// @param buttonType the button type for the new action node
-    /// @return the action node associated with `buttonType`
-    protected Node createButton(ButtonType buttonType) {
-        Objects.requireNonNull(buttonType, "buttonType");
-        M3Button button = new M3Button(buttonType.getText());
-        button.getStyleClass().add(BUTTON_STYLE_CLASS);
-        button.setVariant(M3ButtonVariant.TEXT);
-        ButtonBar.ButtonData buttonData = buttonType.getButtonData();
-        ButtonBar.setButtonData(button, buttonData);
-        ButtonBar.setButtonUniformSize(button, false);
-        button.setDefaultButton(buttonData != null && buttonData.isDefaultButton());
-        button.setCancelButton(buttonData != null && buttonData.isCancelButton());
-        return button;
-    }
-
-    /// Creates the skin and installs its newly created action bar.
+    /// Creates the skin for this dialog pane and its retained action buttons.
     ///
     /// @return a new default dialog-pane skin
     @Override
     protected Skin<?> createDefaultSkin() {
-        ButtonBar materialButtonBar = createButtonBar();
-        buttonBar = materialButtonBar;
-        synchronizeButtonBarActions();
-        synchronizeActionSpacing();
-        return new M3DialogPaneSkin(this, materialButtonBar);
-    }
-
-    /// Recreates action nodes after the ordered button definitions change.
-    private void rebuildActionButtons() {
-        actionButtons.clear();
-        for (ButtonType buttonType : buttonTypes) {
-            actionButtons.add(createButton(buttonType));
-        }
-        synchronizeButtonBarActions();
-    }
-
-    /// Copies current action nodes into the active button bar.
-    private void synchronizeButtonBarActions() {
-        @Nullable ButtonBar materialButtonBar = buttonBar;
-        if (materialButtonBar != null) {
-            materialButtonBar.getButtons().setAll(actionButtons);
-        }
+        return new M3DialogPaneSkin(this, leadingAction);
     }
 
     /// Forwards an unconsumed action from one of this pane's action nodes to its dialog controller.
@@ -643,11 +604,11 @@ public class M3DialogPane extends Control {
 
         @Nullable Node current = target;
         while (current != null && current != this) {
-            for (int index = 0; index < actionButtons.size(); index++) {
-                if (actionButtons.get(index) == current) {
-                    @Nullable Consumer<ButtonType> action = buttonAction;
+            for (M3Button actionButton : actions) {
+                if (actionButton == current) {
+                    @Nullable Consumer<M3Button> action = buttonAction;
                     if (action != null) {
-                        action.accept(buttonTypes.get(index));
+                        action.accept(actionButton);
                     }
                     return;
                 }
@@ -659,8 +620,23 @@ public class M3DialogPane extends Control {
     /// Sets the controller callback for unconsumed dialog action events.
     ///
     /// @param buttonAction the callback, or `null` while this pane is not owned by a dialog
-    final void setButtonAction(@Nullable Consumer<ButtonType> buttonAction) {
+    final void setButtonAction(@Nullable Consumer<M3Button> buttonAction) {
         this.buttonAction = buttonAction;
+    }
+
+    /// Installs a package-owned action at the logical start of the action row.
+    ///
+    /// The leading action participates in focus traversal and accessibility but does not automatically request dialog
+    /// closure. It must be configured before the pane creates its skin.
+    ///
+    /// @param leadingAction the leading action, or `null` for no leading action
+    /// @throws IllegalStateException if the pane already has a skin
+    final void setLeadingAction(@Nullable Node leadingAction) {
+        if (getSkin() != null) {
+            throw new IllegalStateException("leading action must be configured before the dialog pane creates a skin");
+        }
+        this.leadingAction = leadingAction;
+        notifyAccessibleItemsChanged();
     }
 
     /// Updates whether keyboard traversal is constrained to this modal dialog surface.
@@ -682,16 +658,11 @@ public class M3DialogPane extends Control {
         }
     }
 
-    /// Fires the first reachable cancel action, if one is configured.
+    /// Fires the configured cancel action when it is reachable.
     private void fireCancelButton() {
-        for (int index = 0; index < buttonTypes.size(); index++) {
-            ButtonType buttonType = buttonTypes.get(index);
-            ButtonBar.ButtonData buttonData = buttonType.getButtonData();
-            Node button = actionButtons.get(index);
-            if (buttonData != null && buttonData.isCancelButton() && button instanceof M3ButtonBase action) {
-                action.fire();
-                return;
-            }
+        @Nullable M3Button action = getCancelAction();
+        if (action != null && M3Accessible.canReach(action)) {
+            action.fire();
         }
     }
 
@@ -704,7 +675,7 @@ public class M3DialogPane extends Control {
         M3FocusTraversal.handleHorizontalKeyFocus(
                 this,
                 event,
-                M3FocusTraversal.focusTargets(actionButtons)
+                M3FocusTraversal.focusTargets(leadingAction, actions)
         );
     }
 
@@ -715,7 +686,27 @@ public class M3DialogPane extends Control {
 
     /// Returns the focus targets contained by this dialog pane in traversal order.
     private List<Node> focusTrapTargets() {
-        return M3FocusTraversal.focusTargetsInReachableTrees(getContent(), actionButtons);
+        List<Node> actionTargets = M3FocusTraversal.focusTargetsInReachableTrees(leadingAction, actions);
+        @Nullable Node content = getContent();
+        if (content == null) {
+            return actionTargets;
+        }
+        List<Node> contentTargets = M3FocusTraversal.focusTargetsInReachableTree(content);
+        if (contentTargets.isEmpty()) {
+            return actionTargets;
+        }
+        if (actionTargets.isEmpty()) {
+            return contentTargets;
+        }
+        Node[] targets = new Node[contentTargets.size() + actionTargets.size()];
+        int index = 0;
+        for (Node target : contentTargets) {
+            targets[index++] = target;
+        }
+        for (Node target : actionTargets) {
+            targets[index++] = target;
+        }
+        return List.of(targets);
     }
 
     /// Returns the user-agent stylesheet for M3FX dialog panes.
@@ -730,10 +721,8 @@ public class M3DialogPane extends Control {
     @Override
     protected void layoutChildren() {
         synchronizeContainerShapeStyle();
-        synchronizeActionSpacing();
         updateGraphicMetrics(null, getGraphic());
         super.layoutChildren();
-        synchronizeActionSpacing();
     }
 
     /// Applies size-related component tokens to JavaFX layout properties.
@@ -747,36 +736,9 @@ public class M3DialogPane extends Control {
         updateGraphicMetrics(null, getGraphic());
     }
 
-    /// Applies the action spacing token to the internal button bar and requests layout.
+    /// Requests layout after the action-spacing token changes.
     private void updateActionSpacing() {
-        synchronizeActionSpacing();
         requestLayout();
-    }
-
-    /// Synchronizes the action spacing token with the JavaFX button bar skin row.
-    private void synchronizeActionSpacing() {
-        @Nullable ButtonBar materialButtonBar = buttonBar;
-        if (materialButtonBar != null) {
-            synchronizeActionSpacing(materialButtonBar);
-        }
-    }
-
-    /// Synchronizes action spacing below one skin node.
-    private boolean synchronizeActionSpacing(Node node) {
-        if (node instanceof HBox row && row.getStyleClass().contains("container")) {
-            if (!row.spacingProperty().isBound()) {
-                row.setSpacing(getActionSpacing());
-            }
-            return true;
-        }
-        if (node instanceof Parent parent) {
-            for (Node child : parent.getChildrenUnmodifiable()) {
-                if (synchronizeActionSpacing(child)) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     /// Applies dialog graphic tokens to a Material icon graphic.
@@ -899,7 +861,9 @@ public class M3DialogPane extends Control {
 
     /// Returns the indexed accessibility item count for content and action buttons.
     private int accessibleItemCount() {
-        return (getContent() == null ? 0 : 1) + getButtonTypes().size();
+        return (getContent() == null ? 0 : 1)
+                + (leadingAction == null ? 0 : 1)
+                + actions.size();
     }
 
     /// Returns the dialog content or action button at an accessibility index.
@@ -917,10 +881,14 @@ public class M3DialogPane extends Control {
             index--;
         }
 
-        if (index >= getButtonTypes().size()) {
-            return null;
+        @Nullable Node leading = leadingAction;
+        if (leading != null) {
+            if (index == 0) {
+                return leading;
+            }
+            index--;
         }
-        return actionButtons.get(index);
+        return index >= actions.size() ? null : actions.get(index);
     }
 
     /// Requests focus on the current or first dialog focus target.
@@ -950,10 +918,16 @@ public class M3DialogPane extends Control {
         } else if (M3Accessible.showAccessibleActionTarget(this, getContent(), parameters)) {
             shown = true;
         } else {
-            for (Node button : actionButtons) {
+            @Nullable Node leading = leadingAction;
+            if (leading != null && M3Accessible.showAccessibleActionTarget(this, leading, parameters)) {
+                shown = true;
+            }
+            for (M3Button button : actions) {
+                if (shown) {
+                    break;
+                }
                 if (M3Accessible.showAccessibleActionTarget(this, button, parameters)) {
                     shown = true;
-                    break;
                 }
             }
         }
@@ -969,7 +943,6 @@ public class M3DialogPane extends Control {
         Objects.requireNonNull(parameters, "parameters");
         return parameters.length == 0 || M3Accessible.parametersDirectlyReferenceSingleTarget(
                 parameter -> parameter == item
-                        || (parameter instanceof ButtonType buttonType && lookupButton(buttonType) == item)
                         || (parameter instanceof Number number && accessibleItemAt(number) == item),
                 parameters
         );
@@ -999,9 +972,6 @@ public class M3DialogPane extends Control {
         if (parameter instanceof Number number) {
             return accessibleItemAt(number);
         }
-        if (parameter instanceof ButtonType buttonType) {
-            return lookupButton(buttonType);
-        }
         if (parameter instanceof Node node) {
             if (node == getContent() || isDialogButton(node)) {
                 return node;
@@ -1013,7 +983,13 @@ public class M3DialogPane extends Control {
             if (content != null && M3Accessible.containsAccessibleActionTarget(content, node)) {
                 return content;
             }
-            for (Node button : actionButtons) {
+            @Nullable Node leading = leadingAction;
+            if (leading != null
+                    && (M3Accessible.containsNode(leading, node)
+                    || M3Accessible.containsAccessibleActionTarget(leading, node))) {
+                return leading;
+            }
+            for (M3Button button : actions) {
                 if (M3Accessible.containsNode(button, node)
                         || M3Accessible.containsAccessibleActionTarget(button, node)) {
                     return button;
@@ -1049,13 +1025,18 @@ public class M3DialogPane extends Control {
             return contentFocusTarget;
         }
 
-        @Nullable Node defaultButton = defaultButton();
+        @Nullable Node defaultButton = getDefaultAction();
         @Nullable Node defaultFocusTarget = M3Accessible.focusTarget(defaultButton);
         if (defaultFocusTarget != null) {
             return defaultFocusTarget;
         }
 
-        for (Node button : actionButtons) {
+        @Nullable Node leadingFocusTarget = M3Accessible.focusTarget(leadingAction);
+        if (leadingFocusTarget != null) {
+            return leadingFocusTarget;
+        }
+
+        for (M3Button button : actions) {
             @Nullable Node buttonFocusTarget = M3Accessible.focusTarget(button);
             if (buttonFocusTarget != null) {
                 return buttonFocusTarget;
@@ -1099,7 +1080,12 @@ public class M3DialogPane extends Control {
         if (externalContentFocusTarget != null) {
             return externalContentFocusTarget;
         }
-        for (Node button : actionButtons) {
+        @Nullable Node externalLeadingFocusTarget =
+                M3Accessible.activeExternalFocusTarget(this, leadingAction);
+        if (externalLeadingFocusTarget != null) {
+            return externalLeadingFocusTarget;
+        }
+        for (M3Button button : actions) {
             @Nullable Node externalButtonFocusTarget =
                     M3Accessible.activeExternalFocusTarget(this, button);
             if (externalButtonFocusTarget != null) {
@@ -1115,7 +1101,12 @@ public class M3DialogPane extends Control {
             return contentFocusTarget;
         }
 
-        for (Node button : actionButtons) {
+        @Nullable Node leadingFocusTarget = containedFocusTarget(leadingAction, focusOwner);
+        if (leadingFocusTarget != null) {
+            return leadingFocusTarget;
+        }
+
+        for (M3Button button : actions) {
             @Nullable Node buttonFocusTarget = containedFocusTarget(button, focusOwner);
             if (buttonFocusTarget != null) {
                 return buttonFocusTarget;
@@ -1136,33 +1127,17 @@ public class M3DialogPane extends Control {
         return M3Accessible.canReach(focusOwner) ? focusOwner : itemFocusTarget;
     }
 
-    /// Returns the default action button when one exists.
-    private @Nullable Node defaultButton() {
-        for (Node button : actionButtons) {
-            if (isDefaultButton(button)) {
-                return button;
-            }
-        }
-        return null;
-    }
-
     /// Returns whether a node is one of this dialog pane's action buttons.
     private boolean isDialogButton(Node node) {
-        for (Node button : actionButtons) {
+        if (node == leadingAction) {
+            return true;
+        }
+        for (M3Button button : actions) {
             if (button == node) {
                 return true;
             }
         }
         return false;
-    }
-
-    /// Returns whether a dialog action button is the default action.
-    private static boolean isDefaultButton(@Nullable Node button) {
-        if (button instanceof M3Button materialButton) {
-            return materialButton.isDefaultButton();
-        }
-        return button != null && ButtonBar.getButtonData(button) != null
-                && ButtonBar.getButtonData(button).isDefaultButton();
     }
 
     /// Appends a non-blank text part to an accessibility label.

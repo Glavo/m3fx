@@ -7,8 +7,6 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.InvalidationListener;
 import javafx.collections.ObservableList;
-import javafx.scene.Node;
-import javafx.scene.control.ButtonType;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import org.glavo.m3fx.internal.M3PresetNavigation;
@@ -26,7 +24,7 @@ import java.time.LocalDate;
 /// The embedded [picker][#getPicker()] and the dialog [value][#valueProperty()] stay synchronized. The OK button is
 /// disabled until a date is selected. Activating OK requests dialog closure, and the current date remains available
 /// through [#valueProperty()]. Cancel and other dismissal paths retain that state, so callers must inspect
-/// [M3DialogEvent#getButtonType()] from the hidden event before treating it as confirmed. Close requests remain
+/// [M3DialogEvent#getAction()] from the hidden event before treating it as confirmed. Close requests remain
 /// subject to the inherited [cancellable lifecycle][M3Dialog#onCloseRequestProperty()].
 ///
 /// The picker is owned by this dialog and must not be reparented. Optional presets are exposed as a live ordered
@@ -43,7 +41,7 @@ import java.time.LocalDate;
 ///     dialog.getPicker().setMaxDate(today.plusMonths(3));
 ///     dialog.getPresets().addAll(M3DatePresets.common(today));
 ///     dialog.setOnHidden(event -> {
-///         if (event.getButtonType() == ButtonType.OK) {
+///         if (event.getAction() == dialog.getDialogPane().getDefaultAction()) {
 ///             LocalDate selectedDate = dialog.getValue();
 ///         }
 ///     });
@@ -68,6 +66,12 @@ public final class M3DatePickerDialog extends M3Dialog {
 
     /// The date picker displayed as dialog content.
     private final M3DatePicker picker = new M3DatePicker();
+
+    /// The retained cancel action shown in the dialog action row.
+    private final M3Button cancelAction = new M3Button("Cancel", M3ButtonVariant.TEXT);
+
+    /// The retained confirmation action shown in the dialog action row.
+    private final M3Button confirmAction = new M3Button("OK", M3ButtonVariant.TEXT);
 
     /// The selected date, or `null` when no date is selected.
     ///
@@ -211,7 +215,9 @@ public final class M3DatePickerDialog extends M3Dialog {
         presetList.nodeOrientationProperty().bind(pane.effectiveNodeOrientationProperty());
         presetList.alignmentProperty().bind(M3NodeLayout.createLogicalStartTopAlignmentBinding(pane));
         M3PresetNavigation.installColumn(presetList, pane, () -> M3Accessible.requestAccessibleFocus(pane, picker));
-        pane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
+        cancelAction.setCancelButton(true);
+        confirmAction.setDefaultButton(true);
+        pane.getActions().setAll(cancelAction, confirmAction);
         value.addListener((observable, oldValue, newValue) -> updateOkButtonState());
         picker.minDateProperty().addListener(presetBoundsInvalidation);
         picker.maxDateProperty().addListener(presetBoundsInvalidation);
@@ -221,10 +227,7 @@ public final class M3DatePickerDialog extends M3Dialog {
 
     /// Enables the OK button only when a selected date exists.
     private void updateOkButtonState() {
-        @Nullable Node okButton = getDialogPane().lookupButton(ButtonType.OK);
-        if (okButton != null) {
-            okButton.setDisable(getValue() == null);
-        }
+        confirmAction.setDisable(getValue() == null);
     }
 
 }

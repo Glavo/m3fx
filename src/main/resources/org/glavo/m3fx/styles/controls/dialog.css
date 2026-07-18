@@ -51,16 +51,12 @@
     -m3-icon-size: -m3-dialog-icon-size;
 }
 
-.m3-dialog-pane .m3-dialog-button-bar {
+.m3-dialog-pane .m3-dialog-actions {
     -fx-padding: 24px 0 0 0;
 }
 
-.m3-dialog-pane .m3-dialog-button {
+.m3-dialog-pane .m3-dialog-actions .m3-button {
     -m3-horizontal-padding: 12px;
-}
-
-.m3-dialog-button-bar .container {
-    -fx-spacing: -m3-action-spacing;
 }
 
 .m3-date-picker-dialog-preset-content,

@@ -32,8 +32,6 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.ButtonBase;
-import javafx.scene.control.ButtonBar;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Control;
 import javafx.scene.control.Label;
@@ -188,7 +186,6 @@ import static org.glavo.m3fx.M3TestControls.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -601,7 +598,11 @@ final class M3ControlContractMatrixTest {
             M3DialogPane dialogPane = new M3DialogPane();
             dialogPane.setHeaderText("Dialog");
             dialogPane.setContentText("Dialog content");
-            dialogPane.getButtonTypes().setAll(ButtonType.OK, ButtonType.CANCEL);
+            M3Button okAction = new M3Button("OK", M3ButtonVariant.TEXT);
+            okAction.setDefaultButton(true);
+            M3Button cancelAction = new M3Button("Cancel", M3ButtonVariant.TEXT);
+            cancelAction.setCancelButton(true);
+            dialogPane.getActions().setAll(okAction, cancelAction);
             M3TopAppBar topAppBar = topAppBar(
                     "Top app bar",
                     M3TopAppBarVariant.MEDIUM,
@@ -4338,9 +4339,9 @@ final class M3ControlContractMatrixTest {
                     new M3Button("Toolbar two")
             );
             assertMutableListRejectsNull(
-                    new M3DialogPane().getButtonTypes(),
-                    ButtonType.OK,
-                    ButtonType.CANCEL
+                    new M3DialogPane().getActions(),
+                    new M3Button("Dialog one"),
+                    new M3Button("Dialog two")
             );
             assertMutableListRejectsNull(
                     topAppBar().getActions(),
@@ -6624,7 +6625,11 @@ final class M3ControlContractMatrixTest {
         M3Icon graphic = new M3Icon("info");
         graphic.setStyle("-fx-opacity: 0.75;");
         dialogPane.setGraphic(graphic);
-        dialogPane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
+        M3Button cancelAction = new M3Button("Cancel", M3ButtonVariant.TEXT);
+        cancelAction.setCancelButton(true);
+        M3Button okAction = new M3Button("OK", M3ButtonVariant.TEXT);
+        okAction.setDefaultButton(true);
+        dialogPane.getActions().setAll(cancelAction, okAction);
         dialogPane.setStyle("-m3-container-shape: 20px; -m3-content-padding: 28px; "
                 + "-m3-container-min-width: 300px; -m3-container-max-width: 520px; "
                 + "-m3-action-spacing: 12px; -m3-dialog-icon-size: 28px;");
@@ -6654,9 +6659,10 @@ final class M3ControlContractMatrixTest {
         assertEquals("-fx-opacity: 0.75;", graphic.getStyle());
         assertEquals(M3Theme.defaultTheme().colorScheme().getColor(org.glavo.monetfx.ColorRole.SECONDARY),
                 iconFill(graphic));
-        Node buttonBarContainer = Objects.requireNonNull(dialogPane.lookup(".container"),
-                "dialog button bar container");
-        HBox actionRow = assertInstanceOf(HBox.class, buttonBarContainer);
+        HBox actionRow = assertInstanceOf(
+                HBox.class,
+                dialogPane.lookup("." + M3DialogPane.ACTIONS_STYLE_CLASS)
+        );
         assertEquals(12.0, actionRow.getSpacing(), 0.0001);
         assertRegionRadii(dialogPane, 20.0, 20.0, 20.0, 20.0);
 
@@ -6668,13 +6674,15 @@ final class M3ControlContractMatrixTest {
         assertRegionRadii(dialogPane, 12.0, 12.0, 12.0, 12.0);
     }
 
-    /// Verifies that dialog pane action buttons use m3fx button controls.
+    /// Verifies that dialog panes retain, configure, and incrementally lay out caller-owned Material actions.
     @Test
-    void dialogPaneCreatesMaterialActionButtons() {
+    void dialogPaneUsesCallerOwnedMaterialActionButtons() {
         M3DialogPane dialogPane = new M3DialogPane();
-        ButtonType cancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
-        ButtonType ok = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
-        dialogPane.getButtonTypes().setAll(cancel, ok);
+        M3Button cancelButton = new M3Button("Cancel", M3ButtonVariant.TEXT);
+        cancelButton.setCancelButton(true);
+        M3Button okButton = new M3Button("OK", M3ButtonVariant.TEXT);
+        okButton.setDefaultButton(true);
+        dialogPane.getActions().setAll(cancelButton, okButton);
         Pane root = new Pane(dialogPane);
         Scene scene = new Scene(root, 480.0, 240.0);
 
@@ -6684,28 +6692,22 @@ final class M3ControlContractMatrixTest {
         root.layout();
         dialogPane.layout();
 
-        Node cancelNode = dialogPane.lookupButton(cancel);
-        Node okNode = dialogPane.lookupButton(ok);
-        M3Button cancelButton = assertInstanceOf(M3Button.class, cancelNode);
-        M3Button okButton = assertInstanceOf(M3Button.class, okNode);
+        assertEquals(List.of(cancelButton, okButton), dialogPane.getActions());
         assertEquals(M3ButtonVariant.TEXT, cancelButton.getVariant());
         assertEquals(M3ButtonVariant.TEXT, okButton.getVariant());
-        assertTrue(cancelButton.getStyleClass().contains(M3DialogPane.BUTTON_STYLE_CLASS));
-        assertTrue(okButton.getStyleClass().contains(M3DialogPane.BUTTON_STYLE_CLASS));
-        assertEquals(ButtonBar.ButtonData.CANCEL_CLOSE, ButtonBar.getButtonData(cancelButton));
-        assertEquals(ButtonBar.ButtonData.OK_DONE, ButtonBar.getButtonData(okButton));
         assertTrue(cancelButton.isCancelButton());
         assertTrue(okButton.isDefaultButton());
+        assertSame(cancelButton, dialogPane.getCancelAction());
+        assertSame(okButton, dialogPane.getDefaultAction());
         assertFalse(okButton.disableProperty().isBound());
-        ButtonBar buttonBar = assertInstanceOf(
-                ButtonBar.class,
-                dialogPane.lookup("." + M3DialogPane.BUTTON_BAR_STYLE_CLASS)
+        HBox actionRow = assertInstanceOf(
+                HBox.class,
+                dialogPane.lookup("." + M3DialogPane.ACTIONS_STYLE_CLASS)
         );
-        assertEquals(ButtonBar.BUTTON_ORDER_NONE, buttonBar.getButtonOrder());
-        List<String> buttonTexts = buttonBar.lookupAll("." + M3DialogPane.BUTTON_STYLE_CLASS).stream()
+        assertSame(actionRow, cancelButton.getParent());
+        assertSame(actionRow, okButton.getParent());
+        List<String> buttonTexts = actionRow.getChildren().stream()
                 .map(node -> assertInstanceOf(M3Button.class, node))
-                .sorted(java.util.Comparator.comparingDouble(button ->
-                        button.localToScene(button.getBoundsInLocal()).getMinX()))
                 .map(M3Button::getText)
                 .toList();
         assertEquals(List.of("Cancel", "OK"), buttonTexts);
@@ -6714,18 +6716,20 @@ final class M3ControlContractMatrixTest {
 
         assertTrue(okButton.isDisabled());
 
-        ButtonType repeated = new ButtonType("Repeat", ButtonBar.ButtonData.OTHER);
-        dialogPane.getButtonTypes().setAll(repeated, repeated);
+        M3Button firstReplacement = new M3Button("First", M3ButtonVariant.TEXT);
+        M3Button secondReplacement = new M3Button("Second", M3ButtonVariant.TEXT);
+        dialogPane.getActions().setAll(firstReplacement, secondReplacement);
         root.applyCss();
         root.layout();
         dialogPane.layout();
 
-        List<Node> repeatedButtons = List.copyOf(buttonBar.getButtons());
-        assertEquals(2, repeatedButtons.size());
-        assertNotSame(repeatedButtons.get(0), repeatedButtons.get(1));
-        assertSame(repeatedButtons.get(0), dialogPane.lookupButton(repeated));
-        assertEquals("Repeat", assertInstanceOf(M3Button.class, repeatedButtons.get(0)).getText());
-        assertEquals("Repeat", assertInstanceOf(M3Button.class, repeatedButtons.get(1)).getText());
+        assertEquals(List.of(firstReplacement, secondReplacement), dialogPane.getActions());
+        assertNull(dialogPane.getCancelAction());
+        assertNull(dialogPane.getDefaultAction());
+        assertNull(cancelButton.getParent());
+        assertNull(okButton.getParent());
+        assertSame(actionRow, firstReplacement.getParent());
+        assertSame(actionRow, secondReplacement.getParent());
     }
 
     /// Verifies that dialog pane subnodes keep Material typography and colors.
@@ -6734,7 +6738,9 @@ final class M3ControlContractMatrixTest {
         M3DialogPane dialogPane = new M3DialogPane();
         dialogPane.setHeaderText("Dialog title");
         dialogPane.setContentText("Dialog body");
-        dialogPane.getButtonTypes().setAll(ButtonType.OK);
+        M3Button okAction = new M3Button("OK", M3ButtonVariant.TEXT);
+        okAction.setDefaultButton(true);
+        dialogPane.getActions().setAll(okAction);
         Pane root = new Pane(dialogPane);
         Scene scene = new Scene(root);
 
@@ -6746,7 +6752,7 @@ final class M3ControlContractMatrixTest {
         Region headerPanel = lookupRegion(dialogPane, ".header-panel");
         assertRegionFill(headerPanel, Color.TRANSPARENT);
         assertRegionFill(lookupRegion(headerPanel, ".label"), Color.TRANSPARENT);
-        assertInstanceOf(ButtonBar.class, dialogPane.lookup("." + M3DialogPane.BUTTON_BAR_STYLE_CLASS));
+        assertTrue(M3Accessible.containsNode(dialogPane, okAction));
         Region content = lookupRegion(dialogPane, ".content");
         assertRegionFill(content, Color.TRANSPARENT);
         Labeled contentLabel = assertInstanceOf(Labeled.class, dialogPane.lookup(".content-label"));
@@ -6763,7 +6769,11 @@ final class M3ControlContractMatrixTest {
             M3Button outsideAction = new M3Button("Outside action");
             M3DialogPane dialogPane = new M3DialogPane();
             dialogPane.setContent(contentAction);
-            dialogPane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
+            M3Button cancelButton = new M3Button("Cancel", M3ButtonVariant.TEXT);
+            cancelButton.setCancelButton(true);
+            M3Button okButton = new M3Button("OK", M3ButtonVariant.TEXT);
+            okButton.setDefaultButton(true);
+            dialogPane.getActions().setAll(cancelButton, okButton);
             Pane root = new Pane(dialogPane, outsideAction);
             Stage stage = new Stage();
             try {
@@ -6771,9 +6781,6 @@ final class M3ControlContractMatrixTest {
                 M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
                 stage.show();
                 root.applyCss();
-
-                Node cancelButton = dialogPane.lookupButton(ButtonType.CANCEL);
-                Node okButton = dialogPane.lookupButton(ButtonType.OK);
 
                 assertEquals(contentAction, dialogPane.queryAccessibleAttribute(AccessibleAttribute.CONTENTS));
                 assertEquals(3, dialogPane.queryAccessibleAttribute(AccessibleAttribute.ITEM_COUNT));
@@ -6792,7 +6799,7 @@ final class M3ControlContractMatrixTest {
                 assertTrue(contentAction.isFocused());
                 assertEquals(contentAction, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
-                dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, ButtonType.OK);
+                dialogPane.executeAccessibleAction(AccessibleAction.SHOW_ITEM, okButton);
                 assertTrue(okButton.isFocused());
                 assertEquals(okButton, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
@@ -6822,12 +6829,14 @@ final class M3ControlContractMatrixTest {
     void dialogPaneActionKeyboardTraversalFollowsDirectionWithoutStealingContentKeys() {
         FxTestUtils.runOnFxThread(() -> {
             M3TextField content = new M3TextField("Editable content");
-            ButtonType cancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
-            ButtonType skip = new ButtonType("Skip", ButtonBar.ButtonData.OTHER);
-            ButtonType ok = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
+            M3Button cancelButton = new M3Button("Cancel", M3ButtonVariant.TEXT);
+            cancelButton.setCancelButton(true);
+            M3Button skipButton = new M3Button("Skip", M3ButtonVariant.TEXT);
+            M3Button okButton = new M3Button("OK", M3ButtonVariant.TEXT);
+            okButton.setDefaultButton(true);
             M3DialogPane dialogPane = new M3DialogPane();
             dialogPane.setContent(content);
-            dialogPane.getButtonTypes().setAll(cancel, skip, ok);
+            dialogPane.getActions().setAll(cancelButton, skipButton, okButton);
             Pane root = new Pane(dialogPane);
             Stage stage = new Stage();
             try {
@@ -6838,9 +6847,6 @@ final class M3ControlContractMatrixTest {
                 dialogPane.resizeRelocate(24.0, 24.0, 460.0, 190.0);
                 root.layout();
 
-                Node cancelButton = dialogPane.lookupButton(cancel);
-                Node skipButton = dialogPane.lookupButton(skip);
-                Node okButton = dialogPane.lookupButton(ok);
                 skipButton.setDisable(true);
 
                 content.requestFocus();
@@ -6896,13 +6902,17 @@ final class M3ControlContractMatrixTest {
             M3TextField firstContent = new M3TextField("First content");
             M3DialogPane firstPane = new M3DialogPane();
             firstPane.setContent(firstContent);
-            firstPane.getButtonTypes().setAll(ButtonType.OK);
+            M3Button firstOkButton = new M3Button("OK", M3ButtonVariant.TEXT);
+            firstOkButton.setDefaultButton(true);
+            firstPane.getActions().setAll(firstOkButton);
             firstPane.setModalActive(true);
 
             M3TextField hiddenContent = new M3TextField("Hidden content");
             M3DialogPane hiddenPane = new M3DialogPane();
             hiddenPane.setContent(hiddenContent);
-            hiddenPane.getButtonTypes().setAll(ButtonType.OK);
+            M3Button hiddenOkButton = new M3Button("OK", M3ButtonVariant.TEXT);
+            hiddenOkButton.setDefaultButton(true);
+            hiddenPane.getActions().setAll(hiddenOkButton);
             hiddenPane.setModalActive(true);
 
             VBox root = new VBox(firstPane, hiddenPane);
@@ -6914,8 +6924,6 @@ final class M3ControlContractMatrixTest {
                 stage.show();
                 root.applyCss();
                 root.layout();
-
-                Node firstOkButton = Objects.requireNonNull(firstPane.lookupButton(ButtonType.OK));
 
                 root.getChildren().remove(hiddenPane);
                 root.getChildren().add(hiddenPane);
@@ -6957,7 +6965,11 @@ final class M3ControlContractMatrixTest {
             M3MenuButton menuButton = new M3MenuButton("More", export);
             M3DialogPane dialogPane = new M3DialogPane();
             dialogPane.setContent(menuButton);
-            dialogPane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
+            M3Button cancelAction = new M3Button("Cancel", M3ButtonVariant.TEXT);
+            cancelAction.setCancelButton(true);
+            M3Button okAction = new M3Button("OK", M3ButtonVariant.TEXT);
+            okAction.setDefaultButton(true);
+            dialogPane.getActions().setAll(cancelAction, okAction);
             Pane root = new Pane(dialogPane);
             Stage stage = new Stage();
             try {
@@ -7029,7 +7041,11 @@ final class M3ControlContractMatrixTest {
         FxTestUtils.runOnFxThread(() -> {
             M3DialogPane dialogPane = new M3DialogPane();
             dialogPane.setContent(new Label("Dialog body"));
-            dialogPane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
+            M3Button cancelAction = new M3Button("Cancel", M3ButtonVariant.TEXT);
+            cancelAction.setCancelButton(true);
+            M3Button okButton = new M3Button("OK", M3ButtonVariant.TEXT);
+            okButton.setDefaultButton(true);
+            dialogPane.getActions().setAll(cancelAction, okButton);
             Pane root = new Pane(dialogPane);
             Stage stage = new Stage();
             try {
@@ -7037,8 +7053,6 @@ final class M3ControlContractMatrixTest {
                 M3ThemeManager.install(stage.getScene(), M3Theme.defaultTheme());
                 stage.show();
                 root.applyCss();
-
-                Node okButton = dialogPane.lookupButton(ButtonType.OK);
 
                 assertEquals(okButton, dialogPane.queryAccessibleAttribute(AccessibleAttribute.FOCUS_NODE));
 
@@ -7059,12 +7073,16 @@ final class M3ControlContractMatrixTest {
             M3DialogPane pane = dialog.getDialogPane();
             pane.setHeaderText("Header");
             pane.setContentText("Body");
-            pane.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
+            M3Button cancelAction = new M3Button("Cancel", M3ButtonVariant.TEXT);
+            cancelAction.setCancelButton(true);
+            M3Button okAction = new M3Button("OK", M3ButtonVariant.TEXT);
+            okAction.setDefaultButton(true);
+            pane.getActions().setAll(cancelAction, okAction);
 
             assertSame(pane, dialog.getDialogPane());
             assertEquals("Header", pane.getHeaderText());
             assertEquals("Body", pane.getContentText());
-            assertEquals(List.of(ButtonType.CANCEL, ButtonType.OK), pane.getButtonTypes());
+            assertEquals(List.of(cancelAction, okAction), pane.getActions());
             assertTrue(dialog.isDismissOnScrimClick());
             assertTrue(pane.getStyleClass().contains(M3DialogPane.STYLE_CLASS));
             assertTrue(Objects.requireNonNull(pane.getUserAgentStylesheet(), "dialog stylesheet")
@@ -7072,7 +7090,7 @@ final class M3ControlContractMatrixTest {
 
             applyCss(pane);
 
-            assertInstanceOf(M3Button.class, pane.lookupButton(ButtonType.OK));
+            assertSame(okAction, pane.getDefaultAction());
         });
     }
 
@@ -34483,7 +34501,11 @@ final class M3ControlContractMatrixTest {
             M3DialogPane dialogPane = new M3DialogPane();
             dialogPane.setHeaderText("Dialog title");
             dialogPane.setContentText("Dialog content");
-            dialogPane.getButtonTypes().setAll(ButtonType.OK, ButtonType.CANCEL);
+            M3Button okAction = new M3Button("OK", M3ButtonVariant.TEXT);
+            okAction.setDefaultButton(true);
+            M3Button cancelAction = new M3Button("Cancel", M3ButtonVariant.TEXT);
+            cancelAction.setCancelButton(true);
+            dialogPane.getActions().setAll(okAction, cancelAction);
             dialogPane.setPrefWidth(320.0);
 
             M3ListItem selectedListItem = new M3ListItem("Selected list item");
@@ -34992,7 +35014,9 @@ final class M3ControlContractMatrixTest {
             M3DialogPane dialogPane = new M3DialogPane();
             dialogPane.setHeaderText("Dialog title");
             dialogPane.setContentText("Dialog body");
-            dialogPane.getButtonTypes().add(ButtonType.OK);
+            M3Button okAction = new M3Button("OK", M3ButtonVariant.TEXT);
+            okAction.setDefaultButton(true);
+            dialogPane.getActions().add(okAction);
 
             VBox root = new VBox(16.0, standaloneItem, listView, drawer, dialogPane);
             root.setStyle("-fx-background-color: -m3-color-surface; -fx-padding: 24px;");
@@ -35293,7 +35317,11 @@ final class M3ControlContractMatrixTest {
                         M3Dialog dialog = new M3Dialog();
                         dialog.getDialogPane().setHeaderText("Dark expressive dialog");
                         dialog.getDialogPane().setContentText("Dark overlay body");
-                        dialog.getDialogPane().getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
+                        M3Button cancelAction = new M3Button("Cancel", M3ButtonVariant.TEXT);
+                        cancelAction.setCancelButton(true);
+                        M3Button okAction = new M3Button("OK", M3ButtonVariant.TEXT);
+                        okAction.setDefaultButton(true);
+                        dialog.getDialogPane().getActions().setAll(cancelAction, okAction);
                         ownerStageReference.set(ownerStage);
                         overlayPaneReference.set(overlayPane);
                         dialogHandleReference.set(overlayPane.showDialog(dialog));
@@ -39319,7 +39347,7 @@ final class M3ControlContractMatrixTest {
                 && pane.getOpacity() >= 0.999
                 && pane.lookup(".header-panel .label") instanceof Label
                 && pane.lookup(".content-label") instanceof Label
-                && pane.lookupButton(ButtonType.OK) != null;
+                && pane.getActions().stream().anyMatch(M3Button::isDefaultButton);
     }
 
     /// Returns whether the submenu popup surface is rendering a visible enter-transition frame.
@@ -40590,8 +40618,8 @@ final class M3ControlContractMatrixTest {
                 Node.class,
                 pane.lookup("." + M3TimePicker.MODE_BUTTON_STYLE_CLASS)
         );
-        Node cancelButton = assertInstanceOf(Node.class, pane.lookupButton(ButtonType.CANCEL));
-        Node okButton = assertInstanceOf(Node.class, pane.lookupButton(ButtonType.OK));
+        Node cancelButton = Objects.requireNonNull(pane.getCancelAction(), "cancel action");
+        Node okButton = Objects.requireNonNull(pane.getDefaultAction(), "default action");
         Bounds modeBounds = modeButton.localToScene(modeButton.getBoundsInLocal());
         Bounds cancelBounds = cancelButton.localToScene(cancelButton.getBoundsInLocal());
         Bounds okBounds = okButton.localToScene(okButton.getBoundsInLocal());

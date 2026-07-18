@@ -7,7 +7,6 @@ import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
@@ -237,7 +236,12 @@ final class CatalogSamples {
         M3DialogPane pane = new M3DialogPane();
         pane.setHeaderText("Discard draft?");
         pane.setContentText("This action cannot be undone.");
-        pane.getButtonTypes().addAll(ButtonType.CANCEL, ButtonType.OK);
+
+        M3Button cancel = new M3Button("Cancel", M3ButtonVariant.TEXT);
+        cancel.setCancelButton(true);
+        M3Button confirm = new M3Button("OK", M3ButtonVariant.TEXT);
+        confirm.setDefaultButton(true);
+        pane.getActions().addAll(cancel, confirm);
         return pane;
     }
 

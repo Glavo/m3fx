@@ -15,7 +15,6 @@ import javafx.event.EventTarget;
 import javafx.event.EventType;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.ButtonType;
 import javafx.stage.Window;
 import javafx.stage.WindowEvent;
 import org.glavo.m3fx.animation.M3MotionSpec;
@@ -38,12 +37,12 @@ import java.util.Objects;
 /// Both presentation methods are non-blocking and return an [M3DialogHandle] for that specific presentation. An
 /// action button first bubbles its ordinary action event; consuming that event prevents dialog
 /// closing. Otherwise the dialog emits a cancellable [M3DialogEvent#CLOSE_REQUEST] and runs its exit transition.
-/// Lifecycle events expose the initiating [ButtonType], while application results remain in caller-owned state. They
+/// Lifecycle events expose the initiating [M3Button], while application results remain in caller-owned state. They
 /// are dispatched through this dialog's JavaFX [EventTarget] chain, so callers may register multiple filters and
 /// handlers in addition to the singleton `onXxx` properties. Reduced-motion requests settle presentation
 /// immediately.
 /// In overlay mode, activating the surrounding scrim requests the same cancellable close by default and produces no
-/// button type; [#dismissOnScrimClickProperty()] disables only that pointer-dismissal behavior while retaining
+/// initiating action; [#dismissOnScrimClickProperty()] disables only that pointer-dismissal behavior while retaining
 /// modality. The property has no effect in native-window mode because that mode has no Material scrim.
 ///
 /// The selected host supplies stylesheets, node orientation, motion settings, and the effective Material theme.
@@ -55,9 +54,13 @@ import java.util.Objects;
 /// M3Dialog dialog = new M3Dialog();
 /// dialog.getDialogPane().setHeaderText("Delete item?");
 /// dialog.getDialogPane().setContentText("This action cannot be undone.");
-/// dialog.getDialogPane().getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
+/// M3Button cancel = new M3Button("Cancel", M3ButtonVariant.TEXT);
+/// cancel.setCancelButton(true);
+/// M3Button confirm = new M3Button("OK", M3ButtonVariant.TEXT);
+/// confirm.setDefaultButton(true);
+/// dialog.getDialogPane().getActions().setAll(cancel, confirm);
 /// dialog.setOnHidden(event -> {
-///     if (event.getButtonType() == ButtonType.OK) {
+///     if (event.getAction() == confirm) {
 ///         deleteItem();
 ///     }
 /// });
@@ -80,9 +83,9 @@ public class M3Dialog implements EventTarget {
 
     /// Whether a primary click on the surrounding scrim requests that this dialog close.
     ///
-    /// A scrim dismissal follows the ordinary cancellable close lifecycle and produces no button type. Setting this
-    /// property to `false` keeps the scrim modal but prevents pointer dismissal. Escape and action buttons are not
-    /// affected. Native-window presentations do not have a scrim and ignore this value.
+    /// A scrim dismissal follows the ordinary cancellable close lifecycle and produces no initiating action. Setting
+    /// this property to `false` keeps the scrim modal but prevents pointer dismissal. Escape and action buttons are
+    /// not affected. Native-window presentations do not have a scrim and ignore this value.
     ///
     /// @defaultValue `true`
     private final BooleanProperty dismissOnScrimClickValue =
@@ -127,7 +130,7 @@ public class M3Dialog implements EventTarget {
     private boolean closeRequestPending;
 
     /// The action associated with the accepted close transition.
-    private @Nullable ButtonType pendingButtonType;
+    private @Nullable M3Button pendingAction;
 
     /// Whether the pane has completed the active exit transition.
     private boolean paneExitFinished;
@@ -244,7 +247,7 @@ public class M3Dialog implements EventTarget {
             activePresentation = nonNullPresentation;
             nonNullPresentation.setDismissOnScrimClick(isDismissOnScrimClick());
             fireLifecycle(M3DialogEvent.SHOWING, null);
-            pendingButtonType = null;
+            pendingAction = null;
             paneExitFinished = false;
             backgroundExitFinished = false;
             closing = false;
@@ -278,7 +281,7 @@ public class M3Dialog implements EventTarget {
                     dialogPane.setModalActive(false);
                     stopHostWindowObservation();
                     restorePaneOpacity();
-                    pendingButtonType = null;
+                    pendingAction = null;
                     paneExitFinished = false;
                     backgroundExitFinished = false;
                     closing = false;
@@ -327,8 +330,8 @@ public class M3Dialog implements EventTarget {
     }
 
     /// Handles an unconsumed action from one of the pane's action buttons.
-    private void handleButtonAction(ButtonType buttonType) {
-        requestCloseInternal(Objects.requireNonNull(buttonType, "buttonType"));
+    private void handleButtonAction(M3Button action) {
+        requestCloseInternal(Objects.requireNonNull(action, "action"));
     }
 
     /// Handles activation of the surrounding scrim through the ordinary cancellable close lifecycle.
@@ -344,25 +347,25 @@ public class M3Dialog implements EventTarget {
     /// Emits a cancellable close request and starts an accepted exit transition.
     ///
     /// @return `true` if an accepted close transition started; `false` otherwise
-    private boolean requestCloseInternal(@Nullable ButtonType buttonType) {
+    private boolean requestCloseInternal(@Nullable M3Button action) {
         if (!isPresented() || closing || closeRequestPending) {
             return false;
         }
 
         closeRequestPending = true;
         try {
-            M3DialogEvent closeEvent = fireLifecycle(M3DialogEvent.CLOSE_REQUEST, buttonType);
+            M3DialogEvent closeEvent = fireLifecycle(M3DialogEvent.CLOSE_REQUEST, action);
             if (closeEvent.isConsumed()) {
                 return false;
             }
 
             closing = true;
-            pendingButtonType = buttonType;
+            pendingAction = action;
             try {
-                fireLifecycle(M3DialogEvent.HIDING, buttonType);
+                fireLifecycle(M3DialogEvent.HIDING, action);
             } catch (RuntimeException | Error exception) {
                 closing = false;
-                pendingButtonType = null;
+                pendingAction = null;
                 throw exception;
             }
 
@@ -374,7 +377,7 @@ public class M3Dialog implements EventTarget {
                 presentation.startBackgroundExit(this::handleBackgroundExitFinished);
                 playExitAnimation();
             } else {
-                completeHide(buttonType);
+                completeHide(action);
             }
             return true;
         } finally {
@@ -429,12 +432,12 @@ public class M3Dialog implements EventTarget {
     /// Removes the presentation after the pane and background transitions have settled.
     private void completeHideWhenExitFinished() {
         if (closing && paneExitFinished && backgroundExitFinished) {
-            completeHide(pendingButtonType);
+            completeHide(pendingAction);
         }
     }
 
     /// Removes the presentation surface and completes the accepted close lifecycle.
-    private void completeHide(@Nullable ButtonType buttonType) {
+    private void completeHide(@Nullable M3Button action) {
         M3DialogHandle handle = Objects.requireNonNull(activeHandle, "active dialog handle");
         M3DialogPresentation presentation =
                 Objects.requireNonNull(activePresentation, "active dialog presentation");
@@ -445,13 +448,13 @@ public class M3Dialog implements EventTarget {
         presentation.dispose();
         restorePaneOpacity();
         stopHostWindowObservation();
-        pendingButtonType = null;
+        pendingAction = null;
         paneExitFinished = false;
         backgroundExitFinished = false;
         closing = false;
         closeRequestPending = false;
         handle.detach();
-        fireLifecycle(M3DialogEvent.HIDDEN, buttonType, handle);
+        fireLifecycle(M3DialogEvent.HIDDEN, action, handle);
     }
 
     /// Forces presentation cleanup after the host window has disappeared.
@@ -461,11 +464,11 @@ public class M3Dialog implements EventTarget {
         }
 
         presentationAnimation.stop();
-        @Nullable ButtonType buttonType = pendingButtonType;
+        @Nullable M3Button action = pendingAction;
         boolean fireHiding = !closing;
         if (fireHiding) {
             closing = true;
-            pendingButtonType = null;
+            pendingAction = null;
         }
 
         @Nullable Throwable failure = null;
@@ -477,7 +480,7 @@ public class M3Dialog implements EventTarget {
             }
         }
         try {
-            completeHide(buttonType);
+            completeHide(action);
         } catch (RuntimeException | Error exception) {
             if (failure == null) {
                 failure = exception;
@@ -555,19 +558,19 @@ public class M3Dialog implements EventTarget {
     /// Creates and dispatches one lifecycle event through this dialog's JavaFX event chain.
     private M3DialogEvent fireLifecycle(
             EventType<M3DialogEvent> eventType,
-            @Nullable ButtonType buttonType
+            @Nullable M3Button action
     ) {
         M3DialogHandle handle = Objects.requireNonNull(activeHandle, "active dialog handle");
-        return fireLifecycle(eventType, buttonType, handle);
+        return fireLifecycle(eventType, action, handle);
     }
 
     /// Creates and dispatches one lifecycle event for an explicitly retained presentation handle.
     private M3DialogEvent fireLifecycle(
             EventType<M3DialogEvent> eventType,
-            @Nullable ButtonType buttonType,
+            @Nullable M3Button action,
             M3DialogHandle handle
     ) {
-        M3DialogEvent event = new M3DialogEvent(this, handle, eventType, buttonType);
+        M3DialogEvent event = new M3DialogEvent(this, handle, eventType, action);
         Event.fireEvent(this, event);
         return event;
     }
