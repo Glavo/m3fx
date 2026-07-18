@@ -6,6 +6,7 @@ package org.glavo.m3fx.controls;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
@@ -23,6 +24,7 @@ import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import org.glavo.m3fx.FxTestUtils;
+import org.glavo.m3fx.animation.M3MotionSettings;
 import org.glavo.m3fx.testing.Tier2Test;
 import org.glavo.monetfx.ColorRole;
 import org.glavo.monetfx.Brightness;
@@ -490,7 +492,6 @@ final class M3DialogPresentationTest {
     }
 
     /// Verifies explicit and inherited theme changes restyle a visible dialog without replacing its pane.
-    @Tier2Test
     @Test
     void dialogThemeContextUpdatesWithoutRecreatingPane() {
         FxTestUtils.runOnFxThreadWithAnimationsDisabled(() -> {
@@ -501,6 +502,8 @@ final class M3DialogPresentationTest {
             M3Theme inheritedTheme = M3Theme.defaultTheme();
             M3Theme explicitDarkTheme = M3Theme.fromSeed(Color.web("#006a6a"), Brightness.DARK);
             M3Theme explicitLightTheme = M3Theme.fromSeed(Color.web("#7d5260"));
+            M3Theme replacementInheritedTheme = M3Theme.fromSeed(Color.web("#386a20"));
+            M3Theme localOwnerTheme = M3Theme.fromSeed(Color.web("#984061"), Brightness.DARK);
             M3ThemeManager.install(scene, inheritedTheme);
             stage.setScene(scene);
             stage.show();
@@ -526,8 +529,63 @@ final class M3DialogPresentationTest {
 
                 assertSame(pane, dialog.getDialogPane());
                 assertEquals(dialogSurfaceColor(inheritedTheme), renderedDialogSurface(dialog));
+
+                M3ThemeManager.install(scene, replacementInheritedTheme);
+
+                assertEquals(dialogSurfaceColor(replacementInheritedTheme), renderedDialogSurface(dialog));
+
+                M3ThemeManager.uninstall(scene);
+                M3ThemeManager.install(ownerContent, localOwnerTheme);
+
+                assertEquals(dialogSurfaceColor(localOwnerTheme), renderedDialogSurface(dialog));
             } finally {
                 dialog.close();
+                M3ThemeManager.uninstall(ownerContent);
+                stage.close();
+            }
+        });
+    }
+
+    /// Verifies a dialog mirrors owner orientation and reduced-motion context only for its presentation lifetime.
+    @Test
+    void dialogMirrorsOwnerOrientationAndMotionContextWhileShowing() {
+        FxTestUtils.runOnFxThread(() -> {
+            Stage stage = new Stage();
+            StackPane ownerContent = new StackPane(new M3Button("Owner"));
+            ownerContent.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
+            M3MotionSettings.setReducedMotionRequested(ownerContent, true);
+            M3OverlayPane overlayRoot = createOverlayRoot(ownerContent);
+            Scene scene = new Scene(overlayRoot, 520.0, 340.0);
+            M3ThemeManager.install(scene, M3Theme.defaultTheme());
+            stage.setScene(scene);
+            stage.show();
+
+            M3Dialog<Void> dialog = new M3Dialog<>();
+            dialog.setOwner(ownerContent);
+            dialog.getDialogPane().setHeaderText("Context dialog");
+            dialog.getDialogPane().getButtonTypes().setAll(ButtonType.OK);
+            try {
+                dialog.show();
+                Parent layer = Objects.requireNonNull(dialog.getDialogPane().getParent(), "dialog layer");
+
+                assertEquals(NodeOrientation.RIGHT_TO_LEFT, layer.getNodeOrientation());
+                assertTrue(M3MotionSettings.shouldReduceMotion(dialog.getDialogPane()));
+
+                ownerContent.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
+                M3MotionSettings.setReducedMotionRequested(ownerContent, false);
+
+                assertEquals(NodeOrientation.LEFT_TO_RIGHT, layer.getNodeOrientation());
+                assertFalse(M3MotionSettings.shouldReduceMotion(dialog.getDialogPane()));
+
+                M3MotionSettings.setReducedMotionRequested(ownerContent, true);
+                dialog.close();
+
+                assertEquals(NodeOrientation.INHERIT, layer.getNodeOrientation());
+                assertFalse(M3MotionSettings.isReducedMotionRequested(layer));
+            } finally {
+                M3MotionSettings.setReducedMotionRequested(ownerContent, true);
+                dialog.close();
+                M3MotionSettings.setReducedMotionRequested(ownerContent, false);
                 stage.close();
             }
         });

@@ -92,7 +92,6 @@ import org.glavo.m3fx.internal.M3Animation;
 import org.glavo.m3fx.internal.M3DisclosureIcon;
 import org.glavo.m3fx.internal.M3InternalIcon;
 import org.glavo.m3fx.internal.M3PopupContextSynchronizer;
-import org.glavo.m3fx.internal.M3PopupStyles;
 import org.glavo.m3fx.internal.M3Stylesheets;
 import org.glavo.m3fx.internal.M3TooltipRegistry;
 import org.glavo.m3fx.internal.shape.M3ShapeMorph;
@@ -35269,11 +35268,10 @@ final class M3ControlContractMatrixTest {
         AtomicReference<@Nullable Stage> ownerStageReference = new AtomicReference<>();
         AtomicReference<@Nullable M3OverlayPane> overlayPaneReference = new AtomicReference<>();
         AtomicReference<@Nullable M3Dialog<ButtonType>> dialogReference = new AtomicReference<>();
-        AtomicReference<@Nullable M3Theme> themeReference = new AtomicReference<>();
 
         try {
             FxTestUtils.runOnFxThreadWhenStable(
-                    () -> dialogPopupReady(dialogReference),
+                    () -> dialogOverlayReady(dialogReference),
                     2,
                     () -> {
                         Stage ownerStage = new Stage();
@@ -35304,11 +35302,9 @@ final class M3ControlContractMatrixTest {
                         ownerStageReference.set(ownerStage);
                         overlayPaneReference.set(overlayPane);
                         dialogReference.set(dialog);
-                        themeReference.set(theme);
                         dialog.show();
                     },
                     () -> {
-                        M3Theme theme = Objects.requireNonNull(themeReference.get(), "theme");
                         M3Dialog<ButtonType> dialog = Objects.requireNonNull(dialogReference.get(), "dialog");
                         M3OverlayPane overlayPane =
                                 Objects.requireNonNull(overlayPaneReference.get(), "overlayPane");
@@ -35316,33 +35312,23 @@ final class M3ControlContractMatrixTest {
                         pane.applyCss();
                         pane.layout();
 
-                        Parent contextRoot = assertInstanceOf(
-                                Parent.class,
-                                pane.getParent(),
-                                "dialog presentation context root"
-                        );
                         assertSame(
                                 overlayPane,
                                 Objects.requireNonNull(overlayPane.getScene(), "overlay scene").getRoot()
                         );
                         assertTrue(M3Accessible.containsNode(overlayPane, pane));
-                        assertPopupRootUsesThemeClasses(contextRoot, theme);
-                        assertSame(theme, M3ThemeManager.getTheme(contextRoot));
-                        assertTrue(contextRoot.getStylesheets().contains(M3ThemeRuntime.themeStylesheetUrl(theme)));
-                        assertTrue(contextRoot.getStyleClass().contains(M3PopupStyles.FALLBACK_ROOT_STYLE_CLASS),
-                                () -> "dialog context should keep fallback root class: " + contextRoot.getStyleClass());
                         Label header = assertInstanceOf(
                                 Label.class,
                                 pane.lookup(".header-panel .label"),
-                                "dialog popup header label"
+                                "dialog overlay header label"
                         );
                         Label content = assertInstanceOf(
                                 Label.class,
                                 pane.lookup(".content-label"),
                                 "dialog overlay content label"
                         );
-                        assertDarkThemeLabelFill(header, "dialog popup header label");
-                        assertDarkThemeLabelFill(content, "dialog popup content label");
+                        assertDarkThemeLabelFill(header, "dialog overlay header label");
+                        assertDarkThemeLabelFill(content, "dialog overlay content label");
 
                         WritableImage image = snapshotImageOnFxThread(pane);
                         assertSnapshotHasColorVariety(image, 4);
@@ -35351,7 +35337,7 @@ final class M3ControlContractMatrixTest {
                                 "build",
                                 "reports",
                                 "m3fx-visual",
-                                "visual-dark-expressive-dialog-popup.png"
+                                "visual-dark-expressive-dialog-overlay.png"
                         ));
                         assertMaterialTargetGeometryIsStable(
                                 Objects.requireNonNull(pane.getScene(), "dialog scene").getRoot()
@@ -39317,7 +39303,7 @@ final class M3ControlContractMatrixTest {
     }
 
     /// Returns whether a dialog overlay pane has reached a renderable styled state.
-    private static boolean dialogPopupReady(AtomicReference<@Nullable M3Dialog<ButtonType>> dialogReference) {
+    private static boolean dialogOverlayReady(AtomicReference<@Nullable M3Dialog<ButtonType>> dialogReference) {
         @Nullable M3Dialog<ButtonType> dialog = dialogReference.get();
         if (dialog == null || !dialog.isShowing()) {
             return false;
